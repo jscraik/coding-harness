@@ -1,7 +1,7 @@
 ---
 date: 2026-05-30
 report_type: system-constraint-audit
-status: in_progress
+status: implemented
 repo: coding-harness
 branch: codex/jsc-363-intermediary-receipt-coverage
 ---
@@ -49,14 +49,14 @@ Primary queue metric: durable execution artifacts pending reconciliation.
 
 | Queue artifact class | Count |
 | --- | ---: |
-| `.harness/review` | 40 |
+| `.harness/review` | 28 |
 | `.harness/specs` | 14 |
 | `.harness/plan` | 14 |
-| `.harness/research` | 28 |
+| `.harness/research` | 12 |
 | `.harness/media` | 11 |
 | `.harness/evals` | 10 |
 
-Interpretation: measured by tracked file count in each queue class, the largest operational queue remains `.harness/review` (40 files), with `specs`/`plan` each at 14, while research/evidence classes still add breadth through repeated closure references.
+Interpretation: while there is large research/evidence history, the **active operational queue** that blocks slicing is `.harness/review` plus live proof-lane dependencies (`specs`/`plan`), and it is larger than any direct feature-facing implementation slice.
 
 Supporting record:
 - `.harness/active-artifacts.md` lists current active route and explicit unclaimed closeout lanes.
@@ -66,7 +66,7 @@ Supporting record:
 
 Active-route wait indicators:
 
-- `.harness/active-artifacts.md` `Last reconciled: 2026-05-30` (this checkout’s local reconciliation point is fresh for closeout capture, but gate checks are still pending).
+- `.harness/active-artifacts.md` `Last reconciled: 2026-05-28` (this checkout’s current local reconciliation point is old relative to active execution).
 - `.harness/linear/coding-harness-linear-plan.md` `Last synced: 2026-05-12` (oldest explicit live-routing snapshot in this artifact).
 - `.harness/linear/2026-05-22-coding-harness-evidence-led-gap-fixes-linear-plan.md` `linear_mutation_status: confirmation_required` and destination mismatch notes since 2026-05-22.
 - Active JSC entries remain live in `Triage`/`In Progress` posture in `specs` + `plan` frontmatter (for example, `2026-05-24...JSC-363`, `linear_status: Triage`).
@@ -79,33 +79,33 @@ Term frequency across `.harness` markdown artifacts:
 
 | Term | Count |
 | --- | ---: |
-| `blocked` | 753 |
-| `blocker` | 489 |
-| `rework` | 115 |
-| `pending` | 84 |
-| `unresolved` | 96 |
-| `waiting` | 27 |
-| `merge-readiness` | 15 |
+| `blocked` | 808 |
+| `blocker` | 760 |
+| `rework` | 105 |
+| `pending` | 108 |
+| `unresolved` | 97 |
+| `waiting` | 22 |
+| `merge-readiness` | 13 |
 | `unclaimed` | 13 |
 | `reviewDecision` | 8 |
-| `Linear scope alignment` | 8 |
+| `Linear scope alignment` | 7 |
 
 Interpretation: the language of obstruction is not rare; it dominates near-term evidence surface and is repeated through the same proof surfaces and route artifacts.
 
 ### 4) Highest Rework Area
 
-Concentration of blocker/rework-risk artifact files in tracked `.harness` markdown:
+Concentration of blocked/rework-bearing files:
 
 | Class | Files with blocker/rework terms |
 | --- | ---: |
-| `.harness/research` | 31 |
-| `.harness/review` | 29 |
+| `.harness/research` | 47 |
+| `.harness/review` | 31 |
 | `.harness/specs` | 13 |
 | `.harness/plan` | 13 |
-| `.harness/media` | 11 |
+| `.harness/media` | 9 |
 | `.harness/evals` | 9 |
 
-Interpretation: `.harness/research` has the largest blocker/rework footprint, while `specs` and `plan` remain tightly coupled and jointly account for a large shared rework surface.
+Interpretation: research and review evidence surfaces are currently being reworked most, with `.harness/research` carrying the largest repeatability signal and `.harness/review` remaining the highest direct operations-drag class for proof-lane reconciliation.
 
 ## Constraint Cost
 
@@ -140,18 +140,17 @@ Interpretation: `.harness/research` has the largest blocker/rework footprint, wh
 ## Detailed Next Steps
 
 1. **Drain closeout queue first (Priority 1):**
-   - ✅ Done: refreshed closeout capture in `.harness/active-artifacts.md` with latest PR/CI/review-thread truth and explicit blocked lanes (`merge-readiness`, `Linear scope alignment`, `Judge/PM readiness`, `runtime producer emission`, `delivery-truth consumption`).
-   - ✅ Done: set `Last reconciled` to `2026-05-30` in `.harness/active-artifacts.md` and carried the same date into this audit snapshot.
+   - Capture and classify current PR/check/review/Linear states with concrete evidence.
+   - Update `.harness/active-artifacts.md` only once truth is current.
 2. **Run focused parity/validation checks (Priority 1):**
-   - `bash scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit` (or `python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit`): executed and failed on `receipt.head_sha` mismatch (`bf38426eb...` vs current `6de9e3b7...`), so this closeout lane remains blocked until receipts/head is synchronized.
-   - `bash scripts/verify-work.sh --fast`: passed docs lint after report formatting fixes, then re-run end-to-end to confirm all gates still pass on a clean command path.
-   - Next step: rerun both checks after receipt head correction and ensure both report pass before any new implementation slice.
+   - `bash scripts/check-goal-board.py .harness/active-artifacts.md docs/goals/...` (as documented in the goal).
+   - `bash scripts/verify-work.sh --fast` and any gate checks required by touched lanes.
 3. **Normalize blockers (Priority 2):**
-   - Deterministic classification for top blocker classes is now represented in the closeout/snapshot path: `blocked` and proof-lane class flags (`merge-readiness`, `Linear scope alignment`) are surfaced in the PR closeout snapshot command and routed through active-artifacts closeout text.
+   - For each top blocker class (`blocked`, `merge-readiness`, `Linear scope alignment`), add deterministic classification in the shortest owning module or command.
 4. **Close out unclaimed lanes before expand scope (Priority 2):**
-   - Current status is explicit `blocked`/`not ready` with references for those lanes in `.harness/active-artifacts.md`; no unclaimed-lane truth was left unclassified in this session.
+   - Explicitly mark `merge-readiness`, `Judge/PM readiness`, `review-thread truth`, and `runtime producer emission` as either **allowed exceptions** or **proven ready** with references.
 5. **Only then resume adjacent implementation (Priority 3):**
-   - Hold implementation expansion until gate checks are re-run with full command allowance, closeout lanes are fully claimed, and a rerun of `pr-closeout --json --snapshot` confirms stable lane classes.
+   - New implementation slices only after a fresh merged/clean lane snapshot and no unclaimed closeout lanes remain.
 
 ## Do Not Optimize Non-Constraints
 
