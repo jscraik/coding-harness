@@ -52,7 +52,8 @@ export function isIso(value: unknown): value is string {
 	);
 	if (!match) return false;
 
-	const [, , month, day, hour, minute, second, , tzPart, , tzHour, tzMinute] = match;
+	const [, , month, day, hour, minute, second, , tzPart, , tzHour, tzMinute] =
+		match;
 	const numMonth = Number.parseInt(month ?? "0", 10);
 	const numDay = Number.parseInt(day ?? "0", 10);
 	const numHour = Number.parseInt(hour ?? "0", 10);
@@ -63,13 +64,14 @@ export function isIso(value: unknown): value is string {
 	if (numMonth < 1 || numMonth > 12) return false;
 	if (numHour > 23 || numMinute > 59 || numSecond > 59) return false;
 
-	// Validate day range based on month (simplified - doesn't handle leap years)
+	// Validate day range based on month (simplified: does not handle leap years)
 	const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 	const maxDay = daysInMonth[numMonth - 1];
 	if (numDay < 1 || (maxDay !== undefined && numDay > maxDay)) return false;
 
 	// Validate timezone offset
 	if (tzPart !== "Z") {
+		if (tzHour === undefined || tzMinute === undefined) return false;
 		const numTzHour = Number.parseInt(tzHour, 10);
 		const numTzMinute = Number.parseInt(tzMinute, 10);
 		if (numTzHour > 23 || numTzMinute > 59) return false;

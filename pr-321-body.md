@@ -43,7 +43,7 @@
 - Durable evidence map: GitHub PR #321, CircleCI job URLs in check contexts, local validation command outputs, and pushed commits `1cc43dd8`, `d8f6a1ba`, and `b0cc7b50`.
 - Runtime impact: Advisory next-decision and PR closeout evidence behavior only; no production command-authority expansion.
 - CodeRabbit mode coverage: CodeRabbit check is present on PR #321; latest status must be rechecked before merge.
-- Closeout state: PR is draft, mergeable, and waiting on latest required checks/review after this PR body update.
+- Closeout state: PR is ready for review, mergeable, and waiting on latest required checks/review after this PR body update.
 - Learning / reinforcement: n.a.
 - Deferred work: Final merge, branch cleanup, and any independent review closure remain pending until all required checks and review lanes are current and green.
 
@@ -60,13 +60,14 @@
 
 ## Testing
 
-- verification_commands: `pnpm install --frozen-lockfile`; `pnpm typecheck`; `pnpm vitest run src/lib/architecture/module-boundaries.test.ts --reporter=dot`; `bash scripts/run-harness-gate.sh docs-gate --mode required --json`; `bash scripts/run-harness-gate.sh pr-template-gate --pr-body-file pr-321-body.md --json`; `gh pr view 321 --repo jscraik/coding-harness --json headRefOid,mergeable,mergeStateStatus,isDraft,reviewDecision,statusCheckRollup`.
-- verification_outcomes: `pnpm install --frozen-lockfile` -> pass; `pnpm typecheck` -> pass; `pnpm vitest run src/lib/architecture/module-boundaries.test.ts --reporter=dot` -> pass (1 file, 61 tests); `bash scripts/run-harness-gate.sh docs-gate --mode required --json` -> pass (0 warnings); `bash scripts/run-harness-gate.sh pr-template-gate --pr-body-file pr-321-body.md --json` -> pass; `gh pr view ...` -> pass as live-state read, PR mergeable but draft/blocked pending checks.
-- blocked_steps_reason: `pnpm check` not rerun during this sweep because the current blockers were narrower CircleCI, docs-gate, PR-template, and mergeability lanes; final full-gate truth remains CircleCI/required-check-owned before merge.
+- verification_commands: `pnpm install --frozen-lockfile`; `pnpm typecheck`; `pnpm vitest run src/lib/architecture/module-boundaries.test.ts --reporter=dot`; `bash scripts/run-harness-gate.sh docs-gate --mode required --json`; `bash scripts/run-harness-gate.sh pr-template-gate --pr-body-file pr-321-body.md --json`; `pnpm check`; `gh pr view 321 --repo jscraik/coding-harness --json headRefOid,mergeable,mergeStateStatus,isDraft,reviewDecision,statusCheckRollup`.
+- verification_outcomes: `pnpm install --frozen-lockfile` -> pass; `pnpm typecheck` -> pass; `pnpm vitest run src/lib/architecture/module-boundaries.test.ts --reporter=dot` -> pass (1 file, 61 tests); `bash scripts/run-harness-gate.sh docs-gate --mode required --json` -> pass (0 warnings); `bash scripts/run-harness-gate.sh pr-template-gate --pr-body-file pr-321-body.md --json` -> pass; `pnpm check` -> pass; `gh pr view ...` -> pass as live-state read, PR mergeable but awaiting latest required checks.
+- blocked_steps_reason: none; `pnpm check` passed locally in the PR repair checkout, while final merge truth remains CircleCI/required-check-owned before merge.
 - Command: `pnpm install --frozen-lockfile` -> pass
 - Command: `pnpm typecheck` -> pass
 - Command: `pnpm vitest run src/lib/architecture/module-boundaries.test.ts --reporter=dot` -> pass
 - Command: `bash scripts/run-harness-gate.sh docs-gate --mode required --json` -> pass
+- Command: `pnpm check` -> pass
 - Command: `gh pr view 321 --repo jscraik/coding-harness --json headRefOid,mergeable,mergeStateStatus,isDraft,reviewDecision,statusCheckRollup` -> pass
 - Command: `bash scripts/run-harness-gate.sh pr-template-gate --pr-body-file pr-321-body.md --json` -> pass
 - Command: `gh pr checks 321 --repo jscraik/coding-harness --watch=false` -> blocked (latest CircleCI rerun is still pending after body update)

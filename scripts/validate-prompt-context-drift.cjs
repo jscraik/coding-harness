@@ -67,7 +67,13 @@ function main() {
 		"const reportPath = process.env.PROMPT_CONTEXT_DRIFT_REPORT_PATH;",
 		"const repoRoot = process.env.PROMPT_CONTEXT_DRIFT_REPO_ROOT;",
 		"const { validatePromptContextDriftReport } = await import(moduleUrl);",
-		"const report = JSON.parse(readFileSync(reportPath, 'utf8'));",
+		"let report;",
+		"try {",
+		"  report = JSON.parse(readFileSync(reportPath, 'utf8'));",
+		"} catch (error) {",
+		"  console.log(JSON.stringify({ schemaVersion: 'prompt-context-drift-validation/v1', status: 'fail', errors: ['report: cannot read JSON: ' + error.message] }, null, 2));",
+		"  process.exit(1);",
+		"}",
 		"const result = validatePromptContextDriftReport(report, { repoRoot });",
 		"console.log(JSON.stringify({ schemaVersion: 'prompt-context-drift-validation/v1', ...result }, null, 2));",
 		"process.exit(result.status === 'pass' ? 0 : 1);",
@@ -91,6 +97,9 @@ function main() {
 			encoding: "utf8",
 		},
 	);
+	if (child.error) {
+		printResult("fail", [`child process failed: ${child.error.message}`], 1);
+	}
 	if (child.stdout) process.stdout.write(child.stdout);
 	if (child.stderr) process.stderr.write(child.stderr);
 	process.exit(child.status === null ? 1 : child.status);

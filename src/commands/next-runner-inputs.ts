@@ -54,7 +54,7 @@ export function inspectWorktreeState(repoRoot: string): NextWorktreeState {
 		return Number.isNaN(parsed) ? null : parsed;
 	};
 
-	const status = run(["status", "--short", "--untracked-files=no"]);
+	const status = run(["status", "--short", "--untracked-files=all"]);
 	const branch = run(["rev-parse", "--abbrev-ref", "HEAD"]);
 	const upstream = run([
 		"rev-parse",
@@ -86,11 +86,9 @@ export function blocksDirtyWorktree(
 ): boolean {
 	if (role === "dirty-with-justification") return false;
 	if (!state.clean) return true;
-	// Block when clean but sync state is unknown
-	if (state.clean && (state.upstream === null || state.ahead === null || state.behind === null)) {
-		return true;
-	}
-	if ((state.ahead !== null && state.ahead > 0) || (state.behind !== null && state.behind > 0)) return true;
+	if (state.upstream === null) return role === "fresh-worktree";
+	if (state.ahead === null || state.behind === null) return true;
+	if (state.ahead > 0 || state.behind > 0) return true;
 	return false;
 }
 

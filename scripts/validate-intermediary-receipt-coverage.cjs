@@ -54,11 +54,16 @@ function main() {
 	if (!args.packetPath) {
 		printResult("fail", ["packetPath: is required"], 2);
 	}
-	if (!fs.existsSync(args.packetPath)) {
+	const repoRoot = path.resolve(args.repoRoot);
+	const packetPath = resolveRepoRelativePath(
+		repoRoot,
+		args.packetPath,
+		"packetPath",
+	);
+	if (!fs.existsSync(packetPath)) {
 		printResult("fail", ["packetPath: file does not exist"], 1);
 	}
 
-	const repoRoot = path.resolve(args.repoRoot);
 	const moduleUrl = pathToFileURL(
 		path.join(repoRoot, "src/lib/intermediary-receipts/index.ts"),
 	).href;
@@ -81,26 +86,26 @@ function main() {
 			env: {
 				...process.env,
 				INTERMEDIARY_RECEIPT_COVERAGE_MODULE_URL: moduleUrl,
-				INTERMEDIARY_RECEIPT_COVERAGE_PACKET_PATH: path.resolve(
-					args.packetPath,
-				),
+				INTERMEDIARY_RECEIPT_COVERAGE_PACKET_PATH: packetPath,
 			},
 			encoding: "utf8",
 		},
 	);
-
-	// Handle spawn errors
 	if (child.error) {
-		printResult(
-			"fail",
-			[`Command execution failed: ${child.error.message}`],
-			1,
-		);
+		printResult("fail", [`child process failed: ${child.error.message}`], 1);
 	}
-
 	if (child.stdout) process.stdout.write(child.stdout);
 	if (child.stderr) process.stderr.write(child.stderr);
 	process.exit(child.status === null ? 1 : child.status);
+}
+
+function resolveRepoRelativePath(repoRoot, value, field) {
+	const resolved = path.resolve(repoRoot, value);
+	const relativePath = path.relative(repoRoot, resolved);
+	if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+		printResult("fail", [`${field}: must stay inside repo root`], 2);
+	}
+	return resolved;
 }
 
 main();

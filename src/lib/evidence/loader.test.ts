@@ -1,5 +1,6 @@
 import {
 	existsSync,
+	mkdirSync,
 	mkdtempSync,
 	realpathSync,
 	rmSync,
@@ -101,16 +102,17 @@ describe("resolveEvidencePath", () => {
 		);
 	});
 
-	it("rejects directory inputs", () => {
+	it("rejects directory paths before marking evidence valid", () => {
 		const repoRoot = makeTempRepo();
-		const { mkdirSync } = require("node:fs");
-		mkdirSync(join(repoRoot, "artifacts"));
+		mkdirSync(join(repoRoot, "evidence"));
 
-		const result = resolveEvidencePath(repoRoot, "artifacts");
+		const result = resolveEvidencePath(repoRoot, "evidence");
 
 		expect(result.status).toBe("directory_target");
-		expect(result.realPath).toBe(realpathSync(join(repoRoot, "artifacts")));
+		expect(result.realPath).toBe(realpathSync(join(repoRoot, "evidence")));
 		expect(result.sizeBytes).toBeNull();
-		expect(result.blocker).toContain("directory");
+		expect(result.blocker).toBe(
+			"Evidence path is a directory; expected a file.",
+		);
 	});
 });

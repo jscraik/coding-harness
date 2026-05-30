@@ -14,6 +14,7 @@ import {
 	validateHarnessDecision,
 	validateHarnessDecisionOperationalMeta,
 } from "../lib/decision/harness-decision.js";
+import { blocksDirtyWorktree } from "./next-runner-inputs.js";
 import {
 	HE_GATE_RESULT_SCHEMA_VERSION,
 	aggregateHePhaseExit,
@@ -420,6 +421,34 @@ describe("runHarnessNext", () => {
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });
 		}
+	});
+
+	it("blocks untracked-only worktrees when default role is clean", () => {
+		const repoRoot = createGitRepoWithCommit();
+		try {
+			writeFileSync(join(repoRoot, "scratch.md"), "local scratch\n");
+			const decision = runHarnessNext({ repoRoot });
+
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("worktree_state_blocked");
+			expect(decision.nextAction).toContain(
+				"Use --worktree-role dirty-with-justification",
+			);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("blocks clean-role worktrees when sync counts are unknown", () => {
+		expect(
+			blocksDirtyWorktree("clean", {
+				branch: "feature",
+				clean: true,
+				upstream: "origin/feature",
+				ahead: null,
+				behind: 0,
+			}),
+		).toBe(true);
 	});
 
 	it("allows dirty worktrees when role is dirty-with-justification", () => {

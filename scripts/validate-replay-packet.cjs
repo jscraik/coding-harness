@@ -137,27 +137,21 @@ const VERDICTS = new Set([
 ]);
 
 function parseArgs(argv) {
-	const result = { packetPath: null, repoRoot: process.cwd() };
+	const result = { errors: [], packetPath: null, repoRoot: process.cwd() };
 	for (let index = 0; index < argv.length; index += 1) {
 		const arg = argv[index];
 		if (arg === "--repo-root") {
 			const value = argv[index + 1];
 			if (!value || value.startsWith("-")) {
-				console.error(
-					JSON.stringify(
-						{
-							schemaVersion: "replay-packet-validation/v1",
-							status: "fail",
-							errors: ["--repo-root requires a valid value"],
-						},
-						null,
-						2,
-					),
-				);
-				process.exit(2);
+				result.errors.push("--repo-root: requires a value");
+				continue;
 			}
 			result.repoRoot = value;
 			index += 1;
+			continue;
+		}
+		if (arg.startsWith("--")) {
+			result.errors.push(`${arg}: unknown option`);
 			continue;
 		}
 		if (!result.packetPath) result.packetPath = arg;
@@ -167,7 +161,7 @@ function parseArgs(argv) {
 
 function main() {
 	const args = parseArgs(process.argv.slice(2));
-	const errors = [];
+	const errors = [...args.errors];
 	let packet;
 	if (!args.packetPath) errors.push("packetPath: is required");
 	try {
@@ -177,25 +171,12 @@ function main() {
 	} catch (error) {
 		errors.push(`packet: cannot read JSON: ${error.message}`);
 	}
-
-	let repoRoot;
+	let repoRoot = process.cwd();
 	try {
 		repoRoot = fs.realpathSync(path.resolve(args.repoRoot));
 	} catch (error) {
-		console.log(
-			JSON.stringify(
-				{
-					schemaVersion: "replay-packet-validation/v1",
-					status: "fail",
-					errors: [`--repo-root: cannot resolve path: ${error.message}`],
-				},
-				null,
-				2,
-			),
-		);
-		process.exit(1);
+		errors.push(`repoRoot: cannot resolve repository root: ${error.message}`);
 	}
-
 	if (packet) validatePacket(packet, repoRoot, new Date(), errors);
 	const status = errors.length === 0 ? "pass" : "fail";
 	console.log(

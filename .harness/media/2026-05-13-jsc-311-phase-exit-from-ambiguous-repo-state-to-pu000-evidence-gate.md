@@ -10,8 +10,8 @@ This sidecar records the media status and fallback image prompt for the reviewed
 * `$imagegen` invoked: blocked
 * generated-image cache source path: blocked because the available chat image-generation tool does not expose a repository-local cache path in this workflow
 * repository `.harness/media/` PNG path: blocked because no generated bitmap path was available to copy and verify
-* prompt metadata path: `/Users/jamiecraik/dev/coding-harness/.harness/media/2026-05-13-jsc-311-phase-exit-from-ambiguous-repo-state-to-pu000-evidence-gate-prompt.md`
-* sidecar path: `/Users/jamiecraik/dev/coding-harness/.harness/media/2026-05-13-jsc-311-phase-exit-from-ambiguous-repo-state-to-pu000-evidence-gate.md`
+* prompt metadata path: `.harness/media/2026-05-13-jsc-311-phase-exit-from-ambiguous-repo-state-to-pu000-evidence-gate-prompt.md`
+* sidecar path: `.harness/media/2026-05-13-jsc-311-phase-exit-from-ambiguous-repo-state-to-pu000-evidence-gate.md`
 * repository PNG existence verification: blocked
 * persistence method: blocked
 * final user-facing text after imagegen permitted: no, active image tool contract forbids text after generation
@@ -32,9 +32,9 @@ This sidecar records the media status and fallback image prompt for the reviewed
 
 ## Prompt Summary
 
-Prompt metadata is stored in `/Users/jamiecraik/dev/coding-harness/.harness/media/2026-05-13-jsc-311-phase-exit-from-ambiguous-repo-state-to-pu000-evidence-gate-prompt.md`.
+Prompt metadata is stored in `.harness/media/2026-05-13-jsc-311-phase-exit-from-ambiguous-repo-state-to-pu000-evidence-gate-prompt.md`.
 
 ## Linked Context
 
-* Plan: `/Users/jamiecraik/dev/coding-harness/.harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md`
-* Spec: `/Users/jamiecraik/dev/coding-harness/.harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md`
+* Plan: `.harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md`
+* Spec: `.harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md`

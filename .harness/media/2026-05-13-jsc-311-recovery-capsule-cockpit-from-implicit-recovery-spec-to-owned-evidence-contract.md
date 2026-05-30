@@ -17,9 +17,9 @@ cannot be verified from the active image-generation tool in this environment.
 - repository `.harness/media/` PNG path: blocked; no PNG was generated or
   persisted
 - prompt metadata path:
-  `/Users/jamiecraik/dev/coding-harness/.harness/media/2026-05-13-jsc-311-recovery-capsule-cockpit-from-implicit-recovery-spec-to-owned-evidence-contract-prompt.md`
+  `.harness/media/2026-05-13-jsc-311-recovery-capsule-cockpit-from-implicit-recovery-spec-to-owned-evidence-contract-prompt.md`
 - sidecar path:
-  `/Users/jamiecraik/dev/coding-harness/.harness/media/2026-05-13-jsc-311-recovery-capsule-cockpit-from-implicit-recovery-spec-to-owned-evidence-contract.md`
+  `.harness/media/2026-05-13-jsc-311-recovery-capsule-cockpit-from-implicit-recovery-spec-to-owned-evidence-contract.md`
 - repository PNG existence verification: blocked; no generated PNG path is
   available
 - persistence method: blocked
@@ -55,8 +55,8 @@ adjacent systems.
 
 ## Linked Context
 
-- `/Users/jamiecraik/dev/coding-harness/.harness/specs/2026-05-13-JSC-311-recovery-capsule-cockpit-spec.md`
-- `/Users/jamiecraik/dev/coding-harness/.harness/media/2026-05-13-jsc-311-recovery-capsule-cockpit-from-implicit-recovery-spec-to-owned-evidence-contract-prompt.md`
+- `.harness/specs/2026-05-13-JSC-311-recovery-capsule-cockpit-spec.md`
+- `.harness/media/2026-05-13-jsc-311-recovery-capsule-cockpit-from-implicit-recovery-spec-to-owned-evidence-contract-prompt.md`
 
 ## Fallback `$imagegen` Prompt Output Contract
 

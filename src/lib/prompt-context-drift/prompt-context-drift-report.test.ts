@@ -17,38 +17,56 @@ import type {
 import { validatePromptContextDriftReport } from "./prompt-context-drift-report.js";
 
 // Expected enum values (independent oracle, not derived from source constants)
-const EXPECTED_EVIDENCE_USES = ["orientation", "audit_trail"];
-const EXPECTED_STATUSES = ["current", "stale", "blocked", "unknown"];
+const EXPECTED_EVIDENCE_USES = ["orientation", "audit_trail", "claim_support"];
+const EXPECTED_OVERALL_STATUSES = ["pass", "warn", "fail", "blocked"];
+const EXPECTED_STATUSES = ["pass", "warn", "fail", "blocked"];
 const EXPECTED_SURFACES = [
-	"agent_instructions",
-	"skills",
-	"artifact_context",
-	"deep_context",
-	"environment_context",
-	"runtime_card",
-	"command_catalog",
+	"prompt_context",
+	"active_artifacts",
+	"active_route",
+	"project_brain_memory",
+	"project_brain_knowledge",
+	"runtime_card_or_handoff",
+	"receipt_head_sha",
 ];
-const EXPECTED_FRESHNESS = ["current", "stale", "missing", "unknown"];
+const EXPECTED_FRESHNESS = [
+	"current",
+	"stale",
+	"missing",
+	"unknown",
+	"not_applicable",
+];
 const EXPECTED_REF_KINDS = [
-	"config",
-	"skill",
-	"artifact",
-	"deep_evidence",
-	"environment",
-	"contract",
-	"catalog",
+	"repo_file",
+	"prompt_context_receipt",
+	"runtime_card",
+	"receipt",
+	"external_metadata",
 ];
 const EXPECTED_BLOCKER_CLASSES = [
-	"stale_content",
-	"missing_content",
-	"invalid_schema",
-	"inaccessible_source",
+	"none",
+	"stale_prompt_context",
+	"stale_active_route",
+	"missing_project_brain_ref",
+	"stale_project_brain_ref",
+	"stale_runtime_card",
+	"advisory_runtime_card",
+	"head_sha_mismatch",
+	"missing_source_hash",
+	"digest_mismatch",
+	"external_only_required_surface",
+	"unsafe_ref",
+	"raw_or_secret_content",
+	"unknown_schema_field",
 ];
 const EXPECTED_NEXT_ACTION_CLASSES = [
-	"refresh_source",
-	"repair_source",
-	"escalate",
-	"continue",
+	"none",
+	"refresh_prompt_context",
+	"refresh_active_artifacts",
+	"refresh_project_brain",
+	"refresh_runtime_card",
+	"refresh_receipts",
+	"rerun_validator",
 ];
 
 type JsonSchemaObject = {
@@ -122,7 +140,7 @@ describe("validatePromptContextDriftReport", () => {
 			EXPECTED_EVIDENCE_USES,
 		);
 		expect(schemaEnum(schema.properties, "overallStatus")).toEqual(
-			EXPECTED_STATUSES,
+			EXPECTED_OVERALL_STATUSES,
 		);
 		expect(schemaEnum(schema.$defs, "surfaceId")).toEqual(EXPECTED_SURFACES);
 		expect(schemaEnum(schema.$defs, "status")).toEqual(EXPECTED_STATUSES);

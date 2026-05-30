@@ -18,7 +18,9 @@ try {
 		process.exit(1);
 	}
 } catch (error) {
-	console.error(`[check-git-env-sanitizer] cannot access src directory: ${error.message}`);
+	console.error(
+		`[check-git-env-sanitizer] cannot access src directory: ${error.message}`,
+	);
 	process.exit(1);
 }
 
@@ -43,7 +45,9 @@ const findings = [];
 
 const sourceFiles = listFiles(sourceRoot);
 if (sourceFiles.length === 0) {
-	console.error("[check-git-env-sanitizer] no source files found in src directory");
+	console.error(
+		"[check-git-env-sanitizer] no source files found in src directory",
+	);
 	process.exit(1);
 }
 

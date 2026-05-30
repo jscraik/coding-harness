@@ -39,10 +39,19 @@ covered by fixture-shaped tests so documentation and extraction stay aligned.
 ## Validation
 
 Run focused checks:
-- `pnpm vitest src/lib/project-brain/rules.test.ts src/lib/project-brain/cli.test.ts`
-Expected outcome:
-- All tests pass.
-Owner:
-- Project Brain module owners.
+
+```bash
+pnpm vitest run src/lib/project-brain/rules.test.ts src/lib/project-brain/cli.test.ts --reporter=dot
+```
+
+Expected outcome: command exits `0` and every Project Brain parser,
+presenter, and CLI assertion passes.
+
+Owner: Project Brain module owners.
+
 Failure handling:
-- Do not merge; fix failing parser/presenter/CLI path or record a tracked blocker with rationale.
+- Re-run with the same command after the fix.
+- Do not update snapshots unless the rule grammar or presenter output
+  intentionally changed.
+- Open or reference a tracked blocker if the failure cannot be repaired in the
+  current slice.

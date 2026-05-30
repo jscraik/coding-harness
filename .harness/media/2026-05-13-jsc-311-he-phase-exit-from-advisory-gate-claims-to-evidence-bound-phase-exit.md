@@ -15,8 +15,8 @@ media as implementation, validation, review, or commit-readiness evidence.
   does not expose a repository-local generated bitmap path that can be copied
   and verified while still returning the required structured final report
 * repository `.harness/media/` PNG path: blocked; no PNG generated or persisted
-* prompt metadata path: `/Users/jamiecraik/dev/coding-harness/.harness/media/2026-05-13-jsc-311-he-phase-exit-from-advisory-gate-claims-to-evidence-bound-phase-exit-prompt.md`
-* sidecar path: `/Users/jamiecraik/dev/coding-harness/.harness/media/2026-05-13-jsc-311-he-phase-exit-from-advisory-gate-claims-to-evidence-bound-phase-exit.md`
+* prompt metadata path: `.harness/media/2026-05-13-jsc-311-he-phase-exit-from-advisory-gate-claims-to-evidence-bound-phase-exit-prompt.md`
+* sidecar path: `.harness/media/2026-05-13-jsc-311-he-phase-exit-from-advisory-gate-claims-to-evidence-bound-phase-exit.md`
 * repository PNG existence verification: blocked
 * persistence method: blocked
 * final user-facing text after imagegen permitted: no
@@ -52,6 +52,6 @@ validation evidence.
 
 ## Linked Context
 
-* spec: `/Users/jamiecraik/dev/coding-harness/.harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md`
-* related rule: `/Users/jamiecraik/dev/coding-harness/AGENTS.md`
-* adjacent spec: `/Users/jamiecraik/dev/coding-harness/.harness/specs/2026-05-13-JSC-311-recovery-capsule-cockpit-spec.md`
+* spec: `.harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md`
+* related rule: `AGENTS.md`
+* adjacent spec: `.harness/specs/2026-05-13-JSC-311-recovery-capsule-cockpit-spec.md`

@@ -102,32 +102,26 @@ export function resolveEvidencePath(
 			blocker: "Evidence file resolves outside the repository.",
 		};
 	}
-
-	// Check if the path is a directory
-	try {
-		const stats = statSync(realPath);
-		if (stats.isDirectory()) {
-			return {
-				status: "directory_target",
-				inputPath,
-				absolutePath,
-				realPath,
-				parentRealPath,
-				sizeBytes: null,
-				blocker: "Evidence path is a directory; expected a file.",
-			};
-		}
-	} catch {
-		// If stat fails, continue to return valid or let getFileSize handle it
+	const stats = statSync(realPath);
+	if (stats.isDirectory()) {
+		return {
+			status: "directory_target",
+			inputPath,
+			absolutePath,
+			realPath,
+			parentRealPath,
+			sizeBytes: null,
+			blocker: "Evidence path is a directory; expected a file.",
+		};
 	}
-
+	const sizeBytes = stats.size;
 	return {
 		status: "valid",
 		inputPath,
 		absolutePath,
 		realPath,
 		parentRealPath,
-		sizeBytes: getFileSize(realPath),
+		sizeBytes,
 		blocker: null,
 	};
 }
@@ -149,6 +143,7 @@ export function fileExists(filePath: string): boolean {
 export function getFileSize(filePath: string): number | null {
 	try {
 		const stats = statSync(filePath);
+		if (!stats.isFile()) return null;
 		return stats.size;
 	} catch {
 		return null;
