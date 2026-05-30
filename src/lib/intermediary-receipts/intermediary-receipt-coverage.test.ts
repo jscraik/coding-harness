@@ -113,6 +113,17 @@ describe("IntermediaryReceiptCoverage/v1", () => {
 		expectInvalid(packet, "stale_receipt");
 	});
 
+	it("requires claim-support sources to have passing source status", () => {
+		const packet = basePacket();
+		const source = packet.sources.find(
+			(entry) => entry.sourceId === "external-check-snapshot",
+		);
+		expect(source).toBeDefined();
+		source!.status = "warn";
+
+		expectInvalid(packet, "source_status_not_pass");
+	});
+
 	it("keeps unbound orientation sources ineligible for claim support", () => {
 		const packet = basePacket();
 		const summary = packet.claimFamilySummaries.find(
@@ -220,8 +231,29 @@ describe("IntermediaryReceiptCoverage/v1", () => {
 		);
 
 		expect(result.status).toBe(0);
+			expect(result.stdout).toContain(
+				"intermediary-receipt-coverage-validation/v1",
+			);
+		});
+
+	it("emits validation JSON when child validation fails before producing output", () => {
+		const root = createTempRoot("invalid-json-");
+		const packetPath = join(root, "packet.json");
+		writeFileSync(packetPath, "{not-json", "utf8");
+
+		const result = spawnSync(
+			process.execPath,
+			[SCRIPT_PATH, packetPath, "--repo-root", process.cwd()],
+			{ encoding: "utf8" },
+		);
+
+		expect(result.status).toBe(1);
 		expect(result.stdout).toContain(
 			"intermediary-receipt-coverage-validation/v1",
 		);
+		expect(result.stdout).toContain('"status": "fail"');
+		expect(result.stdout).toContain(
+			"child validation failed before emitting JSON",
+		);
 	});
-});
+	});
