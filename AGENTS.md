@@ -386,6 +386,12 @@ Notes:
   closeout claims must carry current evidence status, source, freshness,
   head SHA, blocker class, and verification timestamp, and missing or stale
   required evidence must classify as blocked or unknown rather than success.
+- `pr-closeout/v1` delivery lifecycle snapshots are read-only handoff
+  evidence. Queue, waiting-state, handoff, approval, worktree-role, Linear
+  mutation availability, release-readiness, and review-artifact blockers may
+  explain throughput and next action, but must not mutate external systems,
+  resolve review state, update Linear, or prove merge readiness without fresh
+  canonical evidence for those lanes.
 - Goal-continuation or approval-plan contract changes must keep `harness next --json` safety metadata, snapshot-only state evidence, and agent-governance docs synchronized in the same PR.
 - When AGENTS/vocabulary surfaces change, run `pnpm run docs:ubiquitous:guard` to ensure `AGENTS.md` keeps the glossary linkage contract.
 - Before PR handoff in this source checkout, run or explicitly mark `n.a.` for the north-star learning loop when changed files can be matched against imported CodeRabbit evidence: `bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, `bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, and `bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json`. Use plain `harness ...` for downstream or installed-package contexts only. The `--files` value accepts comma-separated paths or multiple following path tokens.
