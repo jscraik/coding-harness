@@ -270,7 +270,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   agents, but they must not become delivery-truth, review-state,
   external-state, root-hygiene, Linear, Judge/PM, or merge-readiness proof
   without a current `evidence-receipt/v1` plus the matching canonical packet
-  route
+  route. If the same slice changes `harness next` worktree-role gates or PR
+  closeout snapshot lane projection, keep the governance wording evidence-bound:
+  dirty/fresh role state can block a recommendation, and snapshot classes can
+  describe PR lanes, but neither can authorize delivery or merge readiness by
+  itself
 - `pr-closeout/v1` success must come from current structured
   claim/evidence status rather than model-written summary text. Missing or
   stale required evidence should resolve to blocked or unknown with source,
