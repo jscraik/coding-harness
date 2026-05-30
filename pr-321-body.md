@@ -8,8 +8,8 @@
 
 ## Work performed
 
-- Linear reference: JSC-363.
-- Linked issue relationship: Refs JSC-363; this PR does not close JSC-363 by itself.
+- Linear reference: Refs JSC-363.
+- Linked issue relationship: preparatory/enabling work for JSC-363; completed JSC-363 acceptance IDs: none; this PR does not close the linked acceptance scope.
 - Plan IDs: JSC-363.
 - Phase / slice: PR #321 green-sweep triage, CI recovery, merge-conflict recovery, and PR-template compliance.
 - Session IDs: Codex PR green sweep in this thread.

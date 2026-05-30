@@ -1,4 +1,5 @@
 import { collectWorkEvidenceIntegrityErrors } from "./pr-template-behavior-evidence.js";
+import { collectLinkedIssueRelationshipErrors } from "./pr-template-linked-issue-relationship.js";
 import {
 	MAX_BODY_LENGTH,
 	PLACEHOLDERS,
@@ -323,6 +324,9 @@ export function validatePrTemplateBody(body: string): string[] {
 	}
 
 	errors.push(...collectWorkPerformedFieldErrors(body));
+	errors.push(
+		...collectLinkedIssueRelationshipErrors(body, extractFieldBlockValue),
+	);
 	errors.push(...collectLinkedIssueAcceptanceTraceErrors(body));
 	errors.push(
 		...collectWorkEvidenceIntegrityErrors(body, extractFieldBlockValue),
