@@ -90,25 +90,25 @@ function main() {
 			},
 			encoding: "utf8",
 		},
-		);
-		if (child.error) {
-			printResult("fail", [`child process failed: ${child.error.message}`], 1);
-		}
-		if (child.status !== 0 && !child.stdout.trim()) {
-			const childError = child.stderr.trim().split("\n")[0];
-			const errorDetail = childError
-				? `: ${childError}`
-				: " without stderr details";
-			printResult(
-				"fail",
-				[`child validation failed before emitting JSON${errorDetail}`],
-				1,
-			);
-		}
-		if (child.stdout) process.stdout.write(child.stdout);
-		if (child.stderr) process.stderr.write(child.stderr);
-		process.exit(child.status === null ? 1 : child.status);
+	);
+	if (child.error) {
+		printResult("fail", [`child process failed: ${child.error.message}`], 1);
 	}
+	if (child.status !== 0 && !child.stdout.trim()) {
+		const childError = child.stderr.trim().split("\n")[0];
+		const errorDetail = childError
+			? `: ${childError}`
+			: " without stderr details";
+		printResult(
+			"fail",
+			[`child validation failed before emitting JSON${errorDetail}`],
+			1,
+		);
+	}
+	if (child.stdout) process.stdout.write(child.stdout);
+	if (child.stderr) process.stderr.write(child.stderr);
+	process.exit(child.status === null ? 1 : child.status);
+}
 
 function resolveRepoRelativePath(repoRoot, value, field) {
 	const resolved = path.resolve(repoRoot, value);

@@ -231,10 +231,10 @@ describe("IntermediaryReceiptCoverage/v1", () => {
 		);
 
 		expect(result.status).toBe(0);
-			expect(result.stdout).toContain(
-				"intermediary-receipt-coverage-validation/v1",
-			);
-		});
+		expect(result.stdout).toContain(
+			"intermediary-receipt-coverage-validation/v1",
+		);
+	});
 
 	it("emits validation JSON when child validation fails before producing output", () => {
 		const root = createTempRoot("invalid-json-");
@@ -256,4 +256,4 @@ describe("IntermediaryReceiptCoverage/v1", () => {
 			"child validation failed before emitting JSON",
 		);
 	});
-	});
+});
