@@ -212,10 +212,13 @@ export function runHarnessNext(
 
 	let changedFiles: ChangedFilesResult;
 	try {
-		changedFiles = resolveChangedFiles(repoRoot, {
-			files: options.files,
-			inspectChangedFiles: options.inspectChangedFiles,
-		});
+		const changedFileOptions = {
+			...(options.files !== undefined ? { files: options.files } : {}),
+			...(options.inspectChangedFiles !== undefined
+				? { inspectChangedFiles: options.inspectChangedFiles }
+				: {}),
+		};
+		changedFiles = resolveChangedFiles(repoRoot, changedFileOptions);
 	} catch {
 		return gitInspectionBlockedDecision(mode);
 	}
