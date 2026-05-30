@@ -276,14 +276,14 @@ export function validateReplayPacket(
 	const errors: string[] = [];
 	let repoRoot = process.cwd();
 	if (options.repoRoot) {
-	  try {
-	    repoRoot = realpathSync(options.repoRoot);
-	  } catch {
-	    return {
-	      status: "fail",
-	      errors: ["repoRoot: cannot resolve repository root"],
-	    };
-	  }
+		try {
+			repoRoot = realpathSync(options.repoRoot);
+		} catch {
+			return {
+				status: "fail",
+				errors: ["repoRoot: cannot resolve repository root"],
+			};
+		}
 	}
 	const now = options.now ?? new Date();
 	if (!isRecord(packet)) {

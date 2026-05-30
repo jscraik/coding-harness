@@ -25,9 +25,11 @@ const findings = [];
 
 for (const file of listFiles(sourceRoot)) {
 	const relativePath = relative(repoRoot, file);
-	if (allowedFiles.has(relativePath) || !/\.[cm]?[jt]sx?$/u.test(relativePath)) {
+	if (
+		allowedFiles.has(relativePath) ||
+		!/\.[cm]?[jt]sx?$/u.test(relativePath)
+	) {
 		continue;
-	}
 	}
 
 	const source = readFileSync(file, "utf8");
