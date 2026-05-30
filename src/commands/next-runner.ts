@@ -1,10 +1,8 @@
-import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { cwd } from "node:process";
 import type { HarnessDecision } from "../lib/decision/harness-decision.js";
 import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
-import { gitEnvironmentForRepoRoot } from "../lib/runtime/git-environment.js";
 import {
 	type DecisionSource,
 	collectSourceErrors,
@@ -22,10 +20,14 @@ import {
 import {
 	humanRequiredDecisionMeta,
 	optionalNetworkSources,
-	parseGitStatusShort,
-	type NextWorktreeState,
 	sourceMetaExtra,
 } from "./next-support.js";
+import {
+	blocksDirtyWorktree,
+	inspectWorktreeState,
+	resolveChangedFiles,
+	type ChangedFilesResult,
+} from "./next-runner-inputs.js";
 import {
 	blockedDecision,
 	changedFilesDecision,
@@ -64,84 +66,6 @@ export interface HarnessNextOptions {
 }
 const DEFAULT_FLEET_MATRIX_ARTIFACT =
 	"artifacts/harness-upgrade-matrix-dev.json";
-
-type ChangedFilesResult = {
-	files: string[];
-	filesSource: "override" | "git";
-};
-
-function inspectGitChangedFiles(repoRoot: string): string[] {
-	const output = execFileSync(
-		"git",
-		["status", "--short", "--untracked-files=all"],
-		{
-			cwd: repoRoot,
-			encoding: "utf-8",
-			stdio: ["ignore", "pipe", "pipe"],
-			timeout: 10_000,
-		},
-	);
-	return parseGitStatusShort(output);
-}
-
-function inspectWorktreeState(repoRoot: string): NextWorktreeState {
-	const run = (args: string[]): string | null => {
-		try {
-			const output = execFileSync("git", args, {
-				cwd: repoRoot,
-				env: gitEnvironmentForRepoRoot(),
-				encoding: "utf-8",
-				stdio: ["ignore", "pipe", "ignore"],
-				timeout: 10_000,
-			}).trim();
-			return output.length > 0 ? output : null;
-		} catch {
-			return null;
-		}
-	};
-
-	const parseCount = (value: string | null): number | null => {
-		if (value === null) return null;
-		const parsed = Number.parseInt(value, 10);
-		return Number.isNaN(parsed) ? null : parsed;
-	};
-
-	const status = run(["status", "--short", "--untracked-files=no"]);
-	const branch = run(["rev-parse", "--abbrev-ref", "HEAD"]);
-	const upstream = run([
-		"rev-parse",
-		"--abbrev-ref",
-		"--symbolic-full-name",
-		"@{upstream}",
-	]);
-	const ahead =
-		upstream === null
-			? null
-			: parseCount(run(["rev-list", "--count", `${upstream}..HEAD`]));
-	const behind =
-		upstream === null
-			? null
-			: parseCount(run(["rev-list", "--count", `HEAD..${upstream}`]));
-	return {
-		branch,
-		clean: status !== null ? status.length === 0 : false,
-		upstream,
-		ahead,
-		behind,
-	};
-}
-
-function blocksDirtyWorktree(
-	role: HarnessNextWorktreeRole | undefined,
-	state: NextWorktreeState,
-): boolean {
-	if (role === "dirty-with-justification") return false;
-	if (!state.clean) return true;
-	if (state.upstream === null) return role === "fresh-worktree";
-	if (state.ahead === null || state.behind === null) return false;
-	if (state.ahead > 0 || state.behind > 0) return true;
-	return false;
-}
 
 function requiredEvidenceMissing(
 	mode: HarnessNextMode,
@@ -195,19 +119,6 @@ function evidenceBlockedDecision(args: {
 				sourceErrors: args.sourceErrors,
 			})
 		: null;
-}
-
-function resolveChangedFiles(
-	repoRoot: string,
-	options: HarnessNextOptions,
-): ChangedFilesResult {
-	if (options.files !== undefined) {
-		return { files: [...options.files].sort(), filesSource: "override" };
-	}
-	return {
-		files: (options.inspectChangedFiles ?? inspectGitChangedFiles)(repoRoot),
-		filesSource: "git",
-	};
 }
 
 function filesOverrideEmptyDecision(
@@ -266,7 +177,7 @@ export function runHarnessNext(
 		return filesOverrideEmptyDecision(mode, sourceErrors);
 	}
 
-	let worktreeState: NextWorktreeState | undefined;
+	let worktreeState: ReturnType<typeof inspectWorktreeState> | undefined;
 	if (
 		options.files === undefined &&
 		options.inspectChangedFiles === undefined
@@ -301,7 +212,10 @@ export function runHarnessNext(
 
 	let changedFiles: ChangedFilesResult;
 	try {
-		changedFiles = resolveChangedFiles(repoRoot, options);
+		changedFiles = resolveChangedFiles(repoRoot, {
+			files: options.files,
+			inspectChangedFiles: options.inspectChangedFiles,
+		});
 	} catch {
 		return gitInspectionBlockedDecision(mode);
 	}
