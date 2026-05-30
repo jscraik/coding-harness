@@ -14,7 +14,7 @@ Convert findings into an execution-complete plan with owners, sequencing, accept
 
 ## Source
 
-Plan derived from [delivery-lifecycle-audit](/Users/jamiecraik/dev/coding-harness/.harness/audits/2026-05-30-delivery-lifecycle-audit.md).
+Plan derived from [delivery-lifecycle-audit](.harness/audits/2026-05-30-delivery-lifecycle-audit.md).
 
 ## Scope
 
