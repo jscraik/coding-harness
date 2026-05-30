@@ -401,6 +401,7 @@ describe("runPrCloseoutCLI", () => {
 				branch: {
 					clean: true,
 					headSha: "abc123",
+					worktreeRole: "implementation",
 				},
 				checks: [{ name: "pr-pipeline", state: "SUCCESS", headSha: "abc123" }],
 				reviewThreads: {
@@ -419,6 +420,16 @@ describe("runPrCloseoutCLI", () => {
 				closeoutGates: PASSING_PHASE_EXIT,
 				assurance: PASSING_ASSURANCE,
 				runtimeEvidence: PASSING_RUNTIME_EVIDENCE,
+				reviewArtifacts: [
+					{
+						path: ".harness/review/pr-258-codex.md",
+						producer: "codex",
+						status: "present",
+						evidenceRef: "artifact:.harness/review/pr-258-codex.md",
+					},
+				],
+				linearMutation: "available",
+				releaseReadinessImpact: "none",
 			}),
 		);
 
@@ -431,12 +442,111 @@ describe("runPrCloseoutCLI", () => {
 			pr: 258,
 			status: "ready",
 			nextAction: "ready_to_merge",
+			lifecycleSnapshot: {
+				schemaVersion: "delivery-lifecycle-snapshot/v1",
+				worktreeRole: "implementation",
+				linearMutation: "available",
+				releaseReadinessImpact: "none",
+				handoffRequiredEvidence: [],
+				reviewArtifacts: {
+					expected: 1,
+					missing: 0,
+				},
+				continuation: {
+					nextSafeAction: "ready_to_merge",
+					waitingOwner: "unknown",
+				},
+			},
 			runtimeEvidence: {
 				present: true,
 				valid: true,
 				verifierStatus: "pass",
 			},
 		});
+	});
+
+	it("blocks closeout when an expected review artifact is missing", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const inputPath = join(dir, "input.json");
+		writeFileSync(
+			inputPath,
+			JSON.stringify({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headSha: "abc123",
+					reviewDecision: "APPROVED",
+					body: "Refs JSC-327\n",
+				},
+				branch: {
+					clean: true,
+					headSha: "abc123",
+					worktreeRole: "orientation",
+				},
+				checks: [{ name: "pr-pipeline", state: "SUCCESS", headSha: "abc123" }],
+				reviewThreads: {
+					unresolved: 0,
+					ownerCounts: { codex: 0, jamie: 0 },
+				},
+				traceability: {
+					sessionIds: ["codex-session:2026-05-16"],
+				},
+				rollback: {
+					notApplicable: true,
+					evidenceRef: "pr-body:rollback",
+				},
+				closeoutGates: PASSING_CLOSEOUT_GATES,
+				assurance: PASSING_ASSURANCE,
+				reviewArtifacts: [
+					{
+						path: ".harness/review/pr-258-reviewer.md",
+						producer: "harness-product-code-reviewer",
+						status: "missing",
+						owner: "reviewer",
+						unblockAction: "rerun reviewer artifact capture",
+						nextCheckAt: "2026-05-30T21:00:00.000Z",
+					},
+				],
+			}),
+		);
+
+		const result = await capture(["--json", "--input", inputPath]);
+		const report = JSON.parse(result.output);
+
+		expect(result.exitCode).toBe(0);
+		expect(report).toMatchObject({
+			status: "fixable",
+			nextAction: "codex_can_fix_now",
+			lifecycleSnapshot: {
+				worktreeRole: "orientation",
+				reviewArtifacts: {
+					expected: 1,
+					missing: 1,
+				},
+				continuation: {
+					waitingOwner: "reviewer",
+				},
+			},
+		});
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "review_artifact",
+					reason:
+						"Review artifact .harness/review/pr-258-reviewer.md is missing.",
+				}),
+			]),
+		);
+		expect(report.lifecycleSnapshot.handoffRequiredEvidence).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					lane: "review_state",
+					evidenceRef: ".harness/review/pr-258-reviewer.md",
+				}),
+			]),
+		);
 	});
 
 	it("accepts first-class Coding Harness closeout-gates schema in normalized input", async () => {
@@ -884,6 +994,65 @@ describe("runPrCloseoutCLI", () => {
 			]),
 		);
 		expect(calls.some((call) => call.startsWith("gh api graphql"))).toBe(true);
+	});
+
+	it("does not mark live worktree implementation-safe when upstream drift is unobserved", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git" && args[0] === "status") return "";
+			if (command === "git" && args[0] === "rev-parse") return "abc123";
+			if (command === "git" && args[0] === "rev-list") {
+				throw new Error("no upstream configured");
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			runner,
+		);
+
+		expect(result.exitCode).toBe(0);
+		expect(JSON.parse(result.output)).toMatchObject({
+			lifecycleSnapshot: {
+				worktreeRole: "orientation",
+			},
+		});
 	});
 
 	it("keeps --phase-exit as a compatibility alias for closeout gates", async () => {

@@ -11,6 +11,7 @@ import type {
 	PrCloseoutHarnessGateSummary,
 	PrCloseoutInput,
 	PrCloseoutPullRequestInput,
+	PrCloseoutReviewArtifactInput,
 	PrCloseoutReviewThreadsInput,
 	PrCloseoutToolInput,
 } from "./types.js";
@@ -196,6 +197,24 @@ export function collectReviewBlockers(
 			classification: "introduced",
 			reason: "Pull request review decision is CHANGES_REQUESTED.",
 			fixableByCodex: true,
+		});
+	}
+}
+
+/** Add blockers for expected independent-review artifacts that are unavailable. */
+export function collectReviewArtifactBlockers(
+	reviewArtifacts: readonly PrCloseoutReviewArtifactInput[],
+	blockers: PrCloseoutBlocker[],
+): void {
+	for (const artifact of reviewArtifacts) {
+		if (artifact.status === "present") continue;
+		pushBlocker(blockers, {
+			surface: "review_artifact",
+			classification: "unknown",
+			kind: "state",
+			reason: `Review artifact ${artifact.path} is ${artifact.status}.`,
+			fixableByCodex: artifact.status !== "ignored_runtime_path",
+			ref: artifact.evidenceRef ?? artifact.path,
 		});
 	}
 }

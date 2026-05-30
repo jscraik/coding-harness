@@ -1,5 +1,6 @@
 import { sanitizeError } from "../../lib/input/sanitize.js";
 import type {
+	PrCloseoutBranchInput,
 	PrCloseoutCheckInput,
 	PrCloseoutInput,
 	PrCloseoutPullRequestInput,
@@ -98,6 +99,51 @@ function inspectGitClean(
 	} catch {
 		return null;
 	}
+}
+
+function inspectGitBranch(
+	repoRoot: string,
+	runner: CommandRunner,
+): PrCloseoutBranchInput {
+	const branch: PrCloseoutBranchInput = {
+		clean: inspectGitClean(repoRoot, runner),
+		worktreeRole: "unknown",
+	};
+	try {
+		const headSha = runner("git", ["rev-parse", "HEAD"], {
+			cwd: repoRoot,
+		}).trim();
+		if (headSha.length > 0) branch.headSha = headSha;
+	} catch {
+		// Head SHA is optional evidence; keep the rest of the branch snapshot.
+	}
+	try {
+		const drift = runner(
+			"git",
+			["rev-list", "--left-right", "--count", "@{upstream}...HEAD"],
+			{ cwd: repoRoot },
+		)
+			.trim()
+			.split(/\s+/u)
+			.map((value) => Number.parseInt(value, 10));
+		if (Number.isInteger(drift[0])) branch.behindBy = drift[0] ?? null;
+		if (Number.isInteger(drift[1])) branch.aheadBy = drift[1] ?? null;
+		branch.behindBase = (branch.behindBy ?? 0) > 0;
+	} catch {
+		branch.behindBy = null;
+		branch.aheadBy = null;
+	}
+	branch.worktreeRole =
+		branch.clean === true && branch.behindBy === 0
+			? "implementation"
+			: "orientation";
+	return branch;
+}
+
+function linearMutationAvailability(
+	env: NodeJS.ProcessEnv,
+): NonNullable<PrCloseoutInput["linearMutation"]> {
+	return env.LINEAR_API_KEY?.trim() ? "available" : "blocked";
 }
 
 function isPlaceholderBodyField(value: string): boolean {
@@ -323,13 +369,13 @@ export function buildLivePrCloseoutInput(
 	const rollback = rollbackFromBody(pullRequest.body);
 	return {
 		pullRequest,
-		branch: {
-			clean: inspectGitClean(options.repoRoot, runner),
-		},
+		branch: inspectGitBranch(options.repoRoot, runner),
 		checks,
 		reviewThreads,
 		traceability: traceabilityFromBody(pullRequest.body),
 		...(rollback ? { rollback } : {}),
 		tools,
+		linearMutation: linearMutationAvailability(envLoad.env),
+		releaseReadinessImpact: "unknown",
 	};
 }

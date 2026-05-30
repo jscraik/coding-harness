@@ -287,6 +287,15 @@ describe("buildPrCloseoutReport", () => {
 				complete: true,
 			},
 		});
+		expect({
+			given: "a fully evidenced PR closeout report",
+			should: "mark the PR ready without blockers",
+			actual: { status: report.status, blockers: report.blockers.length },
+		}).toEqual({
+			given: "a fully evidenced PR closeout report",
+			should: "mark the PR ready without blockers",
+			actual: { status: "ready", blockers: 0 },
+		});
 		expect(report.blockers).toEqual([]);
 		expect(report.attemptLedger).toMatchObject({
 			schemaVersion: "attempt-ledger/v1",
@@ -315,6 +324,132 @@ describe("buildPrCloseoutReport", () => {
 					claim: "required_checks_match_current_head",
 					status: "pass",
 					freshness: "current",
+				}),
+			]),
+		);
+	});
+
+	it("sets lifecycle snapshot owner and resume guidance for pending checks", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				checks: [
+					{
+						name: "pr-pipeline",
+						state: "PENDING",
+						headSha: "abc123",
+						source: "github",
+					},
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).toBe("waiting");
+		expect(report.lifecycleSnapshot.latestValidationBlocker).toMatchObject({
+			failureClass: "external_service",
+			reason: "Check is still pending: pr-pipeline.",
+			resumeCommand: null,
+		});
+		expect(report.lifecycleSnapshot.continuation).toMatchObject({
+			waitingOwner: "external_service",
+		});
+		expect(report.lifecycleSnapshot.lanes).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					lane: "ci_state",
+					owner: "external_service",
+					blockerClass: "external_service",
+				}),
+			]),
+		);
+	});
+
+	it("sets lifecycle snapshot resume guidance for harness gate blockers", () => {
+		const phaseExit = passingPhaseExit();
+		phaseExit.commitAllowed = false;
+		phaseExit.exitAllowed = false;
+		phaseExit.gates = phaseExit.gates.map((gate) =>
+			gate.gateId === "he_code_review"
+				? {
+						...gate,
+						status: "fail",
+						blockedReason: "Independent review gate failed.",
+					}
+				: gate,
+		);
+		const report = buildPrCloseoutReport(baseInput({ phaseExit }), {
+			now: new Date("2026-05-16T12:00:00.000Z"),
+		});
+
+		expect(report.lifecycleSnapshot.latestValidationBlocker).toMatchObject({
+			failureClass: "introduced",
+			reason: "Independent review gate failed.",
+			resumeCommand: "bash scripts/verify-work.sh --resume",
+		});
+		expect(report.lifecycleSnapshot.handoffRequiredEvidence).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					lane: "local_validation",
+					sourceOfTruth: "harness-gates",
+				}),
+			]),
+		);
+	});
+
+	it("routes lifecycle snapshot ownership for human review blockers", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				reviewThreads: {
+					unresolved: 2,
+					needsHuman: 1,
+					autofixable: 1,
+				},
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).toBe("needs_jamie");
+		expect(report.lifecycleSnapshot.continuation.waitingOwner).toBe("reviewer");
+		expect(report.lifecycleSnapshot.lanes).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					lane: "review_state",
+					owner: "operator",
+					blockerClass: "needs_jamie_decision",
+				}),
+			]),
+		);
+	});
+
+	it.each([
+		{ status: "missing" as const, fixableByCodex: true },
+		{ status: "empty" as const, fixableByCodex: true },
+		{ status: "unknown" as const, fixableByCodex: true },
+		{ status: "ignored_runtime_path" as const, fixableByCodex: false },
+	])("classifies review artifact status $status as fixable=$fixableByCodex", ({
+		status,
+		fixableByCodex,
+	}) => {
+		const path = `.harness/review/pr-258-${status}.md`;
+		const report = buildPrCloseoutReport(
+			baseInput({
+				reviewArtifacts: [
+					{
+						path,
+						producer: "harness-product-code-reviewer",
+						status,
+					},
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "review_artifact",
+					reason: `Review artifact ${path} is ${status}.`,
+					fixableByCodex,
 				}),
 			]),
 		);
