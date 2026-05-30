@@ -192,6 +192,9 @@ workflows:
             if [[ -n "${CIRCLE_PROJECT_USERNAME:-}" && -n "${CIRCLE_PROJECT_REPONAME:-}" ]]; then
               repo_slug="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
             fi
+            if [[ -z "$repo_slug" ]]; then
+              repo_slug="$(gh repo view --json nameWithOwner --jq '.nameWithOwner // ""' 2>/dev/null || true)"
+            fi
             gh_repo_args=()
             if [[ -n "$repo_slug" ]]; then
               gh_repo_args=(--repo "$repo_slug")

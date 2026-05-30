@@ -3,10 +3,22 @@ import type { HarnessNextMode } from "./next-decisions.js";
 /** Evidence strictness for optional phase-exit and runtime-card inputs. */
 export type HarnessNextEvidenceMode = "optional" | "required";
 
+/** Worktree handling posture for the harness next recommendation.
+ *
+ * - clean: enforce a clean and in-sync worktree before recommending local changes.
+ * - dirty-with-justification: allow a dirty worktree when the caller explicitly acknowledges that state.
+ * - fresh-worktree: recommend and enforce worktrees that are clean and in sync before running local recommendations.
+ */
+export type HarnessNextWorktreeRole =
+	| "clean"
+	| "dirty-with-justification"
+	| "fresh-worktree";
+
 /** Parsed CLI arguments for the harness next command. */
 export interface ParsedNextArgs {
 	json: boolean;
 	mode: HarnessNextMode;
+	worktreeRole?: HarnessNextWorktreeRole;
 	evidenceMode?: HarnessNextEvidenceMode;
 	files?: string[];
 	phaseExitPath?: string;
@@ -20,6 +32,7 @@ export interface ParsedNextArgs {
 		| "runtime_card_missing"
 		| "evidence_missing"
 		| "evidence_invalid"
+		| "worktree_role_invalid"
 		| "unknown_argument";
 	errorValue?: string;
 }
@@ -87,10 +100,31 @@ function parseFilesOption(args: string[], index: number): ParsedFilesOption {
 	return { files: values, nextIndex: valueIndex - 1 };
 }
 
+function isHarnessNextWorktreeRole(
+	value: string,
+): value is HarnessNextWorktreeRole {
+	return ["clean", "dirty-with-justification", "fresh-worktree"].includes(
+		value,
+	);
+}
+
+function parseWorktreeRole(value: string | undefined): {
+	worktreeRole?: HarnessNextWorktreeRole;
+	error?: "worktree_role_invalid";
+	errorValue?: string | undefined;
+} {
+	if (value === undefined) return { error: "worktree_role_invalid" };
+	if (!isHarnessNextWorktreeRole(value)) {
+		return { error: "worktree_role_invalid", errorValue: value };
+	}
+	return { worktreeRole: value };
+}
+
 /** Parse CLI-style arguments for the harness next command. */
 export function parseNextArgs(args: string[]): ParsedNextArgs {
 	let json = args.includes("--json");
 	let mode: HarnessNextMode = "local";
+	let worktreeRole: HarnessNextWorktreeRole = "clean";
 	let evidenceMode: HarnessNextEvidenceMode | undefined;
 	let files: string[] | undefined;
 	let phaseExitPath: string | undefined;
@@ -112,6 +146,22 @@ export function parseNextArgs(args: string[]): ParsedNextArgs {
 				return { json, mode, error: "invalid_mode", errorValue: value };
 			}
 			mode = value;
+			index += 1;
+			continue;
+		}
+		if (arg === "--worktree-role") {
+			const parsedRole = parseWorktreeRole(args[index + 1]);
+			if (parsedRole.error !== undefined) {
+				return {
+					json,
+					mode,
+					error: "worktree_role_invalid",
+					...(parsedRole.errorValue !== undefined
+						? { errorValue: parsedRole.errorValue }
+						: {}),
+				};
+			}
+			worktreeRole = parsedRole.worktreeRole ?? "clean";
 			index += 1;
 			continue;
 		}
@@ -162,6 +212,7 @@ export function parseNextArgs(args: string[]): ParsedNextArgs {
 	return {
 		json,
 		mode,
+		worktreeRole,
 		...(evidenceMode !== undefined ? { evidenceMode } : {}),
 		...(files !== undefined ? { files } : {}),
 		...(phaseExitPath !== undefined ? { phaseExitPath } : {}),

@@ -8,6 +8,15 @@ import type {
 import type { DecisionSource } from "../lib/decision/sources.js";
 import type { HarnessNextMode } from "./next-decisions.js";
 
+/** Represents a lightweight snapshot of current git worktree state for next-command gating. */
+export type NextWorktreeState = {
+	branch: string | null;
+	clean: boolean;
+	ahead: number | null;
+	behind: number | null;
+	upstream: string | null;
+};
+
 /**
  * Decode a Git-quoted path string into its unescaped UTF-8 form.
  *
@@ -150,6 +159,7 @@ export function decisionMeta(args: {
 	mode: string;
 	filesSource?: "override" | "git";
 	changedFileCount?: number;
+	worktreeState?: NextWorktreeState;
 	nextCommandArgv?: string[];
 	frictionClass?: HarnessDecisionFrictionClass;
 	delayClass?: HarnessDecisionDelayClass;
@@ -169,6 +179,9 @@ export function decisionMeta(args: {
 		...(args.filesSource ? { filesSource: args.filesSource } : {}),
 		...(args.changedFileCount !== undefined
 			? { changedFileCount: args.changedFileCount }
+			: {}),
+		...(args.worktreeState !== undefined
+			? { worktreeState: args.worktreeState }
 			: {}),
 		...(args.nextCommandArgv ? { nextCommandArgv: args.nextCommandArgv } : {}),
 		...args.extra,

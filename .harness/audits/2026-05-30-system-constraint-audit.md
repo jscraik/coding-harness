@@ -1,82 +1,53 @@
 ---
 date: 2026-05-30
 report_type: system-constraint-audit
-status: advisory
+status: implemented
 repo: coding-harness
 branch: codex/jsc-363-intermediary-receipt-coverage
 ---
 
 # System Constraint Audit
 
-## Table Of Contents
-
-- [Purpose](#purpose)
-- [Method](#method)
-- [Current Constraint](#current-constraint)
-- [Evidence](#evidence)
-- [Cost](#cost)
-- [What Feeds It](#what-feeds-it)
-- [What Depends On It](#what-depends-on-it)
-- [How To Increase Throughput](#how-to-increase-throughput)
-- [Next Steps](#next-steps)
-- [Do Not Optimize](#do-not-optimize)
-- [Validation](#validation)
-
 ## Purpose
 
-Find the current system constraint using live repository and tracker evidence.
-Do not optimize non-constraints.
-
-The audit checks:
+Find the current system constraint using local evidence and tie it to:
 
 - longest queue
 - highest wait time
 - most frequent blocker
 - highest rework area
 
-## Method
-
-Evidence inspected:
-
-- local branch and dirty-worktree state
-- `.harness/active-artifacts.md`
-- `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`
-- `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md`
-- `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md`
-- `.harness/review/coding-harness-architecture-review.md`
-- `docs/roadmap/north-star.md`
-- Linear `JSC` issues with the `coding-harness` label
-
-Commands used for local evidence:
-
-```bash
-zsh -lc 'git status --short --branch'
-zsh -lc 'find .harness -maxdepth 2 -type f -name "*.md" | awk -F/ "{print \$2}" | sort | uniq -c | sort -nr'
-zsh -lc 'find .harness -maxdepth 3 -type f -name "*.md" -print0 | xargs -0 rg --no-filename -o "blocked|blocker|pending|waiting|unclaimed|unresolved|rework|reviewDecision|merge-readiness|Judge/PM|Linear scope alignment" | sort | uniq -c | sort -nr'
-zsh -lc 'git diff --stat HEAD -- . ":(exclude)pnpm-lock.yaml"'
-zsh -lc 'git diff --name-only HEAD -- . | awk -F/ "{print \$1 (NF>1?\"/\"\$2:\"\")}" | sort | uniq -c | sort -nr'
-zsh -lc 'rg -n "PR lead time|review/rework|primary bottleneck|Current Active Route|Merge-readiness|final closeout remain unclaimed|Goal Governor route|complete only when" harness.contract.json docs/roadmap/north-star.md docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md .harness/active-artifacts.md .harness/review/coding-harness-architecture-review.md | head -120'
-```
-
 ## Current Constraint
 
-The current system constraint is readiness and evidence reconciliation at PR or
-goal closeout.
+The current system constraint is still **cross-lane closeout readiness reconciliation** (PR/CI/review/Linear evidence composition), not raw implementation throughput.
 
-More specifically: work can be implemented faster than the system can prove,
-reconcile, and safely close it across local validation, PR checks,
-review-thread state, Linear scope, runtime receipts, Judge/PM readiness, and
-merge-readiness truth.
+This is the highest-latency boundary for this system because the active route (`JSC-363`) reaches green implementation conditions faster than it reaches trusted merge/goal proof across all required lanes.
 
-This is the constraint to optimize now.
+## Recommendations In Progress / Implemented
 
-## Evidence
+Execution added in this pass addresses the constraint directly: PR closeout readiness now emits a compact, cross-lane **snapshot** alongside the full report.
 
-### Longest Queue
+Implemented items:
 
-The largest local `.harness` artifact queue is review:
+- `src/commands/pr-closeout.ts`: added `--snapshot` output mode so `--json --snapshot` returns `pr-closeout-snapshot/v1` directly.
+- `src/lib/pr-closeout/evaluator.ts`: added snapshot projection logic with lane-level status (`pr`, `checks`, `review`, `linear`, `branch`, `deliveryTruth`), stale-class tagging (`stale-ci`, `stale-pr-metadata`, `stale-review`, `stale-linear`, `stale-external`), and handoff pointers for claims requiring action.
+- `src/lib/pr-closeout/types.ts`: added compact snapshot types for constraint consumption.
+- `src/commands/pr-closeout/args.ts`: added explicit `--snapshot` parsing and usage text.
+- `src/commands/pr-closeout.test.ts`: added regression coverage for `--json --snapshot` and stale evidence lane behavior.
 
-| Queue | Count |
+Execution evidence:
+
+- `pnpm vitest run src/commands/pr-closeout.test.ts src/lib/pr-closeout.test.ts` (pass; 99 tests)
+- `bash scripts/validate-codestyle.sh --fast` (pass)
+- New snapshot output verifies `pr-closeout-snapshot/v1`, `staleEvidenceClasses`, lane staleness, and actionable handoff requirements.
+
+## Evidence Snapshot
+
+### 1) Longest Queue
+
+Primary queue metric: durable execution artifacts pending reconciliation.
+
+| Queue artifact class | Count |
 | --- | ---: |
 | `.harness/review` | 28 |
 | `.harness/specs` | 14 |
@@ -84,229 +55,105 @@ The largest local `.harness` artifact queue is review:
 | `.harness/research` | 12 |
 | `.harness/media` | 11 |
 | `.harness/evals` | 10 |
-| `.harness/core` | 10 |
 
-Interpretation: the largest durable work queue is review and reconciliation
-evidence, not feature specification or planning.
+Interpretation: while there is large research/evidence history, the **active operational queue** that blocks slicing is `.harness/review` plus live proof-lane dependencies (`specs`/`plan`), and it is larger than any direct feature-facing implementation slice.
 
-### Highest Wait Time
+Supporting record:
+- `.harness/active-artifacts.md` lists current active route and explicit unclaimed closeout lanes.
+- `.harness/active-artifacts.md` is still anchored to `JSC-363` and shows multiple unclaimed proof lanes (`merge-readiness`, `Linear scope alignment`, `review-thread truth`, `Judge/PM readiness`, `runtime producer emission`, `delivery-truth consumption`, and `final closeout`).
 
-Linear currently shows two active `coding-harness` in-progress issues:
+### 2) Highest Wait Time
 
-| Issue | Started | Current wait | Constraint relevance |
-| --- | --- | ---: | --- |
-| JSC-330 `[coding-harness] Add boundary map and import guard for architecture/evidence alignment` | 2026-05-19 | about 11 days | Relevant but not the active route. |
-| JSC-363 `[coding-harness] Implement Codex runtime evidence verifier cockpit Phase 1` | 2026-05-28 | about 2 days | Current active route. |
+Active-route wait indicators:
 
-A third issue, JSC-98, has a longer in-progress age from 2026-05-13, but it is
-low priority, roadmap-later, and about release eval timeout tuning. It is not
-the current constraint.
+- `.harness/active-artifacts.md` `Last reconciled: 2026-05-28` (this checkout’s current local reconciliation point is old relative to active execution).
+- `.harness/linear/coding-harness-linear-plan.md` `Last synced: 2026-05-12` (oldest explicit live-routing snapshot in this artifact).
+- `.harness/linear/2026-05-22-coding-harness-evidence-led-gap-fixes-linear-plan.md` `linear_mutation_status: confirmation_required` and destination mismatch notes since 2026-05-22.
+- Active JSC entries remain live in `Triage`/`In Progress` posture in `specs` + `plan` frontmatter (for example, `2026-05-24...JSC-363`, `linear_status: Triage`).
 
-Interpretation: the highest raw wait item is not the constraint. The relevant
-wait is the active JSC-363 route, whose closeout is explicitly blocked on
-multi-lane readiness proof rather than implementation alone.
+Interpretation: the bottleneck is not first-mile coding delay; it is stale cross-lane refresh debt and unclaimed validation/closeout truth across multiple lanes.
 
-### Most Frequent Blocker
+### 3) Most Frequent Blocker
 
-Across `.harness` markdown files within depth 3, blocker language is
-dominated by explicit blocked states:
+Term frequency across `.harness` markdown artifacts:
 
 | Term | Count |
 | --- | ---: |
-| `blocked` | 790 |
-| `blocker` | 743 |
-| `pending` | 105 |
-| `rework` | 94 |
-| `unresolved` | 90 |
-| `Judge/PM` | 59 |
-| `waiting` | 13 |
-| `merge-readiness` | 7 |
-| `reviewDecision` | 4 |
-| `unclaimed` | 3 |
-| `Linear scope alignment` | 3 |
+| `blocked` | 808 |
+| `blocker` | 760 |
+| `rework` | 105 |
+| `pending` | 108 |
+| `unresolved` | 97 |
+| `waiting` | 22 |
+| `merge-readiness` | 13 |
+| `unclaimed` | 13 |
+| `reviewDecision` | 8 |
+| `Linear scope alignment` | 7 |
 
-Interpretation: the system's repeated failure mode is not lack of work
-generation. It is blocked or unresolved readiness state.
+Interpretation: the language of obstruction is not rare; it dominates near-term evidence surface and is repeated through the same proof surfaces and route artifacts.
 
-### Highest Rework Area
+### 4) Highest Rework Area
 
-The current checkout has 87 changed files with 7,383 insertions and 225
-deletions against `HEAD`.
+Concentration of blocked/rework-bearing files:
 
-Changed-file concentration:
-
-| Area | Changed files |
+| Class | Files with blocker/rework terms |
 | --- | ---: |
-| `src/lib` | 44 |
-| `.harness/media` | 11 |
-| `src/commands` | 6 |
-| `.harness/research` | 4 |
-| `docs/agents` | 3 |
-| `src/templates` | 2 |
-| `.harness/audits` | 2 |
+| `.harness/research` | 47 |
+| `.harness/review` | 31 |
+| `.harness/specs` | 13 |
+| `.harness/plan` | 13 |
+| `.harness/media` | 9 |
+| `.harness/evals` | 9 |
 
-Interpretation: rework is concentrated in `src/lib`, especially
-runtime/evidence/project-brain/git/testing support, while `.harness`
-artifacts are carrying substantial review and audit load. That matches a
-system trying to turn repeated readiness failures into reusable evidence
-primitives.
+Interpretation: research and review evidence surfaces are currently being reworked most, with `.harness/research` carrying the largest repeatability signal and `.harness/review` remaining the highest direct operations-drag class for proof-lane reconciliation.
 
-### Active Route Evidence
+## Constraint Cost
 
-`.harness/active-artifacts.md` identifies JSC-363 as the current active Goal
-Governor route and says the board governs the full lifecycle, not only Phase 1.
+1. New implementation work cannot produce reliable merge-ready progress until proof lanes are refreshed.
+2. Evidence composition is split across `review`, `specs`, `plan`, PR, and external states, which induces repeated handoff cost.
+3. The system burns cycle on stale reconciliation debt instead of moving execution capacity into new code work.
+4. The repository’s own north-star objective (`PR lead time`, `review/rework loop`) is therefore constrained by proof-lane friction, not raw function delivery.
 
-The same active artifact states that these remain unclaimed:
+## What Feeds the Constraint
 
-- merge-readiness
-- Linear scope alignment
-- review-thread truth
-- Judge/PM readiness
-- runtime producer emission
-- delivery-truth consumption
-- final closeout
+- Unclaimed closeout truth in `.harness/active-artifacts.md`.
+- Multi-lane proof requirements in `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` (PR/CI/review/Linear separation).
+- Multiple stale/tracker-dependent states in the same active route (`JSC-363`).
+- External-state drift surfaces noted in the local route artifacts.
 
-`docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` says the goal is
-complete only when lifecycle units through hardening, documentation accuracy,
-PR triage, and Judge/PM-ready evidence are finished or explicitly blocked with
-current evidence.
+## What Depends on This Constraint
 
-`docs/roadmap/north-star.md` names PR lead time as the primary north-star
-metric and the review or rework loop as the primary bottleneck.
+- `JSC-363` lifecycle completion and acceptance.
+- PR closeout and merge-readiness claims.
+- Delivery-truth and route-readiness outputs.
+- Any next `JSC-311` / `JSC-331` or follow-on closeout slice.
+- Judge/PM readiness and final goal-completion proof.
 
-`.harness/review/coding-harness-architecture-review.md` repeats the same
-domain diagnosis: the core domain is reducing PR lead time and review/rework
-cost by turning repeated agent workflow failures into deterministic, portable,
-evidence-backed governance.
+## How to Increase Throughput
 
-## Cost
+1. Stop adding new implementation-only slices until closeout lanes drain in the current active route.
+2. Refresh the active route evidence bundle now: `Local PR state + review threads + Linear alignment + runtime-card input freshness + delivery-truth status` in one pass.
+3. Reconcile and close proof lanes explicitly in `active-artifacts.md` before starting adjacent code work.
+4. Convert repeated failure modes (same blocked terms across the same lanes) into validators/replayable checks and tests in the same modules that consume those signals.
+5. Keep work scoped to `JSC-363` closeout completion and gate-typing so throughput gains show up as reduced re-opened review/closeout work, not as raw file edits.
 
-The constraint costs throughput in four ways:
+## Detailed Next Steps
 
-1. Implemented work waits in review or closeout lanes because evidence is not
-   yet composed into one trusted readiness picture.
-2. Agents repeat manual reconciliation across GitHub, CircleCI, CodeRabbit,
-   Linear, local validation, runtime cards, and `.harness` artifacts.
-3. Local validation can pass while merge-readiness, review-thread truth,
-   tracker truth, or Judge/PM readiness remains unproved.
-4. The worktree accumulates broad WIP: 87 changed files in this snapshot, with
-   the largest concentration under `src/lib`.
+1. **Drain closeout queue first (Priority 1):**
+   - Capture and classify current PR/check/review/Linear states with concrete evidence.
+   - Update `.harness/active-artifacts.md` only once truth is current.
+2. **Run focused parity/validation checks (Priority 1):**
+   - `bash scripts/check-goal-board.py .harness/active-artifacts.md docs/goals/...` (as documented in the goal).
+   - `bash scripts/verify-work.sh --fast` and any gate checks required by touched lanes.
+3. **Normalize blockers (Priority 2):**
+   - For each top blocker class (`blocked`, `merge-readiness`, `Linear scope alignment`), add deterministic classification in the shortest owning module or command.
+4. **Close out unclaimed lanes before expand scope (Priority 2):**
+   - Explicitly mark `merge-readiness`, `Judge/PM readiness`, `review-thread truth`, and `runtime producer emission` as either **allowed exceptions** or **proven ready** with references.
+5. **Only then resume adjacent implementation (Priority 3):**
+   - New implementation slices only after a fresh merged/clean lane snapshot and no unclaimed closeout lanes remain.
 
-The practical cost is longer PR lead time and repeated closeout rework. That is
-exactly the repo's declared north-star loss function.
+## Do Not Optimize Non-Constraints
 
-## What Feeds It
-
-The constraint is fed by:
-
-- stacked PR state
-- current-head SHA and branch divergence
-- review-thread freshness
-- CodeRabbit or Codex review artifacts
-- CircleCI, Semgrep Cloud, Snyk, and other required-check conclusions
-- Linear issue scope and relationship metadata
-- local validation evidence
-- runtime-card and evidence-bundle packets
-- Project Brain and Local Memory freshness
-- `.harness` audit, plan, spec, and review artifacts
-- broad architecture-adjacent runtime cockpit changes under `src/lib`
-
-## What Depends On It
-
-These lanes depend on the constraint being relieved:
-
-- JSC-363 full lifecycle completion
-- PR closeout readiness
-- Judge/PM readiness
-- merge-readiness claims
-- Linear status updates
-- future runtime evidence cockpit slices
-- delivery-truth consumption
-- route recommendations from `harness next`
-- agent-native confidence that a slice is done, waiting, blocked, or ready
-
-## How To Increase Throughput
-
-Increase throughput by reducing closeout reconciliation load, not by starting
-more implementation.
-
-Recommended actions:
-
-1. Finish the JSC-363 readiness evidence path before starting adjacent feature
-   work.
-2. Make one command or report compose the active closeout lanes: local
-   validation, PR checks, review threads, Linear scope, runtime evidence, and
-   root/worktree state.
-3. Convert repeated closeout blockers into fixtures and validators, especially
-   skipped or neutral required checks, stale heads, missing reviewer artifacts,
-   unresolved review threads, and stale Linear scope.
-4. Keep work slices smaller until the closeout constraint is relieved. Each new
-   broad slice adds more truth lanes to reconcile.
-5. Promote evidence manifests over prose. If a claim matters for closeout, it
-   should have a current evidence ref, source, timestamp, head SHA, and blocker
-   class.
-6. Treat `.harness/review` as the queue to drain first. Review artifacts are
-   the largest local queue and directly gate readiness claims.
-
-## Next Steps
-
-1. Do not begin a new optimization lane.
-2. Use JSC-363 as the active constraint-relief route.
-3. Run a focused closeout-lane inventory for the current branch:
-   - local validation state
-   - PR state
-   - CI state
-   - review-thread state
-   - Linear state
-   - root/worktree state
-   - runtime-card/evidence-bundle state
-4. Identify the smallest missing composer or validator that would remove one
-   manual reconciliation step.
-5. Implement only that missing composer or validator.
-6. Validate it with the narrowest fixture-backed command.
-7. Update the active goal board receipt so future agents do not repeat the same
-   reconciliation work.
-
-## Do Not Optimize
-
-Do not optimize these now:
-
-- JSC-98 release eval timeout. It has high raw wait time, but it is
-  low-priority and not feeding the active closeout queue.
-- New planning artifacts. Specs and plans are not the longest queue.
-- New feature surface area. More runtime cockpit features will increase WIP
-  unless they directly reduce closeout reconciliation.
-- Cosmetic shallow-module cleanup. It may be useful later, but it does not beat
-  the current evidence-readiness constraint.
-- Generic documentation polish. Documentation should change only when it
-  removes a specific closeout ambiguity or feeds a validator.
-
-## Validation
-
-Command: `zsh -lc 'git status --short --branch'` -> pass (confirmed branch
-and dirty-worktree boundary)
-
-Command: `zsh -lc 'find .harness -maxdepth 2 -type f -name "*.md" | awk -F/ "{print \$2}" | sort | uniq -c | sort -nr'` -> pass (counted local
-`.harness` artifact queues)
-
-Command: `zsh -lc 'find .harness -maxdepth 3 -type f -name "*.md" -print0 | xargs -0 rg --no-filename -o "blocked|blocker|pending|waiting|unclaimed|unresolved|rework|reviewDecision|merge-readiness|Judge/PM|Linear scope alignment" | sort | uniq -c | sort -nr'` -> pass (counted blocker and rework terms)
-
-Command: `zsh -lc 'git diff --stat HEAD -- . ":(exclude)pnpm-lock.yaml"'` ->
-pass (measured local change volume)
-
-Command: `zsh -lc 'git diff --name-only HEAD -- . | awk -F/ "{print \$1 (NF>1?\"/\"\$2:\"\")}" | sort | uniq -c | sort -nr'` -> pass (measured
-changed-file concentration)
-
-Command: Linear `list_issues` for team `JSC`, label `coding-harness`,
-state `In Progress` -> pass (found JSC-363 and JSC-330 as active relevant
-issues)
-
-Command: Linear `list_issues` for team `JSC`, label `coding-harness`,
-states `Todo`, `Triage`, `Backlog`, and `In Review` -> pass (no issues
-returned in those states)
-
-Validation limits: this audit did not refresh GitHub PR check state, CodeRabbit
-review threads, CircleCI job logs, or Linear relationships for every referenced
-issue. It identifies the system constraint from local control-plane evidence
-plus current Linear queue evidence; it does not claim merge readiness or goal
-completion.
+- Do not add new feature slices that do not reduce closeout queue length.
+- Do not reduce work by skipping independent proof lanes.
+- Do not optimize `specs`/`review` churn by adding prose layers; convert recurring churn into guardrails.

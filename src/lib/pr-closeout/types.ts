@@ -364,4 +364,53 @@ export interface PrCloseoutReport {
 	dirtyPathsExcluded: PrCloseoutDirtyPathInput[];
 	attemptLedger: PrCloseoutAttemptLedger;
 	recoveryEvent: PrCloseoutRecoveryEvent | null;
+	snapshot?: PrCloseoutConstraintSnapshot;
+}
+
+/** Lane-level stale-class labels used by compact delivery-lifecycle snapshots. */
+export type PrCloseoutStaleEvidenceClass =
+	| "stale-pr-metadata"
+	| "stale-ci"
+	| "stale-review"
+	| "stale-linear"
+	| "stale-external";
+
+/** Compact evidence pointer used in snapshot handoff output. */
+export interface PrCloseoutSnapshotHandoffPointer {
+	claim: string;
+	surface: PrCloseoutClaim["source"] | PrCloseoutBlocker["surface"];
+	status: PrCloseoutClaimStatus;
+	freshness: PrCloseoutEvidenceFreshness;
+	evidenceRef: string | null;
+	blockerClass: PrCloseoutBlockerClassification | null;
+	verifiedAt: string;
+}
+
+/** Compact lane projection for compact closeout snapshots. */
+export interface PrCloseoutConstraintSnapshotLane {
+	status: "ready" | "blocked" | "stale" | "missing" | "unknown";
+	blockerCount: number;
+	staleEvidence: boolean;
+	freshness: PrCloseoutEvidenceFreshness;
+	evidenceRefs: string[];
+}
+
+/** Compact delivery-lifecycle snapshot derived from a PR closeout report. */
+export interface PrCloseoutConstraintSnapshot {
+	schemaVersion: "pr-closeout-snapshot/v1";
+	generatedAt: string;
+	pr: number;
+	url: string | null;
+	overallStatus: PrCloseoutStatus;
+	nextAction: PrCloseoutNextAction;
+	staleEvidenceClasses: PrCloseoutStaleEvidenceClass[];
+	lanes: {
+		pr: PrCloseoutConstraintSnapshotLane;
+		checks: PrCloseoutConstraintSnapshotLane;
+		review: PrCloseoutConstraintSnapshotLane;
+		linear: PrCloseoutConstraintSnapshotLane;
+		branch: PrCloseoutConstraintSnapshotLane;
+		deliveryTruth: PrCloseoutConstraintSnapshotLane;
+	};
+	handoffRequirements: PrCloseoutSnapshotHandoffPointer[];
 }

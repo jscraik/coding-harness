@@ -10,6 +10,7 @@ import {
 } from "../lib/decision/he-phase-exit.js";
 import {
 	buildPrCloseoutReport,
+	buildPrCloseoutSnapshot,
 	type PrCloseoutInput,
 } from "../lib/pr-closeout.js";
 import type { HarnessAssuranceEntry } from "../lib/harness-assurance.js";
@@ -261,8 +262,21 @@ export async function runPrCloseoutCLI(
 				}
 			: inputWithAssurance;
 		const report = buildPrCloseoutReport(inputWithRuntimeEvidence);
+		const snapshot = parsed.options.snapshot
+			? buildPrCloseoutSnapshot({
+					generatedAt: report.generatedAt,
+					pr: report.pr,
+					url: report.url,
+					status: report.status,
+					nextAction: report.nextAction,
+					claims: report.claims,
+					blockers: report.blockers,
+				})
+			: undefined;
 		if (parsed.options.json) {
-			console.info(JSON.stringify(report, null, 2));
+			console.info(
+				JSON.stringify(parsed.options.snapshot ? snapshot : report, null, 2),
+			);
 		} else {
 			console.info(
 				`PR #${String(report.pr)}: ${report.status} -> ${report.nextAction}`,

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { cwd } from "node:process";
 import type { HarnessDecision } from "../lib/decision/harness-decision.js";
 import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
+import { gitEnvironmentForRepoRoot } from "../lib/runtime/git-environment.js";
 import {
 	type DecisionSource,
 	collectSourceErrors,
@@ -14,6 +15,7 @@ import {
 	type RuntimeCard,
 } from "../lib/runtime/runtime-card.js";
 import {
+	type HarnessNextWorktreeRole,
 	type HarnessNextEvidenceMode,
 	isHarnessNextMode,
 } from "./next-args.js";
@@ -21,6 +23,7 @@ import {
 	humanRequiredDecisionMeta,
 	optionalNetworkSources,
 	parseGitStatusShort,
+	type NextWorktreeState,
 	sourceMetaExtra,
 } from "./next-support.js";
 import {
@@ -30,6 +33,7 @@ import {
 	gitInspectionBlockedDecision,
 	invalidModeDecision,
 	noChangedFilesDecision,
+	worktreeStateBlockedDecision,
 	phaseExitBlockedDecision,
 	runtimeCardBlockedDecision,
 	sourceBlockedDecision,
@@ -55,8 +59,9 @@ export interface HarnessNextOptions {
 	runtimeCard?: RuntimeCard;
 	/** Evidence strictness for phase-exit and runtime-card inputs. */
 	evidenceMode?: HarnessNextEvidenceMode;
+	/** Worktree posture requested for local next recommendations. */
+	worktreeRole?: HarnessNextWorktreeRole;
 }
-
 const DEFAULT_FLEET_MATRIX_ARTIFACT =
 	"artifacts/harness-upgrade-matrix-dev.json";
 
@@ -77,6 +82,65 @@ function inspectGitChangedFiles(repoRoot: string): string[] {
 		},
 	);
 	return parseGitStatusShort(output);
+}
+
+function inspectWorktreeState(repoRoot: string): NextWorktreeState {
+	const run = (args: string[]): string | null => {
+		try {
+			const output = execFileSync("git", args, {
+				cwd: repoRoot,
+				env: gitEnvironmentForRepoRoot(),
+				encoding: "utf-8",
+				stdio: ["ignore", "pipe", "ignore"],
+				timeout: 10_000,
+			}).trim();
+			return output.length > 0 ? output : null;
+		} catch {
+			return null;
+		}
+	};
+
+	const parseCount = (value: string | null): number | null => {
+		if (value === null) return null;
+		const parsed = Number.parseInt(value, 10);
+		return Number.isNaN(parsed) ? null : parsed;
+	};
+
+	const status = run(["status", "--short", "--untracked-files=no"]);
+	const branch = run(["rev-parse", "--abbrev-ref", "HEAD"]);
+	const upstream = run([
+		"rev-parse",
+		"--abbrev-ref",
+		"--symbolic-full-name",
+		"@{upstream}",
+	]);
+	const ahead =
+		upstream === null
+			? null
+			: parseCount(run(["rev-list", "--count", `${upstream}..HEAD`]));
+	const behind =
+		upstream === null
+			? null
+			: parseCount(run(["rev-list", "--count", `HEAD..${upstream}`]));
+	return {
+		branch,
+		clean: status !== null ? status.length === 0 : false,
+		upstream,
+		ahead,
+		behind,
+	};
+}
+
+function blocksDirtyWorktree(
+	role: HarnessNextWorktreeRole | undefined,
+	state: NextWorktreeState,
+): boolean {
+	if (role === "dirty-with-justification") return false;
+	if (!state.clean) return true;
+	if (state.upstream === null) return role === "fresh-worktree";
+	if (state.ahead === null || state.behind === null) return false;
+	if (state.ahead > 0 || state.behind > 0) return true;
+	return false;
 }
 
 function requiredEvidenceMissing(
@@ -201,6 +265,27 @@ export function runHarnessNext(
 	if (options.files !== undefined && options.files.length === 0) {
 		return filesOverrideEmptyDecision(mode, sourceErrors);
 	}
+
+	let worktreeState: NextWorktreeState | undefined;
+	if (
+		options.files === undefined &&
+		options.inspectChangedFiles === undefined
+	) {
+		try {
+			worktreeState = inspectWorktreeState(repoRoot);
+		} catch {
+			return gitInspectionBlockedDecision(mode);
+		}
+		if (blocksDirtyWorktree(options.worktreeRole, worktreeState)) {
+			return worktreeStateBlockedDecision({
+				mode,
+				worktreeState,
+				role: options.worktreeRole ?? "clean",
+				sourceErrors,
+			});
+		}
+	}
+
 	if (
 		options.files === undefined &&
 		mode === "ci" &&

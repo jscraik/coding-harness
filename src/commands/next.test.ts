@@ -6,6 +6,7 @@ import {
 	symlinkSync,
 	writeFileSync,
 } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -48,6 +49,32 @@ function parseDecision(output: string): ReturnType<typeof runHarnessNext> {
 	const parsed = JSON.parse(output) as ReturnType<typeof runHarnessNext>;
 	expect(validateHarnessDecision(parsed)).toEqual({ valid: true, errors: [] });
 	return parsed;
+}
+
+function createGitRepoWithCommit(): string {
+	const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-worktree-"));
+	execFileSync("git", ["init", "-q"], {
+		cwd: repoRoot,
+		encoding: "utf-8",
+	});
+	execFileSync("git", ["config", "user.email", "operator@example.com"], {
+		cwd: repoRoot,
+		encoding: "utf-8",
+	});
+	execFileSync("git", ["config", "user.name", "Harness Operator"], {
+		cwd: repoRoot,
+		encoding: "utf-8",
+	});
+	writeFileSync(join(repoRoot, "README.md"), "# harness\n");
+	execFileSync("git", ["add", "README.md"], {
+		cwd: repoRoot,
+		encoding: "utf-8",
+	});
+	execFileSync("git", ["commit", "-m", "initial commit", "--no-gpg-sign"], {
+		cwd: repoRoot,
+		encoding: "utf-8",
+	});
+	return repoRoot;
 }
 
 function hePayloadFor(gateId: HeGateId): HeGatePayload {
@@ -373,6 +400,65 @@ describe("runHarnessNext", () => {
 				},
 			},
 		});
+	});
+
+	it("blocks dirty worktrees when default role is clean", () => {
+		const repoRoot = createGitRepoWithCommit();
+		try {
+			writeFileSync(join(repoRoot, "README.md"), "# harness\nchanged\n");
+			const decision = runHarnessNext({ repoRoot });
+			const meta = decision.meta;
+
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("worktree_state_blocked");
+			expect(decision.nextAction).toContain(
+				"Use --worktree-role dirty-with-justification",
+			);
+			expect(meta).not.toBeUndefined();
+			expect(meta!.frictionClass).toBe("repo_state");
+			expect(meta!.delayClass).toBe("human_needed");
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("allows dirty worktrees when role is dirty-with-justification", () => {
+		const repoRoot = createGitRepoWithCommit();
+		try {
+			writeFileSync(join(repoRoot, "README.md"), "# harness\nchanged\n");
+			const decision = runHarnessNext({
+				repoRoot,
+				worktreeRole: "dirty-with-justification",
+			});
+
+			expect(decision.status).toBe("action_required");
+			expect(decision.failureClass).toBeNull();
+			expect(decision.nextCommand).toBe(
+				"harness validation-plan --files README.md --json",
+			);
+			expect(decision.phase).toBe("verify");
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("blocks fresh-worktree role when no upstream is configured", () => {
+		const repoRoot = createGitRepoWithCommit();
+		try {
+			const decision = runHarnessNext({
+				repoRoot,
+				worktreeRole: "fresh-worktree",
+			});
+			const meta = decision.meta;
+
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("worktree_state_blocked");
+			expect(meta).not.toBeUndefined();
+			expect(meta!.frictionClass).toBe("repo_state");
+			expect(meta!.delayClass).toBe("human_needed");
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
 	});
 
 	it("surfaces passing HE phase-exit evidence in operator-visible metadata", () => {
@@ -1311,6 +1397,38 @@ describe("runNextCLI", () => {
 		const decision = parseDecision(output);
 		expect(decision.status).toBe("blocked");
 		expect(decision.failureClass).toBe("evidence_invalid");
+	});
+
+	it("emits a usage decision when --worktree-role has no value", () => {
+		const { exitCode, output } = captureNextCLI(
+			["--json", "--worktree-role"],
+			{},
+		);
+
+		expect(exitCode).toBe(2);
+		const decision = parseDecision(output);
+		expect(decision.status).toBe("blocked");
+		expect(decision.failureClass).toBe("worktree_role_invalid");
+		expect(decision.nextAction).toBe(
+			"Use --worktree-role clean, --worktree-role dirty-with-justification, or --worktree-role fresh-worktree.",
+		);
+	});
+
+	it("emits a usage decision when --worktree-role is invalid", () => {
+		const { exitCode, output } = captureNextCLI(
+			["--json", "--worktree-role", "chaos-mode"],
+			{},
+		);
+
+		expect(exitCode).toBe(2);
+		const decision = parseDecision(output);
+		expect(decision.status).toBe("blocked");
+		expect(decision.failureClass).toBe("worktree_role_invalid");
+		expect((decision.meta as { validRoles?: string[] }).validRoles).toEqual([
+			"clean",
+			"dirty-with-justification",
+			"fresh-worktree",
+		]);
 	});
 
 	it("emits a valid blocked decision for invalid --mode", () => {

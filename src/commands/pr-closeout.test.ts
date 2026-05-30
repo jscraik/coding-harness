@@ -439,6 +439,100 @@ describe("runPrCloseoutCLI", () => {
 		});
 	});
 
+	it("builds a compact snapshot with stale evidence classes from input", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const inputPath = join(dir, "input.json");
+		writeFileSync(
+			inputPath,
+			JSON.stringify({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headSha: "abc123",
+					reviewDecision: "APPROVED",
+					body: "Refs JSC-327\n",
+				},
+				branch: {
+					clean: true,
+					headSha: "abc123",
+				},
+				checks: [
+					{
+						name: "pr-pipeline",
+						state: "SUCCESS",
+						headSha: "stale456",
+						headRefName: "abc123",
+					},
+				],
+				reviewThreads: {
+					unresolved: 1,
+				},
+				traceability: {
+					sessionIds: ["codex-session:2026-05-16"],
+					traceIds: ["circleci:workflow-123"],
+					aiSessionTraceability:
+						"JSC-327 -> PR #258 -> stale closeout evidence.",
+				},
+				rollback: {
+					notApplicable: true,
+					evidenceRef: "pr-body:rollback",
+				},
+				closeoutGates: PASSING_CLOSEOUT_GATES,
+				assurance: PASSING_ASSURANCE,
+				runtimeEvidence: PASSING_RUNTIME_EVIDENCE,
+			}),
+		);
+
+		const result = await capture([
+			"--json",
+			"--snapshot",
+			"--input",
+			inputPath,
+		]);
+		const snapshot = JSON.parse(result.output) as {
+			schemaVersion: string;
+			pr: number;
+			staleEvidenceClasses: string[];
+			lanes: {
+				checks: {
+					status: string;
+					freshness: string;
+					staleEvidence: boolean;
+				};
+			};
+			handoffRequirements: Array<{ claim: string; surface: string }>;
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(result.error).toBe("");
+		expect(snapshot).toMatchObject({
+			schemaVersion: "pr-closeout-snapshot/v1",
+			pr: 258,
+			staleEvidenceClasses: expect.arrayContaining(["stale-ci"]),
+			lanes: {
+				checks: {
+					status: "stale",
+					freshness: "stale",
+					staleEvidence: true,
+				},
+			},
+		});
+		expect(snapshot.handoffRequirements).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "required_checks_match_current_head",
+					surface: "checks",
+				}),
+				expect.objectContaining({
+					claim: "review_threads_resolved",
+					surface: "review",
+				}),
+			]),
+		);
+	});
+
 	it("accepts first-class Coding Harness closeout-gates schema in normalized input", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const inputPath = join(dir, "input.json");

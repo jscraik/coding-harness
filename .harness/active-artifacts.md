@@ -10,7 +10,7 @@
 
 ## Scope
 
-Last reconciled: 2026-05-28.
+Last reconciled: 2026-05-30.
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -48,6 +48,11 @@ unless a live refresh is recorded in the referenced artifact.
 
 ## Closeout Reconcile Items
 
+- PR #315 and PR #316 are both in merged state, both PR/CI lanes have all checks
+  passing on current PR heads, and both PRs report zero unresolved review threads
+  after a fresh review-thread refresh. Merge-readiness and Linear scope alignment
+  are still blocked pending a successful check-goal-board run on current HEAD and
+  confirmed live Linear mutation confirmation.
 - Live Linear was refreshed for JSC-331 on 2026-05-21; tracker closure and
   live issue status for other issues remain explicit external actions.
 - JSC-283, JSC-288, JSC-289, and JSC-290 are no longer active routing items in
@@ -102,9 +107,13 @@ unless a live refresh is recorded in the referenced artifact.
   checks passed after the R131 route-evidence push at
   `d7f534d3d396d748a4f30609a0679cc9be6c0cb3`, with PR #315 CLEAN and
   MERGEABLE; PR #316 also remains green, CLEAN, and MERGEABLE on its observed
-  head. Merge-readiness, Linear scope alignment, review-thread truth,
-  Judge/PM readiness, runtime producer emission, delivery-truth consumption,
-  and final closeout remain unclaimed.
+  head. A direct review-thread refresh now shows #315 unresolved_threads=0 and
+  #316 unresolved_threads=0. review-thread truth: claimed as refreshed in this
+  lane snapshot; merge-readiness: blocked until check-goal-board.py is re-run
+  on current HEAD; Linear scope alignment: blocked (confirmation_required /
+  blocked_destination_confirmation); Judge/PM readiness: not ready (not yet
+  completed); runtime producer emission: not ready (not yet emitted); delivery-truth
+  consumption: not ready.
 - JSC-308 is related broader HE runtime-authoring/process-exhaust context. Do
   not use it as the coding-harness tracker for the 2026-05-18 assurance plan
   unless Linear is explicitly reparented or updated later.
