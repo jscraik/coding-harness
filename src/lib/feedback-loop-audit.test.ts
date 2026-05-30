@@ -1,0 +1,124 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+	FEEDBACK_LOOP_AUDIT_SCHEMA_VERSION,
+	buildFeedbackLoopAudit,
+} from "./feedback-loop-audit.js";
+
+const tempDirs: string[] = [];
+
+afterEach(() => {
+	for (const dir of tempDirs.splice(0)) {
+		rmSync(dir, { recursive: true, force: true });
+	}
+});
+
+function makeTempRepo(): string {
+	const dir = mkdtempSync(join(tmpdir(), "feedback-loop-audit-"));
+	tempDirs.push(dir);
+	return dir;
+}
+
+function writeIndex(
+	repoRoot: string,
+	overrides: Record<string, unknown> = {},
+): void {
+	const indexDir = join(repoRoot, ".harness", "feedback-loops");
+	mkdirSync(indexDir, { recursive: true });
+	const loops = Array.from({ length: 19 }, (_, index) => ({
+		rank: index + 1,
+		id: `loop-${(index + 1).toString()}`,
+		name: `Loop ${(index + 1).toString()}`,
+		leverage: "high",
+		owner: "owner",
+		sources: ["source"],
+		recipients: ["recipient"],
+		expectedDelay: "minutes",
+		failureClass: "failure",
+		action: "act",
+		closureState: "implemented",
+		evidenceRefs: ["evidence"],
+	}));
+	const index = {
+		schemaVersion: "feedback-loop-index/v1",
+		generatedAt: "2026-05-30T20:54:32.000Z",
+		sourceAudit: ".harness/audits/2026-05-30-feedback-loops-audit.md",
+		status: "implemented",
+		owner: "coding-harness",
+		summary: {
+			loopCount: 19,
+			crossLoopGapCount: 5,
+			recommendationCount: 7,
+			openFindingCount: 0,
+		},
+		loops,
+		crossLoopGaps: Array.from({ length: 5 }, (_, index) => ({
+			id: `gap-${(index + 1).toString()}`,
+			description: `Gap ${(index + 1).toString()}`,
+			closureState: "implemented",
+			evidenceRefs: ["evidence"],
+		})),
+		recommendations: Array.from({ length: 7 }, (_, index) => ({
+			id: `recommendation-${(index + 1).toString()}`,
+			description: `Recommendation ${(index + 1).toString()}`,
+			closureState: "implemented",
+			evidenceRefs: ["evidence"],
+		})),
+		...overrides,
+	};
+	writeFileSync(join(indexDir, "index.json"), JSON.stringify(index, null, 2));
+}
+
+describe("buildFeedbackLoopAudit", () => {
+	it("passes when all audit loops, gaps, and recommendations are implemented", () => {
+		const repoRoot = makeTempRepo();
+		writeIndex(repoRoot);
+
+		const report = buildFeedbackLoopAudit({ repoRoot });
+
+		expect(report.schemaVersion).toBe(FEEDBACK_LOOP_AUDIT_SCHEMA_VERSION);
+		expect(report.status).toBe("pass");
+		expect(report.summary).toMatchObject({
+			loopCount: 19,
+			crossLoopGapCount: 5,
+			recommendationCount: 7,
+			openFindingCount: 0,
+			implementedLoopCount: 19,
+			implementedGapCount: 5,
+			implementedRecommendationCount: 7,
+		});
+		expect(report.findings.every((finding) => finding.status === "pass")).toBe(
+			true,
+		);
+	});
+
+	it("fails when the feedback-loop index is missing", () => {
+		const repoRoot = makeTempRepo();
+
+		const report = buildFeedbackLoopAudit({ repoRoot });
+
+		expect(report.status).toBe("fail");
+		expect(report.findings).toContainEqual(
+			expect.objectContaining({ code: "feedback_loop_index_missing" }),
+		);
+	});
+
+	it("fails when audit recommendations are not closed", () => {
+		const repoRoot = makeTempRepo();
+		writeIndex(repoRoot, {
+			recommendations: [],
+		});
+
+		const report = buildFeedbackLoopAudit({ repoRoot });
+
+		expect(report.status).toBe("fail");
+		expect(report.findings).toContainEqual(
+			expect.objectContaining({
+				code: "recommended_next_steps_closed",
+				status: "fail",
+			}),
+		);
+	});
+});
