@@ -38,6 +38,11 @@ covered by fixture-shaped tests so documentation and extraction stay aligned.
 
 ## Validation
 
-For parser or presenter changes, run the focused Project Brain tests. For
-public CLI wiring changes, include at least one CLI-level test that proves the
-presenter or parser is used by the public command path.
+Run focused checks:
+- `pnpm vitest src/lib/project-brain/rules.test.ts src/lib/project-brain/cli.test.ts`
+Expected outcome:
+- All tests pass.
+Owner:
+- Project Brain module owners.
+Failure handling:
+- Do not merge; fix failing parser/presenter/CLI path or record a tracked blocker with rationale.
