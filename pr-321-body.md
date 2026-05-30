@@ -2,38 +2,50 @@
 
 ## Summary
 
-- What changed (brief): Added resilient CircleCI metadata fallback logic for repo discovery in `.circleci/config.yml`, `src/templates/circleci-config.yml`, and `src/templates/circleci-linear-gate.yml` by trying `CIRCLE_REPOSITORY_URL`, then `git remote.origin.url`, before GitHub fallback.
-- Why this change was needed: The CircleCI metadata path was brittle when environment variables were missing or inconsistent, which could fail required PR checks during metadata-dependent jobs.
-- Risk and rollback plan: Changes are isolated to three workflow/template files; if regression is observed, revert these three files in one atomic change.
+- What changed (brief): Hardened PR #321 after live green-sweep triage by preserving CircleCI repo-metadata fallback behavior, applying the `harness next`/PR-closeout size-ratchet fixes, resolving the `main` merge conflict lane, and syncing docs-gate governance surfaces for role-gated next decisions and PR closeout snapshots.
+- Why this change was needed: The PR was blocked by stale branch state, CircleCI ratchet/typecheck/doc checks, required PR-template metadata, and GitHub merge conflicts. The branch needed current evidence and current `main` before it could move back toward review readiness.
+- Risk and rollback plan: Risk is concentrated in the merge resolution and advisory evidence-surface wording. Roll back by reverting the merge-resolution/doc-sync follow-up commits or resetting the PR branch to the last known good head before `d8f6a1ba`, then reapplying only the narrow CI fix commits.
 
 ## Work performed
 
-- Plan IDs: JSC-363
-- Phase / slice: PR #321 triage and CircleCI metadata hardening, preparatory slice.
-- Session IDs: this Codex sweep session.
-- Trace IDs: CircleCI and local harness validation command outputs in this sweep.
-- AI session / traceability: local command evidence captured in this run; PR body and check outputs are the artifact trail.
+- Linear reference: JSC-363.
+- Linked issue relationship: Refs JSC-363; this PR does not close JSC-363 by itself.
+- Plan IDs: JSC-363.
+- Phase / slice: PR #321 green-sweep triage, CI recovery, merge-conflict recovery, and PR-template compliance.
+- Session IDs: Codex PR green sweep in this thread.
+- Trace IDs: CircleCI jobs 22017, 22020, 22082, 22117, and 22132; local validation commands listed below.
+- AI session / traceability: local command evidence captured in this run; PR body, pushed commits, GitHub check state, and CircleCI job URLs are the artifact trail.
 - Completed work:
-  - Added fallback resolution logic for repository slug in all metadata-dependent CircleCI templates.
-  - Guarded missing environment values before attempting platform fallbacks.
+  - Preserved remote CircleCI repo-slug fallback commits while applying the local `next-runner` and `pr-closeout` size-ratchet split.
+  - Fixed `exactOptionalPropertyTypes` typecheck failure in `src/commands/next-runner.ts` by omitting undefined optional properties.
+  - Merged current `origin/main` into the PR branch and cleared GitHub's merge-conflict state.
+  - Resolved docs-gate warnings by synchronizing architecture and agent-governance docs for role-gated next decisions and PR closeout snapshot evidence boundaries.
+  - Updated this PR body with required Linear and linked-issue relationship fields.
 - Affected surfaces:
+  - `src/commands/next-runner.ts`
+  - `src/commands/next-runner-inputs.ts`
+  - `src/lib/pr-closeout/evaluator.ts`
+  - `src/lib/pr-closeout/snapshot.ts`
   - `.circleci/config.yml`
   - `src/templates/circleci-config.yml`
   - `src/templates/circleci-linear-gate.yml`
-- Documentation impact: n.a.; no repository documentation files were modified in this PR.
-- Expected outcome alignment: this change improves CI robustness without changing runtime product behavior outside metadata lookup in workflow scripts.
-- Pattern scope inventory: applied the same fallback sequence to all three templates that parse CircleCI repo metadata.
-- Meta-behavior proof: n.a.
-- Repeated-error research: n.a.
-- Acceptance trace: JSC-363: preparatory/enabling governance work; does not complete issue acceptance criteria; completed JSC-363 acceptance IDs: none.
-- Validation evidence: inline command outcomes below, plus CircleCI check URLs and local gate outputs from this sweep.
-- Review artifacts: local gate evidence and PR check state; external review comments are pending.
-- Durable evidence map: CircleCI check URLs, local command outputs, and PR-diff references.
-- Runtime impact: CI workflow metadata lookup behavior only.
-- CodeRabbit mode coverage: n.a.
-- Closeout state: PR is currently draft and failing `ci/circleci: pr-template` and `ci/circleci: test`; branch is merge-conflicted until checks clear or reruns/owner merge-state resolution completes.
+  - `docs/agents/00-architecture-bootstrap.md`
+  - `docs/agents/07b-agent-governance.md`
+  - merge-synchronized goal, schema, validator, and generated architecture surfaces from `origin/main`.
+- Documentation impact: Updated `docs/agents/00-architecture-bootstrap.md` and `docs/agents/07b-agent-governance.md` so docs-gate-required architecture/governance surfaces describe the advisory evidence boundary.
+- Expected outcome alignment: PR #321 should no longer be blocked by stale merge conflicts, next/pr-closeout size ratchets, docs-gate missing surfaces, or missing PR-template issue metadata.
+- Pattern scope inventory: Applied CircleCI repo metadata fallback consistently across generated and live templates; applied docs-gate governance wording to both architecture-bootstrap and agent-governance surfaces.
+- Meta-behavior proof: The sweep treated stale PR body/check/merge state as separate truth lanes, fixed the durable PR-template metadata failure, and kept root dirty worktree changes out of the pushed branch.
+- Repeated-error research: n.a.; failures were deterministic CircleCI/test/docs/PR-template findings with exact logs available.
+- Acceptance trace: JSC-363: preparatory/runtime evidence cockpit hardening; completed JSC-363 acceptance IDs: none; this remains a referenced PR, not issue closure.
+- Validation evidence: inline command outcomes below, plus current GitHub/CircleCI check state.
+- Review artifacts: CodeRabbit check context on PR #321 and CircleCI job URLs linked from GitHub check contexts.
+- Durable evidence map: GitHub PR #321, CircleCI job URLs in check contexts, local validation command outputs, and pushed commits `1cc43dd8`, `d8f6a1ba`, and `b0cc7b50`.
+- Runtime impact: Advisory next-decision and PR closeout evidence behavior only; no production command-authority expansion.
+- CodeRabbit mode coverage: CodeRabbit check is present on PR #321; latest status must be rechecked before merge.
+- Closeout state: PR is draft, mergeable, and waiting on latest required checks/review after this PR body update.
 - Learning / reinforcement: n.a.
-- Deferred work: n.a.
+- Deferred work: Final merge, branch cleanup, and any independent review closure remain pending until all required checks and review lanes are current and green.
 
 ## Checklist
 
@@ -48,32 +60,32 @@
 
 ## Testing
 
-- verification_commands: `bash scripts/validate-codestyle.sh`; `bash scripts/run-harness-gate.sh tooling-audit --path . --json`; `bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files .circleci/config.yml,src/templates/circleci-config.yml,src/templates/circleci-linear-gate.yml --json`; `bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files .circleci/config.yml,src/templates/circleci-config.yml,src/templates/circleci-linear-gate.yml --json`; `bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json`; `bash scripts/run-harness-gate.sh pr-template-gate --pr-body-file pr-321-body.md --json`; `pnpm check`; `gh pr checks 321`.
-- verification_outcomes: `bash scripts/validate-codestyle.sh` pass; `bash scripts/run-harness-gate.sh tooling-audit --path . --json` pass; `bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files .circleci/config.yml,src/templates/circleci-config.yml,src/templates/circleci-linear-gate.yml --json` pass; `bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files .circleci/config.yml,src/templates/circleci-config.yml,src/templates/circleci-linear-gate.yml --json` pass; `bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json` pass; `bash scripts/run-harness-gate.sh pr-template-gate --pr-body-file pr-321-body.md --json` pending (acceptance trace format was still being corrected); `pnpm check` blocked by repository policy; `gh pr checks 321` currently shows CircleCI failures in `ci/circleci: pr-template`, `ci/circleci: test`, and `ci/circleci: check`.
-- blocked_steps_reason: `pnpm check` blocked (environment approval policy prevented command execution); `ci/circleci: pr-template` and `ci/circleci: test` remain failing pending PR-body updates and rerun completion.
-- Command: `bash scripts/validate-codestyle.sh` -> pass
-- Command: `bash scripts/run-harness-gate.sh tooling-audit --path . --json` -> pass
-- Command: `bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files .circleci/config.yml,src/templates/circleci-config.yml,src/templates/circleci-linear-gate.yml --json` -> pass
-- Command: `bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files .circleci/config.yml,src/templates/circleci-config.yml,src/templates/circleci-linear-gate.yml --json` -> pass
-- Command: `bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json` -> pass
-- Command: `bash scripts/run-harness-gate.sh pr-template-gate --pr-body-file pr-321-body.md --json` -> fail
-- Command: `pnpm check` -> blocked (approval required)
-- Command: `gh pr checks 321` -> fail
+- verification_commands: `pnpm install --frozen-lockfile`; `pnpm typecheck`; `pnpm vitest run src/lib/architecture/module-boundaries.test.ts --reporter=dot`; `bash scripts/run-harness-gate.sh docs-gate --mode required --json`; `bash scripts/run-harness-gate.sh pr-template-gate --pr-body-file pr-321-body.md --json`; `gh pr view 321 --repo jscraik/coding-harness --json headRefOid,mergeable,mergeStateStatus,isDraft,reviewDecision,statusCheckRollup`.
+- verification_outcomes: `pnpm install --frozen-lockfile` -> pass; `pnpm typecheck` -> pass; `pnpm vitest run src/lib/architecture/module-boundaries.test.ts --reporter=dot` -> pass (1 file, 61 tests); `bash scripts/run-harness-gate.sh docs-gate --mode required --json` -> pass (0 warnings); `bash scripts/run-harness-gate.sh pr-template-gate --pr-body-file pr-321-body.md --json` -> pass; `gh pr view ...` -> pass as live-state read, PR mergeable but draft/blocked pending checks.
+- blocked_steps_reason: `pnpm check` not rerun during this sweep because the current blockers were narrower CircleCI, docs-gate, PR-template, and mergeability lanes; final full-gate truth remains CircleCI/required-check-owned before merge.
+- Command: `pnpm install --frozen-lockfile` -> pass
+- Command: `pnpm typecheck` -> pass
+- Command: `pnpm vitest run src/lib/architecture/module-boundaries.test.ts --reporter=dot` -> pass
+- Command: `bash scripts/run-harness-gate.sh docs-gate --mode required --json` -> pass
+- Command: `gh pr view 321 --repo jscraik/coding-harness --json headRefOid,mergeable,mergeStateStatus,isDraft,reviewDecision,statusCheckRollup` -> pass
+- Command: `bash scripts/run-harness-gate.sh pr-template-gate --pr-body-file pr-321-body.md --json` -> pass
+- Command: `gh pr checks 321 --repo jscraik/coding-harness --watch=false` -> blocked (latest CircleCI rerun is still pending after body update)
 
 ## Review artifacts
 
 - Review status:
-  - CodeRabbit review: check context present in PR checks; full comment closure pending.
-  - Independent reviewer: pending.
-  - Codex review: local validation evidence collected; pending external closure.
-- CodeRabbit: check context plus any open finding context on PR 321.
+  - CodeRabbit review: check context present on PR #321; latest status must be rechecked after this body update.
+  - Independent reviewer: pending / n.a. for this green-sweep repair slice.
+  - Codex review: local validation evidence collected in this sweep.
+- CodeRabbit: PR #321 CodeRabbit check context.
 - Independent reviewer evidence: n.a.
 - Codex: local sweep evidence in this session output.
-- CodeRabbit Semgrep: fixed / waived with rationale / n.a.
+- CodeRabbit Semgrep: n.a.
 - Additional evidence (if any):
-  - `gh pr checks 321`
+  - `gh pr view 321 --repo jscraik/coding-harness --json headRefOid,mergeable,mergeStateStatus,isDraft,reviewDecision,statusCheckRollup`
+  - `bash scripts/run-harness-gate.sh docs-gate --mode required --json`
   - `bash scripts/run-harness-gate.sh pr-template-gate --pr-body-file pr-321-body.md --json`
 
 ## Notes
 
-This PR keeps scope strictly to CircleCI repo-metadata fallback hardening and is currently blocked by PR check compliance and required check reruns.
+This PR is now mergeable from GitHub's conflict perspective, but it remains draft and must not be called green until the latest required checks and review state are current and passing.
