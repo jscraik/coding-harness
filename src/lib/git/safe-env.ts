@@ -8,6 +8,14 @@ const CALLER_SCOPED_GIT_ENV_KEYS = new Set([
 	"GIT_WORK_TREE",
 ]);
 
+function isCallerScopedGitEnvironmentKey(key: string): boolean {
+	return (
+		CALLER_SCOPED_GIT_ENV_KEYS.has(key) ||
+		key === "GIT_CONFIG" ||
+		key.startsWith("GIT_CONFIG_")
+	);
+}
+
 /** Git subprocess environment cleanup policy. */
 export type GitEnvironmentPolicy = "minimal" | "strict";
 
@@ -25,7 +33,7 @@ export function sanitizeGitEnvironment(
 	for (const [key, value] of Object.entries(environment)) {
 		if (value === undefined) continue;
 		if (options.policy === "strict" && key.startsWith("GIT_")) continue;
-		if (options.policy === "minimal" && CALLER_SCOPED_GIT_ENV_KEYS.has(key)) {
+		if (options.policy === "minimal" && isCallerScopedGitEnvironmentKey(key)) {
 			continue;
 		}
 		sanitized[key] = value;
