@@ -1,10 +1,11 @@
 import { spawnSync } from "node:child_process";
-import { dirname, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "vitest";
 import { expectBehavior } from "../lib/testing/expect-behavior.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const repoRootName = basename(repoRoot);
 
 function runPreflight(
 	args: string[],
@@ -113,7 +114,7 @@ describe("codex-preflight Local Memory legacy routing", () => {
 
 	it("fails closed for legacy positional mode by default", () => {
 		const result = runPreflight(
-			["coding-harness", "git,bash", "CODESTYLE.md"],
+			[repoRootName, "git,bash", "CODESTYLE.md"],
 			"unavailable",
 		);
 
@@ -136,7 +137,7 @@ describe("codex-preflight Local Memory legacy routing", () => {
 
 	it("keeps legacy optional mode explicit and non-blocking", () => {
 		const result = runPreflight(
-			["coding-harness", "git,bash", "CODESTYLE.md", "optional"],
+			[repoRootName, "git,bash", "CODESTYLE.md", "optional"],
 			"unavailable",
 		);
 
