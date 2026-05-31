@@ -22,6 +22,11 @@ thin and delegate into this deep module.
   validation.
 - Scaffold template changes must keep generated downstream docs, PR templates,
   workflow files, and regression fixtures synchronized.
+- Generated shell-script quality guards must prove optional tooling is
+  availability-checked before execution. Repo-owned package CLIs may use a
+  package-manager probe such as `pnpm exec diagram --version` instead of a
+  global `command -v` lookup when the runtime contract intentionally avoids
+  depending on a developer-machine binary.
 - Generated PR template fixtures must use issue-scoped acceptance evidence:
   acceptance IDs need to be bound to the linked issue key (for example,
   `JSC-999 SA-999-001 -> evidence`), and preparatory/no-completion text must
@@ -41,6 +46,7 @@ Use the narrowest relevant checks first, then widen when scaffold behavior or
 operator guidance changes:
 
 ```bash
+pnpm vitest run src/lib/init/scaffold-shell-quality.test.ts
 pnpm vitest run src/lib/init/scaffold-doc-templates.test.ts
 pnpm vitest run src/commands/docs-gate.test.ts src/lib/pr-template-validator.test.ts
 bash scripts/run-harness-gate.sh docs-gate --mode required --json

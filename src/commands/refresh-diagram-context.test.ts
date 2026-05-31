@@ -72,6 +72,16 @@ exit 0
 		join(binDir, "pnpm"),
 		`#!/usr/bin/env bash
 set -euo pipefail
+if [[ "\${1:-}" == "--dir" ]]; then
+	shift 2
+fi
+if [[ "\${1:-}" == "exec" && "\${2:-}" == "diagram" ]]; then
+	shift 2
+fi
+if [[ "\${1:-}" == "--version" ]]; then
+	echo "diagram 0.0.0-test"
+	exit 0
+fi
 out_dir=""
 while [[ $# -gt 0 ]]; do
 	case "$1" in
@@ -238,6 +248,36 @@ describe("refresh-diagram-context.sh", () => {
 		expect(agentClassIds.every((id) => declaredIds.has(id))).toBe(true);
 	});
 
+	it("runs the diagram availability probe from the repository root", {
+		timeout: 30000,
+	}, () => {
+		const { root, binDir } = createRepo();
+		const outsideCwd = mkdtempSync(join(tmpdir(), "diagram-context-cwd-"));
+		roots.push(root, outsideCwd);
+
+		const result = spawnSync(
+			"bash",
+			[
+				join(root, "scripts", "refresh-diagram-context.sh"),
+				"--force",
+				"--quiet",
+			],
+			{
+				cwd: outsideCwd,
+				encoding: "utf-8",
+				env: {
+					...sanitizeGitEnv(),
+					PATH: [binDir, STABLE_PATH].join(delimiter),
+				},
+			},
+		);
+
+		expect(result.status).toBe(0);
+		expect(
+			readFileSync(join(root, "AI", "context", "diagram-context.md"), "utf-8"),
+		).toContain("## How to use this pack");
+	});
+
 	it("preserves context when refresh only changes volatile Mermaid output", {
 		timeout: 30000,
 	}, () => {
@@ -248,6 +288,16 @@ describe("refresh-diagram-context.sh", () => {
 			join(binDir, "pnpm"),
 			`#!/usr/bin/env bash
 set -euo pipefail
+if [[ "\${1:-}" == "--dir" ]]; then
+	shift 2
+fi
+if [[ "\${1:-}" == "exec" && "\${2:-}" == "diagram" ]]; then
+	shift 2
+fi
+if [[ "\${1:-}" == "--version" ]]; then
+	echo "diagram 0.0.0-test"
+	exit 0
+fi
 out_dir=""
 while [[ $# -gt 0 ]]; do
 	case "$1" in
@@ -295,6 +345,16 @@ JSON
 			join(binDir, "pnpm"),
 			`#!/usr/bin/env bash
 set -euo pipefail
+if [[ "\${1:-}" == "--dir" ]]; then
+	shift 2
+fi
+if [[ "\${1:-}" == "exec" && "\${2:-}" == "diagram" ]]; then
+	shift 2
+fi
+if [[ "\${1:-}" == "--version" ]]; then
+	echo "diagram 0.0.0-test"
+	exit 0
+fi
 out_dir=""
 while [[ $# -gt 0 ]]; do
 	case "$1" in
