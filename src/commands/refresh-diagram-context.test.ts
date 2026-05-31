@@ -72,6 +72,13 @@ exit 0
 		join(binDir, "pnpm"),
 		`#!/usr/bin/env bash
 set -euo pipefail
+if [[ "\${1:-}" == "exec" && "\${2:-}" == "diagram" ]]; then
+	shift 2
+fi
+if [[ "\${1:-}" == "--version" ]]; then
+	echo "diagram 0.0.0-test"
+	exit 0
+fi
 out_dir=""
 while [[ $# -gt 0 ]]; do
 	case "$1" in
@@ -248,6 +255,13 @@ describe("refresh-diagram-context.sh", () => {
 			join(binDir, "pnpm"),
 			`#!/usr/bin/env bash
 set -euo pipefail
+if [[ "\${1:-}" == "exec" && "\${2:-}" == "diagram" ]]; then
+	shift 2
+fi
+if [[ "\${1:-}" == "--version" ]]; then
+	echo "diagram 0.0.0-test"
+	exit 0
+fi
 out_dir=""
 while [[ $# -gt 0 ]]; do
 	case "$1" in
@@ -295,6 +309,13 @@ JSON
 			join(binDir, "pnpm"),
 			`#!/usr/bin/env bash
 set -euo pipefail
+if [[ "\${1:-}" == "exec" && "\${2:-}" == "diagram" ]]; then
+	shift 2
+fi
+if [[ "\${1:-}" == "--version" ]]; then
+	echo "diagram 0.0.0-test"
+	exit 0
+fi
 out_dir=""
 while [[ $# -gt 0 ]]; do
 	case "$1" in

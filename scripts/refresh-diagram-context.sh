@@ -67,7 +67,7 @@ if [[ "$FORCE" -ne 1 && -f "$META_FILE" ]]; then
 	fi
 fi
 
-if ! command -v diagram >/dev/null 2>&1; then
+if ! pnpm exec diagram --version >/dev/null 2>&1; then
 	log "error: diagram CLI is not available"
 	exit 1
 fi
@@ -102,7 +102,7 @@ if [[ "$QUIET" -eq 1 ]]; then
 		exit "$status"
 	fi
 else
-	if ! command -v diagram >/dev/null 2>&1; then
+	if ! pnpm exec diagram --version >/dev/null 2>&1; then
 		log "error: diagram CLI is not available"
 		exit 1
 	fi

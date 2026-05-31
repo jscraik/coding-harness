@@ -178,10 +178,7 @@ export function runHarnessNext(
 	}
 
 	let worktreeState: ReturnType<typeof inspectWorktreeState> | undefined;
-	if (
-		options.files === undefined &&
-		options.inspectChangedFiles === undefined
-	) {
+	if (options.inspectChangedFiles === undefined) {
 		try {
 			worktreeState = inspectWorktreeState(repoRoot);
 		} catch {

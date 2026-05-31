@@ -162,6 +162,122 @@
 				"requiresFilesystemExistence": { "type": "boolean" }
 			}
 		},
+		"hookFileRef": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"refId",
+				"refKind",
+				"ref",
+				"hashAlgorithm",
+				"sha256",
+				"requiredForReplay",
+				"requiresFilesystemExistence"
+			],
+			"properties": {
+				"refId": { "$ref": "#/$defs/pointer" },
+				"refKind": { "const": "hook_file" },
+				"ref": { "$ref": "#/$defs/repoRef" },
+				"hashAlgorithm": { "const": "sha256" },
+				"sha256": { "$ref": "#/$defs/sha256" },
+				"requiredForReplay": { "type": "boolean" },
+				"requiresFilesystemExistence": { "type": "boolean" }
+			}
+		},
+		"hookInputRef": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"refId",
+				"refKind",
+				"ref",
+				"hashAlgorithm",
+				"sha256",
+				"requiredForReplay",
+				"requiresFilesystemExistence"
+			],
+			"properties": {
+				"refId": { "$ref": "#/$defs/pointer" },
+				"refKind": {
+					"type": "string",
+					"enum": ["hook_input", "repo_file", "produced_artifact"]
+				},
+				"ref": { "$ref": "#/$defs/repoRef" },
+				"hashAlgorithm": { "const": "sha256" },
+				"sha256": { "$ref": "#/$defs/sha256" },
+				"requiredForReplay": { "type": "boolean" },
+				"requiresFilesystemExistence": { "type": "boolean" }
+			}
+		},
+		"hookOutputRef": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"refId",
+				"refKind",
+				"ref",
+				"hashAlgorithm",
+				"sha256",
+				"requiredForReplay",
+				"requiresFilesystemExistence"
+			],
+			"properties": {
+				"refId": { "$ref": "#/$defs/pointer" },
+				"refKind": {
+					"type": "string",
+					"enum": ["hook_output", "repo_file", "produced_artifact"]
+				},
+				"ref": { "$ref": "#/$defs/repoRef" },
+				"hashAlgorithm": { "const": "sha256" },
+				"sha256": { "$ref": "#/$defs/sha256" },
+				"requiredForReplay": { "type": "boolean" },
+				"requiresFilesystemExistence": { "type": "boolean" }
+			}
+		},
+		"producedArtifactRef": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"refId",
+				"refKind",
+				"ref",
+				"hashAlgorithm",
+				"sha256",
+				"requiredForReplay",
+				"requiresFilesystemExistence"
+			],
+			"properties": {
+				"refId": { "$ref": "#/$defs/pointer" },
+				"refKind": { "const": "produced_artifact" },
+				"ref": { "$ref": "#/$defs/repoRef" },
+				"hashAlgorithm": { "const": "sha256" },
+				"sha256": { "$ref": "#/$defs/sha256" },
+				"requiredForReplay": { "type": "boolean" },
+				"requiresFilesystemExistence": { "type": "boolean" }
+			}
+		},
+		"resolvedCommandRef": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"refId",
+				"refKind",
+				"ref",
+				"hashAlgorithm",
+				"sha256",
+				"requiredForReplay",
+				"requiresFilesystemExistence"
+			],
+			"properties": {
+				"refId": { "$ref": "#/$defs/pointer" },
+				"refKind": { "const": "resolved_command" },
+				"ref": { "$ref": "#/$defs/repoRef" },
+				"hashAlgorithm": { "const": "sha256" },
+				"sha256": { "$ref": "#/$defs/sha256" },
+				"requiredForReplay": { "type": "boolean" },
+				"requiresFilesystemExistence": { "type": "boolean" }
+			}
+		},
 		"replaySeed": {
 			"type": "object",
 			"additionalProperties": false,
@@ -224,21 +340,21 @@
 					"anyOf": [{ "$ref": "#/$defs/pointer" }, { "type": "null" }]
 				},
 				"checkedAt": { "type": "string", "format": "date-time" },
-				"hookRef": { "$ref": "#/$defs/ref" },
-				"inputRef": { "$ref": "#/$defs/ref" },
-				"outputRef": { "$ref": "#/$defs/ref" },
+				"hookRef": { "$ref": "#/$defs/hookFileRef" },
+				"inputRef": { "$ref": "#/$defs/hookInputRef" },
+				"outputRef": { "$ref": "#/$defs/hookOutputRef" },
 				"producedArtifactRefs": {
 					"type": "array",
 					"minItems": 1,
-					"items": { "$ref": "#/$defs/ref" }
+					"items": { "$ref": "#/$defs/producedArtifactRef" }
 				},
 				"hookExecutionIdentity": {
 					"type": "object",
 					"additionalProperties": false,
 					"required": ["hookFileRef", "resolvedCommandRef", "runCorrelationId"],
 					"properties": {
-						"hookFileRef": { "$ref": "#/$defs/ref" },
-						"resolvedCommandRef": { "$ref": "#/$defs/ref" },
+						"hookFileRef": { "$ref": "#/$defs/hookFileRef" },
+						"resolvedCommandRef": { "$ref": "#/$defs/resolvedCommandRef" },
 						"runCorrelationId": {
 							"anyOf": [{ "$ref": "#/$defs/pointer" }, { "type": "null" }]
 						}
