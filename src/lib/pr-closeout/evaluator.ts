@@ -94,6 +94,15 @@ function buildPrCloseoutReportValue(
 		reportStatus: decision.status,
 		nextAction: decision.nextAction,
 	});
+	const snapshot = buildPrCloseoutSnapshot({
+		generatedAt,
+		pr: pr.number,
+		url: pr.url ?? null,
+		status: decision.status,
+		nextAction: decision.nextAction,
+		claims,
+		blockers,
+	});
 	return {
 		schemaVersion: PR_CLOSEOUT_SCHEMA_VERSION,
 		generatedAt,

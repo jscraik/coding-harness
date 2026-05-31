@@ -19,6 +19,10 @@
 | Rule markdown grammar | `rules.ts` |
 | Project Brain validation | `brain-validator.ts`, `lint-*.ts` |
 
+Git environment handling for Project Brain preflight must use the shared
+`sanitizeGitEnvironment` helper instead of local `GIT_*` deletion so packaged
+and source-checkout validation follow the same trust-boundary rule.
+
 Presenter logic currently lives inside each command module. If a command grows
 large enough to extract a presenter, keep the presenter beside the command and
 add a command-level test proving the CLI path uses it.

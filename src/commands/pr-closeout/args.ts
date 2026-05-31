@@ -78,7 +78,11 @@ function parseReleaseReadinessImpact(
 	return undefined;
 }
 
-type FlagParseResult = "handled" | "unknown" | { exitCode: number };
+type FlagParseResult =
+	| "handled"
+	| "handledWithoutArg"
+	| "unknown"
+	| { exitCode: number };
 
 function applyStringFlag(
 	args: readonly string[],
