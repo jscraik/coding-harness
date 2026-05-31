@@ -97,3 +97,9 @@ Run:
 \`\`\`bash
 node --import tsx src/cli.ts feedback-loop-audit --json
 \`\`\`
+
+Expected result: exit code 0 with \`status: "pass"\` after the feedback-loop
+index exists, matches \`feedback-loop-index/v1\`, and all loop, gap, and
+recommendation closure checks pass. Treat a non-zero exit or \`status: "fail"\`
+as a lifecycle blocker; fix the reported finding code before using the audit as
+closeout evidence.

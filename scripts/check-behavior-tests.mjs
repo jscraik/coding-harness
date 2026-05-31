@@ -64,16 +64,28 @@ function referencesBehaviorTraceControl(source) {
 function traceBelongsToSuite(traceLine, suitePath, token) {
 	try {
 		const parsed = JSON.parse(traceLine);
+		const normalizedSuitePath = suitePath.replaceAll("\\", "/");
+		const normalizedStack =
+			typeof parsed.stack === "string"
+				? parsed.stack.replaceAll("\\", "/")
+				: "";
 		return (
 			typeof parsed.given === "string" &&
 			typeof parsed.should === "string" &&
 			parsed.token === token &&
-			typeof parsed.stack === "string" &&
-			parsed.stack.includes(suitePath)
+			normalizedStack.includes(normalizedSuitePath)
 		);
 	} catch {
 		return false;
 	}
+}
+
+function vitestExecutablePath() {
+	const candidates = [
+		join(repoRoot, "node_modules/.bin/vitest"),
+		join(repoRoot, "node_modules/.bin/vitest.cmd"),
+	];
+	return candidates.find((candidate) => existsSync(candidate)) ?? null;
 }
 
 function verifyBehaviorAssertionExecuted(entry, prefix) {
@@ -82,10 +94,11 @@ function verifyBehaviorAssertionExecuted(entry, prefix) {
 		fail(`${prefix} provingCommand must be exactly: ${expectedCommand}`);
 		return;
 	}
-	const vitestPath = join(repoRoot, "node_modules/.bin/vitest");
-	if (!existsSync(vitestPath)) {
+	const vitestPath = vitestExecutablePath();
+	if (!vitestPath) {
 		fail(
-			`${prefix} cannot find repo-local Vitest executable: node_modules/.bin/vitest`,
+			prefix +
+				" cannot find repo-local Vitest executable: node_modules/.bin/vitest or node_modules/.bin/vitest.cmd",
 		);
 		return;
 	}
@@ -96,6 +109,7 @@ function verifyBehaviorAssertionExecuted(entry, prefix) {
 		const result = spawnSync(vitestPath, ["run", entry.path], {
 			cwd: repoRoot,
 			encoding: "utf8",
+			shell: process.platform === "win32",
 			env: {
 				...process.env,
 				HARNESS_EXPECT_BEHAVIOR_TRACE_FILE: traceFile,

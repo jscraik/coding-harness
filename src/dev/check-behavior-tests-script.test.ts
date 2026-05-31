@@ -51,10 +51,12 @@ function writeFakeVitest(
 	suitePath: string,
 	mode: "trace" | "no-trace" = "trace",
 	path = "node_modules/.bin/vitest",
+	stackPath = suitePath,
 ) {
+	const executablePath = path.endsWith(".cmd") ? `${path}.mjs` : path;
 	writeFile(
 		root,
-		path,
+		executablePath,
 		[
 			"#!/usr/bin/env node",
 			"import { appendFileSync } from 'node:fs';",
@@ -63,13 +65,17 @@ function writeFakeVitest(
 				"') process.exit(2);",
 			`if (${JSON.stringify(mode)} === 'trace') appendFileSync(`,
 			"  process.env.HARNESS_EXPECT_BEHAVIOR_TRACE_FILE ?? '',",
-			"  JSON.stringify({ given: 'input', should: 'match', token: process.env.HARNESS_EXPECT_BEHAVIOR_TRACE_TOKEN, stack: 'at test (" +
-				suitePath +
-				":1:1)' }) + '\\n',",
+			"  JSON.stringify({ given: 'input', should: 'match', token: process.env.HARNESS_EXPECT_BEHAVIOR_TRACE_TOKEN, stack: " +
+				JSON.stringify(`at test (${stackPath}:1:1)`) +
+				" }) + '\\n',",
 			");",
 		].join("\n"),
 	);
+	if (path.endsWith(".cmd")) {
+		writeFile(root, path, ["#!/bin/sh", 'exec node "$0.mjs" "$@"'].join("\n"));
+	}
 	chmodSync(join(root, path), 0o755);
+	if (executablePath !== path) chmodSync(join(root, executablePath), 0o755);
 }
 
 function runScript(root: string) {
@@ -320,6 +326,69 @@ describe("check-behavior-tests.mjs", () => {
 				"	it('proves behavior', () => {",
 				"		expectBehavior({ given: 'input', should: 'match', actual: 1, expected: 1 });",
 				"	});",
+				"});",
+			].join("\n"),
+		);
+
+		const result = runScript(root);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain(
+			"verified registered evidence-bearing suites",
+		);
+	});
+
+	it("matches behavior traces with Windows-style stack paths", () => {
+		const root = createTempRoot();
+		writeManifest(root, "src/lib/example.test.ts");
+		writeFakeVitest(
+			root,
+			"src/lib/example.test.ts",
+			"trace",
+			"node_modules/.bin/vitest",
+			"src\\lib\\example.test.ts",
+		);
+		writeFile(
+			root,
+			"src/lib/example.test.ts",
+			[
+				"import { describe, it } from 'vitest';",
+				"import { expectBehavior } from './testing/expect-behavior.js';",
+				"describe('example', () => {",
+				"\tit('proves behavior', () => {",
+				"\t\texpectBehavior({ given: 'input', should: 'match', actual: 1, expected: 1 });",
+				"\t});",
+				"});",
+			].join("\n"),
+		);
+
+		const result = runScript(root);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain(
+			"verified registered evidence-bearing suites",
+		);
+	});
+
+	it("accepts a repo-local Windows Vitest command shim", () => {
+		const root = createTempRoot();
+		writeManifest(root, "src/lib/example.test.ts");
+		writeFakeVitest(
+			root,
+			"src/lib/example.test.ts",
+			"trace",
+			"node_modules/.bin/vitest.cmd",
+		);
+		writeFile(
+			root,
+			"src/lib/example.test.ts",
+			[
+				"import { describe, it } from 'vitest';",
+				"import { expectBehavior } from './testing/expect-behavior.js';",
+				"describe('example', () => {",
+				"\tit('proves behavior', () => {",
+				"\t\texpectBehavior({ given: 'input', should: 'match', actual: 1, expected: 1 });",
+				"\t});",
 				"});",
 			].join("\n"),
 		);

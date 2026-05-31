@@ -376,7 +376,7 @@ function/file size, self-affirming test assertions, and related tests through
 `pnpm run quality:docstrings`, `pnpm run quality:size`,
 `pnpm run quality:self-affirming`, `pnpm run quality:behavior-tests`,
 `pnpm run quality:git-env-sanitizer`, `pnpm run harness:audit-tracking`, and
-`pnpm run test:related`. Related tests must find and run a real Vitest related
+`pnpm run test:related`. Related tests must find and run a real Vitest-related
 path; the gate no longer passes silently when no test covers changed production
 source.
 

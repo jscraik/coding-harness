@@ -179,6 +179,53 @@ function laneNextAction(blocker: PrCloseoutBlocker | undefined): string {
 	return "Route to the named owner before closeout.";
 }
 
+function releaseReadinessStatus(
+	impact: NonNullable<PrCloseoutInput["releaseReadinessImpact"]>,
+): PrCloseoutClaimStatus {
+	if (impact === "none") return "not_applicable";
+	if (impact === "release_blocker") return "blocked";
+	return "unknown";
+}
+
+function releaseReadinessFreshness(
+	impact: NonNullable<PrCloseoutInput["releaseReadinessImpact"]>,
+): PrCloseoutEvidenceFreshness {
+	if (impact === "none") return "not_applicable";
+	if (impact === "unknown") return "unknown";
+	return "current";
+}
+
+function releaseReadinessEvidenceRef(
+	impact: NonNullable<PrCloseoutInput["releaseReadinessImpact"]>,
+): string | null {
+	return impact === "unknown" ? null : `input:releaseReadinessImpact:${impact}`;
+}
+
+function releaseReadinessBlockerClass(
+	impact: NonNullable<PrCloseoutInput["releaseReadinessImpact"]>,
+): PrCloseoutBlocker["classification"] | null {
+	return impact === "release_blocker" ? "needs_jamie_decision" : null;
+}
+
+function releaseReadinessOwner(
+	impact: NonNullable<PrCloseoutInput["releaseReadinessImpact"]>,
+): PrCloseoutLifecycleLane["owner"] {
+	return impact === "release_blocker" ? "operator" : "unknown";
+}
+
+function releaseReadinessNextAction(
+	impact: NonNullable<PrCloseoutInput["releaseReadinessImpact"]>,
+): string {
+	if (impact === "none") return "No release-readiness action required.";
+	if (impact === "governed_change") {
+		return "Attach release-readiness evidence before closeout.";
+	}
+	if (impact === "release_blocker") {
+		return "Resolve the release-readiness blocker before closeout.";
+	}
+	return "Classify release-readiness impact before closeout.";
+}
+
 function buildReviewArtifactSummary(
 	artifacts: readonly PrCloseoutReviewArtifactInput[],
 ): PrCloseoutReviewArtifactSummary {
@@ -196,12 +243,10 @@ function buildReviewArtifactSummary(
 	};
 }
 
-function lifecycleStatusFromReportStatus(
-	status: PrCloseoutStatus,
+function lifecycleStatusFromBlocker(
+	blocker: PrCloseoutBlocker,
 ): PrCloseoutClaimStatus {
-	if (status === "ready") return "pass";
-	if (status === "waiting" || status === "needs_jamie") return "blocked";
-	if (status === "fixable" || status === "cleanup_required") return "fail";
+	if (blocker.fixableByCodex) return "fail";
 	return "blocked";
 }
 
@@ -243,6 +288,18 @@ function staleEvidenceClasses(
 		.map((lane) => STALE_EVIDENCE_CLASS_BY_LANE[lane.lane]);
 }
 
+function laneRequiresHandoffEvidence(
+	lane: PrCloseoutLifecycleLane,
+	blockedLanes: ReadonlySet<PrCloseoutLifecycleLane["lane"]>,
+): boolean {
+	if (blockedLanes.has(lane.lane)) return true;
+	return (
+		lane.lane === "release_readiness" &&
+		lane.status !== "pass" &&
+		lane.status !== "not_applicable"
+	);
+}
+
 /** Build the cross-lane delivery lifecycle snapshot for pr-closeout reports. */
 export function buildLifecycleSnapshot(args: {
 	input: PrCloseoutInput;
@@ -254,19 +311,24 @@ export function buildLifecycleSnapshot(args: {
 	nextAction: PrCloseoutNextAction;
 }): PrCloseoutLifecycleSnapshot {
 	const blockers = [...args.blockers];
+	const releaseReadinessImpact = args.input.releaseReadinessImpact ?? "unknown";
 	const lanes = LANE_ORDER.map((lane): PrCloseoutLifecycleLane => {
 		const laneClaims = args.claims.filter(
 			(claim) => laneForClaim(claim.claim) === lane,
 		);
 		const blocker = laneBlocker(lane, blockers);
 		const initialStatus: PrCloseoutClaimStatus =
-			lane === "continuation" || lane === "release_readiness"
+			lane === "continuation"
 				? "not_applicable"
-				: "unknown";
+				: lane === "release_readiness"
+					? releaseReadinessStatus(releaseReadinessImpact)
+					: "unknown";
 		const initialFreshness: PrCloseoutEvidenceFreshness =
-			lane === "continuation" || lane === "release_readiness"
+			lane === "continuation"
 				? "not_applicable"
-				: "unknown";
+				: lane === "release_readiness"
+					? releaseReadinessFreshness(releaseReadinessImpact)
+					: "unknown";
 		const status = laneClaims.reduce<PrCloseoutClaimStatus>(
 			(current, claim) => worseStatus(current, claim.status),
 			initialStatus,
@@ -276,30 +338,44 @@ export function buildLifecycleSnapshot(args: {
 			initialFreshness,
 		);
 		const blockerStatus = blocker
-			? lifecycleStatusFromReportStatus(args.reportStatus)
+			? lifecycleStatusFromBlocker(blocker)
 			: status;
+		const releaseLaneWithoutBlocker = lane === "release_readiness" && !blocker;
 		return {
 			lane,
 			status: blockerStatus,
 			freshness: blocker ? worseFreshness(freshness, "current") : freshness,
 			sourceOfTruth: sourceOfTruthForLane(lane),
-			evidenceRef: blocker?.ref ?? laneEvidenceRef(lane, args.claims, blockers),
+			evidenceRef:
+				blocker?.ref ??
+				laneEvidenceRef(lane, args.claims, blockers) ??
+				(releaseLaneWithoutBlocker
+					? releaseReadinessEvidenceRef(releaseReadinessImpact)
+					: null),
 			headSha:
 				args.input.pullRequest.headSha ?? args.input.branch?.headSha ?? null,
-			blockerClass: blocker?.classification ?? null,
+			blockerClass:
+				blocker?.classification ??
+				(releaseLaneWithoutBlocker
+					? releaseReadinessBlockerClass(releaseReadinessImpact)
+					: null),
 			owner: blocker
 				? blocker.surface === "review_artifact"
 					? "reviewer"
 					: ownerForBlocker(blocker)
-				: "unknown",
-			nextAction: laneNextAction(blocker),
+				: releaseLaneWithoutBlocker
+					? releaseReadinessOwner(releaseReadinessImpact)
+					: "unknown",
+			nextAction: releaseLaneWithoutBlocker
+				? releaseReadinessNextAction(releaseReadinessImpact)
+				: laneNextAction(blocker),
 		};
 	});
 	const blockedLanes = new Set(
 		blockers.map((blocker) => laneForBlocker(blocker)),
 	);
 	const handoffRequiredEvidence = lanes
-		.filter((lane) => blockedLanes.has(lane.lane))
+		.filter((lane) => laneRequiresHandoffEvidence(lane, blockedLanes))
 		.map((lane) => ({
 			lane: lane.lane,
 			evidenceRef:
@@ -312,7 +388,7 @@ export function buildLifecycleSnapshot(args: {
 		generatedAt: args.generatedAt,
 		worktreeRole: args.input.branch?.worktreeRole ?? "unknown",
 		linearMutation: args.input.linearMutation ?? "unknown",
-		releaseReadinessImpact: args.input.releaseReadinessImpact ?? "unknown",
+		releaseReadinessImpact,
 		staleEvidenceClasses: staleEvidenceClasses(lanes),
 		handoffRequiredEvidence,
 		lanes,

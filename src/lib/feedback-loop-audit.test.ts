@@ -105,6 +105,69 @@ describe("buildFeedbackLoopAudit", () => {
 		);
 	});
 
+	it("fails without throwing when the feedback-loop index is malformed", () => {
+		const repoRoot = makeTempRepo();
+		const indexDir = join(repoRoot, ".harness", "feedback-loops");
+		mkdirSync(indexDir, { recursive: true });
+		writeFileSync(join(indexDir, "index.json"), "{not-json");
+
+		const report = buildFeedbackLoopAudit({ repoRoot });
+
+		expect(report.status).toBe("fail");
+		expect(report.findings).toContainEqual(
+			expect.objectContaining({
+				code: "feedback_loop_index_malformed",
+				status: "fail",
+			}),
+		);
+	});
+
+	it("fails when the feedback-loop index schema version is unsupported", () => {
+		const repoRoot = makeTempRepo();
+		writeIndex(repoRoot, { schemaVersion: "feedback-loop-index/v0" });
+
+		const report = buildFeedbackLoopAudit({ repoRoot });
+
+		expect(report.status).toBe("fail");
+		expect(report.findings).toContainEqual(
+			expect.objectContaining({
+				code: "feedback_loop_index_schema_version",
+				status: "fail",
+			}),
+		);
+	});
+
+	it("fails when a feedback-loop entry omits leverage", () => {
+		const repoRoot = makeTempRepo();
+		writeIndex(repoRoot, {
+			loops: [
+				{
+					rank: 1,
+					id: "loop-1",
+					name: "Loop 1",
+					owner: "owner",
+					sources: ["source"],
+					recipients: ["recipient"],
+					expectedDelay: "minutes",
+					failureClass: "failure",
+					action: "act",
+					closureState: "implemented",
+					evidenceRefs: ["evidence"],
+				},
+			],
+		});
+
+		const report = buildFeedbackLoopAudit({ repoRoot });
+
+		expect(report.status).toBe("fail");
+		expect(report.findings).toContainEqual(
+			expect.objectContaining({
+				code: "feedback_loop_entries_actionable",
+				status: "fail",
+			}),
+		);
+	});
+
 	it("fails when audit recommendations are not closed", () => {
 		const repoRoot = makeTempRepo();
 		writeIndex(repoRoot, {

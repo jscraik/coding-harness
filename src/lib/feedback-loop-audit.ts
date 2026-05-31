@@ -44,7 +44,7 @@ export type FeedbackLoopRecommendation = FeedbackLoopGap;
 
 /** Machine-readable feedback-loop index stored under .harness/feedback-loops. */
 export type FeedbackLoopIndex = {
-	schemaVersion: typeof FEEDBACK_LOOP_INDEX_SCHEMA_VERSION;
+	schemaVersion: string;
 	generatedAt: string;
 	sourceAudit: string;
 	status: FeedbackLoopClosureState;
@@ -165,7 +165,8 @@ function parseFeedbackLoopIndex(raw: string): FeedbackLoopIndex {
 	const index = isRecord(parsed) ? parsed : {};
 	const summary = isRecord(index.summary) ? index.summary : {};
 	return {
-		schemaVersion: FEEDBACK_LOOP_INDEX_SCHEMA_VERSION,
+		schemaVersion:
+			typeof index.schemaVersion === "string" ? index.schemaVersion : "",
 		generatedAt: typeof index.generatedAt === "string" ? index.generatedAt : "",
 		sourceAudit: typeof index.sourceAudit === "string" ? index.sourceAudit : "",
 		status: asClosureState(index.status),
@@ -206,6 +207,7 @@ function hasCompleteLoopShape(loop: FeedbackLoopEntry): boolean {
 		loop.rank > 0 &&
 		loop.id.length > 0 &&
 		loop.name.length > 0 &&
+		loop.leverage.length > 0 &&
 		loop.owner.length > 0 &&
 		loop.sources.length > 0 &&
 		loop.recipients.length > 0 &&
@@ -256,6 +258,20 @@ function buildAuditFindings(
 			code: "feedback_loop_index_present",
 			status: "pass",
 			message: "Feedback-loop index is present and readable.",
+			evidenceRefs: [indexPath],
+		},
+		{
+			code: "feedback_loop_index_schema_version",
+			status:
+				index.schemaVersion === FEEDBACK_LOOP_INDEX_SCHEMA_VERSION
+					? "pass"
+					: "fail",
+			message:
+				"Expected feedback-loop index schema " +
+				FEEDBACK_LOOP_INDEX_SCHEMA_VERSION +
+				"; found " +
+				(index.schemaVersion || "missing") +
+				".",
 			evidenceRefs: [indexPath],
 		},
 		{
@@ -340,7 +356,35 @@ export function buildFeedbackLoopAudit(
 		});
 	}
 
-	const index = parseFeedbackLoopIndex(readFileSync(indexPath, "utf8"));
+	let rawIndex: string;
+	try {
+		rawIndex = readFileSync(indexPath, "utf8");
+	} catch (error) {
+		return failedReport(repoRoot, indexPath, {
+			code: "feedback_loop_index_unreadable",
+			status: "fail",
+			message:
+				"Feedback-loop index cannot be read: " +
+				(error instanceof Error ? error.message : "unknown error") +
+				".",
+			evidenceRefs: [indexPath],
+		});
+	}
+
+	let index: FeedbackLoopIndex;
+	try {
+		index = parseFeedbackLoopIndex(rawIndex);
+	} catch (error) {
+		return failedReport(repoRoot, indexPath, {
+			code: "feedback_loop_index_malformed",
+			status: "fail",
+			message:
+				"Feedback-loop index is not valid JSON: " +
+				(error instanceof Error ? error.message : "unknown error") +
+				".",
+			evidenceRefs: [indexPath],
+		});
+	}
 	const implementedLoopCount = countImplemented(index.loops);
 	const implementedGapCount = countImplemented(index.crossLoopGaps);
 	const implementedRecommendationCount = countImplemented(

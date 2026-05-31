@@ -42,3 +42,9 @@ Run focused Project Brain tests after parser or CLI-output changes:
 ```bash
 pnpm vitest run src/lib/project-brain/rules.test.ts src/lib/project-brain/cli.test.ts
 ```
+
+Expected result: the command exits 0 and proves rule identifiers stay unique,
+durable destinations remain explicit, and Project Brain learning rules continue
+to reject incomplete governance records. On failure, treat the output as a
+Project Brain contract blocker and update either the rule fixture or the
+validator before relying on the rule set as goal evidence.

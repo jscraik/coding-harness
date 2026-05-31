@@ -465,6 +465,155 @@ describe("runPrCloseoutCLI", () => {
 		});
 	});
 
+	it("projects release blockers into the release-readiness lifecycle lane", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const inputPath = join(dir, "input.json");
+		writeFileSync(
+			inputPath,
+			JSON.stringify({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headSha: "abc123",
+					reviewDecision: "APPROVED",
+					body: "Refs JSC-327\n",
+				},
+				branch: {
+					clean: true,
+					headSha: "abc123",
+					worktreeRole: "implementation",
+				},
+				checks: [{ name: "pr-pipeline", state: "SUCCESS", headSha: "abc123" }],
+				reviewThreads: { unresolved: 0 },
+				traceability: {
+					sessionIds: ["codex-session:2026-05-16"],
+					traceIds: ["circleci:workflow-123"],
+					aiSessionTraceability:
+						"JSC-327 -> PR #258 -> Codex session -> validation",
+				},
+				rollback: { notApplicable: true, evidenceRef: "pr-body:rollback" },
+				closeoutGates: PASSING_PHASE_EXIT,
+				assurance: PASSING_ASSURANCE,
+				runtimeEvidence: PASSING_RUNTIME_EVIDENCE,
+				linearMutation: "available",
+				releaseReadinessImpact: "release_blocker",
+			}),
+		);
+
+		const result = await capture(["--json", "--input", inputPath]);
+		const report = JSON.parse(result.output) as {
+			lifecycleSnapshot: {
+				handoffRequiredEvidence: Array<{
+					lane: string;
+					evidenceRef: string;
+				}>;
+				lanes: Array<{
+					lane: string;
+					status: string;
+					freshness: string;
+					evidenceRef: string | null;
+					blockerClass: string | null;
+					nextAction: string;
+				}>;
+			};
+		};
+		const releaseReadinessLane = report.lifecycleSnapshot.lanes.find(
+			(lane) => lane.lane === "release_readiness",
+		);
+
+		expect(result.exitCode).toBe(0);
+		expect(releaseReadinessLane).toMatchObject({
+			status: "blocked",
+			freshness: "current",
+			evidenceRef: "input:releaseReadinessImpact:release_blocker",
+			blockerClass: "needs_jamie_decision",
+			nextAction: "Resolve the release-readiness blocker before closeout.",
+		});
+		expect(report.lifecycleSnapshot.handoffRequiredEvidence).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					lane: "release_readiness",
+					evidenceRef: "input:releaseReadinessImpact:release_blocker",
+				}),
+			]),
+		);
+	});
+
+	it("keeps fixable lane blockers separate from Jamie-decision blockers", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const inputPath = join(dir, "input.json");
+		writeFileSync(
+			inputPath,
+			JSON.stringify({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: true,
+					mergeStateStatus: "CLEAN",
+					headSha: "abc123",
+					reviewDecision: "APPROVED",
+					body: "Refs JSC-327\n",
+				},
+				branch: {
+					clean: true,
+					headSha: "abc123",
+					worktreeRole: "implementation",
+				},
+				checks: [
+					{
+						name: "pr-pipeline",
+						state: "FAILURE",
+						headSha: "abc123",
+					},
+				],
+				reviewThreads: { unresolved: 0 },
+				traceability: {
+					sessionIds: ["codex-session:2026-05-16"],
+					traceIds: ["circleci:workflow-123"],
+					aiSessionTraceability:
+						"JSC-327 -> PR #258 -> Codex session -> validation",
+				},
+				rollback: { notApplicable: true, evidenceRef: "pr-body:rollback" },
+				closeoutGates: PASSING_PHASE_EXIT,
+				assurance: PASSING_ASSURANCE,
+				runtimeEvidence: PASSING_RUNTIME_EVIDENCE,
+				linearMutation: "available",
+				releaseReadinessImpact: "release_blocker",
+			}),
+		);
+
+		const result = await capture(["--json", "--input", inputPath]);
+		const report = JSON.parse(result.output) as {
+			status: string;
+			lifecycleSnapshot: {
+				lanes: Array<{
+					lane: string;
+					status: string;
+					blockerClass: string | null;
+				}>;
+			};
+		};
+		const ciLane = report.lifecycleSnapshot.lanes.find(
+			(lane) => lane.lane === "ci_state",
+		);
+		const releaseReadinessLane = report.lifecycleSnapshot.lanes.find(
+			(lane) => lane.lane === "release_readiness",
+		);
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("needs_jamie");
+		expect(ciLane).toMatchObject({
+			status: "fail",
+			blockerClass: "introduced",
+		});
+		expect(releaseReadinessLane).toMatchObject({
+			status: "blocked",
+			blockerClass: "needs_jamie_decision",
+		});
+	});
+
 	it("blocks closeout when an expected review artifact is missing", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const inputPath = join(dir, "input.json");
@@ -2351,6 +2500,82 @@ Refs JSC-328
 
 		expect(result.exitCode).toBe(0);
 		expect(report.status).toBe("ready");
+	});
+
+	it("passes env-file variables into live git branch probes", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const envFile = join(dir, ".env");
+		writeFileSync(envFile, "PR_CLOSEOUT_TEST_TOKEN=loaded\n");
+		const gitCommandsSeen: string[] = [];
+		const runner = (
+			command: string,
+			args: readonly string[],
+			options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				gitCommandsSeen.push(args.join(" "));
+				expect(options.env?.PR_CLOSEOUT_TEST_TOKEN).toBe("loaded");
+				if (args[0] === "status") return "";
+				if (args[0] === "rev-parse") return "abc123";
+				if (args[0] === "rev-list") return "0\t0";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--env-file",
+				envFile,
+			],
+			runner,
+		);
+
+		expect(result.exitCode).toBe(0);
+		expect(gitCommandsSeen).toEqual(
+			expect.arrayContaining([
+				"status --porcelain",
+				"rev-parse HEAD",
+				"rev-list --left-right --count @{upstream}...HEAD",
+			]),
+		);
 	});
 
 	it("emits blocker evidence when live PR metadata cannot be read", async () => {

@@ -129,6 +129,7 @@ export const EXPECTED_ARTIFACTS_BY_NAME: Partial<Record<string, string[]>> = {
 	"review-context": ["artifacts/review-context/pr-context.json"],
 	"pattern-scope": ["artifacts/pattern-scope/pattern-scope.json"],
 	"pr-closeout": ["artifacts/pr-closeout/pr-closeout.json"],
+	"feedback-loop-audit": [".harness/feedback-loops/index.json"],
 };
 
 export const RETRYABILITY_BY_NAME: Partial<

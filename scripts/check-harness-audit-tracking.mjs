@@ -15,7 +15,8 @@ const requirements = [
 	{
 		name: ".harness/audits control-plane map",
 		ok:
-			readme.includes(".harness/audits/YYYY-MM-DD-<type>-audit.md") &&
+			(readme.includes(".harness/audits/YYYY-MM-DD-...-audit.md") ||
+				readme.includes(".harness/audits/YYYY-MM-DD-<type>-audit.md")) &&
 			readme.includes(".harness/research/audits/"),
 	},
 	{

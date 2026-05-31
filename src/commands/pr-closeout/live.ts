@@ -88,12 +88,14 @@ function inspectCommand(
 
 function inspectGitClean(
 	repoRoot: string,
+	env: NodeJS.ProcessEnv,
 	runner: CommandRunner,
 ): boolean | null {
 	try {
 		return (
 			runner("git", ["status", "--porcelain"], {
 				cwd: repoRoot,
+				env,
 			}).length === 0
 		);
 	} catch {
@@ -103,15 +105,17 @@ function inspectGitClean(
 
 function inspectGitBranch(
 	repoRoot: string,
+	env: NodeJS.ProcessEnv,
 	runner: CommandRunner,
 ): PrCloseoutBranchInput {
 	const branch: PrCloseoutBranchInput = {
-		clean: inspectGitClean(repoRoot, runner),
+		clean: inspectGitClean(repoRoot, env, runner),
 		worktreeRole: "unknown",
 	};
 	try {
 		const headSha = runner("git", ["rev-parse", "HEAD"], {
 			cwd: repoRoot,
+			env,
 		}).trim();
 		if (headSha.length > 0) branch.headSha = headSha;
 	} catch {
@@ -121,7 +125,7 @@ function inspectGitBranch(
 		const drift = runner(
 			"git",
 			["rev-list", "--left-right", "--count", "@{upstream}...HEAD"],
-			{ cwd: repoRoot },
+			{ cwd: repoRoot, env },
 		)
 			.trim()
 			.split(/\s+/u)
@@ -369,7 +373,7 @@ export function buildLivePrCloseoutInput(
 	const rollback = rollbackFromBody(pullRequest.body);
 	return {
 		pullRequest,
-		branch: inspectGitBranch(options.repoRoot, runner),
+		branch: inspectGitBranch(options.repoRoot, envLoad.env, runner),
 		checks,
 		reviewThreads,
 		traceability: traceabilityFromBody(pullRequest.body),
