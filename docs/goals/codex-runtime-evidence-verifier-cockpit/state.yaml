@@ -66,8 +66,8 @@ completion_contract:
   blocked_stop_condition: "Stop if the board is invalid, activation is absent for Worker work, required intent review is missing, validation cannot run, reviewer artifacts are missing after retry, PR or tracker truth is stale, dirty work overlaps required files, or continuing would contaminate a PR under triage."
 current_slice_gate:
   lifecycle_unit: "PU-041-hidden-dependency-guard-hardening"
-  status: "pr322_package_runtime_inputs_pushed_review_threads_resolved_remote_checks_pending"
-  reason: "R156 records reviewer-driven local validation for the hidden-dependency guard. R157 through R173 record earlier PR #322 remediation and post-push reconciliation. R174 records local reviewed remediation for PR #322 review threads PRRT_kwDORWZJCc6F7cu8 and PRRT_kwDORWZJCc6F7ezU on implementation commit 36458dd22f1bd60eec09f724c9968adc523ceb39: package quality-script runtime inputs are included without publishing src/dev or unregistered source tests, and the regression inspects the packed tarball plus packed package.json. R175 records the pushed PR #322 head 219854d4580fe19b13d5e1d03760f1506c7713c6, origin/main freshness at ddd2b966663114c385811fe01ae43ef98c0b3818, resolved review threads PRRT_kwDORWZJCc6F7cu8 and PRRT_kwDORWZJCc6F7ezU, and a fresh unresolved-thread query returning []. Remote checks are not green yet: CodeRabbit, pr-pipeline, ci/circleci: check, and ci/circleci: orb-pinning were pending at the R175 refresh. CodeRabbit completion, reviewDecision approval, Linear full-lifecycle completion, Judge/PM readiness, runtime producer emission, delivery-truth consumption, merge readiness, and final goal completion remain unclaimed."
+  status: "pr322_and_pr321_merged_pr323_clean_route_truth_reanchored"
+  reason: "R156 records reviewer-driven local validation for the hidden-dependency guard. R157 through R175 record earlier PR #322 remediation and post-push reconciliation. R176 records current-main route truth after live refresh: PR #322 is merged at 2026-05-31T10:35:50Z with merge commit 3548095523e1024b91027f80fd7985836b00081f and all captured GitHub check-rollup contexts successful; PR #321 is merged at 2026-05-31T11:09:07Z with merge commit 4a6d75a4d03246ce18f5e74225c7804a480e59fe and all captured GitHub check-rollup contexts successful; PR #323 is open, non-draft, mergeable, clean, attached to Linear JSC-363, all captured GitHub check-rollup contexts successful, and review threads are resolved. Direct CircleCI API truth remains blocked because ~/.codex/.env is present but empty, so this board treats GitHub check rollups as remote-check evidence and does not claim CircleCI API log inspection. Linear JSC-363 was refreshed through the Linear connector and remains In Progress with PR #323 attached. Merge action, auto-merge, Judge/PM readiness, runtime producer emission, delivery-truth consumption, and final goal completion remain unclaimed."
   completed_before_local_validation_claim:
     - "Created and reviewed the PU-038 intent artifact before implementation."
     - "Added src/lib/intermediary-receipts as the deep module for source-kind policy, claim-family coverage, source summaries, next-action classification, and validation reporting."
@@ -77,14 +77,13 @@ current_slice_gate:
     - "Updated ARCHITECTURE.md, AGENTS.md, docs/agents/00-architecture-bootstrap.md, docs/agents/07b-agent-governance.md, and AI/context/diagram-context.md for the new deep module placement."
     - "Ran improve-codebase-architecture, simplify, unslopify, HE code review, testing, adversarial-reviewer, agent-native-reviewer, and best-practices-researcher coverage and recorded artifacts."
   next_required_handoff_steps:
-    - "Run R175 goal-board validators, commit and push the R175 reconciliation, then refresh PR #322 pending checks and CodeRabbit on the pushed head."
-    - "If new CodeRabbit findings appear, fix only validated PR #322 findings on this branch and record a fresh receipt for the new head."
+    - "Commit and push R176 as a current-main route-truth reconciliation so future goal-board checks no longer fail on the stale R175 head."
+    - "Keep PR #323 as the active outstanding PR lane until it is merged or an owner records a decision to leave the cleanup PR open."
+    - "If PR #323 receives new CodeRabbit, Codex, or CI findings, fix only validated current-head issues in an isolated PR worktree and record a fresh receipt."
     - "Before the next implementation slice, choose the next unproven requirement from the goal, plan, receipts, adopted audits, and Project Brain surfaces; create and review intent before implementation."
     - "Refresh live Linear JSC-363 before tracker-alignment, full-lifecycle closeout, or Judge/PM-ready claims; tracker truth remains separate from runtime, CI, review, and implementation proof."
     - "Keep local validation, remote checks, reviewDecision, historical stacked-PR metadata, Linear scope alignment, merge readiness, Judge/PM readiness, and goal completion as separate truth lanes until verified immediately before any closeout claim."
   blocked_done_claims:
-    - "remote-checks-green"
-    - "CodeRabbit-complete"
     - "merge-ready"
     - "Judge/PM-ready"
     - "goal completion"
