@@ -322,7 +322,7 @@ export function buildLifecycleSnapshot(args: {
 	nextAction: PrCloseoutNextAction;
 }): PrCloseoutLifecycleSnapshot {
 	const blockers = [...args.blockers];
-	const releaseReadinessImpact = args.input.releaseReadinessImpact ?? "unknown";
+	const releaseReadinessImpact = args.input.releaseReadinessImpact ?? "none";
 	const lanes = LANE_ORDER.map((lane): PrCloseoutLifecycleLane => {
 		const laneClaims = args.claims.filter(
 			(claim) => laneForClaim(claim.claim) === lane,

@@ -78,12 +78,17 @@ function writeFakeVitest(
 	if (executablePath !== path) chmodSync(join(root, executablePath), 0o755);
 }
 
-function runScript(root: string) {
-	return spawnSync(process.execPath, [SCRIPT_PATH], {
+function runScript(
+	root: string,
+	nodeArgs: readonly string[] = [],
+	extraEnv: NodeJS.ProcessEnv = {},
+) {
+	return spawnSync(process.execPath, [...nodeArgs, SCRIPT_PATH], {
 		cwd: root,
 		encoding: "utf8",
 		env: {
 			...process.env,
+			...extraEnv,
 			PATH: `${join(root, "bin")}:${process.env.PATH ?? ""}`,
 		},
 	});
@@ -332,7 +337,7 @@ describe("check-behavior-tests.mjs", () => {
 
 		const result = runScript(root);
 
-		expect(result.status).toBe(0);
+		expect(result.status, result.stderr || result.stdout).toBe(0);
 		expect(result.stdout).toContain(
 			"verified registered evidence-bearing suites",
 		);
@@ -364,7 +369,7 @@ describe("check-behavior-tests.mjs", () => {
 
 		const result = runScript(root);
 
-		expect(result.status).toBe(0);
+		expect(result.status, result.stderr || result.stdout).toBe(0);
 		expect(result.stdout).toContain(
 			"verified registered evidence-bearing suites",
 		);
@@ -396,6 +401,45 @@ describe("check-behavior-tests.mjs", () => {
 		const result = runScript(root);
 
 		expect(result.status).toBe(0);
+		expect(result.stdout).toContain(
+			"verified registered evidence-bearing suites",
+		);
+	});
+
+	it("prefers the Windows Vitest command shim when running on Windows", () => {
+		const root = createTempRoot();
+		writeManifest(root, "src/lib/example.test.ts");
+		writeFakeVitest(
+			root,
+			"src/lib/example.test.ts",
+			"no-trace",
+			"node_modules/.bin/vitest",
+		);
+		writeFakeVitest(
+			root,
+			"src/lib/example.test.ts",
+			"trace",
+			"node_modules/.bin/vitest.cmd",
+		);
+		writeFile(
+			root,
+			"src/lib/example.test.ts",
+			[
+				"import { describe, it } from 'vitest';",
+				"import { expectBehavior } from './testing/expect-behavior.js';",
+				"describe('example', () => {",
+				"\tit('proves behavior', () => {",
+				"\t\texpectBehavior({ given: 'input', should: 'match', actual: 1, expected: 1 });",
+				"\t});",
+				"});",
+			].join("\n"),
+		);
+
+		const result = runScript(root, [], {
+			HARNESS_BEHAVIOR_TEST_PLATFORM: "win32",
+		});
+
+		expect(result.status, result.stderr || result.stdout).toBe(0);
 		expect(result.stdout).toContain(
 			"verified registered evidence-bearing suites",
 		);

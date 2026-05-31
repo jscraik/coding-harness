@@ -382,6 +382,6 @@ export function buildLivePrCloseoutInput(
 		...(rollback ? { rollback } : {}),
 		tools,
 		linearMutation: linearMutationAvailability(envLoad.env),
-		releaseReadinessImpact: "unknown",
+		releaseReadinessImpact: options.releaseReadinessImpact ?? "unknown",
 	};
 }

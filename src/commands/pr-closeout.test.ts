@@ -429,7 +429,6 @@ describe("runPrCloseoutCLI", () => {
 					},
 				],
 				linearMutation: "available",
-				releaseReadinessImpact: "none",
 			}),
 		);
 
@@ -1144,6 +1143,21 @@ describe("runPrCloseoutCLI", () => {
 		expect(result.error).toContain("--pr requires a positive integer");
 	});
 
+	it("rejects invalid live release-readiness classifications", async () => {
+		const result = await capture([
+			"--json",
+			"--pr",
+			"258",
+			"--release-readiness-impact",
+			"maybe",
+		]);
+
+		expect(result.exitCode).toBe(2);
+		expect(result.error).toContain(
+			"--release-readiness-impact requires one of none, governed_change, release_blocker, unknown",
+		);
+	});
+
 	it("collects live GitHub, CircleCI, CodeRabbit, and Snyk tool evidence", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const closeoutGatesPath = writeCloseoutGates(dir);
@@ -1207,6 +1221,8 @@ describe("runPrCloseoutCLI", () => {
 				closeoutGatesPath,
 				"--runtime-evidence",
 				runtimeEvidencePath,
+				"--release-readiness-impact",
+				"none",
 			],
 			runner,
 		);
@@ -1294,7 +1310,17 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
 			runner,
 		);
 
@@ -1359,6 +1385,8 @@ describe("runPrCloseoutCLI", () => {
 				"258",
 				"--phase-exit",
 				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
 			],
 			runner,
 		);
@@ -1406,7 +1434,17 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
 			runner,
 		);
 		const report = JSON.parse(result.output);
@@ -1481,7 +1519,17 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
 			runner,
 		);
 		const report = JSON.parse(result.output) as {
@@ -1545,7 +1593,17 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
 			runner,
 		);
 
@@ -1617,7 +1675,17 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
 			runner,
 		);
 		const report = JSON.parse(result.output) as {
@@ -1694,7 +1762,17 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
 			runner,
 		);
 		const report = JSON.parse(result.output) as { status: string };
@@ -1765,13 +1843,111 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
 			runner,
 		);
 		const report = JSON.parse(result.output) as { status: string };
 
 		expect(result.exitCode).toBe(0);
 		expect(report.status).toBe("ready");
+	});
+
+	it("blocks live closeout until release readiness is classified", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				if (args[0] === "status") return "";
+				if (args[0] === "rev-parse") return "abc123";
+				if (args[0] === "rev-list") return "0\t0";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"unknown",
+			],
+			runner,
+		);
+		const report = JSON.parse(result.output) as {
+			status: string;
+			mergeable: boolean;
+			blockers: Array<{
+				surface: string;
+				classification: string;
+				ref?: string;
+			}>;
+			lifecycleSnapshot: {
+				releaseReadinessImpact: string;
+			};
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("blocked");
+		expect(report.mergeable).toBe(false);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "release_readiness",
+					classification: "unknown",
+					ref: "input:releaseReadinessImpact:unknown",
+				}),
+			]),
+		);
+		expect(report.lifecycleSnapshot.releaseReadinessImpact).toBe("unknown");
 	});
 
 	it("attaches current-head proof from classic commit statuses", async () => {
@@ -1838,7 +2014,17 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
 			runner,
 		);
 		const report = JSON.parse(result.output) as { status: string };
@@ -1911,7 +2097,17 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
 			runner,
 		);
 		const report = JSON.parse(result.output) as { status: string };
@@ -1982,7 +2178,17 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
 			runner,
 		);
 		const report = JSON.parse(result.output) as { status: string };
@@ -2054,7 +2260,17 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
 			runner,
 		);
 		const report = JSON.parse(result.output) as { status: string };
@@ -2121,7 +2337,17 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
 			runner,
 		);
 		const report = JSON.parse(result.output) as {
@@ -2208,7 +2434,17 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
 			runner,
 		);
 		const report = JSON.parse(result.output) as { status: string };
@@ -2443,7 +2679,17 @@ Refs JSC-328
 		};
 
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
 			runner,
 		);
 		const report = JSON.parse(result.output) as {
@@ -2522,7 +2768,17 @@ Refs JSC-328
 		};
 
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
 			runner,
 		);
 		const report = JSON.parse(result.output) as {
@@ -2595,7 +2851,17 @@ Refs JSC-328
 		};
 
 		const result = await capture(
-			["--json", "--repo", dir, "--pr", "258", "--gates", closeoutGatesPath],
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
 			runner,
 		);
 		const report = JSON.parse(result.output) as { status: string };

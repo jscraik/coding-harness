@@ -1,5 +1,13 @@
 import { resolve } from "node:path";
 import { cwd } from "node:process";
+import type { PrCloseoutInput } from "../../lib/pr-closeout.js";
+
+type PrCloseoutReleaseReadinessImpact = NonNullable<
+	PrCloseoutInput["releaseReadinessImpact"]
+>;
+
+const RELEASE_READINESS_IMPACTS: ReadonlySet<PrCloseoutReleaseReadinessImpact> =
+	new Set(["none", "governed_change", "release_blocker", "unknown"]);
 
 /** Parsed CLI options accepted by the PR closeout command facade. */
 export interface PrCloseoutCLIOptions {
@@ -12,6 +20,7 @@ export interface PrCloseoutCLIOptions {
 	phaseExitPath?: string;
 	assurancePath?: string;
 	runtimeEvidencePath?: string;
+	releaseReadinessImpact?: PrCloseoutReleaseReadinessImpact;
 }
 
 /** Result of parsing PR closeout CLI arguments, including early exits. */
@@ -21,7 +30,7 @@ export type PrCloseoutParseResult =
 
 function printUsage(): void {
 	console.info(
-		"Usage: harness pr-closeout [--json] [--repo <path>] [--input <path> | --pr <number>] [--gates <path>] [--phase-exit <path>] [--assurance <path>] [--runtime-evidence <path>] [--env-file <path>]",
+		"Usage: harness pr-closeout [--json] [--repo <path>] [--input <path> | --pr <number>] [--gates <path>] [--phase-exit <path>] [--assurance <path>] [--runtime-evidence <path>] [--release-readiness-impact <none|governed_change|release_blocker|unknown>] [--env-file <path>]",
 	);
 	console.info("");
 	console.info(
@@ -54,6 +63,18 @@ function parsePositiveInteger(value: string | undefined): number | undefined {
 	const parsed = Number.parseInt(value, 10);
 	if (!Number.isInteger(parsed) || parsed <= 0) return undefined;
 	return parsed;
+}
+
+function parseReleaseReadinessImpact(
+	value: string | undefined,
+): PrCloseoutReleaseReadinessImpact | undefined {
+	if (!value) return undefined;
+	if (
+		RELEASE_READINESS_IMPACTS.has(value as PrCloseoutReleaseReadinessImpact)
+	) {
+		return value as PrCloseoutReleaseReadinessImpact;
+	}
+	return undefined;
 }
 
 type FlagParseResult = "handled" | "unknown" | { exitCode: number };
@@ -154,6 +175,17 @@ function applyPrCloseoutFlag(
 			},
 			"pr-closeout: --runtime-evidence requires a path",
 		);
+	}
+	if (arg === "--release-readiness-impact") {
+		const value = parseReleaseReadinessImpact(readFlagValue(args, index));
+		if (!value) {
+			console.error(
+				"pr-closeout: --release-readiness-impact requires one of none, governed_change, release_blocker, unknown",
+			);
+			return { exitCode: 2 };
+		}
+		options.releaseReadinessImpact = value;
+		return "handled";
 	}
 	return "unknown";
 }

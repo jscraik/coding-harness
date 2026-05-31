@@ -355,7 +355,7 @@ export function collectReleaseReadinessBlockers(
 	blockers: PrCloseoutBlocker[],
 ): void {
 	const impact = input.releaseReadinessImpact;
-	if (impact === undefined || impact === "none" || impact === "unknown") return;
+	if (impact === undefined || impact === "none") return;
 	if (impact === "release_blocker") {
 		pushBlocker(blockers, {
 			surface: "release_readiness",
@@ -385,6 +385,7 @@ export function collectReleaseReadinessBlockers(
 		kind: "state",
 		reason: "Release-readiness impact must be classified before closeout.",
 		fixableByCodex: false,
+		ref: "input:releaseReadinessImpact:unknown",
 	});
 }
 

@@ -81,10 +81,18 @@ function traceBelongsToSuite(traceLine, suitePath, token) {
 }
 
 function vitestExecutablePath() {
-	const candidates = [
-		join(repoRoot, "node_modules/.bin/vitest"),
-		join(repoRoot, "node_modules/.bin/vitest.cmd"),
-	];
+	const platform =
+		process.env.HARNESS_BEHAVIOR_TEST_PLATFORM ?? process.platform;
+	const candidates =
+		platform === "win32"
+			? [
+					join(repoRoot, "node_modules/.bin/vitest.cmd"),
+					join(repoRoot, "node_modules/.bin/vitest"),
+				]
+			: [
+					join(repoRoot, "node_modules/.bin/vitest"),
+					join(repoRoot, "node_modules/.bin/vitest.cmd"),
+				];
 	return candidates.find((candidate) => existsSync(candidate)) ?? null;
 }
 
