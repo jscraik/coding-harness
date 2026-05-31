@@ -4,7 +4,7 @@
  * These tests verify that generated shell scripts follow the established
  * patterns fixed in PRs #57, #58, #60 to prevent regressions. They check for:
  * 1. No bare grep calls without exit code handling (|| true / || :)
- * 2. Optional tools guarded with `command -v` checks
+ * 2. Optional tools guarded with availability checks
  * 3. No set -e unfriendly pipeline patterns
  *
  * We perform static analysis on the template source strings since:
@@ -54,15 +54,15 @@ function getShellTemplates(): ShellTemplate[] {
 		});
 }
 
-function findOptionalToolsWithoutGuard(content: string): string[] {
+function findOptionalToolsWithoutAvailabilityGuard(content: string): string[] {
 	// Only flag lines where `diagram` is actually being EXECUTED as a command,
 	// not just mentioned in a string array or comment.
-	// Execution patterns: `diagram <args>`, `pnpm exec diagram`, `command -v diagram`
+	// Execution patterns: `diagram <args>`, package-manager scoped diagram execution.
 	const OPTIONAL_TOOL_EXEC_PATTERNS = [
 		// Direct execution: "diagram " at start of line or after pipe
 		/(?:^|\|\s*)(diagram)\s+\S/,
-		// pnpm exec diagram
-		/pnpm\s+exec\s+diagram/,
+		// pnpm exec diagram, optionally scoped to the repository root with --dir.
+		/pnpm\s+(?:--dir\s+\S+\s+)?exec\s+diagram/,
 	];
 
 	const violations: string[] = [];
@@ -77,12 +77,14 @@ function findOptionalToolsWithoutGuard(content: string): string[] {
 
 		for (const pattern of OPTIONAL_TOOL_EXEC_PATTERNS) {
 			if (pattern.test(line)) {
-				// Check if there's a command -v guard in nearby lines (10 lines context)
+				// Check if there's an availability guard in nearby lines (10 lines context).
+				// Repository-owned package CLIs may be probed through the package manager
+				// instead of relying on a global binary on PATH.
 				const contextStart = Math.max(0, i - 10);
 				const context = lines.slice(contextStart, i + 1).join("\n");
 				if (
 					!context.includes("command -v diagram") &&
-					!context.includes("command -v")
+					!/pnpm\s+(?:--dir\s+\S+\s+)?exec\s+diagram\s+--version/.test(context)
 				) {
 					violations.push(`Line ${i + 1}: ${line.trim()}`);
 				}
@@ -144,17 +146,19 @@ describe("generated shell script quality (JSC-62)", () => {
 		}
 	});
 
-	it("no optional tools (diagram, etc.) used without command -v guard", () => {
+	it("no optional tools (diagram, etc.) used without an availability guard", () => {
 		const allViolations: string[] = [];
 		for (const template of shellTemplates) {
-			const violations = findOptionalToolsWithoutGuard(template.content);
+			const violations = findOptionalToolsWithoutAvailabilityGuard(
+				template.content,
+			);
 			if (violations.length > 0) {
 				allViolations.push(`== ${template.path} ==\n${violations.join("\n")}`);
 			}
 		}
 		if (allViolations.length > 0) {
 			throw new Error(
-				`Optional tools used without command -v guard (regression from PR #60):\n${allViolations.join("\n\n")}`,
+				`Optional tools used without an availability guard (regression from PR #60):\n${allViolations.join("\n\n")}`,
 			);
 		}
 	});

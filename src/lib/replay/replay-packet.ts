@@ -421,6 +421,7 @@ function validateHookProvenance(
 			`${path}.producedArtifactRefs`,
 			repoRoot,
 			errors,
+			new Set(["produced_artifact"]),
 		);
 		const identity = hook.hookExecutionIdentity;
 		if (!isRecord(identity)) {
@@ -615,13 +616,14 @@ function validateRefs(
 	path: string,
 	repoRoot: string,
 	errors: string[],
+	allowedKinds?: Set<ReplayPacketRefKind>,
 ) {
 	if (!Array.isArray(value) || value.length === 0) {
 		errors.push(`${path}: must contain at least one ref`);
 		return;
 	}
 	value.forEach((entry, index) => {
-		validateRef(entry, `${path}[${index}]`, repoRoot, errors);
+		validateRef(entry, `${path}[${index}]`, repoRoot, errors, allowedKinds);
 	});
 }
 

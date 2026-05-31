@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-30
+last_validated: 2026-05-31
 ---
 
 # Agent governance
@@ -47,6 +47,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - tooling/runtime changes should update `docs/agents/02-tooling-policy.md` and `docs/agents/06-security-and-governance.md`
 - preflight or Local Memory enforcement changes should keep `AGENTS.md`, `README.md`, `docs/agents/02-tooling-policy.md`, `docs/agents/03-local-memory.md`, `docs/agents/06-security-and-governance.md`, and this guide synchronized; legacy positional `scripts/codex-preflight.sh` invocations must default to required Local Memory mode unless `off` or `optional` is explicitly supplied
 - architecture-context refresh changes should update `docs/agents/00-architecture-bootstrap.md`; Flow Ops closure-evidence, E2E runner, or eval artifact changes that trigger that refresh should keep `AGENTS.md` and this guide synchronized when docs-gate reports the agent-governance category
+- diagram refresh tooling should validate and run through the repo-owned `pnpm exec diagram` path rather than requiring a global `diagram` binary on PATH, so disposable worktrees and hook execution use the same dependency contract
 - generated diagram identity rewrites should update every dependent Mermaid reference, including class selectors, and keep AGENTS, the architecture bootstrap guide, this guide, generated diagram artifacts, and regression coverage synchronized when docs-gate reports architecture-context or agent-governance surfaces
 - Flow Ops closure-evidence and outcome-closeout validation changes should keep
   the agent-governance handoff and closeout expectations in this guide
@@ -223,6 +224,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - generated readiness and environment setup changes should preserve caller-provided `PATH` precedence before adding standard tool fallbacks, so local wrappers, fixture shims, and branch-scoped validation evidence remain auditable
 - environment-only push behavior is a narrow governance exception: if the branch diff contains only `.codex/environments/environment.toml`, `make hooks-pre-push` may run only `scripts/check-environment.sh`; any other changed file must use the full pre-push suite
 - full pre-push diagram freshness must be branch-scoped: `make hooks-pre-push` passes the branch changed-file list into `scripts/check-diagram-freshness.sh --changed-files <path>` so agents do not refresh architecture artifacts for unrelated local worktree dirt
+- full pre-push diagram freshness must use the same package-manager-scoped diagram CLI as manual refreshes; a missing global binary is not a valid blocker when `pnpm --dir "$ROOT_DIR" exec diagram --version` succeeds
 - goal-continuation and approval-plan contract changes should keep explicit
   authorization, fail-closed reviewer resolution, and snapshot-only state
   evidence visible through the same agent-native cockpit surfaces before PR
