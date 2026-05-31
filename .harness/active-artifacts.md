@@ -10,7 +10,7 @@
 
 ## Scope
 
-Last reconciled: 2026-05-31T03:13Z plus R163 local remediation (origin/main freshness, PR #322 pushes through R162, and R163 input-mode release-readiness review-thread remediation; live CI/review truth remains pending).
+Last reconciled: 2026-05-31T03:37Z plus R164 current-head reconciliation (origin/main freshness, PR #322 pushed head 27e525eedcc1ef493b51499c983411bd54f8e1fe, and pending CodeRabbit remote-review truth; merge readiness and final goal completion remain unclaimed).
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -110,6 +110,11 @@ unless a live refresh is recorded in the referenced artifact.
   `buildLivePrCloseoutInput`. PR #322 checks, CodeRabbit/review-thread truth,
   linked-issue status, and Linear JSC-363 must be refreshed after the next push
   before any closeout claim.
+  R164 records current-head reconciliation for PR #322 head
+  27e525eedcc1ef493b51499c983411bd54f8e1fe after the board caught the
+  pre-commit R163 head SHA. Live PR checks are green except CodeRabbit, which
+  remains pending; linked-issue status and Linear JSC-363 still require
+  separate refresh before any closeout claim.
   Historical stacked PRs may still show CONFLICTING/DIRTY metadata because
   their old head/base refs are stale. That historical metadata is not an active
   open-PR merge blocker. Before any
