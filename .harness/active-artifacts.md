@@ -10,13 +10,12 @@
 
 ## Scope
 
-Last reconciled: 2026-05-31T21:54Z plus R179 GAP-001 Local Memory
-preflight reanchor after architecture bootstrap sync (current local head
-633b5cc48a0008fdd1f873c0962900c57bcd5e08, branch
-codex/jsc-363-gap001-local-memory-preflight; local validation, generated
-architecture context refresh, architecture bootstrap docs sync, and independent
-rereview passed; push, PR creation, remote checks, CodeRabbit, reviewDecision,
-Linear, merge readiness, Judge/PM readiness, and final goal completion remain
+Last reconciled: 2026-05-31T23:05Z plus R180 post-merge route-truth
+refresh (current local head 246e339e55c5d8750c81840194ebb63d29a4490b from
+origin/main on branch codex/jsc-363-gap002-required-ci-closeout; PR #326 and
+PR #321 are merged, and PR #324/#325 are the remaining open PR lanes under
+bounded green-sweep triage. Linear, Judge/PM readiness, runtime producer
+emission, delivery-truth consumption, and final goal completion remain
 unclaimed).
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
@@ -28,7 +27,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current slice truth is R176/R177/R178/R179 for GAP-001 on branch codex/jsc-363-gap001-local-memory-preflight. R176 records local implementation and independent rereview on commit 4641f9ca17d1ed13f075ef4bdde93a533f3616ca: legacy positional preflight now defaults to required Local Memory, explicit off/optional remains available, test-only overrides are gated and CI-rejected, and repo-like mode ambiguity is covered. R177 reanchors the goal board and governed audit adoption to that implementation head. R178 reanchors the board after generated architecture context refresh commit f8fa4206d6ae85f28e557ffd5ca248938ff2bae7. R179 reanchors the board after architecture bootstrap sync commit 633b5cc48a0008fdd1f873c0962900c57bcd5e08. Push, PR creation, remote checks, CodeRabbit, reviewDecision, Linear, merge readiness, Judge/PM readiness, and final goal completion remain separate unclaimed lanes. | Use the goal board as the current execution cockpit. Next safe action is to commit and push R179, open or update the GAP-001 PR, then refresh PR checks, CodeRabbit, review threads, linked-issue state, and CircleCI logs via <REDACTED_HOME_PATH>/.codex/.env if CircleCI triage is needed before any merge-ready, Judge/PM-ready, or goal-complete claim. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current route truth is R180: GAP-001 PR #326 merged after green checks and resolved review thread, PR #321 is also merged, and open PR lanes are #324 and #325 under bounded green-sweep triage. Linear scope alignment, Judge/PM readiness, runtime producer emission, delivery-truth consumption, and final goal completion remain separate unclaimed lanes. | Use the goal board as the current execution cockpit. Next safe action is to consume PR #324/#325 green-sweep artifacts, fix only validated current-head blockers in isolated PR branches, then choose the next unproven plan/audit requirement with reviewed intent before implementation. Use <REDACTED_HOME_PATH>/.codex/.env for CircleCI API/log triage without printing credential values; record the blocker if that env surface is unavailable. |
 
 ## Artifact Index
 
