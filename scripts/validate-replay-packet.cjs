@@ -310,6 +310,7 @@ function validateHooks(value, generatedAt, repoRoot, errors) {
 			`${prefix}.producedArtifactRefs`,
 			repoRoot,
 			errors,
+			new Set(["produced_artifact"]),
 		);
 		validateHookIdentity(
 			hook.hookExecutionIdentity,
@@ -419,13 +420,13 @@ function validateBlockers(value, errors) {
 	});
 }
 
-function validateRefs(value, prefix, repoRoot, errors) {
+function validateRefs(value, prefix, repoRoot, errors, allowedKinds) {
 	if (!Array.isArray(value) || value.length === 0) {
 		errors.push(`${prefix}: must contain at least one ref`);
 		return;
 	}
 	value.forEach((entry, index) => {
-		validateRef(entry, `${prefix}[${index}]`, repoRoot, errors);
+		validateRef(entry, `${prefix}[${index}]`, repoRoot, errors, allowedKinds);
 	});
 }
 
