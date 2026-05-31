@@ -1,7 +1,5 @@
 import { sanitizeError } from "../../lib/input/sanitize.js";
-import { sanitizeGitEnvironment } from "../../lib/git/safe-env.js";
 import type {
-	PrCloseoutBranchInput,
 	PrCloseoutCheckInput,
 	PrCloseoutInput,
 	PrCloseoutPullRequestInput,
@@ -17,6 +15,7 @@ import {
 } from "../pr-closeout-github.js";
 import type { PrCloseoutCLIOptions } from "./args.js";
 import { loadPrCloseoutEnvFile } from "./env.js";
+import { inspectGitBranch } from "./git-branch.js";
 import type { CommandRunner } from "./types.js";
 
 function parseJsonObject(
@@ -85,65 +84,6 @@ function inspectCommand(
 			failureClass: sanitizeError(error),
 		};
 	}
-}
-
-function inspectGitClean(
-	repoRoot: string,
-	env: NodeJS.ProcessEnv,
-	runner: CommandRunner,
-): boolean | null {
-	try {
-		return (
-			runner("git", ["status", "--porcelain"], {
-				cwd: repoRoot,
-				env,
-			}).length === 0
-		);
-	} catch {
-		return null;
-	}
-}
-
-function inspectGitBranch(
-	repoRoot: string,
-	env: NodeJS.ProcessEnv,
-	runner: CommandRunner,
-): PrCloseoutBranchInput {
-	const gitEnv = sanitizeGitEnvironment(env, { policy: "minimal" });
-	const branch: PrCloseoutBranchInput = {
-		clean: inspectGitClean(repoRoot, gitEnv, runner),
-		worktreeRole: "unknown",
-	};
-	try {
-		const headSha = runner("git", ["rev-parse", "HEAD"], {
-			cwd: repoRoot,
-			env: gitEnv,
-		}).trim();
-		if (headSha.length > 0) branch.headSha = headSha;
-	} catch {
-		// Head SHA is optional evidence; keep the rest of the branch snapshot.
-	}
-	try {
-		const drift = runner(
-			"git",
-			["rev-list", "--left-right", "--count", "@{upstream}...HEAD"],
-			{ cwd: repoRoot, env: gitEnv },
-		)
-			.trim()
-			.split(/\s+/u)
-			.map((value) => Number.parseInt(value, 10));
-		if (Number.isInteger(drift[0])) branch.behindBy = drift[0] ?? null;
-		if (Number.isInteger(drift[1])) branch.aheadBy = drift[1] ?? null;
-		branch.behindBase = (branch.behindBy ?? 0) > 0;
-	} catch {
-		branch.behindBy = null;
-		branch.aheadBy = null;
-	}
-	branch.worktreeRole =
-		branch.clean === true && branch.behindBy === 0
-			? "implementation"
-			: "orientation";
-	return branch;
 }
 
 function linearMutationAvailability(
@@ -375,7 +315,12 @@ export function buildLivePrCloseoutInput(
 	const rollback = rollbackFromBody(pullRequest.body);
 	return {
 		pullRequest,
-		branch: inspectGitBranch(options.repoRoot, envLoad.env, runner),
+		branch: inspectGitBranch(
+			options.repoRoot,
+			envLoad.env,
+			runner,
+			pullRequest.baseRefName,
+		),
 		checks,
 		reviewThreads,
 		traceability: traceabilityFromBody(pullRequest.body),

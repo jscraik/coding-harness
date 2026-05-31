@@ -1096,6 +1096,7 @@ describe("runPrCloseoutCLI", () => {
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
 					headRefOid: "abc123",
+					baseRefName: "main",
 					reviewDecision: "APPROVED",
 					body: PR_BODY_WITH_TRACEABILITY,
 				});
@@ -1120,6 +1121,7 @@ describe("runPrCloseoutCLI", () => {
 				return reviewThreadsGraphql();
 			}
 			if (command === "git") {
+				if (args[0] === "rev-list") return "0\t0";
 				return "";
 			}
 			return "ok";
@@ -1250,6 +1252,7 @@ describe("runPrCloseoutCLI", () => {
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
 					headRefOid: "abc123",
+					baseRefName: "main",
 					reviewDecision: "APPROVED",
 					body: PR_BODY_WITH_TRACEABILITY,
 				});
@@ -1337,7 +1340,7 @@ describe("runPrCloseoutCLI", () => {
 		expect(calls.some((call) => call.startsWith("gh api graphql"))).toBe(true);
 	});
 
-	it("does not mark live worktree implementation-safe when upstream drift is unobserved", async () => {
+	it("does not mark live worktree implementation-safe when base drift is unobserved", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const closeoutGatesPath = writeCloseoutGates(dir);
 		const runner = (
@@ -1352,6 +1355,7 @@ describe("runPrCloseoutCLI", () => {
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
 					headRefOid: "abc123",
+					baseRefName: "main",
 					reviewDecision: "APPROVED",
 					body: PR_BODY_WITH_TRACEABILITY,
 				});
@@ -1406,6 +1410,270 @@ describe("runPrCloseoutCLI", () => {
 		});
 	});
 
+	it("compares live worktree drift against the PR base branch", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const gitCommandsSeen: string[] = [];
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					baseRefName: "main",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				gitCommandsSeen.push(args.join(" "));
+				if (args[0] === "status") return "";
+				if (args[0] === "rev-parse") return "abc123";
+				if (args[0] === "rev-list") return "2\t0";
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
+			runner,
+		);
+
+		expect(result.exitCode).toBe(0);
+		expect(gitCommandsSeen).toEqual(
+			expect.arrayContaining([
+				"rev-list --left-right --count refs/remotes/origin/main...HEAD",
+			]),
+		);
+		expect(gitCommandsSeen).not.toContain(
+			"rev-list --left-right --count @{upstream}...HEAD",
+		);
+		expect(JSON.parse(result.output)).toMatchObject({
+			lifecycleSnapshot: {
+				worktreeRole: "orientation",
+			},
+			blockers: expect.arrayContaining([
+				expect.objectContaining({
+					surface: "branch",
+					classification: "introduced",
+					reason: "Branch is behind its base branch.",
+				}),
+			]),
+		});
+	});
+
+	it("falls back to a discovered remote base ref when origin is unavailable", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const gitCommandsSeen: string[] = [];
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					baseRefName: "main",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				gitCommandsSeen.push(args.join(" "));
+				if (args[0] === "status") return "";
+				if (args[0] === "rev-parse") return "abc123";
+				if (args[0] === "for-each-ref") {
+					return "refs/remotes/upstream/main\nrefs/remotes/origin/HEAD";
+				}
+				if (
+					args[0] === "rev-list" &&
+					args[3] === "refs/remotes/origin/main...HEAD"
+				) {
+					throw new Error("origin base ref missing");
+				}
+				if (
+					args[0] === "rev-list" &&
+					args[3] === "refs/remotes/upstream/main...HEAD"
+				) {
+					return "0\t1";
+				}
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
+			runner,
+		);
+
+		expect(result.exitCode).toBe(0);
+		expect(gitCommandsSeen).toEqual(
+			expect.arrayContaining([
+				"rev-list --left-right --count refs/remotes/origin/main...HEAD",
+				"rev-list --left-right --count refs/remotes/upstream/main...HEAD",
+			]),
+		);
+		expect(JSON.parse(result.output)).toMatchObject({
+			lifecycleSnapshot: {
+				worktreeRole: "implementation",
+			},
+		});
+	});
+
+	it("ignores remote refs that only share the base branch suffix", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const gitCommandsSeen: string[] = [];
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					baseRefName: "main",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git") {
+				gitCommandsSeen.push(args.join(" "));
+				if (args[0] === "status") return "";
+				if (args[0] === "rev-parse") return "abc123";
+				if (args[0] === "for-each-ref") {
+					return "refs/remotes/upstream/release/main\nrefs/remotes/origin/HEAD";
+				}
+				if (args[0] === "rev-list") {
+					throw new Error("base ref unavailable");
+				}
+			}
+			return "ok";
+		};
+
+		const result = await capture(
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
+			runner,
+		);
+
+		expect(result.exitCode).toBe(0);
+		expect(gitCommandsSeen).toEqual(
+			expect.arrayContaining([
+				"rev-list --left-right --count refs/remotes/origin/main...HEAD",
+			]),
+		);
+		expect(gitCommandsSeen).not.toContain(
+			"rev-list --left-right --count refs/remotes/upstream/release/main...HEAD",
+		);
+		expect(JSON.parse(result.output)).toMatchObject({
+			lifecycleSnapshot: {
+				worktreeRole: "orientation",
+			},
+		});
+	});
+
 	it("keeps --phase-exit as a compatibility alias for closeout gates", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const closeoutGatesPath = writeCloseoutGates(dir, PASSING_PHASE_EXIT);
@@ -1421,6 +1689,7 @@ describe("runPrCloseoutCLI", () => {
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
 					headRefOid: "abc123",
+					baseRefName: "main",
 					reviewDecision: "APPROVED",
 					body: PR_BODY_WITH_TRACEABILITY,
 				});
@@ -1491,6 +1760,7 @@ describe("runPrCloseoutCLI", () => {
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
 					headRefOid: "abc123",
+					baseRefName: "main",
 					reviewDecision: "APPROVED",
 					body: PR_BODY_WITH_TRACEABILITY,
 				});
@@ -1557,6 +1827,7 @@ describe("runPrCloseoutCLI", () => {
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
 					headRefOid: "abc123",
+					baseRefName: "main",
 					reviewDecision: "APPROVED",
 					body: PR_BODY_WITH_TRACEABILITY,
 				});
@@ -1636,6 +1907,7 @@ describe("runPrCloseoutCLI", () => {
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
 					headRefOid: "abc123",
+					baseRefName: "main",
 					reviewDecision: "APPROVED",
 					body: PR_BODY_WITH_TRACEABILITY,
 				});
@@ -1713,6 +1985,7 @@ describe("runPrCloseoutCLI", () => {
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
 					headRefOid: "abc123",
+					baseRefName: "main",
 					reviewDecision: "APPROVED",
 					body: PR_BODY_WITH_TRACEABILITY,
 				});
@@ -2985,6 +3258,7 @@ Refs JSC-328
 					isDraft: false,
 					mergeStateStatus: "CLEAN",
 					headRefOid: "abc123",
+					baseRefName: "main",
 					reviewDecision: "APPROVED",
 					body: PR_BODY_WITH_TRACEABILITY,
 				});
@@ -3043,7 +3317,7 @@ Refs JSC-328
 				expect.arrayContaining([
 					"status --porcelain",
 					"rev-parse HEAD",
-					"rev-list --left-right --count @{upstream}...HEAD",
+					"rev-list --left-right --count refs/remotes/origin/main...HEAD",
 				]),
 			);
 		} finally {
