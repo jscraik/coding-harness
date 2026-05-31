@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-05-31T06:49:47Z
+Generated: 2026-05-31T08:55:03Z
 
 ## Table of Contents
 
@@ -48,6 +48,7 @@ Generated: 2026-05-31T06:49:47Z
 - `src/lib/git/safe-env.ts`
 - `src/lib/pr-closeout.ts`
 - `src/lib/pr-closeout/blockers.ts`
+- `src/lib/pr-closeout/claim-builders.ts`
 - `src/lib/pr-closeout/evaluator.ts`
 - `src/lib/pr-closeout/lifecycle-snapshot.ts`
 - `src/lib/pr-closeout/types.ts`
@@ -590,6 +591,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_behavior_tests_2577f6be_58dc87b2
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_environment_core_2c16213f_a8a456d9
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_check_harness_audit_tracking_33e6a72e_eeff5b52
   ext_node_child_process_f62b7d19["node:child_process"] --> node_ci_migrate_core_7005b5af_7e295ae3
   ext_node_child_process_f62b7d19["node:child_process"] --> node_collector_0736fd5b_10bc1882
   ext_node_child_process_f62b7d19["node:child_process"] --> node_control_plane_core_db3b4cb2_27437a14
@@ -1139,6 +1141,7 @@ graph LR
   ext_semver_b4039641["semver"] --> node_validator_helpers_7b927667_8b691f8f
   ext_sqlite_vec_bae73cf2["sqlite-vec"] --> node_store_824d80d7_69038a3e
   ext_tsx_a90e8eec["tsx"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
+  ext_tsx_a90e8eec["tsx"] --> node_check_harness_audit_tracking_33e6a72e_eeff5b52
   ext_typescript_fb9da861["typescript"] --> node_check_behavior_tests_2577f6be_58dc87b2
   ext_typescript_fb9da861["typescript"] --> node_check_code_size_9c5efc3a_154124ae
   ext_typescript_fb9da861["typescript"] --> node_check_public_api_docs_a9604f1b_f824853c
