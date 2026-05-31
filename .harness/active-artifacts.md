@@ -10,7 +10,7 @@
 
 ## Scope
 
-Last reconciled: 2026-05-31T04:11Z plus R165 review-gap remediation (origin/main freshness at ddd2b966663114c385811fe01ae43ef98c0b3818, local implementation commit 3c2cb159eda80334de526e74462736c0608d24b1, and push/PR remote-review truth pending; merge readiness and final goal completion remain unclaimed).
+Last reconciled: 2026-05-31T04:47Z plus R166 base-branch drift remediation (origin/main freshness at ddd2b966663114c385811fe01ae43ef98c0b3818, local implementation commit d5e1eda1, and push/PR remote-review truth pending; merge readiness and final goal completion remain unclaimed).
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -21,7 +21,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309's branch head was `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` and its current-main squash evidence is historical, not a current route blocker. PR #312, PR #318, PR #319, and PR #320 remain route-history evidence, not current merge blockers. Current slice truth is R156 through R165 for PR #322: earlier receipts cover hidden-dependency guard hardening, PR metadata repair, release-readiness blocker flow, live git-env sanitizer repair, Windows behavior-test shim handling, input-mode release-readiness override, and current-head reconciliation. R165 records local reviewed remediation for the latest PR #322 review gaps on implementation commit `3c2cb159eda80334de526e74462736c0608d24b1`; the branch contains `origin/main` at `ddd2b966663114c385811fe01ae43ef98c0b3818` and is 0 behind / 14 ahead after that implementation commit. Push, CodeRabbit, review threads, linked-issue truth, CircleCI checks, Linear, merge readiness, Judge/PM readiness, and final goal completion remain separate unclaimed lanes. | Use the goal board as the current execution cockpit. Next safe action is to commit and push the R165 receipt, resolve only demonstrably fixed PR #322 review threads on the pushed head, then refresh PR #322 checks/review-thread truth and Linear JSC-363 as separate lanes before any merge-ready, Judge/PM-ready, or goal-complete claim. |
+| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309's branch head was `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` and its current-main squash evidence is historical, not a current route blocker. PR #312, PR #318, PR #319, and PR #320 remain route-history evidence, not current merge blockers. Current slice truth is R156 through R166 for PR #322: earlier receipts cover hidden-dependency guard hardening, PR metadata repair, release-readiness blocker flow, live git-env sanitizer repair, Windows behavior-test shim handling, input-mode release-readiness override, current-head reconciliation, and review-gap remediation. R166 records local reviewed remediation for PR #322 base-branch drift evidence on implementation commit `d5e1eda1`; the branch contains `origin/main` at `ddd2b966663114c385811fe01ae43ef98c0b3818` and was 0 behind / 15 ahead before the receipt commit. Push, CodeRabbit, review threads, linked-issue truth, CircleCI checks, Linear, merge readiness, Judge/PM readiness, and final goal completion remain separate unclaimed lanes. | Use the goal board as the current execution cockpit. Next safe action is to commit and push the R166 receipt, resolve only demonstrably fixed PR #322 review threads on the pushed head, then refresh PR #322 checks/review-thread truth and Linear JSC-363 as separate lanes before any merge-ready, Judge/PM-ready, or goal-complete claim. |
 
 ## Artifact Index
 
@@ -124,6 +124,13 @@ unless a live refresh is recorded in the referenced artifact.
   executable regression. Push, remote checks, review threads, CodeRabbit,
   linked-issue truth, Linear, merge readiness, Judge/PM readiness, and final
   goal completion remain unclaimed until refreshed after the R165 push.
+  R166 records local reviewed remediation for PR #322 base-branch drift evidence
+  on implementation commit `d5e1eda1`: pr-closeout --live compares branch drift
+  against the PR base ref, fallback remote refs require exact branch-name
+  equality after the remote segment, and unobserved drift remains
+  orientation-only. Push, remote checks, review threads, CodeRabbit,
+  linked-issue truth, Linear, merge readiness, Judge/PM readiness, and final
+  goal completion remain unclaimed until refreshed after the R166 push.
   Historical stacked PRs may still show CONFLICTING/DIRTY metadata because
   their old head/base refs are stale. That historical metadata is not an active
   open-PR merge blocker. Before any
