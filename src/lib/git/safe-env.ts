@@ -8,6 +8,13 @@ const CALLER_SCOPED_GIT_ENV_KEYS = new Set([
 	"GIT_WORK_TREE",
 ]);
 
+/**
+ * Return whether an environment variable belongs to Git's environment namespace.
+ */
+export function isGitEnvironmentKey(key: string): boolean {
+	return key.startsWith("GIT_");
+}
+
 function isCallerScopedGitEnvironmentKey(key: string): boolean {
 	return (
 		CALLER_SCOPED_GIT_ENV_KEYS.has(key) ||
@@ -24,11 +31,25 @@ export interface SanitizeGitEnvironmentOptions {
 	policy: GitEnvironmentPolicy;
 }
 
+function isSanitizeGitEnvironmentOptions(
+	value: NodeJS.ProcessEnv | SanitizeGitEnvironmentOptions,
+): value is SanitizeGitEnvironmentOptions {
+	return "policy" in value;
+}
+
 /** Return an environment safe for git subprocesses under the selected policy. */
 export function sanitizeGitEnvironment(
-	environment: NodeJS.ProcessEnv = process.env,
-	options: SanitizeGitEnvironmentOptions,
+	environmentOrOptions:
+		| NodeJS.ProcessEnv
+		| SanitizeGitEnvironmentOptions = process.env,
+	maybeOptions?: SanitizeGitEnvironmentOptions,
 ): NodeJS.ProcessEnv {
+	const environment = maybeOptions ? environmentOrOptions : process.env;
+	const options =
+		maybeOptions ??
+		(isSanitizeGitEnvironmentOptions(environmentOrOptions)
+			? environmentOrOptions
+			: { policy: "minimal" });
 	const sanitized: NodeJS.ProcessEnv = {};
 	for (const [key, value] of Object.entries(environment)) {
 		if (value === undefined) continue;

@@ -400,9 +400,9 @@ function validateClaimSupportSource(
 	if (source.status !== "pass") {
 		addError(
 			errors,
-			"invalid_source_status",
+			"source_status_not_pass",
 			`${path}.status`,
-			'claim-support sources must have status "pass"',
+			"claim support source status must be pass",
 		);
 	}
 	if (source.freshness !== "current") {

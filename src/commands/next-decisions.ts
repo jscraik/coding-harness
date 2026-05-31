@@ -4,6 +4,7 @@ export {
 	gitInspectionBlockedDecision,
 	invalidModeDecision,
 	phaseExitBlockedDecision,
+	worktreeStateBlockedDecision,
 	runtimeCardBlockedDecision,
 	sourceBlockedDecision,
 } from "./next-blocked-decisions.js";

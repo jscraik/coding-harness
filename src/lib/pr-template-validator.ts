@@ -1,4 +1,5 @@
 import { collectWorkEvidenceIntegrityErrors } from "./pr-template-behavior-evidence.js";
+import { collectLinkedIssueRelationshipErrors } from "./pr-template-linked-issue-relationship.js";
 import {
 	MAX_BODY_LENGTH,
 	PLACEHOLDERS,
@@ -212,12 +213,16 @@ function traceCoversEveryLinkedIssue(
 	acceptanceTrace: string,
 ): boolean {
 	return issueKeys.every((issueKey) => {
-		const issueKeyPattern = issueKeyRegExp(issueKey);
+		const escapedIssueKey = issueKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+		const issueKeyPattern = new RegExp(`\\b${escapedIssueKey}\\b`, "i");
 		if (!issueKeyPattern.test(acceptanceTrace)) {
 			return false;
 		}
 
-		const segmentPattern = issueScopedSegmentRegExp(issueKey);
+		const segmentPattern = new RegExp(
+			`\\b${escapedIssueKey}\\b([\\s\\S]*?)(?=\\bJSC-\\d+\\b|$)`,
+			"i",
+		);
 		const segment = acceptanceTrace.match(segmentPattern)?.[0] ?? "";
 		return (
 			ACCEPTANCE_TRACE_ID_PATTERN.test(segment) ||
@@ -230,161 +235,15 @@ function issueHasPreparatoryNoCompletionTrace(
 	issueKey: string,
 	acceptanceTrace: string,
 ): boolean {
-	const issueScopedNoCompletionPattern =
-		issueScopedNoCompletionRegExp(issueKey);
+	const escapedIssueKey = issueKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	const issueScopedNoCompletionPattern = new RegExp(
+		`\\bcompleted\\s+${escapedIssueKey}\\s+acceptance\\s+IDs?\\s*:\\s*none\\b`,
+		"i",
+	);
 	return (
 		PREPARATORY_LINKED_ISSUE_TRACE_PATTERN.test(acceptanceTrace) &&
 		issueScopedNoCompletionPattern.test(acceptanceTrace)
 	);
-}
-
-function issueKeyRegExp(issueKey: string): RegExp {
-	return new RegExp(`\\b${escapeForRegExp(issueKey)}\\b`, "i");
-}
-
-function issueScopedSegmentRegExp(issueKey: string): RegExp {
-	return new RegExp(
-		`\\b${escapeForRegExp(issueKey)}\\b([\\s\\S]*?)(?=\\bJSC-\\d+\\b|$)`,
-		"i",
-	);
-}
-
-function issueScopedNoCompletionRegExp(issueKey: string): RegExp {
-	return new RegExp(
-		`\\bcompleted\\s+${escapeForRegExp(issueKey)}\\s+acceptance\\s+IDs?\\s*:\\s*none\\b`,
-		"i",
-	);
-}
-
-function escapeForRegExp(value: string): string {
-	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function hasCompletedAcceptanceIds(normalized: string): boolean {
-	return (
-		/\bcompleted (?:[a-z0-9-]+ )?acceptance ids\s*:\s*(?!none\b)[a-z0-9-]+\b/.test(
-			normalized,
-		) || /\bcompleted acceptance criteria\s*:\s*(?!none\b)\S+/.test(normalized)
-	);
-}
-
-function statesNoCompletedAcceptance(normalized: string): boolean {
-	return (
-		/\bcompleted (?:[a-z]+ )?acceptance (?:ids|criteria)\s*:\s*none\b/.test(
-			normalized,
-		) ||
-		/\bcompleted [a-z0-9-]+ acceptance ids\s*:\s*none\b/.test(normalized) ||
-		/\bacceptance (?:ids|criteria)\s*:\s*none\b/.test(normalized) ||
-		/\bdoes not (?:close|complete|claim)\b.*\b(?:sa-\d{3}|acceptance)\b/.test(
-			normalized,
-		)
-	);
-}
-
-function collectLinkedIssueRelationshipErrors(body: string): string[] {
-	const value = extractFieldBlockValue(
-		body,
-		"## Work performed",
-		"Linked issue relationship",
-	);
-	if (value === null) {
-		return [];
-	}
-
-	const normalized = normalizeFieldValue(value).toLowerCase();
-	const hasKnownClassification =
-		/\bimplementation closure\b/.test(normalized) ||
-		/\bpreparatory\/enabling work\b/.test(normalized) ||
-		/\bstandalone\/untracked work\b/.test(normalized) ||
-		/\bn\.?a\.?\b/.test(normalized) ||
-		/\bnot applicable\b/.test(normalized);
-
-	if (!hasKnownClassification) {
-		return [
-			"Linked issue relationship must classify the PR as implementation closure, preparatory/enabling work, standalone/untracked work, or n.a. with reason.",
-		];
-	}
-
-	if (/\bpreparatory\/enabling work\b/.test(normalized)) {
-		if (!statesNoCompletedAcceptance(normalized)) {
-			return [
-				"Preparatory/enabling linked issue relationship must state completed acceptance IDs are none or explicitly say it does not close the linked acceptance scope.",
-			];
-		}
-	}
-
-	return [];
-}
-
-function collectLinearReferenceFormatErrors(body: string): string[] {
-	const value = extractFieldBlockValue(
-		body,
-		"## Work performed",
-		"Linear reference",
-	);
-	if (value === null) {
-		return [];
-	}
-
-	const normalized = normalizeFieldValue(value).toLowerCase();
-	const isNotApplicable =
-		/\bn\.?a\.?\b/.test(normalized) || /\bnot applicable\b/.test(normalized);
-	if (isNotApplicable) {
-		return [];
-	}
-
-	const hasSupportedReferenceToken =
-		/\b(?:refs?|fix(?:es)?|clos(?:e|es|ed))\s+[a-z]+-\d+\b/.test(normalized);
-	if (hasSupportedReferenceToken) {
-		return [];
-	}
-
-	return [
-		"Linear reference must use Refs, Fixes, or Closes with a Linear issue key, or n.a. with reason; URL-only references do not satisfy linear-gate.",
-	];
-}
-
-function collectLinkedIssueClosureConsistencyErrors(body: string): string[] {
-	const linearReference = extractFieldBlockValue(
-		body,
-		"## Work performed",
-		"Linear reference",
-	);
-	const linkedIssueRelationship = extractFieldBlockValue(
-		body,
-		"## Work performed",
-		"Linked issue relationship",
-	);
-	if (linearReference === null || linkedIssueRelationship === null) {
-		return [];
-	}
-
-	const normalizedLinearReference =
-		normalizeFieldValue(linearReference).toLowerCase();
-	const normalizedLinkedIssueRelationship = normalizeFieldValue(
-		linkedIssueRelationship,
-	).toLowerCase();
-	const hasIssueClosureToken =
-		/\b(?:closes|close|closed|fix(?:es)?|resolves)\s+[a-z]+-\d+\b/.test(
-			normalizedLinearReference,
-		);
-	if (!hasIssueClosureToken) {
-		return [];
-	}
-
-	const isImplementationClosure = /\bimplementation closure\b/.test(
-		normalizedLinkedIssueRelationship,
-	);
-	if (
-		!isImplementationClosure ||
-		!hasCompletedAcceptanceIds(normalizedLinkedIssueRelationship)
-	) {
-		return [
-			"Linear reference uses a closure token, so Linked issue relationship must be implementation closure with completed acceptance IDs; use Refs for preparatory/enabling or standalone work.",
-		];
-	}
-
-	return [];
 }
 
 function extractFieldBlockValue(
@@ -465,10 +324,10 @@ export function validatePrTemplateBody(body: string): string[] {
 	}
 
 	errors.push(...collectWorkPerformedFieldErrors(body));
+	errors.push(
+		...collectLinkedIssueRelationshipErrors(body, extractFieldBlockValue),
+	);
 	errors.push(...collectLinkedIssueAcceptanceTraceErrors(body));
-	errors.push(...collectLinearReferenceFormatErrors(body));
-	errors.push(...collectLinkedIssueRelationshipErrors(body));
-	errors.push(...collectLinkedIssueClosureConsistencyErrors(body));
 	errors.push(
 		...collectWorkEvidenceIntegrityErrors(body, extractFieldBlockValue),
 	);

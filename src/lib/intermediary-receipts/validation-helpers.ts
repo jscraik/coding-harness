@@ -42,58 +42,53 @@ export function isPointer(value: unknown): value is string {
 
 /** Returns true when a value is an RFC3339-style timestamp. */
 export function isIso(value: unknown): value is string {
-	if (typeof value !== "string") return false;
-	const match = RFC3339.exec(value);
+	if (typeof value !== "string" || !RFC3339.test(value)) {
+		return false;
+	}
+
+	// Parse components with more specific capture groups
+	const match = value.match(
+		/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(Z|([+-])(\d{2}):(\d{2}))$/u,
+	);
 	if (!match) return false;
-	const [datePart, timeAndZone] = value.split("T");
-	if (!datePart || !timeAndZone) return false;
-	const [yearText, monthText, dayText] = datePart.split("-");
-	const [timePart, zonePart] = timeAndZone.endsWith("Z")
-		? [timeAndZone.slice(0, -1), "Z"]
-		: [timeAndZone.slice(0, -6), timeAndZone.slice(timeAndZone.length - 6)];
-	const [hourText, minuteText, secondTextWithFraction] = timePart.split(":");
-	const secondText = secondTextWithFraction?.split(".")[0];
-	const year = Number(yearText);
-	const month = Number(monthText);
-	const day = Number(dayText);
-	const hour = Number(hourText);
-	const minute = Number(minuteText);
-	const second = Number(secondText);
-	if (
-		!Number.isInteger(year) ||
-		!Number.isInteger(month) ||
-		!Number.isInteger(day) ||
-		!Number.isInteger(hour) ||
-		!Number.isInteger(minute) ||
-		!Number.isInteger(second)
-	) {
-		return false;
+
+	const [
+		,
+		year,
+		month,
+		day,
+		hour,
+		minute,
+		second,
+		,
+		tzPart,
+		,
+		tzHour,
+		tzMinute,
+	] = match;
+	const numYear = Number.parseInt(year ?? "0", 10);
+	const numMonth = Number.parseInt(month ?? "0", 10);
+	const numDay = Number.parseInt(day ?? "0", 10);
+	const numHour = Number.parseInt(hour ?? "0", 10);
+	const numMinute = Number.parseInt(minute ?? "0", 10);
+	const numSecond = Number.parseInt(second ?? "0", 10);
+
+	// Validate component ranges
+	if (numMonth < 1 || numMonth > 12) return false;
+	if (numHour > 23 || numMinute > 59 || numSecond > 59) return false;
+
+	// Validate day range based on month and leap-year calendar semantics.
+	const maxDay = new Date(Date.UTC(numYear, numMonth, 0)).getUTCDate();
+	if (numDay < 1 || (maxDay !== undefined && numDay > maxDay)) return false;
+
+	// Validate timezone offset
+	if (tzPart !== "Z") {
+		if (tzHour === undefined || tzMinute === undefined) return false;
+		const numTzHour = Number.parseInt(tzHour, 10);
+		const numTzMinute = Number.parseInt(tzMinute, 10);
+		if (numTzHour > 23 || numTzMinute > 59) return false;
 	}
-	if (month < 1 || month > 12) return false;
-	const maxDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
-	if (day < 1 || day > maxDay) return false;
-	if (
-		hour < 0 ||
-		hour > 23 ||
-		minute < 0 ||
-		minute > 59 ||
-		second < 0 ||
-		second > 59
-	) {
-		return false;
-	}
-	if (zonePart !== "Z") {
-		const zoneHour = Number(zonePart.slice(1, 3));
-		const zoneMinute = Number(zonePart.slice(4, 6));
-		if (
-			!Number.isInteger(zoneHour) ||
-			!Number.isInteger(zoneMinute) ||
-			zoneHour > 23 ||
-			zoneMinute > 59
-		) {
-			return false;
-		}
-	}
+
 	return true;
 }
 

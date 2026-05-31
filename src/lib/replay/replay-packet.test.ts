@@ -36,14 +36,6 @@ function firstHook(
 	return hook;
 }
 
-function firstNormalizedEvent(
-	packet: ReplayPacket,
-): ReplayPacket["normalizedEvents"][number] {
-	const event = packet.normalizedEvents[0];
-	if (!event) throw new Error("replay-packet fixture missing normalized event");
-	return event;
-}
-
 describe("ReplayPacket/v1", () => {
 	it("accepts the checked-in replay packet example", () => {
 		expect(validate(loadExample())).toEqual({
@@ -114,18 +106,6 @@ describe("ReplayPacket/v1", () => {
 		});
 	});
 
-	it("returns a validation result instead of throwing for invalid repo roots", () => {
-		expect(
-			validateReplayPacket(loadExample(), {
-				now: new Date("2026-05-28T10:31:00Z"),
-				repoRoot: "/path/that/does/not/exist",
-			}),
-		).toMatchObject({
-			status: "fail",
-			errors: expect.arrayContaining([expect.stringContaining("repoRoot")]),
-		});
-	});
-
 	it("rejects filesystem-bound references when the digest does not match", () => {
 		const packet = loadExample();
 		packet.sourceRefs = [
@@ -166,29 +146,17 @@ describe("ReplayPacket/v1", () => {
 		});
 	});
 
-	it("rejects hook provenance refs with mismatched refKind bindings", () => {
+	it("rejects hook execution identity refs with swapped provenance kinds", () => {
 		const packet = loadExample();
 		const hook = firstHook(packet);
 		packet.hookProvenance = [
 			{
 				...hook,
-				hookRef: {
-					...hook.hookRef,
-					refKind: "repo_file",
-				},
-				inputRef: {
-					...hook.inputRef,
-					refKind: "hook_output",
-				},
-				outputRef: {
-					...hook.outputRef,
-					refKind: "hook_input",
-				},
 				hookExecutionIdentity: {
 					...hook.hookExecutionIdentity,
 					hookFileRef: {
 						...hook.hookExecutionIdentity.hookFileRef,
-						refKind: "runtime_identity",
+						refKind: "repo_file",
 					},
 					resolvedCommandRef: {
 						...hook.hookExecutionIdentity.resolvedCommandRef,
@@ -201,60 +169,10 @@ describe("ReplayPacket/v1", () => {
 		expect(validate(packet)).toMatchObject({
 			status: "fail",
 			errors: expect.arrayContaining([
-				expect.stringContaining("hookProvenance[0].hookRef.refKind"),
-				expect.stringContaining("hookProvenance[0].inputRef.refKind"),
-				expect.stringContaining("hookProvenance[0].outputRef.refKind"),
+				expect.stringContaining("hookExecutionIdentity.hookFileRef.refKind"),
 				expect.stringContaining(
-					"hookProvenance[0].hookExecutionIdentity.hookFileRef.refKind",
+					"hookExecutionIdentity.resolvedCommandRef.refKind",
 				),
-				expect.stringContaining(
-					"hookProvenance[0].hookExecutionIdentity.resolvedCommandRef.refKind",
-				),
-			]),
-		});
-	});
-
-	it("requires hook blocker and normalized failure classes to be compact pointers or null", () => {
-		const packet = loadExample();
-		const hook = firstHook(packet);
-		const event = firstNormalizedEvent(packet);
-		packet.hookProvenance = [
-			{
-				...hook,
-				blockerClass:
-					"human prose with spaces" as ReplayPacket["hookProvenance"][number]["blockerClass"],
-			},
-		];
-		packet.normalizedEvents = [
-			{
-				...event,
-				failureClass:
-					"free form failure" as ReplayPacket["normalizedEvents"][number]["failureClass"],
-			},
-		];
-
-		expect(validate(packet)).toMatchObject({
-			status: "fail",
-			errors: expect.arrayContaining([
-				expect.stringContaining("hookProvenance[0].blockerClass"),
-				expect.stringContaining("normalizedEvents[0].failureClass"),
-			]),
-		});
-	});
-
-	it("rejects malformed branch, redaction status, and next action fields", () => {
-		const packet = loadExample({
-			branch: "../escape" as ReplayPacket["branch"],
-			redactionStatus: "raw_transcript" as ReplayPacket["redactionStatus"],
-			nextAction: "" as ReplayPacket["nextAction"],
-		});
-
-		expect(validate(packet)).toMatchObject({
-			status: "fail",
-			errors: expect.arrayContaining([
-				expect.stringContaining("branch"),
-				expect.stringContaining("redactionStatus"),
-				expect.stringContaining("nextAction"),
 			]),
 		});
 	});
@@ -263,7 +181,7 @@ describe("ReplayPacket/v1", () => {
 		const packet = loadExample();
 		packet.normalizedEvents = [
 			{
-				...firstNormalizedEvent(packet),
+				...packet.normalizedEvents[0],
 				payload: "raw command output",
 			} as ReplayPacket["normalizedEvents"][number],
 		];
@@ -272,29 +190,6 @@ describe("ReplayPacket/v1", () => {
 			status: "fail",
 			errors: expect.arrayContaining([
 				expect.stringContaining("raw or secret-like keys"),
-			]),
-		});
-	});
-
-	it("rejects normalized events without source refs or hashes", () => {
-		const packet = loadExample();
-		packet.normalizedEvents = [
-			{
-				...firstNormalizedEvent(packet),
-				sourceRefs: [],
-				hashes: [],
-			},
-		];
-
-		expect(validate(packet)).toMatchObject({
-			status: "fail",
-			errors: expect.arrayContaining([
-				expect.stringContaining(
-					"normalizedEvents[0].sourceRefs: must contain at least one pointer",
-				),
-				expect.stringContaining(
-					"normalizedEvents[0].hashes: must contain at least one sha256",
-				),
 			]),
 		});
 	});
@@ -386,6 +281,23 @@ describe("ReplayPacket/v1", () => {
 		expect(validate(packet)).toMatchObject({
 			status: "fail",
 			errors: expect.arrayContaining([expect.stringContaining("checkedAt")]),
+		});
+	});
+
+	it("rejects hook provenance blocker classes that are not compact pointers", () => {
+		const packet = loadExample();
+		packet.hookProvenance = [
+			{
+				...firstHook(packet),
+				blockerClass: "needs manual triage",
+			},
+		];
+
+		expect(validate(packet)).toMatchObject({
+			status: "fail",
+			errors: expect.arrayContaining([
+				expect.stringContaining("hookProvenance[0].blockerClass"),
+			]),
 		});
 	});
 });

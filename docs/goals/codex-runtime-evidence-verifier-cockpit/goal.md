@@ -237,7 +237,7 @@ Required PU-037 intent repairs:
 4. Require canonicalized realpath-under-repo containment before digest checks,
    with symlink-escape and path-alias negative fixtures.
 5. Pin the agent-readable enum fields, including `overallStatus`, per-surface
-   status, `blockerClass`, and `nextActionClass`.
+   status, `blockerClass`, and `nextAction`.
 6. Name the agent consumption boundary for the validator result, such as a
    runtime-card projection, `harness next --json` advisory projection, or
    receipt bridge. The boundary may be advisory in this slice, but it must be

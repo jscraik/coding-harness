@@ -63,24 +63,20 @@ function main() {
 	).href;
 	const runner = [
 		"import { readFileSync } from 'node:fs';",
+		"const moduleUrl = process.env.PROMPT_CONTEXT_DRIFT_MODULE_URL;",
+		"const reportPath = process.env.PROMPT_CONTEXT_DRIFT_REPORT_PATH;",
+		"const repoRoot = process.env.PROMPT_CONTEXT_DRIFT_REPO_ROOT;",
+		"const { validatePromptContextDriftReport } = await import(moduleUrl);",
+		"let report;",
 		"try {",
-		"  const moduleUrl = process.env.PROMPT_CONTEXT_DRIFT_MODULE_URL;",
-		"  const reportPath = process.env.PROMPT_CONTEXT_DRIFT_REPORT_PATH;",
-		"  const repoRoot = process.env.PROMPT_CONTEXT_DRIFT_REPO_ROOT;",
-		"  const { validatePromptContextDriftReport } = await import(moduleUrl);",
-		"  const report = JSON.parse(readFileSync(reportPath, 'utf8'));",
-		"  const result = validatePromptContextDriftReport(report, { repoRoot });",
-		"  console.log(JSON.stringify({ schemaVersion: 'prompt-context-drift-validation/v1', ...result }, null, 2));",
-		"  process.exit(result.status === 'pass' ? 0 : 1);",
+		"  report = JSON.parse(readFileSync(reportPath, 'utf8'));",
 		"} catch (error) {",
-		"  const message = error instanceof Error ? error.message : String(error);",
-		"  console.log(JSON.stringify({",
-		"    schemaVersion: 'prompt-context-drift-validation/v1',",
-		"    status: 'fail',",
-		'    errors: ["runtime failure: " + message],',
-		"  }, null, 2));",
+		"  console.log(JSON.stringify({ schemaVersion: 'prompt-context-drift-validation/v1', status: 'fail', errors: ['report: cannot read JSON: ' + error.message] }, null, 2));",
 		"  process.exit(1);",
 		"}",
+		"const result = validatePromptContextDriftReport(report, { repoRoot });",
+		"console.log(JSON.stringify({ schemaVersion: 'prompt-context-drift-validation/v1', ...result }, null, 2));",
+		"process.exit(result.status === 'pass' ? 0 : 1);",
 	].join("\n");
 
 	if (!fs.existsSync(args.reportPath)) {
@@ -101,6 +97,9 @@ function main() {
 			encoding: "utf8",
 		},
 	);
+	if (child.error) {
+		printResult("fail", [`child process failed: ${child.error.message}`], 1);
+	}
 	if (child.stdout) process.stdout.write(child.stdout);
 	if (child.stderr) process.stderr.write(child.stderr);
 	process.exit(child.status === null ? 1 : child.status);

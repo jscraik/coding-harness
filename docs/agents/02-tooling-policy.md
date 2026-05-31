@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-17
+last_validated: 2026-05-30
 ---
 
 # Tooling policy
@@ -222,7 +222,7 @@ Branch name consumers should treat this pattern as an agent worktree-readiness b
 | ------------------------------ | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Install/deps                   | `pnpm install`                                                                                      | Dependency installation                                                                                                                                                                 |
 | Code-style gate                | `bash scripts/validate-codestyle.sh`                                                                | Fail-closed repo-local code-style validation                                                                                                                                            |
-| Quality gate                   | `pnpm check`                                                                                        | `lint + typecheck + self-affirming test guard + test + audit`                                                                                                                           |
+| Quality gate                   | `pnpm check`                                                                                        | `lint + typecheck + self-affirming test guard + behavior-test guard + git-env sanitizer guard + test + audit`                                                                            |
 | Lint                           | `pnpm lint`                                                                                         | `biome check .`                                                                                                                                                                         |
 | Typecheck                      | `pnpm typecheck`                                                                                    | `tsc --noEmit`                                                                                                                                                                          |
 | Tests                          | `pnpm test`                                                                                         | `vitest run`                                                                                                                                                                            |
@@ -484,7 +484,7 @@ When working with high-risk action governance:
 - **High-risk action envelopes** require current evidence refs and head SHA where the action touches repository or PR state
 - **Reviewer independence requirement**: reviewer must not be the same as requester/producer
 - **Canonical actor identity separation**: reviewer and requester canonical identity refs must differ (not just display alias)
-- **Decision semantics**: allow, block, mismatch, unknown, and not applicable; the not-applicable verdict is forbidden for high-risk action kinds
+- **Decision semantics**: allow, block, mismatch, unknown, N/A; the N/A verdict is forbidden for high-risk action kinds
 - **Docs-gate requirement**: companion documentation surfaces must be updated in the same PR as any action-review governance change
 - **Diagrams**: see `AI/context/diagram-context.md` for required architecture diagrams
 

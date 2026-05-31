@@ -2,4 +2,4 @@
 
 ## Current Active Route
 
-- `.harness/active-artifacts.md`
+- `contracts/fixtures/prompt-context-drift/active-artifacts.md`

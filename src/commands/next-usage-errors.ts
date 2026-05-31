@@ -112,6 +112,20 @@ export function usageErrorDecision(
 				nextAction: "Use --evidence optional or --evidence required.",
 				failureClass: "evidence_invalid",
 			});
+		case "worktree_role_invalid":
+			return blockedUsageErrorDecision({
+				mode: parsed.mode as HarnessNextMode,
+				summary:
+					"Invalid --worktree-role: " +
+					(parsed.errorValue ?? "missing value") +
+					".",
+				nextAction:
+					"Use --worktree-role clean, --worktree-role dirty-with-justification, or --worktree-role fresh-worktree.",
+				failureClass: "worktree_role_invalid",
+				extra: {
+					validRoles: ["clean", "dirty-with-justification", "fresh-worktree"],
+				},
+			});
 		case "phase_exit_missing":
 			return blockedUsageErrorDecision({
 				mode: parsed.mode,

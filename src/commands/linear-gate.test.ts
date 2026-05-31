@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { sanitizeGitEnvironment } from "../lib/git/safe-env.js";
 import { normaliseLinearGateResult } from "../lib/output/normalise.js";
 import { runLinearGate } from "./linear-gate.js";
 
@@ -43,10 +44,7 @@ function writeHarnessContract(tempDir: string): void {
 }
 
 function runFixtureGit(args: string[], cwd: string): void {
-	const env = { ...process.env };
-	delete env.GIT_DIR;
-	delete env.GIT_WORK_TREE;
-	delete env.GIT_INDEX_FILE;
+	const env = sanitizeGitEnvironment({ policy: "minimal" });
 
 	execFileSync("git", args, {
 		cwd,

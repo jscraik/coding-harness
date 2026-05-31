@@ -11,6 +11,7 @@ import {
 	resolveBrainHarnessDir,
 	shouldRenderBrainJson,
 } from "./cli-args.js";
+import { renderBrainQueryHuman } from "./query-presenter.js";
 
 /** Public API export. */
 export function runBrainQuery(
@@ -65,24 +66,6 @@ export function runBrainQuery(
 	}
 
 	return { query, matches, total: matches.length };
-}
-
-function renderBrainQueryHuman(result: BrainQueryResult): string {
-	const lines: string[] = [];
-
-	lines.push("");
-	lines.push(`=== Brain Query: "${result.query}" ===`);
-	lines.push(`  ${result.total} match${result.total !== 1 ? "es" : ""} found`);
-	lines.push("");
-
-	for (const m of result.matches) {
-		const domainTag = m.domain ? `[${m.domain}] ` : "";
-		lines.push(`  ${domainTag}${m.path}:${m.lineNumber}`);
-		lines.push(`    ${m.line}`);
-	}
-
-	lines.push("");
-	return lines.join("\n");
 }
 
 /** Run the Project Brain query subcommand and render CLI output. */

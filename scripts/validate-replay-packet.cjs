@@ -135,23 +135,23 @@ const VERDICTS = new Set([
 	"missing",
 	"unknown",
 ]);
-const REDACTION_STATUSES = new Set(["redacted", "summary_only"]);
 
 function parseArgs(argv) {
-	const result = { packetPath: null, repoRoot: process.cwd() };
+	const result = { errors: [], packetPath: null, repoRoot: process.cwd() };
 	for (let index = 0; index < argv.length; index += 1) {
 		const arg = argv[index];
 		if (arg === "--repo-root") {
-			const nextArg = argv[index + 1];
-			if (!nextArg || nextArg.startsWith("-")) {
-				return {
-					error: "--repo-root: requires a non-flag argument",
-					packetPath: null,
-					repoRoot: null,
-				};
+			const value = argv[index + 1];
+			if (!value || value.startsWith("-")) {
+				result.errors.push("--repo-root: requires a value");
+				continue;
 			}
-			result.repoRoot = nextArg;
+			result.repoRoot = value;
 			index += 1;
+			continue;
+		}
+		if (arg.startsWith("--")) {
+			result.errors.push(`${arg}: unknown option`);
 			continue;
 		}
 		if (!result.packetPath) result.packetPath = arg;
@@ -161,23 +161,7 @@ function parseArgs(argv) {
 
 function main() {
 	const args = parseArgs(process.argv.slice(2));
-	const errors = [];
-	if (args.error) {
-		errors.push(args.error);
-		const status = "fail";
-		console.log(
-			JSON.stringify(
-				{
-					schemaVersion: "replay-packet-validation/v1",
-					status,
-					errors,
-				},
-				null,
-				2,
-			),
-		);
-		process.exit(1);
-	}
+	const errors = [...args.errors];
 	let packet;
 	if (!args.packetPath) errors.push("packetPath: is required");
 	try {
@@ -187,24 +171,11 @@ function main() {
 	} catch (error) {
 		errors.push(`packet: cannot read JSON: ${error.message}`);
 	}
-	let repoRoot;
+	let repoRoot = process.cwd();
 	try {
 		repoRoot = fs.realpathSync(path.resolve(args.repoRoot));
 	} catch (error) {
-		errors.push(`repoRoot: cannot resolve path: ${error.message}`);
-		const status = "fail";
-		console.log(
-			JSON.stringify(
-				{
-					schemaVersion: "replay-packet-validation/v1",
-					status,
-					errors,
-				},
-				null,
-				2,
-			),
-		);
-		process.exit(1);
+		errors.push(`repoRoot: cannot resolve repository root: ${error.message}`);
 	}
 	if (packet) validatePacket(packet, repoRoot, new Date(), errors);
 	const status = errors.length === 0 ? "pass" : "fail";
@@ -251,18 +222,6 @@ function validatePacket(packet, repoRoot, now, errors) {
 	}
 	validatePointer(packet.producer, "producer", errors);
 	validatePointer(packet.replayId, "replayId", errors);
-	validateNullablePointer(packet.branch, "branch", errors);
-	if (!REDACTION_STATUSES.has(String(packet.redactionStatus))) {
-		errors.push("redactionStatus: must be redacted or summary_only");
-	}
-	if (
-		typeof packet.nextAction !== "string" ||
-		packet.nextAction.trim() === ""
-	) {
-		errors.push("nextAction: must be a non-empty compact pointer");
-	} else {
-		validatePointer(packet.nextAction, "nextAction", errors);
-	}
 	validateDateTime(packet.generatedAt, "generatedAt", errors);
 	validateNullableHead(packet.headSha, "headSha", errors);
 	validateNullableHead(packet.observedHeadSha, "observedHeadSha", errors);
@@ -320,23 +279,32 @@ function validateHooks(value, generatedAt, repoRoot, errors) {
 			errors.push(`${prefix}.triggerKind: must be recognized`);
 		if (!STATUSES.has(String(hook.status)))
 			errors.push(`${prefix}.status: must be recognized`);
-		validateNullablePointer(
-			hook.blockerClass,
-			`${prefix}.blockerClass`,
-			errors,
-		);
+		if (hook.blockerClass !== null)
+			validatePointer(hook.blockerClass, `${prefix}.blockerClass`, errors);
 		validateDateTime(hook.checkedAt, `${prefix}.checkedAt`, errors);
 		if (isAfter(hook.checkedAt, generatedAt))
 			errors.push(`${prefix}.checkedAt: must not be after generatedAt`);
-		validateRef(hook.hookRef, `${prefix}.hookRef`, repoRoot, errors, [
-			"hook_file",
-		]);
-		validateRef(hook.inputRef, `${prefix}.inputRef`, repoRoot, errors, [
-			"hook_input",
-		]);
-		validateRef(hook.outputRef, `${prefix}.outputRef`, repoRoot, errors, [
-			"hook_output",
-		]);
+		validateRef(
+			hook.hookRef,
+			`${prefix}.hookRef`,
+			repoRoot,
+			errors,
+			new Set(["hook_file"]),
+		);
+		validateRef(
+			hook.inputRef,
+			`${prefix}.inputRef`,
+			repoRoot,
+			errors,
+			new Set(["hook_input", "repo_file", "produced_artifact"]),
+		);
+		validateRef(
+			hook.outputRef,
+			`${prefix}.outputRef`,
+			repoRoot,
+			errors,
+			new Set(["hook_output", "repo_file", "produced_artifact"]),
+		);
 		validateRefs(
 			hook.producedArtifactRefs,
 			`${prefix}.producedArtifactRefs`,
@@ -359,15 +327,19 @@ function validateHookIdentity(value, prefix, repoRoot, errors) {
 	}
 	validateKnownKeys(value, HOOK_IDENTITY_KEYS, prefix, errors);
 	requireFields(value, HOOK_IDENTITY_KEYS, prefix, errors);
-	validateRef(value.hookFileRef, `${prefix}.hookFileRef`, repoRoot, errors, [
-		"hook_file",
-	]);
+	validateRef(
+		value.hookFileRef,
+		`${prefix}.hookFileRef`,
+		repoRoot,
+		errors,
+		new Set(["hook_file"]),
+	);
 	validateRef(
 		value.resolvedCommandRef,
 		`${prefix}.resolvedCommandRef`,
 		repoRoot,
 		errors,
-		["resolved_command"],
+		new Set(["resolved_command"]),
 	);
 	if (value.runCorrelationId !== null)
 		validatePointer(
@@ -399,11 +371,9 @@ function validateEvents(value, generatedAt, errors) {
 			errors.push(`${prefix}.observedAt: must not be after generatedAt`);
 		validatePointerArray(event.sourceRefs, `${prefix}.sourceRefs`, errors);
 		validateHashArray(event.hashes, `${prefix}.hashes`, errors);
-		validateNullablePointer(
-			event.failureClass,
-			`${prefix}.failureClass`,
-			errors,
-		);
+		if (event.failureClass !== null && typeof event.failureClass !== "string") {
+			errors.push(`${prefix}.failureClass: must be a string or null`);
+		}
 	});
 }
 
@@ -467,13 +437,11 @@ function validateRef(value, prefix, repoRoot, errors, allowedKinds) {
 	validateKnownKeys(value, REF_KEYS, prefix, errors);
 	requireFields(value, REF_KEYS, prefix, errors);
 	validatePointer(value.refId, `${prefix}.refId`, errors);
-	if (!REF_KINDS.has(String(value.refKind)))
-		errors.push(`${prefix}.refKind: must be recognized`);
-	if (allowedKinds && !allowedKinds.includes(value.refKind)) {
+	const kindsToCheck = allowedKinds ?? REF_KINDS;
+	if (!kindsToCheck.has(String(value.refKind)))
 		errors.push(
-			`${prefix}.refKind: must be ${allowedKinds.join(" or ")} for this field`,
+			`${prefix}.refKind: must be recognized${allowedKinds ? ` (allowed: ${Array.from(allowedKinds).join(", ")})` : ""}`,
 		);
-	}
 	if (value.hashAlgorithm !== "sha256")
 		errors.push(`${prefix}.hashAlgorithm: must be sha256`);
 	if (typeof value.sha256 !== "string" || !SHA256.test(value.sha256))
@@ -622,10 +590,6 @@ function requireFields(value, keys, prefix, errors) {
 function validatePointer(value, prefix, errors) {
 	if (typeof value !== "string" || !POINTER.test(value))
 		errors.push(`${prefix}: must be a compact pointer`);
-}
-
-function validateNullablePointer(value, prefix, errors) {
-	if (value !== null) validatePointer(value, prefix, errors);
 }
 
 function validateDateTime(value, prefix, errors) {

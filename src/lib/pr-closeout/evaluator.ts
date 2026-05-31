@@ -25,13 +25,14 @@ import {
 import { buildLifecycleSnapshot } from "./lifecycle-snapshot.js";
 import { buildTraceabilitySummary, summarizeChecks } from "./report-helpers.js";
 import { buildPrCloseoutRecoveryState } from "./recovery.js";
+import { buildPrCloseoutSnapshot } from "./snapshot.js";
 import { deriveNextAction } from "./status.js";
-import {
-	PR_CLOSEOUT_SCHEMA_VERSION,
-	type PrCloseoutBlocker,
-	type PrCloseoutHarnessGateEvidenceSource,
-	type PrCloseoutInput,
-	type PrCloseoutReport,
+import { PR_CLOSEOUT_SCHEMA_VERSION } from "./types.js";
+import type {
+	PrCloseoutBlocker,
+	PrCloseoutHarnessGateEvidenceSource,
+	PrCloseoutInput,
+	PrCloseoutReport,
 } from "./types.js";
 
 function buildPrCloseoutReportValue(
@@ -93,6 +94,15 @@ function buildPrCloseoutReportValue(
 		reportStatus: decision.status,
 		nextAction: decision.nextAction,
 	});
+	const snapshot = buildPrCloseoutSnapshot({
+		generatedAt,
+		pr: pr.number,
+		url: pr.url ?? null,
+		status: decision.status,
+		nextAction: decision.nextAction,
+		claims,
+		blockers,
+	});
 	return {
 		schemaVersion: PR_CLOSEOUT_SCHEMA_VERSION,
 		generatedAt,
@@ -124,6 +134,7 @@ function buildPrCloseoutReportValue(
 		dirtyPathsExcluded,
 		attemptLedger,
 		recoveryEvent,
+		snapshot,
 	};
 }
 
@@ -142,3 +153,5 @@ export function buildPrCloseoutReport(
 ): PrCloseoutReport {
 	return Effect.runSync(buildPrCloseoutReportEffect(input, options));
 }
+
+export { buildPrCloseoutSnapshot };

@@ -12,6 +12,7 @@ const RELEASE_READINESS_IMPACTS: ReadonlySet<PrCloseoutReleaseReadinessImpact> =
 /** Parsed CLI options accepted by the PR closeout command facade. */
 export interface PrCloseoutCLIOptions {
 	json: boolean;
+	snapshot?: boolean;
 	repoRoot: string;
 	inputPath?: string;
 	prNumber?: number;
@@ -77,7 +78,11 @@ function parseReleaseReadinessImpact(
 	return undefined;
 }
 
-type FlagParseResult = "handled" | "unknown" | { exitCode: number };
+type FlagParseResult =
+	| "handled"
+	| "handledWithoutArg"
+	| "unknown"
+	| { exitCode: number };
 
 function applyStringFlag(
 	args: readonly string[],
@@ -125,6 +130,10 @@ function applyPrCloseoutFlag(
 		}
 		options.prNumber = value;
 		return "handled";
+	}
+	if (arg === "--snapshot") {
+		options.snapshot = true;
+		return "handledWithoutArg";
 	}
 	if (arg === "--env-file") {
 		return applyStringFlag(
@@ -226,6 +235,9 @@ export function parsePrCloseoutArgs(
 		const result = applyPrCloseoutFlag(options, args, index);
 		if (result === "handled") {
 			index += 1;
+			continue;
+		}
+		if (result === "handledWithoutArg") {
 			continue;
 		}
 		if (result !== "unknown") return result;

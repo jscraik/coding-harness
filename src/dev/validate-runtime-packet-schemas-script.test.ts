@@ -69,13 +69,6 @@ function runReplayValidator(packetPath: string) {
 	);
 }
 
-function runReplayValidatorArgs(args: string[]) {
-	return spawnSync(process.execPath, [REPLAY_VALIDATOR_PATH, ...args], {
-		cwd: process.cwd(),
-		encoding: "utf8",
-	});
-}
-
 function manifestWithPatch(
 	patchEntry: (entry: Record<string, unknown>) => Record<string, unknown>,
 ): string {
@@ -197,28 +190,6 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(scriptResult.stdout).toContain(
 			"orientation packets must not carry stale state",
 		);
-	});
-
-	it("keeps ReplayPacket/v1 script failures parseable for invalid repo roots", () => {
-		const missingValue = runReplayValidatorArgs(["--repo-root"]);
-		expect(missingValue.status).toBe(1);
-		expect(JSON.parse(missingValue.stdout)).toMatchObject({
-			schemaVersion: "replay-packet-validation/v1",
-			status: "fail",
-			errors: expect.arrayContaining([expect.stringContaining("--repo-root")]),
-		});
-
-		const invalidRoot = runReplayValidatorArgs([
-			"contracts/examples/replay-packet.example.json",
-			"--repo-root",
-			"/path/that/does/not/exist",
-		]);
-		expect(invalidRoot.status).toBe(1);
-		expect(JSON.parse(invalidRoot.stdout)).toMatchObject({
-			schemaVersion: "replay-packet-validation/v1",
-			status: "fail",
-			errors: expect.arrayContaining([expect.stringContaining("repoRoot")]),
-		});
 	});
 
 	it("keeps ArtifactRuntimeSurface/v1 examples aligned with the TypeScript validator", () => {

@@ -48,6 +48,11 @@ unless a live refresh is recorded in the referenced artifact.
 
 ## Closeout Reconcile Items
 
+- PR #315 and PR #316 are both in merged state, both PR/CI lanes have all checks
+  passing on current PR heads, and both PRs report zero unresolved review threads
+  after a fresh review-thread refresh. Merge-readiness and Linear scope alignment
+  are still blocked pending a successful check-goal-board run on current HEAD and
+  confirmed live Linear mutation confirmation.
 - Live Linear was refreshed for JSC-331 on 2026-05-21; tracker closure and
   live issue status for other issues remain explicit external actions.
 - JSC-283, JSC-288, JSC-289, and JSC-290 are no longer active routing items in

@@ -28,6 +28,9 @@ SELF_REFERENTIAL_GOAL_RECEIPT_PATHS = {
     "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
     "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
 }
+SELF_REFERENTIAL_DECLARABLE_PATHS = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS | {
+    "scripts/check-goal-audit-freshness.py",
+}
 
 
 class ValidationError(Exception):
@@ -153,12 +156,16 @@ def permits_self_referential_goal_receipt_commit(
     changed_files = receipt.get("changed_files", [])
     if not isinstance(changed_files, list):
         return False
+    declared_paths: set[str] = set()
     for value in changed_files:
         if not isinstance(value, str):
             return False
-        normalize_repo_relative_path(value, "receipt.changed_files[]")
+        declared_paths.add(normalize_repo_relative_path(value, "receipt.changed_files[]"))
+    if not declared_paths <= SELF_REFERENTIAL_DECLARABLE_PATHS:
+        return False
     changed_paths = changed_paths_between(repo_root, receipt_head_sha, current_head)
-    return bool(changed_paths) and changed_paths <= SELF_REFERENTIAL_GOAL_RECEIPT_PATHS
+    allowed_paths = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS | declared_paths
+    return bool(changed_paths) and changed_paths <= allowed_paths
 
 
 def latest_audit_source(

@@ -91,6 +91,9 @@ export function runNextCLI(
 		decision ??= runHarnessNext({
 			...options,
 			mode: parsed.mode,
+			...(parsed.worktreeRole !== undefined
+				? { worktreeRole: parsed.worktreeRole }
+				: {}),
 			...(parsed.evidenceMode !== undefined
 				? { evidenceMode: parsed.evidenceMode }
 				: {}),

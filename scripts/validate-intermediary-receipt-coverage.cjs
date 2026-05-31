@@ -46,42 +46,6 @@ function printResult(status, errors, exitCode) {
 	process.exit(exitCode);
 }
 
-function resolvePacketPath(repoRoot, packetPath) {
-	const resolved = path.resolve(repoRoot, packetPath);
-	const relative = path.relative(repoRoot, resolved);
-	if (
-		relative === "" ||
-		relative.startsWith("..") ||
-		path.isAbsolute(relative)
-	) {
-		printResult("fail", ["packetPath: must resolve within --repo-root"], 1);
-	}
-	return resolved;
-}
-
-function isValidationEnvelope(stdout) {
-	if (!stdout.trim()) return false;
-	try {
-		const parsed = JSON.parse(stdout);
-		return (
-			parsed &&
-			parsed.schemaVersion === "intermediary-receipt-coverage-validation/v1" &&
-			(parsed.status === "pass" || parsed.status === "fail") &&
-			Array.isArray(parsed.errors)
-		);
-	} catch (_error) {
-		return false;
-	}
-}
-
-function summarizeText(value) {
-	const normalized = String(value || "")
-		.replace(/\s+/g, " ")
-		.trim();
-	if (normalized.length <= 800) return normalized;
-	return `${normalized.slice(0, 800)}...`;
-}
-
 function main() {
 	const args = parseArgs(process.argv.slice(2));
 	if (args.errors.length > 0) {
@@ -91,7 +55,11 @@ function main() {
 		printResult("fail", ["packetPath: is required"], 2);
 	}
 	const repoRoot = path.resolve(args.repoRoot);
-	const packetPath = resolvePacketPath(repoRoot, args.packetPath);
+	const packetPath = resolveRepoRelativePath(
+		repoRoot,
+		args.packetPath,
+		"packetPath",
+	);
 	if (!fs.existsSync(packetPath)) {
 		printResult("fail", ["packetPath: file does not exist"], 1);
 	}
@@ -124,31 +92,31 @@ function main() {
 		},
 	);
 	if (child.error) {
-		printResult("fail", [`runner: ${child.error.message}`], 1);
+		printResult("fail", [`child process failed: ${child.error.message}`], 1);
 	}
-	if (isValidationEnvelope(child.stdout)) {
-		process.stdout.write(child.stdout);
-		process.exit(child.status === null ? 1 : child.status);
+	if (child.status !== 0 && !child.stdout.trim()) {
+		const childError = child.stderr.trim().split("\n")[0];
+		const errorDetail = childError
+			? `: ${childError}`
+			: " without stderr details";
+		printResult(
+			"fail",
+			[`child validation failed before emitting JSON${errorDetail}`],
+			1,
+		);
 	}
-	if (child.status === 0) {
-		const errors = [
-			"runner: exited with status 0 but did not emit intermediary-receipt-coverage-validation/v1 JSON",
-		];
-		const stderr = summarizeText(child.stderr);
-		const stdout = summarizeText(child.stdout);
-		if (stderr) errors.push(`runner.stderr: ${stderr}`);
-		if (stdout) errors.push(`runner.stdout: ${stdout}`);
-		printResult("fail", errors, 1);
+	if (child.stdout) process.stdout.write(child.stdout);
+	if (child.stderr) process.stderr.write(child.stderr);
+	process.exit(child.status === null ? 1 : child.status);
+}
+
+function resolveRepoRelativePath(repoRoot, value, field) {
+	const resolved = path.resolve(repoRoot, value);
+	const relativePath = path.relative(repoRoot, resolved);
+	if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+		printResult("fail", [`${field}: must stay inside repo root`], 2);
 	}
-	const childExit = child.signal
-		? `signal ${child.signal}`
-		: `status ${child.status ?? "unknown"}`;
-	const errors = [`runner: exited with ${childExit}`];
-	const stderr = summarizeText(child.stderr);
-	const stdout = summarizeText(child.stdout);
-	if (stderr) errors.push(`runner.stderr: ${stderr}`);
-	if (stdout) errors.push(`runner.stdout: ${stdout}`);
-	printResult("fail", errors, child.status === null ? 1 : child.status || 1);
+	return resolved;
 }
 
 main();

@@ -8,6 +8,20 @@
             if [[ -n "${CIRCLE_PROJECT_USERNAME:-}" && -n "${CIRCLE_PROJECT_REPONAME:-}" ]]; then
               repo_slug="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
             fi
+            if [[ -z "$repo_slug" ]]; then
+              if [[ -n "$CIRCLE_REPOSITORY_URL" ]]; then
+                repo_slug="$(printf '%s' "$CIRCLE_REPOSITORY_URL" | sed 's#^https://github.com/##; s#^git@github.com:/##; s#^git@github.com:##; s#\.git$##')"
+              fi
+            fi
+            if [[ -z "$repo_slug" ]]; then
+              remote_url="$(git config --get remote.origin.url 2>/dev/null || true)"
+              if [[ -n "$remote_url" ]]; then
+                repo_slug="$(printf '%s' "$remote_url" | sed 's#^https://github.com/##; s#^git@github.com:/##; s#^git@github.com:##; s#\.git$##')"
+              fi
+            fi
+            if [[ -z "$repo_slug" ]]; then
+              repo_slug="$(gh repo view --json nameWithOwner --jq '.nameWithOwner // ""' 2>/dev/null || true)"
+            fi
             gh_repo_args=()
             if [[ -n "$repo_slug" ]]; then
               gh_repo_args=(--repo "$repo_slug")

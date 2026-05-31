@@ -1,44 +1,157 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
-import {
-	PROMPT_CONTEXT_DRIFT_BLOCKER_CLASSES,
-	PROMPT_CONTEXT_DRIFT_EVIDENCE_USES,
-	PROMPT_CONTEXT_DRIFT_FRESHNESS,
-	PROMPT_CONTEXT_DRIFT_NEXT_ACTION_CLASSES,
-	PROMPT_CONTEXT_DRIFT_REF_KINDS,
-	PROMPT_CONTEXT_DRIFT_REPORT_SCHEMA_VERSION,
-	PROMPT_CONTEXT_DRIFT_STATUSES,
-	PROMPT_CONTEXT_DRIFT_SURFACES,
-	type PromptContextDriftValidationOptions,
-	type PromptContextDriftValidationResult,
-} from "./prompt-context-drift-types.js";
 
-export {
-	PROMPT_CONTEXT_DRIFT_BLOCKER_CLASSES,
-	PROMPT_CONTEXT_DRIFT_EVIDENCE_USES,
-	PROMPT_CONTEXT_DRIFT_FRESHNESS,
-	PROMPT_CONTEXT_DRIFT_NEXT_ACTION_CLASSES,
-	PROMPT_CONTEXT_DRIFT_REF_KINDS,
-	PROMPT_CONTEXT_DRIFT_REPORT_SCHEMA_VERSION,
-	PROMPT_CONTEXT_DRIFT_STATUSES,
-	PROMPT_CONTEXT_DRIFT_SURFACES,
-} from "./prompt-context-drift-types.js";
-export type {
-	PromptContextDriftBlocker,
-	PromptContextDriftBlockerClass,
-	PromptContextDriftEvidenceUse,
-	PromptContextDriftFreshness,
-	PromptContextDriftRef,
-	PromptContextDriftRefKind,
-	PromptContextDriftReport,
-	PromptContextDriftStatus,
-	PromptContextDriftSurface,
-	PromptContextDriftSurfaceId,
-	PromptContextDriftNextActionClass,
-	PromptContextDriftValidationOptions,
-	PromptContextDriftValidationResult,
-} from "./prompt-context-drift-types.js";
+export const PROMPT_CONTEXT_DRIFT_REPORT_SCHEMA_VERSION =
+	"prompt-context-drift-report/v1" as const;
+
+export const PROMPT_CONTEXT_DRIFT_STATUSES = [
+	"pass",
+	"warn",
+	"fail",
+	"blocked",
+] as const;
+
+export const PROMPT_CONTEXT_DRIFT_EVIDENCE_USES = [
+	"orientation",
+	"audit_trail",
+	"claim_support",
+] as const;
+
+export const PROMPT_CONTEXT_DRIFT_FRESHNESS = [
+	"current",
+	"stale",
+	"missing",
+	"unknown",
+	"not_applicable",
+] as const;
+
+export const PROMPT_CONTEXT_DRIFT_SURFACES = [
+	"prompt_context",
+	"active_artifacts",
+	"active_route",
+	"project_brain_memory",
+	"project_brain_knowledge",
+	"runtime_card_or_handoff",
+	"receipt_head_sha",
+] as const;
+
+export const PROMPT_CONTEXT_DRIFT_REF_KINDS = [
+	"repo_file",
+	"prompt_context_receipt",
+	"runtime_card",
+	"receipt",
+	"external_metadata",
+] as const;
+
+export const PROMPT_CONTEXT_DRIFT_BLOCKER_CLASSES = [
+	"none",
+	"stale_prompt_context",
+	"stale_active_route",
+	"missing_project_brain_ref",
+	"stale_project_brain_ref",
+	"stale_runtime_card",
+	"advisory_runtime_card",
+	"head_sha_mismatch",
+	"missing_source_hash",
+	"digest_mismatch",
+	"external_only_required_surface",
+	"unsafe_ref",
+	"raw_or_secret_content",
+	"unknown_schema_field",
+] as const;
+
+export const PROMPT_CONTEXT_DRIFT_NEXT_ACTION_CLASSES = [
+	"none",
+	"refresh_prompt_context",
+	"refresh_active_artifacts",
+	"refresh_project_brain",
+	"refresh_runtime_card",
+	"refresh_receipts",
+	"rerun_validator",
+] as const;
+
+/** Overall or per-surface status emitted by a prompt-context drift report. */
+export type PromptContextDriftStatus =
+	(typeof PROMPT_CONTEXT_DRIFT_STATUSES)[number];
+/** How report evidence may be used by downstream cockpit or claim logic. */
+export type PromptContextDriftEvidenceUse =
+	(typeof PROMPT_CONTEXT_DRIFT_EVIDENCE_USES)[number];
+/** Freshness classification for a context surface or source reference. */
+export type PromptContextDriftFreshness =
+	(typeof PROMPT_CONTEXT_DRIFT_FRESHNESS)[number];
+/** Stable identifier for a context surface that can drift from live execution. */
+export type PromptContextDriftSurfaceId =
+	(typeof PROMPT_CONTEXT_DRIFT_SURFACES)[number];
+/** Kind of pointer used to prove a context surface without embedding raw content. */
+export type PromptContextDriftRefKind =
+	(typeof PROMPT_CONTEXT_DRIFT_REF_KINDS)[number];
+/** Machine-readable reason a report or surface cannot support a claim. */
+export type PromptContextDriftBlockerClass =
+	(typeof PROMPT_CONTEXT_DRIFT_BLOCKER_CLASSES)[number];
+/** Recommended refresh or repair lane for the blocking condition. */
+export type PromptContextDriftNextActionClass =
+	(typeof PROMPT_CONTEXT_DRIFT_NEXT_ACTION_CLASSES)[number];
+
+/** Pointer to the repo-local artifact or metadata backing one context surface. */
+export interface PromptContextDriftRef {
+	refId: string;
+	surfaceId: PromptContextDriftSurfaceId;
+	refKind: PromptContextDriftRefKind;
+	ref: string;
+	hashAlgorithm: "sha256" | null;
+	sha256: string | null;
+	freshness: PromptContextDriftFreshness;
+	evidenceUse: PromptContextDriftEvidenceUse;
+	requiredForClaimSupport: boolean;
+	requiresFilesystemExistence: boolean;
+}
+
+/** Blocking condition that prevents prompt-context evidence from supporting a claim. */
+export interface PromptContextDriftBlocker {
+	blockerClass: PromptContextDriftBlockerClass;
+	reason: string;
+	nextActionClass: PromptContextDriftNextActionClass;
+}
+
+/** Drift status for one required or advisory context surface. */
+export interface PromptContextDriftSurface {
+	surfaceId: PromptContextDriftSurfaceId;
+	status: PromptContextDriftStatus;
+	evidenceUse: PromptContextDriftEvidenceUse;
+	freshness: PromptContextDriftFreshness;
+	requiredForClaimSupport: boolean;
+	observedHeadSha: string | null;
+	currentHeadSha: string | null;
+	sourceRefs: PromptContextDriftRef[];
+	blockers: PromptContextDriftBlocker[];
+}
+
+/** Full prompt-context drift report consumed by agent-readiness and validators. */
+export interface PromptContextDriftReport {
+	schemaVersion: typeof PROMPT_CONTEXT_DRIFT_REPORT_SCHEMA_VERSION;
+	generatedAt: string;
+	producer: string;
+	repoRootRef: string;
+	currentHeadSha: string | null;
+	evidenceUse: PromptContextDriftEvidenceUse;
+	overallStatus: PromptContextDriftStatus;
+	surfaces: PromptContextDriftSurface[];
+	blockers: PromptContextDriftBlocker[];
+	nextAction: string;
+}
+
+/** Validation result for semantic prompt-context drift report checks. */
+export interface PromptContextDriftValidationResult {
+	status: "pass" | "fail";
+	errors: string[];
+}
+
+/** Options that bind prompt-context drift validation to a repository root. */
+export interface PromptContextDriftValidationOptions {
+	repoRoot?: string | undefined;
+	now?: Date | undefined;
+}
 
 const HEAD_SHA = /^[0-9a-f]{40}$/u;
 const SHA256 = /^[0-9a-f]{64}$/u;
@@ -134,27 +247,23 @@ function validateReportFields(
 	);
 	validateText(report.nextAction, "nextAction", errors, 512);
 	validateBlockers(report.blockers, "blockers", errors);
-	if (!Array.isArray(report.surfaces)) {
-		errors.push("surfaces: must be an array");
-		return;
-	}
+	if (!Array.isArray(report.surfaces))
+		return void errors.push("surfaces: must be an array");
 	const repoRoot = options.repoRoot ? resolve(options.repoRoot) : undefined;
 	const surfaceRecords = new Map<string, Record<string, unknown>>();
 	for (const [index, surface] of report.surfaces.entries()) {
 		validateSurface(surface, `surfaces[${index}]`, report, repoRoot, errors);
-		if (isRecord(surface) && typeof surface.surfaceId === "string") {
-			if (surfaceRecords.has(surface.surfaceId)) {
-				errors.push(
-					`surfaces[${index}].surfaceId: duplicate surfaceId ${surface.surfaceId} is not allowed`,
-				);
-				continue;
-			}
+		if (!isRecord(surface) || typeof surface.surfaceId !== "string") continue;
+		if (!surfaceRecords.has(surface.surfaceId)) {
 			surfaceRecords.set(surface.surfaceId, surface);
+			continue;
 		}
+		errors.push(
+			`surfaces[${index}].surfaceId: duplicate surface ${surface.surfaceId}`,
+		);
 	}
-	if (report.evidenceUse === "claim_support") {
+	if (report.evidenceUse === "claim_support")
 		validateClaimSupportReport(report, surfaceRecords, errors);
-	}
 }
 
 function validateSurface(
@@ -372,7 +481,7 @@ function validateRef(
 	if (ref.requiresFilesystemExistence === true) {
 		if (!repoRoot) {
 			errors.push(
-				`${path}.ref: repoRoot is required when requiresFilesystemExistence is true`,
+				`${path}.ref: repoRoot is required when requiresFilesystemExistence=true`,
 			);
 			return false;
 		}
@@ -387,14 +496,6 @@ function validateRepoFileRef(
 	repoRoot: string,
 	errors: string[],
 ): boolean {
-	let resolvedRepoRoot: string;
-	try {
-		resolvedRepoRoot = realpathSync(repoRoot);
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		errors.push(`${path}.ref: repoRoot is not accessible: ${message}`);
-		return false;
-	}
 	if (ref.refKind !== "repo_file") {
 		if (ref.requiredForClaimSupport === true) {
 			errors.push(`${path}.refKind: required local evidence must be repo_file`);
@@ -402,6 +503,13 @@ function validateRepoFileRef(
 		return false;
 	}
 	const refPath = String(ref.ref);
+	let resolvedRepoRoot: string;
+	try {
+		resolvedRepoRoot = realpathSync(repoRoot);
+	} catch {
+		errors.push(`${path}.ref: repository root is not accessible`);
+		return false;
+	}
 	const candidate = resolve(resolvedRepoRoot, refPath);
 	if (!existsSync(candidate)) {
 		errors.push(`${path}.ref: required repo file does not exist`);
@@ -410,11 +518,8 @@ function validateRepoFileRef(
 	let realCandidate: string;
 	try {
 		realCandidate = realpathSync(candidate);
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		errors.push(
-			`${path}.ref: required repo file is not accessible: ${message}`,
-		);
+	} catch {
+		errors.push(`${path}.ref: required repo file does not exist`);
 		return false;
 	}
 	const containment = relative(resolvedRepoRoot, realCandidate);
@@ -422,36 +527,26 @@ function validateRepoFileRef(
 		errors.push(`${path}.ref: resolved path escapes repository root`);
 		return false;
 	}
-	let isFile: boolean;
 	try {
-		isFile = statSync(realCandidate).isFile();
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		errors.push(
-			`${path}.ref: required repo file metadata is not accessible: ${message}`,
-		);
-		return false;
-	}
-	if (!isFile) {
-		errors.push(`${path}.ref: required repo file is not a file`);
+		if (!statSync(realCandidate).isFile()) {
+			errors.push(`${path}.ref: required repo file is not a file`);
+			return false;
+		}
+	} catch {
+		errors.push(`${path}.ref: required repo file is not accessible`);
 		return false;
 	}
 	if (ref.hashAlgorithm !== "sha256" || !SHA256.test(String(ref.sha256))) {
-		errors.push(
-			`${path}.sha256: must be a valid sha256 digest with hashAlgorithm=sha256`,
-		);
 		return false;
 	}
-	let actual: string;
+	let content: Buffer;
 	try {
-		actual = createHash("sha256")
-			.update(readFileSync(realCandidate))
-			.digest("hex");
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		errors.push(`${path}.ref: required repo file cannot be read: ${message}`);
+		content = readFileSync(realCandidate);
+	} catch {
+		errors.push(`${path}.ref: required repo file is not readable`);
 		return false;
 	}
+	const actual = createHash("sha256").update(content).digest("hex");
 	if (actual !== ref.sha256) {
 		errors.push(`${path}.sha256: digest mismatch`);
 		return false;

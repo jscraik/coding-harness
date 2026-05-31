@@ -270,22 +270,34 @@ describe("buildPrCloseoutReport", () => {
 			now: new Date("2026-05-16T12:00:00.000Z"),
 		});
 
-		expect(report).toMatchObject({
-			schemaVersion: "pr-closeout/v1",
-			generatedAt: "2026-05-16T12:00:00.000Z",
-			pr: 258,
-			status: "ready",
-			mergeable: true,
-			nextAction: "ready_to_merge",
-			checks: {
-				total: 1,
-				failed: 0,
-				pending: 0,
-				passed: 1,
-				unknown: 0,
+		expectBehavior({
+			given: "a fully evidenced PR closeout input",
+			should: "produce a ready pr-closeout/v1 report",
+			actual: {
+				checks: report.checks,
+				generatedAt: report.generatedAt,
+				mergeable: report.mergeable,
+				nextAction: report.nextAction,
+				pr: report.pr,
+				schemaVersion: report.schemaVersion,
+				status: report.status,
+				traceabilityComplete: report.traceability.complete,
 			},
-			traceability: {
-				complete: true,
+			expected: {
+				checks: {
+					failed: 0,
+					passed: 1,
+					pending: 0,
+					total: 1,
+					unknown: 0,
+				},
+				generatedAt: "2026-05-16T12:00:00.000Z",
+				mergeable: true,
+				nextAction: "ready_to_merge",
+				pr: 258,
+				schemaVersion: "pr-closeout/v1",
+				status: "ready",
+				traceabilityComplete: true,
 			},
 		});
 		expectBehavior({

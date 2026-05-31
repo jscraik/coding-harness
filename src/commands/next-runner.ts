@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { cwd } from "node:process";
@@ -14,15 +13,21 @@ import {
 	type RuntimeCard,
 } from "../lib/runtime/runtime-card.js";
 import {
+	type HarnessNextWorktreeRole,
 	type HarnessNextEvidenceMode,
 	isHarnessNextMode,
 } from "./next-args.js";
 import {
 	humanRequiredDecisionMeta,
 	optionalNetworkSources,
-	parseGitStatusShort,
 	sourceMetaExtra,
 } from "./next-support.js";
+import {
+	blocksDirtyWorktree,
+	inspectWorktreeState,
+	resolveChangedFiles,
+	type ChangedFilesResult,
+} from "./next-runner-inputs.js";
 import {
 	blockedDecision,
 	changedFilesDecision,
@@ -30,6 +35,7 @@ import {
 	gitInspectionBlockedDecision,
 	invalidModeDecision,
 	noChangedFilesDecision,
+	worktreeStateBlockedDecision,
 	phaseExitBlockedDecision,
 	runtimeCardBlockedDecision,
 	sourceBlockedDecision,
@@ -55,29 +61,11 @@ export interface HarnessNextOptions {
 	runtimeCard?: RuntimeCard;
 	/** Evidence strictness for phase-exit and runtime-card inputs. */
 	evidenceMode?: HarnessNextEvidenceMode;
+	/** Worktree posture requested for local next recommendations. */
+	worktreeRole?: HarnessNextWorktreeRole;
 }
-
 const DEFAULT_FLEET_MATRIX_ARTIFACT =
 	"artifacts/harness-upgrade-matrix-dev.json";
-
-type ChangedFilesResult = {
-	files: string[];
-	filesSource: "override" | "git";
-};
-
-function inspectGitChangedFiles(repoRoot: string): string[] {
-	const output = execFileSync(
-		"git",
-		["status", "--short", "--untracked-files=all"],
-		{
-			cwd: repoRoot,
-			encoding: "utf-8",
-			stdio: ["ignore", "pipe", "pipe"],
-			timeout: 10_000,
-		},
-	);
-	return parseGitStatusShort(output);
-}
 
 function requiredEvidenceMissing(
 	mode: HarnessNextMode,
@@ -131,19 +119,6 @@ function evidenceBlockedDecision(args: {
 				sourceErrors: args.sourceErrors,
 			})
 		: null;
-}
-
-function resolveChangedFiles(
-	repoRoot: string,
-	options: HarnessNextOptions,
-): ChangedFilesResult {
-	if (options.files !== undefined) {
-		return { files: [...options.files].sort(), filesSource: "override" };
-	}
-	return {
-		files: (options.inspectChangedFiles ?? inspectGitChangedFiles)(repoRoot),
-		filesSource: "git",
-	};
 }
 
 function filesOverrideEmptyDecision(
@@ -201,6 +176,27 @@ export function runHarnessNext(
 	if (options.files !== undefined && options.files.length === 0) {
 		return filesOverrideEmptyDecision(mode, sourceErrors);
 	}
+
+	let worktreeState: ReturnType<typeof inspectWorktreeState> | undefined;
+	if (
+		options.files === undefined &&
+		options.inspectChangedFiles === undefined
+	) {
+		try {
+			worktreeState = inspectWorktreeState(repoRoot);
+		} catch {
+			return gitInspectionBlockedDecision(mode);
+		}
+		if (blocksDirtyWorktree(options.worktreeRole, worktreeState)) {
+			return worktreeStateBlockedDecision({
+				mode,
+				worktreeState,
+				role: options.worktreeRole ?? "clean",
+				sourceErrors,
+			});
+		}
+	}
+
 	if (
 		options.files === undefined &&
 		mode === "ci" &&
@@ -216,7 +212,13 @@ export function runHarnessNext(
 
 	let changedFiles: ChangedFilesResult;
 	try {
-		changedFiles = resolveChangedFiles(repoRoot, options);
+		const changedFileOptions = {
+			...(options.files !== undefined ? { files: options.files } : {}),
+			...(options.inspectChangedFiles !== undefined
+				? { inspectChangedFiles: options.inspectChangedFiles }
+				: {}),
+		};
+		changedFiles = resolveChangedFiles(repoRoot, changedFileOptions);
 	} catch {
 		return gitInspectionBlockedDecision(mode);
 	}

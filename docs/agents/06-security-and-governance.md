@@ -118,6 +118,8 @@ post-change markdown/docs validation.
 
 - Validate behavior changes before merge using documented gates.
 - Validate behavior changes with the smallest real executable path that exercises the exact production code touched whenever feasible; broad gates are necessary but not sufficient on their own.
+- Keep high-trust evidence-bearing test suites covered by `pnpm run quality:behavior-tests` so manifest-listed PR closeout, delivery truth, runtime-card, Local Memory preflight, policy-gate, and external-state snapshot failures carry `Given ... should ...` reproduction context.
+- Keep git child-process environment cleanup routed through `src/lib/git/safe-env.ts` and validated by `pnpm run quality:git-env-sanitizer` so hook-provided `GIT_*` state cannot leak into nested fixture repositories.
 - Keep audit trail artifacts (closeout outputs, validation status) in the task record.
 - For high-risk edits (policy/validation gates), include rollback expectations in docs.
 - Validation evidence must name the wrapper that ran (`validate-codestyle.sh`, `verify-work.sh`, or deeper gates), not just the underlying tool categories.
@@ -250,11 +252,11 @@ This repository uses `action-review-receipt/v1` as a narrow guardian-style recei
 - **High-risk action envelopes**: merge, release, destructive cleanup, and external tracker mutation require current evidence refs and head SHA
 - **Reviewer independence**: reviewer must not be the same as requester/producer (no self-approval)
 - **Canonical actor identity separation**: reviewer and requester canonical identity refs must differ (not only by display alias or shared runtime/source identity ref)
-- **Decision semantics**: allow, block, mismatch, unknown, and not applicable
+- **Decision semantics**: allow, block, mismatch, unknown, N/A
   - `allow` verdicts require current supporting evidence, non-expired review time, independent reviewer identity, differing canonical identity refs, and no unresolved blockers
   - `block` and `unknown` verdicts must carry blocker classes and next action text
   - `mismatch` verdicts must require expected and actual action envelopes plus explicit mismatch reason
-  - the not-applicable verdict is forbidden for merge, release, destructive cleanup, and external tracker mutation envelopes
+  - N/A verdicts are forbidden for merge, release, destructive cleanup, and external tracker mutation envelopes
 - **Docs-gate requirement**: these companion documentation surfaces must be updated in the same PR as any action-review governance change
 - **Reference diagrams**: see `AI/context/diagram-context.md` for required architecture diagrams
 

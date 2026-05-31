@@ -7,8 +7,8 @@ import {
 	it,
 	vi,
 } from "vitest";
-import { EXIT_CODES, runPolicyGate, runPolicyGateCLI } from "./policy-gate.js";
 import { expectBehavior } from "../lib/testing/expect-behavior.js";
+import { EXIT_CODES, runPolicyGate, runPolicyGateCLI } from "./policy-gate.js";
 
 describe("runPolicyGate", () => {
 	const contractPath = "test-fixtures/contract.json";

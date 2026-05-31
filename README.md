@@ -372,7 +372,8 @@ script remains the authority for execution order; the typed mirror exists so
 CLI dispatch, tests, and automation can fail closed on unknown checkpoint names.
 
 The fast lane now includes changed-file enforcement for public API docstrings,
-function/file size, self-affirming test assertions, and related tests through
+function/file size, self-affirming test assertions, high-trust behavior-test
+assertions, git child-process environment sanitation, and related tests through
 `pnpm run quality:docstrings`, `pnpm run quality:size`,
 `pnpm run quality:self-affirming`, `pnpm run quality:behavior-tests`,
 `pnpm run quality:git-env-sanitizer`, `pnpm run harness:audit-tracking`, and

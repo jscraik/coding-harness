@@ -1,6 +1,6 @@
 import * as artifactGate from "../../artifact-gate.js";
-import type { CommandSpec } from "./types.js";
 import { defineCommandSpec } from "./define-command-spec.js";
+import type { CommandSpec } from "./types.js";
 
 /** Build the generated artifact provenance gate command adapter. */
 export function createArtifactGateCommandSpec(): CommandSpec {

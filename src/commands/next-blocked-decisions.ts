@@ -17,6 +17,8 @@ import {
 	sourceMetaExtra,
 } from "./next-support.js";
 
+export { worktreeStateBlockedDecision } from "./next-blocked-worktree-decision.js";
+
 /**
  * Build a `HarnessDecision` representing a blocked, read-only state that requires human intervention.
  *

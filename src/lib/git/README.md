@@ -10,6 +10,8 @@
 
 Use `sanitizeGitEnvironment` for git subprocess environments instead of deleting
 `GIT_*` variables in feature modules.
+Callers may pass an explicit environment plus policy, or pass only sanitizer
+options to sanitize `process.env` for source-checkout and packaged CLI paths.
 
 | Policy | Use | Behavior |
 | --- | --- | --- |

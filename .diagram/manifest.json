@@ -62,8 +62,8 @@
 			"type": "database",
 			"file": "database.mmd",
 			"outputPath": ".diagram/database.mmd",
-			"lines": 49,
-			"bytes": 2721,
+			"lines": 57,
+			"bytes": 3270,
 			"isPlaceholder": false
 		},
 		{
@@ -102,8 +102,8 @@
 			"type": "rag",
 			"file": "rag.mmd",
 			"outputPath": ".diagram/rag.mmd",
-			"lines": 228,
-			"bytes": 18366,
+			"lines": 225,
+			"bytes": 18042,
 			"isPlaceholder": false
 		},
 		{

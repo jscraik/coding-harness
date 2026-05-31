@@ -327,9 +327,20 @@ describe("runRuntimeCardCLI", () => {
 		expect(exitCode).toBe(0);
 		expect(error).toBe("");
 		const card = JSON.parse(output);
-		expect(card.schemaVersion).toBe("runtime-card/v1");
-		expect(card.issueKey).toBe("JSC-311");
-		expect(card.artifacts.status).toBe("current");
+		expectBehavior({
+			given: "a repo with active artifacts for JSC-311",
+			should: "emit a current runtime-card/v1 packet",
+			actual: {
+				artifactsStatus: card.artifacts.status,
+				issueKey: card.issueKey,
+				schemaVersion: card.schemaVersion,
+			},
+			expected: {
+				artifactsStatus: "current",
+				issueKey: "JSC-311",
+				schemaVersion: "runtime-card/v1",
+			},
+		});
 	});
 
 	it("matches mixed-case issue flags against active artifact rows", async () => {

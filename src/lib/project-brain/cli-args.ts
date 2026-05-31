@@ -1,5 +1,6 @@
 import { join, resolve } from "node:path";
 import { inspectFlagList } from "../cli/parse-utils.js";
+import { BRAIN_VALUE_FLAGS } from "./cli-value-flags.js";
 
 /** Resolve the Project Brain harness directory from an optional repo root. */
 export function resolveBrainHarnessDir(explicitDir?: string): string {
@@ -18,6 +19,7 @@ export function getBrainFlagValue(
 	index: number,
 ): string | undefined {
 	if (index < 0 || index >= args.length - 1) return undefined;
+	if (!BRAIN_VALUE_FLAGS.has(args[index] ?? "")) return undefined;
 	const val = args[index + 1];
 	if (!val || val.startsWith("--")) return undefined;
 	return val;

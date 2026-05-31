@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-29
+last_validated: 2026-05-30
 ---
 
 # Architecture bootstrap
@@ -255,7 +255,11 @@ delivery-truth, Linear, Judge/PM, and merge-readiness claim families. Unbound
 intermediary observations may orient agents, but they must not support
 delivery, closeout, tracker, review, root-hygiene, Judge/PM, or merge-readiness
 claims without a current `evidence-receipt/v1` plus the matching canonical
-packet route.
+packet route. When intermediary receipt work also changes `harness next`
+worktree-role decisioning or PR closeout snapshot projections, keep those
+surfaces advisory and evidence-bound: role-gated worktree state may block the
+next recommendation, and snapshot status may classify PR lanes, but neither
+surface becomes merge authority without current canonical evidence.
 
 Steering-queue packet changes are continuation-recovery cockpit work, not a new
 agent execution rail. Keep `steering-queue/v1` inside

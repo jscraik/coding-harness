@@ -11,6 +11,7 @@ import {
 	resolveBrainHarnessDir,
 	shouldRenderBrainJson,
 } from "./cli-args.js";
+import { renderBrainStaleHuman } from "./stale-presenter.js";
 
 /** Public API export. */
 export function runBrainStale(
@@ -22,47 +23,6 @@ export function runBrainStale(
 		scanOptions.thresholdDays = options.thresholdDays;
 	const report = scanBrainMetadata(harnessDir, scanOptions);
 	return { report };
-}
-
-function renderBrainStaleHuman(result: BrainStaleResult): string {
-	const { report } = result;
-	const lines: string[] = [];
-
-	lines.push("");
-	lines.push("=== Brain Staleness Report ===");
-	lines.push(
-		`  Domains: ${report.totalDomains} | Files: ${report.totalFiles} | Threshold: ${report.thresholdDays} days`,
-	);
-	lines.push(
-		`  Average staleness: ${report.averageStaleness} | Needs review: ${report.staleFiles.length}`,
-	);
-	lines.push("");
-
-	if (report.staleFiles.length > 0) {
-		lines.push("  Stale / needs review:");
-		for (const f of report.staleFiles) {
-			const stalenessPercent = `${Math.round(f.stalenessScore * 100)}%`;
-			const verified = f.lastVerified ?? "never";
-			lines.push(
-				`    [${f.domain}] ${stalenessPercent} stale - last verified: ${verified}`,
-			);
-			lines.push(`      ${f.stalenessReason}`);
-		}
-		lines.push("");
-	}
-
-	if (report.freshFiles.length > 0) {
-		lines.push("  Fresh:");
-		for (const f of report.freshFiles) {
-			const stalenessPercent = `${Math.round(f.stalenessScore * 100)}%`;
-			lines.push(
-				`    [${f.domain}] ${stalenessPercent} stale - ${f.stalenessReason}`,
-			);
-		}
-		lines.push("");
-	}
-
-	return lines.join("\n");
 }
 
 /** Run the Project Brain stale subcommand and render CLI output. */

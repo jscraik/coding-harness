@@ -16,24 +16,10 @@ import type {
 } from "./prompt-context-drift-report.js";
 import { validatePromptContextDriftReport } from "./prompt-context-drift-report.js";
 
-type JsonSchemaObject = {
-	properties: Record<string, { enum?: unknown[] }>;
-	$defs: Record<string, { enum?: unknown[] }>;
-};
-
-const EXPECTED_EVIDENCE_USES = [
-	"orientation",
-	"audit_trail",
-	"claim_support",
-] as const;
-const EXPECTED_STATUSES = ["pass", "warn", "fail", "blocked"] as const;
-const EXPECTED_FRESHNESS = [
-	"current",
-	"stale",
-	"missing",
-	"unknown",
-	"not_applicable",
-] as const;
+// Expected enum values (independent oracle, not derived from source constants)
+const EXPECTED_EVIDENCE_USES = ["orientation", "audit_trail", "claim_support"];
+const EXPECTED_OVERALL_STATUSES = ["pass", "warn", "fail", "blocked"];
+const EXPECTED_STATUSES = ["pass", "warn", "fail", "blocked"];
 const EXPECTED_SURFACES = [
 	"prompt_context",
 	"active_artifacts",
@@ -42,14 +28,21 @@ const EXPECTED_SURFACES = [
 	"project_brain_knowledge",
 	"runtime_card_or_handoff",
 	"receipt_head_sha",
-] as const;
+];
+const EXPECTED_FRESHNESS = [
+	"current",
+	"stale",
+	"missing",
+	"unknown",
+	"not_applicable",
+];
 const EXPECTED_REF_KINDS = [
 	"repo_file",
 	"prompt_context_receipt",
 	"runtime_card",
 	"receipt",
 	"external_metadata",
-] as const;
+];
 const EXPECTED_BLOCKER_CLASSES = [
 	"none",
 	"stale_prompt_context",
@@ -65,7 +58,7 @@ const EXPECTED_BLOCKER_CLASSES = [
 	"unsafe_ref",
 	"raw_or_secret_content",
 	"unknown_schema_field",
-] as const;
+];
 const EXPECTED_NEXT_ACTION_CLASSES = [
 	"none",
 	"refresh_prompt_context",
@@ -74,7 +67,12 @@ const EXPECTED_NEXT_ACTION_CLASSES = [
 	"refresh_runtime_card",
 	"refresh_receipts",
 	"rerun_validator",
-] as const;
+];
+
+type JsonSchemaObject = {
+	properties: Record<string, { enum?: unknown[] }>;
+	$defs: Record<string, { enum?: unknown[] }>;
+};
 
 function exampleReport(): PromptContextDriftReport {
 	return JSON.parse(
@@ -138,31 +136,25 @@ describe("validatePromptContextDriftReport", () => {
 			readFileSync("contracts/prompt-context-drift-report.schema.json", "utf8"),
 		) as JsonSchemaObject;
 
-		expect(schemaEnum(schema.properties, "evidenceUse")).toEqual([
-			...EXPECTED_EVIDENCE_USES,
-		]);
-		expect(schemaEnum(schema.properties, "overallStatus")).toEqual([
-			...EXPECTED_STATUSES,
-		]);
-		expect(schemaEnum(schema.$defs, "surfaceId")).toEqual([
-			...EXPECTED_SURFACES,
-		]);
-		expect(schemaEnum(schema.$defs, "status")).toEqual([...EXPECTED_STATUSES]);
-		expect(schemaEnum(schema.$defs, "evidenceUse")).toEqual([
-			...EXPECTED_EVIDENCE_USES,
-		]);
-		expect(schemaEnum(schema.$defs, "freshness")).toEqual([
-			...EXPECTED_FRESHNESS,
-		]);
-		expect(schemaEnum(schema.$defs, "refKind")).toEqual([
-			...EXPECTED_REF_KINDS,
-		]);
-		expect(schemaEnum(schema.$defs, "blockerClass")).toEqual([
-			...EXPECTED_BLOCKER_CLASSES,
-		]);
-		expect(schemaEnum(schema.$defs, "nextActionClass")).toEqual([
-			...EXPECTED_NEXT_ACTION_CLASSES,
-		]);
+		expect(schemaEnum(schema.properties, "evidenceUse")).toEqual(
+			EXPECTED_EVIDENCE_USES,
+		);
+		expect(schemaEnum(schema.properties, "overallStatus")).toEqual(
+			EXPECTED_OVERALL_STATUSES,
+		);
+		expect(schemaEnum(schema.$defs, "surfaceId")).toEqual(EXPECTED_SURFACES);
+		expect(schemaEnum(schema.$defs, "status")).toEqual(EXPECTED_STATUSES);
+		expect(schemaEnum(schema.$defs, "evidenceUse")).toEqual(
+			EXPECTED_EVIDENCE_USES,
+		);
+		expect(schemaEnum(schema.$defs, "freshness")).toEqual(EXPECTED_FRESHNESS);
+		expect(schemaEnum(schema.$defs, "refKind")).toEqual(EXPECTED_REF_KINDS);
+		expect(schemaEnum(schema.$defs, "blockerClass")).toEqual(
+			EXPECTED_BLOCKER_CLASSES,
+		);
+		expect(schemaEnum(schema.$defs, "nextActionClass")).toEqual(
+			EXPECTED_NEXT_ACTION_CLASSES,
+		);
 	});
 
 	it("accepts the content-bound checked-in example", () => {
@@ -212,23 +204,6 @@ describe("validatePromptContextDriftReport", () => {
 			expect.arrayContaining([
 				expect.stringContaining("surfaces[2].status"),
 				expect.stringContaining("surfaces[2].freshness"),
-			]),
-		);
-	});
-
-	it("fails closed on duplicate surface IDs", () => {
-		const report = exampleReport();
-		report.surfaces[1] = {
-			...surfaceAt(report, 1),
-			surfaceId: surfaceAt(report, 0).surfaceId,
-		};
-
-		const result = validatePromptContextDriftReport(report, { repoRoot: "." });
-
-		expect(result.status).toBe("fail");
-		expect(result.errors).toEqual(
-			expect.arrayContaining([
-				"surfaces[1].surfaceId: duplicate surfaceId prompt_context is not allowed",
 			]),
 		);
 	});
@@ -377,18 +352,15 @@ describe("validatePromptContextDriftReport", () => {
 		);
 	});
 
-	it("returns validation errors when repo-root filesystem access fails", () => {
+	it("rejects duplicate prompt-context drift surfaces", () => {
 		const report = exampleReport();
+		report.surfaces = [...report.surfaces, { ...surfaceAt(report, 0) }];
 
-		const result = validatePromptContextDriftReport(report, {
-			repoRoot: "/path/that/does/not/exist",
-		});
+		const result = validatePromptContextDriftReport(report, { repoRoot: "." });
 
 		expect(result.status).toBe("fail");
-		expect(result.errors).toEqual(
-			expect.arrayContaining([
-				expect.stringContaining("repoRoot is not accessible"),
-			]),
+		expect(result.errors).toContain(
+			"surfaces[7].surfaceId: duplicate surface prompt_context",
 		);
 	});
 
@@ -421,6 +393,19 @@ describe("validatePromptContextDriftReport", () => {
 		expect(result.status).toBe("fail");
 		expect(result.errors).toContain(
 			"surfaces[0].sourceRefs[0].ref: required repo file is not a file",
+		);
+	});
+
+	it("returns validation errors for inaccessible evidence roots", () => {
+		const root = tempRoot();
+		rmSync(root, { recursive: true, force: true });
+		const result = validatePromptContextDriftReport(exampleReport(), {
+			repoRoot: root,
+		});
+
+		expect(result.status).toBe("fail");
+		expect(result.errors).toContain(
+			"surfaces[0].sourceRefs[0].ref: repository root is not accessible",
 		);
 	});
 

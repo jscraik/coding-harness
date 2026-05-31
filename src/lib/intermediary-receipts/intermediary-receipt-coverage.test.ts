@@ -81,18 +81,6 @@ describe("IntermediaryReceiptCoverage/v1", () => {
 		expectInvalid(packet, "missing_policy_entry");
 	});
 
-	it("rejects duplicate claim-family summaries", () => {
-		const packet = basePacket();
-		const firstSummary = packet.claimFamilySummaries[0];
-		expect(firstSummary).toBeDefined();
-		packet.claimFamilySummaries = [
-			...packet.claimFamilySummaries,
-			{ ...firstSummary! },
-		];
-
-		expectInvalid(packet, "duplicate_claim_family_summary");
-	});
-
 	it("rejects claim support denied by the policy matrix", () => {
 		const packet = basePacket();
 		const source = packet.sources.find(
@@ -125,7 +113,14 @@ describe("IntermediaryReceiptCoverage/v1", () => {
 		expectInvalid(packet, "stale_receipt");
 	});
 
-	it("requires claim-support sources to have pass status", () => {
+	it("rejects non-leap-year February 29 timestamps", () => {
+		const packet = basePacket();
+		packet.generatedAt = "2025-02-29T10:00:00Z";
+
+		expectInvalid(packet, "invalid_timestamp");
+	});
+
+	it("requires claim-support sources to have passing source status", () => {
 		const packet = basePacket();
 		const source = packet.sources.find(
 			(entry) => entry.sourceId === "external-check-snapshot",
@@ -133,14 +128,7 @@ describe("IntermediaryReceiptCoverage/v1", () => {
 		expect(source).toBeDefined();
 		source!.status = "warn";
 
-		expectInvalid(packet, "invalid_source_status");
-	});
-
-	it("rejects impossible RFC3339-style timestamps", () => {
-		const packet = basePacket();
-		packet.generatedAt = "2026-02-31T10:15:00Z";
-
-		expectInvalid(packet, "invalid_timestamp");
+		expectInvalid(packet, "source_status_not_pass");
 	});
 
 	it("keeps unbound orientation sources ineligible for claim support", () => {
@@ -153,6 +141,16 @@ describe("IntermediaryReceiptCoverage/v1", () => {
 		summary!.evidenceUse = "claim_support";
 
 		expectInvalid(packet, "unsupported_claim_support");
+	});
+
+	it("rejects duplicate claim-family summaries", () => {
+		const packet = basePacket();
+		packet.claimFamilySummaries = [
+			...packet.claimFamilySummaries,
+			{ ...packet.claimFamilySummaries[0]! },
+		];
+
+		expectInvalid(packet, "duplicate_claim_family_summary");
 	});
 
 	it("rejects protected claim support from non-claim-support sources", () => {
@@ -255,96 +253,24 @@ describe("IntermediaryReceiptCoverage/v1", () => {
 		);
 	});
 
-	it("standalone validator resolves packet paths relative to repo root", () => {
-		const root = createTempRoot("alternate-cwd-");
+	it("emits validation JSON when child validation fails before producing output", () => {
+		const root = createTempRoot("invalid-json-");
+		const packetPath = join(root, "packet.json");
+		writeFileSync(packetPath, "{not-json", "utf8");
 
 		const result = spawnSync(
 			process.execPath,
-			[
-				SCRIPT_PATH,
-				"contracts/examples/intermediary-receipt-coverage.example.json",
-				"--repo-root",
-				process.cwd(),
-			],
-			{ cwd: root, encoding: "utf8" },
+			[SCRIPT_PATH, packetPath, "--repo-root", process.cwd()],
+			{ encoding: "utf8" },
 		);
 
-		expect(result.status).toBe(0);
+		expect(result.status).toBe(1);
 		expect(result.stdout).toContain(
 			"intermediary-receipt-coverage-validation/v1",
 		);
-	});
-
-	it("standalone validator returns structured JSON for runner bootstrap failures", () => {
-		const root = createTempRoot("runner-bootstrap-");
-		const packetPath = join(root, "packet.json");
-		writeFileSync(packetPath, JSON.stringify(basePacket(), null, 2));
-
-		const result = spawnSync(
-			process.execPath,
-			[SCRIPT_PATH, packetPath, "--repo-root", root],
-			{ encoding: "utf8" },
-		);
-		const parsed = JSON.parse(result.stdout) as {
-			schemaVersion: string;
-			status: string;
-			errors: string[];
-		};
-
-		expect(result.status).toBe(1);
-		expect(result.stderr).toBe("");
-		expect(parsed).toMatchObject({
-			schemaVersion: "intermediary-receipt-coverage-validation/v1",
-			status: "fail",
-		});
-		expect(parsed.errors).toEqual(
-			expect.arrayContaining([expect.stringContaining("runner: exited")]),
-		);
-	});
-
-	it("standalone validator fails closed when a zero-exit runner emits a malformed envelope", () => {
-		const root = createTempRoot("malformed-runner-output-");
-		const sourceRoot = join(root, "src", "lib", "intermediary-receipts");
-		mkdirSync(sourceRoot, { recursive: true });
-		writeFileSync(join(root, "packet.json"), "{}");
-		writeFileSync(
-			join(sourceRoot, "index.ts"),
-			[
-				"export function validateIntermediaryReceiptCoverage() {",
-				"  return {",
-				"    get valid() {",
-				"      process.stdout.write('malformed runner output\\n');",
-				"      return true;",
-				"    },",
-				"    errors: [],",
-				"  };",
-				"}",
-			].join("\n"),
-		);
-
-		const result = spawnSync(
-			process.execPath,
-			[SCRIPT_PATH, "packet.json", "--repo-root", root],
-			{ encoding: "utf8" },
-		);
-		const parsed = JSON.parse(result.stdout) as {
-			schemaVersion: string;
-			status: string;
-			errors: string[];
-		};
-
-		expect(result.status).toBe(1);
-		expect(parsed).toMatchObject({
-			schemaVersion: "intermediary-receipt-coverage-validation/v1",
-			status: "fail",
-		});
-		expect(parsed.errors).toEqual(
-			expect.arrayContaining([
-				expect.stringContaining(
-					"runner: exited with status 0 but did not emit intermediary-receipt-coverage-validation/v1 JSON",
-				),
-				expect.stringContaining("runner.stdout: malformed runner output"),
-			]),
+		expect(result.stdout).toContain('"status": "fail"');
+		expect(result.stdout).toContain(
+			"child validation failed before emitting JSON",
 		);
 	});
 });

@@ -55,6 +55,13 @@
 - Security-sensitive trace or browser-evidence tests MUST assert that sensitive
   headers, environment values, metadata, and nested payloads are redacted before
   artifacts are persisted.
+- High-trust evidence-bearing suites registered in
+  `src/lib/testing/behavior-test-suites.json` MUST keep at least one
+  `expectBehavior({ given, should, actual, expected })` assertion so failing
+  trust-boundary tests include reproduction context, expected behavior, actual
+  output, and expected output. Add new evidence-bearing trust-boundary suites
+  to the manifest before relying on `pnpm run quality:behavior-tests` for
+  enforcement.
 - Provider error, retry, and rate-limit tests SHOULD use mocks or fixtures unless
   a live integration test is explicitly budgeted and isolated.
 - Long TDD arcs are a decomposition signal: if a behavior change needs many

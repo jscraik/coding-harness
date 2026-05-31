@@ -1,6 +1,7 @@
 export {
 	buildPrCloseoutReport,
 	buildPrCloseoutReportEffect,
+	buildPrCloseoutSnapshot,
 } from "./pr-closeout/evaluator.js";
 export {
 	PR_CLOSEOUT_SCHEMA_VERSION,
@@ -31,6 +32,10 @@ export {
 	type PrCloseoutRollbackInput,
 	type PrCloseoutRuntimeEvidenceSummary,
 	type PrCloseoutStatus,
+	type PrCloseoutConstraintSnapshot,
+	type PrCloseoutStaleEvidenceClass,
+	type PrCloseoutSnapshotHandoffPointer,
+	type PrCloseoutConstraintSnapshotLane,
 	type PrCloseoutToolInput,
 	type PrCloseoutTraceabilityInput,
 } from "./pr-closeout/types.js";

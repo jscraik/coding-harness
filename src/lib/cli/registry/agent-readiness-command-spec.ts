@@ -1,6 +1,6 @@
 import { runAgentReadinessCLI } from "../../agent-readiness/cli.js";
-import type { CommandSpec } from "./types.js";
 import { defineCommandSpec } from "./define-command-spec.js";
+import type { CommandSpec } from "./types.js";
 
 /** Build the agent-readiness registry seam. */
 export function createAgentReadinessCommandSpec(): CommandSpec {
