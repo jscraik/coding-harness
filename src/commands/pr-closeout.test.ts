@@ -1936,7 +1936,10 @@ describe("runPrCloseoutCLI", () => {
 		expect(report.status).toBe("ready");
 	});
 
-	it("blocks live closeout until release readiness is classified", async () => {
+	it.each([
+		["explicit unknown", ["--release-readiness-impact", "unknown"] as const],
+		["omitted flag", [] as const],
+	])("blocks live closeout until release readiness is classified (%s)", async (_caseName, releaseReadinessArgs) => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const closeoutGatesPath = writeCloseoutGates(dir);
 		const runner = (
@@ -1991,8 +1994,7 @@ describe("runPrCloseoutCLI", () => {
 				"258",
 				"--gates",
 				closeoutGatesPath,
-				"--release-readiness-impact",
-				"unknown",
+				...releaseReadinessArgs,
 			],
 			runner,
 		);
@@ -2959,6 +2961,18 @@ Refs JSC-328
 			].join("\n"),
 		);
 		const gitCommandsSeen: string[] = [];
+		const taintedGitEnv = {
+			GIT_COMMON_DIR: "/tmp/inherited-wrong-repo/.git",
+			GIT_DIR: "/tmp/inherited-wrong-repo/.git",
+			GIT_WORK_TREE: "/tmp/inherited-wrong-repo",
+			GIT_INDEX_FILE: "/tmp/inherited-wrong-repo/index",
+		};
+		const previousGitEnv = new Map(
+			Object.keys(taintedGitEnv).map((name) => [name, process.env[name]]),
+		);
+		for (const [name, value] of Object.entries(taintedGitEnv)) {
+			process.env[name] = value;
+		}
 		const runner = (
 			command: string,
 			args: readonly string[],
@@ -3008,29 +3022,39 @@ Refs JSC-328
 			return "ok";
 		};
 
-		const result = await capture(
-			[
-				"--json",
-				"--repo",
-				dir,
-				"--pr",
-				"258",
-				"--gates",
-				closeoutGatesPath,
-				"--env-file",
-				envFile,
-			],
-			runner,
-		);
+		try {
+			const result = await capture(
+				[
+					"--json",
+					"--repo",
+					dir,
+					"--pr",
+					"258",
+					"--gates",
+					closeoutGatesPath,
+					"--env-file",
+					envFile,
+				],
+				runner,
+			);
 
-		expect(result.exitCode).toBe(0);
-		expect(gitCommandsSeen).toEqual(
-			expect.arrayContaining([
-				"status --porcelain",
-				"rev-parse HEAD",
-				"rev-list --left-right --count @{upstream}...HEAD",
-			]),
-		);
+			expect(result.exitCode).toBe(0);
+			expect(gitCommandsSeen).toEqual(
+				expect.arrayContaining([
+					"status --porcelain",
+					"rev-parse HEAD",
+					"rev-list --left-right --count @{upstream}...HEAD",
+				]),
+			);
+		} finally {
+			for (const [name, value] of previousGitEnv) {
+				if (value === undefined) {
+					delete process.env[name];
+				} else {
+					process.env[name] = value;
+				}
+			}
+		}
 	});
 
 	it("emits blocker evidence when live PR metadata cannot be read", async () => {

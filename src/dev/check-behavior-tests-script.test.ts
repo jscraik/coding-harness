@@ -7,7 +7,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 const SCRIPT_PATH = join(process.cwd(), "scripts/check-behavior-tests.mjs");
@@ -89,7 +89,7 @@ function runScript(
 		env: {
 			...process.env,
 			...extraEnv,
-			PATH: `${join(root, "bin")}:${process.env.PATH ?? ""}`,
+			PATH: `${join(root, "bin")}${delimiter}${process.env.PATH ?? ""}`,
 		},
 	});
 }
