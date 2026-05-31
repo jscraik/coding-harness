@@ -18,7 +18,6 @@ import type {
 	DeliveryTruthEvidence,
 	DeliveryTruthVerdict,
 } from "./types.js";
-import { expectBehavior } from "../testing/expect-behavior.js";
 
 const CURRENT_HEAD = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const OTHER_HEAD = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
