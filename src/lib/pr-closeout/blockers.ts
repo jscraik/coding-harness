@@ -349,6 +349,45 @@ export function collectHarnessGateBlockers(
 	}
 }
 
+/** Add blockers for release-readiness impacts that require proof before closeout. */
+export function collectReleaseReadinessBlockers(
+	input: PrCloseoutInput,
+	blockers: PrCloseoutBlocker[],
+): void {
+	const impact = input.releaseReadinessImpact;
+	if (impact === undefined || impact === "none" || impact === "unknown") return;
+	if (impact === "release_blocker") {
+		pushBlocker(blockers, {
+			surface: "release_readiness",
+			classification: "needs_jamie_decision",
+			kind: "state",
+			reason: "Release-readiness impact is marked as a release blocker.",
+			fixableByCodex: false,
+			ref: "input:releaseReadinessImpact:release_blocker",
+		});
+		return;
+	}
+	if (impact === "governed_change") {
+		pushBlocker(blockers, {
+			surface: "release_readiness",
+			classification: "unknown",
+			kind: "state",
+			reason:
+				"Governed change requires release-readiness evidence before closeout.",
+			fixableByCodex: true,
+			ref: "input:releaseReadinessImpact:governed_change",
+		});
+		return;
+	}
+	pushBlocker(blockers, {
+		surface: "release_readiness",
+		classification: "unknown",
+		kind: "state",
+		reason: "Release-readiness impact must be classified before closeout.",
+		fixableByCodex: false,
+	});
+}
+
 /** Add blockers for required closeout tools that are observed as blocked. */
 export function collectToolBlockers(
 	tools: readonly PrCloseoutToolInput[],

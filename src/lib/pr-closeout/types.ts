@@ -313,6 +313,7 @@ export interface PrCloseoutBlocker {
 		| "assurance"
 		| "runtime_evidence"
 		| "delivery_truth"
+		| "release_readiness"
 		| "review_artifact"
 		| "tool";
 	classification: PrCloseoutBlockerClassification;

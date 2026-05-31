@@ -6,6 +6,7 @@ import {
 	collectPullRequestBlockers,
 	collectReviewArtifactBlockers,
 	collectReviewBlockers,
+	collectReleaseReadinessBlockers,
 	collectToolBlockers,
 	collectTraceabilityBlocker,
 	collectWorktreeBlockers,
@@ -71,6 +72,7 @@ function buildPrCloseoutReportValue(
 	collectAssuranceBlockers(input, blockers);
 	collectRuntimeEvidenceBlockers(input, blockers);
 	collectDeliveryTruthBlockers(deliveryTruth, blockers);
+	collectReleaseReadinessBlockers(input, blockers);
 	collectToolBlockers(tools, blockers);
 	collectClaimBlockers(claims, blockers);
 

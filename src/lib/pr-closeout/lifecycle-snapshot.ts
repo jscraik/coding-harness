@@ -89,6 +89,8 @@ function laneForBlocker(
 			return "local_validation";
 		case "delivery_truth":
 			return "acceptance";
+		case "release_readiness":
+			return "release_readiness";
 		case "tool":
 			return "continuation";
 		case "pr":
@@ -172,6 +174,15 @@ function laneBlocker(
 
 function laneNextAction(blocker: PrCloseoutBlocker | undefined): string {
 	if (!blocker) return "No closeout blocker observed for this lane.";
+	if (blocker.surface === "release_readiness") {
+		if (blocker.ref === "input:releaseReadinessImpact:release_blocker") {
+			return "Resolve the release-readiness blocker before closeout.";
+		}
+		if (blocker.ref === "input:releaseReadinessImpact:governed_change") {
+			return "Attach release-readiness evidence before closeout.";
+		}
+		return "Classify release-readiness impact before closeout.";
+	}
 	if (blocker.fixableByCodex) return "Fix this lane before closeout.";
 	if (blocker.classification === "external_service") {
 		return "Wait for external state refresh or service completion.";

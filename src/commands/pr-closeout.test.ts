@@ -504,6 +504,13 @@ describe("runPrCloseoutCLI", () => {
 
 		const result = await capture(["--json", "--input", inputPath]);
 		const report = JSON.parse(result.output) as {
+			status: string;
+			mergeable: boolean;
+			blockers: Array<{
+				surface: string;
+				classification: string;
+				ref?: string;
+			}>;
 			lifecycleSnapshot: {
 				handoffRequiredEvidence: Array<{
 					lane: string;
@@ -524,6 +531,17 @@ describe("runPrCloseoutCLI", () => {
 		);
 
 		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("needs_jamie");
+		expect(report.mergeable).toBe(false);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "release_readiness",
+					classification: "needs_jamie_decision",
+					ref: "input:releaseReadinessImpact:release_blocker",
+				}),
+			]),
+		);
 		expect(releaseReadinessLane).toMatchObject({
 			status: "blocked",
 			freshness: "current",
@@ -539,6 +557,90 @@ describe("runPrCloseoutCLI", () => {
 				}),
 			]),
 		);
+	});
+
+	it("requires release-readiness evidence for governed changes before closeout", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const inputPath = join(dir, "input.json");
+		writeFileSync(
+			inputPath,
+			JSON.stringify({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headSha: "abc123",
+					reviewDecision: "APPROVED",
+					body: "Refs JSC-327\n",
+				},
+				branch: {
+					clean: true,
+					headSha: "abc123",
+					worktreeRole: "implementation",
+				},
+				checks: [{ name: "pr-pipeline", state: "SUCCESS", headSha: "abc123" }],
+				reviewThreads: { unresolved: 0 },
+				traceability: {
+					sessionIds: ["codex-session:2026-05-16"],
+					traceIds: ["circleci:workflow-123"],
+					aiSessionTraceability:
+						"JSC-327 -> PR #258 -> Codex session -> validation",
+				},
+				rollback: { notApplicable: true, evidenceRef: "pr-body:rollback" },
+				closeoutGates: PASSING_PHASE_EXIT,
+				assurance: PASSING_ASSURANCE,
+				runtimeEvidence: PASSING_RUNTIME_EVIDENCE,
+				linearMutation: "available",
+				releaseReadinessImpact: "governed_change",
+			}),
+		);
+
+		const result = await capture(["--json", "--input", inputPath]);
+		const report = JSON.parse(result.output) as {
+			status: string;
+			mergeable: boolean;
+			blockers: Array<{
+				surface: string;
+				classification: string;
+				fixableByCodex: boolean;
+				ref?: string;
+			}>;
+			lifecycleSnapshot: {
+				lanes: Array<{
+					lane: string;
+					status: string;
+					freshness: string;
+					evidenceRef: string | null;
+					blockerClass: string | null;
+					nextAction: string;
+				}>;
+			};
+		};
+		const releaseReadinessLane = report.lifecycleSnapshot.lanes.find(
+			(lane) => lane.lane === "release_readiness",
+		);
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("fixable");
+		expect(report.mergeable).toBe(false);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "release_readiness",
+					classification: "unknown",
+					fixableByCodex: true,
+					ref: "input:releaseReadinessImpact:governed_change",
+				}),
+			]),
+		);
+		expect(releaseReadinessLane).toMatchObject({
+			status: "fail",
+			freshness: "current",
+			evidenceRef: "input:releaseReadinessImpact:governed_change",
+			blockerClass: "unknown",
+			nextAction: "Attach release-readiness evidence before closeout.",
+		});
 	});
 
 	it("keeps fixable lane blockers separate from Jamie-decision blockers", async () => {
