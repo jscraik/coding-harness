@@ -10,7 +10,7 @@
 
 ## Scope
 
-Last reconciled: 2026-05-31T08:07Z plus R169 post-push PR #322 reconciliation (origin/main freshness at ddd2b966663114c385811fe01ae43ef98c0b3818, pushed PR head e7bde7dc, resolved feedback-loop ledger thread, and CodeRabbit/CircleCI remote checks pending; merge readiness and final goal completion remain unclaimed).
+Last reconciled: 2026-05-31T08:26Z plus R170 local PR #322 review-thread remediation (origin/main freshness at ddd2b966663114c385811fe01ae43ef98c0b3818, implementation commit fbd472c, audit-tracking Git environment fix reviewed and locally validated; push, remote checks, review-thread resolution, merge readiness, and final goal completion remain unclaimed).
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -21,7 +21,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309's branch head was `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` and its current-main squash evidence is historical, not a current route blocker. PR #312, PR #318, PR #319, and PR #320 remain route-history evidence, not current merge blockers. Current slice truth is R156 through R169 for PR #322: earlier receipts cover hidden-dependency guard hardening, PR metadata repair, release-readiness blocker flow, live git-env sanitizer repair, Windows behavior-test shim handling, input-mode release-readiness override, current-head reconciliation, review-gap remediation, base-branch drift evidence, feedback-loop closure-evidence validation, and feedback-loop ledger allowlist remediation. R169 records post-push reconciliation for PR #322 head `e7bde7dc`: the targeted feedback-loop ledger thread is resolved, the refreshed review-thread page returned no unresolved threads, PR #322 is mergeable but blocked, and CodeRabbit plus several CircleCI checks are still pending. CodeRabbit, remote checks green, linked-issue truth, Linear, merge readiness, Judge/PM readiness, and final goal completion remain separate unclaimed lanes. | Use the goal board as the current execution cockpit. Next safe action is to wait for or triage pending CodeRabbit and CircleCI checks on PR #322 head `e7bde7dc`, then refresh PR #322 checks/review-thread truth and Linear JSC-363 as separate lanes before any merge-ready, Judge/PM-ready, or goal-complete claim. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current slice truth is R156 through R170 for PR #322. R170 records local reviewed remediation for review thread PRRT_kwDORWZJCc6F7LzF on implementation commit fbd472c: harness:audit-tracking now binds git probes to the active repo with sanitized Git environment and regression coverage. Push, CodeRabbit, remote checks green, review-thread resolution, linked-issue truth, Linear, merge readiness, Judge/PM readiness, and final goal completion remain separate unclaimed lanes. | Use the goal board as the current execution cockpit. Next safe action is to commit and push R170, resolve only demonstrably fixed review thread PRRT_kwDORWZJCc6F7LzF on the pushed head, then refresh PR #322 checks/review-thread truth and Linear JSC-363 as separate lanes before any merge-ready, Judge/PM-ready, or goal-complete claim. |
 
 ## Artifact Index
 
@@ -133,12 +133,16 @@ unless a live refresh is recorded in the referenced artifact.
   as tracked durable evidence, sibling local outputs remain ignored,
   `.harness/README.md` documents the ledger, and `harness:audit-tracking`
   verifies the live git-ignore behavior. R169 records post-push reconciliation
-  for PR #322 head `e7bde7dc`: the targeted feedback-loop ledger thread is
+  for PR #322 head e7bde7dc: the targeted feedback-loop ledger thread is
   resolved and the refreshed review-thread page returned no unresolved threads,
-  but CodeRabbit and several CircleCI checks are still pending. Remote checks
-  green, CodeRabbit completion, linked-issue truth, Linear, merge readiness,
-  Judge/PM readiness, and final goal completion remain unclaimed until refreshed
-  after the pending remote checks settle.
+  but CodeRabbit and several CircleCI checks were still pending. R170 records
+  local reviewed remediation for new review thread PRRT_kwDORWZJCc6F7LzF on
+  implementation commit fbd472c: audit-tracking git probes now bind to the
+  active repo root with sanitized Git environment and contaminated-env
+  regression coverage. Push, remote checks green, CodeRabbit completion,
+  review-thread resolution, linked-issue truth, Linear, merge readiness,
+  Judge/PM readiness, and final goal completion remain unclaimed until
+  refreshed after the R170 push.
   Historical stacked PRs may still show CONFLICTING/DIRTY metadata because
   their old head/base refs are stale. That historical metadata is not an active
   open-PR merge blocker. Before any
