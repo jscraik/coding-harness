@@ -1,6 +1,15 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { tsImport } from "tsx/esm/api";
+
+const { sanitizeGitEnvironment } = await tsImport(
+	"../src/lib/git/safe-env.ts",
+	import.meta.url,
+);
+
+const repoRoot = process.cwd();
+const gitEnv = sanitizeGitEnvironment(process.env, { policy: "minimal" });
 
 const gitignore = readFileSync(".gitignore", "utf8");
 const readme = readFileSync(".harness/README.md", "utf8");
@@ -10,7 +19,9 @@ function gitCheckIgnorePattern(path) {
 		"git",
 		["check-ignore", "-v", "--no-index", "--", path],
 		{
+			cwd: repoRoot,
 			encoding: "utf8",
+			env: gitEnv,
 		},
 	);
 	return result.stdout.trim();
