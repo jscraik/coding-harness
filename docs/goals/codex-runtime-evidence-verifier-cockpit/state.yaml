@@ -66,8 +66,8 @@ completion_contract:
   blocked_stop_condition: "Stop if the board is invalid, activation is absent for Worker work, required intent review is missing, validation cannot run, reviewer artifacts are missing after retry, PR or tracker truth is stale, dirty work overlaps required files, or continuing would contaminate a PR under triage."
 current_slice_gate:
   lifecycle_unit: "PU-041-hidden-dependency-guard-hardening"
-  status: "pr322_audit_tracking_git_env_reviewed_validated_commit_pending_push"
-  reason: "R156 records reviewer-driven local validation for the hidden-dependency guard. R157 through R169 record earlier PR #322 remediation and post-push reconciliation. R170 records local reviewed remediation for PR #322 review thread PRRT_kwDORWZJCc6F7LzF on implementation commit fbd472cca366ce22364e46af3fb406a700f31bc9: audit-tracking git probes now bind to the active repo root with sanitized Git environment, and a contaminated GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE regression passed. This remains local validation and goal-board evidence only; push, remote checks green, CodeRabbit completion, reviewDecision approval, Linear full-lifecycle completion, Judge/PM readiness, runtime producer emission, delivery-truth consumption, merge readiness, and final goal completion remain unclaimed."
+  status: "pr322_package_quality_scripts_reviewed_validated_commit_pending_push"
+  reason: "R156 records reviewer-driven local validation for the hidden-dependency guard. R157 through R170 record earlier PR #322 remediation and post-push reconciliation. R171 records local reviewed remediation for PR #322 review thread PRRT_kwDORWZJCc6F7N2M on implementation commit 6da8acab9162ac29d137156c35df6c6bfff07785: the package files whitelist now includes the three pnpm check quality guard scripts, and a focused package-files regression plus pnpm pack --dry-run prove the reviewed tarball surface locally. This remains local validation and goal-board evidence only; push, remote checks green, CodeRabbit completion, reviewDecision approval, Linear full-lifecycle completion, Judge/PM readiness, runtime producer emission, delivery-truth consumption, merge readiness, and final goal completion remain unclaimed."
   completed_before_local_validation_claim:
     - "Created PU-039 intent at .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-039-review-coverage-backfill-intent.json."
     - "Reviewed the PU-039 intent with adversarial-reviewer and agent-native-reviewer artifacts before validator or ledger implementation."
@@ -79,7 +79,7 @@ current_slice_gate:
     - "Verified skill-lens and reviewer artifacts exist, including the final adversarial no-blocker artifact."
     - "Appended R139 with artifact-backed skill-lens and independent-reviewer results."
   next_required_handoff_steps:
-    - "Commit and push R170 for PR #322 audit-tracking Git environment remediation, then resolve only demonstrably fixed review thread PRRT_kwDORWZJCc6F7LzF on the pushed head."
+    - "Commit and push R171 for PR #322 package quality-script tarball remediation, then resolve only demonstrably fixed review thread PRRT_kwDORWZJCc6F7N2M on the pushed head."
     - "If new CodeRabbit findings appear, fix only validated PR #322 findings on this branch and record a fresh receipt for the new head."
     - "Before the next implementation slice, choose the next unproven requirement from the goal, plan, receipts, adopted audits, and Project Brain surfaces; create and review intent before implementation."
     - "Refresh live Linear JSC-363 before tracker-alignment, full-lifecycle closeout, or Judge/PM-ready claims; tracker truth remains separate from runtime, CI, review, and implementation proof."
