@@ -243,10 +243,30 @@ function buildBranchCurrentClaim(
 }
 
 function buildLinearClaim(
-	hasLinear: boolean,
+	input: PrCloseoutInput,
 	headSha: string | null,
 	verifiedAt: string,
 ): PrCloseoutClaim {
+	const hasLinear = hasLinearReference(input.pullRequest.body);
+	const mutationAvailability = input.linearMutation;
+	if (
+		hasLinear &&
+		(mutationAvailability === "blocked" || mutationAvailability === "unknown")
+	) {
+		return buildClaim(
+			"linear_tracker_state_aligned",
+			mutationAvailability === "blocked" ? "blocked" : "unknown",
+			"linear",
+			verifiedAt,
+			{
+				evidenceRef: `linearMutation:${mutationAvailability}`,
+				headSha,
+				freshness: "missing",
+				blockerClass:
+					mutationAvailability === "blocked" ? "external_service" : "unknown",
+			},
+		);
+	}
 	return buildClaim(
 		"linear_tracker_state_aligned",
 		hasLinear ? "pass" : "unknown",
@@ -346,14 +366,13 @@ export function buildCloseoutClaims(
 	const checkOptions = checkClaimOptions(checks, headSha);
 	const testChecks = checks.filter(isTestCheck);
 	const branch = branchClaimState(input.pullRequest, input.branch);
-	const hasLinear = hasLinearReference(input.pullRequest.body);
 	return [
 		buildTestsPassedClaim(testChecks, checkOptions, headSha, verifiedAt),
 		buildCiGreenClaim(checkOptions, headSha, verifiedAt),
 		buildReviewThreadsResolvedClaim(reviewThreads, headSha, verifiedAt),
 		buildPrMetadataReadyClaim(input.pullRequest, headSha, verifiedAt),
 		buildBranchCurrentClaim(branch, headSha, verifiedAt),
-		buildLinearClaim(hasLinear, headSha, verifiedAt),
+		buildLinearClaim(input, headSha, verifiedAt),
 		buildIndependentReviewClaim(input, checks, headSha, verifiedAt),
 		buildRequiredChecksCurrentHeadClaim(checkOptions, headSha, verifiedAt),
 		buildRollbackClaim(input, headSha, verifiedAt),

@@ -10,7 +10,7 @@
 
 ## Scope
 
-Last reconciled: 2026-05-30.
+Last reconciled: 2026-05-31T10:15Z plus R175 PR #322 post-push reconciliation (branch head 219854d4580fe19b13d5e1d03760f1506c7713c6, origin/main freshness at ddd2b966663114c385811fe01ae43ef98c0b3818, package-runtime-input fix pushed, targeted review threads resolved, unresolved-thread query returned none; CodeRabbit and remote checks were still pending, so merge readiness and final goal completion remain unclaimed).
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -21,7 +21,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. PR #309 is merged; its branch head was `84bd19b1a5da56800e7cf4239c9f65348ccf2d96`, current main includes squash commit `75b77c2543053ade3c3e793d28f8811998b9f01c`, and the active stack now runs through PR #312, PR #313, PR #314, PR #315, and PR #316. R124 records PU-038 IntermediaryReceiptCoverage/v1 as PR #315, explicit about no completed JSC-363 SA acceptance IDs, independently triaged by green-sweep, and green on all visible PR checks after CircleCI rerun. R127 records live linked-issue scope repair for historical PR #310 so preparatory governance work does not claim SA-001 through SA-018. R128 records commit `921bc5ec7e70a211a65da94a5c5e2ad99c7d2601` for the linked-issue evidence repair. R129 records a live PR stack refresh that separated observed PR #315/#314 CI from PR #316 review/protection state. R130 records the live PR #315 linked-issue body repair with separate Linear reference and relationship fields, observed-head PR #315 checks green at ee9d43960f5f2a072fb5d7ddfc9522e7ef97a874 before that route-evidence commit, and PR-visible PR #316 stale-review classification at https://github.com/jscraik/coding-harness/pull/316#issuecomment-4570004834. R131 records the follow-up PR #316 linked-issue contract repair on current head `f3dd5e4f035cd547e531e3e505af2b650c54d558`: focused tests and Biome pass, all visible PR checks pass, mergeStateStatus is CLEAN, mergeable is MERGEABLE, all known review threads are resolved, and the PR still claims no JSC-363 SA-001 through SA-018 completion. R132 records the R131 route-evidence commit/push at `d7f534d3d396d748a4f30609a0679cc9be6c0cb3`, post-push PR #315 current-head checks as all visible checks passing, PR #315 CLEAN/MERGEABLE, and PR #316 still CLEAN/MERGEABLE with all visible checks passing. GitHub reviewDecision, stacked-base merge execution, Linear full-lifecycle scope alignment, Judge/PM readiness, runtime producer emission, delivery-truth consumption, and final goal completion truth remain unclaimed. | Use the goal board as the current execution cockpit. Next safe action is to resume the next implementation slice in an isolated clean worktree or branch context so unrelated local dirt and open PR triage do not contaminate the slice. Before any closeout, merge-ready, Judge/PM-ready, or goal-complete claim, refresh PR #315/#316 reviewDecision, review-thread state, stacked-base readiness, Linear scope alignment, and mergeability again. Keep CI, reviewDecision, stacked-base readiness, Linear scope alignment, merge readiness, Judge/PM readiness, and goal completion as separate truth lanes. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current slice truth is R156 through R175 for PR #322. R174 records local reviewed remediation for review threads PRRT_kwDORWZJCc6F7cu8 and PRRT_kwDORWZJCc6F7ezU on implementation commit 36458dd: package quality-script runtime inputs are included without publishing src/dev or unregistered source tests, with tarball-level regression coverage. R175 records the pushed head 219854d4580fe19b13d5e1d03760f1506c7713c6, targeted review-thread resolution, and a fresh unresolved-thread query returning none. CodeRabbit, pr-pipeline, ci/circleci: check, and ci/circleci: orb-pinning were still pending at the R175 refresh; linked-issue truth, Linear, merge readiness, Judge/PM readiness, and final goal completion remain separate unclaimed lanes. | Use the goal board as the current execution cockpit. Next safe action is to run R175 board validators, commit and push the R175 reconciliation, then refresh PR #322 pending checks and CodeRabbit before any merge-ready, Judge/PM-ready, or goal-complete claim. |
 
 ## Artifact Index
 
@@ -81,39 +81,114 @@ unless a live refresh is recorded in the referenced artifact.
   cockpit, keep `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md`
   freshness enforced through `scripts/check-goal-board.py`, and keep Linear,
   PR, CI, review-thread, Project Brain, and runtime evidence truth separated in
-  receipts. PR #309 is merged; the PR branch head was
-  `84bd19b1a5da56800e7cf4239c9f65348ccf2d96`, and current main includes
-  squash commit `75b77c2543053ade3c3e793d28f8811998b9f01c`. R114 restores
-  current-head goal-board freshness and encodes the tool promotion threshold,
-  and R115 records PU-035 ArtifactRuntimeSurface/v1 local contract evidence on
-  branch `codex/jsc-363-artifact-runtime-surface`. R118 records that PU-036
-  ReplayPacket/v1 is committed, pushed, open as PR #313, and green on all
-  visible PR checks, while PR #310 has also been repaired and is green after
-  linked-issue metadata recovery. R121 records PU-037 as committed, pushed,
-  open as PR #314, green after env-backed CircleCI rerun, and independently
-  triaged by green-sweep. R124 records PU-038 IntermediaryReceiptCoverage/v1
-  as committed, pushed, open as PR #315, explicit about no completed JSC-363
-  SA acceptance IDs, independently triaged by green-sweep, and green on all
-  visible PR checks after CircleCI rerun. R127 repairs the historical PR #310
-  linked-issue scope ambiguity, R128 commits the linked-issue evidence repair,
-  R129 records live stack triage: PR #315 and PR #314 are green and
-  mergeable, while PR #316 needed review/protection classification. R130
-  records PR #315 observed-head green checks plus linked-issue body repair and
-  PR #316 stale-review classification comment. R131 records the follow-up
-  PR #316 linked-issue contract repair on head
-  `f3dd5e4f035cd547e531e3e505af2b650c54d558`, with focused tests,
-  Biome, all visible PR checks, mergeStateStatus CLEAN, mergeable MERGEABLE,
-  and known review threads resolved. R132 records that PR #315 current-head
-  checks passed after the R131 route-evidence push at
-  `d7f534d3d396d748a4f30609a0679cc9be6c0cb3`, with PR #315 CLEAN and
-  MERGEABLE; PR #316 also remains green, CLEAN, and MERGEABLE on its observed
-  head. A direct review-thread refresh now shows #315 unresolved_threads=0 and
-  #316 unresolved_threads=0. review-thread truth: claimed as refreshed in this
-  lane snapshot; merge-readiness: blocked until check-goal-board.py is re-run
-  on current HEAD; Linear scope alignment: blocked (confirmation_required /
-  blocked_destination_confirmation); Judge/PM readiness: not ready (not yet
-  completed); runtime producer emission: not ready (not yet emitted); delivery-truth
-  consumption: not ready.
+  receipts. Historical PR #309 continuity remains indexed by branch head
+  `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` for validator compatibility;
+  it is not current route truth. R149 records the post-merge refresh after PR
+  #312 merged into main as squash commit
+  `7e8cb93fa16636336194e15e53a592117b9f276a`. R150/R152 record the PR #318
+  and PU-040 validator-hardening lane. PR #319 merged into main as squash
+  commit `1afb519f7623f109b7a383688449c031541ff3dd`; R154 is the current
+  route-truth reanchor because the latest pre-squash branch receipt R153 is no
+  longer reachable from current main. PR #322 is the current live branch lane
+  for `codex/jsc-363-pr320-rerun`; R157 records that its stale PR title/body
+  were repaired after `ci/circleci: linear-gate` failed on missing JSC-363 PR
+  metadata. R158 records remediation for PR #322 review-thread findings,
+  including the release-readiness handoff-evidence fix, and was pushed as
+  `fa74a817fd5b476f10510ef26803c5a2790abd91`. R159 records the remaining
+  goal-evidence follow-up for R155 validators and current-PR handoff wording,
+  and was pushed as `f208aa3da8d7c56fb36a7a121dd453a3f4268ecd`. R160 records
+  the release-readiness closeout blocker remediation and was pushed as
+  `aa9a478d57d0cf0362765ab21280e1e41032d4e0`: explicit
+  `releaseReadinessImpact` values now feed top-level closeout blockers, with
+  governed-change regression coverage. R161 records the live git-env sanitizer
+  remediation for PR #322 review thread `PRRT_kwDORWZJCc6F6Lc6`: local git
+  inspection now uses the shared safe-env minimal policy and the regression
+  covers `GIT_COMMON_DIR`, `GIT_DIR`, `GIT_WORK_TREE`, and
+  `GIT_INDEX_FILE`. R162 records reviewed release-readiness classification and
+  Windows behavior-test shim remediation: live closeout now blocks unknown
+  release-readiness impact, non-live omission remains lifecycle-compatible, and
+  the behavior-test script prefers `vitest.cmd` under the Windows platform
+  override. R163 records the input-mode release-readiness override remediation
+  for PR #322 review thread `PRRT_kwDORWZJCc6F6XuZ`: explicit
+  `--release-readiness-impact` now overlays normalized `--input` packets before
+  report generation while live `--pr` mode remains owned by
+  `buildLivePrCloseoutInput`. PR #322 checks, CodeRabbit/review-thread truth,
+  linked-issue status, and Linear JSC-363 must be refreshed after the next push
+  before any closeout claim.
+  R164 records current-head reconciliation for PR #322 head
+  27e525eedcc1ef493b51499c983411bd54f8e1fe after the board caught the
+  pre-commit R163 head SHA. Live PR checks are green except CodeRabbit, which
+  remains pending; linked-issue status and Linear JSC-363 still require
+  separate refresh before any closeout claim.
+  R165 records local reviewed remediation for the latest PR #322 review gaps on
+  implementation commit `3c2cb159eda80334de526e74462736c0608d24b1`: source
+  repo codestyle source-only gates remain fail-closed while downstream scaffold
+  repos stay compatible by default, omitted release-readiness input is covered,
+  inherited process-level `GIT_*` contamination is covered, PATH composition
+  uses the platform delimiter, and strict-mode downstream behavior is now an
+  executable regression. Push, remote checks, review threads, CodeRabbit,
+  linked-issue truth, Linear, merge readiness, Judge/PM readiness, and final
+  goal completion remain unclaimed until refreshed after the R165 push.
+  R167 records local reviewed remediation for the PR #322 feedback-loop
+  closure-evidence review thread on implementation commit `e4fb33e`: implemented
+  feedback-loop gaps and recommendations now require non-empty evidence refs
+  before the audit can report closure. R168 records local reviewed remediation
+  for PR #322 review thread `PRRT_kwDORWZJCc6F7Fgx` on implementation commit
+  `65c56a9`: `.harness/feedback-loops/index.json` is explicitly unignored
+  as tracked durable evidence, sibling local outputs remain ignored,
+  `.harness/README.md` documents the ledger, and `harness:audit-tracking`
+  verifies the live git-ignore behavior. R169 records post-push reconciliation
+  for PR #322 head e7bde7dc: the targeted feedback-loop ledger thread is
+  resolved and the refreshed review-thread page returned no unresolved threads,
+  but CodeRabbit and several CircleCI checks were still pending. R170 records
+  local reviewed remediation for new review thread PRRT_kwDORWZJCc6F7LzF on
+  implementation commit fbd472c: audit-tracking git probes now bind to the
+  active repo root with sanitized Git environment and contaminated-env
+  regression coverage. Push, remote checks green, CodeRabbit completion,
+  review-thread resolution, linked-issue truth, Linear, merge readiness,
+  Judge/PM readiness, and final goal completion remain unclaimed until
+  refreshed after the R170 push.
+  R171 records local reviewed remediation for review thread
+  `PRRT_kwDORWZJCc6F7N2M` on implementation commit `6da8aca`: the package
+  files whitelist now includes the three pnpm check quality guard scripts, and
+  package-files regression coverage plus `pnpm pack --dry-run` prove the
+  reviewed tarball surface locally. R172 records local reviewed remediation for
+  review thread `PRRT_kwDORWZJCc6F7StG` on implementation commit `c5a1f39`:
+  minimal Git environment sanitization now drops `GIT_CONFIG` and all
+  `GIT_CONFIG_*` keys, with behavior tests proving inline config and
+  config-file pointer contamination cannot hide untracked-file truth after
+  sanitization. Push, remote checks green, CodeRabbit completion, review-thread
+  resolution, linked-issue truth, Linear, merge readiness, Judge/PM readiness,
+  and final goal completion remain unclaimed until refreshed after the R172
+  push. R173 records local reviewed remediation for review thread
+  `PRRT_kwDORWZJCc6F7XW0` on implementation commit `4d5039f`:
+  `expectBehavior` now validates `given` and `should` context separately and
+  requires exact deep equality between `actual` and `expected`, with regression
+  coverage proving extra actual object fields no longer pass through subset
+  matching. Push, remote checks green, CodeRabbit completion, review-thread
+  resolution, linked-issue truth, Linear, merge readiness, Judge/PM readiness,
+  and final goal completion remain unclaimed until refreshed after the R173
+  push.
+  R174 records local reviewed remediation for review threads
+  `PRRT_kwDORWZJCc6F7cu8` and `PRRT_kwDORWZJCc6F7ezU` on implementation
+  commit `36458dd`: the package files allowlist now includes the runtime
+  source/test inputs required by packaged quality scripts without publishing
+  \`src/dev/**\` or unregistered \`src/**/*.test.ts\` payloads, and the
+  package-files regression verifies the actual packed tarball plus packed
+  \`package.json\`. R175 records the pushed PR #322 head
+  \`219854d4580fe19b13d5e1d03760f1506c7713c6\`, targeted resolution of those
+  two review threads, and a fresh unresolved-thread query returning no
+  unresolved threads; CodeRabbit, pr-pipeline, ci/circleci: check, and
+  ci/circleci: orb-pinning were still pending at that refresh. Linked-issue
+  truth, Linear, merge readiness, Judge/PM readiness, and final goal completion
+  remain unclaimed.
+  Historical stacked PRs may still show CONFLICTING/DIRTY metadata because
+  their old head/base refs are stale. That historical metadata is not an active
+  open-PR merge blocker. Before any
+  closeout, refresh Linear
+  JSC-363, current PR/CI/review-thread truth, runtime producer evidence,
+  delivery-truth consumption, Judge/PM readiness, merge execution, and final
+  goal completion as separate lanes.
 - JSC-308 is related broader HE runtime-authoring/process-exhaust context. Do
   not use it as the coding-harness tracker for the 2026-05-18 assurance plan
   unless Linear is explicitly reparented or updated later.

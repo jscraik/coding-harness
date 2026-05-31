@@ -13,16 +13,7 @@ import {
 	resolveBrainHarnessDir,
 	shouldRenderBrainJson,
 } from "./cli-args.js";
-
-function extractRules(content: string): string[] {
-	const rules: string[] = [];
-	const regex = /^\s*-\s*\*\*R-\d+\*\*:\s*(.+)$/gm;
-	for (const match of content.matchAll(regex)) {
-		const rule = match[1];
-		if (rule) rules.push(rule.trim());
-	}
-	return rules;
-}
+import { parseBrainRules } from "./rules.js";
 
 /**
  * Extracts list items from a second-level (##) markdown section with the given header.
@@ -75,7 +66,7 @@ export function runBrainPreflight(
 		const rulesPath = join(harnessDir, "knowledge", mapping.domain, "rules.md");
 		if (existsSync(rulesPath)) {
 			const content = readFileSync(rulesPath, "utf-8");
-			ctx.rules = extractRules(content);
+			ctx.rules = parseBrainRules(content).map((rule) => rule.text);
 			totalRules += ctx.rules.length;
 		}
 

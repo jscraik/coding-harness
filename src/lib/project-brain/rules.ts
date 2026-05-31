@@ -1,31 +1,18 @@
-/** Parsed Project Brain rule entry. */
-export interface BrainRuleEntry {
+/** Parsed Project Brain rule entry from the supported markdown grammar. */
+export interface BrainRule {
 	id: string;
 	text: string;
 }
 
-const RULE_ID_PATTERN = "R-[a-z0-9_-]+";
+const RULE_ENTRY_PATTERN = /^\s*-\s*\*\*(R-[^*]+)\*\*:\s*(.+)$/gm;
 
-/** Format a Project Brain rule list item. */
-export function formatBrainRuleEntry(rule: BrainRuleEntry): string {
-	return `- **${rule.id}**: ${rule.text}`;
-}
-
-/** Extract Project Brain rules from a domain rules document. */
-export function parseBrainRules(content: string): BrainRuleEntry[] {
-	const rules: BrainRuleEntry[] = [];
-	const regex = new RegExp(
-		`^\\s*-\\s*\\*\\*(${RULE_ID_PATTERN})\\*\\*:\\s*(.+)$`,
-		"gim",
-	);
-
-	for (const match of content.matchAll(regex)) {
-		const id = match[1];
-		const text = match[2];
-		if (id && text) {
-			rules.push({ id, text: text.trim() });
-		}
+/** Parse active Project Brain rules from the supported markdown list grammar. */
+export function parseBrainRules(content: string): BrainRule[] {
+	const rules: BrainRule[] = [];
+	for (const match of content.matchAll(RULE_ENTRY_PATTERN)) {
+		const id = match[1]?.trim();
+		const text = match[2]?.trim();
+		if (id && text) rules.push({ id, text });
 	}
-
 	return rules;
 }

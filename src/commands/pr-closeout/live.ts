@@ -15,6 +15,7 @@ import {
 } from "../pr-closeout-github.js";
 import type { PrCloseoutCLIOptions } from "./args.js";
 import { loadPrCloseoutEnvFile } from "./env.js";
+import { inspectGitBranch } from "./git-branch.js";
 import type { CommandRunner } from "./types.js";
 
 function parseJsonObject(
@@ -85,19 +86,10 @@ function inspectCommand(
 	}
 }
 
-function inspectGitClean(
-	repoRoot: string,
-	runner: CommandRunner,
-): boolean | null {
-	try {
-		return (
-			runner("git", ["status", "--porcelain"], {
-				cwd: repoRoot,
-			}).length === 0
-		);
-	} catch {
-		return null;
-	}
+function linearMutationAvailability(
+	env: NodeJS.ProcessEnv,
+): NonNullable<PrCloseoutInput["linearMutation"]> {
+	return env.LINEAR_API_KEY?.trim() ? "available" : "blocked";
 }
 
 function isPlaceholderBodyField(value: string): boolean {
@@ -323,13 +315,19 @@ export function buildLivePrCloseoutInput(
 	const rollback = rollbackFromBody(pullRequest.body);
 	return {
 		pullRequest,
-		branch: {
-			clean: inspectGitClean(options.repoRoot, runner),
-		},
+		branch: inspectGitBranch(
+			options.repoRoot,
+			envLoad.env,
+			runner,
+			pullRequest.baseRefName,
+			pullRequest.headSha,
+		),
 		checks,
 		reviewThreads,
 		traceability: traceabilityFromBody(pullRequest.body),
 		...(rollback ? { rollback } : {}),
 		tools,
+		linearMutation: linearMutationAvailability(envLoad.env),
+		releaseReadinessImpact: options.releaseReadinessImpact ?? "unknown",
 	};
 }

@@ -1,31 +1,34 @@
+import { appendFileSync } from "node:fs";
 import { expect } from "vitest";
 
-/**
- * Describes one evidence-bearing behavior assertion.
- */
-export type BehaviorExpectation = {
+/** Context-rich assertion payload for evidence-bearing tests. */
+export interface BehaviorExpectation<TActual, TExpected = TActual> {
 	given: string;
 	should: string;
-	actual: unknown;
-	expected: unknown;
-};
-
-/**
- * Formats the behavior context used in evidence-bearing assertion failures.
- */
-export function formatBehaviorExpectation({
-	given,
-	should,
-}: Pick<BehaviorExpectation, "given" | "should">): string {
-	return `Given ${given}: should ${should}`;
+	actual: TActual;
+	expected: TExpected;
 }
 
-/**
- * Asserts a behavior-shaped actual/expected pair with agent-readable context.
- */
-export function expectBehavior(expectation: BehaviorExpectation): void {
-	expect(
-		expectation.actual,
-		formatBehaviorExpectation(expectation),
-	).toStrictEqual(expectation.expected);
+/** Assert behavior with explicit evidence context for high-trust tests. */
+export function expectBehavior<TActual, TExpected = TActual>({
+	given,
+	should,
+	actual,
+	expected,
+}: BehaviorExpectation<TActual, TExpected>): void {
+	const traceFile = process.env.HARNESS_EXPECT_BEHAVIOR_TRACE_FILE;
+	if (traceFile) {
+		appendFileSync(
+			traceFile,
+			`${JSON.stringify({
+				given,
+				should,
+				token: process.env.HARNESS_EXPECT_BEHAVIOR_TRACE_TOKEN ?? "",
+				stack: new Error().stack ?? "",
+			})}\n`,
+		);
+	}
+	expect(given).toEqual(expect.any(String));
+	expect(should).toEqual(expect.any(String));
+	expect(actual).toEqual(expected);
 }

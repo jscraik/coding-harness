@@ -2,28 +2,23 @@ import { describe, expect, it } from "vitest";
 import { defineCommandSpec } from "./define-command-spec.js";
 
 describe("defineCommandSpec", () => {
-	it("builds a simple forwarding command spec", () => {
-		const calls: string[][] = [];
+	it("keeps public command metadata with the forwarding runner", async () => {
 		const spec = defineCommandSpec({
-			name: "example",
-			aliases: ["ex"],
-			summary: "Run an example command",
-			example: "example --json",
-			errorLabel: "Example Error",
-			runner: (args) => {
-				calls.push(args);
-				return 0;
-			},
+			name: "sample",
+			aliases: ["s"],
+			summary: "Run sample command",
+			example: "sample --json",
+			errorLabel: "Sample Error",
+			execute: (args) => args.length,
 		});
 
 		expect(spec).toMatchObject({
-			name: "example",
-			aliases: ["ex"],
-			summary: "Run an example command",
-			example: "example --json",
-			errorLabel: "Example Error",
+			name: "sample",
+			aliases: ["s"],
+			summary: "Run sample command",
+			example: "sample --json",
+			errorLabel: "Sample Error",
 		});
-		expect(spec.execute(["--json"])).toBe(0);
-		expect(calls).toEqual([["--json"]]);
+		expect(await spec.execute(["--json"])).toBe(1);
 	});
 });

@@ -31,6 +31,12 @@ function gitFixtureEnvironment(): NodeJS.ProcessEnv {
 	for (const key of GIT_ENV_KEYS) {
 		delete env[key];
 	}
+	expectBehavior({
+		given: "a git fixture environment for runtime-card subprocesses",
+		should: "remove caller-scoped git worktree state",
+		actual: GIT_ENV_KEYS.every((key) => env[key] === undefined),
+		expected: true,
+	});
 	return env;
 }
 

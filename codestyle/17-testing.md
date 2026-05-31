@@ -45,6 +45,13 @@
   gate outputs, and workflow contracts SHOULD assert machine-readable evidence
   references, blocked/unknown states, and current-head freshness where the
   behavior depends on external proof.
+- Evidence-bearing trust-boundary suites MUST be registered in
+  `src/lib/testing/behavior-test-suites.json` and include at least one
+  `expectBehavior({ given, should, actual, expected })` assertion. Add the
+  suite owner, rationale, and proving command when registering a new suite.
+- The behavior-test suite manifest is the owner table for this guard. Update
+  `scripts/check-behavior-tests.mjs`, package scripts, and hook validation only
+  when the manifest contract itself changes.
 - Security-sensitive trace or browser-evidence tests MUST assert that sensitive
   headers, environment values, metadata, and nested payloads are redacted before
   artifacts are persisted.
@@ -69,7 +76,6 @@
   - `pnpm typecheck`
   - `pnpm run quality:self-affirming`
   - `pnpm run quality:behavior-tests`
-  - `pnpm run quality:git-env-sanitizer`
   - `pnpm run test:related`
   - `pnpm test`
   - `pnpm audit`

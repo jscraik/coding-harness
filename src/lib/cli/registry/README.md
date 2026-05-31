@@ -1,41 +1,28 @@
-# CLI Registry
+# Command Registry
 
 ## Table of Contents
 
-- [Purpose](#purpose)
-- [Command Spec Authoring](#command-spec-authoring)
+- [Adapter Shapes](#adapter-shapes)
+- [Public Metadata](#public-metadata)
 - [Validation](#validation)
 
-## Purpose
+## Adapter Shapes
 
-This directory owns the command registry metadata that agents and users see
-through command dispatch, help, suggestions, and capability catalogs.
-Command names, aliases, summaries, examples, and error labels are public
-agent-facing metadata, even when the command implementation lives elsewhere.
+Use `defineCommandSpec` for command specs that only provide public metadata
+and forward raw CLI args to one runner. Keep a bespoke factory when the spec
+assembles options, composes multiple runners, owns compatibility behavior, or
+needs command-specific parsing before dispatch.
 
-## Command Spec Authoring
+## Public Metadata
 
-Use `defineCommandSpec` for simple adapters that only supply metadata and
-forward the remaining CLI args to one runner. This keeps pass-through command
-specs consistent without creating one-off object shapes.
-
-Use a bespoke factory when the command spec owns parsing, composes multiple
-runners, preserves compatibility behavior, or needs custom execution glue.
-
-When adding or migrating a command spec:
-
-- Keep local ESM imports on `.js` paths.
-- Preserve command metadata unless the user-facing contract is intentionally
-  changing.
-- Search sibling `*-command-spec.ts` files before adding a new pattern.
-- Add or update tests when metadata, aliases, examples, or dispatch behavior
-  change.
+The command name, aliases, summary, example, and error label are agent-facing
+CLI contract fields. Treat changes to those fields as user-visible command
+contract changes.
 
 ## Validation
 
-Run the narrow registry tests with `pnpm run test:registry` (or equivalent test
-target) and assert the process exits with code 0 and all tests pass. Then run
-`pnpm typecheck` and assert it exits 0 with no type errors. On any failure,
-capture the failing test or typecheck output, fix the helper signature/imports
-or revert the registry-only change, and re-run until both commands succeed. If
-failures persist, notify the registry owners.
+Run the command-spec tests after changing registry adapters:
+
+```bash
+pnpm vitest run src/lib/cli/registry/define-command-spec.test.ts src/lib/cli/registry/command-specs.test.ts
+```

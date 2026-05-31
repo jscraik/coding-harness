@@ -56,6 +56,7 @@ gardener-report.json
 !.harness/README.md
 !.harness/active-artifacts.md
 !.harness/audits/
+.harness/audits/*
 !.harness/audits/**/*.md
 !.harness/core/
 !.harness/core/**/*.md
@@ -115,6 +116,9 @@ gardener-report.json
 .harness/learnings/session-*.json
 !.harness/knowledge/
 !.harness/knowledge/**/*.md
+!.harness/feedback-loops/
+.harness/feedback-loops/*
+!.harness/feedback-loops/index.json
 !.harness/quality/
 .harness/quality/*
 !.harness/quality/criteria.md

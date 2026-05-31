@@ -11,7 +11,7 @@ function buildVerifyWorkWrapperEnv(
 	environment: NodeJS.ProcessEnv = process.env,
 ): NodeJS.ProcessEnv {
 	return {
-		...sanitizeGitEnvironment({ env: environment, policy: "strict" }),
+		...sanitizeGitEnvironment(environment, { policy: "strict" }),
 		HARNESS_VERIFY_WORK_NO_DELEGATE: "1",
 	};
 }

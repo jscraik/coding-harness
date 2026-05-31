@@ -10,6 +10,7 @@ import {
 	rootHygieneGitEnv,
 	rootHygieneReceiptRef,
 } from "../root-hygiene/index.js";
+import { expectBehavior } from "../testing/expect-behavior.js";
 import type { RootHygieneReport } from "../root-hygiene/types.js";
 import { composeDeliveryTruth as composeDeliveryTruthBase } from "./composition.js";
 import type {
@@ -36,25 +37,18 @@ describe("composeDeliveryTruth", () => {
 
 		expectBehavior({
 			given: "current root-hygiene claim-support evidence",
-			should: "pass root_surface_tidy delivery truth",
-			actual: {
-				blockerCode: verdict.blockerCode,
-				claim: verdict.claim,
-				evidenceRef: verdict.evidenceRef,
-				evidenceUse: verdict.evidenceUse,
-				freshness: verdict.freshness,
-				schemaVersion: verdict.schemaVersion,
-				status: verdict.status,
-			},
-			expected: {
-				blockerCode: null,
-				claim: "root_surface_tidy",
-				evidenceRef: rootHygieneReceiptRef(),
-				evidenceUse: "claim_support",
-				freshness: "current",
-				schemaVersion: "delivery-truth/v1",
-				status: "pass",
-			},
+			should: "pass the root_surface_tidy delivery-truth claim",
+			actual: verdict.status,
+			expected: "pass",
+		});
+		expect(verdict).toMatchObject({
+			schemaVersion: "delivery-truth/v1",
+			claim: "root_surface_tidy",
+			status: "pass",
+			evidenceRef: rootHygieneReceiptRef(),
+			freshness: "current",
+			blockerCode: null,
+			evidenceUse: "claim_support",
 		});
 	});
 

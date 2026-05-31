@@ -4,5 +4,5 @@ import { sanitizeGitEnvironment } from "../git/safe-env.js";
 export function rootHygieneGitEnv(
 	env: NodeJS.ProcessEnv = process.env,
 ): NodeJS.ProcessEnv {
-	return sanitizeGitEnvironment({ env, policy: "strict" });
+	return sanitizeGitEnvironment(env, { policy: "strict" });
 }

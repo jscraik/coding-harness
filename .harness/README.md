@@ -47,6 +47,7 @@ repository truth. Classify the artifact first:
 | `.harness/decisions/**.md` | `decision` | Track |
 | `.harness/linear/**.md` | `execution-input` | Track |
 | `.harness/active-artifacts.md` | `execution-input` | Track |
+| `.harness/audits/YYYY-MM-DD-<type>-audit.md` | `secondary-context` | Track operator-requested advisory audits that classify current repo state and are safe to review |
 | `.harness/refactors/**.md` | `execution-input` | Track |
 | `.harness/audits/**.md` | `secondary-context` | Track operator-requested audit reports named `YYYY-MM-DD-<type>-audit.md`; use for repo-state visibility findings that are not research evidence by themselves |
 | `.harness/features/**.md` | `secondary-context` | Track |
@@ -68,6 +69,7 @@ repository truth. Classify the artifact first:
 | `.harness/learnings/enforcement-status.json` | `policy` | Track when it represents the repo intent for enforcement posture |
 | `.harness/learnings/*.local.json` | `generated-runtime` | Do not track imported local reviewer, session, or telemetry feeds |
 | `.harness/knowledge/**.md` | `secondary-context` | Track |
+| `.harness/feedback-loops/index.json` | `policy` | Track as the curated feedback-loop ledger consumed by `feedback-loop-audit` and PR closeout evidence |
 | `.harness/quality/**` | `policy` | Track |
 | `.harness/review-log.md` | `secondary-context` | Track |
 | `.harness/media/**/*.md` | `secondary-context` | Track sidecars, prompts, and review notes for promoted media artifacts |
@@ -105,3 +107,8 @@ Deep research evidence becomes implementation authority only when it is listed
 in `.harness/research/evidence-patterns.json` with an `adopted` status,
 target surfaces, a disposition reason, and a validation command. Deferred or
 unlisted research remains secondary context.
+
+Operator-requested audits belong in `.harness/audits/` when they describe
+current repo state and should remain visible in review. Research-discovery
+audits belong in `.harness/research/audits/` until an accepted evidence
+pattern, plan, or spec promotes them.

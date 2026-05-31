@@ -2,36 +2,30 @@
 
 ## Table of Contents
 
-- [Purpose](#purpose)
-- [Environment Sanitation](#environment-sanitation)
+- [Environment Policies](#environment-policies)
+- [Ownership](#ownership)
 - [Validation](#validation)
 
-## Purpose
+## Environment Policies
 
-This directory owns shared git subprocess helpers. Feature modules should use
-these helpers instead of hand-rolling git environment cleanup beside their own
-runtime or evidence logic.
+Use `sanitizeGitEnvironment` for git subprocess environments instead of deleting
+`GIT_*` variables in feature modules.
 
-## Environment Sanitation
+| Policy | Use | Behavior |
+| --- | --- | --- |
+| `minimal` | Run git against an explicit repository root while preserving user identity and tool configuration. | Drops caller-scoped repository, object-store, quarantine, and env-provided config variables such as `GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`, `GIT_COMMON_DIR`, `GIT_OBJECT_DIRECTORY`, `GIT_ALTERNATE_OBJECT_DIRECTORIES`, `GIT_QUARANTINE_PATH`, `GIT_CONFIG`, and all `GIT_CONFIG_*` keys. |
+| `strict` | Run repository validators or wrappers that must not inherit any caller git state. | Drops every `GIT_*` key. |
 
-Use `sanitizeGitEnvironment` from `safe-env.ts` before spawning git commands
-from code that may run inside hooks, tests, or nested fixture repositories.
+`minimal` intentionally does not preserve inherited object-store indirection. Callers that require alternates or quarantine object paths need a separate reviewed execution policy instead of broadening the default repository-root sanitizer.
 
-Policies:
+## Ownership
 
-- `strict`: drop every `GIT_*` variable. Use this when inherited git state,
-  identity, and hook-local values must not affect the subprocess.
-- `minimal`: drop repository-scoped variables only:
-  `GIT_COMMON_DIR`, `GIT_DIR`, `GIT_INDEX_FILE`, and `GIT_WORK_TREE`. Use this
-  when caller identity/configuration may remain but repository binding must be
-  reset.
-
-Do not manually delete `GIT_*` keys in feature modules. Route new cases through
-this helper so root-hygiene, runtime-card, fixture, and hook contexts keep one
-shared policy surface.
+`src/lib/git/safe-env.ts` is the shared authority for git subprocess
+environment cleanup. Runtime-card code, root-hygiene classifiers, and wrapper
+invocations should call it through their local adapter instead of repeating
+manual deletion logic.
 
 ## Validation
 
 Run `pnpm run quality:git-env-sanitizer` after changing git subprocess
-environment handling. The guard fails when production source manually deletes
-or broadly filters `GIT_*` variables outside `src/lib/git/safe-env.ts`.
+environment handling.

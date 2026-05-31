@@ -1,52 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { formatBrainRuleEntry, parseBrainRules } from "./rules.js";
+import { parseBrainRules } from "./rules.js";
 
-describe("Project Brain rules", () => {
-	it("parses numeric and auto-generated rule identifiers", () => {
-		const rules = parseBrainRules(`
-# CLI Rules
-
-- **R-001**: Existing numeric rule
-  - Severity: must
-- **R-auto**: Added rule from brain add
-  - Severity: should
-- **not-a-rule**: Ignored entry
-`);
+describe("parseBrainRules", () => {
+	it("parses the Project Brain active-rule markdown grammar", () => {
+		const rules = parseBrainRules(
+			[
+				"# Rules",
+				"",
+				"## Active rules",
+				"- **R-1**: Prefer current repo evidence over memory.",
+				"- **R-closeout-truth**: Keep PR, CI, review, and tracker lanes separate.",
+			].join("\n"),
+		);
 
 		expect(rules).toEqual([
-			{ id: "R-001", text: "Existing numeric rule" },
-			{ id: "R-auto", text: "Added rule from brain add" },
+			{ id: "R-1", text: "Prefer current repo evidence over memory." },
+			{
+				id: "R-closeout-truth",
+				text: "Keep PR, CI, review, and tracker lanes separate.",
+			},
 		]);
 	});
 
-	it("formats rule entries with the shared markdown contract", () => {
-		expect(
-			formatBrainRuleEntry({
-				id: "R-auto",
-				text: "All command help must render before validation",
-			}),
-		).toBe("- **R-auto**: All command help must render before validation");
-	});
-
-	it("parses the documented Project Brain rules document shape", () => {
-		const content = `
-# CLI Rules
-
-## Rules
-
-- **R-cli-help**: Help output renders before subcommand validation.
-- **R-runtime_card**: Runtime-card evidence stays advisory unless a verifier consumes it.
-`;
-
-		expect(parseBrainRules(content)).toEqual([
-			{
-				id: "R-cli-help",
-				text: "Help output renders before subcommand validation.",
-			},
-			{
-				id: "R-runtime_card",
-				text: "Runtime-card evidence stays advisory unless a verifier consumes it.",
-			},
-		]);
+	it("skips near-miss rule entries instead of silently inventing ids", () => {
+		expect(parseBrainRules("- **Rule 1**: wrong prefix")).toEqual([]);
 	});
 });

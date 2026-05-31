@@ -173,8 +173,12 @@ export interface PrCloseoutBranchInput {
 	clean?: boolean | null;
 	pushed?: boolean | null;
 	behindBase?: boolean | null;
+	aheadBy?: number | null;
+	behindBy?: number | null;
 	hasConflicts?: boolean | null;
 	headSha?: string | null;
+	matchesPullRequestHead?: boolean | null;
+	worktreeRole?: PrCloseoutWorktreeRole;
 }
 
 /** Review-thread counts consumed by the closeout classifier. */
@@ -182,6 +186,7 @@ export interface PrCloseoutReviewThreadsInput {
 	unresolved: number | null;
 	needsHuman?: number | null;
 	autofixable?: number | null;
+	ownerCounts?: Record<string, number>;
 }
 
 /** Session and trace references expected in professional PR handoff evidence. */
@@ -238,6 +243,17 @@ export interface PrCloseoutDirtyPathInput {
 		| "unrelated_local_noise";
 }
 
+/** Review artifact expected by a closeout or independent-approval handoff. */
+export interface PrCloseoutReviewArtifactInput {
+	path: string;
+	producer: string;
+	status: "present" | "missing" | "empty" | "ignored_runtime_path" | "unknown";
+	owner?: string | null;
+	unblockAction?: string | null;
+	nextCheckAt?: string | null;
+	evidenceRef?: string | null;
+}
+
 /** Tool availability and command evidence captured during live closeout inspection. */
 export interface PrCloseoutToolInput {
 	name:
@@ -252,6 +268,12 @@ export interface PrCloseoutToolInput {
 	failureClass: string | null;
 }
 
+/** Branch/worktree role used to prevent dirty orientation checkouts from becoming implementation surfaces. */
+export type PrCloseoutWorktreeRole =
+	| "implementation"
+	| "orientation"
+	| "unknown";
+
 /** Complete normalized input for one PR closeout classification pass. */
 export interface PrCloseoutInput {
 	pullRequest: PrCloseoutPullRequestInput;
@@ -265,10 +287,17 @@ export interface PrCloseoutInput {
 	/** Backwards-compatible HE phase-exit evidence accepted from older workflows. */
 	phaseExit?: HePhaseExit;
 	dirtyPaths?: PrCloseoutDirtyPathInput[];
+	reviewArtifacts?: PrCloseoutReviewArtifactInput[];
 	tools?: PrCloseoutToolInput[];
 	assurance?: HarnessAssuranceEntry[];
 	runtimeEvidence?: RuntimeEvidenceContract;
 	deliveryTruth?: PrCloseoutDeliveryTruthVerdict[];
+	linearMutation?: "available" | "blocked" | "not_needed" | "unknown";
+	releaseReadinessImpact?:
+		| "none"
+		| "governed_change"
+		| "release_blocker"
+		| "unknown";
 }
 
 /** One blocker that prevents the PR from being safely closed out. */
@@ -285,6 +314,8 @@ export interface PrCloseoutBlocker {
 		| "assurance"
 		| "runtime_evidence"
 		| "delivery_truth"
+		| "release_readiness"
+		| "review_artifact"
 		| "tool";
 	classification: PrCloseoutBlockerClassification;
 	kind?: "state" | "closeout_claim";
@@ -293,6 +324,81 @@ export interface PrCloseoutBlocker {
 	fixableByCodex: boolean;
 	ref?: string;
 	missingContext?: MissingContextClassification;
+}
+
+/** Queue metrics captured when a caller has lifecycle rate evidence available. */
+export interface PrCloseoutQueueSignals {
+	arrivalRate: string | null;
+	leaveRate: string | null;
+	holdReason: string | null;
+	queueAgeP95Hours: number | null;
+	queueAgeMaxHours: number | null;
+	costOfDelay: string | null;
+}
+
+/** One truth lane inside the delivery-lifecycle closeout snapshot. */
+export interface PrCloseoutLifecycleLane {
+	lane:
+		| "local_validation"
+		| "pr_state"
+		| "ci_state"
+		| "review_state"
+		| "linear_state"
+		| "branch_worktree"
+		| "continuation"
+		| "acceptance"
+		| "release_readiness";
+	status: PrCloseoutClaimStatus;
+	freshness: PrCloseoutEvidenceFreshness;
+	sourceOfTruth: string;
+	evidenceRef: string | null;
+	headSha: string | null;
+	blockerClass: PrCloseoutBlockerClassification | null;
+	owner: PrCloseoutRecoveryOwner | "reviewer" | "unknown";
+	nextAction: string;
+	queueSignals?: PrCloseoutQueueSignals;
+}
+
+/** Review artifact manifest projection included in the lifecycle snapshot. */
+export interface PrCloseoutReviewArtifactSummary {
+	expected: number;
+	missing: number;
+	empty: number;
+	ignoredRuntimePath: number;
+	unknown: number;
+	artifacts: PrCloseoutReviewArtifactInput[];
+}
+
+/** Cross-lane lifecycle snapshot generated from PR closeout evidence. */
+export interface PrCloseoutLifecycleSnapshot {
+	schemaVersion: "delivery-lifecycle-snapshot/v1";
+	generatedAt: string;
+	worktreeRole: PrCloseoutWorktreeRole;
+	linearMutation: "available" | "blocked" | "not_needed" | "unknown";
+	releaseReadinessImpact:
+		| "none"
+		| "governed_change"
+		| "release_blocker"
+		| "unknown";
+	staleEvidenceClasses: string[];
+	handoffRequiredEvidence: Array<{
+		lane: PrCloseoutLifecycleLane["lane"];
+		evidenceRef: string;
+		freshness: PrCloseoutEvidenceFreshness;
+		sourceOfTruth: string;
+	}>;
+	lanes: PrCloseoutLifecycleLane[];
+	latestValidationBlocker: {
+		failureClass: PrCloseoutBlockerClassification;
+		reason: string;
+		resumeCommand: string | null;
+	} | null;
+	reviewArtifacts: PrCloseoutReviewArtifactSummary;
+	continuation: {
+		nextSafeAction: PrCloseoutNextAction;
+		waitingOwner: PrCloseoutRecoveryOwner | "reviewer" | "unknown";
+		blocker: string | null;
+	};
 }
 
 /** Replayable attempt metadata for the read-only PR closeout classifier. */
@@ -360,6 +466,7 @@ export interface PrCloseoutReport {
 	assurance: PrCloseoutAssuranceSummary;
 	runtimeEvidence: PrCloseoutRuntimeEvidenceSummary;
 	deliveryTruth: PrCloseoutDeliveryTruthSummary;
+	lifecycleSnapshot: PrCloseoutLifecycleSnapshot;
 	tools: PrCloseoutToolInput[];
 	dirtyPathsExcluded: PrCloseoutDirtyPathInput[];
 	attemptLedger: PrCloseoutAttemptLedger;

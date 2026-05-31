@@ -50,6 +50,7 @@ import { createDocsGateCommandSpec } from "./docs-gate-command-spec.js";
 import { createDoctorCommandSpec } from "./doctor-command-spec.js";
 import { createDriftGateCommandSpec } from "./drift-gate-command-spec.js";
 import { createEvidenceVerifyCommandSpec } from "./evidence-verify-command-spec.js";
+import { createFeedbackLoopAuditCommandSpec } from "./feedback-loop-audit-command-spec.js";
 import { createFleetPlanCommandSpec } from "./fleet-plan-command-spec.js";
 import { createGardenerCommandSpec } from "./gardener-command-spec.js";
 import { createGapCaseCommandSpec } from "./gap-case-command-spec.js";
@@ -110,6 +111,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createWorkflowGenerateCommandSpec(),
 	createOrgAuditCommandSpec(),
 	createToolingAuditCommandSpec(),
+	createFeedbackLoopAuditCommandSpec(),
 	createPresetCommandSpec(),
 	createCheckCommandSpec(),
 	createAgentReadinessCommandSpec(),

@@ -376,9 +376,10 @@ function/file size, self-affirming test assertions, high-trust behavior-test
 assertions, git child-process environment sanitation, and related tests through
 `pnpm run quality:docstrings`, `pnpm run quality:size`,
 `pnpm run quality:self-affirming`, `pnpm run quality:behavior-tests`,
-`pnpm run quality:git-env-sanitizer`, and `pnpm run test:related`. Related
-tests must find and run a real Vitest-related path; the gate no longer passes
-silently when no test covers changed production source.
+`pnpm run quality:git-env-sanitizer`, `pnpm run harness:audit-tracking`, and
+`pnpm run test:related`. Related tests must find and run a real Vitest-related
+path; the gate no longer passes silently when no test covers changed production
+source.
 
 For downstream repos, this is one of the most practical parts of harness. It
 turns "what do I need to run before handoff?" into a single local command.
@@ -816,6 +817,7 @@ merge-readiness claims.
 | `drift-gate`          | Evaluate consistency drift across governance surfaces                                                                                                                                                                             |
 | `org-audit`           | Scan multi-repo governance and drift posture                                                                                                                                                                                      |
 | `tooling-audit`       | Audit managed repo tooling baselines                                                                                                                                                                                              |
+| `feedback-loop-audit` | Validate the local feedback-loop ledger so audit findings, cross-loop gaps, and recommended next steps have closure state, owner, action, delay, failure-class, and evidence refs                                                 |
 | `gardener`            | Detect stale docs and broken links                                                                                                                                                                                                |
 | `context-health`      | Generate advisory context-integrity scorecards                                                                                                                                                                                    |
 | `learnings`           | Import local operational review evidence, run exact-file learning gates, and generate high-usage promotion candidates via `learnings import`, `learnings gate`, and `learnings promote`                                           |

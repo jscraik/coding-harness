@@ -1,42 +1,38 @@
 import { describe, expect, it } from "vitest";
-import {
-	expectBehavior,
-	formatBehaviorExpectation,
-} from "./expect-behavior.js";
+import { expectBehavior } from "./expect-behavior.js";
 
 describe("expectBehavior", () => {
-	it("formats failures with given and should context", () => {
-		expect(
-			formatBehaviorExpectation({
-				given: "a skipped required check",
-				should: "block closeout success",
-			}),
-		).toBe("Given a skipped required check: should block closeout success");
-	});
-
-	it("passes when actual and expected are deeply equal", () => {
-		expectBehavior({
-			given: "a current evidence packet",
-			should: "preserve claim-support status",
-			actual: {
-				blockerClass: null,
-				status: "pass",
-			},
-			expected: {
-				blockerClass: null,
-				status: "pass",
-			},
-		});
-	});
-
-	it("throws with behavior context when actual and expected diverge", () => {
+	it("keeps behavior assertions tied to given and should context", () => {
 		expect(() =>
 			expectBehavior({
-				given: "a stale evidence packet",
-				should: "block claim support",
-				actual: { status: "pass" },
-				expected: { status: "blocked" },
+				given: "a verifier result with explicit status",
+				should:
+					"pin the expected status without using the implementation as oracle",
+				actual: "blocked",
+				expected: "blocked",
 			}),
-		).toThrow(/Given a stale evidence packet: should block claim support/u);
+		).not.toThrow();
+	});
+
+	it("fails when the actual value does not match the requirement-derived expected value", () => {
+		expect(() =>
+			expectBehavior({
+				given: "a verifier result with stale evidence",
+				should: "classify stale evidence as blocked",
+				actual: "pass",
+				expected: "blocked",
+			}),
+		).toThrow();
+	});
+
+	it("fails when an object actual only partially matches the expected shape", () => {
+		expect(() =>
+			expectBehavior({
+				given: "a behavior result with extra unapproved fields",
+				should: "match the requirement-derived object exactly",
+				actual: { blockers: 1, status: "ready" },
+				expected: { status: "ready" },
+			}),
+		).toThrow();
 	});
 });

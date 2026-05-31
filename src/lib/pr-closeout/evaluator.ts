@@ -4,7 +4,9 @@ import {
 	collectCheckBlockers,
 	collectHarnessGateBlockers,
 	collectPullRequestBlockers,
+	collectReviewArtifactBlockers,
 	collectReviewBlockers,
+	collectReleaseReadinessBlockers,
 	collectToolBlockers,
 	collectTraceabilityBlocker,
 	collectWorktreeBlockers,
@@ -20,6 +22,7 @@ import {
 	buildDeliveryTruthSummary,
 	collectDeliveryTruthBlockers,
 } from "./delivery-truth.js";
+import { buildLifecycleSnapshot } from "./lifecycle-snapshot.js";
 import { buildTraceabilitySummary, summarizeChecks } from "./report-helpers.js";
 import { buildPrCloseoutRecoveryState } from "./recovery.js";
 import { buildPrCloseoutSnapshot } from "./snapshot.js";
@@ -64,11 +67,13 @@ function buildPrCloseoutReportValue(
 	collectPullRequestBlockers(pr, blockers);
 	collectCheckBlockers(checks, blockers);
 	collectReviewBlockers(pr, reviewThreads, blockers);
+	collectReviewArtifactBlockers(input.reviewArtifacts ?? [], blockers);
 	collectTraceabilityBlocker(traceability.complete, blockers);
 	collectHarnessGateBlockers(harnessGates, blockers);
 	collectAssuranceBlockers(input, blockers);
 	collectRuntimeEvidenceBlockers(input, blockers);
 	collectDeliveryTruthBlockers(deliveryTruth, blockers);
+	collectReleaseReadinessBlockers(input, blockers);
 	collectToolBlockers(tools, blockers);
 	collectClaimBlockers(claims, blockers);
 
@@ -80,14 +85,14 @@ function buildPrCloseoutReportValue(
 		pr.number,
 		generatedAt,
 	);
-	const snapshot = buildPrCloseoutSnapshot({
-		generatedAt,
-		pr: pr.number,
-		url: pr.url ?? null,
-		status: decision.status,
-		nextAction: decision.nextAction,
+	const lifecycleSnapshot = buildLifecycleSnapshot({
+		input,
 		claims,
 		blockers,
+		deliveryTruth,
+		generatedAt,
+		reportStatus: decision.status,
+		nextAction: decision.nextAction,
 	});
 	return {
 		schemaVersion: PR_CLOSEOUT_SCHEMA_VERSION,
@@ -115,6 +120,7 @@ function buildPrCloseoutReportValue(
 		assurance: buildAssuranceSummary(input),
 		runtimeEvidence: buildRuntimeEvidenceSummary(input),
 		deliveryTruth,
+		lifecycleSnapshot,
 		tools,
 		dirtyPathsExcluded,
 		attemptLedger,

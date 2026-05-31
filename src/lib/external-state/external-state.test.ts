@@ -27,14 +27,19 @@ describe("external-state-snapshot/v1 validation", () => {
 		const claimSupport = evaluateExternalStateClaimSupport(snapshot, HEAD_SHA);
 
 		expectBehavior({
-			given: "a current multi-source external-state snapshot",
-			should: "validate and support closeout claims",
-			actual: { claimSupport, validation },
+			given: "a current external-state snapshot with fetch proof",
+			should: "validate and support the matching head SHA claim",
+			actual: {
+				valid: validation.valid,
+				canSupportClaim: claimSupport.canSupportClaim,
+			},
 			expected: {
-				claimSupport: { canSupportClaim: true, blockers: [] },
-				validation: { valid: true, errors: [] },
+				valid: true,
+				canSupportClaim: true,
 			},
 		});
+		expect(validation).toEqual({ valid: true, errors: [] });
+		expect(claimSupport).toEqual({ canSupportClaim: true, blockers: [] });
 	});
 
 	it("rejects snapshots without fetchedAt", () => {

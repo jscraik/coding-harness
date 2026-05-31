@@ -199,7 +199,7 @@ Notes:
 ## Quality Checks
 
 - During iteration, run the narrowest check first, then `bash scripts/validate-codestyle.sh --fast`.
-- Changed production source must satisfy `pnpm run quality:docstrings`, `pnpm run quality:size`, `pnpm run quality:git-env-sanitizer`, and `pnpm run test:related`; changed tests must satisfy `pnpm run quality:self-affirming` so assertions do not use the implementation under test as their own expected oracle. Evidence-bearing trust-boundary tests must satisfy `pnpm run quality:behavior-tests` so the suites registered in `src/lib/testing/behavior-test-suites.json` keep at least one `expectBehavior({ given, should, actual, expected })` assertion. These are wired into `pnpm check`, `bash scripts/validate-codestyle.sh --fast`, and local pre-commit hooks.
+- Changed production source must satisfy `pnpm run quality:docstrings`, `pnpm run quality:size`, and `pnpm run test:related`; changed tests must satisfy `pnpm run quality:self-affirming` so assertions do not use the implementation under test as their own expected oracle. Evidence-bearing trust-boundary suites must satisfy `pnpm run quality:behavior-tests`, git child-process environment changes must satisfy `pnpm run quality:git-env-sanitizer`, and durable audit-lane changes must satisfy `pnpm run harness:audit-tracking`. These are wired into `pnpm check`, `bash scripts/validate-codestyle.sh --fast`, and local pre-commit hooks.
 - When executable behavior changes, run the smallest real code path that exercises the exact production code touched before claiming the change is verified.
 - Prefer invoking the production function, class, CLI command, shell script, validator, or route directly. If no existing test covers the path, create a temporary reproduction harness under `codex-scripts/` and keep that directory gitignored.
 - If the exact path cannot run because of unavailable credentials, external services, unsafe side effects, or missing generated state, state the blocker clearly, run the nearest meaningful validation, and do not describe production behavior as verified unless the touched path actually ran.
@@ -386,6 +386,12 @@ Notes:
   closeout claims must carry current evidence status, source, freshness,
   head SHA, blocker class, and verification timestamp, and missing or stale
   required evidence must classify as blocked or unknown rather than success.
+- `pr-closeout/v1` delivery lifecycle snapshots are read-only handoff
+  evidence. Queue, waiting-state, handoff, approval, worktree-role, Linear
+  mutation availability, release-readiness, and review-artifact blockers may
+  explain throughput and next action, but must not mutate external systems,
+  resolve review state, update Linear, or prove merge readiness without fresh
+  canonical evidence for those lanes.
 - Goal-continuation or approval-plan contract changes must keep `harness next --json` safety metadata, snapshot-only state evidence, and agent-governance docs synchronized in the same PR.
 - When AGENTS/vocabulary surfaces change, run `pnpm run docs:ubiquitous:guard` to ensure `AGENTS.md` keeps the glossary linkage contract.
 - Before PR handoff in this source checkout, run or explicitly mark `n.a.` for the north-star learning loop when changed files can be matched against imported CodeRabbit evidence: `bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, `bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files <changed-files> --json`, and `bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json`. Use plain `harness ...` for downstream or installed-package contexts only. The `--files` value accepts comma-separated paths or multiple following path tokens.

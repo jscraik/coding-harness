@@ -205,12 +205,20 @@ export async function runPrCloseoutCLI(
 	const parsed = parsePrCloseoutArgs(args);
 	if ("exitCode" in parsed) return parsed.exitCode;
 	try {
-		const input = parsed.options.inputPath
+		const loadedInput = parsed.options.inputPath
 			? loadInput(parsed.options.inputPath)
 			: buildLivePrCloseoutInput(
 					parsed.options,
 					options.runner ?? defaultRunner,
 				);
+		const input =
+			!parsed.options.inputPath ||
+			parsed.options.releaseReadinessImpact === undefined
+				? loadedInput
+				: {
+						...loadedInput,
+						releaseReadinessImpact: parsed.options.releaseReadinessImpact,
+					};
 		const closeoutGatesPath =
 			parsed.options.closeoutGatesPath ?? parsed.options.phaseExitPath;
 		if (

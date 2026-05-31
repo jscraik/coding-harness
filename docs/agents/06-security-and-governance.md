@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-30
+last_validated: 2026-05-31
 ---
 
 # Security and governance
@@ -132,6 +132,13 @@ post-change markdown/docs validation.
 - If the exact touched path cannot run because it depends on unavailable credentials, external services, unsafe side effects, or missing generated runtime state, record that blocker explicitly and run the nearest meaningful validation instead.
 - Do not replace `bash scripts/validate-codestyle.sh` with an informal list of roughly equivalent commands when documenting or attesting verification; the wrapper is the governed proof surface.
 - Treat hook-exported repository git environment (`GIT_DIR`, `GIT_WORK_TREE`, and related `GIT_*` variables) as untrusted input for nested validation scripts; `scripts/validate-codestyle.sh` should sanitize those values before invoking `pnpm run` so fixture-local git checks are isolated from hook context.
+- Treat evidence-bearing tests, git child-process environment handling, and
+  durable audit tracking as governance surfaces. Changes in these lanes must
+  pass `pnpm run quality:behavior-tests`,
+  `pnpm run quality:git-env-sanitizer`, and
+  `pnpm run harness:audit-tracking` as applicable before push, because these
+  guards stop local assertions, hook-exported git state, or untracked
+  `.harness` artifacts from becoming unsupported closeout evidence.
 - CircleCI test reliability guardrail: use `pnpm test:ci` (which invokes `scripts/test-ci.sh`) so the long-running `ci-migrate` suite executes in an isolated lane with scoped Vitest worker-timeout mitigation configured in `vitest.config.ts` (timeout settings and `onUnhandledError` handler) while all functional assertions remain enforced.
 - Source-checkout harness-gate fallback is narrow by design: `scripts/run-harness-gate.sh` may fall back from the source CLI command to `node dist/cli.js` only when the actual command emits the known runner IPC `EPERM` temp-pipe signature. Missing `pnpm`, missing source files, or non-matching runner failures must remain fail-closed.
 

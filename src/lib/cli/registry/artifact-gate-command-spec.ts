@@ -1,6 +1,7 @@
 import * as artifactGate from "../../artifact-gate.js";
 import { defineCommandSpec } from "./define-command-spec.js";
 import type { CommandSpec } from "./types.js";
+import { defineCommandSpec } from "./define-command-spec.js";
 
 /** Build the generated artifact provenance gate command adapter. */
 export function createArtifactGateCommandSpec(): CommandSpec {
@@ -10,6 +11,6 @@ export function createArtifactGateCommandSpec(): CommandSpec {
 			"Check generated artifact changes against the artifact provenance registry",
 		example: "artifact-gate --files scripts/codex-preflight.sh --json",
 		errorLabel: "Artifact Gate Error",
-		runner: (args) => artifactGate.runArtifactGateFromCliArgs(args),
+		execute: (args) => artifactGate.runArtifactGateFromCliArgs(args),
 	});
 }

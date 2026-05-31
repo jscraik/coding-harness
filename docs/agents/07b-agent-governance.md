@@ -280,6 +280,12 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   stale required evidence should resolve to blocked or unknown with source,
   freshness, head SHA, blocker class, and verification timestamp retained for
   review.
+- `pr-closeout/v1` delivery lifecycle snapshots are read-only throughput and
+  handoff evidence. They may summarize queue growth, waiting states, handoffs,
+  approvals, worktree role, Linear mutation availability, release readiness,
+  and review artifact status, but they must not mutate external systems,
+  satisfy review-state or external-state truth, or prove merge readiness without
+  fresh canonical evidence for those lanes.
 - `pr-closeout` live evidence inputs must stay evidence-bounded: shell-style
   env files may populate local credentials, but closeout gate paths must remain
   repo-scoped and outside-repo paths should block rather than expand the trust

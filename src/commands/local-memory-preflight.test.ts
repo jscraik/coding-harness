@@ -124,9 +124,8 @@ describe("runLocalMemoryPreflightCLI", () => {
 			daemonLogPath,
 		});
 		expectBehavior({
-			given:
-				"healthy Local Memory config, REST health, qdrant, and smoke cycle",
-			should: "pass Local Memory preflight",
+			given: "REST, qdrant, and smoke-cycle evidence all pass",
+			should: "classify Local Memory preflight as passed",
 			actual: result.passed,
 			expected: true,
 		});
