@@ -66,8 +66,8 @@ completion_contract:
   blocked_stop_condition: "Stop if the board is invalid, activation is absent for Worker work, required intent review is missing, validation cannot run, reviewer artifacts are missing after retry, PR or tracker truth is stale, dirty work overlaps required files, or continuing would contaminate a PR under triage."
 current_slice_gate:
   lifecycle_unit: "PU-041-hidden-dependency-guard-hardening"
-  status: "reviewed_validated_commit_pending"
-  reason: "R156 records reviewer-driven hardening for the hidden-dependency guard after final adversarial, agent-native, and best-practices review artifacts passed. Local validation proves the guard rejects static spoofing, non-executed assertions, trace forgery, ambient PATH/package-manager spoofing, trace-control env access, and suite-local expectBehavior shims. This remains local guard-hardening progress only; it does not claim PR #321 merge readiness, live review-thread resolution, Linear full-lifecycle completion, Judge/PM readiness, runtime producer emission, delivery-truth consumption, or final goal completion."
+  status: "pr_metadata_repaired_remote_ci_pending"
+  reason: "R156 records reviewer-driven local validation for the hidden-dependency guard. R157 refreshes the pushed branch and PR lane: PR #322 is the active open PR for branch codex/jsc-363-pr320-rerun at head 692043d98f09ce7f55483983f6994c68430db17d, and its stale PR body/title were repaired to reference JSC-363 and pass local pr-template-gate plus linear-gate. This remains PR metadata and local gate progress only; live CircleCI, CodeRabbit, review-thread resolution, Linear full-lifecycle completion, Judge/PM readiness, runtime producer emission, delivery-truth consumption, merge readiness, and final goal completion remain unclaimed."
   completed_before_local_validation_claim:
     - "Created PU-039 intent at .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-039-review-coverage-backfill-intent.json."
     - "Reviewed the PU-039 intent with adversarial-reviewer and agent-native-reviewer artifacts before validator or ledger implementation."
@@ -80,7 +80,7 @@ current_slice_gate:
     - "Appended R139 with artifact-backed skill-lens and independent-reviewer results."
   next_required_handoff_steps:
     - "Run the post-R156 goal validators: jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null; PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit; PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .; PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-review-backfill.py docs/goals/codex-runtime-evidence-verifier-cockpit/notes/review-coverage-backfill.json --repo .; git diff --check."
-    - "Commit the reviewed hidden-dependency guard patch, push the rebased feature branch, and refresh PR #321 pending checks, review threads, and linked-issue scope before any merge-ready or closeout claim."
+    - "Commit and push the R157 route-truth repair so CircleCI reruns with the corrected PR #322 metadata, then refresh PR #322 pending checks, review threads, and linked-issue scope before any merge-ready or closeout claim."
     - "Before the next implementation slice, choose the next unproven requirement from the goal, plan, receipts, adopted audits, and Project Brain surfaces; create and review intent before implementation."
     - "Refresh live Linear JSC-363 before tracker-alignment, full-lifecycle closeout, or Judge/PM-ready claims; tracker truth remains separate from runtime, CI, review, and implementation proof."
     - "Keep local validation, remote checks, reviewDecision, historical stacked-PR metadata, Linear scope alignment, merge readiness, Judge/PM readiness, and goal completion as separate truth lanes until verified immediately before any closeout claim."
