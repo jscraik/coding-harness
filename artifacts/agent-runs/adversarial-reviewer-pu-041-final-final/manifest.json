@@ -1,0 +1,18 @@
+{
+  "status": "completed",
+  "reviewer": "adversarial",
+  "scope": "PU-041 hidden-dependency guard hardening final-final delta",
+  "artifact_path": "artifacts/reviews/pu-041-hidden-dependency-guard-adversarial-final-final.md",
+  "validation_commands": [
+    "pnpm exec biome format --write scripts/check-behavior-tests.mjs src/dev/check-behavior-tests-script.test.ts src/lib/testing/expect-behavior.ts",
+    "pnpm vitest run src/dev/check-behavior-tests-script.test.ts src/lib/testing/expect-behavior.test.ts",
+    "pnpm run quality:behavior-tests"
+  ],
+  "local_memory": {
+    "attempted": true,
+    "blocked_local_memory_cli": {
+      "command": "local-memory bootstrap --mode minimal --include_questions --session_id \"repo:coding-harness/task:pu-041-final-final\" --json",
+      "error": "failed to save PID: failed to write PID file: open /Users/jamiecraik/.local-memory/local-memory.pid: operation not permitted"
+    }
+  }
+}

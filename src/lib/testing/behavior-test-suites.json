@@ -1,0 +1,44 @@
+[
+	{
+		"path": "src/commands/local-memory-preflight.test.ts",
+		"owner": "local-memory-preflight",
+		"rationale": "Local Memory preflight emits trust-boundary readiness evidence before downstream validation runs.",
+		"provingCommand": "pnpm vitest run src/commands/local-memory-preflight.test.ts"
+	},
+	{
+		"path": "src/commands/policy-gate.test.ts",
+		"owner": "policy-gate",
+		"rationale": "Policy-gate decisions classify file risk and block unsafe work based on machine-readable evidence.",
+		"provingCommand": "pnpm vitest run src/commands/policy-gate.test.ts"
+	},
+	{
+		"path": "src/commands/runtime-card.test.ts",
+		"owner": "runtime-card",
+		"rationale": "Runtime-card output is operator-facing evidence for local execution and handoff state.",
+		"provingCommand": "pnpm vitest run src/commands/runtime-card.test.ts"
+	},
+	{
+		"path": "src/lib/delivery-truth/delivery-truth-composition.test.ts",
+		"owner": "delivery-truth",
+		"rationale": "Delivery-truth composition decides whether evidence can support closeout claims.",
+		"provingCommand": "pnpm vitest run src/lib/delivery-truth/delivery-truth-composition.test.ts"
+	},
+	{
+		"path": "src/lib/delivery-truth/delivery-truth-freshness-policy.test.ts",
+		"owner": "delivery-truth",
+		"rationale": "Freshness policy prevents stale or conflicting evidence from becoming claim support.",
+		"provingCommand": "pnpm vitest run src/lib/delivery-truth/delivery-truth-freshness-policy.test.ts"
+	},
+	{
+		"path": "src/lib/external-state/external-state.test.ts",
+		"owner": "external-state",
+		"rationale": "External-state snapshots separate PR, CI, review, tracker, and merge-readiness truth.",
+		"provingCommand": "pnpm vitest run src/lib/external-state/external-state.test.ts"
+	},
+	{
+		"path": "src/lib/pr-closeout.test.ts",
+		"owner": "pr-closeout",
+		"rationale": "PR closeout reports aggregate delivery evidence and must not infer missing claim support.",
+		"provingCommand": "pnpm vitest run src/lib/pr-closeout.test.ts"
+	}
+]

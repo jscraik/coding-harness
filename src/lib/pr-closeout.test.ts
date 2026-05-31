@@ -14,6 +14,7 @@ import {
 	type PrCloseoutInput,
 	type PrCloseoutDeliveryTruthVerdict,
 } from "./pr-closeout.js";
+import { expectBehavior } from "./testing/expect-behavior.js";
 
 function gatePayload(gateId: HeGateId): HeGatePayload {
 	switch (gateId) {
@@ -287,14 +288,11 @@ describe("buildPrCloseoutReport", () => {
 				complete: true,
 			},
 		});
-		expect({
+		expectBehavior({
 			given: "a fully evidenced PR closeout report",
 			should: "mark the PR ready without blockers",
 			actual: { status: report.status, blockers: report.blockers.length },
-		}).toEqual({
-			given: "a fully evidenced PR closeout report",
-			should: "mark the PR ready without blockers",
-			actual: { status: "ready", blockers: 0 },
+			expected: { status: "ready", blockers: 0 },
 		});
 		expect(report.blockers).toEqual([]);
 		expect(report.attemptLedger).toMatchObject({

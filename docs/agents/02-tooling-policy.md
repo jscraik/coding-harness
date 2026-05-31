@@ -318,10 +318,13 @@ Changed production source and tests also carry local ratchet gates:
 `pnpm run quality:docstrings` requires JSDoc on changed exported public API
 declarations, `pnpm run quality:size` enforces changed-file function/file size
 limits with explicit legacy allowlists, `pnpm run quality:self-affirming`
-scans test/spec files for self-affirming assertions, and `pnpm run
-test:related` runs Vitest related mode without a no-tests pass-through. These
-commands are part of `pnpm check`, `bash scripts/validate-codestyle.sh --fast`,
-and `make hooks-pre-commit`.
+scans test/spec files for self-affirming assertions, `pnpm run
+quality:behavior-tests` verifies registered evidence-bearing suites use
+`expectBehavior`, `pnpm run quality:git-env-sanitizer` prevents duplicate git
+environment cleanup, `pnpm run harness:audit-tracking` keeps durable audit
+tracking visible, and `pnpm run test:related` runs Vitest related mode without
+a no-tests pass-through. These commands are part of `pnpm check`,
+`bash scripts/validate-codestyle.sh --fast`, and `make hooks-pre-commit`.
 
 ## Recommended command order
 

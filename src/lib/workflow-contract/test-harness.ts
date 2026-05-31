@@ -20,6 +20,7 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { sanitizeGitEnvironment } from "../git/safe-env.js";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -134,45 +135,6 @@ export interface ManifestFinding {
 // ─── Git Fixture Utilities ──────────────────────────────────────────────────────
 
 /**
- * Environment variables that must not leak into test git subprocesses.
- *
- * Two categories:
- * 1. **Hook-injected vars** (`GIT_DIR`, `GIT_INDEX_FILE`, etc.) — set by git
- *    when running hooks, pointing at the hook's repo instead of the fixture.
- * 2. **Author/committer identity vars** (`GIT_AUTHOR_NAME`, `GIT_COMMITTER_EMAIL`,
- *    etc.) — override `git config user.name/email` for commits. When another
- *    test sets these on `process.env`, they bleed into unrelated fixtures.
- */
-const GIT_HOOK_ENV_KEYS = [
-	// Hook-injected vars
-	"GIT_DIR",
-	"GIT_WORK_TREE",
-	"GIT_INDEX_FILE",
-	"GIT_OBJECT_DIRECTORY",
-	"GIT_ALTERNATE_OBJECT_DIRECTORIES",
-	"GIT_QUARANTINE_PATH",
-	"GIT_PUSH_OPTION_COUNT",
-	"GIT_PUSH_OPTION_0",
-	"GIT_PUSH_OPTION_1",
-	"GIT_PUSH_OPTION_2",
-	"GIT_PUSH_OPTION_3",
-	"GIT_PUSH_OPTION_4",
-	"GIT_PUSH_OPTION_5",
-	"GIT_PUSH_OPTION_6",
-	"GIT_PUSH_OPTION_7",
-	"GIT_PUSH_OPTION_8",
-	"GIT_PUSH_OPTION_9",
-	"GIT_REFLOG_ACTION",
-	// Author/committer identity — must not override fixture-local git config
-	"GIT_AUTHOR_NAME",
-	"GIT_AUTHOR_EMAIL",
-	"GIT_AUTHOR_DATE",
-	"GIT_COMMITTER_NAME",
-	"GIT_COMMITTER_EMAIL",
-	"GIT_COMMITTER_DATE",
-] as const;
-
-/**
  * Strip git-hook-injected environment variables from a copy of `process.env`.
  *
  * Returns a clean env object suitable for passing to `spawnSync("git", ...)`
@@ -185,17 +147,7 @@ export function sanitizeGitEnv(
 		string | undefined
 	>,
 ): Record<string, string | undefined> {
-	const clean: Record<string, string | undefined> = { ...env };
-	for (const key of GIT_HOOK_ENV_KEYS) {
-		delete clean[key];
-	}
-	// Also strip any higher-numbered GIT_PUSH_OPTION_N vars
-	for (const key of Object.keys(clean)) {
-		if (/^GIT_PUSH_OPTION_\d+$/.test(key)) {
-			delete clean[key];
-		}
-	}
-	return clean;
+	return sanitizeGitEnvironment(env, { policy: "strict" });
 }
 
 /**

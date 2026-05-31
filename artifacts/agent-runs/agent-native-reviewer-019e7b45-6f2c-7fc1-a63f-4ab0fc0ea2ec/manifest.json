@@ -1,0 +1,14 @@
+{
+  "status": "completed",
+  "reviewer": "agent-native-reviewer",
+  "run_id": "019e7b45-6f2c-7fc1-a63f-4ab0fc0ea2ec",
+  "artifact_paths": [
+    "artifacts/reviews/pu-041-hidden-dependency-guard-agent-native-final-final.md"
+  ],
+  "scope": "PU-041 final-final hidden-dependency guard import-identity delta",
+  "validation_commands": [
+    "pnpm exec biome format --write scripts/check-behavior-tests.mjs src/dev/check-behavior-tests-script.test.ts src/lib/testing/expect-behavior.ts",
+    "pnpm vitest run src/dev/check-behavior-tests-script.test.ts src/lib/testing/expect-behavior.test.ts",
+    "pnpm run quality:behavior-tests"
+  ]
+}

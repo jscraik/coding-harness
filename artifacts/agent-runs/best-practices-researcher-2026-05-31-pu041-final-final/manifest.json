@@ -1,0 +1,19 @@
+{
+  "status": "complete",
+  "role": "best-practices-researcher",
+  "run_id": "2026-05-31-pu041-final-final",
+  "objective": "Final-final scoped review for PU-041 hidden-dependency guard hardening delta",
+  "artifact_paths": [
+    "artifacts/reviews/pu-041-hidden-dependency-guard-best-practices-final-final.md"
+  ],
+  "validation_commands": [
+    "pnpm exec biome format --write scripts/check-behavior-tests.mjs src/dev/check-behavior-tests-script.test.ts src/lib/testing/expect-behavior.ts",
+    "pnpm vitest run src/dev/check-behavior-tests-script.test.ts src/lib/testing/expect-behavior.test.ts",
+    "pnpm run quality:behavior-tests"
+  ],
+  "findings": [],
+  "blockers": [
+    "agents/contracts.json not found",
+    "agents/templates/review-artifact.md not found"
+  ]
+}
