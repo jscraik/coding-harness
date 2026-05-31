@@ -11,11 +11,23 @@ function runPreflight(
 	forcedStatus: string,
 	options: { ci?: boolean; enableTestOverrides?: boolean } = {},
 ) {
+	const env = { ...process.env };
+	delete env.BASH_ENV;
+	delete env.CIRCLECI;
+	delete env.CIRCLE_BRANCH;
+	delete env.CIRCLE_BUILD_NUM;
+	delete env.CIRCLE_JOB;
+	delete env.CIRCLE_NODE_INDEX;
+	delete env.CIRCLE_NODE_TOTAL;
+	delete env.CIRCLE_SHA1;
+	delete env.CIRCLE_WORKFLOW_ID;
+	delete env.CIRCLE_WORKING_DIRECTORY;
+
 	return spawnSync("bash", ["scripts/codex-preflight.sh", ...args], {
 		cwd: repoRoot,
 		encoding: "utf-8",
 		env: {
-			...process.env,
+			...env,
 			CI: options.ci ? "true" : "",
 			CODEX_PREFLIGHT_ENABLE_TEST_OVERRIDES:
 				options.enableTestOverrides === false ? "" : "1",
