@@ -28,9 +28,7 @@ export function expectBehavior<TActual, TExpected = TActual>({
 			})}\n`,
 		);
 	}
-	expect({ given, should, actual }).toMatchObject({
-		given: expect.any(String),
-		should: expect.any(String),
-		actual: expected,
-	});
+	expect(given).toEqual(expect.any(String));
+	expect(should).toEqual(expect.any(String));
+	expect(actual).toEqual(expected);
 }

@@ -24,4 +24,15 @@ describe("expectBehavior", () => {
 			}),
 		).toThrow();
 	});
+
+	it("fails when an object actual only partially matches the expected shape", () => {
+		expect(() =>
+			expectBehavior({
+				given: "a behavior result with extra unapproved fields",
+				should: "match the requirement-derived object exactly",
+				actual: { blockers: 1, status: "ready" },
+				expected: { status: "ready" },
+			}),
+		).toThrow();
+	});
 });
