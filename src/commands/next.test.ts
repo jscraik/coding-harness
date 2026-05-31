@@ -10,6 +10,7 @@ import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
+import { sanitizeGitEnvironment } from "../lib/git/safe-env.js";
 import {
 	validateHarnessDecision,
 	validateHarnessDecisionOperationalMeta,
@@ -54,27 +55,40 @@ function parseDecision(output: string): ReturnType<typeof runHarnessNext> {
 
 function createGitRepoWithCommit(): string {
 	const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-worktree-"));
+	const gitEnv = {
+		...sanitizeGitEnvironment({ policy: "strict" }),
+		PREK_ALLOW_NO_CONFIG: "1",
+	};
 	execFileSync("git", ["init", "-q"], {
 		cwd: repoRoot,
 		encoding: "utf-8",
+		env: gitEnv,
 	});
 	execFileSync("git", ["config", "user.email", "operator@example.com"], {
 		cwd: repoRoot,
 		encoding: "utf-8",
+		env: gitEnv,
 	});
 	execFileSync("git", ["config", "user.name", "Harness Operator"], {
 		cwd: repoRoot,
 		encoding: "utf-8",
+		env: gitEnv,
 	});
 	writeFileSync(join(repoRoot, "README.md"), "# harness\n");
 	execFileSync("git", ["add", "README.md"], {
 		cwd: repoRoot,
 		encoding: "utf-8",
+		env: gitEnv,
 	});
-	execFileSync("git", ["commit", "-m", "initial commit", "--no-gpg-sign"], {
-		cwd: repoRoot,
-		encoding: "utf-8",
-	});
+	execFileSync(
+		"git",
+		["commit", "-m", "initial commit", "--no-gpg-sign", "--no-verify"],
+		{
+			cwd: repoRoot,
+			encoding: "utf-8",
+			env: gitEnv,
+		},
+	);
 	return repoRoot;
 }
 
@@ -299,6 +313,7 @@ describe("runHarnessNext", () => {
 		const decision = runHarnessNext({
 			files: ["src/commands/next.ts"],
 			mode: "local",
+			worktreeRole: "dirty-with-justification",
 		});
 
 		expect(validateHarnessDecision(decision)).toEqual({
@@ -434,6 +449,26 @@ describe("runHarnessNext", () => {
 			expect(decision.nextAction).toContain(
 				"Use --worktree-role dirty-with-justification",
 			);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("blocks explicit file overrides when default role is clean and the worktree is dirty", () => {
+		const repoRoot = createGitRepoWithCommit();
+		try {
+			writeFileSync(join(repoRoot, "README.md"), "# harness\nchanged\n");
+			const decision = runHarnessNext({
+				repoRoot,
+				files: ["README.md"],
+			});
+
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("worktree_state_blocked");
+			expect(decision.nextAction).toContain(
+				"Use --worktree-role dirty-with-justification",
+			);
+			expect(decision.evidenceRef).toContain("git:status");
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });
 		}
@@ -704,6 +739,7 @@ describe("runHarnessNext", () => {
 		const decision = runHarnessNext({
 			files: ["src/commands/next.ts"],
 			phaseExit: passingPhaseExit(),
+			worktreeRole: "dirty-with-justification",
 		});
 
 		expect(validateHarnessDecision(decision)).toEqual({
@@ -840,6 +876,7 @@ describe("runHarnessNext", () => {
 			files: ["docs/spec.md"],
 			mode: "pr",
 			evidenceMode: "optional",
+			worktreeRole: "dirty-with-justification",
 		});
 
 		expect(decision.status).toBe("action_required");
@@ -887,6 +924,7 @@ describe("runHarnessNext", () => {
 	it("carries source errors without corrupting JSON recommendations", () => {
 		const decision = runHarnessNext({
 			files: ["src/commands/next.ts"],
+			worktreeRole: "dirty-with-justification",
 			decisionSources: [
 				{
 					kind: "learning",
@@ -1054,6 +1092,7 @@ describe("runHarnessNext", () => {
 		const decision = runHarnessNext({
 			files: ["docs/My Plan.md", "src/$(bad).ts"],
 			mode: "local",
+			worktreeRole: "dirty-with-justification",
 		});
 
 		expect(decision.nextCommand).toBe(
@@ -1490,7 +1529,13 @@ describe("runNextCLI", () => {
 
 	it("splits comma-separated --files values into separate paths", () => {
 		const { exitCode, output } = captureNextCLI(
-			["--json", "--files", "src/a,b.ts"],
+			[
+				"--json",
+				"--files",
+				"src/a,b.ts",
+				"--worktree-role",
+				"dirty-with-justification",
+			],
 			{},
 		);
 

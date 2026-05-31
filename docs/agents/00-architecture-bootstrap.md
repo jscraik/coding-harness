@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-30
+last_validated: 2026-05-31
 ---
 
 # Architecture bootstrap
@@ -370,6 +370,13 @@ jq -r '.generated_at, .diagram_count, .changed' .diagram/context/diagram-context
 ```
 
 The local `make hooks-pre-push` path also runs `scripts/check-diagram-freshness.sh`. That gate now skips refresh work unless architecture-sensitive implementation paths changed, and it ignores test-only source changes to keep the local loop tighter.
+The refresh script must use repo-owned package-manager execution for both
+availability checks and generation: `pnpm --dir "$ROOT_DIR" exec diagram --version`
+for the pre-`pushd` availability probe, and `pnpm exec diagram` after entering
+the repo root for generation. Do not require a globally installed `diagram`
+binary when the package-manager-scoped command is available,
+because pre-push validation runs from disposable worktrees where PATH may not
+expose dependency bins directly.
 The freshness gate compares the standalone `.diagram/*.mmd` artifacts for semantic diagram drift and treats volatile embedded sections in `AI/context/diagram-context.md` as generated presentation detail. Keep `scripts/lib/normalize-mermaid-artifact.cjs` aligned with that split so changes to the combined context pack do not create false stale-artifact failures while the underlying Mermaid artifacts still catch real topology changes.
 
 ## Deterministic Fingerprints

@@ -151,6 +151,93 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(scriptResult.stdout).toContain("replayKind");
 	});
 
+	it("keeps ReplayPacket/v1 schema validation aligned on hook provenance ref kinds", () => {
+		const root = createTempRoot("replay-packet-invalid-hook-ref-kind-");
+		const packet = readJson(
+			"contracts/examples/replay-packet.example.json",
+		) as Record<string, unknown>;
+		const hookProvenance = packet.hookProvenance as Array<
+			Record<string, unknown>
+		>;
+		const hook = hookProvenance[0] as Record<string, unknown>;
+		packet.hookProvenance = [
+			{
+				...hook,
+				hookRef: {
+					...(hook.hookRef as Record<string, unknown>),
+					refKind: "repo_file",
+				},
+				inputRef: {
+					...(hook.inputRef as Record<string, unknown>),
+					refKind: "hook_output",
+				},
+			},
+		];
+		const packetPath = join(root, "packet.json");
+		writeFileSync(packetPath, JSON.stringify(packet, null, 2));
+		const manifestPath = manifestWithEntryPatch("replay-packet/v1", (entry) => {
+			const { semanticValidatorPath: _semanticValidatorPath, ...rest } = entry;
+			return {
+				...rest,
+				examplePath: packetPath,
+			};
+		});
+
+		const result = runValidator(["--manifest", manifestPath]);
+		const report = JSON.parse(result.stdout) as { errors: string[] };
+
+		expect(result.status).toBe(1);
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("hookProvenance[0].hookRef.refKind"),
+				expect.stringContaining("hookProvenance[0].inputRef.refKind"),
+			]),
+		);
+	});
+
+	it("keeps ReplayPacket/v1 semantic validators aligned on produced artifact ref kinds", () => {
+		const root = createTempRoot("replay-packet-invalid-produced-artifact-ref-");
+		const packet = readJson(
+			"contracts/examples/replay-packet.example.json",
+		) as Record<string, unknown>;
+		const hookProvenance = packet.hookProvenance as Array<
+			Record<string, unknown>
+		>;
+		const hook = hookProvenance[0] as Record<string, unknown>;
+		const producedArtifactRefs = hook.producedArtifactRefs as Array<
+			Record<string, unknown>
+		>;
+		packet.hookProvenance = [
+			{
+				...hook,
+				producedArtifactRefs: [
+					{
+						...producedArtifactRefs[0],
+						refKind: "repo_file",
+					},
+				],
+			},
+		];
+		const packetPath = join(root, "packet.json");
+		writeFileSync(packetPath, JSON.stringify(packet, null, 2));
+
+		expect(
+			validateReplayPacket(packet, { repoRoot: process.cwd() }),
+		).toMatchObject({
+			status: "fail",
+			errors: expect.arrayContaining([
+				expect.stringContaining(
+					"hookProvenance[0].producedArtifactRefs[0].refKind",
+				),
+			]),
+		});
+		const scriptResult = runReplayValidator(packetPath);
+		expect(scriptResult.status).toBe(1);
+		expect(scriptResult.stdout).toContain(
+			"hookProvenance[0].producedArtifactRefs[0].refKind",
+		);
+	});
+
 	it("keeps ReplayPacket/v1 semantic validators aligned on stale orientation contradictions", () => {
 		const root = createTempRoot("replay-packet-stale-orientation-");
 		const packet = {
