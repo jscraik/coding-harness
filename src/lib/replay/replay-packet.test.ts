@@ -169,9 +169,7 @@ describe("ReplayPacket/v1", () => {
 		expect(validate(packet)).toMatchObject({
 			status: "fail",
 			errors: expect.arrayContaining([
-				expect.stringContaining(
-					"hookExecutionIdentity.hookFileRef.refKind",
-				),
+				expect.stringContaining("hookExecutionIdentity.hookFileRef.refKind"),
 				expect.stringContaining(
 					"hookExecutionIdentity.resolvedCommandRef.refKind",
 				),
