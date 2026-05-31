@@ -2,6 +2,12 @@
 import { readFileSync } from "node:fs";
 import { relative } from "node:path";
 import { execFileSync } from "node:child_process";
+import { tsImport } from "tsx/esm/api";
+
+const { sanitizeGitEnvironment } = await tsImport(
+	"../src/lib/git/safe-env.ts",
+	import.meta.url,
+);
 
 const repoRoot = process.cwd();
 const sourceFiles = [
@@ -12,6 +18,7 @@ const sourceFiles = [
 			{
 				cwd: repoRoot,
 				encoding: "utf8",
+				env: sanitizeGitEnvironment(process.env, { policy: "minimal" }),
 			},
 		)
 			.split("\n")

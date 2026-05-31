@@ -21,10 +21,11 @@ function writeSource(root: string, path: string, content: string) {
 	writeFileSync(filePath, content);
 }
 
-function runScript(root: string) {
+function runScript(root: string, env: NodeJS.ProcessEnv = process.env) {
 	return spawnSync(process.execPath, [SCRIPT_PATH], {
 		cwd: root,
 		encoding: "utf8",
+		env,
 	});
 }
 
@@ -112,5 +113,36 @@ describe("check-git-env-sanitizer.mjs", () => {
 
 		expect(result.status).toBe(0);
 		expect(result.stdout).toContain("no manual git environment cleanup found");
+	});
+
+	it("sanitizes caller-scoped git environment before listing source files", () => {
+		const root = createTempRepo();
+		writeSource(
+			root,
+			"src/lib/runtime/clean.ts",
+			"export const clean = true;\n",
+		);
+		const contaminatingRoot = createTempRepo();
+		writeSource(
+			contaminatingRoot,
+			"src/lib/runtime/contaminating-git-env.ts",
+			[
+				"export function clean(environment: NodeJS.ProcessEnv) {",
+				"\tdelete environment.GIT_DIR;",
+				"\treturn environment;",
+				"}",
+			].join("\n"),
+		);
+
+		const result = runScript(root, {
+			...process.env,
+			GIT_DIR: join(contaminatingRoot, ".git"),
+			GIT_WORK_TREE: contaminatingRoot,
+			GIT_INDEX_FILE: join(contaminatingRoot, ".git", "index"),
+		});
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("no manual git environment cleanup found");
+		expect(result.stderr).not.toContain("contaminating-git-env.ts");
 	});
 });
