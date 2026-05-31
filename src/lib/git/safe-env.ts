@@ -8,6 +8,9 @@ const CALLER_SCOPED_GIT_ENV_KEYS = new Set([
 	"GIT_WORK_TREE",
 ]);
 
+/**
+ * Return whether an environment variable belongs to Git's environment namespace.
+ */
 export function isGitEnvironmentKey(key: string): boolean {
 	return key.startsWith("GIT_");
 }
