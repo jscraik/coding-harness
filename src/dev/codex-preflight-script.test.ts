@@ -1,5 +1,7 @@
 import { spawnSync } from "node:child_process";
-import { basename, dirname, resolve } from "node:path";
+import { mkdirSync, mkdtempSync, symlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "vitest";
 import { expectBehavior } from "../lib/testing/expect-behavior.js";
@@ -40,6 +42,37 @@ function runPreflight(
 
 function combinedOutput(result: ReturnType<typeof runPreflight>): string {
 	return (result.stdout ?? "") + (result.stderr ?? "");
+}
+
+function resolveTool(tool: string): string {
+	const result = spawnSync("bash", ["-lc", `command -v ${tool}`], {
+		cwd: repoRoot,
+		encoding: "utf-8",
+	});
+	if (result.status !== 0) {
+		throw new Error(`Unable to resolve tool for preflight test: ${tool}`);
+	}
+	return result.stdout.trim();
+}
+
+function pathWithoutLocalMemory(): string {
+	const binDir = mkdtempSync(join(tmpdir(), "codex-preflight-bin-"));
+	for (const tool of [
+		"pnpm",
+		"node",
+		"bash",
+		"git",
+		"sed",
+		"rg",
+		"jq",
+		"curl",
+		"python3",
+		"tsx",
+	]) {
+		mkdirSync(binDir, { recursive: true });
+		symlinkSync(resolveTool(tool), join(binDir, tool));
+	}
+	return `${binDir}:/usr/bin:/bin`;
 }
 
 describe("codex-preflight Local Memory legacy routing", () => {
@@ -153,6 +186,46 @@ describe("codex-preflight Local Memory legacy routing", () => {
 			expected: {
 				status: 0,
 				outputIncludesOptionalWarning: true,
+			},
+		});
+	});
+
+	it("fails closed when a real Local Memory helper reports a missing binary", () => {
+		const result = spawnSync(
+			"bash",
+			["scripts/codex-preflight.sh", repoRootName, "git,bash", "CODESTYLE.md"],
+			{
+				cwd: repoRoot,
+				encoding: "utf-8",
+				env: {
+					...process.env,
+					BASH_ENV: "",
+					CI: "",
+					CODEX_PREFLIGHT_REQUIRE_PROJECT_BRAIN: "never",
+					CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS: "",
+					PATH: pathWithoutLocalMemory(),
+				},
+			},
+		);
+
+		expectBehavior({
+			given:
+				"legacy positional required preflight with the helper available but local-memory missing from PATH",
+			should:
+				"propagate the helper failure instead of normalizing the failed command to success",
+			actual: {
+				status: result.status,
+				outputIncludesMissingBinary: combinedOutput(result).includes(
+					"missing binary: local-memory",
+				),
+				outputIncludesRequiredFailure: combinedOutput(result).includes(
+					"local-memory preflight failed (required mode)",
+				),
+			},
+			expected: {
+				status: 2,
+				outputIncludesMissingBinary: true,
+				outputIncludesRequiredFailure: true,
 			},
 		});
 	});

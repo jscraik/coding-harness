@@ -539,9 +539,10 @@ run_local_memory_preflight_with_runner() {
 			printf '%s\n' "${output}"
 		fi
 		return 0
+	else
+		status=$?
 	fi
 
-	status=$?
 	case "${output}" in
 		*"Unknown command"*|*"local @brainwav/coding-harness could not be resolved"*|*"MODULE_NOT_FOUND"*|*"Cannot find module"*)
 			return 3
