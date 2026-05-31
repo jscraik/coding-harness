@@ -284,9 +284,27 @@ function validateHooks(value, generatedAt, repoRoot, errors) {
 		validateDateTime(hook.checkedAt, `${prefix}.checkedAt`, errors);
 		if (isAfter(hook.checkedAt, generatedAt))
 			errors.push(`${prefix}.checkedAt: must not be after generatedAt`);
-		validateRef(hook.hookRef, `${prefix}.hookRef`, repoRoot, errors);
-		validateRef(hook.inputRef, `${prefix}.inputRef`, repoRoot, errors);
-		validateRef(hook.outputRef, `${prefix}.outputRef`, repoRoot, errors);
+		validateRef(
+			hook.hookRef,
+			`${prefix}.hookRef`,
+			repoRoot,
+			errors,
+			new Set(["hook_file"]),
+		);
+		validateRef(
+			hook.inputRef,
+			`${prefix}.inputRef`,
+			repoRoot,
+			errors,
+			new Set(["hook_input", "repo_file", "produced_artifact"]),
+		);
+		validateRef(
+			hook.outputRef,
+			`${prefix}.outputRef`,
+			repoRoot,
+			errors,
+			new Set(["hook_output", "repo_file", "produced_artifact"]),
+		);
 		validateRefs(
 			hook.producedArtifactRefs,
 			`${prefix}.producedArtifactRefs`,
@@ -309,12 +327,19 @@ function validateHookIdentity(value, prefix, repoRoot, errors) {
 	}
 	validateKnownKeys(value, HOOK_IDENTITY_KEYS, prefix, errors);
 	requireFields(value, HOOK_IDENTITY_KEYS, prefix, errors);
-	validateRef(value.hookFileRef, `${prefix}.hookFileRef`, repoRoot, errors);
+	validateRef(
+		value.hookFileRef,
+		`${prefix}.hookFileRef`,
+		repoRoot,
+		errors,
+		new Set(["hook_file"]),
+	);
 	validateRef(
 		value.resolvedCommandRef,
 		`${prefix}.resolvedCommandRef`,
 		repoRoot,
 		errors,
+		new Set(["resolved_command"]),
 	);
 	if (value.runCorrelationId !== null)
 		validatePointer(
@@ -404,7 +429,7 @@ function validateRefs(value, prefix, repoRoot, errors) {
 	});
 }
 
-function validateRef(value, prefix, repoRoot, errors) {
+function validateRef(value, prefix, repoRoot, errors, allowedKinds) {
 	if (!isRecord(value)) {
 		errors.push(`${prefix}: must be an object`);
 		return;
@@ -412,8 +437,11 @@ function validateRef(value, prefix, repoRoot, errors) {
 	validateKnownKeys(value, REF_KEYS, prefix, errors);
 	requireFields(value, REF_KEYS, prefix, errors);
 	validatePointer(value.refId, `${prefix}.refId`, errors);
-	if (!REF_KINDS.has(String(value.refKind)))
-		errors.push(`${prefix}.refKind: must be recognized`);
+	const kindsToCheck = allowedKinds ?? REF_KINDS;
+	if (!kindsToCheck.has(String(value.refKind)))
+		errors.push(
+			`${prefix}.refKind: must be recognized${allowedKinds ? ` (allowed: ${Array.from(allowedKinds).join(", ")})` : ""}`,
+		);
 	if (value.hashAlgorithm !== "sha256")
 		errors.push(`${prefix}.hashAlgorithm: must be sha256`);
 	if (typeof value.sha256 !== "string" || !SHA256.test(value.sha256))

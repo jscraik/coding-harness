@@ -146,6 +146,39 @@ describe("ReplayPacket/v1", () => {
 		});
 	});
 
+	it("rejects hook execution identity refs with swapped provenance kinds", () => {
+		const packet = loadExample();
+		const hook = firstHook(packet);
+		packet.hookProvenance = [
+			{
+				...hook,
+				hookExecutionIdentity: {
+					...hook.hookExecutionIdentity,
+					hookFileRef: {
+						...hook.hookExecutionIdentity.hookFileRef,
+						refKind: "repo_file",
+					},
+					resolvedCommandRef: {
+						...hook.hookExecutionIdentity.resolvedCommandRef,
+						refKind: "hook_file",
+					},
+				},
+			},
+		];
+
+		expect(validate(packet)).toMatchObject({
+			status: "fail",
+			errors: expect.arrayContaining([
+				expect.stringContaining(
+					"hookExecutionIdentity.hookFileRef.refKind",
+				),
+				expect.stringContaining(
+					"hookExecutionIdentity.resolvedCommandRef.refKind",
+				),
+			]),
+		});
+	});
+
 	it("rejects normalized events that smuggle raw payload fields", () => {
 		const packet = loadExample();
 		packet.normalizedEvents = [

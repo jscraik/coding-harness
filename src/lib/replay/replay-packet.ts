@@ -444,12 +444,14 @@ function validateHookProvenance(
 			`${path}.hookExecutionIdentity.hookFileRef`,
 			repoRoot,
 			errors,
+			new Set(["hook_file"]),
 		);
 		validateRef(
 			identity.resolvedCommandRef,
 			`${path}.hookExecutionIdentity.resolvedCommandRef`,
 			repoRoot,
 			errors,
+			new Set(["resolved_command"]),
 		);
 		if (identity.runCorrelationId !== null)
 			validatePointer(
