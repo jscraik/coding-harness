@@ -41,6 +41,22 @@ const LANE_ORDER: PrCloseoutLifecycleLane["lane"][] = [
 	"release_readiness",
 ];
 
+const CLAIM_STATUS_RANK: Record<PrCloseoutClaimStatus, number> = {
+	fail: 5,
+	blocked: 4,
+	unknown: 3,
+	pass: 2,
+	not_applicable: 1,
+};
+
+const EVIDENCE_FRESHNESS_RANK: Record<PrCloseoutEvidenceFreshness, number> = {
+	stale: 5,
+	missing: 4,
+	unknown: 3,
+	current: 2,
+	not_applicable: 1,
+};
+
 function ownerForBlocker(blocker: PrCloseoutBlocker): PrCloseoutRecoveryOwner {
 	if (blocker.classification === "external_service") return "external_service";
 	if (blocker.classification === "needs_jamie_decision") return "operator";
@@ -126,28 +142,31 @@ function worseStatus(
 	current: PrCloseoutClaimStatus,
 	next: PrCloseoutClaimStatus,
 ): PrCloseoutClaimStatus {
-	const rank: Record<PrCloseoutClaimStatus, number> = {
-		fail: 5,
-		blocked: 4,
-		unknown: 3,
-		pass: 2,
-		not_applicable: 1,
-	};
-	return rank[next] > rank[current] ? next : current;
+	return CLAIM_STATUS_RANK[next] > CLAIM_STATUS_RANK[current] ? next : current;
 }
 
 function worseFreshness(
 	current: PrCloseoutEvidenceFreshness,
 	next: PrCloseoutEvidenceFreshness,
 ): PrCloseoutEvidenceFreshness {
-	const rank: Record<PrCloseoutEvidenceFreshness, number> = {
-		stale: 5,
-		missing: 4,
-		unknown: 3,
-		current: 2,
-		not_applicable: 1,
-	};
-	return rank[next] > rank[current] ? next : current;
+	return EVIDENCE_FRESHNESS_RANK[next] > EVIDENCE_FRESHNESS_RANK[current]
+		? next
+		: current;
+}
+
+function worseClaim(
+	current: PrCloseoutClaim | undefined,
+	next: PrCloseoutClaim,
+): PrCloseoutClaim {
+	if (!current) return next;
+	const currentStatusRank = CLAIM_STATUS_RANK[current.status];
+	const nextStatusRank = CLAIM_STATUS_RANK[next.status];
+	if (nextStatusRank !== currentStatusRank) {
+		return nextStatusRank > currentStatusRank ? next : current;
+	}
+	const currentFreshnessRank = EVIDENCE_FRESHNESS_RANK[current.freshness];
+	const nextFreshnessRank = EVIDENCE_FRESHNESS_RANK[next.freshness];
+	return nextFreshnessRank > currentFreshnessRank ? next : current;
 }
 
 function laneEvidenceRef(
@@ -155,9 +174,9 @@ function laneEvidenceRef(
 	claims: readonly PrCloseoutClaim[],
 	blockers: readonly PrCloseoutBlocker[],
 ): string | null {
-	const claimRef = claims.find(
-		(claim) => laneForClaim(claim.claim) === lane,
-	)?.evidenceRef;
+	const claimRef = claims
+		.filter((claim) => laneForClaim(claim.claim) === lane)
+		.reduce<PrCloseoutClaim | undefined>(worseClaim, undefined)?.evidenceRef;
 	if (claimRef) return claimRef;
 	const blockerRef = blockers.find(
 		(blocker) => laneForBlocker(blocker) === lane,
@@ -304,6 +323,7 @@ function laneRequiresHandoffEvidence(
 	blockedLanes: ReadonlySet<PrCloseoutLifecycleLane["lane"]>,
 ): boolean {
 	if (blockedLanes.has(lane.lane)) return true;
+	if (lane.status === "fail" || lane.status === "blocked") return true;
 	return (
 		lane.lane === "release_readiness" &&
 		lane.status !== "pass" &&

@@ -18,7 +18,10 @@ describe("sanitizeGitEnvironment", () => {
 	it("minimal policy drops caller-scoped repository keys and keeps identity config", () => {
 		const sanitized = sanitizeGitEnvironment(
 			{
+				GIT_ALTERNATE_OBJECT_DIRECTORIES: "/tmp/quarantine/alternates",
 				GIT_DIR: "/tmp/repo/.git",
+				GIT_OBJECT_DIRECTORY: "/tmp/quarantine/objects",
+				GIT_QUARANTINE_PATH: "/tmp/quarantine",
 				GIT_WORK_TREE: "/tmp/repo",
 				GIT_AUTHOR_NAME: "Jamie",
 				PATH: "/usr/bin",

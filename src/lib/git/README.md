@@ -13,8 +13,10 @@ Use `sanitizeGitEnvironment` for git subprocess environments instead of deleting
 
 | Policy | Use | Behavior |
 | --- | --- | --- |
-| `minimal` | Run git against an explicit repository root while preserving user identity and tool configuration. | Drops caller-scoped repository variables such as `GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`, and `GIT_COMMON_DIR`. |
+| `minimal` | Run git against an explicit repository root while preserving user identity and tool configuration. | Drops caller-scoped repository and object-store variables such as `GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`, `GIT_COMMON_DIR`, `GIT_OBJECT_DIRECTORY`, `GIT_ALTERNATE_OBJECT_DIRECTORIES`, and `GIT_QUARANTINE_PATH`. |
 | `strict` | Run repository validators or wrappers that must not inherit any caller git state. | Drops every `GIT_*` key. |
+
+`minimal` intentionally does not preserve inherited object-store indirection. Callers that require alternates or quarantine object paths need a separate reviewed execution policy instead of broadening the default repository-root sanitizer.
 
 ## Ownership
 

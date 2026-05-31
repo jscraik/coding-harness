@@ -763,6 +763,10 @@ describe("runPrCloseoutCLI", () => {
 		const report = JSON.parse(result.output) as {
 			status: string;
 			lifecycleSnapshot: {
+				handoffRequiredEvidence: Array<{
+					lane: string;
+					evidenceRef: string;
+				}>;
 				lanes: Array<{
 					lane: string;
 					status: string;
@@ -783,6 +787,18 @@ describe("runPrCloseoutCLI", () => {
 			status: "fail",
 			blockerClass: "introduced",
 		});
+		expect(report.lifecycleSnapshot.handoffRequiredEvidence).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					lane: "local_validation",
+					evidenceRef: "check:pr-pipeline",
+				}),
+				expect.objectContaining({
+					lane: "ci_state",
+					evidenceRef: "pr-pipeline",
+				}),
+			]),
+		);
 		expect(releaseReadinessLane).toMatchObject({
 			status: "blocked",
 			blockerClass: "needs_jamie_decision",
@@ -3227,18 +3243,24 @@ Refs JSC-328
 			envFile,
 			[
 				"PR_CLOSEOUT_TEST_TOKEN=loaded",
+				"GIT_ALTERNATE_OBJECT_DIRECTORIES=/tmp/wrong-repo/alternates",
 				"GIT_COMMON_DIR=/tmp/wrong-repo/.git",
 				"GIT_DIR=/tmp/wrong-repo/.git",
-				"GIT_WORK_TREE=/tmp/wrong-repo",
 				"GIT_INDEX_FILE=/tmp/wrong-repo/index",
+				"GIT_OBJECT_DIRECTORY=/tmp/wrong-repo/objects",
+				"GIT_QUARANTINE_PATH=/tmp/wrong-repo/quarantine",
+				"GIT_WORK_TREE=/tmp/wrong-repo",
 			].join("\n"),
 		);
 		const gitCommandsSeen: string[] = [];
 		const taintedGitEnv = {
+			GIT_ALTERNATE_OBJECT_DIRECTORIES: "/tmp/inherited-wrong-repo/alternates",
 			GIT_COMMON_DIR: "/tmp/inherited-wrong-repo/.git",
 			GIT_DIR: "/tmp/inherited-wrong-repo/.git",
-			GIT_WORK_TREE: "/tmp/inherited-wrong-repo",
 			GIT_INDEX_FILE: "/tmp/inherited-wrong-repo/index",
+			GIT_OBJECT_DIRECTORY: "/tmp/inherited-wrong-repo/objects",
+			GIT_QUARANTINE_PATH: "/tmp/inherited-wrong-repo/quarantine",
+			GIT_WORK_TREE: "/tmp/inherited-wrong-repo",
 		};
 		const previousGitEnv = new Map(
 			Object.keys(taintedGitEnv).map((name) => [name, process.env[name]]),
@@ -3285,10 +3307,13 @@ Refs JSC-328
 			if (command === "git") {
 				gitCommandsSeen.push(args.join(" "));
 				expect(options.env?.PR_CLOSEOUT_TEST_TOKEN).toBe("loaded");
+				expect(options.env?.GIT_ALTERNATE_OBJECT_DIRECTORIES).toBeUndefined();
 				expect(options.env?.GIT_COMMON_DIR).toBeUndefined();
 				expect(options.env?.GIT_DIR).toBeUndefined();
-				expect(options.env?.GIT_WORK_TREE).toBeUndefined();
 				expect(options.env?.GIT_INDEX_FILE).toBeUndefined();
+				expect(options.env?.GIT_OBJECT_DIRECTORY).toBeUndefined();
+				expect(options.env?.GIT_QUARANTINE_PATH).toBeUndefined();
+				expect(options.env?.GIT_WORK_TREE).toBeUndefined();
 				if (args[0] === "status") return "";
 				if (args[0] === "rev-parse") return "abc123";
 				if (args[0] === "rev-list") return "0\t0";
