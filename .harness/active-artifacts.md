@@ -156,17 +156,17 @@ unless a live refresh is recorded in the referenced artifact.
   resolution, linked-issue truth, Linear, merge readiness, Judge/PM readiness,
   and final goal completion remain unclaimed until refreshed after the R172
   push. R173 records local reviewed remediation for review thread
-  \`PRRT_kwDORWZJCc6F7XW0\` on implementation commit \`4d5039f\`:
-  \`expectBehavior\` now validates \`given\` and \`should\` context separately and
-  requires exact deep equality between \`actual\` and \`expected\`, with regression
+  `PRRT_kwDORWZJCc6F7XW0` on implementation commit `4d5039f`:
+  `expectBehavior` now validates `given` and `should` context separately and
+  requires exact deep equality between `actual` and `expected`, with regression
   coverage proving extra actual object fields no longer pass through subset
   matching. Push, remote checks green, CodeRabbit completion, review-thread
   resolution, linked-issue truth, Linear, merge readiness, Judge/PM readiness,
   and final goal completion remain unclaimed until refreshed after the R173
   push.
   R174 records local reviewed remediation for review threads
-  \`PRRT_kwDORWZJCc6F7cu8\` and \`PRRT_kwDORWZJCc6F7ezU\` on implementation
-  commit \`36458dd\`: the package files allowlist now includes the runtime
+  `PRRT_kwDORWZJCc6F7cu8` and `PRRT_kwDORWZJCc6F7ezU` on implementation
+  commit `36458dd`: the package files allowlist now includes the runtime
   source/test inputs required by packaged quality scripts without publishing
   \`src/dev/**\` or unregistered \`src/**/*.test.ts\` payloads, and the
   package-files regression verifies the actual packed tarball plus packed
