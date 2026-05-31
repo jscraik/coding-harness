@@ -218,17 +218,25 @@ function countImplementedWithEvidence(
 function hasCompleteLoopShape(loop: FeedbackLoopEntry): boolean {
 	return (
 		loop.rank > 0 &&
-		loop.id.length > 0 &&
-		loop.name.length > 0 &&
-		loop.leverage.length > 0 &&
-		loop.owner.length > 0 &&
-		loop.sources.length > 0 &&
-		loop.recipients.length > 0 &&
-		loop.expectedDelay.length > 0 &&
-		loop.failureClass.length > 0 &&
-		loop.action.length > 0 &&
-		loop.evidenceRefs.length > 0
+		hasText(loop.id) &&
+		hasText(loop.name) &&
+		hasText(loop.leverage) &&
+		hasText(loop.owner) &&
+		hasOnlyTextItems(loop.sources) &&
+		hasOnlyTextItems(loop.recipients) &&
+		hasText(loop.expectedDelay) &&
+		hasText(loop.failureClass) &&
+		hasText(loop.action) &&
+		hasOnlyTextItems(loop.evidenceRefs)
 	);
+}
+
+function hasText(value: string): boolean {
+	return value.trim().length > 0;
+}
+
+function hasOnlyTextItems(values: string[]): boolean {
+	return values.length > 0 && values.every(hasText);
 }
 
 function failedReport(

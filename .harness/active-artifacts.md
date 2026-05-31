@@ -124,13 +124,13 @@ unless a live refresh is recorded in the referenced artifact.
   executable regression. Push, remote checks, review threads, CodeRabbit,
   linked-issue truth, Linear, merge readiness, Judge/PM readiness, and final
   goal completion remain unclaimed until refreshed after the R165 push.
-  R166 records local reviewed remediation for PR #322 base-branch drift evidence
-  on implementation commit `d5e1eda1`: pr-closeout --live compares branch drift
-  against the PR base ref, fallback remote refs require exact branch-name
-  equality after the remote segment, and unobserved drift remains
-  orientation-only. Push, remote checks, review threads, CodeRabbit,
-  linked-issue truth, Linear, merge readiness, Judge/PM readiness, and final
-  goal completion remain unclaimed until refreshed after the R166 push.
+  R167 records local reviewed remediation for the PR #322 feedback-loop
+  closure-evidence review thread on implementation commit `e4fb33e`: implemented
+  feedback-loop gaps and recommendations now require non-empty evidence refs
+  before the audit can report closure. Push, remote checks, review threads,
+  CodeRabbit, linked-issue truth, Linear, merge readiness, Judge/PM readiness,
+  and final goal completion remain unclaimed until refreshed after the R167
+  push.
   Historical stacked PRs may still show CONFLICTING/DIRTY metadata because
   their old head/base refs are stale. That historical metadata is not an active
   open-PR merge blocker. Before any

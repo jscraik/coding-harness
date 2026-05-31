@@ -201,6 +201,55 @@ describe("buildFeedbackLoopAudit", () => {
 		);
 	});
 
+	const completeFeedbackLoopEntry = {
+		rank: 1,
+		id: "loop-1",
+		name: "Loop 1",
+		leverage: "high",
+		owner: "owner",
+		sources: ["source"],
+		recipients: ["recipient"],
+		expectedDelay: "minutes",
+		failureClass: "failure",
+		action: "act",
+		closureState: "implemented",
+		evidenceRefs: ["evidence"],
+	};
+
+	const blankRequiredLoopMetadataCases: Array<
+		[string, Record<string, unknown>]
+	> = [
+		["id", { id: " " }],
+		["name", { name: " " }],
+		["leverage", { leverage: " " }],
+		["owner", { owner: " " }],
+		["sources", { sources: ["source", " "] }],
+		["recipients", { recipients: ["recipient", " "] }],
+		["expectedDelay", { expectedDelay: " " }],
+		["failureClass", { failureClass: " " }],
+		["action", { action: " " }],
+		["evidenceRefs", { evidenceRefs: ["evidence", " "] }],
+	];
+
+	for (const [fieldName, override] of blankRequiredLoopMetadataCases) {
+		it(`fails when a feedback-loop entry has blank ${fieldName} metadata`, () => {
+			const repoRoot = makeTempRepo();
+			writeIndex(repoRoot, {
+				loops: [{ ...completeFeedbackLoopEntry, ...override }],
+			});
+
+			const report = buildFeedbackLoopAudit({ repoRoot });
+
+			expect(report.status).toBe("fail");
+			expect(report.findings).toContainEqual(
+				expect.objectContaining({
+					code: "feedback_loop_entries_actionable",
+					status: "fail",
+				}),
+			);
+		});
+	}
+
 	it("fails when audit recommendations are not closed", () => {
 		const repoRoot = makeTempRepo();
 		writeIndex(repoRoot, {
