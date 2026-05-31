@@ -464,6 +464,80 @@ describe("runPrCloseoutCLI", () => {
 		});
 	});
 
+	it("applies release-readiness CLI classification to input files", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const inputPath = join(dir, "input.json");
+		writeFileSync(
+			inputPath,
+			JSON.stringify({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headSha: "abc123",
+					reviewDecision: "APPROVED",
+					body: "Refs JSC-327\n",
+				},
+				branch: {
+					clean: true,
+					headSha: "abc123",
+					worktreeRole: "implementation",
+				},
+				checks: [{ name: "pr-pipeline", state: "SUCCESS", headSha: "abc123" }],
+				reviewThreads: { unresolved: 0 },
+				traceability: {
+					sessionIds: ["codex-session:2026-05-16"],
+					traceIds: ["circleci:workflow-123"],
+					aiSessionTraceability:
+						"JSC-327 -> PR #258 -> Codex session -> commit -> validation",
+				},
+				rollback: { notApplicable: true, evidenceRef: "pr-body:rollback" },
+				closeoutGates: PASSING_PHASE_EXIT,
+				assurance: PASSING_ASSURANCE,
+				runtimeEvidence: PASSING_RUNTIME_EVIDENCE,
+				linearMutation: "available",
+				releaseReadinessImpact: "none",
+			}),
+		);
+
+		const result = await capture([
+			"--json",
+			"--input",
+			inputPath,
+			"--release-readiness-impact",
+			"release_blocker",
+		]);
+		const report = JSON.parse(result.output) as {
+			status: string;
+			mergeable: boolean;
+			blockers: Array<{
+				surface: string;
+				classification: string;
+				ref?: string;
+			}>;
+			lifecycleSnapshot: {
+				releaseReadinessImpact: string;
+			};
+		};
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("needs_jamie");
+		expect(report.mergeable).toBe(false);
+		expect(report.lifecycleSnapshot.releaseReadinessImpact).toBe(
+			"release_blocker",
+		);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "release_readiness",
+					classification: "needs_jamie_decision",
+					ref: "input:releaseReadinessImpact:release_blocker",
+				}),
+			]),
+		);
+	});
+
 	it("projects release blockers into the release-readiness lifecycle lane", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const inputPath = join(dir, "input.json");
