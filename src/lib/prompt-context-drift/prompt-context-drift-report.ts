@@ -247,29 +247,23 @@ function validateReportFields(
 	);
 	validateText(report.nextAction, "nextAction", errors, 512);
 	validateBlockers(report.blockers, "blockers", errors);
-	if (!Array.isArray(report.surfaces)) {
-		errors.push("surfaces: must be an array");
-		return;
-	}
+	if (!Array.isArray(report.surfaces))
+		return void errors.push("surfaces: must be an array");
 	const repoRoot = options.repoRoot ? resolve(options.repoRoot) : undefined;
 	const surfaceRecords = new Map<string, Record<string, unknown>>();
-	const seenSurfaceIds = new Set<string>();
 	for (const [index, surface] of report.surfaces.entries()) {
 		validateSurface(surface, `surfaces[${index}]`, report, repoRoot, errors);
-		if (isRecord(surface) && typeof surface.surfaceId === "string") {
-			if (seenSurfaceIds.has(surface.surfaceId)) {
-				errors.push(
-					`surfaces[${index}].surfaceId: duplicate surface ${surface.surfaceId}`,
-				);
-			} else {
-				seenSurfaceIds.add(surface.surfaceId);
-				surfaceRecords.set(surface.surfaceId, surface);
-			}
+		if (!isRecord(surface) || typeof surface.surfaceId !== "string") continue;
+		if (!surfaceRecords.has(surface.surfaceId)) {
+			surfaceRecords.set(surface.surfaceId, surface);
+			continue;
 		}
+		errors.push(
+			`surfaces[${index}].surfaceId: duplicate surface ${surface.surfaceId}`,
+		);
 	}
-	if (report.evidenceUse === "claim_support") {
+	if (report.evidenceUse === "claim_support")
 		validateClaimSupportReport(report, surfaceRecords, errors);
-	}
 }
 
 function validateSurface(
