@@ -10,7 +10,7 @@
 
 ## Scope
 
-Last reconciled: 2026-05-31T08:48Z plus R171 local PR #322 review-thread remediation (origin/main freshness at ddd2b966663114c385811fe01ae43ef98c0b3818, implementation commit 6da8aca, package quality-script tarball fix reviewed and locally validated; push, remote checks, review-thread resolution, merge readiness, and final goal completion remain unclaimed).
+Last reconciled: 2026-05-31T09:17Z plus R172 local PR #322 review-thread remediation (origin/main freshness at ddd2b966663114c385811fe01ae43ef98c0b3818, implementation commit c5a1f39, safe-env config-family fix reviewed and locally validated; push, remote checks, review-thread resolution, merge readiness, and final goal completion remain unclaimed).
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -21,7 +21,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current slice truth is R156 through R171 for PR #322. R171 records local reviewed remediation for review thread PRRT_kwDORWZJCc6F7N2M on implementation commit 6da8aca: package.json now includes the three pnpm check quality guard scripts in the tarball whitelist, with package-files regression coverage and pnpm pack --dry-run proof. Push, CodeRabbit, remote checks green, review-thread resolution, linked-issue truth, Linear, merge readiness, Judge/PM readiness, and final goal completion remain separate unclaimed lanes. | Use the goal board as the current execution cockpit. Next safe action is to commit and push R171, resolve only demonstrably fixed review thread PRRT_kwDORWZJCc6F7N2M on the pushed head, then refresh PR #322 checks/review-thread truth and Linear JSC-363 as separate lanes before any merge-ready, Judge/PM-ready, or goal-complete claim. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current slice truth is R156 through R172 for PR #322. R172 records local reviewed remediation for review thread PRRT_kwDORWZJCc6F7StG on implementation commit c5a1f39: minimal Git environment sanitization now drops GIT_CONFIG and all GIT_CONFIG_* keys, with behavior tests proving inline config and config-file pointer contamination cannot hide untracked-file truth after sanitization. Push, CodeRabbit, remote checks green, review-thread resolution, linked-issue truth, Linear, merge readiness, Judge/PM readiness, and final goal completion remain separate unclaimed lanes. | Use the goal board as the current execution cockpit. Next safe action is to commit and push R172, resolve only demonstrably fixed review thread PRRT_kwDORWZJCc6F7StG on the pushed head, then refresh PR #322 checks/review-thread truth and Linear JSC-363 as separate lanes before any merge-ready, Judge/PM-ready, or goal-complete claim. |
 
 ## Artifact Index
 
@@ -143,6 +143,19 @@ unless a live refresh is recorded in the referenced artifact.
   review-thread resolution, linked-issue truth, Linear, merge readiness,
   Judge/PM readiness, and final goal completion remain unclaimed until
   refreshed after the R170 push.
+  R171 records local reviewed remediation for review thread
+  `PRRT_kwDORWZJCc6F7N2M` on implementation commit `6da8aca`: the package
+  files whitelist now includes the three pnpm check quality guard scripts, and
+  package-files regression coverage plus `pnpm pack --dry-run` prove the
+  reviewed tarball surface locally. R172 records local reviewed remediation for
+  review thread `PRRT_kwDORWZJCc6F7StG` on implementation commit `c5a1f39`:
+  minimal Git environment sanitization now drops `GIT_CONFIG` and all
+  `GIT_CONFIG_*` keys, with behavior tests proving inline config and
+  config-file pointer contamination cannot hide untracked-file truth after
+  sanitization. Push, remote checks green, CodeRabbit completion, review-thread
+  resolution, linked-issue truth, Linear, merge readiness, Judge/PM readiness,
+  and final goal completion remain unclaimed until refreshed after the R172
+  push.
   Historical stacked PRs may still show CONFLICTING/DIRTY metadata because
   their old head/base refs are stale. That historical metadata is not an active
   open-PR merge blocker. Before any
