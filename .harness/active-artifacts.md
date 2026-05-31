@@ -10,7 +10,7 @@
 
 ## Scope
 
-Last reconciled: 2026-05-31T05:12Z plus R167 feedback-loop closure-evidence remediation (origin/main freshness at ddd2b966663114c385811fe01ae43ef98c0b3818, local implementation commit e4fb33e, and push/PR remote-review truth pending; merge readiness and final goal completion remain unclaimed).
+Last reconciled: 2026-05-31T07:59Z plus R168 feedback-loop ledger allowlist remediation (origin/main freshness at ddd2b966663114c385811fe01ae43ef98c0b3818, local implementation commit 65c56a9, and push/PR remote-review truth pending; merge readiness and final goal completion remain unclaimed).
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -21,7 +21,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309's branch head was `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` and its current-main squash evidence is historical, not a current route blocker. PR #312, PR #318, PR #319, and PR #320 remain route-history evidence, not current merge blockers. Current slice truth is R156 through R167 for PR #322: earlier receipts cover hidden-dependency guard hardening, PR metadata repair, release-readiness blocker flow, live git-env sanitizer repair, Windows behavior-test shim handling, input-mode release-readiness override, current-head reconciliation, review-gap remediation, and base-branch drift evidence. R167 records local reviewed remediation for the PR #322 feedback-loop closure-evidence review thread on implementation commit `e4fb33e`; the branch contains `origin/main` at `ddd2b966663114c385811fe01ae43ef98c0b3818` and was 0 behind / 17 ahead before the receipt update. Push, CodeRabbit, review threads, linked-issue truth, CircleCI checks, Linear, merge readiness, Judge/PM readiness, and final goal completion remain separate unclaimed lanes. | Use the goal board as the current execution cockpit. Next safe action is to commit and push the R167 receipt, resolve only demonstrably fixed PR #322 review threads on the pushed head, then refresh PR #322 checks/review-thread truth and Linear JSC-363 as separate lanes before any merge-ready, Judge/PM-ready, or goal-complete claim. |
+| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309's branch head was `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` and its current-main squash evidence is historical, not a current route blocker. PR #312, PR #318, PR #319, and PR #320 remain route-history evidence, not current merge blockers. Current slice truth is R156 through R168 for PR #322: earlier receipts cover hidden-dependency guard hardening, PR metadata repair, release-readiness blocker flow, live git-env sanitizer repair, Windows behavior-test shim handling, input-mode release-readiness override, current-head reconciliation, review-gap remediation, base-branch drift evidence, and feedback-loop closure-evidence validation. R168 records local reviewed remediation for the PR #322 feedback-loop ledger allowlist review thread on implementation commit `65c56a9`; the branch contains `origin/main` at `ddd2b966663114c385811fe01ae43ef98c0b3818` and was 0 behind / 26 ahead after the implementation commit. Push, CodeRabbit, review threads, linked-issue truth, CircleCI checks, Linear, merge readiness, Judge/PM readiness, and final goal completion remain separate unclaimed lanes. | Use the goal board as the current execution cockpit. Next safe action is to commit and push the R168 receipt, resolve only demonstrably fixed PR #322 review threads on the pushed head, then refresh PR #322 checks/review-thread truth and Linear JSC-363 as separate lanes before any merge-ready, Judge/PM-ready, or goal-complete claim. |
 
 ## Artifact Index
 
@@ -127,9 +127,14 @@ unless a live refresh is recorded in the referenced artifact.
   R167 records local reviewed remediation for the PR #322 feedback-loop
   closure-evidence review thread on implementation commit `e4fb33e`: implemented
   feedback-loop gaps and recommendations now require non-empty evidence refs
-  before the audit can report closure. Push, remote checks, review threads,
+  before the audit can report closure. R168 records local reviewed remediation
+  for PR #322 review thread `PRRT_kwDORWZJCc6F7Fgx` on implementation commit
+  `65c56a9`: `.harness/feedback-loops/index.json` is explicitly unignored
+  as tracked durable evidence, sibling local outputs remain ignored,
+  `.harness/README.md` documents the ledger, and `harness:audit-tracking`
+  verifies the live git-ignore behavior. Push, remote checks, review threads,
   CodeRabbit, linked-issue truth, Linear, merge readiness, Judge/PM readiness,
-  and final goal completion remain unclaimed until refreshed after the R167
+  and final goal completion remain unclaimed until refreshed after the R168
   push.
   Historical stacked PRs may still show CONFLICTING/DIRTY metadata because
   their old head/base refs are stale. That historical metadata is not an active
