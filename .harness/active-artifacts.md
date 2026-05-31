@@ -10,7 +10,7 @@
 
 ## Scope
 
-Last reconciled: 2026-05-31T10:03Z plus R174 local PR #322 review-thread remediation (origin/main freshness at ddd2b966663114c385811fe01ae43ef98c0b3818, implementation commit 36458dd, packaged quality runtime inputs reviewed and locally validated; push, remote checks, review-thread resolution, merge readiness, and final goal completion remain unclaimed).
+Last reconciled: 2026-05-31T10:15Z plus R175 PR #322 post-push reconciliation (branch head 219854d4580fe19b13d5e1d03760f1506c7713c6, origin/main freshness at ddd2b966663114c385811fe01ae43ef98c0b3818, package-runtime-input fix pushed, targeted review threads resolved, unresolved-thread query returned none; CodeRabbit and remote checks were still pending, so merge readiness and final goal completion remain unclaimed).
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -21,7 +21,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current slice truth is R156 through R174 for PR #322. R174 records local reviewed remediation for review threads PRRT_kwDORWZJCc6F7cu8 and PRRT_kwDORWZJCc6F7ezU on implementation commit 36458dd: package quality-script runtime inputs are included without publishing src/dev or unregistered source tests, with tarball-level regression coverage. Push, CodeRabbit, remote checks green, review-thread resolution, linked-issue truth, Linear, merge readiness, Judge/PM readiness, and final goal completion remain separate unclaimed lanes. | Use the goal board as the current execution cockpit. Next safe action is to commit and push R174, resolve only demonstrably fixed review threads PRRT_kwDORWZJCc6F7cu8 and PRRT_kwDORWZJCc6F7ezU on the pushed head, then refresh PR #322 checks/review-thread truth and Linear JSC-363 as separate lanes before any merge-ready, Judge/PM-ready, or goal-complete claim. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current slice truth is R156 through R175 for PR #322. R174 records local reviewed remediation for review threads PRRT_kwDORWZJCc6F7cu8 and PRRT_kwDORWZJCc6F7ezU on implementation commit 36458dd: package quality-script runtime inputs are included without publishing src/dev or unregistered source tests, with tarball-level regression coverage. R175 records the pushed head 219854d4580fe19b13d5e1d03760f1506c7713c6, targeted review-thread resolution, and a fresh unresolved-thread query returning none. CodeRabbit, pr-pipeline, ci/circleci: check, and ci/circleci: orb-pinning were still pending at the R175 refresh; linked-issue truth, Linear, merge readiness, Judge/PM readiness, and final goal completion remain separate unclaimed lanes. | Use the goal board as the current execution cockpit. Next safe action is to run R175 board validators, commit and push the R175 reconciliation, then refresh PR #322 pending checks and CodeRabbit before any merge-ready, Judge/PM-ready, or goal-complete claim. |
 
 ## Artifact Index
 
@@ -170,10 +170,13 @@ unless a live refresh is recorded in the referenced artifact.
   source/test inputs required by packaged quality scripts without publishing
   \`src/dev/**\` or unregistered \`src/**/*.test.ts\` payloads, and the
   package-files regression verifies the actual packed tarball plus packed
-  \`package.json\`. Push, remote checks green, CodeRabbit completion,
-  review-thread resolution, linked-issue truth, Linear, merge readiness,
-  Judge/PM readiness, and final goal completion remain unclaimed until
-  refreshed after the R174 push.
+  \`package.json\`. R175 records the pushed PR #322 head
+  \`219854d4580fe19b13d5e1d03760f1506c7713c6\`, targeted resolution of those
+  two review threads, and a fresh unresolved-thread query returning no
+  unresolved threads; CodeRabbit, pr-pipeline, ci/circleci: check, and
+  ci/circleci: orb-pinning were still pending at that refresh. Linked-issue
+  truth, Linear, merge readiness, Judge/PM readiness, and final goal completion
+  remain unclaimed.
   Historical stacked PRs may still show CONFLICTING/DIRTY metadata because
   their old head/base refs are stale. That historical metadata is not an active
   open-PR merge blocker. Before any
