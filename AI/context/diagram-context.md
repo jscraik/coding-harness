@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-05-29T09:53:24Z
+Generated: 2026-05-31T08:55:03Z
 
 ## Table of Contents
 
@@ -29,35 +29,40 @@ Generated: 2026-05-29T09:53:24Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `src/lib/agent-readiness/context-health.ts`
-- `src/lib/agent-readiness/types.ts`
-- `src/lib/artifact-runtime-surface/claim-support-semantics.ts`
-- `src/lib/artifact-runtime-surface/index.ts`
-- `src/lib/artifact-runtime-surface/types.ts`
-- `src/lib/artifact-runtime-surface/validation-constants.ts`
-- `src/lib/artifact-runtime-surface/validation-helpers.ts`
-- `src/lib/artifact-runtime-surface/validation.ts`
-- `src/lib/init/README.md`
-- `src/lib/intermediary-receipts/constants.ts`
-- `src/lib/intermediary-receipts/index.ts`
-- `src/lib/intermediary-receipts/types.ts`
-- `src/lib/intermediary-receipts/validation-common.ts`
-- `src/lib/intermediary-receipts/validation-helpers.ts`
-- `src/lib/intermediary-receipts/validation-summaries.ts`
-- `src/lib/intermediary-receipts/validation.ts`
-- `src/lib/pr-template-validator-rules.ts`
-- `src/lib/pr-template-validator.ts`
-- `src/lib/prompt-context-drift/index.ts`
-- `src/lib/prompt-context-drift/prompt-context-drift-report.ts`
-- `src/lib/prompt-context-drift/prompt-context-drift-types.ts`
-- `src/lib/replay/replay-packet.ts`
-- `scripts/validate-intermediary-receipt-coverage.cjs`
-- `scripts/validate-replay-packet.cjs`
-- `contracts/artifact-runtime-surface.schema.json`
-- `contracts/examples/artifact-runtime-surface.example.json`
-- `contracts/runtime-packet-schemas.manifest.json`
-- `scripts/validate-artifact-runtime-surface.cjs`
-- `scripts/validate-runtime-packet-schemas.cjs`
+- `package.json`
+- `src/commands/feedback-loop-audit.ts`
+- `src/commands/pr-closeout.ts`
+- `src/commands/pr-closeout/args.ts`
+- `src/commands/pr-closeout/git-branch.ts`
+- `src/commands/pr-closeout/live.ts`
+- `src/lib/cli/registry/README.md`
+- `src/lib/cli/registry/agent-readiness-command-spec.ts`
+- `src/lib/cli/registry/artifact-gate-command-spec.ts`
+- `src/lib/cli/registry/command-capability-rules.ts`
+- `src/lib/cli/registry/command-specs-core.ts`
+- `src/lib/cli/registry/define-command-spec.ts`
+- `src/lib/cli/registry/feedback-loop-audit-command-spec.ts`
+- `src/lib/feedback-loop-audit-cli.ts`
+- `src/lib/feedback-loop-audit.ts`
+- `src/lib/git/README.md`
+- `src/lib/git/safe-env.ts`
+- `src/lib/pr-closeout.ts`
+- `src/lib/pr-closeout/blockers.ts`
+- `src/lib/pr-closeout/claim-builders.ts`
+- `src/lib/pr-closeout/evaluator.ts`
+- `src/lib/pr-closeout/lifecycle-snapshot.ts`
+- `src/lib/pr-closeout/types.ts`
+- `src/lib/project-brain/README.md`
+- `src/lib/project-brain/preflight-cli.ts`
+- `src/lib/project-brain/rules.ts`
+- `src/lib/root-hygiene/git-env.ts`
+- `src/lib/runtime/git-environment.ts`
+- `src/lib/testing/behavior-test-suites.json`
+- `src/lib/testing/expect-behavior.ts`
+- `src/lib/verify-work/runner.ts`
+- `src/lib/workflow-contract/test-harness.ts`
+- `src/templates/codestyle/17-testing.md`
+- `src/templates/codestyle/CHECKSUMS.sha256`
 
 ## agent
 
@@ -138,6 +143,7 @@ flowchart TD
     metadata_scanner_6a101b66["🤖 metadata-scanner"]
     preflight_cli_5d148379["🤖 preflight-cli"]
     query_cli_b95be64d["🤖 query-cli"]
+    rules_6c621d1a["🤖 rules"]
     stale_cli_64548720["🤖 stale-cli"]
     status_cli_4c24a0d6["🤖 status-cli"]
     node_agent_mmd_orchestration_layer_orchestration_sugg_85c5ebe3["🤖 suggestion-generator"]
@@ -360,7 +366,7 @@ flowchart TD
     overload_guard_2748c559[("📚 overload-guard")]
   end
   classDef agentNode fill:#555,color:#fff
-  class node_agent_mmd_orchestration_layer_orchestration_chec_7a9f0b64,node_agent_mmd_llm_model_layer_llmlayer_check_codex_a_29e7b7fa,node_agent_mmd_tool_layer_toollayer_check_codex_agent_4b361d5a,node_agent_mmd_orchestration_layer_orchestration_chec_7fd47f5c,node_agent_mmd_llm_model_layer_llmlayer_check_steerin_0e1bf90d,node_agent_mmd_tool_layer_toollayer_check_steering_fe_eafecf3a,node_agent_mmd_memory_vector_layer_memorylayer_check__64c86928,node_agent_mmd_orchestration_layer_orchestration_run__18817957,node_agent_mmd_llm_model_layer_llmlayer_run_harness_e_603fcfdc,node_agent_mmd_tool_layer_toollayer_run_harness_evals_e2ee24f1,node_agent_mmd_orchestration_layer_orchestration_vali_c01b04be,node_agent_mmd_llm_model_layer_llmlayer_validate_pack_2a12e1f4,node_agent_mmd_tool_layer_toollayer_validate_packaged_2855c827,cli_99bb8840,agent_readiness_c82c68e6,brain_core_aa07c380,brain_bbbf7a64,doctor_north_star_contract_checks_0048124c,doctor_roadmap_file_checks_14447b8e,doctor_72f4be89,drift_gate_rules_9685e72d,next_runner_41643472,next_usage_errors_837a345a,next_c6c1c9a9,remediate_findings_8b09c8c6,remediate_git_58c6f6f4,remediate_run_record_9dfe5dc1,node_agent_mmd_orchestration_layer_orchestration_reme_359fe98f,node_agent_mmd_llm_model_layer_llmlayer_remediate_run_9e3d4585,node_agent_mmd_tool_layer_toollayer_remediate_runner__c003b871,remediate_06b9c7fc,runtime_card_args_2b3d4b28,runtime_card_options_c9156ad5,runtime_card_e06b53e1,node_agent_mmd_orchestration_layer_orchestration_tool_acfe0c01,node_agent_mmd_memory_vector_layer_memorylayer_toolin_a1185b8f,upgrade_7fef9479,node_agent_mmd_orchestration_layer_orchestration_chec_0550c395,node_agent_mmd_tool_layer_toollayer_checker_checker_2_453d593b,node_agent_mmd_memory_vector_layer_memorylayer_checke_a583eb4f,cli_1_084e05fe,node_agent_mmd_orchestration_layer_orchestration_cont_61b3b9c9,node_agent_mmd_llm_model_layer_llmlayer_context_healt_cfc0bfa8,node_agent_mmd_memory_vector_layer_memorylayer_contex_3204aa0e,package_scripts_3ee6150f,repo_evidence_38bb1de5,status_073c1634,node_agent_mmd_orchestration_layer_orchestration_type_4f906dcc,node_agent_mmd_memory_vector_layer_memorylayer_types__9ad640a0,agent_readiness_command_spec_a30c2c1e,brain_command_spec_15b122d5,command_agent_catalog_rules_8e06b2af,node_agent_mmd_orchestration_layer_orchestration_comm_6e41a7f7,node_agent_mmd_tool_layer_toollayer_command_capabilit_7fe13db1,node_agent_mmd_orchestration_layer_orchestration_comm_1f8cc24c,node_agent_mmd_llm_model_layer_llmlayer_command_specs_782af9fa,node_agent_mmd_memory_vector_layer_memorylayer_comman_111eb454,command_specs_69167c63,node_agent_mmd_orchestration_layer_orchestration_line_b67affd5,node_agent_mmd_tool_layer_toollayer_linear_command_ru_d6763748,linear_command_spec_1e12dd44,upgrade_command_spec_03f6c7bd,north_star_alignment_00440188,node_agent_mmd_orchestration_layer_orchestration_poli_3270b55d,node_agent_mmd_tool_layer_toollayer_policy_validators_af136abf,node_agent_mmd_memory_vector_layer_memorylayer_policy_1944de42,run_records_core_89286dfa,node_agent_mmd_orchestration_layer_orchestration_type_7cf81261,node_agent_mmd_tool_layer_toollayer_types_core_types__6c8319b6,node_agent_mmd_memory_vector_layer_memorylayer_types__83f369fa,node_agent_mmd_orchestration_layer_orchestration_vali_d9fe99e6,node_agent_mmd_tool_layer_toollayer_validator_core_va_6ef6131f,node_agent_mmd_memory_vector_layer_memorylayer_valida_41034356,node_agent_mmd_orchestration_layer_orchestration_he_p_fc778c24,node_agent_mmd_tool_layer_toollayer_he_phase_exit_cor_af016160,node_agent_mmd_orchestration_layer_orchestration_init_2a9c3ecb,node_agent_mmd_memory_vector_layer_memorylayer_init_m_333d02c5,node_agent_mmd_orchestration_layer_orchestration_proj_6ab6f60f,node_agent_mmd_memory_vector_layer_memorylayer_projec_3ae304d9,node_agent_mmd_orchestration_layer_orchestration_scaf_12cc07db,node_agent_mmd_memory_vector_layer_memorylayer_scaffo_5fd73b94,node_agent_mmd_orchestration_layer_orchestration_scaf_c9a90c2f,node_agent_mmd_tool_layer_toollayer_scaffold_environm_c1afc013,node_agent_mmd_memory_vector_layer_memorylayer_scaffo_12b42341,node_agent_mmd_orchestration_layer_orchestration_scaf_ff8f92f6,node_agent_mmd_memory_vector_layer_memorylayer_scaffo_a86eece1,types_15_86775c96,node_agent_mmd_orchestration_layer_orchestration_clas_899b821a,node_agent_mmd_memory_vector_layer_memorylayer_classi_1ebbf5ff,control_plane_core_db3b4cb2,metrics_capture_core_db4bf7cf,registries_06402afa,lifecycle_intent_test_fixtures_a53c7ada,node_agent_mmd_orchestration_layer_orchestration_tool_cc43149f,node_agent_mmd_tool_layer_toollayer_tooling_baseline__61e66e9f,node_agent_mmd_memory_vector_layer_memorylayer_toolin_14f86b00,add_cli_7614de25,brain_validator_be251832,cli_args_8_d546936e,cli_types_1686e858,cli_9_b54c1407,domain_mapper_cd9333d2,help_106a5842,lint_attachments_873c0632,lint_checks_83522b19,lint_cli_9ec62ec0,lint_pages_e33301d0,lint_types_2862c255,metadata_scanner_6a101b66,preflight_cli_5d148379,query_cli_b95be64d,stale_cli_64548720,status_cli_4c24a0d6,node_agent_mmd_orchestration_layer_orchestration_sugg_85c5ebe3,node_agent_mmd_memory_vector_layer_memorylayer_sugges_267f408d,node_agent_mmd_orchestration_layer_orchestration_prom_77088997,node_agent_mmd_llm_model_layer_llmlayer_prompt_contex_e5066b88,node_agent_mmd_tool_layer_toollayer_prompt_context_dr_bd82da46,node_agent_mmd_memory_vector_layer_memorylayer_prompt_efd77624,orchestrator_11376b7e,eval_runner_0966a6b3,runtime_card_trace_64a5ca95,runtime_evidence_contract_0f7b15b2,analysis_f44e85c4,runner_527aa9f4,verify_work_1_cd8e7ec3,cli_args_14_3481043e,runner_1_6f281bf8,orchestrator_core_d0678b53,orchestrator_1_6b7137c5 agentNode
+  class node_agent_mmd_orchestration_layer_orchestration_chec_7a9f0b64,node_agent_mmd_llm_model_layer_llmlayer_check_codex_a_29e7b7fa,node_agent_mmd_tool_layer_toollayer_check_codex_agent_4b361d5a,node_agent_mmd_orchestration_layer_orchestration_chec_7fd47f5c,node_agent_mmd_llm_model_layer_llmlayer_check_steerin_0e1bf90d,node_agent_mmd_tool_layer_toollayer_check_steering_fe_eafecf3a,node_agent_mmd_memory_vector_layer_memorylayer_check__64c86928,node_agent_mmd_orchestration_layer_orchestration_run__18817957,node_agent_mmd_llm_model_layer_llmlayer_run_harness_e_603fcfdc,node_agent_mmd_tool_layer_toollayer_run_harness_evals_e2ee24f1,node_agent_mmd_orchestration_layer_orchestration_vali_c01b04be,node_agent_mmd_llm_model_layer_llmlayer_validate_pack_2a12e1f4,node_agent_mmd_tool_layer_toollayer_validate_packaged_2855c827,cli_99bb8840,agent_readiness_c82c68e6,brain_core_aa07c380,brain_bbbf7a64,doctor_north_star_contract_checks_0048124c,doctor_roadmap_file_checks_14447b8e,doctor_72f4be89,drift_gate_rules_9685e72d,next_runner_41643472,next_usage_errors_837a345a,next_c6c1c9a9,remediate_findings_8b09c8c6,remediate_git_58c6f6f4,remediate_run_record_9dfe5dc1,node_agent_mmd_orchestration_layer_orchestration_reme_359fe98f,node_agent_mmd_llm_model_layer_llmlayer_remediate_run_9e3d4585,node_agent_mmd_tool_layer_toollayer_remediate_runner__c003b871,remediate_06b9c7fc,runtime_card_args_2b3d4b28,runtime_card_options_c9156ad5,runtime_card_e06b53e1,node_agent_mmd_orchestration_layer_orchestration_tool_acfe0c01,node_agent_mmd_memory_vector_layer_memorylayer_toolin_a1185b8f,upgrade_7fef9479,node_agent_mmd_orchestration_layer_orchestration_chec_0550c395,node_agent_mmd_tool_layer_toollayer_checker_checker_2_453d593b,node_agent_mmd_memory_vector_layer_memorylayer_checke_a583eb4f,cli_1_084e05fe,node_agent_mmd_orchestration_layer_orchestration_cont_61b3b9c9,node_agent_mmd_llm_model_layer_llmlayer_context_healt_cfc0bfa8,node_agent_mmd_memory_vector_layer_memorylayer_contex_3204aa0e,package_scripts_3ee6150f,repo_evidence_38bb1de5,status_073c1634,node_agent_mmd_orchestration_layer_orchestration_type_4f906dcc,node_agent_mmd_memory_vector_layer_memorylayer_types__9ad640a0,agent_readiness_command_spec_a30c2c1e,brain_command_spec_15b122d5,command_agent_catalog_rules_8e06b2af,node_agent_mmd_orchestration_layer_orchestration_comm_6e41a7f7,node_agent_mmd_tool_layer_toollayer_command_capabilit_7fe13db1,node_agent_mmd_orchestration_layer_orchestration_comm_1f8cc24c,node_agent_mmd_llm_model_layer_llmlayer_command_specs_782af9fa,node_agent_mmd_memory_vector_layer_memorylayer_comman_111eb454,command_specs_69167c63,node_agent_mmd_orchestration_layer_orchestration_line_b67affd5,node_agent_mmd_tool_layer_toollayer_linear_command_ru_d6763748,linear_command_spec_1e12dd44,upgrade_command_spec_03f6c7bd,north_star_alignment_00440188,node_agent_mmd_orchestration_layer_orchestration_poli_3270b55d,node_agent_mmd_tool_layer_toollayer_policy_validators_af136abf,node_agent_mmd_memory_vector_layer_memorylayer_policy_1944de42,run_records_core_89286dfa,node_agent_mmd_orchestration_layer_orchestration_type_7cf81261,node_agent_mmd_tool_layer_toollayer_types_core_types__6c8319b6,node_agent_mmd_memory_vector_layer_memorylayer_types__83f369fa,node_agent_mmd_orchestration_layer_orchestration_vali_d9fe99e6,node_agent_mmd_tool_layer_toollayer_validator_core_va_6ef6131f,node_agent_mmd_memory_vector_layer_memorylayer_valida_41034356,node_agent_mmd_orchestration_layer_orchestration_he_p_fc778c24,node_agent_mmd_tool_layer_toollayer_he_phase_exit_cor_af016160,node_agent_mmd_orchestration_layer_orchestration_init_2a9c3ecb,node_agent_mmd_memory_vector_layer_memorylayer_init_m_333d02c5,node_agent_mmd_orchestration_layer_orchestration_proj_6ab6f60f,node_agent_mmd_memory_vector_layer_memorylayer_projec_3ae304d9,node_agent_mmd_orchestration_layer_orchestration_scaf_12cc07db,node_agent_mmd_memory_vector_layer_memorylayer_scaffo_5fd73b94,node_agent_mmd_orchestration_layer_orchestration_scaf_c9a90c2f,node_agent_mmd_tool_layer_toollayer_scaffold_environm_c1afc013,node_agent_mmd_memory_vector_layer_memorylayer_scaffo_12b42341,node_agent_mmd_orchestration_layer_orchestration_scaf_ff8f92f6,node_agent_mmd_memory_vector_layer_memorylayer_scaffo_a86eece1,types_15_86775c96,node_agent_mmd_orchestration_layer_orchestration_clas_899b821a,node_agent_mmd_memory_vector_layer_memorylayer_classi_1ebbf5ff,control_plane_core_db3b4cb2,metrics_capture_core_db4bf7cf,registries_06402afa,lifecycle_intent_test_fixtures_a53c7ada,node_agent_mmd_orchestration_layer_orchestration_tool_cc43149f,node_agent_mmd_tool_layer_toollayer_tooling_baseline__61e66e9f,node_agent_mmd_memory_vector_layer_memorylayer_toolin_14f86b00,add_cli_7614de25,brain_validator_be251832,cli_args_8_d546936e,cli_types_1686e858,cli_9_b54c1407,domain_mapper_cd9333d2,help_106a5842,lint_attachments_873c0632,lint_checks_83522b19,lint_cli_9ec62ec0,lint_pages_e33301d0,lint_types_2862c255,metadata_scanner_6a101b66,preflight_cli_5d148379,query_cli_b95be64d,rules_6c621d1a,stale_cli_64548720,status_cli_4c24a0d6,node_agent_mmd_orchestration_layer_orchestration_sugg_85c5ebe3,node_agent_mmd_memory_vector_layer_memorylayer_sugges_267f408d,node_agent_mmd_orchestration_layer_orchestration_prom_77088997,node_agent_mmd_llm_model_layer_llmlayer_prompt_contex_e5066b88,node_agent_mmd_tool_layer_toollayer_prompt_context_dr_bd82da46,node_agent_mmd_memory_vector_layer_memorylayer_prompt_efd77624,orchestrator_11376b7e,eval_runner_0966a6b3,runtime_card_trace_64a5ca95,runtime_evidence_contract_0f7b15b2,analysis_f44e85c4,runner_527aa9f4,verify_work_1_cd8e7ec3,cli_args_14_3481043e,runner_1_6f281bf8,orchestrator_core_d0678b53,orchestrator_1_6b7137c5 agentNode
   classDef llmNode fill:#555,color:#fff
   class node_agent_mmd_orchestration_layer_orchestration_chec_7a9f0b64,node_agent_mmd_llm_model_layer_llmlayer_check_codex_a_29e7b7fa,node_agent_mmd_tool_layer_toollayer_check_codex_agent_4b361d5a,node_agent_mmd_orchestration_layer_orchestration_chec_7fd47f5c,node_agent_mmd_llm_model_layer_llmlayer_check_steerin_0e1bf90d,node_agent_mmd_tool_layer_toollayer_check_steering_fe_eafecf3a,node_agent_mmd_memory_vector_layer_memorylayer_check__64c86928,node_agent_mmd_orchestration_layer_orchestration_run__18817957,node_agent_mmd_llm_model_layer_llmlayer_run_harness_e_603fcfdc,node_agent_mmd_tool_layer_toollayer_run_harness_evals_e2ee24f1,validate_decision_request_2e5c325e,validate_goal_completion_audit_receipt_100d252c,node_agent_mmd_orchestration_layer_orchestration_vali_c01b04be,node_agent_mmd_llm_model_layer_llmlayer_validate_pack_2a12e1f4,node_agent_mmd_tool_layer_toollayer_validate_packaged_2855c827,node_agent_mmd_llm_model_layer_llmlayer_validate_prom_9880f764,node_agent_mmd_memory_vector_layer_memorylayer_valida_c52c4db8,validate_reviewer_coverage_251efee3,check_environment_core_2c16213f,node_agent_mmd_llm_model_layer_llmlayer_context_conte_ad2dfbd9,node_agent_mmd_memory_vector_layer_memorylayer_contex_78ceaaa9,node_agent_mmd_llm_model_layer_llmlayer_index_context_1041bd11,node_agent_mmd_memory_vector_layer_memorylayer_index__6f3402d0,prompt_gate_c5e9d207,node_agent_mmd_orchestration_layer_orchestration_reme_359fe98f,node_agent_mmd_llm_model_layer_llmlayer_remediate_run_9e3d4585,node_agent_mmd_tool_layer_toollayer_remediate_runner__c003b871,node_agent_mmd_llm_model_layer_llmlayer_search_search_66b9a911,node_agent_mmd_memory_vector_layer_memorylayer_search_ac35cb7e,node_agent_mmd_orchestration_layer_orchestration_cont_61b3b9c9,node_agent_mmd_llm_model_layer_llmlayer_context_healt_cfc0bfa8,node_agent_mmd_memory_vector_layer_memorylayer_contex_3204aa0e,node_agent_mmd_orchestration_layer_orchestration_comm_1f8cc24c,node_agent_mmd_llm_model_layer_llmlayer_command_specs_782af9fa,node_agent_mmd_memory_vector_layer_memorylayer_comman_111eb454,prompt_gate_command_spec_9a941482,node_agent_mmd_llm_model_layer_llmlayer_constants_con_c9bd3f6c,node_agent_mmd_memory_vector_layer_memorylayer_consta_702d3f46,node_agent_mmd_llm_model_layer_llmlayer_index_index_1_02e160ff,node_agent_mmd_memory_vector_layer_memorylayer_index__752bc61e,node_agent_mmd_llm_model_layer_llmlayer_indexer_index_4f4deef5,node_agent_mmd_memory_vector_layer_memorylayer_indexe_93e6d86f,node_agent_mmd_llm_model_layer_llmlayer_ollama_ollama_968b23fa,node_agent_mmd_memory_vector_layer_memorylayer_ollama_6d51be16,node_agent_mmd_llm_model_layer_llmlayer_sync_contract_9f3cc8c1,node_agent_mmd_memory_vector_layer_memorylayer_sync_c_e43418bc,north_star_validators_cfc926ce,hilt_boundary_9b36fb15,types_9_1db4641f,goal_completion_audit_receipt_validation_9d0f4891,goal_completion_audit_receipt_5e4939c3,index_4_013aa0e3,node_agent_mmd_tool_layer_toollayer_constants_constan_9d71b829,types_16_0fae1112,sensitive_text_7c11f760,pr_template_validator_rules_20a32d6b,node_agent_mmd_llm_model_layer_llmlayer_prompt_contex_9683b128,node_agent_mmd_tool_layer_toollayer_prompt_context_dr_801c86ff,node_agent_mmd_memory_vector_layer_memorylayer_prompt_84937d91,node_agent_mmd_orchestration_layer_orchestration_prom_77088997,node_agent_mmd_llm_model_layer_llmlayer_prompt_contex_e5066b88,node_agent_mmd_tool_layer_toollayer_prompt_context_dr_bd82da46,node_agent_mmd_memory_vector_layer_memorylayer_prompt_efd77624,node_agent_mmd_llm_model_layer_llmlayer_prompt_contex_6426acc2,node_agent_mmd_memory_vector_layer_memorylayer_prompt_55c0d605,cli_args_9_9c136878,cli_10_35dc8cbd,sections_4697ef32,types_26_a5814179,validator_6_3688adbf,cli_args_10_861cdd3f llmNode
   classDef toolNode fill:#555,color:#fff
@@ -582,7 +588,10 @@ graph LR
   ext_lodash_901466a5["lodash"] --> node_merger_3e167607_07e847e5
   ext_node_child_process_f62b7d19["node:child_process"] --> node_branch_enforcer_acb749cd_10e89517
   ext_node_child_process_f62b7d19["node:child_process"] --> node_changed_files_4c0102f6_bfd165bc
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_check_behavior_tests_2577f6be_58dc87b2
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_environment_core_2c16213f_a8a456d9
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_check_harness_audit_tracking_33e6a72e_eeff5b52
   ext_node_child_process_f62b7d19["node:child_process"] --> node_ci_migrate_core_7005b5af_7e295ae3
   ext_node_child_process_f62b7d19["node:child_process"] --> node_collector_0736fd5b_10bc1882
   ext_node_child_process_f62b7d19["node:child_process"] --> node_control_plane_core_db3b4cb2_27437a14
@@ -623,6 +632,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_version_coherence_69733bcb_00c8d5d9
   ext_node_crypto_c7dfc512["node:crypto"] --> node_analysis_f44e85c4_c68a7cb6
   ext_node_crypto_c7dfc512["node:crypto"] --> node_artifact_io_ba511748_6d1faad8
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_check_behavior_tests_2577f6be_58dc87b2
   ext_node_crypto_c7dfc512["node:crypto"] --> node_check_environment_core_2c16213f_a8a456d9
   ext_node_crypto_c7dfc512["node:crypto"] --> node_ci_migrate_signing_2d82ac3f_9e5e8974
   ext_node_crypto_c7dfc512["node:crypto"] --> node_control_plane_core_db3b4cb2_27437a14
@@ -680,9 +690,12 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_branch_protect_sync_570adb18_cc4751e4
   ext_node_fs_a15b7d96["node:fs"] --> node_check_20f65c28_48d25399
   ext_node_fs_a15b7d96["node:fs"] --> node_check_architecture_rules_6b7347fd_dc8f2cf3
+  ext_node_fs_a15b7d96["node:fs"] --> node_check_behavior_tests_2577f6be_58dc87b2
   ext_node_fs_a15b7d96["node:fs"] --> node_check_code_size_9c5efc3a_154124ae
   ext_node_fs_a15b7d96["node:fs"] --> node_check_codex_agent_roles_5bb2e89b_c1a9a472
   ext_node_fs_a15b7d96["node:fs"] --> node_check_environment_core_2c16213f_a8a456d9
+  ext_node_fs_a15b7d96["node:fs"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
+  ext_node_fs_a15b7d96["node:fs"] --> node_check_harness_audit_tracking_33e6a72e_eeff5b52
   ext_node_fs_a15b7d96["node:fs"] --> node_check_pr_closeout_truth_contract_f135348c_b39f6edc
   ext_node_fs_a15b7d96["node:fs"] --> node_check_public_api_docs_a9604f1b_f824853c
   ext_node_fs_a15b7d96["node:fs"] --> node_check_root_archive_links_bba945ff_9be55643
@@ -728,6 +741,8 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_env_b77349bf_420e4120
   ext_node_fs_a15b7d96["node:fs"] --> node_eval_seed_5699fd3e_2a74a5f6
   ext_node_fs_a15b7d96["node:fs"] --> node_evidence_verify_3b73c290_e82131d7
+  ext_node_fs_a15b7d96["node:fs"] --> node_expect_behavior_26b3f69f_5d713658
+  ext_node_fs_a15b7d96["node:fs"] --> node_feedback_loop_audit_1_c7be4304_08480aec
   ext_node_fs_a15b7d96["node:fs"] --> node_fleet_plan_7a1dd79c_1225abdb
   ext_node_fs_a15b7d96["node:fs"] --> node_frontmatter_metadata_gate_6901bbe4_282d02fe
   ext_node_fs_a15b7d96["node:fs"] --> node_gardener_9416a9df_87b06be0
@@ -872,6 +887,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_workflow_generate_2fc0af62_803bbfeb
   ext_node_fs_a15b7d96["node:fs"] --> node_workflow_generate_parser_ad69fefe_62542333
   ext_node_module_ca1b42af["node:module"] --> node_health_core_2b2fdada_341de678
+  ext_node_os_d93fe73a["node:os"] --> node_check_behavior_tests_2577f6be_58dc87b2
   ext_node_os_d93fe73a["node:os"] --> node_env_1_b6f6b232_dda31a93
   ext_node_os_d93fe73a["node:os"] --> node_github_e2e_2891a341_af6f1610
   ext_node_os_d93fe73a["node:os"] --> node_link_checker_d0fa555f_abfe9020
@@ -897,9 +913,11 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_branch_protect_sync_570adb18_cc4751e4
   ext_node_path_78811c13["node:path"] --> node_check_20f65c28_48d25399
   ext_node_path_78811c13["node:path"] --> node_check_architecture_rules_6b7347fd_dc8f2cf3
+  ext_node_path_78811c13["node:path"] --> node_check_behavior_tests_2577f6be_58dc87b2
   ext_node_path_78811c13["node:path"] --> node_check_code_size_9c5efc3a_154124ae
   ext_node_path_78811c13["node:path"] --> node_check_codex_agent_roles_5bb2e89b_c1a9a472
   ext_node_path_78811c13["node:path"] --> node_check_environment_core_2c16213f_a8a456d9
+  ext_node_path_78811c13["node:path"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
   ext_node_path_78811c13["node:path"] --> node_check_pr_closeout_truth_contract_f135348c_b39f6edc
   ext_node_path_78811c13["node:path"] --> node_check_public_api_docs_a9604f1b_f824853c
   ext_node_path_78811c13["node:path"] --> node_check_root_archive_links_bba945ff_9be55643
@@ -947,6 +965,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_env_1_b6f6b232_dda31a93
   ext_node_path_78811c13["node:path"] --> node_eval_seed_5699fd3e_2a74a5f6
   ext_node_path_78811c13["node:path"] --> node_evidence_verify_3b73c290_e82131d7
+  ext_node_path_78811c13["node:path"] --> node_feedback_loop_audit_1_c7be4304_08480aec
   ext_node_path_78811c13["node:path"] --> node_frontmatter_metadata_gate_6901bbe4_282d02fe
   ext_node_path_78811c13["node:path"] --> node_gardener_9416a9df_87b06be0
   ext_node_path_78811c13["node:path"] --> node_gate_c974e17b_07549baf
@@ -1121,10 +1140,14 @@ graph LR
   ext_semver_b4039641["semver"] --> node_upgrade_1_b277486e_4a06b7a8
   ext_semver_b4039641["semver"] --> node_validator_helpers_7b927667_8b691f8f
   ext_sqlite_vec_bae73cf2["sqlite-vec"] --> node_store_824d80d7_69038a3e
+  ext_tsx_a90e8eec["tsx"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
+  ext_tsx_a90e8eec["tsx"] --> node_check_harness_audit_tracking_33e6a72e_eeff5b52
+  ext_typescript_fb9da861["typescript"] --> node_check_behavior_tests_2577f6be_58dc87b2
   ext_typescript_fb9da861["typescript"] --> node_check_code_size_9c5efc3a_154124ae
   ext_typescript_fb9da861["typescript"] --> node_check_public_api_docs_a9604f1b_f824853c
   ext_typescript_fb9da861["typescript"] --> node_check_self_affirming_tests_7638e575_c6155698
   ext_typescript_fb9da861["typescript"] --> node_source_outline_1_54a631fa_8582fb07
+  ext_vitest_4c9cfa13["vitest"] --> node_expect_behavior_26b3f69f_5d713658
   ext_vitest_4c9cfa13["vitest"] --> node_vitest_e2e_config_4e2a61bc_3efa3f07
   style ext_better_sqlite3_d7ed8f1a fill:#f59e0b,color:#fff
   style ext_child_process_4845fa97 fill:#f59e0b,color:#fff
@@ -1151,6 +1174,7 @@ graph LR
   style ext_picomatch_2ebdbf14 fill:#f59e0b,color:#fff
   style ext_semver_b4039641 fill:#f59e0b,color:#fff
   style ext_sqlite_vec_bae73cf2 fill:#f59e0b,color:#fff
+  style ext_tsx_a90e8eec fill:#f59e0b,color:#fff
   style ext_typescript_fb9da861 fill:#f59e0b,color:#fff
   style ext_vitest_4c9cfa13 fill:#f59e0b,color:#fff
 
@@ -1226,10 +1250,10 @@ flowchart TD
   resource_tracker_d95b6649 --> vitest_e2e_config_4e2a61bc
   check_architecture_rules_6b7347fd["check-architecture-rules"]
   vitest_e2e_config_4e2a61bc --> check_architecture_rules_6b7347fd
-  check_code_size_9c5efc3a["check-code-size"]
-  check_architecture_rules_6b7347fd --> check_code_size_9c5efc3a
+  check_behavior_tests_2577f6be["check-behavior-tests"]
+  check_architecture_rules_6b7347fd --> check_behavior_tests_2577f6be
   End(["End"])
-  check_code_size_9c5efc3a --> End
+  check_behavior_tests_2577f6be --> End
 
 ```
 
@@ -1471,6 +1495,8 @@ flowchart LR
 ```mermaid
 flowchart TD
   Untrusted["Untrusted input"]
+  check_harness_audit_tracking_33e6a72e["check-harness-audit-tracking"]
+  Untrusted --> check_harness_audit_tracking_33e6a72e
   validate_audit_references_811f872a["validate-audit-references"]
   Untrusted --> validate_audit_references_811f872a
   validate_goal_completion_audit_receipt_100d252c["validate-goal-completion-audit-receipt"]
@@ -1479,6 +1505,8 @@ flowchart TD
   Untrusted --> audit_b81f37a0
   evidence_verify_3b73c290["evidence-verify"]
   Untrusted --> evidence_verify_3b73c290
+  feedback_loop_audit_0ac0ec9d["feedback-loop-audit"]
+  Untrusted --> feedback_loop_audit_0ac0ec9d
   org_audit_d739e44b["org-audit"]
   Untrusted --> org_audit_d739e44b
   policy_gate_213f7313["policy-gate"]
@@ -1495,6 +1523,8 @@ flowchart TD
   Untrusted --> audit_command_spec_5acf0149
   evidence_verify_command_spec_e1cbfea2["evidence-verify-command-spec"]
   Untrusted --> evidence_verify_command_spec_e1cbfea2
+  feedback_loop_audit_command_spec_27e599c4["feedback-loop-audit-command-spec"]
+  Untrusted --> feedback_loop_audit_command_spec_27e599c4
   org_audit_command_spec_1a570341["org-audit-command-spec"]
   Untrusted --> org_audit_command_spec_1a570341
   policy_gate_command_spec_71e8726a["policy-gate-command-spec"]
@@ -1521,6 +1551,10 @@ flowchart TD
   Untrusted --> judge_pm_audit_ccd20b35
   policy_823412d1["policy"]
   Untrusted --> policy_823412d1
+  feedback_loop_audit_cli_fd8f38dc["feedback-loop-audit-cli"]
+  Untrusted --> feedback_loop_audit_cli_fd8f38dc
+  feedback_loop_audit_1_c7be4304["feedback-loop-audit"]
+  Untrusted --> feedback_loop_audit_1_c7be4304
   scaffold_security_scan_template_55bc7465["scaffold-security-scan-template"]
   Untrusted --> scaffold_security_scan_template_55bc7465
   normalise_policy_gate_90229693["normalise-policy-gate"]
@@ -1541,18 +1575,8 @@ flowchart TD
   Untrusted --> policy_coverage_dab8febe
   policy_digest_ca7acf0a["policy-digest"]
   Untrusted --> policy_digest_ca7acf0a
-  policy_1_fc4198db["policy"]
-  Untrusted --> policy_1_fc4198db
-  issue_key_305bf3db["issue-key"]
-  Untrusted --> issue_key_305bf3db
-  hash_d04b98f4["hash"]
-  Untrusted --> hash_d04b98f4
-  verify_work_1_cd8e7ec3["verify-work"]
-  Untrusted --> verify_work_1_cd8e7ec3
-  args_1_15220d9b["args"]
-  Untrusted --> args_1_15220d9b
   classDef securityNode fill:#dc2626,color:#fff
-  class validate_audit_references_811f872a,validate_goal_completion_audit_receipt_100d252c,audit_b81f37a0,evidence_verify_3b73c290,org_audit_d739e44b,policy_gate_213f7313,tooling_audit_core_328d6a41,tooling_audit_8a8239ff,verify_coderabbit_490b4e71,verify_work_df70ecac,audit_command_spec_5acf0149,evidence_verify_command_spec_e1cbfea2,org_audit_command_spec_1a570341,policy_gate_command_spec_71e8726a,tooling_audit_command_spec_e0e57863,verify_coderabbit_command_spec_68cc9ec5,verify_work_command_spec_d6c94ac8,context_compact_policy_3dcaf95d,policy_validators_core_714a3fe7,policy_validators_6682e192,he_gate_trust_policy_b1126dfd,goal_completion_audit_receipt_validation_9d0f4891,goal_completion_audit_receipt_5e4939c3,judge_pm_audit_ccd20b35,policy_823412d1,scaffold_security_scan_template_55bc7465,normalise_policy_gate_90229693,cardinality_ebef8aff,diff_budget_1_9f85eb1c,policy_chain_0c92e343,required_checks_46396214,risk_tier_1_96b6ff91,tooling_baseline_50ab2eeb,policy_coverage_dab8febe,policy_digest_ca7acf0a,policy_1_fc4198db,issue_key_305bf3db,hash_d04b98f4,verify_work_1_cd8e7ec3,args_1_15220d9b securityNode
+  class check_harness_audit_tracking_33e6a72e,validate_audit_references_811f872a,validate_goal_completion_audit_receipt_100d252c,audit_b81f37a0,evidence_verify_3b73c290,feedback_loop_audit_0ac0ec9d,org_audit_d739e44b,policy_gate_213f7313,tooling_audit_core_328d6a41,tooling_audit_8a8239ff,verify_coderabbit_490b4e71,verify_work_df70ecac,audit_command_spec_5acf0149,evidence_verify_command_spec_e1cbfea2,feedback_loop_audit_command_spec_27e599c4,org_audit_command_spec_1a570341,policy_gate_command_spec_71e8726a,tooling_audit_command_spec_e0e57863,verify_coderabbit_command_spec_68cc9ec5,verify_work_command_spec_d6c94ac8,context_compact_policy_3dcaf95d,policy_validators_core_714a3fe7,policy_validators_6682e192,he_gate_trust_policy_b1126dfd,goal_completion_audit_receipt_validation_9d0f4891,goal_completion_audit_receipt_5e4939c3,judge_pm_audit_ccd20b35,policy_823412d1,feedback_loop_audit_cli_fd8f38dc,feedback_loop_audit_1_c7be4304,scaffold_security_scan_template_55bc7465,normalise_policy_gate_90229693,cardinality_ebef8aff,diff_budget_1_9f85eb1c,policy_chain_0c92e343,required_checks_46396214,risk_tier_1_96b6ff91,tooling_baseline_50ab2eeb,policy_coverage_dab8febe,policy_digest_ca7acf0a securityNode
 
 ```
 
@@ -1624,6 +1648,8 @@ flowchart LR
   User --> pattern_scope_61ff946d
   pr_closeout_env_9bfcd9ef["pr-closeout-env"]
   User --> pr_closeout_env_9bfcd9ef
+  live_247610f4["live"]
+  User --> live_247610f4
   review_gate_core_4c8001f9["review-gate-core"]
   User --> review_gate_core_4c8001f9
   symphony_check_e97f2ea0["symphony-check"]
@@ -1644,9 +1670,8 @@ flowchart LR
   User --> types_2_d9bc6e7a
   resolver_439c3635["resolver"]
   User --> resolver_439c3635
-  ownership_gate_2e194d13["ownership-gate"]
-  User --> ownership_gate_2e194d13
   classDef userNode fill:#16a34a,color:#fff
-  class github_e2e_2891a341,linear_e2e_decf3708,run_e2e_39efe696,env_b77349bf,check_public_api_docs_a9604f1b,check_steering_feedback_contract_80134459,run_harness_evals_77704768,validate_decision_request_2e5c325e,branch_protect_core_a8feb0fd,check_environment_core_2c16213f,ci_migrate_core_7005b5af,decision_request_118a770d,evidence_verify_3b73c290,linear_prepare_0c613ba6,linear_sync_a2fa2bf7,linear_triage_core_7cbca73e,linear_workflow_core_0e19cff4,pattern_scope_61ff946d,pr_closeout_env_9bfcd9ef,review_gate_core_4c8001f9,symphony_check_e97f2ea0,ui_loop_internal_f2eb8892,ui_loop_shared_8c83b841,ui_loop_tooling_12b2d2c7,ui_loop_11660889,verify_coderabbit_490b4e71,context_health_1_ceb11829,types_2_d9bc6e7a,resolver_439c3635,ownership_gate_2e194d13 userNode
+  class github_e2e_2891a341,linear_e2e_decf3708,run_e2e_39efe696,env_b77349bf,check_public_api_docs_a9604f1b,check_steering_feedback_contract_80134459,run_harness_evals_77704768,validate_decision_request_2e5c325e,branch_protect_core_a8feb0fd,check_environment_core_2c16213f,ci_migrate_core_7005b5af,decision_request_118a770d,evidence_verify_3b73c290,linear_prepare_0c613ba6,linear_sync_a2fa2bf7,linear_triage_core_7cbca73e,linear_workflow_core_0e19cff4,pattern_scope_61ff946d,pr_closeout_env_9bfcd9ef,live_247610f4,review_gate_core_4c8001f9,symphony_check_e97f2ea0,ui_loop_internal_f2eb8892,ui_loop_shared_8c83b841,ui_loop_tooling_12b2d2c7,ui_loop_11660889,verify_coderabbit_490b4e71,context_health_1_ceb11829,types_2_d9bc6e7a,resolver_439c3635 userNode
 
 ```
+

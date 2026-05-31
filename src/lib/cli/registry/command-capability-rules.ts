@@ -75,6 +75,7 @@ export const COMMAND_CATEGORY_BY_NAME: Partial<
 	"drift-gate": "drift-search-evidence",
 	"org-audit": "drift-search-evidence",
 	"tooling-audit": "drift-search-evidence",
+	"feedback-loop-audit": "drift-search-evidence",
 	gardener: "drift-search-evidence",
 	"context-health": "drift-search-evidence",
 	learnings: "drift-search-evidence",
@@ -128,6 +129,7 @@ export const EXPECTED_ARTIFACTS_BY_NAME: Partial<Record<string, string[]>> = {
 	"review-context": ["artifacts/review-context/pr-context.json"],
 	"pattern-scope": ["artifacts/pattern-scope/pattern-scope.json"],
 	"pr-closeout": ["artifacts/pr-closeout/pr-closeout.json"],
+	"feedback-loop-audit": [".harness/feedback-loops/index.json"],
 };
 
 export const RETRYABILITY_BY_NAME: Partial<
@@ -272,6 +274,7 @@ export const ORCHESTRATED_BY_BY_NAME: Partial<
 	"runtime-budget": ["next", "pr-ready"],
 	"linear-gate": ["pr-ready"],
 	"north-star-feedback": ["learn"],
+	"feedback-loop-audit": ["learn"],
 	learnings: ["learn"],
 };
 
@@ -303,6 +306,7 @@ export const AGENT_MODE_BY_NAME: Partial<Record<string, CommandAgentMode>> = {
 	remediate: "repair",
 	learnings: "learn",
 	"north-star-feedback": "learn",
+	"feedback-loop-audit": "learn",
 };
 
 export const COMMAND_VISIBILITY_BY_NAME: Partial<

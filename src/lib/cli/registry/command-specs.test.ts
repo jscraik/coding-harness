@@ -114,6 +114,7 @@ describe("COMMAND_SPECS structural integrity", () => {
 			"workflow:generate",
 			"org-audit",
 			"tooling-audit",
+			"feedback-loop-audit",
 			"preset",
 			"check",
 			"doctor",

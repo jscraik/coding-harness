@@ -871,6 +871,15 @@ describe("getRegistryCommandCapabilities", () => {
 			]);
 		});
 
+		it("feedback-loop-audit declares the feedback-loop index artifact", () => {
+			const cap = getRegistryCommandCapabilities().find(
+				(c) => c.name === "feedback-loop-audit",
+			);
+			expect(cap?.expectedArtifacts).toEqual([
+				".harness/feedback-loops/index.json",
+			]);
+		});
+
 		it("policy-gate has empty expectedArtifacts", () => {
 			const cap = getRegistryCommandCapabilities().find(
 				(c) => c.name === "policy-gate",

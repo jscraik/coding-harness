@@ -11,6 +11,7 @@ import type {
 	PrCloseoutHarnessGateSummary,
 	PrCloseoutInput,
 	PrCloseoutPullRequestInput,
+	PrCloseoutReviewArtifactInput,
 	PrCloseoutReviewThreadsInput,
 	PrCloseoutToolInput,
 } from "./types.js";
@@ -79,6 +80,24 @@ export function collectWorktreeBlockers(
 			classification: "introduced",
 			kind: "state",
 			reason: "Branch is behind its base branch.",
+			fixableByCodex: true,
+		});
+	}
+	if (input.branch?.matchesPullRequestHead === false) {
+		pushBlocker(blockers, {
+			surface: "branch",
+			classification: "introduced",
+			kind: "state",
+			reason: "Local HEAD does not match the pull request head.",
+			fixableByCodex: true,
+		});
+	}
+	if (input.branch?.matchesPullRequestHead === null) {
+		pushBlocker(blockers, {
+			surface: "branch",
+			classification: "unknown",
+			kind: "state",
+			reason: "Unable to verify local HEAD against the pull request head.",
 			fixableByCodex: true,
 		});
 	}
@@ -196,6 +215,24 @@ export function collectReviewBlockers(
 			classification: "introduced",
 			reason: "Pull request review decision is CHANGES_REQUESTED.",
 			fixableByCodex: true,
+		});
+	}
+}
+
+/** Add blockers for expected independent-review artifacts that are unavailable. */
+export function collectReviewArtifactBlockers(
+	reviewArtifacts: readonly PrCloseoutReviewArtifactInput[],
+	blockers: PrCloseoutBlocker[],
+): void {
+	for (const artifact of reviewArtifacts) {
+		if (artifact.status === "present") continue;
+		pushBlocker(blockers, {
+			surface: "review_artifact",
+			classification: "unknown",
+			kind: "state",
+			reason: `Review artifact ${artifact.path} is ${artifact.status}.`,
+			fixableByCodex: artifact.status !== "ignored_runtime_path",
+			ref: artifact.evidenceRef ?? artifact.path,
 		});
 	}
 }
@@ -328,6 +365,46 @@ export function collectHarnessGateBlockers(
 			ref: "schema:coding-harness-closeout-gates/v1",
 		});
 	}
+}
+
+/** Add blockers for release-readiness impacts that require proof before closeout. */
+export function collectReleaseReadinessBlockers(
+	input: PrCloseoutInput,
+	blockers: PrCloseoutBlocker[],
+): void {
+	const impact = input.releaseReadinessImpact;
+	if (impact === undefined || impact === "none") return;
+	if (impact === "release_blocker") {
+		pushBlocker(blockers, {
+			surface: "release_readiness",
+			classification: "needs_jamie_decision",
+			kind: "state",
+			reason: "Release-readiness impact is marked as a release blocker.",
+			fixableByCodex: false,
+			ref: "input:releaseReadinessImpact:release_blocker",
+		});
+		return;
+	}
+	if (impact === "governed_change") {
+		pushBlocker(blockers, {
+			surface: "release_readiness",
+			classification: "unknown",
+			kind: "state",
+			reason:
+				"Governed change requires release-readiness evidence before closeout.",
+			fixableByCodex: true,
+			ref: "input:releaseReadinessImpact:governed_change",
+		});
+		return;
+	}
+	pushBlocker(blockers, {
+		surface: "release_readiness",
+		classification: "unknown",
+		kind: "state",
+		reason: "Release-readiness impact must be classified before closeout.",
+		fixableByCodex: false,
+		ref: "input:releaseReadinessImpact:unknown",
+	});
 }
 
 /** Add blockers for required closeout tools that are observed as blocked. */

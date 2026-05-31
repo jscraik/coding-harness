@@ -10,6 +10,7 @@ import {
 	rootHygieneGitEnv,
 	rootHygieneReceiptRef,
 } from "../root-hygiene/index.js";
+import { expectBehavior } from "../testing/expect-behavior.js";
 import type { RootHygieneReport } from "../root-hygiene/types.js";
 import { composeDeliveryTruth as composeDeliveryTruthBase } from "./composition.js";
 import type {
@@ -33,6 +34,12 @@ describe("composeDeliveryTruth", () => {
 			evidence: [supportingEvidence({ source: "root_hygiene" })],
 		});
 
+		expectBehavior({
+			given: "current root-hygiene claim-support evidence",
+			should: "pass the root_surface_tidy delivery-truth claim",
+			actual: verdict.status,
+			expected: "pass",
+		});
 		expect(verdict).toMatchObject({
 			schemaVersion: "delivery-truth/v1",
 			claim: "root_surface_tidy",

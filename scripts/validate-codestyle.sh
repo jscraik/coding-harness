@@ -77,6 +77,27 @@ run_required_script() {
 	run_script "$script_name"
 }
 
+is_source_harness_repo() {
+	[[ -f "$repo_root/package.json" ]] || return 1
+	jq -e '.name == "@brainwav/coding-harness"' "$repo_root/package.json" >/dev/null 2>&1
+}
+
+run_source_repo_script() {
+	local script_name="$1"
+
+	if has_package_script "$script_name"; then
+		run_script "$script_name"
+		return 0
+	fi
+
+	if is_source_harness_repo || [[ "$strict_mode" -eq 1 ]]; then
+		echo "[validate-codestyle] missing source repo package script: $script_name" >&2
+		exit 1
+	fi
+
+	echo "[validate-codestyle] skip $script_name: source-repo script not defined"
+}
+
 run_optional_script() {
 	local script_name="$1"
 
@@ -170,6 +191,9 @@ run_optional_script "workflow:validate"
 run_required_script "typecheck"
 run_required_script "quality:docstrings"
 run_required_script "quality:size"
+run_source_repo_script "quality:behavior-tests"
+run_source_repo_script "quality:git-env-sanitizer"
+run_source_repo_script "harness:audit-tracking"
 
 if [[ "$changed_only" -eq 1 ]]; then
 	if has_package_script "test:related"; then

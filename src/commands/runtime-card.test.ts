@@ -16,6 +16,7 @@ import { HE_PHASE_EXIT_SCHEMA_VERSION } from "../lib/decision/he-phase-exit.js";
 import { loadRunRecordBundle } from "../lib/contract/run-records.js";
 import { validateRuntimeCardHandoff } from "../lib/runtime/runtime-card-handoff.js";
 import { validateRuntimeEvidenceBundle } from "../lib/runtime/runtime-evidence-bundle.js";
+import { expectBehavior } from "../lib/testing/expect-behavior.js";
 
 const CODE = String.fromCharCode(96);
 const GIT_ENV_KEYS = [
@@ -30,6 +31,12 @@ function gitFixtureEnvironment(): NodeJS.ProcessEnv {
 	for (const key of GIT_ENV_KEYS) {
 		delete env[key];
 	}
+	expectBehavior({
+		given: "a git fixture environment for runtime-card subprocesses",
+		should: "remove caller-scoped git worktree state",
+		actual: GIT_ENV_KEYS.every((key) => env[key] === undefined),
+		expected: true,
+	});
 	return env;
 }
 

@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { constants as osConstants } from "node:os";
 import { join, resolve } from "node:path";
+import { sanitizeGitEnvironment } from "../git/safe-env.js";
 import { sanitizeError } from "../input/sanitize.js";
 import { buildVerifyWorkArgs } from "./args.js";
 import { EXIT_CODES, type VerifyWorkCliOptions } from "./types.js";
@@ -10,9 +11,7 @@ function buildVerifyWorkWrapperEnv(
 	environment: NodeJS.ProcessEnv = process.env,
 ): NodeJS.ProcessEnv {
 	return {
-		...Object.fromEntries(
-			Object.entries(environment).filter(([key]) => !key.startsWith("GIT_")),
-		),
+		...sanitizeGitEnvironment(environment, { policy: "strict" }),
 		HARNESS_VERIFY_WORK_NO_DELEGATE: "1",
 	};
 }

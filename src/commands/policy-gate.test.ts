@@ -8,6 +8,7 @@ import {
 	vi,
 } from "vitest";
 import { EXIT_CODES, runPolicyGate, runPolicyGateCLI } from "./policy-gate.js";
+import { expectBehavior } from "../lib/testing/expect-behavior.js";
 
 describe("runPolicyGate", () => {
 	const contractPath = "test-fixtures/contract.json";
@@ -22,7 +23,12 @@ describe("runPolicyGate", () => {
 			});
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.passed).toBe(true);
+				expectBehavior({
+					given: "a medium-risk file with max-tier set to medium",
+					should: "pass without blocking the policy gate",
+					actual: result.output.passed,
+					expected: true,
+				});
 				expect(result.output.tier).toBe("medium");
 				expect(result.output.action).toBe("warn");
 				expect(result.output.verdict).toBe("pass");

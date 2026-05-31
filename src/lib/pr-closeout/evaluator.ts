@@ -4,7 +4,9 @@ import {
 	collectCheckBlockers,
 	collectHarnessGateBlockers,
 	collectPullRequestBlockers,
+	collectReviewArtifactBlockers,
 	collectReviewBlockers,
+	collectReleaseReadinessBlockers,
 	collectToolBlockers,
 	collectTraceabilityBlocker,
 	collectWorktreeBlockers,
@@ -20,6 +22,7 @@ import {
 	buildDeliveryTruthSummary,
 	collectDeliveryTruthBlockers,
 } from "./delivery-truth.js";
+import { buildLifecycleSnapshot } from "./lifecycle-snapshot.js";
 import { buildTraceabilitySummary, summarizeChecks } from "./report-helpers.js";
 import { buildPrCloseoutRecoveryState } from "./recovery.js";
 import { deriveNextAction } from "./status.js";
@@ -63,11 +66,13 @@ function buildPrCloseoutReportValue(
 	collectPullRequestBlockers(pr, blockers);
 	collectCheckBlockers(checks, blockers);
 	collectReviewBlockers(pr, reviewThreads, blockers);
+	collectReviewArtifactBlockers(input.reviewArtifacts ?? [], blockers);
 	collectTraceabilityBlocker(traceability.complete, blockers);
 	collectHarnessGateBlockers(harnessGates, blockers);
 	collectAssuranceBlockers(input, blockers);
 	collectRuntimeEvidenceBlockers(input, blockers);
 	collectDeliveryTruthBlockers(deliveryTruth, blockers);
+	collectReleaseReadinessBlockers(input, blockers);
 	collectToolBlockers(tools, blockers);
 	collectClaimBlockers(claims, blockers);
 
@@ -79,6 +84,15 @@ function buildPrCloseoutReportValue(
 		pr.number,
 		generatedAt,
 	);
+	const lifecycleSnapshot = buildLifecycleSnapshot({
+		input,
+		claims,
+		blockers,
+		deliveryTruth,
+		generatedAt,
+		reportStatus: decision.status,
+		nextAction: decision.nextAction,
+	});
 	return {
 		schemaVersion: PR_CLOSEOUT_SCHEMA_VERSION,
 		generatedAt,
@@ -105,6 +119,7 @@ function buildPrCloseoutReportValue(
 		assurance: buildAssuranceSummary(input),
 		runtimeEvidence: buildRuntimeEvidenceSummary(input),
 		deliveryTruth,
+		lifecycleSnapshot,
 		tools,
 		dirtyPathsExcluded,
 		attemptLedger,

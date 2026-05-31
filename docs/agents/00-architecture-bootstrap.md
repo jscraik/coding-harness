@@ -302,6 +302,13 @@ For PR closeout evidence changes, treat `pr-closeout/v1` and
 Refresh `AI/context/diagram-context.md` and keep this guide synchronized with
 `AGENTS.md` and `docs/agents/07b-agent-governance.md` when docs-gate reports
 the architecture-context surface.
+Delivery lifecycle closeout snapshots belong inside the existing
+`src/lib/pr-closeout/` boundary. Keep lifecycle lane summaries, worktree role
+classification, review artifact status, Linear mutation availability, release
+readiness impact, and queue/handoff/approval blockers read-only inside
+`pr-closeout/v1`; they describe delivery truth for handoff and must not perform
+external mutations, resolve review threads, update Linear, or prove merge
+readiness without the matching fresh external-state evidence.
 Structured closeout success must remain claim/evidence driven: model-written
 summaries may point at verifier output, but current required evidence status,
 source, freshness, head SHA, blocker class, and verification timestamp are the

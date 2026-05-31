@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { EvidenceReceipt } from "../evidence/evidence-receipt.js";
+import { expectBehavior } from "../testing/expect-behavior.js";
 import {
 	evaluateExternalStateClaimSupport,
 	validateExternalStateSnapshot,
@@ -25,6 +26,18 @@ describe("external-state-snapshot/v1 validation", () => {
 		const validation = validateExternalStateSnapshot(snapshot);
 		const claimSupport = evaluateExternalStateClaimSupport(snapshot, HEAD_SHA);
 
+		expectBehavior({
+			given: "a current external-state snapshot with fetch proof",
+			should: "validate and support the matching head SHA claim",
+			actual: {
+				valid: validation.valid,
+				canSupportClaim: claimSupport.canSupportClaim,
+			},
+			expected: {
+				valid: true,
+				canSupportClaim: true,
+			},
+		});
 		expect(validation).toEqual({ valid: true, errors: [] });
 		expect(claimSupport).toEqual({ canSupportClaim: true, blockers: [] });
 	});
