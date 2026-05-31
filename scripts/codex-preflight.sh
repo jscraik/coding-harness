@@ -84,9 +84,10 @@ Examples:
   ./scripts/codex-preflight.sh --repo-fragment local-memory
 
 Legacy compatibility:
-  ./scripts/codex-preflight.sh <repo-fragment> [bins-csv] [paths-csv]
+  ./scripts/codex-preflight.sh <repo-fragment> [bins-csv] [paths-csv] [off|optional|required]
+  ./scripts/codex-preflight.sh <auto|js|py|rust> <off|optional|required>
   This preserves the older positional interface used by parent-repo checks and
-  runs with Local Memory disabled unless the new flag-based mode is used.
+  defaults to required Local Memory preflight unless optional/off is explicit.
 USAGE
 }
 
@@ -628,6 +629,37 @@ run_local_memory_preflight_via_harness() {
 preflight_local_memory_gold() {
 	local helper_status=0
 
+	if [[ -n "${CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS:-}" ]]; then
+		if [[ "${CODEX_PREFLIGHT_ENABLE_TEST_OVERRIDES:-}" != '1' ]]; then
+			log_err 'CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS requires CODEX_PREFLIGHT_ENABLE_TEST_OVERRIDES=1'
+			return 1
+		fi
+		if [[ -n "${CI:-}" ]]; then
+			log_err 'CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS is not allowed in CI'
+			return 1
+		fi
+	fi
+
+	case "${CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS:-}" in
+		pass)
+			log_ok 'local-memory preflight forced pass for deterministic validation'
+			return 0
+			;;
+		unavailable)
+			log_err 'local-memory preflight forced unavailable: blocker=local_memory_unavailable'
+			return 1
+			;;
+		unclassified)
+			log_err 'local-memory preflight forced unclassified: blocker=local_memory_unclassified'
+			return 1
+			;;
+		'') ;;
+		*)
+			log_err "invalid CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS: ${CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS}"
+			return 1
+			;;
+	esac
+
 	run_local_memory_preflight_via_harness
 	helper_status=$?
 	if [[ "${helper_status}" -eq 0 ]]; then
@@ -737,16 +769,21 @@ main() {
 	local paths_csv=''
 
 	if (( $# > 0 )) && [[ "${1}" != --* ]] && [[ "${1}" != '-h' ]]; then
-		if (( $# > 3 )); then
-			log_err "legacy positional mode accepts at most 3 arguments"
+		if (( $# == 2 )) && [[ "${1}" =~ ^(auto|js|py|rust)$ ]] && [[ "${2}" =~ ^(off|optional|required)$ ]]; then
+			stack="${1}"
+			local_memory_mode="${2}"
+			set --
+		elif (( $# <= 4 )); then
+			expected_repo="${1:-}"
+			bins_csv="${2:-}"
+			paths_csv="${3:-}"
+			local_memory_mode="${4:-required}"
+			set --
+		else
+			log_err "legacy positional mode accepts at most 4 arguments"
 			usage >&2
 			exit 2
 		fi
-		expected_repo="${1:-}"
-		bins_csv="${2:-}"
-		paths_csv="${3:-}"
-		local_memory_mode='off'
-		set --
 	fi
 
 	while (( $# > 0 )); do

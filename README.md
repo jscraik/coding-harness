@@ -330,6 +330,11 @@ surface even if contributors use different shells or global setups.
 Use `bash scripts/verify-work.sh` as the canonical repo-local verification
 entrypoint. It runs repo-local preflight in `required` Local Memory mode and
 then executes the full verification bundle.
+Direct `scripts/codex-preflight.sh` usage follows the same default: use
+`bash scripts/codex-preflight.sh --stack auto --mode required` for the canonical
+path, and treat legacy positional invocations as compatibility-only aliases that
+default to required Local Memory mode unless `off` or `optional` is supplied
+explicitly.
 The verification and worktree bootstrap paths also run
 `scripts/check-git-common-config.sh`, which blocks shared non-bare `.git/config`
 from pinning `core.worktree`; worktree-local values must live in per-worktree

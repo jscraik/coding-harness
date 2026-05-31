@@ -1,0 +1,124 @@
+{
+	"schemaVersion": "intent-packet/v1",
+	"id": "codex-runtime-evidence-verifier-cockpit-pu-043-gap-001-local-memory-preflight",
+	"goal": "JSC-363 Codex Runtime Evidence Verifier Cockpit",
+	"lifecycleUnit": "PU-043-gap-001-local-memory-preflight",
+	"auditGapIds": ["GAP-001"],
+	"intent": "Remove the required-mode preflight downgrade that lets legacy positional invocation skip Local Memory or Project Brain readiness while still looking successful.",
+	"problemSignal": {
+		"source": ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+		"summary": "A legacy positional preflight path can bypass the CLI-backed Local Memory lane even though Local Memory is part of the required operating surface.",
+		"failureMode": "An agent can begin multi-step work with stale or unavailable Local Memory or Project Brain evidence while required preflight appears green."
+	},
+	"scope": {
+		"in": [
+			"Required-mode codex-preflight Local Memory and Project Brain readiness routing",
+			"Legacy positional preflight compatibility path behavior",
+			"Fixture or script regression proving the old bypass fails",
+			"Focused documentation for required versus optional memory preflight behavior"
+		],
+		"out": [
+			"New memory database format or migration",
+			"New external Local Memory service",
+			"Broad Project Brain feature expansion",
+			"Session-context traversal command work from GAP-004",
+			"Final JSC-363 goal completion or Judge/PM readiness"
+		]
+	},
+	"architecture": {
+		"deepModule": "src/lib/preflight/",
+		"scriptSurface": "scripts/codex-preflight.sh plus src/templates/codex-preflight.sh",
+		"publicSurface": "harness local-memory-preflight remains the CLI-backed required memory readiness lane used by codex-preflight required mode.",
+		"separation": "The slice verifies memory readiness and bootstrap safety only; it does not claim runtime evidence ingestion, delivery truth, review state, external state, merge readiness, or tracker completion."
+	},
+	"contractRequirements": {
+		"singleReadinessAuthority": [
+			"The required-mode decision source is the local-memory-preflight CLI-backed lane. Adjacent memory-gate or shell fallback behavior must not independently classify required readiness differently.",
+			"If a shell fallback remains necessary for unavailable helper runners, required mode must still expose the same pass/fail semantics and named blocker classes as the CLI-backed lane."
+		],
+		"requiredMode": [
+			"Required preflight must invoke the same CLI-backed Local Memory lane regardless of flag-style or legacy positional invocation.",
+			"Required preflight must fail closed when Local Memory or Project Brain readiness is unavailable, stale, blocked, or cannot be classified.",
+			"Required preflight output must make optional-mode downgrade explicit when an operator intentionally chooses optional mode.",
+			"Every non-healthy required-mode classification must return a non-zero shell exit code and include a named blocker such as local_memory_unavailable, project_brain_missing, or local_memory_unclassified."
+		],
+		"legacyInvocation": [
+			"Legacy positional arguments must not silently disable Local Memory checks.",
+			"If compatibility requires preserving a legacy shape, it must translate into the current required or optional mode explicitly.",
+			"All accepted legacy invocation shapes must normalize to the same executor path as flag-style mode before Local Memory dispatch."
+		],
+		"requiredInvocationMatrix": [
+			"bash scripts/codex-preflight.sh --stack auto --mode required",
+			"bash scripts/codex-preflight.sh --stack js --mode required",
+			"bash scripts/codex-preflight.sh auto required",
+			"bash scripts/codex-preflight.sh coding-harness git,bash CODESTYLE.md required",
+			"bash scripts/codex-preflight.sh coding-harness git,bash CODESTYLE.md"
+		],
+		"followUpOnly": "harness memory status --json and harness memory validate --json remain migration targets from the audit, not part of this slice unless already present and wired by existing code.",
+		"notProofOf": [
+			"runtime-card freshness",
+			"delivery-truth claims",
+			"review-state claims",
+			"external-state claims",
+			"merge-readiness",
+			"Judge/PM readiness",
+			"goal completion"
+		]
+	},
+	"acceptanceCriteria": [
+		"harness local-memory-preflight --json remains callable and returns a machine-readable readiness packet.",
+		"bash scripts/codex-preflight.sh --stack auto --mode required delegates to the CLI-backed Local Memory lane or fails closed with a named blocker.",
+		"A table-driven regression covers every accepted legacy required-mode invocation in requiredInvocationMatrix and proves each path cannot skip Local Memory.",
+		"At least one forced-failure fixture proves required-mode legacy and flag-style invocations both return non-zero when the Local Memory lane is unavailable.",
+		"Optional mode remains available but is visibly optional and cannot be mistaken for required-mode success.",
+		"Docs or generated templates that describe preflight behavior are synchronized with the implementation."
+	],
+	"validationPlan": [
+		"pnpm vitest run src/commands/local-memory-preflight.test.ts src/dev/run-local-memory-preflight.test.ts src/lib/preflight/validator.test.ts",
+		"pnpm vitest run src/commands/preflight-gate.test.ts src/lib/cli/registry/command-specs.test.ts",
+		"bash scripts/codex-preflight.sh --stack auto --mode required",
+		"bash scripts/codex-preflight.sh auto required",
+		"CODEX_PREFLIGHT_ENABLE_TEST_OVERRIDES=1 CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS=unavailable bash scripts/codex-preflight.sh auto required",
+		"pnpm run codex-preflight:check",
+		"bash scripts/validate-codestyle.sh --fast"
+	],
+	"intentReviewResolution": {
+		"status": "updated_after_review",
+		"reviewArtifacts": [
+			"artifacts/reviews/pu-043-gap-001-local-memory-preflight-intent-adversarial.md",
+			"artifacts/reviews/pu-043-gap-001-local-memory-preflight-intent-agent-native.md",
+			"artifacts/reviews/pu-043-gap-001-local-memory-preflight-intent-best-practices.md"
+		],
+		"changesApplied": [
+			"Added a required invocation matrix so implementation cannot patch only one legacy alias.",
+			"Added explicit required-mode exit-code and blocker-class semantics.",
+			"Constrained memory status/validate language to follow-up-only so GAP-001 remains one slice.",
+			"Required forced-failure parity evidence for flag-style and legacy invocation paths.",
+			"Made the single readiness authority explicit to avoid split-brain local-memory-preflight versus memory-gate decisions."
+		]
+	},
+	"reviewRequirements": [
+		"Review intent before implementation.",
+		"Run improve-codebase-architecture, simplify, unslopify, he-code-review, and testing lenses after implementation.",
+		"Use adversarial-reviewer, agent-native-reviewer, and best-practices-researcher before marking the slice done."
+	],
+	"documentationImpact": {
+		"expected": [
+			"docs/agents/02-tooling-policy.md if preflight invocation semantics change",
+			"docs/agents/03-local-memory.md if Local Memory readiness wording changes",
+			"AGENTS.md only if required operating policy changes",
+			"ARCHITECTURE.md only if module boundaries change"
+		],
+		"notExpected": [
+			"README workflow rewrite",
+			"New Project Brain user guide",
+			"Runtime-card or delivery-truth docs"
+		]
+	},
+	"circleciCredentialHandling": {
+		"approvedEnvSurface": "~/.codex/.env",
+		"rule": "Use this env surface for CircleCI API access when CircleCI logs or pipeline details are required; do not print values.",
+		"fifoSafety": "If the path is a FIFO with no active writer, classify direct CircleCI API access as credential_surface_fifo_no_writer instead of sourcing it blindly."
+	},
+	"status": "intent_ready_for_review"
+}

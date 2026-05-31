@@ -182,6 +182,7 @@ Notes:
 - Run shell commands with `zsh -lc`; prefer `rg`, `fd`, and `jq`.
 - Before edits, confirm `pwd`, repo root, required binaries, and target paths.
 - Keep `bash scripts/codex-preflight.sh --stack auto --mode required` as the bootstrap gate beneath `bash scripts/verify-work.sh`, and treat repo-root `CODESTYLE.md`, `codestyle/`, `codestyle/CHECKSUMS.sha256`, `bash scripts/check-codestyle-parity.sh`, and `bash scripts/validate-codestyle.sh` as required verification surfaces.
+- Legacy positional `scripts/codex-preflight.sh` invocations are compatibility-only and must preserve that required Local Memory posture by default; pass `off` or `optional` explicitly only when a softer check is intentional and documented.
 - For detailed tooling and command-selection policy, use [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md).
 
 ## Fresh Worktree Bootstrap
