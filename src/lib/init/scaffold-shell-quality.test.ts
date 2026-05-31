@@ -57,12 +57,12 @@ function getShellTemplates(): ShellTemplate[] {
 function findOptionalToolsWithoutAvailabilityGuard(content: string): string[] {
 	// Only flag lines where `diagram` is actually being EXECUTED as a command,
 	// not just mentioned in a string array or comment.
-	// Execution patterns: `diagram <args>`, `pnpm exec diagram`, `command -v diagram`
+	// Execution patterns: `diagram <args>`, package-manager scoped diagram execution.
 	const OPTIONAL_TOOL_EXEC_PATTERNS = [
 		// Direct execution: "diagram " at start of line or after pipe
 		/(?:^|\|\s*)(diagram)\s+\S/,
-		// pnpm exec diagram
-		/pnpm\s+exec\s+diagram/,
+		// pnpm exec diagram, optionally scoped to the repository root with --dir.
+		/pnpm\s+(?:--dir\s+\S+\s+)?exec\s+diagram/,
 	];
 
 	const violations: string[] = [];
@@ -84,8 +84,7 @@ function findOptionalToolsWithoutAvailabilityGuard(content: string): string[] {
 				const context = lines.slice(contextStart, i + 1).join("\n");
 				if (
 					!context.includes("command -v diagram") &&
-					!context.includes("command -v") &&
-					!/pnpm\s+exec\s+diagram\s+--version/.test(context)
+					!/pnpm\s+(?:--dir\s+\S+\s+)?exec\s+diagram\s+--version/.test(context)
 				) {
 					violations.push(`Line ${i + 1}: ${line.trim()}`);
 				}

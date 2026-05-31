@@ -67,7 +67,7 @@ if [[ "$FORCE" -ne 1 && -f "$META_FILE" ]]; then
 	fi
 fi
 
-if ! pnpm exec diagram --version >/dev/null 2>&1; then
+if ! pnpm --dir "$ROOT_DIR" exec diagram --version >/dev/null 2>&1; then
 	log "error: diagram CLI is not available"
 	exit 1
 fi
