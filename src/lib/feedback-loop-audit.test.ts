@@ -267,6 +267,28 @@ describe("buildFeedbackLoopAudit", () => {
 		);
 	});
 
+	it("fails when the cross-loop gap summary count drifts from the closed gap evidence", () => {
+		const repoRoot = makeTempRepo();
+		writeIndex(repoRoot, {
+			summary: {
+				loopCount: 19,
+				crossLoopGapCount: 4,
+				recommendationCount: 7,
+				openFindingCount: 0,
+			},
+		});
+
+		const report = buildFeedbackLoopAudit({ repoRoot });
+
+		expect(report.status).toBe("fail");
+		expect(report.findings).toContainEqual(
+			expect.objectContaining({
+				code: "cross_loop_gaps_closed",
+				status: "fail",
+			}),
+		);
+	});
+
 	it("fails when implemented cross-loop gaps omit closure evidence", () => {
 		const repoRoot = makeTempRepo();
 		writeIndex(repoRoot, {

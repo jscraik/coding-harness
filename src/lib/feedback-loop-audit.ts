@@ -326,6 +326,7 @@ function buildAuditFindings(
 			code: "cross_loop_gaps_closed",
 			status:
 				index.crossLoopGaps.length === EXPECTED_GAP_COUNT &&
+				index.summary.crossLoopGapCount === EXPECTED_GAP_COUNT &&
 				implementedGapCount === EXPECTED_GAP_COUNT &&
 				implementedGapEvidenceCount === EXPECTED_GAP_COUNT
 					? "pass"
@@ -337,7 +338,9 @@ function buildAuditFindings(
 				implementedGapCount.toString() +
 				" implemented and " +
 				implementedGapEvidenceCount.toString() +
-				" with evidence.",
+				" with evidence; summary reports " +
+				index.summary.crossLoopGapCount.toString() +
+				".",
 			evidenceRefs: [indexPath],
 		},
 		{

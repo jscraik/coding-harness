@@ -361,7 +361,25 @@ async function capture(
 			}
 			runArgs.push("--assurance", writeAssuranceMatrix(repoRoot));
 		}
-		const runOptions = runner ? { runner } : {};
+		const runOptions = runner
+			? {
+					runner: (
+						command: string,
+						args: readonly string[],
+						options: { cwd: string; env?: NodeJS.ProcessEnv },
+					) => {
+						const result = runner(command, args, options);
+						if (
+							command === "git" &&
+							args[0] === "rev-parse" &&
+							(result === "ok" || result === "")
+						) {
+							return "abc123";
+						}
+						return result;
+					},
+				}
+			: {};
 		return {
 			exitCode: await runPrCloseoutCLI(runArgs, runOptions),
 			output: output.join("\n"),
@@ -1508,6 +1526,232 @@ describe("runPrCloseoutCLI", () => {
 					surface: "branch",
 					classification: "introduced",
 					reason: "Branch is behind its base branch.",
+				}),
+			]),
+		});
+	});
+
+	it("does not mark live worktree implementation-safe when local head differs from PR head", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					baseRefName: "main",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git" && args[0] === "status") return "";
+			if (command === "git" && args[0] === "rev-parse") return "local123";
+			if (command === "git" && args[0] === "rev-list") return "0\t0";
+			return "ok";
+		};
+
+		const result = await capture(
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
+			runner,
+		);
+
+		expect(result.exitCode).toBe(0);
+		expect(JSON.parse(result.output)).toMatchObject({
+			lifecycleSnapshot: {
+				worktreeRole: "orientation",
+			},
+			blockers: expect.arrayContaining([
+				expect.objectContaining({
+					surface: "branch",
+					classification: "introduced",
+					reason: "Local HEAD does not match the pull request head.",
+				}),
+			]),
+		});
+	});
+
+	it("does not mark live worktree implementation-safe when PR head evidence is missing", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					baseRefName: "main",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git" && args[0] === "status") return "";
+			if (command === "git" && args[0] === "rev-parse") return "local123";
+			if (command === "git" && args[0] === "rev-list") return "0\t0";
+			return "ok";
+		};
+
+		const result = await capture(
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
+			runner,
+		);
+
+		expect(result.exitCode).toBe(0);
+		expect(JSON.parse(result.output)).toMatchObject({
+			lifecycleSnapshot: {
+				worktreeRole: "orientation",
+			},
+			blockers: expect.arrayContaining([
+				expect.objectContaining({
+					surface: "branch",
+					classification: "unknown",
+					reason: "Unable to verify local HEAD against the pull request head.",
+				}),
+			]),
+		});
+	});
+
+	it("does not mark live worktree implementation-safe when local head cannot be resolved", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const closeoutGatesPath = writeCloseoutGates(dir);
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "pr" && args[1] === "view") {
+				return JSON.stringify({
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headRefOid: "abc123",
+					baseRefName: "main",
+					reviewDecision: "APPROVED",
+					body: PR_BODY_WITH_TRACEABILITY,
+				});
+			}
+			if (command === "gh" && args[0] === "pr" && args[1] === "checks") {
+				return prChecksForHead();
+			}
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return checkRunsForHead();
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return reviewThreadsGraphql();
+			}
+			if (command === "git" && args[0] === "status") return "";
+			if (command === "git" && args[0] === "rev-parse") {
+				throw new Error("HEAD unavailable");
+			}
+			if (command === "git" && args[0] === "rev-list") return "0\t0";
+			return "ok";
+		};
+
+		const result = await capture(
+			[
+				"--json",
+				"--repo",
+				dir,
+				"--pr",
+				"258",
+				"--gates",
+				closeoutGatesPath,
+				"--release-readiness-impact",
+				"none",
+			],
+			runner,
+		);
+
+		expect(result.exitCode).toBe(0);
+		expect(JSON.parse(result.output)).toMatchObject({
+			lifecycleSnapshot: {
+				worktreeRole: "orientation",
+			},
+			blockers: expect.arrayContaining([
+				expect.objectContaining({
+					surface: "branch",
+					classification: "unknown",
+					reason: "Unable to verify local HEAD against the pull request head.",
 				}),
 			]),
 		});

@@ -177,6 +177,7 @@ export interface PrCloseoutBranchInput {
 	behindBy?: number | null;
 	hasConflicts?: boolean | null;
 	headSha?: string | null;
+	matchesPullRequestHead?: boolean | null;
 	worktreeRole?: PrCloseoutWorktreeRole;
 }
 

@@ -320,6 +320,7 @@ export function buildLivePrCloseoutInput(
 			envLoad.env,
 			runner,
 			pullRequest.baseRefName,
+			pullRequest.headSha,
 		),
 		checks,
 		reviewThreads,

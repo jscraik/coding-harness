@@ -83,6 +83,24 @@ export function collectWorktreeBlockers(
 			fixableByCodex: true,
 		});
 	}
+	if (input.branch?.matchesPullRequestHead === false) {
+		pushBlocker(blockers, {
+			surface: "branch",
+			classification: "introduced",
+			kind: "state",
+			reason: "Local HEAD does not match the pull request head.",
+			fixableByCodex: true,
+		});
+	}
+	if (input.branch?.matchesPullRequestHead === null) {
+		pushBlocker(blockers, {
+			surface: "branch",
+			classification: "unknown",
+			kind: "state",
+			reason: "Unable to verify local HEAD against the pull request head.",
+			fixableByCodex: true,
+		});
+	}
 }
 
 /** Add blockers for pull request state and metadata closeout evidence. */

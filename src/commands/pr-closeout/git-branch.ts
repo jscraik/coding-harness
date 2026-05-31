@@ -56,18 +56,29 @@ export function inspectGitBranch(
 	env: NodeJS.ProcessEnv,
 	runner: CommandRunner,
 	baseRefName: string | null | undefined,
+	expectedHeadSha?: string | null,
 ): PrCloseoutBranchInput {
 	const gitEnv = sanitizeGitEnvironment(env, { policy: "minimal" });
 	const branch: PrCloseoutBranchInput = {
 		clean: inspectGitClean(repoRoot, gitEnv, runner),
 		worktreeRole: "unknown",
 	};
+	const headBindingExpected = expectedHeadSha !== undefined;
+	const expectedHead = expectedHeadSha?.trim();
+	if (headBindingExpected) {
+		branch.matchesPullRequestHead = null;
+	}
 	try {
 		const headSha = runner("git", ["rev-parse", "HEAD"], {
 			cwd: repoRoot,
 			env: gitEnv,
 		}).trim();
-		if (headSha.length > 0) branch.headSha = headSha;
+		if (headSha.length > 0) {
+			branch.headSha = headSha;
+			if (expectedHead) {
+				branch.matchesPullRequestHead = headSha === expectedHead;
+			}
+		}
 	} catch {
 		// Head SHA is optional evidence; keep the rest of the branch snapshot.
 	}
@@ -103,7 +114,11 @@ export function inspectGitBranch(
 		branch.behindBase = null;
 	}
 	branch.worktreeRole =
-		branch.clean === true && branch.behindBase === false
+		branch.clean === true &&
+		branch.behindBase === false &&
+		(headBindingExpected
+			? branch.matchesPullRequestHead === true
+			: branch.matchesPullRequestHead !== false)
 			? "implementation"
 			: "orientation";
 	return branch;
