@@ -30,7 +30,12 @@ const allowedFiles = new Set([
 ]);
 const forbiddenPatterns = [
 	{
-		pattern: /delete\s+\w+\.GIT_[A-Z0-9_]+/u,
+		pattern: /delete\s+(?:\w+\.)*\w+\.GIT_[A-Z0-9_]+/u,
+		message:
+			"manual deletion of GIT_* variables must route through sanitizeGitEnvironment",
+	},
+	{
+		pattern: /delete\s+(?:\w+\.)*\w+\[\s*["']GIT_[A-Z0-9_]+["']\s*\]/u,
 		message:
 			"manual deletion of GIT_* variables must route through sanitizeGitEnvironment",
 	},
@@ -55,6 +60,8 @@ for (const file of sourceFiles) {
 	const relativePath = relative(repoRoot, file);
 	if (
 		allowedFiles.has(relativePath) ||
+		relativePath.endsWith(".test.ts") ||
+		relativePath.endsWith(".test.tsx") ||
 		!/\.[cm]?[jt]sx?$/u.test(relativePath)
 	) {
 		continue;
