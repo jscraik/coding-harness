@@ -501,28 +501,50 @@ function validateRepoFileRef(
 		return false;
 	}
 	const refPath = String(ref.ref);
-	const resolvedRepoRoot = realpathSync(repoRoot);
+	let resolvedRepoRoot: string;
+	try {
+		resolvedRepoRoot = realpathSync(repoRoot);
+	} catch {
+		errors.push(`${path}.ref: repository root is not accessible`);
+		return false;
+	}
 	const candidate = resolve(resolvedRepoRoot, refPath);
 	if (!existsSync(candidate)) {
 		errors.push(`${path}.ref: required repo file does not exist`);
 		return false;
 	}
-	const realCandidate = realpathSync(candidate);
+	let realCandidate: string;
+	try {
+		realCandidate = realpathSync(candidate);
+	} catch {
+		errors.push(`${path}.ref: required repo file does not exist`);
+		return false;
+	}
 	const containment = relative(resolvedRepoRoot, realCandidate);
 	if (containment.startsWith("..") || isAbsolute(containment)) {
 		errors.push(`${path}.ref: resolved path escapes repository root`);
 		return false;
 	}
-	if (!statSync(realCandidate).isFile()) {
-		errors.push(`${path}.ref: required repo file is not a file`);
+	try {
+		if (!statSync(realCandidate).isFile()) {
+			errors.push(`${path}.ref: required repo file is not a file`);
+			return false;
+		}
+	} catch {
+		errors.push(`${path}.ref: required repo file is not accessible`);
 		return false;
 	}
 	if (ref.hashAlgorithm !== "sha256" || !SHA256.test(String(ref.sha256))) {
 		return false;
 	}
-	const actual = createHash("sha256")
-		.update(readFileSync(realCandidate))
-		.digest("hex");
+	let content: Buffer;
+	try {
+		content = readFileSync(realCandidate);
+	} catch {
+		errors.push(`${path}.ref: required repo file is not readable`);
+		return false;
+	}
+	const actual = createHash("sha256").update(content).digest("hex");
 	if (actual !== ref.sha256) {
 		errors.push(`${path}.sha256: digest mismatch`);
 		return false;

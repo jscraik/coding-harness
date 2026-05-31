@@ -384,6 +384,19 @@ describe("validatePromptContextDriftReport", () => {
 		);
 	});
 
+	it("returns validation errors for inaccessible evidence roots", () => {
+		const root = tempRoot();
+		rmSync(root, { recursive: true, force: true });
+		const result = validatePromptContextDriftReport(exampleReport(), {
+			repoRoot: root,
+		});
+
+		expect(result.status).toBe("fail");
+		expect(result.errors).toContain(
+			"surfaces[0].sourceRefs[0].ref: repository root is not accessible",
+		);
+	});
+
 	it("blocks external-only required local surfaces", () => {
 		const report = exampleReport();
 		surfaceAt(report, 4).sourceRefs = [

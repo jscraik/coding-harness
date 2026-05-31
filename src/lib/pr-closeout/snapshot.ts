@@ -45,7 +45,11 @@ export function buildPrCloseoutSnapshot({
 			branch: summarizeLane("branch", claims, blockers),
 			deliveryTruth: summarizeLane("delivery_truth", claims, blockers),
 		},
-		handoffRequirements: buildHandoffRequirements(claims),
+		handoffRequirements: buildHandoffRequirements(
+			claims,
+			blockers,
+			generatedAt,
+		),
 	};
 }
 
@@ -100,8 +104,10 @@ function summarizeFreshness(
 
 function buildHandoffRequirements(
 	claims: readonly PrCloseoutClaim[],
+	blockers: readonly PrCloseoutBlocker[],
+	generatedAt: string,
 ): PrCloseoutSnapshotHandoffPointer[] {
-	return claims
+	const claimRequirements = claims
 		.filter(
 			(claim) => claim.status !== "pass" && claim.status !== "not_applicable",
 		)
@@ -114,6 +120,16 @@ function buildHandoffRequirements(
 			blockerClass: claim.blockerClass ?? null,
 			verifiedAt: claim.verifiedAt,
 		}));
+	const blockerRequirements = blockers.map((blocker) => ({
+		claim: blocker.ref ?? `${blocker.surface}_blocker`,
+		surface: blocker.surface,
+		status: "blocked" as const,
+		freshness: "missing" as const,
+		evidenceRef: blocker.ref ?? null,
+		blockerClass: blocker.classification,
+		verifiedAt: generatedAt,
+	}));
+	return [...claimRequirements, ...blockerRequirements];
 }
 
 function classifyStaleEvidenceClasses(

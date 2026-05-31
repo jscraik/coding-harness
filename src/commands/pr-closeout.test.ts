@@ -479,6 +479,20 @@ describe("runPrCloseoutCLI", () => {
 					notApplicable: true,
 					evidenceRef: "pr-body:rollback",
 				},
+				deliveryTruth: [
+					{
+						schemaVersion: "delivery-truth/v1",
+						claim: "goal_ready_for_judge_pm",
+						status: "blocked",
+						source: "delivery-truth",
+						evidenceRef: "delivery-truth:goal-ready",
+						headSha: "abc123",
+						freshness: "current",
+						blockerClass: "needs_jamie_decision",
+						verifiedAt: "2026-05-30T12:00:00Z",
+						evidenceUse: "claim_support",
+					},
+				],
 				closeoutGates: PASSING_CLOSEOUT_GATES,
 				assurance: PASSING_ASSURANCE,
 				runtimeEvidence: PASSING_RUNTIME_EVIDENCE,
@@ -528,6 +542,11 @@ describe("runPrCloseoutCLI", () => {
 				expect.objectContaining({
 					claim: "review_threads_resolved",
 					surface: "review",
+				}),
+				expect.objectContaining({
+					claim: "delivery-truth:goal-ready",
+					surface: "delivery_truth",
+					status: "blocked",
 				}),
 			]),
 		);
