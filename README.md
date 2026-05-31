@@ -833,7 +833,7 @@ merge-readiness claims.
 | `source-outline` | Inspect TypeScript-family signatures and comments before opening implementations, with optional single-symbol implementation unwrapping via `--symbol` |
 
 | `index-context` | Build the local semantic-search index |
-| `evidence-verify` | Validate screenshot and evidence artifacts |
+| `evidence-verify` | Validate evidence files and browser evidence manifests, including screenshot presence, viewport coverage, non-blank PNG checks, and console policy |
 | `ui:fast` | Run a Storybook-first local UI loop |
 | `ui:verify` | Run Playwright smoke verification with evidence capture |
 | `ui:explore` | Run agent-browser exploratory testing |

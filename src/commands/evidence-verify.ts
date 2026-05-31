@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadContract } from "../lib/contract/loader.js";
+import { validateBrowserEvidenceManifest } from "../lib/browser-evidence/index.js";
 import type { EvidencePolicy } from "../lib/contract/types.js";
 import type {
 	EvidenceError,
@@ -23,6 +24,7 @@ export const EXIT_CODES = {
 	SYSTEM_ERROR: 10,
 } as const;
 
+/** Options for evidence file and browser evidence manifest verification. */
 export interface EvidenceVerifyOptions {
 	/** Comma-separated list of file paths to verify */
 	files: string[];
@@ -36,7 +38,15 @@ export interface EvidenceVerifyOptions {
 	maxFileSizeBytes?: number | undefined;
 	/** Changed files to check against evidence policy (e.g., --changed src/ui/**.tsx) */
 	changed?: string[] | undefined;
+	/** Browser evidence manifest to validate with browser-specific policy checks */
+	browserEvidence?: string | undefined;
+	/** Required viewport IDs for browser evidence coverage */
+	browserRequiredViewports?: string[] | undefined;
 }
+
+type EvidencePolicyLoadResult =
+	| { ok: true; policy?: EvidencePolicy }
+	| { ok: false; error: { code: string; message: string } };
 
 /**
  * Determine the most severe exit code from multiple errors.
@@ -60,56 +70,58 @@ function getWorstExitCode(errors: EvidenceError[]): number {
 	return EXIT_CODES.VALIDATION_ERROR;
 }
 
-/**
- * Verify evidence files and return structured result.
- * This function is usable as a library (does not output to console).
- *
- * @param options - Verification options
- * @returns EvidenceVerifyResult with output or error
- */
-export function runEvidenceVerify(
+function verifyBrowserEvidence(
 	options: EvidenceVerifyOptions,
-): EvidenceVerifyResult {
-	const baseDir = options.baseDir ?? process.cwd();
-	const maxFileSizeBytes =
-		options.maxFileSizeBytes ?? DEFAULT_MAX_FILE_SIZE_BYTES;
+	baseDir: string,
+): EvidenceVerifyOutput["browserEvidence"] {
+	if (!options.browserEvidence) return undefined;
+	return validateBrowserEvidenceManifest({
+		manifestPath: options.browserEvidence,
+		baseDir,
+		...(options.browserRequiredViewports
+			? { requiredViewportIds: options.browserRequiredViewports }
+			: {}),
+	});
+}
+
+function loadEvidencePolicy(
+	options: EvidenceVerifyOptions,
+	baseDir: string,
+): EvidencePolicyLoadResult {
+	if (!options.contract) return { ok: true };
+	const contractPath = resolve(baseDir, options.contract);
+	if (!existsSync(contractPath)) {
+		return {
+			ok: false,
+			error: {
+				code: "FILE_NOT_FOUND",
+				message: `Contract file not found: ${options.contract}`,
+			},
+		};
+	}
+	try {
+		const contract = loadContract(contractPath, baseDir);
+		return contract.evidencePolicy
+			? { ok: true, policy: contract.evidencePolicy }
+			: { ok: true };
+	} catch (e) {
+		return {
+			ok: false,
+			error: { code: "VALIDATION_ERROR", message: sanitizeError(e) },
+		};
+	}
+}
+
+function verifyEvidenceFiles(
+	options: EvidenceVerifyOptions,
+	baseDir: string,
+	maxFileSizeBytes: number,
+): { verifiedFiles: EvidenceFile[]; errors: EvidenceError[] } {
 	const verifiedFiles: EvidenceFile[] = [];
 	const errors: EvidenceError[] = [];
-
-	// Load contract and evidence policy if provided
-	let evidencePolicy: EvidencePolicy | undefined;
-	if (options.contract) {
-		const contractPath = resolve(baseDir, options.contract);
-		if (!existsSync(contractPath)) {
-			return {
-				ok: false,
-				error: {
-					code: "FILE_NOT_FOUND",
-					message: `Contract file not found: ${options.contract}`,
-				},
-			};
-		}
-
-		// Load and validate contract
-		try {
-			const contract = loadContract(contractPath, baseDir);
-			evidencePolicy = contract.evidencePolicy;
-		} catch (e) {
-			return {
-				ok: false,
-				error: {
-					code: "VALIDATION_ERROR",
-					message: sanitizeError(e),
-				},
-			};
-		}
-	}
-
-	// Verify each evidence file
 	for (const filePath of options.files) {
 		logger.debug("Verifying evidence file", { file: filePath });
 		const result = loadEvidenceFile(filePath, baseDir, maxFileSizeBytes);
-
 		if (result.ok) {
 			logger.debug("Evidence file verified", {
 				file: filePath,
@@ -126,18 +138,41 @@ export function runEvidenceVerify(
 			errors.push(result);
 		}
 	}
+	return { verifiedFiles, errors };
+}
+
+/**
+ * Verify evidence files and return structured result.
+ * This function is usable as a library (does not output to console).
+ *
+ * @param options - Verification options
+ * @returns EvidenceVerifyResult with output or error
+ */
+export function runEvidenceVerify(
+	options: EvidenceVerifyOptions,
+): EvidenceVerifyResult {
+	const baseDir = options.baseDir ?? process.cwd();
+	const maxFileSizeBytes =
+		options.maxFileSizeBytes ?? DEFAULT_MAX_FILE_SIZE_BYTES;
+	const policyResult = loadEvidencePolicy(options, baseDir);
+	if (!policyResult.ok) return policyResult;
+	const { verifiedFiles, errors } = verifyEvidenceFiles(
+		options,
+		baseDir,
+		maxFileSizeBytes,
+	);
 
 	// Apply evidence policy if we have both policy and changed files
-	if (evidencePolicy && options.changed && options.changed.length > 0) {
-		const policyResult = enforceEvidencePolicy(
+	if (policyResult.policy && options.changed && options.changed.length > 0) {
+		const evidencePolicyResult = enforceEvidencePolicy(
 			verifiedFiles,
 			options.changed,
-			evidencePolicy,
+			policyResult.policy,
 		);
 
 		// Add policy violations to errors
-		if (!policyResult.passed) {
-			errors.push(...policyResult.violations);
+		if (!evidencePolicyResult.passed) {
+			errors.push(...evidencePolicyResult.violations);
 		}
 	}
 
@@ -147,6 +182,13 @@ export function runEvidenceVerify(
 		files: verifiedFiles,
 		errors,
 	};
+	const browserEvidence = verifyBrowserEvidence(options, baseDir);
+	if (browserEvidence) {
+		output.browserEvidence = browserEvidence;
+		if (!browserEvidence.passed) {
+			output.failed += browserEvidence.errors.length;
+		}
+	}
 
 	logger.debug("Evidence verification complete", {
 		verified: output.verified,
@@ -183,6 +225,11 @@ export function runEvidenceVerifyCLI(options: EvidenceVerifyOptions): number {
 				for (const error of output.errors) {
 					console.error(`  ✗ ${error.path}: ${error.message}`);
 				}
+				for (const error of output.browserEvidence?.errors ?? []) {
+					console.error(
+						`  ✗ ${error.path ?? output.browserEvidence?.manifestPath}: ${error.message}`,
+					);
+				}
 			}
 
 			if (output.verified > 0 && output.failed === 0) {
@@ -190,8 +237,13 @@ export function runEvidenceVerifyCLI(options: EvidenceVerifyOptions): number {
 			}
 		}
 
-		// Return worst exit code from errors
-		return getWorstExitCode(output.errors);
+		const fileExitCode = getWorstExitCode(output.errors);
+		if (output.browserEvidence && !output.browserEvidence.passed) {
+			return fileExitCode === EXIT_CODES.SUCCESS
+				? EXIT_CODES.VALIDATION_ERROR
+				: fileExitCode;
+		}
+		return fileExitCode;
 	}
 
 	// Command-level error

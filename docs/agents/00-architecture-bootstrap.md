@@ -192,6 +192,17 @@ source classification, validation, and reference-integrity checks; refresh
 `AI/context/diagram-context.md` and this guide when those packet or validator
 modules change.
 
+Browser evidence packet changes are runtime-cockpit evidence work, not delivery
+truth. Keep `browser-evidence/v1` validation inside
+`src/lib/browser-evidence/` and expose it through the existing
+`evidence-verify` command facade only as advisory orientation/audit evidence.
+Validators must prove manifest path containment, screenshot file existence,
+required view port coverage, PNG dimensions, non-blank image content, stable
+console policy handling, and sanitized evidence messages. Browser evidence must
+not prove delivery-truth, review-state, external-state, root-hygiene,
+Judge/PM readiness, merge readiness, or command authority without a future
+explicit consumer boundary and synchronized governance update.
+
 Review-state and external-state packet changes are runtime-cockpit architecture
 work even when they do not add public CLI commands. Keep `review-state/v1`
 inside `src/lib/review-state/` as the PR review truth packet for reviewer
@@ -256,7 +267,7 @@ intermediary observations may orient agents, but they must not support
 delivery, closeout, tracker, review, root-hygiene, Judge/PM, or merge-readiness
 claims without a current `evidence-receipt/v1` plus the matching canonical
 packet route. When intermediary receipt work also changes `harness next`
-worktree-role decisioning or PR closeout snapshot projections, keep those
+worktree-role decisions or PR closeout snapshot projections, keep those
 surfaces advisory and evidence-bound: role-gated worktree state may block the
 next recommendation, and snapshot status may classify PR lanes, but neither
 surface becomes merge authority without current canonical evidence.

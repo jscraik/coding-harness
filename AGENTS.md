@@ -265,6 +265,16 @@ Notes:
   `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
   governance surfaces.
+- Browser evidence packet changes that add or alter `browser-evidence/v1`,
+  screenshot presence, required viewport coverage, PNG dimension/non-blank
+  checks, console policy handling, or visual-evidence CLI wiring are
+  architecture-adjacent runtime cockpit changes. Keep the deep module in
+  `src/lib/browser-evidence/`, expose it through the existing
+  `evidence-verify` command facade, and keep it advisory orientation/audit
+  evidence only. It must not support delivery-truth, review-state,
+  external-state, root-hygiene, Judge/PM, merge-readiness, or command-authority
+  claims without an explicit future consumer boundary and synchronized
+  governance update.
 - Judge/PM readiness changes that add or alter `goal_ready_for_judge_pm`,
   issue-authority checks, clean-worktree classification, local-validation
   blocker projection, or external-state eligibility are delivery-truth

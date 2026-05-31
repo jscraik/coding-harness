@@ -1,12 +1,45 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { deflateSync } from "node:zlib";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	EXIT_CODES,
 	runEvidenceVerify,
 	runEvidenceVerifyCLI,
 } from "./evidence-verify.js";
+
+const PNG_SIGNATURE = Buffer.from([
+	0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+]);
+
+function pngChunk(type: string, data: Buffer): Buffer {
+	const length = Buffer.alloc(4);
+	length.writeUInt32BE(data.length, 0);
+	return Buffer.concat([
+		length,
+		Buffer.from(type, "ascii"),
+		data,
+		Buffer.alloc(4),
+	]);
+}
+
+function nonblankPng(): Buffer {
+	const ihdr = Buffer.alloc(13);
+	ihdr.writeUInt32BE(2, 0);
+	ihdr.writeUInt32BE(2, 4);
+	ihdr[8] = 8;
+	ihdr[9] = 6;
+	const pixels = Buffer.from([
+		0, 255, 0, 0, 255, 0, 255, 0, 255, 0, 255, 0, 0, 255, 0, 255, 0, 255,
+	]);
+	return Buffer.concat([
+		PNG_SIGNATURE,
+		pngChunk("IHDR", ihdr),
+		pngChunk("IDAT", deflateSync(pixels)),
+		pngChunk("IEND", Buffer.alloc(0)),
+	]);
+}
 
 describe("evidence-verify", () => {
 	let tempDir: string;
@@ -20,6 +53,39 @@ describe("evidence-verify", () => {
 	});
 
 	describe("runEvidenceVerify", () => {
+		function writeBrowserManifest(
+			overrides: Record<string, unknown> = {},
+		): void {
+			writeFileSync(
+				join(tempDir, "browser-evidence.json"),
+				JSON.stringify(
+					{
+						schemaVersion: "browser-evidence/v1",
+						screenshots: [
+							{
+								path: "desktop.png",
+								viewportId: "desktop",
+								width: 2,
+								height: 2,
+							},
+						],
+						requiredViewportIds: ["desktop"],
+						consoleEvents: [],
+						consolePolicy: { failOn: ["error"] },
+						blankScreenshotPolicy: {
+							minWidth: 2,
+							minHeight: 2,
+							minBytes: 64,
+							minUniqueColors: 2,
+						},
+						...overrides,
+					},
+					null,
+					2,
+				),
+			);
+		}
+
 		it("returns success for valid PNG file", () => {
 			const pngFile = join(tempDir, "test.png");
 			const pngHeader = Buffer.from([
@@ -130,6 +196,42 @@ describe("evidence-verify", () => {
 				expect(result.output.failed).toBe(0);
 			}
 		});
+
+		it("includes browser evidence report for valid browser manifests", () => {
+			writeFileSync(join(tempDir, "desktop.png"), nonblankPng());
+			writeBrowserManifest();
+
+			const result = runEvidenceVerify({
+				files: [],
+				browserEvidence: "browser-evidence.json",
+				browserRequiredViewports: ["desktop"],
+				baseDir: tempDir,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.browserEvidence?.passed).toBe(true);
+				expect(result.output.browserEvidence?.errors).toEqual([]);
+			}
+		});
+
+		it("fails browser evidence manifests with missing screenshots", () => {
+			writeBrowserManifest();
+
+			const result = runEvidenceVerify({
+				files: [],
+				browserEvidence: "browser-evidence.json",
+				baseDir: tempDir,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.browserEvidence?.passed).toBe(false);
+				expect(
+					result.output.browserEvidence?.errors.map((error) => error.code),
+				).toContain("BROWSER_SCREENSHOT_MISSING");
+			}
+		});
 	});
 
 	describe("runEvidenceVerifyCLI", () => {
@@ -212,6 +314,74 @@ describe("evidence-verify", () => {
 			});
 
 			expect(exitCode).toBe(EXIT_CODES.FILE_NOT_FOUND);
+		});
+
+		it("returns VALIDATION_ERROR (1) when browser evidence validation fails", () => {
+			writeFileSync(
+				join(tempDir, "browser-evidence.json"),
+				JSON.stringify({
+					schemaVersion: "browser-evidence/v1",
+					screenshots: [
+						{
+							path: "missing.png",
+							viewportId: "desktop",
+							width: 2,
+							height: 2,
+						},
+					],
+					requiredViewportIds: ["desktop"],
+					consoleEvents: [],
+					consolePolicy: { failOn: ["error"] },
+					blankScreenshotPolicy: {
+						minWidth: 2,
+						minHeight: 2,
+						minBytes: 64,
+						minUniqueColors: 2,
+					},
+				}),
+			);
+
+			const exitCode = runEvidenceVerifyCLI({
+				files: [],
+				baseDir: tempDir,
+				browserEvidence: "browser-evidence.json",
+			});
+
+			expect(exitCode).toBe(EXIT_CODES.VALIDATION_ERROR);
+		});
+
+		it("preserves path traversal precedence when browser evidence also fails", () => {
+			writeFileSync(
+				join(tempDir, "browser-evidence.json"),
+				JSON.stringify({
+					schemaVersion: "browser-evidence/v1",
+					screenshots: [
+						{
+							path: "missing.png",
+							viewportId: "desktop",
+							width: 2,
+							height: 2,
+						},
+					],
+					requiredViewportIds: ["desktop"],
+					consoleEvents: [],
+					consolePolicy: { failOn: ["error"] },
+					blankScreenshotPolicy: {
+						minWidth: 2,
+						minHeight: 2,
+						minBytes: 64,
+						minUniqueColors: 2,
+					},
+				}),
+			);
+
+			const exitCode = runEvidenceVerifyCLI({
+				files: ["../../../etc/passwd"],
+				baseDir: tempDir,
+				browserEvidence: "browser-evidence.json",
+			});
+
+			expect(exitCode).toBe(EXIT_CODES.PATH_TRAVERSAL);
 		});
 	});
 

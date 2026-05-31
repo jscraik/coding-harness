@@ -87,6 +87,8 @@ export interface EvidenceVerifyOutput {
 	files: EvidenceFile[];
 	/** List of validation errors */
 	errors: EvidenceError[];
+	/** Optional browser evidence manifest validation report */
+	browserEvidence?: import("../browser-evidence/types.js").BrowserEvidenceValidationReport;
 }
 
 /**

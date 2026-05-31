@@ -17,13 +17,14 @@ context and expected behavior, not only the mismatched value.
 `behavior-test-suites.json` is the visibility map for suites that must keep
 at least one behavior assertion. Add new trust-boundary evidence suites to
 the manifest when their failures affect closeout, delivery-truth, external
-state, runtime-card, Local Memory, or policy-gate decisions.
+state, runtime-card, Local Memory, browser evidence, or policy-gate decisions.
 
 Each manifest entry includes:
 
-- `area`: human-readable owner area for diagnostics.
 - `path`: repo-relative test file path checked by the guard.
+- `owner`: human-readable owner area for diagnostics.
 - `rationale`: why this suite needs behavior-shaped failure context.
+- `provingCommand`: focused command that proves the registered suite.
 
 ## Validation
 
