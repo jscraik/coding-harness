@@ -94,6 +94,39 @@ describe("buildFeedbackLoopAudit", () => {
 		);
 	});
 
+	it("passes closure checks when implemented gaps and recommendations include one non-blank evidence ref", () => {
+		const repoRoot = makeTempRepo();
+		writeIndex(repoRoot, {
+			crossLoopGaps: Array.from({ length: 5 }, (_, index) => ({
+				id: `gap-${(index + 1).toString()}`,
+				description: `Gap ${(index + 1).toString()}`,
+				closureState: "implemented",
+				evidenceRefs: ["", " evidence ", "   "],
+			})),
+			recommendations: Array.from({ length: 7 }, (_, index) => ({
+				id: `recommendation-${(index + 1).toString()}`,
+				description: `Recommendation ${(index + 1).toString()}`,
+				closureState: "implemented",
+				evidenceRefs: ["", " evidence ", "   "],
+			})),
+		});
+
+		const report = buildFeedbackLoopAudit({ repoRoot });
+
+		expect(report.findings).toContainEqual(
+			expect.objectContaining({
+				code: "cross_loop_gaps_closed",
+				status: "pass",
+			}),
+		);
+		expect(report.findings).toContainEqual(
+			expect.objectContaining({
+				code: "recommended_next_steps_closed",
+				status: "pass",
+			}),
+		);
+	});
+
 	it("fails when the feedback-loop index is missing", () => {
 		const repoRoot = makeTempRepo();
 
@@ -172,6 +205,94 @@ describe("buildFeedbackLoopAudit", () => {
 		const repoRoot = makeTempRepo();
 		writeIndex(repoRoot, {
 			recommendations: [],
+		});
+
+		const report = buildFeedbackLoopAudit({ repoRoot });
+
+		expect(report.status).toBe("fail");
+		expect(report.findings).toContainEqual(
+			expect.objectContaining({
+				code: "recommended_next_steps_closed",
+				status: "fail",
+			}),
+		);
+	});
+
+	it("fails when implemented cross-loop gaps omit closure evidence", () => {
+		const repoRoot = makeTempRepo();
+		writeIndex(repoRoot, {
+			crossLoopGaps: Array.from({ length: 5 }, (_, index) => ({
+				id: `gap-${(index + 1).toString()}`,
+				description: `Gap ${(index + 1).toString()}`,
+				closureState: "implemented",
+				evidenceRefs: [],
+			})),
+		});
+
+		const report = buildFeedbackLoopAudit({ repoRoot });
+
+		expect(report.status).toBe("fail");
+		expect(report.findings).toContainEqual(
+			expect.objectContaining({
+				code: "cross_loop_gaps_closed",
+				status: "fail",
+			}),
+		);
+	});
+
+	it("fails when implemented recommendations omit closure evidence", () => {
+		const repoRoot = makeTempRepo();
+		writeIndex(repoRoot, {
+			recommendations: Array.from({ length: 7 }, (_, index) => ({
+				id: `recommendation-${(index + 1).toString()}`,
+				description: `Recommendation ${(index + 1).toString()}`,
+				closureState: "implemented",
+				evidenceRefs: [],
+			})),
+		});
+
+		const report = buildFeedbackLoopAudit({ repoRoot });
+
+		expect(report.status).toBe("fail");
+		expect(report.findings).toContainEqual(
+			expect.objectContaining({
+				code: "recommended_next_steps_closed",
+				status: "fail",
+			}),
+		);
+	});
+
+	it("fails when implemented cross-loop gaps have only blank evidence", () => {
+		const repoRoot = makeTempRepo();
+		writeIndex(repoRoot, {
+			crossLoopGaps: Array.from({ length: 5 }, (_, index) => ({
+				id: `gap-${(index + 1).toString()}`,
+				description: `Gap ${(index + 1).toString()}`,
+				closureState: "implemented",
+				evidenceRefs: index === 0 ? [""] : ["   "],
+			})),
+		});
+
+		const report = buildFeedbackLoopAudit({ repoRoot });
+
+		expect(report.status).toBe("fail");
+		expect(report.findings).toContainEqual(
+			expect.objectContaining({
+				code: "cross_loop_gaps_closed",
+				status: "fail",
+			}),
+		);
+	});
+
+	it("fails when implemented recommendations have only blank evidence", () => {
+		const repoRoot = makeTempRepo();
+		writeIndex(repoRoot, {
+			recommendations: Array.from({ length: 7 }, (_, index) => ({
+				id: `recommendation-${(index + 1).toString()}`,
+				description: `Recommendation ${(index + 1).toString()}`,
+				closureState: "implemented",
+				evidenceRefs: index === 0 ? [""] : ["   "],
+			})),
 		});
 
 		const report = buildFeedbackLoopAudit({ repoRoot });

@@ -202,6 +202,19 @@ function countImplemented(
 	return items.filter((item) => item.closureState === "implemented").length;
 }
 
+function countImplementedWithEvidence(
+	items: readonly {
+		closureState: FeedbackLoopClosureState;
+		evidenceRefs: readonly string[];
+	}[],
+): number {
+	return items.filter(
+		(item) =>
+			item.closureState === "implemented" &&
+			item.evidenceRefs.some((ref) => ref.trim().length > 0),
+	).length;
+}
+
 function hasCompleteLoopShape(loop: FeedbackLoopEntry): boolean {
 	return (
 		loop.rank > 0 &&
@@ -253,6 +266,12 @@ function buildAuditFindings(
 	implementedGapCount: number,
 	implementedRecommendationCount: number,
 ): FeedbackLoopAuditFinding[] {
+	const implementedGapEvidenceCount = countImplementedWithEvidence(
+		index.crossLoopGaps,
+	);
+	const implementedRecommendationEvidenceCount = countImplementedWithEvidence(
+		index.recommendations,
+	);
 	return [
 		{
 			code: "feedback_loop_index_present",
@@ -299,30 +318,36 @@ function buildAuditFindings(
 			code: "cross_loop_gaps_closed",
 			status:
 				index.crossLoopGaps.length === EXPECTED_GAP_COUNT &&
-				implementedGapCount === EXPECTED_GAP_COUNT
+				implementedGapCount === EXPECTED_GAP_COUNT &&
+				implementedGapEvidenceCount === EXPECTED_GAP_COUNT
 					? "pass"
 					: "fail",
 			message:
 				"Expected " +
 				EXPECTED_GAP_COUNT.toString() +
-				" implemented cross-loop gaps; found " +
+				" implemented cross-loop gaps with closure evidence; found " +
 				implementedGapCount.toString() +
-				".",
+				" implemented and " +
+				implementedGapEvidenceCount.toString() +
+				" with evidence.",
 			evidenceRefs: [indexPath],
 		},
 		{
 			code: "recommended_next_steps_closed",
 			status:
 				index.recommendations.length === EXPECTED_RECOMMENDATION_COUNT &&
-				implementedRecommendationCount === EXPECTED_RECOMMENDATION_COUNT
+				implementedRecommendationCount === EXPECTED_RECOMMENDATION_COUNT &&
+				implementedRecommendationEvidenceCount === EXPECTED_RECOMMENDATION_COUNT
 					? "pass"
 					: "fail",
 			message:
 				"Expected " +
 				EXPECTED_RECOMMENDATION_COUNT.toString() +
-				" implemented recommendations; found " +
+				" implemented recommendations with closure evidence; found " +
 				implementedRecommendationCount.toString() +
-				".",
+				" implemented and " +
+				implementedRecommendationEvidenceCount.toString() +
+				" with evidence.",
 			evidenceRefs: [indexPath],
 		},
 		{
