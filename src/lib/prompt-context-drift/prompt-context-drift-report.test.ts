@@ -352,6 +352,18 @@ describe("validatePromptContextDriftReport", () => {
 		);
 	});
 
+	it("rejects duplicate prompt-context drift surfaces", () => {
+		const report = exampleReport();
+		report.surfaces = [...report.surfaces, { ...surfaceAt(report, 0) }];
+
+		const result = validatePromptContextDriftReport(report, { repoRoot: "." });
+
+		expect(result.status).toBe("fail");
+		expect(result.errors).toContain(
+			"surfaces[7].surfaceId: duplicate surface prompt_context",
+		);
+	});
+
 	it("accepts root-level repo files as claim-support evidence", () => {
 		const report = exampleReport();
 		surfaceAt(report, 0).sourceRefs[0] = {

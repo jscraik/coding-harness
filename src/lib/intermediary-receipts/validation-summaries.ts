@@ -58,6 +58,14 @@ export function validateSummaries(
 		);
 		validateBlockers(summary.blockers, `${path}.blockers`, errors);
 		if (typeof summary.claimFamily === "string") {
+			if (observedFamilies.has(summary.claimFamily)) {
+				addError(
+					errors,
+					"duplicate_claim_family_summary",
+					`${path}.claimFamily`,
+					`duplicate summary for ${summary.claimFamily}`,
+				);
+			}
 			observedFamilies.add(summary.claimFamily);
 		}
 		const summarySources = resolveSummarySources(

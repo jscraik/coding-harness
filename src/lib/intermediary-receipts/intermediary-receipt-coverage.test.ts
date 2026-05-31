@@ -113,6 +113,13 @@ describe("IntermediaryReceiptCoverage/v1", () => {
 		expectInvalid(packet, "stale_receipt");
 	});
 
+	it("rejects non-leap-year February 29 timestamps", () => {
+		const packet = basePacket();
+		packet.generatedAt = "2025-02-29T10:00:00Z";
+
+		expectInvalid(packet, "invalid_timestamp");
+	});
+
 	it("requires claim-support sources to have passing source status", () => {
 		const packet = basePacket();
 		const source = packet.sources.find(
@@ -134,6 +141,16 @@ describe("IntermediaryReceiptCoverage/v1", () => {
 		summary!.evidenceUse = "claim_support";
 
 		expectInvalid(packet, "unsupported_claim_support");
+	});
+
+	it("rejects duplicate claim-family summaries", () => {
+		const packet = basePacket();
+		packet.claimFamilySummaries = [
+			...packet.claimFamilySummaries,
+			{ ...packet.claimFamilySummaries[0]! },
+		];
+
+		expectInvalid(packet, "duplicate_claim_family_summary");
 	});
 
 	it("rejects protected claim support from non-claim-support sources", () => {

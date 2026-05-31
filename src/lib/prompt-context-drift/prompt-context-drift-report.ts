@@ -253,10 +253,18 @@ function validateReportFields(
 	}
 	const repoRoot = options.repoRoot ? resolve(options.repoRoot) : undefined;
 	const surfaceRecords = new Map<string, Record<string, unknown>>();
+	const seenSurfaceIds = new Set<string>();
 	for (const [index, surface] of report.surfaces.entries()) {
 		validateSurface(surface, `surfaces[${index}]`, report, repoRoot, errors);
 		if (isRecord(surface) && typeof surface.surfaceId === "string") {
-			surfaceRecords.set(surface.surfaceId, surface);
+			if (seenSurfaceIds.has(surface.surfaceId)) {
+				errors.push(
+					`surfaces[${index}].surfaceId: duplicate surface ${surface.surfaceId}`,
+				);
+			} else {
+				seenSurfaceIds.add(surface.surfaceId);
+				surfaceRecords.set(surface.surfaceId, surface);
+			}
 		}
 	}
 	if (report.evidenceUse === "claim_support") {
