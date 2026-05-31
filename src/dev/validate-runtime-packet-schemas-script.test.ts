@@ -195,6 +195,49 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		);
 	});
 
+	it("keeps ReplayPacket/v1 semantic validators aligned on produced artifact ref kinds", () => {
+		const root = createTempRoot("replay-packet-invalid-produced-artifact-ref-");
+		const packet = readJson(
+			"contracts/examples/replay-packet.example.json",
+		) as Record<string, unknown>;
+		const hookProvenance = packet.hookProvenance as Array<
+			Record<string, unknown>
+		>;
+		const hook = hookProvenance[0] as Record<string, unknown>;
+		const producedArtifactRefs = hook.producedArtifactRefs as Array<
+			Record<string, unknown>
+		>;
+		packet.hookProvenance = [
+			{
+				...hook,
+				producedArtifactRefs: [
+					{
+						...producedArtifactRefs[0],
+						refKind: "repo_file",
+					},
+				],
+			},
+		];
+		const packetPath = join(root, "packet.json");
+		writeFileSync(packetPath, JSON.stringify(packet, null, 2));
+
+		expect(
+			validateReplayPacket(packet, { repoRoot: process.cwd() }),
+		).toMatchObject({
+			status: "fail",
+			errors: expect.arrayContaining([
+				expect.stringContaining(
+					"hookProvenance[0].producedArtifactRefs[0].refKind",
+				),
+			]),
+		});
+		const scriptResult = runReplayValidator(packetPath);
+		expect(scriptResult.status).toBe(1);
+		expect(scriptResult.stdout).toContain(
+			"hookProvenance[0].producedArtifactRefs[0].refKind",
+		);
+	});
+
 	it("keeps ReplayPacket/v1 semantic validators aligned on stale orientation contradictions", () => {
 		const root = createTempRoot("replay-packet-stale-orientation-");
 		const packet = {
