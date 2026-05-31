@@ -1,4 +1,5 @@
 import { sanitizeError } from "../../lib/input/sanitize.js";
+import { sanitizeGitEnvironment } from "../../lib/git/safe-env.js";
 import type {
 	PrCloseoutBranchInput,
 	PrCloseoutCheckInput,
@@ -108,14 +109,15 @@ function inspectGitBranch(
 	env: NodeJS.ProcessEnv,
 	runner: CommandRunner,
 ): PrCloseoutBranchInput {
+	const gitEnv = sanitizeGitEnvironment(env, { policy: "minimal" });
 	const branch: PrCloseoutBranchInput = {
-		clean: inspectGitClean(repoRoot, env, runner),
+		clean: inspectGitClean(repoRoot, gitEnv, runner),
 		worktreeRole: "unknown",
 	};
 	try {
 		const headSha = runner("git", ["rev-parse", "HEAD"], {
 			cwd: repoRoot,
-			env,
+			env: gitEnv,
 		}).trim();
 		if (headSha.length > 0) branch.headSha = headSha;
 	} catch {
@@ -125,7 +127,7 @@ function inspectGitBranch(
 		const drift = runner(
 			"git",
 			["rev-list", "--left-right", "--count", "@{upstream}...HEAD"],
-			{ cwd: repoRoot, env },
+			{ cwd: repoRoot, env: gitEnv },
 		)
 			.trim()
 			.split(/\s+/u)

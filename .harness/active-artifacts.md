@@ -10,7 +10,7 @@
 
 ## Scope
 
-Last reconciled: 2026-05-31T02:56Z (origin/main freshness, R158/R159 PR #322 pushes, and R160 release-readiness closeout remediation; live CI/review truth remains pending).
+Last reconciled: 2026-05-31T02:56Z plus R161 local remediation (origin/main freshness, R158/R159/R160 PR #322 pushes, and R161 live git-env sanitizer review-thread remediation; live CI/review truth remains pending).
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -21,7 +21,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309's branch head was `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` and its current-main squash evidence is historical, not a current route blocker. R149 records PR #312 merged into main as squash commit `7e8cb93fa16636336194e15e53a592117b9f276a`. R150/R152 preserved the PR #318 lane and PU-040 validation. PR #319 merged into main on 2026-05-29 as squash commit `1afb519f7623f109b7a383688449c031541ff3dd`; R154 reanchors route truth because the pre-squash R153 branch head is no longer reachable from current main. PR #320 merged as current-main route truth. Current slice truth is R156/R157/R158/R159/R160: reviewed hidden-dependency guard hardening passed final adversarial, agent-native, and best-practices artifacts plus focused local validation; PR #322 metadata was repaired after live refresh showed stale feedback-loop PR text was failing `ci/circleci: linear-gate`; PR #322 review-thread remediation was pushed as `fa74a817fd5b476f10510ef26803c5a2790abd91`; R159 records the remaining current-head goal-evidence follow-up for R155 validators and current-PR handoff wording; and R160 records reviewed release-readiness closeout blocker remediation with governed_change regression coverage. The branch contains `origin/main` at `ddd2b966663114c385811fe01ae43ef98c0b3818`; PR #322 is open at `f208aa3da8d7c56fb36a7a121dd453a3f4268ecd` before the R160 remediation push; CodeRabbit, review threads, linked-issue truth, and CircleCI checks must be refreshed after the push. | Use the goal board as the current execution cockpit. Next safe action is to commit and push the R160 release-readiness closeout remediation, resolve only demonstrably fixed review threads, then refresh PR #322 checks/review-thread truth and Linear JSC-363 as separate lanes before any merge-ready, Judge/PM-ready, or goal-complete claim. |
+| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309's branch head was `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` and its current-main squash evidence is historical, not a current route blocker. R149 records PR #312 merged into main as squash commit `7e8cb93fa16636336194e15e53a592117b9f276a`. R150/R152 preserved the PR #318 lane and PU-040 validation. PR #319 merged into main on 2026-05-29 as squash commit `1afb519f7623f109b7a383688449c031541ff3dd`; R154 reanchors route truth because the pre-squash R153 branch head is no longer reachable from current main. PR #320 merged as current-main route truth. Current slice truth is R156/R157/R158/R159/R160/R161: reviewed hidden-dependency guard hardening passed final adversarial, agent-native, and best-practices artifacts plus focused local validation; PR #322 metadata was repaired after live refresh showed stale feedback-loop PR text was failing `ci/circleci: linear-gate`; PR #322 review-thread remediation was pushed as `fa74a817fd5b476f10510ef26803c5a2790abd91`; R159 records the remaining current-head goal-evidence follow-up for R155 validators and current-PR handoff wording; R160 records reviewed release-readiness closeout blocker remediation with governed_change regression coverage and was pushed as `aa9a478d57d0cf0362765ab21280e1e41032d4e0`; and R161 records the reviewed live git-env sanitizer remediation for PR #322 review thread `PRRT_kwDORWZJCc6F6Lc6`. The branch contains `origin/main` at `ddd2b966663114c385811fe01ae43ef98c0b3818`; CodeRabbit, review threads, linked-issue truth, and CircleCI checks must be refreshed after the R161 push. | Use the goal board as the current execution cockpit. Next safe action is to commit and push the R161 live git-env sanitizer remediation, resolve only demonstrably fixed review threads, then refresh PR #322 checks/review-thread truth and Linear JSC-363 as separate lanes before any merge-ready, Judge/PM-ready, or goal-complete claim. |
 
 ## Artifact Index
 
@@ -92,11 +92,16 @@ unless a live refresh is recorded in the referenced artifact.
   `fa74a817fd5b476f10510ef26803c5a2790abd91`. R159 records the remaining
   goal-evidence follow-up for R155 validators and current-PR handoff wording,
   and was pushed as `f208aa3da8d7c56fb36a7a121dd453a3f4268ecd`. R160 records
-  the release-readiness closeout blocker remediation before push: explicit
+  the release-readiness closeout blocker remediation and was pushed as
+  `aa9a478d57d0cf0362765ab21280e1e41032d4e0`: explicit
   `releaseReadinessImpact` values now feed top-level closeout blockers, with
-  governed-change regression coverage. PR #322 checks, CodeRabbit/review-thread
-  truth, linked-issue status, and Linear JSC-363 must be refreshed after the
-  next push before any closeout claim.
+  governed-change regression coverage. R161 records the live git-env sanitizer
+  remediation for PR #322 review thread `PRRT_kwDORWZJCc6F6Lc6`: local git
+  inspection now uses the shared safe-env minimal policy and the regression
+  covers `GIT_COMMON_DIR`, `GIT_DIR`, `GIT_WORK_TREE`, and
+  `GIT_INDEX_FILE`. PR #322 checks, CodeRabbit/review-thread truth,
+  linked-issue status, and Linear JSC-363 must be refreshed after the next push
+  before any closeout claim.
   Historical stacked PRs may still show CONFLICTING/DIRTY metadata because
   their old head/base refs are stale. That historical metadata is not an active
   open-PR merge blocker. Before any

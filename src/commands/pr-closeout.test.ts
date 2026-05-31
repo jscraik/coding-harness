@@ -2604,11 +2604,20 @@ Refs JSC-328
 		expect(report.status).toBe("ready");
 	});
 
-	it("passes env-file variables into live git branch probes", async () => {
+	it("sanitizes caller git env vars for live git branch probes", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const closeoutGatesPath = writeCloseoutGates(dir);
 		const envFile = join(dir, ".env");
-		writeFileSync(envFile, "PR_CLOSEOUT_TEST_TOKEN=loaded\n");
+		writeFileSync(
+			envFile,
+			[
+				"PR_CLOSEOUT_TEST_TOKEN=loaded",
+				"GIT_COMMON_DIR=/tmp/wrong-repo/.git",
+				"GIT_DIR=/tmp/wrong-repo/.git",
+				"GIT_WORK_TREE=/tmp/wrong-repo",
+				"GIT_INDEX_FILE=/tmp/wrong-repo/index",
+			].join("\n"),
+		);
 		const gitCommandsSeen: string[] = [];
 		const runner = (
 			command: string,
@@ -2648,6 +2657,10 @@ Refs JSC-328
 			if (command === "git") {
 				gitCommandsSeen.push(args.join(" "));
 				expect(options.env?.PR_CLOSEOUT_TEST_TOKEN).toBe("loaded");
+				expect(options.env?.GIT_COMMON_DIR).toBeUndefined();
+				expect(options.env?.GIT_DIR).toBeUndefined();
+				expect(options.env?.GIT_WORK_TREE).toBeUndefined();
+				expect(options.env?.GIT_INDEX_FILE).toBeUndefined();
 				if (args[0] === "status") return "";
 				if (args[0] === "rev-parse") return "abc123";
 				if (args[0] === "rev-list") return "0\t0";
