@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-05-31T12:26:38Z
+Generated: 2026-05-31T21:46:37Z
 
 ## Table of Contents
 
@@ -29,7 +29,7 @@ Generated: 2026-05-31T12:26:38Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `src/commands/next-runner.ts`
+- `src/templates/codex-preflight.sh`
 
 ## agent
 

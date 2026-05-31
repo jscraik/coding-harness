@@ -10,7 +10,14 @@
 
 ## Scope
 
-Last reconciled: 2026-05-31T10:15Z plus R175 PR #322 post-push reconciliation (branch head 219854d4580fe19b13d5e1d03760f1506c7713c6, origin/main freshness at ddd2b966663114c385811fe01ae43ef98c0b3818, package-runtime-input fix pushed, targeted review threads resolved, unresolved-thread query returned none; CodeRabbit and remote checks were still pending, so merge readiness and final goal completion remain unclaimed).
+Last reconciled: 2026-05-31T21:54Z plus R179 GAP-001 Local Memory
+preflight reanchor after architecture bootstrap sync (current local head
+633b5cc48a0008fdd1f873c0962900c57bcd5e08, branch
+codex/jsc-363-gap001-local-memory-preflight; local validation, generated
+architecture context refresh, architecture bootstrap docs sync, and independent
+rereview passed; push, PR creation, remote checks, CodeRabbit, reviewDecision,
+Linear, merge readiness, Judge/PM readiness, and final goal completion remain
+unclaimed).
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -21,7 +28,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current slice truth is R156 through R175 for PR #322. R174 records local reviewed remediation for review threads PRRT_kwDORWZJCc6F7cu8 and PRRT_kwDORWZJCc6F7ezU on implementation commit 36458dd: package quality-script runtime inputs are included without publishing src/dev or unregistered source tests, with tarball-level regression coverage. R175 records the pushed head 219854d4580fe19b13d5e1d03760f1506c7713c6, targeted review-thread resolution, and a fresh unresolved-thread query returning none. CodeRabbit, pr-pipeline, ci/circleci: check, and ci/circleci: orb-pinning were still pending at the R175 refresh; linked-issue truth, Linear, merge readiness, Judge/PM readiness, and final goal completion remain separate unclaimed lanes. | Use the goal board as the current execution cockpit. Next safe action is to run R175 board validators, commit and push the R175 reconciliation, then refresh PR #322 pending checks and CodeRabbit before any merge-ready, Judge/PM-ready, or goal-complete claim. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current slice truth is R176/R177/R178/R179 for GAP-001 on branch codex/jsc-363-gap001-local-memory-preflight. R176 records local implementation and independent rereview on commit 4641f9ca17d1ed13f075ef4bdde93a533f3616ca: legacy positional preflight now defaults to required Local Memory, explicit off/optional remains available, test-only overrides are gated and CI-rejected, and repo-like mode ambiguity is covered. R177 reanchors the goal board and governed audit adoption to that implementation head. R178 reanchors the board after generated architecture context refresh commit f8fa4206d6ae85f28e557ffd5ca248938ff2bae7. R179 reanchors the board after architecture bootstrap sync commit 633b5cc48a0008fdd1f873c0962900c57bcd5e08. Push, PR creation, remote checks, CodeRabbit, reviewDecision, Linear, merge readiness, Judge/PM readiness, and final goal completion remain separate unclaimed lanes. | Use the goal board as the current execution cockpit. Next safe action is to commit and push R179, open or update the GAP-001 PR, then refresh PR checks, CodeRabbit, review threads, linked-issue state, and CircleCI logs via <REDACTED_HOME_PATH>/.codex/.env if CircleCI triage is needed before any merge-ready, Judge/PM-ready, or goal-complete claim. |
 
 ## Artifact Index
 
@@ -182,6 +189,18 @@ unless a live refresh is recorded in the referenced artifact.
   ci/circleci: orb-pinning were still pending at that refresh. Linked-issue
   truth, Linear, merge readiness, Judge/PM readiness, and final goal completion
   remain unclaimed.
+  R176 records the GAP-001 Local Memory preflight implementation on commit
+  `4641f9ca17d1ed13f075ef4bdde93a533f3616ca`: legacy positional preflight
+  calls now fail closed to required Local Memory, explicit off/optional modes
+  remain intentional, deterministic test overrides are gated and CI-rejected,
+  and repo-like mode ambiguity is covered. R177 reanchors this Project Brain
+  route and the governed 2026-05-26 audit freshness to that implementation
+  head. R178 reanchors the same route after the generated architecture context
+  refresh commit `f8fa4206d6ae85f28e557ffd5ca248938ff2bae7`. R179 reanchors
+  it again after the architecture bootstrap sync commit
+  `633b5cc48a0008fdd1f873c0962900c57bcd5e08`. Push, PR creation, remote
+  checks, CodeRabbit, reviewDecision, Linear, merge readiness, Judge/PM
+  readiness, and final goal completion remain unclaimed.
   Historical stacked PRs may still show CONFLICTING/DIRTY metadata because
   their old head/base refs are stale. That historical metadata is not an active
   open-PR merge blocker. Before any
