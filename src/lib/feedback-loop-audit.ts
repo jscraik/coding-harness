@@ -215,6 +215,12 @@ function countImplementedWithEvidence(
 	).length;
 }
 
+function countCompleteStatusEntries(
+	items: readonly (FeedbackLoopGap | FeedbackLoopRecommendation)[],
+): number {
+	return items.filter(hasCompleteStatusShape).length;
+}
+
 function hasCompleteLoopShape(loop: FeedbackLoopEntry): boolean {
 	return (
 		loop.rank > 0 &&
@@ -231,12 +237,89 @@ function hasCompleteLoopShape(loop: FeedbackLoopEntry): boolean {
 	);
 }
 
+function hasCompleteStatusShape(
+	entry: FeedbackLoopGap | FeedbackLoopRecommendation,
+): boolean {
+	return (
+		hasText(entry.id) &&
+		hasText(entry.description) &&
+		entry.evidenceRefs.some(hasText)
+	);
+}
+
 function hasText(value: string): boolean {
 	return value.trim().length > 0;
 }
 
 function hasOnlyTextItems(values: string[]): boolean {
 	return values.length > 0 && values.every(hasText);
+}
+
+function buildCrossLoopGapFinding(
+	index: FeedbackLoopIndex,
+	indexPath: string,
+	implementedGapCount: number,
+	implementedGapEvidenceCount: number,
+	completeGapMetadataCount: number,
+): FeedbackLoopAuditFinding {
+	return {
+		code: "cross_loop_gaps_closed",
+		status:
+			index.crossLoopGaps.length === EXPECTED_GAP_COUNT &&
+			index.summary.crossLoopGapCount === EXPECTED_GAP_COUNT &&
+			implementedGapCount === EXPECTED_GAP_COUNT &&
+			implementedGapEvidenceCount === EXPECTED_GAP_COUNT &&
+			completeGapMetadataCount === EXPECTED_GAP_COUNT
+				? "pass"
+				: "fail",
+		message:
+			"Expected " +
+			EXPECTED_GAP_COUNT.toString() +
+			" implemented cross-loop gaps with closure evidence and actionable metadata; found " +
+			implementedGapCount.toString() +
+			" implemented and " +
+			implementedGapEvidenceCount.toString() +
+			" with evidence and " +
+			completeGapMetadataCount.toString() +
+			" with actionable metadata; summary reports " +
+			index.summary.crossLoopGapCount.toString() +
+			".",
+		evidenceRefs: [indexPath],
+	};
+}
+
+function buildRecommendationFinding(
+	index: FeedbackLoopIndex,
+	indexPath: string,
+	implementedRecommendationCount: number,
+	implementedRecommendationEvidenceCount: number,
+	completeRecommendationMetadataCount: number,
+): FeedbackLoopAuditFinding {
+	return {
+		code: "recommended_next_steps_closed",
+		status:
+			index.recommendations.length === EXPECTED_RECOMMENDATION_COUNT &&
+			index.summary.recommendationCount === EXPECTED_RECOMMENDATION_COUNT &&
+			implementedRecommendationCount === EXPECTED_RECOMMENDATION_COUNT &&
+			implementedRecommendationEvidenceCount ===
+				EXPECTED_RECOMMENDATION_COUNT &&
+			completeRecommendationMetadataCount === EXPECTED_RECOMMENDATION_COUNT
+				? "pass"
+				: "fail",
+		message:
+			"Expected " +
+			EXPECTED_RECOMMENDATION_COUNT.toString() +
+			" implemented recommendations with closure evidence and actionable metadata; found " +
+			implementedRecommendationCount.toString() +
+			" implemented and " +
+			implementedRecommendationEvidenceCount.toString() +
+			" with evidence and " +
+			completeRecommendationMetadataCount.toString() +
+			" with actionable metadata; summary reports " +
+			index.summary.recommendationCount.toString() +
+			".",
+		evidenceRefs: [indexPath],
+	};
 }
 
 function failedReport(
@@ -278,6 +361,12 @@ function buildAuditFindings(
 		index.crossLoopGaps,
 	);
 	const implementedRecommendationEvidenceCount = countImplementedWithEvidence(
+		index.recommendations,
+	);
+	const completeGapMetadataCount = countCompleteStatusEntries(
+		index.crossLoopGaps,
+	);
+	const completeRecommendationMetadataCount = countCompleteStatusEntries(
 		index.recommendations,
 	);
 	return [
@@ -322,45 +411,20 @@ function buildAuditFindings(
 			message: "Every feedback-loop entry must include actionable metadata.",
 			evidenceRefs: [indexPath],
 		},
-		{
-			code: "cross_loop_gaps_closed",
-			status:
-				index.crossLoopGaps.length === EXPECTED_GAP_COUNT &&
-				index.summary.crossLoopGapCount === EXPECTED_GAP_COUNT &&
-				implementedGapCount === EXPECTED_GAP_COUNT &&
-				implementedGapEvidenceCount === EXPECTED_GAP_COUNT
-					? "pass"
-					: "fail",
-			message:
-				"Expected " +
-				EXPECTED_GAP_COUNT.toString() +
-				" implemented cross-loop gaps with closure evidence; found " +
-				implementedGapCount.toString() +
-				" implemented and " +
-				implementedGapEvidenceCount.toString() +
-				" with evidence; summary reports " +
-				index.summary.crossLoopGapCount.toString() +
-				".",
-			evidenceRefs: [indexPath],
-		},
-		{
-			code: "recommended_next_steps_closed",
-			status:
-				index.recommendations.length === EXPECTED_RECOMMENDATION_COUNT &&
-				implementedRecommendationCount === EXPECTED_RECOMMENDATION_COUNT &&
-				implementedRecommendationEvidenceCount === EXPECTED_RECOMMENDATION_COUNT
-					? "pass"
-					: "fail",
-			message:
-				"Expected " +
-				EXPECTED_RECOMMENDATION_COUNT.toString() +
-				" implemented recommendations with closure evidence; found " +
-				implementedRecommendationCount.toString() +
-				" implemented and " +
-				implementedRecommendationEvidenceCount.toString() +
-				" with evidence.",
-			evidenceRefs: [indexPath],
-		},
+		buildCrossLoopGapFinding(
+			index,
+			indexPath,
+			implementedGapCount,
+			implementedGapEvidenceCount,
+			completeGapMetadataCount,
+		),
+		buildRecommendationFinding(
+			index,
+			indexPath,
+			implementedRecommendationCount,
+			implementedRecommendationEvidenceCount,
+			completeRecommendationMetadataCount,
+		),
 		{
 			code: "audit_lifecycle_closed",
 			status:

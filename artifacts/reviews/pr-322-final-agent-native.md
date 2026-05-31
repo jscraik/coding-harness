@@ -1,63 +1,47 @@
 ## Agent-Native Architecture Review
 
 ### Summary
-This slice updates codestyle validation and supporting tests to preserve source-repo fail-closed behavior while keeping downstream scaffold repos agent-usable. Agent-facing behavior is deterministic and explicitly tested for both source and consumer package identities. No material agent-native parity or workflow-reliability defects were found in the reviewed scope.
+This diff improves agent-native closeout parity by making Linear mutation availability an explicit machine-readable claim signal and by tightening feedback-loop closure evidence checks. The changes preserve lane separation (local/test truth vs. Linear mutation availability vs. claim support) and prevent unknown/blocked evidence from being reported as ready or mergeable.
 
 ### Capability Map
 
-| UI/Workflow Action | Location | Agent Tool/Path | In Prompt/Contract? | Priority | Status |
-|---|---|---|---|---|---|
-| Run codestyle fast validation in source repo | scripts/validate-codestyle.sh | `bash scripts/validate-codestyle.sh --fast` | Yes (AGENTS validation contract) | Must have | Pass |
-| Fail closed when source-only quality scripts are absent in source repo | scripts/validate-codestyle.sh | `run_source_repo_script` | Yes (repo governance) | Must have | Pass |
-| Keep downstream scaffold compatibility when source-only scripts are absent | scripts/validate-codestyle.sh | `run_source_repo_script` skip path | Yes (scaffold compatibility intent) | Should have | Pass |
-| Ensure git env sanitizer test harness is cross-platform PATH-safe | src/dev/check-behavior-tests-script.test.ts | test fixture PATH setup | Yes (deterministic test runtime) | Should have | Pass |
-| Block live closeout when release readiness is unknown or omitted | src/commands/pr-closeout.test.ts | `runPrCloseoutCLI` coverage | Yes (closeout claim contract) | Must have | Pass |
-| Sanitize inherited git env in live closeout branch probes | src/commands/pr-closeout.test.ts | git runner env assertions | Yes (agent runtime safety) | Must have | Pass |
+| UI Action | Location | Agent Tool | In Prompt? | Priority | Status |
+|-----------|----------|------------|------------|----------|--------|
+| Run PR closeout and evaluate readiness including Linear availability | src/commands/pr-closeout.test.ts:501 | harness pr-closeout claim builder path via buildCloseoutClaims | n/a (CLI/output contract) | Must-have | Pass |
+| Emit claim-level blocker details for unavailable Linear mutation path | src/lib/pr-closeout/claim-builders.ts:245 | linear_tracker_state_aligned claim with blockerClass/evidenceRef | n/a (CLI/output contract) | Must-have | Pass |
+| Audit repeated-steering closure inventory with evidence + metadata completeness | src/lib/feedback-loop-audit.ts:258 | buildFeedbackLoopAudit machine-readable report | n/a (CLI/output contract) | Should-have | Pass |
 
 ### Findings
 
 #### Critical (Must Fix)
-None.
+1. None.
 
 #### Warnings (Should Fix)
-None.
+1. None.
 
 #### Observations
-1. The new source-repo gate path is covered by focused harness script tests and preserves strict fail-closed semantics for `@brainwav/coding-harness` while intentionally skipping source-only checks for consumer fixtures. Evidence: `scripts/validate-codestyle.sh:80-99`, `src/dev/validate-codestyle-script.test.ts:78-105`.
-2. The closeout test now protects global process env cleanup with a `try/finally`, reducing cross-test contamination risk for agent-executed test lanes. Evidence: `src/commands/pr-closeout.test.ts:3025-3057`.
-3. PATH composition switched to `path.delimiter` in script tests, improving deterministic execution on non-POSIX environments without changing runtime semantics on macOS/Linux. Evidence: `src/dev/check-behavior-tests-script.test.ts:10`, `src/dev/check-behavior-tests-script.test.ts:92`, `src/dev/validate-codestyle-script.test.ts:11`, `src/dev/validate-codestyle-script.test.ts:58`.
+1. Contract brittleness by fixed cardinality -- src/lib/feedback-loop-audit.ts:100 -- The audit is intentionally deterministic through hard-coded expected counts (19/5/7). This is fail-safe (prevents false success) but will require synchronized updates when index inventory evolves. Recommendation: keep this coupling documented and ensure index evolution always ships with expectation updates and regression tests.
 
-### What’s Working Well
-- Source-repo-only quality gates are explicit and auditable instead of implicitly bundled.
-- Behavior is scaffold-compatible by default but still supports strict failure mode.
-- Test coverage targets exact historical failure classes (omitted release-readiness flag and inherited git env taint).
+### What's Working Well
+- Linear mutation unavailability now flows into claim status, blocker classification, and next action in machine-readable output (blocked and unknown paths are both tested).
+- The closeout path explicitly avoids false-ready outcomes when Linear mutation is unavailable (mergeable: false and non-ready status in tests).
+- Feedback-loop audit now verifies both closure evidence and actionable metadata completeness for gaps and recommendations, improving future-agent determinism.
 
 ### Score
-- **6/6 high-priority capabilities are agent-accessible**
-- **Verdict:** PASS
+- 3/3 high-priority capabilities are agent-accessible
+- Verdict: PASS
 
-## Accountability Receipt
-- status: complete
-- manifest_path: n.a. (single-review artifact run)
-- artifact_paths:
-  - artifacts/reviews/pr-322-final-agent-native.md
-- findings:
-  - No material defects in scoped files.
-- failures_or_blockers:
-  - none
-- improvement_opportunities:
-  - Add a small assertion in `validate-codestyle-script.test.ts` for `--strict` + consumer fixture to keep intended strict semantics explicit.
-- strengths:
-  - Deterministic, fail-closed source behavior with compatibility-preserving downstream behavior.
-  - Good regression targeting for env sanitization and release-readiness enforcement.
+### Accountability Receipt
+- status: completed
+- artifact_paths: artifacts/reviews/pr-322-final-agent-native.md
+- manifest_path: n/a (single-review artifact task; no manifest path was provided by coordinator contract)
+- findings: no material defects; 1 low-risk observation
+- failures_or_blockers: none
+- improvement_opportunities: document/update fixed-count coupling workflow for feedback-loop index evolution
+- strengths: clear lane separation, explicit blocker projection, strong regression coverage for unknown/blocked semantics
 - validation_evidence:
-  - `scripts/validate-codestyle.sh:80-99`
-  - `scripts/validate-codestyle.sh:194-196`
-  - `src/dev/validate-codestyle-script.test.ts:78-105`
-  - `src/commands/pr-closeout.test.ts:1939-1943`
-  - `src/commands/pr-closeout.test.ts:3025-3057`
-  - `src/dev/check-behavior-tests-script.test.ts:92`
-- next_action:
-  - Coordinator can treat this review lane as cleared for agent-native parity in the scoped files.
+  - Command: git diff -- src/commands/pr-closeout.test.ts src/lib/pr-closeout/claim-builders.ts src/lib/feedback-loop-audit.ts src/lib/feedback-loop-audit.test.ts
+  - Evidence: reviewed changed hunks and corresponding assertion coverage for linear mutation and feedback-loop closure checks
+- next_action: coordinator can treat this lane as PASS and proceed with final synthesis
 
 WROTE: artifacts/reviews/pr-322-final-agent-native.md

@@ -1,54 +1,42 @@
-# PR 322 Final Best Practices Review
+# PR-322 Final Best Practices Rerun Review
 
 ## Scope
-- scripts/validate-codestyle.sh
 - src/commands/pr-closeout.test.ts
-- src/dev/check-behavior-tests-script.test.ts
-- src/dev/validate-codestyle-script.test.ts
+- src/lib/pr-closeout/claim-builders.ts
+- src/lib/feedback-loop-audit.ts
+- src/lib/feedback-loop-audit.test.ts
 
-## Method
-- Reviewed the uncommitted diff and surrounding file context with line-level inspection.
-- Used repository-local conventions and existing behavior patterns only.
-- Evaluated source-vs-downstream guard semantics, fixture behavior, PATH delimiter portability, and pr-closeout env handling.
+## Findings (Severity-Ranked)
+No material findings.
 
-## Findings
-No material findings remain in the scoped diff.
+## Check Results
 
-## Evidence Notes
-- `scripts/validate-codestyle.sh:80-99` adds a source-repo-aware guard that still fails closed for the source harness repo while preserving downstream compatibility, and `src/dev/validate-codestyle-script.test.ts:78-105` provides direct regression coverage for both lanes.
-- `src/dev/check-behavior-tests-script.test.ts:10` and `:92` switch PATH joining from `:` to `path.delimiter`, matching cross-platform Node practice without changing test intent.
-- `src/commands/pr-closeout.test.ts:1939-1942` extends release-readiness blocking coverage to both explicit `unknown` and omitted-flag inputs.
-- `src/commands/pr-closeout.test.ts:2964-3057` now restores process-level git env variables in a `finally` block, preventing test pollution while still asserting env sanitization within the command runner.
+1. Test behavior proof without self-affirming coupling: pass
+Evidence:
+- src/commands/pr-closeout.test.ts:485-599 validates externally observable closeout output fields (`status`, `nextAction`, `mergeable`, claims, blockers) for both `linearMutation` states, rather than mirroring internal implementation branches.
+- src/lib/feedback-loop-audit.test.ts:292-366 exercises metadata and summary-drift failure surfaces through report status/finding codes.
 
-## Validation Ownership
-- introduced by current patch: none
-- pre-existing: none observed in scoped files
-- unrelated dirty worktree: not observed within scope
-- environment or tooling failure: not observed
+2. Linear mutation blocked/unknown distinction and false-ready prevention: pass
+Evidence:
+- src/lib/pr-closeout/claim-builders.ts:251-272 maps `blocked` -> claim status `blocked` with blocker class `external_service`, and `unknown` -> claim status `unknown` with blocker class `unknown`, both with `freshness: "missing"` and explicit evidence refs.
+- src/commands/pr-closeout.test.ts:495-599 asserts downstream closeout posture differs by mutation state (`blocked` -> overall blocked + `needs_jamie_decision`; `unknown` -> fixable + `codex_can_fix_now`) and remains non-mergeable in both cases.
 
-## Accountability Receipt
-- status: complete
-- artifact_paths:
-  - artifacts/reviews/pr-322-final-best-practices.md
-- manifest_path: artifacts/agent-runs/best-practices-researcher-20260531-pr322-final-best-practices/manifest.json
-- findings:
-  - none (no material issues in scope)
-- failures_or_blockers:
-  - none
-- improvement_opportunities:
-  - Consider adding one strict-mode downstream fixture to explicitly lock the intended strict behavior for missing source-only scripts, if that contract is expected to remain immutable.
-- strengths:
-  - Clear source/downstream distinction with explicit tests.
-  - Cross-platform PATH handling correction uses standard library delimiter.
-  - Test isolation improved via deterministic env restoration.
-  - Release-readiness classification coverage tightened for real CLI usage paths.
-- validation_evidence:
-  - command: `git diff -- scripts/validate-codestyle.sh src/commands/pr-closeout.test.ts src/dev/check-behavior-tests-script.test.ts src/dev/validate-codestyle-script.test.ts`
-  - command: `nl -ba scripts/validate-codestyle.sh | sed -n "1,260p"`
-  - command: `nl -ba src/dev/validate-codestyle-script.test.ts | sed -n "1,260p"`
-  - command: `nl -ba src/dev/check-behavior-tests-script.test.ts | sed -n "1,220p"`
-  - command: `nl -ba src/commands/pr-closeout.test.ts | sed -n "1910,3075p"`
-- next_action:
-  - Ready for coordinator synthesis; no follow-up fixes required from this reviewer.
+3. Feedback-loop audit metadata and summary count maintainability: pass
+Evidence:
+- src/lib/feedback-loop-audit.ts:218-436 factors repeated logic into helpers (`countCompleteStatusEntries`, `hasCompleteStatusShape`, `buildCrossLoopGapFinding`, `buildRecommendationFinding`) and preserves existing finding code surfaces while tightening metadata and summary consistency checks.
+- src/lib/feedback-loop-audit.test.ts:292-454 adds focused negative coverage for blank required metadata, summary drift, and blank/absent evidence refs.
 
-WROTE: artifacts/reviews/pr-322-final-best-practices.md
+4. Docs/architecture synchronization need for this slice: no immediate requirement observed
+Evidence:
+- The change surface is constrained to verifier/test behavior and does not introduce new command families, schema versions, public contracts, or governance lane semantics beyond stricter claim classification coverage.
+
+## Residual Risk
+- Moderate residual risk around future mutation enum expansion (`linearMutation` new values) because this change validates only `blocked` and `unknown` branches. Existing tests do not assert an exhaustive mapping contract for newly introduced mutation states.
+
+## Validation Evidence Reviewed
+- Coordinator-provided:
+  - `pnpm vitest run src/commands/pr-closeout.test.ts src/lib/feedback-loop-audit.test.ts` (pass, 79 tests)
+  - `git diff --check` (pass)
+  - `bash scripts/validate-codestyle.sh --fast` (pass, with existing drift-gate warnings)
+
+WROTE: artifacts/reviews/pr-322-final-best-practices-rerun.md

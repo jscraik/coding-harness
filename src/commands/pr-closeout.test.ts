@@ -256,7 +256,7 @@ function writeAssuranceMatrix(dir: string): string {
 
 function writeEnvFile(dir: string): string {
 	const path = join(dir, "codex.env");
-	writeFileSync(path, "# test env file\n");
+	writeFileSync(path, "LINEAR_API_KEY=test-linear-key\n");
 	return path;
 }
 
@@ -481,6 +481,117 @@ describe("runPrCloseoutCLI", () => {
 			},
 		});
 	});
+
+	for (const linearMutationCase of [
+		{
+			mutation: "blocked" as const,
+			expectedStatus: "blocked",
+			expectedNextAction: "needs_jamie_decision",
+			expectedClaimStatus: "blocked",
+			expectedBlockerClass: "external_service",
+		},
+		{
+			mutation: "unknown" as const,
+			expectedStatus: "fixable",
+			expectedNextAction: "codex_can_fix_now",
+			expectedClaimStatus: "unknown",
+			expectedBlockerClass: "unknown",
+		},
+	] as const) {
+		it(`does not mark Linear closeout ready when Linear mutation availability is ${linearMutationCase.mutation}`, async () => {
+			const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+			const inputPath = join(dir, "input.json");
+			writeFileSync(
+				inputPath,
+				JSON.stringify({
+					pullRequest: {
+						number: 258,
+						state: "OPEN",
+						isDraft: false,
+						mergeStateStatus: "CLEAN",
+						headSha: "abc123",
+						reviewDecision: "APPROVED",
+						body: "Refs JSC-327\n",
+					},
+					branch: {
+						clean: true,
+						headSha: "abc123",
+						worktreeRole: "implementation",
+					},
+					checks: [
+						{ name: "pr-pipeline", state: "SUCCESS", headSha: "abc123" },
+					],
+					reviewThreads: { unresolved: 0 },
+					traceability: {
+						sessionIds: ["codex-session:2026-05-16"],
+						traceIds: ["circleci:workflow-123"],
+						aiSessionTraceability:
+							"JSC-327 -> PR #258 -> Codex session -> commit -> validation",
+					},
+					rollback: {
+						notApplicable: true,
+						evidenceRef: "pr-body:rollback",
+					},
+					closeoutGates: PASSING_PHASE_EXIT,
+					assurance: PASSING_ASSURANCE,
+					runtimeEvidence: PASSING_RUNTIME_EVIDENCE,
+					reviewArtifacts: [
+						{
+							path: ".harness/review/pr-258-codex.md",
+							producer: "codex",
+							status: "present",
+							evidenceRef: "artifact:.harness/review/pr-258-codex.md",
+						},
+					],
+					linearMutation: linearMutationCase.mutation,
+				}),
+			);
+
+			const result = await capture(["--json", "--input", inputPath]);
+			const report = JSON.parse(result.output) as {
+				status: string;
+				nextAction: string;
+				mergeable: boolean;
+				blockers: Array<{
+					surface: string;
+					classification?: string;
+					kind?: string;
+					ref?: string;
+				}>;
+				claims: Array<{
+					claim: string;
+					status: string;
+					freshness: string;
+					evidenceRef: string | null;
+				}>;
+			};
+
+			expect(result.exitCode).toBe(0);
+			expect(report.status).toBe(linearMutationCase.expectedStatus);
+			expect(report.nextAction).toBe(linearMutationCase.expectedNextAction);
+			expect(report.mergeable).toBe(false);
+			expect(report.claims).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						claim: "linear_tracker_state_aligned",
+						status: linearMutationCase.expectedClaimStatus,
+						freshness: "missing",
+						evidenceRef: `linearMutation:${linearMutationCase.mutation}`,
+					}),
+				]),
+			);
+			expect(report.blockers).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						surface: "linear",
+						classification: linearMutationCase.expectedBlockerClass,
+						kind: "closeout_claim",
+						ref: `linearMutation:${linearMutationCase.mutation}`,
+					}),
+				]),
+			);
+		});
+	}
 
 	it("applies release-readiness CLI classification to input files", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
