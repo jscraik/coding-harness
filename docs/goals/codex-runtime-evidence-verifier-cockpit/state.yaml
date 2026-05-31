@@ -66,8 +66,8 @@ completion_contract:
   blocked_stop_condition: "Stop if the board is invalid, activation is absent for Worker work, required intent review is missing, validation cannot run, reviewer artifacts are missing after retry, PR or tracker truth is stale, dirty work overlaps required files, or continuing would contaminate a PR under triage."
 current_slice_gate:
   lifecycle_unit: "PU-041-hidden-dependency-guard-hardening"
-  status: "pr322_safe_env_config_family_reviewed_validated_commit_pending_push"
-  reason: "R156 records reviewer-driven local validation for the hidden-dependency guard. R157 through R171 record earlier PR #322 remediation and post-push reconciliation. R172 records local reviewed remediation for PR #322 review thread PRRT_kwDORWZJCc6F7StG on implementation commit c5a1f39573090071326077d789484b9dabb71f7a: the shared minimal Git environment sanitizer now drops GIT_CONFIG and all GIT_CONFIG_* keys, and focused behavioral regressions prove both inline env config and config-file pointer contamination cannot hide untracked-file truth after sanitization. This remains local validation and goal-board evidence only; push, remote checks green, CodeRabbit completion, reviewDecision approval, Linear full-lifecycle completion, Judge/PM readiness, runtime producer emission, delivery-truth consumption, merge readiness, and final goal completion remain unclaimed."
+  status: "pr322_expect_behavior_exact_equality_reviewed_validated_commit_pending_push"
+  reason: "R156 records reviewer-driven local validation for the hidden-dependency guard. R157 through R172 record earlier PR #322 remediation and post-push reconciliation. R173 records local reviewed remediation for PR #322 review thread PRRT_kwDORWZJCc6F7XW0 on implementation commit 4d5039f0405a3fb97c9b6144d4a18472babf56ac: expectBehavior now validates given/should context explicitly and requires exact deep equality between actual and expected, with a regression proving extra actual fields fail against the expected shape. This remains local validation and goal-board evidence only; push, remote checks green, CodeRabbit completion, reviewDecision approval, Linear full-lifecycle completion, Judge/PM readiness, runtime producer emission, delivery-truth consumption, merge readiness, and final goal completion remain unclaimed."
   completed_before_local_validation_claim:
     - "Created PU-039 intent at .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-039-review-coverage-backfill-intent.json."
     - "Reviewed the PU-039 intent with adversarial-reviewer and agent-native-reviewer artifacts before validator or ledger implementation."
@@ -79,7 +79,7 @@ current_slice_gate:
     - "Verified skill-lens and reviewer artifacts exist, including the final adversarial no-blocker artifact."
     - "Appended R139 with artifact-backed skill-lens and independent-reviewer results."
   next_required_handoff_steps:
-    - "Commit and push R172 for PR #322 safe-env config-family remediation, then resolve only demonstrably fixed review thread PRRT_kwDORWZJCc6F7StG on the pushed head."
+    - "Commit and push R173 for PR #322 expectBehavior exact-equality remediation, then resolve only demonstrably fixed review thread PRRT_kwDORWZJCc6F7XW0 on the pushed head."
     - "If new CodeRabbit findings appear, fix only validated PR #322 findings on this branch and record a fresh receipt for the new head."
     - "Before the next implementation slice, choose the next unproven requirement from the goal, plan, receipts, adopted audits, and Project Brain surfaces; create and review intent before implementation."
     - "Refresh live Linear JSC-363 before tracker-alignment, full-lifecycle closeout, or Judge/PM-ready claims; tracker truth remains separate from runtime, CI, review, and implementation proof."
