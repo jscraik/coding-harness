@@ -279,9 +279,8 @@ function validateHooks(value, generatedAt, repoRoot, errors) {
 			errors.push(`${prefix}.triggerKind: must be recognized`);
 		if (!STATUSES.has(String(hook.status)))
 			errors.push(`${prefix}.status: must be recognized`);
-		if (hook.blockerClass !== null && typeof hook.blockerClass !== "string") {
-			errors.push(`${prefix}.blockerClass: must be a string or null`);
-		}
+		if (hook.blockerClass !== null)
+			validatePointer(hook.blockerClass, `${prefix}.blockerClass`, errors);
 		validateDateTime(hook.checkedAt, `${prefix}.checkedAt`, errors);
 		if (isAfter(hook.checkedAt, generatedAt))
 			errors.push(`${prefix}.checkedAt: must not be after generatedAt`);

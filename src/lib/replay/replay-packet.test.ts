@@ -252,4 +252,21 @@ describe("ReplayPacket/v1", () => {
 			errors: expect.arrayContaining([expect.stringContaining("checkedAt")]),
 		});
 	});
+
+	it("rejects hook provenance blocker classes that are not compact pointers", () => {
+		const packet = loadExample();
+		packet.hookProvenance = [
+			{
+				...firstHook(packet),
+				blockerClass: "needs manual triage",
+			},
+		];
+
+		expect(validate(packet)).toMatchObject({
+			status: "fail",
+			errors: expect.arrayContaining([
+				expect.stringContaining("hookProvenance[0].blockerClass"),
+			]),
+		});
+	});
 });

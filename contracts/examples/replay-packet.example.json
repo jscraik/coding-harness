@@ -121,7 +121,7 @@
 					"refKind": "resolved_command",
 					"ref": "scripts/validate-replay-packet.cjs",
 					"hashAlgorithm": "sha256",
-					"sha256": "eb2081c30696b7dc96eb8456a2d3a5481f1efa40eadc6d490ac9cfbc6f0c6ef9",
+					"sha256": "d9c67284aeb20c8634842efa5c8ea79fb84c0d0c5e2179a017e25d82ad3e4da6",
 					"requiredForReplay": true,
 					"requiresFilesystemExistence": true
 				},
