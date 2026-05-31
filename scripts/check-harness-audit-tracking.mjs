@@ -1,8 +1,27 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 
 const gitignore = readFileSync(".gitignore", "utf8");
 const readme = readFileSync(".harness/README.md", "utf8");
+
+function gitCheckIgnorePattern(path) {
+	const result = spawnSync(
+		"git",
+		["check-ignore", "-v", "--no-index", "--", path],
+		{
+			encoding: "utf8",
+		},
+	);
+	return result.stdout.trim();
+}
+
+const feedbackLoopIndexIgnoreRule = gitCheckIgnorePattern(
+	".harness/feedback-loops/index.json",
+);
+const feedbackLoopSiblingIgnoreRule = gitCheckIgnorePattern(
+	".harness/feedback-loops/local-output.json",
+);
 
 const requirements = [
 	{
@@ -18,6 +37,25 @@ const requirements = [
 			(readme.includes(".harness/audits/YYYY-MM-DD-...-audit.md") ||
 				readme.includes(".harness/audits/YYYY-MM-DD-<type>-audit.md")) &&
 			readme.includes(".harness/research/audits/"),
+	},
+	{
+		name: ".harness/feedback-loops gitignore allowlist",
+		ok:
+			gitignore.includes("!.harness/feedback-loops/") &&
+			gitignore.includes(".harness/feedback-loops/*") &&
+			gitignore.includes("!.harness/feedback-loops/index.json") &&
+			feedbackLoopIndexIgnoreRule.includes(
+				":!.harness/feedback-loops/index.json\t.harness/feedback-loops/index.json",
+			) &&
+			feedbackLoopSiblingIgnoreRule.includes(
+				":.harness/feedback-loops/*\t.harness/feedback-loops/local-output.json",
+			),
+	},
+	{
+		name: ".harness/feedback-loops control-plane map",
+		ok:
+			readme.includes(".harness/feedback-loops/index.json") &&
+			readme.includes("feedback-loop-audit"),
 	},
 	{
 		name: "audit destination distinction",

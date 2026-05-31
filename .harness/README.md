@@ -68,6 +68,7 @@ repository truth. Classify the artifact first:
 | `.harness/learnings/enforcement-status.json` | `policy` | Track when it represents the repo intent for enforcement posture |
 | `.harness/learnings/*.local.json` | `generated-runtime` | Do not track imported local reviewer, session, or telemetry feeds |
 | `.harness/knowledge/**.md` | `secondary-context` | Track |
+| `.harness/feedback-loops/index.json` | `policy` | Track as the curated feedback-loop ledger consumed by `feedback-loop-audit` and PR closeout evidence |
 | `.harness/quality/**` | `policy` | Track |
 | `.harness/review-log.md` | `secondary-context` | Track |
 | `.harness/media/**/*.md` | `secondary-context` | Track sidecars, prompts, and review notes for promoted media artifacts |

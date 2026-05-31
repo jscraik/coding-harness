@@ -1,357 +1,547 @@
 {
-  "schemaVersion": "feedback-loop-index/v1",
-  "generatedAt": "2026-05-30T20:54:32.000Z",
-  "sourceAudit": ".harness/audits/2026-05-30-feedback-loops-audit.md",
-  "status": "implemented",
-  "owner": "coding-harness",
-  "summary": {
-    "loopCount": 19,
-    "crossLoopGapCount": 5,
-    "recommendationCount": 7,
-    "openFindingCount": 0
-  },
-  "loops": [
-    {
-      "rank": 1,
-      "id": "operator-steering-to-durable-guardrail",
-      "name": "Operator steering to durable guardrail",
-      "leverage": "very-high",
-      "owner": "agent-governance",
-      "sources": ["Jamie feedback", "review comments", "repeated command failures"],
-      "recipients": ["current agent", "AGENTS.md", ".harness/memory/LEARNINGS.md", "Project Brain"],
-      "expectedDelay": "minutes in-session; longer when deferred to closeout",
-      "failureClass": "signal_not_promoted",
-      "action": "Track steering admissions with durable destinations and proving commands.",
-      "closureState": "implemented",
-      "evidenceRefs": ["AGENTS.md#required-essentials", ".harness/memory/LEARNINGS.md", "package.json#docs:steering:guard"]
-    },
-    {
-      "rank": 2,
-      "id": "local-validation-and-repo-wrapper-gates",
-      "name": "Local validation and repo wrapper gates",
-      "leverage": "very-high",
-      "owner": "validation",
-      "sources": ["pnpm check", "bash scripts/validate-codestyle.sh", "bash scripts/verify-work.sh"],
-      "recipients": ["implementing agent", "PR author", "local hooks"],
-      "expectedDelay": "seconds to minutes locally",
-      "failureClass": "validation_overgeneralized_or_overclaimed",
-      "action": "Record exact commands, scope, outcome, blocker class, and next owner.",
-      "closureState": "implemented",
-      "evidenceRefs": ["CODESTYLE.md#enforcement-model", "docs/agents/04-validation.md", "scripts/validate-codestyle.sh"]
-    },
-    {
-      "rank": 3,
-      "id": "ci-and-branch-protection-checks",
-      "name": "CI and branch-protection checks",
-      "leverage": "very-high",
-      "owner": "ci-release",
-      "sources": ["CircleCI", "CodeRabbit", "Semgrep Cloud", "branch protection"],
-      "recipients": ["PR author", "maintainer", "GitHub branch protection"],
-      "expectedDelay": "5-30 minutes for most PR checks",
-      "failureClass": "external_readiness_conflated",
-      "action": "Keep required-check manifests, CI ownership, and docs in parity.",
-      "closureState": "implemented",
-      "evidenceRefs": [".harness/ci-required-checks.json", "harness.contract.json", ".circleci/config.yml"]
-    },
-    {
-      "rank": 4,
-      "id": "code-review-and-review-gate",
-      "name": "Code review, CodeRabbit, and review-gate",
-      "leverage": "very-high",
-      "owner": "review-governance",
-      "sources": ["human PR review", "CodeRabbit comments", "Codex review artifacts", "harness review-gate"],
-      "recipients": ["PR author", "independent reviewers", "PR closeout gates"],
-      "expectedDelay": "minutes to days depending on reviewer",
-      "failureClass": "review_fix_not_reconciled",
-      "action": "Join review source, severity, fix commit, validation, remote state, and learning promotion.",
-      "closureState": "implemented",
-      "evidenceRefs": ["docs/agents/12-ai-review-governance.md", "src/lib/learnings/review-context.ts", "src/lib/pr-closeout/blockers.ts"]
-    },
-    {
-      "rank": 5,
-      "id": "runtime-evidence-runtime-card-and-pr-closeout",
-      "name": "Runtime evidence, runtime-card, and pr-closeout",
-      "leverage": "high",
-      "owner": "delivery-truth",
-      "sources": ["runtime-card/v1", "pr-closeout/v1", "delivery-truth packets"],
-      "recipients": ["current agent", "coordinator", "PR author", "reviewer"],
-      "expectedDelay": "immediate locally; minutes with providers",
-      "failureClass": "stale_or_overclaimed_packet",
-      "action": "Expose lane-separated freshness and advisory-only status before closeout claims.",
-      "closureState": "implemented",
-      "evidenceRefs": ["src/lib/pr-closeout/evaluator.ts", "src/lib/runtime-card.ts", "src/lib/delivery-truth"]
-    },
-    {
-      "rank": 6,
-      "id": "linear-and-issue-tracking",
-      "name": "Linear and issue-tracking loop",
-      "leverage": "high",
-      "owner": "linear-workflow",
-      "sources": ["Linear issue state", "branch naming", "linear-gate", "PR template"],
-      "recipients": ["agent", "PR author", "Linear issue owner"],
-      "expectedDelay": "immediate locally; remote sync varies",
-      "failureClass": "tracker_truth_drift",
-      "action": "Require current PR and validation refs before issue-state changes.",
-      "closureState": "implemented",
-      "evidenceRefs": ["docs/agents/13-linear-production-workflow.md", "src/lib/cli/registry/linear-gate-command-spec.ts", ".github/PULL_REQUEST_TEMPLATE.md"]
-    },
-    {
-      "rank": 7,
-      "id": "project-brain-local-memory-and-learnings",
-      "name": "Project Brain, local memory, and learnings",
-      "leverage": "high",
-      "owner": "learning-loop",
-      "sources": [".harness/memory/LEARNINGS.md", "Project Brain", "north-star feedback"],
-      "recipients": ["future agents", "closeout author", "planning workflows"],
-      "expectedDelay": "same turn when explicit; longer when deferred",
-      "failureClass": "learning_not_promoted",
-      "action": "Track affected surfaces, validation proof, and recurrence-prevention evidence.",
-      "closureState": "implemented",
-      "evidenceRefs": ["src/lib/learnings/north-star-feedback.ts", "src/lib/learnings/promote.ts", ".harness/memory/LEARNINGS.md"]
-    },
-    {
-      "rank": 8,
-      "id": "docs-contract-and-governance-drift",
-      "name": "Docs, contract, and governance drift gates",
-      "leverage": "high",
-      "owner": "governance-docs",
-      "sources": ["docs-gate", "contract validation", "codestyle parity", "workflow validation"],
-      "recipients": ["PR author", "docs reviewer", "downstream scaffold consumers"],
-      "expectedDelay": "seconds to minutes locally",
-      "failureClass": "governance_behavior_drift",
-      "action": "Keep consumer, changed behavior, and downstream-confusion evidence visible.",
-      "closureState": "implemented",
-      "evidenceRefs": ["harness.contract.json", "scripts/check-codestyle-parity.sh", "scripts/validate-workflow-contracts.cjs"]
-    },
-    {
-      "rank": 9,
-      "id": "security-dependency-and-secrets",
-      "name": "Security, dependency, and secrets loops",
-      "leverage": "high",
-      "owner": "security",
-      "sources": ["pnpm audit", "Semgrep", "Snyk", "staged secret checks"],
-      "recipients": ["PR author", "security reviewer", "branch protection"],
-      "expectedDelay": "seconds to 30 minutes",
-      "failureClass": "security_finding_without_owner",
-      "action": "Track scanner source, severity, waiver, owner, expiry, and verification command.",
-      "closureState": "implemented",
-      "evidenceRefs": ["scripts/check-staged-secrets.sh", "scripts/check-semgrep-changed.sh", "package.json#audit"]
-    },
-    {
-      "rank": 10,
-      "id": "artifact-and-evidence-provenance",
-      "name": "Artifact and evidence provenance loops",
-      "leverage": "medium-high",
-      "owner": "artifact-governance",
-      "sources": ["artifact-gate", "research validators", "runtime receipts", ".harness/active-artifacts.md"],
-      "recipients": ["reviewer", "closeout author", "future agent"],
-      "expectedDelay": "seconds to minutes locally",
-      "failureClass": "artifact_not_claim_support_eligible",
-      "action": "Track active, superseded, consumed, stale, and local-only artifact states.",
-      "closureState": "implemented",
-      "evidenceRefs": ["src/lib/artifact-runtime-surface", ".harness/active-artifacts.md", "src/lib/cli/registry/artifact-gate-command-spec.ts"]
-    },
-    {
-      "rank": 11,
-      "id": "related-tests-and-behavior-test-quality",
-      "name": "Related tests and behavior-test quality loops",
-      "leverage": "medium-high",
-      "owner": "testing",
-      "sources": ["Vitest", "test:related", "quality:self-affirming", "quality:behavior-tests"],
-      "recipients": ["implementing agent", "maintainer", "reviewer"],
-      "expectedDelay": "seconds to minutes",
-      "failureClass": "test_quality_gap",
-      "action": "Backfeed escaped defects into related-test mapping and trust-boundary behavior tests.",
-      "closureState": "implemented",
-      "evidenceRefs": ["scripts/check-related-tests.sh", "scripts/check-self-affirming-tests.mjs", "scripts/check-behavior-tests.mjs"]
-    },
-    {
-      "rank": 12,
-      "id": "preflight-policy-risk-and-blast-radius",
-      "name": "Preflight, policy, risk, and blast-radius loops",
-      "leverage": "medium-high",
-      "owner": "risk-policy",
-      "sources": ["preflight-gate", "policy-gate", "risk-tier", "blast-radius"],
-      "recipients": ["agent", "PR author", "reviewer"],
-      "expectedDelay": "seconds to minutes",
-      "failureClass": "risk_classifier_not_calibrated",
-      "action": "Capture false positives and false negatives by path category.",
-      "closureState": "implemented",
-      "evidenceRefs": ["src/lib/cli/registry/preflight-gate-command-spec.ts", "src/lib/cli/registry/risk-tier-command-spec.ts", "src/commands/blast-radius.ts"]
-    },
-    {
-      "rank": 13,
-      "id": "git-hooks-and-worktree-safety",
-      "name": "Git hooks and worktree-safety loops",
-      "leverage": "medium",
-      "owner": "tooling",
-      "sources": ["pre-commit hooks", "pre-push hooks", "prepare-worktree.sh", "check-git-common-config.sh"],
-      "recipients": ["local agent", "developer before commit or push"],
-      "expectedDelay": "immediate to minutes",
-      "failureClass": "hook_bypass_or_environment_drift",
-      "action": "Record hook bypasses and keep hook environment sanitization enforced.",
-      "closureState": "implemented",
-      "evidenceRefs": ["scripts/prepare-worktree.sh", "scripts/check-git-common-config.sh", "scripts/check-environment.sh"]
-    },
-    {
-      "rank": 14,
-      "id": "agent-readiness-session-context-and-next-command",
-      "name": "Agent readiness, session context, and next-command loops",
-      "leverage": "medium",
-      "owner": "agent-readiness",
-      "sources": ["harness next --json", "agent-readiness", "session-context/v1", "runtime-card inputs"],
-      "recipients": ["current agents", "future agents", "coordinators"],
-      "expectedDelay": "immediate locally",
-      "failureClass": "stale_recommendation_or_advisory_overclaim",
-      "action": "Capture recommendation overrides and repeated route mistakes.",
-      "closureState": "implemented",
-      "evidenceRefs": ["src/commands/next.ts", "src/lib/agent-readiness", "src/lib/session"]
-    },
-    {
-      "rank": 15,
-      "id": "telemetry-observability-and-session-traces",
-      "name": "Telemetry, observability, and session traces",
-      "leverage": "medium",
-      "owner": "observability",
-      "sources": ["runtime-card traces", "session collector artifacts", "eval usage collection"],
-      "recipients": ["maintainers", "evaluators", "release reviewers"],
-      "expectedDelay": "immediate locally; longer when aggregated",
-      "failureClass": "trace_without_claim_mapping",
-      "action": "Record gate duration, failure class, rerun count, and turnaround fields.",
-      "closureState": "implemented",
-      "evidenceRefs": ["src/lib/evals/observed-skill-usage.ts", "src/lib/cli/registry/observability-gate-command-spec.ts", "src/lib/runtime-card.ts"]
-    },
-    {
-      "rank": 16,
-      "id": "packaged-skill-downstream-install-and-upgrade",
-      "name": "Packaged skill, downstream install, and upgrade loops",
-      "leverage": "medium",
-      "owner": "packaging",
-      "sources": ["packaged skill validation", "harness upgrade", "upgrade matrix tests"],
-      "recipients": ["maintainers", "downstream repo agents", "package consumers"],
-      "expectedDelay": "minutes locally; longer downstream",
-      "failureClass": "downstream_generated_surface_drift",
-      "action": "Track first-run blockers and generated-surface drift by version.",
-      "closureState": "implemented",
-      "evidenceRefs": ["scripts/validate-packaged-skill.cjs", "src/lib/upgrade", "scripts/test-harness-upgrade-matrix.mjs"]
-    },
-    {
-      "rank": 17,
-      "id": "release-provenance-and-rollback",
-      "name": "Release, provenance, and rollback loops",
-      "leverage": "medium",
-      "owner": "release",
-      "sources": ["prepublishOnly", "release scripts", "GitHub Actions release publishing", "npm package state"],
-      "recipients": ["release owner", "package consumers", "downstream repos"],
-      "expectedDelay": "release-cadence dependent",
-      "failureClass": "release_feedback_not_retrospected",
-      "action": "Tie post-release issues back to missing local, CI, review, or rollback loops.",
-      "closureState": "implemented",
-      "evidenceRefs": ["package.json#prepublishOnly", ".github/workflows", "CHANGELOG.md"]
-    },
-    {
-      "rank": 18,
-      "id": "audit-research-and-refactor-reports",
-      "name": "Audit, research, and refactor report loops",
-      "leverage": "medium",
-      "owner": "research-audit",
-      "sources": [".harness/audits", ".harness/research/audits", ".harness/refactors"],
-      "recipients": ["maintainers", "planning agents", "implementation agents"],
-      "expectedDelay": "same turn for reports; days to weeks for remediation",
-      "failureClass": "audit_finding_without_lifecycle_state",
-      "action": "Require accepted, rejected, implemented, superseded, or linked states.",
-      "closureState": "implemented",
-      "evidenceRefs": [".harness/feedback-loops/index.json", ".harness/research/audits", "src/commands/feedback-loop-audit.ts"]
-    },
-    {
-      "rank": 19,
-      "id": "user-reports-and-external-issue-intake",
-      "name": "User reports and external issue intake",
-      "leverage": "medium",
-      "owner": "issue-intake",
-      "sources": ["user bug reports", "GitHub issues", "Linear intake", "PR comments from consumers"],
-      "recipients": ["triage owner", "maintainer", "implementation agent"],
-      "expectedDelay": "hours to days depending on channel",
-      "failureClass": "external_report_not_normalized",
-      "action": "Normalize reports with reproduction, affected version, expected/actual, escaped-loop class, and durable destination.",
-      "closureState": "implemented",
-      "evidenceRefs": ["docs/agents/13-linear-production-workflow.md", "src/lib/learnings", ".github/PULL_REQUEST_TEMPLATE.md"]
-    }
-  ],
-  "crossLoopGaps": [
-    {
-      "id": "unified-feedback-loop-ledger",
-      "description": "No unified feedback-loop ledger joined source, recipient, delay, owner, failure class, and action taken.",
-      "closureState": "implemented",
-      "evidenceRefs": [".harness/feedback-loops/index.json", "src/commands/feedback-loop-audit.ts"]
-    },
-    {
-      "id": "implicit-delay",
-      "description": "Delay was mostly implicit across validation, CI, review, tracker, memory, and artifact freshness loops.",
-      "closureState": "implemented",
-      "evidenceRefs": [".harness/feedback-loops/index.json#loops.expectedDelay"]
-    },
-    {
-      "id": "uneven-closure-state",
-      "description": "Audit findings, steering admissions, user reports, and telemetry observations lacked clear lifecycle states.",
-      "closureState": "implemented",
-      "evidenceRefs": [".harness/feedback-loops/index.json#closureState"]
-    },
-    {
-      "id": "manual-feedback-promotion",
-      "description": "Repeated failures required manual promotion to guardrails, tests, policy checks, prompts, or exceptions.",
-      "closureState": "implemented",
-      "evidenceRefs": [".harness/feedback-loops/index.json#loops.action", "src/lib/learnings/north-star-feedback.ts"]
-    },
-    {
-      "id": "external-truth-lane-conflation",
-      "description": "Local validation, CI, review, Linear, and merge readiness remained easy to conflate in reports.",
-      "closureState": "implemented",
-      "evidenceRefs": [".harness/feedback-loops/index.json", "src/lib/pr-closeout/evaluator.ts"]
-    }
-  ],
-  "recommendations": [
-    {
-      "id": "feedback-loop-index",
-      "description": "Build .harness/feedback-loops/index.json with owner, source, recipient, delay, latest signal, failure class, action, and closure state.",
-      "closureState": "implemented",
-      "evidenceRefs": [".harness/feedback-loops/index.json"]
-    },
-    {
-      "id": "feedback-loop-audit-command",
-      "description": "Add harness feedback-loop-audit --json as a read-only command over repository evidence.",
-      "closureState": "implemented",
-      "evidenceRefs": ["src/commands/feedback-loop-audit.ts", "src/lib/feedback-loop-audit.ts"]
-    },
-    {
-      "id": "lane-separated-pr-closeout-feedback-summary",
-      "description": "Keep local validation, CI, review, Linear, artifact/runtime evidence, learning promotion, and residual signals separated.",
-      "closureState": "implemented",
-      "evidenceRefs": [".harness/feedback-loops/index.json#loops", "src/lib/pr-closeout/evaluator.ts"]
-    },
-    {
-      "id": "latency-collection",
-      "description": "Represent expected delay for each loop and leave provider-backed collection as explicit future extension.",
-      "closureState": "implemented",
-      "evidenceRefs": [".harness/feedback-loops/index.json#loops.expectedDelay"]
-    },
-    {
-      "id": "audit-finding-lifecycle",
-      "description": "Create a lifecycle convention for audit findings: accepted, rejected, implemented, superseded, or linked.",
-      "closureState": "implemented",
-      "evidenceRefs": [".harness/feedback-loops/index.json#closureState", "src/lib/feedback-loop-audit.ts"]
-    },
-    {
-      "id": "escaped-loop-classification",
-      "description": "Classify user reports and escaped defects by the loop that should have caught the issue.",
-      "closureState": "implemented",
-      "evidenceRefs": [".harness/feedback-loops/index.json#loops.failureClass"]
-    },
-    {
-      "id": "narrow-local-first-implementation",
-      "description": "Start with local validation, CI manifest, PR template, learnings, and audit findings before provider-backed state.",
-      "closureState": "implemented",
-      "evidenceRefs": [".harness/feedback-loops/index.json", ".harness/ci-required-checks.json", ".github/PULL_REQUEST_TEMPLATE.md", ".harness/memory/LEARNINGS.md"]
-    }
-  ]
+	"schemaVersion": "feedback-loop-index/v1",
+	"generatedAt": "2026-05-30T20:54:32.000Z",
+	"sourceAudit": ".harness/audits/2026-05-30-feedback-loops-audit.md",
+	"status": "implemented",
+	"owner": "coding-harness",
+	"summary": {
+		"loopCount": 19,
+		"crossLoopGapCount": 5,
+		"recommendationCount": 7,
+		"openFindingCount": 0
+	},
+	"loops": [
+		{
+			"rank": 1,
+			"id": "operator-steering-to-durable-guardrail",
+			"name": "Operator steering to durable guardrail",
+			"leverage": "very-high",
+			"owner": "agent-governance",
+			"sources": [
+				"Jamie feedback",
+				"review comments",
+				"repeated command failures"
+			],
+			"recipients": [
+				"current agent",
+				"AGENTS.md",
+				".harness/memory/LEARNINGS.md",
+				"Project Brain"
+			],
+			"expectedDelay": "minutes in-session; longer when deferred to closeout",
+			"failureClass": "signal_not_promoted",
+			"action": "Track steering admissions with durable destinations and proving commands.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"AGENTS.md#required-essentials",
+				".harness/memory/LEARNINGS.md",
+				"package.json#docs:steering:guard"
+			]
+		},
+		{
+			"rank": 2,
+			"id": "local-validation-and-repo-wrapper-gates",
+			"name": "Local validation and repo wrapper gates",
+			"leverage": "very-high",
+			"owner": "validation",
+			"sources": [
+				"pnpm check",
+				"bash scripts/validate-codestyle.sh",
+				"bash scripts/verify-work.sh"
+			],
+			"recipients": ["implementing agent", "PR author", "local hooks"],
+			"expectedDelay": "seconds to minutes locally",
+			"failureClass": "validation_overgeneralized_or_overclaimed",
+			"action": "Record exact commands, scope, outcome, blocker class, and next owner.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"CODESTYLE.md#enforcement-model",
+				"docs/agents/04-validation.md",
+				"scripts/validate-codestyle.sh"
+			]
+		},
+		{
+			"rank": 3,
+			"id": "ci-and-branch-protection-checks",
+			"name": "CI and branch-protection checks",
+			"leverage": "very-high",
+			"owner": "ci-release",
+			"sources": [
+				"CircleCI",
+				"CodeRabbit",
+				"Semgrep Cloud",
+				"branch protection"
+			],
+			"recipients": ["PR author", "maintainer", "GitHub branch protection"],
+			"expectedDelay": "5-30 minutes for most PR checks",
+			"failureClass": "external_readiness_conflated",
+			"action": "Keep required-check manifests, CI ownership, and docs in parity.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				".harness/ci-required-checks.json",
+				"harness.contract.json",
+				".circleci/config.yml"
+			]
+		},
+		{
+			"rank": 4,
+			"id": "code-review-and-review-gate",
+			"name": "Code review, CodeRabbit, and review-gate",
+			"leverage": "very-high",
+			"owner": "review-governance",
+			"sources": [
+				"human PR review",
+				"CodeRabbit comments",
+				"Codex review artifacts",
+				"harness review-gate"
+			],
+			"recipients": ["PR author", "independent reviewers", "PR closeout gates"],
+			"expectedDelay": "minutes to days depending on reviewer",
+			"failureClass": "review_fix_not_reconciled",
+			"action": "Join review source, severity, fix commit, validation, remote state, and learning promotion.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"docs/agents/12-ai-review-governance.md",
+				"src/lib/learnings/review-context.ts",
+				"src/lib/pr-closeout/blockers.ts"
+			]
+		},
+		{
+			"rank": 5,
+			"id": "runtime-evidence-runtime-card-and-pr-closeout",
+			"name": "Runtime evidence, runtime-card, and pr-closeout",
+			"leverage": "high",
+			"owner": "delivery-truth",
+			"sources": [
+				"runtime-card/v1",
+				"pr-closeout/v1",
+				"delivery-truth packets"
+			],
+			"recipients": ["current agent", "coordinator", "PR author", "reviewer"],
+			"expectedDelay": "immediate locally; minutes with providers",
+			"failureClass": "stale_or_overclaimed_packet",
+			"action": "Expose lane-separated freshness and advisory-only status before closeout claims.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"src/lib/pr-closeout/evaluator.ts",
+				"src/lib/runtime-card.ts",
+				"src/lib/delivery-truth"
+			]
+		},
+		{
+			"rank": 6,
+			"id": "linear-and-issue-tracking",
+			"name": "Linear and issue-tracking loop",
+			"leverage": "high",
+			"owner": "linear-workflow",
+			"sources": [
+				"Linear issue state",
+				"branch naming",
+				"linear-gate",
+				"PR template"
+			],
+			"recipients": ["agent", "PR author", "Linear issue owner"],
+			"expectedDelay": "immediate locally; remote sync varies",
+			"failureClass": "tracker_truth_drift",
+			"action": "Require current PR and validation refs before issue-state changes.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"docs/agents/13-linear-production-workflow.md",
+				"src/lib/cli/registry/linear-gate-command-spec.ts",
+				".github/PULL_REQUEST_TEMPLATE.md"
+			]
+		},
+		{
+			"rank": 7,
+			"id": "project-brain-local-memory-and-learnings",
+			"name": "Project Brain, local memory, and learnings",
+			"leverage": "high",
+			"owner": "learning-loop",
+			"sources": [
+				".harness/memory/LEARNINGS.md",
+				"Project Brain",
+				"north-star feedback"
+			],
+			"recipients": ["future agents", "closeout author", "planning workflows"],
+			"expectedDelay": "same turn when explicit; longer when deferred",
+			"failureClass": "learning_not_promoted",
+			"action": "Track affected surfaces, validation proof, and recurrence-prevention evidence.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"src/lib/learnings/north-star-feedback.ts",
+				"src/lib/learnings/promote.ts",
+				".harness/memory/LEARNINGS.md"
+			]
+		},
+		{
+			"rank": 8,
+			"id": "docs-contract-and-governance-drift",
+			"name": "Docs, contract, and governance drift gates",
+			"leverage": "high",
+			"owner": "governance-docs",
+			"sources": [
+				"docs-gate",
+				"contract validation",
+				"codestyle parity",
+				"workflow validation"
+			],
+			"recipients": [
+				"PR author",
+				"docs reviewer",
+				"downstream scaffold consumers"
+			],
+			"expectedDelay": "seconds to minutes locally",
+			"failureClass": "governance_behavior_drift",
+			"action": "Keep consumer, changed behavior, and downstream-confusion evidence visible.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"harness.contract.json",
+				"scripts/check-codestyle-parity.sh",
+				"scripts/validate-workflow-contracts.cjs"
+			]
+		},
+		{
+			"rank": 9,
+			"id": "security-dependency-and-secrets",
+			"name": "Security, dependency, and secrets loops",
+			"leverage": "high",
+			"owner": "security",
+			"sources": ["pnpm audit", "Semgrep", "Snyk", "staged secret checks"],
+			"recipients": ["PR author", "security reviewer", "branch protection"],
+			"expectedDelay": "seconds to 30 minutes",
+			"failureClass": "security_finding_without_owner",
+			"action": "Track scanner source, severity, waiver, owner, expiry, and verification command.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"scripts/check-staged-secrets.sh",
+				"scripts/check-semgrep-changed.sh",
+				"package.json#audit"
+			]
+		},
+		{
+			"rank": 10,
+			"id": "artifact-and-evidence-provenance",
+			"name": "Artifact and evidence provenance loops",
+			"leverage": "medium-high",
+			"owner": "artifact-governance",
+			"sources": [
+				"artifact-gate",
+				"research validators",
+				"runtime receipts",
+				".harness/active-artifacts.md"
+			],
+			"recipients": ["reviewer", "closeout author", "future agent"],
+			"expectedDelay": "seconds to minutes locally",
+			"failureClass": "artifact_not_claim_support_eligible",
+			"action": "Track active, superseded, consumed, stale, and local-only artifact states.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"src/lib/artifact-runtime-surface",
+				".harness/active-artifacts.md",
+				"src/lib/cli/registry/artifact-gate-command-spec.ts"
+			]
+		},
+		{
+			"rank": 11,
+			"id": "related-tests-and-behavior-test-quality",
+			"name": "Related tests and behavior-test quality loops",
+			"leverage": "medium-high",
+			"owner": "testing",
+			"sources": [
+				"Vitest",
+				"test:related",
+				"quality:self-affirming",
+				"quality:behavior-tests"
+			],
+			"recipients": ["implementing agent", "maintainer", "reviewer"],
+			"expectedDelay": "seconds to minutes",
+			"failureClass": "test_quality_gap",
+			"action": "Backfeed escaped defects into related-test mapping and trust-boundary behavior tests.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"scripts/check-related-tests.sh",
+				"scripts/check-self-affirming-tests.mjs",
+				"scripts/check-behavior-tests.mjs"
+			]
+		},
+		{
+			"rank": 12,
+			"id": "preflight-policy-risk-and-blast-radius",
+			"name": "Preflight, policy, risk, and blast-radius loops",
+			"leverage": "medium-high",
+			"owner": "risk-policy",
+			"sources": ["preflight-gate", "policy-gate", "risk-tier", "blast-radius"],
+			"recipients": ["agent", "PR author", "reviewer"],
+			"expectedDelay": "seconds to minutes",
+			"failureClass": "risk_classifier_not_calibrated",
+			"action": "Capture false positives and false negatives by path category.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"src/lib/cli/registry/preflight-gate-command-spec.ts",
+				"src/lib/cli/registry/risk-tier-command-spec.ts",
+				"src/commands/blast-radius.ts"
+			]
+		},
+		{
+			"rank": 13,
+			"id": "git-hooks-and-worktree-safety",
+			"name": "Git hooks and worktree-safety loops",
+			"leverage": "medium",
+			"owner": "tooling",
+			"sources": [
+				"pre-commit hooks",
+				"pre-push hooks",
+				"prepare-worktree.sh",
+				"check-git-common-config.sh"
+			],
+			"recipients": ["local agent", "developer before commit or push"],
+			"expectedDelay": "immediate to minutes",
+			"failureClass": "hook_bypass_or_environment_drift",
+			"action": "Record hook bypasses and keep hook environment sanitization enforced.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"scripts/prepare-worktree.sh",
+				"scripts/check-git-common-config.sh",
+				"scripts/check-environment.sh"
+			]
+		},
+		{
+			"rank": 14,
+			"id": "agent-readiness-session-context-and-next-command",
+			"name": "Agent readiness, session context, and next-command loops",
+			"leverage": "medium",
+			"owner": "agent-readiness",
+			"sources": [
+				"harness next --json",
+				"agent-readiness",
+				"session-context/v1",
+				"runtime-card inputs"
+			],
+			"recipients": ["current agents", "future agents", "coordinators"],
+			"expectedDelay": "immediate locally",
+			"failureClass": "stale_recommendation_or_advisory_overclaim",
+			"action": "Capture recommendation overrides and repeated route mistakes.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"src/commands/next.ts",
+				"src/lib/agent-readiness",
+				"src/lib/session"
+			]
+		},
+		{
+			"rank": 15,
+			"id": "telemetry-observability-and-session-traces",
+			"name": "Telemetry, observability, and session traces",
+			"leverage": "medium",
+			"owner": "observability",
+			"sources": [
+				"runtime-card traces",
+				"session collector artifacts",
+				"eval usage collection"
+			],
+			"recipients": ["maintainers", "evaluators", "release reviewers"],
+			"expectedDelay": "immediate locally; longer when aggregated",
+			"failureClass": "trace_without_claim_mapping",
+			"action": "Record gate duration, failure class, rerun count, and turnaround fields.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"src/lib/evals/observed-skill-usage.ts",
+				"src/lib/cli/registry/observability-gate-command-spec.ts",
+				"src/lib/runtime-card.ts"
+			]
+		},
+		{
+			"rank": 16,
+			"id": "packaged-skill-downstream-install-and-upgrade",
+			"name": "Packaged skill, downstream install, and upgrade loops",
+			"leverage": "medium",
+			"owner": "packaging",
+			"sources": [
+				"packaged skill validation",
+				"harness upgrade",
+				"upgrade matrix tests"
+			],
+			"recipients": [
+				"maintainers",
+				"downstream repo agents",
+				"package consumers"
+			],
+			"expectedDelay": "minutes locally; longer downstream",
+			"failureClass": "downstream_generated_surface_drift",
+			"action": "Track first-run blockers and generated-surface drift by version.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"scripts/validate-packaged-skill.cjs",
+				"src/lib/upgrade",
+				"scripts/test-harness-upgrade-matrix.mjs"
+			]
+		},
+		{
+			"rank": 17,
+			"id": "release-provenance-and-rollback",
+			"name": "Release, provenance, and rollback loops",
+			"leverage": "medium",
+			"owner": "release",
+			"sources": [
+				"prepublishOnly",
+				"release scripts",
+				"GitHub Actions release publishing",
+				"npm package state"
+			],
+			"recipients": ["release owner", "package consumers", "downstream repos"],
+			"expectedDelay": "release-cadence dependent",
+			"failureClass": "release_feedback_not_retrospected",
+			"action": "Tie post-release issues back to missing local, CI, review, or rollback loops.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"package.json#prepublishOnly",
+				".github/workflows",
+				"CHANGELOG.md"
+			]
+		},
+		{
+			"rank": 18,
+			"id": "audit-research-and-refactor-reports",
+			"name": "Audit, research, and refactor report loops",
+			"leverage": "medium",
+			"owner": "research-audit",
+			"sources": [
+				".harness/audits",
+				".harness/research/audits",
+				".harness/refactors"
+			],
+			"recipients": ["maintainers", "planning agents", "implementation agents"],
+			"expectedDelay": "same turn for reports; days to weeks for remediation",
+			"failureClass": "audit_finding_without_lifecycle_state",
+			"action": "Require accepted, rejected, implemented, superseded, or linked states.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				".harness/feedback-loops/index.json",
+				".harness/research/audits",
+				"src/commands/feedback-loop-audit.ts"
+			]
+		},
+		{
+			"rank": 19,
+			"id": "user-reports-and-external-issue-intake",
+			"name": "User reports and external issue intake",
+			"leverage": "medium",
+			"owner": "issue-intake",
+			"sources": [
+				"user bug reports",
+				"GitHub issues",
+				"Linear intake",
+				"PR comments from consumers"
+			],
+			"recipients": ["triage owner", "maintainer", "implementation agent"],
+			"expectedDelay": "hours to days depending on channel",
+			"failureClass": "external_report_not_normalized",
+			"action": "Normalize reports with reproduction, affected version, expected/actual, escaped-loop class, and durable destination.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"docs/agents/13-linear-production-workflow.md",
+				"src/lib/learnings",
+				".github/PULL_REQUEST_TEMPLATE.md"
+			]
+		}
+	],
+	"crossLoopGaps": [
+		{
+			"id": "unified-feedback-loop-ledger",
+			"description": "No unified feedback-loop ledger joined source, recipient, delay, owner, failure class, and action taken.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				".harness/feedback-loops/index.json",
+				"src/commands/feedback-loop-audit.ts"
+			]
+		},
+		{
+			"id": "implicit-delay",
+			"description": "Delay was mostly implicit across validation, CI, review, tracker, memory, and artifact freshness loops.",
+			"closureState": "implemented",
+			"evidenceRefs": [".harness/feedback-loops/index.json#loops.expectedDelay"]
+		},
+		{
+			"id": "uneven-closure-state",
+			"description": "Audit findings, steering admissions, user reports, and telemetry observations lacked clear lifecycle states.",
+			"closureState": "implemented",
+			"evidenceRefs": [".harness/feedback-loops/index.json#closureState"]
+		},
+		{
+			"id": "manual-feedback-promotion",
+			"description": "Repeated failures required manual promotion to guardrails, tests, policy checks, prompts, or exceptions.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				".harness/feedback-loops/index.json#loops.action",
+				"src/lib/learnings/north-star-feedback.ts"
+			]
+		},
+		{
+			"id": "external-truth-lane-conflation",
+			"description": "Local validation, CI, review, Linear, and merge readiness remained easy to conflate in reports.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				".harness/feedback-loops/index.json",
+				"src/lib/pr-closeout/evaluator.ts"
+			]
+		}
+	],
+	"recommendations": [
+		{
+			"id": "feedback-loop-index",
+			"description": "Build .harness/feedback-loops/index.json with owner, source, recipient, delay, latest signal, failure class, action, and closure state.",
+			"closureState": "implemented",
+			"evidenceRefs": [".harness/feedback-loops/index.json"]
+		},
+		{
+			"id": "feedback-loop-audit-command",
+			"description": "Add harness feedback-loop-audit --json as a read-only command over repository evidence.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				"src/commands/feedback-loop-audit.ts",
+				"src/lib/feedback-loop-audit.ts"
+			]
+		},
+		{
+			"id": "lane-separated-pr-closeout-feedback-summary",
+			"description": "Keep local validation, CI, review, Linear, artifact/runtime evidence, learning promotion, and residual signals separated.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				".harness/feedback-loops/index.json#loops",
+				"src/lib/pr-closeout/evaluator.ts"
+			]
+		},
+		{
+			"id": "latency-collection",
+			"description": "Represent expected delay for each loop and leave provider-backed collection as explicit future extension.",
+			"closureState": "implemented",
+			"evidenceRefs": [".harness/feedback-loops/index.json#loops.expectedDelay"]
+		},
+		{
+			"id": "audit-finding-lifecycle",
+			"description": "Create a lifecycle convention for audit findings: accepted, rejected, implemented, superseded, or linked.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				".harness/feedback-loops/index.json#closureState",
+				"src/lib/feedback-loop-audit.ts"
+			]
+		},
+		{
+			"id": "escaped-loop-classification",
+			"description": "Classify user reports and escaped defects by the loop that should have caught the issue.",
+			"closureState": "implemented",
+			"evidenceRefs": [".harness/feedback-loops/index.json#loops.failureClass"]
+		},
+		{
+			"id": "narrow-local-first-implementation",
+			"description": "Start with local validation, CI manifest, PR template, learnings, and audit findings before provider-backed state.",
+			"closureState": "implemented",
+			"evidenceRefs": [
+				".harness/feedback-loops/index.json",
+				".harness/ci-required-checks.json",
+				".github/PULL_REQUEST_TEMPLATE.md",
+				".harness/memory/LEARNINGS.md"
+			]
+		}
+	]
 }
