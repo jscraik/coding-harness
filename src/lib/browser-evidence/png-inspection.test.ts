@@ -7,6 +7,7 @@ import {
 	grayscaleAlphaPngWithPixels,
 	indexedPngWithPaletteIndexes,
 	pngWithDeclaredSize,
+	pngWithIdatBeforeIhdr,
 	pngWithInvalidChunkCrc,
 	pngWithOversizedIhdr,
 	pngWithPixels,
@@ -49,6 +50,13 @@ describe("inspectPng", () => {
 	it("rejects PNGs with oversized IHDR chunks", () => {
 		const path = join(tempDir, "oversized-ihdr.png");
 		writeFileSync(path, pngWithOversizedIhdr(2, 2));
+
+		expect(inspectPng(path)).toBeNull();
+	});
+
+	it("rejects PNGs with image data before the required first IHDR chunk", () => {
+		const path = join(tempDir, "idat-before-ihdr.png");
+		writeFileSync(path, pngWithIdatBeforeIhdr(2, 2));
 
 		expect(inspectPng(path)).toBeNull();
 	});

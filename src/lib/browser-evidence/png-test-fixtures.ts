@@ -132,6 +132,23 @@ export function pngWithOversizedIhdr(width: number, height: number): Buffer {
 	]);
 }
 
+/** Build a PNG with image data before the required first IHDR chunk. */
+export function pngWithIdatBeforeIhdr(width: number, height: number): Buffer {
+	const rows: number[] = [];
+	for (let row = 0; row < height; row++) {
+		rows.push(0);
+		for (let col = 0; col < width; col++) {
+			rows.push(255, 0, 0, 255);
+		}
+	}
+	return Buffer.concat([
+		PNG_SIGNATURE,
+		chunk("IDAT", deflateSync(Buffer.from(rows))),
+		chunk("IHDR", pngHeader(width, height)),
+		chunk("IEND", Buffer.alloc(0)),
+	]);
+}
+
 /** Build an otherwise valid PNG whose first IDAT chunk has a corrupted CRC. */
 export function pngWithInvalidChunkCrc(width: number, height: number): Buffer {
 	const valid = pngWithPixels(width, height, [

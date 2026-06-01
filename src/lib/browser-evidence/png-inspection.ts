@@ -81,6 +81,9 @@ function readPngMetadata(file: Buffer): PngMetadata | null {
 		hasIend: false,
 		idatParts: [],
 	};
+	let seenIhdr = false;
+	let seenIdat = false;
+	let seenPalette = false;
 	while (offset + 12 <= file.length) {
 		const length = file.readUInt32BE(offset);
 		const type = file.subarray(offset + 4, offset + 8).toString("ascii");
@@ -91,8 +94,11 @@ function readPngMetadata(file: Buffer): PngMetadata | null {
 		const expectedCrc = file.readUInt32BE(dataEnd);
 		const actualCrc = crc32(file.subarray(offset + 4, dataEnd));
 		if (actualCrc !== expectedCrc) return null;
+		if (!seenIhdr && type !== "IHDR") return null;
 		if (type === "IHDR") {
+			if (seenIhdr || offset !== PNG_SIGNATURE.length) return null;
 			if (data.length !== 13) return null;
+			seenIhdr = true;
 			metadata.width = data.readUInt32BE(0);
 			metadata.height = data.readUInt32BE(4);
 			metadata.bitDepth = data[8] ?? 0;
@@ -100,7 +106,11 @@ function readPngMetadata(file: Buffer): PngMetadata | null {
 			metadata.compressionMethod = data[10] ?? 0;
 			metadata.filterMethod = data[11] ?? 0;
 			metadata.interlace = data[12] ?? 0;
+		} else if (type === "PLTE") {
+			if (seenPalette || seenIdat) return null;
+			seenPalette = true;
 		} else if (type === "IDAT") {
+			seenIdat = true;
 			metadata.idatParts.push(Buffer.from(data));
 		} else if (type === "IEND") {
 			if (data.length !== 0) return null;
