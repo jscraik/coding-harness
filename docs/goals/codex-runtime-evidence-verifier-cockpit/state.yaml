@@ -66,7 +66,7 @@ completion_contract:
   blocked_stop_condition: "Stop if the board is invalid, activation is absent for Worker work, required intent review is missing, validation cannot run, reviewer artifacts are missing after retry, PR or tracker truth is stale, dirty work overlaps required files, or continuing would contaminate a PR under triage."
 current_slice_gate:
   lifecycle_unit: "route-truth-pr324-supersession"
-  status: "pr324_closed_superseded_pr327_pr328_live_clean"
+  status: "pr324_closed_superseded_route_truth_artifacts_committed"
   reason: "Live route truth was refreshed after the reviewer-artifact head-freshness guard: PR #327 is open, clean, mergeable, and has all visible checks passing at head 33e99c695c6cb6f67301948e1b9013deb5ed2037; PR #328 is open, clean, mergeable, and has all visible checks passing at head 0d1c736fe754da799b9e6c462cfc006b976acb34. PR #324 remained conflicting with one unresolved stale R179 head-sha review thread, and its unique route-truth/evidence-registry changes were superseded by later PR #327/#328 work. PR #324 was therefore closed as superseded at 2026-06-01T05:38:55Z with a GitHub comment explaining the lineage. This is route-truth cleanup only; it does not claim PR #327 or PR #328 merge execution, Linear alignment, Judge/PM readiness, runtime producer emission, delivery-truth consumption, or final JSC-363 completion."
   completed_before_local_validation_claim:
     - "Created and tracked the PR #324 supersession intent artifact before route-state edits."
@@ -75,12 +75,14 @@ current_slice_gate:
     - "Queried PR #324 review threads and confirmed the remaining unresolved thread targeted stale R179 head-sha evidence on the obsolete branch."
     - "Closed PR #324 as superseded with a GitHub comment that preserves lineage and avoids claiming parent goal completion."
     - "Updated the active artifact route and goal state to remove PR #324 as an active merge-conflict lane while keeping Linear, Judge/PM, runtime, delivery-truth, and final completion claims blocked."
+    - "Committed PR #324 supersession route artifacts at 2e431ee89e6897540a4dcdcb2b587cf4d62da2cf and recorded receipt R194 as the append-only handoff."
+    - "Committed PR #324 supersession route artifacts at 2e431ee89e6897540a4dcdcb2b587cf4d62da2cf and recorded receipt R194 as the append-only handoff."
   next_required_handoff_steps:
     - "Keep the PR #327 -> PR #328 stack refreshed against live checks, CodeRabbit, unresolved review threads, mergeability, and linked-issue status before any PR-green, review-clear, linked-issue, or merge-ready claim."
     - "Run the reviewer-coverage validator against final on-disk review artifacts with expectedHeadSha before accepting review-swarm completion evidence in future slices."
     - "Use <REDACTED_HOME_PATH>/.codex/.env for CircleCI API/log access only if CircleCI triage is needed, without printing values; if that env surface remains a FIFO without a readable writer, record the blocker before using authenticated read-only fallback evidence."
     - "Refresh live Linear JSC-363 before tracker-alignment, full-lifecycle closeout, or Judge/PM-ready claims; tracker truth remains separate from runtime, CI, review, and implementation proof."
-    - "After the current route-truth record is committed, pushed, and remotely checked, choose the next unproven lifecycle requirement from the goal board, adopted audit gaps, SPG matrix, and plan/spec rather than re-opening the superseded PR #324 lane."
+    - "After the current route-truth record is pushed and remotely checked, choose the next unproven lifecycle requirement from the goal board, adopted audit gaps, SPG matrix, and plan/spec rather than re-opening the superseded PR #324 lane."
   blocked_done_claims:
     - "Linear-scope-aligned"
     - "Judge/PM-ready"

@@ -10,7 +10,7 @@
 
 ## Scope
 
-Last reconciled: 2026-06-01T05:40:00Z during PR #324 supersession cleanup after
+Last reconciled: 2026-06-01T05:49:46Z during PR #324 supersession cleanup after
 live GitHub truth was refreshed for PR #324, PR #327, and PR #328. PR #324 was
 closed as superseded at 2026-06-01T05:38:55Z because its conflicted branch
 carried stale route-truth receipt state now superseded by the newer PR #327 and
@@ -19,7 +19,11 @@ PR #326 route-truth repairs, and the earlier GAP-001 lane; PR #327 preserves the
 unique system-prompt evidence-registry alignment and review-thread state repair,
 and PR #328 adds reviewer-artifact head-freshness coverage. Linear, Judge/PM
 readiness, runtime producer emission, delivery-truth consumption, merge
-execution, and final goal completion remain unclaimed.
+execution, and final goal completion remain unclaimed. Supersession route
+artifacts were committed at 2e431ee89e6897540a4dcdcb2b587cf4d62da2cf; receipt
+R194 records the append-only ledger handoff. Supersession route
+artifacts were committed at 2e431ee89e6897540a4dcdcb2b587cf4d62da2cf; receipt
+R194 records the append-only ledger handoff.
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
