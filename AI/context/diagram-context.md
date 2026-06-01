@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-05-31T19:36:43Z
+Generated: 2026-06-01T00:18:17Z
 
 ## Table of Contents
 
@@ -44,6 +44,7 @@ Generated: 2026-05-31T19:36:43Z
 - `src/lib/evidence/types.ts`
 - `src/lib/testing/README.md`
 - `src/lib/testing/behavior-test-suites.json`
+- `src/templates/codex-preflight.sh`
 
 ## agent
 

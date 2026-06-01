@@ -72,6 +72,22 @@ After any bug, tool failure, or extra-effort fix:
 
 Format: `**YYYY-MM-DD [Agent]:** <problem> → <fix>`
 
+### Preflight enforcement
+
+Repo-local required preflight must exercise Local Memory instead of relying on
+conversation memory or a legacy shell shortcut. The canonical invocation is:
+
+```bash
+bash scripts/codex-preflight.sh --stack auto --mode required
+```
+
+Compatibility invocations keep the same fail-closed posture. A legacy positional
+call such as `bash scripts/codex-preflight.sh coding-harness git,bash CODESTYLE.md`
+defaults to required Local Memory mode, and `off` or `optional` must be passed
+explicitly when a softer check is intentional. The older stack/mode shorthand
+`bash scripts/codex-preflight.sh auto required` is also accepted and must block
+when Local Memory is unavailable, stale, or unclassified.
+
 ### Session-start read order
 
 1. Read `~/.codex/instructions/Learnings.md` (always).

@@ -10,7 +10,7 @@
 
 ## Scope
 
-Last reconciled: 2026-05-31T20:44Z plus R176 PR #325 browser-evidence route refresh (branch head 02b5c1897c790ea1d48c95d0131f93d32db49eee, origin/main freshness at 4a6d75a4, browser-evidence routine gate pushed, all visible checks passing, unresolved-thread query returned none; merge readiness, Linear full-lifecycle completion, Judge/PM readiness, and final goal completion remain unclaimed).
+Last reconciled: 2026-06-01T00:18Z plus R179 GAP-001 main-base route truth and R180 PR #325 browser-evidence route truth. This branch is currently resolving PR #325 merge conflicts against origin/main 246e339e55c5d8750c81840194ebb63d29a4490b; PR #325 head 8a3083f8436e3ded3ace427b1047fb01788157da contains the browser-evidence review fixes, but remote checks, CodeRabbit, review threads, mergeability, Linear alignment, Judge/PM readiness, and final goal completion must be refreshed again after the merge repair is committed and pushed.
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -21,7 +21,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current slice truth is R176 for PR #325. PR #325 head 02b5c1897c790ea1d48c95d0131f93d32db49eee adds the PU-042 / GAP-010 browser-evidence routine gate with browser-evidence/v1 schema, src/lib/browser-evidence deep module, evidence-verify CLI integration, docs/governance/architecture synchronization, and focused parser/PNG/CLI regressions. Live refresh before the R176 receipt showed all visible checks passing, CodeRabbit success, mergeable MERGEABLE, mergeStateStatus CLEAN, and zero unresolved review threads. Linear full-lifecycle completion, merge readiness, Judge/PM readiness, runtime producer emission, delivery-truth consumption, and final goal completion remain separate unclaimed lanes. | Use the goal board as the current execution cockpit. Next safe action is to run R176 board validators, commit and push the route-truth receipt, refresh PR #325 checks/review truth on the new pushed head, then choose the next unproven lifecycle slice from the goal, plan, adopted audits, Project Brain, and receipts. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current base truth includes main's R176/R177/R178/R179 GAP-001 Local Memory preflight lane. Current PR #325 branch truth is R180 for PU-042 / GAP-010 browser-evidence: browser-evidence/v1 schema, src/lib/browser-evidence deep module, evidence-verify CLI integration, and focused parser/PNG/CLI regressions. Additional PR #325 review fixes are present on head 8a3083f8436e3ded3ace427b1047fb01788157da. This branch is repairing merge conflicts against origin/main 246e339e55c5d8750c81840194ebb63d29a4490b; all remote checks, CodeRabbit, review threads, mergeability, Linear full-lifecycle completion, Judge/PM readiness, runtime producer emission, delivery-truth consumption, and final goal completion remain separate unclaimed lanes until refreshed after the repair push. | Use the goal board as the current execution cockpit. Next safe action is to finish the PR #325 merge repair, run board and focused browser-evidence validators, commit and push, then refresh PR #325 checks, CodeRabbit, unresolved review threads, mergeability, linked-issue status, and CircleCI logs via <REDACTED_HOME_PATH>/.codex/.env if CircleCI triage is needed before any merge-ready, Judge/PM-ready, or goal-complete claim. |
 
 ## Artifact Index
 
@@ -182,6 +182,18 @@ unless a live refresh is recorded in the referenced artifact.
   ci/circleci: orb-pinning were still pending at that refresh. Linked-issue
   truth, Linear, merge readiness, Judge/PM readiness, and final goal completion
   remain unclaimed.
+  R176 records the GAP-001 Local Memory preflight implementation on commit
+  `4641f9ca17d1ed13f075ef4bdde93a533f3616ca`: legacy positional preflight
+  calls now fail closed to required Local Memory, explicit off/optional modes
+  remain intentional, deterministic test overrides are gated and CI-rejected,
+  and repo-like mode ambiguity is covered. R177 reanchors this Project Brain
+  route and the governed 2026-05-26 audit freshness to that implementation
+  head. R178 reanchors the same route after the generated architecture context
+  refresh commit `f8fa4206d6ae85f28e557ffd5ca248938ff2bae7`. R179 reanchors
+  it again after the architecture bootstrap sync commit
+  `633b5cc48a0008fdd1f873c0962900c57bcd5e08`. Push, PR creation, remote
+  checks, CodeRabbit, reviewDecision, Linear, merge readiness, Judge/PM
+  readiness, and final goal completion remain unclaimed.
   Historical stacked PRs may still show CONFLICTING/DIRTY metadata because
   their old head/base refs are stale. That historical metadata is not an active
   open-PR merge blocker. Before any

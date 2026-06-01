@@ -101,6 +101,14 @@ Rule lifecycle governance updates are architecture-adjacent when they alter the 
 For agent-native cockpit work, treat decision-envelope, generated environment action, hook setup, runtime-card evidence, and diagram-context changes as architecture-adjacent surfaces. Run `bash scripts/check-diagram-freshness.sh` explicitly for those changes, and use `bash scripts/refresh-diagram-context.sh --force` when the check reports stale or missing artifacts. Keep this guide synchronized with `AGENTS.md` and `docs/agents/07b-agent-governance.md` when `docs-gate` asks for architecture-context evidence.
 RouteDecision lifecycle metadata belongs to this cockpit architecture-adjacent lane: keep `route-decision/v1` contract changes additive to `harness-decision/v1`, refresh `AI/context/diagram-context.md`, and commit this guide with the required docs-gate governance surfaces when `docs-gate` reports the architecture-context surface.
 Generated Codex environment action changes that add validation script actions or branch-attachment behavior are architecture-adjacent when they refresh `AI/context/diagram-context.md`; commit the refreshed context pack and this guide with the required docs-gate governance surfaces when docs-gate reports the architecture-context surface.
+Codex preflight changes are architecture-adjacent when they alter Local Memory,
+Project Brain, or runtime-readiness enforcement. Legacy positional
+`scripts/codex-preflight.sh` invocations must preserve the required Local
+Memory default unless the caller explicitly selects `off` or `optional`.
+When that parser or its generated template changes, refresh the architecture
+context pack and keep this guide synchronized with `AGENTS.md` and
+`docs/agents/07b-agent-governance.md` so future agents can trace the
+fail-closed preflight contract from the architecture bootstrap surface.
 Generated environment action merge repairs that preserve setup PATH behavior,
 detached worktree attachment, or script-derived test/eval actions should keep
 `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and `docs/agents/07b-agent-governance.md` in the PR when `AI/context/diagram-context.md` is part of the branch
