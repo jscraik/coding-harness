@@ -149,6 +149,30 @@ export function pngWithIdatBeforeIhdr(width: number, height: number): Buffer {
 	]);
 }
 
+/** Build a PNG whose IDAT stream is interrupted by an ancillary chunk. */
+export function pngWithInterruptedIdatSequence(
+	width: number,
+	height: number,
+): Buffer {
+	const rows: number[] = [];
+	for (let row = 0; row < height; row++) {
+		rows.push(0);
+		for (let col = 0; col < width; col++) {
+			rows.push(255, 0, 0, 255);
+		}
+	}
+	const compressed = deflateSync(Buffer.from(rows));
+	const splitAt = Math.max(1, Math.floor(compressed.length / 2));
+	return Buffer.concat([
+		PNG_SIGNATURE,
+		chunk("IHDR", pngHeader(width, height)),
+		chunk("IDAT", compressed.subarray(0, splitAt)),
+		chunk("tEXt", Buffer.from("review=interrupted-idat", "utf8")),
+		chunk("IDAT", compressed.subarray(splitAt)),
+		chunk("IEND", Buffer.alloc(0)),
+	]);
+}
+
 /** Build an otherwise valid PNG whose first IDAT chunk has a corrupted CRC. */
 export function pngWithInvalidChunkCrc(width: number, height: number): Buffer {
 	const valid = pngWithPixels(width, height, [

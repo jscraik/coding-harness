@@ -83,6 +83,7 @@ function readPngMetadata(file: Buffer): PngMetadata | null {
 	};
 	let seenIhdr = false;
 	let seenIdat = false;
+	let idatSequenceEnded = false;
 	let seenPalette = false;
 	while (offset + 12 <= file.length) {
 		const length = file.readUInt32BE(offset);
@@ -110,12 +111,15 @@ function readPngMetadata(file: Buffer): PngMetadata | null {
 			if (seenPalette || seenIdat) return null;
 			seenPalette = true;
 		} else if (type === "IDAT") {
+			if (idatSequenceEnded) return null;
 			seenIdat = true;
 			metadata.idatParts.push(Buffer.from(data));
 		} else if (type === "IEND") {
 			if (data.length !== 0) return null;
 			metadata.hasIend = true;
 			break;
+		} else if (seenIdat) {
+			idatSequenceEnded = true;
 		}
 		offset = dataEnd + 4;
 	}

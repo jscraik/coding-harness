@@ -8,6 +8,7 @@ import {
 	indexedPngWithPaletteIndexes,
 	pngWithDeclaredSize,
 	pngWithIdatBeforeIhdr,
+	pngWithInterruptedIdatSequence,
 	pngWithInvalidChunkCrc,
 	pngWithOversizedIhdr,
 	pngWithPixels,
@@ -57,6 +58,13 @@ describe("inspectPng", () => {
 	it("rejects PNGs with image data before the required first IHDR chunk", () => {
 		const path = join(tempDir, "idat-before-ihdr.png");
 		writeFileSync(path, pngWithIdatBeforeIhdr(2, 2));
+
+		expect(inspectPng(path)).toBeNull();
+	});
+
+	it("rejects PNGs whose IDAT stream is interrupted by another chunk", () => {
+		const path = join(tempDir, "interrupted-idat-sequence.png");
+		writeFileSync(path, pngWithInterruptedIdatSequence(2, 2));
 
 		expect(inspectPng(path)).toBeNull();
 	});
