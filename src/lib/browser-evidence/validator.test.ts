@@ -152,6 +152,31 @@ describe("validateBrowserEvidenceManifest", () => {
 		);
 	});
 
+	it("rejects normalized invalid console timestamp calendar values", () => {
+		for (const timestamp of ["2026-02-31T00:00:00Z", "2026-01-01T24:00:00Z"]) {
+			writeFileSync(
+				join(tempDir, "desktop.png"),
+				png(2, 2, [
+					[255, 0, 0, 255],
+					[0, 255, 0, 255],
+					[255, 0, 0, 255],
+					[0, 255, 0, 255],
+				]),
+			);
+			const report = validateBrowserEvidenceManifest({
+				manifestPath: writeManifest("browser-evidence.json", {
+					consoleEvents: [{ level: "info", timestamp }],
+				}),
+				baseDir: tempDir,
+			});
+
+			expect(report.passed).toBe(false);
+			expect(report.errors.map((error) => error.message)).toContain(
+				"Browser evidence console event timestamp must be an RFC3339 date-time string.",
+			);
+		}
+	});
+
 	it("rejects empty screenshot arrays before evidence can pass", () => {
 		const report = validateBrowserEvidenceManifest({
 			manifestPath: writeManifest("browser-evidence.json", {

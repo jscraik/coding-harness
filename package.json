@@ -3,6 +3,7 @@
 	"version": "0.15.1",
 	"files": [
 		"dist",
+		"contracts/browser-evidence.schema.json",
 		"scripts/codex-preflight.sh",
 		"scripts/codex-preflight-local-memory-legacy.sh",
 		"scripts/verify-work.sh",

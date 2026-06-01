@@ -1,7 +1,16 @@
 import type { BrowserEvidenceValidationError } from "./types.js";
 
 const RFC3339_DATE_TIME =
-	/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u;
+	/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-](\d{2}):(\d{2}))$/u;
+
+function isLeapYear(year: number): boolean {
+	return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+}
+
+function daysInMonth(year: number, month: number): number {
+	if (month === 2) return isLeapYear(year) ? 29 : 28;
+	return [4, 6, 9, 11].includes(month) ? 30 : 31;
+}
 
 /** Build a browser-evidence validation error with a canonical code. */
 export function browserError(
@@ -23,9 +32,30 @@ export function isNonEmptyString(value: unknown): value is string {
 
 /** Return true when a value is an RFC3339 date-time string with timezone. */
 export function isRfc3339DateTime(value: unknown): value is string {
+	if (!isNonEmptyString(value)) return false;
+	const match = RFC3339_DATE_TIME.exec(value.trim());
+	if (!match) return false;
+	const [, yearText, monthText, dayText, hourText, minuteText, secondText] =
+		match;
+	const [, , , , , , , zoneHourText, zoneMinuteText] = match;
+	const year = Number(yearText);
+	const month = Number(monthText);
+	const day = Number(dayText);
+	const hour = Number(hourText);
+	const minute = Number(minuteText);
+	const second = Number(secondText);
+	const zoneHour = zoneHourText === undefined ? 0 : Number(zoneHourText);
+	const zoneMinute = zoneMinuteText === undefined ? 0 : Number(zoneMinuteText);
 	return (
-		isNonEmptyString(value) &&
-		RFC3339_DATE_TIME.test(value.trim()) &&
+		month >= 1 &&
+		month <= 12 &&
+		day >= 1 &&
+		day <= daysInMonth(year, month) &&
+		hour <= 23 &&
+		minute <= 59 &&
+		second <= 59 &&
+		zoneHour <= 23 &&
+		zoneMinute <= 59 &&
 		!Number.isNaN(Date.parse(value.trim()))
 	);
 }
