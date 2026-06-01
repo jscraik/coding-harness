@@ -70,7 +70,15 @@ function readText(root, relativePath, errors) {
 		return "";
 	}
 	try {
-		return fs.readFileSync(absolutePath, "utf8");
+		const text = fs.readFileSync(absolutePath, "utf8");
+		if (text.trim().length === 0) {
+			errors.push({
+				code: "required_file_empty",
+				path: relativePath,
+				message: "required SPG adoption surface must not be empty",
+			});
+		}
+		return text;
 	} catch (error) {
 		errors.push({
 			code: "file_missing_or_unreadable",
