@@ -220,9 +220,11 @@ describe("check-goal-audit-freshness.py", () => {
 
 	it("accepts a shallow self-referential receipt checkout when declared files are goal-route evidence only", () => {
 		const root = createTempRoot("audit-freshness-shallow-source-");
-		const parentHead = tempRootHeads.get(root);
-		if (!parentHead) throw new Error("missing test repository head");
 		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		runGit(root, ["add", AUDIT_PATH]);
+		runGit(root, ["commit", "-m", "record audit baseline"]);
+		const parentHead = runGit(root, ["rev-parse", "HEAD"]);
+		tempRootHeads.set(root, parentHead);
 		writeReceipts(root, [
 			{
 				...receipt(root),
@@ -248,7 +250,6 @@ describe("check-goal-audit-freshness.py", () => {
 			join(GOAL_DIR, "receipts.jsonl"),
 			join(GOAL_DIR, "state.yaml"),
 			"scripts/check-goal-audit-freshness.py",
-			AUDIT_PATH,
 		]);
 		runGit(root, ["commit", "-m", "record self-referential route"]);
 		const cloneParent = mkdtempSync(
@@ -272,10 +273,63 @@ describe("check-goal-audit-freshness.py", () => {
 
 		expect(result.status, result.stderr).toBe(0);
 		expect(JSON.parse(result.stdout)).toMatchObject({
-			head_relation: "shallow_unreachable",
+			head_relation: "non_ancestor_tree_diff",
 			head_sha: parentHead,
 			receipt_id: "R072",
 		});
+	});
+
+	it("rejects a shallow self-referential receipt when the real fetched diff includes non-goal files", () => {
+		const root = createTempRoot("audit-freshness-shallow-non-goal-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		runGit(root, ["add", AUDIT_PATH]);
+		runGit(root, ["commit", "-m", "record audit baseline"]);
+		tempRootHeads.set(root, runGit(root, ["rev-parse", "HEAD"]));
+		writeReceipts(root, [
+			{
+				...receipt(root),
+				changed_files: [
+					".harness/active-artifacts.md",
+					join(GOAL_DIR, "receipts.jsonl"),
+					join(GOAL_DIR, "state.yaml"),
+				],
+			},
+		]);
+		mkdirSync(join(root, ".harness"), { recursive: true });
+		writeFileSync(join(root, ".harness/active-artifacts.md"), "route\n");
+		writeFileSync(join(root, GOAL_DIR, "state.yaml"), "status: route\n");
+		writeFileSync(join(root, "source.ts"), "export const changed = true;\n");
+		runGit(root, [
+			"add",
+			".harness/active-artifacts.md",
+			join(GOAL_DIR, "receipts.jsonl"),
+			join(GOAL_DIR, "state.yaml"),
+			"source.ts",
+		]);
+		runGit(root, ["commit", "-m", "record mixed route and source changes"]);
+		const cloneParent = mkdtempSync(
+			join(tmpdir(), "audit-freshness-shallow-non-goal-clone-"),
+		);
+		tempRoots.push(cloneParent);
+		const cloneRoot = join(cloneParent, "clone");
+		const clone = spawnSync(
+			"git",
+			["clone", "--depth", "1", `file://${root}`, cloneRoot],
+			{ encoding: "utf8" },
+		);
+		if (clone.status !== 0) throw new Error(clone.stderr || clone.stdout);
+		utimesSync(
+			join(cloneRoot, AUDIT_PATH),
+			new Date("2026-05-27T01:00:00Z"),
+			new Date("2026-05-27T01:00:00Z"),
+		);
+
+		const result = runValidator(cloneRoot);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"receipt.head_sha must match current repository HEAD",
+		);
 	});
 
 	it("rejects a stale receipt head when non-goal files changed afterward", () => {

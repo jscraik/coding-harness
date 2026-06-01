@@ -169,24 +169,6 @@ def permits_self_referential_goal_receipt_commit(
     return bool(changed_paths) and changed_paths <= allowed_paths
 
 
-def permits_shallow_self_referential_goal_receipt(
-    receipt: dict[str, Any],
-    receipt_head_sha: str,
-    source_head_sha: str,
-) -> bool:
-    if receipt_head_sha != source_head_sha:
-        return False
-    changed_files = receipt.get("changed_files", [])
-    if not isinstance(changed_files, list):
-        return False
-    declared_paths: set[str] = set()
-    for value in changed_files:
-        if not isinstance(value, str):
-            return False
-        declared_paths.add(normalize_repo_relative_path(value, "receipt.changed_files[]"))
-    return bool(declared_paths) and declared_paths <= SELF_REFERENTIAL_DECLARABLE_PATHS
-
-
 def latest_audit_source(
     receipts: list[dict[str, Any]],
     audit_path: str,
@@ -267,50 +249,24 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
     if source_head_sha_normalized != receipt_head_sha_normalized:
         raise ValidationError("audit_sources_checked[].head_sha must match receipt.head_sha")
     if receipt_head_sha_normalized != current_head_normalized:
-        shallow_receipt_permitted = (
-            receipt_head_relation == "shallow_unreachable"
-            and permits_shallow_self_referential_goal_receipt(
-                receipt,
-                receipt_head_sha_normalized,
-                source_head_sha_normalized,
-            )
+        full_history_receipt_permitted = permits_self_referential_goal_receipt_commit(
+            repo_root,
+            receipt,
+            receipt_head_sha_normalized,
+            source_head_sha_normalized,
+            current_head_normalized,
         )
-        full_history_receipt_permitted = (
-            not shallow_receipt_permitted
-            and permits_self_referential_goal_receipt_commit(
-                repo_root,
-                receipt,
-                receipt_head_sha_normalized,
-                source_head_sha_normalized,
-                current_head_normalized,
-            )
-        )
-        if receipt_head_relation != "tree_equivalent" and not (
-            shallow_receipt_permitted or full_history_receipt_permitted
-        ):
+        if receipt_head_relation != "tree_equivalent" and not full_history_receipt_permitted:
             raise ValidationError(f"receipt.head_sha must match current repository HEAD: receipt={receipt_head_sha} current={current_head}")
     if source_head_sha_normalized != current_head_normalized:
-        shallow_source_permitted = (
-            source_head_relation == "shallow_unreachable"
-            and permits_shallow_self_referential_goal_receipt(
-                receipt,
-                receipt_head_sha_normalized,
-                source_head_sha_normalized,
-            )
+        full_history_source_permitted = permits_self_referential_goal_receipt_commit(
+            repo_root,
+            receipt,
+            receipt_head_sha_normalized,
+            source_head_sha_normalized,
+            current_head_normalized,
         )
-        full_history_source_permitted = (
-            not shallow_source_permitted
-            and permits_self_referential_goal_receipt_commit(
-                repo_root,
-                receipt,
-                receipt_head_sha_normalized,
-                source_head_sha_normalized,
-                current_head_normalized,
-            )
-        )
-        if source_head_relation != "tree_equivalent" and not (
-            shallow_source_permitted or full_history_source_permitted
-        ):
+        if source_head_relation != "tree_equivalent" and not full_history_source_permitted:
             raise ValidationError(f"audit_sources_checked[].head_sha must match current repository HEAD: source={source_head_sha} current={current_head}")
 
     source_sha256 = require_string(source.get("sha256"), "audit_sources_checked[].sha256").lower()
@@ -377,8 +333,8 @@ def classify_head_relation(repo_root: Path, head_sha: str, current_head: str, fi
             current_head,
             field,
         )
-    if is_shallow_repository(repo_root):
-        return "shallow_unreachable"
+    if is_shallow_repository(repo_root) and fetch_commit_from_origin(repo_root, normalized_head_sha):
+        return classify_head_relation(repo_root, normalized_head_sha, current_head, field)
     detail = completed.stderr.strip()
     suffix = f": {detail}" if detail else ""
     raise ValidationError(f"{field} must be reachable from current repository HEAD{suffix}")
@@ -397,6 +353,21 @@ def is_shallow_repository(repo_root: Path) -> bool:
     except OSError:
         return False
     return completed.returncode == 0 and completed.stdout.strip().lower() == "true"
+
+
+def fetch_commit_from_origin(repo_root: Path, head_sha: str) -> bool:
+    try:
+        completed = subprocess.run(
+            ["git", "fetch", "--depth=1", "--no-tags", "origin", head_sha],
+            cwd=repo_root,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except OSError:
+        return False
+    return completed.returncode == 0
 
 
 def classify_non_ancestor_tree_relation(
@@ -420,8 +391,6 @@ def classify_non_ancestor_tree_relation(
         return "tree_equivalent"
     if completed.returncode == 1:
         return "non_ancestor_tree_diff"
-    if is_shallow_repository(repo_root):
-        return "shallow_unreachable"
     detail = completed.stderr.strip()
     suffix = f": {detail}" if detail else ""
     raise ValidationError(f"could not compare {field} with current repository HEAD{suffix}")

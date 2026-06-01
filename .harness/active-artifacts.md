@@ -84,9 +84,10 @@ Post-R211 validator repair: after the R211 route-truth commit was pushed as
 1175bfcbd25ed5f2b5ad345f2369af8de2f4dc1b, PR #330 checks passed, but a new
 review thread found that depth-1 review checkouts could not prove receipt
 ancestry for otherwise declared self-referential route receipts. R212 repairs
-\`scripts/check-goal-audit-freshness.py\` so shallow checkouts classify that
-narrow declared self-referential case instead of failing before the goal-board
-guard can evaluate it. This is a validator compatibility repair only; it does
+\`scripts/check-goal-audit-freshness.py\` to fetch the missing recorded commit
+from \`origin\` in shallow checkouts before evaluating the real changed-path
+diff; R213 then rejects self-reported shallow changed-file claims when the
+fetched diff includes non-goal files. This is a validator compatibility repair only; it does
 not claim PR stack merge execution, Linear field alignment, Judge/PM readiness,
 runtime producer emission, delivery-truth consumption, or final goal completion.
 
