@@ -405,7 +405,38 @@ describe("check-goal-audit-freshness.py", () => {
 
 		expect(result.status).toBe(1);
 		expect(result.stderr).toContain(
-			"must be reachable from current repository HEAD or tree-equivalent to it",
+			"receipt.head_sha must match current repository HEAD",
 		);
+	});
+
+	it("accepts a synthetic self-referential receipt checkout when changed files are declared", () => {
+		const root = createTempRoot("audit-freshness-synthetic-self-ref-");
+		const recordedHead = tempRootHeads.get(root);
+		if (!recordedHead) throw new Error("missing test repository head");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		writeReceipts(root, [
+			{
+				...receipt(root),
+				changed_files: [join(GOAL_DIR, "receipts.jsonl")],
+			},
+		]);
+		runGit(root, ["add", join(GOAL_DIR, "receipts.jsonl")]);
+		runGit(root, ["commit", "-m", "record receipt"]);
+		const receiptCommit = runGit(root, ["rev-parse", "HEAD"]);
+		const syntheticReviewHead = runGit(root, [
+			"commit-tree",
+			`${receiptCommit}^{tree}`,
+			"-m",
+			"synthetic review",
+		]);
+		runGit(root, ["checkout", "-q", syntheticReviewHead]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(0);
+		expect(JSON.parse(result.stdout)).toMatchObject({
+			head_relation: "non_ancestor_tree_diff",
+			head_sha: recordedHead,
+		});
 	});
 });

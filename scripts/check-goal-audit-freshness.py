@@ -30,6 +30,7 @@ SELF_REFERENTIAL_GOAL_RECEIPT_PATHS = {
 }
 SELF_REFERENTIAL_DECLARABLE_PATHS = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS | {
     "scripts/check-goal-audit-freshness.py",
+    "src/dev/check-goal-audit-freshness-script.test.ts",
 }
 
 
@@ -330,7 +331,7 @@ def classify_head_relation(repo_root: Path, head_sha: str, current_head: str, fi
     if completed.returncode == 0:
         return "ancestor"
     if completed.returncode == 1:
-        return require_tree_equivalent_head(
+        return classify_non_ancestor_tree_relation(
             repo_root,
             normalized_head_sha,
             current_head,
@@ -341,7 +342,7 @@ def classify_head_relation(repo_root: Path, head_sha: str, current_head: str, fi
     raise ValidationError(f"{field} must be reachable from current repository HEAD{suffix}")
 
 
-def require_tree_equivalent_head(
+def classify_non_ancestor_tree_relation(
     repo_root: Path,
     head_sha: str,
     current_head: str,
@@ -361,9 +362,7 @@ def require_tree_equivalent_head(
     if completed.returncode == 0:
         return "tree_equivalent"
     if completed.returncode == 1:
-        raise ValidationError(
-            f"{field} must be reachable from current repository HEAD or tree-equivalent to it",
-        )
+        return "non_ancestor_tree_diff"
     detail = completed.stderr.strip()
     suffix = f": {detail}" if detail else ""
     raise ValidationError(f"could not compare {field} with current repository HEAD{suffix}")
