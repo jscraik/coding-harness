@@ -75,8 +75,8 @@ current_slice_gate:
     - "Queried PR #324 review threads and confirmed the remaining unresolved thread targeted stale R179 head-sha evidence on the obsolete branch."
     - "Closed PR #324 as superseded with a GitHub comment that preserves lineage and avoids claiming parent goal completion."
     - "Updated the active artifact route and goal state to remove PR #324 as an active merge-conflict lane while keeping Linear, Judge/PM, runtime, delivery-truth, and final completion claims blocked."
-    - "Committed PR #324 supersession route artifacts at 2e431ee89e6897540a4dcdcb2b587cf4d62da2cf and recorded receipt R194 as the append-only handoff."
-    - "Committed PR #324 supersession route artifacts at 2e431ee89e6897540a4dcdcb2b587cf4d62da2cf and recorded receipt R194 as the append-only handoff."
+    - "Committed PR #324 supersession route artifacts at 4224d4a13e797315961361ce4ea3a40a2d340c68 and recorded receipt R194 as the append-only handoff."
+    - "Committed PR #324 supersession route artifacts at 4224d4a13e797315961361ce4ea3a40a2d340c68 and recorded receipt R194 as the append-only handoff."
   next_required_handoff_steps:
     - "Keep the PR #327 -> PR #328 stack refreshed against live checks, CodeRabbit, unresolved review threads, mergeability, and linked-issue status before any PR-green, review-clear, linked-issue, or merge-ready claim."
     - "Run the reviewer-coverage validator against final on-disk review artifacts with expectedHeadSha before accepting review-swarm completion evidence in future slices."

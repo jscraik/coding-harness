@@ -20,9 +20,9 @@ unique system-prompt evidence-registry alignment and review-thread state repair,
 and PR #328 adds reviewer-artifact head-freshness coverage. Linear, Judge/PM
 readiness, runtime producer emission, delivery-truth consumption, merge
 execution, and final goal completion remain unclaimed. Supersession route
-artifacts were committed at 2e431ee89e6897540a4dcdcb2b587cf4d62da2cf; receipt
+artifacts were committed at 4224d4a13e797315961361ce4ea3a40a2d340c68; receipt
 R194 records the append-only ledger handoff. Supersession route
-artifacts were committed at 2e431ee89e6897540a4dcdcb2b587cf4d62da2cf; receipt
+artifacts were committed at 4224d4a13e797315961361ce4ea3a40a2d340c68; receipt
 R194 records the append-only ledger handoff.
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
