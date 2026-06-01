@@ -202,7 +202,7 @@
 				".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
 				".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md"
 			],
-			"validationCommand": "node scripts/validate-evidence-patterns.cjs --json",
+			"validationCommand": "node scripts/validate-system-prompt-gap-adoption.cjs --json",
 			"dispositionReason": "Admitted into the Codex Runtime Evidence Verifier Cockpit goal as SPG-001 through SPG-012; future goal-board receipts must keep the adopted system-prompt operational findings aligned with the plan, spec, receipts, and runtime evidence contracts without copying private prompt text, secrets, or runtime internals."
 		}
 	]
