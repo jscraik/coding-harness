@@ -10,32 +10,24 @@
 
 ## Scope
 
-Last reconciled: 2026-06-01T10:34:37Z during the PU-046 PR #330 review-thread
-evidence-artifact remediation after PR #330 reached green on head
-163017e16e4611d5d71f5c4c62fc85f8d164b17b. Current
+Last reconciled: 2026-06-01T10:58:00Z during the PU-045 PR #330 review-artifact evidence
+promotion after PR #330 reached green on the R206 route-truth head. Current
 main contains merged PR #321, PR #322, PR #325 browser evidence, PR #326
-route-truth repairs, and the earlier GAP-001 lane. PR #321 is merged and its
-historical review threads were resolved before this refresh. PR #327, PR #328,
-and PR #329 remain the active stacked JSC-363 route-truth lanes from the prior
-refresh. PR #330 is the PU-045/PU-046 Project Brain CI-rule and Linear
-scope-note PR stacked on PR #329; live GitHub refresh on head
-5d72021714747b7853200c3ea096ea0a7a851f5b reports all visible checks passing
-and `MERGEABLE`/`CLEAN`. R204 fixed the R203 Project Brain path from
-`.harness/knowledge/ci-rules.md` to `.harness/knowledge/ci/rules.md` and
-resolved that outdated thread. A new review thread then found R200's referenced
-PU-046 review artifacts were local-only under `artifacts/reviews/`; R205
-promotes those artifacts into the PR tree so the goal board's reviewer evidence
-refs are resolvable. R206 records current-head audit freshness after R205 was
-committed because R205's receipt was necessarily authored against the parent
-head before the artifact commit existed.
-Linear JSC-363 was
-refreshed through the Linear app and still has Phase 1 title/description while
-also carrying the PU-046 full-lifecycle scope-note attachment. Tracker alignment
-remains only partially mitigated because the Linear title and description still
-say Phase 1; the current tracker verdict is
-`tracker_scope_note_attached_fields_stale`. PU-045 promotes the repeated
-CircleCI API/log triage steering into Project Brain CI rule R-001 so future
-failing or opaque CircleCI work must inspect the approved
+route-truth repairs, and the earlier GAP-001 lane. PRs #327, #328, and #329
+remain the active stacked JSC-363 route-truth lanes from the prior refresh.
+PR #330 is the PU-045/PU-046 Project Brain CI-rule and Linear scope-note PR
+stacked on PR #329. After R206, all visible checks passed and the PR was
+MERGEABLE/CLEAN, but a new review thread found that R198 referenced three
+PU-045 reviewer artifacts that existed locally and were absent from the committed
+branch. Commit e6b245df4124da83310897fa94253bb86c7fa5b9 promotes those three
+artifacts, and R207 records current-head audit freshness against that artifact
+commit before the next push. Linear JSC-363 was refreshed through the Linear app
+and still has Phase 1 title/description while also carrying the PU-046
+full-lifecycle scope-note attachment. Tracker alignment remains only partially
+mitigated because the Linear title and description still say Phase 1; the current
+tracker verdict is tracker_scope_note_attached_fields_stale. PU-045 promotes
+the repeated CircleCI API/log triage steering into Project Brain CI rule R-001 so
+future failing or opaque CircleCI work must inspect the approved
 <REDACTED_HOME_PATH>/.codex/.env surface without printing secrets and must
 classify FIFO/no-writer or unreadable env surfaces separately from missing
 credentials. For local command execution, the redacted
@@ -55,7 +47,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged PR #321, merged PR #322, merged PR #325 GAP-010 browser evidence, merged PR #326 route-truth repairs, and GAP-001 Local Memory preflight artifacts. PR #327, PR #328, and PR #329 are the active stacked JSC-363 lanes from the prior refresh. PR #330 is the PU-045 Project Brain CI-rule plus PU-046 Linear scope-note PR stacked on PR #329; it is green and MERGEABLE/CLEAN on head 163017e16e4611d5d71f5c4c62fc85f8d164b17b before the R206 current-head freshness fix. R204 fixed and resolved the R203 Project Brain path thread. R205 commits the PU-046 review artifacts referenced by R200 so reviewer and skill-lens evidence refs are present in the PR tree. R206 restores audit freshness against current head after R205 introduced artifact files. PR #324 is closed as superseded and no longer an active merge-conflict lane. Linear JSC-363 has an owner-visible PU-046 full-lifecycle scope-note attachment, but its title and description still carry Phase 1 wording, so tracker alignment remains only partially mitigated. PU-045 adds Project Brain CI rule R-001 for env-backed CircleCI API/log triage and passed local reviewer plus goal-board validation. | Use the goal board as the current execution cockpit. Next safe action is to commit and push the PR #330 R206 current-head freshness fix, refresh checks and review threads on the new head, then continue the stacked route against live PR #327, #328, #329, and #330 truth. Use <REDACTED_HOME_PATH>/.codex/.env for CircleCI API/log triage if a CircleCI lane fails or lacks enough public check evidence; map that redacted path to ~/.codex/.env only for local command execution after a regular-file probe, and classify FIFO/no-writer or unreadable env surfaces explicitly instead of calling credentials missing. Do not claim parent JSC-363 completion until Linear field alignment or owner acceptance, runtime producer evidence, delivery-truth consumption, Judge/PM readiness, and final completion audit are separately refreshed. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged PR #321, merged PR #322, merged PR #325 GAP-010 browser evidence, merged PR #326 route-truth repairs, and GAP-001 Local Memory preflight artifacts. PR #327, PR #328, and PR #329 are the active stacked JSC-363 lanes from the prior refresh. PR #330 is the PU-045 Project Brain CI-rule plus PU-046 Linear scope-note PR stacked on PR #329; after R206 it was green and MERGEABLE/CLEAN before a review thread identified missing PU-045 artifacts. Commit e6b245df4124da83310897fa94253bb86c7fa5b9 adds the PU-045 reviewer artifacts referenced by R198, and R207 restores governed audit freshness against that artifact commit. PR #324 is closed as superseded and no longer an active merge-conflict lane. Linear JSC-363 has an owner-visible PU-046 full-lifecycle scope-note attachment, but its title and description still carry Phase 1 wording, so tracker alignment remains only partially mitigated. PU-045 adds Project Brain CI rule R-001 for env-backed CircleCI API/log triage and passed local reviewer plus goal-board validation. | Use the goal board as the current execution cockpit. Next safe action is to commit and push the PR #330 R207 PU-045 artifact freshness fix, verify the three PU-045 artifacts in the remote branch tree, resolve the PU-045 artifact review thread, refresh checks and review threads on the new head, then continue the stacked route against live PR #327, #328, #329, and #330 truth. Use <REDACTED_HOME_PATH>/.codex/.env for CircleCI API/log triage if a CircleCI lane fails or lacks enough public check evidence; map that redacted path to ~/.codex/.env only for local command execution after a regular-file probe, and classify FIFO/no-writer or unreadable env surfaces explicitly instead of calling credentials missing. Do not claim parent JSC-363 completion until Linear field alignment or owner acceptance, runtime producer evidence, delivery-truth consumption, Judge/PM readiness, and final completion audit are separately refreshed. |
 
 PU-046 update: PR #330 was refreshed again on head
 163017e16e4611d5d71f5c4c62fc85f8d164b17b after the R205 artifact receipt was
@@ -72,6 +64,14 @@ Because the Linear title and description still say Phase 1, this only supports
 `tracker_scope_note_attached_fields_stale`; it does not prove Linear fields
 current, Judge/PM readiness, runtime producer emission, delivery-truth
 consumption, merge readiness, or final goal completion.
+
+PU-045 artifact update: PR #330 review found that R198 referenced the PU-045
+CircleCI env Project Brain reviewer artifacts without committing them. Commit
+e6b245df4124da83310897fa94253bb86c7fa5b9 adds the adversarial, agent-native,
+and best-practices reviewer artifacts under artifacts/reviews/. R207 records
+the governed audit source against that artifact commit; remote push, remote tree
+verification, thread resolution, and check refresh remain separate evidence
+lanes.
 
 ## Artifact Index
 
