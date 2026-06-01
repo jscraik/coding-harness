@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "intent/v1",
+  "id": "codex-runtime-evidence-verifier-cockpit-pr324-supersession",
+  "goal": "codex-runtime-evidence-verifier-cockpit",
+  "lifecycleUnit": "route-truth-pr324-supersession",
+  "createdAt": "2026-06-01T05:40:00Z",
+  "createdBy": "Codex",
+  "scope": {
+    "type": "control-plane-route-truth",
+    "allowedFiles": [
+      ".harness/active-artifacts.md",
+      ".harness/intent/codex-runtime-evidence-verifier-cockpit-pr324-supersession-intent.json",
+      "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+      "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml"
+    ],
+    "externalActions": [
+      "Close superseded PR #324 after verifying current PR #327 and PR #328 are the live clean JSC-363 stack."
+    ]
+  },
+  "intent": "Remove the stale PR #324 merge-conflict lane from the active JSC-363 route by closing it as superseded and recording the current live PR stack without blending that route cleanup into parent-goal completion.",
+  "evidenceInputs": [
+    {
+      "source": "GitHub PR #324",
+      "observed": "CLOSED at 2026-06-01T05:38:55Z after being CONFLICTING/DIRTY with one unresolved stale R179 head-sha review thread."
+    },
+    {
+      "source": "GitHub PR #327",
+      "observed": "OPEN, MERGEABLE, CLEAN, all visible checks passing at head 33e99c695c6cb6f67301948e1b9013deb5ed2037."
+    },
+    {
+      "source": "GitHub PR #328",
+      "observed": "OPEN, MERGEABLE, CLEAN, all visible checks passing at head 0d1c736fe754da799b9e6c462cfc006b976acb34."
+    },
+    {
+      "source": "git diff origin/codex/jsc-363-gap002-required-ci-closeout...origin/codex/jsc-363-route-truth-r176",
+      "observed": "PR #324 unique route-truth and evidence-registry content is older than the later PR #327/#328 route-truth stack; repairing #324 would reanimate stale receipt state."
+    }
+  ],
+  "nonGoals": [
+    "Do not merge PR #327 or PR #328.",
+    "Do not claim Linear JSC-363 scope alignment.",
+    "Do not claim Judge/PM readiness.",
+    "Do not claim runtime producer emission, delivery-truth consumption, or final goal completion."
+  ],
+  "validationPlan": [
+    "Parse receipts.jsonl as JSONL.",
+    "Run check-goal-board for docs/goals/codex-runtime-evidence-verifier-cockpit.",
+    "Run check-goal-audit-freshness for the active goal board.",
+    "Run check-goal-review-backfill for the historical review ledger.",
+    "Run git diff --check.",
+    "Refresh live PR #324, #327, and #328 truth after the route update."
+  ]
+}
