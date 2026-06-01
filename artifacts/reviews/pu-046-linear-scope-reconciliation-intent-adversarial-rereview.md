@@ -55,4 +55,3 @@ No material blocking findings.
   - Proceed with implementation under the stated validation plan and enforce blocker classification on any external mutation visibility failure.
 
 WROTE: artifacts/reviews/pu-046-linear-scope-reconciliation-intent-adversarial-rereview.md
-

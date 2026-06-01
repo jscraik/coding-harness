@@ -52,4 +52,3 @@
 - Condition to proceed: verify attachment target is externally resolvable and owner-visible before calling create_attachment; then capture exact mutation evidence in PU-046 receipt/state update.
 
 WROTE: artifacts/reviews/pu-046-linear-scope-reconciliation-intent-best-practices.md
-

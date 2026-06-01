@@ -60,4 +60,3 @@ STATUS: pass_with_findings
   - Normalize the R200 summary digest representation to full SHA-256 (or explicitly prefix-labeled) to keep all evidence lanes mechanically comparable.
 
 WROTE: /private/tmp/coding-harness-jsc363-linear-stack-refresh-0601/artifacts/reviews/pu-046-linear-scope-reconciliation-final-adversarial.md
-

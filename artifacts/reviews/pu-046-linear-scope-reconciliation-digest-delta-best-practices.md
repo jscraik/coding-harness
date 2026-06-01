@@ -53,4 +53,3 @@ No material findings.
 - coordinator_score: 5/5
 
 WROTE: /private/tmp/coding-harness-jsc363-linear-stack-refresh-0601/artifacts/reviews/pu-046-linear-scope-reconciliation-digest-delta-best-practices.md
-
