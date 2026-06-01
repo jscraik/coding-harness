@@ -485,3 +485,53 @@ Reviewer loop:
 - Best-practices final closure: no material remaining findings; confidence 97 percent after atomic pre-append run-id claim and full policyContext assertions.
 
 Remaining before PU-026 commit: append the goal receipt, update active Project Brain routing, run the board/assurance validators, and commit the scoped slice without claiming broader PR, CI, Linear, or merge-readiness truth.
+
+## PR-329 Synthetic Review Head Freshness
+
+<RuntimeCardState
+  pr="329"
+  mergeable="not claimed from local validation"
+  merge_state="review-thread remediation in progress"
+  checks="local validator hardening checks pass; remote CI must be refreshed after push"
+  review_threads="CodeRabbit reported R194 head freshness as stale in a synthetic non-ancestor review checkout"
+/>
+
+The PR #329 route-truth receipt refresh exposed a validator design gap rather
+than a stale content gap: external review checkouts can evaluate the submitted
+tree under a synthetic commit SHA that is not an ancestor of the branch commit
+recorded in receipts.jsonl. Rewriting R194 to each observed review SHA would
+create a moving target and would not improve the underlying guarantee.
+
+Durable correction:
+
+- scripts/check-goal-audit-freshness.py now classifies receipt heads as
+  current, ancestor, or tree_equivalent.
+- Normal stale-head behavior remains strict: a reachable ancestor still needs
+  exact current-head match or the existing declared self-referential receipt
+  exception.
+- A non-ancestor head is accepted only when git diff --quiet
+  <receipt_head>..<current_head> proves that the reviewed tree is identical.
+- A non-ancestor head with a different tree still fails, so the guard does not
+  turn review-checkout ambiguity into a broad bypass.
+
+Regression coverage:
+
+- src/dev/check-goal-audit-freshness-script.test.ts now covers tree-equivalent
+  non-ancestor review checkouts as pass.
+- The same test suite now covers different-tree non-ancestor review checkouts
+  as fail.
+
+Validation evidence:
+
+- python3 -m py_compile scripts/check-goal-audit-freshness.py -> pass.
+- pnpm vitest run src/dev/check-goal-audit-freshness-script.test.ts --reporter=dot -> pass, 16 tests.
+- PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo . -> pass, R194 with head_relation: ancestor.
+- PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit -> pass.
+- git diff --check -> pass.
+- bash scripts/validate-codestyle.sh --fast -> pass.
+
+CircleCI note: the current blocker was a CodeRabbit validator finding, not a
+failing CircleCI lane. If CircleCI logs or API detail become necessary, use the
+approved private env surface ~/.codex/.env without printing values; direct
+shell reads previously classified that path as a FIFO and may block without an
+active writer.

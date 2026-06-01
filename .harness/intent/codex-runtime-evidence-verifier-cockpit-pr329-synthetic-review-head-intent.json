@@ -1,0 +1,54 @@
+{
+	"schemaVersion": "intent/v1",
+	"id": "codex-runtime-evidence-verifier-cockpit-pr329-synthetic-review-head",
+	"goal": "codex-runtime-evidence-verifier-cockpit",
+	"lifecycleUnit": "pr329-synthetic-review-head-freshness",
+	"createdAt": "2026-06-01T06:45:08Z",
+	"createdBy": "Codex",
+	"scope": {
+		"type": "validator-hardening",
+		"allowedFiles": [
+			".harness/intent/codex-runtime-evidence-verifier-cockpit-pr329-synthetic-review-head-intent.json",
+			".harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx",
+			"scripts/check-goal-audit-freshness.py",
+			"src/dev/check-goal-audit-freshness-script.test.ts"
+		],
+		"externalActions": [
+			"Refresh PR #329 review-thread and CI truth after the validator hardening commit is pushed."
+		]
+	},
+	"intent": "Stop the recurring PR-review freshness loop by teaching the goal audit freshness validator to distinguish true stale receipt heads from synthetic review checkouts whose current commit is not an ancestor relationship but has an identical tree.",
+	"feedbackSignal": "CodeRabbit reopened the R194 freshness thread after each route-truth head refresh because the reviewed commit SHA was a synthetic non-ancestor checkout rather than the submitted branch commit.",
+	"rootOperationalFailure": "The validator compressed branch-history freshness and synthetic review-checkout identity into one reachability rule, so the same human/reviewer steering could recur whenever an external reviewer evaluates an equivalent tree under a different commit SHA.",
+	"failureCategory": [
+		"runtime ambiguity",
+		"weak validation",
+		"stale-state prevention"
+	],
+	"durableSystemImprovement": "Classify receipt head relationship as current, ancestor, or tree_equivalent; allow only tree-equivalent non-ancestor review checkouts while keeping different-tree non-ancestor heads blocked.",
+	"evidenceInputs": [
+		{
+			"source": "GitHub PR #329 CodeRabbit thread PRRT_kwDORWZJCc6GBdM8",
+			"observed": "R194 recorded branch head 012b3a29 but CodeRabbit reviewed synthetic commit 091207147fca and reported the branch head was not an ancestor of that checkout."
+		},
+		{
+			"source": "scripts/check-goal-audit-freshness.py",
+			"observed": "The prior guard failed immediately on git merge-base --is-ancestor before checking whether the reviewed tree was equivalent."
+		}
+	],
+	"nonGoals": [
+		"Do not weaken normal stale-head validation for reachable ancestor history.",
+		"Do not accept missing, malformed, or different-tree receipt heads.",
+		"Do not claim PR #329 is review-clear, merge-ready, or JSC-363-complete from local validation alone.",
+		"Do not require CircleCI API access unless a CircleCI lane fails or public check data is insufficient."
+	],
+	"validationPlan": [
+		"Run py_compile for scripts/check-goal-audit-freshness.py.",
+		"Run the focused Vitest suite for check-goal-audit-freshness-script.test.ts.",
+		"Run check-goal-audit-freshness against the active goal board.",
+		"Run check-goal-board against the active goal board.",
+		"Run git diff --check.",
+		"Run bash scripts/validate-codestyle.sh --fast.",
+		"After push, refresh PR #329 checks and review threads."
+	]
+}
