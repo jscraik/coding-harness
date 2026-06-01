@@ -58,4 +58,3 @@ Validation ownership: introduced by current patch.
   - append the supersession receipt row, then rerun goal-board freshness checks and refresh live PR truth before closeout claims
 
 WROTE: artifacts/reviews/pr324-supersession-agent-native.md
-
