@@ -30,6 +30,7 @@ SELF_REFERENTIAL_GOAL_RECEIPT_PATHS = {
 }
 SELF_REFERENTIAL_DECLARABLE_PATHS = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS | {
     "scripts/check-goal-audit-freshness.py",
+    "src/dev/check-goal-audit-freshness-script.test.ts",
 }
 
 
@@ -230,29 +231,45 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
 
     receipt_id = require_string(receipt.get("id"), "receipt.id")
     receipt_head_sha = require_string(receipt.get("head_sha"), "receipt.head_sha")
-    require_reachable_head(repo_root, receipt_head_sha, "receipt.head_sha")
+    receipt_head_relation = classify_head_relation(
+        repo_root,
+        receipt_head_sha,
+        current_head,
+        "receipt.head_sha",
+    )
     receipt_head_sha_normalized = receipt_head_sha.lower()
     source_head_sha = require_string(source.get("head_sha"), "audit_sources_checked[].head_sha")
-    require_reachable_head(repo_root, source_head_sha, "audit_sources_checked[].head_sha")
+    source_head_relation = classify_head_relation(
+        repo_root,
+        source_head_sha,
+        current_head,
+        "audit_sources_checked[].head_sha",
+    )
     source_head_sha_normalized = source_head_sha.lower()
     if source_head_sha_normalized != receipt_head_sha_normalized:
         raise ValidationError("audit_sources_checked[].head_sha must match receipt.head_sha")
     if receipt_head_sha_normalized != current_head_normalized:
-        if not permits_self_referential_goal_receipt_commit(
-            repo_root,
-            receipt,
-            receipt_head_sha_normalized,
-            source_head_sha_normalized,
-            current_head_normalized,
+        if (
+            receipt_head_relation != "tree_equivalent"
+            and not permits_self_referential_goal_receipt_commit(
+                repo_root,
+                receipt,
+                receipt_head_sha_normalized,
+                source_head_sha_normalized,
+                current_head_normalized,
+            )
         ):
             raise ValidationError(f"receipt.head_sha must match current repository HEAD: receipt={receipt_head_sha} current={current_head}")
     if source_head_sha_normalized != current_head_normalized:
-        if not permits_self_referential_goal_receipt_commit(
-            repo_root,
-            receipt,
-            receipt_head_sha_normalized,
-            source_head_sha_normalized,
-            current_head_normalized,
+        if (
+            source_head_relation != "tree_equivalent"
+            and not permits_self_referential_goal_receipt_commit(
+                repo_root,
+                receipt,
+                receipt_head_sha_normalized,
+                source_head_sha_normalized,
+                current_head_normalized,
+            )
         ):
             raise ValidationError(f"audit_sources_checked[].head_sha must match current repository HEAD: source={source_head_sha} current={current_head}")
 
@@ -288,13 +305,18 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
         "checked_at": checked_at.isoformat().replace("+00:00", "Z"),
         "receipt_id": receipt_id,
         "head_sha": receipt_head_sha_normalized,
+        "head_relation": receipt_head_relation,
     }
 
 
-def require_reachable_head(repo_root: Path, head_sha: str, field: str) -> None:
-    if len(head_sha) != 40 or any(character not in "0123456789abcdef" for character in head_sha.lower()):
+def classify_head_relation(repo_root: Path, head_sha: str, current_head: str, field: str) -> str:
+    if len(head_sha) != 40 or any(
+        character not in "0123456789abcdef" for character in head_sha.lower()
+    ):
         raise ValidationError(f"{field} must be a 40-character git commit SHA")
     normalized_head_sha = head_sha.lower()
+    if normalized_head_sha == current_head.lower():
+        return "current"
     try:
         completed = subprocess.run(
             ["git", "merge-base", "--is-ancestor", normalized_head_sha, "HEAD"],
@@ -306,10 +328,44 @@ def require_reachable_head(repo_root: Path, head_sha: str, field: str) -> None:
         )
     except OSError as exc:
         raise ValidationError(f"could not verify {field} against repository history: {exc}") from exc
-    if completed.returncode != 0:
-        detail = completed.stderr.strip()
-        suffix = f": {detail}" if detail else ""
-        raise ValidationError(f"{field} must be reachable from current repository HEAD{suffix}")
+    if completed.returncode == 0:
+        return "ancestor"
+    if completed.returncode == 1:
+        return classify_non_ancestor_tree_relation(
+            repo_root,
+            normalized_head_sha,
+            current_head,
+            field,
+        )
+    detail = completed.stderr.strip()
+    suffix = f": {detail}" if detail else ""
+    raise ValidationError(f"{field} must be reachable from current repository HEAD{suffix}")
+
+
+def classify_non_ancestor_tree_relation(
+    repo_root: Path,
+    head_sha: str,
+    current_head: str,
+    field: str,
+) -> str:
+    try:
+        completed = subprocess.run(
+            ["git", "diff", "--quiet", f"{head_sha}..{current_head}"],
+            cwd=repo_root,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except OSError as exc:
+        raise ValidationError(f"could not compare {field} with current repository HEAD: {exc}") from exc
+    if completed.returncode == 0:
+        return "tree_equivalent"
+    if completed.returncode == 1:
+        return "non_ancestor_tree_diff"
+    detail = completed.stderr.strip()
+    suffix = f": {detail}" if detail else ""
+    raise ValidationError(f"could not compare {field} with current repository HEAD{suffix}")
 
 
 def main() -> int:
