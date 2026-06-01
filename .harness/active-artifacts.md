@@ -80,6 +80,16 @@ answered. This updates the PR #330 lane only; PR #327, PR #328, PR #329, Linear,
 Judge/PM readiness, runtime producer emission, delivery-truth consumption, merge
 execution, and final goal completion remain separate evidence lanes.
 
+Post-R211 validator repair: after the R211 route-truth commit was pushed as
+1175bfcbd25ed5f2b5ad345f2369af8de2f4dc1b, PR #330 checks passed, but a new
+review thread found that depth-1 review checkouts could not prove receipt
+ancestry for otherwise declared self-referential route receipts. R212 repairs
+\`scripts/check-goal-audit-freshness.py\` so shallow checkouts classify that
+narrow declared self-referential case instead of failing before the goal-board
+guard can evaluate it. This is a validator compatibility repair only; it does
+not claim PR stack merge execution, Linear field alignment, Judge/PM readiness,
+runtime producer emission, delivery-truth consumption, or final goal completion.
+
 ## Artifact Index
 
 | Linear Key | Canonical Slug | Active Spec | Active Plan | Local Status | Notes |

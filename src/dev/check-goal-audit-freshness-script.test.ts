@@ -134,7 +134,7 @@ describe("check-goal-audit-freshness.py", () => {
 
 		const result = runValidator(root);
 
-		expect(result.status).toBe(0);
+		expect(result.status, result.stderr).toBe(0);
 		expect(result.stdout).toContain('"status": "pass"');
 		expect(result.stdout).toContain('"receipt_id": "R072"');
 	});
@@ -213,6 +213,66 @@ describe("check-goal-audit-freshness.py", () => {
 
 		expect(result.status).toBe(0);
 		expect(JSON.parse(result.stdout)).toMatchObject({
+			head_sha: parentHead,
+			receipt_id: "R072",
+		});
+	});
+
+	it("accepts a shallow self-referential receipt checkout when declared files are goal-route evidence only", () => {
+		const root = createTempRoot("audit-freshness-shallow-source-");
+		const parentHead = tempRootHeads.get(root);
+		if (!parentHead) throw new Error("missing test repository head");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		writeReceipts(root, [
+			{
+				...receipt(root),
+				changed_files: [
+					".harness/active-artifacts.md",
+					join(GOAL_DIR, "receipts.jsonl"),
+					join(GOAL_DIR, "state.yaml"),
+					"scripts/check-goal-audit-freshness.py",
+				],
+			},
+		]);
+		mkdirSync(join(root, ".harness"), { recursive: true });
+		mkdirSync(join(root, "scripts"), { recursive: true });
+		writeFileSync(join(root, ".harness/active-artifacts.md"), "route\n");
+		writeFileSync(join(root, GOAL_DIR, "state.yaml"), "status: route\n");
+		writeFileSync(
+			join(root, "scripts/check-goal-audit-freshness.py"),
+			"# guard\n",
+		);
+		runGit(root, [
+			"add",
+			".harness/active-artifacts.md",
+			join(GOAL_DIR, "receipts.jsonl"),
+			join(GOAL_DIR, "state.yaml"),
+			"scripts/check-goal-audit-freshness.py",
+			AUDIT_PATH,
+		]);
+		runGit(root, ["commit", "-m", "record self-referential route"]);
+		const cloneParent = mkdtempSync(
+			join(tmpdir(), "audit-freshness-shallow-clone-"),
+		);
+		tempRoots.push(cloneParent);
+		const cloneRoot = join(cloneParent, "clone");
+		const clone = spawnSync(
+			"git",
+			["clone", "--depth", "1", `file://${root}`, cloneRoot],
+			{ encoding: "utf8" },
+		);
+		if (clone.status !== 0) throw new Error(clone.stderr || clone.stdout);
+		utimesSync(
+			join(cloneRoot, AUDIT_PATH),
+			new Date("2026-05-27T01:00:00Z"),
+			new Date("2026-05-27T01:00:00Z"),
+		);
+
+		const result = runValidator(cloneRoot);
+
+		expect(result.status, result.stderr).toBe(0);
+		expect(JSON.parse(result.stdout)).toMatchObject({
+			head_relation: "shallow_unreachable",
 			head_sha: parentHead,
 			receipt_id: "R072",
 		});
