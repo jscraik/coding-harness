@@ -130,6 +130,7 @@ Selected implementation source IDs:
 | FR-007 / SA-016 | PU-005 | verifier freshness policy overrides producer TTL |
 | FR-008 / SA-008 | PU-008 | foundation non-blending fixture proves review-state and external-state refs stay separate |
 | FR-010 / SA-010 | PU-008 | closeout text downgrades or blocks unsupported green, tidy, delivered, or ready claims |
+| 2026-05-27 system-prompt operational analysis | PU-016 / Judge-PM audit | .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md remains linked as the adopted SPG-001 through SPG-012 source; every item must be implemented, explicitly blocked, or accepted as a tracked follow-up before full lifecycle completion is claimed. |
 | SA-012 | PU-006 | root tidy fixture cites docs/architecture/root-surface-classification.md |
 | SA-013 | PU-007 | operator-facing outputs include textual status labels |
 | SA-014 | PU-007 | sensitive values and bulky raw telemetry are blocked or redacted |

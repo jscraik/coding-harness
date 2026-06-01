@@ -61,7 +61,7 @@ function parseArgs(argv) {
 
 function readText(root, relativePath, errors) {
 	const absolutePath = path.resolve(root, relativePath);
-	if (!absolutePath.startsWith(root + path.sep) && absolutePath !== root) {
+	if (!isPathInsideRoot(root, absolutePath)) {
 		errors.push({
 			code: "path_escapes_root",
 			path: relativePath,
@@ -79,6 +79,14 @@ function readText(root, relativePath, errors) {
 		});
 		return "";
 	}
+}
+
+function isPathInsideRoot(root, absolutePath) {
+	const relativePath = path.relative(root, absolutePath);
+	return (
+		relativePath === "" ||
+		(!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+	);
 }
 
 function readJson(root, relativePath, errors) {
@@ -243,6 +251,17 @@ function validatePlanAndSpec(planText, specText, errors) {
 				code: "spg_target_runtime_context_missing",
 				path: label,
 				message: "SPG target surfaces must keep runtime evidence context",
+			});
+		}
+		if (
+			!text.includes("SPG-001 through SPG-012") ||
+			!text.includes(SOURCE_PATH)
+		) {
+			errors.push({
+				code: "spg_target_adoption_marker_missing",
+				path: label,
+				message:
+					"SPG target surfaces must keep the adopted SPG-001 through SPG-012 source marker",
 			});
 		}
 	}
