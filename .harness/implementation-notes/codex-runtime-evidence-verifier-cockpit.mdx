@@ -44,7 +44,7 @@ Runtime evidence work stays inside the existing deep modules instead of adding a
 
 PU-044 responds to a concrete artifact-truth failure during PR #327 triage: an agent-native mailbox summary reported pass while the on-disk review artifact still said `status: findings` and described an older patch state. The fix stays in the existing reviewer-coverage validator instead of adding a new workflow. When a manifest declares `expectedHeadSha`, every required reviewer artifact must begin with a canonical `head_sha: <40-char-sha>` line matching that expected head before it can count as complete. Missing head metadata, stale head metadata, ambiguous head-like metadata, malformed manifest head values, and blocked status variants now fail closed.
 
-This slice deliberately does not alter delivery-truth, external-state, PR closeout, Linear, CircleCI, or merge-readiness authority. It only makes reviewer-swarm evidence harder to misread. `~/.codex/.env` remains the approved CircleCI credential surface for API or job-log triage, but it was not opened for this slice because the public PR #327 check surface was already green and no CircleCI-specific failure needed authenticated logs.
+This slice deliberately does not alter delivery-truth, external-state, PR closeout, Linear, CircleCI, or merge-readiness authority. It only makes reviewer-swarm evidence harder to misread. `~/.codex/.env` remains the approved CircleCI credential surface for API or job-log triage. It was not opened for CircleCI during this slice because the public PR #327 check surface was already green and no CircleCI-specific failure needed authenticated logs. A later credential-backed `pnpm test:deep` E2E probe found that `~/.codex/.env` is currently a FIFO rather than a regular file in this runtime; direct reads block without an external writer, so credential-backed E2E validation is recorded as blocked instead of inferred.
 
 Validation evidence for PU-044:
 
@@ -56,6 +56,14 @@ Validation evidence for PU-044:
 - git diff --check -- scripts/validate-reviewer-coverage.cjs src/lib/reviewer-coverage-receipt.test.ts .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-044-reviewer-artifact-head-freshness-intent.json -> pass.
 - bash scripts/validate-codestyle.sh --fast -> pass.
 - node scripts/validate-reviewer-coverage.cjs --manifest artifacts/reviews/head-freshness-final-manifest.json --reviews-dir artifacts/reviews --json -> pass against final adversarial, agent-native, and best-practices review artifacts bound to head 33e99c695c6cb6f67301948e1b9013deb5ed2037.
+- bash scripts/validate-codestyle.sh -> pass after commit.
+- pnpm check -> pass after commit.
+- bash scripts/run-harness-gate.sh tooling-audit --path . --json -> pass after commit.
+- pnpm exec tsx src/cli.ts learnings import --provider coderabbit-csv --source "/Users/jamiecraik/Downloads/learnings (2).csv" --repo jscraik/coding-harness --json -> pass with partial import, 129 imported rows, 88 skipped rows, 0 invalid rows, and local-only sensitive-path warnings.
+- bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files <PU-044 changed files> --json -> pass with advisory warnings from imported learning matches.
+- bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files <PU-044 changed files> --json -> pass; summary reported 129 applicable learnings, 9 validation-plan items, 129 reviewer-likely concerns, and 3 PR mention items.
+- bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json -> pass.
+- pnpm test:deep -> blocked at credential-backed E2E after `pnpm check`, `test:artifacts`, and `test:integration` passed; E2E requires GitHub and Linear credentials, and the approved env surface `~/.codex/.env` is a FIFO in this runtime, so variable-presence inspection and env-loaded rerun could not be performed without a writer.
 
 ## Current Slice Insertion Map
 
