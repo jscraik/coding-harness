@@ -92,7 +92,7 @@ function readPngMetadata(file: Buffer): PngMetadata | null {
 		const actualCrc = crc32(file.subarray(offset + 4, dataEnd));
 		if (actualCrc !== expectedCrc) return null;
 		if (type === "IHDR") {
-			if (data.length < 13) return null;
+			if (data.length !== 13) return null;
 			metadata.width = data.readUInt32BE(0);
 			metadata.height = data.readUInt32BE(4);
 			metadata.bitDepth = data[8] ?? 0;

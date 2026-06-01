@@ -8,6 +8,7 @@ import {
 	indexedPngWithPaletteIndexes,
 	pngWithDeclaredSize,
 	pngWithInvalidChunkCrc,
+	pngWithOversizedIhdr,
 	pngWithPixels,
 	pngWithUnsupportedIhdrMethods,
 	pngWithoutIend,
@@ -41,6 +42,13 @@ describe("inspectPng", () => {
 	it("rejects PNGs with unsupported IHDR compression or filter methods", () => {
 		const path = join(tempDir, "unsupported-ihdr-methods.png");
 		writeFileSync(path, pngWithUnsupportedIhdrMethods(2, 2));
+
+		expect(inspectPng(path)).toBeNull();
+	});
+
+	it("rejects PNGs with oversized IHDR chunks", () => {
+		const path = join(tempDir, "oversized-ihdr.png");
+		writeFileSync(path, pngWithOversizedIhdr(2, 2));
 
 		expect(inspectPng(path)).toBeNull();
 	});
