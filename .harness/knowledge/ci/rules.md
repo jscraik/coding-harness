@@ -1,16 +1,35 @@
 # CI Rules
 
-**Rule count:** 0
-**Last promoted:** (not yet)
+**Rule count:** 1
+**Last promoted:** 2026-06-01
 
 ## Active rules
 
-No rules promoted yet. As patterns become confirmed through repeated observation,
-promote them from hypotheses with a rule ID:
-
-- **Format**: `R-NNN: description`
-- **Severity**: must | should | may
-- **Required fields**: Rationale, Last promoted date, Promoted from source
+- **R-001**: CircleCI API or job-log triage must use the approved private env
+  surface `~/.codex/.env` before reporting CircleCI credentials unavailable.
+  - Severity: must
+  - Rationale: Repeated JSC-363 CI triage required CircleCI API/log access after
+    stale or opaque checks. The repo already records env-backed validation
+    recovery in `.harness/memory/LEARNINGS.md`, but leaving the rule out of
+    Project Brain made future agents rediscover it through operator steering.
+  - Last promoted: 2026-06-01
+  - Promoted from: operator steering, `.harness/memory/LEARNINGS.md`, and
+    JSC-363 Goal Governor receipts.
+  - Operating contract: never print or persist secret values; if
+    `~/.codex/.env` is missing, unreadable, a FIFO without a writer, or does
+    not contain the required variable names, record that concrete blocker
+    separately from `missing credentials` and use public GitHub check evidence
+    only for lanes it actually proves.
+  - Env-surface probe contract: first test that `~/.codex/.env` is a regular
+    readable file before sourcing it. If it is a pipe, socket, missing, or
+    unreadable, do not source it; classify the blocker as
+    `env_surface_unreadable` or `env_surface_fifo_without_writer`, then use
+    only already-authenticated CLIs or public GitHub check evidence for the
+    lanes those sources prove. Bounded CircleCI API/log triage may load the env
+    file only after the regular-file probe passes.
+  - Placeholder normalization: route-truth artifacts may redact the home
+    directory as `<REDACTED_HOME_PATH>/.codex/.env`; local command execution
+    maps that placeholder to the operator-local `~/.codex/.env` path.
 
 ## Promotion guide
 
