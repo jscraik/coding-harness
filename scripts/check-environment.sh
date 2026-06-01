@@ -205,7 +205,7 @@ fi
 		fi
 	done
 
-	required_prek_hooks=("pre-commit|Pre-commit|make hooks-pre-commit|system|false|" "pre-push|Pre-push|make hooks-pre-push|system|false|pre-push")
+	required_prek_hooks=("pre-commit|Pre-commit|make hooks-pre-commit|system|false|pre-commit" "pre-push|Pre-push|make hooks-pre-push|system|false|pre-push")
 	for hook_spec in "${required_prek_hooks[@]}"; do
 		IFS='|' read -r hook_name hook_display_name hook_command hook_language hook_pass_filenames hook_stages <<< "$hook_spec"
 		if ! rg -q "^[[:space:]]*id[[:space:]]*=[[:space:]]*\"${hook_name}\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then

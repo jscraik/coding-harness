@@ -18,6 +18,12 @@
 		"provingCommand": "pnpm vitest run src/commands/runtime-card.test.ts"
 	},
 	{
+		"path": "src/lib/browser-evidence/validator.test.ts",
+		"owner": "browser-evidence",
+		"rationale": "Browser-evidence validation decides whether captured screenshots and console telemetry are sufficient routine UI proof.",
+		"provingCommand": "pnpm vitest run src/lib/browser-evidence/validator.test.ts"
+	},
+	{
 		"path": "src/lib/delivery-truth/delivery-truth-composition.test.ts",
 		"owner": "delivery-truth",
 		"rationale": "Delivery-truth composition decides whether evidence can support closeout claims.",

@@ -3,6 +3,7 @@
 	"version": "0.15.1",
 	"files": [
 		"dist",
+		"contracts/browser-evidence.schema.json",
 		"scripts/codex-preflight.sh",
 		"scripts/codex-preflight-local-memory-legacy.sh",
 		"scripts/verify-work.sh",
@@ -25,6 +26,7 @@
 		"src/commands/runtime-card.test.ts",
 		"src/lib/**/*.json",
 		"src/lib/**/!(*.test).ts",
+		"src/lib/browser-evidence/validator.test.ts",
 		"src/lib/delivery-truth/delivery-truth-composition.test.ts",
 		"src/lib/delivery-truth/delivery-truth-freshness-policy.test.ts",
 		"src/lib/external-state/external-state.test.ts",

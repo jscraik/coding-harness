@@ -161,6 +161,34 @@ describe("command registry", () => {
 		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
 			"--contract requires a value",
 		);
+		expect(
+			dispatchRegistryCommand("evidence-verify", [
+				"evidence-verify",
+				"--browser-evidence",
+			])?.result,
+		).toBe(2);
+		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
+			"--browser-evidence requires a value",
+		);
+		expect(
+			dispatchRegistryCommand("evidence-verify", [
+				"evidence-verify",
+				"--browser-required-viewports",
+			])?.result,
+		).toBe(2);
+		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
+			"--browser-required-viewports requires a value",
+		);
+		expect(
+			dispatchRegistryCommand("evidence-verify", [
+				"evidence-verify",
+				"--browser-required-viewports",
+				"desktop",
+			])?.result,
+		).toBe(2);
+		expect(errorSpy.mock.calls.at(-1)?.[0]).toContain(
+			"--browser-required-viewports requires --browser-evidence",
+		);
 
 		errorSpy.mockRestore();
 	});

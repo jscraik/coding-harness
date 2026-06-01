@@ -175,7 +175,7 @@ The weekly status surface is
 [docs/roadmap/agent-first-status.md](./docs/roadmap/agent-first-status.md),
 and its review cadence is mirrored in `harness.contract.json` so
 `drift-gate --mode health` can fail closed on stale north-star evidence.
-The roadmap and status metadata were last synchronized on 2026-05-18 as part
+The roadmap and status metadata were last synchronized on 2026-06-01 as part
 of the Coding Harness evidence alignment refresh.
 The `preflight-gate` product-surface cadence evidence was refreshed on
 2026-05-21 after source and test review; future `harness.contract.json`
@@ -838,7 +838,7 @@ merge-readiness claims.
 | `source-outline` | Inspect TypeScript-family signatures and comments before opening implementations, with optional single-symbol implementation unwrapping via `--symbol` |
 
 | `index-context` | Build the local semantic-search index |
-| `evidence-verify` | Validate screenshot and evidence artifacts |
+| `evidence-verify` | Validate evidence files and browser evidence manifests, including screenshot presence, viewport coverage, non-blank PNG checks, and console policy |
 | `ui:fast` | Run a Storybook-first local UI loop |
 | `ui:verify` | Run Playwright smoke verification with evidence capture |
 | `ui:explore` | Run agent-browser exploratory testing |
