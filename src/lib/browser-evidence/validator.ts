@@ -41,7 +41,15 @@ function browserError(
 function effectiveBlankPolicy(
 	policy: BrowserBlankScreenshotPolicy | undefined,
 ): Required<BrowserBlankScreenshotPolicy> {
-	return { ...DEFAULT_BLANK_POLICY, ...(policy ?? {}) };
+	return {
+		minWidth: Math.max(DEFAULT_BLANK_POLICY.minWidth, policy?.minWidth ?? 0),
+		minHeight: Math.max(DEFAULT_BLANK_POLICY.minHeight, policy?.minHeight ?? 0),
+		minBytes: Math.max(DEFAULT_BLANK_POLICY.minBytes, policy?.minBytes ?? 0),
+		minUniqueColors: Math.max(
+			DEFAULT_BLANK_POLICY.minUniqueColors,
+			policy?.minUniqueColors ?? 0,
+		),
+	};
 }
 
 function validateDistinctViewportArtifact(
@@ -230,10 +238,11 @@ function validateConsolePolicy(
 	manifest: BrowserEvidenceManifest,
 ): BrowserEvidenceValidationError[] {
 	const policy = manifest.consolePolicy ?? {};
-	const failOn = policy.failOn ?? DEFAULT_CONSOLE_FAIL_ON;
+	const failOn = new Set(policy.failOn ?? DEFAULT_CONSOLE_FAIL_ON);
+	for (const level of DEFAULT_CONSOLE_FAIL_ON) failOn.add(level);
 	const allowedPatterns = policy.allowedMessagePatterns ?? [];
 	return manifest.consoleEvents.flatMap((event) => {
-		if (!failOn.includes(event.level)) return [];
+		if (!failOn.has(event.level)) return [];
 		const message = event.message ?? event.text ?? "";
 		const allowed = allowedPatterns.some((pattern) =>
 			message.includes(pattern),

@@ -30,6 +30,14 @@ interface ParsedPolicy<TPolicy> {
 	errors: BrowserEvidenceValidationError[];
 }
 
+const TRUSTED_CONSOLE_FAIL_LEVEL_FLOOR: BrowserConsoleLevel[] = ["error"];
+const TRUSTED_BLANK_POLICY_FLOOR: Required<BrowserBlankScreenshotPolicy> = {
+	minWidth: 2,
+	minHeight: 2,
+	minBytes: 64,
+	minUniqueColors: 2,
+};
+
 function parseConsolePolicy(
 	value: unknown,
 ): ParsedPolicy<BrowserConsolePolicy> {
@@ -73,6 +81,19 @@ function parseConsolePolicy(
 				),
 			);
 		} else {
+			const missingTrustedLevels = TRUSTED_CONSOLE_FAIL_LEVEL_FLOOR.filter(
+				(level) => !failOn.includes(level),
+			);
+			if (missingTrustedLevels.length > 0) {
+				errors.push(
+					browserError(
+						"BROWSER_CONSOLE_POLICY_VIOLATION",
+						"Browser evidence consolePolicy.failOn must include trusted failure levels: " +
+							missingTrustedLevels.join(", ") +
+							".",
+					),
+				);
+			}
 			policy.failOn = failOn as BrowserConsoleLevel[];
 		}
 	}
@@ -124,17 +145,22 @@ function parseBlankPolicy(
 		"minUniqueColors",
 	] as const) {
 		const candidate = value[key];
+		const floor = TRUSTED_BLANK_POLICY_FLOOR[key];
 		if (
 			typeof candidate === "number" &&
 			Number.isInteger(candidate) &&
-			candidate > 0
+			candidate >= floor
 		) {
 			policy[key] = candidate;
 		} else {
 			errors.push(
 				browserError(
 					"BROWSER_MANIFEST_SCHEMA_INVALID",
-					`Browser evidence blankScreenshotPolicy.${key} must be a positive integer.`,
+					"Browser evidence blankScreenshotPolicy." +
+						key +
+						" must be an integer greater than or equal to " +
+						String(floor) +
+						".",
 				),
 			);
 		}

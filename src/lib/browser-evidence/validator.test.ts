@@ -93,7 +93,7 @@ describe("validateBrowserEvidenceManifest", () => {
 				blankScreenshotPolicy: {
 					minWidth: 2,
 					minHeight: 2,
-					minBytes: 1,
+					minBytes: 64,
 					minUniqueColors: 2,
 				},
 			}),
@@ -123,6 +123,29 @@ describe("validateBrowserEvidenceManifest", () => {
 		expect(schema.properties?.consolePolicy?.properties?.failOn).toMatchObject({
 			type: "array",
 			minItems: 1,
+			contains: { const: "error" },
+		});
+	});
+
+	it("keeps schema blank screenshot policy floors aligned with parser validation", () => {
+		const schema = JSON.parse(
+			readFileSync(
+				join(process.cwd(), "contracts/browser-evidence.schema.json"),
+				"utf-8",
+			),
+		) as {
+			properties?: {
+				blankScreenshotPolicy?: {
+					properties?: Record<string, Record<string, unknown>>;
+				};
+			};
+		};
+
+		expect(schema.properties?.blankScreenshotPolicy?.properties).toMatchObject({
+			minWidth: { minimum: 2 },
+			minHeight: { minimum: 2 },
+			minBytes: { minimum: 64 },
+			minUniqueColors: { minimum: 2 },
 		});
 	});
 
@@ -267,6 +290,53 @@ describe("validateBrowserEvidenceManifest", () => {
 		expect(report.passed).toBe(false);
 		expect(report.errors.map((error) => error.code)).toContain(
 			"BROWSER_SCREENSHOT_BLANK",
+		);
+	});
+
+	it("does not let manifests lower the trusted nonblank screenshot floor", () => {
+		writeFileSync(join(tempDir, "desktop.png"), png(1, 1, [[255, 0, 0, 255]]));
+		const report = validateBrowserEvidenceManifest({
+			manifestPath: writeManifest("browser-evidence.json", {
+				screenshots: [
+					{ path: "desktop.png", viewportId: "desktop", width: 1, height: 1 },
+				],
+				blankScreenshotPolicy: {
+					minWidth: 1,
+					minHeight: 1,
+					minBytes: 1,
+					minUniqueColors: 1,
+				},
+			}),
+			baseDir: tempDir,
+		});
+
+		expect(report.passed).toBe(false);
+		expect(report.errors.map((error) => error.code)).toContain(
+			"BROWSER_MANIFEST_SCHEMA_INVALID",
+		);
+	});
+
+	it("does not let manifests disable error-level console failures", () => {
+		writeFileSync(
+			join(tempDir, "desktop.png"),
+			png(2, 2, [
+				[255, 0, 0, 255],
+				[0, 255, 0, 255],
+				[255, 0, 0, 255],
+				[0, 255, 0, 255],
+			]),
+		);
+		const report = validateBrowserEvidenceManifest({
+			manifestPath: writeManifest("browser-evidence.json", {
+				consoleEvents: [{ level: "error", message: "render failed" }],
+				consolePolicy: { failOn: ["warning"] },
+			}),
+			baseDir: tempDir,
+		});
+
+		expect(report.passed).toBe(false);
+		expect(report.errors.map((error) => error.code)).toContain(
+			"BROWSER_CONSOLE_POLICY_VIOLATION",
 		);
 	});
 
