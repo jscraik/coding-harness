@@ -138,6 +138,7 @@
 	            <li><a href="#status-proof-hardening">Status Proof Hardening</a></li>
 	            <li><a href="#final-closeout-review-fixes">Final Closeout Review Fixes</a></li>
 	            <li><a href="#head-scoped-status-and-recovery-denial-fixes">Head-Scoped Status And Recovery Denial Fixes</a></li>
+	            <li><a href="#jsc-363-browser-evidence-slice">JSC-363 Browser Evidence Slice</a></li>
 	            <li><a href="#next-safe-action">Next Safe Action</a></li>
 	          </ul>
 	        </nav>
@@ -1036,37 +1037,221 @@
 	        </ul>
 	      </section>
 
+	      <section id="jsc-363-browser-evidence-slice">
+	        <h2>JSC-363 Browser Evidence Slice</h2>
+	        <p>
+	          Active slice: <code>PU-042 / GAP-010</code>, browser evidence as a
+	          routine gate. The implementation is intentionally placed in a deep
+	          module instead of adding browser-specific policy into the command
+	          body.
+	        </p>
+	        <table>
+	          <thead>
+	            <tr>
+	              <th>Layer</th>
+	              <th>Where Work Is Placed</th>
+	              <th>Why It Belongs There</th>
+	            </tr>
+	          </thead>
+	          <tbody>
+	            <tr>
+	              <td>CLI seam</td>
+	              <td>
+	                <code>src/commands/evidence-verify.ts</code> and
+	                <code>src/lib/cli/registry/evidence-verify-command-spec.ts</code>
+	              </td>
+	              <td>
+	                Accepts <code>--browser-evidence</code> and
+	                <code>--browser-required-viewports</code>, then delegates to the
+	                browser evidence module.
+	              </td>
+	            </tr>
+	            <tr>
+	              <td>Deep module</td>
+	              <td>
+	                <code>src/lib/browser-evidence/</code>, including
+	                <code>manifest-parser-items.ts</code> and
+	                <code>png-test-fixtures.ts</code>
+	              </td>
+	              <td>
+	                Owns manifest parsing, item-level schema parity, screenshot
+	                proof, PNG nonblank checks, console policy, stable error
+	                codes, and the validation report.
+	              </td>
+	            </tr>
+	            <tr>
+	              <td>Shared report contract</td>
+	              <td><code>src/lib/evidence/types.ts</code></td>
+	              <td>
+	                Adds <code>browserEvidence</code> to the existing evidence
+	                verification report without making browser evidence a delivery
+	                truth, review-state, or merge-readiness proof.
+	              </td>
+	            </tr>
+	            <tr>
+	              <td>Docs and architecture</td>
+	              <td>
+	                <code>ARCHITECTURE.md</code>, <code>README.md</code>,
+	                <code>docs/cli-reference.md</code>, and
+	                <code>src/lib/testing/README.md</code>
+	              </td>
+	              <td>
+	                Keeps the human source map, CLI contract, and behavior-test
+	                ownership aligned with the new module.
+	              </td>
+	            </tr>
+	          </tbody>
+	        </table>
+	        <p>
+	          Deep-module flow:
+	          <code>CLI flags &gt; evidence-verify command &gt; browser-evidence validator &gt; manifest parser / PNG inspection &gt; evidence report</code>.
+	          This preserves the thin public surface while making the enforcement
+	          path testable as a module.
+	        </p>
+	        <p>
+	          Decisions made during implementation: manifests must include
+	          <code>consoleEvents</code>, <code>consolePolicy</code>, and
+	          <code>blankScreenshotPolicy</code>; malformed console policy fails
+	          closed; browser screenshot refs must be inspectable PNG artifacts;
+	          PNG files get deterministic pixel-level nonblank inspection.
+	          PR review follow-ups also tightened required viewport handling so
+	          CLI-supplied requirements are added to the manifest requirements
+	          instead of replacing or weakening them; parser/schema integer and
+	          unknown-property checks now stay aligned; malformed PNGs fail
+	          closed; and browser-evidence failures no longer downgrade
+	          higher-priority file error exit codes. A later Codex PR finding
+	          tightened distinct viewport proof to compare canonical loaded
+	          artifact paths, so <code>shared.png</code> and
+	          <code>./shared.png</code> cannot satisfy two required viewports.
+	          A follow-up Codex finding raised the browser screenshot load ceiling
+	          above the generic evidence-file default so full-page or high-DPI PNG
+	          browser captures can still reach PNG inspection instead of failing
+	          early as oversized generic artifacts. A later Codex schema finding
+	          aligned <code>contracts/browser-evidence.schema.json</code> with the
+	          runtime parser by requiring
+	          <code>consolePolicy.failOn</code> to contain at least one console
+	          level, so schema-valid manifests cannot fail the parser only after
+	          reaching <code>evidence-verify --browser-evidence</code>. A current
+	          Codex review then tightened PNG inspection to reject images whose
+	          declared dimensions would require unsafe inflated pixel buffers before
+	          calling <code>inflateSync</code>, keeping compressed screenshot files
+	          from becoming CI memory spikes. A final timestamp parity finding made
+	          runtime parsing enforce the same RFC3339 date-time requirement that the
+	          browser-evidence schema already declared for console telemetry.
+	          CodeRabbit's next pass found remaining schema-parity gaps: empty
+	          screenshot arrays, non-string optional manifest fields, zero-CRC PNG
+	          fixtures, and public docs using <code>view port</code> instead of
+	          <code>viewport</code>. The fix now rejects those schema-invalid
+	          optional fields, rejects empty screenshot arrays, centralizes
+	          structurally valid PNG test fixtures with CRCs, and keeps the parser
+	          split below the module-size ratchet. A subsequent Codex review found
+	          two remaining PNG-inspection risks: indexed-color PNGs were being
+	          counted as palette indexes instead of rendered colors, and high
+	          entropy screenshots could allocate one set entry per unique pixel.
+	          The inspector now fails closed on indexed-color PNGs until palette
+	          resolution is intentionally implemented, and the validator passes its
+	          nonblank color threshold into PNG inspection so unique-color tracking
+	          stops once enough proof has been collected. A further Codex review
+	          found that fully transparent alpha PNGs could still count hidden
+	          color-channel bytes as visual proof. PNG inspection now ignores fully
+	          transparent RGBA and grayscale-alpha pixels for nonblank color
+	          diversity, so invisible pixels cannot satisfy screenshot-render
+	          evidence. The latest Codex review also found that PNGs missing the
+	          required terminal <code>IEND</code> chunk could still be inflated and
+	          counted as screenshot proof. PNG inspection now requires a zero-length
+	          terminal <code>IEND</code> chunk before trusting dimensions or color
+	          diversity, so truncated IDAT-only files cannot pass as renderable
+	          screenshots. The final review refresh found one more valid PNG
+	          decoder parity gap: nonzero IHDR compression or filter methods were
+	          not rejected before IDAT inspection. PNG inspection now requires both
+	          IHDR method fields to be <code>0</code>, matching the supported PNG
+	          method set instead of accepting artifacts ordinary decoders reject.
+	        </p>
+	        <p>
+	          Validation so far:
+	          <code>pnpm vitest run src/lib/browser-evidence/validator.test.ts src/commands/evidence-verify.test.ts src/lib/cli/command-registry.test.ts src/lib/cli/registry/command-specs.test.ts</code>
+	          passed 338 tests after the policy hardening patch;
+	          <code>pnpm vitest run src/lib/architecture/module-boundaries.test.ts src/dev/package-files-quality-scripts.test.ts src/lib/cli/registry/command-specs.test.ts src/commands/evidence-verify.test.ts</code>
+	          passed 186 tests after moving registry option parsing into a deep
+	          helper; <code>pnpm typecheck</code>,
+	          <code>pnpm run quality:docstrings</code>,
+	          <code>pnpm run quality:size</code>,
+	          <code>pnpm run quality:behavior-tests</code>,
+	          <code>pnpm run test:related</code>, docs-gate,
+	          <code>bash scripts/validate-codestyle.sh --fast</code>, and
+	          <code>bash scripts/verify-work.sh --fast</code> passed. After
+	          Codex PR review found the PNG-inspection and viewport-union gaps,
+	          <code>pnpm vitest run src/lib/browser-evidence/validator.test.ts src/commands/evidence-verify.test.ts</code>
+	          passed 31 tests with the regression cases included. After CodeRabbit
+	          opened the schema, parser, PNG, exit-code, docs, and CLI contract
+	          threads,
+	          <code>pnpm vitest run src/lib/browser-evidence/validator.test.ts src/commands/evidence-verify.test.ts src/lib/cli/command-registry.test.ts src/lib/cli/registry/command-specs.test.ts</code>
+	          passed 344 tests, and
+	          <code>bash scripts/validate-codestyle.sh --fast</code> passed with
+	          only existing baseline drift-gate warnings. After the canonical
+	          artifact-path fix, the same focused test command passed 344 tests
+	          again and the fast validation gate passed again with the same
+	          baseline drift-gate warnings. After the browser screenshot size-limit
+	          fix, the focused browser-evidence and CLI registry test lane was
+	          rerun with 63 suites and 345 tests passing, and the PR check lanes
+	          were refreshed separately. After the schema/parser failOn alignment
+	          fix, the same focused lane was rerun with the schema contract and
+	          runtime rejection regressions included. After the PNG inflate-budget
+	          fix, the PNG-inspection regression was added to the same focused
+	          browser-evidence validation lane. After the console timestamp parity
+	          fix, malformed console timestamps were added to the manifest parser
+	          regression coverage before another focused validation pass. After the
+	          final CodeRabbit review-thread pass, the focused browser-evidence and
+	          CLI registry lane passed 351 tests, and
+	          <code>bash scripts/validate-codestyle.sh --fast</code> passed with
+	          491 tests passing, one skipped, clean docstring and size checks. After the PNG palette
+	          and color-tracking review fixes, the same focused lane passed again
+	          with 351 tests, then the fast validation gate passed with 493 tests
+	          passing, one skipped, clean public API docs, clean size ratchets, and
+	          only the existing baseline drift-gate warnings. After the transparent
+	          alpha review fix, the focused browser-evidence lane passed again with
+	          RGBA and grayscale-alpha regressions included, then the fast
+	          validation gate passed with 495 tests passing, one skipped, clean
+	          public API docs, clean size ratchets, and only the existing baseline
+	          drift-gate warnings. After the terminal-IEND review fix and docs
+	          metadata/CLI wording updates, the focused browser-evidence lane and
+	          fast validation gate were rerun again. A final unsupported-IHDR-method
+	          review fix added one more PNG-inspection regression before the next
+	          focused and fast validation pass.
+	        </p>
+	        <p>
+	          Environment-backed validation note:
+	          <code>pnpm test:deep</code> reached the E2E credential gate after
+	          the local suites passed, then blocked because credentials were not
+	          present in the process environment. The approved private env path
+	          <code>~/.codex/.env</code> exists as a FIFO, but a bounded source
+	          probe reached <code>before_source</code> and blocked before
+	          <code>after_source</code>, which means no secret writer was attached
+          for this shell. That probe was killed and no secret values were
+          printed.
+        </p>
+        <p>
+          Pre-push architecture note:
+          because this slice touches architecture-adjacent runtime evidence
+          surfaces, the pre-push hook refreshed generated Mermaid diagrams and
+          <code>AI/context/diagram-context.md</code>. Those generated artifacts
+          are included with the slice so the human architecture map and machine
+          context pack stay synchronized.
+        </p>
+      </section>
+
 	      <section id="next-safe-action">
 	        <h2>Next Safe Action</h2>
 	        <p>
-	          PR closeout loop update: latest status-proof review findings are
-	          validated locally. Next safe action is to stage, commit, push, wait
-	          for PR checks and review threads to settle, rerun live
-	          <code>pr-closeout</code>, then merge and update local
-	          <code>main</code> only after remote evidence is current.
+	          Browser evidence slice update: PR #325 is open at the latest pushed
+	          head. Next safe action is to keep polling CircleCI until the current
+	          head has no failing or pending required contexts, then refresh review
+	          threads, PR mergeability, and closeout evidence as separate lanes.
+	          If direct CircleCI API logs are needed, use
+	          <code>~/.codex/.env</code> only when the FIFO has an active writer;
+	          otherwise classify that lane as blocked by
+	          <code>env_fifo_no_writer</code>.
 	        </p>
-        <p>
-          Validation for this follow-up passed:
-          <code>pnpm vitest run src/commands/pr-closeout.test.ts src/lib/pr-closeout.test.ts</code>
-          passed 39 tests;
-          <code>pnpm vitest run src/lib/pr-closeout.test.ts src/commands/pr-closeout.test.ts src/lib/recovery/contract.test.ts src/lib/recovery/generated-artifact-parent.test.ts src/lib/replay/eval-runner.test.ts src/lib/architecture/pr-closeout-truth-contract.test.ts</code>
-          passed 57 tests;
-          <code>node scripts/check-pr-closeout-truth-contract.cjs --json</code>
-          passed; <code>bash scripts/validate-codestyle.sh --fast</code>
-          passed with the known non-blocking
-          <code>docs/QUALITY_SCORE.md</code> stale warning.
-        </p>
-        <p>
-          Goal board and native goal are ready for closeout. Next safe action:
-          stage, commit, push the URL-matched check-proof fix, rerun live
-          <code>pr-closeout</code>, then merge once review threads and checks
-          are current.
-        </p>
-        <p>
-          Latest validation: <code>pnpm check</code> passed with network access
-          for <code>pnpm audit</code>; <code>docs-gate</code>, codestyle,
-          closeout tests, and the pr-closeout truth invariant gate also passed.
-        </p>
       </section>
     </main>
   </body>

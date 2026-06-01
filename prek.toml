@@ -13,6 +13,7 @@ name = "Pre-commit"
 entry = "make hooks-pre-commit"
 language = "system"
 pass_filenames = false
+stages = ["pre-commit"]
 
 [[repos.hooks]]
 id = "pre-push"

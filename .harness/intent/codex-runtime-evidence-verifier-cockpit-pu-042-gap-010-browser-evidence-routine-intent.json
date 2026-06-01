@@ -1,0 +1,150 @@
+{
+	"schemaVersion": "intent-packet/v1",
+	"id": "codex-runtime-evidence-verifier-cockpit-pu-042-gap-010-browser-evidence-routine",
+	"goal": "JSC-363 Codex Runtime Evidence Verifier Cockpit",
+	"lifecycleUnit": "PU-042-gap-010-browser-evidence-routine",
+	"auditGapIds": ["GAP-010"],
+	"intent": "Add the smallest deterministic browser-evidence validation lane so captured browser artifacts can fail closed on missing screenshots, blank screenshots, missing required viewport coverage, missing console telemetry, and console-error policy violations.",
+	"problemSignal": {
+		"source": ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+		"summary": "Browser evidence schema and capture script exist, but rendered evidence is not yet a routine gate with explicit failure classification.",
+		"failureMode": "A frontend or user-visible change can appear validated while the rendered artifact is missing, blank, unscoped to viewports, or hides console errors."
+	},
+	"scope": {
+		"in": [
+			"Deep module for browser-evidence manifest validation",
+			"CLI wiring through the existing evidence verification surface",
+			"Schema-supported manifest fields for required viewport coverage, captured viewport evidence, console telemetry, console policy, and blank-screenshot policy",
+			"Regression tests for missing screenshot, blank screenshot, viewport coverage, and console policy failures"
+		],
+		"out": [
+			"Full visual diffing or golden-image comparison",
+			"New browser automation runner",
+			"External browser service integration",
+			"Merge-readiness, delivery-truth, or Judge/PM claim support"
+		]
+	},
+	"architecture": {
+		"deepModule": "src/lib/browser-evidence/",
+		"publicSurface": "Existing evidence-verify command receives an explicit browser-evidence manifest validation option instead of treating generic file verification as browser evidence proof.",
+		"separation": "The validator classifies browser artifact quality but remains separate from UI capture, delivery-truth, review-state, external-state, and merge-readiness authority."
+	},
+	"contractRequirements": {
+		"manifestShape": {
+			"schemaVersion": "browser-evidence/v1",
+			"requiredFields": [
+				"schemaVersion",
+				"screenshots",
+				"requiredViewportIds",
+				"consoleEvents",
+				"consolePolicy",
+				"blankScreenshotPolicy"
+			],
+			"screenshots": "Each screenshot must include repo-contained path, viewportId, width, height, and optional description.",
+			"viewportCoverage": "requiredViewportIds must be supplied by CLI/policy/contract or explicitly mirrored from a reviewed manifest field; captured screenshot viewportIds must cover every required viewport ID.",
+			"consoleTelemetry": "consoleEvents must be present, even when empty, so telemetry omission is distinct from no observed console events.",
+			"consolePolicy": "Default policy fails error-level console events. Warning-level handling is explicit and must not silently fail open.",
+			"blankScreenshotPolicy": "Validator must use deterministic thresholds: minimum dimensions, minimum byte size, and PNG pixel-channel diversity above an explicit minimum unique-colour threshold."
+		},
+		"cliContract": {
+			"command": "harness evidence-verify --browser-evidence <manifest.json> --browser-required-viewports <viewport-id-list> --json",
+			"requiredWhen": "The browser-evidence manifest option is mandatory only when this lane is invoked directly or when a future contract/policy explicitly requires it for UI-affecting changes.",
+			"notProofOf": [
+				"delivery-truth",
+				"review-state",
+				"external-state",
+				"merge-readiness",
+				"Judge/PM readiness",
+				"goal completion"
+			]
+		},
+		"failureCodes": [
+			"BROWSER_MANIFEST_NOT_FOUND",
+			"BROWSER_MANIFEST_PATH_UNSAFE",
+			"BROWSER_MANIFEST_INVALID_JSON",
+			"BROWSER_MANIFEST_SCHEMA_INVALID",
+			"BROWSER_SCREENSHOT_MISSING",
+			"BROWSER_SCREENSHOT_BLANK",
+			"BROWSER_SCREENSHOT_INVALID_FORMAT",
+			"BROWSER_VIEWPORT_COVERAGE_MISSING",
+			"BROWSER_CONSOLE_TELEMETRY_MISSING",
+			"BROWSER_CONSOLE_ERROR_DISALLOWED",
+			"BROWSER_CONSOLE_POLICY_VIOLATION",
+			"BROWSER_SCREENSHOT_PATH_UNSAFE"
+		],
+		"jsonOutput": {
+			"browserEvidence": {
+				"checked": "boolean",
+				"manifestPath": "string",
+				"passed": "boolean",
+				"requiredViewportIds": ["string"],
+				"capturedViewportIds": ["string"],
+				"missingViewportIds": ["string"],
+				"screenshotsChecked": "number",
+				"consoleEventsChecked": "number",
+				"errors": [
+					{
+						"code": "browser failure code",
+						"message": "human-readable diagnostic",
+						"path": "manifest or screenshot path",
+						"details": "machine-readable details object"
+					}
+				]
+			}
+		}
+	},
+	"acceptanceCriteria": [
+		"A valid browser-evidence manifest with screenshots, viewport coverage, and no disallowed console errors passes.",
+		"A manifest referencing a missing screenshot fails with a machine-readable code.",
+		"A blank screenshot fails with a machine-readable code.",
+		"A manifest without required viewport coverage fails with a machine-readable code.",
+		"A manifest without consoleEvents fails with a machine-readable missing-telemetry code.",
+		"Console errors fail by default unless the manifest policy explicitly allows them.",
+		"The command returns non-zero when browser-evidence validation fails and JSON output includes the browser evidence errors."
+	],
+	"validationPlan": [
+		"pnpm vitest run src/lib/browser-evidence/*.test.ts src/commands/evidence-verify.test.ts src/lib/cli/command-registry.test.ts",
+		"pnpm vitest run src/lib/cli/registry/command-specs.test.ts",
+		"node --import tsx src/cli.ts evidence-verify --browser-evidence <valid-fixture> --browser-required-viewports desktop,mobile --json",
+		"node --import tsx src/cli.ts evidence-verify --browser-evidence <missing-screenshot-fixture> --browser-required-viewports desktop --json",
+		"node --import tsx src/cli.ts evidence-verify --browser-evidence <blank-screenshot-fixture> --browser-required-viewports desktop --json",
+		"node --import tsx src/cli.ts evidence-verify --browser-evidence <console-error-fixture> --browser-required-viewports desktop --json",
+		"bash scripts/validate-codestyle.sh --fast"
+	],
+	"intentReviewResolution": {
+		"status": "updated_after_review",
+		"reviewArtifacts": [
+			"artifacts/reviews/pu-042-gap-010-browser-evidence-intent-adversarial.md",
+			"artifacts/reviews/pu-042-gap-010-browser-evidence-intent-agent-native.md",
+			"artifacts/reviews/pu-042-gap-010-browser-evidence-intent-best-practices.md"
+		],
+		"changesApplied": [
+			"Made required/captured viewport coverage explicit and prevented generic file verification from implying browser-policy proof.",
+			"Required consoleEvents telemetry and default-deny error policy.",
+			"Added browser-specific error-code taxonomy.",
+			"Replaced non-assertive validation command with fixture-backed positive and negative command expectations.",
+			"Defined deterministic blank-screenshot criteria at the intent level."
+		]
+	},
+	"documentationImpact": {
+		"expected": [
+			"ARCHITECTURE.md deep-module map if a new module is added",
+			"CLI/docs references only if the public command contract changes beyond an option"
+		],
+		"notExpected": [
+			"README workflow rewrite",
+			"Full visual-regression user guide"
+		]
+	},
+	"reviewRequirements": [
+		"Review intent before implementation.",
+		"Run improve-codebase-architecture, simplify, unslopify, he-code-review, and testing lenses after implementation.",
+		"Use adversarial-reviewer, agent-native-reviewer, and best-practices-researcher before marking the slice done."
+	],
+	"circleciCredentialHandling": {
+		"approvedEnvSurface": "~/.codex/.env",
+		"sessionObservation": "The path can be a FIFO in this environment; do not blindly source it because it can hang without a writer.",
+		"fallback": "If the FIFO cannot be read safely, classify direct CircleCI API access as credential_surface_fifo_no_writer and use GitHub check rollup for current CircleCI status."
+	},
+	"status": "intent_ready_for_review"
+}

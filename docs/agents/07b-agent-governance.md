@@ -251,6 +251,15 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   repo-relative path containment, checksum/size checks, and value-level leakage
   rejection before any artifact supports delivery, review, root, external-state,
   merge-readiness, or Judge/PM claims
+- browser evidence changes should keep visual runtime evidence in
+  `src/lib/browser-evidence/`, with manifest path containment, screenshot file
+  existence, required viewport coverage, PNG dimension and non-blank checks,
+  console policy validation, sanitized messages, and stable error codes before
+  `evidence-verify` reports the packet as passing. Browser evidence may orient
+  agents and audit visual proof, but it must not become delivery-truth,
+  review-state, external-state, root-hygiene, Linear, Judge/PM,
+  merge-readiness, or command-authority proof without a future typed consumer
+  boundary and governance update
 - prompt-context drift report changes should keep context freshness truth in
   `src/lib/prompt-context-drift/`, with pointer-only payloads, repo-contained
   SHA-256 source refs, prompt-context receipt freshness, Project Brain route

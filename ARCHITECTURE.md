@@ -96,6 +96,13 @@ not in docs, templates, generated context, or command facades.
 
 - src/lib/evidence/: shared receipt contracts that classify validation,
   artifact, runtime-card, review, external-state, and run-record proof.
+- src/lib/browser-evidence/: browser-evidence/v1 manifest validation for
+  rendered UI artifacts. It owns screenshot path containment, required viewport
+  coverage, missing-console-telemetry classification, default-deny console
+  policy checks, deterministic nonblank PNG screenshot inspection, and
+  browser-specific machine-readable failure codes while keeping browser
+  evidence separate from delivery-truth, review-state, external-state,
+  Judge/PM, goal-completion, and merge-readiness proof.
 - src/lib/runtime/: Codex runtime evidence, runtime evidence bundles, runtime
   cards, producer adapters, runtime-card projections, and
   `runtime-card-handoff/v1` contracts. The runtime-card handoff module binds a
