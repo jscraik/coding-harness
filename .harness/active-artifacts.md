@@ -10,7 +10,17 @@
 
 ## Scope
 
-Last reconciled: 2026-06-01T00:33Z plus R181 PR #325 merge-repair commit reanchor. This branch now contains origin/main 246e339e55c5d8750c81840194ebb63d29a4490b plus PR #325 browser-evidence review fixes at merge commit 693d9bbe55dc9d7f86f81212f7f8d1f17a6bcc3f; remote checks, CodeRabbit, review threads, mergeability, Linear alignment, Judge/PM readiness, and final goal completion must be refreshed again after the R181 receipt commit is pushed.
+Last reconciled: 2026-06-01T02:47:30Z during PR #327 review-thread repair after
+origin/main fd7ea47a3 and live CodeRabbit/CircleCI/review-thread truth were
+checked separately. This route must be refreshed against the latest live PR #327
+head before any PR-green, review-clear, linked-issue, or merge-ready claim.
+Current main contains
+merged PR #321, PR #325 browser evidence, PR #326 route-truth repairs, and the
+earlier GAP-001 lane; PR #327 preserves the unique system-prompt
+evidence-registry alignment and review-thread state repair only. PR #324 remains
+a separate open/conflicting lane and must not be treated as resolved or obsolete
+without an explicit owner decision. Linear, Judge/PM readiness, runtime producer
+emission, delivery-truth consumption, and final goal completion remain unclaimed.
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -21,7 +31,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current base truth includes main's R176/R177/R178/R179 GAP-001 Local Memory preflight lane. Current PR #325 branch truth is R180 for PU-042 / GAP-010 browser-evidence: browser-evidence/v1 schema, src/lib/browser-evidence deep module, evidence-verify CLI integration, and focused parser/PNG/CLI regressions. Additional PR #325 review fixes are present on head 8a3083f8436e3ded3ace427b1047fb01788157da. R181 records local merge commit 693d9bbe55dc9d7f86f81212f7f8d1f17a6bcc3f after repairing conflicts against origin/main 246e339e55c5d8750c81840194ebb63d29a4490b; all remote checks, CodeRabbit, review threads, mergeability, Linear full-lifecycle completion, Judge/PM readiness, runtime producer emission, delivery-truth consumption, and final goal completion remain separate unclaimed lanes until refreshed after the repair push. | Use the goal board as the current execution cockpit. Next safe action is to run post-commit board and focused browser-evidence validators, commit R181 if they pass, push PR #325, then refresh PR #325 checks, CodeRabbit, unresolved review threads, mergeability, linked-issue status, and CircleCI logs via <REDACTED_HOME_PATH>/.codex/.env if CircleCI triage is needed before any merge-ready, Judge/PM-ready, or goal-complete claim. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged PR #321, merged PR #325 GAP-010 browser evidence, merged PR #326 route-truth repairs, and GAP-001 Local Memory preflight artifacts. PR #327 is an active route-truth/control-plane reconciliation lane that preserves SPG evidence-registry adoption and review-thread state repairs without claiming parent JSC-363 completion. PR #324 remains open/conflicting pending owner decision. | Use the goal board as the current execution cockpit. Next safe action is idempotent: if this worktree has unpublished route-truth changes, push them without force; otherwise refresh PR #327 required checks, CodeRabbit, unresolved review threads, mergeability, and linked-issue state on the latest live PR head before any PR-green or merge-ready claim. Only use <REDACTED_HOME_PATH>/.codex/.env for CircleCI API/log triage if a CircleCI lane fails or lacks enough public check evidence. After PR #327 is clean or explicitly blocked, decide whether PR #324 is superseded or needs its stale receipt thread repaired. |
 
 ## Artifact Index
 

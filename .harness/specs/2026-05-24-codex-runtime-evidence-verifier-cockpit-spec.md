@@ -710,6 +710,7 @@ Do not create separate public truth commands for every domain until the shared p
 ## Evidence and References
 
 - .harness/research/audits/2026-05-24-evidence-led-codebase-gap-audit.md
+- .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md is adopted as the SPG-001 through SPG-012 source for final Judge/PM audit reconciliation; the spec must keep this marker so the focused SPG adoption validator can detect plan/spec drift.
 - docs/architecture/root-surface-classification.md
 - src/lib/runtime/runtime-evidence-bundle.ts
 - src/lib/runtime/runtime-evidence-contract.ts

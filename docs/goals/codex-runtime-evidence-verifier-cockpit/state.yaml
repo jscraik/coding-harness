@@ -65,9 +65,9 @@ completion_contract:
   iteration_policy: "Scout first, then bounded Worker slices with reviewed intent, deterministic validation, reviewer artifacts, atomic commits, GitHub PRs, pr-green-sweep triage, and append-only receipts. Continue to the next safe slice while PR triage runs only when dependency and branch state permit. PR triage must run either remote-only or in an isolated worktree created for the PR head; it must not share the coordinator checkout after the coordinator is allowed to switch branches for the next slice."
   blocked_stop_condition: "Stop if the board is invalid, activation is absent for Worker work, required intent review is missing, validation cannot run, reviewer artifacts are missing after retry, PR or tracker truth is stale, dirty work overlaps required files, or continuing would contaminate a PR under triage."
 current_slice_gate:
-  lifecycle_unit: "PU-042-gap-010-browser-evidence-routine"
-  status: "pr325_browser_evidence_gate_main_merge_repair_validated_pending_receipt_commit"
-  reason: "R179 from origin/main records the GAP-001 Local Memory preflight lane. R180 preserves the PR #325 browser-evidence route-truth receipt from the PR branch. R181 records merge commit 693d9bbe55dc9d7f86f81212f7f8d1f17a6bcc3f, which carries PR #325 review fixes on top of origin/main 246e339e55c5d8750c81840194ebb63d29a4490b. Remote checks, CodeRabbit, unresolved review threads, mergeability, linked-issue status, Linear scope alignment, Judge/PM readiness, runtime producer emission, delivery-truth consumption, merge execution, and final goal completion must be refreshed after the R181 receipt commit is pushed."
+  lifecycle_unit: "route-truth-control-plane-reconciliation-pr327"
+  status: "pr327_latest_head_refresh_required_after_route_truth_repair"
+  reason: "Current main fd7ea47a3 contains merged PR #321, merged PR #325 GAP-010 browser evidence, merged PR #326 route-truth repairs, and GAP-001 Local Memory preflight artifacts. PR #327 preserves the unique SPG evidence-registry alignment from its R182 branch receipt, the state.yaml review-thread repair from its R183 branch receipt, and the R184/R185 merge-and-push reanchors against current main. PR #324 remains open/conflicting and is not resolved, closed, or declared obsolete by this board. This board records route-truth repair only: PR #327 has had required checks green on prior pushed heads, but any PR-green, review-clear, linked-issue, or merge-ready claim must refresh required checks, CodeRabbit, unresolved review threads, mergeability, and linked-issue state against the latest live PR head after the current route-truth changes are pushed. Linear scope alignment, Judge/PM readiness, runtime producer emission, delivery-truth consumption, merge readiness, and final JSC-363 completion remain unclaimed."
   completed_before_local_validation_claim:
     - "Created and tracked the PU-042 intent artifact before implementation."
     - "Added src/lib/browser-evidence as the deep module for browser-evidence/v1 manifest parsing, policy validation, PNG inspection, and evidence-report projection."
@@ -76,17 +76,13 @@ current_slice_gate:
     - "Fixed current-head CodeRabbit and Codex review findings, including invalid normalized console timestamps and schema packaging, with focused regressions."
     - "Merged origin/main GAP-001 Local Memory preflight artifacts into the PR #325 worktree without treating GAP-001 as PR #325 completion evidence."
   next_required_handoff_steps:
-    - "Rerun check-goal-board after the R181 redaction fix, commit the R181 post-merge receipt if it passes, then push PR #325."
-    - "Commit and push the merge repair, then refresh PR #325 checks, CodeRabbit, unresolved review threads, mergeability, linked-issue status, and CircleCI logs via <REDACTED_HOME_PATH>/.codex/.env if CircleCI triage is needed, without printing credential values."
-    - "If new current-head findings appear after the repair push, fix only validated PR #325 findings on this branch and record a fresh receipt for the new head."
+    - "If this worktree has unpublished route-truth changes, push them without force; otherwise do not repeat an already-pushed repair."
+    - "Refresh PR #327 checks, CodeRabbit, unresolved review threads, mergeability, and linked-issue status on the latest live PR head before any PR-green or merge-ready claim."
+    - "Use <REDACTED_HOME_PATH>/.codex/.env for CircleCI API/log access if CircleCI triage is needed, without printing values; if that env surface is unavailable, record the blocker before using authenticated read-only fallback evidence."
     - "Refresh live Linear JSC-363 before tracker-alignment, full-lifecycle closeout, or Judge/PM-ready claims; tracker truth remains separate from runtime, CI, review, and implementation proof."
-    - "After PR #325 truth is clean or explicitly blocked, choose the next unproven requirement from the goal, plan, adopted audits, and Project Brain surfaces; create and review intent before implementation."
+    - "After PR #327 is clean or explicitly blocked, decide whether PR #324 is superseded by merged main and PR #327 evidence-registry alignment or whether its stale receipt thread must still be repaired."
   blocked_done_claims:
-    - "remote-checks-green"
-    - "CodeRabbit-complete"
-    - "reviewDecision-approved"
     - "Linear-scope-aligned"
-    - "merge-ready"
     - "Judge/PM-ready"
     - "goal completion"
 slice_review_contract:
