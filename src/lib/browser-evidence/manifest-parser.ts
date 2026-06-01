@@ -108,6 +108,13 @@ function parseConsolePolicy(
 					"Browser evidence consolePolicy.allowedMessagePatterns must be a string array when present.",
 				),
 			);
+		} else if (allowedMessagePatterns.length > 0) {
+			errors.push(
+				browserError(
+					"BROWSER_CONSOLE_POLICY_VIOLATION",
+					"Browser evidence consolePolicy.allowedMessagePatterns must not be supplied by the untrusted manifest.",
+				),
+			);
 		} else {
 			policy.allowedMessagePatterns = allowedMessagePatterns;
 		}

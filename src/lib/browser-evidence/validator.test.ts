@@ -115,7 +115,10 @@ describe("validateBrowserEvidenceManifest", () => {
 		) as {
 			properties?: {
 				consolePolicy?: {
-					properties?: { failOn?: Record<string, unknown> };
+					properties?: {
+						allowedMessagePatterns?: Record<string, unknown>;
+						failOn?: Record<string, unknown>;
+					};
 				};
 			};
 		};
@@ -124,6 +127,12 @@ describe("validateBrowserEvidenceManifest", () => {
 			type: "array",
 			minItems: 1,
 			contains: { const: "error" },
+		});
+		expect(
+			schema.properties?.consolePolicy?.properties?.allowedMessagePatterns,
+		).toMatchObject({
+			type: "array",
+			maxItems: 0,
 		});
 	});
 
@@ -330,6 +339,33 @@ describe("validateBrowserEvidenceManifest", () => {
 			manifestPath: writeManifest("browser-evidence.json", {
 				consoleEvents: [{ level: "error", message: "render failed" }],
 				consolePolicy: { failOn: ["warning"] },
+			}),
+			baseDir: tempDir,
+		});
+
+		expect(report.passed).toBe(false);
+		expect(report.errors.map((error) => error.code)).toContain(
+			"BROWSER_CONSOLE_POLICY_VIOLATION",
+		);
+	});
+
+	it("does not let manifests allowlist their own error console events", () => {
+		writeFileSync(
+			join(tempDir, "desktop.png"),
+			png(2, 2, [
+				[255, 0, 0, 255],
+				[0, 255, 0, 255],
+				[255, 0, 0, 255],
+				[0, 255, 0, 255],
+			]),
+		);
+		const report = validateBrowserEvidenceManifest({
+			manifestPath: writeManifest("browser-evidence.json", {
+				consoleEvents: [{ level: "error", message: "known benign error" }],
+				consolePolicy: {
+					failOn: ["error"],
+					allowedMessagePatterns: ["known benign"],
+				},
 			}),
 			baseDir: tempDir,
 		});

@@ -107,10 +107,12 @@
 				},
 				"allowedMessagePatterns": {
 					"type": "array",
+					"maxItems": 0,
 					"items": {
 						"type": "string",
 						"minLength": 1
-					}
+					},
+					"description": "Reserved for trusted validator configuration; untrusted manifests must not provide allowlist entries."
 				}
 			}
 		},
