@@ -7,6 +7,7 @@ import {
 	grayscaleAlphaPngWithPixels,
 	indexedPngWithPaletteIndexes,
 	pngWithDeclaredSize,
+	pngWithInvalidChunkCrc,
 	pngWithPixels,
 	pngWithUnsupportedIhdrMethods,
 	pngWithoutIend,
@@ -40,6 +41,13 @@ describe("inspectPng", () => {
 	it("rejects PNGs with unsupported IHDR compression or filter methods", () => {
 		const path = join(tempDir, "unsupported-ihdr-methods.png");
 		writeFileSync(path, pngWithUnsupportedIhdrMethods(2, 2));
+
+		expect(inspectPng(path)).toBeNull();
+	});
+
+	it("rejects PNGs with invalid chunk CRCs", () => {
+		const path = join(tempDir, "invalid-chunk-crc.png");
+		writeFileSync(path, pngWithInvalidChunkCrc(2, 2));
 
 		expect(inspectPng(path)).toBeNull();
 	});

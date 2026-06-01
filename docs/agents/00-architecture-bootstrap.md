@@ -205,7 +205,7 @@ truth. Keep `browser-evidence/v1` validation inside
 `src/lib/browser-evidence/` and expose it through the existing
 `evidence-verify` command facade only as advisory orientation/audit evidence.
 Validators must prove manifest path containment, screenshot file existence,
-required view port coverage, PNG dimensions, non-blank image content, stable
+required viewport coverage, PNG dimensions, non-blank image content, stable
 console policy handling, and sanitized evidence messages. Browser evidence must
 not prove delivery-truth, review-state, external-state, root-hygiene,
 Judge/PM readiness, merge readiness, or command authority without a future

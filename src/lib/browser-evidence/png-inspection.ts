@@ -5,6 +5,13 @@ const PNG_SIGNATURE = Buffer.from([
 	0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
 ]);
 const MAX_BROWSER_SCREENSHOT_INFLATED_BYTES = 64 * 1024 * 1024;
+const CRC_TABLE = Array.from({ length: 256 }, (_, index) => {
+	let crc = index;
+	for (let bit = 0; bit < 8; bit++) {
+		crc = crc & 1 ? 0xedb88320 ^ (crc >>> 1) : crc >>> 1;
+	}
+	return crc >>> 0;
+});
 
 /** Minimal PNG dimensions and color diversity used for nonblank checks. */
 export interface PngInspection {
@@ -36,6 +43,14 @@ function bytesPerPixel(colorType: number): number | null {
 	if (colorType === 2) return 3;
 	if (colorType === 6) return 4;
 	return null;
+}
+
+function crc32(data: Buffer): number {
+	let crc = 0xffffffff;
+	for (const byte of data) {
+		crc = (crc >>> 8) ^ (CRC_TABLE[(crc ^ byte) & 0xff] ?? 0);
+	}
+	return (crc ^ 0xffffffff) >>> 0;
 }
 
 function expectedInflatedLayout(
@@ -73,6 +88,9 @@ function readPngMetadata(file: Buffer): PngMetadata | null {
 		const dataEnd = dataStart + length;
 		if (dataEnd + 4 > file.length) return null;
 		const data = file.subarray(dataStart, dataEnd);
+		const expectedCrc = file.readUInt32BE(dataEnd);
+		const actualCrc = crc32(file.subarray(offset + 4, dataEnd));
+		if (actualCrc !== expectedCrc) return null;
 		if (type === "IHDR") {
 			if (data.length < 13) return null;
 			metadata.width = data.readUInt32BE(0);

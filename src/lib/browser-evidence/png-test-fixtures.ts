@@ -115,6 +115,22 @@ export function pngWithUnsupportedIhdrMethods(
 	]);
 }
 
+/** Build an otherwise valid PNG whose first IDAT chunk has a corrupted CRC. */
+export function pngWithInvalidChunkCrc(width: number, height: number): Buffer {
+	const valid = pngWithPixels(width, height, [
+		[255, 0, 0, 255],
+		[0, 255, 0, 255],
+		[0, 0, 255, 255],
+		[255, 255, 0, 255],
+	]);
+	const mutated = Buffer.from(valid);
+	const idatOffset = PNG_SIGNATURE.length + 4 + 4 + 13 + 4;
+	const idatLength = mutated.readUInt32BE(idatOffset);
+	const crcOffset = idatOffset + 4 + 4 + idatLength;
+	mutated[crcOffset + 3] = (mutated[crcOffset + 3] ?? 0) ^ 0xff;
+	return mutated;
+}
+
 /** Build a structurally valid grayscale-alpha PNG from explicit pixel rows. */
 export function grayscaleAlphaPngWithPixels(
 	width: number,

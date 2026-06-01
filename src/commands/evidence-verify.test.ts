@@ -1,43 +1,20 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { deflateSync } from "node:zlib";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	EXIT_CODES,
 	runEvidenceVerify,
 	runEvidenceVerifyCLI,
 } from "./evidence-verify.js";
-
-const PNG_SIGNATURE = Buffer.from([
-	0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-]);
-
-function pngChunk(type: string, data: Buffer): Buffer {
-	const length = Buffer.alloc(4);
-	length.writeUInt32BE(data.length, 0);
-	return Buffer.concat([
-		length,
-		Buffer.from(type, "ascii"),
-		data,
-		Buffer.alloc(4),
-	]);
-}
+import { pngWithPixels } from "../lib/browser-evidence/png-test-fixtures.js";
 
 function nonblankPng(): Buffer {
-	const ihdr = Buffer.alloc(13);
-	ihdr.writeUInt32BE(2, 0);
-	ihdr.writeUInt32BE(2, 4);
-	ihdr[8] = 8;
-	ihdr[9] = 6;
-	const pixels = Buffer.from([
-		0, 255, 0, 0, 255, 0, 255, 0, 255, 0, 255, 0, 0, 255, 0, 255, 0, 255,
-	]);
-	return Buffer.concat([
-		PNG_SIGNATURE,
-		pngChunk("IHDR", ihdr),
-		pngChunk("IDAT", deflateSync(pixels)),
-		pngChunk("IEND", Buffer.alloc(0)),
+	return pngWithPixels(2, 2, [
+		[255, 0, 0, 255],
+		[0, 255, 0, 255],
+		[0, 0, 255, 255],
+		[255, 255, 0, 255],
 	]);
 }
 
