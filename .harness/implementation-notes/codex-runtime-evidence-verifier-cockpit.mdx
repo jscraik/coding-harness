@@ -2,7 +2,7 @@
 schema_version: implementation-notes/v1
 title: Codex Runtime Evidence Verifier Cockpit Implementation Notes
 goal: codex-runtime-evidence-verifier-cockpit
-updated_at: 2026-05-27T13:58:45Z
+updated_at: 2026-06-01T04:46:41Z
 status: present
 ---
 
@@ -27,6 +27,35 @@ This MDX source is the version-controlled implementation-notes artifact for the 
 />
 
 Runtime evidence work stays inside the existing deep modules instead of adding a parallel truth subsystem. `src/lib/runtime` owns Codex runtime packets, adapters, and runtime-card projection. `src/lib/runtime-trace` owns opt-in runtime-card replay traces and delegates persistence to the canonical agent-run record writer. `src/lib/delivery-truth` composes claim support from receipts, review state, external state, root hygiene, and PR closeout evidence. PU-019 adds the GAP-008 stale-context orientation slice inside `src/lib/agent-readiness`, projecting existing Project Brain, runtime-card, and external-horizon signals without duplicating the canonical `context-health-report/v1` contract.
+
+## PU-044 Reviewer Artifact Head Freshness Guard
+
+<InsertionPoint
+  slice="PU-044 GAP-009 reviewer artifact head freshness"
+  branch="codex/jsc-363-review-artifact-head-freshness"
+  files={[
+    ".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-044-reviewer-artifact-head-freshness-intent.json",
+    "scripts/validate-reviewer-coverage.cjs",
+    "src/lib/reviewer-coverage-receipt.test.ts",
+    "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+    "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+  ]}
+/>
+
+PU-044 responds to a concrete artifact-truth failure during PR #327 triage: an agent-native mailbox summary reported pass while the on-disk review artifact still said `status: findings` and described an older patch state. The fix stays in the existing reviewer-coverage validator instead of adding a new workflow. When a manifest declares `expectedHeadSha`, every required reviewer artifact must begin with a canonical `head_sha: <40-char-sha>` line matching that expected head before it can count as complete. Missing head metadata, stale head metadata, ambiguous head-like metadata, malformed manifest head values, and blocked status variants now fail closed.
+
+This slice deliberately does not alter delivery-truth, external-state, PR closeout, Linear, CircleCI, or merge-readiness authority. It only makes reviewer-swarm evidence harder to misread. `~/.codex/.env` remains the approved CircleCI credential surface for API or job-log triage, but it was not opened for this slice because the public PR #327 check surface was already green and no CircleCI-specific failure needed authenticated logs.
+
+Validation evidence for PU-044:
+
+- node --check scripts/validate-reviewer-coverage.cjs -> pass.
+- jq . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-044-reviewer-artifact-head-freshness-intent.json -> pass.
+- pnpm exec vitest run src/lib/reviewer-coverage-receipt.test.ts -> pass, 19 tests.
+- pnpm exec biome check scripts/validate-reviewer-coverage.cjs src/lib/reviewer-coverage-receipt.test.ts .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-044-reviewer-artifact-head-freshness-intent.json -> pass.
+- pnpm run quality:behavior-tests -> pass.
+- git diff --check -- scripts/validate-reviewer-coverage.cjs src/lib/reviewer-coverage-receipt.test.ts .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-044-reviewer-artifact-head-freshness-intent.json -> pass.
+- bash scripts/validate-codestyle.sh --fast -> pass.
+- node scripts/validate-reviewer-coverage.cjs --manifest artifacts/reviews/head-freshness-final-manifest.json --reviews-dir artifacts/reviews --json -> pass against final adversarial, agent-native, and best-practices review artifacts bound to head 33e99c695c6cb6f67301948e1b9013deb5ed2037.
 
 ## Current Slice Insertion Map
 
