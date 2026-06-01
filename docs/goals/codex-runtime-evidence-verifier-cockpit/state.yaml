@@ -66,8 +66,8 @@ completion_contract:
   blocked_stop_condition: "Stop if the board is invalid, activation is absent for Worker work, required intent review is missing, validation cannot run, reviewer artifacts are missing after retry, PR or tracker truth is stale, dirty work overlaps required files, or continuing would contaminate a PR under triage."
 current_slice_gate:
   lifecycle_unit: "PU-042-gap-010-browser-evidence-routine"
-  status: "pr325_browser_evidence_gate_main_merge_repair_validated_pending_commit"
-  reason: "R179 from origin/main records the GAP-001 Local Memory preflight lane. R180 preserves the PR #325 browser-evidence route-truth receipt from the PR branch. PR #325 head 8a3083f8436e3ded3ace427b1047fb01788157da contains the current browser-evidence review fixes, including strict console timestamp validation and packaged schema inclusion, and this worktree is resolving merge conflicts against origin/main 246e339e55c5d8750c81840194ebb63d29a4490b. The older R180 green snapshot is historical pre-merge evidence only; remote checks, CodeRabbit, unresolved review threads, mergeability, linked-issue status, Linear scope alignment, Judge/PM readiness, runtime producer emission, delivery-truth consumption, merge execution, and final goal completion must be refreshed after the merge repair commit is pushed."
+  status: "pr325_browser_evidence_gate_main_merge_repair_validated_pending_receipt_commit"
+  reason: "R179 from origin/main records the GAP-001 Local Memory preflight lane. R180 preserves the PR #325 browser-evidence route-truth receipt from the PR branch. R181 records merge commit 693d9bbe55dc9d7f86f81212f7f8d1f17a6bcc3f, which carries PR #325 review fixes on top of origin/main 246e339e55c5d8750c81840194ebb63d29a4490b. Remote checks, CodeRabbit, unresolved review threads, mergeability, linked-issue status, Linear scope alignment, Judge/PM readiness, runtime producer emission, delivery-truth consumption, merge execution, and final goal completion must be refreshed after the R181 receipt commit is pushed."
   completed_before_local_validation_claim:
     - "Created and tracked the PU-042 intent artifact before implementation."
     - "Added src/lib/browser-evidence as the deep module for browser-evidence/v1 manifest parsing, policy validation, PNG inspection, and evidence-report projection."
@@ -76,7 +76,7 @@ current_slice_gate:
     - "Fixed current-head CodeRabbit and Codex review findings, including invalid normalized console timestamps and schema packaging, with focused regressions."
     - "Merged origin/main GAP-001 Local Memory preflight artifacts into the PR #325 worktree without treating GAP-001 as PR #325 completion evidence."
   next_required_handoff_steps:
-    - "Commit the validated conflict resolution and then append a post-merge-commit receipt if the commit changes HEAD."
+    - "Rerun check-goal-board after the R181 redaction fix, commit the R181 post-merge receipt if it passes, then push PR #325."
     - "Commit and push the merge repair, then refresh PR #325 checks, CodeRabbit, unresolved review threads, mergeability, linked-issue status, and CircleCI logs via <REDACTED_HOME_PATH>/.codex/.env if CircleCI triage is needed, without printing credential values."
     - "If new current-head findings appear after the repair push, fix only validated PR #325 findings on this branch and record a fresh receipt for the new head."
     - "Refresh live Linear JSC-363 before tracker-alignment, full-lifecycle closeout, or Judge/PM-ready claims; tracker truth remains separate from runtime, CI, review, and implementation proof."
