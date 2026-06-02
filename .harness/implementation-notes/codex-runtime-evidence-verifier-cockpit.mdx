@@ -59,7 +59,7 @@ Validation evidence for PU-044:
 - bash scripts/validate-codestyle.sh -> pass after commit.
 - pnpm check -> pass after commit.
 - bash scripts/run-harness-gate.sh tooling-audit --path . --json -> pass after commit.
-- pnpm exec tsx src/cli.ts learnings import --provider coderabbit-csv --source "/Users/jamiecraik/Downloads/learnings (2).csv" --repo jscraik/coding-harness --json -> pass with partial import, 129 imported rows, 88 skipped rows, 0 invalid rows, and local-only sensitive-path warnings.
+- pnpm exec tsx src/cli.ts learnings import --provider coderabbit-csv --source "<REDACTED_HOME_PATH>/Downloads/learnings (2).csv" --repo jscraik/coding-harness --json -> pass with partial import, 129 imported rows, 88 skipped rows, 0 invalid rows, and local-only sensitive-path warnings.
 - bash scripts/run-harness-gate.sh learnings gate --source .harness/learnings/coderabbit.local.json --files <PU-044 changed files> --json -> pass with advisory warnings from imported learning matches.
 - bash scripts/run-harness-gate.sh review-context --source .harness/learnings/coderabbit.local.json --files <PU-044 changed files> --json -> pass; summary reported 129 applicable learnings, 9 validation-plan items, 129 reviewer-likely concerns, and 3 PR mention items.
 - bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json -> pass.
