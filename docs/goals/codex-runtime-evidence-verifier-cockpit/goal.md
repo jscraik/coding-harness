@@ -41,21 +41,23 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-03 PR-stack conflict reconciliation.
+Last updated during the 2026-06-03 PR-stack conflict and review-thread
+reconciliation.
 
 Current route truth:
 
 - `origin/main` is at `f655560719404d1cde11a5f40b6fac715f205bef` and already contains the merged PR #327 route-truth repair.
-- PR #328 is the lower open branch, `codex/jsc-363-review-artifact-head-freshness` into `main`. Its merge conflict was repaired locally and pushed to `4a295a3ce5ab5ce25b0099775e2c81a21560640b`.
-- The latest live PR #328 refresh after that push reports `mergeable: MERGEABLE` and `mergeStateStatus: BLOCKED`, with CodeRabbit and several CircleCI contexts still pending and `security/snyk (jscraik)` reporting `ERROR`. PR #328 is therefore not merge-ready.
-- PR #330 is the top open branch, `codex/jsc-363-linear-stack-refresh` into PR #328's branch. The local reconcile merge is at `395d565d50e914a066e4680189e3e3ebe0db04f1` before the follow-up goal-board receipt commit.
-- PR #330 must be pushed and refreshed after the receipt commit before any review-clear, check-green, stack-ready, merge-ready, Judge/PM-ready, or goal-complete claim.
+- PR #328 is the lower open branch, `codex/jsc-363-review-artifact-head-freshness` into `main`. Its merge conflict was repaired, the two unresolved CodeRabbit review threads were fixed and resolved, and the branch was pushed to `6efd1a14d202993b1e03991731804107245f6082`.
+- The latest live PR #328 refresh reports `mergeable: MERGEABLE`, `mergeStateStatus: BLOCKED`, zero unresolved review threads, CodeRabbit passing, several CircleCI contexts still pending, and `security/snyk (jscraik)` failing because the Snyk account has used its private-test limit. PR #328 is therefore not merge-ready.
+- PR #330 is the top open branch, `codex/jsc-363-linear-stack-refresh` into PR #328's branch. It now includes the refreshed PR #328 head and was pushed to `588f445672c111d68096d05c98ae5a0ea110cd58`.
+- The latest live PR #330 refresh reports `mergeable: MERGEABLE`, `mergeStateStatus: UNSTABLE`, `reviewDecision: APPROVED`, zero unresolved review threads, CodeRabbit skipped/pass, several CircleCI contexts still pending, and `security/snyk (jscraik)` failing because the Snyk account has used its private-test limit. PR #330 is therefore not merge-ready.
 - PR #329 is no longer a live open lane in the current GitHub PR list. Treat it as historical stack evidence unless a fresh GitHub query shows it reopened.
 - PR #327 is now represented by `origin/main`; do not keep routing work as if PR #327 were still an open stacked PR.
 
 Outstanding goal work after conflict reconciliation:
 
 - Finish live PR triage for PR #328 and PR #330 from current GitHub truth, not older green-check receipts.
+- Wait for or triage the pending CircleCI contexts on PR #328 and PR #330. The external Snyk GitHub App failure is currently an account-quota blocker, not an implementation failure proven by the code diff.
 - Re-run CodeRabbit, CircleCI, Snyk, review-thread, mergeability, and linked-issue checks after each pushed head.
 - Use `~/.codex/.env` only for failing or opaque CircleCI API/log triage after probing that it is a regular readable file; never print token values.
 - Refresh Linear JSC-363 before tracker-alignment or full-lifecycle closeout claims. Its Phase 1 wording remains a tracker-alignment blocker unless the owner accepts attachment-only mitigation or the issue fields are updated.
