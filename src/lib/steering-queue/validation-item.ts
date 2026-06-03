@@ -230,16 +230,12 @@ function validateTerminalState(
 			"is required for applied items",
 		);
 	}
-	if (
-		item.state === "applied" &&
-		item.expectedClientUserMessageId !== null &&
-		item.appliedClientUserMessageId === null
-	) {
+	if (item.state === "applied" && item.appliedClientUserMessageId === null) {
 		addError(
 			errors,
 			"missing_applied_client_user_message_id",
 			`${path}.appliedClientUserMessageId`,
-			"is required when an applied item expected a client user-message id",
+			"is required for applied items",
 		);
 	}
 	if (

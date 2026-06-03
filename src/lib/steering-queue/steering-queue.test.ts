@@ -373,6 +373,27 @@ describe("SteeringQueue/v1", () => {
 		);
 	});
 
+	it("rejects applied items without applied evidence even when no client user-message id was expected", () => {
+		const packet = packetWith([
+			item({
+				expectedClientUserMessageId: null,
+				state: "applied",
+				appliedAt: "2026-05-28T09:43:00Z",
+			}),
+		]);
+
+		expect(validateSteeringQueuePacket(packet).errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: expect.stringContaining(
+						"missing_applied_client_user_message_id",
+					),
+					path: "items[0].appliedClientUserMessageId",
+				}),
+			]),
+		);
+	});
+
 	it("rejects applied items with a different client user-message id", () => {
 		const packet = packetWith([
 			item({
