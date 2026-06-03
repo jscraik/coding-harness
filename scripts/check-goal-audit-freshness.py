@@ -3,8 +3,9 @@
 
 This guard exists for the Codex Runtime Evidence Verifier Cockpit goal. It is
 deliberately narrow: the governed 2026-05-26 audit must be re-read and recorded
-with a content digest after the audit file's latest filesystem timestamp before
-the goal can use that audit as closeout evidence.
+with the current content digest and head SHA before the goal can use that audit
+as closeout evidence. Filesystem mtimes are intentionally ignored because Git
+checkouts rewrite them and cannot prove source freshness.
 """
 
 from __future__ import annotations
@@ -219,7 +220,6 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
         raise ValidationError(f"could not retrieve current repository HEAD: {exc}") from exc
 
     current_sha256 = sha256_file(audit_file)
-    audit_mtime = datetime.fromtimestamp(audit_file.stat().st_mtime, tz=UTC)
     receipt, source = latest_audit_source(receipts, audit_path)
     current_head_normalized = current_head.lower()
 
@@ -288,16 +288,10 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
         raise ValidationError(
             "audit_sources_checked[].checked_at must not be in the future",
         )
-    if checked_at < audit_mtime:
-        raise ValidationError(
-            "audit_sources_checked[].checked_at is older than the current audit file timestamp",
-        )
-
     return {
         "status": "pass",
         "audit_path": audit_path,
         "audit_sha256": current_sha256,
-        "audit_mtime": audit_mtime.isoformat().replace("+00:00", "Z"),
         "checked_at": checked_at.isoformat().replace("+00:00", "Z"),
         "receipt_id": receipt_id,
         "head_sha": receipt_head_sha_normalized,

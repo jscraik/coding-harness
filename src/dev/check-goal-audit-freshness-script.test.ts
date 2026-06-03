@@ -113,7 +113,7 @@ describe("check-goal-audit-freshness.py", () => {
 		}
 	});
 
-	it("passes when the latest matching audit source records the current hash and checked_at after audit mtime", () => {
+	it("passes when the latest matching audit source records the current hash and head", () => {
 		const root = createTempRoot("audit-freshness-pass-");
 		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
 		writeReceipts(root, [
@@ -359,17 +359,15 @@ describe("check-goal-audit-freshness.py", () => {
 		expect(result.stderr).toContain("audit sha256 is stale");
 	});
 
-	it("fails when matching content is acknowledged before the current audit timestamp", () => {
-		const root = createTempRoot("audit-freshness-stale-timestamp-");
+	it("ignores checkout mtimes because git rewrites filesystem timestamps", () => {
+		const root = createTempRoot("audit-freshness-checkout-mtime-");
 		writeAudit(root, "audit content", new Date("2026-05-27T02:00:00Z"));
 		writeReceipts(root, [receipt(root)]);
 
 		const result = runValidator(root);
 
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain(
-			"checked_at is older than the current audit file timestamp",
-		);
+		expect(result.status, result.stderr).toBe(0);
+		expect(result.stdout).toContain('"status": "pass"');
 	});
 
 	it("fails when checked_at predates the receipt creation time", () => {
