@@ -10,22 +10,17 @@
 
 ## Scope
 
-Last reconciled: 2026-06-01T12:01:11Z during the post-R210 PR #330 refresh.
-PR #330 is now on head d217f528dd934bd8c285da11e8596481534be695 after the
-R210 receipt commit was pushed. Fresh GitHub evidence shows PR #330 is OPEN,
-MERGEABLE, APPROVED, and has no auto-merge request. All visible checks pass on
-that head, including CircleCI check, orb-pinning, pr-pipeline, security-scan,
-docs-gate, linear-gate, test, typecheck, lint, Socket, Snyk, and CodeRabbit.
-The GitHub review-thread query reports all nine PR #330 review threads resolved
-after the stale R210 depth-only review thread was answered and resolved. PR #327,
-PR #328, and PR #329 remain the lower open stacked lanes from the prior refresh;
-refresh them again before any stack-ready, merge-ready, Judge/PM-ready, or done
-claim. Linear JSC-363 remains only partially aligned because its title and
-description still say Phase 1 while the full-lifecycle scope-note attachment is
-visible. CircleCI API/log triage remains governed by Project Brain CI rule R-001:
-use <REDACTED_HOME_PATH>/.codex/.env only for failing or opaque CircleCI lanes
-after a regular-file probe passes; this refresh did not need authenticated
-CircleCI logs because public check evidence was complete. Judge/PM readiness,
+Last reconciled: 2026-06-03T19:28:16Z during the PR #328/#330 conflict and
+goal-route refresh. Current origin/main is
+f655560719404d1cde11a5f40b6fac715f205bef after PR #327 merged. PR #328 was
+updated against origin/main, pushed to
+4a295a3ce5ab5ce25b0099775e2c81a21560640b, and live GitHub reported it OPEN,
+MERGEABLE, and BLOCKED by pending checks plus a security/snyk error. PR #330
+was reconciled locally on top of the repaired PR #328 branch through merge commit
+395d565d50e914a066e4680189e3e3ebe0db04f1, then goal.md was refreshed at
+8721fe6bf0cdcb41e1b09d1a8bfe4dd121dfdfb2 to stop routing against stale PR #327
+or historical PR #329 lanes. PR #330 must be pushed and refreshed on the new head
+before any PR #330 live-readiness claim. Linear JSC-363, Judge/PM readiness,
 runtime producer emission, delivery-truth consumption, merge execution, and final
 goal completion remain unclaimed.
 
@@ -38,7 +33,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged PR #321, merged PR #322, merged PR #325 GAP-010 browser evidence, merged PR #326 route-truth repairs, and GAP-001 Local Memory preflight artifacts. PR #324 is closed as superseded and no longer an active merge-conflict lane. PR #327, PR #328, PR #329, and PR #330 are the active open JSC-363 stacked lanes. PR #330 was refreshed on 2026-06-01T12:01:11Z after the R210 push: head d217f528dd934bd8c285da11e8596481534be695 is MERGEABLE, APPROVED, all visible checks pass, all nine review threads are resolved, and no auto-merge request is active. PR #327, PR #328, and PR #329 were green/CLEAN with zero unresolved threads in the prior stack refresh and must be refreshed again before any stack-level claim. Linear JSC-363 has an owner-visible PU-046 full-lifecycle scope-note attachment, but its title and description still carry Phase 1 wording, so tracker alignment remains only partially mitigated. PU-045 adds Project Brain CI rule R-001 for env-backed CircleCI API/log triage and passed local reviewer plus goal-board validation. | Use the goal board as the current execution cockpit. Next safe action is to preserve the green stacked PR lane without churning self-referential receipts, keep the PR #327 -> PR #328 -> PR #329 -> PR #330 stack refreshed from live GitHub evidence, and request or perform explicit merge/auto-merge action only when authorized. Use <REDACTED_HOME_PATH>/.codex/.env for CircleCI API/log triage if a CircleCI lane fails or lacks enough public check evidence; map that redacted path to ~/.codex/.env only for local command execution after a regular-file probe, and classify FIFO/no-writer or unreadable env surfaces explicitly instead of calling credentials missing. Do not claim parent JSC-363 completion until Linear field alignment or owner acceptance, runtime producer evidence, delivery-truth consumption, Judge/PM readiness, and final completion audit are separately refreshed. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged PR #321, merged PR #322, merged PR #325 GAP-010 browser evidence, merged PR #326 route-truth repairs, merged PR #327 route truth, and GAP-001 Local Memory preflight artifacts. PR #324 is closed as superseded and no longer an active merge-conflict lane. PR #328 and PR #330 are the currently observed open JSC-363 PR lanes. PR #328 was conflict-repaired and pushed at 4a295a3ce5ab5ce25b0099775e2c81a21560640b; live GitHub reports it MERGEABLE but BLOCKED by pending checks plus security/snyk ERROR. PR #330 has been reconciled locally through 8721fe6bf0cdcb41e1b09d1a8bfe4dd121dfdfb2 and must be pushed, checked, and review-refreshed before live readiness is claimed. Linear JSC-363 has an owner-visible full-lifecycle scope-note attachment, but tracker field alignment remains unclaimed until a fresh Linear refresh proves it. | Use the goal board as the current execution cockpit. Next safe action is to commit the R214 route-truth receipt, push PR #330, then refresh PR #328 and PR #330 from live GitHub checks, CodeRabbit, CircleCI/Snyk, unresolved review threads, linked-issue state, and mergeability. Use <REDACTED_HOME_PATH>/.codex/.env for CircleCI API/log triage only if a CircleCI lane fails or lacks enough public evidence; map that redacted path to ~/.codex/.env only for local command execution after a regular-file probe, and classify FIFO/no-writer or unreadable env surfaces explicitly instead of calling credentials missing. Do not claim parent JSC-363 completion until Linear field alignment or owner acceptance, runtime producer evidence, delivery-truth consumption, Judge/PM readiness, and final completion audit are separately refreshed. |
 
 PU-046 update: PR #330 was refreshed again on head
 163017e16e4611d5d71f5c4c62fc85f8d164b17b after the R205 artifact receipt was
