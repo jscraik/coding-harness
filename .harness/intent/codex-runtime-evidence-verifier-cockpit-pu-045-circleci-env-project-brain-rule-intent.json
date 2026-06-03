@@ -1,0 +1,83 @@
+{
+	"schemaVersion": "implementation-intent/v1",
+	"id": "jsc-363-pu-045-circleci-env-project-brain-rule",
+	"createdAt": "2026-06-01T07:55:26Z",
+	"status": "intent_reviewed_pending_validation_commit_push",
+	"goal": "Promote the repeated CircleCI credential-recovery steering into Project Brain CI rules so future JSC-363 CI triage uses ~/.codex/.env before classifying CircleCI API or log access as unavailable.",
+	"feedbackSignal": {
+		"summary": "The operator repeatedly reminded Codex that CircleCI API/log triage should use ~/.codex/.env, including the current instruction to remember this for the CircleCI plugin.",
+		"source": "current operator steering plus .harness/memory/LEARNINGS.md:48 and goal-board CircleCI credential policy receipts",
+		"headShaAtIntent": "7c08b496119f9c70033f52c782c706efbba056ef"
+	},
+	"rootOperationalFailure": "Project Brain CI rules had zero promoted rules even though repo memory, AGENTS.md, goal receipts, and repeated operator steering already identified env-backed CircleCI recovery as a recurring workflow invariant.",
+	"failureCategories": [
+		"missing guardrails",
+		"retrieval failure",
+		"weak observability",
+		"poor workflow design"
+	],
+	"durableImprovement": {
+		"type": "project_brain_rule",
+		"target": ".harness/knowledge/ci/rules.md",
+		"behavior": "Future CircleCI triage must probe that ~/.codex/.env is a regular readable file before sourcing it for token-backed API or log access, and must record FIFO, no-writer, or unreadable-surface blockers separately from missing credentials."
+	},
+	"scope": {
+		"allowedFiles": [
+			".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-045-circleci-env-project-brain-rule-intent.json",
+			".harness/knowledge/ci/rules.md",
+			".harness/knowledge/INDEX.md",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+			".harness/active-artifacts.md"
+		],
+		"forbiddenFiles": [
+			"src/**",
+			"scripts/**",
+			".circleci/**",
+			"package.json",
+			"pnpm-lock.yaml",
+			"/Users/jamiecraik/dev/codex/**"
+		],
+		"nonGoals": [
+			"Do not print, copy, persist, or validate secret values from ~/.codex/.env.",
+			"Do not call CircleCI API unless a CircleCI lane is failing or opaque.",
+			"Do not claim CI green, merge readiness, Linear alignment, Judge/PM readiness, or goal completion from this memory-rule slice.",
+			"Do not mutate Linear from this slice; read-only Linear refresh is recorded as tracker evidence only."
+		]
+	},
+	"projectBrainInputs": [
+		".harness/active-artifacts.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/research/evidence-patterns.json",
+		".harness/knowledge/ci/rules.md",
+		".harness/knowledge/governance/rules.md",
+		".harness/knowledge/runtime-evidence/rules.md"
+	],
+	"auditGapMapping": ["GAP-002", "GAP-008", "GAP-012"],
+	"ecosystemReviewFindings": [
+		"Recovery is a first-class runtime class",
+		"Repeatable telemetry is the learning loop",
+		"Instruction provenance is runtime safety"
+	],
+	"validationPlan": [
+		"jq . .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-045-circleci-env-project-brain-rule-intent.json",
+		"rg -n \"CircleCI|~/.codex/.env|FIFO|credential\" .harness/knowledge/ci/rules.md .harness/memory/LEARNINGS.md docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .",
+		"PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+		"git diff --check -- .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-045-circleci-env-project-brain-rule-intent.json .harness/knowledge/ci/rules.md .harness/knowledge/INDEX.md docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml .harness/active-artifacts.md"
+	],
+	"reviewerPlan": [
+		"adversarial-reviewer",
+		"agent-native-reviewer",
+		"best-practices-researcher"
+	],
+	"rollbackPlan": "Revert the PU-045 commit. The existing AGENTS.md and .harness/memory/LEARNINGS.md env-backed validation rules would remain active, but Project Brain CI retrieval would lose the promoted rule.",
+	"acceptanceCriteria": [
+		"Project Brain CI rules contain a must-level rule for ~/.codex/.env-backed CircleCI API/log recovery.",
+		"The rule requires a regular-file probe before sourcing ~/.codex/.env and distinguishes missing credentials from an unreadable FIFO or missing writer.",
+		"The rule forbids printing or persisting secret values.",
+		"The goal receipt records that live PR #327 through PR #329 CircleCI lanes were already green through GitHub, so CircleCI API access was not needed in this slice.",
+		"Linear JSC-363 is refreshed as tracker truth only and remains separate from implementation, CI, review, merge, and Judge/PM proof."
+	],
+	"circleciCredentialPolicy": "Use ~/.codex/.env for CircleCI API/log triage only when CircleCI evidence is failing or opaque; never print values; if the surface is a FIFO without a writer, classify that as env_surface_unreadable rather than missing credentials."
+}

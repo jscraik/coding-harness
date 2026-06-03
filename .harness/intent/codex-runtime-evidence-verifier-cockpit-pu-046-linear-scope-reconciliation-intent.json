@@ -1,0 +1,104 @@
+{
+	"schemaVersion": "intent-artifact/v1",
+	"intentId": "codex-runtime-evidence-verifier-cockpit-pu-046-linear-scope-reconciliation",
+	"createdAt": "2026-06-01T09:15:00Z",
+	"owner": "Coordinator",
+	"goalRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+	"planRef": ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+	"linearIssue": "JSC-363",
+	"slice": {
+		"id": "PU-046",
+		"name": "Linear full-lifecycle scope reconciliation",
+		"purpose": "Reduce the remaining tracker-scope ambiguity before Judge/PM closeout by uploading an owner-visible scope note attachment to Linear JSC-363 and recording repo-local evidence that Linear is planning and ownership truth, not implementation proof.",
+		"feedbackSignals": [
+			"The active goal explicitly says this is not Phase 1-only.",
+			"The plan frontmatter still requires Linear action before full lifecycle delivery claims.",
+			"Live Linear JSC-363 title and description still describe a Phase 1 issue while the repo goal board now governs PU-000 through PU-016 plus adopted audit and SPG gaps.",
+			"Prior linked-issue failures showed external checkers need explicit relationship classification."
+		],
+		"rootOperationalFailure": "Tracker wording and PR attachment history can make full-lifecycle progress look either narrower than the actual goal or more complete than the evidence supports.",
+		"failureCategories": [
+			"unclear authority boundaries",
+			"weak observability",
+			"hidden assumptions",
+			"stale state"
+		]
+	},
+	"plannedChange": {
+		"repoArtifacts": [
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-01-linear-full-lifecycle-scope-note.md",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+			".harness/active-artifacts.md"
+		],
+		"externalMutation": {
+			"system": "Linear",
+			"issue": "JSC-363",
+			"operation": "create_attachment",
+			"artifact": "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-01-linear-full-lifecycle-scope-note.md",
+			"reason": "The available Linear connector exposes attachment creation but not issue title/description update. A tracked Markdown attachment uploaded as base64 content is the narrowest available owner-visible mutation that records the scope note without overwriting issue fields.",
+			"requiredEvidence": [
+				"sha256 digest of the exact Markdown bytes uploaded",
+				"redacted create_attachment argument summary including issue, filename, contentType, title, and subtitle",
+				"returned Linear attachment id or URL",
+				"post-mutation get_issue evidence showing the attachment is visible",
+				"explicit verdict that issue title/description fields remain stale unless a later Linear issue-field update occurs"
+			]
+		}
+	},
+	"nonGoals": [
+		"Do not claim JSC-363 completion.",
+		"Do not claim Judge/PM readiness.",
+		"Do not claim runtime producer emission, delivery-truth consumption, merge readiness, or PR stack merge completion.",
+		"Do not rewrite the Linear issue title or description unless an update tool is available and separately reviewed.",
+		"Do not mutate code modules in this slice."
+	],
+	"validationPlan": [
+		{
+			"command": "Linear get_issue JSC-363",
+			"expected": "Confirms current Phase 1 wording and attachment history before mutation."
+		},
+		{
+			"command": "Linear create_attachment JSC-363",
+			"expected": "Uploads the exact scope note bytes as a Linear attachment; receipt records digest, filename, title/subtitle, returned attachment id or URL, and any connector failure."
+		},
+		{
+			"command": "Linear get_issue JSC-363",
+			"expected": "Confirms the new attachment is visible after mutation. If it is not visible, local state must record blocked_external_tracker_mutation and must not mark tracker scope mitigated."
+		},
+		{
+			"command": "python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit",
+			"expected": "Goal board remains valid after recording the slice receipt."
+		},
+		{
+			"command": "python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .",
+			"expected": "Latest route receipt remains current or ancestor-classified with explicit head relation."
+		},
+		{
+			"command": "sha256sum or shasum -a 256 docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-01-linear-full-lifecycle-scope-note.md",
+			"expected": "Digest matches the digest recorded in the receipt and uploaded attachment evidence."
+		}
+	],
+	"reviewRequirements": {
+		"intentReviewBeforeMutation": [
+			"adversarial-reviewer",
+			"agent-native-reviewer",
+			"best-practices-researcher"
+		],
+		"skillLenses": [
+			"improve-codebase-architecture",
+			"simplify",
+			"unslopify",
+			"he-code-review",
+			"testing"
+		]
+	},
+	"acceptanceCriteria": [
+		"Linear JSC-363 has a visible uploaded attachment explaining that the repo-owned goal is full lifecycle while the original issue wording remains Phase 1.",
+		"Repo-local notes record the exact distinction between tracker scope, implementation evidence, PR state, review state, CI, merge readiness, and Judge/PM readiness.",
+		"The receipt and state update do not mark the parent goal complete.",
+		"The slice records whether Linear issue-field update remains blocked by available connector capability.",
+		"The slice verdict is no stronger than tracker_scope_note_attached_fields_stale unless issue title and description are actually updated or an owner-visible acknowledgment explicitly accepts attachment-only mitigation.",
+		"Future scope-note attachments supersede earlier scope-note attachments only when the newer attachment digest, Linear attachment id or URL, and post-fetch evidence are recorded in the latest receipt."
+	]
+}

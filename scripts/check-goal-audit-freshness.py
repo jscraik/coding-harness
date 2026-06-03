@@ -3,8 +3,9 @@
 
 This guard exists for the Codex Runtime Evidence Verifier Cockpit goal. It is
 deliberately narrow: the governed 2026-05-26 audit must be re-read and recorded
-with a content digest after the audit file's latest filesystem timestamp before
-the goal can use that audit as closeout evidence.
+with the current content digest and head SHA before the goal can use that audit
+as closeout evidence. Filesystem mtimes are intentionally ignored because Git
+checkouts rewrite them and cannot prove source freshness.
 """
 
 from __future__ import annotations
@@ -219,7 +220,6 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
         raise ValidationError(f"could not retrieve current repository HEAD: {exc}") from exc
 
     current_sha256 = sha256_file(audit_file)
-    audit_mtime = datetime.fromtimestamp(audit_file.stat().st_mtime, tz=UTC)
     receipt, source = latest_audit_source(receipts, audit_path)
     current_head_normalized = current_head.lower()
 
@@ -249,28 +249,24 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
     if source_head_sha_normalized != receipt_head_sha_normalized:
         raise ValidationError("audit_sources_checked[].head_sha must match receipt.head_sha")
     if receipt_head_sha_normalized != current_head_normalized:
-        if (
-            receipt_head_relation != "tree_equivalent"
-            and not permits_self_referential_goal_receipt_commit(
-                repo_root,
-                receipt,
-                receipt_head_sha_normalized,
-                source_head_sha_normalized,
-                current_head_normalized,
-            )
-        ):
+        full_history_receipt_permitted = permits_self_referential_goal_receipt_commit(
+            repo_root,
+            receipt,
+            receipt_head_sha_normalized,
+            source_head_sha_normalized,
+            current_head_normalized,
+        )
+        if receipt_head_relation != "tree_equivalent" and not full_history_receipt_permitted:
             raise ValidationError(f"receipt.head_sha must match current repository HEAD: receipt={receipt_head_sha} current={current_head}")
     if source_head_sha_normalized != current_head_normalized:
-        if (
-            source_head_relation != "tree_equivalent"
-            and not permits_self_referential_goal_receipt_commit(
-                repo_root,
-                receipt,
-                receipt_head_sha_normalized,
-                source_head_sha_normalized,
-                current_head_normalized,
-            )
-        ):
+        full_history_source_permitted = permits_self_referential_goal_receipt_commit(
+            repo_root,
+            receipt,
+            receipt_head_sha_normalized,
+            source_head_sha_normalized,
+            current_head_normalized,
+        )
+        if source_head_relation != "tree_equivalent" and not full_history_source_permitted:
             raise ValidationError(f"audit_sources_checked[].head_sha must match current repository HEAD: source={source_head_sha} current={current_head}")
 
     source_sha256 = require_string(source.get("sha256"), "audit_sources_checked[].sha256").lower()
@@ -292,16 +288,10 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
         raise ValidationError(
             "audit_sources_checked[].checked_at must not be in the future",
         )
-    if checked_at < audit_mtime:
-        raise ValidationError(
-            "audit_sources_checked[].checked_at is older than the current audit file timestamp",
-        )
-
     return {
         "status": "pass",
         "audit_path": audit_path,
         "audit_sha256": current_sha256,
-        "audit_mtime": audit_mtime.isoformat().replace("+00:00", "Z"),
         "checked_at": checked_at.isoformat().replace("+00:00", "Z"),
         "receipt_id": receipt_id,
         "head_sha": receipt_head_sha_normalized,
@@ -337,9 +327,41 @@ def classify_head_relation(repo_root: Path, head_sha: str, current_head: str, fi
             current_head,
             field,
         )
+    if is_shallow_repository(repo_root) and fetch_commit_from_origin(repo_root, normalized_head_sha):
+        return classify_head_relation(repo_root, normalized_head_sha, current_head, field)
     detail = completed.stderr.strip()
     suffix = f": {detail}" if detail else ""
     raise ValidationError(f"{field} must be reachable from current repository HEAD{suffix}")
+
+
+def is_shallow_repository(repo_root: Path) -> bool:
+    try:
+        completed = subprocess.run(
+            ["git", "rev-parse", "--is-shallow-repository"],
+            cwd=repo_root,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except OSError:
+        return False
+    return completed.returncode == 0 and completed.stdout.strip().lower() == "true"
+
+
+def fetch_commit_from_origin(repo_root: Path, head_sha: str) -> bool:
+    try:
+        completed = subprocess.run(
+            ["git", "fetch", "--depth=1", "--no-tags", "origin", head_sha],
+            cwd=repo_root,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except OSError:
+        return False
+    return completed.returncode == 0
 
 
 def classify_non_ancestor_tree_relation(

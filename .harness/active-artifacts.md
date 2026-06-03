@@ -10,22 +10,19 @@
 
 ## Scope
 
-Last reconciled: 2026-06-01T07:10:27Z during PR #329 post-remediation route
-truth refresh after live GitHub truth was refreshed for PR #324, PR #327,
-PR #328, and PR #329. PR #324 was closed as superseded at
-2026-06-01T05:38:55Z because its conflicted branch carried stale route-truth
-receipt state now superseded by the newer PR #327 and PR #328 stack. Current
-main contains merged PR #321, PR #325 browser evidence, PR #326 route-truth
-repairs, and the earlier GAP-001 lane; PR #327 preserves the unique
-system-prompt evidence-registry alignment and review-thread state repair, and
-PR #328 adds reviewer-artifact head-freshness coverage. PR #329 is the active
-stacked PR for PR #324 supersession route truth. Live refresh at
-d99f70705a61caf2b437b640db3df7389175d10d showed all visible checks passing,
-mergeable MERGEABLE, mergeStateStatus CLEAN, and all review threads resolved.
-Receipt R195 records the validator repair for synthetic review checkouts, and
-R196 records this self-referential route-truth evidence sync. Linear,
-Judge/PM readiness, runtime producer emission, delivery-truth consumption,
-merge execution, and final goal completion remain unclaimed.
+Last reconciled: 2026-06-03 during the PR #330 latest-main merge-conflict
+repair. Current origin/main is
+2a07bd708a8532afc80d9ba5747d12686a8121f5 after the earlier JSC-363 stack
+merged. Live GitHub reports PR #328 and PR #329 are MERGED. PR #330 is the
+remaining open JSC-363 route lane, based directly on main at head
+7142480c618ab747b9c37185d34eb931d084b9de before this local conflict repair.
+The conflict repair preserves the current PR #330 route truth, the
+audit-freshness checkout-mtime guard repair, and the shallow-review ancestry
+fallback while removing stale active-stack wording from merged PRs. This
+reconcile does not claim PR #330 remote checks, review-thread state,
+mergeability, Linear field alignment, Judge/PM readiness, runtime producer
+emission, delivery-truth consumption, merge execution, or final goal
+completion.
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -36,7 +33,58 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged PR #321, merged PR #325 GAP-010 browser evidence, merged PR #326 route-truth repairs, and GAP-001 Local Memory preflight artifacts. PR #327 is an active route-truth/control-plane reconciliation lane that preserves SPG evidence-registry adoption and review-thread state repairs without claiming parent JSC-363 completion. PR #328 is the active stacked reviewer-artifact head-freshness guard. PR #329 is the active stacked supersession route-truth PR; live refresh at d99f70705a61caf2b437b640db3df7389175d10d showed all visible checks passing, MERGEABLE/CLEAN, and review threads resolved before this self-referential evidence-sync commit. PR #324 is closed as superseded and no longer an active merge-conflict lane. | Use the goal board as the current execution cockpit. Next safe action is to refresh PR #329 after this evidence-sync commit lands, then keep the PR #327 -> PR #328 -> PR #329 stack refreshed against live checks, CodeRabbit, unresolved review threads, mergeability, and linked-issue state before any PR-green, review-clear, linked-issue, or merge-ready claim. Only use <REDACTED_HOME_PATH>/.codex/.env for CircleCI API/log triage if a CircleCI lane fails or lacks enough public check evidence. Do not claim parent JSC-363 completion until Linear, runtime producer evidence, delivery-truth consumption, Judge/PM readiness, and final completion audit are separately refreshed. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged PR #321, merged PR #322, merged PR #325 GAP-010 browser evidence, merged PR #326 route-truth repairs, merged PR #327 route truth, merged PR #328 reviewer-artifact head-freshness coverage, merged PR #329 route-truth supersession cleanup, and GAP-001 Local Memory preflight artifacts. PR #324 is closed as superseded and no longer an active merge-conflict lane. PR #330 is the currently observed open JSC-363 PR lane, based directly on main, and this local reconcile pulls origin/main 2a07bd708a8532afc80d9ba5747d12686a8121f5 into the branch while preserving the audit-freshness checkout-mtime guard repair. Linear JSC-363 has an owner-visible full-lifecycle scope-note attachment, but tracker field alignment remains unclaimed until a fresh Linear refresh proves it. | Use the goal board as the current execution cockpit. Next safe action is to commit and push the PR #330 latest-main conflict repair, then refresh PR #330 checks, CodeRabbit/status-check rollups, unresolved review threads, linked-issue state, and mergeability from live GitHub before any PR-green, merge-ready, Judge/PM-ready, stack-ready, or done claim. Use <REDACTED_HOME_PATH>/.codex/.env for CircleCI API/log triage only if a CircleCI lane fails or lacks enough public evidence; map that redacted path to ~/.codex/.env only for local command execution after a regular-file probe, and classify FIFO/no-writer or unreadable env surfaces explicitly instead of calling credentials missing. Do not claim parent JSC-363 completion until Linear field alignment or owner acceptance, runtime producer evidence, delivery-truth consumption, Judge/PM readiness, and final completion audit are separately refreshed. |
+
+PU-046 update: PR #330 was refreshed again on head
+163017e16e4611d5d71f5c4c62fc85f8d164b17b after the R205 artifact receipt was
+committed and pushed.
+All visible checks pass and the PR is MERGEABLE/CLEAN. The R203 Project Brain
+path review thread is resolved. A new review thread found R200 references PU-046
+review artifacts that were still ignored local files; R205 commits those
+artifacts so the references are present in the PR tree. R206 records current-head
+audit freshness after the artifact commit. The Linear
+full-lifecycle scope-note attachment
+for JSC-363 remains attachment 5d4b796b-9129-4561-92b6-489bb6982925 with local
+digest ce1463fba3a0dd7daebe2ff15c55ecb54119d0c9a24456b907757b3e2920e414.
+Because the Linear title and description still say Phase 1, this only supports
+`tracker_scope_note_attached_fields_stale`; it does not prove Linear fields
+current, Judge/PM readiness, runtime producer emission, delivery-truth
+consumption, merge readiness, or final goal completion.
+
+PU-045 artifact update: PR #330 review found that R198 referenced the PU-045
+CircleCI env Project Brain reviewer artifacts without committing them. Commit
+e6b245df4124da83310897fa94253bb86c7fa5b9 adds the adversarial, agent-native,
+and best-practices reviewer artifacts under artifacts/reviews/. R207 records
+the governed audit source against that artifact commit; remote push, remote tree
+verification, thread resolution, and check refresh remain separate evidence
+lanes.
+
+PU-045/PU-046 whitespace update: PR #330 review found that five committed
+review artifacts had extra blank EOF lines and failed the PR-range
+git diff --check. Commit aec76ea1c46ee084ab018e474736d5d79ac0fce1 trims the
+affected artifacts, and R208 records the corrected range validation. The R208
+receipt commit 490cc6b7a7ca55adca1cb19269c1ca15bc43a100 was pushed to PR #330;
+fresh review-thread refresh reports zero unresolved threads, PR #330 is
+APPROVED, MERGEABLE/CLEAN, and visible checks pass.
+
+Post-R210 PR #330 refresh: R210 was pushed through current PR #330 head
+d217f528dd934bd8c285da11e8596481534be695. Fresh GitHub evidence reports PR #330
+OPEN, MERGEABLE, APPROVED, no auto-merge request, all visible checks passing,
+and all nine review threads resolved after the stale R210 depth-only thread was
+answered. This updates the PR #330 lane only; PR #327, PR #328, PR #329, Linear,
+Judge/PM readiness, runtime producer emission, delivery-truth consumption, merge
+execution, and final goal completion remain separate evidence lanes.
+
+Post-R211 validator repair: after the R211 route-truth commit was pushed as
+1175bfcbd25ed5f2b5ad345f2369af8de2f4dc1b, PR #330 checks passed, but a new
+review thread found that depth-1 review checkouts could not prove receipt
+ancestry for otherwise declared self-referential route receipts. R212 repairs
+\`scripts/check-goal-audit-freshness.py\` to fetch the missing recorded commit
+from \`origin\` in shallow checkouts before evaluating the real changed-path
+diff; R213 then rejects self-reported shallow changed-file claims when the
+fetched diff includes non-goal files. This is a validator compatibility repair only; it does
+not claim PR stack merge execution, Linear field alignment, Judge/PM readiness,
+runtime producer emission, delivery-truth consumption, or final goal completion.
 
 ## Artifact Index
 
