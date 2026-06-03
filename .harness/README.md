@@ -52,7 +52,8 @@ repository truth. Classify the artifact first:
 | `.harness/audits/**.md` | `secondary-context` | Track operator-requested audit reports named `YYYY-MM-DD-<type>-audit.md`; use for repo-state visibility findings that are not research evidence by themselves |
 | `.harness/features/**.md` | `secondary-context` | Track |
 | `.harness/implementation-notes/**.md` | `secondary-context` | Track when they admit steering, capture implementation proof, or are referenced by a validator |
-| `.harness/implementation-notes/**.html` | `generated-runtime` | Keep local while used as a live browser view; promote only as a reviewed final artifact |
+| `.harness/implementation-notes/goal-kanban-board.html` | `execution-input` | Track as the promoted browser-visible tracker for the Codex runtime evidence verifier goal while the goal references it; keep synchronized with `goal.md`, `state.yaml`, and `receipts.jsonl`; do not treat it as implementation, CI, Linear, or Judge/PM proof |
+| Other `.harness/implementation-notes/**.html` | `generated-runtime` | Keep local while used as a live browser view; promote only as a reviewed final artifact |
 | `.harness/intent/**.md` | `execution-input` | Track when tied to an accepted plan, goal, or review packet |
 | `.harness/intent/**.json` | `execution-input` | Track when it is a stable intent, baseline, or review receipt; do not track bulky runtime captures |
 | `.harness/strategy/**.md` | `secondary-context` | Track |

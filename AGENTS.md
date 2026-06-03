@@ -261,10 +261,13 @@ Notes:
   consumer boundary and synchronized governance update.
 - Codex runtime evidence packet changes that add or alter
   `codex-runtime-evidence/v1`, source-provenance classification, packet
-  validation, or evidence-reference integrity are architecture-adjacent runtime
-  cockpit changes. Keep the public packet surface inside `src/lib/runtime` as
-  a narrow facade over typed contract, validation, and reference-integrity
-  modules; refresh `AI/context/diagram-context.md` and keep `AGENTS.md`,
+  validation, client user-message correlation, or evidence-reference integrity
+  are architecture-adjacent runtime cockpit changes. Keep the public packet
+  surface inside `src/lib/runtime` as a narrow facade over typed contract,
+  validation, and reference-integrity modules; nullable client user-message ids
+  must come from explicit producer input and must not be synthesized from turn,
+  trace, timestamp, PR, or artifact fields. Refresh
+  `AI/context/diagram-context.md` and keep `AGENTS.md`,
   `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
   governance surfaces.
@@ -377,11 +380,14 @@ Notes:
   pending operator-steering state, instruction-source hashing, artifact
   identity checks, supersession, stale-precondition classification, or
   deterministic selected-item ordering are architecture-adjacent runtime
-  cockpit changes. Keep the deep module in `src/lib/steering-queue/`, keep
-  the packet advisory for orientation/audit evidence, and do not let it become
-  command authority, delivery-truth claim support, or merge-readiness proof
-  until a future runtime-card adapter intentionally wires that consumption
-  boundary and updates governance docs in the same PR.
+  cockpit changes. Keep client user-message correlation for expected/applied
+  same-thread steering inside this deep module, with stale-message
+  preconditions and applied-item validation proving the boundary. Keep the deep
+  module in `src/lib/steering-queue/`, keep the packet advisory for
+  orientation/audit evidence, and do not let it become command authority,
+  delivery-truth claim support, or merge-readiness proof until a future
+  runtime-card adapter intentionally wires that consumption boundary and
+  updates governance docs in the same PR.
 - Trust-boundary validator changes that add or alter script-backed evidence
   reports such as `audit-reference-report/v1` are architecture-adjacent
   agent-governance changes when they classify repository paths, git-tracked

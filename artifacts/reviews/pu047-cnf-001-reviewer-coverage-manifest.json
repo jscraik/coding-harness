@@ -1,0 +1,23 @@
+{
+  "expectedHeadSha": "50a6d0b5d764e35395e12190a465e854c26784fd",
+  "reviewers": [
+    {
+      "role": "adversarial-reviewer",
+      "artifact": "artifacts/reviews/pu047-cnf-001-post-implementation-adversarial.md"
+    },
+    {
+      "role": "agent-native-reviewer",
+      "artifact": "artifacts/reviews/pu047-cnf-001-post-implementation-agent-native.md"
+    },
+    {
+      "role": "best-practices-researcher",
+      "artifact": "artifacts/reviews/pu047-cnf-001-post-implementation-best-practices.md"
+    }
+  ],
+  "synthesisStatus": "complete",
+  "evidenceRefs": [
+    "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+    "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml"
+  ],
+  "retryCount": 4
+}

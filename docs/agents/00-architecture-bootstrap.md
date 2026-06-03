@@ -198,7 +198,10 @@ before they feed the runtime-card adapter. Keep the public
 `codex-runtime-evidence/v1` surface as a narrow facade over runtime types,
 source classification, validation, and reference-integrity checks; refresh
 `AI/context/diagram-context.md` and this guide when those packet or validator
-modules change.
+modules change. Client user-message correlation belongs in the Codex runtime
+identity contract only when the producer supplies explicit evidence; missing
+message ids must remain null rather than inferred from turn, trace, timestamp,
+PR, or artifact fields.
 
 Browser evidence packet changes are runtime-cockpit evidence work, not delivery
 truth. Keep `browser-evidence/v1` validation inside

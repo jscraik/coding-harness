@@ -108,7 +108,10 @@ not in docs, templates, generated context, or command facades.
   `runtime-card-handoff/v1` contracts. The runtime-card handoff module binds a
   persisted runtime card to its produced runtime-evidence bundle with a shared
   binding id, checksums, source/provenance refs, head SHA, and orientation-only
-  evidence-use policy before any handoff can feed agent cockpit state.
+  evidence-use policy before any handoff can feed agent cockpit state. Codex
+  runtime identity also carries nullable client user-message correlation when
+  producer input can prove it; unavailable message ids remain null and must not
+  be synthesized from adjacent turn, trace, timestamp, PR, or artifact fields.
 - src/lib/runtime-trace/: opt-in runtime-card trace recording that projects
   runtime-card execution into canonical `agent-run-event/v1` event streams
   under `artifacts/agent-runs/<runId>/events.jsonl`. It owns trace-out path
@@ -204,9 +207,10 @@ not in docs, templates, generated context, or command facades.
   `steering-queue.ts` as a compatibility facade over typed contracts, builder,
   hash, constants, and semantic-validation modules. It owns steering-queue/v1
   item state, instruction-source hashing, artifact identity checks,
-  supersession, stale-precondition classification, single-scope packet
-  validation, deterministic selection order, and semantic validation while
-  keeping queued steering out of execution authority, closeout proof, and
+  supersession, stale-precondition classification, client user-message
+  correlation for expected and applied same-thread steering, single-scope
+  packet validation, deterministic selection order, and semantic validation
+  while keeping queued steering out of execution authority, closeout proof, and
   merge-readiness claim support until a future runtime-card adapter explicitly
   consumes it.
 - src/lib/decision-request/: read-only governance request packet emission for

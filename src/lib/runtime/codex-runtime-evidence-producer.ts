@@ -48,6 +48,8 @@ export interface CodexRuntimeEvidenceProducerIdentityInput {
 	threadId?: string | null;
 	/** Codex turn identifier. This is required because claim support is turn-scoped. */
 	turnId: string;
+	/** Client user-message identifier, when visible to the producer. */
+	clientUserMessageId?: string | null;
 	/** Trace identifier, when visible to the producer. */
 	traceId?: string | null;
 	/** Required blocker class when traceId is unavailable. */
@@ -132,6 +134,7 @@ export function buildCodexRuntimeEvidenceFromProducerInput(
 		codex: {
 			threadId: input.codex.threadId ?? null,
 			turnId: input.codex.turnId,
+			clientUserMessageId: input.codex.clientUserMessageId ?? null,
 			traceId: input.codex.traceId ?? null,
 			traceFailureClass:
 				input.codex.traceId === undefined || input.codex.traceId === null

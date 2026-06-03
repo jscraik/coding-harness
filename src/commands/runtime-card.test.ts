@@ -178,6 +178,7 @@ function writeCodexRuntimeEvidencePacket(
 		codex: {
 			threadId: "thread-123",
 			turnId: "turn-123",
+			clientUserMessageId: "client-user-message-123",
 			traceId: "trace-123",
 			traceFailureClass: null,
 			goalState: "active",

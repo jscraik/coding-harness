@@ -279,6 +279,7 @@ function validPacket(): CodexRuntimeEvidence {
 		codex: {
 			threadId: "thread-123",
 			turnId: "turn-456",
+			clientUserMessageId: null,
 			traceId: null,
 			traceFailureClass: "sdk_event_does_not_expose_trace_id",
 			goalState: "unknown",

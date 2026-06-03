@@ -177,10 +177,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - steering-queue packet changes should keep pending operator steering in
   `src/lib/steering-queue/` as advisory orientation/audit evidence. Validators
   must prove instruction-source hash integrity, artifact identity, supersession,
-  stale-precondition classification, deterministic selected-item ordering, and
-  terminal state consistency. The packet must not become command authority,
-  delivery-truth claim support, or merge-readiness proof until a future
-  runtime-card adapter intentionally wires that boundary and updates the
+  stale-precondition classification, deterministic selected-item ordering,
+  client user-message correlation for expected and applied same-thread
+  steering, and terminal state consistency. The packet must not become command
+  authority, delivery-truth claim support, or merge-readiness proof until a
+  future runtime-card adapter intentionally wires that boundary and updates the
   governance docs in the same PR.
 - trust-boundary validator changes that add script-backed evidence reports
   such as `audit-reference-report/v1` should keep output machine-readable,

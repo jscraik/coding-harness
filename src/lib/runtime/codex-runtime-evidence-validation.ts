@@ -167,6 +167,11 @@ function validateIdentity(value: unknown, add: AddFinding): void {
 	}
 	requireNullableNonEmptyString(value.threadId, "codex.threadId", add);
 	requireNonEmptyString(value.turnId, "codex.turnId", add);
+	requireNullableNonEmptyString(
+		value.clientUserMessageId,
+		"codex.clientUserMessageId",
+		add,
+	);
 	requireNullableNonEmptyString(value.traceId, "codex.traceId", add);
 	requireNullableNonEmptyString(
 		value.traceFailureClass,

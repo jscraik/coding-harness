@@ -20,6 +20,7 @@ describe("codex runtime evidence producer", () => {
 			codex: {
 				threadId: "thread-123",
 				turnId: "turn-456",
+				clientUserMessageId: "client-user-message-789",
 				traceId: "trace-789",
 				goalState: "active",
 				model: "gpt-5.5",
@@ -46,6 +47,7 @@ describe("codex runtime evidence producer", () => {
 			codex: {
 				threadId: "thread-123",
 				turnId: "turn-456",
+				clientUserMessageId: "client-user-message-789",
 				traceId: "trace-789",
 				traceFailureClass: null,
 				goalState: "active",
@@ -81,6 +83,7 @@ describe("codex runtime evidence producer", () => {
 		expect(packet.codex.traceFailureClass).toBe(
 			"producer_input_missing_trace_context",
 		);
+		expect(packet.codex.clientUserMessageId).toBeNull();
 		expect(packet.permissions).toEqual({
 			profile: "unknown",
 			writableRoots: [],

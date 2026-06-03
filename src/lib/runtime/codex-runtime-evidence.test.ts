@@ -30,6 +30,15 @@ describe("codex-runtime-evidence/v1", () => {
 		);
 	});
 
+	it("allows client user-message id to be absent without adjacent-field inference", () => {
+		const packet = validPacket();
+		packet.codex.clientUserMessageId = null;
+
+		const result = validateCodexRuntimeEvidence(packet);
+
+		expect(result).toEqual({ valid: true, findings: [] });
+	});
+
 	it("requires a failure class when trace id is unavailable", () => {
 		const packet = validPacket();
 		packet.codex.traceId = null;
@@ -205,6 +214,7 @@ function validPacket(): CodexRuntimeEvidence {
 		codex: {
 			threadId: "thread-123",
 			turnId: "turn-456",
+			clientUserMessageId: "client-user-message-789",
 			traceId: null,
 			traceFailureClass: "sdk_event_does_not_expose_trace_id",
 			goalState: "unknown",

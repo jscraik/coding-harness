@@ -65,6 +65,11 @@ function validatePacketEnvelope(
 	requireHeadSha(value.headSha, "headSha", errors);
 	requireNullableSafePointer(value.threadId, "threadId", errors);
 	requireNullableSafePointer(value.turnId, "turnId", errors);
+	requireNullableSafePointer(
+		value.clientUserMessageId,
+		"clientUserMessageId",
+		errors,
+	);
 	requireIso(value.evaluatedAt, "evaluatedAt", errors);
 	requireNullableSafePointer(value.selectedItemId, "selectedItemId", errors);
 }

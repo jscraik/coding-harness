@@ -112,6 +112,8 @@ export interface CodexRuntimeIdentity {
 	threadId: string | null;
 	/** Codex turn identifier; required because claim support is turn-scoped. */
 	turnId: string;
+	/** Client user-message identifier when the producer can prove the initiating message. */
+	clientUserMessageId: string | null;
 	/** W3C trace identifier or equivalent trace handle, when available. */
 	traceId: string | null;
 	/** Required blocker class when traceId is unavailable. */

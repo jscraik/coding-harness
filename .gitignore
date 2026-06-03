@@ -73,6 +73,7 @@ gardener-report.json
 .harness/implementation-notes/*
 !.harness/implementation-notes/*.md
 !.harness/implementation-notes/*.mdx
+!.harness/implementation-notes/goal-kanban-board.html
 !.harness/intent/
 .harness/intent/*
 !.harness/intent/**/*.md
@@ -161,12 +162,16 @@ ops/metrics/skill-feedback/
 e2e/recordings/
 
 # Pilot artifacts
-artifacts/
+artifacts/*
 artifacts/pilot/
 artifacts/agent-runs/
 artifacts/policy/
 artifacts/consistency-gate/
 artifacts/context-integrity/
+!artifacts/reviews/
+artifacts/reviews/*
+!artifacts/reviews/pu047-cnf-001-*.md
+!artifacts/reviews/pu047-cnf-001-*.json
 !.harness/artifacts/
 !.harness/artifacts/README.md
 !.harness/artifacts/brownfield-memory-inventory.md

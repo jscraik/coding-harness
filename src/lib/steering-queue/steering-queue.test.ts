@@ -14,6 +14,7 @@ const EXPIRES_AT = "2026-05-28T12:40:00Z";
 const INSTRUCTION_TEXT =
 	"Continue with the next bounded slice after PR triage completes.";
 const INSTRUCTION_HASH = hashSteeringInstructionText(INSTRUCTION_TEXT);
+const CLIENT_USER_MESSAGE_ID = "client-user-message:pu-047";
 
 const ARTIFACT: SteeringArtifactIdentity = {
 	artifactRef: "artifact:pr-triage-report",
@@ -41,6 +42,7 @@ function item(
 		deliveryMode: "same_thread_continuation",
 		expectedThreadId: "thread:codex-runtime-evidence-cockpit",
 		expectedTurnId: "turn:pu-030",
+		expectedClientUserMessageId: CLIENT_USER_MESSAGE_ID,
 		expectedHeadSha: HEAD_SHA,
 		priority: 10,
 		requiredArtifacts: [ARTIFACT],
@@ -48,6 +50,7 @@ function item(
 		supersededBy: null,
 		state: "pending",
 		stateReason: null,
+		appliedClientUserMessageId: null,
 		appliedAt: null,
 		rejectedAt: null,
 		supersededAt: null,
@@ -63,6 +66,7 @@ function packetWith(items: readonly SteeringQueueItemInput[]) {
 		headSha: HEAD_SHA,
 		threadId: "thread:codex-runtime-evidence-cockpit",
 		turnId: "turn:pu-030",
+		clientUserMessageId: CLIENT_USER_MESSAGE_ID,
 		nowIso: NOW,
 		items,
 		currentArtifacts: [ARTIFACT],
@@ -98,6 +102,20 @@ describe("SteeringQueue/v1", () => {
 		expect(packet.selectedItemId).toBeNull();
 	});
 
+	it("classifies stale client user-message preconditions as stale", () => {
+		const packet = packetWith([
+			item({ expectedClientUserMessageId: "client-user-message:old" }),
+		]);
+
+		expect(packet.items[0]?.state).toBe("stale");
+		expect(packet.items[0]?.stalePreconditions).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ kind: "stale_client_user_message" }),
+			]),
+		);
+		expect(packet.selectedItemId).toBeNull();
+	});
+
 	it("classifies stale head preconditions as stale", () => {
 		const packet = packetWith([item({ expectedHeadSha: "b".repeat(40) })]);
 
@@ -118,6 +136,7 @@ describe("SteeringQueue/v1", () => {
 			headSha: HEAD_SHA,
 			threadId: "thread:codex-runtime-evidence-cockpit",
 			turnId: "turn:pu-030",
+			clientUserMessageId: CLIENT_USER_MESSAGE_ID,
 			nowIso: NOW,
 			items: [item()],
 			currentArtifacts: [ARTIFACT],
@@ -144,6 +163,7 @@ describe("SteeringQueue/v1", () => {
 			headSha: HEAD_SHA,
 			threadId: "thread:codex-runtime-evidence-cockpit",
 			turnId: "turn:pu-030",
+			clientUserMessageId: CLIENT_USER_MESSAGE_ID,
 			nowIso: NOW,
 			items: [item()],
 			currentArtifacts: [
@@ -182,6 +202,7 @@ describe("SteeringQueue/v1", () => {
 			item({
 				id: "steering:applied",
 				state: "applied",
+				appliedClientUserMessageId: CLIENT_USER_MESSAGE_ID,
 				appliedAt: "2026-05-28T09:43:00Z",
 			}),
 		]);
@@ -252,6 +273,7 @@ describe("SteeringQueue/v1", () => {
 			headSha: HEAD_SHA,
 			threadId: "thread:codex-runtime-evidence-cockpit",
 			turnId: "turn:pu-030",
+			clientUserMessageId: CLIENT_USER_MESSAGE_ID,
 			nowIso: NOW,
 			items: [item()],
 			currentArtifacts: [ARTIFACT],
@@ -309,6 +331,7 @@ describe("SteeringQueue/v1", () => {
 		const packet = packetWith([
 			item({
 				state: "applied",
+				appliedClientUserMessageId: CLIENT_USER_MESSAGE_ID,
 				appliedAt: "2026-05-28T09:43:00Z",
 				stalePreconditions: [
 					{
@@ -325,6 +348,45 @@ describe("SteeringQueue/v1", () => {
 			expect.arrayContaining([
 				expect.objectContaining({
 					path: "items[0].stalePreconditions",
+				}),
+			]),
+		);
+	});
+
+	it("rejects applied items without the applied client user-message id", () => {
+		const packet = packetWith([
+			item({
+				state: "applied",
+				appliedAt: "2026-05-28T09:43:00Z",
+			}),
+		]);
+
+		expect(validateSteeringQueuePacket(packet).errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: expect.stringContaining(
+						"missing_applied_client_user_message_id",
+					),
+					path: "items[0].appliedClientUserMessageId",
+				}),
+			]),
+		);
+	});
+
+	it("rejects applied items with a different client user-message id", () => {
+		const packet = packetWith([
+			item({
+				state: "applied",
+				appliedClientUserMessageId: "client-user-message:other",
+				appliedAt: "2026-05-28T09:43:00Z",
+			}),
+		]);
+
+		expect(validateSteeringQueuePacket(packet).errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: expect.stringContaining("client_user_message_mismatch"),
+					path: "items[0].appliedClientUserMessageId",
 				}),
 			]),
 		);

@@ -199,6 +199,7 @@ function sourcePacket(options: {
 		codex: {
 			threadId: "thread-123",
 			turnId: "turn-456",
+			clientUserMessageId: null,
 			traceId: options.traceId,
 			traceFailureClass: options.traceFailureClass,
 			goalState: "unknown",
