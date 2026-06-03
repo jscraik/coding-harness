@@ -72,8 +72,8 @@ completion_contract:
   blocked_stop_condition: "Stop if the board is invalid, activation is absent for Worker work, required intent review is missing, validation cannot run, reviewer artifacts are missing after retry, PR or tracker truth is stale, dirty work overlaps required files, or continuing would contaminate a PR under triage."
 current_slice_gate:
   lifecycle_unit: "PU-047-cnf-001-message-correlation"
-  status: "local_contract_implemented_validated_reviewed_pending_commit_pr_handoff"
-  reason: "Jamie reactivated the goal after current-main route truth and Linear attachment-backed alignment were refreshed. PU-047/CNF-001 is now the active bounded implementation slice. The local contract adds nullable clientUserMessageId support to Codex runtime evidence, carries explicit producer input when available, preserves null when unavailable, extends steering queue expected/applied client-message correlation, rejects stale or mismatched applied items, and updates schemas, examples, semantic validator logic, architecture docs, and focused tests. Live Codex Desktop extraction is not proven; clientUserMessageId must not be synthesized from turnId, traceId, timestamps, PR state, artifact paths, or other surrogate identifiers. Deterministic local validation, the coordinator skill-lens artifact, and three post-implementation subagent review artifacts now exist, are bound to the current local head through the reviewer-coverage manifest, and report no material findings. The fixed reviewer roles remained runtime-fragile, so R224-R226 preserve that blocker history and the recovery used default subagents with explicit reviewer personas. Runtime producer emission, delivery-truth consumption, final review-state/external-state/root-hygiene proof, historical review-coverage backfill, final Judge/PM readiness, and parent goal completion remain unclaimed."
+  status: "pr_open_remote_triage_pending"
+  reason: "Jamie reactivated the goal after current-main route truth and Linear attachment-backed alignment were refreshed. PU-047/CNF-001 is now the active bounded implementation slice. The local contract adds nullable clientUserMessageId support to Codex runtime evidence, carries explicit producer input when available, preserves null when unavailable, extends steering queue expected/applied client-message correlation, rejects stale or mismatched applied items, and updates schemas, examples, semantic validator logic, architecture docs, and focused tests. Live Codex Desktop extraction is not proven; clientUserMessageId must not be synthesized from turnId, traceId, timestamps, PR state, artifact paths, or other surrogate identifiers. Deterministic local validation, the coordinator skill-lens artifact, and three post-implementation subagent review artifacts now exist, are bound to the current local head through the reviewer-coverage manifest, and report no material findings. PR #331 is open against main at head 65b964b500adfd56efdd9cac935cca190435d604; GitHub currently reports mergeable MERGEABLE and mergeStateStatus BLOCKED while remote checks and reviews are pending. Runtime producer emission, delivery-truth consumption, final review-state/external-state/root-hygiene proof, historical review-coverage backfill, final Judge/PM readiness, and parent goal completion remain unclaimed."
   completed_before_local_validation_claim:
     - "Created and tracked the PR #324 supersession intent artifact before route-state edits."
     - "Fetched current remote refs and verified PR #327 and PR #328 are the current clean JSC-363 stack."
@@ -119,7 +119,7 @@ current_slice_gate:
     - "Resolved PR #330 latest-main conflicts in .harness/active-artifacts.md, receipts.jsonl, state.yaml, and scripts/check-goal-audit-freshness.py by preserving current PR #330 route truth plus the checkout-mtime guard repair and shallow-review ancestry fallback while updating active-stack wording for merged PR #328/#329."
     - "Refreshed live Linear JSC-363 after all known PR lanes merged: status Done, completedAt 2026-06-03T20:44:00Z, full-lifecycle scope-note attachment present, PR #321 through PR #330 attachments present, and residual title/description Phase 1 wording preserved as field-text mismatch rather than a tracker-scope blocker."
   next_required_handoff_steps:
-    - "Do not mark PU-047/CNF-001 done until PR handoff evidence is recorded after the now-present post-implementation reviewer artifacts, skill-lens evidence, goal-board validation, and audit-freshness validation remain current."
+    - "Do not mark PU-047/CNF-001 done until PR #331 remote CI, review-thread truth, CodeRabbit/Codex review state, and merge readiness are freshly triaged after the handoff receipt remains current."
     - "Use this board and the local board tracker as the current route-truth surfaces; keep both synchronized when route state changes."
     - "PU-047/CNF-001 intent classifies Codex user-message correlation as locally implementable only for explicit producer input; live Codex Desktop extraction remains unproven and owner-visible."
     - "Run the goal-board validator and audit-freshness validator after this route-truth refresh."
@@ -127,6 +127,7 @@ current_slice_gate:
     - "Treat PR #321, PR #322, PR #323, PR #325, PR #326, PR #327, PR #328, PR #329, and PR #330 as merged route/foundation evidence, not active PR lanes."
     - "After PU-047/CNF-001 is reviewed and committed, continue only from remaining evidence-backed lifecycle gaps: CNF-002 through CNF-006, runtime producer evidence, delivery-truth consumption, final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, and final requirement-by-requirement completion audit."
     - "Reviewer-coverage validation now passes against the final on-disk PU-047/CNF-001 review artifacts with expectedHeadSha; keep the manifest and artifact head bindings synchronized before PR handoff or any future slice done claim."
+    - "PR #331 triage must run with git fetch and pr-green-sweep expectations in a separate subagent lane before any PU-047/CNF-001 done claim."
     - "If future Linear tools expose issue title/description update and owner wants field text current, update JSC-363 fields; otherwise preserve the accepted attachment-backed alignment boundary."
   blocked_done_claims:
     - "Linear-fields-current"
@@ -256,7 +257,7 @@ codex_native_refinement_adoption:
   required_findings:
     - id: "CNF-001"
       name: "Codex user-message correlation"
-      status: "local_contract_implemented_validated_reviewed_pending_commit_pr_handoff"
+      status: "pr_open_remote_triage_pending"
       target_modules:
         - "src/lib/runtime/codex-runtime-evidence-types.ts"
         - "src/lib/steering-queue/types.ts"
