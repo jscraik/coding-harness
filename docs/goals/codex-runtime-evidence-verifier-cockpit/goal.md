@@ -47,10 +47,10 @@ reconciliation.
 Current route truth:
 
 - `origin/main` is at `f655560719404d1cde11a5f40b6fac715f205bef` and already contains the merged PR #327 route-truth repair.
-- PR #328 is the lower open branch, `codex/jsc-363-review-artifact-head-freshness` into `main`. Its merge conflict was repaired, the two unresolved CodeRabbit review threads were fixed and resolved, and the branch was pushed to `6efd1a14d202993b1e03991731804107245f6082`.
+- PR #328 is the lower open branch, `codex/jsc-363-review-artifact-head-freshness` into `main`. Its merge conflict was repaired, the unresolved review threads were fixed and resolved, and the branch was pushed to `24ef2dcf7a42c4a00c39bb8c6d4c7d692bcf3915`.
 - The latest live PR #328 refresh reports `mergeable: MERGEABLE`, `mergeStateStatus: BLOCKED`, zero unresolved review threads, CodeRabbit passing, several CircleCI contexts still pending, and `security/snyk (jscraik)` failing because the Snyk account has used its private-test limit. PR #328 is therefore not merge-ready.
-- PR #330 is the top open branch, `codex/jsc-363-linear-stack-refresh` into PR #328's branch. It now includes the refreshed PR #328 head and was pushed to `588f445672c111d68096d05c98ae5a0ea110cd58`.
-- The latest live PR #330 refresh reports `mergeable: MERGEABLE`, `mergeStateStatus: UNSTABLE`, `reviewDecision: APPROVED`, zero unresolved review threads, CodeRabbit skipped/pass, several CircleCI contexts still pending, and `security/snyk (jscraik)` failing because the Snyk account has used its private-test limit. PR #330 is therefore not merge-ready.
+- PR #330 is the top open branch, `codex/jsc-363-linear-stack-refresh` into PR #328's branch. It includes the refreshed PR #328 head through local merge `c8a52517c3b46ccb837ed37369268e4cca253218`; the follow-up receipt-only commit will move the submitted PR #330 head again and must be live-refreshed before readiness claims.
+- The latest live PR #330 refresh before the PR #328 documentation-note merge reported `mergeable: MERGEABLE`, `mergeStateStatus: UNSTABLE`, `reviewDecision: APPROVED`, pending CircleCI contexts, and a Snyk App check in progress or previously failing due private-test quota. PR #330 is therefore not merge-ready until the receipt-only head is pushed and checked.
 - PR #329 is no longer a live open lane in the current GitHub PR list. Treat it as historical stack evidence unless a fresh GitHub query shows it reopened.
 - PR #327 is now represented by `origin/main`; do not keep routing work as if PR #327 were still an open stacked PR.
 

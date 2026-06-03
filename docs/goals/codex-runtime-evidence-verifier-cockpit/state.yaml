@@ -66,8 +66,8 @@ completion_contract:
   blocked_stop_condition: "Stop if the board is invalid, activation is absent for Worker work, required intent review is missing, validation cannot run, reviewer artifacts are missing after retry, PR or tracker truth is stale, dirty work overlaps required files, or continuing would contaminate a PR under triage."
 current_slice_gate:
   lifecycle_unit: "PU-046-linear-scope-reconciliation"
-  status: "post_r215_pr328_pr330_conflict_and_review_thread_reconcile_pending_ci_snyk"
-  reason: "Current remote truth was refreshed on 2026-06-03 after PR #327 merged into origin/main at f655560719404d1cde11a5f40b6fac715f205bef. PR #328 is pushed to 6efd1a14d202993b1e03991731804107245f6082 with merge conflicts cleared and both previously unresolved CodeRabbit review threads resolved. Live GitHub reports PR #328 OPEN, MERGEABLE, BLOCKED, zero unresolved review threads, pending CircleCI contexts, and security/snyk failing because the Snyk account has used its private-test limit. PR #330 is pushed to 588f445672c111d68096d05c98ae5a0ea110cd58 after merging the updated PR #328 head. Live GitHub reports PR #330 OPEN, MERGEABLE, UNSTABLE, APPROVED, zero unresolved review threads, pending CircleCI contexts, and the same security/snyk private-test quota failure. Linear JSC-363, Judge/PM readiness, runtime producer emission, delivery-truth consumption, merge execution, and final JSC-363 completion remain unclaimed."
+  status: "post_r216_pr328_review_thread_repair_pr330_receipt_anchor_pending_push_refresh"
+  reason: "Current remote truth was refreshed on 2026-06-03 after PR #327 merged into origin/main at f655560719404d1cde11a5f40b6fac715f205bef. PR #328 is pushed to 24ef2dcf7a42c4a00c39bb8c6d4c7d692bcf3915 with merge conflicts cleared and unresolved review threads repaired and resolved. Live GitHub previously reported PR #328 OPEN, MERGEABLE, BLOCKED, pending CircleCI contexts, and security/snyk quota risk. PR #330 includes the updated PR #328 head through local merge c8a52517c3b46ccb837ed37369268e4cca253218. A receipt-only commit must be added, pushed, and live-refreshed before current PR #330 readiness can be claimed. Linear JSC-363, Judge/PM readiness, runtime producer emission, delivery-truth consumption, merge execution, and final JSC-363 completion remain unclaimed."
   completed_before_local_validation_claim:
     - "Created and tracked the PR #324 supersession intent artifact before route-state edits."
     - "Fetched current remote refs and verified PR #327 and PR #328 are the current clean JSC-363 stack."
@@ -108,7 +108,9 @@ current_slice_gate:
     - "Merged the repaired PR #328 branch into PR #330 locally, combined the audit-freshness shallow-fetch and synthetic-head behaviors, validated the shallow regression lane, and committed the refreshed goal.md route update at 8721fe6bf0cdcb41e1b09d1a8bfe4dd121dfdfb2."
     - "Fixed and resolved the two remaining PR #328 CodeRabbit review threads by removing the unsupported .pnpm-store ignore rule and downgrading R198 validated wording to match its recorded blocked validation evidence."
     - "Merged the updated PR #328 head into PR #330 and pushed PR #330 to 588f445672c111d68096d05c98ae5a0ea110cd58."
+    - "Fixed and resolved the follow-up PR #328 local-only manifest evidence thread, then merged PR #328 head 24ef2dcf7a42c4a00c39bb8c6d4c7d692bcf3915 into PR #330 at c8a52517c3b46ccb837ed37369268e4cca253218."
   next_required_handoff_steps:
+    - "Add a receipt-only PR #330 commit anchored to c8a52517c3b46ccb837ed37369268e4cca253218 so goal-audit freshness validates after the route-text update."
     - "Wait for or triage pending CircleCI contexts on PR #328 and PR #330; use CircleCI API/log evidence only if public check output is failing or opaque."
     - "Classify the external security/snyk private-test quota failure separately from code-validation failures before any merge-ready claim."
     - "Refresh PR #328 and PR #330 from current live checks, CodeRabbit/status-check rollups, unresolved review threads, mergeability, linked-issue state, and Linear evidence before any stack-ready, merge-ready, Judge/PM-ready, or done claim."
