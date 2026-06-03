@@ -11,17 +11,18 @@
 ## Scope
 
 Last reconciled: 2026-06-03 during the PR #328/#330 conflict, review-thread,
-and goal-route refresh. Current origin/main is
+goal-route, and post-push validation refresh. Current origin/main is
 f655560719404d1cde11a5f40b6fac715f205bef after PR #327 merged. PR #328 was
 updated against origin/main, had unresolved review threads fixed and resolved,
-and was pushed to 24ef2dcf7a42c4a00c39bb8c6d4c7d692bcf3915. Live GitHub
-reports PR #328 OPEN, MERGEABLE, and BLOCKED by pending CircleCI contexts
-plus a security/snyk private-test quota failure. PR #330 was reconciled on top
-of that repaired PR #328 head through local merge
-c8a52517c3b46ccb837ed37369268e4cca253218. A follow-up receipt-only commit must
-be pushed and refreshed before any current PR #330 readiness claim. Linear
-JSC-363, Judge/PM readiness, runtime producer emission, delivery-truth
-consumption, merge execution, and final goal completion remain unclaimed.
+and was pushed to 24ef2dce35568f357f5d6df1d16de11f311efb1b. Live GitHub
+reports PR #328 OPEN, MERGEABLE, UNSTABLE, zero unresolved review threads, all
+visible CircleCI contexts passing, and a security/snyk private-test quota
+failure. PR #330 was pushed to be5855140c05a29672393a54d7be149a83b1fd90 with
+merge conflicts cleared, zero unresolved review threads, MERGEABLE/UNSTABLE
+state, several pending CircleCI contexts, and the same security/snyk quota
+failure. Linear JSC-363, Judge/PM readiness, runtime producer emission,
+delivery-truth consumption, merge execution, and final goal completion remain
+unclaimed.
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -32,7 +33,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged PR #321, merged PR #322, merged PR #325 GAP-010 browser evidence, merged PR #326 route-truth repairs, merged PR #327 route truth, and GAP-001 Local Memory preflight artifacts. PR #324 is closed as superseded and no longer an active merge-conflict lane. PR #328 and PR #330 are the currently observed open JSC-363 PR lanes. PR #328 is at 24ef2dcf7a42c4a00c39bb8c6d4c7d692bcf3915 with unresolved review threads resolved, MERGEABLE/BLOCKED state, pending CircleCI contexts, and security/snyk quota risk. PR #330 includes PR #328 through local merge c8a52517c3b46ccb837ed37369268e4cca253218 and needs a receipt-only push plus live refresh before readiness claims. Linear JSC-363 has an owner-visible full-lifecycle scope-note attachment, but tracker field alignment remains unclaimed until a fresh Linear refresh proves it. | Use the goal board as the current execution cockpit. Next safe action is to commit and push the receipt-only head for PR #330, then wait for or triage pending CircleCI contexts on PR #328 and PR #330, classify the external Snyk quota blocker separately from implementation failures, and refresh linked-issue/Linear evidence before any stack-ready, merge-ready, Judge/PM-ready, or done claim. Use <REDACTED_HOME_PATH>/.codex/.env for CircleCI API/log triage only if a CircleCI lane fails or lacks enough public evidence; map that redacted path to ~/.codex/.env only for local command execution after a regular-file probe, and classify FIFO/no-writer or unreadable env surfaces explicitly instead of calling credentials missing. Do not claim parent JSC-363 completion until Linear field alignment or owner acceptance, runtime producer evidence, delivery-truth consumption, Judge/PM readiness, and final completion audit are separately refreshed. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged PR #321, merged PR #322, merged PR #325 GAP-010 browser evidence, merged PR #326 route-truth repairs, merged PR #327 route truth, and GAP-001 Local Memory preflight artifacts. PR #324 is closed as superseded and no longer an active merge-conflict lane. PR #328 and PR #330 are the currently observed open JSC-363 PR lanes. PR #328 is at 24ef2dce35568f357f5d6df1d16de11f311efb1b with unresolved review threads resolved, MERGEABLE/UNSTABLE state, all visible CircleCI contexts passing, and security/snyk quota risk. PR #330 is at be5855140c05a29672393a54d7be149a83b1fd90 with unresolved review threads resolved, MERGEABLE/UNSTABLE state, several pending CircleCI contexts, and security/snyk quota risk. Linear JSC-363 has an owner-visible full-lifecycle scope-note attachment, but tracker field alignment remains unclaimed until a fresh Linear refresh proves it. | Use the goal board as the current execution cockpit. Next safe action is to wait for or triage pending CircleCI contexts on PR #330, classify the external Snyk quota blocker separately from implementation failures, and refresh linked-issue/Linear evidence before any stack-ready, merge-ready, Judge/PM-ready, or done claim. Use <REDACTED_HOME_PATH>/.codex/.env for CircleCI API/log triage only if a CircleCI lane fails or lacks enough public evidence; map that redacted path to ~/.codex/.env only for local command execution after a regular-file probe, and classify FIFO/no-writer or unreadable env surfaces explicitly instead of calling credentials missing. Do not claim parent JSC-363 completion until Linear field alignment or owner acceptance, runtime producer evidence, delivery-truth consumption, Judge/PM readiness, and final completion audit are separately refreshed. |
 
 PU-046 update: PR #330 was refreshed again on head
 163017e16e4611d5d71f5c4c62fc85f8d164b17b after the R205 artifact receipt was
