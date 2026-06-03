@@ -55,7 +55,7 @@ Validation evidence for PU-044:
 - pnpm run quality:behavior-tests -> pass.
 - git diff --check -- scripts/validate-reviewer-coverage.cjs src/lib/reviewer-coverage-receipt.test.ts .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-044-reviewer-artifact-head-freshness-intent.json -> pass.
 - bash scripts/validate-codestyle.sh --fast -> pass.
-- node scripts/validate-reviewer-coverage.cjs --manifest artifacts/reviews/head-freshness-final-manifest.json --reviews-dir artifacts/reviews --json -> pass against final adversarial, agent-native, and best-practices review artifacts bound to head 33e99c695c6cb6f67301948e1b9013deb5ed2037.
+- node scripts/validate-reviewer-coverage.cjs --manifest artifacts/reviews/head-freshness-final-manifest.json --reviews-dir artifacts/reviews --json -> pass against final local-only adversarial, agent-native, and best-practices review artifacts bound to head 33e99c695c6cb6f67301948e1b9013deb5ed2037. The manifest and review artifacts for this proof were not committed in PR #328, so this line is historical local evidence rather than a command that can be rerun from the submitted tree. Reproducible committed proof for the guard is the validator source, the PU-044 intent file, and the committed reviewer-coverage receipt tests listed above.
 - bash scripts/validate-codestyle.sh -> pass after commit.
 - pnpm check -> pass after commit.
 - bash scripts/run-harness-gate.sh tooling-audit --path . --json -> pass after commit.
