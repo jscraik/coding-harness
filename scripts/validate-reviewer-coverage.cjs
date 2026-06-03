@@ -7,7 +7,11 @@ const path = require("node:path");
 const DEFAULT_ROOT = path.resolve(__dirname, "..");
 const SCHEMA_VERSION = "reviewer-coverage-receipt/v1";
 const BLOCKED_STATUS_PATTERN =
-	/^STATUS:\s+(blocked_runtime|blocked_missing_artifact|blocked_validation)\b/mu;
+	/^\s*(?:[-*]\s*)?(?:STATUS|status):\s+blocked(?:_runtime|_missing_artifact|_validation)?\b/imu;
+const HEAD_SHA_FIELD_PATTERN =
+	/^\s*(?:[-*]\s*)?head(?:_sha|\s+sha|Sha|RefOid)\b\s*[:=]\s*`?([0-9a-f]{40})`?\s*$/gimu;
+const HEAD_SHA_LINE_PATTERN = /^head_sha:\s*`?([0-9a-f]{40})`?\s*$/iu;
+const GIT_SHA_PATTERN = /^[0-9a-f]{40}$/iu;
 const WROTE_PATTERN = /^WROTE:\s+\S+/mu;
 
 function hasText(value) {
@@ -147,6 +151,24 @@ function readJsonFile(filePath) {
 	return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
+function normalizeHeadSha(value) {
+	if (!hasText(value)) return null;
+	const normalized = String(value).trim().toLowerCase();
+	return GIT_SHA_PATTERN.test(normalized) ? normalized : null;
+}
+
+function hasOwn(object, key) {
+	return Object.hasOwn(object, key);
+}
+
+function requiredHeadSha(value, location) {
+	const normalized = normalizeHeadSha(value);
+	if (!normalized) {
+		throw new Error(`${location} must be a 40-character git SHA`);
+	}
+	return normalized;
+}
+
 function manifestEntries(manifest) {
 	const entries =
 		manifest.requiredReviewers ||
@@ -156,13 +178,19 @@ function manifestEntries(manifest) {
 	if (!Array.isArray(entries)) {
 		throw new Error("reviewer manifest must contain an array of reviewers");
 	}
-	return entries.map((entry, index) => normalizeManifestEntry(entry, index));
+	const expectedHeadSha = hasOwn(manifest, "expectedHeadSha")
+		? requiredHeadSha(manifest.expectedHeadSha, "manifest expectedHeadSha")
+		: null;
+	return entries.map((entry, index) =>
+		normalizeManifestEntry(entry, index, expectedHeadSha),
+	);
 }
 
-function normalizeManifestEntry(entry, index) {
+function normalizeManifestEntry(entry, index, manifestExpectedHeadSha) {
 	if (typeof entry === "string") {
 		return {
 			artifact: null,
+			expectedHeadSha: manifestExpectedHeadSha,
 			mailboxOnly: true,
 			role: entry,
 		};
@@ -174,8 +202,15 @@ function normalizeManifestEntry(entry, index) {
 	if (!hasText(role)) {
 		throw new Error(`reviewer entry ${index + 1} is missing role`);
 	}
+	const entryExpectedHeadSha = hasOwn(entry, "expectedHeadSha")
+		? requiredHeadSha(
+				entry.expectedHeadSha,
+				`reviewer entry ${index + 1} expectedHeadSha`,
+			)
+		: null;
 	return {
 		artifact: entry.artifact || entry.path || entry.report || null,
+		expectedHeadSha: entryExpectedHeadSha || manifestExpectedHeadSha,
 		mailboxOnly: entry.mailboxOnly === true || entry.proof === "mailbox",
 		role: String(role),
 	};
@@ -202,11 +237,38 @@ function statusLine(pattern, content) {
 	return match ? match[0] : null;
 }
 
+function artifactHeadSha(content) {
+	const firstTextLine = content.split(/\r?\n/u).find((line) => hasText(line));
+	const canonicalMatch = firstTextLine?.match(HEAD_SHA_LINE_PATTERN);
+	if (!canonicalMatch) {
+		return { reason: "artifact_missing_head_sha" };
+	}
+	const candidates = [
+		...new Set(
+			Array.from(content.matchAll(HEAD_SHA_FIELD_PATTERN), (match) =>
+				match[1].toLowerCase(),
+			),
+		),
+	].sort();
+	if (candidates.length > 1) {
+		return {
+			actualHeadSha: canonicalMatch[1].toLowerCase(),
+			candidateHeadShas: candidates,
+			reason: "artifact_ambiguous_head_sha",
+		};
+	}
+	return {
+		actualHeadSha: canonicalMatch[1].toLowerCase(),
+		reason: null,
+	};
+}
+
 function classifyEntry(root, reviewsDir, entry) {
 	const artifactPath = resolveArtifactPath(root, reviewsDir, entry.artifact);
 	const artifact = artifactPath ? toRepoRelative(root, artifactPath) : "";
 	const requested = {
 		artifact,
+		expectedHeadSha: entry.expectedHeadSha,
 		role: entry.role,
 	};
 
@@ -291,6 +353,37 @@ function classifyEntry(root, reviewsDir, entry) {
 				role: entry.role,
 			},
 		};
+	}
+
+	if (entry.expectedHeadSha) {
+		const headEvidence = artifactHeadSha(content);
+		if (headEvidence.reason) {
+			return {
+				kind: "missing",
+				requested,
+				result: {
+					actualHeadSha: headEvidence.actualHeadSha,
+					artifact,
+					candidateHeadShas: headEvidence.candidateHeadShas,
+					expectedHeadSha: entry.expectedHeadSha,
+					reason: headEvidence.reason,
+					role: entry.role,
+				},
+			};
+		}
+		if (headEvidence.actualHeadSha !== entry.expectedHeadSha) {
+			return {
+				kind: "missing",
+				requested,
+				result: {
+					actualHeadSha: headEvidence.actualHeadSha,
+					artifact,
+					expectedHeadSha: entry.expectedHeadSha,
+					reason: "artifact_head_sha_mismatch",
+					role: entry.role,
+				},
+			};
+		}
 	}
 
 	const blockedLine = statusLine(BLOCKED_STATUS_PATTERN, content);

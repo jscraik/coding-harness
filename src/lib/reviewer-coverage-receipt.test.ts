@@ -16,6 +16,8 @@ const SCRIPT_PATH = fileURLToPath(
 );
 
 const roots: string[] = [];
+const HEAD_SHA = "33e99c695c6cb6f67301948e1b9013deb5ed2037";
+const STALE_HEAD_SHA = "ab27286b6658440c49d7de8ee1aac7f3371c36d9";
 
 function makeRoot() {
 	const root = mkdtempSync(join(tmpdir(), "reviewer-coverage-"));
@@ -99,6 +101,158 @@ describe("validate-reviewer-coverage script", () => {
 		});
 		expect(report.completedRoles).toEqual(["architecture", "testing"]);
 		expect(report.missingArtifacts).toEqual([]);
+	});
+
+	it("passes when required reviewer artifacts match the expected head SHA", () => {
+		const root = makeRoot();
+		write(
+			root,
+			"artifacts/reviews/architecture.md",
+			`head_sha: ${HEAD_SHA}\n\nWROTE: artifacts/reviews/architecture.md\n`,
+		);
+		writeManifest(root, {
+			expectedHeadSha: HEAD_SHA,
+			requiredReviewers: [
+				{ artifact: "architecture.md", role: "architecture" },
+			],
+			synthesisStatus: "complete",
+		});
+
+		const result = runValidator(root);
+		const report = parseSingleJsonReport(result);
+
+		expect(result.status).toBe(0);
+		expect(report).toMatchObject({
+			blockerClass: null,
+			status: "pass",
+		});
+		expect(report.completedRoles).toEqual(["architecture"]);
+	});
+
+	it("fails closed when a required reviewer artifact reports a stale head SHA", () => {
+		const root = makeRoot();
+		write(
+			root,
+			"artifacts/reviews/architecture.md",
+			`head_sha: ${STALE_HEAD_SHA}\n\nWROTE: artifacts/reviews/architecture.md\n`,
+		);
+		writeManifest(root, {
+			expectedHeadSha: HEAD_SHA,
+			requiredReviewers: [
+				{ artifact: "architecture.md", role: "architecture" },
+			],
+			synthesisStatus: "complete",
+		});
+
+		const result = runValidator(root);
+		const report = parseSingleJsonReport(result);
+
+		expect(result.status).toBe(1);
+		expect(report).toMatchObject({
+			blockerClass: "missing_artifacts",
+			status: "blocked",
+		});
+		expect(report.missingArtifacts).toEqual([
+			expect.objectContaining({
+				actualHeadSha: STALE_HEAD_SHA,
+				expectedHeadSha: HEAD_SHA,
+				reason: "artifact_head_sha_mismatch",
+				role: "architecture",
+			}),
+		]);
+	});
+
+	it("fails closed when an artifact contains conflicting head SHA fields", () => {
+		const root = makeRoot();
+		write(
+			root,
+			"artifacts/reviews/architecture.md",
+			[
+				`head_sha: ${HEAD_SHA}`,
+				"status: findings",
+				`- headRefOid: ${STALE_HEAD_SHA}`,
+				"WROTE: artifacts/reviews/architecture.md",
+			].join("\n"),
+		);
+		writeManifest(root, {
+			expectedHeadSha: HEAD_SHA,
+			requiredReviewers: [
+				{ artifact: "architecture.md", role: "architecture" },
+			],
+			synthesisStatus: "complete",
+		});
+
+		const result = runValidator(root);
+		const report = parseSingleJsonReport(result);
+
+		expect(result.status).toBe(1);
+		expect(report.missingArtifacts).toEqual([
+			expect.objectContaining({
+				actualHeadSha: HEAD_SHA,
+				candidateHeadShas: [HEAD_SHA, STALE_HEAD_SHA],
+				expectedHeadSha: HEAD_SHA,
+				reason: "artifact_ambiguous_head_sha",
+				role: "architecture",
+			}),
+		]);
+	});
+
+	it("fails closed when expected head SHA is required but absent from the artifact", () => {
+		const root = makeRoot();
+		write(
+			root,
+			"artifacts/reviews/architecture.md",
+			"Findings clear.\n\nWROTE: artifacts/reviews/architecture.md\n",
+		);
+		writeManifest(root, {
+			expectedHeadSha: HEAD_SHA,
+			requiredReviewers: [
+				{ artifact: "architecture.md", role: "architecture" },
+			],
+			synthesisStatus: "complete",
+		});
+
+		const result = runValidator(root);
+		const report = parseSingleJsonReport(result);
+
+		expect(result.status).toBe(1);
+		expect(report).toMatchObject({
+			blockerClass: "missing_artifacts",
+			status: "blocked",
+		});
+		expect(report.missingArtifacts).toEqual([
+			expect.objectContaining({
+				expectedHeadSha: HEAD_SHA,
+				reason: "artifact_missing_head_sha",
+				role: "architecture",
+			}),
+		]);
+	});
+
+	it("rejects malformed expected head SHA values instead of disabling the freshness guard", () => {
+		const root = makeRoot();
+		write(
+			root,
+			"artifacts/reviews/architecture.md",
+			`head_sha: ${HEAD_SHA}\n\nWROTE: artifacts/reviews/architecture.md\n`,
+		);
+		writeManifest(root, {
+			expectedHeadSha: "not-a-git-sha",
+			requiredReviewers: [
+				{ artifact: "architecture.md", role: "architecture" },
+			],
+			synthesisStatus: "complete",
+		});
+
+		const result = runValidator(root);
+		const report = parseSingleJsonReport(result);
+
+		expect(result.status).toBe(1);
+		expect(report).toMatchObject({
+			blockerClass: "invalid_manifest",
+			reason: "manifest expectedHeadSha must be a 40-character git SHA",
+			status: "blocked",
+		});
 	});
 
 	it("fails closed when a required reviewer artifact is missing", () => {
@@ -248,6 +402,70 @@ describe("validate-reviewer-coverage script", () => {
 			expect.objectContaining({
 				role: "testing",
 				statusLine: "STATUS: blocked_runtime",
+			}),
+		]);
+	});
+
+	it("fails closed when an artifact carries lowercase blocked metadata", () => {
+		const root = makeRoot();
+		write(
+			root,
+			"artifacts/reviews/testing.md",
+			[
+				"status: blocked",
+				"Validation could not run.",
+				"WROTE: artifacts/reviews/testing.md",
+			].join("\n"),
+		);
+		writeManifest(root, {
+			requiredReviewers: [{ artifact: "testing.md", role: "testing" }],
+			synthesisStatus: "complete",
+		});
+
+		const result = runValidator(root);
+		const report = parseSingleJsonReport(result);
+
+		expect(result.status).toBe(1);
+		expect(report).toMatchObject({
+			blockerClass: "blocked_reviewers",
+			status: "blocked",
+		});
+		expect(report.blockedRoles).toEqual([
+			expect.objectContaining({
+				role: "testing",
+				statusLine: "status: blocked",
+			}),
+		]);
+	});
+
+	it("fails closed when an artifact carries lowercase blocked reason metadata", () => {
+		const root = makeRoot();
+		write(
+			root,
+			"artifacts/reviews/testing.md",
+			[
+				"- status: blocked_validation",
+				"Validation could not run.",
+				"WROTE: artifacts/reviews/testing.md",
+			].join("\n"),
+		);
+		writeManifest(root, {
+			requiredReviewers: [{ artifact: "testing.md", role: "testing" }],
+			synthesisStatus: "complete",
+		});
+
+		const result = runValidator(root);
+		const report = parseSingleJsonReport(result);
+
+		expect(result.status).toBe(1);
+		expect(report).toMatchObject({
+			blockerClass: "blocked_reviewers",
+			status: "blocked",
+		});
+		expect(report.blockedRoles).toEqual([
+			expect.objectContaining({
+				role: "testing",
+				statusLine: "- status: blocked_validation",
 			}),
 		]);
 	});

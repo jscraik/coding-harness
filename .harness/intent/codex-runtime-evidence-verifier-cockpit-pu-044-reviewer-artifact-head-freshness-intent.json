@@ -1,0 +1,58 @@
+{
+	"schemaVersion": "implementation-intent/v1",
+	"id": "jsc-363-pu-044-reviewer-artifact-head-freshness",
+	"createdAt": "2026-06-01T04:18:40Z",
+	"status": "implementation_recovery_intent_recorded",
+	"goal": "Prevent stale reviewer artifacts from satisfying JSC-363 review coverage when live PR head state has moved.",
+	"feedbackSignal": {
+		"summary": "A PR #327 review-thread audit subagent wrote artifacts that claimed head ab27286b6658440c49d7de8ee1aac7f3371c36d9 and unresolved review concerns while live GitHub evidence showed head 33e99c695c6cb6f67301948e1b9013deb5ed2037, green checks, and all review threads resolved.",
+		"source": "live PR truth refresh plus subagent artifact comparison",
+		"headShaAtIntent": "33e99c695c6cb6f67301948e1b9013deb5ed2037"
+	},
+	"rootOperationalFailure": "Reviewer coverage validated artifact presence and WROTE markers but did not require reviewer artifacts to bind their claims to the current PR head SHA.",
+	"failureCategories": [
+		"stale state",
+		"weak validation",
+		"missing guardrails",
+		"weak observability"
+	],
+	"durableImprovement": {
+		"type": "validator",
+		"target": "scripts/validate-reviewer-coverage.cjs",
+		"behavior": "When a reviewer manifest declares expectedHeadSha, required reviewer artifacts must contain the same head SHA before the artifact can count as completed. Missing or mismatched artifact head evidence fails closed."
+	},
+	"scope": {
+		"allowedFiles": [
+			"scripts/validate-reviewer-coverage.cjs",
+			"src/lib/reviewer-coverage-receipt.test.ts",
+			".harness/intent/codex-runtime-evidence-verifier-cockpit-pu-044-reviewer-artifact-head-freshness-intent.json",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml"
+		],
+		"nonGoals": [
+			"Do not mutate CircleCI state or use CircleCI credentials unless a CircleCI check fails or logs are opaque.",
+			"Do not claim PR #324 supersession, PR #327 merge readiness, Linear closure, Judge/PM readiness, or goal completion from this validator slice alone.",
+			"Do not change public review workflow semantics for manifests that do not opt into expectedHeadSha."
+		]
+	},
+	"validationPlan": [
+		"node --check scripts/validate-reviewer-coverage.cjs",
+		"pnpm exec vitest run src/lib/reviewer-coverage-receipt.test.ts",
+		"pnpm exec biome check scripts/validate-reviewer-coverage.cjs src/lib/reviewer-coverage-receipt.test.ts",
+		"git diff --check -- scripts/validate-reviewer-coverage.cjs src/lib/reviewer-coverage-receipt.test.ts .harness/intent/codex-runtime-evidence-verifier-cockpit-pu-044-reviewer-artifact-head-freshness-intent.json"
+	],
+	"reviewerPlan": [
+		"adversarial-reviewer",
+		"agent-native-reviewer",
+		"best-practices-researcher"
+	],
+	"rollbackPlan": "Revert this slice commit to restore prior reviewer-coverage semantics. Existing manifests remain compatible because expectedHeadSha is opt-in.",
+	"acceptanceCriteria": [
+		"Reviewer manifests with expectedHeadSha pass only when each required artifact reports the same 40-character git SHA.",
+		"Reviewer manifests with expectedHeadSha fail closed when an artifact reports a stale head SHA.",
+		"Reviewer manifests with expectedHeadSha fail closed when an artifact omits head SHA evidence.",
+		"Malformed expectedHeadSha values fail as invalid_manifest instead of silently disabling the guard.",
+		"Existing manifests without expectedHeadSha continue to use the existing WROTE or blocked-status contract."
+	],
+	"circleciCredentialPolicy": "Use ~/.codex/.env only for CircleCI API or job-log triage. This slice has not required CircleCI credentials because live public PR checks were already green."
+}
