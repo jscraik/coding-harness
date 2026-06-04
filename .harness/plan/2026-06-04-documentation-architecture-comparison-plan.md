@@ -767,8 +767,8 @@ Do not run PU-007 before reader-task eval design exists.
 
 Plan validation:
 
-- `./scripts/check-bluf-structure.sh PLAN_PATH --json` (or via repository validation wrapper): required when available. (Legacy plugin path: `python3 Plugins/harness-engineering/scripts/check_bluf_structure.py` - optional/unstable)
-- `./scripts/check-artifact-shape.sh PLAN_PATH --kind plan --json` (or via repository validation wrapper): required when available. (Legacy plugin path: `python3 Plugins/harness-engineering/scripts/check_generated_artifact_shape.py` - optional/unstable)
+- `./scripts/check-bluf-structure.sh PLAN_PATH --json` (or via repository validation wrapper): **required — must always run**. A missing or non-functional repository validation wrapper (including the legacy plugin path `python3 Plugins/harness-engineering/scripts/check_bluf_structure.py`) is a **blocking failure**, not a pass. Absent wrappers cause pipeline/blocking validation failure and must be resolved before proceeding.
+- `./scripts/check-artifact-shape.sh PLAN_PATH --kind plan --json` (or via repository validation wrapper): **required — must always run**. A missing or non-functional repository validation wrapper (including the legacy plugin path `python3 Plugins/harness-engineering/scripts/check_generated_artifact_shape.py`) is a **blocking failure**, not a pass. Absent wrappers cause pipeline/blocking validation failure and must be resolved before proceeding.
 - pnpm docs:lint: required.
 - git diff --check: required.
 
