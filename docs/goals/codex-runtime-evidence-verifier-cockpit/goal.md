@@ -42,13 +42,13 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-04 CNF-006 CircleCI-green and freshness-guard refresh.
+Last updated during the 2026-06-04 CNF-006 post-push pending-check refresh.
 
 Current route truth:
 
 - `main` and `origin/main` are synchronized at `50a6d0b5d764e35395e12190a465e854c26784fd`.
-- Live GitHub reports draft PR #336 open for PU-052/CNF-006 at head `787ceb1c1c67fb244600728bdb5bca99eb1f998f`, base `codex/jsc-363-cnf-005-prompt-context-authority`, mergeable `MERGEABLE`, and merge state `UNSTABLE`.
-- PR #336 now has all visible CircleCI lanes and aggregate `pr-pipeline` passing at the latest refresh, including the repaired `ci/circleci: pr-template` lane on CircleCI job 24852. The external GitHub App check `security/snyk (jscraik)` still fails from private-test quota exhaustion and must stay separate from CircleCI's repo-run `ci/circleci: snyk-dependency-scan`, which passed.
+- Live GitHub reports draft PR #336 open for PU-052/CNF-006 at head `0432410426f6127336763112f0fcca4a626d2689`, base `codex/jsc-363-cnf-005-prompt-context-authority`, mergeable `MERGEABLE`, and merge state `UNSTABLE`.
+- After the R258 freshness-guard repair was pushed, PR #336 remote checks reran on head `04324104`: CircleCI, Socket, security-scan, pr-pipeline, and external `security/snyk (jscraik)` lanes were pending at the latest refresh, while CodeRabbit reported review skipped. The prior all-visible-CircleCI-green state remains historical evidence for head `787ceb1c`, not current-head remote proof.
 - The goal freshness guard now permits declared tracked Markdown review artifacts under `artifacts/reviews/` in self-referential route-truth commits, with focused regression coverage. It still rejects arbitrary source/runtime file drift after a recorded receipt.
 - PR #321, PR #322, PR #323, PR #325, PR #326, PR #327, PR #328, PR #329, and PR #330 are merged route or foundation lanes for this goal.
 - PR #330 merged into `main` at 2026-06-03T20:43:56Z as `docs(goal): promote CircleCI env recovery rule`.
@@ -59,10 +59,10 @@ Outstanding goal work after conflict reconciliation:
 
 - The owner reactivated goal implementation; proceed only through bounded slices with route truth updated after each slice.
 - Keep this goal board and the local board tracker synchronized before using either as route truth.
-- Run the goal-board and audit-freshness validators after this route-truth and validator-policy refresh.
+- Run the goal-board and audit-freshness validators after this post-push pending-check route refresh.
 - Treat merged PRs as completed route/foundation evidence, not as final goal completion.
 - Treat Linear `JSC-363` as tracker-aligned by current `Done` status plus the full-lifecycle scope-note attachment, with a residual field-text mismatch because the title and description still say Phase 1. Do not call Linear fields current unless those fields are updated.
-- Continue implementation only from the remaining evidence-backed lifecycle gaps: PR/remote triage for the PR #336 external Snyk quota lane and draft/review-artifact blockers, runtime producer evidence, delivery-truth consumption, final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, and final requirement-by-requirement completion audit.
+- Continue implementation only from the remaining evidence-backed lifecycle gaps: PR/remote triage for PR #336 current-head checks, draft/review-artifact blockers, runtime producer evidence, delivery-truth consumption, final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, and final requirement-by-requirement completion audit.
 - Treat the current-main Codex-native refinement addendum as next-slice intent scope. It is not completed implementation evidence until the named source modules, contracts, fixtures, validators, and receipts prove the new fields or record owner-visible blockers.
 - Do not create a new duplicate goal board. Update this board, `state.yaml`, and `receipts.jsonl` as the canonical durable goal surface.
 
