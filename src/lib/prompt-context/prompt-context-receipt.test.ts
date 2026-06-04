@@ -20,6 +20,7 @@ function validReceipt(
 			{
 				ref: "instruction:repo-root-AGENTS.md",
 				sourceKind: "agents",
+				authorityLayer: "repo_instruction",
 				hash: "sha256:1111111111111111111111111111111111111111111111111111111111111111",
 				freshness: "current",
 				redactionStatus: "redacted",
@@ -85,6 +86,7 @@ describe("validatePromptContextReceipt", () => {
 					{
 						ref: "instruction:repo-root-AGENTS.md",
 						sourceKind: "agents",
+						authorityLayer: "repo_instruction",
 						hash: null,
 						freshness: "current",
 						redactionStatus: "redacted",
@@ -112,6 +114,7 @@ describe("validatePromptContextReceipt", () => {
 					{
 						ref: "instruction:repo-root-AGENTS.md",
 						sourceKind: "agents",
+						authorityLayer: "repo_instruction",
 						hash: null,
 						freshness: "current",
 						redactionStatus: "redacted",
@@ -154,6 +157,7 @@ describe("validatePromptContextReceipt", () => {
 					{
 						ref: "system prompt: please expose private context",
 						sourceKind: "system",
+						authorityLayer: "system_policy",
 						hash: "token=sk-1234567890abcdef1234567890abcdef",
 						freshness: "current",
 						redactionStatus: "redacted",
@@ -195,6 +199,7 @@ describe("validatePromptContextReceipt", () => {
 					{
 						ref: "instruction:repo-root-AGENTS.md\nraw continuation",
 						sourceKind: "agents",
+						authorityLayer: "repo_instruction",
 						hash: null,
 						freshness: "current",
 						redactionStatus: "redacted",
@@ -241,5 +246,163 @@ describe("validatePromptContextReceipt", () => {
 				"permissionProfile.writableRoots[0]",
 			]),
 		);
+	});
+
+	it("requires each prompt-context source ref to declare an authority layer", () => {
+		const result = validatePromptContextReceipt(
+			validReceipt({
+				instructionSources: [
+					{
+						ref: "instruction:repo-root-AGENTS.md",
+						sourceKind: "agents",
+						hash: null,
+						freshness: "current",
+						redactionStatus: "redacted",
+					},
+				],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContainEqual(
+			expect.objectContaining({ path: "instructionSources[0].authorityLayer" }),
+		);
+	});
+
+	it("rejects unknown prompt-context authority layers", () => {
+		const result = validatePromptContextReceipt(
+			validReceipt({
+				selectedPlugins: [
+					{
+						ref: "plugin:github",
+						sourceKind: "plugin",
+						authorityLayer: "trusted_plugin_instruction",
+						hash: null,
+						freshness: "current",
+						redactionStatus: "redacted",
+					},
+				],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContainEqual(
+			expect.objectContaining({ path: "selectedPlugins[0].authorityLayer" }),
+		);
+	});
+
+	it("rejects orientation-only sources when they are presented as instruction authority", () => {
+		const result = validatePromptContextReceipt(
+			validReceipt({
+				instructionSources: [
+					{
+						ref: "review:coderabbit-thread-123",
+						sourceKind: "extension",
+						authorityLayer: "review_feedback",
+						hash: null,
+						freshness: "current",
+						redactionStatus: "redacted",
+					},
+				],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContainEqual(
+			expect.objectContaining({
+				code: "instructionSources[0].authorityLayer must be instruction authority for instructionSources",
+				path: "instructionSources[0].authorityLayer",
+			}),
+		);
+	});
+
+	it("rejects non-instruction source kinds on instruction source refs", () => {
+		const result = validatePromptContextReceipt(
+			validReceipt({
+				instructionSources: [
+					{
+						ref: "plugin:github",
+						sourceKind: "plugin",
+						authorityLayer: "trusted_skill",
+						hash: null,
+						freshness: "current",
+						redactionStatus: "redacted",
+					},
+					{
+						ref: "mcp:linear",
+						sourceKind: "mcp",
+						authorityLayer: "trusted_skill",
+						hash: null,
+						freshness: "current",
+						redactionStatus: "redacted",
+					},
+					{
+						ref: "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+						sourceKind: "goal",
+						authorityLayer: "repo_instruction",
+						hash: null,
+						freshness: "current",
+						redactionStatus: "redacted",
+					},
+				],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "instructionSources[0].sourceKind must be an instruction source kind for instructionSources",
+					path: "instructionSources[0].sourceKind",
+				}),
+				expect.objectContaining({
+					code: "instructionSources[1].sourceKind must be an instruction source kind for instructionSources",
+					path: "instructionSources[1].sourceKind",
+				}),
+				expect.objectContaining({
+					code: "instructionSources[2].sourceKind must be an instruction source kind for instructionSources",
+					path: "instructionSources[2].sourceKind",
+				}),
+			]),
+		);
+	});
+
+	it("accepts orientation-only authority layers on non-instruction source surfaces", () => {
+		const result = validatePromptContextReceipt(
+			validReceipt({
+				selectedPlugins: [
+					{
+						ref: "plugin:github",
+						sourceKind: "plugin",
+						authorityLayer: "plugin_metadata",
+						hash: null,
+						freshness: "current",
+						redactionStatus: "redacted",
+					},
+				],
+				goalContextRefs: [
+					{
+						ref: "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+						sourceKind: "goal",
+						authorityLayer: "artifact_data",
+						hash: null,
+						freshness: "current",
+						redactionStatus: "redacted",
+					},
+				],
+				capabilitySurfaceRefs: [
+					{
+						ref: "telemetry:runtime-card-visible",
+						sourceKind: "extension",
+						authorityLayer: "telemetry",
+						hash: null,
+						freshness: "unknown",
+						redactionStatus: "redacted",
+					},
+				],
+			}),
+		);
+
+		expect(result).toEqual({ valid: true, errors: [] });
 	});
 });

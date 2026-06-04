@@ -171,6 +171,17 @@ not in docs, templates, generated context, or command facades.
   repo-relative path safety, SHA-256 integrity, hook identity, TTL/head
   freshness semantics, and absence of raw prompts, transcripts, command output,
   screenshots, images, or secret-like values.
+- src/lib/prompt-context/: prompt-context receipt contracts for the prompt,
+  instruction, permission, capability, and goal context that shaped an agent
+  turn. It owns `prompt-context-receipt/v1` types, schema parity, pointer-only
+  validation, raw prompt/transcript/secret rejection, and source-ref authority
+  classification. Instruction sources may use only system, developer, repo,
+  trusted-skill, or user-steering authority layers; plugin metadata, artifact
+  data, review feedback, telemetry, and untrusted external inputs may orient or
+  audit the turn but must not be accepted as behavior-steering instruction
+  authority. The packet remains `not_yet_emitted` and cannot authorize
+  commands, support delivery-truth, review-state, external-state, Linear,
+  merge-readiness, Judge/PM, or goal-completion claims.
 - src/lib/prompt-context-drift/: prompt-context integrity reports for agent
   cockpit orientation. It owns `prompt-context-drift-report/v1` types,
   semantic validation, repo-contained SHA-256 source refs, symlink/realpath

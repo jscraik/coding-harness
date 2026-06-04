@@ -36,6 +36,42 @@ export const PROMPT_CONTEXT_SOURCE_KINDS = [
 	"unknown",
 ] as const;
 
+export const PROMPT_CONTEXT_AUTHORITY_LAYERS = [
+	"system_policy",
+	"developer_policy",
+	"repo_instruction",
+	"trusted_skill",
+	"plugin_metadata",
+	"artifact_data",
+	"review_feedback",
+	"telemetry",
+	"user_steering",
+	"untrusted_external",
+] as const;
+
+export const PROMPT_CONTEXT_INSTRUCTION_AUTHORITY_LAYERS = [
+	"system_policy",
+	"developer_policy",
+	"repo_instruction",
+	"trusted_skill",
+	"user_steering",
+] as const;
+
+export const PROMPT_CONTEXT_INSTRUCTION_SOURCE_KINDS = [
+	"system",
+	"developer",
+	"user",
+	"agents",
+	"skill",
+] as const;
+
+const PROMPT_CONTEXT_INSTRUCTION_AUTHORITY_LAYER_SET = new Set<string>(
+	PROMPT_CONTEXT_INSTRUCTION_AUTHORITY_LAYERS,
+);
+const PROMPT_CONTEXT_INSTRUCTION_SOURCE_KIND_SET = new Set<string>(
+	PROMPT_CONTEXT_INSTRUCTION_SOURCE_KINDS,
+);
+
 export const PROMPT_CONTEXT_STALE_CLASSIFICATIONS = [
 	"current",
 	"stale",
@@ -80,6 +116,7 @@ const PROMPT_CONTEXT_RECEIPT_KEYS = new Set([
 const SOURCE_REF_KEYS = new Set([
 	"ref",
 	"sourceKind",
+	"authorityLayer",
 	"hash",
 	"freshness",
 	"redactionStatus",
@@ -111,6 +148,9 @@ export type PromptContextRedactionStatus =
 /** Source category for an instruction, capability, tool, or goal context ref. */
 export type PromptContextSourceKind =
 	(typeof PROMPT_CONTEXT_SOURCE_KINDS)[number];
+/** Authority layer for deciding whether a source can steer agent behavior. */
+export type PromptContextAuthorityLayer =
+	(typeof PROMPT_CONTEXT_AUTHORITY_LAYERS)[number];
 /** Staleness classification for context surfaces visible to the turn. */
 export type PromptContextStaleClassification =
 	(typeof PROMPT_CONTEXT_STALE_CLASSIFICATIONS)[number];
@@ -119,6 +159,7 @@ export type PromptContextStaleClassification =
 export interface PromptContextSourceRef {
 	ref: string;
 	sourceKind: PromptContextSourceKind;
+	authorityLayer: PromptContextAuthorityLayer;
 	hash: string | null;
 	freshness: PromptContextFreshness;
 	redactionStatus: PromptContextRedactionStatus;
@@ -214,7 +255,14 @@ export function validatePromptContextReceipt(
 		"redactionStatus",
 		errors,
 	);
-	requireSourceRefArray(value.instructionSources, "instructionSources", errors);
+	requireSourceRefArray(
+		value.instructionSources,
+		"instructionSources",
+		errors,
+		{
+			instructionAuthorityOnly: true,
+		},
+	);
 	requireSourceRefArray(value.selectedSkills, "selectedSkills", errors);
 	requireSourceRefArray(value.selectedPlugins, "selectedPlugins", errors);
 	requireSourceRefArray(value.selectedMcpServers, "selectedMcpServers", errors);
@@ -274,13 +322,14 @@ function requireSourceRefArray(
 	value: unknown,
 	path: string,
 	errors: PromptContextReceiptValidationError[],
+	options: { instructionAuthorityOnly?: boolean } = {},
 ): void {
 	if (!Array.isArray(value)) {
 		addPromptContextError(errors, `${path} must be an array`, path);
 		return;
 	}
 	value.forEach((entry, index) => {
-		validateSourceRef(entry, `${path}[${index}]`, errors);
+		validateSourceRef(entry, `${path}[${index}]`, errors, options);
 	});
 }
 
@@ -288,6 +337,7 @@ function validateSourceRef(
 	value: unknown,
 	path: string,
 	errors: PromptContextReceiptValidationError[],
+	options: { instructionAuthorityOnly?: boolean } = {},
 ): void {
 	if (!isRecord(value)) {
 		addPromptContextError(errors, `${path} must be an object`, path);
@@ -301,6 +351,34 @@ function validateSourceRef(
 		`${path}.sourceKind`,
 		errors,
 	);
+	requireEnum(
+		value.authorityLayer,
+		PROMPT_CONTEXT_AUTHORITY_LAYERS,
+		`${path}.authorityLayer`,
+		errors,
+	);
+	if (
+		options.instructionAuthorityOnly &&
+		typeof value.authorityLayer === "string" &&
+		!PROMPT_CONTEXT_INSTRUCTION_AUTHORITY_LAYER_SET.has(value.authorityLayer)
+	) {
+		addPromptContextError(
+			errors,
+			`${path}.authorityLayer must be instruction authority for instructionSources`,
+			`${path}.authorityLayer`,
+		);
+	}
+	if (
+		options.instructionAuthorityOnly &&
+		typeof value.sourceKind === "string" &&
+		!PROMPT_CONTEXT_INSTRUCTION_SOURCE_KIND_SET.has(value.sourceKind)
+	) {
+		addPromptContextError(
+			errors,
+			`${path}.sourceKind must be an instruction source kind for instructionSources`,
+			`${path}.sourceKind`,
+		);
+	}
 	requireNullableSafeContextPointer(value.hash, `${path}.hash`, errors, {
 		maxLength: MAX_CONTEXT_HASH_LENGTH,
 	});
