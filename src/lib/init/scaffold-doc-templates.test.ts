@@ -7,7 +7,10 @@ import {
 	renderPrekConfigTemplate,
 	renderPullRequestTemplate,
 } from "./scaffold-doc-templates.js";
-import { REQUIRED_WORK_FIELDS } from "../pr-template-validator-rules.js";
+import {
+	REQUIRED_BEHAVIOR_PROOF_FIELDS,
+	REQUIRED_WORK_FIELDS,
+} from "../pr-template-validator-rules.js";
 
 const requiredWorkPerformedLabels = [
 	"Plan IDs",
@@ -101,19 +104,60 @@ const completedWorkPerformedValues = new Map<string, string>([
 	["Deferred work", "none."],
 ]);
 
+const completedBehaviorProofValues = new Map<string, string>([
+	[
+		"Behavior or issue addressed",
+		"Generated PR templates include the behavior-proof contract.",
+	],
+	[
+		"Real environment tested",
+		"local source-repo scaffold renderer through Vitest.",
+	],
+	[
+		"Exact steps or command run after this patch",
+		"pnpm vitest run src/lib/init/scaffold-doc-templates.test.ts.",
+	],
+	["Evidence after fix", "Generated template fixture passed validation."],
+	[
+		"Observed result after fix",
+		"Rendered template satisfied validatePrTemplateBody.",
+	],
+	[
+		"What was not tested",
+		"live GitHub PR submission is n.a. because this fixture validates local rendering.",
+	],
+	["Proof limitations or environment constraints", "none for local rendering."],
+	[
+		"Before evidence, if available",
+		"n.a. because this fixture asserts the rendered after state.",
+	],
+]);
+
 function fillRenderedPullRequestTemplate(template: string): string {
 	let body = template
 		.replace(
-			"- What changed (brief):",
-			"- What changed (brief): Validated generated PR template parity.",
+			"- Problem:",
+			"- Problem: Generated PR templates could drift from validator contracts.",
 		)
 		.replace(
-			"- Why this change was needed:",
-			"- Why this change was needed: Prevent scaffold drift from bypassing PR-template validation.",
+			"- Why now:",
+			"- Why now: Prevent scaffold drift from bypassing PR-template validation.",
 		)
 		.replace(
-			"- Risk and rollback plan:",
-			"- Risk and rollback plan: Revert the template change and invariant test.",
+			"- Intended outcome:",
+			"- Intended outcome: Generated templates stay validator-compatible.",
+		)
+		.replace(
+			"- Out of scope:",
+			"- Out of scope: Changing downstream branch protection.",
+		)
+		.replace(
+			"- Reviewer focus:",
+			"- Reviewer focus: Template clarity and validator compatibility.",
+		)
+		.replace(
+			"- Risk and rollback:",
+			"- Risk and rollback: Revert the template change and invariant test.",
 		)
 		.replaceAll("- [ ]", "- [x]")
 		.replaceAll("pass/fail", "pass")
@@ -131,6 +175,13 @@ function fillRenderedPullRequestTemplate(template: string): string {
 		);
 
 	for (const [label, value] of completedWorkPerformedValues) {
+		body = body.replace(
+			new RegExp(`^- ${label}: .*$`, "m"),
+			`- ${label}: ${value}`,
+		);
+	}
+
+	for (const [label, value] of completedBehaviorProofValues) {
 		body = body.replace(
 			new RegExp(`^- ${label}: .*$`, "m"),
 			`- ${label}: ${value}`,
@@ -218,12 +269,17 @@ describe("document scaffold templates", () => {
 		);
 		expect(template).toContain("CodeRabbit review completed");
 		expect(template).toContain("Codex review completed");
+		expect(template).toContain("## Behavior Proof");
+		expect(template).toContain("Behavior proof is separate from unit tests");
 		expect(template).toContain("verification_commands");
 		expect(template).toContain("blocked_steps_reason");
 		for (const label of requiredWorkPerformedLabels) {
 			expect(template).toContain(`- ${label}:`);
 		}
 		for (const field of REQUIRED_WORK_FIELDS) {
+			expect(template).toContain(`- ${field.label}: ${field.placeholder}`);
+		}
+		for (const field of REQUIRED_BEHAVIOR_PROOF_FIELDS) {
 			expect(template).toContain(`- ${field.label}: ${field.placeholder}`);
 		}
 	});

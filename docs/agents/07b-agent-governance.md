@@ -275,6 +275,12 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - PR-template contract changes should keep local validation, GitHub PR body
   structure, and reviewer handoff evidence synchronized so the work-performed
   ledger remains enforceable before closeout
+- PR-template Behavior Proof changes should keep the source PR template,
+  downstream scaffolded PR template, validator rules, README guidance, AGENTS
+  guidance, and affected deep-module README files synchronized. Behavior Proof
+  is the operator-evidence lane for observable runtime, CLI, generated-artifact,
+  validation, agent-workflow, and user-facing documentation changes; it is
+  separate from unit tests and CI status.
 - PR-template linked-issue evidence must separate traceability from closure:
   `Linear reference` records issue refs such as `Refs JSC-363`,
   `Fixes JSC-363`, or `Closes JSC-363`, while

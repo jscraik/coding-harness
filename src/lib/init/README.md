@@ -35,6 +35,12 @@ thin and delegate into this deep module.
   acceptance IDs need to be bound to the linked issue key (for example,
   `JSC-999 SA-999-001 -> evidence`), and preparatory/no-completion text must
   name the concrete issue key rather than a generic linked issue.
+- Generated PR templates must keep the `Behavior Proof` evidence lane
+  synchronized with the repository PR template and validator rules. Observable
+  runtime, CLI, generated-artifact, validation, agent-workflow, and user-facing
+  documentation changes need proof fields that describe the behavior addressed,
+  path tested, evidence observed, untested paths, proof limits, and before
+  evidence when available.
 
 ## Documentation Alignment
 

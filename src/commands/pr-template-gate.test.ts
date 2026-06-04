@@ -17,11 +17,23 @@ import {
 
 const VALID_BODY = `## Summary
 
-- Linear issue: JSC-999
-- Plan IDs: plan-2026-03-12
-- What changed (brief): Added local PR-template gate command.
-- Why this change was needed: Prevent incomplete PR templates before CI.
-- Risk and rollback plan: Revert the command and docs updates.
+- Problem: PR bodies could omit required validation evidence.
+- Why now: CI should catch incomplete PR templates before review.
+- Intended outcome: PR-template gate rejects incomplete evidence.
+- Out of scope: Changing GitHub branch protection.
+- Reviewer focus: Command-gate behavior and fixture coverage.
+- Risk and rollback: Revert the command and docs updates.
+
+## Behavior Proof
+
+- Behavior or issue addressed: PR-template gate validates complete PR bodies.
+- Real environment tested: local command-gate fixture through Vitest.
+- Exact steps or command run after this patch: pnpm vitest run src/commands/pr-template-gate.test.ts.
+- Evidence after fix: Command output recorded in Testing.
+- Observed result after fix: Complete PR body fixture passed the gate.
+- What was not tested: live GitHub PR submission is n.a. because this fixture tests the local command path.
+- Proof limitations or environment constraints: none for the local command-gate path.
+- Before evidence, if available: n.a. because this fixture describes the valid after state.
 
 ## Work performed
 
