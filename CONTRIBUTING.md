@@ -1,3 +1,31 @@
+---
+doc_schema: coding-harness-doc/v1
+doc_type: contributing
+authority: canon
+canon_class: canonical
+distribution: source-only
+audience:
+  - human-operator
+  - coding-harness-maintainer
+  - codex-agent
+lifecycle_state: active
+owner: coding-harness-maintainers
+created: 2026-06-04
+last_reviewed: 2026-06-04
+review_cadence: quarterly
+maintenance_trigger:
+  - contributor-workflow-change
+  - pr-template-change
+  - validation-gate-change
+semver_impact: minor
+validated_by:
+  - pnpm docs:lifecycle
+depends_on:
+  - AGENTS.md
+  - docs/agents/04-validation.md
+  - docs/agents/08-release-and-change-control.md
+---
+
 # Contributing
 
 ## Table of Contents
@@ -223,6 +251,9 @@ Every PR must keep `## Work performed` filled in with concrete evidence:
 - `Session IDs`: Codex, session-collector, or Harness Engineering session IDs, or `n.a.` with reason.
 - `Trace IDs`: CI, harness, eval, review, or runtime trace IDs, or `n.a.` with reason.
 - `Completed work`: implementation units, docs/config changes, or evidence-only work completed in the PR.
+- `Documentation impact`: root docs, governed docs, and deep-module README changes, or `n.a.` with reason.
+- `Documentation lifecycle impact`: created, updated, deprecated, superseded, archived, removed, or `n.a.` with canon and distribution classification.
+- `SemVer impact`: none, patch, minor, major, or `n.a.` with downstream-template or packaged-skill impact when present.
 - `Acceptance trace`: completed acceptance items mapped to evidence refs, or `n.a.` with reason.
 - `Validation evidence`: command outcomes, CI jobs, artifact paths, or `n.a.` with reason.
 - `Review artifacts`: CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason.

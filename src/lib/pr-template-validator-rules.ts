@@ -114,6 +114,16 @@ export const REQUIRED_WORK_FIELDS = [
 			"classify required docs as updated or `n.a.` with reason, including README.md, SECURITY.md, CONTRIBUTING.md, AGENTS.md, ARCHITECTURE.md, governance docs, and existing deep-module READMEs; list docs-expert or reviewer evidence for high-impact documentation changes",
 	},
 	{
+		label: "Documentation lifecycle impact",
+		placeholder:
+			"classify created, updated, deprecated, superseded, archived, removed, or `n.a.` with reason; include canon class and distribution impact when docs changed",
+	},
+	{
+		label: "SemVer impact",
+		placeholder:
+			"classify none, patch, minor, major, or `n.a.` with reason; explain downstream-template or packaged-skill impact when present",
+	},
+	{
 		label: "Expected outcome alignment",
 		placeholder:
 			"state how this change preserves Coding Harness as a portable agent operating system for greenfield and brownfield repos, or mark `n.a.` with reason",
