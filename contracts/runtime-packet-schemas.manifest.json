@@ -117,6 +117,17 @@
 			"blockedBy": "PU-030 adds the steering queue packet contract before runtime-card or continuation wiring projects it into agent cockpit state."
 		},
 		{
+			"schemaVersion": "steering-application-receipt/v1",
+			"schemaPath": "contracts/steering-application-receipt.schema.json",
+			"examplePath": "contracts/examples/steering-application-receipt.example.json",
+			"typeSourcePath": null,
+			"runtimeStatus": "not_yet_emitted",
+			"parityValidator": "none",
+			"semanticValidatorPath": "scripts/validate-steering-application-receipt.cjs",
+			"ownerGap": "SPG-004",
+			"blockedBy": "PU-052 adds the steering application receipt contract before production runtime-card continuation wiring emits applied or blocked steering application receipts."
+		},
+		{
 			"schemaVersion": "tool-exposure-snapshot/v1",
 			"schemaPath": "contracts/tool-exposure-snapshot.schema.json",
 			"examplePath": "contracts/examples/tool-exposure-snapshot.example.json",

@@ -1,0 +1,176 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://jscraik.github.io/coding-harness/contracts/steering-application-receipt.schema.json",
+	"title": "SteeringApplicationReceipt",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"receiptId",
+		"generatedAt",
+		"producer",
+		"runtimeStatus",
+		"evidenceUse",
+		"headSha",
+		"queuePacketRef",
+		"queueItemId",
+		"queueItemState",
+		"expectedContext",
+		"currentContext",
+		"runtimeCardUpdateRef",
+		"application",
+		"stalePreconditions",
+		"blockers",
+		"nextAction",
+		"blockedBy"
+	],
+	"properties": {
+		"schemaVersion": { "const": "steering-application-receipt/v1" },
+		"receiptId": { "$ref": "#/$defs/safePointer" },
+		"generatedAt": { "$ref": "#/$defs/isoTimestamp" },
+		"producer": { "$ref": "#/$defs/safePointer" },
+		"runtimeStatus": { "const": "not_yet_emitted" },
+		"evidenceUse": {
+			"enum": ["orientation", "audit_trail", "governance"]
+		},
+		"headSha": { "$ref": "#/$defs/headSha" },
+		"queuePacketRef": { "$ref": "#/$defs/safePointer" },
+		"queueItemId": { "$ref": "#/$defs/safePointer" },
+		"queueItemState": { "$ref": "#/$defs/queueItemState" },
+		"expectedContext": { "$ref": "#/$defs/applicationContext" },
+		"currentContext": { "$ref": "#/$defs/applicationContext" },
+		"runtimeCardUpdateRef": {
+			"anyOf": [{ "type": "null" }, { "$ref": "#/$defs/runtimeCardUpdateRef" }]
+		},
+		"application": { "$ref": "#/$defs/application" },
+		"stalePreconditions": {
+			"type": "array",
+			"items": { "$ref": "#/$defs/stalePrecondition" }
+		},
+		"blockers": {
+			"type": "array",
+			"items": { "$ref": "#/$defs/blocker" }
+		},
+		"nextAction": { "$ref": "#/$defs/safePointer" },
+		"blockedBy": { "$ref": "#/$defs/safePointer" }
+	},
+	"$defs": {
+		"safePointer": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 512,
+			"pattern": "^[A-Za-z0-9#][A-Za-z0-9._:/#@+-]{0,511}$"
+		},
+		"nullableSafePointer": {
+			"anyOf": [{ "type": "null" }, { "$ref": "#/$defs/safePointer" }]
+		},
+		"isoTimestamp": {
+			"type": "string",
+			"pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$"
+		},
+		"headSha": {
+			"type": "string",
+			"pattern": "^[a-f0-9]{7,64}$"
+		},
+		"queueItemState": {
+			"enum": [
+				"pending",
+				"applicable",
+				"applied",
+				"rejected",
+				"expired",
+				"superseded",
+				"stale"
+			]
+		},
+		"applicationContext": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["threadId", "turnId", "clientUserMessageId", "headSha"],
+			"properties": {
+				"threadId": { "$ref": "#/$defs/nullableSafePointer" },
+				"turnId": { "$ref": "#/$defs/nullableSafePointer" },
+				"clientUserMessageId": { "$ref": "#/$defs/nullableSafePointer" },
+				"headSha": { "$ref": "#/$defs/headSha" }
+			}
+		},
+		"runtimeCardUpdateRef": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["ref", "headSha", "producedAt", "receiptId"],
+			"properties": {
+				"ref": { "$ref": "#/$defs/safePointer" },
+				"headSha": { "$ref": "#/$defs/headSha" },
+				"producedAt": { "$ref": "#/$defs/isoTimestamp" },
+				"receiptId": { "$ref": "#/$defs/nullableSafePointer" }
+			}
+		},
+		"application": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"decision",
+				"decidedAt",
+				"reason",
+				"appliedClientUserMessageId"
+			],
+			"properties": {
+				"decision": { "enum": ["applied", "rejected", "blocked"] },
+				"decidedAt": { "$ref": "#/$defs/isoTimestamp" },
+				"reason": { "$ref": "#/$defs/safePointer" },
+				"appliedClientUserMessageId": {
+					"$ref": "#/$defs/nullableSafePointer"
+				}
+			}
+		},
+		"stalePrecondition": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "expected", "actual", "evidenceRef"],
+			"properties": {
+				"kind": {
+					"enum": [
+						"stale_turn",
+						"stale_thread",
+						"stale_client_user_message",
+						"stale_head",
+						"instruction_hash_mismatch",
+						"instruction_hash_unverifiable",
+						"artifact_identity_mismatch",
+						"superseded_artifact",
+						"expired_queue",
+						"missing_artifact",
+						"rejected_steering",
+						"already_applied",
+						"terminal_conflict"
+					]
+				},
+				"expected": { "$ref": "#/$defs/safePointer" },
+				"actual": { "$ref": "#/$defs/safePointer" },
+				"evidenceRef": { "$ref": "#/$defs/safePointer" }
+			}
+		},
+		"blocker": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["class", "reason", "nextAction", "evidenceRef"],
+			"properties": {
+				"class": {
+					"enum": [
+						"stale_context",
+						"expired_steering",
+						"superseded_steering",
+						"missing_runtime_card_update",
+						"runtime_card_head_mismatch",
+						"stale_precondition",
+						"queue_item_not_applicable",
+						"producer_not_wired"
+					]
+				},
+				"reason": { "$ref": "#/$defs/safePointer" },
+				"nextAction": { "$ref": "#/$defs/safePointer" },
+				"evidenceRef": { "$ref": "#/$defs/safePointer" }
+			}
+		}
+	}
+}

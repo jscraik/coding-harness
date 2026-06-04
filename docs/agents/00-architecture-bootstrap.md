@@ -329,14 +329,19 @@ next recommendation, and snapshot status may classify PR lanes, but neither
 surface becomes merge authority without current canonical evidence.
 
 Steering-queue packet changes are continuation-recovery cockpit work, not a new
-agent execution rail. Keep `steering-queue/v1` inside
-`src/lib/steering-queue/` as an advisory packet for pending operator
-steering, with instruction-source hashing, artifact identity, supersession,
+agent execution rail. Keep `steering-queue/v1` and
+`steering-application-receipt/v1` inside `src/lib/steering-queue/` as advisory
+packets for pending operator steering and attempted steering application. The
+queue packet owns instruction-source hashing, artifact identity, supersession,
 stale-precondition classification, deterministic selected-item rules, and a
-script-backed semantic validator. The packet may support orientation and audit
-trails, but it must not authorize commands, satisfy delivery-truth claims, or
-prove merge readiness until a separate runtime-card integration explicitly defines
-that consumption boundary.
+script-backed semantic validator. The application receipt must stay
+pointer-only and bind the queue item, expected/current thread-turn-message
+context, stale-precondition result, runtime-card update reference, and current
+head SHA before it can explain whether steering was applied, rejected, or
+blocked. These packets may support orientation and audit trails, but they must
+not authorize commands, satisfy delivery-truth claims, prove Judge/PM
+readiness, mutate trackers, or prove merge readiness until a separate
+runtime-card integration explicitly defines that consumption boundary.
 
 Tool promotion threshold changes are agent operating-system architecture, not
 just prose hygiene. If an operator must apply the same judgment twice, or the
