@@ -98,6 +98,13 @@ MDX:
 ### Commit body requirements
 
 * Include `Why`, `What`, and `Impact/Risk` sections when helpful.
+* Include `Behavior Proof` when a commit changes runtime behavior, CLI
+  behavior, generated artifacts, validation behavior, agent workflow behavior,
+  user-facing docs, or any observable operator experience.
+* `Behavior Proof` SHOULD state the behavior or issue addressed, real
+  environment or production path tested, exact post-patch steps or command,
+  evidence after fix, observed result, untested paths, proof limitations, and
+  before evidence when available.
 * `Validation` section MUST include only commands actually run.
 * Validation lines MUST use this format:
   * `Command: <exact command> -> pass|fail|blocked (<reason>)`
@@ -150,6 +157,9 @@ MDX:
 ## 14. Toolchain & Lockfiles
 
 * Node and package-manager contract is defined in [11-package-managers-pnpm-npm.md](./11-package-managers-pnpm-npm.md).
+* `.mise.toml`, `docs/agents/tooling.md`, `scripts/check-environment.sh`, and `harness.contract.json` MUST stay aligned when a managed CLI is added, removed, or renamed.
+* Global npm CLIs used by agents SHOULD be pinned through mise as `npm:<package>` tools instead of installed manually with `npm install -g`.
+* If mise lockfile support is adopted for this repository, commit the lockfile and document the update workflow in the tooling policy before requiring it in CI.
 * Python dependency locks should remain deterministic and validated in CI.
 * Rust lockfiles should remain deterministic and validated in CI.
 * Frozen or locked install/build modes SHOULD be used for CI reproducibility.

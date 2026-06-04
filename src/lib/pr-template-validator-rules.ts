@@ -1,5 +1,6 @@
 export const REQUIRED_SECTIONS = [
 	"## Summary",
+	"## Behavior Proof",
 	"## Work performed",
 	"## Checklist",
 	"## Testing",
@@ -59,6 +60,43 @@ export const REQUIRED_TESTING_FIELDS = [
 	{
 		label: "blocked_steps_reason",
 		placeholder: "none if all planned steps ran",
+	},
+] as const;
+
+export const REQUIRED_BEHAVIOR_PROOF_FIELDS = [
+	{
+		label: "Behavior or issue addressed",
+		placeholder: "describe the observable behavior, issue, or n.a. reason",
+	},
+	{
+		label: "Real environment tested",
+		placeholder: "list the real environment, production path, or n.a. reason",
+	},
+	{
+		label: "Exact steps or command run after this patch",
+		placeholder: "list exact steps, command, or n.a. reason",
+	},
+	{
+		label: "Evidence after fix",
+		placeholder:
+			"link artifact, copied output, screenshot, redacted log, runtime-card ref, or n.a. reason",
+	},
+	{
+		label: "Observed result after fix",
+		placeholder: "state the observed result, or n.a. reason",
+	},
+	{
+		label: "What was not tested",
+		placeholder: "list untested paths, or `none` with reason",
+	},
+	{
+		label: "Proof limitations or environment constraints",
+		placeholder: "state limitations, blockers, or `none`",
+	},
+	{
+		label: "Before evidence, if available",
+		placeholder:
+			"link before evidence, summarize baseline, or `n.a.` with reason",
 	},
 ] as const;
 

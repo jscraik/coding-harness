@@ -6,6 +6,7 @@ import {
 	ACCEPTANCE_TRACE_ID_PATTERN,
 	LINKED_ISSUE_REFERENCE_PATTERN,
 	PREPARATORY_LINKED_ISSUE_TRACE_PATTERN,
+	REQUIRED_BEHAVIOR_PROOF_FIELDS,
 	REQUIRED_SECTIONS,
 	REQUIRED_TESTING_FIELDS,
 	REQUIRED_WORK_FIELDS,
@@ -159,6 +160,15 @@ function collectTestingFieldErrors(body: string): string[] {
 		errors.push(...collectCommandEvidenceErrors(testingBody));
 	}
 	return errors;
+}
+
+function collectBehaviorProofFieldErrors(body: string): string[] {
+	return collectFieldErrors(
+		body,
+		"## Behavior Proof",
+		REQUIRED_BEHAVIOR_PROOF_FIELDS,
+		"behavior proof",
+	);
 }
 
 /**
@@ -332,6 +342,7 @@ export function validatePrTemplateBody(body: string): string[] {
 		...collectWorkEvidenceIntegrityErrors(body, extractFieldBlockValue),
 	);
 	errors.push(...collectChecklistErrors(body));
+	errors.push(...collectBehaviorProofFieldErrors(body));
 	errors.push(...collectTestingFieldErrors(body));
 	errors.push(...collectPlaceholderErrors(body));
 
