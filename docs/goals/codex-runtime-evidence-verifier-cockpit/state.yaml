@@ -71,9 +71,9 @@ completion_contract:
   iteration_policy: "Scout first, then bounded Worker slices with reviewed intent, deterministic validation, reviewer artifacts, atomic commits, GitHub PRs, pr-green-sweep triage, and append-only receipts. Continue to the next safe slice while PR triage runs only when dependency and branch state permit. PR triage must run either remote-only or in an isolated worktree created for the PR head; it must not share the coordinator checkout after the coordinator is allowed to switch branches for the next slice."
   blocked_stop_condition: "Stop if the board is invalid, activation is absent for Worker work, required intent review is missing, validation cannot run, reviewer artifacts are missing after retry, PR or tracker truth is stale, dirty work overlaps required files, or continuing would contaminate a PR under triage."
 current_slice_gate:
-  lifecycle_unit: "PR-331-review-thread-repair"
-  status: "local_review_thread_repair_on_current_pr331_head"
-  reason: "Live GitHub refreshed on 2026-06-04T17:10Z shows PR #333 merged into PR #331 at 02907f95c1a5941e7ba0bc43e519fc66bc23eb84 and PR #338 merged into PR #336 at 01179cdefccf34c58fbac54d4f0da344fdaa6155. Open stack truth is now PR #331 MERGEABLE/BLOCKED, PR #335 CONFLICTING/DIRTY, and PR #336 MERGEABLE/UNSTABLE. This worktree was fast-forwarded to the current PR #331 head before applying review-thread repairs for docs lifecycle validation, malformed manifest handling, portable validation docs, environment source-role projection, and local-path redaction. Remote CI, Snyk quota, CodeRabbit/Codex review, unresolved review threads, merge readiness, delivery-truth consumption, Judge/PM readiness, and parent goal completion remain unclaimed until the repair is committed, pushed, and refreshed live."
+  lifecycle_unit: "PR-336-steering-application-receipt-repair"
+  status: "local_pr336_current_main_reconstruction_validated_push_pending"
+  reason: "PR #331 and PR #335 have merged into origin/main through e612bf3cbe405988b0f33acc66ae265b0fd83fc6. PR #336 was reconstructed from that current main, the CNF-006 steering application receipt slice was replayed without stale route-truth conflict debris, and the active Codex review-thread finding was reimplemented at the current pr-closeout blocker boundary instead of resurrecting deleted state-packet code. Local validation passes, but remote push, fresh CI, manual CodeRabbit review, review-thread resolution, Snyk status, merge readiness, delivery-truth consumption, Judge/PM readiness, and parent goal completion remain unclaimed."
   completed_before_local_validation_claim:
     - "Created and tracked the PR #324 supersession intent artifact before route-state edits."
     - "Fetched current remote refs and verified PR #327 and PR #328 are the current clean JSC-363 stack."
@@ -125,7 +125,7 @@ current_slice_gate:
     - "Recorded CNF-004 reviewer-runtime artifact-output blockers in artifacts/reviews/pu050-cnf-004-intent-reviewer-runtime-blocker.md and artifacts/reviews/pu050-cnf-004-implementation-reviewer-runtime-blocker.md; local skill-lens coverage is in artifacts/reviews/pu050-cnf-004-skill-lenses.md."
     - "Pushed CNF-004 branch head 11cf544aa7ecf3918d780e1118d82b1f49293880 and opened draft stacked PR #334 against codex/jsc-363-cnf-003-risk-tier-authority after the PR body passed pr-template-gate; foreground make hooks-pre-push passed before the no-verify push fallback was used to avoid a silent Git transport hook hang."
   next_required_handoff_steps:
-    - "Do not mark PU-047/CNF-001 done until the PR #331 review-thread repair is committed and pushed, CodeRabbit is manually retriggered on the new head, and PR #331 remote CI, review-thread truth, CodeRabbit/Codex review state, and merge readiness are freshly triaged."
+    - "Treat PU-047/CNF-001 as merged through PR #331; final goal closeout still requires current runtime producer, delivery-truth, review-state, external-state, tracker, docs, and Judge/PM evidence."
     - "Do not mark PU-048/CNF-002 done until PR #332 remote CI is refreshed on the R241-repaired PR body, the Snyk quota lane is resolved or explicitly accepted by the proper owner, independent reviewer artifacts are recovered or a validated fallback is recorded, and current review/merge truth is checked."
     - "Use this board and the local board tracker as the current route-truth surfaces; keep both synchronized when route state changes."
     - "PU-047/CNF-001 intent classifies Codex user-message correlation as locally implementable only for explicit producer input; live Codex Desktop extraction remains unproven and owner-visible."
@@ -138,8 +138,8 @@ current_slice_gate:
     - "Do not mark PU-050/CNF-004 done until PR #334 remote CI/review-thread/CodeRabbit/Codex/mergeability truth is freshly triaged, independent reviewer artifact recovery or an accepted fallback is recorded, and predecessor PR lanes remain current."
     - "Reviewer-coverage validation now passes against the final on-disk PU-047/CNF-001 review artifacts with expectedHeadSha; keep the manifest and artifact head bindings synchronized before PR handoff or any future slice done claim."
     - "PR #331 triage must run with git fetch and pr-green-sweep expectations in a separate subagent lane before any PU-047/CNF-001 done claim."
-    - "PR #335 remains the next conflict lane after PR #331 repair; refresh it only after PR #331 has a pushed repair head."
-    - "PR #336 remains open and unstable after PR #338 merged into its base; refresh it after lower-stack conflict truth is current."
+    - "Treat PR #335 as merged through e612bf3cbe405988b0f33acc66ae265b0fd83fc6; do not reopen CNF-005 unless current main or PR #336 review evidence shows a regression."
+    - "PR #336 is the active PR lane; push the current-main reconstruction, manually trigger CodeRabbit, resolve PRRT_kwDORWZJCc6HKIo4 only after submitted-head proof, and refresh CI/review truth before any CNF-006 done claim."
     - "If future Linear tools expose issue title/description update and owner wants field text current, update JSC-363 fields; otherwise preserve the accepted attachment-backed alignment boundary."
   blocked_done_claims:
     - "Linear-fields-current"
