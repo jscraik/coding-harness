@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-04T10:14:08Z
+Generated: 2026-06-04T16:19:19Z
 
 ## Table of Contents
 
@@ -29,13 +29,29 @@ Generated: 2026-06-04T10:14:08Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
+- `package.json`
+- `src/commands/docs-gate-core.ts`
+- `src/commands/drift-gate-command-surface.ts`
+- `src/commands/symphony-check.ts`
+- `src/lib/agents/instruction-compat.ts`
 - `src/lib/decision/route-decision.ts`
+- `src/lib/docs-surface/doc-lifecycle-distribution.ts`
+- `src/lib/docs-surface/doc-lifecycle-frontmatter.ts`
+- `src/lib/docs-surface/doc-lifecycle-harness.ts`
+- `src/lib/docs-surface/doc-lifecycle-paths.ts`
+- `src/lib/docs-surface/doc-lifecycle-report.ts`
+- `src/lib/docs-surface/doc-lifecycle-types.ts`
+- `src/lib/docs-surface/doc-lifecycle.ts`
+- `src/lib/init/README.md`
+- `src/lib/intermediary-receipts/validation-summaries.ts`
+- `src/lib/pilot-evaluation/control-plane-core.ts`
 - `src/lib/pr-closeout.ts`
 - `src/lib/pr-closeout/delivery-truth.ts`
 - `src/lib/pr-closeout/evaluator.ts`
 - `src/lib/pr-closeout/state-packet-delivery-truth.ts`
 - `src/lib/pr-closeout/state-packet-evidence.ts`
 - `src/lib/pr-closeout/state-packets.ts`
+- `src/lib/pr-template-validator-rules.ts`
 - `src/lib/prompt-context/prompt-context-receipt.ts`
 - `src/lib/runtime/codex-runtime-evidence-adapter.ts`
 - `src/lib/runtime/codex-runtime-evidence-producer.ts`
@@ -733,6 +749,10 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_detector_core_cdccee8d_ca107dc8
   ext_node_fs_a15b7d96["node:fs"] --> node_detector_f2b3cbe4_a0d4caae
   ext_node_fs_a15b7d96["node:fs"] --> node_diff_budget_9da0268d_71167227
+  ext_node_fs_a15b7d96["node:fs"] --> node_doc_lifecycle_distribution_7b43f55d_5a49146b
+  ext_node_fs_a15b7d96["node:fs"] --> node_doc_lifecycle_f9b35003_fec78d91
+  ext_node_fs_a15b7d96["node:fs"] --> node_doc_lifecycle_harness_131bc783_fad034a2
+  ext_node_fs_a15b7d96["node:fs"] --> node_doc_lifecycle_paths_f62bff0f_413ff7eb
   ext_node_fs_a15b7d96["node:fs"] --> node_docs_gate_core_eb9b6c18_f8540503
   ext_node_fs_a15b7d96["node:fs"] --> node_doctor_artifacts_1a126caa_fcefdf99
   ext_node_fs_a15b7d96["node:fs"] --> node_doctor_check_utils_d0fc22ea_d74f86eb
@@ -743,6 +763,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_doctor_north_star_contract_checks_0048124c_02b00237
   ext_node_fs_a15b7d96["node:fs"] --> node_doctor_roadmap_file_checks_14447b8e_2d1c2d49
   ext_node_fs_a15b7d96["node:fs"] --> node_drift_gate_artifacts_29aeb0cc_86b9c342
+  ext_node_fs_a15b7d96["node:fs"] --> node_drift_gate_command_surface_060f7e67_f8e83146
   ext_node_fs_a15b7d96["node:fs"] --> node_drift_gate_core_ec6b4881_9500c485
   ext_node_fs_a15b7d96["node:fs"] --> node_drift_gate_rules_9685e72d_95044db0
   ext_node_fs_a15b7d96["node:fs"] --> node_drift_gate_types_3f045f82_a9a3c987
@@ -961,6 +982,10 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_detector_3_86ca96aa_c95676c3
   ext_node_path_78811c13["node:path"] --> node_detector_core_cdccee8d_ca107dc8
   ext_node_path_78811c13["node:path"] --> node_detector_f2b3cbe4_a0d4caae
+  ext_node_path_78811c13["node:path"] --> node_doc_lifecycle_distribution_7b43f55d_5a49146b
+  ext_node_path_78811c13["node:path"] --> node_doc_lifecycle_f9b35003_fec78d91
+  ext_node_path_78811c13["node:path"] --> node_doc_lifecycle_harness_131bc783_fad034a2
+  ext_node_path_78811c13["node:path"] --> node_doc_lifecycle_paths_f62bff0f_413ff7eb
   ext_node_path_78811c13["node:path"] --> node_docs_gate_core_eb9b6c18_f8540503
   ext_node_path_78811c13["node:path"] --> node_doctor_72f4be89_04fd2f3d
   ext_node_path_78811c13["node:path"] --> node_doctor_artifacts_1a126caa_fcefdf99
