@@ -42,6 +42,8 @@ const REPEAT_FEEDBACK_ADMISSION_PATTERN =
 	/(repeat-feedback admission|repeated steering|same steering twice|same feedback twice|stop-the-line environment defect|ordinary feature work)/i;
 const PATTERN_GENERALIZATION_PATTERN =
 	/(pattern-generalization|pattern generalization|sibling implementations|similar classes of misbehavior|shared abstraction|intentionally local|design principle|design\/API principle)/i;
+const SPECIFIC_FEEDBACK_SYSTEMIC_PATTERN =
+	/(specific implementation-detail feedback|specific feedback|line-level correction|review comment)[\s\S]{0,240}(systemic until proven isolated|not local by default|local or systemic|isolated or systemic)[\s\S]{0,500}(validator|lint rule|schema constraint|shared utility|repository convention|CI check|documented invariant|tracked exception)/i;
 const PATTERN_SCOPE_INVENTORY_PATTERN =
 	/(pattern scope inventory|siblings changed|siblings left unchanged|sibling implementations searched|similar misbehavior classes searched|deferred follow-ups|deferred followup)/i;
 const OBSERVED_FIXABLE_BLOCKER_PATTERN =
@@ -536,6 +538,13 @@ function validateValidationDoc(content) {
 		errors,
 		REQUIRED_FILES.validation,
 		content,
+		SPECIFIC_FEEDBACK_SYSTEMIC_PATTERN,
+		"specific-feedback systemic-until-proven-isolated requirement",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.validation,
+		content,
 		PATTERN_SCOPE_INVENTORY_PATTERN,
 		"pattern scope inventory closeout requirement",
 	);
@@ -719,6 +728,13 @@ function validateGlossary(content) {
 		content,
 		PATTERN_GENERALIZATION_PATTERN,
 		"pattern-generalization language",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.glossary,
+		content,
+		SPECIFIC_FEEDBACK_SYSTEMIC_PATTERN,
+		"specific-feedback systemic-until-proven-isolated language",
 	);
 	requirePattern(
 		errors,
@@ -981,6 +997,13 @@ function validateSolution(content) {
 		content,
 		PATTERN_GENERALIZATION_PATTERN,
 		"pattern-generalization evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.solution,
+		content,
+		SPECIFIC_FEEDBACK_SYSTEMIC_PATTERN,
+		"specific-feedback systemic-until-proven-isolated evidence",
 	);
 	requirePattern(
 		errors,
@@ -1306,6 +1329,13 @@ function validateMemory(content) {
 		content,
 		/similar misbehavior classes/i,
 		"pattern-generalization similar-misbehavior learning",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.memory,
+		content,
+		SPECIFIC_FEEDBACK_SYSTEMIC_PATTERN,
+		"specific-feedback systemic-until-proven-isolated learning",
 	);
 	requirePattern(
 		errors,

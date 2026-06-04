@@ -61,6 +61,7 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 - Rules in this pack use RFC2119 language (`MUST`, `MUST NOT`, `SHOULD`) and are normative unless an explicit waiver exists.
 - Waivers MUST include: rule ID or section, reason, tracking ticket, and expiry or ADR reference.
 - Design corrections MUST be generalized before closeout when they imply a broader principle. If feedback says one boolean success/failure API should instead return a named sentinel error, the agent MUST search sibling APIs and tests in the same command core, adapter family, and affected docs/templates; then either update the shared pattern or record why each sibling is intentionally different.
+- Specific implementation-detail feedback MUST be treated as systemic until proven isolated. Before finalizing the fix, classify the correction as local or systemic, search equivalent patterns in the same module family and affected governance surfaces, identify the underlying engineering preference, and decide whether the rule belongs in a validator, lint rule, schema constraint, shared utility, repository convention, CI check, documented invariant, or tracked exception.
 - Validation evidence MUST use exact command text and explicit outcomes:
   - `Command: <exact command> -> pass|fail|blocked (<reason>)`
 - Commands are expected from the active instruction scope and the repository root.

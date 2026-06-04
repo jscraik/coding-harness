@@ -19,7 +19,7 @@ import {
 	collectRuntimeEvidenceBlockers,
 } from "./evidence-summaries.js";
 import {
-	buildDeliveryTruthSummary,
+	buildPrCloseoutDeliveryTruthSummary,
 	collectDeliveryTruthBlockers,
 } from "./delivery-truth.js";
 import { buildLifecycleSnapshot } from "./lifecycle-snapshot.js";
@@ -28,6 +28,7 @@ import { buildPrCloseoutRecoveryState } from "./recovery.js";
 import { buildPrCloseoutSnapshot } from "./snapshot.js";
 import { deriveNextAction } from "./status.js";
 import { PR_CLOSEOUT_SCHEMA_VERSION } from "./types.js";
+import type { PrCloseoutStatePacketOptions } from "./state-packets.js";
 import type {
 	PrCloseoutBlocker,
 	PrCloseoutHarnessGateEvidenceSource,
@@ -35,9 +36,15 @@ import type {
 	PrCloseoutReport,
 } from "./types.js";
 
+/** Options controlling report timestamping and opt-in derived verifier evidence. */
+export interface PrCloseoutReportOptions {
+	now?: Date;
+	deriveDeliveryTruthFromStatePackets?: PrCloseoutStatePacketOptions;
+}
+
 function buildPrCloseoutReportValue(
 	input: PrCloseoutInput,
-	options: { now?: Date } = {},
+	options: PrCloseoutReportOptions = {},
 ): PrCloseoutReport {
 	const blockers: PrCloseoutBlocker[] = [];
 	const generatedAt = (options.now ?? new Date()).toISOString();
@@ -62,7 +69,11 @@ function buildPrCloseoutReportValue(
 	);
 
 	const claims = buildCloseoutClaims(input, checks, reviewThreads, generatedAt);
-	const deliveryTruth = buildDeliveryTruthSummary(input.deliveryTruth);
+	const deliveryTruth = buildPrCloseoutDeliveryTruthSummary(
+		input,
+		generatedAt,
+		options.deriveDeliveryTruthFromStatePackets,
+	);
 	collectWorktreeBlockers(input, dirtyPathsExcluded, blockers);
 	collectPullRequestBlockers(pr, blockers);
 	collectCheckBlockers(checks, blockers);
@@ -141,7 +152,7 @@ function buildPrCloseoutReportValue(
 /** Build a read-only PR closeout evidence report as an Effect boundary. */
 export function buildPrCloseoutReportEffect(
 	input: PrCloseoutInput,
-	options: { now?: Date } = {},
+	options: PrCloseoutReportOptions = {},
 ): Effect.Effect<PrCloseoutReport> {
 	return Effect.sync(() => buildPrCloseoutReportValue(input, options));
 }
@@ -149,7 +160,7 @@ export function buildPrCloseoutReportEffect(
 /** Build a read-only PR closeout evidence report from normalized PR closeout inputs. */
 export function buildPrCloseoutReport(
 	input: PrCloseoutInput,
-	options: { now?: Date } = {},
+	options: PrCloseoutReportOptions = {},
 ): PrCloseoutReport {
 	return Effect.runSync(buildPrCloseoutReportEffect(input, options));
 }

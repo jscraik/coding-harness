@@ -10,16 +10,16 @@ audience:
   - reviewer
 lifecycle_state: active
 owner: coding-harness-maintainers
-created: 2026-06-04
+created: 2026-05-29
 last_reviewed: 2026-06-04
-review_cadence: quarterly
+review_cadence: on architecture-adjacent change
 maintenance_trigger:
-  - architecture-boundary-change
-  - command-family-change
-  - generated-context-refresh
+  - architecture-artifact changes
+  - docs-gate architecture-context findings
+  - deep-module boundary changes
 semver_impact: minor
 validated_by:
-  - pnpm docs:lifecycle
+  - pnpm exec tsx src/cli.ts docs-gate --mode required --json
 depends_on:
   - AGENTS.md
   - docs/architecture/documentation-layers.md
@@ -235,7 +235,11 @@ not in docs, templates, generated context, or command facades.
   merge readiness into one blended truth. Its state-packet bridge derives
   validated `external-state-snapshot/v1` and `review-state/v1` packets from
   normalized closeout input while preserving the packet validators as the
-  claim-support boundary.
+  claim-support boundary. The bridge may compose only claim-scoped
+  `remote_checks_current` and `review_threads_resolved` delivery-truth verdicts
+  from those packets; `merge_ready`, `goal_ready_for_judge_pm`,
+  `linear_state_aligned`, and `root_surface_tidy` remain separate evidence
+  lanes.
 - src/lib/review-state/: PR review truth packets, reviewer artifact receipt
   validation, unresolved thread counts, and validation ownership
   classification.
@@ -276,13 +280,11 @@ not in docs, templates, generated context, or command facades.
   adapter explicitly emits and consumes them with synchronized governance docs.
 - src/lib/decision/: advisory cockpit decision and lifecycle route metadata.
   It owns `harness-decision/v1`, `route-decision/v1`, route validation, and the
-  risk-tiered mutation policy (CNF-003) that allows only low-risk repo-local
-  advisory mutation routes to omit human review (`requiresHuman=false`) when
-  evidence freshness is current, validator ownership is present, mutation
-  authority is agent-local (`authority=agent_local`), and the route requires no
-  network dependency (`requiresNetwork=false`). It must not make route target
-  commands executable authority, prove delivery truth, mutate trackers, prove
-  merge readiness, or satisfy Judge/PM or goal-completion claims.
+  risk-tiered mutation policy that allows only low-risk repo-local advisory
+  mutation routes to omit human review when current evidence and validator
+  ownership are present. It must not make route target commands executable
+  authority, prove delivery truth, mutate trackers, prove merge readiness, or
+  satisfy Judge/PM or goal-completion claims.
 - src/lib/decision-request/: read-only governance request packet emission for
   human or operator escalation. It owns intent, authority, option grammar,
   evidence references, escalation metadata, expiry/freshness normalization, and

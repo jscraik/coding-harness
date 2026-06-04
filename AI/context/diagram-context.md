@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-04T15:16:13Z
+Generated: 2026-06-04T16:19:19Z
 
 ## Table of Contents
 
@@ -29,9 +29,29 @@ Generated: 2026-06-04T15:16:13Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
+- `package.json`
+- `src/commands/docs-gate-core.ts`
+- `src/commands/drift-gate-command-surface.ts`
+- `src/commands/symphony-check.ts`
+- `src/lib/agents/instruction-compat.ts`
 - `src/lib/decision/route-decision.ts`
+- `src/lib/docs-surface/doc-lifecycle-distribution.ts`
+- `src/lib/docs-surface/doc-lifecycle-frontmatter.ts`
+- `src/lib/docs-surface/doc-lifecycle-harness.ts`
+- `src/lib/docs-surface/doc-lifecycle-paths.ts`
+- `src/lib/docs-surface/doc-lifecycle-report.ts`
+- `src/lib/docs-surface/doc-lifecycle-types.ts`
+- `src/lib/docs-surface/doc-lifecycle.ts`
+- `src/lib/init/README.md`
+- `src/lib/intermediary-receipts/validation-summaries.ts`
+- `src/lib/pilot-evaluation/control-plane-core.ts`
 - `src/lib/pr-closeout.ts`
+- `src/lib/pr-closeout/delivery-truth.ts`
+- `src/lib/pr-closeout/evaluator.ts`
+- `src/lib/pr-closeout/state-packet-delivery-truth.ts`
+- `src/lib/pr-closeout/state-packet-evidence.ts`
 - `src/lib/pr-closeout/state-packets.ts`
+- `src/lib/pr-template-validator-rules.ts`
 - `src/lib/prompt-context/prompt-context-receipt.ts`
 - `src/lib/runtime/codex-runtime-evidence-adapter.ts`
 - `src/lib/runtime/codex-runtime-evidence-producer.ts`
@@ -676,7 +696,7 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_runtime_card_trace_64a5ca95_a26c03d1
   ext_node_crypto_c7dfc512["node:crypto"] --> node_scan_cache_fc02c79c_11793337
   ext_node_crypto_c7dfc512["node:crypto"] --> node_sources_878a52fc_cd312fcd
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_state_packets_536f9a25_d221f5ae
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_state_packet_evidence_0af7e8d0_58cc7a7f
   ext_node_crypto_c7dfc512["node:crypto"] --> node_test_harness_upgrade_matrix_84113c4e_e0838daa
   ext_node_crypto_c7dfc512["node:crypto"] --> node_tracer_1e6243a2_cb3d802b
   ext_node_crypto_c7dfc512["node:crypto"] --> node_ui_loop_internal_f2eb8892_c4b49e6a

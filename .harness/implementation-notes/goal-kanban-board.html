@@ -399,13 +399,13 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness warning">PR #336 repair: merging CNF-006 onto PR #335 head 8b70a32d; PR/CI/review truth requires refresh</div>
+      <div class="source-chip" aria-label="Source freshness warning">5 open PRs; #332/#334/#337 merged into stack branches</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
       <div class="metric"><span>Goal status</span><strong>Active, full lifecycle</strong></div>
       <div class="metric"><span>Completed stack</span><strong>11 tracker cards done</strong></div>
-      <div class="metric"><span>Outstanding work</span><strong>7 gates + PR/producer proof</strong></div>
+      <div class="metric"><span>Outstanding work</span><strong>5 open PRs + producer/final proof</strong></div>
       <div class="metric"><span>Claim boundary</span><strong>Completion unclaimed</strong></div>
       <div class="metric"><span>Source files</span><strong>goal.md, state.yaml, receipts.jsonl, Kanban</strong></div>
     </section>
@@ -461,7 +461,7 @@
           <li><code>src/lib/delivery-truth/</code><small>Private claim-support composition and Judge/PM readiness logic.</small></li>
           <li><code>src/lib/review-state/</code><small>Reviewer artifact and unresolved-thread truth packets.</small></li>
           <li><code>src/lib/external-state/</code><small>PR, CI, review, tracker freshness snapshots.</small></li>
-          <li><code>src/lib/pr-closeout/</code><small>PU-053 bridge derives external-state and review-state packets from normalized closeout input without granting closeout authority.</small></li>
+          <li><code>src/lib/pr-closeout/</code><small>PU-053 derives external-state and review-state packets; PU-054 derives only remote-checks-current and review-threads-resolved delivery-truth verdicts.</small></li>
           <li><code>src/lib/root-hygiene/</code><small>Tracked root-surface and tidy-claim evidence.</small></li>
         </ul>
       </article>
@@ -485,7 +485,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts and route-truth receipts through <code>R267</code> plus live stack refresh on 2026-06-04. Local <code>main</code> and <code>origin/main</code> are synchronized at <code>50a6d0b5d764e35395e12190a465e854c26784fd</code>. PR #335 has advanced to head <code>8b70a32d</code> with the prompt-context instruction-source review fix, and this branch is repairing PR #336 against that updated base before rechecking PR #336 and PR #338. The board remains an orientation artifact, not proof of independent reviewer completion, live Codex Desktop extraction, runtime producer emission, delivery-truth consumption, PR/CI green status, review-thread resolution, merge readiness, Judge/PM readiness, or final goal completion.</p>
+    <p class="footer">Snapshot generated from current goal artifacts and route-truth receipts through <code>R278</code>, with the PU-053/PU-014 base receipts preserved during the PR #338 stack repair. PU-053/PU-014 locally implemented the read-only <code>src/lib/pr-closeout/</code> bridge for deriving validated external-state and review-state packets from normalized closeout input; R261/R262 keep its reviewer-artifact lane blocked and its adopted audit sources anchored. Later PR-stack receipts record systemic pre-PR gate misses, CodeRabbit-trigger evidence, and the fallback PR-stack sweep artifact after two subagent artifact failures. Current live route truth shows five open PRs (#331, #333, #335, #336, #338), with PR #332, #334, and #337 merged into stack branches. PR #338 conflict repair is pushed at <code>d85b0b55</code>; CircleCI lanes are pending, external Snyk is blocked by private-test quota, CodeRabbit has been manually retriggered, and PR #338 green-sweep is delegated to a subagent. This tracked visualization remains an orientation artifact, not proof of PR green, Snyk success, fresh review-thread resolution, independent reviewer completion, live Codex Desktop extraction, runtime producer emission, final delivery-truth consumption for merge/Judge/Linear/root lanes, Judge/PM readiness, or final goal completion.</p>
   </main>
 
   <script>
@@ -709,12 +709,12 @@
         risk: "The field is nullable and orientation-only when source evidence is unavailable; this slice does not prove live Codex Desktop extraction, runtime producer emission, delivery-truth consumption, Judge/PM readiness, or parent-goal completion."
       },
       {
-		id: "cnf002-environment-permissions",
-		lane: "implementation",
-		title: "CNF-002 environment-scoped permissions",
-		status: "PR #332 draft; remote checks blocked",
-		tags: ["permissions", "tool exposure", "environment"],
-		summary: "Implementation adds a codex-runtime-evidence environment snapshot and runtime-card environmentRefs so permission evidence is scoped to cwd, executor, approval scope, and sandbox policy evidence. PR #332 is open as a stacked draft on PR #331.",
+        id: "cnf002-environment-permissions",
+        lane: "implementation",
+        title: "CNF-002 environment-scoped permissions",
+        status: "PR #332 draft; remote checks blocked",
+        tags: ["permissions", "tool exposure", "environment"],
+        summary: "Implementation adds a codex-runtime-evidence environment snapshot and runtime-card environmentRefs so permission evidence is scoped to cwd, executor, approval scope, and sandbox policy evidence. PR #332 is open as a stacked draft on PR #331.",
         evidence: ["docs/goals/.../notes/PU-048-cnf-002-env-permissions-intent.md", "src/lib/runtime/codex-runtime-evidence-{types,validation,producer,references,adapter}.ts", "src/lib/runtime/runtime-card-codex-runtime{,-validation}.ts", "src/lib/runtime/runtime-evidence-adapter.ts", "focused runtime evidence and runtime-card tests -> pass (88 tests)", "pnpm typecheck -> pass", "docs-gate -> pass", "validate-codestyle full -> pass", "pnpm check -> pass", "source checkout pr-template-gate on live PR body -> pass after durable evidence-map repair", "installed harness pr-template-gate on edited PR body -> pass", "PR #332 -> OPEN draft, MERGEABLE/UNSTABLE", "GitHub checks: ci/circleci: pr-template still failed on pre-repair status, Snyk quota failed, most other visible CircleCI lanes passed or completed", "R241: PR #332 body and route-truth freshness repaired", "artifacts/reviews/pu048-cnf-002-skill-lenses.md", "artifacts/reviews/pu048-cnf-002-reviewer-runtime-blocker.md"],
         next: "Push R241 route-truth and validator repair to PR #332 so remote checks rerun on a new head, then triage CircleCI pr-template/pr-pipeline, Snyk quota, and missing independent-review artifacts separately.",
         risk: "Live Codex Desktop extraction of these fields is still unproven; independent reviewer artifacts are blocked; remote CI is not green; delivery-truth consumption, Judge/PM readiness, and parent-goal completion remain separate proof lanes."
@@ -723,7 +723,7 @@
         id: "cnf003-risk-tiered-hilt",
         lane: "implementation",
         title: "CNF-003 risk-tiered mutation authority",
-        status: "active",
+        status: "PR #333 draft; remote checks pending",
         tags: ["HILT", "route decision", "agent-native"],
         summary: "RouteDecision now carries a mutationPolicy with scope, risk tier, evidence freshness, validator ownership, and authority. Agent-local mutation is limited to low-risk repo-local work with current evidence, validator ownership, and no network requirement.",
         evidence: ["docs/goals/.../notes/PU-049-cnf-003-risk-tier-authority-intent.md", "src/lib/decision/route-decision.ts", "src/lib/decision/route-decision.test.ts", "ARCHITECTURE.md", "docs/agents/00-architecture-bootstrap.md", "docs/agents/07b-agent-governance.md", "pnpm exec vitest run src/lib/decision/route-decision.test.ts -> pass (49 tests)", "pnpm exec vitest run src/commands/decision-request.test.ts -> pass (13 tests)", "pnpm typecheck -> pass", "docs-gate -> pass", "check-diagram-freshness -> pass", "validate-codestyle --fast -> pass", "artifacts/reviews/pu049-cnf-003-reviewer-runtime-blocker.md", "R242: CNF-003 route-truth refreshed"],
@@ -734,8 +734,8 @@
         id: "cnf004-runtime-card-continuity",
         lane: "remote",
         title: "CNF-004 runtime-card continuity",
-        status: "active",
-        tags: ["runtime-card", "continuity", "projection", "PR #334 draft", "remote unstable"],
+        status: "PR #334 draft; remote unstable",
+        tags: ["runtime-card", "continuity", "projection"],
         summary: "Runtime-card Codex projection now exposes compact codexRuntime.continuity refs for thread, turn, trace, goal, client message, active queue item, approval request, and heartbeat/automation continuity while preserving pointer-only redaction.",
         evidence: ["docs/goals/.../notes/PU-050-cnf-004-runtime-card-continuity-intent.md", "src/lib/runtime/runtime-card-codex-runtime.ts", "src/lib/runtime/runtime-card-codex-runtime-validation.ts", "src/lib/runtime/runtime-evidence-bundle.ts", "src/lib/runtime/runtime-evidence-adapter.ts", "runtime-card projection tests -> pass", "runtime-evidence adapter tests -> pass", "pnpm typecheck -> pass", "quality:docstrings -> pass", "docs-gate -> pass", "check-diagram-freshness -> pass", "validate-codestyle --fast -> pass", "pr-template-gate -> pass", "make hooks-pre-push -> pass", "PR #334 OPEN draft, base PR #333 branch, head 11cf544a, mergeStateStatus UNSTABLE", "artifacts/reviews/pu050-cnf-004-skill-lenses.md", "artifacts/reviews/pu050-cnf-004-implementation-reviewer-runtime-blocker.md", "R245: CNF-004 PR route-truth refresh"],
         next: "Run PR #334 triage for remote CI, review threads, CodeRabbit/Codex state, mergeability, and independent reviewer artifact recovery or accepted fallback before any slice-done claim.",
@@ -764,15 +764,37 @@
         risk: "The receipt is contract/schema/test proven only and remains not_yet_emitted; it does not mutate runtime cards, authorize commands, prove delivery truth, prove review/external/root-hygiene truth, update Linear, establish merge readiness, satisfy Judge/PM readiness, or close the parent goal."
       },
       {
-         id: "pu053-closeout-state-packets",
-         lane: "implementation",
-         title: "PU-053 closeout state-packet bridge",
-         status: "blocked",
+        id: "open-pr-stack-green-sweep",
+        lane: "remote",
+        title: "Open PR stack green-sweep",
+        status: "5 open PRs; PR #338 pushed, checks pending",
+        tags: ["PR #331/#333/#335/#336/#338", "pr-green-sweep", "GitHub"],
+        summary: "Live GitHub reports five open stacked PRs. PR #332, #334, and #337 are merged into their stack base branches. PR #338 conflict repair was pushed to remote head d85b0b55 after pulling the merged #336/#337 base and passing local pre-push.",
+        evidence: ["gh pr list -> pass on 2026-06-04", "Open PRs: #331, #333, #335, #336, #338", "Merged stack PRs: #332 -> #331 branch, #334 -> #333 branch, #337 -> #336 branch", "main and origin/main -> 50a6d0b5", "PR #336 remote/local stack head -> abbe0b7f849d8afbd61c6bc58a3a6c75dbc401ec", "PR #338 remote head -> d85b0b55137842a6b1e4dd2be9a6594212b904a7", "make hooks-pre-push -> pass after repairing shared Git common core.worktree", "CodeRabbit trigger comment -> https://github.com/jscraik/coding-harness/pull/338#issuecomment-4624222187", "PR #338 checks -> CircleCI pending, Snyk private-test quota fail, Socket pass, CodeRabbit not fresh-review proof", "PR #338 green-sweep delegated to /root/pr338_green_sweep_after_merged_pull"],
+        next: "Wait for PR #338 green-sweep artifact, refresh open PR #331/#333/#335/#336/#338 checks, CodeRabbit/review-thread truth, external Snyk disposition, and mergeability as separate lanes.",
+        risk: "This is live inventory and triage routing only. It does not prove any PR is green, merge-ready, reviewed, or safe to merge."
+      },
+      {
+        id: "pu053-closeout-state-packets",
+        lane: "implementation",
+        title: "PU-053 closeout state-packet bridge",
+        status: "local commit ad06aa82; reviewer artifacts blocked",
         tags: ["pr-closeout", "external-state", "review-state", "PU-014"],
         summary: "src/lib/pr-closeout now derives validated external-state-snapshot/v1 and review-state/v1 packets from normalized pr-closeout input while leaving claim support with the packet validators.",
         evidence: ["docs/goals/.../notes/PU-053-pu014-closeout-state-packets-intent.md", "src/lib/pr-closeout/state-packets.ts", "src/lib/pr-closeout/state-packets.test.ts", "src/lib/pr-closeout.ts", "ARCHITECTURE.md and governance docs updated", "AI/context/diagram-context.md refreshed", "focused packet and nearby closeout tests -> pass", "pnpm typecheck -> pass", "Biome touched-file check -> pass", "quality:docstrings -> pass", "quality:size -> pass with non-blocking ratchet warnings", "test:related -> pass", "docs-gate -> pass", "check-diagram-freshness -> pass after refresh", "validate-codestyle --fast -> pass", "artifacts/reviews/pu053-pu014-closeout-state-packets-skill-lenses.md", "artifacts/reviews/pu053-pu014-implementation-adversarial-runtime-blocker.md", "artifacts/reviews/pu053-pu014-implementation-agent-native-runtime-blocker.md", "artifacts/reviews/pu053-pu014-implementation-best-practices-runtime-blocker.md", "R261: local implementation route truth", "R262: audit-source route truth re-anchored to current head"],
         next: "Push this branch, open or update the PR lane, run PR/CI/review triage, and keep independent-review artifact recovery separate from local validation.",
         risk: "This is local implementation evidence only. It does not prove remote CI, review-thread resolution, Linear field updates, delivery-truth consumption, merge readiness, Judge/PM readiness, or parent-goal completion."
+      },
+      {
+        id: "pu054-closeout-delivery-truth",
+        lane: "implementation",
+        title: "PU-054 closeout delivery-truth seam",
+        status: "PR #338 open; pushed at d85b0b55, CircleCI pending",
+        tags: ["pr-closeout", "delivery-truth", "PU-054"],
+        summary: "PR #338 carries the opt-in delivery-truth bridge. The merged-stack conflict repair pulled the PR #336/#337 base, resolved conflicts, refreshed ARCHITECTURE and diagram context, and pushed the repaired head d85b0b55. Remote checks are still live.",
+        evidence: ["docs/goals/.../notes/PU-054-closeout-delivery-truth-intent.md", "src/lib/pr-closeout/state-packet-evidence.ts", "src/lib/pr-closeout/state-packet-delivery-truth.ts", "src/lib/pr-closeout/state-packets.ts", "src/lib/pr-closeout/delivery-truth.ts", "src/lib/pr-closeout/evaluator.ts", "scripts/check-steering-feedback-contract.cjs", "src/lib/pr-closeout/state-packets.test.ts", "src/lib/pr-closeout.test.ts", "src/lib/architecture/module-boundaries.test.ts", "ARCHITECTURE.md and governance docs updated", "R274 -> merged-stack pull and conflict repair", "R275 -> ARCHITECTURE lifecycle frontmatter repair", "R276 -> architecture diagram refresh", "R277 -> local receipt anchor", "Remote branch head -> d85b0b55137842a6b1e4dd2be9a6594212b904a7", "make hooks-pre-push -> pass after shared Git common config repair", "CodeRabbit fresh manual trigger comment -> https://github.com/jscraik/coding-harness/pull/338#issuecomment-4624222187", "gh pr checks #338 -> CircleCI pending, pr-pipeline pending, external security/snyk quota fail, Socket pass", "PR #338 green-sweep subagent -> /root/pr338_green_sweep_after_merged_pull", "artifacts/reviews/pu054-closeout-delivery-truth-skill-lenses.md", "artifacts/reviews/pu054-implementation-reviewer-runtime-blocker.md"],
+        next: "Wait for CircleCI and PR #338 green-sweep, resolve or disposition the external Snyk/error lane, refresh review-thread/Codex/mergeability truth, and keep independent reviewer artifact coverage as an accepted fallback until a reliable artifact-first subagent lane is restored.",
+        risk: "This proves local repair, remote push, local pre-push, and CodeRabbit request evidence. It does not prove CircleCI green, Snyk success, CodeRabbit review completion, review-thread resolution, merge readiness, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "linear-scope",
@@ -821,13 +843,13 @@
       {
         id: "delivery-truth-consumption",
         lane: "remaining",
-        title: "Delivery-truth consumption",
-        status: "blocked",
+        title: "Final delivery-truth consumption",
+        status: "partially implemented locally",
         tags: ["delivery-truth", "claim support", "closeout"],
-        summary: "Delivery-truth must separate local validation, remote checks, review threads, tracker state, root hygiene, and merge readiness.",
-        evidence: ["goal.md Completion Contract", "state.yaml blocked_done_claims include delivery-truth consumption", "src/lib/delivery-truth/"],
-        next: "Run or produce current evidence that the closeout path consumes delivery-truth verdicts for final claims.",
-        risk: "A green local check or merged PR could still be overclaimed as goal completion."
+        summary: "PU-054 derives only remote-check and review-thread verdicts. Final merge-ready, Judge/PM, Linear, root-hygiene, and runtime-producer claim support remain blocked.",
+        evidence: ["goal.md Completion Contract", "state.yaml blocked_done_claims include final delivery-truth consumption for merge/Judge/Linear/root lanes", "src/lib/delivery-truth/", "src/lib/pr-closeout/state-packet-delivery-truth.ts"],
+        next: "Add or validate current evidence for the remaining final-claim lanes before any closeout or Judge/PM-ready claim.",
+        risk: "A green local check or merged PR could still be overclaimed as goal completion if final claim families are blended."
       },
       {
         id: "final-proof-packets",

@@ -98,25 +98,16 @@ subcommand behavior inside `src/lib/project-brain/*-cli.ts`.
 For north-star contract/scaffold updates that affect workflow authority, update this guide and `docs/agents/07b-agent-governance.md` together in the same PR.
 For root-surface cleanup, use `docs/architecture/root-surface-classification.md` as the tracked classification contract. Move historical root evidence into `docs/archive/root-cleanup/` or a domain docs surface before considering deletion; when a tracked root entry is deleted under explicit destructive-cleanup authority, record that decision in the classification table. Keep `AGENTS.md`, this guide, `docs/README.md`, and `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports architecture-context or agent-governance surfaces.
 Rule lifecycle governance updates are architecture-adjacent when they alter the manifest schema, `rule-lifecycle-gate`, or rule metadata validation. Keep this guide synchronized with `AGENTS.md` and `README.md` when docs-gate reports architecture-context or contract-policy surfaces, and ensure schema validation resolves from the target repo root rather than the caller's shell cwd.
-Documentation lifecycle governance updates are architecture-adjacent when they
-alter `docs/doc-lifecycle-manifest.json`,
-`docs/doc-lifecycle.schema.json`, `pnpm docs:lifecycle`, docs-gate
-lifecycle validation, PR lifecycle fields, or downstream-template distribution
-guards. Keep this guide synchronized with `AGENTS.md`,
-`docs/architecture/documentation-layers.md`, and
-`docs/agents/07b-agent-governance.md` when docs-gate reports
-architecture-context or agent-governance surfaces.
 For agent-native cockpit work, treat decision-envelope, generated environment action, hook setup, runtime-card evidence, and diagram-context changes as architecture-adjacent surfaces. Run `bash scripts/check-diagram-freshness.sh` explicitly for those changes, and use `bash scripts/refresh-diagram-context.sh --force` when the check reports stale or missing artifacts. Keep this guide synchronized with `AGENTS.md` and `docs/agents/07b-agent-governance.md` when `docs-gate` asks for architecture-context evidence.
 RouteDecision lifecycle metadata belongs to this cockpit architecture-adjacent lane: keep `route-decision/v1` contract changes additive to `harness-decision/v1`, refresh `AI/context/diagram-context.md`, and commit this guide with the required docs-gate governance surfaces when `docs-gate` reports the architecture-context surface.
 Risk-tiered RouteDecision mutation authority is still advisory route metadata:
-only low-risk repo-local mutation routes with current evidence, validator
-ownership, agent-local authority (`authority=agent_local`), and no network
-dependency (`requiresNetwork=false`) may omit human review, while destructive,
+only low-risk repo-local mutation routes with current evidence and validator
+ownership may omit human review, while destructive, external, tracker,
 production, release, security, credential, merge, public-contract,
-goal-completion, verifier-disagreement, ambiguous-governance, external-impact,
-tracker-sensitive, unknown, or network-dependent mutation remains HILT-governed.
-This policy must not turn target commands into execution authority or support
-delivery-truth, merge-readiness, Judge/PM, or goal-completion claims.
+goal-completion, verifier-disagreement, ambiguous, unknown, or network-dependent
+mutation remains HILT-governed. This policy must not turn target commands into
+execution authority or support delivery-truth, merge-readiness, Judge/PM, or
+goal-completion claims.
 Generated Codex environment action changes that add validation script actions or branch-attachment behavior are architecture-adjacent when they refresh `AI/context/diagram-context.md`; commit the refreshed context pack and this guide with the required docs-gate governance surfaces when docs-gate reports the architecture-context surface.
 Codex preflight changes are architecture-adjacent when they alter Local Memory,
 Project Brain, or runtime-readiness enforcement. Legacy positional
@@ -269,8 +260,10 @@ source completeness, TTL-derived staleness, head-SHA binding, and claim-support
 eligibility handled by validators before delivery-truth composition consumes
 those packets. When `src/lib/pr-closeout/` derives those packets from
 normalized closeout input, keep that bridge read-only and validator-backed; it
-must not turn raw PR, CI, review, or Linear summaries into closeout or merge
-authority.
+may compose only claim-scoped `remote_checks_current` and
+`review_threads_resolved` delivery-truth verdicts from validated packets, and
+must not turn raw PR, CI, review, or Linear summaries into closeout, Linear,
+root-hygiene, Judge/PM, or merge authority.
 
 Action-review receipt changes are high-risk-action governance packet work, not
 a new execution rail. Keep `action-review-receipt/v1` inside
