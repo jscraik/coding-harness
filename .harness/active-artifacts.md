@@ -10,19 +10,17 @@
 
 ## Scope
 
-Last reconciled: 2026-06-03 during the PR #330 latest-main merge-conflict
-repair. Current origin/main is
-2a07bd708a8532afc80d9ba5747d12686a8121f5 after the earlier JSC-363 stack
-merged. Live GitHub reports PR #328 and PR #329 are MERGED. PR #330 is the
-remaining open JSC-363 route lane, based directly on main at head
-7142480c618ab747b9c37185d34eb931d084b9de before this local conflict repair.
-The conflict repair preserves the current PR #330 route truth, the
-audit-freshness checkout-mtime guard repair, and the shallow-review ancestry
-fallback while removing stale active-stack wording from merged PRs. This
-reconcile does not claim PR #330 remote checks, review-thread state,
-mergeability, Linear field alignment, Judge/PM readiness, runtime producer
-emission, delivery-truth consumption, merge execution, or final goal
-completion.
+Last reconciled: 2026-06-04 during the post-merge route-truth refresh. Local
+`main` fast-forwarded to `origin/main` at
+`a76921942cdbd8b3e1b449a05993d467700f770c`. Live GitHub reports zero open pull
+requests for `jscraik/coding-harness`. PR #331 through PR #336 are merged into
+the current main-delivery line. PR #337 and PR #338 are marked merged by GitHub
+but were merged into the stacked branch
+`codex/jsc-363-cnf-006-steering-application-receipt`, not `main`; their merge
+commits are not ancestors of current `origin/main`. This reconcile does not
+claim PR #337/#338 main delivery, Linear field-text alignment, runtime producer
+evidence, delivery-truth consumption, docs accuracy, Judge/PM readiness, or
+final goal completion.
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -33,7 +31,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged PR #321, merged PR #322, merged PR #325 GAP-010 browser evidence, merged PR #326 route-truth repairs, merged PR #327 route truth, merged PR #328 reviewer-artifact head-freshness coverage, merged PR #329 route-truth supersession cleanup, and GAP-001 Local Memory preflight artifacts. PR #324 is closed as superseded and no longer an active merge-conflict lane. PR #330 is the currently observed open JSC-363 PR lane, based directly on main, and this local reconcile pulls origin/main 2a07bd708a8532afc80d9ba5747d12686a8121f5 into the branch while preserving the audit-freshness checkout-mtime guard repair. Linear JSC-363 has an owner-visible full-lifecycle scope-note attachment, but tracker field alignment remains unclaimed until a fresh Linear refresh proves it. | Use the goal board as the current execution cockpit. Next safe action is to commit and push the PR #330 latest-main conflict repair, then refresh PR #330 checks, CodeRabbit/status-check rollups, unresolved review threads, linked-issue state, and mergeability from live GitHub before any PR-green, merge-ready, Judge/PM-ready, stack-ready, or done claim. Use <REDACTED_HOME_PATH>/.codex/.env for CircleCI API/log triage only if a CircleCI lane fails or lacks enough public evidence; map that redacted path to ~/.codex/.env only for local command execution after a regular-file probe, and classify FIFO/no-writer or unreadable env surfaces explicitly instead of calling credentials missing. Do not claim parent JSC-363 completion until Linear field alignment or owner acceptance, runtime producer evidence, delivery-truth consumption, Judge/PM readiness, and final completion audit are separately refreshed. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged PR #321 through PR #336, including CNF-001 through CNF-006 current-main delivery through PR #336. PR #337 and PR #338 are stack-branch merged only and cannot be counted as current-main evidence until a main-delivery path lands or a fresh owner decision accepts them as out of scope. Linear JSC-363 is In Review with an owner-visible full-lifecycle scope-note attachment and the 2026-06-04 route-truth comment, but tracker field text remains Phase 1-stale. | Use the goal board as the current execution cockpit. Next safe action is to decide whether PR #337/#338 work is required on main; if yes, create a bounded main-delivery branch from current main and validate it without claiming parent completion. Do not claim parent JSC-363 completion until Linear field alignment or owner acceptance, runtime producer evidence, delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final completion audit are separately refreshed. |
 
 PU-046 update: PR #330 was refreshed again on head
 163017e16e4611d5d71f5c4c62fc85f8d164b17b after the R205 artifact receipt was

@@ -15,10 +15,9 @@ const requiredUnits = Array.from(
 	(_, index) => `PU-${String(index + 1).padStart(3, "0")}`,
 );
 const requiredSkillLenses = [
-	"improve-codebase-architecture",
 	"simplify",
-	"unslopify",
-	"he-code-review",
+	"improve-codebase-architecture",
+	"sy-review",
 	"testing",
 ] as const;
 const requiredReviewers = [
@@ -345,14 +344,16 @@ describe("check-goal-review-backfill.py", () => {
 	it("fails when pass evidence receipt lacks the member result", () => {
 		const root = createTempRoot("review-backfill-pass-wrong-member-");
 		const ledger = baseLedger();
-		lifecycleEntry(ledger, 0).sliceSkillLensResults["he-code-review"] =
-			passResult("he-code-review", `${RECEIPTS_REF}#R200`);
+		lifecycleEntry(ledger, 0).sliceSkillLensResults["sy-review"] = passResult(
+			"sy-review",
+			`${RECEIPTS_REF}#R200`,
+		);
 
 		const result = runValidator(root, ledger);
 
 		expect(result.status).toBe(1);
 		expect(result.stderr).toContain(
-			"receipt does not contain member result for 'he-code-review'",
+			"receipt does not contain member result for 'sy-review'",
 		);
 	});
 

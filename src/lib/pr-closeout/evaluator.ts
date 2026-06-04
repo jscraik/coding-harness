@@ -19,25 +19,36 @@ import {
 	collectRuntimeEvidenceBlockers,
 } from "./evidence-summaries.js";
 import {
-	buildDeliveryTruthSummary,
+	buildPrCloseoutDeliveryTruthSummary,
 	collectDeliveryTruthBlockers,
+	type PrCloseoutDeliveryTruthDerivationOptions,
 } from "./delivery-truth.js";
 import { buildLifecycleSnapshot } from "./lifecycle-snapshot.js";
-import { buildTraceabilitySummary, summarizeChecks } from "./report-helpers.js";
+import {
+	buildTraceabilitySummary,
+	selectDirtyPathsExcluded,
+	selectHarnessGateEvidenceSource,
+	summarizeChecks,
+} from "./report-helpers.js";
 import { buildPrCloseoutRecoveryState } from "./recovery.js";
 import { buildPrCloseoutSnapshot } from "./snapshot.js";
 import { deriveNextAction } from "./status.js";
 import { PR_CLOSEOUT_SCHEMA_VERSION } from "./types.js";
 import type {
 	PrCloseoutBlocker,
-	PrCloseoutHarnessGateEvidenceSource,
 	PrCloseoutInput,
 	PrCloseoutReport,
 } from "./types.js";
 
+/** Options controlling report timestamping and opt-in derived verifier evidence. */
+export interface PrCloseoutReportOptions {
+	now?: Date;
+	deriveDeliveryTruthFromStatePackets?: PrCloseoutDeliveryTruthDerivationOptions;
+}
+
 function buildPrCloseoutReportValue(
 	input: PrCloseoutInput,
-	options: { now?: Date } = {},
+	options: PrCloseoutReportOptions = {},
 ): PrCloseoutReport {
 	const blockers: PrCloseoutBlocker[] = [];
 	const generatedAt = (options.now ?? new Date()).toISOString();
@@ -45,24 +56,20 @@ function buildPrCloseoutReportValue(
 	const checks = input.checks ?? [];
 	const reviewThreads = input.reviewThreads ?? { unresolved: null };
 	const traceability = buildTraceabilitySummary(input);
-	const harnessGateEvidenceSource: PrCloseoutHarnessGateEvidenceSource =
-		input.closeoutGates !== undefined
-			? "closeout_gates"
-			: input.phaseExit !== undefined
-				? "phase_exit"
-				: "missing";
+	const harnessGateEvidenceSource = selectHarnessGateEvidenceSource(input);
 	const harnessGates = buildHarnessGateSummary(
 		input.closeoutGates ?? input.phaseExit,
 		harnessGateEvidenceSource,
 	);
-	const dirtyPaths = input.dirtyPaths ?? [];
 	const tools = input.tools ?? [];
-	const dirtyPathsExcluded = dirtyPaths.filter(
-		(path) => path.classification === "unrelated_local_noise",
-	);
+	const dirtyPathsExcluded = selectDirtyPathsExcluded(input);
 
 	const claims = buildCloseoutClaims(input, checks, reviewThreads, generatedAt);
-	const deliveryTruth = buildDeliveryTruthSummary(input.deliveryTruth);
+	const deliveryTruth = buildPrCloseoutDeliveryTruthSummary(
+		input,
+		generatedAt,
+		options.deriveDeliveryTruthFromStatePackets,
+	);
 	collectWorktreeBlockers(input, dirtyPathsExcluded, blockers);
 	collectPullRequestBlockers(pr, blockers);
 	collectCheckBlockers(checks, blockers);
@@ -145,7 +152,7 @@ function buildPrCloseoutReportValue(
 /** Build a read-only PR closeout evidence report as an Effect boundary. */
 export function buildPrCloseoutReportEffect(
 	input: PrCloseoutInput,
-	options: { now?: Date } = {},
+	options: PrCloseoutReportOptions = {},
 ): Effect.Effect<PrCloseoutReport> {
 	return Effect.sync(() => buildPrCloseoutReportValue(input, options));
 }
@@ -153,7 +160,7 @@ export function buildPrCloseoutReportEffect(
 /** Build a read-only PR closeout evidence report from normalized PR closeout inputs. */
 export function buildPrCloseoutReport(
 	input: PrCloseoutInput,
-	options: { now?: Date } = {},
+	options: PrCloseoutReportOptions = {},
 ): PrCloseoutReport {
 	return Effect.runSync(buildPrCloseoutReportEffect(input, options));
 }
