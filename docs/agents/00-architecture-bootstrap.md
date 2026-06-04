@@ -100,6 +100,14 @@ For root-surface cleanup, use `docs/architecture/root-surface-classification.md`
 Rule lifecycle governance updates are architecture-adjacent when they alter the manifest schema, `rule-lifecycle-gate`, or rule metadata validation. Keep this guide synchronized with `AGENTS.md` and `README.md` when docs-gate reports architecture-context or contract-policy surfaces, and ensure schema validation resolves from the target repo root rather than the caller's shell cwd.
 For agent-native cockpit work, treat decision-envelope, generated environment action, hook setup, runtime-card evidence, and diagram-context changes as architecture-adjacent surfaces. Run `bash scripts/check-diagram-freshness.sh` explicitly for those changes, and use `bash scripts/refresh-diagram-context.sh --force` when the check reports stale or missing artifacts. Keep this guide synchronized with `AGENTS.md` and `docs/agents/07b-agent-governance.md` when `docs-gate` asks for architecture-context evidence.
 RouteDecision lifecycle metadata belongs to this cockpit architecture-adjacent lane: keep `route-decision/v1` contract changes additive to `harness-decision/v1`, refresh `AI/context/diagram-context.md`, and commit this guide with the required docs-gate governance surfaces when `docs-gate` reports the architecture-context surface.
+Risk-tiered RouteDecision mutation authority is still advisory route metadata:
+only low-risk repo-local mutation routes with current evidence and validator
+ownership may omit human review, while destructive, external, tracker,
+production, release, security, credential, merge, public-contract,
+goal-completion, verifier-disagreement, ambiguous, unknown, or network-dependent
+mutation remains HILT-governed. This policy must not turn target commands into
+execution authority or support delivery-truth, merge-readiness, Judge/PM, or
+goal-completion claims.
 Generated Codex environment action changes that add validation script actions or branch-attachment behavior are architecture-adjacent when they refresh `AI/context/diagram-context.md`; commit the refreshed context pack and this guide with the required docs-gate governance surfaces when docs-gate reports the architecture-context surface.
 Codex preflight changes are architecture-adjacent when they alter Local Memory,
 Project Brain, or runtime-readiness enforcement. Legacy positional

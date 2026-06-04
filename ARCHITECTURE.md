@@ -220,6 +220,13 @@ not in docs, templates, generated context, or command facades.
   while keeping queued steering out of execution authority, closeout proof, and
   merge-readiness claim support until a future runtime-card adapter explicitly
   consumes it.
+- src/lib/decision/: advisory cockpit decision and lifecycle route metadata.
+  It owns `harness-decision/v1`, `route-decision/v1`, route validation, and the
+  risk-tiered mutation policy that allows only low-risk repo-local advisory
+  mutation routes to omit human review when current evidence and validator
+  ownership are present. It must not make route target commands executable
+  authority, prove delivery truth, mutate trackers, prove merge readiness, or
+  satisfy Judge/PM or goal-completion claims.
 - src/lib/decision-request/: read-only governance request packet emission for
   human or operator escalation. It owns intent, authority, option grammar,
   evidence references, escalation metadata, expiry/freshness normalization, and
