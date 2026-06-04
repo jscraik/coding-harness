@@ -45,7 +45,7 @@ kind of environment-scoped permission fact CNF-002 should make explicit.
   writable roots, or source provenance.
 - Do not duplicate `tool-exposure-snapshot/v1`; CNF-002 complements the
   completed SPG-005 tool-exposure slice.
-- Do not mutate `/Users/jamiecraik/dev/codex`.
+- Do not mutate a sibling Codex runtime checkout such as `<CODEX_RUNTIME_REPO>`.
 
 ## Source Capability Evidence
 
@@ -58,7 +58,7 @@ kind of environment-scoped permission fact CNF-002 should make explicit.
 - Goal refinement:
   `docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml`
 - Required preflight recovery evidence:
-  `HOME=/private/tmp/coding-harness-cnf002-003802/.cache/local-memory-home MISE_TRUSTED_CONFIG_PATHS=/private/tmp/coding-harness-cnf002-003802/.mise.toml bash scripts/codex-preflight.sh --stack auto --mode required` -> pass
+  `HOME=<WORKTREE_CACHE_HOME> MISE_TRUSTED_CONFIG_PATHS=<WORKTREE_ROOT>/.mise.toml bash scripts/codex-preflight.sh --stack auto --mode required` -> pass
 
 ## Review-The-Intent Checklist
 

@@ -142,6 +142,8 @@ export interface RuntimeCardPhaseExitState {
 export interface RuntimeCardSource {
 	/** Source family. */
 	kind: RuntimeCardSourceKind;
+	/** Optional producer-classified role for sources whose kind is intentionally broad. */
+	role?: "environment";
 	/** Stable file, command, URL, or artifact reference. */
 	ref: string;
 	/** Source freshness relative to the runtime card. */

@@ -114,6 +114,7 @@ function toEnvironmentSource(packet: CodexRuntimeEvidence): RuntimeCardSource {
 	const current = state === "current";
 	return {
 		kind: "session",
+		role: "environment",
 		ref:
 			packet.environment.sandboxPolicyRef ??
 			`codex-runtime://${packet.codex.turnId}/environment`,

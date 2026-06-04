@@ -487,12 +487,17 @@ path, authority class, and suggested next action.
 
 Spec artifact validation:
 
-    python3 /Users/jamiecraik/dev/agent-skills/Plugins/cache/agent-skills-local/harness-engineering/0.1.0/scripts/check_bluf_structure.py .harness/specs/2026-06-04-documentation-research-lifecycle-metadata-spec.md --json
-    python3 /Users/jamiecraik/dev/agent-skills/Plugins/cache/agent-skills-local/harness-engineering/0.1.0/scripts/check_generated_artifact_shape.py .harness/specs/2026-06-04-documentation-research-lifecycle-metadata-spec.md --kind spec --json
     pnpm docs:lint
     pnpm docs:lifecycle
     bash scripts/run-harness-gate.sh docs-gate --mode required --json
     git diff --check
+
+Optional independent artifact-shape validation:
+
+    Run the harness-engineering he-spec artifact validators only when their
+    scripts are discoverable from the active plugin installation. If the plugin
+    runtime is unavailable, record the check as blocked with the discovery
+    failure instead of hardcoding a workstation-local plugin-cache path.
 
 Implementation validation after checker changes:
 

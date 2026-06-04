@@ -112,6 +112,7 @@ describe("codex runtime evidence adapter", () => {
 				}),
 				expect.objectContaining({
 					kind: "session",
+					role: "environment",
 					ref: "artifact://sandbox-policy.json",
 					status: "usable",
 					freshness: "current",
@@ -139,6 +140,10 @@ describe("codex runtime evidence adapter", () => {
 		expect(bundle.sources).not.toContainEqual(
 			expect.objectContaining({ status: "blocked" }),
 		);
+		expect(
+			inspectRuntimeEvidenceBundle(bundle, unexpectedPhaseExit).codexRuntime
+				?.environmentRefs,
+		).toEqual(["artifact://sandbox-policy.json"]);
 	});
 
 	it("retains the highest-risk source when provenance collides with packet evidence", () => {

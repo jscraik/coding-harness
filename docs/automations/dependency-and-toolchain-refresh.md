@@ -74,5 +74,17 @@ requires a major migration decision, or validation cannot prove the touched path
 
 ## Validation
 
-Use the repo wrapper commands for the touched surface, then pnpm docs:lifecycle
-and docs-gate for runbook changes.
+Use exact commands and outcomes in refresh closeout. Minimum lanes:
+
+- Command: `pnpm docs:lifecycle` -> required after runbook metadata,
+  authority, lifecycle, package, or scaffold documentation changes.
+- Command: `bash scripts/run-harness-gate.sh docs-gate --mode required --json`
+  -> required when docs-gate, governed documentation, scaffold release, or
+  toolchain authority behavior changes.
+- Command: `pnpm test:related` -> required when source, templates, fixtures,
+  validators, or generated scaffold behavior changes.
+- Command: `pnpm check` -> required before package or release handoff.
+
+If a command is blocked by external services, credentials, or unavailable
+tooling, record the blocker and the smallest fallback command that still proves
+the touched path.

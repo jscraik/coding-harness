@@ -161,6 +161,33 @@ describe("codex-runtime-evidence/v1", () => {
 		);
 	});
 
+	it("does not treat omitted permission fields as known sandbox facts", () => {
+		const packet = validPacket();
+		const permissions = packet.permissions as unknown as {
+			profile?: string;
+			network?: string;
+		};
+		delete permissions.profile;
+		delete permissions.network;
+		packet.environment.sandboxPolicyRef = null;
+
+		const result = validateCodexRuntimeEvidence(packet);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).not.toContainEqual(
+			expect.objectContaining({
+				code: "sandbox_policy_ref_missing",
+				path: "environment.sandboxPolicyRef",
+			}),
+		);
+		expect(result.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ path: "permissions.profile" }),
+				expect.objectContaining({ path: "permissions.network" }),
+			]),
+		);
+	});
+
 	it("rejects current environment claims without any explicit scope evidence", () => {
 		const packet = validPacket();
 		packet.permissions.profile = "read_only";

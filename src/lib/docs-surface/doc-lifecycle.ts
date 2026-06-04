@@ -92,16 +92,26 @@ export function collectDocLifecycleViolations(options: {
 }): DocLifecycleViolation[] {
 	const repoRoot = resolve(options.repoRoot);
 	const manifestPath = join(repoRoot, "docs/doc-lifecycle-manifest.json");
-	if (!existsSync(manifestPath)) return [];
 	const deletedFiles = options.deletedFiles ?? new Set<string>();
+	const touchedFiles = [...new Set([...options.changedFiles, ...deletedFiles])];
+	const touchesLifecycleSurface = touchedFiles.some(
+		(file) =>
+			file === "docs/doc-lifecycle-manifest.json" ||
+			file === "docs/doc-lifecycle.schema.json" ||
+			file.startsWith("src/templates/") ||
+			isCoveredHarnessLifecyclePath(file),
+	);
+	if (!existsSync(manifestPath)) {
+		if (!touchesLifecycleSurface) return [];
+		const missingManifestViolations: DocLifecycleViolation[] = [];
+		loadManifest(repoRoot, missingManifestViolations);
+		return missingManifestViolations;
+	}
 	const manifestViolations: DocLifecycleViolation[] = [];
 	const manifest = loadManifest(repoRoot, manifestViolations);
 	if (!manifest) return manifestViolations;
 	const governedPaths = new Set(manifest.documents.map((entry) => entry.path));
-	const changed = [...new Set(options.changedFiles)].filter(
-		(file) => !deletedFiles.has(file),
-	);
-	const affectsLifecycle = changed.some(
+	const affectsLifecycle = touchedFiles.some(
 		(file) =>
 			file === "docs/doc-lifecycle-manifest.json" ||
 			file === "docs/doc-lifecycle.schema.json" ||
@@ -110,7 +120,7 @@ export function collectDocLifecycleViolations(options: {
 			governedPaths.has(file),
 	);
 	if (!affectsLifecycle) return [];
-	return validateDocLifecycle({ repoRoot, changedFiles: changed })
+	return validateDocLifecycle({ repoRoot, changedFiles: touchedFiles })
 		.requiredFindings;
 }
 
@@ -137,6 +147,22 @@ function loadManifest(
 				message:
 					"Documentation lifecycle manifest must contain documents array.",
 				fix: "Add a documents array with governed document entries.",
+			});
+			return null;
+		}
+		const hasInvalidEntry = parsed.documents.some(
+			(entry: unknown) =>
+				!entry ||
+				typeof entry !== "object" ||
+				typeof (entry as { path?: unknown }).path !== "string",
+		);
+		if (hasInvalidEntry) {
+			violations.push({
+				path: "docs/doc-lifecycle-manifest.json",
+				severity: "error",
+				message:
+					"Each manifest document entry must be an object with string path.",
+				fix: "Normalize malformed document entries in docs/doc-lifecycle-manifest.json.",
 			});
 			return null;
 		}

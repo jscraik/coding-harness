@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -82,6 +82,99 @@ describe("validateDocLifecycle", () => {
 					severity: "error",
 					classification: "required",
 					message: ".harness lifecycle artifact is missing YAML frontmatter.",
+				}),
+			]),
+		);
+	});
+
+	it("blocks deleted governed docs even when the file is absent from changed files", () => {
+		const repoRoot = createRepo();
+		writeLifecycleManifest(repoRoot, "docs/lifecycle/example.md");
+		writeGovernedDoc(repoRoot, "docs/lifecycle/example.md");
+		unlinkSync(join(repoRoot, "docs/lifecycle/example.md"));
+
+		expect(
+			collectDocLifecycleViolations({
+				repoRoot,
+				changedFiles: [],
+				deletedFiles: new Set(["docs/lifecycle/example.md"]),
+			}),
+		).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					path: "docs/lifecycle/example.md",
+					severity: "error",
+					message: "Governed document listed in manifest does not exist.",
+				}),
+			]),
+		);
+	});
+
+	it("reports malformed manifest entries instead of throwing", () => {
+		const repoRoot = createRepo();
+		writeFile(
+			repoRoot,
+			"docs/doc-lifecycle-manifest.json",
+			JSON.stringify({
+				schema: "coding-harness-doc-lifecycle-manifest/v1",
+				generatedAt: "2026-06-04T00:00:00Z",
+				documents: [null],
+			}),
+		);
+
+		expect(validateDocLifecycle({ repoRoot }).violations).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					path: "docs/doc-lifecycle-manifest.json",
+					severity: "error",
+					message:
+						"Each manifest document entry must be an object with string path.",
+				}),
+			]),
+		);
+	});
+
+	it("treats empty required frontmatter scalars as missing metadata", () => {
+		const repoRoot = createRepo();
+		writeLifecycleManifest(repoRoot, "docs/lifecycle/example.md");
+		writeGovernedDoc(repoRoot, "docs/lifecycle/example.md");
+		writeFile(
+			repoRoot,
+			"docs/lifecycle/example.md",
+			[
+				"---",
+				"doc_schema: coding-harness-doc/v1",
+				"doc_type: lifecycle",
+				"authority: canon",
+				"canon_class: canonical",
+				"distribution: source-only",
+				"audience:",
+				"  - codex-agent",
+				"lifecycle_state: active",
+				"owner:",
+				"created: 2026-06-04",
+				"last_reviewed: 2026-06-04",
+				"review_cadence: quarterly",
+				"maintenance_trigger:",
+				"  - lifecycle-change",
+				"semver_impact: minor",
+				"validated_by:",
+				"  - pnpm docs:lifecycle",
+				"depends_on:",
+				"  - AGENTS.md",
+				"---",
+				"",
+				"# Example",
+				"",
+			].join("\n"),
+		);
+
+		expect(validateDocLifecycle({ repoRoot }).violations).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					path: "docs/lifecycle/example.md",
+					severity: "error",
+					message: "Governed document is missing owner metadata.",
 				}),
 			]),
 		);

@@ -11,7 +11,7 @@ export function parseMarkdownFrontmatter(
 		(line, index) => index > 0 && line === "---",
 	);
 	if (closingIndex < 0) return null;
-	const metadata: Record<string, string | string[]> = {};
+	const metadata: Record<string, string | string[] | null> = {};
 	let currentKey: string | null = null;
 	for (const line of lines.slice(1, closingIndex)) {
 		const keyValue = line.match(/^([A-Za-z0-9_-]+):(?:\s*(.*))?$/);
@@ -36,9 +36,9 @@ export function parseMarkdownFrontmatter(
 	return metadata as Partial<DocLifecycleMetadata>;
 }
 
-function parseYamlScalar(value: string): string | string[] {
+function parseYamlScalar(value: string): string | string[] | null {
 	const trimmed = value.trim();
-	if (!trimmed) return [];
+	if (!trimmed) return null;
 	if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
 		return trimmed
 			.slice(1, -1)

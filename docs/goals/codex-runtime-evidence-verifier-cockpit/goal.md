@@ -42,21 +42,24 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-03 current-main route-truth refresh after the
-PR stack merged.
+Last updated during the 2026-06-04 stacked-PR route-truth refresh after PR #333
+and PR #338 merged into their stack bases and PR #331 advanced to
+`02907f95c1a5941e7ba0bc43e519fc66bc23eb84`.
 
 Current route truth:
 
 - `main` and `origin/main` are synchronized at `50a6d0b5d764e35395e12190a465e854c26784fd`.
-- Live GitHub reports zero open pull requests for `jscraik/coding-harness`.
+- Live GitHub reports open stacked pull requests for `jscraik/coding-harness`: PR #331 is `MERGEABLE/BLOCKED`, PR #335 is `CONFLICTING/DIRTY`, and PR #336 is `MERGEABLE/UNSTABLE`.
 - PR #321, PR #322, PR #323, PR #325, PR #326, PR #327, PR #328, PR #329, and PR #330 are merged route or foundation lanes for this goal.
+- PR #333 merged into the PR #331 branch at 2026-06-04T17:10:10Z as merge commit `02907f95c1a5941e7ba0bc43e519fc66bc23eb84`.
+- PR #338 merged into the PR #336 branch at 2026-06-04T17:12:20Z as merge commit `01179cdefccf34c58fbac54d4f0da344fdaa6155`.
 - PR #330 merged into `main` at 2026-06-03T20:43:56Z as `docs(goal): promote CircleCI env recovery rule`.
 - Live Linear `JSC-363` was refreshed after the PR stack merged: status is `Done`, completed at 2026-06-03T20:44:00Z, and the issue has an attachment titled `JSC-363 full lifecycle scope note`. The issue title and description still use Phase 1 wording, so Linear alignment is attachment-backed rather than field-text-current.
-- Do not keep routing work as if PR #328, PR #329, or PR #330 were open stacked PRs unless a fresh GitHub query shows a reopened or new PR lane.
+- Do not keep routing work as if PR #328, PR #329, PR #330, PR #333, or PR #338 were open stacked PRs unless a fresh GitHub query shows a reopened or new PR lane.
 
 Outstanding goal work after conflict reconciliation:
 
-- Do not proceed with implementation work until the owner explicitly reactivates the goal.
+- Continue only from current open-stack truth: repair PR #331 review-thread findings first, then recheck PR #335 conflicts and PR #336 checks/review after PR #331 has a new submitted head.
 - Keep this goal board and the local board tracker synchronized before using either as route truth.
 - Run the goal-board and audit-freshness validators after this route-truth refresh.
 - Treat merged PRs as completed route/foundation evidence, not as final goal completion.

@@ -510,11 +510,16 @@ Rollback:
 
 Spec artifact validation:
 
-    python3 /Users/jamiecraik/dev/agent-skills/Plugins/cache/agent-skills-local/harness-engineering/0.1.0/scripts/check_bluf_structure.py .harness/specs/2026-06-04-reader-task-documentation-eval-spec.md --json
-    python3 /Users/jamiecraik/dev/agent-skills/Plugins/cache/agent-skills-local/harness-engineering/0.1.0/scripts/check_generated_artifact_shape.py .harness/specs/2026-06-04-reader-task-documentation-eval-spec.md --kind spec --json
     pnpm docs:lint
     pnpm docs:lifecycle
     git diff --check
+
+Optional independent artifact-shape validation:
+
+    Run the harness-engineering he-spec artifact validators only when their
+    scripts are discoverable from the active plugin installation. If the plugin
+    runtime is unavailable, record the check as blocked with the discovery
+    failure instead of hardcoding a workstation-local plugin-cache path.
 
 Implementation validation after PU-004:
 

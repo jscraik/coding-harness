@@ -62,8 +62,19 @@ permission model all allow that action.
 
 ## Validation
 
-Use the runbook's declared validation command, then docs lifecycle and docs-gate
-when the runbook or authority model changes.
+Use exact commands and outcomes in automation closeout. Minimum lanes:
+
+- Command: `pnpm docs:lifecycle` -> required after runbook metadata,
+  authority, ownership, or lifecycle changes.
+- Command: `bash scripts/run-harness-gate.sh docs-gate --mode required --json`
+  -> required when automation authority, docs-gate, or governed documentation
+  behavior changes.
+- Command: `pnpm test:related` -> required when implementation or validator
+  code changes.
+- Command: `git diff --check` -> required before handoff.
+
+If a command is blocked, record the blocker, owner, and nearest meaningful
+fallback. Do not replace command evidence with a prose assertion.
 
 ## Review Checklist
 

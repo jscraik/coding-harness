@@ -273,6 +273,11 @@ function validateSources(value: unknown, errors: HeValidationError[]): void {
 			continue;
 		}
 		validateEnum(source.kind, `${field}.kind`, VALID_SOURCE_KINDS, errors);
+		if (source.role !== undefined && source.role !== "environment") {
+			errors.push(
+				toValidationError(`${field}.role is invalid`, `${field}.role`),
+			);
+		}
 		validateString(source.ref, `${field}.ref`, errors);
 		validateEnum(
 			source.freshness,

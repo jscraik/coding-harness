@@ -497,7 +497,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts and route-truth receipts through <code>R261</code> plus live GitHub conflict refresh on 2026-06-04. Local <code>main</code> and <code>origin/main</code> were synchronized at <code>50a6d0b5d764e35395e12190a465e854c26784fd</code>; there was no main fast-forward to pull, but stale merged PR refs were pruned. Open PR truth is now <code>#331 MERGEABLE/BLOCKED</code>, <code>#333 CONFLICTING/DIRTY</code>, <code>#335 CONFLICTING/DIRTY</code>, <code>#336 CONFLICTING/DIRTY</code>, and <code>#338 CONFLICTING/DIRTY</code>. This branch is repairing PR #333 bottom-up before rechecking #335, #336, and #338. The board remains an orientation artifact, not proof of independent reviewer completion, live Codex Desktop extraction, runtime producer emission, delivery-truth consumption, PR/CI green status, review-thread resolution, merge readiness, Judge/PM readiness, or final goal completion.</p>
+    <p class="footer">Snapshot generated from current goal artifacts and route-truth receipts through <code>R266</code> plus live GitHub refresh on 2026-06-04. Local <code>main</code> and <code>origin/main</code> remain synchronized at <code>50a6d0b5d764e35395e12190a465e854c26784fd</code>. PR #333 merged into PR #331 at <code>02907f95c1a5941e7ba0bc43e519fc66bc23eb84</code>, and PR #338 merged into PR #336 at <code>01179cdefccf34c58fbac54d4f0da344fdaa6155</code>. Open PR truth is now <code>#331 MERGEABLE/BLOCKED</code>, <code>#335 CONFLICTING/DIRTY</code>, and <code>#336 MERGEABLE/UNSTABLE</code>. This branch is repairing PR #331 review-thread findings before rechecking #335 conflicts and #336 checks/review. The board remains an orientation artifact, not proof of independent reviewer completion, live Codex Desktop extraction, runtime producer emission, delivery-truth consumption, PR/CI green status, review-thread resolution, merge readiness, Judge/PM readiness, or final goal completion.</p>
   </main>
 
   <script>
@@ -606,7 +606,7 @@
         status: "done",
         tags: ["PR #329", "route cleanup", "merged"],
         summary: "Merged the route cleanup that retired the stale PR #324 lane.",
-        evidence: ["GitHub merged PR list: #329 merged at 2026-06-01T21:47:42Z", "Current live PR list has zero open PRs"],
+        evidence: ["GitHub merged PR list: #329 merged at 2026-06-01T21:47:42Z", "Current live PR list has open PRs #331, #335, and #336 after the newer stack restarted"],
         next: "Keep PR #324 out of active routing unless live GitHub shows it reopened.",
         risk: "Stale text can reintroduce old PR lanes if the goal board is not updated."
       },
@@ -617,7 +617,7 @@
         status: "done",
         tags: ["PR #330", "CircleCI", "merged"],
         summary: "Merged the CircleCI env recovery rule and PR #330 conflict/receipt reanchor lane into main.",
-        evidence: ["GitHub merged PR list: #330 merged at 2026-06-03T20:43:56Z", "origin/main top commit 50a6d0b5", "Live open PR list is empty"],
+        evidence: ["GitHub merged PR list: #330 merged at 2026-06-03T20:43:56Z", "origin/main top commit 50a6d0b5", "Newer live open PR list contains #331, #335, and #336"],
         next: "Move from PR repair to current-main goal re-evaluation and final completion audit.",
         risk: "PR #330 merge does not prove Linear scope alignment, runtime producer emission, delivery-truth consumption, or Judge/PM readiness."
       },
@@ -638,10 +638,10 @@
         title: "Source freshness current",
         status: "done",
         tags: ["main", "origin/main", "R222"],
-        summary: "The board is sourced from synchronized local main, origin/main, live GitHub PR truth, and the current-main R222 receipt.",
-        evidence: ["git rev-parse HEAD -> 50a6d0b5d764e35395e12190a465e854c26784fd", "git rev-list --left-right --count HEAD...origin/main -> 0 0", "gh pr list --state open -> []", "R222 head_sha -> 50a6d0b5d764e35395e12190a465e854c26784fd"],
-        next: "Use this tracker as the current route surface, but stop goal implementation until Jamie explicitly reactivates the goal.",
-        risk: "Current route truth proves merged-main orientation only. It does not prove Linear alignment or parent-goal completion."
+        summary: "The board is sourced from synchronized main, the current PR #331 branch head, live GitHub PR truth, and the latest route receipt.",
+        evidence: ["origin/main -> 50a6d0b5d764e35395e12190a465e854c26784fd", "PR #331 head -> 02907f95c1a5941e7ba0bc43e519fc66bc23eb84", "gh pr list --state open -> #331, #335, #336", "R266 records current open-stack truth"],
+        next: "Use this tracker as the current route surface while repairing PR #331, then refresh PR #335 and PR #336.",
+        risk: "Current route truth proves orientation only. It does not prove CI green, review-thread resolution, Linear field text, or parent-goal completion."
       },
       {
         id: "codex-native-refinement",
@@ -693,10 +693,10 @@
         title: "Merged PR stack",
         status: "done",
         tags: ["PR #327", "PR #328", "PR #330"],
-        summary: "Live GitHub reports no open PRs and recent JSC-363 lanes through PR #330 are merged into the stack represented by origin/main.",
-        evidence: ["gh pr list --state open -> []", "PR #330 merged into main at 2026-06-03T20:43:56Z", "origin/main top commit 50a6d0b5 is PR #330"],
-        next: "Move from PR triage to goal-board re-evaluation, Linear refresh, runtime proof, and final completion-audit checks.",
-        risk: "Merged PR stack status is separate from runtime evidence, Linear truth, Judge/PM readiness, and final goal completion."
+        summary: "Live GitHub reports PR #331 open against main, PR #335 conflicting against PR #331, and PR #336 open/unstable after PR #338 merged into its base.",
+        evidence: ["gh pr list --state open -> #331, #335, #336", "PR #333 merged into PR #331 at 2026-06-04T17:10:10Z", "PR #338 merged into PR #336 at 2026-06-04T17:12:20Z"],
+        next: "Finish the PR #331 review-thread repair, trigger CodeRabbit on the pushed head, then recheck PR #335 conflicts and PR #336 checks/review.",
+        risk: "Open PR truth is separate from local validation, Snyk quota, review-thread resolution, merge readiness, and parent goal completion."
       },
       {
         id: "browser-preview",
@@ -717,18 +717,18 @@
         tags: ["PU-047", "CNF-001", "runtime", "steering", "message id"],
         summary: "Local implementation now carries clientUserMessageId as explicit nullable Codex runtime identity and binds steering items to expected/applied client-message IDs without synthesizing missing evidence. PR #331 is open for remote checks and review.",
         evidence: ["docs/goals/.../notes/PU-047-cnf-001-source-capability.md", "src/lib/runtime/codex-runtime-evidence-*.ts", "src/lib/steering-queue/{builder,types,validation-item}.ts", "contracts/steering-queue.schema.json", "scripts/validate-steering-queue.cjs", "focused runtime and steering-queue tests -> pass", "verify-work --fast --changed-only -> pass on resume", "R225/R226: earlier review artifact failure and tracking repair recorded", "post-implementation adversarial, agent-native, and best-practices artifacts exist with no material findings", "reviewer-coverage validator with expectedHeadSha -> pass", "R229: full validate-codestyle, pnpm check path, tooling-audit, goal-board, audit-freshness -> pass", "R230: docs-style repair and refreshed goal-surface validation -> pass", "R231: pre-push architecture diagram refresh -> pass", "R232: PR #331 opened; GitHub reports OPEN/MERGEABLE/BLOCKED"],
-        next: "Run PR #331 triage with git fetch and pr-green-sweep expectations; keep live Codex Desktop extraction, runtime-card continuity, and delivery-truth consumption as separate proof lanes before claiming PU-047/CNF-001 done.",
+        next: "Commit and push the PR #331 review-thread repair, manually trigger CodeRabbit, then refresh PR #331 checks, review threads, Snyk quota, and mergeability before any PU-047/CNF-001 done claim.",
         risk: "The field is nullable and orientation-only when source evidence is unavailable; this slice does not prove live Codex Desktop extraction, runtime producer emission, delivery-truth consumption, Judge/PM readiness, or parent-goal completion."
       },
       {
 		id: "cnf002-environment-permissions",
 		lane: "implementation",
 		title: "CNF-002 environment-scoped permissions",
-		status: "PR #332 draft; remote checks blocked",
+		status: "merged into PR #331 stack",
 		tags: ["permissions", "tool exposure", "environment"],
-		summary: "Implementation adds a codex-runtime-evidence environment snapshot and runtime-card environmentRefs so permission evidence is scoped to cwd, executor, approval scope, and sandbox policy evidence. PR #332 is open as a stacked draft on PR #331.",
+		summary: "Implementation adds a codex-runtime-evidence environment snapshot and runtime-card environmentRefs so permission evidence is scoped to cwd, executor, approval scope, and sandbox policy evidence. The branch content is now present in the PR #331 stack.",
         evidence: ["docs/goals/.../notes/PU-048-cnf-002-env-permissions-intent.md", "src/lib/runtime/codex-runtime-evidence-{types,validation,producer,references,adapter}.ts", "src/lib/runtime/runtime-card-codex-runtime{,-validation}.ts", "src/lib/runtime/runtime-evidence-adapter.ts", "focused runtime evidence and runtime-card tests -> pass (88 tests)", "pnpm typecheck -> pass", "docs-gate -> pass", "validate-codestyle full -> pass", "pnpm check -> pass", "source checkout pr-template-gate on live PR body -> pass after durable evidence-map repair", "installed harness pr-template-gate on edited PR body -> pass", "PR #332 -> OPEN draft, MERGEABLE/UNSTABLE", "GitHub checks: ci/circleci: pr-template still failed on pre-repair status, Snyk quota failed, most other visible CircleCI lanes passed or completed", "R241: PR #332 body and route-truth freshness repaired", "artifacts/reviews/pu048-cnf-002-skill-lenses.md", "artifacts/reviews/pu048-cnf-002-reviewer-runtime-blocker.md"],
-        next: "Push R241 route-truth and validator repair to PR #332 so remote checks rerun on a new head, then triage CircleCI pr-template/pr-pipeline, Snyk quota, and missing independent-review artifacts separately.",
+        next: "Validate the environment-source repair on PR #331 and keep Snyk quota plus missing independent-review artifacts separate from local implementation truth.",
         risk: "Live Codex Desktop extraction of these fields is still unproven; independent reviewer artifacts are blocked; remote CI is not green; delivery-truth consumption, Judge/PM readiness, and parent-goal completion remain separate proof lanes."
       },
       {
@@ -739,7 +739,7 @@
         tags: ["HILT", "route decision", "agent-native"],
         summary: "RouteDecision now carries a mutationPolicy with scope, risk tier, evidence freshness, validator ownership, and authority. Agent-local mutation is limited to low-risk repo-local work with current evidence, validator ownership, and no network requirement.",
         evidence: ["docs/goals/.../notes/PU-049-cnf-003-risk-tier-authority-intent.md", "src/lib/decision/route-decision.ts", "src/lib/decision/route-decision.test.ts", "ARCHITECTURE.md", "docs/agents/00-architecture-bootstrap.md", "docs/agents/07b-agent-governance.md", "pnpm exec vitest run src/lib/decision/route-decision.test.ts -> pass (49 tests)", "pnpm exec vitest run src/commands/decision-request.test.ts -> pass (13 tests)", "pnpm typecheck -> pass", "docs-gate -> pass", "check-diagram-freshness -> pass", "validate-codestyle --fast -> pass", "artifacts/reviews/pu049-cnf-003-reviewer-runtime-blocker.md", "R242: CNF-003 route-truth refreshed"],
-        next: "Run PR #333 triage for remote CI, review threads, CodeRabbit/Codex state, mergeability, and independent reviewer artifact recovery or accepted fallback before any slice-done claim.",
+        next: "Treat PR #333 as merged into PR #331; continue validating CNF-003 evidence through PR #331 and PR #335 rather than reopening a closed PR.",
         risk: "The route remains advisory and must not authorize commands, mutate trackers, prove delivery truth, satisfy merge readiness, or close Judge/PM/goal completion. Independent reviewer artifact production is still blocked."
       },
       {
@@ -747,10 +747,10 @@
         lane: "remote",
         title: "CNF-004 runtime-card continuity",
         status: "active",
-        tags: ["runtime-card", "continuity", "projection", "PR #334 draft", "remote unstable"],
+        tags: ["runtime-card", "continuity", "projection", "stacked PR", "remote unstable"],
         summary: "Runtime-card Codex projection now exposes compact codexRuntime.continuity refs for thread, turn, trace, goal, client message, active queue item, approval request, and heartbeat/automation continuity while preserving pointer-only redaction.",
         evidence: ["docs/goals/.../notes/PU-050-cnf-004-runtime-card-continuity-intent.md", "src/lib/runtime/runtime-card-codex-runtime.ts", "src/lib/runtime/runtime-card-codex-runtime-validation.ts", "src/lib/runtime/runtime-evidence-bundle.ts", "src/lib/runtime/runtime-evidence-adapter.ts", "runtime-card projection tests -> pass", "runtime-evidence adapter tests -> pass", "pnpm typecheck -> pass", "quality:docstrings -> pass", "docs-gate -> pass", "check-diagram-freshness -> pass", "validate-codestyle --fast -> pass", "pr-template-gate -> pass", "make hooks-pre-push -> pass", "PR #334 OPEN draft, base PR #333 branch, head 11cf544a, mergeStateStatus UNSTABLE", "artifacts/reviews/pu050-cnf-004-skill-lenses.md", "artifacts/reviews/pu050-cnf-004-implementation-reviewer-runtime-blocker.md", "R245: CNF-004 PR route-truth refresh"],
-        next: "Run PR #334 triage for remote CI, review threads, CodeRabbit/Codex state, mergeability, and independent reviewer artifact recovery or accepted fallback before any slice-done claim.",
+        next: "Treat the CNF-004 branch content as part of the current stack and refresh PR #336 after lower-stack truth is repaired.",
         risk: "Continuity refs are source and receipt pointers only; they do not prove live Codex Desktop extraction, delivery-truth consumption, review-state truth, external-state truth, merge readiness, Judge/PM readiness, slice completion, or parent-goal completion."
       },
       {
@@ -789,13 +789,13 @@
       {
         id: "stale-board-route",
         lane: "completed",
-        title: "Route truth refreshed on current main",
+        title: "Route truth refreshed for open stack",
         status: "done",
-        tags: ["goal.md", "state.yaml", "R222"],
-        summary: "goal.md, state.yaml, and receipts.jsonl now start from all known PR lanes merged and local main synchronized with origin/main.",
-        evidence: ["goal.md route truth says zero open PRs and PR #321, #322, #323, #325, #326, #327, #328, #329, and #330 merged", "state.yaml current_slice_gate.status = all_pr_lanes_merged_route_truth_refreshed_pending_owner_reactivation", "R222 head_sha -> 50a6d0b5d764e35395e12190a465e854c26784fd"],
-        next: "Keep the tracker synchronized with canonical goal artifacts; do not continue implementation until Jamie reactivates the goal.",
-        risk: "This fixes stale routing. It does not close remaining runtime, Linear, delivery-truth, docs, or Judge/PM gates."
+        tags: ["goal.md", "state.yaml", "R266"],
+        summary: "goal.md, state.yaml, receipts.jsonl, and this board now start from current open-stack truth rather than stale zero-open-PR wording.",
+        evidence: ["goal.md route truth says PR #331, #335, and #336 are open", "state.yaml current_slice_gate.status = local_review_thread_repair_on_current_pr331_head", "R266 head_sha -> 02907f95c1a5941e7ba0bc43e519fc66bc23eb84"],
+        next: "Keep the tracker synchronized with canonical goal artifacts after every push or merged PR lane.",
+        risk: "This fixes stale routing. It does not close remaining runtime, review, CI, delivery-truth, docs, or Judge/PM gates."
       },
       {
         id: "goal-validators",
