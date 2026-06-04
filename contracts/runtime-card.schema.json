@@ -241,9 +241,51 @@
 					"type": "array",
 					"items": { "type": "string", "minLength": 1 }
 				},
+				"environmentRefs": {
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 }
+				},
 				"staleStateRefs": {
 					"type": "array",
 					"items": { "type": "string", "minLength": 1 }
+				},
+				"continuity": {
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"threadRefs": {
+							"type": "array",
+							"items": { "type": "string", "minLength": 1 }
+						},
+						"turnRefs": {
+							"type": "array",
+							"items": { "type": "string", "minLength": 1 }
+						},
+						"traceRefs": {
+							"type": "array",
+							"items": { "type": "string", "minLength": 1 }
+						},
+						"goalRefs": {
+							"type": "array",
+							"items": { "type": "string", "minLength": 1 }
+						},
+						"clientMessageRefs": {
+							"type": "array",
+							"items": { "type": "string", "minLength": 1 }
+						},
+						"queueRefs": {
+							"type": "array",
+							"items": { "type": "string", "minLength": 1 }
+						},
+						"approvalRefs": {
+							"type": "array",
+							"items": { "type": "string", "minLength": 1 }
+						},
+						"heartbeatRefs": {
+							"type": "array",
+							"items": { "type": "string", "minLength": 1 }
+						}
+					}
 				},
 				"toolExposure": {
 					"type": "object",

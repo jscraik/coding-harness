@@ -52,6 +52,7 @@ export function adaptCodexRuntimeEvidenceToRuntimeEvidenceBundle(
 	const sources = mergeRuntimeCardSources([
 		toSourceProvenanceSource(packet),
 		toPermissionSource(packet),
+		toEnvironmentSource(packet),
 		...packet.mcp.servers.map(toMcpSource),
 		...packet.receipts.map(toReceiptSource),
 		...packet.validationResults.map(toValidationResultSource),
@@ -108,6 +109,28 @@ function toPermissionSource(packet: CodexRuntimeEvidence): RuntimeCardSource {
 	};
 }
 
+function toEnvironmentSource(packet: CodexRuntimeEvidence): RuntimeCardSource {
+	const state = packet.environment.state;
+	const current = state === "current";
+	return {
+		kind: "session",
+		role: "environment",
+		ref:
+			packet.environment.sandboxPolicyRef ??
+			`codex-runtime://${packet.codex.turnId}/environment`,
+		freshness:
+			state === "stale_cwd" || state === "approval_scope_mismatch"
+				? "stale"
+				: state === "sandbox_policy_missing"
+					? "missing"
+					: current
+						? "current"
+						: "unknown",
+		status: current ? "usable" : "blocked",
+		failureClass: packet.environment.failureClass,
+	};
+}
+
 function toMcpSource(server: CodexRuntimeMcpServerSnapshot): RuntimeCardSource {
 	return {
 		kind: "session",
@@ -155,9 +178,10 @@ function optionalStateSource(
 	state: CodexRuntimeOptionalState | undefined,
 ): RuntimeCardSource | null {
 	if (!state) return null;
+	if (state.status !== "provided" && !state.evidenceRef) return null;
 	return {
 		kind: subject === "review_state" ? "review" : "artifact",
-		ref: state.evidenceRef ?? `codex-${subject}://unknown`,
+		ref: state.evidenceRef ?? `codex-${subject}://provided`,
 		freshness: state.status === "provided" ? "current" : "unknown",
 		status: state.status === "provided" ? "usable" : "blocked",
 		failureClass: state.failureClass,
@@ -220,6 +244,7 @@ function buildBlockers(packet: CodexRuntimeEvidence): string[] {
 		...sourceProvenanceBlockers(packet),
 		...identityBlockers(packet),
 		...permissionBlockers(packet),
+		...environmentBlockers(packet),
 		...mcpBlockers(packet),
 		...validationResultBlockers(packet),
 		...receiptBlockers(packet),
@@ -265,6 +290,17 @@ function permissionBlockers(packet: CodexRuntimeEvidence): string[] {
 		];
 	}
 	return [];
+}
+
+function environmentBlockers(packet: CodexRuntimeEvidence): string[] {
+	if (packet.environment.state === "current") return [];
+	return [
+		"Codex environment scope is " +
+			packet.environment.state +
+			": " +
+			(packet.environment.failureClass ?? "unknown") +
+			".",
+	];
 }
 
 function mcpBlockers(packet: CodexRuntimeEvidence): string[] {

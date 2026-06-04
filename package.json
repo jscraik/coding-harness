@@ -63,7 +63,7 @@
 		"harness": "dist/cli.js"
 	},
 	"scripts": {
-		"check": "pnpm lint && pnpm docs:lint && pnpm docs:root-archive:links && pnpm docs:ubiquitous:guard && pnpm docs:steering:guard && pnpm skill:validate && pnpm workflow:validate && pnpm research:evidence:validate && pnpm architecture:check && pnpm typecheck && pnpm quality:docstrings && pnpm quality:size && pnpm quality:self-affirming && pnpm quality:behavior-tests && pnpm quality:git-env-sanitizer && pnpm harness:audit-tracking && pnpm test:related && pnpm test:ci && pnpm audit",
+		"check": "pnpm lint && pnpm docs:lint && pnpm docs:lifecycle && pnpm docs:root-archive:links && pnpm docs:ubiquitous:guard && pnpm docs:steering:guard && pnpm skill:validate && pnpm workflow:validate && pnpm research:evidence:validate && pnpm architecture:check && pnpm typecheck && pnpm quality:docstrings && pnpm quality:size && pnpm quality:self-affirming && pnpm quality:behavior-tests && pnpm quality:git-env-sanitizer && pnpm harness:audit-tracking && pnpm test:related && pnpm test:ci && pnpm audit",
 		"publish:release": "pnpm check && pnpm build && npm publish --access restricted --ignore-scripts=false",
 		"lint": "pnpm codestyle:parity && pnpm codex-preflight:check && pnpm codex:agents:guard && biome check .",
 		"lint:fix": "biome check . --write",
@@ -87,6 +87,7 @@
 		"docs:root-archive:links": "node scripts/check-root-archive-links.mjs",
 		"docs:ubiquitous:guard": "bash scripts/check-ubiquitous-language-link.sh",
 		"docs:steering:guard": "node scripts/check-steering-feedback-contract.cjs",
+		"docs:lifecycle": "tsx scripts/check-doc-lifecycle.ts",
 		"docs:style:changed": "bash scripts/check-doc-style.sh",
 		"skill:validate": "node scripts/validate-packaged-skill.cjs",
 		"workflow:normalize": "node scripts/normalize-workflow-contracts.cjs",

@@ -19,6 +19,7 @@ const STATES = new Set([
 const STALE_KINDS = new Set([
 	"stale_turn",
 	"stale_thread",
+	"stale_client_user_message",
 	"stale_head",
 	"instruction_hash_mismatch",
 	"instruction_hash_unverifiable",
@@ -53,6 +54,7 @@ const PACKET_KEYS = new Set([
 	"headSha",
 	"threadId",
 	"turnId",
+	"clientUserMessageId",
 	"evaluatedAt",
 	"selectedItemId",
 	"items",
@@ -73,6 +75,7 @@ const ITEM_KEYS = new Set([
 	"deliveryMode",
 	"expectedThreadId",
 	"expectedTurnId",
+	"expectedClientUserMessageId",
 	"expectedHeadSha",
 	"priority",
 	"requiredArtifacts",
@@ -80,6 +83,7 @@ const ITEM_KEYS = new Set([
 	"supersededBy",
 	"state",
 	"stateReason",
+	"appliedClientUserMessageId",
 	"stateAt",
 	"appliedAt",
 	"rejectedAt",
@@ -259,6 +263,11 @@ function validateItem(value, index, ids, errors) {
 		errors,
 	);
 	requireNullableSafe(value.expectedTurnId, `${path}.expectedTurnId`, errors);
+	requireNullableSafe(
+		value.expectedClientUserMessageId,
+		`${path}.expectedClientUserMessageId`,
+		errors,
+	);
 	requireSha(value.expectedHeadSha, `${path}.expectedHeadSha`, errors);
 	if (!Number.isInteger(value.priority))
 		add(errors, `${path}.priority`, "must be an integer");
@@ -281,6 +290,11 @@ function validateItem(value, index, ids, errors) {
 	requireNullableSafe(value.supersededBy, `${path}.supersededBy`, errors);
 	requireEnum(value.state, STATES, `${path}.state`, errors);
 	requireNullableSafe(value.stateReason, `${path}.stateReason`, errors);
+	requireNullableSafe(
+		value.appliedClientUserMessageId,
+		`${path}.appliedClientUserMessageId`,
+		errors,
+	);
 	requireIso(value.stateAt, `${path}.stateAt`, errors);
 	requireNullableIso(value.appliedAt, `${path}.appliedAt`, errors);
 	requireNullableIso(value.rejectedAt, `${path}.rejectedAt`, errors);
@@ -300,6 +314,25 @@ function validateItem(value, index, ids, errors) {
 	}
 	if (value.state === "applied" && value.appliedAt === null) {
 		add(errors, `${path}.appliedAt`, "is required for applied items");
+	}
+	if (value.state === "applied" && value.appliedClientUserMessageId === null) {
+		add(
+			errors,
+			`${path}.appliedClientUserMessageId`,
+			"is required for applied items",
+		);
+	}
+	if (
+		value.state === "applied" &&
+		value.expectedClientUserMessageId !== null &&
+		value.appliedClientUserMessageId !== null &&
+		value.expectedClientUserMessageId !== value.appliedClientUserMessageId
+	) {
+		add(
+			errors,
+			`${path}.appliedClientUserMessageId`,
+			"must match expectedClientUserMessageId for applied items",
+		);
 	}
 	if (
 		value.state === "applied" &&
@@ -366,6 +399,11 @@ function validatePacket(packet) {
 	requireSha(packet.headSha, "headSha", errors);
 	requireNullableSafe(packet.threadId, "threadId", errors);
 	requireNullableSafe(packet.turnId, "turnId", errors);
+	requireNullableSafe(
+		packet.clientUserMessageId,
+		"clientUserMessageId",
+		errors,
+	);
 	requireIso(packet.evaluatedAt, "evaluatedAt", errors);
 	requireNullableSafe(packet.selectedItemId, "selectedItemId", errors);
 	if (!Array.isArray(packet.items)) {

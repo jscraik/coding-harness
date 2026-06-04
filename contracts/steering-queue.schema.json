@@ -13,6 +13,7 @@
 		"headSha",
 		"threadId",
 		"turnId",
+		"clientUserMessageId",
 		"evaluatedAt",
 		"selectedItemId",
 		"items",
@@ -28,6 +29,7 @@
 		"headSha": { "$ref": "#/$defs/headSha" },
 		"threadId": { "$ref": "#/$defs/nullableSafePointer" },
 		"turnId": { "$ref": "#/$defs/nullableSafePointer" },
+		"clientUserMessageId": { "$ref": "#/$defs/nullableSafePointer" },
 		"evaluatedAt": { "$ref": "#/$defs/isoTimestamp" },
 		"selectedItemId": { "$ref": "#/$defs/nullableSafePointer" },
 		"items": {
@@ -89,6 +91,7 @@
 					"enum": [
 						"stale_turn",
 						"stale_thread",
+						"stale_client_user_message",
 						"stale_head",
 						"instruction_hash_mismatch",
 						"instruction_hash_unverifiable",
@@ -123,6 +126,7 @@
 				"deliveryMode",
 				"expectedThreadId",
 				"expectedTurnId",
+				"expectedClientUserMessageId",
 				"expectedHeadSha",
 				"priority",
 				"requiredArtifacts",
@@ -130,6 +134,7 @@
 				"supersededBy",
 				"state",
 				"stateReason",
+				"appliedClientUserMessageId",
 				"stateAt",
 				"appliedAt",
 				"rejectedAt",
@@ -168,6 +173,9 @@
 				},
 				"expectedThreadId": { "$ref": "#/$defs/nullableSafePointer" },
 				"expectedTurnId": { "$ref": "#/$defs/nullableSafePointer" },
+				"expectedClientUserMessageId": {
+					"$ref": "#/$defs/nullableSafePointer"
+				},
 				"expectedHeadSha": { "$ref": "#/$defs/headSha" },
 				"priority": { "type": "integer" },
 				"requiredArtifacts": {
@@ -191,6 +199,9 @@
 					]
 				},
 				"stateReason": { "$ref": "#/$defs/nullableSafePointer" },
+				"appliedClientUserMessageId": {
+					"$ref": "#/$defs/nullableSafePointer"
+				},
 				"stateAt": { "$ref": "#/$defs/isoTimestamp" },
 				"appliedAt": {
 					"anyOf": [{ "type": "null" }, { "$ref": "#/$defs/isoTimestamp" }]

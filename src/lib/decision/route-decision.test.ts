@@ -40,6 +40,13 @@ function validRouteDecision(
 		requiresHuman: false,
 		requiresNetwork: false,
 		mutates: false,
+		mutationPolicy: {
+			scope: "none",
+			riskTier: "none",
+			evidenceFreshness: "not_applicable",
+			validatorOwnership: "not_applicable",
+			authority: "not_applicable",
+		},
 		failureClass: null,
 		blockerBoundary: "none",
 		evidenceRef: ["plan:jsc-301-route-decision-contract"],
@@ -143,6 +150,31 @@ describe("validateRouteDecision", () => {
 			valid: true,
 			errors: [],
 		});
+	});
+
+	it("accepts legacy non-mutating v1 routes without mutationPolicy", () => {
+		const { mutationPolicy: _mutationPolicy, ...legacyRouteDecision } =
+			validRouteDecision();
+
+		expect(validateRouteDecision(legacyRouteDecision)).toEqual({
+			valid: true,
+			errors: [],
+		});
+	});
+
+	it("rejects legacy mutating v1 routes without mutationPolicy", () => {
+		const { mutationPolicy: _mutationPolicy, ...legacyRouteDecision } =
+			validRouteDecision({
+				mutates: true,
+				requiresHuman: false,
+			});
+
+		const result = validateRouteDecision(legacyRouteDecision);
+
+		expect(result.valid).toBe(false);
+		expect(errorCodes(result)).toContain(
+			"mutating routes must set a mutation policy",
+		);
 	});
 
 	it("narrows valid route decisions with the type guard", () => {
@@ -363,7 +395,7 @@ describe("validateRouteDecision", () => {
 		);
 	});
 
-	it("rejects mutating routes without human review", () => {
+	it("rejects mutating routes without a mutation policy", () => {
 		const result = validateRouteDecision(
 			validRouteDecision({
 				mutates: true,
@@ -373,10 +405,178 @@ describe("validateRouteDecision", () => {
 
 		expect(result.valid).toBe(false);
 		expect(errorCodes(result)).toContain(
-			"mutating routes must require human review",
+			"mutating routes must set a mutation policy",
 		);
 	});
 
+	it("accepts low-risk repo-local mutating routes without human review", () => {
+		const result = validateRouteDecision(
+			validRouteDecision({
+				status: "action_required",
+				route: {
+					id: "work",
+					label: "Work",
+					targetCommand: null,
+					targetSkill: "he-work",
+				},
+				mutates: true,
+				requiresHuman: false,
+				mutationPolicy: {
+					scope: "repo_local",
+					riskTier: "low",
+					evidenceFreshness: "current",
+					validatorOwnership: "present",
+					authority: "agent_local",
+				},
+			}),
+		);
+
+		expect(result).toEqual({ valid: true, errors: [] });
+	});
+
+	it("rejects agent-local mutating routes with stale evidence", () => {
+		const result = validateRouteDecision(
+			validRouteDecision({
+				status: "action_required",
+				route: {
+					id: "work",
+					label: "Work",
+					targetCommand: null,
+					targetSkill: "he-work",
+				},
+				mutates: true,
+				requiresHuman: false,
+				mutationPolicy: {
+					scope: "repo_local",
+					riskTier: "low",
+					evidenceFreshness: "stale",
+					validatorOwnership: "present",
+					authority: "agent_local",
+				},
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(errorCodes(result)).toContain(
+			"agent-local mutating routes require low-risk repo-local current validator-owned policy",
+		);
+	});
+
+	it("rejects agent-local mutating routes without validator ownership", () => {
+		const result = validateRouteDecision(
+			validRouteDecision({
+				status: "action_required",
+				route: {
+					id: "work",
+					label: "Work",
+					targetCommand: null,
+					targetSkill: "he-work",
+				},
+				mutates: true,
+				requiresHuman: false,
+				mutationPolicy: {
+					scope: "repo_local",
+					riskTier: "low",
+					evidenceFreshness: "current",
+					validatorOwnership: "missing",
+					authority: "agent_local",
+				},
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(errorCodes(result)).toContain(
+			"agent-local mutating routes require low-risk repo-local current validator-owned policy",
+		);
+	});
+
+	it("rejects mutating routes with an incomplete mutation policy", () => {
+		const result = validateRouteDecision(
+			validRouteDecision({
+				status: "action_required",
+				route: {
+					id: "work",
+					label: "Work",
+					targetCommand: null,
+					targetSkill: "he-work",
+				},
+				mutates: true,
+				requiresHuman: true,
+				mutationPolicy: {
+					scope: "external",
+					riskTier: "high",
+					evidenceFreshness: "current",
+					validatorOwnership: "present",
+					authority: "not_applicable",
+				},
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(errorCodes(result)).toContain(
+			"mutating routes must set a complete mutation policy",
+		);
+	});
+
+	it("rejects high-risk mutating routes without human review", () => {
+		const result = validateRouteDecision(
+			validRouteDecision({
+				status: "action_required",
+				route: {
+					id: "work",
+					label: "Work",
+					targetCommand: null,
+					targetSkill: "he-work",
+				},
+				mutates: true,
+				requiresHuman: false,
+				mutationPolicy: {
+					scope: "external",
+					riskTier: "high",
+					evidenceFreshness: "current",
+					validatorOwnership: "present",
+					authority: "human_required",
+				},
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(errorCodes(result)).toEqual(
+			expect.arrayContaining([
+				"human-required mutation policies must require human review",
+				"agent-local mutating routes require low-risk repo-local current validator-owned policy",
+			]),
+		);
+	});
+
+	it("rejects agent-local mutating routes that require network access", () => {
+		const result = validateRouteDecision(
+			validRouteDecision({
+				status: "action_required",
+				route: {
+					id: "work",
+					label: "Work",
+					targetCommand: null,
+					targetSkill: "he-work",
+				},
+				mutates: true,
+				requiresHuman: false,
+				requiresNetwork: true,
+				mutationPolicy: {
+					scope: "repo_local",
+					riskTier: "low",
+					evidenceFreshness: "current",
+					validatorOwnership: "present",
+					authority: "agent_local",
+				},
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(errorCodes(result)).toContain(
+			"agent-local mutating routes require low-risk repo-local current validator-owned policy",
+		);
+	});
 	it("accepts mutating routes when human review is required", () => {
 		const result = validateRouteDecision(
 			validRouteDecision({
@@ -389,6 +589,13 @@ describe("validateRouteDecision", () => {
 				},
 				mutates: true,
 				requiresHuman: true,
+				mutationPolicy: {
+					scope: "external",
+					riskTier: "high",
+					evidenceFreshness: "current",
+					validatorOwnership: "present",
+					authority: "human_required",
+				},
 			}),
 		);
 
@@ -482,6 +689,13 @@ describe("toHarnessDecisionLifecycleRouteMeta", () => {
 			requiresHuman: false,
 			requiresNetwork: false,
 			mutates: false,
+			mutationPolicy: {
+				scope: "none",
+				riskTier: "none",
+				evidenceFreshness: "not_applicable",
+				validatorOwnership: "not_applicable",
+				authority: "not_applicable",
+			},
 			failureClass: null,
 			blockerBoundary: "none",
 			evidenceRef: ["test:route-decision", "review:he-code-review"],

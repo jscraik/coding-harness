@@ -7,6 +7,7 @@
 	"headSha": "a07c87353bb2e437abee6ac11aae0bee625c6e96",
 	"threadId": "thread:codex-runtime-evidence-cockpit",
 	"turnId": "turn:pu-030",
+	"clientUserMessageId": "client-user-message:pu-047",
 	"evaluatedAt": "2026-05-28T09:46:00Z",
 	"selectedItemId": "steering:continue-after-triage",
 	"items": [
@@ -24,6 +25,7 @@
 			"deliveryMode": "same_thread_continuation",
 			"expectedThreadId": "thread:codex-runtime-evidence-cockpit",
 			"expectedTurnId": "turn:pu-030",
+			"expectedClientUserMessageId": "client-user-message:pu-047",
 			"expectedHeadSha": "a07c87353bb2e437abee6ac11aae0bee625c6e96",
 			"priority": 10,
 			"requiredArtifacts": [
@@ -39,6 +41,7 @@
 			"supersededBy": null,
 			"state": "applicable",
 			"stateReason": null,
+			"appliedClientUserMessageId": null,
 			"stateAt": "2026-05-28T09:46:00Z",
 			"appliedAt": null,
 			"rejectedAt": null,

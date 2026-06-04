@@ -1,78 +1,164 @@
 schema_version: 1
-mode: "repair"
-goal_path: "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md"
-native_goal_status: "unknown"
-board_status: "valid"
-next_action: "continue"
-truth_lanes:
-  local_validation: "pass"
-  generated_artifacts: "pass"
-  remote_pr_checks: "not applicable"
-  review_threads: "not applicable"
-  tracker_state: "pass"
-  merge_readiness: "not applicable"
-continuation_gate:
-  decision: "continue"
-  read_order:
-    - "read goal.md and state.yaml first"
-    - "receipts.jsonl"
-  pending_work: "present"
-  required_before_next_slice:
-    - "Use Project Brain and repo-local memory surfaces before slice intent."
-    - "Map touched work to GAP-001 through GAP-012 and adopted ecosystem review findings."
-    - "Refresh Linear JSC-363 before tracker-alignment or full-lifecycle closeout claims."
-    - "Carry expanded ecosystem findings into the isolated GAP-002 PR branch before pushing current slice work."
+mode: import
+goal_path: docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md
+native_goal_status: unknown
+board_status: valid
+next_action: stop_until_owner_reactivates_goal
+interpreted_objective: >
+  Classify the attached Codex-native runtime identity and authority review,
+  produced from ~/dev/codex while checking ~/dev/coding-harness, as source
+  material for the existing Codex Runtime Evidence Verifier Cockpit goal without
+  continuing implementation work.
 native_blocker_audit:
   gate_met: false
-  worker_must_pause: false
-  work_should_pause: false
-  reason: "This pass updated the durable goal board only; implementation gaps remain pending."
+  blocker_class: owner_stop
+  worker_must_pause: true
+  work_should_pause: true
+  reason: >
+    The owner previously instructed not to proceed with the goal until they say
+    so. This placement decision is allowed orientation/import work, not Worker
+    implementation.
+truth_lanes:
+  local_validation: pass
+  generated_artifacts: pass
+  remote_pr_checks: not_rechecked
+  review_threads: not_rechecked
+  tracker_state: pass
+  merge_readiness: not_rechecked
+  tracker_state_evidence: >
+    Linear JSC-363 tracker state snapshot as of 2026-06-03T20:44:00Z. The
+    issue was Done at that time with the full-lifecycle scope-note attachment
+    and PR attachments through #330. The title and description still contained
+    Phase 1 wording, so tracker alignment was attachment-backed rather than
+    field-text-current. This is a point-in-time snapshot and may not reflect
+    current state.
+continuation_gate:
+  queued_user_input: present
+  pending_work: present
+  decision: tracker_refinement_allowed_goal_implementation_paused
+  reason: >
+    Source material can be mapped into the goal and promoted into the tracked
+    Kanban route surface, but Worker implementation, CI/PR work, and goal
+    continuation remain prohibited until explicit owner reactivation.
+  read_order:
+    - read goal.md and state.yaml first
+    - receipts.jsonl
 validation_evidence:
-  - command: "git diff --check -- docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml"
-    outcome: "pass"
-  - command: "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
-    outcome: "pass"
-  - command: "Linear get_issue JSC-363"
-    outcome: "pass"
-  - command: "Linear save_comment JSC-363"
-    outcome: "pass (comment e45becc9-0af1-4b31-9c27-ede7b3c19347 linked the issue to the adopted ecosystem review, goal board, and receipt R062)"
-  - command: "jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null"
-    outcome: "pass"
+  - command: "cat /Users/jamiecraik/dev/agent-skills/.agents/skills/goal-governor/SKILL.md"
+    outcome: pass
+    note: "Loaded Goal Governor handle."
+  - command: "cat /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/SKILL.md"
+    outcome: pass
+    note: "Loaded source Goal Governor contract."
+  - command: "cat /Users/jamiecraik/.codex/attachments/fee8cf65-6dbe-4b22-a167-676223e271fa/pasted-text.txt"
+    outcome: pass
+    note: "Loaded attached source material."
+  - command: "sed -n '1,430p' docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md"
+    outcome: pass
+    note: "Checked current goal placement surfaces."
 claim_ledger:
-  - claim: "2026-05-26 audit gaps are enforceable goal completion gates."
-    status: "supported"
+  - claim: >
+      The pasted review should not become a new standalone goal board or broad
+      implementation slice.
+    classification: verified
     evidence_surface:
-      - ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md"
-      - "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md"
-      - "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml"
-    remaining_uncertainty: "Implementation, explicit blocker evidence, or Judge/PM-accepted follow-up remains required for each GAP-001 through GAP-012 item."
-  - claim: "Project Brain and repo-local memory are required inputs for future slices and closeout claims."
-    status: "supported"
+      - /Users/jamiecraik/.codex/attachments/fee8cf65-6dbe-4b22-a167-676223e271fa/pasted-text.txt
+      - docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md
+    remaining_uncertainty: >
+      It still needs current-main source verification before implementation
+      because the pasted text states the target ~/dev/coding-harness checkout
+      inspected from the ~/dev/codex review context was on a local branch that
+      was behind remote by 13 commits.
+  - claim: >
+      The review provenance is cross-repository: it was taken in ~/dev/codex
+      against ~/dev/coding-harness.
+    classification: verified_from_owner_correction
     evidence_surface:
-      - ".harness/README.md"
-      - ".harness/active-artifacts.md"
-      - ".harness/memory/LEARNINGS.md"
-      - ".harness/knowledge/**"
-      - ".harness/research/evidence-patterns.json"
-    remaining_uncertainty: "Future receipts must prove current memory use or record blocked/not-applicable status."
-  - claim: "The Codex ecosystem operational review is adopted steering for runtime identity, runtime state, claim verification, tool exposure, review mode, retrieval provenance, recovery classification, schema parity, telemetry, artifacts, hooks, instruction provenance, runtime provenance, and Codex parity."
-    status: "supported"
+      - owner clarification in current chat
+      - /Users/jamiecraik/.codex/attachments/fee8cf65-6dbe-4b22-a167-676223e271fa/pasted-text.txt
+    remaining_uncertainty: >
+      This improves source provenance but does not remove the need to recheck
+      current ~/dev/coding-harness main before implementation or schema edits.
+  - claim: >
+      The strongest fit is as an addendum to the Codex Ecosystem Operational
+      Review and SPG matrix, reframed as missing Codex-native dimensions on
+      existing primitives.
+    classification: supported
     evidence_surface:
-      - ".harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md"
-      - "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md"
-      - "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml"
-    remaining_uncertainty: "The adopted findings still need implementation, explicit blockers, or accepted deferrals before final goal completion."
-  - claim: "Linear JSC-363 is linked as the tracker anchor, with current Phase 1 wording that must be reconciled before full-lifecycle closeout."
-    status: "supported"
+      - docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md#codex-ecosystem-operational-review-addendum
+      - docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md#codex-system-prompt-operational-analysis-addendum
+      - docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md#completion-contract
+    remaining_uncertainty: >
+      The exact source lines cited in the pasted review may have moved on
+      current main and must be rechecked before code or schema changes.
+  - claim: >
+      The pasted P0 items map to existing goal surfaces rather than replacing
+      them: client message correlation maps to SteeringQueue/runtime evidence,
+      environment-scoped permission evidence maps to tool-exposure/runtime
+      permission packets, and risk-tiered HILT maps to decision/action-review
+      and route-decision policy.
+    classification: supported
     evidence_surface:
-      - "Linear get_issue JSC-363"
-      - "Linear comment e45becc9-0af1-4b31-9c27-ede7b3c19347"
-      - "https://linear.app/jscraik/issue/JSC-363/coding-harness-implement-codex-runtime-evidence-verifier-cockpit-phase"
-    remaining_uncertainty: "Linear issue content was not rewritten in this patch; closeout must refresh live Linear state and update or scope-note the tracker before claiming tracker alignment."
+      - docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md#scope
+      - docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md#lifecycle-slices
+      - docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md#completion-contract
+    remaining_uncertainty: >
+      Requires fresh repository inspection plus intent review before assigning
+      lifecycle unit ownership.
+  - claim: >
+      Current main does not yet expose the newly requested Codex-native
+      user-message correlation, environment-scoped permission evidence,
+      risk-tiered route-decision mutation authority, full runtime-card
+      continuity projection, context authority taxonomy, or steering
+      application receipt contract as implemented source behavior.
+    classification: verified_current_main
+    evidence_surface:
+      - src/lib/runtime/codex-runtime-evidence-types.ts
+      - src/lib/steering-queue/types.ts
+      - src/lib/tool-exposure/types.ts
+      - src/lib/runtime/runtime-card-codex-runtime.ts
+      - src/lib/decision/route-decision.ts
+      - src/lib/decision-request/types.ts
+    remaining_uncertainty: >
+      The exact implementation shape still requires owner reactivation,
+      reviewed slice intent, fixtures, validators, and reviewer coverage.
+evidence_surface:
+  supplied_source: /Users/jamiecraik/.codex/attachments/fee8cf65-6dbe-4b22-a167-676223e271fa/pasted-text.txt
+  source_review_context: /Users/jamiecraik/dev/codex
+  target_repository_checked: /Users/jamiecraik/dev/coding-harness
+  current_goal: docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md
+  current_state: docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml
+  current_kanban: .harness/implementation-notes/goal-kanban-board.html
+  durable_output: goal-governor-output.yaml
+placement_recommendation:
+  primary_landing_zone: Codex-Native Current-Main Refinement Addendum
+  secondary_landing_zone: codex_native_refinement_adoption in state.yaml
+  completion_gate_landing_zone: Completion Contract
+  slice_contract_landing_zone: Slice Execution Contract
+  suggested_new_material_type: "adopted current-Codex-native dimension review"
+  suggested_priority:
+    P0:
+      - "Add clientUserMessageId or equivalent correlation to SteeringQueue/runtime evidence/application receipts."
+      - "Add environmentId/cwd/executorKind/approvalScope/sandboxPolicyRef to permission evidence."
+      - "Replace blanket mutating-route HILT with risk-tiered agent-native mutation policy."
+    P1:
+      - "Expand runtime-card codexRuntime identity with thread, turn, trace, goal, environment, message, queue, approval, and heartbeat refs."
+      - "Add prompt/context authority classification before context can steer behavior."
+    P2:
+      - "Add queue application receipts that bind steering item to Codex turn/message/runtime-card update."
+prohibited_actions:
+  - do not create_goal
+  - do not create native goal
+  - do not spawn agents
+  - do not commit
+  - do not open PR
+  - do not run CI
+  - do not continue Worker implementation
+remaining_uncertainty:
+  - "The pasted source was produced from ~/dev/codex against ~/dev/coding-harness, but explicitly says the target harness checkout was not remote-current truth; all code references need current-main re-verification."
+  - "Some proposed dimensions may already exist after merged PRs #321 through #330 and must not be duplicated."
+  - "Lifecycle ownership should be assigned only after owner reactivation and intent review."
 risks:
-  - "The branch remains dirty and divergent; implementation must preserve unrelated worktree changes."
-  - "The goal board now gates audit and expanded ecosystem findings, but the code fixes remain pending."
-  - "Linear now has a persisted linkage comment, but still frames JSC-363 as Phase 1 while the repo goal is full lifecycle; tracker-alignment claims must not pass until reconciled."
-artifact:
-  path: "goal-governor-output.yaml"
-  marker: "goal-governor-output.yaml"
+  - "Treating the pasted text as implementation evidence would overclaim; it is orientation and gap-shaping evidence only."
+  - "Adding new packet fields without current source verification could duplicate or contradict existing runtime packet contracts."
+  - "Risk-tiered agent-native mutation policy is authority-sensitive and must go through reviewed intent before code changes."

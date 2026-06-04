@@ -112,6 +112,11 @@ function validateRuntimeContext(
 		`${path}.expectedTurnId`,
 		errors,
 	);
+	requireNullableSafePointer(
+		value.expectedClientUserMessageId,
+		`${path}.expectedClientUserMessageId`,
+		errors,
+	);
 	requireHeadSha(value.expectedHeadSha, `${path}.expectedHeadSha`, errors);
 	if (!Number.isInteger(value.priority)) {
 		addError(
@@ -141,6 +146,11 @@ function validateItemStateFields(
 ) {
 	requireEnum(value.state, STEERING_QUEUE_STATES, `${path}.state`, errors);
 	requireNullableSafePointer(value.stateReason, `${path}.stateReason`, errors);
+	requireNullableSafePointer(
+		value.appliedClientUserMessageId,
+		`${path}.appliedClientUserMessageId`,
+		errors,
+	);
 	requireIso(value.stateAt, `${path}.stateAt`, errors);
 	requireNullableIso(value.appliedAt, `${path}.appliedAt`, errors);
 	requireNullableIso(value.rejectedAt, `${path}.rejectedAt`, errors);
@@ -218,6 +228,27 @@ function validateTerminalState(
 			"missing_applied_at",
 			`${path}.appliedAt`,
 			"is required for applied items",
+		);
+	}
+	if (item.state === "applied" && item.appliedClientUserMessageId === null) {
+		addError(
+			errors,
+			"missing_applied_client_user_message_id",
+			`${path}.appliedClientUserMessageId`,
+			"is required for applied items",
+		);
+	}
+	if (
+		item.state === "applied" &&
+		item.expectedClientUserMessageId !== null &&
+		item.appliedClientUserMessageId !== null &&
+		item.expectedClientUserMessageId !== item.appliedClientUserMessageId
+	) {
+		addError(
+			errors,
+			"client_user_message_mismatch",
+			`${path}.appliedClientUserMessageId`,
+			"must match expectedClientUserMessageId for applied items",
 		);
 	}
 	if (item.state === "applied" && (item.stalePreconditions?.length ?? 0) > 0) {

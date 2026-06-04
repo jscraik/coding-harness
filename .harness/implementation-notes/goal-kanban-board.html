@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codex Runtime Evidence Verifier Cockpit Goal Board</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0f14;
+      --panel: #121922;
+      --panel-2: #17202b;
+      --ink: #f3f7fb;
+      --muted: #9ba8b8;
+      --line: #2a3442;
+      --blue: #48a8ff;
+      --green: #42d06b;
+      --amber: #ffbf3f;
+      --red: #ff5a61;
+      --purple: #c260ff;
+      --cyan: #39d7d7;
+      --pink: #ff70bd;
+      --shadow: 0 18px 60px rgba(0, 0, 0, 0.32);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(180deg, rgba(72, 168, 255, 0.08), transparent 34rem),
+        radial-gradient(circle at 88% 8%, rgba(194, 96, 255, 0.10), transparent 28rem),
+        var(--bg);
+      color: var(--ink);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .shell {
+      width: min(1580px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 24px 0 40px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) auto;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.55rem, 2.2vw, 2.55rem);
+      letter-spacing: 0;
+      line-height: 1.05;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      max-width: 980px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .source-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 44px;
+      padding: 10px 14px;
+      border: 1px solid rgba(255, 191, 63, 0.46);
+      border-radius: 8px;
+      background: rgba(255, 191, 63, 0.10);
+      color: #ffe2a3;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(150px, 1fr));
+      gap: 12px;
+      margin: 16px 0 18px;
+    }
+
+    .metric {
+      min-height: 92px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(18, 25, 34, 0.86);
+      box-shadow: var(--shadow);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 1.02rem;
+      line-height: 1.2;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      margin: 18px 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(18, 25, 34, 0.74);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      background: var(--panel-2);
+      min-height: 38px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    .tab[aria-pressed="true"] {
+      border-color: var(--blue);
+      background: rgba(72, 168, 255, 0.18);
+      color: #d9efff;
+    }
+
+    .search {
+      width: min(360px, 42vw);
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0e141b;
+      color: var(--ink);
+      padding: 8px 12px;
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(240px, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+
+    .lane {
+      min-height: 420px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(18, 25, 34, 0.78);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .lane-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 4px solid var(--lane-color);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .lane h2 {
+      margin: 0;
+      font-size: 0.98rem;
+      line-height: 1.2;
+    }
+
+    .lane-count {
+      min-width: 28px;
+      text-align: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .cards {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .card {
+      width: 100%;
+      text-align: left;
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      border-left: 5px solid var(--status-color);
+      border-radius: 8px;
+      background: #0f151d;
+      color: var(--ink);
+      padding: 12px;
+      cursor: pointer;
+      min-height: 126px;
+    }
+
+    .card:focus-visible,
+    .card:hover {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+      background: #141c26;
+    }
+
+    .card-title {
+      display: block;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+
+    .card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #dce6f2;
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+
+    .card p {
+      color: var(--muted);
+      line-height: 1.42;
+      margin: 0;
+      font-size: 0.9rem;
+    }
+
+    .inspector {
+      position: sticky;
+      top: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(18, 25, 34, 0.92);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .inspector-header {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(57, 215, 215, 0.08);
+    }
+
+    .inspector h2 {
+      margin: 0 0 8px;
+      font-size: 1.08rem;
+      line-height: 1.25;
+    }
+
+    .inspector-body {
+      display: grid;
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .detail-block h3 {
+      margin: 0 0 7px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .detail-block p,
+    .detail-block li {
+      color: #d5deea;
+      line-height: 1.45;
+      margin: 0;
+      font-size: 0.92rem;
+    }
+
+    .detail-block ul {
+      display: grid;
+      gap: 7px;
+      padding-left: 18px;
+      margin: 0;
+    }
+
+    .module-map {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: 1.05fr 1fr 1fr;
+      gap: 14px;
+    }
+
+    .module-panel {
+      min-height: 230px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(18, 25, 34, 0.78);
+      overflow: hidden;
+    }
+
+    .module-panel header {
+      padding: 11px 13px;
+      border-bottom: 4px solid var(--module-color);
+      font-weight: 800;
+    }
+
+    .module-panel ul {
+      list-style: none;
+      padding: 12px;
+      margin: 0;
+      display: grid;
+      gap: 9px;
+    }
+
+    .module-panel li {
+      display: grid;
+      gap: 3px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 10px;
+      background: rgba(0,0,0,0.16);
+    }
+
+    code {
+      color: #d8edff;
+      overflow-wrap: anywhere;
+    }
+
+    .module-panel small {
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .footer {
+      color: var(--muted);
+      margin-top: 18px;
+      line-height: 1.5;
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 1180px) {
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .workspace { grid-template-columns: 1fr; }
+      .inspector { position: static; }
+      .board { grid-template-columns: repeat(2, minmax(240px, 1fr)); }
+      .module-map { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      .shell { width: min(100vw - 20px, 680px); padding-top: 14px; }
+      .topbar { grid-template-columns: 1fr; }
+      .source-chip { white-space: normal; align-items: flex-start; }
+      .metrics { grid-template-columns: 1fr; }
+      .toolbar { align-items: stretch; flex-direction: column; }
+      .search { width: 100%; }
+      .board { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="topbar" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
+        <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
+      </div>
+      <div class="source-chip" aria-label="Source freshness warning">origin/main snapshot: 50a6d0b5, 4 open stacked draft PRs (#331, #332, #333, #334), Linear Done, CNF scope adopted</div>
+    </section>
+
+    <section class="metrics" aria-label="Goal status summary">
+      <div class="metric"><span>Goal status</span><strong>Paused, full lifecycle</strong></div>
+      <div class="metric"><span>Completed stack</span><strong>11 tracker cards done</strong></div>
+      <div class="metric"><span>Outstanding work</span><strong>7 gates + 6 CNF refinements</strong></div>
+      <div class="metric"><span>Claim boundary</span><strong>Completion unclaimed</strong></div>
+      <div class="metric"><span>Source files</span><strong>goal.md, state.yaml, receipts.jsonl, Kanban</strong></div>
+    </section>
+
+    <section class="toolbar" aria-label="Board controls">
+      <div class="tabs" role="group" aria-label="Status filter">
+        <button class="tab" type="button" data-filter="all" aria-pressed="true">All</button>
+        <button class="tab" type="button" data-filter="active" aria-pressed="false">Active</button>
+        <button class="tab" type="button" data-filter="blocked" aria-pressed="false">Blocked</button>
+        <button class="tab" type="button" data-filter="done" aria-pressed="false">Done</button>
+      </div>
+      <label for="board-search" class="visually-hidden">Search cards</label>
+      <input id="board-search" class="search" type="search" aria-label="Search board cards">
+    </section>
+
+    <section class="workspace">
+      <div class="board" id="board" aria-label="Goal Kanban lanes"></div>
+      <aside class="inspector" aria-live="polite" aria-label="Selected card details">
+        <div class="inspector-header">
+          <h2 id="inspector-title">Select a card</h2>
+          <div class="card-meta" id="inspector-meta"></div>
+        </div>
+        <div class="inspector-body">
+          <div class="detail-block">
+            <h3>Evidence</h3>
+            <ul id="inspector-evidence"><li>Board source loaded from the local goal artifacts.</li></ul>
+          </div>
+          <div class="detail-block">
+            <h3>Next action</h3>
+            <p id="inspector-next">Use the lanes to separate current implementation truth from PR, CI, review, tracker, and final closeout truth.</p>
+          </div>
+          <div class="detail-block">
+            <h3>Risk boundary</h3>
+            <p id="inspector-risk">This visualization is an orientation surface. It does not prove CI, mergeability, review resolution, Linear state, or goal completion.</p>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="module-map" aria-label="Deep module work placement">
+      <article class="module-panel" style="--module-color: var(--blue)">
+        <header>Repository Control Plane</header>
+        <ul>
+          <li><code>docs/goals/codex-runtime-evidence-verifier-cockpit/</code><small>Goal board, state, receipts, intent notes, review coverage backfill.</small></li>
+          <li><code>.harness/plan/</code><small>Lifecycle implementation plan and slice sequence.</small></li>
+          <li><code>.harness/specs/</code><small>Canonical requirements and acceptance contracts.</small></li>
+          <li><code>.harness/research/</code><small>Adopted audits and operational-review gap sources.</small></li>
+        </ul>
+      </article>
+      <article class="module-panel" style="--module-color: var(--green)">
+        <header>Deep Runtime Modules</header>
+        <ul>
+          <li><code>src/lib/runtime/</code><small>PU-047 client message identity now lives here with runtime evidence packets, bundles, and provenance validation.</small></li>
+          <li><code>src/lib/delivery-truth/</code><small>Private claim-support composition and Judge/PM readiness logic.</small></li>
+          <li><code>src/lib/review-state/</code><small>Reviewer artifact and unresolved-thread truth packets.</small></li>
+          <li><code>src/lib/external-state/</code><small>PR, CI, review, tracker freshness snapshots.</small></li>
+          <li><code>src/lib/root-hygiene/</code><small>Tracked root-surface and tidy-claim evidence.</small></li>
+        </ul>
+      </article>
+      <article class="module-panel" style="--module-color: var(--pink)">
+        <header>Codex-Native Refinement Targets</header>
+        <ul>
+          <li><code>src/lib/steering-queue/</code><small>PU-047 expected/applied message correlation is here now; later work owns selected steering item and application receipts.</small></li>
+          <li><code>src/lib/tool-exposure/</code><small>Environment-scoped permission and approval evidence.</small></li>
+          <li><code>src/lib/decision/</code><small>Risk-tiered mutation policy instead of blanket HILT.</small></li>
+          <li><code>src/lib/prompt-context-drift/</code><small>Prompt and context authority classification.</small></li>
+        </ul>
+      </article>
+      <article class="module-panel" style="--module-color: var(--purple)">
+        <header>Evidence And Guardrails</header>
+        <ul>
+          <li><code>scripts/check-goal-board.py</code><small>Board validity plus audit freshness extension.</small></li>
+          <li><code>artifacts/reviews/</code><small>Required independent reviewer artifacts for slice closure.</small></li>
+          <li><code>.harness/implementation-notes/</code><small>Visible implementation and decision record surfaces.</small></li>
+          <li><code>ARCHITECTURE.md</code><small>Human source map for where deep-module work lands.</small></li>
+        </ul>
+      </article>
+    </section>
+
+    <p class="footer">Snapshot generated from current goal artifacts and route-truth receipts through <code>R266</code> plus live GitHub refresh on 2026-06-04. Local <code>main</code> and <code>origin/main</code> remain synchronized at <code>50a6d0b5d764e35395e12190a465e854c26784fd</code>. PR #333 merged into PR #331 at <code>02907f95c1a5941e7ba0bc43e519fc66bc23eb84</code>, and PR #338 merged into PR #336 at <code>01179cdefccf34c58fbac54d4f0da344fdaa6155</code>. Open PR truth is now <code>#331 MERGEABLE/BLOCKED</code>, <code>#335 CONFLICTING/DIRTY</code>, and <code>#336 MERGEABLE/UNSTABLE</code>. This branch is repairing PR #331 review-thread findings before rechecking #335 conflicts and #336 checks/review. The board remains an orientation artifact, not proof of independent reviewer completion, live Codex Desktop extraction, runtime producer emission, delivery-truth consumption, PR/CI green status, review-thread resolution, merge readiness, Judge/PM readiness, or final goal completion.</p>
+  </main>
+
+  <script>
+    const lanes = [
+      { id: "intent", title: "Intent & Contract", color: "var(--blue)" },
+      { id: "completed", title: "Completed Work", color: "var(--green)" },
+      { id: "implementation", title: "Implemented Foundations", color: "var(--cyan)" },
+      { id: "remote", title: "PR / CI / Review Truth", color: "var(--amber)" },
+      { id: "remaining", title: "Outstanding Work", color: "var(--pink)" },
+      { id: "closeout", title: "Closeout Blockers", color: "var(--red)" }
+    ];
+
+    const cards = [
+      {
+        id: "full-lifecycle",
+        lane: "intent",
+        title: "Full lifecycle, not Phase 1 only",
+        status: "active",
+        tags: ["JSC-363", "goal.md", "scope"],
+        summary: "The board governs the complete runtime evidence verifier lifecycle through hardening, docs accuracy, PR triage, and Judge/PM evidence.",
+        evidence: ["docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md", "Objective section explicitly rejects Phase 1-only completion", "Linear wording remains a separate tracker-alignment lane"],
+        next: "Keep the plan, spec, goal board, and Linear scope note aligned before any full-lifecycle closeout claim.",
+        risk: "A PR may complete a slice, but it cannot close the parent goal without separate proof for runtime, CI, review, tracker, docs, and Judge/PM lanes."
+      },
+      {
+        id: "pr321",
+        lane: "completed",
+        title: "PR #321: Intermediary receipt coverage",
+        status: "done",
+        tags: ["PR #321", "runtime contracts", "merged"],
+        summary: "Merged the intermediary receipt coverage hardening and runtime evidence contract work into the JSC-363 stack.",
+        evidence: ["GitHub merged PR list: #321 merged", "origin/main history includes PR #321", "Deep module: src/lib/intermediary-receipts/"],
+        next: "Treat as completed foundation; verify final claim support still rejects intermediary observations without canonical receipts.",
+        risk: "Completion of the PR does not by itself prove final delivery-truth consumption."
+      },
+      {
+        id: "pr322",
+        lane: "completed",
+        title: "PR #322: Verifier cockpit guardrails",
+        status: "done",
+        tags: ["PR #322", "tests", "guardrails"],
+        summary: "Merged verifier cockpit guardrail hardening for JSC-363 after PR rerun and review-debt work.",
+        evidence: ["GitHub merged PR list: #322 merged", "origin/main history includes PR #322", "Goal receipts R157-R175 record PR #322 repair/validation cycles"],
+        next: "Use as foundation evidence during final requirement audit.",
+        risk: "Earlier green CI/review truth may be stale; final audit must use current main."
+      },
+      {
+        id: "pr323",
+        lane: "completed",
+        title: "PR #323: PR #321 review debt closed",
+        status: "done",
+        tags: ["PR #323", "review debt", "merged"],
+        summary: "Merged the dedicated repair lane for outstanding PR #321 review debt.",
+        evidence: ["GitHub merged PR list: #323 merged at 2026-05-31T22:35:26Z", "origin/main contains commit 68cf00c8"],
+        next: "Do not re-triage old PR #321 threads unless a fresh current-main audit finds a regression.",
+        risk: "Historical review resolution is not the same as current Judge/PM readiness."
+      },
+      {
+        id: "pr325",
+        lane: "completed",
+        title: "PR #325: Browser evidence routine gate",
+        status: "done",
+        tags: ["PR #325", "GAP-010", "browser"],
+        summary: "Merged the browser-evidence routine gate so UI/browser-affecting work has explicit evidence expectations.",
+        evidence: ["GitHub merged PR list: #325 merged at 2026-06-01T01:46:25Z", "origin/main top history includes fd7ea47a"],
+        next: "Use this gate when browser-visible artifacts like this Kanban steer execution or claims.",
+        risk: "The current Kanban is still an orientation artifact unless promoted into receipt-bound claim evidence."
+      },
+      {
+        id: "pr326",
+        lane: "completed",
+        title: "PR #326: GAP-001 fail-closed Local Memory preflight",
+        status: "done",
+        tags: ["PR #326", "GAP-001", "preflight"],
+        summary: "Merged the Local Memory preflight downgrade fix so legacy positional preflight calls default to required Local Memory behavior.",
+        evidence: ["GitHub merged PR list: #326 merged at 2026-05-31T23:01:22Z", "state.yaml records GAP-001 as merged, reconciled, and validated", "origin/main contains commit 246e339e"],
+        next: "Count GAP-001 as implemented unless current validators show regression.",
+        risk: "Final closeout still needs all other GAP and SPG entries classified."
+      },
+      {
+        id: "pr327",
+        lane: "completed",
+        title: "PR #327: Route truth reconciled",
+        status: "done",
+        tags: ["PR #327", "goal route", "merged"],
+        summary: "Merged the JSC-363 route-truth reconciliation lane into main.",
+        evidence: ["GitHub merged PR list: #327 merged at 2026-06-01T21:46:56Z", "origin/main contains f6555607"],
+        next: "Use its route-truth improvements, but correct stale post-merge text now that PR #328 and PR #330 are also merged.",
+        risk: "The canonical goal text still contains stale route wording from before all PRs merged."
+      },
+      {
+        id: "pr328",
+        lane: "completed",
+        title: "PR #328: Reviewer artifacts guarded by head SHA",
+        status: "done",
+        tags: ["PR #328", "GAP-009", "merged"],
+        summary: "Merged reviewer artifact freshness protection so review evidence must bind to expected head SHA.",
+        evidence: ["GitHub merged PR list: #328 merged at 2026-06-03T20:11:19Z", "origin/main contains 2a07bd70"],
+        next: "Use the reviewer-coverage validator during final backfill and Judge/PM audit.",
+        risk: "Review evidence still needs final current-main ratification across all lifecycle units."
+      },
+      {
+        id: "pr329",
+        lane: "completed",
+        title: "PR #329: Superseded PR #324 retired",
+        status: "done",
+        tags: ["PR #329", "route cleanup", "merged"],
+        summary: "Merged the route cleanup that retired the stale PR #324 lane.",
+        evidence: ["GitHub merged PR list: #329 merged at 2026-06-01T21:47:42Z", "Current live PR list has open PRs #331, #335, and #336 after the newer stack restarted"],
+        next: "Keep PR #324 out of active routing unless live GitHub shows it reopened.",
+        risk: "Stale text can reintroduce old PR lanes if the goal board is not updated."
+      },
+      {
+        id: "pr330",
+        lane: "completed",
+        title: "PR #330: CircleCI env recovery rule",
+        status: "done",
+        tags: ["PR #330", "CircleCI", "merged"],
+        summary: "Merged the CircleCI env recovery rule and PR #330 conflict/receipt reanchor lane into main.",
+        evidence: ["GitHub merged PR list: #330 merged at 2026-06-03T20:43:56Z", "origin/main top commit 50a6d0b5", "Newer live open PR list contains #331, #335, and #336"],
+        next: "Move from PR repair to current-main goal re-evaluation and final completion audit.",
+        risk: "PR #330 merge does not prove Linear scope alignment, runtime producer emission, delivery-truth consumption, or Judge/PM readiness."
+      },
+      {
+        id: "slice-contract",
+        lane: "intent",
+        title: "Slice execution contract",
+        status: "active",
+        tags: ["intent", "review-first", "automation"],
+        summary: "Each slice needs reviewed intent, deterministic validation, required skill lenses, independent reviewers, atomic commit, PR triage, and receipts.",
+        evidence: ["state.yaml slice_review_contract", "goal.md Review and Validation Contract", "Required lenses: architecture, simplify, unslopify, HE review, testing, adversarial, agent-native, best-practices"],
+        next: "Represent every slice as a small module-bounded card before implementation begins.",
+        risk: "Missing reviewer artifacts or missing skill-lens evidence blocks done claims even when local tests pass."
+      },
+      {
+        id: "source-freshness",
+        lane: "intent",
+        title: "Source freshness current",
+        status: "done",
+        tags: ["main", "origin/main", "R222"],
+        summary: "The board is sourced from synchronized main, the current PR #331 branch head, live GitHub PR truth, and the latest route receipt.",
+        evidence: ["origin/main -> 50a6d0b5d764e35395e12190a465e854c26784fd", "PR #331 head -> 02907f95c1a5941e7ba0bc43e519fc66bc23eb84", "gh pr list --state open -> #331, #335, #336", "R266 records current open-stack truth"],
+        next: "Use this tracker as the current route surface while repairing PR #331, then refresh PR #335 and PR #336.",
+        risk: "Current route truth proves orientation only. It does not prove CI green, review-thread resolution, Linear field text, or parent-goal completion."
+      },
+      {
+        id: "codex-native-refinement",
+        lane: "intent",
+        title: "Codex-native refinement adopted",
+        status: "active",
+        tags: ["CNF-001..006", "goal-governor", "current main"],
+        summary: "The imported review from ~/dev/codex against this repo is now adopted as next-slice steering, not as implementation proof.",
+        evidence: ["goal.md Codex-Native Current-Main Refinement Addendum", "state.yaml codex_native_refinement_adoption", "goal-governor-output.yaml source review context"],
+        next: "Before refined implementation starts, classify CNF-001 through CNF-006 in the slice intent as implemented, blocked, not applicable, or accepted follow-up.",
+        risk: "Using the imported review as proof would overclaim; it is only scope and evidence for what to build or block next."
+      },
+      {
+        id: "gap001",
+        lane: "implementation",
+        title: "PU-043 / GAP-001 Local Memory preflight",
+        status: "done",
+        tags: ["GAP-001", "PU-043", "merged"],
+        summary: "Local state records GAP-001 as merged, reconciled, and validated through PR #326.",
+        evidence: ["state.yaml current_slice_gate.status", "R176-R180 receipt references", "scripts/codex-preflight.sh and templates updated per state.yaml"],
+        next: "Do not spend more implementation time here unless a fresh validator or PR review finds a current-head regression.",
+        risk: "This card is local board truth, not a fresh live GitHub or Linear refresh."
+      },
+      {
+        id: "gap002",
+        lane: "implementation",
+        title: "GAP-002 required CI closeout",
+        status: "done",
+        tags: ["GAP-002", "CI", "closeout"],
+        summary: "The closeout-truth stack has merged through PR #330, including the CircleCI env recovery rule and receipt-head reanchor lane.",
+        evidence: ["origin/main contains PR #327, #328, and #330", "PR #330 merged at 2026-06-03T20:43:56Z", "Latest receipt tail includes R221 submitted-head reanchor evidence"],
+        next: "Re-evaluate the parent goal against the full completion contract rather than reopening the now-merged PR lane.",
+        risk: "Merged PRs prove code landed on origin/main; they do not prove final goal completion."
+      },
+      {
+        id: "runtime-modules",
+        lane: "implementation",
+        title: "Deep runtime module placement",
+        status: "active",
+        tags: ["architecture", "modules", "src/lib"],
+        summary: "Runtime evidence, delivery truth, review state, external state, root hygiene, artifact surfaces, prompt drift, intermediary receipts, and steering queues have named deep-module homes.",
+        evidence: ["ARCHITECTURE.md", "AGENTS.md architecture-adjacent module contracts", "docs/agents/07b-agent-governance.md"],
+        next: "Place new implementation in the named deep module and keep compatibility facades thin.",
+        risk: "Putting verifier behavior into broad command files creates architecture drift and weakens future slice review."
+      },
+      {
+        id: "open-pr-lanes",
+        lane: "remote",
+        title: "Merged PR stack",
+        status: "done",
+        tags: ["PR #327", "PR #328", "PR #330"],
+        summary: "Live GitHub reports PR #331 open against main, PR #335 conflicting against PR #331, and PR #336 open/unstable after PR #338 merged into its base.",
+        evidence: ["gh pr list --state open -> #331, #335, #336", "PR #333 merged into PR #331 at 2026-06-04T17:10:10Z", "PR #338 merged into PR #336 at 2026-06-04T17:12:20Z"],
+        next: "Finish the PR #331 review-thread repair, trigger CodeRabbit on the pushed head, then recheck PR #335 conflicts and PR #336 checks/review.",
+        risk: "Open PR truth is separate from local validation, Snyk quota, review-thread resolution, merge readiness, and parent goal completion."
+      },
+      {
+        id: "browser-preview",
+        lane: "remote",
+        title: "Implementation notes browser preview",
+        status: "active",
+        tags: ["Browser", "artifact-runtime", "preview"],
+        summary: "state.yaml says the reviewed MDX source exists, but the live HTML preview is a local runtime projection and no repo-owned watcher exists yet.",
+        evidence: ["state.yaml artifact_runtime_surface.browser_preview.status = blocked", ".harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx", ".harness/implementation-notes/implementation-notes.html"],
+        next: "Treat this Kanban as a static visible artifact until a repo-owned watcher makes preview generation deterministic.",
+        risk: "Browser visibility helps orientation but is not claim-support evidence unless bound by receipt, head SHA, and artifact contract."
+      },
+      {
+        id: "cnf001-message-correlation",
+        lane: "implementation",
+        title: "CNF-001 message correlation",
+        status: "active",
+        tags: ["PU-047", "CNF-001", "runtime", "steering", "message id"],
+        summary: "Local implementation now carries clientUserMessageId as explicit nullable Codex runtime identity and binds steering items to expected/applied client-message IDs without synthesizing missing evidence. PR #331 is open for remote checks and review.",
+        evidence: ["docs/goals/.../notes/PU-047-cnf-001-source-capability.md", "src/lib/runtime/codex-runtime-evidence-*.ts", "src/lib/steering-queue/{builder,types,validation-item}.ts", "contracts/steering-queue.schema.json", "scripts/validate-steering-queue.cjs", "focused runtime and steering-queue tests -> pass", "verify-work --fast --changed-only -> pass on resume", "R225/R226: earlier review artifact failure and tracking repair recorded", "post-implementation adversarial, agent-native, and best-practices artifacts exist with no material findings", "reviewer-coverage validator with expectedHeadSha -> pass", "R229: full validate-codestyle, pnpm check path, tooling-audit, goal-board, audit-freshness -> pass", "R230: docs-style repair and refreshed goal-surface validation -> pass", "R231: pre-push architecture diagram refresh -> pass", "R232: PR #331 opened; GitHub reports OPEN/MERGEABLE/BLOCKED"],
+        next: "Commit and push the PR #331 review-thread repair, manually trigger CodeRabbit, then refresh PR #331 checks, review threads, Snyk quota, and mergeability before any PU-047/CNF-001 done claim.",
+        risk: "The field is nullable and orientation-only when source evidence is unavailable; this slice does not prove live Codex Desktop extraction, runtime producer emission, delivery-truth consumption, Judge/PM readiness, or parent-goal completion."
+      },
+      {
+		id: "cnf002-environment-permissions",
+		lane: "implementation",
+		title: "CNF-002 environment-scoped permissions",
+		status: "merged into PR #331 stack",
+		tags: ["permissions", "tool exposure", "environment"],
+		summary: "Implementation adds a codex-runtime-evidence environment snapshot and runtime-card environmentRefs so permission evidence is scoped to cwd, executor, approval scope, and sandbox policy evidence. The branch content is now present in the PR #331 stack.",
+        evidence: ["docs/goals/.../notes/PU-048-cnf-002-env-permissions-intent.md", "src/lib/runtime/codex-runtime-evidence-{types,validation,producer,references,adapter}.ts", "src/lib/runtime/runtime-card-codex-runtime{,-validation}.ts", "src/lib/runtime/runtime-evidence-adapter.ts", "focused runtime evidence and runtime-card tests -> pass (88 tests)", "pnpm typecheck -> pass", "docs-gate -> pass", "validate-codestyle full -> pass", "pnpm check -> pass", "source checkout pr-template-gate on live PR body -> pass after durable evidence-map repair", "installed harness pr-template-gate on edited PR body -> pass", "PR #332 -> OPEN draft, MERGEABLE/UNSTABLE", "GitHub checks: ci/circleci: pr-template still failed on pre-repair status, Snyk quota failed, most other visible CircleCI lanes passed or completed", "R241: PR #332 body and route-truth freshness repaired", "artifacts/reviews/pu048-cnf-002-skill-lenses.md", "artifacts/reviews/pu048-cnf-002-reviewer-runtime-blocker.md"],
+        next: "Validate the environment-source repair on PR #331 and keep Snyk quota plus missing independent-review artifacts separate from local implementation truth.",
+        risk: "Live Codex Desktop extraction of these fields is still unproven; independent reviewer artifacts are blocked; remote CI is not green; delivery-truth consumption, Judge/PM readiness, and parent-goal completion remain separate proof lanes."
+      },
+      {
+        id: "cnf003-risk-tiered-hilt",
+        lane: "implementation",
+        title: "CNF-003 risk-tiered mutation authority",
+        status: "active",
+        tags: ["HILT", "route decision", "agent-native"],
+        summary: "RouteDecision now carries a mutationPolicy with scope, risk tier, evidence freshness, validator ownership, and authority. Agent-local mutation is limited to low-risk repo-local work with current evidence, validator ownership, and no network requirement.",
+        evidence: ["docs/goals/.../notes/PU-049-cnf-003-risk-tier-authority-intent.md", "src/lib/decision/route-decision.ts", "src/lib/decision/route-decision.test.ts", "ARCHITECTURE.md", "docs/agents/00-architecture-bootstrap.md", "docs/agents/07b-agent-governance.md", "pnpm exec vitest run src/lib/decision/route-decision.test.ts -> pass (49 tests)", "pnpm exec vitest run src/commands/decision-request.test.ts -> pass (13 tests)", "pnpm typecheck -> pass", "docs-gate -> pass", "check-diagram-freshness -> pass", "validate-codestyle --fast -> pass", "artifacts/reviews/pu049-cnf-003-reviewer-runtime-blocker.md", "R242: CNF-003 route-truth refreshed"],
+        next: "Treat PR #333 as merged into PR #331; continue validating CNF-003 evidence through PR #331 and PR #335 rather than reopening a closed PR.",
+        risk: "The route remains advisory and must not authorize commands, mutate trackers, prove delivery truth, satisfy merge readiness, or close Judge/PM/goal completion. Independent reviewer artifact production is still blocked."
+      },
+      {
+        id: "cnf004-runtime-card-continuity",
+        lane: "remote",
+        title: "CNF-004 runtime-card continuity",
+        status: "active",
+        tags: ["runtime-card", "continuity", "projection", "stacked PR", "remote unstable"],
+        summary: "Runtime-card Codex projection now exposes compact codexRuntime.continuity refs for thread, turn, trace, goal, client message, active queue item, approval request, and heartbeat/automation continuity while preserving pointer-only redaction.",
+        evidence: ["docs/goals/.../notes/PU-050-cnf-004-runtime-card-continuity-intent.md", "src/lib/runtime/runtime-card-codex-runtime.ts", "src/lib/runtime/runtime-card-codex-runtime-validation.ts", "src/lib/runtime/runtime-evidence-bundle.ts", "src/lib/runtime/runtime-evidence-adapter.ts", "runtime-card projection tests -> pass", "runtime-evidence adapter tests -> pass", "pnpm typecheck -> pass", "quality:docstrings -> pass", "docs-gate -> pass", "check-diagram-freshness -> pass", "validate-codestyle --fast -> pass", "pr-template-gate -> pass", "make hooks-pre-push -> pass", "PR #334 OPEN draft, base PR #333 branch, head 11cf544a, mergeStateStatus UNSTABLE", "artifacts/reviews/pu050-cnf-004-skill-lenses.md", "artifacts/reviews/pu050-cnf-004-implementation-reviewer-runtime-blocker.md", "R245: CNF-004 PR route-truth refresh"],
+        next: "Treat the CNF-004 branch content as part of the current stack and refresh PR #336 after lower-stack truth is repaired.",
+        risk: "Continuity refs are source and receipt pointers only; they do not prove live Codex Desktop extraction, delivery-truth consumption, review-state truth, external-state truth, merge readiness, Judge/PM readiness, slice completion, or parent-goal completion."
+      },
+      {
+        id: "cnf005-context-authority",
+        lane: "remaining",
+        title: "CNF-005 context authority classification",
+        status: "active",
+        tags: ["prompt context", "authority", "Project Brain"],
+        summary: "Current context freshness and route checks do not yet expose a canonical authority taxonomy for system, developer, repo, skill, plugin, artifact, review, telemetry, user, and untrusted external sources.",
+        evidence: ["src/lib/prompt-context-drift/", "src/lib/steering-queue/", "src/lib/agent-readiness/", "goal.md Codex-native addendum"],
+        next: "Classify context authority before a source may steer behavior or support closeout, with validators rejecting untrusted source promotion.",
+        risk: "Fresh context can still be the wrong authority class; treating telemetry or review feedback as instructions would recreate prompt-level drift."
+      },
+      {
+        id: "cnf006-application-receipts",
+        lane: "remaining",
+        title: "CNF-006 steering application receipts",
+        status: "active",
+        tags: ["steering queue", "receipts", "runtime-card"],
+        summary: "Steering queue items record applied or rejected timestamps, but there is no distinct receipt binding queue application to message/turn identity and runtime-card update.",
+        evidence: ["src/lib/steering-queue/types.ts", "src/lib/runtime/", "state.yaml codex_native_refinement_adoption"],
+        next: "Add an application receipt or equivalent packet with mismatch, expiry, supersession, missing runtime-card, and head-mismatch fixtures.",
+        risk: "Without application receipts, delayed steering can appear handled while the runtime card cannot prove what was applied."
+      },
+      {
+        id: "linear-scope",
+        lane: "completed",
+        title: "Linear JSC-363 attachment-backed alignment",
+        status: "done",
+        tags: ["Linear", "tracker", "Done"],
+        summary: "Live Linear now reports JSC-363 as Done with the full-lifecycle scope-note attachment present; the title and description still contain Phase 1 wording.",
+        evidence: ["Linear JSC-363 status -> Done", "completedAt -> 2026-06-03T20:44:00Z", "Attachment: JSC-363 full lifecycle scope note", "PR attachments through #330 present"],
+        next: "Treat tracker alignment as attachment-backed. Do not claim Linear field text is current unless the title and description are updated.",
+        risk: "Linear Done and scope-note attachment prove tracker alignment only. They do not prove runtime producer emission, delivery-truth consumption, implementation completeness, or Judge/PM readiness."
+      },
+      {
+        id: "stale-board-route",
+        lane: "completed",
+        title: "Route truth refreshed for open stack",
+        status: "done",
+        tags: ["goal.md", "state.yaml", "R266"],
+        summary: "goal.md, state.yaml, receipts.jsonl, and this board now start from current open-stack truth rather than stale zero-open-PR wording.",
+        evidence: ["goal.md route truth says PR #331, #335, and #336 are open", "state.yaml current_slice_gate.status = local_review_thread_repair_on_current_pr331_head", "R266 head_sha -> 02907f95c1a5941e7ba0bc43e519fc66bc23eb84"],
+        next: "Keep the tracker synchronized with canonical goal artifacts after every push or merged PR lane.",
+        risk: "This fixes stale routing. It does not close remaining runtime, review, CI, delivery-truth, docs, or Judge/PM gates."
+      },
+      {
+        id: "goal-validators",
+        lane: "completed",
+        title: "Current-main goal validators pass",
+        status: "done",
+        tags: ["check-goal-board", "audit freshness", "origin/main"],
+        summary: "The canonical board and audit-freshness validators pass against the current-main R222 receipt.",
+        evidence: ["PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit -> pass", "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo . -> pass", "JSONL parse -> pass for 222 receipts"],
+        next: "Use validator-passing board truth as the tracker baseline; wait for owner instruction before continuing the goal.",
+        risk: "Passing board validators prove freshness and structure, not implementation completeness."
+      },
+      {
+        id: "runtime-producer",
+        lane: "remaining",
+        title: "Runtime producer evidence",
+        status: "blocked",
+        tags: ["runtime-card", "Codex evidence", "producer"],
+        summary: "The goal still requires runtime cards to cite Codex runtime evidence without scraping final response prose.",
+        evidence: ["goal.md completion line for runtime cards", "state.yaml blocked_done_claims include runtime producer emission", "src/lib/runtime/ is the deep module home"],
+        next: "Produce or explicitly block current runtime producer emission evidence with receipt-bound head SHA.",
+        risk: "Without producer evidence, the cockpit can validate contracts but cannot prove live runtime ingestion."
+      },
+      {
+        id: "delivery-truth-consumption",
+        lane: "remaining",
+        title: "Delivery-truth consumption",
+        status: "blocked",
+        tags: ["delivery-truth", "claim support", "closeout"],
+        summary: "Delivery-truth must separate local validation, remote checks, review threads, tracker state, root hygiene, and merge readiness.",
+        evidence: ["goal.md Completion Contract", "state.yaml blocked_done_claims include delivery-truth consumption", "src/lib/delivery-truth/"],
+        next: "Run or produce current evidence that the closeout path consumes delivery-truth verdicts for final claims.",
+        risk: "A green local check or merged PR could still be overclaimed as goal completion."
+      },
+      {
+        id: "final-proof-packets",
+        lane: "remaining",
+        title: "Review, external-state, and root-hygiene proof",
+        status: "active",
+        tags: ["review-state", "external-state", "root-hygiene"],
+        summary: "Final proof still needs current review-state packets, external-state snapshots with freshness/TTL/head SHA, and root-hygiene evidence.",
+        evidence: ["goal.md lines 398-400", "ARCHITECTURE.md module map", "src/lib/review-state/, src/lib/external-state/, src/lib/root-hygiene/"],
+        next: "Generate or validate the current packets against origin/main and bind them to the final completion audit.",
+        risk: "Review threads, external CI/tracker truth, and root tidiness are separate lanes and can drift after merge."
+      },
+      {
+        id: "review-backfill",
+        lane: "remaining",
+        title: "Historical review coverage backfill",
+        status: "active",
+        tags: ["PU-000..016", "review artifacts", "ratification"],
+        summary: "Final closeout needs a backfill or ratification ledger mapping every lifecycle unit to required skill lenses and independent reviewer evidence.",
+        evidence: ["goal.md Completion Contract", "state.yaml review_backfill references", "docs/goals/.../notes/review-coverage-backfill.json"],
+        next: "Verify the ledger is current, complete, and accepted for PU-000 through PU-016 before Judge/PM closeout.",
+        risk: "Missing reviewer evidence blocks done claims even when implementation artifacts exist."
+      },
+      {
+        id: "gap-spg-audit",
+        lane: "remaining",
+        title: "GAP and SPG completion matrix",
+        status: "active",
+        tags: ["GAP-001..012", "SPG-001..012", "Judge/PM"],
+        summary: "All adopted audit gaps and system-prompt operational gaps must be implemented, explicitly blocked, or accepted as follow-ups by Judge/PM.",
+        evidence: ["goal.md Completion Contract", ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md", ".harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md"],
+        next: "Run a requirement-by-requirement audit and record which gaps are closed, blocked, or accepted follow-ups.",
+        risk: "Gap closure by prose is invalid under the goal contract."
+      },
+      {
+        id: "docs-accuracy",
+        lane: "remaining",
+        title: "Documentation accuracy gate",
+        status: "active",
+        tags: ["docs", "ARCHITECTURE.md", "AGENTS.md"],
+        summary: "Documentation and agent instruction surfaces must describe the current merged contract and deep-module placement.",
+        evidence: ["goal.md Completion Contract", "AGENTS.md architecture-adjacent documentation rules", "ARCHITECTURE.md"],
+        next: "Run docs-gate and update stale docs surfaces after route truth and final proof lanes are reconciled.",
+        risk: "Docs drift can route the next slice into stale PRs or the wrong module boundary."
+      },
+      {
+        id: "judge-pm-packet",
+        lane: "remaining",
+        title: "Final Judge/PM audit packet",
+        status: "blocked",
+        tags: ["Judge", "PM", "final audit"],
+        summary: "The goal cannot close until a final Judge/PM-ready audit packet exists or the goal is marked blocked with current evidence.",
+        evidence: ["goal.md Completion Contract", "state.yaml Judge and PM task entries", "blocked_done_claims still include Judge/PM-ready and goal completion"],
+        next: "After validators, docs, runtime proof, delivery-truth, Linear, and backfill are current, run the final Judge and PM audits.",
+        risk: "This is the parent-goal closeout gate; no child PR can satisfy it by itself."
+      },
+      {
+        id: "judge-pm",
+        lane: "closeout",
+        title: "Judge/PM readiness unclaimed",
+        status: "blocked",
+        tags: ["Judge/PM", "delivery-truth", "audit"],
+        summary: "Final readiness requires current proof across plan/spec acceptance, audit gaps, SPG gaps, validation, reviewer coverage, docs, PRs, Linear, and runtime evidence.",
+        evidence: ["goal.md Completion Contract", "state.yaml closeout blockers", "GAP and SPG adoption matrices"],
+        next: "Run a final goal completion audit only after current implementation, PR, review, CI, Linear, docs, and receipt lanes are fresh.",
+        risk: "Green PR checks alone do not prove the parent objective."
+      },
+      {
+        id: "audit-gaps",
+        lane: "closeout",
+        title: "Adopted GAP and SPG matrices remain completion gates",
+        status: "active",
+        tags: ["GAP-001..012", "SPG-001..012", "audit"],
+        summary: "The 2026-05-26 audit and 2026-05-27 system-prompt operational analysis are part of the completion contract.",
+        evidence: [".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md", ".harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md", "scripts/check-goal-audit-freshness.py"],
+        next: "Close, block, or accepted-follow-up every adopted gap before final completion.",
+        risk: "A prose-only gap closure is invalid; every closure needs code, schema, validator, receipt, PR truth, or accepted blocked decision."
+      },
+      {
+        id: "docs-architecture",
+        lane: "closeout",
+        title: "Docs and architecture synchronization",
+        status: "active",
+        tags: ["ARCHITECTURE.md", "docs-gate", "agent-governance"],
+        summary: "Architecture-adjacent runtime cockpit changes must keep ARCHITECTURE.md, AI context, AGENTS.md, and agent-governance docs synchronized.",
+        evidence: ["AGENTS.md architecture-adjacent contracts", "ARCHITECTURE.md source map", "docs/agents/00-architecture-bootstrap.md and 07b-agent-governance.md references"],
+        next: "Run docs-gate and architecture context checks whenever the visualized deep-module boundaries change.",
+        risk: "Docs drift can make future agents place work in the wrong module even when code is locally correct."
+      }
+    ];
+
+    const statusColor = {
+      active: "var(--blue)",
+      blocked: "var(--red)",
+      done: "var(--green)"
+    };
+
+    const board = document.querySelector("#board");
+    const search = document.querySelector("#board-search");
+    const filterButtons = [...document.querySelectorAll(".tab")];
+    let currentFilter = "all";
+
+    function renderBoard() {
+      const query = search.value.trim().toLowerCase();
+      board.innerHTML = "";
+      for (const lane of lanes) {
+        const laneCards = cards.filter(card => {
+          const inLane = card.lane === lane.id;
+          const inFilter = currentFilter === "all" || card.status === currentFilter;
+          const haystack = [card.title, card.summary, card.status, ...card.tags, ...card.evidence].join(" ").toLowerCase();
+          return inLane && inFilter && (!query || haystack.includes(query));
+        });
+
+        const section = document.createElement("section");
+        section.className = "lane";
+        section.style.setProperty("--lane-color", lane.color);
+        section.innerHTML = `
+          <div class="lane-header">
+            <h2>${lane.title}</h2>
+            <span class="lane-count">${laneCards.length}</span>
+          </div>
+          <div class="cards"></div>
+        `;
+        const list = section.querySelector(".cards");
+        for (const card of laneCards) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "card";
+          button.style.setProperty("--status-color", statusColor[card.status]);
+          button.dataset.card = card.id;
+          button.innerHTML = `
+            <span class="card-title">${card.title}</span>
+            <span class="card-meta">
+              <span class="pill">${card.status}</span>
+              ${card.tags.slice(0, 3).map(tag => `<span class="pill">${tag}</span>`).join("")}
+            </span>
+            <p>${card.summary}</p>
+          `;
+          button.addEventListener("click", () => selectCard(card.id));
+          list.appendChild(button);
+        }
+        board.appendChild(section);
+      }
+    }
+
+    function selectCard(id) {
+      const card = cards.find(item => item.id === id);
+      if (!card) return;
+      document.querySelector("#inspector-title").textContent = card.title;
+      document.querySelector("#inspector-meta").innerHTML = [
+        `<span class="pill">${card.status}</span>`,
+        ...card.tags.map(tag => `<span class="pill">${tag}</span>`)
+      ].join("");
+      document.querySelector("#inspector-evidence").innerHTML = card.evidence.map(item => `<li>${item}</li>`).join("");
+      document.querySelector("#inspector-next").textContent = card.next;
+      document.querySelector("#inspector-risk").textContent = card.risk;
+    }
+
+    filterButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        currentFilter = button.dataset.filter;
+        filterButtons.forEach(item => {
+          item.setAttribute("aria-pressed", String(item === button));
+        });
+        renderBoard();
+      });
+    });
+
+    search.addEventListener("input", renderBoard);
+    renderBoard();
+    selectCard("full-lifecycle");
+  </script>
+</body>
+</html>

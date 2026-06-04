@@ -26,6 +26,8 @@ REQUIRED_SOURCE_FIELDS = ("path", "sha256", "checked_at", "head_sha")
 CHECKED_AT_FUTURE_SKEW = timedelta(minutes=5)
 SELF_REFERENTIAL_GOAL_RECEIPT_PATHS = {
     ".harness/active-artifacts.md",
+    ".harness/implementation-notes/goal-kanban-board.html",
+    "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
     "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
     "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
 }

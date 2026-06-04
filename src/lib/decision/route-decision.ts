@@ -54,6 +54,101 @@ export const ROUTE_DECISION_BLOCKER_BOUNDARIES = [
 export type RouteDecisionBlockerBoundary =
 	(typeof ROUTE_DECISION_BLOCKER_BOUNDARIES)[number];
 
+/** Stable mutation scopes for advisory lifecycle routes. */
+export const ROUTE_DECISION_MUTATION_SCOPES = [
+	"none",
+	"repo_local",
+	"destructive",
+	"external",
+	"tracker",
+	"production",
+	"release",
+	"security",
+	"credential",
+	"merge",
+	"public_contract",
+	"goal_completion",
+	"verifier_disagreement",
+	"ambiguous_governance",
+	"unknown",
+] as const;
+
+/** Mutation scope for advisory lifecycle routes. */
+export type RouteDecisionMutationScope =
+	(typeof ROUTE_DECISION_MUTATION_SCOPES)[number];
+
+/** Stable mutation risk tiers for advisory lifecycle routes. */
+export const ROUTE_DECISION_MUTATION_RISK_TIERS = [
+	"none",
+	"low",
+	"medium",
+	"high",
+	"critical",
+	"unknown",
+] as const;
+
+/** Mutation risk tier for advisory lifecycle routes. */
+export type RouteDecisionMutationRiskTier =
+	(typeof ROUTE_DECISION_MUTATION_RISK_TIERS)[number];
+
+/** Evidence freshness for mutation authority decisions. */
+export const ROUTE_DECISION_MUTATION_EVIDENCE_FRESHNESS = [
+	"not_applicable",
+	"current",
+	"stale",
+	"missing",
+	"unknown",
+] as const;
+
+/** Evidence freshness for mutation authority decisions. */
+export type RouteDecisionMutationEvidenceFreshness =
+	(typeof ROUTE_DECISION_MUTATION_EVIDENCE_FRESHNESS)[number];
+
+/** Validator ownership status for mutation authority decisions. */
+export const ROUTE_DECISION_MUTATION_VALIDATOR_OWNERSHIP = [
+	"not_applicable",
+	"present",
+	"missing",
+	"unknown",
+] as const;
+
+/** Validator ownership status for mutation authority decisions. */
+export type RouteDecisionMutationValidatorOwnership =
+	(typeof ROUTE_DECISION_MUTATION_VALIDATOR_OWNERSHIP)[number];
+
+/** Mutation authority result for advisory lifecycle routes. */
+export const ROUTE_DECISION_MUTATION_AUTHORITIES = [
+	"not_applicable",
+	"agent_local",
+	"human_required",
+] as const;
+
+/** Mutation authority result for advisory lifecycle routes. */
+export type RouteDecisionMutationAuthority =
+	(typeof ROUTE_DECISION_MUTATION_AUTHORITIES)[number];
+
+/** Machine-readable policy for mutating advisory lifecycle routes. */
+export interface RouteDecisionMutationPolicy {
+	/** State scope the route would mutate. */
+	scope: RouteDecisionMutationScope;
+	/** Risk tier for the mutation. */
+	riskTier: RouteDecisionMutationRiskTier;
+	/** Freshness of evidence supporting the mutation authority decision. */
+	evidenceFreshness: RouteDecisionMutationEvidenceFreshness;
+	/** Whether a deterministic validator owns the mutation claim. */
+	validatorOwnership: RouteDecisionMutationValidatorOwnership;
+	/** Authority result for the route. */
+	authority: RouteDecisionMutationAuthority;
+}
+
+const NOT_APPLICABLE_MUTATION_POLICY: RouteDecisionMutationPolicy = {
+	scope: "none",
+	riskTier: "none",
+	evidenceFreshness: "not_applicable",
+	validatorOwnership: "not_applicable",
+	authority: "not_applicable",
+};
+
 /** Lifecycle route target and optional non-authoritative routing hints. */
 export interface RouteDecisionRoute {
 	/** Lifecycle route identifier. */
@@ -85,6 +180,8 @@ interface RouteDecisionLifecycleFields {
 	requiresNetwork: boolean;
 	/** Whether acting on the route would mutate files, git state, or trackers. */
 	mutates: boolean;
+	/** Risk-tiered mutation policy for advisory route consumption. */
+	mutationPolicy: RouteDecisionMutationPolicy;
 	/** Detailed failure taxonomy for blocked or failed routes. */
 	failureClass: string | null;
 	/** Aggregate recovery boundary for blocked or failed routes. */
@@ -174,9 +271,53 @@ function validateRouteShape(
 	return value;
 }
 
+function validateMutationPolicyShape(
+	value: unknown,
+	errors: HeValidationError[],
+): Record<string, unknown> | null {
+	if (!isRecord(value)) {
+		errors.push(
+			toValidationError("mutationPolicy must be an object", "mutationPolicy"),
+		);
+		return null;
+	}
+	validateEnum(
+		value.scope,
+		"mutationPolicy.scope",
+		ROUTE_DECISION_MUTATION_SCOPES,
+		errors,
+	);
+	validateEnum(
+		value.riskTier,
+		"mutationPolicy.riskTier",
+		ROUTE_DECISION_MUTATION_RISK_TIERS,
+		errors,
+	);
+	validateEnum(
+		value.evidenceFreshness,
+		"mutationPolicy.evidenceFreshness",
+		ROUTE_DECISION_MUTATION_EVIDENCE_FRESHNESS,
+		errors,
+	);
+	validateEnum(
+		value.validatorOwnership,
+		"mutationPolicy.validatorOwnership",
+		ROUTE_DECISION_MUTATION_VALIDATOR_OWNERSHIP,
+		errors,
+	);
+	validateEnum(
+		value.authority,
+		"mutationPolicy.authority",
+		ROUTE_DECISION_MUTATION_AUTHORITIES,
+		errors,
+	);
+	return value;
+}
+
 function validateRouteConsistency(
 	value: Record<string, unknown>,
 	route: Record<string, unknown> | null,
+	mutationPolicy: Record<string, unknown> | null,
 	errors: HeValidationError[],
 ): void {
 	const status = value.status;
@@ -242,19 +383,108 @@ function validateRouteConsistency(
 			),
 		);
 	}
-	if (value.mutates === true && value.requiresHuman !== true) {
-		errors.push(
-			toValidationError(
-				"mutating routes must require human review",
-				"requiresHuman",
-			),
-		);
-	}
+	validateMutationPolicyConsistency(value, mutationPolicy, errors);
 	if (isBlockedOrFail && value.safeToUse === true) {
 		errors.push(
 			toValidationError(
 				"safeToUse must be false when status is blocked or fail",
 				"safeToUse",
+			),
+		);
+	}
+}
+
+function validateMutationPolicyConsistency(
+	value: Record<string, unknown>,
+	mutationPolicy: Record<string, unknown> | null,
+	errors: HeValidationError[],
+): void {
+	if (mutationPolicy === null) return;
+
+	const notApplicablePolicy =
+		mutationPolicy.scope === "none" &&
+		mutationPolicy.riskTier === "none" &&
+		mutationPolicy.evidenceFreshness === "not_applicable" &&
+		mutationPolicy.validatorOwnership === "not_applicable" &&
+		mutationPolicy.authority === "not_applicable";
+
+	if (value.mutates === false) {
+		if (!notApplicablePolicy) {
+			errors.push(
+				toValidationError(
+					"non-mutating routes must use a not-applicable mutation policy",
+					"mutationPolicy",
+				),
+			);
+		}
+		return;
+	}
+
+	if (value.mutates !== true) return;
+
+	if (notApplicablePolicy) {
+		errors.push(
+			toValidationError(
+				"mutating routes must set a mutation policy",
+				"mutationPolicy",
+			),
+		);
+		return;
+	}
+
+	const incompletePolicy =
+		mutationPolicy.scope === "none" ||
+		mutationPolicy.riskTier === "none" ||
+		mutationPolicy.evidenceFreshness === "not_applicable" ||
+		mutationPolicy.validatorOwnership === "not_applicable" ||
+		mutationPolicy.authority === "not_applicable";
+
+	if (incompletePolicy) {
+		errors.push(
+			toValidationError(
+				"mutating routes must set a complete mutation policy",
+				"mutationPolicy",
+			),
+		);
+		return;
+	}
+
+	if (
+		mutationPolicy.authority === "human_required" &&
+		value.requiresHuman !== true
+	) {
+		errors.push(
+			toValidationError(
+				"human-required mutation policies must require human review",
+				"requiresHuman",
+			),
+		);
+	}
+	if (
+		mutationPolicy.authority === "agent_local" &&
+		value.requiresHuman === true
+	) {
+		errors.push(
+			toValidationError(
+				"agent-local mutation policies must not require human review",
+				"mutationPolicy.authority",
+			),
+		);
+	}
+
+	const agentLocalPolicy =
+		mutationPolicy.scope === "repo_local" &&
+		mutationPolicy.riskTier === "low" &&
+		mutationPolicy.evidenceFreshness === "current" &&
+		mutationPolicy.validatorOwnership === "present" &&
+		mutationPolicy.authority === "agent_local" &&
+		value.requiresNetwork === false;
+
+	if (value.requiresHuman === false && !agentLocalPolicy) {
+		errors.push(
+			toValidationError(
+				"agent-local mutating routes require low-risk repo-local current validator-owned policy",
+				"mutationPolicy",
 			),
 		);
 	}
@@ -295,6 +525,14 @@ export function validateRouteDecision(
 		);
 	}
 	const route = validateRouteShape(value.route, errors);
+	const mutationPolicyInput =
+		value.mutationPolicy === undefined
+			? NOT_APPLICABLE_MUTATION_POLICY
+			: value.mutationPolicy;
+	const mutationPolicy = validateMutationPolicyShape(
+		mutationPolicyInput,
+		errors,
+	);
 	validateNullableString(value.sourcePath, "sourcePath", errors);
 	validateBoolean(value.safeToUse, "safeToUse", errors);
 	validateBoolean(value.requiresHuman, "requiresHuman", errors);
@@ -315,7 +553,7 @@ export function validateRouteDecision(
 			toValidationError("meta must be an object when present", "meta"),
 		);
 	}
-	validateRouteConsistency(value, route, errors);
+	validateRouteConsistency(value, route, mutationPolicy, errors);
 
 	return { valid: errors.length === 0, errors };
 }
@@ -350,6 +588,9 @@ export function toHarnessDecisionLifecycleRouteMeta(
 		requiresHuman: routeDecision.requiresHuman,
 		requiresNetwork: routeDecision.requiresNetwork,
 		mutates: routeDecision.mutates,
+		mutationPolicy: {
+			...(routeDecision.mutationPolicy ?? NOT_APPLICABLE_MUTATION_POLICY),
+		},
 		failureClass: routeDecision.failureClass,
 		blockerBoundary: routeDecision.blockerBoundary,
 		evidenceRef: [...routeDecision.evidenceRef],

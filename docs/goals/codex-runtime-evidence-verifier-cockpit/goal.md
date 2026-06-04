@@ -12,6 +12,7 @@
 - [Lifecycle Slices](#lifecycle-slices)
 - [Audit Gap Enforcement Addendum](#audit-gap-enforcement-addendum)
 - [Codex Ecosystem Operational Review Addendum](#codex-ecosystem-operational-review-addendum)
+- [Codex-Native Current-Main Refinement Addendum](#codex-native-current-main-refinement-addendum)
 - [Codex System Prompt Operational Analysis Addendum](#codex-system-prompt-operational-analysis-addendum)
 - [Project Brain Memory Contract](#project-brain-memory-contract)
 - [Slice Execution Contract](#slice-execution-contract)
@@ -41,27 +42,30 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-03 PR-stack conflict, review-thread, and
-post-push validation refresh.
+Last updated during the 2026-06-04 stacked-PR route-truth refresh after PR #333
+and PR #338 merged into their stack bases and PR #331 advanced to
+`02907f95c1a5941e7ba0bc43e519fc66bc23eb84`.
 
 Current route truth:
 
-- `origin/main` is at `f655560719404d1cde11a5f40b6fac715f205bef` and already contains the merged PR #327 route-truth repair.
-- PR #328 is the lower open branch, `codex/jsc-363-review-artifact-head-freshness` into `main`. Its merge conflict was repaired, the unresolved review threads were fixed and resolved, and the branch was pushed to `24ef2dce35568f357f5d6df1d16de11f311efb1b`.
-- The latest live PR #328 refresh reports `mergeable: MERGEABLE`, `mergeStateStatus: UNSTABLE`, zero unresolved review threads, CodeRabbit passing, all visible CircleCI contexts passing, and `security/snyk (jscraik)` failing because the Snyk account has used its private-test limit. PR #328 is therefore not merge-ready.
-- PR #330 is the top open branch, `codex/jsc-363-linear-stack-refresh` into PR #328's branch. It includes the refreshed PR #328 head, receipt-only route anchors, and the audit-freshness checkout-mtime guard repair. Use a fresh GitHub query for the exact latest submitted head before any readiness claim.
-- The latest live PR #330 refresh after the mtime guard repair reports `mergeable: MERGEABLE`, `mergeStateStatus: UNSTABLE`, `reviewDecision: APPROVED`, zero unresolved review threads, several CircleCI contexts still pending, and `security/snyk (jscraik)` failing because the Snyk account has used its private-test limit. PR #330 is therefore not merge-ready.
-- PR #329 is no longer a live open lane in the current GitHub PR list. Treat it as historical stack evidence unless a fresh GitHub query shows it reopened.
-- PR #327 is now represented by `origin/main`; do not keep routing work as if PR #327 were still an open stacked PR.
+- `main` and `origin/main` are synchronized at `50a6d0b5d764e35395e12190a465e854c26784fd`.
+- Live GitHub reports open stacked pull requests for `jscraik/coding-harness`: PR #331 is `MERGEABLE/BLOCKED`, PR #335 is `CONFLICTING/DIRTY`, and PR #336 is `MERGEABLE/UNSTABLE`.
+- PR #321, PR #322, PR #323, PR #325, PR #326, PR #327, PR #328, PR #329, and PR #330 are merged route or foundation lanes for this goal.
+- PR #333 merged into the PR #331 branch at 2026-06-04T17:10:10Z as merge commit `02907f95c1a5941e7ba0bc43e519fc66bc23eb84`.
+- PR #338 merged into the PR #336 branch at 2026-06-04T17:12:20Z as merge commit `01179cdefccf34c58fbac54d4f0da344fdaa6155`.
+- PR #330 merged into `main` at 2026-06-03T20:43:56Z as `docs(goal): promote CircleCI env recovery rule`.
+- Live Linear `JSC-363` was refreshed after the PR stack merged: status is `Done`, completed at 2026-06-03T20:44:00Z, and the issue has an attachment titled `JSC-363 full lifecycle scope note`. The issue title and description still use Phase 1 wording, so Linear alignment is attachment-backed rather than field-text-current.
+- Do not keep routing work as if PR #328, PR #329, PR #330, PR #333, or PR #338 were open stacked PRs unless a fresh GitHub query shows a reopened or new PR lane.
 
 Outstanding goal work after conflict reconciliation:
 
-- Finish live PR triage for PR #328 and PR #330 from current GitHub truth, not older green-check receipts.
-- Wait for or triage the pending CircleCI contexts on PR #330 after the current pushed head settles. PR #328's visible CircleCI contexts currently pass. The external Snyk GitHub App failure is currently an account-quota blocker, not an implementation failure proven by the code diff.
-- Re-run CodeRabbit, CircleCI, Snyk, review-thread, mergeability, and linked-issue checks after each pushed head.
-- Use `~/.codex/.env` only for failing or opaque CircleCI API/log triage after probing that it is a regular readable file; never print token values.
-- Refresh Linear JSC-363 before tracker-alignment or full-lifecycle closeout claims. Its Phase 1 wording remains a tracker-alignment blocker unless the owner accepts attachment-only mitigation or the issue fields are updated.
+- Continue only from current open-stack truth: repair PR #331 review-thread findings first, then recheck PR #335 conflicts and PR #336 checks/review after PR #331 has a new submitted head.
+- Keep this goal board and the local board tracker synchronized before using either as route truth.
+- Run the goal-board and audit-freshness validators after this route-truth refresh.
+- Treat merged PRs as completed route/foundation evidence, not as final goal completion.
+- Treat Linear `JSC-363` as tracker-aligned by current `Done` status plus the full-lifecycle scope-note attachment, with a residual field-text mismatch because the title and description still say Phase 1. Do not call Linear fields current unless those fields are updated.
 - Continue implementation only from the remaining evidence-backed lifecycle gaps: runtime producer evidence, delivery-truth consumption, final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, and final requirement-by-requirement completion audit.
+- Treat the current-main Codex-native refinement addendum as next-slice intent scope. It is not completed implementation evidence until the named source modules, contracts, fixtures, validators, and receipts prove the new fields or record owner-visible blockers.
 - Do not create a new duplicate goal board. Update this board, `state.yaml`, and `receipts.jsonl` as the canonical durable goal surface.
 
 ## Why This Exists
@@ -91,6 +95,7 @@ Supporting operational review:
 
 - `.harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md`
 - `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md`
+- `goal-governor-output.yaml` records the imported current-main Codex-native refinement review from `/Users/jamiecraik/dev/codex` against this repository. The imported findings steer scope; they do not prove implementation.
 
 Project Brain and memory authority:
 
@@ -220,8 +225,47 @@ Adoption rules:
 - The ecosystem review is advisory until this section and `state.yaml` adopt specific findings; after adoption, the listed findings are goal steering constraints.
 - Harness must not become a competing Codex app-server, goal store, scheduler, tool registry, or thread engine.
 - Runtime cards remain cockpit summaries and pointers, not warehouses for raw prompts, raw telemetry, review bodies, secrets, or bulky artifacts.
-- Linear `JSC-363` remains the tracker anchor for this goal. If the Linear issue title or description still says Phase 1, future closeout must record that mismatch and either update Linear or add an accepted scope note before claiming full-lifecycle tracker alignment.
+- Linear `JSC-363` remains the tracker anchor for this goal. Current live Linear evidence records the issue as `Done` with a full-lifecycle scope-note attachment, while the title and description still say Phase 1. Future closeout may claim attachment-backed tracker alignment, but not field-text-current Linear alignment unless those fields are updated.
 - Every future Worker/Judge/PM receipt should include `ecosystem_review_findings` when a slice touches runtime identity, runtime state, claim verification, queueing, tool exposure, review mode, artifacts, memory/retrieval, recovery, schemas, telemetry, hooks, instruction provenance, runtime provenance, or Codex parity.
+
+## Codex-Native Current-Main Refinement Addendum
+
+A 2026-06-03/2026-06-04 Codex-native review was produced from
+`/Users/jamiecraik/dev/codex` against `/Users/jamiecraik/dev/coding-harness`
+and imported into `goal-governor-output.yaml`. The review found that current
+`main` already contains broad verifier primitives, including runtime cards,
+runtime evidence contracts, stale-state detection, review-state separation,
+external-state claim support, steering queues, verifier ownership, and
+decision-request HILT boundaries. The missing work is narrower and more
+Codex-native: identity correlation, environment-scoped permission evidence,
+risk-tiered mutation authority, richer runtime-card continuity, context
+authority classification, and queue application receipts.
+
+Current-main verification at `50a6d0b5d764e35395e12190a465e854c26784fd`
+supports the refinement as pending scope, not as proof of implementation:
+
+| Refinement | Current-main evidence | Required Goal Treatment | Minimum Proof |
+| --- | --- | --- | --- |
+| Codex user-message correlation | PU-047/CNF-001 local slice adds `clientUserMessageId` as an explicit nullable runtime identity field and adds steering-queue expected/applied client-message correlation, stale-precondition classification, schema/example updates, and validator/test coverage. The reviewed source-capability artifact classifies live Codex Desktop extraction as unproven and forbids synthesizing the field from turn IDs, trace IDs, timestamps, PR data, or artifact paths. | Preserve the nullable producer-input contract, keep missing source evidence as `null`, reject stale or mismatched applied steering items, and keep runtime-card/closeout use orientation-only until a later slice proves live producer extraction and delivery-truth consumption. | Implemented locally in `src/lib/runtime/**`, `src/lib/steering-queue/**`, `contracts/steering-queue.schema.json`, `contracts/examples/steering-queue.example.json`, `scripts/validate-steering-queue.cjs`, and focused tests. Remaining proof requires post-implementation reviewer artifacts, goal receipts, and any future live producer extraction evidence before parent-goal closeout. |
+| Environment-scoped permission evidence | PU-048/CNF-002 adds `CodexRuntimeEnvironmentSnapshot` to `codex-runtime-evidence/v1`, validates stale cwd, approval-scope mismatch, missing sandbox-policy refs, missing receipt-backed sandbox refs, and current environment claims without explicit scope evidence, and projects environment refs into the compact runtime-card Codex surface. `src/lib/tool-exposure/types.ts` remains the separate exposure-summary module and is not duplicated. The slice is now in stacked draft PR #332 on top of PR #331. | Preserve explicit producer-input semantics: environment fields are nullable/unknown unless source evidence provides them, known permission claims require a sandbox-policy ref, and runtime-card projection remains pointer-only. | Implemented in `src/lib/runtime/**`, `src/commands/runtime-card.test.ts`, and focused runtime tests, with broad local validation passing. PR #332 exists and its live body now passes the source checkout and installed `pr-template-gate` after R241 paired each review artifact with tracked receipt evidence in the durable evidence map. GitHub still reports the pre-repair CircleCI pr-template status as failed until a fresh pipeline completes; Snyk private-test quota and required independent reviewer artifacts remain blocked. No done, CI-green, merge-ready, delivery-truth, Judge/PM, or parent-goal completion claim is made. |
+| Risk-tiered agent-native mutation authority | PU-049/CNF-003 local commit `10f989e645be54b04fa997f30d7fc63c052195c8` adds `mutationPolicy` to `route-decision/v1` with scope, risk tier, evidence freshness, validator ownership, and authority fields. `src/lib/decision-request/types.ts` remains the high/critical HILT boundary taxonomy for destructive actions, external mutation, credentials, security, public contracts, release, permission escalation, stale claim support, merge readiness, tracker authority, goal completion, unknown, and network-dependent operations. Draft stacked PR #333 now targets PR #332's CNF-002 branch. | Preserve the advisory route-decision boundary: low-risk repo-local mutations may be agent-local only when current evidence, validator ownership, agent-local authority (`authority=agent_local`), and no network requirement (`requiresNetwork=false`) are present; destructive, external, tracker, production, release, security, credential, merge, public-contract, ambiguous-governance, verifier-disagreement, goal-completion, unknown, and network-dependent paths still require HILT. | Implemented locally in `src/lib/decision/route-decision.ts` and `src/lib/decision/route-decision.test.ts`, with focused route tests, command-facing decision-request tests, typecheck, docs-gate, diagram freshness, `validate-codestyle --fast`, goal-board, and audit-freshness passing. Required independent reviewer artifacts remain blocked by runtime artifact-output failure recorded in `artifacts/reviews/pu049-cnf-003-reviewer-runtime-blocker.md`; PR #333 remote checks/reviews are pending. No slice-done, CI-green, merge-ready, delivery-truth, Judge/PM, or parent-goal completion claim is made. |
+| Runtime-card Codex continuity projection | PU-050/CNF-004 commit `4490549966e705edceca01916553c80f433347d1` adds `codexRuntime.continuity` to runtime-card Codex projection with compact source refs for thread, turn, trace, goal, client message, active queue item, approval request, and heartbeat/automation continuity. It also accepts `continuity` in `runtime-evidence-bundle/v1` only when every ref is source-backed, then requires runtime-card continuity refs to be present in `codexRuntime.receiptRefs`. Draft stacked PR #334 now targets PR #333's CNF-003 branch. | Preserve pointer-only, redacted runtime-card semantics: continuity refs are provenance links, not prompts, transcripts, secrets, command authority, review truth, delivery truth, Linear truth, merge readiness, Judge/PM readiness, or parent-goal proof. Keep unknown continuity fields and payload-like refs rejected. | Implemented in `src/lib/runtime/runtime-card-codex-runtime.ts`, `src/lib/runtime/runtime-card-codex-runtime-validation.ts`, `src/lib/runtime/runtime-evidence-bundle.ts`, `src/lib/runtime/runtime-evidence-adapter.ts`, and focused runtime tests. Focused vitest, `pnpm typecheck`, docs-gate, diagram freshness, `quality:docstrings`, `validate-codestyle --fast`, PR-template gate, foreground `make hooks-pre-push`, route board validation, and audit-freshness passed locally. PR #334 exists; required independent reviewer artifacts remain blocked by runtime artifact-output failure recorded in `artifacts/reviews/pu050-cnf-004-implementation-reviewer-runtime-blocker.md`; remote CI, review threads, delivery-truth consumption, Judge/PM readiness, and parent-goal completion are not claimed. |
+| Prompt/context authority classification | Existing prompt-context, steering, and Project Brain surfaces classify freshness and route evidence, but no current-main source match was found for a canonical authority taxonomy covering `system_policy`, `developer_policy`, `repo_instruction`, `trusted_skill`, `plugin_metadata`, `artifact_data`, `review_feedback`, `telemetry`, `user_steering`, and `untrusted_external`. | Classify context authority before a source may steer agent behavior or support a closeout claim. | Validator and fixtures that reject untrusted external, telemetry, artifact data, or review feedback when presented as instruction authority without an allowed promotion path. |
+| Steering queue application receipts | `SteeringQueueItem` records application and rejection timestamps, but there is no distinct current-main packet or receipt that binds queue item application to Codex message/turn identity and the resulting runtime-card update. | Add a steering application receipt or equivalent packet that connects queue item, expected/current turn or message identity, runtime-card update, and stale-precondition result. | Positive and negative fixtures for expected/current mismatch, expired steering, superseded items, missing runtime-card ref, and applied receipt head mismatch. |
+
+Refinement adoption rules:
+
+- These findings may re-scope the next implementation slice, but they do not
+  authorize weakening existing PU, GAP, SPG, review, validation, or closeout
+  requirements.
+- The next activated slice must classify each refinement as implemented,
+  blocked, not applicable, or accepted follow-up before claiming done.
+- Any implemented refinement must update the relevant deep-module docs,
+  architecture context, fixtures, validators, and receipt fields in the same
+  slice when repo policy requires synchronization.
+- Harness remains a verifier cockpit. It must ingest and verify Codex-native
+  facts; it must not become a second Codex app server, scheduler, tool
+  registry, prompt composer, or thread engine.
 
 ## Codex System Prompt Operational Analysis Addendum
 
@@ -388,6 +432,7 @@ The goal is complete only when all of the following are true:
 - PU-000 through PU-016 are implemented, explicitly marked not applicable with evidence, or explicitly blocked with owner-visible evidence.
 - GAP-001 through GAP-012 from `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` are implemented, explicitly blocked, or tracked as accepted follow-ups by the Judge/PM audit.
 - SPG-001 through SPG-012 from `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` are implemented, explicitly blocked, or tracked as accepted follow-ups by the Judge/PM audit.
+- The Codex-native current-main refinement addendum items are implemented, explicitly blocked with owner-visible evidence, marked not applicable with rationale, or accepted as follow-ups by Judge/PM before final goal completion.
 - `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .` proves the latest relevant receipt acknowledges the current `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` content hash after the audit file timestamp; otherwise audit-gap closeout is stale and blocked.
 - `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit` also passes, proving the normal goal-board path executes audit-freshness and active-artifacts route enforcement for this goal.
 - Each implemented slice has an intent artifact, validation evidence, review evidence, commit, PR truth, and receipt.

@@ -1,3 +1,31 @@
+---
+doc_schema: coding-harness-doc/v1
+doc_type: architecture
+authority: canon
+canon_class: canonical
+distribution: source-only
+audience:
+  - coding-harness-maintainer
+  - codex-agent
+  - reviewer
+lifecycle_state: active
+owner: coding-harness-maintainers
+created: 2026-06-04
+last_reviewed: 2026-06-04
+review_cadence: quarterly
+maintenance_trigger:
+  - architecture-boundary-change
+  - command-family-change
+  - generated-context-refresh
+semver_impact: minor
+validated_by:
+  - pnpm docs:lifecycle
+depends_on:
+  - AGENTS.md
+  - docs/architecture/documentation-layers.md
+  - AI/context/diagram-context.md
+---
+
 # Architecture
 
 ## Table of Contents
@@ -108,7 +136,24 @@ not in docs, templates, generated context, or command facades.
   `runtime-card-handoff/v1` contracts. The runtime-card handoff module binds a
   persisted runtime card to its produced runtime-evidence bundle with a shared
   binding id, checksums, source/provenance refs, head SHA, and orientation-only
-  evidence-use policy before any handoff can feed agent cockpit state.
+  evidence-use policy before any handoff can feed agent cockpit state. Codex
+  runtime identity also carries nullable client user-message correlation when
+  producer input can prove it; unavailable message ids remain null and must not
+  be synthesized from adjacent turn, trace, timestamp, PR, or artifact fields.
+  Permission evidence is scoped by an explicit runtime environment snapshot
+  rather than by profile alone: environment id, cwd, expected cwd, executor
+  kind, approval scope, expected approval scope, sandbox policy ref, state, and
+	failure class live in `codex-runtime-evidence/v1`. Known permission claims
+	require a receipt-backed sandbox policy ref, stale cwd and approval-scope
+	mismatches are blocked session sources, and runtime-card projection exposes
+	only compact `environmentRefs` pointers. Runtime-card Codex continuity
+	projection also stays inside this deep module: producer-supplied thread,
+	turn, trace, goal, client-message, queue, approval, and heartbeat refs may be
+	projected only as compact source-backed and receipt-backed pointers under
+	`codexRuntime.continuity`; they must not embed raw prompts, transcripts,
+	event streams, secrets, or bulky runtime payloads and must not become command
+	authority, delivery-truth, review-state, external-state, merge-readiness,
+	Judge/PM, or goal-completion proof.
 - src/lib/runtime-trace/: opt-in runtime-card trace recording that projects
   runtime-card execution into canonical `agent-run-event/v1` event streams
   under `artifacts/agent-runs/<runId>/events.jsonl`. It owns trace-out path
@@ -204,11 +249,21 @@ not in docs, templates, generated context, or command facades.
   `steering-queue.ts` as a compatibility facade over typed contracts, builder,
   hash, constants, and semantic-validation modules. It owns steering-queue/v1
   item state, instruction-source hashing, artifact identity checks,
-  supersession, stale-precondition classification, single-scope packet
-  validation, deterministic selection order, and semantic validation while
-  keeping queued steering out of execution authority, closeout proof, and
+  supersession, stale-precondition classification, client user-message
+  correlation for expected and applied same-thread steering, single-scope
+  packet validation, deterministic selection order, and semantic validation
+  while keeping queued steering out of execution authority, closeout proof, and
   merge-readiness claim support until a future runtime-card adapter explicitly
   consumes it.
+- src/lib/decision/: advisory cockpit decision and lifecycle route metadata.
+  It owns `harness-decision/v1`, `route-decision/v1`, route validation, and the
+  risk-tiered mutation policy (CNF-003) that allows only low-risk repo-local
+  advisory mutation routes to omit human review (`requiresHuman=false`) when
+  evidence freshness is current, validator ownership is present, mutation
+  authority is agent-local (`authority=agent_local`), and the route requires no
+  network dependency (`requiresNetwork=false`). It must not make route target
+  commands executable authority, prove delivery truth, mutate trackers, prove
+  merge readiness, or satisfy Judge/PM or goal-completion claims.
 - src/lib/decision-request/: read-only governance request packet emission for
   human or operator escalation. It owns intent, authority, option grammar,
   evidence references, escalation metadata, expiry/freshness normalization, and

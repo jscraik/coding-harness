@@ -11,6 +11,10 @@ import type {
 } from "../lib/contract/types.js";
 import { DEFAULT_DOCS_GATE_POLICY } from "../lib/contract/types.js";
 import { validateContract } from "../lib/contract/validator.js";
+import {
+	DOC_LIFECYCLE_RULE_ID,
+	collectDocLifecycleViolations,
+} from "../lib/docs-surface/doc-lifecycle.js";
 import { collectFrontmatterMetadataViolations } from "../lib/docs-surface/frontmatter-metadata-gate.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { validatePath } from "../lib/input/validator.js";
@@ -1549,6 +1553,29 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 	);
 	findings.push(...frontmatterMetadataFindings);
 	if (frontmatterMetadataFindings.length > 0 && outcome !== "policy_error") {
+		outcome = "drift_detected";
+	}
+
+	const docLifecycleFindings = collectDocLifecycleViolations({
+		repoRoot,
+		changedFiles,
+		deletedFiles,
+	}).map(
+		(violation): DocsFinding => ({
+			rule_id: DOC_LIFECYCLE_RULE_ID,
+			category: "doc_only",
+			surface: violation.path,
+			rule_result: "fail",
+			result: "fail",
+			severity: mode === "required" ? violation.severity : "warning",
+			message: violation.message,
+			path: violation.path,
+			details: violation.fix,
+			source_of_truth_ref: "docs/doc-lifecycle-manifest.json",
+		}),
+	);
+	findings.push(...docLifecycleFindings);
+	if (docLifecycleFindings.length > 0 && outcome !== "policy_error") {
 		outcome = "drift_detected";
 	}
 

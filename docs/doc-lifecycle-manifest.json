@@ -1,0 +1,565 @@
+{
+	"schema": "coding-harness-doc-lifecycle-manifest/v1",
+	"generatedAt": "2026-06-04T17:10:38Z",
+	"documents": [
+		{
+			"path": "README.md",
+			"purpose": "Product overview, installation path, and common workflow orientation.",
+			"audience": [
+				"human-operator",
+				"coding-harness-maintainer",
+				"codex-agent"
+			],
+			"lifecycleStage": "discover",
+			"knowledgeCategory": "product-orientation",
+			"canonicality": "canon",
+			"docType": "product",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"ARCHITECTURE.md",
+				"docs/brand/README.md",
+				"docs/README.md",
+				"harness.contract.json"
+			]
+		},
+		{
+			"path": "AGENTS.md",
+			"purpose": "Mandatory operating instructions for Codex agents in this repository.",
+			"audience": ["codex-agent", "coding-harness-maintainer"],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "operator-policy",
+			"canonicality": "canon",
+			"docType": "operator-instructions",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": ["CODESTYLE.md", "UBIQUITOUS_LANGUAGE.md", "docs/README.md"]
+		},
+		{
+			"path": "ARCHITECTURE.md",
+			"purpose": "Stable source map, boundaries, and architecture invariants.",
+			"audience": ["coding-harness-maintainer", "codex-agent", "reviewer"],
+			"lifecycleStage": "design",
+			"knowledgeCategory": "architecture",
+			"canonicality": "canon",
+			"docType": "architecture",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"AGENTS.md",
+				"docs/architecture/documentation-layers.md",
+				"AI/context/diagram-context.md"
+			]
+		},
+		{
+			"path": "SECURITY.md",
+			"purpose": "Security reporting policy and contribution security baseline.",
+			"audience": [
+				"human-operator",
+				"security-reporter",
+				"coding-harness-maintainer"
+			],
+			"lifecycleStage": "report-and-review",
+			"knowledgeCategory": "security",
+			"canonicality": "canon",
+			"docType": "security",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"CONTRIBUTING.md",
+				"docs/agents/06-security-and-governance.md"
+			]
+		},
+		{
+			"path": "CONTRIBUTING.md",
+			"purpose": "Contributor workflow, branch, PR, validation, and review contract.",
+			"audience": [
+				"human-operator",
+				"coding-harness-maintainer",
+				"codex-agent"
+			],
+			"lifecycleStage": "contribute",
+			"knowledgeCategory": "delivery-governance",
+			"canonicality": "canon",
+			"docType": "contributing",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"AGENTS.md",
+				"docs/agents/04-validation.md",
+				"docs/agents/08-release-and-change-control.md"
+			]
+		},
+		{
+			"path": "docs/README.md",
+			"purpose": "Progressive-disclosure index for repository documentation.",
+			"audience": [
+				"human-operator",
+				"codex-agent",
+				"coding-harness-maintainer"
+			],
+			"lifecycleStage": "discover",
+			"knowledgeCategory": "navigation",
+			"canonicality": "canon",
+			"docType": "docs-index",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "patch",
+			"dependsOn": [
+				"README.md",
+				"AGENTS.md",
+				"docs/architecture/documentation-layers.md"
+			]
+		},
+		{
+			"path": "docs/brand/README.md",
+			"purpose": "Canonical source-repository brand language, logo asset, and rename boundary for synAIpse.",
+			"audience": [
+				"human-operator",
+				"codex-agent",
+				"coding-harness-maintainer"
+			],
+			"lifecycleStage": "discover",
+			"knowledgeCategory": "brand-governance",
+			"canonicality": "canon",
+			"docType": "product",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "patch",
+			"dependsOn": ["README.md", "UBIQUITOUS_LANGUAGE.md"]
+		},
+		{
+			"path": "docs/architecture/documentation-layers.md",
+			"purpose": "Information architecture and progressive-disclosure governance model.",
+			"audience": ["coding-harness-maintainer", "codex-agent", "docs-reviewer"],
+			"lifecycleStage": "design",
+			"knowledgeCategory": "documentation-governance",
+			"canonicality": "canon",
+			"docType": "governance",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/README.md",
+				".harness/README.md",
+				"docs/doc-lifecycle.schema.json"
+			]
+		},
+		{
+			"path": "docs/agents/13-linear-production-workflow.md",
+			"purpose": "Linear workflow states, transitions, guards, and operating invariants.",
+			"audience": [
+				"codex-agent",
+				"coding-harness-maintainer",
+				"release-operator"
+			],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "workflow-governance",
+			"canonicality": "canon",
+			"docType": "lifecycle",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/lifecycle/issue-to-main.md",
+				"docs/agents/19-linear-templates.md",
+				".harness/README.md"
+			]
+		},
+		{
+			"path": ".harness/README.md",
+			"purpose": "Tracked Project Brain and harness control-plane classification map.",
+			"audience": ["codex-agent", "coding-harness-maintainer"],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "control-plane",
+			"canonicality": "canon",
+			"docType": "control-plane",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": ["AGENTS.md", "docs/architecture/documentation-layers.md"]
+		},
+		{
+			"path": ".agents/skills/coding-harness/SKILL.md",
+			"purpose": "Packaged Codex skill entrypoint for harness install, upgrade, diagnosis, and governance workflows.",
+			"audience": ["codex-agent", "coding-harness-maintainer"],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "agent-skill",
+			"canonicality": "canon",
+			"docType": "skill",
+			"distribution": "packaged-skill",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				".agents/skills/coding-harness/references/agent-install-guide.md",
+				".agents/skills/coding-harness/references/setup-and-commands.md",
+				".agents/skills/coding-harness/references/contract.yaml"
+			]
+		},
+		{
+			"path": "docs/lifecycle/issue-to-main.md",
+			"purpose": "Canonical issue-to-main operating model for synAIpse lifecycle work.",
+			"audience": [
+				"human-operator",
+				"codex-agent",
+				"coding-harness-maintainer"
+			],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "lifecycle-governance",
+			"canonicality": "canon",
+			"docType": "lifecycle",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"AGENTS.md",
+				"docs/agents/13-linear-production-workflow.md",
+				".harness/README.md",
+				".github/PULL_REQUEST_TEMPLATE.md"
+			]
+		},
+		{
+			"path": "docs/domain/context-map.md",
+			"purpose": "Bounded-context map for synAIpse lifecycle truth lanes and claim authority.",
+			"audience": [
+				"human-operator",
+				"codex-agent",
+				"coding-harness-maintainer"
+			],
+			"lifecycleStage": "design",
+			"knowledgeCategory": "domain-language",
+			"canonicality": "canon",
+			"docType": "governance",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"UBIQUITOUS_LANGUAGE.md",
+				"docs/lifecycle/issue-to-main.md",
+				".harness/README.md"
+			]
+		},
+		{
+			"path": "docs/guardrails/README.md",
+			"purpose": "Guardrail index and authoring contract for recurring delivery-risk domains.",
+			"audience": ["codex-agent", "docs-reviewer", "coding-harness-maintainer"],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "delivery-governance",
+			"canonicality": "canon",
+			"docType": "governance",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/domain/context-map.md",
+				"docs/lifecycle/issue-to-main.md",
+				"docs/architecture/documentation-layers.md"
+			]
+		},
+		{
+			"path": "docs/guardrails/delivery-truth.md",
+			"purpose": "Guardrail for keeping local, PR, CI, review, tracker, artifact, merge, and main-sync truth lanes separate.",
+			"audience": ["codex-agent", "docs-reviewer", "coding-harness-maintainer"],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "delivery-governance",
+			"canonicality": "canon",
+			"docType": "governance",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/lifecycle/issue-to-main.md",
+				"docs/domain/context-map.md",
+				".github/PULL_REQUEST_TEMPLATE.md"
+			]
+		},
+		{
+			"path": "docs/guardrails/generated-artifacts.md",
+			"purpose": "Guardrail for generated artifacts, projections, diagrams, receipts, and claim-authority boundaries.",
+			"audience": ["codex-agent", "docs-reviewer", "coding-harness-maintainer"],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "artifact-governance",
+			"canonicality": "canon",
+			"docType": "governance",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/domain/context-map.md",
+				".harness/README.md",
+				"docs/architecture/documentation-layers.md"
+			]
+		},
+		{
+			"path": "docs/automations/README.md",
+			"purpose": "Runbook convention for recurring automations, durable cursors, stop conditions, and lifecycle feedback loops.",
+			"audience": [
+				"codex-agent",
+				"coding-harness-maintainer",
+				"automation-maintainer"
+			],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "automation-governance",
+			"canonicality": "canon",
+			"docType": "governance",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/lifecycle/issue-to-main.md",
+				"docs/guardrails/delivery-truth.md",
+				".harness/README.md"
+			]
+		},
+		{
+			"path": "docs/domain/claim-authority.md",
+			"purpose": "Claim-family authority rules for which sources may support delivery, review, external-state, merge, and learning claims.",
+			"audience": ["codex-agent", "docs-reviewer", "coding-harness-maintainer"],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "claim-authority",
+			"canonicality": "canon",
+			"docType": "governance",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/domain/context-map.md",
+				"docs/lifecycle/truth-lanes.md",
+				"docs/guardrails/delivery-truth.md"
+			]
+		},
+		{
+			"path": "docs/lifecycle/truth-lanes.md",
+			"purpose": "Lane-specific status and evidence reporting contract for lifecycle closeout.",
+			"audience": ["codex-agent", "coding-harness-maintainer", "docs-reviewer"],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "lifecycle-governance",
+			"canonicality": "canon",
+			"docType": "lifecycle",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/lifecycle/issue-to-main.md",
+				"docs/domain/claim-authority.md",
+				"docs/guardrails/delivery-truth.md"
+			]
+		},
+		{
+			"path": "docs/lifecycle/feedback-loop.md",
+			"purpose": "Durable feedback admission and routing rules for repeated steering, review, CI, automation, and validation feedback.",
+			"audience": [
+				"codex-agent",
+				"coding-harness-maintainer",
+				"automation-maintainer"
+			],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "lifecycle-governance",
+			"canonicality": "canon",
+			"docType": "lifecycle",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/lifecycle/issue-to-main.md",
+				"docs/automations/README.md",
+				"docs/guardrails/delivery-truth.md"
+			]
+		},
+		{
+			"path": "docs/guardrails/external-state.md",
+			"purpose": "Guardrail for current external-state evidence from GitHub, CI, CodeRabbit, Semgrep Cloud, and Linear.",
+			"audience": ["codex-agent", "docs-reviewer", "coding-harness-maintainer"],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "external-state-governance",
+			"canonicality": "canon",
+			"docType": "governance",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/lifecycle/truth-lanes.md",
+				"docs/domain/claim-authority.md",
+				"docs/agents/13-linear-production-workflow.md"
+			]
+		},
+		{
+			"path": "docs/guardrails/review-state.md",
+			"purpose": "Guardrail for independent review, CodeRabbit, Codex review, review artifacts, and unresolved-thread claims.",
+			"audience": ["codex-agent", "docs-reviewer", "coding-harness-maintainer"],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "review-governance",
+			"canonicality": "canon",
+			"docType": "governance",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/lifecycle/truth-lanes.md",
+				"docs/guardrails/delivery-truth.md",
+				"docs/agents/12-ai-review-governance.md"
+			]
+		},
+		{
+			"path": "docs/guardrails/runtime-evidence.md",
+			"purpose": "Guardrail for runtime cards, evidence receipts, browser evidence, replay packets, eval artifacts, and allowed claim families.",
+			"audience": ["codex-agent", "docs-reviewer", "coding-harness-maintainer"],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "runtime-evidence-governance",
+			"canonicality": "canon",
+			"docType": "governance",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/guardrails/generated-artifacts.md",
+				"docs/domain/claim-authority.md",
+				"docs/agents/07b-agent-governance.md"
+			]
+		},
+		{
+			"path": "docs/guardrails/automation-authority.md",
+			"purpose": "Guardrail for recurring automation observation, reporting, mutation authority, pause/delete behavior, and feedback promotion.",
+			"audience": [
+				"codex-agent",
+				"automation-maintainer",
+				"coding-harness-maintainer"
+			],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "automation-governance",
+			"canonicality": "canon",
+			"docType": "governance",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/automations/README.md",
+				"docs/lifecycle/feedback-loop.md",
+				"docs/domain/claim-authority.md"
+			]
+		},
+		{
+			"path": "docs/guardrails/package-and-scaffold-release.md",
+			"purpose": "Guardrail for npm package, harness init scaffold, packaged skill, generated template, and release contract changes.",
+			"audience": [
+				"codex-agent",
+				"release-operator",
+				"coding-harness-maintainer"
+			],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "release-governance",
+			"canonicality": "canon",
+			"docType": "governance",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/agents/08-release-and-change-control.md",
+				"docs/guardrails/generated-artifacts.md",
+				"src/lib/init/README.md"
+			]
+		},
+		{
+			"path": "docs/automations/ci-green-sweep.md",
+			"purpose": "Runbook for recurring PR required-check, CI status, and merge-readiness support sweeps.",
+			"audience": ["codex-agent", "automation-maintainer", "release-operator"],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "automation-governance",
+			"canonicality": "canon",
+			"docType": "governance",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/automations/README.md",
+				"docs/guardrails/external-state.md",
+				"docs/lifecycle/truth-lanes.md"
+			]
+		},
+		{
+			"path": "docs/automations/coderabbit-review-sweep.md",
+			"purpose": "Runbook for recurring CodeRabbit findings, review threads, and review-lane handoff sweeps.",
+			"audience": ["codex-agent", "automation-maintainer", "docs-reviewer"],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "automation-governance",
+			"canonicality": "canon",
+			"docType": "governance",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/automations/README.md",
+				"docs/guardrails/review-state.md",
+				"docs/agents/12-ai-review-governance.md"
+			]
+		},
+		{
+			"path": "docs/automations/linear-sync.md",
+			"purpose": "Runbook for recurring Linear state alignment with PR, blocker, handoff, and merge evidence.",
+			"audience": ["codex-agent", "automation-maintainer", "release-operator"],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "automation-governance",
+			"canonicality": "canon",
+			"docType": "governance",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/automations/README.md",
+				"docs/agents/13-linear-production-workflow.md",
+				"docs/guardrails/external-state.md"
+			]
+		},
+		{
+			"path": "docs/automations/dependency-and-toolchain-refresh.md",
+			"purpose": "Runbook for recurring dependency, package-manager, Node, pnpm, toolchain, CI, and scaffold-runtime refreshes.",
+			"audience": ["codex-agent", "automation-maintainer", "release-operator"],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "automation-governance",
+			"canonicality": "canon",
+			"docType": "governance",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/automations/README.md",
+				"docs/guardrails/package-and-scaffold-release.md",
+				"docs/agents/08-release-and-change-control.md"
+			]
+		}
+	]
+}

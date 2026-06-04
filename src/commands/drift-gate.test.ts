@@ -282,7 +282,7 @@ describe("drift-gate command", () => {
 			join(root, "src/cli.ts"),
 			[
 				'import { dispatchRegistryCommand } from "./lib/cli/command-registry.js";',
-				"dispatchRegistryCommand(command, dispatchArgs);",
+				"const registryDispatch = dispatchRegistryCommand(command, dispatchArgs);",
 			].join("\n"),
 		);
 		write(

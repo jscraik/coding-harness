@@ -2,6 +2,9 @@ import type { EvidenceReceipt } from "../evidence/evidence-receipt.js";
 import {
 	CODEX_RUNTIME_EVIDENCE_SCHEMA_VERSION,
 	type CodexRuntimeEvidence,
+	type CodexRuntimeApprovalScope,
+	type CodexRuntimeEnvironmentState,
+	type CodexRuntimeExecutorKind,
 	type CodexRuntimeGoalState,
 	type CodexRuntimeMcpServerSnapshot,
 	type CodexRuntimeNetworkState,
@@ -48,6 +51,8 @@ export interface CodexRuntimeEvidenceProducerIdentityInput {
 	threadId?: string | null;
 	/** Codex turn identifier. This is required because claim support is turn-scoped. */
 	turnId: string;
+	/** Client user-message identifier, when visible to the producer. */
+	clientUserMessageId?: string | null;
 	/** Trace identifier, when visible to the producer. */
 	traceId?: string | null;
 	/** Required blocker class when traceId is unavailable. */
@@ -72,6 +77,28 @@ export interface CodexRuntimeEvidenceProducerPermissionInput {
 	failureClass?: string | null;
 }
 
+/** Environment facts available to the Harness-owned producer. */
+export interface CodexRuntimeEvidenceProducerEnvironmentInput {
+	/** Runtime environment identifier when visible to the producer. */
+	environmentId?: string | null;
+	/** Working directory for the current execution lane. */
+	cwd?: string | null;
+	/** Expected working directory for the current execution lane. */
+	expectedCwd?: string | null;
+	/** Executor family that produced or wrapped this packet. */
+	executorKind?: CodexRuntimeExecutorKind;
+	/** Approval scope that governed this execution lane. */
+	approvalScope?: CodexRuntimeApprovalScope;
+	/** Expected approval scope for this lane. */
+	expectedApprovalScope?: CodexRuntimeApprovalScope | null;
+	/** Receipt ref that backs the sandbox policy snapshot. */
+	sandboxPolicyRef?: string | null;
+	/** Environment freshness classification. */
+	state?: CodexRuntimeEnvironmentState;
+	/** Required when state is not current. */
+	failureClass?: string | null;
+}
+
 /** Input for building a validated codex-runtime-evidence/v1 packet. */
 export interface CodexRuntimeEvidenceProducerInput {
 	/** Packet generation timestamp. */
@@ -89,6 +116,8 @@ export interface CodexRuntimeEvidenceProducerInput {
 	codex: CodexRuntimeEvidenceProducerIdentityInput;
 	/** Permission facts, defaulting to explicit unknown classifications. */
 	permissions?: CodexRuntimeEvidenceProducerPermissionInput;
+	/** Environment facts that scope permission and sandbox evidence. */
+	environment?: CodexRuntimeEvidenceProducerEnvironmentInput;
 	/** MCP servers visible to the producer. */
 	mcpServers?: CodexRuntimeMcpServerSnapshot[];
 	/** Shared evidence receipts referenced by the packet. */
@@ -132,6 +161,7 @@ export function buildCodexRuntimeEvidenceFromProducerInput(
 		codex: {
 			threadId: input.codex.threadId ?? null,
 			turnId: input.codex.turnId,
+			clientUserMessageId: input.codex.clientUserMessageId ?? null,
 			traceId: input.codex.traceId ?? null,
 			traceFailureClass:
 				input.codex.traceId === undefined || input.codex.traceId === null
@@ -142,6 +172,7 @@ export function buildCodexRuntimeEvidenceFromProducerInput(
 			model: input.codex.model ?? null,
 		},
 		permissions: normalizePermissions(input.permissions),
+		environment: normalizeEnvironment(input.environment, input.permissions),
 		mcp: {
 			servers: input.mcpServers ?? [],
 		},
@@ -155,6 +186,46 @@ export function buildCodexRuntimeEvidenceFromProducerInput(
 			unknownOptionalState("producer_input_missing_review_state"),
 		staleState: input.staleState ?? [],
 	});
+}
+
+function normalizeEnvironment(
+	input: CodexRuntimeEvidenceProducerEnvironmentInput | undefined,
+	permissions: CodexRuntimeEvidenceProducerPermissionInput | undefined,
+): CodexRuntimeEvidence["environment"] {
+	const cwd = input?.cwd ?? null;
+	const expectedCwd = input?.expectedCwd ?? null;
+	const approvalScope = input?.approvalScope ?? "unknown";
+	const expectedApprovalScope = input?.expectedApprovalScope ?? null;
+	const missingSandboxPolicy =
+		permissionInputFactsAreKnown(permissions) &&
+		input?.sandboxPolicyRef == null;
+	let state = input?.state ?? "unknown";
+	if (cwd !== null && expectedCwd !== null && cwd !== expectedCwd) {
+		state = "stale_cwd";
+	} else if (
+		approvalScope !== "unknown" &&
+		expectedApprovalScope !== null &&
+		approvalScope !== expectedApprovalScope
+	) {
+		state = "approval_scope_mismatch";
+	} else if (missingSandboxPolicy) {
+		state = "sandbox_policy_missing";
+	}
+
+	return {
+		environmentId: input?.environmentId ?? null,
+		cwd,
+		expectedCwd,
+		executorKind: input?.executorKind ?? "unknown",
+		approvalScope,
+		expectedApprovalScope,
+		sandboxPolicyRef: input?.sandboxPolicyRef ?? null,
+		state,
+		failureClass:
+			state === "current"
+				? (input?.failureClass ?? null)
+				: (input?.failureClass ?? environmentFailureClassForState(state)),
+	};
 }
 
 function normalizePermissions(
@@ -192,10 +263,40 @@ function normalizePermissions(
 	};
 }
 
+function permissionInputFactsAreKnown(
+	input: CodexRuntimeEvidenceProducerPermissionInput | undefined,
+): boolean {
+	return (
+		input?.profile !== undefined &&
+		input.profile !== "unknown" &&
+		input?.network !== undefined &&
+		input.network !== "unknown" &&
+		(!isWriteCapableProfile(input.profile) ||
+			(input.writableRoots ?? []).length > 0)
+	);
+}
+
 function isWriteCapableProfile(
 	profile: CodexRuntimePermissionProfile,
 ): boolean {
 	return profile === "workspace_write" || profile === "escalated";
+}
+
+function environmentFailureClassForState(
+	state: CodexRuntimeEnvironmentState,
+): string {
+	switch (state) {
+		case "stale_cwd":
+			return "producer_input_stale_cwd";
+		case "approval_scope_mismatch":
+			return "producer_input_approval_scope_mismatch";
+		case "sandbox_policy_missing":
+			return "producer_input_missing_sandbox_policy_ref";
+		case "unknown":
+			return "producer_input_missing_environment_scope";
+		case "current":
+			return "producer_input_current_environment_unexpected_failure";
+	}
 }
 
 function unknownOptionalState(failureClass: string): CodexRuntimeOptionalState {

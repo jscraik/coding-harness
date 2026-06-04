@@ -30,6 +30,29 @@ describe("codex-runtime-evidence/v1", () => {
 		);
 	});
 
+	it("allows client user-message id to be absent without adjacent-field inference", () => {
+		const packet = validPacket();
+		packet.codex.clientUserMessageId = null;
+
+		const result = validateCodexRuntimeEvidence(packet);
+
+		expect(result).toEqual({ valid: true, findings: [] });
+	});
+
+	it("rejects malformed client user-message id values", () => {
+		const packet = validPacket();
+		packet.codex.clientUserMessageId = "";
+
+		const result = validateCodexRuntimeEvidence(packet);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				path: "codex.clientUserMessageId",
+			}),
+		);
+	});
+
 	it("requires a failure class when trace id is unavailable", () => {
 		const packet = validPacket();
 		packet.codex.traceId = null;
@@ -58,6 +81,151 @@ describe("codex-runtime-evidence/v1", () => {
 			expect.objectContaining({
 				code: "permission_failure_class_missing",
 				path: "permissions.failureClass",
+			}),
+		);
+	});
+
+	it("validates environment-scoped permission evidence across execution environments", () => {
+		const desktopPacket = validPacket();
+		desktopPacket.environment = {
+			environmentId: "codex-desktop:thread-123",
+			cwd: "/repo/coding-harness",
+			expectedCwd: "/repo/coding-harness",
+			executorKind: "codex_desktop",
+			approvalScope: "auto_review",
+			expectedApprovalScope: "auto_review",
+			sandboxPolicyRef: "codex://runtime/sandbox-policy.json",
+			state: "current",
+			failureClass: null,
+		};
+
+		expect(validateCodexRuntimeEvidence(desktopPacket)).toEqual({
+			valid: true,
+			findings: [],
+		});
+
+		const subagentPacket = validPacket();
+		subagentPacket.environment.environmentId = "subagent:reviewer-1";
+		subagentPacket.environment.executorKind = "subagent";
+
+		expect(validateCodexRuntimeEvidence(subagentPacket)).toEqual({
+			valid: true,
+			findings: [],
+		});
+	});
+
+	it("requires stale cwd classification when the environment cwd changed", () => {
+		const packet = validPacket();
+		packet.environment.cwd = "/repo/old-worktree";
+		packet.environment.expectedCwd = "/repo/coding-harness";
+
+		const result = validateCodexRuntimeEvidence(packet);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "environment_stale_cwd_missing",
+				path: "environment.state",
+			}),
+		);
+	});
+
+	it("requires approval-scope mismatch classification when approval scope differs from policy", () => {
+		const packet = validPacket();
+		packet.environment.approvalScope = "escalated";
+		packet.environment.expectedApprovalScope = "auto_review";
+
+		const result = validateCodexRuntimeEvidence(packet);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "approval_scope_mismatch_missing",
+				path: "environment.state",
+			}),
+		);
+	});
+
+	it("requires sandbox policy references for known permission claims", () => {
+		const packet = validPacket();
+		packet.environment.sandboxPolicyRef = null;
+
+		const result = validateCodexRuntimeEvidence(packet);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "sandbox_policy_ref_missing",
+				path: "environment.sandboxPolicyRef",
+			}),
+		);
+	});
+
+	it("does not treat omitted permission fields as known sandbox facts", () => {
+		const packet = validPacket();
+		const permissions = packet.permissions as unknown as {
+			profile?: string;
+			network?: string;
+		};
+		delete permissions.profile;
+		delete permissions.network;
+		packet.environment.sandboxPolicyRef = null;
+
+		const result = validateCodexRuntimeEvidence(packet);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).not.toContainEqual(
+			expect.objectContaining({
+				code: "sandbox_policy_ref_missing",
+				path: "environment.sandboxPolicyRef",
+			}),
+		);
+		expect(result.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ path: "permissions.profile" }),
+				expect.objectContaining({ path: "permissions.network" }),
+			]),
+		);
+	});
+
+	it("rejects current environment claims without any explicit scope evidence", () => {
+		const packet = validPacket();
+		packet.permissions.profile = "read_only";
+		packet.permissions.writableRoots = [];
+		packet.environment = {
+			environmentId: null,
+			cwd: null,
+			expectedCwd: null,
+			executorKind: "unknown",
+			approvalScope: "unknown",
+			expectedApprovalScope: null,
+			sandboxPolicyRef: null,
+			state: "current",
+			failureClass: null,
+		};
+
+		const result = validateCodexRuntimeEvidence(packet);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "environment_current_scope_missing",
+				path: "environment.state",
+			}),
+		);
+	});
+
+	it("rejects sandbox policy refs that are not backed by receipts", () => {
+		const packet = validPacket();
+		packet.environment.sandboxPolicyRef = "codex://runtime/missing-policy.json";
+
+		const result = validateCodexRuntimeEvidence(packet);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "evidence_ref_missing",
+				path: "environment.sandboxPolicyRef",
 			}),
 		);
 	});
@@ -136,7 +304,7 @@ describe("codex-runtime-evidence/v1", () => {
 		expect(result.findings).toContainEqual(
 			expect.objectContaining({
 				code: "duplicate_receipt_ref",
-				path: "receipts[1].ref",
+				path: "receipts[3].ref",
 			}),
 		);
 	});
@@ -205,17 +373,29 @@ function validPacket(): CodexRuntimeEvidence {
 		codex: {
 			threadId: "thread-123",
 			turnId: "turn-456",
+			clientUserMessageId: "client-user-message-789",
 			traceId: null,
 			traceFailureClass: "sdk_event_does_not_expose_trace_id",
 			goalState: "unknown",
 			model: "gpt-5.5",
 		},
 		permissions: {
-			profile: "unknown",
-			writableRoots: [],
-			network: "unknown",
-			evidenceRef: null,
-			failureClass: "sdk_event_does_not_expose_permission_profile",
+			profile: "workspace_write",
+			writableRoots: ["/repo/coding-harness"],
+			network: "enabled",
+			evidenceRef: "codex://runtime/permissions.json",
+			failureClass: null,
+		},
+		environment: {
+			environmentId: "codex-desktop:thread-123",
+			cwd: "/repo/coding-harness",
+			expectedCwd: "/repo/coding-harness",
+			executorKind: "codex_desktop",
+			approvalScope: "auto_review",
+			expectedApprovalScope: "auto_review",
+			sandboxPolicyRef: "codex://runtime/sandbox-policy.json",
+			state: "current",
+			failureClass: null,
 		},
 		mcp: {
 			servers: [
@@ -239,6 +419,28 @@ function validPacket(): CodexRuntimeEvidence {
 				producedAt: "2026-05-24T22:40:00Z",
 				checksum:
 					"sha256:aaa850bf1da2867ad3d1994dd9023b5693471491b33993562af916f727c49a44",
+			},
+			{
+				schemaVersion: "evidence-receipt/v1",
+				kind: "artifact",
+				ref: "codex://runtime/permissions.json",
+				producer: "codex-source-fixture",
+				status: "pass",
+				freshness: "current",
+				evidenceUse: "claim_support",
+				blockerClass: null,
+				producedAt: "2026-05-24T22:40:00Z",
+			},
+			{
+				schemaVersion: "evidence-receipt/v1",
+				kind: "artifact",
+				ref: "codex://runtime/sandbox-policy.json",
+				producer: "codex-source-fixture",
+				status: "pass",
+				freshness: "current",
+				evidenceUse: "claim_support",
+				blockerClass: null,
+				producedAt: "2026-05-24T22:40:00Z",
 			},
 		],
 		validationResults: [

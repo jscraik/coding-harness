@@ -591,6 +591,7 @@ describe("runHarnessNext", () => {
 				validationRefs: ["artifact:.harness/runtime/validation.json"],
 				reviewRefs: ["artifact:.harness/runtime/review-state.json"],
 				sessionRefs: ["artifact:.harness/runtime/permissions.json"],
+				environmentRefs: [],
 				staleStateRefs: [],
 			},
 		});

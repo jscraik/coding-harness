@@ -51,6 +51,7 @@ export interface SteeringQueueItem {
 	deliveryMode: SteeringQueueDeliveryMode;
 	expectedThreadId: string | null;
 	expectedTurnId: string | null;
+	expectedClientUserMessageId: string | null;
 	expectedHeadSha: string;
 	priority: number;
 	requiredArtifacts: SteeringArtifactIdentity[];
@@ -58,6 +59,7 @@ export interface SteeringQueueItem {
 	supersededBy: string | null;
 	state: SteeringQueueState;
 	stateReason: string | null;
+	appliedClientUserMessageId: string | null;
 	stateAt: string;
 	appliedAt: string | null;
 	rejectedAt: string | null;
@@ -87,6 +89,7 @@ export interface SteeringQueuePacket {
 	headSha: string;
 	threadId: string | null;
 	turnId: string | null;
+	clientUserMessageId: string | null;
 	evaluatedAt: string;
 	selectedItemId: string | null;
 	items: SteeringQueueItem[];
@@ -116,6 +119,7 @@ export interface SteeringQueueEvaluationInput {
 	headSha: string;
 	threadId: string | null;
 	turnId: string | null;
+	clientUserMessageId: string | null;
 	nowIso: string;
 	items: readonly SteeringQueueItemInput[];
 	currentArtifacts: readonly SteeringArtifactIdentity[];

@@ -1,3 +1,29 @@
+---
+doc_schema: coding-harness-doc/v1
+doc_type: control-plane
+authority: canon
+canon_class: canonical
+distribution: source-only
+audience:
+  - codex-agent
+  - coding-harness-maintainer
+lifecycle_state: active
+owner: coding-harness-maintainers
+created: 2026-06-04
+last_reviewed: 2026-06-04
+review_cadence: quarterly
+maintenance_trigger:
+  - project-brain-change
+  - control-plane-classification-change
+  - artifact-tracking-change
+semver_impact: minor
+validated_by:
+  - pnpm docs:lifecycle
+depends_on:
+  - AGENTS.md
+  - docs/architecture/documentation-layers.md
+---
+
 # Harness Control Plane
 
 ## Table of Contents
@@ -52,7 +78,9 @@ repository truth. Classify the artifact first:
 | `.harness/audits/**.md` | `secondary-context` | Track operator-requested audit reports named `YYYY-MM-DD-<type>-audit.md`; use for repo-state visibility findings that are not research evidence by themselves |
 | `.harness/features/**.md` | `secondary-context` | Track |
 | `.harness/implementation-notes/**.md` | `secondary-context` | Track when they admit steering, capture implementation proof, or are referenced by a validator |
-| `.harness/implementation-notes/**.html` | `generated-runtime` | Keep local while used as a live browser view; promote only as a reviewed final artifact |
+| `.harness/implementation-notes/goal-kanban-board.html` | `execution-input` | Track as the promoted browser-visible tracker for the Codex runtime evidence verifier goal while the goal references it; keep synchronized with `goal.md`, `state.yaml`, and `receipts.jsonl`; do not treat it as implementation, CI, Linear, or Judge/PM proof |
+| `.harness/implementation-notes/2026-06-04-documentation-lifecycle-implementation-notes.html` | `secondary-context` | Track as the promoted implementation note for the documentation lifecycle rollout; it records decisions and browser-preview blockers, but does not prove implementation, CI, Linear, review, or merge readiness |
+| Other `.harness/implementation-notes/**.html` | `generated-runtime` | Keep local while used as a live browser view; promote only as a reviewed final artifact |
 | `.harness/intent/**.md` | `execution-input` | Track when tied to an accepted plan, goal, or review packet |
 | `.harness/intent/**.json` | `execution-input` | Track when it is a stable intent, baseline, or review receipt; do not track bulky runtime captures |
 | `.harness/strategy/**.md` | `secondary-context` | Track |

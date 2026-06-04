@@ -1,5 +1,30 @@
 ---
-last_validated: 2026-04-18
+last_validated: 2026-06-04
+doc_schema: coding-harness-doc/v1
+doc_type: lifecycle
+authority: canon
+canon_class: canonical
+distribution: source-only
+audience:
+  - codex-agent
+  - coding-harness-maintainer
+  - release-operator
+lifecycle_state: active
+owner: coding-harness-maintainers
+created: 2026-06-04
+last_reviewed: 2026-06-04
+review_cadence: quarterly
+maintenance_trigger:
+  - linear-workflow-change
+  - issue-state-change
+  - pr-lifecycle-change
+semver_impact: minor
+validated_by:
+  - pnpm docs:lifecycle
+depends_on:
+  - docs/lifecycle/issue-to-main.md
+  - docs/agents/19-linear-templates.md
+  - .harness/README.md
 ---
 
 # Linear production workflow
@@ -22,6 +47,10 @@ last_validated: 2026-04-18
 ## Purpose
 
 This document defines the production workflow for coding-harness work tracked in Linear and executed through coding-harness, Codex, and GitHub pull requests.
+
+For the wider issue-to-main operating model, including spec, plan,
+implementation, review, PR checks, merge, main sync, and feedback loops, see
+[issue-to-main lifecycle](../lifecycle/issue-to-main.md).
 
 ## Setup boundary
 

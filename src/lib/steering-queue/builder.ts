@@ -35,6 +35,7 @@ export function buildSteeringQueuePacket(
 		headSha: input.headSha,
 		threadId: input.threadId,
 		turnId: input.turnId,
+		clientUserMessageId: input.clientUserMessageId,
 		evaluatedAt: input.nowIso,
 		selectedItemId: selectApplicableItem(evaluatedItems)?.id ?? null,
 		items: evaluatedItems,
@@ -140,6 +141,18 @@ function addContextPreconditions(
 	if (item.expectedTurnId !== null && item.expectedTurnId !== input.turnId) {
 		preconditions.push(
 			precondition("stale_turn", item.expectedTurnId, input.turnId),
+		);
+	}
+	if (
+		item.expectedClientUserMessageId !== null &&
+		item.expectedClientUserMessageId !== input.clientUserMessageId
+	) {
+		preconditions.push(
+			precondition(
+				"stale_client_user_message",
+				item.expectedClientUserMessageId,
+				input.clientUserMessageId,
+			),
 		);
 	}
 	if (item.expectedHeadSha !== input.headSha) {

@@ -165,6 +165,16 @@ function buildCodexRuntimeProjection(
 		sessionRefs: uniqueRefs(
 			bundle.sources.filter((source) => source.kind === "session"),
 		),
+		environmentRefs: uniqueRefs(
+			bundle.sources.filter(
+				(source) =>
+					source.role === "environment" ||
+					(source.kind === "session" &&
+						(source.ref.endsWith("/environment") ||
+							source.ref.includes("sandbox-policy"))) ||
+					(source.kind === "artifact" && source.ref.includes("sandbox-policy")),
+			),
+		),
 		staleStateRefs: uniqueRefs(
 			bundle.sources.filter(
 				(source) =>
@@ -172,6 +182,7 @@ function buildCodexRuntimeProjection(
 					source.freshness === "stale",
 			),
 		),
+		...(bundle.continuity ? { continuity: bundle.continuity } : {}),
 		...(bundle.toolExposure ? { toolExposure: bundle.toolExposure } : {}),
 	};
 }

@@ -158,6 +158,7 @@ function writeCodexRuntimeEvidencePacket(
 ): string {
 	const evidencePath = ".harness/runtime/codex-runtime-evidence.json";
 	const permissionRef = "artifact:.harness/runtime/permissions.json";
+	const sandboxPolicyRef = "artifact:.harness/runtime/sandbox-policy.json";
 	const validationRef = "artifact:.harness/runtime/validation.json";
 	const externalRef = "artifact:.harness/runtime/external-state.json";
 	const reviewRef = "artifact:.harness/runtime/review-state.json";
@@ -178,6 +179,7 @@ function writeCodexRuntimeEvidencePacket(
 		codex: {
 			threadId: "thread-123",
 			turnId: "turn-123",
+			clientUserMessageId: "client-user-message-123",
 			traceId: "trace-123",
 			traceFailureClass: null,
 			goalState: "active",
@@ -188,6 +190,17 @@ function writeCodexRuntimeEvidencePacket(
 			writableRoots: [repoRoot],
 			network: "enabled",
 			evidenceRef: permissionRef,
+			failureClass: null,
+		},
+		environment: {
+			environmentId: "codex-desktop:thread-123",
+			cwd: repoRoot,
+			expectedCwd: repoRoot,
+			executorKind: "codex_desktop",
+			approvalScope: "auto_review",
+			expectedApprovalScope: "auto_review",
+			sandboxPolicyRef,
+			state: "current",
 			failureClass: null,
 		},
 		mcp: {
@@ -204,6 +217,18 @@ function writeCodexRuntimeEvidencePacket(
 				schemaVersion: "evidence-receipt/v1",
 				kind: "artifact",
 				ref: permissionRef,
+				producer: "codex-runtime",
+				status: "pass",
+				freshness: "current",
+				evidenceUse: "claim_support",
+				blockerClass: null,
+				verifiedAt: "2026-05-15T12:01:00.000Z",
+				headSha: "a".repeat(40),
+			},
+			{
+				schemaVersion: "evidence-receipt/v1",
+				kind: "artifact",
+				ref: sandboxPolicyRef,
 				producer: "codex-runtime",
 				status: "pass",
 				freshness: "current",
@@ -324,8 +349,8 @@ describe("runRuntimeCardCLI", () => {
 			"JSC-311",
 		]);
 
-		expect(exitCode).toBe(0);
 		expect(error).toBe("");
+		expect(exitCode).toBe(0);
 		const card = JSON.parse(output);
 		expectBehavior({
 			given: "a repo with active artifacts for JSC-311",
@@ -354,8 +379,8 @@ describe("runRuntimeCardCLI", () => {
 			"jSc-311",
 		]);
 
-		expect(exitCode).toBe(0);
 		expect(error).toBe("");
+		expect(exitCode).toBe(0);
 		const card = JSON.parse(output);
 		expect(card.issueKey).toBe("jSc-311");
 		expect(card.artifacts.status).toBe("current");
@@ -615,8 +640,8 @@ describe("runRuntimeCardCLI", () => {
 			evidencePath,
 		]);
 
-		expect(exitCode).toBe(0);
 		expect(error).toBe("");
+		expect(exitCode).toBe(0);
 		const card = JSON.parse(output);
 		expect(card.schemaVersion).toBe("runtime-card/v1");
 		expect(card.codexRuntime).toMatchObject({
@@ -639,6 +664,95 @@ describe("runRuntimeCardCLI", () => {
 		expect(card.codexRuntime.sessionRefs).toContain(
 			"artifact:.harness/runtime/permissions.json",
 		);
+		expect(card.codexRuntime.environmentRefs).toContain(
+			"artifact:.harness/runtime/sandbox-policy.json",
+		);
+	});
+
+	it("includes environment-scoped sandbox policy evidence in environmentRefs", async () => {
+		const repoRoot = setupRepo();
+		const evidencePath = writeCodexRuntimeEvidencePacket(repoRoot);
+		const { exitCode, output, error } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--issue",
+			"JSC-311",
+			"--evidence",
+			evidencePath,
+		]);
+
+		expect(error).toBe("");
+		expect(exitCode).toBe(0);
+		const card = JSON.parse(output);
+		expect(card.codexRuntime.environmentRefs).toBeDefined();
+		expect(card.codexRuntime.environmentRefs).toEqual(
+			expect.arrayContaining(["artifact:.harness/runtime/sandbox-policy.json"]),
+		);
+		const sandboxPolicyReceipt = card.codexRuntime.receiptRefs.find(
+			(ref: string) => ref.includes("sandbox-policy"),
+		);
+		expect(sandboxPolicyReceipt).toBe(
+			"artifact:.harness/runtime/sandbox-policy.json",
+		);
+	});
+
+	it("omits environmentRefs when environment.sandboxPolicyRef is missing", async () => {
+		const repoRoot = setupRepo();
+		const evidencePath = writeCodexRuntimeEvidencePacket(repoRoot, {
+			permissions: {
+				profile: "unknown",
+				writableRoots: [],
+				network: "unknown",
+				evidenceRef: null,
+				failureClass: "source_does_not_expose_permission_profile",
+			},
+			environment: {
+				environmentId: "codex-desktop:thread-123",
+				cwd: repoRoot,
+				expectedCwd: repoRoot,
+				executorKind: "codex_desktop",
+				approvalScope: "auto_review",
+				expectedApprovalScope: "auto_review",
+				sandboxPolicyRef: null,
+				state: "current",
+				failureClass: null,
+			},
+			receipts: [],
+			validationResults: [],
+			externalState: {
+				status: "unknown",
+				evidenceRef: null,
+				failureClass: "source_does_not_expose_external_state",
+			},
+			reviewState: {
+				status: "unknown",
+				evidenceRef: null,
+				failureClass: "source_does_not_expose_review_state",
+			},
+			staleState: [],
+		});
+		const { exitCode, output, error } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--issue",
+			"JSC-311",
+			"--evidence",
+			evidencePath,
+		]);
+
+		expect(exitCode).toBe(0);
+		expect(error).toBe("");
+		const card = JSON.parse(output);
+		expect(card.codexRuntime.environmentRefs).toBeDefined();
+		expect(card.codexRuntime.environmentRefs).not.toContain(
+			"artifact:.harness/runtime/sandbox-policy.json",
+		);
+		const sandboxPolicyReceipt = card.codexRuntime.receiptRefs.find(
+			(ref: string) => ref.includes("sandbox-policy"),
+		);
+		expect(sandboxPolicyReceipt).toBeUndefined();
 	});
 
 	it("rejects malformed codex-runtime-evidence/v1 packets through --evidence", async () => {
