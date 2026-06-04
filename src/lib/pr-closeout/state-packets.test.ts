@@ -147,6 +147,57 @@ describe("PR closeout state packet bridge", () => {
 		expect(result.reviewState).toBeNull();
 	});
 
+	it("blocks review-state packet derivation when present reviewer artifacts lack proof", () => {
+		const input = completeInput({
+			reviewArtifacts: [
+				{
+					path: "artifacts/reviews/adversarial-reviewer.md",
+					producer: "adversarial-reviewer",
+					status: "present",
+				},
+			],
+		});
+
+		const result = buildPrCloseoutStatePackets(input, {
+			repository: REPOSITORY,
+			generatedAt: GENERATED_AT,
+			fetchedAt: GENERATED_AT,
+		});
+
+		expect(result.blockers).toContain(
+			"reviewer_artifact_missing_proof:artifacts/reviews/adversarial-reviewer.md",
+		);
+		expect(result.reviewState).toBeNull();
+	});
+
+	it("blocks review-state packet derivation when present reviewer artifact proof is not claim support", () => {
+		const input = completeInput({
+			reviewArtifacts: [
+				{
+					path: "artifacts/reviews/adversarial-reviewer.md",
+					producer: "adversarial-reviewer",
+					status: "present",
+				},
+			],
+		});
+
+		const result = buildPrCloseoutStatePackets(input, {
+			repository: REPOSITORY,
+			generatedAt: GENERATED_AT,
+			fetchedAt: GENERATED_AT,
+			reviewerArtifactProofs: [
+				reviewerArtifactProof({
+					receipt: reviewReceipt({ evidenceUse: "orientation" }),
+				}),
+			],
+		});
+
+		expect(result.blockers).toContain(
+			"reviewer_artifact_unverified_proof:artifacts/reviews/adversarial-reviewer.md",
+		);
+		expect(result.reviewState).toBeNull();
+	});
+
 	it("treats pending required checks as orientation evidence, not claim support", () => {
 		const input = completeInput({
 			checks: [
@@ -258,7 +309,16 @@ function completeInput(
 	};
 }
 
-function reviewerArtifactProof() {
+function reviewerArtifactProof(
+	overrides: Partial<ReturnType<typeof reviewerArtifactProofValue>> = {},
+) {
+	return {
+		...reviewerArtifactProofValue(),
+		...overrides,
+	};
+}
+
+function reviewerArtifactProofValue() {
 	return {
 		role: "adversarial-reviewer",
 		path: "artifacts/reviews/adversarial-reviewer.md",

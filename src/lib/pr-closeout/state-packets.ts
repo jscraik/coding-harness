@@ -97,7 +97,13 @@ export function buildPrCloseoutStatePackets(
 	const verifierIdentity =
 		options.verifierIdentity ?? DEFAULT_VERIFIER_IDENTITY;
 	const headSha = currentHeadSha(input);
-	const blockers = preflightBlockers(input, options.repository, headSha);
+	const reviewerArtifactProofs = options.reviewerArtifactProofs ?? [];
+	const blockers = preflightBlockers(
+		input,
+		options.repository,
+		headSha,
+		reviewerArtifactProofs,
+	);
 	const externalState =
 		options.repository.trim() === ""
 			? null
@@ -116,7 +122,7 @@ export function buildPrCloseoutStatePackets(
 					generatedAt,
 					verifierIdentity,
 					headSha: headSha as string,
-					reviewerArtifactProofs: options.reviewerArtifactProofs ?? [],
+					reviewerArtifactProofs,
 				})
 			: null;
 	const externalStateValidation = validateExternalStateSnapshot(externalState);
@@ -161,6 +167,7 @@ function preflightBlockers(
 	input: PrCloseoutInput,
 	repository: string,
 	headSha: string | null,
+	reviewerArtifactProofs: readonly PrCloseoutStatePacketReviewerArtifactProof[],
 ): string[] {
 	const blockers: string[] = [];
 	if (repository.trim() === "") blockers.push("missing_repository");
@@ -174,9 +181,34 @@ function preflightBlockers(
 	for (const artifact of input.reviewArtifacts ?? []) {
 		if (artifact.status !== "present") {
 			blockers.push(`reviewer_artifact_${artifact.status}:${artifact.path}`);
+			continue;
+		}
+		const proof = reviewerArtifactProofs.find(
+			(candidate) =>
+				candidate.path === artifact.path &&
+				(candidate.expectedProducer ?? candidate.role) === artifact.producer,
+		);
+		if (!proof) {
+			blockers.push(`reviewer_artifact_missing_proof:${artifact.path}`);
+			continue;
+		}
+		if (!isUsableReviewerArtifactProof(proof)) {
+			blockers.push(`reviewer_artifact_unverified_proof:${artifact.path}`);
 		}
 	}
 	return blockers;
+}
+
+function isUsableReviewerArtifactProof(
+	proof: PrCloseoutStatePacketReviewerArtifactProof,
+): boolean {
+	return (
+		proof.receipt.kind === "review_artifact" &&
+		proof.receipt.status === "pass" &&
+		proof.receipt.freshness === "current" &&
+		proof.receipt.evidenceUse === "claim_support" &&
+		proof.receipt.blockerClass === null
+	);
 }
 
 function buildExternalStateSnapshot(
