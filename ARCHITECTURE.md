@@ -232,7 +232,10 @@ not in docs, templates, generated context, or command facades.
 - src/lib/pr-closeout/: PR closeout claim evaluation and recovery state; it may
   consume delivery-truth verdict summaries as additive evidence but must not
   collapse local validation, remote checks, review state, tracker state, and
-  merge readiness into one blended truth.
+  merge readiness into one blended truth. Its state-packet bridge derives
+  validated `external-state-snapshot/v1` and `review-state/v1` packets from
+  normalized closeout input while preserving the packet validators as the
+  claim-support boundary.
 - src/lib/review-state/: PR review truth packets, reviewer artifact receipt
   validation, unresolved thread counts, and validation ownership
   classification.

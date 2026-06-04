@@ -32,6 +32,7 @@ Generated: 2026-06-04T20:06:50Z
 - `src/lib/pr-closeout.ts`
 - `src/lib/pr-closeout/blockers.ts`
 - `src/lib/pr-closeout/evaluator.ts`
+- `src/lib/pr-closeout/state-packets.ts`
 - `src/lib/pr-closeout/types.ts`
 - `src/lib/steering-queue/application-receipt.ts`
 - `src/lib/steering-queue/index.ts`
@@ -662,6 +663,7 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_runtime_card_trace_64a5ca95_a26c03d1
   ext_node_crypto_c7dfc512["node:crypto"] --> node_scan_cache_fc02c79c_11793337
   ext_node_crypto_c7dfc512["node:crypto"] --> node_sources_878a52fc_cd312fcd
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_state_packets_536f9a25_d221f5ae
   ext_node_crypto_c7dfc512["node:crypto"] --> node_test_harness_upgrade_matrix_84113c4e_e0838daa
   ext_node_crypto_c7dfc512["node:crypto"] --> node_tracer_1e6243a2_cb3d802b
   ext_node_crypto_c7dfc512["node:crypto"] --> node_ui_loop_internal_f2eb8892_c4b49e6a
@@ -1687,4 +1689,3 @@ flowchart LR
   class github_e2e_2891a341,linear_e2e_decf3708,run_e2e_39efe696,env_b77349bf,check_public_api_docs_a9604f1b,check_steering_feedback_contract_80134459,run_harness_evals_77704768,validate_decision_request_2e5c325e,validate_steering_application_receipt_c922e84a,validate_steering_queue_4bc0cc94,branch_protect_core_a8feb0fd,check_environment_core_2c16213f,ci_migrate_core_7005b5af,decision_request_118a770d,evidence_verify_3b73c290,linear_prepare_0c613ba6,linear_sync_a2fa2bf7,linear_triage_core_7cbca73e,linear_workflow_core_0e19cff4,pattern_scope_61ff946d,pr_closeout_env_9bfcd9ef,live_247610f4,review_gate_core_4c8001f9,symphony_check_e97f2ea0,ui_loop_internal_f2eb8892,ui_loop_shared_8c83b841,ui_loop_tooling_12b2d2c7,ui_loop_11660889,verify_coderabbit_490b4e71,context_health_1_ceb11829 userNode
 
 ```
-
