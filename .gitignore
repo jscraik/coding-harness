@@ -76,6 +76,7 @@ gardener-report.json
 !.harness/implementation-notes/*.md
 !.harness/implementation-notes/*.mdx
 !.harness/implementation-notes/goal-kanban-board.html
+!.harness/implementation-notes/2026-06-04-documentation-lifecycle-implementation-notes.html
 !.harness/intent/
 .harness/intent/*
 !.harness/intent/**/*.md

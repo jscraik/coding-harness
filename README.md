@@ -1,16 +1,49 @@
+---
+doc_schema: coding-harness-doc/v1
+doc_type: product
+authority: canon
+canon_class: canonical
+distribution: source-only
+audience:
+  - human-operator
+  - coding-harness-maintainer
+  - codex-agent
+lifecycle_state: active
+owner: coding-harness-maintainers
+created: 2026-06-04
+last_reviewed: 2026-06-04
+review_cadence: quarterly
+maintenance_trigger:
+  - product-surface-change
+  - install-workflow-change
+  - release-contract-change
+semver_impact: minor
+validated_by:
+  - pnpm docs:lifecycle
+depends_on:
+  - ARCHITECTURE.md
+  - docs/brand/README.md
+  - docs/README.md
+  - harness.contract.json
+---
+
 # Coding Harness
 
 Status: [CircleCI main](https://app.circleci.com/pipelines/github/jscraik/coding-harness?branch=main) | [npm package](https://www.npmjs.com/package/@brainwav/coding-harness) | [Apache-2.0 license](LICENSE) | [OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/jscraik/coding-harness)
 
-Coding Harness is a CLI control plane for repositories that use AI coding
-agents. Coding Harness exists to let a solo developer with limited cognitive
+![synAIpse AI Delivery Harness logo](./docs/brand/synaipse-logo.png)
+
+synAIpse is the AI Delivery Harness implemented today by the coding-harness
+repository and @brainwav/coding-harness package. It is a CLI control plane for
+repositories that use AI coding agents. synAIpse exists to let a solo developer
+with limited cognitive
 bandwidth orchestrate agentic software work to professional standards through
 compact orientation, executable guardrails, durable memory, and evidence-based
 handoff.
 
 Thin surface. Strong guardrails. Durable memory. Professional output.
 
-Expected outcome: Coding Harness becomes a portable agent operating system that
+Expected outcome: synAIpse becomes a portable agent operating system that
 makes Codex behave like a software engineer, not merely a code generator, across
 greenfield and brownfield projects with zero customer integration ceremony.
 
@@ -512,6 +545,14 @@ admitted, and record Repeated-error research when the same error happens twice.
 This keeps high-signal review and user steering in the repo operating system
 instead of leaving it in a chat transcript.
 
+Documentation changes must also classify documentation lifecycle impact and
+SemVer impact. Use `Documentation lifecycle impact` to state whether a doc was
+created, updated, deprecated, superseded, archived, removed, or not applicable,
+and whether the change affects canon, supporting, generated, historical,
+source-only, downstream-template, or packaged-skill surfaces. Use `SemVer
+impact` to classify none, patch, minor, or major impact, especially when a
+packaged skill or downstream template changes.
+
 PR bodies must separate issue traceability from issue closure. `Linear
 reference` records `Refs JSC-N`, `Fixes JSC-N`, or `Closes JSC-N`;
 `Linked issue relationship` must classify the PR as implementation closure,
@@ -522,9 +563,12 @@ scope.
 
 PR bodies must also classify `Documentation impact`: list the required root
 docs, governed docs, and existing deep-module README files updated by the slice,
-or mark each unaffected class `n.a.` with a concrete reason. `docs-gate`
-enforces configured governed surfaces and existing deep-module README parity;
-use docs-expert or independent reviewer evidence for high-impact docs changes.
+or mark each unaffected class `n.a.` with a concrete reason. They must also
+classify `Documentation lifecycle impact` and `SemVer impact` when docs,
+packaged skills, or downstream templates change. `docs-gate` enforces
+configured governed surfaces, lifecycle metadata, downstream-template
+distribution boundaries, and existing deep-module README parity; use
+docs-expert or independent reviewer evidence for high-impact docs changes.
 
 ```bash
 harness pr-template-gate --json

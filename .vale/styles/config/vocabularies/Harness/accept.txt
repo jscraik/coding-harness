@@ -204,6 +204,7 @@ metacharacters
 schemaVersion
 SLOs
 staleDocs
+synAIpse
 Unescaped
 unindexed
 workflow_dispatch
@@ -219,6 +220,8 @@ nullable
 Octokit
 observedAt
 outcomeMapping
+overclaim
+overclaims
 overfits
 overfitting
 parseability

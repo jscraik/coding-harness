@@ -22,6 +22,10 @@ thin and delegate into this deep module.
   validation.
 - Scaffold template changes must keep generated downstream docs, PR templates,
   workflow files, and regression fixtures synchronized.
+- Source-only governance docs must not be referenced from downstream
+  scaffolds. When docs lifecycle, guardrail, or domain-language docs are added
+  to the source repository, scaffold tests should prove generated templates use
+  downstream-facing contracts instead of linking back to source-only docs.
 - Generated shell-script quality guards must prove optional tooling is
   availability-checked before execution. Repo-owned package CLIs may use a
   package-manager probe such as `pnpm exec diagram --version` instead of a

@@ -20,6 +20,8 @@ const requiredWorkPerformedLabels = [
 	"Completed work",
 	"Affected surfaces",
 	"Documentation impact",
+	"Documentation lifecycle impact",
+	"SemVer impact",
 	"Expected outcome alignment",
 	"Pattern scope inventory",
 	"Meta-behavior proof",
@@ -54,6 +56,14 @@ const completedWorkPerformedValues = new Map<string, string>([
 	[
 		"Documentation impact",
 		"PR template and scaffold fixtures updated; README.md, SECURITY.md, CONTRIBUTING.md, AGENTS.md, ARCHITECTURE.md, governance docs, and deep-module READMEs are n.a. because this fixture only proves generated PR template validation.",
+	],
+	[
+		"Documentation lifecycle impact",
+		"updated downstream-template PR contract fixture; canon class is supporting downstream scaffold.",
+	],
+	[
+		"SemVer impact",
+		"minor because downstream PR template requirements changed.",
 	],
 	[
 		"Expected outcome alignment",

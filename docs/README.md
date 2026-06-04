@@ -1,5 +1,30 @@
 ---
 last_validated: 2026-04-18
+doc_schema: coding-harness-doc/v1
+doc_type: docs-index
+authority: canon
+canon_class: canonical
+distribution: source-only
+audience:
+  - human-operator
+  - codex-agent
+  - coding-harness-maintainer
+lifecycle_state: active
+owner: coding-harness-maintainers
+created: 2026-06-04
+last_reviewed: 2026-06-04
+review_cadence: quarterly
+maintenance_trigger:
+  - documentation-navigation-change
+  - canon-surface-change
+  - governance-doc-change
+semver_impact: patch
+validated_by:
+  - pnpm docs:lifecycle
+depends_on:
+  - README.md
+  - AGENTS.md
+  - docs/architecture/documentation-layers.md
 ---
 
 # Docs Index
@@ -27,7 +52,15 @@ last_validated: 2026-04-18
 
 ### Workflows
 
+- [Brand](./brand/README.md) — synAIpse name, descriptor, logo, and rename boundary
 - [Linear production workflow](./agents/13-linear-production-workflow.md) — issue lifecycle, states, transitions
+- [Lifecycle Harness](./lifecycle/issue-to-main.md) — issue-to-main truth lanes from Linear issue to synced main
+- [Truth lanes](./lifecycle/truth-lanes.md) — separate status lanes for local, PR, CI, review, tracker, artifact, merge, main-sync, and learning evidence
+- [Feedback loop](./lifecycle/feedback-loop.md) — durable destinations for repeated steering, review, CI, automation, and validation feedback
+- [Domain context map](./domain/context-map.md) — bounded contexts and lifecycle truth-lane relationships
+- [Claim authority](./domain/claim-authority.md) — which sources may support delivery, review, external-state, merge, and learning claims
+- [Guardrails](./guardrails/README.md) — durable standards for recurring delivery-risk domains
+- [Automation runbooks](./automations/README.md) — governed recurring-workflow and feedback-loop convention
 - [Release and change control](./agents/08-release-and-change-control.md) — release process
 - [Local memory](./agents/03-local-memory.md) — LEARNINGS.md, Local Memory CLI state machine
 - [Advanced workflows](./advanced-workflows.md)
@@ -65,6 +98,15 @@ last_validated: 2026-04-18
 ### Architecture and planning
 
 - [Documentation layers](./architecture/documentation-layers.md)
+- [Documentation lifecycle schema](./doc-lifecycle.schema.json)
+- [Documentation lifecycle manifest](./doc-lifecycle-manifest.json)
+- [Lifecycle delivery truth guardrail](./guardrails/delivery-truth.md)
+- [External state guardrail](./guardrails/external-state.md)
+- [Generated artifact guardrail](./guardrails/generated-artifacts.md)
+- [Review state guardrail](./guardrails/review-state.md)
+- [Runtime evidence guardrail](./guardrails/runtime-evidence.md)
+- [Automation authority guardrail](./guardrails/automation-authority.md)
+- [Package and scaffold release guardrail](./guardrails/package-and-scaffold-release.md)
 - [Root surface classification](./architecture/root-surface-classification.md)
 - [Archived root cleanup evidence](./archive/root-cleanup/)
 - [Blast radius](./architecture/blast-radius.md)
