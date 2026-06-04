@@ -152,6 +152,31 @@ describe("validateRouteDecision", () => {
 		});
 	});
 
+	it("accepts legacy non-mutating v1 routes without mutationPolicy", () => {
+		const { mutationPolicy: _mutationPolicy, ...legacyRouteDecision } =
+			validRouteDecision();
+
+		expect(validateRouteDecision(legacyRouteDecision)).toEqual({
+			valid: true,
+			errors: [],
+		});
+	});
+
+	it("rejects legacy mutating v1 routes without mutationPolicy", () => {
+		const { mutationPolicy: _mutationPolicy, ...legacyRouteDecision } =
+			validRouteDecision({
+				mutates: true,
+				requiresHuman: false,
+			});
+
+		const result = validateRouteDecision(legacyRouteDecision);
+
+		expect(result.valid).toBe(false);
+		expect(errorCodes(result)).toContain(
+			"mutating routes must set a mutation policy",
+		);
+	});
+
 	it("narrows valid route decisions with the type guard", () => {
 		const candidate: unknown = validRouteDecision({ status: "pass" });
 

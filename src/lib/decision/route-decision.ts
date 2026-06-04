@@ -141,6 +141,14 @@ export interface RouteDecisionMutationPolicy {
 	authority: RouteDecisionMutationAuthority;
 }
 
+const NOT_APPLICABLE_MUTATION_POLICY: RouteDecisionMutationPolicy = {
+	scope: "none",
+	riskTier: "none",
+	evidenceFreshness: "not_applicable",
+	validatorOwnership: "not_applicable",
+	authority: "not_applicable",
+};
+
 /** Lifecycle route target and optional non-authoritative routing hints. */
 export interface RouteDecisionRoute {
 	/** Lifecycle route identifier. */
@@ -517,8 +525,12 @@ export function validateRouteDecision(
 		);
 	}
 	const route = validateRouteShape(value.route, errors);
+	const mutationPolicyInput =
+		value.mutationPolicy === undefined
+			? NOT_APPLICABLE_MUTATION_POLICY
+			: value.mutationPolicy;
 	const mutationPolicy = validateMutationPolicyShape(
-		value.mutationPolicy,
+		mutationPolicyInput,
 		errors,
 	);
 	validateNullableString(value.sourcePath, "sourcePath", errors);
@@ -576,7 +588,9 @@ export function toHarnessDecisionLifecycleRouteMeta(
 		requiresHuman: routeDecision.requiresHuman,
 		requiresNetwork: routeDecision.requiresNetwork,
 		mutates: routeDecision.mutates,
-		mutationPolicy: { ...routeDecision.mutationPolicy },
+		mutationPolicy: {
+			...(routeDecision.mutationPolicy ?? NOT_APPLICABLE_MUTATION_POLICY),
+		},
 		failureClass: routeDecision.failureClass,
 		blockerBoundary: routeDecision.blockerBoundary,
 		evidenceRef: [...routeDecision.evidenceRef],

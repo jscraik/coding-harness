@@ -133,6 +133,49 @@ describe("validateDocLifecycle", () => {
 		);
 	});
 
+	it("does not cascade invalid manifest entries into document checks", () => {
+		const repoRoot = createRepo();
+		writeFile(
+			repoRoot,
+			"docs/doc-lifecycle-manifest.json",
+			JSON.stringify({
+				schema: "coding-harness-doc-lifecycle-manifest/v1",
+				generatedAt: "2026-06-04T00:00:00Z",
+				documents: [
+					{
+						path: "docs/lifecycle/missing.md",
+						docType: "unknown",
+						canonicality: "canon",
+						distribution: "source-only",
+						lifecycleState: "active",
+						semverDefault: "patch",
+					},
+				],
+			}),
+		);
+
+		const report = validateDocLifecycle({ repoRoot });
+
+		expect(report.checkedDocuments).toEqual([]);
+		expect(report.violations).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					path: "docs/lifecycle/missing.md",
+					severity: "error",
+					message: "Manifest docType is invalid.",
+				}),
+			]),
+		);
+		expect(report.violations).not.toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					path: "docs/lifecycle/missing.md",
+					message: "Governed document listed in manifest does not exist.",
+				}),
+			]),
+		);
+	});
+
 	it("treats empty required frontmatter scalars as missing metadata", () => {
 		const repoRoot = createRepo();
 		writeLifecycleManifest(repoRoot, "docs/lifecycle/example.md");

@@ -202,6 +202,37 @@ describe("runtime-card Codex runtime projection", () => {
 		tempDirs.length = 0;
 	});
 
+	it("keeps the runtime-card schema aligned with compact Codex projection fields", () => {
+		const schema = JSON.parse(
+			readFileSync("contracts/runtime-card.schema.json", "utf-8"),
+		) as {
+			properties: {
+				codexRuntime: {
+					properties: Record<string, unknown>;
+				};
+			};
+		};
+		const codexRuntimeProperties = schema.properties.codexRuntime.properties;
+		const continuity = codexRuntimeProperties.continuity as {
+			additionalProperties?: unknown;
+			properties: Record<string, unknown>;
+		};
+
+		expect(codexRuntimeProperties).toHaveProperty("environmentRefs");
+		expect(codexRuntimeProperties).toHaveProperty("continuity");
+		expect(continuity.additionalProperties).toBe(false);
+		expect(Object.keys(continuity.properties).sort()).toEqual([
+			"approvalRefs",
+			"clientMessageRefs",
+			"goalRefs",
+			"heartbeatRefs",
+			"queueRefs",
+			"threadRefs",
+			"traceRefs",
+			"turnRefs",
+		]);
+	});
+
 	it("projects compact Codex runtime evidence without embedding raw packet bodies", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
 		tempDirs.push(repoRoot);

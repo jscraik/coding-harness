@@ -62,12 +62,14 @@ export function validateDocLifecycle(options: {
 		});
 	}
 	const seenPaths = new Set<string>();
+	const validDocuments: DocLifecycleManifestEntry[] = [];
 	for (const entry of manifest.documents) {
-		validateManifestEntry(entry, seenPaths, violations);
+		if (!validateManifestEntry(entry, seenPaths, violations)) continue;
+		validDocuments.push(entry);
 		validateDocumentEntry(repoRoot, entry, violations);
 	}
 	violations.push(
-		...collectDistributionBoundaryViolations(repoRoot, manifest.documents),
+		...collectDistributionBoundaryViolations(repoRoot, validDocuments),
 	);
 	const harnessReport = collectHarnessLifecycleFindings(
 		options.changedFiles
@@ -77,7 +79,7 @@ export function validateDocLifecycle(options: {
 	violations.push(...harnessReport.requiredFindings);
 	advisoryFindings.push(...harnessReport.advisoryFindings);
 	return buildDocLifecycleReport(
-		manifest.documents.map((entry) => entry.path).sort(),
+		validDocuments.map((entry) => entry.path).sort(),
 		violations,
 		harnessReport.checkedArtifacts,
 		advisoryFindings,
@@ -193,7 +195,8 @@ function validateManifestEntry(
 	entry: DocLifecycleManifestEntry,
 	seenPaths: Set<string>,
 	violations: DocLifecycleViolation[],
-): void {
+): boolean {
+	let valid = true;
 	if (!entry.path) {
 		violations.push({
 			path: "docs/doc-lifecycle-manifest.json",
@@ -201,7 +204,7 @@ function validateManifestEntry(
 			message: "Manifest entry is missing path.",
 			fix: "Add a repo-relative path to every manifest entry.",
 		});
-		return;
+		return false;
 	}
 	if (seenPaths.has(entry.path)) {
 		violations.push({
@@ -210,6 +213,7 @@ function validateManifestEntry(
 			message: "Document appears more than once in lifecycle manifest.",
 			fix: "Keep one manifest entry per governed document.",
 		});
+		valid = false;
 	}
 	seenPaths.add(entry.path);
 	for (const [value, allowed, label] of [
@@ -226,8 +230,10 @@ function validateManifestEntry(
 				message: `Manifest ${label} is invalid.`,
 				fix: `Use one of: ${[...allowed].join(", ")}.`,
 			});
+			valid = false;
 		}
 	}
+	return valid;
 }
 
 function validateDocumentEntry(
