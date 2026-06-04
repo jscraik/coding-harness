@@ -226,6 +226,19 @@ timestamps, PR data, branch names, artifact paths, or model output, and do not
 let continuity refs authorize commands or satisfy delivery-truth, review-state,
 external-state, merge-readiness, Judge/PM, or goal-completion claims.
 
+Prompt-context receipt authority classification belongs in
+`src/lib/prompt-context/`, not in prompt-context drift or delivery truth. Keep
+`prompt-context-receipt/v1` pointer-only and `not_yet_emitted`; validate
+authority metadata directly on source refs before any source can steer agent
+behavior. Instruction sources may only use system policy, developer policy,
+repo instruction, trusted skill, or user steering authority layers. Plugin
+metadata, artifact data, review feedback, telemetry, and untrusted external
+sources may orient or preserve audit evidence on non-instruction surfaces, but
+must not become command authority, delivery-truth support, review-state support,
+external-state support, Linear truth, merge-readiness proof, Judge/PM proof, or
+goal-completion proof without a future typed consumer boundary and synchronized
+governance update.
+
 Browser evidence packet changes are runtime-cockpit evidence work, not delivery
 truth. Keep `browser-evidence/v1` validation inside
 `src/lib/browser-evidence/` and expose it through the existing
