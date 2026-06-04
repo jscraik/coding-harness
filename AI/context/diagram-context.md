@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-04T13:19:09Z
+Generated: 2026-06-04T20:06:50Z
 
 ## Table of Contents
 
@@ -29,35 +29,13 @@ Generated: 2026-06-04T13:19:09Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `package.json`
-- `src/commands/docs-gate-core.ts`
-- `src/commands/drift-gate-command-surface.ts`
-- `src/commands/symphony-check.ts`
-- `src/lib/agents/instruction-compat.ts`
-- `src/lib/docs-surface/doc-lifecycle-distribution.ts`
-- `src/lib/docs-surface/doc-lifecycle-frontmatter.ts`
-- `src/lib/docs-surface/doc-lifecycle-harness.ts`
-- `src/lib/docs-surface/doc-lifecycle-paths.ts`
-- `src/lib/docs-surface/doc-lifecycle-report.ts`
-- `src/lib/docs-surface/doc-lifecycle-types.ts`
-- `src/lib/docs-surface/doc-lifecycle.ts`
-- `src/lib/init/README.md`
-- `src/lib/intermediary-receipts/validation-summaries.ts`
-- `src/lib/pilot-evaluation/control-plane-core.ts`
-- `src/lib/pr-template-validator-rules.ts`
-- `src/lib/runtime/codex-runtime-evidence-adapter.ts`
-- `src/lib/runtime/codex-runtime-evidence-producer.ts`
-- `src/lib/runtime/codex-runtime-evidence-references.ts`
-- `src/lib/runtime/codex-runtime-evidence-types.ts`
-- `src/lib/runtime/codex-runtime-evidence-validation.ts`
-- `src/lib/runtime/runtime-card-codex-runtime-validation.ts`
-- `src/lib/runtime/runtime-card-codex-runtime.ts`
-- `src/lib/runtime/runtime-evidence-adapter.ts`
-- `src/lib/steering-queue/builder.ts`
-- `src/lib/steering-queue/constants.ts`
-- `src/lib/steering-queue/types.ts`
-- `src/lib/steering-queue/validation-item.ts`
-- `src/lib/steering-queue/validation.ts`
+- `src/lib/pr-closeout.ts`
+- `src/lib/pr-closeout/blockers.ts`
+- `src/lib/pr-closeout/evaluator.ts`
+- `src/lib/pr-closeout/types.ts`
+- `src/lib/steering-queue/application-receipt.ts`
+- `src/lib/steering-queue/index.ts`
+- `src/lib/steering-queue/steering-queue.ts`
 
 ## agent
 
@@ -893,6 +871,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_review_lifecycle_0b410d1e_cf9db8cc
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_reviewer_coverage_251efee3_621cd543
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_runtime_packet_schemas_bc3ba8ec_ee732335
+  ext_node_fs_a15b7d96["node:fs"] --> node_validate_steering_application_receipt_c922e84a_bbe0cc40
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_steering_queue_4bc0cc94_58b6d2b9
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_system_prompt_gap_adoption_62d8c955_74930f35
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_workflow_contracts_33dc063c_2f80e314
@@ -1660,6 +1639,8 @@ flowchart LR
   User --> run_harness_evals_77704768
   validate_decision_request_2e5c325e["validate-decision-request"]
   User --> validate_decision_request_2e5c325e
+  validate_steering_application_receipt_c922e84a["validate-steering-application-receipt"]
+  User --> validate_steering_application_receipt_c922e84a
   validate_steering_queue_4bc0cc94["validate-steering-queue"]
   User --> validate_steering_queue_4bc0cc94
   branch_protect_core_a8feb0fd["branch-protect-core"]
@@ -1702,10 +1683,8 @@ flowchart LR
   User --> verify_coderabbit_490b4e71
   context_health_1_ceb11829["context-health"]
   User --> context_health_1_ceb11829
-  types_2_d9bc6e7a["types"]
-  User --> types_2_d9bc6e7a
   classDef userNode fill:#16a34a,color:#fff
-  class github_e2e_2891a341,linear_e2e_decf3708,run_e2e_39efe696,env_b77349bf,check_public_api_docs_a9604f1b,check_steering_feedback_contract_80134459,run_harness_evals_77704768,validate_decision_request_2e5c325e,validate_steering_queue_4bc0cc94,branch_protect_core_a8feb0fd,check_environment_core_2c16213f,ci_migrate_core_7005b5af,decision_request_118a770d,evidence_verify_3b73c290,linear_prepare_0c613ba6,linear_sync_a2fa2bf7,linear_triage_core_7cbca73e,linear_workflow_core_0e19cff4,pattern_scope_61ff946d,pr_closeout_env_9bfcd9ef,live_247610f4,review_gate_core_4c8001f9,symphony_check_e97f2ea0,ui_loop_internal_f2eb8892,ui_loop_shared_8c83b841,ui_loop_tooling_12b2d2c7,ui_loop_11660889,verify_coderabbit_490b4e71,context_health_1_ceb11829,types_2_d9bc6e7a userNode
+  class github_e2e_2891a341,linear_e2e_decf3708,run_e2e_39efe696,env_b77349bf,check_public_api_docs_a9604f1b,check_steering_feedback_contract_80134459,run_harness_evals_77704768,validate_decision_request_2e5c325e,validate_steering_application_receipt_c922e84a,validate_steering_queue_4bc0cc94,branch_protect_core_a8feb0fd,check_environment_core_2c16213f,ci_migrate_core_7005b5af,decision_request_118a770d,evidence_verify_3b73c290,linear_prepare_0c613ba6,linear_sync_a2fa2bf7,linear_triage_core_7cbca73e,linear_workflow_core_0e19cff4,pattern_scope_61ff946d,pr_closeout_env_9bfcd9ef,live_247610f4,review_gate_core_4c8001f9,symphony_check_e97f2ea0,ui_loop_internal_f2eb8892,ui_loop_shared_8c83b841,ui_loop_tooling_12b2d2c7,ui_loop_11660889,verify_coderabbit_490b4e71,context_health_1_ceb11829 userNode
 
 ```
 

@@ -428,12 +428,17 @@ Notes:
   deterministic selected-item ordering are architecture-adjacent runtime
   cockpit changes. Keep client user-message correlation for expected/applied
   same-thread steering inside this deep module, with stale-message
-  preconditions and applied-item validation proving the boundary. Keep the deep
-  module in `src/lib/steering-queue/`, keep the packet advisory for
-  orientation/audit evidence, and do not let it become command authority,
-  delivery-truth claim support, or merge-readiness proof until a future
-  runtime-card adapter intentionally wires that consumption boundary and
-  updates governance docs in the same PR.
+  preconditions and applied-item validation proving the boundary.
+  Steering-application receipt changes that add or alter
+  `steering-application-receipt/v1`, application outcome, stale-precondition
+  results, expected/current thread-turn-message binding, runtime-card update
+  references, head-SHA binding, mismatch classification, or supersession/expiry
+  semantics are the same architecture-adjacent cockpit family. Keep the deep
+  module in `src/lib/steering-queue/`, keep both packets advisory for
+  orientation/audit evidence, and do not let them become command authority,
+  delivery-truth claim support, Judge/PM proof, tracker mutation authority, or
+  merge-readiness proof until a future runtime-card adapter intentionally wires
+  that consumption boundary and updates governance docs in the same PR.
 - Trust-boundary validator changes that add or alter script-backed evidence
   reports such as `audit-reference-report/v1` are architecture-adjacent
   agent-governance changes when they classify repository paths, git-tracked

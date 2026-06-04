@@ -446,6 +446,14 @@ describe("runPrCloseoutCLI", () => {
 						evidenceRef: "artifact:.harness/review/pr-258-codex.md",
 					},
 				],
+				reviewerArtifactProofs: [
+					{
+						path: ".harness/review/pr-258-codex.md",
+						producer: "codex",
+						evidenceVerified: true,
+						receipt: "artifact-proof:.harness/review/pr-258-codex.md",
+					},
+				],
 				linearMutation: "available",
 			}),
 		);
@@ -541,6 +549,14 @@ describe("runPrCloseoutCLI", () => {
 							producer: "codex",
 							status: "present",
 							evidenceRef: "artifact:.harness/review/pr-258-codex.md",
+						},
+					],
+					reviewerArtifactProofs: [
+						{
+							path: ".harness/review/pr-258-codex.md",
+							producer: "codex",
+							evidenceVerified: true,
+							receipt: "artifact-proof:.harness/review/pr-258-codex.md",
 						},
 					],
 					linearMutation: linearMutationCase.mutation,

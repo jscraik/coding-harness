@@ -1,0 +1,40 @@
+{
+	"schemaVersion": "steering-application-receipt/v1",
+	"receiptId": "steering-application:continue-after-triage",
+	"generatedAt": "2026-05-28T09:48:00Z",
+	"producer": "coding-harness:steering-application-receipt",
+	"runtimeStatus": "not_yet_emitted",
+	"evidenceUse": "audit_trail",
+	"headSha": "a07c87353bb2e437abee6ac11aae0bee625c6e96",
+	"queuePacketRef": "steering-queue:packet-2026-05-28T09-45-00Z",
+	"queueItemId": "steering:continue-after-triage",
+	"queueItemState": "applicable",
+	"expectedContext": {
+		"threadId": "thread:codex-runtime-evidence-cockpit",
+		"turnId": "turn:pu-030",
+		"clientUserMessageId": "client-user-message:pu-047",
+		"headSha": "a07c87353bb2e437abee6ac11aae0bee625c6e96"
+	},
+	"currentContext": {
+		"threadId": "thread:codex-runtime-evidence-cockpit",
+		"turnId": "turn:pu-030",
+		"clientUserMessageId": "client-user-message:pu-047",
+		"headSha": "a07c87353bb2e437abee6ac11aae0bee625c6e96"
+	},
+	"runtimeCardUpdateRef": {
+		"ref": "runtime-card:after-steering-continue-after-triage",
+		"headSha": "a07c87353bb2e437abee6ac11aae0bee625c6e96",
+		"producedAt": "2026-05-28T09:48:00Z",
+		"receiptId": "runtime-card-receipt:after-steering-continue-after-triage"
+	},
+	"application": {
+		"decision": "applied",
+		"decidedAt": "2026-05-28T09:48:00Z",
+		"reason": "selected-applicable-steering-item-applied",
+		"appliedClientUserMessageId": "client-user-message:pu-047"
+	},
+	"stalePreconditions": [],
+	"blockers": [],
+	"nextAction": "continue-runtime-card-bound-slice",
+	"blockedBy": "PU-052-runtime-emission-not-wired"
+}

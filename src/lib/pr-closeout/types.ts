@@ -254,6 +254,15 @@ export interface PrCloseoutReviewArtifactInput {
 	evidenceRef?: string | null;
 }
 
+/** Verifier proof that a present reviewer artifact was inspected and bound to evidence. */
+export interface PrCloseoutReviewerArtifactProof {
+	path: string;
+	producer: string;
+	evidenceVerified: boolean;
+	receipt: string;
+	verifiedAt?: string | null;
+}
+
 /** Tool availability and command evidence captured during live closeout inspection. */
 export interface PrCloseoutToolInput {
 	name:
@@ -288,6 +297,7 @@ export interface PrCloseoutInput {
 	phaseExit?: HePhaseExit;
 	dirtyPaths?: PrCloseoutDirtyPathInput[];
 	reviewArtifacts?: PrCloseoutReviewArtifactInput[];
+	reviewerArtifactProofs?: PrCloseoutReviewerArtifactProof[];
 	tools?: PrCloseoutToolInput[];
 	assurance?: HarnessAssuranceEntry[];
 	runtimeEvidence?: RuntimeEvidenceContract;

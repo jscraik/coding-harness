@@ -67,7 +67,11 @@ function buildPrCloseoutReportValue(
 	collectPullRequestBlockers(pr, blockers);
 	collectCheckBlockers(checks, blockers);
 	collectReviewBlockers(pr, reviewThreads, blockers);
-	collectReviewArtifactBlockers(input.reviewArtifacts ?? [], blockers);
+	collectReviewArtifactBlockers(
+		input.reviewArtifacts ?? [],
+		input.reviewerArtifactProofs ?? [],
+		blockers,
+	);
 	collectTraceabilityBlocker(traceability.complete, blockers);
 	collectHarnessGateBlockers(harnessGates, blockers);
 	collectAssuranceBlockers(input, blockers);
