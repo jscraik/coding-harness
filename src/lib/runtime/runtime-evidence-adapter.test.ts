@@ -67,12 +67,9 @@ describe("codex runtime evidence adapter", () => {
 				status: "usable",
 			}),
 		);
-		expect(snapshot.sources).toContainEqual(
+		expect(snapshot.sources).not.toContainEqual(
 			expect.objectContaining({
-				kind: "review",
 				ref: "codex-review_state://unknown",
-				status: "blocked",
-				failureClass: "sdk_event_does_not_expose_review_state",
 			}),
 		);
 		expect(snapshot.blockers).toContain(
@@ -85,8 +82,11 @@ describe("codex runtime evidence adapter", () => {
 				"codex-runtime://turn-456/environment",
 			]),
 			environmentRefs: ["codex-runtime://turn-456/environment"],
-			reviewRefs: expect.arrayContaining(["codex-review_state://unknown"]),
+			reviewRefs: [],
 		});
+		expect(snapshot.codexRuntime?.receiptRefs).not.toContain(
+			"codex-review_state://unknown",
+		);
 		expect(snapshot.codexRuntime?.receiptRefs).not.toContain(
 			CODEX_RUNTIME_EVIDENCE_SCHEMA_VERSION,
 		);

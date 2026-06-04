@@ -349,8 +349,8 @@ describe("runRuntimeCardCLI", () => {
 			"JSC-311",
 		]);
 
-		expect(exitCode).toBe(0);
 		expect(error).toBe("");
+		expect(exitCode).toBe(0);
 		const card = JSON.parse(output);
 		expectBehavior({
 			given: "a repo with active artifacts for JSC-311",
@@ -379,8 +379,8 @@ describe("runRuntimeCardCLI", () => {
 			"jSc-311",
 		]);
 
-		expect(exitCode).toBe(0);
 		expect(error).toBe("");
+		expect(exitCode).toBe(0);
 		const card = JSON.parse(output);
 		expect(card.issueKey).toBe("jSc-311");
 		expect(card.artifacts.status).toBe("current");
@@ -640,8 +640,8 @@ describe("runRuntimeCardCLI", () => {
 			evidencePath,
 		]);
 
-		expect(exitCode).toBe(0);
 		expect(error).toBe("");
+		expect(exitCode).toBe(0);
 		const card = JSON.parse(output);
 		expect(card.schemaVersion).toBe("runtime-card/v1");
 		expect(card.codexRuntime).toMatchObject({
@@ -682,14 +682,12 @@ describe("runRuntimeCardCLI", () => {
 			evidencePath,
 		]);
 
-		expect(exitCode).toBe(0);
 		expect(error).toBe("");
+		expect(exitCode).toBe(0);
 		const card = JSON.parse(output);
 		expect(card.codexRuntime.environmentRefs).toBeDefined();
 		expect(card.codexRuntime.environmentRefs).toEqual(
-			expect.arrayContaining([
-				"artifact:.harness/runtime/sandbox-policy.json",
-			]),
+			expect.arrayContaining(["artifact:.harness/runtime/sandbox-policy.json"]),
 		);
 		const sandboxPolicyReceipt = card.codexRuntime.receiptRefs.find(
 			(ref: string) => ref.includes("sandbox-policy"),
@@ -702,6 +700,13 @@ describe("runRuntimeCardCLI", () => {
 	it("omits environmentRefs when environment.sandboxPolicyRef is missing", async () => {
 		const repoRoot = setupRepo();
 		const evidencePath = writeCodexRuntimeEvidencePacket(repoRoot, {
+			permissions: {
+				profile: "unknown",
+				writableRoots: [],
+				network: "unknown",
+				evidenceRef: null,
+				failureClass: "source_does_not_expose_permission_profile",
+			},
 			environment: {
 				environmentId: "codex-desktop:thread-123",
 				cwd: repoRoot,
@@ -711,8 +716,21 @@ describe("runRuntimeCardCLI", () => {
 				expectedApprovalScope: "auto_review",
 				sandboxPolicyRef: null,
 				state: "current",
-				failureClass: "sandbox_policy_ref_missing",
+				failureClass: null,
 			},
+			receipts: [],
+			validationResults: [],
+			externalState: {
+				status: "unknown",
+				evidenceRef: null,
+				failureClass: "source_does_not_expose_external_state",
+			},
+			reviewState: {
+				status: "unknown",
+				evidenceRef: null,
+				failureClass: "source_does_not_expose_review_state",
+			},
+			staleState: [],
 		});
 		const { exitCode, output, error } = await captureRuntimeCardCLI([
 			"--json",

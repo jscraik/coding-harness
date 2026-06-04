@@ -94,7 +94,17 @@ describe("codex runtime source provenance", () => {
 
 		const result = validateCodexRuntimeEvidence(packet);
 
-		expect(result).toEqual({ valid: true, findings: [] });
+		expect(result).toEqual({
+			valid: false,
+			findings: [
+				{
+					path: "environment.sandboxPolicyRef",
+					code: "sandbox_policy_ref_missing",
+					message:
+						"sandboxPolicyRef is required when permission and network facts are known.",
+				},
+			],
+		});
 		expect(packet.environment.sandboxPolicyRef).toBeNull();
 		expect(packet.environment.failureClass).toBe(
 			"sandbox_policy_ref_missing_from_analytics_fixture",
@@ -269,7 +279,12 @@ function sourcePacket(options: {
 			expectedApprovalScope: null,
 			sandboxPolicyRef: options.sandboxPolicyRef ?? null,
 			state:
-				options.permissionProfile === "workspace_write" ? "current" : "unknown",
+				options.permissionProfile === "workspace_write" &&
+				options.sandboxPolicyRef === null
+					? "sandbox_policy_missing"
+					: options.permissionProfile === "workspace_write"
+						? "current"
+						: "unknown",
 			failureClass:
 				options.permissionProfile === "workspace_write"
 					? options.sandboxPolicyRef === null
