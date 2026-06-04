@@ -911,6 +911,91 @@ applies_to:
 		).toBe(false);
 	});
 
+	it("blocks source-only lifecycle docs from downstream templates", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-doc-lifecycle");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+		write(
+			join(root, "docs/doc-lifecycle-manifest.json"),
+			JSON.stringify(
+				{
+					schema: "coding-harness-doc-lifecycle-manifest/v1",
+					generatedAt: "2026-06-04T00:00:00Z",
+					documents: [
+						{
+							path: "docs/lifecycle/example.md",
+							purpose: "Example lifecycle document.",
+							audience: ["codex-agent"],
+							lifecycleStage: "execute",
+							knowledgeCategory: "lifecycle-governance",
+							canonicality: "canon",
+							docType: "lifecycle",
+							distribution: "source-only",
+							lifecycleState: "active",
+							owner: "coding-harness-maintainers",
+							semverDefault: "minor",
+							dependsOn: ["AGENTS.md"],
+						},
+					],
+				},
+				null,
+				2,
+			),
+		);
+		write(
+			join(root, "docs/lifecycle/example.md"),
+			[
+				"---",
+				"doc_schema: coding-harness-doc/v1",
+				"doc_type: lifecycle",
+				"authority: canon",
+				"canon_class: canonical",
+				"distribution: source-only",
+				"audience:",
+				"  - codex-agent",
+				"lifecycle_state: active",
+				"owner: coding-harness-maintainers",
+				"created: 2026-06-04",
+				"last_reviewed: 2026-06-04",
+				"review_cadence: quarterly",
+				"maintenance_trigger:",
+				"  - lifecycle-change",
+				"semver_impact: minor",
+				"validated_by:",
+				"  - pnpm docs:lifecycle",
+				"depends_on:",
+				"  - AGENTS.md",
+				"---",
+				"",
+				"# Example",
+				"",
+			].join("\n"),
+		);
+		write(
+			join(root, "src/templates/AGENTS.md"),
+			"Read docs/lifecycle/example.md during downstream setup.\n",
+		);
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["src/templates/AGENTS.md"],
+		});
+
+		expect(result.exitCode).toBe(10);
+		const finding = result.report.findings.find(
+			(f) => f.rule_id === "docs.lifecycle.metadata",
+		);
+		expect(finding?.severity).toBe("error");
+		expect(finding?.details).toContain(
+			"Move the reference to a packaged or generated surface",
+		);
+	});
+
 	it("emits source_truth_missing contradictions for missing required truth sources", () => {
 		const root = join(
 			process.cwd(),

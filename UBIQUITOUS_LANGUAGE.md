@@ -17,7 +17,14 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 ## Canonical Terms
 | Term | Definition |
 | --- | --- |
+| synAIpse | The product and brand name for the AI Delivery Harness currently implemented by the coding-harness repository. Use this for external product language and concept docs. |
+| AI Delivery Harness | The product category and descriptor for synAIpse: a governed system for moving AI-assisted software work from issue intake to merged main with evidence, review, and learning loops intact. |
 | Coding Harness | The TypeScript control-plane repository that governs agentic development, review workflows, and validation contracts. |
+| Lifecycle Harness | The issue-to-main operating model inside synAIpse: Linear issue, spec, plan, implementation, local validation, review, PR polling, independent review, green checks, merge, main sync, and feedback-loop capture. |
+| Truth Lane | A separately observed source-of-truth lane such as local code, local validation, PR metadata, CI checks, review threads, tracker state, artifact evidence, merge readiness, or synced main. One lane does not prove another unless a current contract explicitly joins them. |
+| Claim Authority | The documented permission for a doc, artifact, gate, receipt, or external source to support a specific delivery claim. Claim authority must name freshness, source, head SHA when relevant, and the lane it proves. |
+| Guardrail | A durable standard, validator, schema, runbook, or review rule that prevents a repeated failure class from staying as chat-only guidance. |
+| Runbook | A versioned operational workflow that defines purpose, trigger, source of truth, cursor, validation evidence, stop conditions, and feedback-loop behavior for repeated human or agent work. |
 | Codex Runtime | The agent execution environment that owns sessions, permissions, workspace roots, tools, hooks, lifecycle events, and memory contributors. |
 | Harness Control Plane | The Coding Harness interpretation layer that turns Codex/runtime evidence into repo workflow policy, validation lanes, PR evidence, Project Brain context, and safe next-action recommendations. |
 | Expected Outcome Contract | The canonical outcome that Coding Harness must preserve: a portable agent operating system that makes Codex behave like a software engineer, not merely a code generator, across greenfield and brownfield projects with zero customer integration ceremony. |
@@ -117,6 +124,11 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 ## Aliases and Terms to Avoid
 | Phrase | Use Instead | Why |
 | --- | --- | --- |
+| "Coding Harness" in external product copy | synAIpse | synAIpse is the product and brand name; coding-harness remains the repository/package identity until a formal rename migration exists. |
+| "Lifecycle" by itself | Lifecycle Harness or issue-to-main lifecycle | Lifecycle is too broad to route safely without naming the operating model. |
+| "Everything is green" | Truth Lane classification | Green local checks do not prove PR review, CI, tracker, merge readiness, or main-sync state. |
+| "The artifact proves it" | Claim Authority for the named lane | Artifacts are supporting evidence unless a contract says which claim family they can support. |
+| "Automation reminder" | Runbook-backed automation | Repeated automation behavior belongs in reviewed runbooks with cursors, stop conditions, and validation evidence. |
 | "Just run whatever works" | `Wrapper command` + explicit command contract | Ad hoc execution creates drift and inconsistent evidence. |
 | "Looks fine to me" | `Validation lane passed` with exact command outcomes | Subjective approval is not sufficient for governance. |
 | "Config issue" | `Config drift` or `startup blocker` | Narrower terms improve routing and remediation speed. |
@@ -146,6 +158,9 @@ This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-
 ## Prompt Translations
 | User phrase | Canonical intent | Better Codex wording |
 | --- | --- | --- |
+| "this is our new name and logo" | Brand-language update without unsafe package rename | "Treat synAIpse as the product name and AI Delivery Harness as the descriptor; update glossary and docs language first, and keep package, CLI, and downstream template renames behind an explicit migration plan." |
+| "where does the feedback loop fit?" | Lifecycle Harness learning loop | "Show feedback as the loop from review, CI, user steering, and post-merge evidence back into guardrails, runbooks, Project Brain, specs, and validation." |
+| "enforce the truth lanes" | Claim authority governance | "Add or update guardrails, lifecycle metadata, and validation gates so each delivery claim names the lane and evidence that can prove it." |
 | "Make sure it works" | Validate changed surface with evidence | "Run the narrowest required validation lane for this change and report exact `pass\|fail\|blocked` outcomes for each command." |
 | "Fix drift" | Resolve canonical mismatch | "Identify config drift against canonical control-plane files, apply minimal fixes, and rerun the focused config-drift lane." |
 | "Use a swarm" | Bounded multi-review with artifacts | "Run a bounded review swarm, require one artifact file per reviewer under `artifacts/reviews/`, and synthesize severity-ranked findings." |

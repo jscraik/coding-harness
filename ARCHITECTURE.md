@@ -1,3 +1,31 @@
+---
+doc_schema: coding-harness-doc/v1
+doc_type: architecture
+authority: canon
+canon_class: canonical
+distribution: source-only
+audience:
+  - coding-harness-maintainer
+  - codex-agent
+  - reviewer
+lifecycle_state: active
+owner: coding-harness-maintainers
+created: 2026-06-04
+last_reviewed: 2026-06-04
+review_cadence: quarterly
+maintenance_trigger:
+  - architecture-boundary-change
+  - command-family-change
+  - generated-context-refresh
+semver_impact: minor
+validated_by:
+  - pnpm docs:lifecycle
+depends_on:
+  - AGENTS.md
+  - docs/architecture/documentation-layers.md
+  - AI/context/diagram-context.md
+---
+
 # Architecture
 
 ## Table of Contents
