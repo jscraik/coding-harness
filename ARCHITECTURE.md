@@ -1,3 +1,31 @@
+---
+doc_schema: coding-harness-doc/v1
+doc_type: architecture
+authority: canon
+canon_class: canonical
+distribution: source-only
+audience:
+  - coding-harness-maintainer
+  - codex-agent
+  - reviewer
+lifecycle_state: active
+owner: coding-harness-maintainers
+created: 2026-05-29
+last_reviewed: 2026-06-04
+review_cadence: on architecture-adjacent change
+maintenance_trigger:
+  - architecture-artifact changes
+  - docs-gate architecture-context findings
+  - deep-module boundary changes
+semver_impact: minor
+validated_by:
+  - pnpm exec tsx src/cli.ts docs-gate --mode required --json
+depends_on:
+  - AGENTS.md
+  - docs/architecture/documentation-layers.md
+  - AI/context/diagram-context.md
+---
+
 # Architecture
 
 ## Table of Contents
