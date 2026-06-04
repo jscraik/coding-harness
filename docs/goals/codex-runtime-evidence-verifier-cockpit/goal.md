@@ -366,21 +366,22 @@ For every slice:
 8. Fix valid findings and rerun the narrowest proving checks.
 9. Record a receipt in `receipts.jsonl` after each completed slice.
 10. Commit the slice atomically, push it, and open or update the matching GitHub PR.
-11. Launch PR triage with `$pr-green-sweep` and continue to the next safe slice while triage runs.
+11. Launch PR triage with `$pr-green-sweep` and keep working that same slice until the PR is green, review threads are resolved or explicitly blocked, and the PR is merged into `main`.
+12. After merge proof, check out `main`, pull the latest remote `main`, record the synced head, update the goal board, and only then start the next implementation slice.
 
-Parallel continuation rule:
+Sequential continuation rule:
 
-- Continue to the next slice only when dependency order and branch state allow it. If the next slice depends on the PR under triage, perform non-mutating prep, intent drafting, or review instead of contaminating the active PR branch.
-- If parallel code work is safe, use an explicit branch or worktree strategy and record which PR branch each agent owns.
+- Stacked implementation PRs are disallowed for this goal unless Jamie explicitly authorizes a named exception in the current slice intent and receipt.
+- Background PR triage is not a done state. The coordinator may perform only non-mutating observation while `$pr-green-sweep` is active; it must not start the next code slice until live GitHub proves the current slice PR is merged and local `main` is refreshed.
+- If the PR cannot be made green or merged, classify the blocker in the receipt and board before any further goal implementation work.
 
 ## Review and Validation Contract
 
 After each slice, validate with these skill lenses or their repo-owned deterministic equivalents:
 
-- `$improve-codebase-architecture`: confirm the slice stays inside the intended deep module boundary, preserves a narrow public seam, and records any architecture tradeoff in the intent or receipt.
 - `$simplify`: confirm the slice did not add unnecessary abstractions, duplicate truth layers, or broad public surfaces.
-- `$unslopify`: remove vague claims, placeholder wording, speculative assertions, and AI-shaped docs or PR text.
-- `$he-code-review`: review the slice against Harness Engineering expectations, evidence contracts, and implementation-risk boundaries.
+- `$improve-codebase-architecture`: confirm the slice stays inside the intended deep module boundary, preserves a narrow public seam, and records any architecture tradeoff in the intent or receipt.
+- `$sy-review`: review the slice claim against separate evidence lanes, readiness boundaries, and SynAIpse Harness stage-risk expectations.
 - `$testing`: prove the touched behavior with the narrowest meaningful tests first, then broaden according to risk.
 
 Before marking any slice done, also run independent review with:
@@ -417,7 +418,8 @@ When the coordinator is happy with a slice:
 2. Push the branch to GitHub.
 3. Open or update a PR with truthful lifecycle scope.
 4. Launch a subagent to run `$pr-green-sweep` against that PR until faults are fixed or explicitly blocked.
-5. While the PR triage subagent works, continue to the next safe slice under the parallel continuation rule.
+5. Trigger or verify CodeRabbit review when required for stacked or freshly updated PR heads, and fix actionable review findings before merge.
+6. Do not continue to the next implementation slice while the PR is open. Continue only after `$pr-green-sweep` records live PR green evidence, the PR is merged into `main`, and the coordinator has pulled the latest `main`.
 
 The PR may claim only the lifecycle unit it actually completes. A PR cannot claim green, tidy, delivered, merged, goal-ready, or merge-ready unless delivery-truth has current claim-support evidence for each separate claim.
 

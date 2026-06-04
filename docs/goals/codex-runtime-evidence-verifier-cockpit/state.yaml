@@ -66,10 +66,26 @@ completion_contract:
     - "Do not start Worker implementation until the activation phrase is present."
     - "Do not weaken the plan or spec to fit already-written code."
     - "Do not blend local validation, remote checks, review threads, tracker state, root hygiene, and merge readiness into one success claim."
-    - "Do not mark a slice done without improve-codebase-architecture, simplify, unslopify, HE code review, testing, adversarial review, agent-native review, and best-practices-researcher coverage or explicit blocked/not-applicable evidence."
+    - "Do not mark a slice done without simplify, improve-codebase-architecture, sy-review, testing, adversarial review, agent-native review, and best-practices-researcher coverage or explicit blocked/not-applicable evidence."
+    - "Do not start the next implementation slice until the current slice PR has pr-green-sweep evidence, live merge proof into main, and a refreshed local main head recorded in the board and receipt."
+    - "Do not use stacked implementation PRs for this goal unless Jamie explicitly authorizes a named exception in the current slice intent and receipt."
     - "Do not approach cleanup or closeout until docs-expert and agents-md accuracy checks are complete when relevant."
-  iteration_policy: "Scout first, then bounded Worker slices with reviewed intent, deterministic validation, reviewer artifacts, atomic commits, GitHub PRs, pr-green-sweep triage, and append-only receipts. Continue to the next safe slice while PR triage runs only when dependency and branch state permit. PR triage must run either remote-only or in an isolated worktree created for the PR head; it must not share the coordinator checkout after the coordinator is allowed to switch branches for the next slice."
+  iteration_policy: "Scout first, then bounded Worker slices with reviewed intent, deterministic validation, reviewer artifacts, atomic commits, GitHub PRs, pr-green-sweep triage, merge-to-main proof, refreshed local main, goal-board update, and append-only receipts. The next implementation slice may start only after the current slice PR is green, merged into main, and pulled locally. PR triage must run either remote-only or in an isolated worktree created for the PR head, but background triage does not authorize stacked continuation."
   blocked_stop_condition: "Stop if the board is invalid, activation is absent for Worker work, required intent review is missing, validation cannot run, reviewer artifacts are missing after retry, PR or tracker truth is stale, dirty work overlaps required files, or continuing would contaminate a PR under triage."
+  slice_continuation_policy:
+    stacking_default: "forbidden"
+    required_completion_sequence:
+      - "run simplify"
+      - "run improve-codebase-architecture"
+      - "run sy-review"
+      - "run testing"
+      - "commit atomic slice"
+      - "push and open or update PR"
+      - "run pr-green-sweep until faults are fixed or explicitly blocked"
+      - "prove PR merged into main"
+      - "checkout main and pull latest remote main"
+      - "record refreshed main head in goal board and receipt"
+    exception_rule: "Only Jamie can authorize a stacked or parallel implementation exception; the exception must name the dependent slice, branch/worktree owner, allowed files, stop condition, and receipt id before any code work begins."
 current_slice_gate:
   lifecycle_unit: "post-merge-route-truth-refresh"
   status: "main_synced_pr_stack_reconciled_next_decision_required"
@@ -154,10 +170,9 @@ slice_review_contract:
   effective_receipt_id: "R064"
   scope: "future_slices_and_final_closeout_backfill"
   required_skill_lenses:
-    - "improve-codebase-architecture"
     - "simplify"
-    - "unslopify"
-    - "he-code-review"
+    - "improve-codebase-architecture"
+    - "sy-review"
     - "testing"
   required_independent_reviewers:
     - "adversarial-reviewer"
@@ -174,7 +189,7 @@ slice_review_contract:
     - "blocked"
     - "not applicable"
   historical_backfill_required_before_goal_closeout: true
-  historical_backfill_rule: "Pre-R064 receipts are not retroactively invalidated, but final Judge/PM closeout must provide a backfill or ratification ledger for PU-001 through PU-016 mapping each required skill lens and independent reviewer to pass, blocked, or not applicable with evidence refs or accepted exceptions."
+  historical_backfill_rule: "Pre-R064 receipts are not retroactively invalidated, but final Judge/PM closeout must provide a backfill or ratification ledger for PU-001 through PU-016 mapping each currently required skill lens and independent reviewer to pass, blocked, or not applicable with evidence refs or accepted exceptions. Historical unslopify and he-code-review evidence may remain supporting evidence, but from this policy revision onward they are not substitutes for simplify, improve-codebase-architecture, sy-review, and testing."
   historical_backfill_artifact: "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/review-coverage-backfill.json"
   historical_backfill_validator: "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-review-backfill.py docs/goals/codex-runtime-evidence-verifier-cockpit/notes/review-coverage-backfill.json --repo ."
   completion_blockers:

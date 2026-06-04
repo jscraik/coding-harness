@@ -497,7 +497,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, local git ancestry, and Linear refresh evidence on 2026-06-04. <code>origin/main</code> is current at <code>a76921942cdbd8b3e1b449a05993d467700f770c</code>. GitHub reports zero open PRs. PR #331 through PR #336 are main-delivered; PR #337 and PR #338 are merged only into the stacked branch <code>codex/jsc-363-cnf-006-steering-application-receipt</code> and are not ancestors of current <code>origin/main</code>. Linear JSC-363 is <code>In Review</code> with a route-truth comment and full-lifecycle scope-note attachment. Runtime producer evidence, delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, local git ancestry, and Linear refresh evidence on 2026-06-04. <code>origin/main</code> is current at <code>a76921942cdbd8b3e1b449a05993d467700f770c</code>. GitHub reports zero open PRs. PR #331 through PR #336 are main-delivered; PR #337 and PR #338 were merged only into the stacked branch <code>codex/jsc-363-cnf-006-steering-application-receipt</code> and are being ported through the current main-delivery branch before any next slice starts. Linear JSC-363 is <code>In Review</code> with a route-truth comment and full-lifecycle scope-note attachment. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -626,11 +626,11 @@
         lane: "intent",
         title: "Slice execution contract",
         status: "active",
-        tags: ["intent", "review-first", "automation"],
-        summary: "Each slice needs reviewed intent, deterministic validation, required skill lenses, independent reviewers, atomic commit, PR triage, and receipts.",
-        evidence: ["state.yaml slice_review_contract", "goal.md Review and Validation Contract", "Required lenses: architecture, simplify, unslopify, HE review, testing, adversarial, agent-native, best-practices"],
-        next: "Represent every slice as a small module-bounded card before implementation begins.",
-        risk: "Missing reviewer artifacts or missing skill-lens evidence blocks done claims even when local tests pass."
+        tags: ["intent", "review-first", "no stacked PRs"],
+        summary: "Each slice needs reviewed intent, deterministic validation, simplify, architecture, sy-review, testing, independent reviewers, atomic commit, PR green sweep, merge-to-main proof, local main pull, board update, and receipts.",
+        evidence: ["state.yaml slice_review_contract", "state.yaml slice_continuation_policy", "goal.md Review and Validation Contract", "Required lenses: simplify, improve-codebase-architecture, sy-review, testing, adversarial, agent-native, best-practices"],
+        next: "Finish the active slice through PR merge and refreshed local main before any next implementation slice begins.",
+        risk: "Starting the next implementation slice before PR merge proof recreates stacked PR conflicts and stale review-thread churn."
       },
       {
         id: "source-freshness",
@@ -638,10 +638,10 @@
         title: "Source freshness current",
         status: "done",
         tags: ["main", "origin/main", "R279"],
-        summary: "The board is sourced from synced local main plus live GitHub and Linear refresh evidence after PR #336 merged.",
-        evidence: ["origin/main -> a76921942cdbd8b3e1b449a05993d467700f770c", "Live GitHub open PR list -> []", "PR #331 through #336 -> MERGED into the main-delivery line", "PR #337/#338 -> MERGED into stacked branch, not ancestors of origin/main", "Linear comment e34da9b0 records the route-truth split"],
-        next: "Use this tracker as the current route surface while deciding whether PR #337/#338 require a main-delivery branch.",
-        risk: "Current route truth proves orientation only. It does not prove runtime producer evidence, delivery-truth consumption, Linear field text, or parent-goal completion."
+        summary: "The board is sourced from synced local main plus live GitHub and Linear refresh evidence after PR #336 merged, with PR #337/#338 work now treated as a current-main port lane rather than a completed main-delivered claim.",
+        evidence: ["origin/main -> a76921942cdbd8b3e1b449a05993d467700f770c", "Live GitHub open PR list -> []", "PR #331 through #336 -> MERGED into the main-delivery line", "PR #337/#338 -> MERGED into stacked branch, not ancestors of origin/main", "Local branch codex/jsc-363-pu014-pu015-main-delivery ports PU-014/PU-015 to current main", "Linear comment e34da9b0 records the route-truth split"],
+        next: "Complete the PU-014/PU-015 main-delivery PR, run pr-green-sweep until merged, then pull main before choosing the next slice.",
+        risk: "Current route truth proves orientation only. It does not prove runtime producer evidence, final delivery-truth consumption, Linear field text, or parent-goal completion."
       },
       {
         id: "codex-native-refinement",
