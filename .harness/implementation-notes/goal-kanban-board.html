@@ -399,7 +399,7 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness warning">origin/main snapshot: 50a6d0b5, zero open PRs, Linear Done, CNF scope adopted</div>
+      <div class="source-chip" aria-label="Source freshness warning">origin/main snapshot: 50a6d0b5, 4 open stacked draft PRs (#331, #332, #333, #334), Linear Done, CNF scope adopted</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
@@ -722,7 +722,7 @@
         id: "cnf003-risk-tiered-hilt",
         lane: "implementation",
         title: "CNF-003 risk-tiered mutation authority",
-        status: "PR #333 draft; remote checks pending",
+        status: "active",
         tags: ["HILT", "route decision", "agent-native"],
         summary: "RouteDecision now carries a mutationPolicy with scope, risk tier, evidence freshness, validator ownership, and authority. Agent-local mutation is limited to low-risk repo-local work with current evidence, validator ownership, and no network requirement.",
         evidence: ["docs/goals/.../notes/PU-049-cnf-003-risk-tier-authority-intent.md", "src/lib/decision/route-decision.ts", "src/lib/decision/route-decision.test.ts", "ARCHITECTURE.md", "docs/agents/00-architecture-bootstrap.md", "docs/agents/07b-agent-governance.md", "pnpm exec vitest run src/lib/decision/route-decision.test.ts -> pass (49 tests)", "pnpm exec vitest run src/commands/decision-request.test.ts -> pass (13 tests)", "pnpm typecheck -> pass", "docs-gate -> pass", "check-diagram-freshness -> pass", "validate-codestyle --fast -> pass", "artifacts/reviews/pu049-cnf-003-reviewer-runtime-blocker.md", "R242: CNF-003 route-truth refreshed"],
@@ -733,8 +733,8 @@
         id: "cnf004-runtime-card-continuity",
         lane: "remote",
         title: "CNF-004 runtime-card continuity",
-        status: "PR #334 draft; remote unstable",
-        tags: ["runtime-card", "continuity", "projection"],
+        status: "active",
+        tags: ["runtime-card", "continuity", "projection", "PR #334 draft", "remote unstable"],
         summary: "Runtime-card Codex projection now exposes compact codexRuntime.continuity refs for thread, turn, trace, goal, client message, active queue item, approval request, and heartbeat/automation continuity while preserving pointer-only redaction.",
         evidence: ["docs/goals/.../notes/PU-050-cnf-004-runtime-card-continuity-intent.md", "src/lib/runtime/runtime-card-codex-runtime.ts", "src/lib/runtime/runtime-card-codex-runtime-validation.ts", "src/lib/runtime/runtime-evidence-bundle.ts", "src/lib/runtime/runtime-evidence-adapter.ts", "runtime-card projection tests -> pass", "runtime-evidence adapter tests -> pass", "pnpm typecheck -> pass", "quality:docstrings -> pass", "docs-gate -> pass", "check-diagram-freshness -> pass", "validate-codestyle --fast -> pass", "pr-template-gate -> pass", "make hooks-pre-push -> pass", "PR #334 OPEN draft, base PR #333 branch, head 11cf544a, mergeStateStatus UNSTABLE", "artifacts/reviews/pu050-cnf-004-skill-lenses.md", "artifacts/reviews/pu050-cnf-004-implementation-reviewer-runtime-blocker.md", "R245: CNF-004 PR route-truth refresh"],
         next: "Run PR #334 triage for remote CI, review threads, CodeRabbit/Codex state, mergeability, and independent reviewer artifact recovery or accepted fallback before any slice-done claim.",

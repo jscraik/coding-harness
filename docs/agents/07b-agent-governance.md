@@ -242,12 +242,13 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - RouteDecision lifecycle metadata is part of the agent-native cockpit contract: `route-decision/v1` must remain additive to `harness-decision/v1`, must not make target commands executable authority by itself, and must keep architecture-context plus docs-gate-required governance surfaces synchronized
 - RouteDecision risk-tiered mutation authority remains advisory and
   non-executable: low-risk repo-local mutation routes may set
-  `requiresHuman=false` only when current evidence and validator ownership are
-  present, while destructive, external, tracker, production, release, security,
-  credential, merge, public-contract, goal-completion, verifier-disagreement,
-  ambiguous-governance, unknown, or network-dependent mutation still requires
-  human review and must route through the decision-request or action-review
-  authority surface where applicable.
+  `requiresHuman=false` only when current evidence, validator ownership,
+  agent-local authority (`authority=agent_local`), and no network dependency
+  (`requiresNetwork=false`) are present, while destructive, external, tracker,
+  production, release, security, credential, merge, public-contract,
+  goal-completion, verifier-disagreement, ambiguous-governance, unknown, or
+  network-dependent mutation still requires human review and must route through
+  the decision-request or action-review authority surface where applicable.
 - generated hook setup or readiness changes should keep agent setup evidence synchronized: `scripts/setup-git-hooks.js` must install generated `prek` shims that derive `WORKTREE_ROOT` with `git rev-parse --show-toplevel` and default `PREK_HOME` to `$WORKTREE_ROOT/.cache/prek`, and `scripts/check-environment.sh` must fail drift across installed `pre-commit`, `pre-push`, and `commit-msg` shims
 - worktree bootstrap and generated Codex environment action changes should keep
   the shared Git common-config guard, detached-worktree branch attachment, and
