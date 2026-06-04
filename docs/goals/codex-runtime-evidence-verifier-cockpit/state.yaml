@@ -88,8 +88,8 @@ completion_contract:
     exception_rule: "Only Jamie can authorize a stacked or parallel implementation exception; the exception must name the dependent slice, branch/worktree owner, allowed files, stop condition, and receipt id before any code work begins."
 current_slice_gate:
   lifecycle_unit: "post-merge-route-truth-refresh"
-  status: "main_synced_pr_stack_reconciled_next_decision_required"
-  reason: "Local main fast-forwarded to origin/main at a76921942cdbd8b3e1b449a05993d467700f770c. Live GitHub reports zero open PRs. PR #331 through PR #336 are merged into the current main-delivery line. PR #337 and PR #338 are merged only into the stacked branch codex/jsc-363-cnf-006-steering-application-receipt; their merge commits are not ancestors of current origin/main, so they require an explicit main-delivery decision before their work can be claimed as current-main evidence. Linear JSC-363 is In Review with a full-lifecycle scope-note attachment and a new route-truth comment, but its title/description still use Phase 1 wording. Runtime producer emission, delivery-truth consumption, final review/external/root-hygiene proof, docs accuracy, Judge/PM readiness, and parent goal completion remain unclaimed."
+  status: "main_synced_pr342_merged_next_slice_selection_required"
+  reason: "Local main fast-forwarded to origin/main at 173a3fe0772fcce6d1e960bd0d9f41debbc7d96f after PR #342 merged at 2026-06-04T23:25:43Z. PR #331 through PR #338 plus PR #342 are completed JSC-363 route/foundation evidence on current main. Live GitHub reports no open JSC-363/cockpit implementation PR lanes; unrelated open PRs #340 and #341 remain outside this goal unless they touch JSC-363 scope. Linear JSC-363 must be refreshed again before any tracker-current or field-text-current claim after PR #342. Runtime producer emission, delivery-truth consumption, final review/external/root-hygiene proof, docs accuracy, Judge/PM readiness, and parent goal completion remain unclaimed."
   completed_before_local_validation_claim:
     - "Created and tracked the PR #324 supersession intent artifact before route-state edits."
     - "Fetched current remote refs and verified PR #327 and PR #328 are the current clean JSC-363 stack."
@@ -141,23 +141,14 @@ current_slice_gate:
     - "Recorded CNF-004 reviewer-runtime artifact-output blockers in artifacts/reviews/pu050-cnf-004-intent-reviewer-runtime-blocker.md and artifacts/reviews/pu050-cnf-004-implementation-reviewer-runtime-blocker.md; local skill-lens coverage is in artifacts/reviews/pu050-cnf-004-skill-lenses.md."
     - "Pushed CNF-004 branch head 11cf544aa7ecf3918d780e1118d82b1f49293880 and opened draft stacked PR #334 against codex/jsc-363-cnf-003-risk-tier-authority after the PR body passed pr-template-gate; foreground make hooks-pre-push passed before the no-verify push fallback was used to avoid a silent Git transport hook hang."
   next_required_handoff_steps:
-    - "Treat PU-047/CNF-001 as merged through PR #331; final goal closeout still requires current runtime producer, delivery-truth, review-state, external-state, tracker, docs, and Judge/PM evidence."
-    - "Do not mark PU-048/CNF-002 done until PR #332 remote CI is refreshed on the R241-repaired PR body, the Snyk quota lane is resolved or explicitly accepted by the proper owner, independent reviewer artifacts are recovered or a validated fallback is recorded, and current review/merge truth is checked."
-    - "Use this board and the local board tracker as the current route-truth surfaces; keep both synchronized when route state changes."
-    - "PU-047/CNF-001 intent classifies Codex user-message correlation as locally implementable only for explicit producer input; live Codex Desktop extraction remains unproven and owner-visible."
-    - "Run the goal-board validator and audit-freshness validator after this route-truth refresh."
-    - "Use the current Linear JSC-363 refresh as attachment-backed tracker alignment: status In Review, full-lifecycle scope-note attachment present, PR attachments through #338 present, and comment e34da9b0 records post-merge route truth. Do not claim Linear field text is current while the title and description still say Phase 1."
-    - "Treat PR #321, PR #322, PR #323, PR #325, PR #326, PR #327, PR #328, PR #329, and PR #330 as merged route/foundation evidence, not active PR lanes."
-    - "After PU-048/CNF-002 PR #332 is triaged, continue only from remaining evidence-backed lifecycle gaps: CNF-003 through CNF-006, runtime producer evidence, delivery-truth consumption, final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, and final requirement-by-requirement completion audit."
-    - "After PR #334 remote CI/review triage, continue only from remaining evidence-backed lifecycle gaps: CNF-005 and CNF-006, runtime producer evidence, delivery-truth consumption, final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, and final requirement-by-requirement completion audit."
-    - "Treat PR #333 as merged into PR #331 at 02907f95c1a5941e7ba0bc43e519fc66bc23eb84; do not reopen PR #333 triage unless live GitHub shows it reopened or a current PR #331/#335 review thread references missing CNF-003 evidence."
-    - "Do not mark PU-050/CNF-004 done until PR #334 remote CI/review-thread/CodeRabbit/Codex/mergeability truth is freshly triaged, independent reviewer artifact recovery or an accepted fallback is recorded, and predecessor PR lanes remain current."
-    - "Reviewer-coverage validation now passes against the final on-disk PU-047/CNF-001 review artifacts with expectedHeadSha; keep the manifest and artifact head bindings synchronized before PR handoff or any future slice done claim."
-    - "PR #331 triage must run with git fetch and pr-green-sweep expectations in a separate subagent lane before any PU-047/CNF-001 done claim."
-    - "Treat PR #335 as merged through e612bf3cbe405988b0f33acc66ae265b0fd83fc6; do not reopen CNF-005 unless current main, PR #336 evidence, or the stack-only PR #337/#338 main-delivery decision shows a regression."
-    - "Treat PR #336 as merged into current main at a76921942cdbd8b3e1b449a05993d467700f770c; there are no open GitHub PR lanes as of R279."
-    - "PR #337 and PR #338 are live-merged only into codex/jsc-363-cnf-006-steering-application-receipt and are not ancestors of current origin/main; decide whether their changes are required on main before any CNF-006 or parent-goal done claim."
-    - "If future Linear tools expose issue title/description update and owner wants field text current, update JSC-363 fields; otherwise preserve the accepted attachment-backed alignment boundary."
+    - "Treat PR #331 through PR #338 plus PR #342 as completed JSC-363 route/foundation evidence on current main at 173a3fe0772fcce6d1e960bd0d9f41debbc7d96f; do not reopen those PR lanes unless fresh GitHub or current-main validation shows a regression."
+    - "Treat live GitHub as having no open JSC-363/cockpit implementation PR lanes after PR #342; unrelated open PRs #340 and #341 are outside this goal unless they touch JSC-363 scope."
+    - "Before the next implementation slice starts, select the next remaining lifecycle gap from current main and record bounded intent with Project Brain, memory surfaces, plan/spec/audit inputs, and required validation."
+    - "For every future slice, run simplify, improve-codebase-architecture, sy-review, and testing before done; then commit atomically, open or update one PR, trigger CodeRabbit manually when required, run pr-green-sweep until faults are fixed or explicitly blocked, merge to main, checkout main, pull latest remote main, update the goal board/state/receipt, and only then start the next slice."
+    - "Stacked implementation PRs are forbidden by default. Only Jamie can authorize a named exception in the current slice intent and receipt before any parallel or dependent implementation work begins."
+    - "Keep this board and the local board tracker as current route-truth surfaces; synchronize goal.md, state.yaml, goal-kanban-board.html, and receipts.jsonl after every merge, route decision, or blocker decision."
+    - "Refresh Linear JSC-363 after PR #342 before claiming tracker-current, field-text-current, Judge/PM-ready, or parent-goal completion. Earlier Linear evidence remains attachment-backed route context, not current post-PR #342 proof."
+    - "Continue only from remaining evidence-backed lifecycle gaps: runtime producer evidence, delivery-truth consumption, final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, and final requirement-by-requirement completion audit."
   blocked_done_claims:
     - "Linear-fields-current"
     - "live-Codex-Desktop-clientUserMessageId-extraction"
@@ -167,7 +158,7 @@ current_slice_gate:
     - "Judge/PM-ready"
     - "goal completion"
 slice_review_contract:
-  effective_receipt_id: "R064"
+  effective_receipt_id: "R285"
   scope: "future_slices_and_final_closeout_backfill"
   required_skill_lenses:
     - "simplify"
@@ -280,13 +271,13 @@ ecosystem_review_adoption:
 codex_native_refinement_adoption:
   source: "goal-governor-output.yaml"
   source_context: "/Users/jamiecraik/dev/codex review against /Users/jamiecraik/dev/coding-harness"
-  current_main_sha: "a76921942cdbd8b3e1b449a05993d467700f770c"
+  current_main_sha: "173a3fe0772fcce6d1e960bd0d9f41debbc7d96f"
   authority: "adopted_for_next_slice_steering"
   rule: "Use the imported Codex-native review to refine the next activated slice toward message correlation, environment-scoped permission evidence, risk-tiered agent-native mutation authority, runtime-card continuity, context authority classification, and steering application receipts. The findings steer scope but do not prove implementation."
   required_findings:
     - id: "CNF-001"
       name: "Codex user-message correlation"
-      status: "pr_open_remote_triage_pending"
+      status: "main_delivered_pr342"
       target_modules:
         - "src/lib/runtime/codex-runtime-evidence-types.ts"
         - "src/lib/steering-queue/types.ts"
@@ -311,7 +302,7 @@ codex_native_refinement_adoption:
         - "clientUserMessageId is nullable and orientation-only until explicit source evidence exists."
     - id: "CNF-002"
       name: "Environment-scoped permission evidence"
-      status: "local_contract_validated_review_artifacts_blocked"
+      status: "main_delivered_pr342"
       target_modules:
         - "src/lib/runtime/codex-runtime-evidence-types.ts"
         - "src/lib/tool-exposure/**"
@@ -342,7 +333,7 @@ codex_native_refinement_adoption:
       minimum_proof: "Focused policy tests prove high-risk mutation without HILT fails, incomplete mutation policy fails, and low-risk repo-local mutation can pass only with current evidence, validator ownership, agent-local authority, and no network requirement. Required independent reviewer artifacts are blocked by runtime artifact-output failure, so this slice is not done."
     - id: "CNF-004"
       name: "Runtime-card Codex continuity projection"
-      status: "local_implementation_committed_validation_passed_review_artifacts_blocked"
+      status: "main_delivered_pr342"
       target_modules:
         - "src/lib/runtime/runtime-card-codex-runtime.ts"
         - "src/lib/runtime/runtime-card-codex-runtime-validation.ts"
