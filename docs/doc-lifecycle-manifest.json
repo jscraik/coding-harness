@@ -1,6 +1,6 @@
 {
 	"schema": "coding-harness-doc-lifecycle-manifest/v1",
-	"generatedAt": "2026-06-04T00:00:00Z",
+	"generatedAt": "{{GENERATION_TIMESTAMP}}",
 	"documents": [
 		{
 			"path": "README.md",

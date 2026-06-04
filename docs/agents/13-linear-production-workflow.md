@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-18
+last_validated: 2026-06-04
 doc_schema: coding-harness-doc/v1
 doc_type: lifecycle
 authority: canon

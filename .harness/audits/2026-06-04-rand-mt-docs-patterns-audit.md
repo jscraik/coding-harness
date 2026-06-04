@@ -23,7 +23,7 @@ Date: 2026-06-04
 
 Reference repository: <https://github.com/artichoke/rand_mt/tree/a36409d23bac908681f5e891f43a215ea8dbb84b/docs>
 
-Coding Harness checkout: `/Users/jamiecraik/dev/coding-harness`
+Coding Harness checkout: `<REPO_ROOT>`
 
 ## Table of Contents
 
@@ -560,7 +560,7 @@ Validation evidence:
 
 - Command: `bash scripts/codex-preflight.sh --mode optional` -> pass (run before this audit artifact was drafted in the current thread)
 - Command: `git status --short --branch` -> pass (showed pre-existing user-owned modification in `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`)
-- Command: `git clone --quiet https://github.com/artichoke/rand_mt.git /private/tmp/rand_mt-docs-audit-1780564601857` -> pass
-- Command: `git -C /private/tmp/rand_mt-docs-audit-1780564601857 checkout --quiet a36409d23bac908681f5e891f43a215ea8dbb84b` -> pass
-- Command: `find /private/tmp/rand_mt-docs-audit-1780564601857/docs -type f | sort` -> pass
+- Command: `git clone --quiet https://github.com/artichoke/rand_mt.git <TMP_DIR>/rand_mt-docs-audit` -> pass
+- Command: `git -C <TMP_DIR>/rand_mt-docs-audit checkout --quiet a36409d23bac908681f5e891f43a215ea8dbb84b` -> pass
+- Command: `find <TMP_DIR>/rand_mt-docs-audit/docs -type f | sort` -> pass
 - Command: `sed -n ...` and `rg -n "^#{1,4} "` over reference and Coding Harness docs -> pass

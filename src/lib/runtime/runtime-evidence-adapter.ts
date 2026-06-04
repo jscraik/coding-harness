@@ -168,8 +168,14 @@ function buildCodexRuntimeProjection(
 		environmentRefs: uniqueRefs(
 			bundle.sources.filter(
 				(source) =>
-					source.ref.includes("/environment") ||
-					source.ref.includes("sandbox-policy"),
+					// Match session sources that are explicitly environment-related:
+					// 1. Exact match for sandbox policy refs (e.g., "artifact://sandbox-policy.json")
+					// 2. Codex runtime environment refs (e.g., "codex-runtime://turn-123/environment")
+					// 3. Legacy: substring check for "/environment" or "sandbox-policy" for backward compatibility
+					(source.kind === "session" &&
+						(source.ref.endsWith("/environment") ||
+							source.ref.includes("sandbox-policy"))) ||
+					(source.kind === "artifact" && source.ref.includes("sandbox-policy")),
 			),
 		),
 		staleStateRefs: uniqueRefs(

@@ -40,10 +40,14 @@
 			]
 		},
 		"authority": {
-			"enum": ["canon", "supporting", "generated", "historical"]
+			"enum": ["canon", "supporting", "generated", "historical"],
+			"description": "Source authority level: canon (authoritative source), supporting (explanatory), generated (machine-produced), historical (archived)"
 		},
 		"canon_class": {
-			"enum": ["canonical", "supporting", "generated", "historical"]
+			"enum": ["canonical", "supporting", "generated", "historical"],
+			"description": "Classification tier: canonical (source of truth), supporting (reference), generated (derived), historical (superseded)",
+			"deprecated": true,
+			"x-deprecated-reason": "Use 'authority' field instead; 'canon_class' is maintained for backward compatibility"
 		},
 		"distribution": {
 			"enum": [

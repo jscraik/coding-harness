@@ -92,24 +92,29 @@ export function collectDocLifecycleViolations(options: {
 }): DocLifecycleViolation[] {
 	const repoRoot = resolve(options.repoRoot);
 	const manifestPath = join(repoRoot, "docs/doc-lifecycle-manifest.json");
-	if (!existsSync(manifestPath)) return [];
 	const deletedFiles = options.deletedFiles ?? new Set<string>();
 	const manifestViolations: DocLifecycleViolation[] = [];
 	const manifest = loadManifest(repoRoot, manifestViolations);
-	if (!manifest) return manifestViolations;
-	const governedPaths = new Set(manifest.documents.map((entry) => entry.path));
+	const governedPaths = manifest
+		? new Set(manifest.documents.map((entry) => entry.path))
+		: new Set<string>();
+	const allFiles = [
+		...new Set([...options.changedFiles, ...Array.from(deletedFiles)]),
+	];
+	const affectsLifecycle =
+		!existsSync(manifestPath) ||
+		allFiles.some(
+			(file) =>
+				file === "docs/doc-lifecycle-manifest.json" ||
+				file === "docs/doc-lifecycle.schema.json" ||
+				file.startsWith("src/templates/") ||
+				isCoveredHarnessLifecyclePath(file) ||
+				governedPaths.has(file),
+		);
+	if (!affectsLifecycle) return [];
 	const changed = [...new Set(options.changedFiles)].filter(
 		(file) => !deletedFiles.has(file),
 	);
-	const affectsLifecycle = changed.some(
-		(file) =>
-			file === "docs/doc-lifecycle-manifest.json" ||
-			file === "docs/doc-lifecycle.schema.json" ||
-			file.startsWith("src/templates/") ||
-			isCoveredHarnessLifecyclePath(file) ||
-			governedPaths.has(file),
-	);
-	if (!affectsLifecycle) return [];
 	return validateDocLifecycle({ repoRoot, changedFiles: changed })
 		.requiredFindings;
 }
@@ -139,6 +144,28 @@ function loadManifest(
 				fix: "Add a documents array with governed document entries.",
 			});
 			return null;
+		}
+		// Validate each document entry is a non-null object with required keys
+		for (let i = 0; i < parsed.documents.length; i++) {
+			const entry = parsed.documents[i];
+			if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+				violations.push({
+					path: "docs/doc-lifecycle-manifest.json",
+					severity: "error",
+					message: `Document entry at index ${i} is not a valid object.`,
+					fix: "Ensure all document entries are objects with required keys (path, docType, etc.).",
+				});
+				return null;
+			}
+			if (!entry.path || typeof entry.path !== "string") {
+				violations.push({
+					path: "docs/doc-lifecycle-manifest.json",
+					severity: "error",
+					message: `Document entry at index ${i} is missing required 'path' field.`,
+					fix: "Add a valid 'path' string to the document entry.",
+				});
+				return null;
+			}
 		}
 		return parsed as DocLifecycleManifest;
 	} catch (error) {

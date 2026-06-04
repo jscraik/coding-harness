@@ -20,7 +20,10 @@ export function parseMarkdownFrontmatter(
 			if (!key) continue;
 			currentKey = key;
 			const rawValue = keyValue[2] ?? "";
-			metadata[currentKey] = parseYamlScalar(rawValue);
+			const parsedValue = parseYamlScalar(rawValue);
+			if (parsedValue !== null) {
+				metadata[currentKey] = parsedValue;
+			}
 			continue;
 		}
 		const listValue = line.match(/^\s+-\s+(.+?)\s*$/);
@@ -36,9 +39,9 @@ export function parseMarkdownFrontmatter(
 	return metadata as Partial<DocLifecycleMetadata>;
 }
 
-function parseYamlScalar(value: string): string | string[] {
+function parseYamlScalar(value: string): string | string[] | null {
 	const trimmed = value.trim();
-	if (!trimmed) return [];
+	if (!trimmed) return null;
 	if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
 		return trimmed
 			.slice(1, -1)

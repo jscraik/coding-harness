@@ -510,11 +510,15 @@ Rollback:
 
 Spec artifact validation:
 
-    python3 /Users/jamiecraik/dev/agent-skills/Plugins/cache/agent-skills-local/harness-engineering/0.1.0/scripts/check_bluf_structure.py .harness/specs/2026-06-04-reader-task-documentation-eval-spec.md --json
-    python3 /Users/jamiecraik/dev/agent-skills/Plugins/cache/agent-skills-local/harness-engineering/0.1.0/scripts/check_generated_artifact_shape.py .harness/specs/2026-06-04-reader-task-documentation-eval-spec.md --kind spec --json
+    # Run from repository root
+    ./scripts/check-bluf-structure.sh .harness/specs/2026-06-04-reader-task-documentation-eval-spec.md --json
+    ./scripts/check-artifact-shape.sh .harness/specs/2026-06-04-reader-task-documentation-eval-spec.md --kind spec --json
     pnpm docs:lint
     pnpm docs:lifecycle
     git diff --check
+
+Note: If using plugin paths directly, invoke from repository root:
+`./Plugins/cache/agent-skills-local/harness-engineering/0.1.0/scripts/check_bluf_structure.py` (path may vary by installation)
 
 Implementation validation after PU-004:
 
