@@ -29,6 +29,7 @@ const CODEX_RUNTIME_PROJECTION_FIELDS = new Set([
 	"validationRefs",
 	"reviewRefs",
 	"sessionRefs",
+	"environmentRefs",
 	"staleStateRefs",
 	"toolExposure",
 ]);
@@ -219,6 +220,12 @@ function validateProjectionConsistency(
 		errors,
 	);
 	validateRefsAreProjected(
+		value.environmentRefs,
+		"codexRuntime.environmentRefs",
+		receiptRefSet,
+		errors,
+	);
+	validateRefsAreProjected(
 		value.staleStateRefs,
 		"codexRuntime.staleStateRefs",
 		receiptRefSet,
@@ -317,6 +324,11 @@ export function validateOptionalCodexRuntimeProjection(
 	validateRuntimeCardReferenceArray(
 		value.sessionRefs,
 		"codexRuntime.sessionRefs",
+		errors,
+	);
+	validateRuntimeCardReferenceArray(
+		value.environmentRefs,
+		"codexRuntime.environmentRefs",
 		errors,
 	);
 	validateRuntimeCardReferenceArray(

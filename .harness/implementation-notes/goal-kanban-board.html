@@ -484,7 +484,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts, live route-truth receipts through <code>R232</code>, and the active PU-047/CNF-001 local implementation slice on 2026-06-03. Local <code>main</code> and <code>origin/main</code> were synchronized at <code>50a6d0b5d764e35395e12190a465e854c26784fd</code> before this branch; GitHub reported zero open PRs before this branch was created, all recent JSC-363 PR lanes through #330 were merged, and Linear was <code>Done</code> with a full-lifecycle scope-note attachment. PU-047 now places client-message correlation work in <code>src/lib/runtime/</code>, <code>src/lib/steering-queue/</code>, <code>contracts/</code>, <code>scripts/validate-steering-queue.cjs</code>, and synchronized architecture docs. R225 and R226 record the earlier reviewer-artifact failure plus tracking repair; R227 records that the three required post-implementation review artifacts now exist, are current-head bound through the reviewer coverage manifest, and report no material findings; R228/R229 record local handoff validation, including the PR-template required gates; R230 records the pre-commit docs-style repair; R231 records the pre-push architecture diagram refresh required by the hook; R232 records PR #331 handoff. This tracked visualization remains an orientation artifact, not proof of live Codex Desktop extraction, runtime producer emission, delivery-truth consumption, Judge/PM readiness, or final goal completion.</p>
+    <p class="footer">Snapshot generated from current goal artifacts and route-truth receipts through <code>R241</code>. Local <code>main</code> and <code>origin/main</code> were synchronized at <code>50a6d0b5d764e35395e12190a465e854c26784fd</code> before this branch; all recent JSC-363 PR lanes through #330 were merged, and Linear was <code>Done</code> with a full-lifecycle scope-note attachment. PU-047 client-message correlation is open in PR #331. PU-048/CNF-002 now places environment-scoped permission work in <code>src/lib/runtime/</code> and is open as stacked draft PR #332; local validation and the live PR body pass source and installed pr-template gates after the durable evidence map repair, but remote CircleCI pr-template remains on the pre-repair failed status until a fresh pipeline completes, and Snyk quota plus independent-review artifacts remain blocked. This tracked visualization remains an orientation artifact, not proof of independent reviewer completion, live Codex Desktop extraction, runtime producer emission, delivery-truth consumption, PR/CI green status, Judge/PM readiness, or final goal completion.</p>
   </main>
 
   <script>
@@ -709,14 +709,14 @@
       },
       {
         id: "cnf002-environment-permissions",
-        lane: "remaining",
+        lane: "implementation",
         title: "CNF-002 environment-scoped permissions",
-        status: "active",
+        status: "blocked",
         tags: ["permissions", "tool exposure", "environment"],
-        summary: "Current permission evidence is profile and sandbox oriented; it does not yet prove environment, cwd, executor kind, approval scope, or sandbox policy ref.",
-        evidence: ["src/lib/runtime/codex-runtime-evidence-types.ts", "src/lib/tool-exposure/types.ts", "state.yaml codex_native_refinement_adoption"],
-        next: "Add environment-scoped permission fields and fixtures for multiple environments and stale or mismatched cwd/scope cases.",
-        risk: "Profile-only permission evidence can overstate authority when the same profile behaves differently across worktrees, executors, or approval scopes."
+        summary: "PR #332 draft; remote checks blocked. Implementation adds a codex-runtime-evidence environment snapshot and runtime-card environmentRefs so permission evidence is scoped to cwd, executor, approval scope, and sandbox policy evidence. PR #332 is open as a stacked draft on PR #331.",
+        evidence: ["docs/goals/.../notes/PU-048-cnf-002-env-permissions-intent.md", "src/lib/runtime/codex-runtime-evidence-{types,validation,producer,references,adapter}.ts", "src/lib/runtime/runtime-card-codex-runtime{,-validation}.ts", "src/lib/runtime/runtime-evidence-adapter.ts", "focused runtime evidence and runtime-card tests -> pass (88 tests)", "pnpm typecheck -> pass", "docs-gate -> pass", "validate-codestyle full -> pass", "pnpm check -> pass", "source checkout pr-template-gate on live PR body -> pass after durable evidence-map repair", "installed harness pr-template-gate on edited PR body -> pass", "PR #332 -> OPEN draft, MERGEABLE/UNSTABLE", "GitHub checks: ci/circleci: pr-template still failed on pre-repair status, Snyk quota failed, most other visible CircleCI lanes passed or completed", "R241: PR #332 body and route-truth freshness repaired", "artifacts/reviews/pu048-cnf-002-skill-lenses.md", "artifacts/reviews/pu048-cnf-002-reviewer-runtime-blocker.md"],
+        next: "Push R241 route-truth and validator repair to PR #332 so remote checks rerun on a new head, then triage CircleCI pr-template/pr-pipeline, Snyk quota, and missing independent-review artifacts separately.",
+        risk: "Live Codex Desktop extraction of these fields is still unproven; independent reviewer artifacts are blocked; remote CI is not green; delivery-truth consumption, Judge/PM readiness, and parent-goal completion remain separate proof lanes."
       },
       {
         id: "cnf003-risk-tiered-hilt",

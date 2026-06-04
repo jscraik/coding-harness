@@ -155,6 +155,7 @@ describe("runtime-card Codex runtime projection", () => {
 			validationRefs: ["command:pnpm test"],
 			reviewRefs: ["artifact://reviews/codex-runtime.md"],
 			sessionRefs: ["codex-runtime://turn-456"],
+			environmentRefs: [],
 			staleStateRefs: ["codex-stale-state://linear"],
 		});
 		expect(JSON.stringify(card)).not.toContain("rawEvents");

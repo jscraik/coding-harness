@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-06-03T23:24:36.861Z",
+	"generatedAt": "2026-06-04T00:32:51.665Z",
 	"schemaVersion": "1.0",
 	"rootPath": ".",
 	"diagramDir": ".diagram",
@@ -22,8 +22,8 @@
 			"type": "agent",
 			"file": "agent.mmd",
 			"outputPath": ".diagram/agent.mmd",
-			"lines": 316,
-			"bytes": 43164,
+			"lines": 318,
+			"bytes": 43413,
 			"isPlaceholder": false
 		},
 		{

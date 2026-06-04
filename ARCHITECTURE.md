@@ -112,6 +112,13 @@ not in docs, templates, generated context, or command facades.
   runtime identity also carries nullable client user-message correlation when
   producer input can prove it; unavailable message ids remain null and must not
   be synthesized from adjacent turn, trace, timestamp, PR, or artifact fields.
+  Permission evidence is scoped by an explicit runtime environment snapshot
+  rather than by profile alone: environment id, cwd, expected cwd, executor
+  kind, approval scope, expected approval scope, sandbox policy ref, state, and
+  failure class live in `codex-runtime-evidence/v1`. Known permission claims
+  require a receipt-backed sandbox policy ref, stale cwd and approval-scope
+  mismatches are blocked session sources, and runtime-card projection exposes
+  only compact `environmentRefs` pointers.
 - src/lib/runtime-trace/: opt-in runtime-card trace recording that projects
   runtime-card execution into canonical `agent-run-event/v1` event streams
   under `artifacts/agent-runs/<runId>/events.jsonl`. It owns trace-out path

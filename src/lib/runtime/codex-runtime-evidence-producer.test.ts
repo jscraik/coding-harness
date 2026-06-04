@@ -31,7 +31,21 @@ describe("codex runtime evidence producer", () => {
 				network: "enabled",
 				evidenceRef: "artifact://permission-snapshot.json",
 			},
-			receipts: [permissionReceipt(), validationReceipt()],
+			environment: {
+				environmentId: "codex-desktop:thread-123",
+				cwd: "/repo/coding-harness",
+				expectedCwd: "/repo/coding-harness",
+				executorKind: "codex_desktop",
+				approvalScope: "auto_review",
+				expectedApprovalScope: "auto_review",
+				sandboxPolicyRef: "artifact://sandbox-policy.json",
+				state: "current",
+			},
+			receipts: [
+				permissionReceipt(),
+				sandboxPolicyReceipt(),
+				validationReceipt(),
+			],
 			validationResults: [
 				{
 					name: "codex-runtime-producer-input",
@@ -60,6 +74,12 @@ describe("codex runtime evidence producer", () => {
 			externalState: {
 				status: "unknown",
 				failureClass: "producer_input_missing_external_state",
+			},
+			environment: {
+				executorKind: "codex_desktop",
+				approvalScope: "auto_review",
+				state: "current",
+				failureClass: null,
 			},
 			reviewState: {
 				status: "unknown",
@@ -92,6 +112,17 @@ describe("codex runtime evidence producer", () => {
 			failureClass: "producer_input_missing_permission_profile",
 		});
 		expect(packet.mcp.servers).toEqual([]);
+		expect(packet.environment).toEqual({
+			environmentId: null,
+			cwd: null,
+			expectedCwd: null,
+			executorKind: "unknown",
+			approvalScope: "unknown",
+			expectedApprovalScope: null,
+			sandboxPolicyRef: null,
+			state: "unknown",
+			failureClass: "producer_input_missing_environment_scope",
+		});
 		expect(packet.receipts).toEqual([]);
 		expect(packet.validationResults).toEqual([]);
 	});
@@ -125,6 +156,7 @@ describe("codex runtime evidence producer", () => {
 			expect.arrayContaining([
 				"Codex trace unavailable: producer_input_missing_trace_context.",
 				"Codex permission profile incomplete: producer_input_missing_permission_profile.",
+				"Codex environment scope is unknown: producer_input_missing_environment_scope.",
 				"External state unavailable: producer_input_missing_external_state.",
 				"Review state unavailable: producer_input_missing_review_state.",
 			]),
@@ -270,6 +302,20 @@ function permissionReceipt() {
 		schemaVersion: "evidence-receipt/v1" as const,
 		kind: "run_record" as const,
 		ref: "artifact://permission-snapshot.json",
+		producer: "codex-runtime-evidence-producer-test",
+		status: "pass" as const,
+		freshness: "current" as const,
+		evidenceUse: "orientation" as const,
+		blockerClass: null,
+		producedAt: "2026-05-26T08:29:00Z",
+	};
+}
+
+function sandboxPolicyReceipt() {
+	return {
+		schemaVersion: "evidence-receipt/v1" as const,
+		kind: "run_record" as const,
+		ref: "artifact://sandbox-policy.json",
 		producer: "codex-runtime-evidence-producer-test",
 		status: "pass" as const,
 		freshness: "current" as const,

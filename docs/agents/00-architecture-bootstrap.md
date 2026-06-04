@@ -202,6 +202,13 @@ modules change. Client user-message correlation belongs in the Codex runtime
 identity contract only when the producer supplies explicit evidence; missing
 message ids must remain null rather than inferred from turn, trace, timestamp,
 PR, or artifact fields.
+Environment-scoped permission evidence also belongs in this runtime deep
+module. Keep environment id, cwd, expected cwd, executor kind, approval scope,
+expected approval scope, sandbox policy refs, environment state, and failure
+class inside `codex-runtime-evidence/v1`; project only compact
+`environmentRefs` into runtime-card summaries. Tool-exposure snapshots remain a
+separate exposure-summary module and should not be duplicated to satisfy this
+environment contract.
 
 Browser evidence packet changes are runtime-cockpit evidence work, not delivery
 truth. Keep `browser-evidence/v1` validation inside

@@ -67,12 +67,9 @@ describe("codex runtime evidence adapter", () => {
 				status: "usable",
 			}),
 		);
-		expect(snapshot.sources).toContainEqual(
+		expect(snapshot.sources).not.toContainEqual(
 			expect.objectContaining({
-				kind: "review",
 				ref: "codex-review_state://unknown",
-				status: "blocked",
-				failureClass: "sdk_event_does_not_expose_review_state",
 			}),
 		);
 		expect(snapshot.blockers).toContain(
@@ -82,9 +79,14 @@ describe("codex runtime evidence adapter", () => {
 			provenanceRef: "codex-runtime://turn-456",
 			sessionRefs: expect.arrayContaining([
 				"codex-runtime://turn-456/permissions",
+				"codex-runtime://turn-456/environment",
 			]),
-			reviewRefs: expect.arrayContaining(["codex-review_state://unknown"]),
+			environmentRefs: ["codex-runtime://turn-456/environment"],
+			reviewRefs: [],
 		});
+		expect(snapshot.codexRuntime?.receiptRefs).not.toContain(
+			"codex-review_state://unknown",
+		);
 		expect(snapshot.codexRuntime?.receiptRefs).not.toContain(
 			CODEX_RUNTIME_EVIDENCE_SCHEMA_VERSION,
 		);
@@ -104,7 +106,13 @@ describe("codex runtime evidence adapter", () => {
 			expect.arrayContaining([
 				expect.objectContaining({
 					kind: "session",
-					ref: "codex-runtime://turn-456/permissions",
+					ref: "artifact://permissions.json",
+					status: "usable",
+					freshness: "current",
+				}),
+				expect.objectContaining({
+					kind: "session",
+					ref: "artifact://sandbox-policy.json",
 					status: "usable",
 					freshness: "current",
 				}),
@@ -292,6 +300,17 @@ function validPacket(): CodexRuntimeEvidence {
 			evidenceRef: null,
 			failureClass: "sdk_event_does_not_expose_permission_profile",
 		},
+		environment: {
+			environmentId: null,
+			cwd: null,
+			expectedCwd: null,
+			executorKind: "unknown",
+			approvalScope: "unknown",
+			expectedApprovalScope: null,
+			sandboxPolicyRef: null,
+			state: "unknown",
+			failureClass: "sdk_event_does_not_expose_environment_scope",
+		},
 		mcp: {
 			servers: [
 				{
@@ -352,8 +371,21 @@ function healthyPacket(): CodexRuntimeEvidence {
 	packet.codex.traceFailureClass = null;
 	packet.codex.goalState = "active";
 	packet.permissions.profile = "workspace_write";
+	packet.permissions.writableRoots = ["/repo/coding-harness"];
 	packet.permissions.network = "enabled";
+	packet.permissions.evidenceRef = "artifact://permissions.json";
 	packet.permissions.failureClass = null;
+	packet.environment = {
+		environmentId: "codex-desktop:thread-123",
+		cwd: "/repo/coding-harness",
+		expectedCwd: "/repo/coding-harness",
+		executorKind: "codex_desktop",
+		approvalScope: "auto_review",
+		expectedApprovalScope: "auto_review",
+		sandboxPolicyRef: "artifact://sandbox-policy.json",
+		state: "current",
+		failureClass: null,
+	};
 	packet.mcp.servers = [
 		{
 			name: "codex_repo",
@@ -380,6 +412,28 @@ function healthyPacket(): CodexRuntimeEvidence {
 		},
 	];
 	packet.receipts.push(
+		{
+			schemaVersion: "evidence-receipt/v1",
+			kind: "run_record",
+			ref: "artifact://permissions.json",
+			producer: "permission-fixture",
+			status: "pass",
+			freshness: "current",
+			evidenceUse: "claim_support",
+			blockerClass: null,
+			producedAt: "2026-05-24T22:40:00Z",
+		},
+		{
+			schemaVersion: "evidence-receipt/v1",
+			kind: "run_record",
+			ref: "artifact://sandbox-policy.json",
+			producer: "environment-fixture",
+			status: "pass",
+			freshness: "current",
+			evidenceUse: "claim_support",
+			blockerClass: null,
+			producedAt: "2026-05-24T22:40:00Z",
+		},
 		{
 			schemaVersion: "evidence-receipt/v1",
 			kind: "external_state",

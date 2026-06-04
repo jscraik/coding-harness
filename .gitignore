@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+.pnpm-home/
+.pnpm-store/
 
 # Build output
 dist/
@@ -172,6 +174,8 @@ artifacts/context-integrity/
 artifacts/reviews/*
 !artifacts/reviews/pu047-cnf-001-*.md
 !artifacts/reviews/pu047-cnf-001-*.json
+!artifacts/reviews/pu048-cnf-002-*.md
+!artifacts/reviews/pu048-cnf-002-*.json
 !.harness/artifacts/
 !.harness/artifacts/README.md
 !.harness/artifacts/brownfield-memory-inventory.md
