@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-04T08:52:42Z
+Generated: 2026-06-04T10:14:08Z
 
 ## Table of Contents
 
@@ -34,6 +34,7 @@ Generated: 2026-06-04T08:52:42Z
 - `src/lib/pr-closeout/delivery-truth.ts`
 - `src/lib/pr-closeout/evaluator.ts`
 - `src/lib/pr-closeout/state-packet-delivery-truth.ts`
+- `src/lib/pr-closeout/state-packet-evidence.ts`
 - `src/lib/pr-closeout/state-packets.ts`
 - `src/lib/prompt-context/prompt-context-receipt.ts`
 - `src/lib/runtime/codex-runtime-evidence-adapter.ts`
@@ -679,8 +680,7 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_runtime_card_trace_64a5ca95_a26c03d1
   ext_node_crypto_c7dfc512["node:crypto"] --> node_scan_cache_fc02c79c_11793337
   ext_node_crypto_c7dfc512["node:crypto"] --> node_sources_878a52fc_cd312fcd
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_state_packet_delivery_truth_efbab741_e9f59115
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_state_packets_536f9a25_d221f5ae
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_state_packet_evidence_0af7e8d0_58cc7a7f
   ext_node_crypto_c7dfc512["node:crypto"] --> node_test_harness_upgrade_matrix_84113c4e_e0838daa
   ext_node_crypto_c7dfc512["node:crypto"] --> node_tracer_1e6243a2_cb3d802b
   ext_node_crypto_c7dfc512["node:crypto"] --> node_ui_loop_internal_f2eb8892_c4b49e6a
