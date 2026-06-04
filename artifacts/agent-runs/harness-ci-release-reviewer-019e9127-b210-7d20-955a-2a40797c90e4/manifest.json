@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "agent": "harness-ci-release-reviewer",
+  "status": "current_failing",
+  "artifact_paths": [
+    "/private/tmp/coding-harness-cnf004-runtime-card-continuity-1780540044/artifacts/reviews/pr336-triage.md"
+  ],
+  "head_sha": "dd4add15b5802fd811305b86ae9ea92ccf4cebc0",
+  "pr": 336,
+  "branch": "codex/jsc-363-cnf-006-steering-application-receipt",
+  "base": "codex/jsc-363-cnf-005-prompt-context-authority"
+}
