@@ -321,11 +321,15 @@ function validateEnvironment(
 }
 
 function permissionFactsAreKnown(value: unknown): boolean {
+	if (!isRecord(value)) return false;
+	const profile = typeof value.profile === "string" ? value.profile : null;
+	const network = typeof value.network === "string" ? value.network : null;
 	return (
-		isRecord(value) &&
-		value.profile !== "unknown" &&
-		value.network !== "unknown" &&
-		(!isWriteCapablePermissionProfile(value.profile) ||
+		profile !== null &&
+		profile !== "unknown" &&
+		network !== null &&
+		network !== "unknown" &&
+		(!isWriteCapablePermissionProfile(profile) ||
 			(Array.isArray(value.writableRoots) && value.writableRoots.length > 0))
 	);
 }
