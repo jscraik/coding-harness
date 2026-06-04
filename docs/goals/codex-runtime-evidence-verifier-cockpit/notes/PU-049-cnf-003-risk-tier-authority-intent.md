@@ -1,5 +1,18 @@
 # PU-049 CNF-003 Risk-Tiered Mutation Authority Intent
 
+## Table of Contents
+
+- [Intent Contract](`#intent-contract`)
+- [Purpose](`#purpose`)
+- [Source Evidence](`#source-evidence`)
+- [Scope](`#scope`)
+- [Non-Goals](`#non-goals`)
+- [Design Intent](`#design-intent`)
+- [Acceptance Criteria](`#acceptance-criteria`)
+- [Validation Plan](`#validation-plan`)
+- [Review Requirement](`#review-requirement`)
+- [Stop Conditions](`#stop-conditions`)
+
 ## Intent Contract
 
 ```yaml
