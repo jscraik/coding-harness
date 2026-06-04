@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import {
 	composeDeliveryTruth,
 	type DeliveryTruthEvidence,
@@ -7,13 +6,19 @@ import {
 import type { EvidenceReceipt } from "../evidence/evidence-receipt.js";
 import type {
 	ExternalStateSnapshot,
-	ExternalStateSourceSnapshot,
 	ExternalStateValidationResult,
 } from "../external-state/index.js";
 import type {
 	ReviewStatePacket,
 	ReviewStateValidationResult,
 } from "../review-state/index.js";
+import {
+	buildStatePacketReceipt,
+	isClaimSupportExternalStateSource,
+	statePacketByteLength,
+	statePacketChecksum,
+	statePacketVerifierTtlOption,
+} from "./state-packet-evidence.js";
 
 export type { DeliveryTruthVerdict };
 
@@ -34,7 +39,7 @@ export function buildPrCloseoutStatePacketDeliveryTruth(options: {
 			evidence: externalStateDeliveryTruthEvidence(options),
 			verifiedAt: options.verifiedAt,
 			verdictHeadSha: options.verdictHeadSha,
-			...verifierTtlOption(options.verifierTtlSeconds),
+			...statePacketVerifierTtlOption(options.verifierTtlSeconds),
 		}),
 		composeDeliveryTruth({
 			claim: "review_threads_resolved",
@@ -42,10 +47,12 @@ export function buildPrCloseoutStatePacketDeliveryTruth(options: {
 			evidence: reviewStateDeliveryTruthEvidence(options),
 			verifiedAt: options.verifiedAt,
 			verdictHeadSha: options.verdictHeadSha,
-			...verifierTtlOption(options.verifierTtlSeconds),
+			...statePacketVerifierTtlOption(options.verifierTtlSeconds),
 		}),
 	];
 }
+
+const REMOTE_CHECK_CLAIM_SOURCE_NAMES = ["github_checks", "circleci"] as const;
 
 function externalStateDeliveryTruthEvidence(options: {
 	externalState: ExternalStateSnapshot | null;
@@ -54,30 +61,29 @@ function externalStateDeliveryTruthEvidence(options: {
 }): DeliveryTruthEvidence[] {
 	const snapshot = options.externalState;
 	if (!snapshot || !options.externalStateValidation.valid) return [];
-	const sourceNames = ["github_checks", "circleci"] as const;
 	const sources = snapshot.sources.filter((source) =>
-		sourceNames.some((name) => name === source.source),
+		REMOTE_CHECK_CLAIM_SOURCE_NAMES.some((name) => name === source.source),
 	);
-	if (sources.length !== sourceNames.length) return [];
-	const receipt = buildReceipt({
+	if (sources.length !== REMOTE_CHECK_CLAIM_SOURCE_NAMES.length) return [];
+	const receipt = buildStatePacketReceipt({
 		kind: "external_state",
 		ref: `external-state:pr-closeout/pr-${String(snapshot.prNumber)}/remote-checks.json`,
 		producer: snapshot.verifierIdentity,
 		verifiedAt: snapshot.generatedAt,
 		headSha: snapshot.headSha,
-		checksum: checksum({
+		checksum: statePacketChecksum({
 			claim: "remote_checks_current",
 			fetchReceiptRef: snapshot.fetchReceiptRef,
 			sources,
 		}),
-		sizeBytes: byteLength(sources),
+		sizeBytes: statePacketByteLength(sources),
 		status: aggregateReceiptStatus(
 			sources.map((source) => source.resultStatus),
 		),
 		freshness: aggregateReceiptFreshness(
 			sources.map((source) => source.freshness),
 		),
-		evidenceUse: sources.every(isClaimSupportSource)
+		evidenceUse: sources.every(isClaimSupportExternalStateSource)
 			? "claim_support"
 			: "orientation",
 	});
@@ -85,11 +91,11 @@ function externalStateDeliveryTruthEvidence(options: {
 		{
 			receipt,
 			source: "external_state",
-			externalStateSources: sourceNames,
+			externalStateSources: REMOTE_CHECK_CLAIM_SOURCE_NAMES,
 			producerTtlSeconds: Math.max(
 				...sources.map((source) => source.ttlSeconds),
 			),
-			...verifierTtlOption(options.verifierTtlSeconds),
+			...statePacketVerifierTtlOption(options.verifierTtlSeconds),
 			fetchedAt: snapshot.fetchedAt,
 			recomputedHeadSha: snapshot.headSha,
 		},
@@ -111,7 +117,7 @@ function reviewStateDeliveryTruthEvidence(options: {
 				githubDecision: packet.githubReviews.decision,
 				unresolvedThreads: packet.unresolvedThreads,
 			},
-			...verifierTtlOption(options.verifierTtlSeconds),
+			...statePacketVerifierTtlOption(options.verifierTtlSeconds),
 			recomputedHeadSha: packet.pr.headSha,
 		},
 	];
@@ -141,69 +147,4 @@ function aggregateReceiptFreshness(
 		return "not_applicable";
 	}
 	return "current";
-}
-
-function verifierTtlOption(
-	verifierTtlSeconds: number | undefined,
-): { verifierTtlSeconds: number } | Record<string, never> {
-	return verifierTtlSeconds === undefined ? {} : { verifierTtlSeconds };
-}
-
-function buildReceipt(options: {
-	kind: EvidenceReceipt["kind"];
-	ref: string;
-	producer: string;
-	verifiedAt: string;
-	headSha: string | null;
-	checksum: string;
-	sizeBytes: number;
-	status?: EvidenceReceipt["status"];
-	freshness?: EvidenceReceipt["freshness"];
-	evidenceUse?: EvidenceReceipt["evidenceUse"];
-}): EvidenceReceipt {
-	return {
-		schemaVersion: "evidence-receipt/v1",
-		kind: options.kind,
-		ref: options.ref,
-		producer: options.producer,
-		status: options.status ?? "pass",
-		freshness: options.freshness ?? "current",
-		evidenceUse: options.evidenceUse ?? "claim_support",
-		blockerClass: null,
-		verifiedAt: options.verifiedAt,
-		headSha: options.headSha,
-		sizeBytes: options.sizeBytes,
-		checksum: options.checksum,
-	};
-}
-
-function isClaimSupportSource(source: ExternalStateSourceSnapshot): boolean {
-	return (
-		source.status === "available" &&
-		source.evidenceUse === "claim_support" &&
-		source.freshness === "current" &&
-		source.resultStatus === "pass"
-	);
-}
-
-function checksum(value: unknown): string {
-	return createHash("sha256").update(stableStringify(value)).digest("hex");
-}
-
-function byteLength(value: unknown): number {
-	return Buffer.byteLength(stableStringify(value), "utf8");
-}
-
-function stableStringify(value: unknown): string {
-	if (Array.isArray(value)) {
-		return `[${value.map((item) => stableStringify(item)).join(",")}]`;
-	}
-	if (value && typeof value === "object") {
-		const record = value as Record<string, unknown>;
-		return `{${Object.keys(record)
-			.sort()
-			.map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`)
-			.join(",")}}`;
-	}
-	return JSON.stringify(value);
 }
