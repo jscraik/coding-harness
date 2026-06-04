@@ -42,7 +42,7 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-04 PU-054 closeout delivery-truth consumption route-truth refresh.
+Last updated during the 2026-06-04 open PR stack green-sweep route-truth refresh.
 
 Current route truth:
 
@@ -54,6 +54,9 @@ Current route truth:
 - PU-054 local validation passed focused closeout/state-packet tests, architecture module-boundary tests, typecheck, Biome over touched files, `git diff --check`, docs-gate, docstring quality, `bash scripts/validate-codestyle.sh --fast`, and `pnpm check`. Non-blocking size ratchet warnings remain baseline/local debt and do not prove production correctness.
 - Required adversarial, agent-native, and best-practices implementation reviewers were launched and retried where appropriate, but the runtime again returned mailbox completion without writing the required artifacts. The tracked blocker is `artifacts/reviews/pu054-implementation-reviewer-runtime-blocker.md`; local skill-lens evidence is in `artifacts/reviews/pu054-closeout-delivery-truth-skill-lenses.md`.
 - Receipt R263 re-anchors the adopted audit and operational-review source hashes to current local head `f765ecd833ffe59226a166b5baf1b1c40943fe78` so the goal-board and audit-freshness validators evaluate the active PU-054 route truth rather than stale PU-053 receipt context.
+- Receipt R264 records live GitHub open PR stack truth: PR #331 through PR #337 are open, with PR #331/#333/#334/#335 carrying pr-template or aggregate pr-pipeline failures, PR #332 carrying pending CodeRabbit review, and PR #336/#337 draft with external Snyk errors but visible CircleCI lanes green. A bounded PR green-sweep subagent is running and must persist `artifacts/reviews/pr331-337-green-sweep-triage.md`.
+- Receipt R266 records the stacked-PR CodeRabbit manual-trigger correction: `@coderabbitai review this pr` comments were posted on PR #331 through PR #337, and the PR-sweep subagent was updated to treat trigger comments as request evidence only. CodeRabbit success, pending, or skipped state still requires a fresh review-thread and finding-resolution refresh before any PR lane can close.
+- Receipt R266 also records the pre-PR quality-gate correction: CodeRabbit findings for docstrings, PR beta-test or PR-template evidence, docs style, related tests, or other deterministic finishing touches are systemic pre-PR gate misses. Each such finding must be classified as local versus systemic, searched for sibling patterns, mapped to the deterministic gate that should have caught it, and either fixed now or promoted into a validator, guard, documented invariant, or tracked exception.
 - The goal freshness guard now permits declared tracked Markdown review artifacts under `artifacts/reviews/` in self-referential route-truth commits, with focused regression coverage. It still rejects arbitrary source/runtime file drift after a recorded receipt.
 - PR #321, PR #322, PR #323, PR #325, PR #326, PR #327, PR #328, PR #329, and PR #330 are merged route or foundation lanes for this goal.
 - PR #330 merged into `main` at 2026-06-03T20:43:56Z as `docs(goal): promote CircleCI env recovery rule`.
@@ -63,11 +66,15 @@ Current route truth:
 Outstanding goal work after conflict reconciliation:
 
 - The owner reactivated goal implementation; proceed only through bounded slices with route truth updated after each slice.
+- Treat the open PR stack as an active parallel work lane. Do not wait for the next local implementation slice before PR triage for PR #331 through PR #337.
+- For stacked PRs, post or verify a fresh `@coderabbitai review this pr` trigger comment before treating CodeRabbit state as current. Treat that comment as review-request evidence only, not as proof that CodeRabbit reviewed, found no issues, or resolved threads.
+- Before pushing or handing off any implementation PR slice, run the deterministic pre-PR gates relevant to the changed files. At minimum, changed production source requires `pnpm run quality:docstrings`, `pnpm run test:related`, the focused tests, and the broader repo gate when risk warrants it; PR body and linked-issue evidence requires `bash scripts/run-harness-gate.sh pr-template-gate --json` once a PR body exists or is being repaired.
+- When CodeRabbit, Codex review, CI, or the user reports a specific implementation detail, do not fix only the visible line. Classify the correction as isolated or systemic, search sibling patterns, identify the underlying design principle, and either enforce it through an existing validator or record why a new durable primitive is not appropriate.
 - Keep this goal board and the local board tracker synchronized before using either as route truth.
 - Keep the goal-board and audit-freshness validators green after this PU-054 route-truth refresh.
 - Treat merged PRs as completed route/foundation evidence, not as final goal completion.
 - Treat Linear `JSC-363` as tracker-aligned by current `Done` status plus the full-lifecycle scope-note attachment, with a residual field-text mismatch because the title and description still say Phase 1. Do not call Linear fields current unless those fields are updated.
-- Continue implementation only from the remaining evidence-backed lifecycle gaps: PR/remote triage for PR #336 current-head checks, draft/review-artifact blockers, PU-053 and PU-054 push/PR/remote triage, runtime producer evidence, final delivery-truth consumption for merge/Judge/Linear/root lanes, final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, and final requirement-by-requirement completion audit.
+- Continue implementation only from the remaining evidence-backed lifecycle gaps: PR green-sweep triage and fixes for PR #331 through PR #337, PU-054 push/PR/remote triage, runtime producer evidence, final delivery-truth consumption for merge/Judge/Linear/root lanes, final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, and final requirement-by-requirement completion audit.
 - Treat the current-main Codex-native refinement addendum as next-slice intent scope. It is not completed implementation evidence until the named source modules, contracts, fixtures, validators, and receipts prove the new fields or record owner-visible blockers.
 - Do not create a new duplicate goal board. Update this board, `state.yaml`, and `receipts.jsonl` as the canonical durable goal surface.
 
