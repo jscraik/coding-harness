@@ -377,6 +377,23 @@ Notes:
   `ARCHITECTURE.md`, `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
   governance surfaces.
+- Prompt-context receipt changes that add or alter
+  `prompt-context-receipt/v1`, prompt, instruction, permission, capability,
+  or goal-context source refs, source-ref authority metadata,
+  instruction-source authority rules, pointer-only validation, raw prompt or
+  transcript rejection, or prompt-context schema parity are
+  architecture-adjacent agent-readiness changes. Keep the deep module in
+  `src/lib/prompt-context/`; only repo instructions, trusted skills, and user
+  steering may carry instruction authority, while plugin metadata, MCP
+  capability refs, artifacts, and goals remain context sources without
+  instruction authority. Keep prompt-context receipts `not_yet_emitted` until
+  a producer and consumer boundary are intentionally implemented and validated,
+  and do not let them authorize commands, satisfy delivery-truth or review-state
+  claims, close JSC-363 acceptance criteria, or prove merge readiness. Refresh
+  `AI/context/diagram-context.md` and keep `ARCHITECTURE.md`,
+  `docs/agents/00-architecture-bootstrap.md`, and
+  `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports
+  governance surfaces.
 - Prompt-context drift report changes that add or alter
   `prompt-context-drift-report/v1`, prompt-context receipt freshness, Project
   Brain route/memory/knowledge freshness, runtime-card or handoff freshness,
