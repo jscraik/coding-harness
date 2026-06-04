@@ -219,7 +219,7 @@ function sourceCanSupportSummaryClaim(
 	const policy = policies.get(
 		policyKey(source.sourceKind, summary.claimFamily),
 	);
-	if (!policy || policy.allowed !== true) return false;
+	if (policy?.allowed !== true) return false;
 	const protectedSchemas =
 		PROTECTED_CLAIM_FAMILY_CANONICAL_SCHEMAS[
 			summary.claimFamily as keyof typeof PROTECTED_CLAIM_FAMILY_CANONICAL_SCHEMAS

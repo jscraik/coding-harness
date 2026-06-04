@@ -66,6 +66,53 @@ describe("codex runtime source provenance", () => {
 		expect(packet.permissions.evidenceRef).toBe(
 			"codex://analytics/turn-resolved-config",
 		);
+		expect(packet.environment.sandboxPolicyRef).toBe(
+			"codex://analytics/sandbox-policy",
+		);
+		const sandboxPolicyReceipt = packet.receipts.find(
+			(receipt) => receipt.ref === "codex://analytics/sandbox-policy",
+		);
+		expect(sandboxPolicyReceipt).toBeDefined();
+		expect(sandboxPolicyReceipt?.kind).toBe("run_record");
+		expect(sandboxPolicyReceipt?.status).toBe("pass");
+	});
+
+	it("rejects analytics fixtures when sandboxPolicyRef is missing", () => {
+		const packet = sourcePacket({
+			sourceKind: "analytics",
+			codexRepoPath: "codex-rs/analytics/src/facts.rs",
+			checksum:
+				"sha256:0d9c488a50638ffb2f621ac22e12898e994c6240646af599c00646b0f23f7e33",
+			traceId: null,
+			traceFailureClass: "analytics_fact_does_not_expose_w3c_trace_context",
+			permissionProfile: "workspace_write",
+			network: "enabled",
+			permissionEvidenceRef: "codex://analytics/turn-resolved-config",
+			sandboxPolicyRef: null,
+			permissionFailureClass: null,
+		});
+
+		const result = validateCodexRuntimeEvidence(packet);
+
+		expect(result).toEqual({
+			valid: false,
+			findings: [
+				{
+					path: "environment.sandboxPolicyRef",
+					code: "sandbox_policy_ref_missing",
+					message:
+						"sandboxPolicyRef is required when permission and network facts are known.",
+				},
+			],
+		});
+		expect(packet.environment.sandboxPolicyRef).toBeNull();
+		expect(packet.environment.failureClass).toBe(
+			"sandbox_policy_ref_missing_from_analytics_fixture",
+		);
+		const sandboxPolicyReceipt = packet.receipts.find(
+			(receipt) => receipt.ref === "codex://analytics/sandbox-policy",
+		);
+		expect(sandboxPolicyReceipt).toBeUndefined();
 	});
 
 	it("keeps Python SDK turn routing evidence separate from external-state claims", () => {
@@ -232,10 +279,17 @@ function sourcePacket(options: {
 			expectedApprovalScope: null,
 			sandboxPolicyRef: options.sandboxPolicyRef ?? null,
 			state:
-				options.permissionProfile === "workspace_write" ? "current" : "unknown",
+				options.permissionProfile === "workspace_write" &&
+				options.sandboxPolicyRef === null
+					? "sandbox_policy_missing"
+					: options.permissionProfile === "workspace_write"
+						? "current"
+						: "unknown",
 			failureClass:
 				options.permissionProfile === "workspace_write"
-					? null
+					? options.sandboxPolicyRef === null
+						? "sandbox_policy_ref_missing_from_analytics_fixture"
+						: null
 					: "source_does_not_expose_environment_scope",
 		},
 		mcp: {
