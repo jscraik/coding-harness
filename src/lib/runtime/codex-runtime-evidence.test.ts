@@ -39,6 +39,20 @@ describe("codex-runtime-evidence/v1", () => {
 		expect(result).toEqual({ valid: true, findings: [] });
 	});
 
+	it("rejects malformed client user-message id values", () => {
+		const packet = validPacket();
+		packet.codex.clientUserMessageId = "";
+
+		const result = validateCodexRuntimeEvidence(packet);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				path: "codex.clientUserMessageId",
+			}),
+		);
+	});
+
 	it("requires a failure class when trace id is unavailable", () => {
 		const packet = validPacket();
 		packet.codex.traceId = null;
