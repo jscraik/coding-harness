@@ -4,6 +4,31 @@ description: "Use when users need to install, bootstrap, upgrade, audit, diagnos
 skill_kind: executable
 owned_workflow: harness-install-upgrade-and-governance
 validation_command: pnpm skill:validate
+doc_schema: coding-harness-doc/v1
+doc_type: skill
+authority: canon
+canon_class: canonical
+distribution: packaged-skill
+audience:
+  - codex-agent
+  - coding-harness-maintainer
+lifecycle_state: active
+owner: coding-harness-maintainers
+created: 2026-06-04
+last_reviewed: 2026-06-04
+review_cadence: release
+maintenance_trigger:
+  - packaged-skill-change
+  - harness-command-change
+  - downstream-install-change
+semver_impact: minor
+validated_by:
+  - pnpm docs:lifecycle
+  - pnpm skill:validate
+depends_on:
+  - .agents/skills/coding-harness/references/agent-install-guide.md
+  - .agents/skills/coding-harness/references/setup-and-commands.md
+  - .agents/skills/coding-harness/references/contract.yaml
 ---
 
 # Coding Harness Skill

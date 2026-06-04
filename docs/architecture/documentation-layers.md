@@ -1,3 +1,31 @@
+---
+doc_schema: coding-harness-doc/v1
+doc_type: governance
+authority: canon
+canon_class: canonical
+distribution: source-only
+audience:
+  - coding-harness-maintainer
+  - codex-agent
+  - docs-reviewer
+lifecycle_state: active
+owner: coding-harness-maintainers
+created: 2026-06-04
+last_reviewed: 2026-06-04
+review_cadence: quarterly
+maintenance_trigger:
+  - documentation-architecture-change
+  - progressive-disclosure-change
+  - distribution-boundary-change
+semver_impact: minor
+validated_by:
+  - pnpm docs:lifecycle
+depends_on:
+  - docs/README.md
+  - .harness/README.md
+  - docs/doc-lifecycle.schema.json
+---
+
 # Documentation layers
 
 ## Table of Contents
@@ -10,6 +38,7 @@
 - [Extended governance reference (Layer 3)](#extended-governance-reference-layer-3)
 - [Layer routing rules](#layer-routing-rules)
 - [Adding new documentation](#adding-new-documentation)
+- [Documentation lifecycle metadata](#documentation-lifecycle-metadata)
 - [Pruning and consolidation](#pruning-and-consolidation)
 
 ## Purpose
@@ -75,6 +104,13 @@ These files define operational contracts for active contributors:
 | `docs/agents/02-tooling-policy.md` | Tooling contracts, command reference |
 | `docs/agents/04-validation.md` | Validation gates, check suites |
 | `docs/agents/13-linear-production-workflow.md` | Linear issue lifecycle |
+| `docs/lifecycle/issue-to-main.md` | Issue-to-main Lifecycle Harness truth lanes |
+| `docs/lifecycle/truth-lanes.md` | Lane-specific status and evidence reporting |
+| `docs/lifecycle/feedback-loop.md` | Durable feedback absorption routing |
+| `docs/domain/context-map.md` | synAIpse bounded contexts and lane relationships |
+| `docs/domain/claim-authority.md` | Claim-family authority and evidence support rules |
+| `docs/guardrails/README.md` | Guardrail index for repeated delivery-risk domains |
+| `docs/automations/README.md` | Runbook convention for recurring automation loops |
 | `docs/agents/06-security-and-governance.md` | Security posture, secret handling |
 | `docs/agents/08-release-and-change-control.md` | Release process |
 | `docs/agents/03-local-memory.md` | Memory/LEARNINGS workflow |
@@ -91,6 +127,8 @@ Deep-dive operational specs, rollout contracts, and governance detail:
 | Review governance | `12-ai-review-governance.md`, `review-gate-*.md` |
 | Testing gates | `10-agent-testing-gates.md`, `11-flaky-test-artifacts.md`, `agent-testing-gates-operational-spec.md` |
 | Docs governance | `14-docs-gate-rollout.md`, `docs-gate-rollout-operational-spec.md` |
+| Guardrails | `guardrails/*.md` for deep guardrail standards linked from `docs/guardrails/README.md` |
+| Automation runbooks | `automations/*.md` for recurring workflow contracts linked from `docs/automations/README.md` |
 | Release governance | `release-change-control-operational-spec.md` |
 | Architecture | `00-architecture-bootstrap.md` |
 | Role governance | `07a-role-governance.md`, `07b-agent-governance.md` |
@@ -117,6 +155,33 @@ For humans:
 3. `docs/agents/` files are task-specific; open only what you need.
 
 ## Adding new documentation
+
+## Documentation lifecycle metadata
+
+Governed documentation carries YAML frontmatter that classifies its authority,
+lifecycle state, audience, owner, review cadence, dependency set,
+distribution boundary, and SemVer impact.
+
+The source of truth is [doc-lifecycle-manifest.json](../doc-lifecycle-manifest.json).
+The field contract is [doc-lifecycle.schema.json](../doc-lifecycle.schema.json).
+
+Use the lifecycle model to keep four concerns separate:
+
+- Canon: root and governance surfaces that define the operating model.
+- Supporting: explanatory material that helps readers understand canon.
+- Generated: derived context that must name its producer and refresh trigger.
+- Historical: retained evidence that no longer instructs current work.
+
+Domain context maps, guardrail indexes, and automation runbooks are canonical
+Layer 2 operating contracts when they steer current agent behavior. Deep
+guardrail pages may live in Layer 3, but they must be linked from the Layer 2
+guardrail index and listed in the lifecycle manifest before they can enforce a
+delivery claim.
+
+Distribution is a second axis. Source-only docs may guide this repository but
+must not leak into downstream templates. Packaged skills and downstream
+templates must carry their own entrypoint metadata because they cross project
+boundaries and can affect SemVer.
 
 1. Assign the new file to exactly one layer.
 2. Layer 0 and Layer 1 files must stay within their line budgets.

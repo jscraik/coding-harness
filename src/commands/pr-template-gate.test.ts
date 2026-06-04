@@ -35,6 +35,8 @@ const VALID_BODY = `## Summary
 - Completed work: Added pr-template-gate command and docs update with evidence refs.
 - Affected surfaces: code, tests, docs, PR template.
 - Documentation impact: PR template and validator fixtures updated; README.md, SECURITY.md, CONTRIBUTING.md, AGENTS.md, ARCHITECTURE.md, governance docs, and deep-module READMEs are n.a. because this fixture only proves PR body validation.
+- Documentation lifecycle impact: updated canonical PR template and validator fixtures; distribution remains source-only.
+- SemVer impact: none; validation-only fixture and PR-template contract change does not alter the packaged CLI runtime.
 - Expected outcome alignment: Keeps PR evidence reviewable for downstream harness operators.
 - Pattern scope inventory: validation evidence format checked in PR template gate; no sibling validators needed.
 - Meta-behavior proof: n.a. because this fixture is not driven by steering admission.

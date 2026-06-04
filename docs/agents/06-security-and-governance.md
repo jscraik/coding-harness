@@ -338,7 +338,7 @@ Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`, `ci`
 On agent branches (`codex/*`, `claude/*`), the commit-msg hook reminds about PR template requirements:
 
 - ## Summary (1-3 bullet points)
-- ## Work performed (plan IDs, phase/slice, session IDs, trace IDs, AI session/traceability mapping, completed work, acceptance trace, validation evidence, review artifacts, learning/reinforcement, deferred work)
+- ## Work performed (plan IDs, phase/slice, session IDs, trace IDs, AI session/traceability mapping, completed work, documentation impact, documentation lifecycle impact, SemVer impact, acceptance trace, validation evidence, review artifacts, learning/reinforcement, deferred work)
 - ## Checklist (all items checked)
 - ## Testing (test commands and evidence)
 - ## Review artifacts (links to review outputs)
