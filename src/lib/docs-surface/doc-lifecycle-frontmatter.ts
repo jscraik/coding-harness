@@ -20,7 +20,10 @@ export function parseMarkdownFrontmatter(
 			if (!key) continue;
 			currentKey = key;
 			const rawValue = keyValue[2] ?? "";
-			metadata[currentKey] = parseYamlScalar(rawValue);
+			const parsedValue = parseYamlScalar(rawValue);
+			if (parsedValue !== null) {
+				metadata[currentKey] = parsedValue;
+			}
 			continue;
 		}
 		const listValue = line.match(/^\s+-\s+(.+?)\s*$/);

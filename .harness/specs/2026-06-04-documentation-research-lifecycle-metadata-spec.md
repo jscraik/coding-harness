@@ -487,6 +487,9 @@ path, authority class, and suggested next action.
 
 Spec artifact validation:
 
+    # Run from repository root
+    ./scripts/check-bluf-structure.sh .harness/specs/2026-06-04-documentation-research-lifecycle-metadata-spec.md --json
+    ./scripts/check-artifact-shape.sh .harness/specs/2026-06-04-documentation-research-lifecycle-metadata-spec.md --kind spec --json
     pnpm docs:lint
     pnpm docs:lifecycle
     bash scripts/run-harness-gate.sh docs-gate --mode required --json

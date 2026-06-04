@@ -560,7 +560,7 @@ Validation evidence:
 
 - Command: `bash scripts/codex-preflight.sh --mode optional` -> pass (run before this audit artifact was drafted in the current thread)
 - Command: `git status --short --branch` -> pass (showed pre-existing user-owned modification in `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`)
-- Command: `git clone --quiet https://github.com/artichoke/rand_mt.git <TMP_REVIEW_CHECKOUT>` -> pass
-- Command: `git -C <TMP_REVIEW_CHECKOUT> checkout --quiet a36409d23bac908681f5e891f43a215ea8dbb84b` -> pass
-- Command: `find <TMP_REVIEW_CHECKOUT>/docs -type f | sort` -> pass
+- Command: `git clone --quiet https://github.com/artichoke/rand_mt.git <TMP_DIR>/rand_mt-docs-audit` -> pass
+- Command: `git -C <TMP_DIR>/rand_mt-docs-audit checkout --quiet a36409d23bac908681f5e891f43a215ea8dbb84b` -> pass
+- Command: `find <TMP_DIR>/rand_mt-docs-audit/docs -type f | sort` -> pass
 - Command: `sed -n ...` and `rg -n "^#{1,4} "` over reference and Coding Harness docs -> pass

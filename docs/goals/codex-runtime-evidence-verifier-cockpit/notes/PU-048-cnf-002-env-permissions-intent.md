@@ -58,7 +58,17 @@ kind of environment-scoped permission fact CNF-002 should make explicit.
 - Goal refinement:
   `docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml`
 - Required preflight recovery evidence:
-  `HOME=<WORKTREE_CACHE_HOME> MISE_TRUSTED_CONFIG_PATHS=<WORKTREE_ROOT>/.mise.toml bash scripts/codex-preflight.sh --stack auto --mode required` -> pass
+
+  ```bash
+  # Set HOME and MISE_TRUSTED_CONFIG_PATHS to a temporary worktree-local directory
+  # Example placeholders shown; substitute actual values before running:
+  HOME=<TMP_DIR>/.cache/local-memory-home \
+  MISE_TRUSTED_CONFIG_PATHS=<TMP_DIR>/.mise.toml \
+  bash scripts/codex-preflight.sh --stack auto --mode required
+  ```
+  Expected: pass
+
+  Note: `<TMP_DIR>` should be set to a disposable temporary directory (e.g., `$TMPDIR/coding-harness-cnf002-${UNIQUE_ID}`) to avoid mutating user-global home state.
 
 ## Review-The-Intent Checklist
 

@@ -40,12 +40,14 @@
 			]
 		},
 		"authority": {
-			"description": "Authority lane used by readers and agents when deciding whether a document can define current repository behavior.",
-			"enum": ["canon", "supporting", "generated", "historical"]
+			"enum": ["canon", "supporting", "generated", "historical"],
+			"description": "Authority lane used by readers and agents when deciding whether a document can define current repository behavior."
 		},
 		"canon_class": {
+			"enum": ["canonical", "supporting", "generated", "historical"],
 			"description": "Canonicality class for routing and docs-gate reporting; mirrors authority with reader-facing wording for lifecycle inventories.",
-			"enum": ["canonical", "supporting", "generated", "historical"]
+			"deprecated": true,
+			"x-deprecated-reason": "Use 'authority' field instead; 'canon_class' is maintained for backward compatibility"
 		},
 		"distribution": {
 			"enum": [

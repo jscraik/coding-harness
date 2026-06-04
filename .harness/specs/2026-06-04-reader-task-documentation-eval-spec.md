@@ -510,6 +510,9 @@ Rollback:
 
 Spec artifact validation:
 
+    # Run from repository root
+    ./scripts/check-bluf-structure.sh .harness/specs/2026-06-04-reader-task-documentation-eval-spec.md --json
+    ./scripts/check-artifact-shape.sh .harness/specs/2026-06-04-reader-task-documentation-eval-spec.md --kind spec --json
     pnpm docs:lint
     pnpm docs:lifecycle
     git diff --check

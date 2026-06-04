@@ -767,10 +767,8 @@ Do not run PU-007 before reader-task eval design exists.
 
 Plan validation:
 
-- python3 Plugins/harness-engineering/scripts/check_bluf_structure.py
-  PLAN_PATH --json: required when available.
-- python3 Plugins/harness-engineering/scripts/check_generated_artifact_shape.py
-  PLAN_PATH --kind plan --json: required when available.
+- `./scripts/check-bluf-structure.sh PLAN_PATH --json` (or via repository validation wrapper): required when available. (Legacy plugin path: `python3 Plugins/harness-engineering/scripts/check_bluf_structure.py` - optional/unstable)
+- `./scripts/check-artifact-shape.sh PLAN_PATH --kind plan --json` (or via repository validation wrapper): required when available. (Legacy plugin path: `python3 Plugins/harness-engineering/scripts/check_generated_artifact_shape.py` - optional/unstable)
 - pnpm docs:lint: required.
 - git diff --check: required.
 

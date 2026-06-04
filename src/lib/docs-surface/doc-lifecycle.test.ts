@@ -127,8 +127,7 @@ describe("validateDocLifecycle", () => {
 				expect.objectContaining({
 					path: "docs/doc-lifecycle-manifest.json",
 					severity: "error",
-					message:
-						"Each manifest document entry must be an object with string path.",
+					message: "Document entry at index 0 is not a valid object.",
 				}),
 			]),
 		);

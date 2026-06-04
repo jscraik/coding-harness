@@ -169,8 +169,10 @@ function buildCodexRuntimeProjection(
 			bundle.sources.filter(
 				(source) =>
 					source.role === "environment" ||
-					source.ref.includes("/environment") ||
-					source.ref.includes("sandbox-policy"),
+					(source.kind === "session" &&
+						(source.ref.endsWith("/environment") ||
+							source.ref.includes("sandbox-policy"))) ||
+					(source.kind === "artifact" && source.ref.includes("sandbox-policy")),
 			),
 		),
 		staleStateRefs: uniqueRefs(
