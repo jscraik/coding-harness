@@ -405,7 +405,7 @@
     <section class="metrics" aria-label="Goal status summary">
       <div class="metric"><span>Goal status</span><strong>Paused, full lifecycle</strong></div>
       <div class="metric"><span>Completed stack</span><strong>11 tracker cards done</strong></div>
-      <div class="metric"><span>Outstanding work</span><strong>7 gates + 6 CNF refinements</strong></div>
+      <div class="metric"><span>Outstanding work</span><strong>7 gates + PR/producer proof</strong></div>
       <div class="metric"><span>Claim boundary</span><strong>Completion unclaimed</strong></div>
       <div class="metric"><span>Source files</span><strong>goal.md, state.yaml, receipts.jsonl, Kanban</strong></div>
     </section>
@@ -753,14 +753,14 @@
       },
       {
         id: "cnf006-application-receipts",
-        lane: "remaining",
+        lane: "local",
         title: "CNF-006 steering application receipts",
-        status: "active",
+        status: "local implementation validated; review artifacts blocked",
         tags: ["steering queue", "receipts", "runtime-card"],
-        summary: "Steering queue items record applied or rejected timestamps, but there is no distinct receipt binding queue application to message/turn identity and runtime-card update.",
-        evidence: ["src/lib/steering-queue/types.ts", "src/lib/runtime/", "state.yaml codex_native_refinement_adoption"],
-        next: "Add an application receipt or equivalent packet with mismatch, expiry, supersession, missing runtime-card, and head-mismatch fixtures.",
-        risk: "Without application receipts, delayed steering can appear handled while the runtime card cannot prove what was applied."
+        summary: "Steering-application-receipt/v1 now records a pointer-only not_yet_emitted application receipt that binds queue item, expected/current thread-turn-message context, stale-precondition result, runtime-card update ref, blockers, and head-SHA freshness.",
+        evidence: ["docs/goals/.../notes/PU-052-cnf-006-steering-application-receipt-intent.md", "src/lib/steering-queue/application-receipt.ts", "contracts/steering-application-receipt.schema.json", "contracts/examples/steering-application-receipt.example.json", "scripts/validate-steering-application-receipt.cjs", "steering-queue receipt tests -> pass", "runtime packet schema tests -> pass", "standalone steering application validator -> pass", "runtime packet manifest validation -> pass", "pnpm typecheck -> pass", "docs-gate -> pass", "diagram context refreshed", "artifacts/reviews/pu052-cnf-006-skill-lenses.md", "artifacts/reviews/pu052-cnf-006-post-implementation-adversarial-runtime-blocker.md", "artifacts/reviews/pu052-cnf-006-post-implementation-agent-native-runtime-blocker.md", "artifacts/reviews/pu052-cnf-006-post-implementation-best-practices-runtime-blocker.md", "R250: CNF-006 local validation route-truth refresh"],
+        next: "Commit and push the CNF-006 slice, then create/triage the stacked PR before any remote or slice-done claim.",
+        risk: "The receipt is contract/schema/test proven only and remains not_yet_emitted; it does not mutate runtime cards, authorize commands, prove delivery truth, prove review/external/root-hygiene truth, update Linear, establish merge readiness, satisfy Judge/PM readiness, or close the parent goal."
       },
       {
         id: "linear-scope",

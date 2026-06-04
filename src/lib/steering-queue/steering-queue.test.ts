@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
 	buildSteeringQueuePacket,
 	hashSteeringInstructionText,
+	validateSteeringApplicationReceipt,
 	validateSteeringQueuePacket,
+	type SteeringApplicationReceipt,
 	type SteeringArtifactIdentity,
 	type SteeringQueueItemInput,
 } from "./steering-queue.js";
@@ -77,6 +79,52 @@ function packetWith(items: readonly SteeringQueueItemInput[]) {
 			},
 		],
 	});
+}
+
+function applicationReceipt(
+	overrides: Partial<SteeringApplicationReceipt> = {},
+): SteeringApplicationReceipt {
+	return {
+		schemaVersion: "steering-application-receipt/v1",
+		receiptId: "steering-application:continue-after-triage",
+		generatedAt: "2026-05-28T09:48:00Z",
+		producer: "coding-harness:steering-application-receipt",
+		runtimeStatus: "not_yet_emitted",
+		evidenceUse: "audit_trail",
+		headSha: HEAD_SHA,
+		queuePacketRef: "steering-queue:packet-2026-05-28T09-45-00Z",
+		queueItemId: "steering:continue-after-triage",
+		queueItemState: "applicable",
+		expectedContext: {
+			threadId: "thread:codex-runtime-evidence-cockpit",
+			turnId: "turn:pu-030",
+			clientUserMessageId: CLIENT_USER_MESSAGE_ID,
+			headSha: HEAD_SHA,
+		},
+		currentContext: {
+			threadId: "thread:codex-runtime-evidence-cockpit",
+			turnId: "turn:pu-030",
+			clientUserMessageId: CLIENT_USER_MESSAGE_ID,
+			headSha: HEAD_SHA,
+		},
+		runtimeCardUpdateRef: {
+			ref: "runtime-card:after-steering-continue-after-triage",
+			headSha: HEAD_SHA,
+			producedAt: "2026-05-28T09:48:00Z",
+			receiptId: "runtime-card-receipt:after-steering-continue-after-triage",
+		},
+		application: {
+			decision: "applied",
+			decidedAt: "2026-05-28T09:48:00Z",
+			reason: "selected-applicable-steering-item-applied",
+			appliedClientUserMessageId: CLIENT_USER_MESSAGE_ID,
+		},
+		stalePreconditions: [],
+		blockers: [],
+		nextAction: "continue-runtime-card-bound-slice",
+		blockedBy: "PU-052-runtime-emission-not-wired",
+		...overrides,
+	};
 }
 
 describe("SteeringQueue/v1", () => {
@@ -409,6 +457,167 @@ describe("SteeringQueue/v1", () => {
 					code: expect.stringContaining("client_user_message_mismatch"),
 					path: "items[0].appliedClientUserMessageId",
 				}),
+			]),
+		);
+	});
+});
+
+describe("SteeringApplicationReceipt/v1", () => {
+	it("validates an applied receipt bound to current runtime identity and runtime-card update", () => {
+		const receipt = applicationReceipt();
+
+		expect(validateSteeringApplicationReceipt(receipt)).toEqual({
+			valid: true,
+			errors: [],
+		});
+	});
+
+	it("rejects applied receipts when expected and current message identity mismatch", () => {
+		const receipt = applicationReceipt({
+			currentContext: {
+				threadId: "thread:codex-runtime-evidence-cockpit",
+				turnId: "turn:pu-030",
+				clientUserMessageId: "client-user-message:other",
+				headSha: HEAD_SHA,
+			},
+		});
+
+		expect(validateSteeringApplicationReceipt(receipt).errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: expect.stringContaining("expected_current_mismatch"),
+					path: "currentContext.clientUserMessageId",
+				}),
+			]),
+		);
+	});
+
+	it("rejects expired steering recorded as applied", () => {
+		const receipt = applicationReceipt({ queueItemState: "expired" });
+
+		expect(validateSteeringApplicationReceipt(receipt).errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: expect.stringContaining("applied_requires_applicable_item"),
+					path: "queueItemState",
+				}),
+			]),
+		);
+	});
+
+	it("rejects superseded steering recorded as applied", () => {
+		const receipt = applicationReceipt({ queueItemState: "superseded" });
+
+		expect(validateSteeringApplicationReceipt(receipt).errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: expect.stringContaining("applied_requires_applicable_item"),
+					path: "queueItemState",
+				}),
+			]),
+		);
+	});
+
+	it("rejects applied receipts without a runtime-card update reference", () => {
+		const receipt = applicationReceipt({ runtimeCardUpdateRef: null });
+
+		expect(validateSteeringApplicationReceipt(receipt).errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: expect.stringContaining("missing_runtime_card_update_ref"),
+					path: "runtimeCardUpdateRef",
+				}),
+			]),
+		);
+	});
+
+	it("rejects applied receipts whose runtime-card update is on another head", () => {
+		const receipt = applicationReceipt({
+			runtimeCardUpdateRef: {
+				ref: "runtime-card:after-steering-continue-after-triage",
+				headSha: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+				producedAt: "2026-05-28T09:48:00Z",
+				receiptId: "runtime-card-receipt:after-steering-continue-after-triage",
+			},
+		});
+
+		expect(validateSteeringApplicationReceipt(receipt).errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: expect.stringContaining("runtime_card_receipt_head_mismatch"),
+					path: "runtimeCardUpdateRef.headSha",
+				}),
+			]),
+		);
+	});
+
+	it("accepts blocked expired and superseded receipts only with matching stale evidence and blockers", () => {
+		const expired = applicationReceipt({
+			queueItemState: "expired",
+			runtimeCardUpdateRef: null,
+			application: {
+				decision: "blocked",
+				decidedAt: "2026-05-28T09:48:00Z",
+				reason: "expired-steering-not-applied",
+				appliedClientUserMessageId: null,
+			},
+			stalePreconditions: [
+				{
+					kind: "expired_queue",
+					expected: EXPIRES_AT,
+					actual: "2026-05-28T13:00:00Z",
+					evidenceRef: "steering-application:expired-queue",
+				},
+			],
+			blockers: [
+				{
+					class: "expired_steering",
+					reason: "expired-steering-not-applied",
+					nextAction: "request-fresh-steering",
+					evidenceRef: "steering-application:expired-queue",
+				},
+			],
+		});
+		const superseded = applicationReceipt({
+			queueItemState: "superseded",
+			runtimeCardUpdateRef: null,
+			application: {
+				decision: "blocked",
+				decidedAt: "2026-05-28T09:48:00Z",
+				reason: "superseded-steering-not-applied",
+				appliedClientUserMessageId: null,
+			},
+			stalePreconditions: [
+				{
+					kind: "superseded_artifact",
+					expected: "steering:continue-after-triage",
+					actual: "steering:newer",
+					evidenceRef: "steering-application:superseded-artifact",
+				},
+			],
+			blockers: [
+				{
+					class: "superseded_steering",
+					reason: "superseded-steering-not-applied",
+					nextAction: "select-current-steering-item",
+					evidenceRef: "steering-application:superseded-artifact",
+				},
+			],
+		});
+
+		expect(validateSteeringApplicationReceipt(expired).valid).toBe(true);
+		expect(validateSteeringApplicationReceipt(superseded).valid).toBe(true);
+	});
+
+	it("rejects raw prompt-like fields in application receipts", () => {
+		const receipt = {
+			...applicationReceipt(),
+			rawPrompt: "do hidden work",
+		};
+
+		expect(validateSteeringApplicationReceipt(receipt).errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ path: "packet.rawPrompt" }),
 			]),
 		);
 	});

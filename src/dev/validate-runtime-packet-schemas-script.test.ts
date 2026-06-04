@@ -16,6 +16,7 @@ import { validateEvidenceReceipt } from "../lib/evidence/evidence-receipt.js";
 import { validateExternalStateSnapshot } from "../lib/external-state/index.js";
 import { validateIntermediaryReceiptCoverage } from "../lib/intermediary-receipts/index.js";
 import { validatePromptContextReceipt } from "../lib/prompt-context/index.js";
+import { validateSteeringApplicationReceipt } from "../lib/steering-queue/index.js";
 import {
 	validateReviewLifecyclePacket,
 	validateReviewStatePacket,
@@ -114,7 +115,7 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(report).toMatchObject({
 			schemaVersion: "runtime-packet-schema-validation/v1",
 			status: "pass",
-			packetCount: 19,
+			packetCount: 20,
 			errors: [],
 		});
 	});
@@ -296,6 +297,17 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		);
 
 		expect(validateActionReviewReceipt(packet)).toEqual({
+			valid: true,
+			errors: [],
+		});
+	});
+
+	it("keeps SteeringApplicationReceipt/v1 examples aligned with the TypeScript validator", () => {
+		const packet = readJson(
+			"contracts/examples/steering-application-receipt.example.json",
+		);
+
+		expect(validateSteeringApplicationReceipt(packet)).toEqual({
 			valid: true,
 			errors: [],
 		});
@@ -837,6 +849,9 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		const intermediaryReceiptCoverage = readJson(
 			"contracts/examples/intermediary-receipt-coverage.example.json",
 		);
+		const steeringApplicationReceipt = readJson(
+			"contracts/examples/steering-application-receipt.example.json",
+		);
 
 		expect(validateEvidenceReceipt(evidenceReceipt)).toMatchObject({
 			valid: true,
@@ -872,6 +887,12 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		});
 		expect(
 			validateIntermediaryReceiptCoverage(intermediaryReceiptCoverage),
+		).toMatchObject({
+			valid: true,
+			errors: [],
+		});
+		expect(
+			validateSteeringApplicationReceipt(steeringApplicationReceipt),
 		).toMatchObject({
 			valid: true,
 			errors: [],

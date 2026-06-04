@@ -227,17 +227,22 @@ not in docs, templates, generated context, or command facades.
   applicability, value-level leakage checks, and filesystem containment checks
   in the standalone validator so artifacts can steer agents or support claims
   only when their path, freshness, preview, checksum, and lineage are current.
-- src/lib/steering-queue/: pending operator-steering packets for
-  continuation recovery and audit/orientation evidence. It keeps
-  `steering-queue.ts` as a compatibility facade over typed contracts, builder,
-  hash, constants, and semantic-validation modules. It owns steering-queue/v1
-  item state, instruction-source hashing, artifact identity checks,
-  supersession, stale-precondition classification, client user-message
-  correlation for expected and applied same-thread steering, single-scope
-  packet validation, deterministic selection order, and semantic validation
-  while keeping queued steering out of execution authority, closeout proof, and
-  merge-readiness claim support until a future runtime-card adapter explicitly
-  consumes it.
+- src/lib/steering-queue/: pending operator-steering packets and
+  steering-application receipts for continuation recovery, stale-state
+  detection, and audit/orientation evidence. It keeps `steering-queue.ts` as a
+  compatibility facade over typed contracts, builder, hash, constants, and
+  semantic-validation modules. It owns `steering-queue/v1` item state,
+  instruction-source hashing, artifact identity checks, supersession,
+  stale-precondition classification, client user-message correlation for
+  expected and applied same-thread steering, single-scope packet validation,
+  deterministic selection order, and semantic validation. It also owns
+  `steering-application-receipt/v1` as a pointer-only, `not_yet_emitted`
+  contract that binds a queue item, expected/current thread-turn-message
+  context, stale-precondition result, runtime-card update reference, and
+  head-SHA freshness for the attempted application. Both packets stay out of
+  execution authority, delivery-truth claim support, Judge/PM readiness,
+  tracker mutation, and merge-readiness proof until a future runtime-card
+  adapter explicitly emits and consumes them with synchronized governance docs.
 - src/lib/decision/: advisory cockpit decision and lifecycle route metadata.
   It owns `harness-decision/v1`, `route-decision/v1`, route validation, and the
   risk-tiered mutation policy that allows only low-risk repo-local advisory
