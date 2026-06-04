@@ -65,12 +65,6 @@ function externalStateDeliveryTruthEvidence(options: {
 		REMOTE_CHECK_CLAIM_SOURCE_NAMES.some((name) => name === source.source),
 	);
 	if (sources.length !== REMOTE_CHECK_CLAIM_SOURCE_NAMES.length) return [];
-	const receipt = buildStatePacketReceipt({
-		kind: "external_state",
-		ref: `external-state:pr-closeout/pr-${String(snapshot.prNumber)}/remote-checks.json`,
-		producer: snapshot.verifierIdentity,
-		verifiedAt: snapshot.generatedAt,
-		headSha: snapshot.headSha,
 	const remoteChecksPayload = {
 		claim: "remote_checks_current",
 		fetchReceiptRef: snapshot.fetchReceiptRef,
@@ -84,9 +78,6 @@ function externalStateDeliveryTruthEvidence(options: {
 		headSha: snapshot.headSha,
 		checksum: statePacketChecksum(remoteChecksPayload),
 		sizeBytes: statePacketByteLength(remoteChecksPayload),
-		status: aggregateReceiptStatus(
-			sources.map((source) => source.resultStatus),
-		),
 		status: aggregateReceiptStatus(
 			sources.map((source) => source.resultStatus),
 		),
