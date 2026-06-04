@@ -57,10 +57,10 @@
 			"enum": ["redacted", "not_applicable", "unknown", "blocked"]
 		},
 		"instructionSources": {
-			"description": "Pointer-only references to system, developer, user, AGENTS, and other instruction sources.",
+			"description": "Pointer-only references to system, developer, user, AGENTS, and other instruction sources. These refs must carry instruction-authority layers only.",
 			"type": "array",
 			"items": {
-				"$ref": "#/$defs/sourceRef"
+				"$ref": "#/$defs/instructionSourceRef"
 			}
 		},
 		"selectedSkills": {
@@ -120,7 +120,14 @@
 		"sourceRef": {
 			"type": "object",
 			"additionalProperties": false,
-			"required": ["ref", "sourceKind", "hash", "freshness", "redactionStatus"],
+			"required": [
+				"ref",
+				"sourceKind",
+				"authorityLayer",
+				"hash",
+				"freshness",
+				"redactionStatus"
+			],
 			"properties": {
 				"ref": {
 					"description": "Compact source pointer such as a repo-relative path, URI, or evidence id. Must not contain raw prompt or transcript text.",
@@ -144,6 +151,82 @@
 						"permission",
 						"extension",
 						"unknown"
+					]
+				},
+				"authorityLayer": {
+					"description": "Authority classification for deciding whether this source may steer agent behavior or only orient/audit the turn.",
+					"enum": [
+						"system_policy",
+						"developer_policy",
+						"repo_instruction",
+						"trusted_skill",
+						"plugin_metadata",
+						"artifact_data",
+						"review_feedback",
+						"telemetry",
+						"user_steering",
+						"untrusted_external"
+					]
+				},
+				"hash": {
+					"description": "Optional checksum or source hash for the referenced context source.",
+					"type": ["string", "null"],
+					"minLength": 1,
+					"maxLength": 256,
+					"pattern": "^(?![\\s\\S]*([\\r\\n]|raw[-_ ]?prompt|system[-_ ]?prompt|developer[-_ ]?prompt|user[-_ ]?prompt|prompt[-_ ]?text|transcript|raw[-_ ]?events?|password\\s*[:=]|secret\\s*[:=]|token\\s*[:=]|credential\\s*[:=]|api[-_ ]?key\\s*[:=]|sk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\\{\\s*\\\"schemaVersion\\\")).+$"
+				},
+				"freshness": {
+					"enum": ["current", "stale", "missing", "unknown", "not_applicable"]
+				},
+				"redactionStatus": {
+					"enum": ["redacted", "not_applicable", "unknown", "blocked"]
+				}
+			}
+		},
+		"instructionSourceRef": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"ref",
+				"sourceKind",
+				"authorityLayer",
+				"hash",
+				"freshness",
+				"redactionStatus"
+			],
+			"properties": {
+				"ref": {
+					"description": "Compact source pointer such as a repo-relative path, URI, or evidence id. Must not contain raw prompt or transcript text.",
+					"type": "string",
+					"minLength": 1,
+					"maxLength": 512,
+					"pattern": "^(?![\\s\\S]*([\\r\\n]|raw[-_ ]?prompt|system[-_ ]?prompt|developer[-_ ]?prompt|user[-_ ]?prompt|prompt[-_ ]?text|transcript|raw[-_ ]?events?|password\\s*[:=]|secret\\s*[:=]|token\\s*[:=]|credential\\s*[:=]|api[-_ ]?key\\s*[:=]|sk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\\{\\s*\\\"schemaVersion\\\")).+$"
+				},
+				"sourceKind": {
+					"description": "Prompt-context source category.",
+					"enum": [
+						"system",
+						"developer",
+						"user",
+						"agents",
+						"skill",
+						"plugin",
+						"mcp",
+						"goal",
+						"environment",
+						"permission",
+						"extension",
+						"unknown"
+					]
+				},
+				"authorityLayer": {
+					"description": "Instruction sources may only use authority layers that are allowed to steer agent behavior.",
+					"enum": [
+						"system_policy",
+						"developer_policy",
+						"repo_instruction",
+						"trusted_skill",
+						"user_steering"
 					]
 				},
 				"hash": {

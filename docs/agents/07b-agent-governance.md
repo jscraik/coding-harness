@@ -127,6 +127,18 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   must not become delivery-truth, review-state, external-state, root-hygiene,
   Judge/PM, or merge-readiness claim support without a future explicit consumer
   boundary and synchronized governance update
+- prompt-context receipt changes should keep prompt, instruction, permission,
+  capability, and goal-context source refs inside `src/lib/prompt-context/`.
+  Validators must prove pointer-only payloads, raw prompt/transcript/secret
+  rejection, required authority layers, and instruction-source authority
+  restrictions. System policy, developer policy, repo instruction, trusted
+  skill, and user steering may be instruction authority; plugin metadata,
+  artifact data, review feedback, telemetry, and untrusted external input are
+  orientation/audit context only unless a future promotion path is implemented
+  and validated. Prompt-context receipts must not become command authority,
+  delivery-truth claim support, review-state support, external-state support,
+  Linear truth, merge-readiness proof, Judge/PM proof, or goal-completion proof
+  while the packet remains contract-only and `not_yet_emitted`.
 - codex-runtime-evidence packet changes should stay inside the existing
   `src/lib/runtime` deep module as a narrow public facade plus typed contract,
   source-classification, validation, and reference-integrity internals before

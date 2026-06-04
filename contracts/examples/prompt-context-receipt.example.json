@@ -10,6 +10,7 @@
 		{
 			"ref": "instruction:repo-root-AGENTS.md",
 			"sourceKind": "agents",
+			"authorityLayer": "repo_instruction",
 			"hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
 			"freshness": "current",
 			"redactionStatus": "redacted"
@@ -17,6 +18,7 @@
 		{
 			"ref": "instruction:system-developer-policy-snapshot",
 			"sourceKind": "system",
+			"authorityLayer": "system_policy",
 			"hash": null,
 			"freshness": "unknown",
 			"redactionStatus": "redacted"
@@ -26,6 +28,7 @@
 		{
 			"ref": "skill:improve-codebase-architecture",
 			"sourceKind": "skill",
+			"authorityLayer": "trusted_skill",
 			"hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
 			"freshness": "current",
 			"redactionStatus": "redacted"
@@ -35,6 +38,7 @@
 		{
 			"ref": "plugin:github",
 			"sourceKind": "plugin",
+			"authorityLayer": "plugin_metadata",
 			"hash": null,
 			"freshness": "current",
 			"redactionStatus": "redacted"
@@ -44,6 +48,7 @@
 		{
 			"ref": "mcp:linear",
 			"sourceKind": "mcp",
+			"authorityLayer": "plugin_metadata",
 			"hash": null,
 			"freshness": "unknown",
 			"redactionStatus": "redacted"
@@ -59,6 +64,7 @@
 		{
 			"ref": "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
 			"sourceKind": "goal",
+			"authorityLayer": "artifact_data",
 			"hash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
 			"freshness": "current",
 			"redactionStatus": "redacted"
@@ -68,6 +74,7 @@
 		{
 			"ref": "tool:spawn_agent",
 			"sourceKind": "extension",
+			"authorityLayer": "plugin_metadata",
 			"hash": null,
 			"freshness": "current",
 			"redactionStatus": "redacted"
