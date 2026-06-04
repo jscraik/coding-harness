@@ -115,17 +115,17 @@ not in docs, templates, generated context, or command facades.
   Permission evidence is scoped by an explicit runtime environment snapshot
   rather than by profile alone: environment id, cwd, expected cwd, executor
   kind, approval scope, expected approval scope, sandbox policy ref, state, and
-  failure class live in `codex-runtime-evidence/v1`. Known permission claims
-  require a receipt-backed sandbox policy ref, stale cwd and approval-scope
-  mismatches are blocked session sources, and runtime-card projection exposes
-  only compact `environmentRefs` pointers. Runtime-card Codex continuity
-  projection also stays inside this deep module: producer-supplied thread,
-  turn, trace, goal, client-message, queue, approval, and heartbeat refs may be
-  projected only as compact source-backed and receipt-backed pointers under
-  `codexRuntime.continuity`; they must not embed raw prompts, transcripts,
-  event streams, secrets, or bulky runtime payloads and must not become command
-  authority, delivery-truth, review-state, external-state, merge-readiness,
-  Judge/PM, or goal-completion proof.
+	failure class live in `codex-runtime-evidence/v1`. Known permission claims
+	require a receipt-backed sandbox policy ref, stale cwd and approval-scope
+	mismatches are blocked session sources, and runtime-card projection exposes
+	only compact `environmentRefs` pointers. Runtime-card Codex continuity
+	projection also stays inside this deep module: producer-supplied thread,
+	turn, trace, goal, client-message, queue, approval, and heartbeat refs may be
+	projected only as compact source-backed and receipt-backed pointers under
+	`codexRuntime.continuity`; they must not embed raw prompts, transcripts,
+	event streams, secrets, or bulky runtime payloads and must not become command
+	authority, delivery-truth, review-state, external-state, merge-readiness,
+	Judge/PM, or goal-completion proof.
 - src/lib/runtime-trace/: opt-in runtime-card trace recording that projects
   runtime-card execution into canonical `agent-run-event/v1` event streams
   under `artifacts/agent-runs/<runId>/events.jsonl`. It owns trace-out path

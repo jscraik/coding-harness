@@ -297,7 +297,7 @@ function auditContractAndEnvironment(
 		try {
 			const contract = JSON.parse(readFileSync(contractPath, "utf-8"));
 			const policy = contract?.issueTrackingPolicy;
-			if (!policy || policy.provider !== "linear") {
+			if (policy?.provider !== "linear") {
 				findings.push({
 					severity: "warning",
 					code: "CONTRACT_NOT_LINEAR",

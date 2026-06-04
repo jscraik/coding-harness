@@ -120,9 +120,11 @@ function toEnvironmentSource(packet: CodexRuntimeEvidence): RuntimeCardSource {
 		freshness:
 			state === "stale_cwd" || state === "approval_scope_mismatch"
 				? "stale"
-				: current
-					? "current"
-					: "unknown",
+				: state === "sandbox_policy_missing"
+					? "missing"
+					: current
+						? "current"
+						: "unknown",
 		status: current ? "usable" : "blocked",
 		failureClass: packet.environment.failureClass,
 	};
@@ -175,9 +177,10 @@ function optionalStateSource(
 	state: CodexRuntimeOptionalState | undefined,
 ): RuntimeCardSource | null {
 	if (!state) return null;
+	if (state.status !== "provided" && !state.evidenceRef) return null;
 	return {
 		kind: subject === "review_state" ? "review" : "artifact",
-		ref: state.evidenceRef ?? `codex-${subject}://unknown`,
+		ref: state.evidenceRef ?? `codex-${subject}://provided`,
 		freshness: state.status === "provided" ? "current" : "unknown",
 		status: state.status === "provided" ? "usable" : "blocked",
 		failureClass: state.failureClass,

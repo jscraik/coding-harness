@@ -412,34 +412,6 @@ describe("validateRouteDecision", () => {
 	it("rejects agent-local mutating routes with stale evidence", () => {
 		const result = validateRouteDecision(
 			validRouteDecision({
-	it("accepts low-risk repo-local mutating routes without human review", () => {
-		const result = validateRouteDecision(
-			validRouteDecision({
-				status: "action_required",
-				route: {
-					id: "work",
-					label: "Work",
-					targetCommand: null,
-					targetSkill: "he-work",
-				},
-				mutates: true,
-				requiresHuman: false,
-				mutationPolicy: {
-					scope: "repo_local",
-					riskTier: "low",
-					evidenceFreshness: "current",
-					validatorOwnership: "present",
-					authority: "agent_local",
-				},
-			}),
-		);
-
-		expect(result).toEqual({ valid: true, errors: [] });
-	});
-
-	it("rejects agent-local mutating routes with stale evidence", () => {
-		const result = validateRouteDecision(
-			validRouteDecision({
 				status: "action_required",
 				route: {
 					id: "work",
