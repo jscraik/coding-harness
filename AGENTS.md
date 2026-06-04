@@ -383,8 +383,9 @@ Notes:
   instruction-source authority rules, pointer-only validation, raw prompt or
   transcript rejection, or prompt-context schema parity are
   architecture-adjacent agent-readiness changes. Keep the deep module in
-  `src/lib/prompt-context/`; only repo instructions, trusted skills, and user
-  steering may carry instruction authority, while plugin metadata, MCP
+  `src/lib/prompt-context/`; only system policy, developer policy, repo
+  instructions, trusted skills, and user steering may carry instruction
+  authority, while plugin metadata, MCP
   capability refs, artifacts, and goals remain context sources without
   instruction authority. Keep prompt-context receipts `not_yet_emitted` until
   a producer and consumer boundary are intentionally implemented and validated,
