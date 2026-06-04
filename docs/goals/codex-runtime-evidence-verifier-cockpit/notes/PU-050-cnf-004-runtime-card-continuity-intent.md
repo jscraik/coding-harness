@@ -61,9 +61,21 @@ source-backed. `runtime-card/v1` remains an advisory orientation artifact.
 ## Validation Gates
 
 - `pnpm exec vitest run src/lib/runtime/runtime-card-codex-runtime-projection.test.ts`
+  - Expected: exit code 0, all tests passing
+  - On failure: review test output for failing assertions, fix implementation or tests, rerun until pass
+  - Owner: Coordinator
 - `pnpm exec vitest run src/lib/runtime/runtime-evidence-bundle.test.ts`
+  - Expected: exit code 0, all tests passing
+  - On failure: review test output for failing assertions, fix implementation or tests, rerun until pass
+  - Owner: Coordinator
 - `pnpm typecheck`
+  - Expected: exit code 0, no type errors
+  - On failure: resolve TypeScript compilation errors before proceeding
+  - Owner: Coordinator
 - `git diff --check`
+  - Expected: exit code 0, no whitespace errors
+  - On failure: fix trailing whitespace or line-ending issues, rerun until pass
+  - Owner: Coordinator
 
 Wider gates such as docs-gate, diagram freshness, and codestyle run before
 slice handoff because this changes an architecture-adjacent runtime-card
