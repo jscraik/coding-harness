@@ -264,29 +264,29 @@ function validateEnvironment(
 			"failureClass is required when environment state is not current.",
 		);
 	}
-	if (
+	const hasStaleCwd =
 		value.cwd !== null &&
 		value.expectedCwd !== null &&
-		value.cwd !== value.expectedCwd &&
-		value.state !== "stale_cwd"
-	) {
+		value.cwd !== value.expectedCwd;
+	const hasApprovalScopeMismatch =
+		!hasStaleCwd &&
+		value.approvalScope !== "unknown" &&
+		value.expectedApprovalScope !== null &&
+		value.approvalScope !== value.expectedApprovalScope;
+	if (hasStaleCwd && value.state !== "stale_cwd") {
 		add(
 			"environment.state",
 			"environment_stale_cwd_missing",
 			"state must be stale_cwd when cwd differs from expectedCwd.",
 		);
 	}
-	if (
-		value.approvalScope !== "unknown" &&
-		value.expectedApprovalScope !== null &&
-		value.approvalScope !== value.expectedApprovalScope &&
-		value.state !== "approval_scope_mismatch"
-	) {
+	if (hasApprovalScopeMismatch && value.state !== "approval_scope_mismatch") {
 		add(
 			"environment.state",
 			"approval_scope_mismatch_missing",
 			"state must be approval_scope_mismatch when approvalScope differs from expectedApprovalScope.",
 		);
+	}
 	}
 	if (
 		permissionFactsAreKnown(permissions) &&
