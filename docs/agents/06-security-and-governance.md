@@ -272,7 +272,10 @@ This repository uses `action-review-receipt/v1` as a narrow guardian-style recei
 `scripts/check-semgrep-changed.sh` is intentionally narrow: it compares `HEAD`
 to the upstream merge-base, or the nearest main/master fallback, filters to
 changed implementation files under `src/**`, and runs only the local
-`scripts/semgrep-pre-push.yml` ruleset.
+`scripts/semgrep-pre-push.yml` ruleset. The shared Semgrep bootstrap keeps
+local scanner runtime state in the worktree-local ignored `.cache/semgrep`
+directory by default; use `SEMGREP_STATE_ROOT` only when a controlled CI or
+operator cache location is intentional.
 
 ### Safety Aggregate
 

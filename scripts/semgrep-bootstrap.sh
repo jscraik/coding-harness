@@ -18,13 +18,7 @@ if [[ "$SEMGREP_VERSION_SERIES" == *.* ]]; then
   fi
 fi
 SEMGREP_PIP_SPEC="${SEMGREP_PIP_SPEC:-$DEFAULT_SEMGREP_PIP_SPEC}"
-DEFAULT_SEMGREP_STATE_ROOT="$REPO_ROOT/.git/semgrep"
-if git_semgrep_state_root="$(git -C "$REPO_ROOT" rev-parse --git-path semgrep 2>/dev/null)"; then
-  if [[ "$git_semgrep_state_root" != /* ]]; then
-    git_semgrep_state_root="$REPO_ROOT/$git_semgrep_state_root"
-  fi
-  DEFAULT_SEMGREP_STATE_ROOT="$git_semgrep_state_root"
-fi
+DEFAULT_SEMGREP_STATE_ROOT="$REPO_ROOT/.cache/semgrep"
 
 SEMGREP_STATE_ROOT="${SEMGREP_STATE_ROOT:-$DEFAULT_SEMGREP_STATE_ROOT}"
 HOST_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
