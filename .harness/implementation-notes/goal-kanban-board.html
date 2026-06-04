@@ -765,9 +765,11 @@
       },
       {
         id: "pu053-closeout-state-packets",
-        lane: "local",
-        title: "PU-053 closeout state-packet bridge",
-        status: "local commit ad06aa82; reviewer artifacts blocked",
+       {
+         id: "pu053-closeout-state-packets",
+         lane: "implementation",
+         title: "PU-053 closeout state-packet bridge",
+         status: "blocked",
         tags: ["pr-closeout", "external-state", "review-state", "PU-014"],
         summary: "src/lib/pr-closeout now derives validated external-state-snapshot/v1 and review-state/v1 packets from normalized pr-closeout input while leaving claim support with the packet validators.",
         evidence: ["docs/goals/.../notes/PU-053-pu014-closeout-state-packets-intent.md", "src/lib/pr-closeout/state-packets.ts", "src/lib/pr-closeout/state-packets.test.ts", "src/lib/pr-closeout.ts", "ARCHITECTURE.md and governance docs updated", "AI/context/diagram-context.md refreshed", "focused packet and nearby closeout tests -> pass", "pnpm typecheck -> pass", "Biome touched-file check -> pass", "quality:docstrings -> pass", "quality:size -> pass with non-blocking ratchet warnings", "test:related -> pass", "docs-gate -> pass", "check-diagram-freshness -> pass after refresh", "validate-codestyle --fast -> pass", "artifacts/reviews/pu053-pu014-closeout-state-packets-skill-lenses.md", "artifacts/reviews/pu053-pu014-implementation-adversarial-runtime-blocker.md", "artifacts/reviews/pu053-pu014-implementation-agent-native-runtime-blocker.md", "artifacts/reviews/pu053-pu014-implementation-best-practices-runtime-blocker.md", "R261: local implementation route truth", "R262: audit-source route truth re-anchored to current head"],
