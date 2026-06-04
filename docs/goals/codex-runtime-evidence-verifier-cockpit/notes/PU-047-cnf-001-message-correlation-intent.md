@@ -1,5 +1,17 @@
 # PU-047 CNF-001 Message Correlation Intent
 
+## Table of Contents
+
+- [Intent Contract](#intent-contract)
+- [Purpose](#purpose)
+- [Scope](#scope)
+- [Target Modules](#target-modules)
+- [Design Intent](#design-intent)
+- [Acceptance Criteria](#acceptance-criteria)
+- [Validation Plan](#validation-plan)
+- [Review Requirement](#review-requirement)
+- [Stop Conditions](#stop-conditions)
+
 ## Intent Contract
 
 ```yaml

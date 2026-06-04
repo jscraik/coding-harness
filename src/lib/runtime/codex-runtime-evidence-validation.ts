@@ -171,8 +171,9 @@ function validateIdentity(value: unknown, add: AddFinding): void {
 	}
 	requireNullableNonEmptyString(value.threadId, "codex.threadId", add);
 	requireNonEmptyString(value.turnId, "codex.turnId", add);
+	const clientUserMessageId = value.clientUserMessageId ?? null;
 	requireNullableNonEmptyString(
-		value.clientUserMessageId,
+		clientUserMessageId,
 		"codex.clientUserMessageId",
 		add,
 	);

@@ -158,6 +158,18 @@
       padding: 8px 12px;
     }
 
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+
     .workspace {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 360px;
@@ -417,7 +429,8 @@
         <button class="tab" type="button" data-filter="blocked" aria-pressed="false">Blocked</button>
         <button class="tab" type="button" data-filter="done" aria-pressed="false">Done</button>
       </div>
-      <input class="search" type="search" aria-label="Search board cards">
+      <label for="board-search" class="visually-hidden">Search cards</label>
+      <input id="board-search" class="search" type="search" aria-label="Search board cards">
     </section>
 
     <section class="workspace">
@@ -914,7 +927,7 @@
     };
 
     const board = document.querySelector("#board");
-    const search = document.querySelector(".search");
+    const search = document.querySelector("#board-search");
     const filterButtons = [...document.querySelectorAll(".tab")];
     let currentFilter = "all";
 

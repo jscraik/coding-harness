@@ -26,11 +26,12 @@ truth_lanes:
   tracker_state: pass
   merge_readiness: not_rechecked
   tracker_state_evidence: >
-    Linear JSC-363 was refreshed live. The issue is Done, completed at
-    2026-06-03T20:44:00Z, has the full-lifecycle scope-note attachment, and
-    has PR attachments through #330. The title and description still contain
-    Phase 1 wording, so tracker alignment is attachment-backed rather than
-    field-text-current.
+    Linear JSC-363 tracker state snapshot as of 2026-06-03T20:44:00Z. The
+    issue was Done at that time with the full-lifecycle scope-note attachment
+    and PR attachments through #330. The title and description still contained
+    Phase 1 wording, so tracker alignment was attachment-backed rather than
+    field-text-current. This is a point-in-time snapshot and may not reflect
+    current state.
 continuation_gate:
   queued_user_input: present
   pending_work: present

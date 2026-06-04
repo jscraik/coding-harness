@@ -1,5 +1,13 @@
 # PU-047 CNF-001 Source Capability Proof
 
+## Table of Contents
+
+- [Classification](#classification)
+- [Evidence](#evidence)
+- [Non-Claims](#non-claims)
+- [Contract Implication](#contract-implication)
+- [Validation Requirement](#validation-requirement)
+
 ## Classification
 
 \`available_producer_input\`
