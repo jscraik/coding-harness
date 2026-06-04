@@ -10,6 +10,10 @@ import {
 	type PrCloseoutStatePacketOptions,
 } from "./state-packets.js";
 
+/** Options for deriving delivery-truth verdicts from validated state packets. */
+export type PrCloseoutDeliveryTruthDerivationOptions =
+	PrCloseoutStatePacketOptions;
+
 const PR_CLOSEOUT_DELIVERY_TRUTH_CLAIMS = new Set<
 	PrCloseoutDeliveryTruthVerdict["claim"]
 >([
@@ -38,7 +42,7 @@ export function buildDeliveryTruthSummary(
 export function buildPrCloseoutDeliveryTruthSummary(
 	input: PrCloseoutInput,
 	generatedAt: string,
-	deriveOptions?: PrCloseoutStatePacketOptions,
+	deriveOptions?: PrCloseoutDeliveryTruthDerivationOptions,
 ): PrCloseoutDeliveryTruthSummary {
 	const derivedVerdicts = deriveOptions
 		? buildPrCloseoutStatePackets(input, {

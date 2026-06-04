@@ -21,17 +21,21 @@ import {
 import {
 	buildPrCloseoutDeliveryTruthSummary,
 	collectDeliveryTruthBlockers,
+	type PrCloseoutDeliveryTruthDerivationOptions,
 } from "./delivery-truth.js";
 import { buildLifecycleSnapshot } from "./lifecycle-snapshot.js";
-import { buildTraceabilitySummary, summarizeChecks } from "./report-helpers.js";
+import {
+	buildTraceabilitySummary,
+	selectDirtyPathsExcluded,
+	selectHarnessGateEvidenceSource,
+	summarizeChecks,
+} from "./report-helpers.js";
 import { buildPrCloseoutRecoveryState } from "./recovery.js";
 import { buildPrCloseoutSnapshot } from "./snapshot.js";
 import { deriveNextAction } from "./status.js";
 import { PR_CLOSEOUT_SCHEMA_VERSION } from "./types.js";
-import type { PrCloseoutStatePacketOptions } from "./state-packets.js";
 import type {
 	PrCloseoutBlocker,
-	PrCloseoutHarnessGateEvidenceSource,
 	PrCloseoutInput,
 	PrCloseoutReport,
 } from "./types.js";
@@ -39,7 +43,7 @@ import type {
 /** Options controlling report timestamping and opt-in derived verifier evidence. */
 export interface PrCloseoutReportOptions {
 	now?: Date;
-	deriveDeliveryTruthFromStatePackets?: PrCloseoutStatePacketOptions;
+	deriveDeliveryTruthFromStatePackets?: PrCloseoutDeliveryTruthDerivationOptions;
 }
 
 function buildPrCloseoutReportValue(
@@ -52,21 +56,13 @@ function buildPrCloseoutReportValue(
 	const checks = input.checks ?? [];
 	const reviewThreads = input.reviewThreads ?? { unresolved: null };
 	const traceability = buildTraceabilitySummary(input);
-	const harnessGateEvidenceSource: PrCloseoutHarnessGateEvidenceSource =
-		input.closeoutGates !== undefined
-			? "closeout_gates"
-			: input.phaseExit !== undefined
-				? "phase_exit"
-				: "missing";
+	const harnessGateEvidenceSource = selectHarnessGateEvidenceSource(input);
 	const harnessGates = buildHarnessGateSummary(
 		input.closeoutGates ?? input.phaseExit,
 		harnessGateEvidenceSource,
 	);
-	const dirtyPaths = input.dirtyPaths ?? [];
 	const tools = input.tools ?? [];
-	const dirtyPathsExcluded = dirtyPaths.filter(
-		(path) => path.classification === "unrelated_local_noise",
-	);
+	const dirtyPathsExcluded = selectDirtyPathsExcluded(input);
 
 	const claims = buildCloseoutClaims(input, checks, reviewThreads, generatedAt);
 	const deliveryTruth = buildPrCloseoutDeliveryTruthSummary(
