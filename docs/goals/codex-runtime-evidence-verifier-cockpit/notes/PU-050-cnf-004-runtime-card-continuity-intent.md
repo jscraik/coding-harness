@@ -1,5 +1,16 @@
 # PU-050 / CNF-004 Runtime-Card Continuity Intent
 
+## Table of Contents
+
+- [Intent](#intent)
+- [Scope](#scope)
+- [Non-Goals](#non-goals)
+- [Architecture Boundary](#architecture-boundary)
+- [Implementation Plan](#implementation-plan)
+- [Validation Gates](#validation-gates)
+- [Review Requirements](#review-requirements)
+- [Explicit Non-Claims](#explicit-non-claims)
+
 ## Intent
 
 Add compact Codex continuity references to the existing runtime-card Codex

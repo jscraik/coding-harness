@@ -1,5 +1,18 @@
 # PU-049 CNF-003 Risk-Tiered Mutation Authority Intent
 
+## Table of Contents
+
+- [Intent Contract](`#intent-contract`)
+- [Purpose](`#purpose`)
+- [Source Evidence](`#source-evidence`)
+- [Scope](`#scope`)
+- [Non-Goals](`#non-goals`)
+- [Design Intent](`#design-intent`)
+- [Acceptance Criteria](`#acceptance-criteria`)
+- [Validation Plan](`#validation-plan`)
+- [Review Requirement](`#review-requirement`)
+- [Stop Conditions](`#stop-conditions`)
+
 ## Intent Contract
 
 ```yaml
@@ -200,13 +213,37 @@ Validation owns the safety rule:
 Run mandatory pre-handoff gates:
 
 - `pnpm exec vitest run src/lib/decision/route-decision.test.ts`
+  - Expected: exit code 0, all route-decision tests passing
+  - On failure: review failing assertions, fix route-decision logic or tests, rerun until pass
+  - Owner: Coordinator
 - `pnpm exec vitest run src/commands/decision-request.test.ts`
+  - Expected: exit code 0, all decision-request tests passing
+  - On failure: review failing assertions, fix decision-request command or tests, rerun until pass
+  - Owner: Coordinator
 - `pnpm typecheck`
+  - Expected: exit code 0, no TypeScript type errors
+  - On failure: resolve TypeScript compilation errors before proceeding
+  - Owner: Coordinator
 - `bash scripts/run-harness-gate.sh docs-gate --mode required --json`
+  - Expected: exit code 0, docs-gate reports no blocking drift
+  - On failure: review JSON output for failing gates, fix docs or lifecycle metadata, rerun until pass
+  - Owner: Coordinator
 - `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit`
+  - Expected: exit code 0, goal board validates successfully
+  - On failure: review script output for missing or malformed goal board entries, update goal board, rerun until pass
+  - Owner: Coordinator
 - `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .`
+  - Expected: exit code 0, audit freshness check passes
+  - On failure: review script output for stale audit entries, update receipts or audit docs, rerun until pass
+  - Owner: Coordinator
 - `bash scripts/validate-codestyle.sh --fast`
+  - Expected: exit code 0, codestyle validation passes
+  - On failure: fix codestyle violations reported by the script, rerun until pass
+  - Owner: Coordinator
 - `pnpm check`
+  - Expected: exit code 0, all checks pass
+  - On failure: review check output, fix reported issues, rerun until pass
+  - Owner: Coordinator
 
 ## Review Requirement
 
