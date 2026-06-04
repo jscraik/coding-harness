@@ -399,13 +399,13 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness warning">8 open PRs under green-sweep; PR #332 is first blocker, R272</div>
+      <div class="source-chip" aria-label="Source freshness warning">5 open PRs; #332/#334/#337 merged into stack branches</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
       <div class="metric"><span>Goal status</span><strong>Active, full lifecycle</strong></div>
       <div class="metric"><span>Completed stack</span><strong>11 tracker cards done</strong></div>
-      <div class="metric"><span>Outstanding work</span><strong>8 open PRs + producer/final proof</strong></div>
+      <div class="metric"><span>Outstanding work</span><strong>5 open PRs + producer/final proof</strong></div>
       <div class="metric"><span>Claim boundary</span><strong>Completion unclaimed</strong></div>
       <div class="metric"><span>Source files</span><strong>goal.md, state.yaml, receipts.jsonl, Kanban</strong></div>
     </section>
@@ -485,7 +485,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts and route-truth receipts through <code>R272</code>, with the PU-053/PU-014 base receipts preserved during the PR #338 stack repair. PU-053/PU-014 locally implemented the read-only <code>src/lib/pr-closeout/</code> bridge for deriving validated external-state and review-state packets from normalized closeout input; R261/R262 keep its reviewer-artifact lane blocked and its adopted audit sources anchored. Later PR-stack receipts record systemic pre-PR gate misses, CodeRabbit-trigger evidence, and the fallback PR-stack sweep artifact after two subagent artifact failures. Live route truth before this repair showed PR #332 as the first implementation-gate blocker, PR #331/#333/#334/#335 with earlier PR-template/pr-pipeline failures, PR #336/#337 CircleCI-green but stack/Snyk-blocked, and PR #338 needing current conflict repair. This tracked visualization remains an orientation artifact, not proof of PR green, Snyk success, fresh review-thread resolution, independent reviewer completion, live Codex Desktop extraction, runtime producer emission, final delivery-truth consumption for merge/Judge/Linear/root lanes, Judge/PM readiness, or final goal completion.</p>
+    <p class="footer">Snapshot generated from current goal artifacts and route-truth receipts through <code>R273</code>, with the PU-053/PU-014 base receipts preserved during the PR #338 stack repair. PU-053/PU-014 locally implemented the read-only <code>src/lib/pr-closeout/</code> bridge for deriving validated external-state and review-state packets from normalized closeout input; R261/R262 keep its reviewer-artifact lane blocked and its adopted audit sources anchored. Later PR-stack receipts record systemic pre-PR gate misses, CodeRabbit-trigger evidence, and the fallback PR-stack sweep artifact after two subagent artifact failures. Current live route truth shows five open PRs (#331, #333, #335, #336, #338), with PR #332, #334, and #337 merged into stack branches. PR #338 remains the active conflict-repair lane after pulling the merged #336/#337 base. This tracked visualization remains an orientation artifact, not proof of PR green, Snyk success, fresh review-thread resolution, independent reviewer completion, live Codex Desktop extraction, runtime producer emission, final delivery-truth consumption for merge/Judge/Linear/root lanes, Judge/PM readiness, or final goal completion.</p>
   </main>
 
   <script>
@@ -767,11 +767,11 @@
         id: "open-pr-stack-green-sweep",
         lane: "remote",
         title: "Open PR stack green-sweep",
-        status: "active subagent triage for 7 PRs",
-        tags: ["PR #331-#337", "pr-green-sweep", "GitHub"],
-        summary: "Live GitHub reports seven open stacked PRs. The coordinator launched a bounded PR sweep subagent so PR triage runs in parallel with local slice work instead of waiting for PU-054.",
-        evidence: ["gh pr list -> pass on 2026-06-04T08:55:43Z", "Open PRs: #331, #332, #333, #334, #335, #336, #337", "#331: MERGEABLE, pr-template and pr-pipeline failing, Snyk external error", "#332: MERGEABLE, CodeRabbit pending before manual trigger, visible CircleCI green, Snyk external error", "#333: MERGEABLE, pr-template and pr-pipeline failing, Snyk external error", "#334: MERGEABLE, pr-template and pr-pipeline failing, Snyk external error", "#335: MERGEABLE, pr-template and pr-pipeline failing, Snyk external error", "#336: draft MERGEABLE, visible CircleCI green, Snyk external error", "#337: draft MERGEABLE, visible CircleCI green, Snyk external error", "Manual @coderabbitai review this pr comments posted on PR #331-#337", "Comment URLs recorded in R266", "CodeRabbit finishing-touch findings are pre-PR gate misses until classified otherwise", "Subagent /root/pr_stack_green_sweep launched with expected artifact artifacts/reviews/pr331-337-green-sweep-triage.md", "R264/R266: open PR stack route truth"],
-        next: "Wait for the PR sweep artifact and refreshed CodeRabbit state, then classify each finding as local or systemic, map the deterministic pre-PR gate that should have caught it, and fix the highest-ranked auto-fixable blocker while preserving separate CI, review-thread, draft, Snyk, and mergeability lanes.",
+        status: "5 open PRs after merged-stack pull",
+        tags: ["PR #331/#333/#335/#336/#338", "pr-green-sweep", "GitHub"],
+        summary: "Live GitHub now reports five open stacked PRs. PR #332, #334, and #337 are merged into their stack base branches, and PR #338 is the active conflict-repair lane after pulling the merged #336/#337 base.",
+        evidence: ["gh pr list -> pass on 2026-06-04", "Open PRs: #331, #333, #335, #336, #338", "Merged stack PRs: #332 -> #331 branch, #334 -> #333 branch, #337 -> #336 branch", "main and origin/main -> 50a6d0b5", "PR #336 remote/local stack head -> abbe0b7f849d8afbd61c6bc58a3a6c75dbc401ec", "PR #338 conflict repair worktree -> /private/tmp/coding-harness-pr338-repair-1780641123", "Manual @coderabbitai review this pr comments remain request evidence only", "CodeRabbit finishing-touch findings are pre-PR gate misses until classified otherwise"],
+        next: "Finish PR #338 conflict repair, then refresh open PR #331/#333/#335/#336/#338 checks, CodeRabbit/review-thread truth, external Snyk disposition, and mergeability as separate lanes.",
         risk: "This is live inventory and triage routing only. It does not prove any PR is green, merge-ready, reviewed, or safe to merge."
       },
       {

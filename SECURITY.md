@@ -1,3 +1,30 @@
+---
+doc_schema: coding-harness-doc/v1
+doc_type: security
+authority: canon
+canon_class: canonical
+distribution: source-only
+audience:
+  - human-operator
+  - security-reporter
+  - coding-harness-maintainer
+lifecycle_state: active
+owner: coding-harness-maintainers
+created: 2026-06-04
+last_reviewed: 2026-06-04
+review_cadence: quarterly
+maintenance_trigger:
+  - security-policy-change
+  - scanner-baseline-change
+  - vulnerability-reporting-change
+semver_impact: minor
+validated_by:
+  - pnpm docs:lifecycle
+depends_on:
+  - CONTRIBUTING.md
+  - docs/agents/06-security-and-governance.md
+---
+
 # Security Policy
 
 ## Supported Versions

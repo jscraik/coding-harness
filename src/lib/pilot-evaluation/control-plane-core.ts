@@ -300,7 +300,7 @@ function loadAdapterRegistry(registryPath?: string): {
 	const warnings: string[] = [];
 	const document = readJsonFile<AdapterRegistryDocument>(path);
 
-	if (!document || document.schemaVersion !== "agent-adapter-registry/v1") {
+	if (document?.schemaVersion !== "agent-adapter-registry/v1") {
 		warnings.push(
 			`Adapter registry missing or invalid at ${path}; provider normalization will remain degraded`,
 		);
@@ -1363,7 +1363,7 @@ function getNextRolloutStage(stage: RolloutStage): RolloutStage | null {
 
 function readRolloutWindowHistory(historyPath: string): RolloutWindowHistory {
 	const history = readJsonFile<RolloutWindowHistory>(historyPath);
-	if (!history || history.schemaVersion !== "rollout-window-history/v1") {
+	if (history?.schemaVersion !== "rollout-window-history/v1") {
 		return {
 			schemaVersion: "rollout-window-history/v1",
 			...createControlPlaneMetadata(),

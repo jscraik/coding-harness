@@ -316,6 +316,57 @@ describe("validatePromptContextReceipt", () => {
 		);
 	});
 
+	it("rejects non-instruction source kinds on instruction source refs", () => {
+		const result = validatePromptContextReceipt(
+			validReceipt({
+				instructionSources: [
+					{
+						ref: "plugin:github",
+						sourceKind: "plugin",
+						authorityLayer: "trusted_skill",
+						hash: null,
+						freshness: "current",
+						redactionStatus: "redacted",
+					},
+					{
+						ref: "mcp:linear",
+						sourceKind: "mcp",
+						authorityLayer: "trusted_skill",
+						hash: null,
+						freshness: "current",
+						redactionStatus: "redacted",
+					},
+					{
+						ref: "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+						sourceKind: "goal",
+						authorityLayer: "repo_instruction",
+						hash: null,
+						freshness: "current",
+						redactionStatus: "redacted",
+					},
+				],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "instructionSources[0].sourceKind must be an instruction source kind for instructionSources",
+					path: "instructionSources[0].sourceKind",
+				}),
+				expect.objectContaining({
+					code: "instructionSources[1].sourceKind must be an instruction source kind for instructionSources",
+					path: "instructionSources[1].sourceKind",
+				}),
+				expect.objectContaining({
+					code: "instructionSources[2].sourceKind must be an instruction source kind for instructionSources",
+					path: "instructionSources[2].sourceKind",
+				}),
+			]),
+		);
+	});
+
 	it("accepts orientation-only authority layers on non-instruction source surfaces", () => {
 		const result = validatePromptContextReceipt(
 			validReceipt({

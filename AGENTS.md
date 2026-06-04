@@ -1,5 +1,29 @@
 ---
 schema_version: 1
+doc_schema: coding-harness-doc/v1
+doc_type: operator-instructions
+authority: canon
+canon_class: canonical
+distribution: source-only
+audience:
+  - codex-agent
+  - coding-harness-maintainer
+lifecycle_state: active
+owner: coding-harness-maintainers
+created: 2026-06-04
+last_reviewed: 2026-06-04
+review_cadence: on-change
+maintenance_trigger:
+  - agent-operating-policy-change
+  - validation-contract-change
+  - workflow-governance-change
+semver_impact: minor
+validated_by:
+  - pnpm docs:lifecycle
+depends_on:
+  - CODESTYLE.md
+  - UBIQUITOUS_LANGUAGE.md
+  - docs/README.md
 ---
 
 # Coding Harness - AGENTS.md

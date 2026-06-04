@@ -315,15 +315,11 @@ function validateItem(value, index, ids, errors) {
 	if (value.state === "applied" && value.appliedAt === null) {
 		add(errors, `${path}.appliedAt`, "is required for applied items");
 	}
-	if (
-		value.state === "applied" &&
-		value.expectedClientUserMessageId !== null &&
-		value.appliedClientUserMessageId === null
-	) {
+	if (value.state === "applied" && value.appliedClientUserMessageId === null) {
 		add(
 			errors,
 			`${path}.appliedClientUserMessageId`,
-			"is required when an applied item expected a client user-message id",
+			"is required for applied items",
 		);
 	}
 	if (

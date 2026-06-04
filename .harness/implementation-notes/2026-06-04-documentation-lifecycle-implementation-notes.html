@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Documentation Lifecycle Implementation Notes</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #08090b;
+        --panel: #11151b;
+        --panel-2: #171c23;
+        --text: #f4f7fb;
+        --muted: #9aa7b7;
+        --line: #2a3442;
+        --accent: #ff8a00;
+        --accent-2: #ff4d1d;
+        --green: #54d18a;
+        --yellow: #ffd166;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 50% 0%, rgba(255, 138, 0, 0.18), transparent 32rem),
+          var(--bg);
+        color: var(--text);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        line-height: 1.55;
+      }
+
+      main {
+        width: min(1180px, calc(100vw - 40px));
+        margin: 0 auto;
+        padding: 40px 0 64px;
+      }
+
+      header {
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 24px;
+        margin-bottom: 28px;
+      }
+
+      .eyebrow {
+        color: var(--accent);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 8px 0 10px;
+        font-size: clamp(2.1rem, 5vw, 4.2rem);
+        line-height: 1;
+      }
+
+      h2 {
+        margin: 0 0 12px;
+        font-size: 1.1rem;
+      }
+
+      p {
+        margin: 0 0 12px;
+      }
+
+      code {
+        color: #ffd7aa;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 0.92em;
+      }
+
+      .lede {
+        max-width: 820px;
+        color: var(--muted);
+        font-size: 1.04rem;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 16px;
+      }
+
+      section,
+      .note {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent), var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 18px;
+      }
+
+      .span-4 {
+        grid-column: span 4;
+      }
+
+      .span-6 {
+        grid-column: span 6;
+      }
+
+      .span-8 {
+        grid-column: span 8;
+      }
+
+      .span-12 {
+        grid-column: span 12;
+      }
+
+      .status-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+        padding: 5px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel-2);
+        color: var(--muted);
+        font-size: 0.84rem;
+        font-weight: 600;
+      }
+
+      .pill.good {
+        border-color: rgba(84, 209, 138, 0.4);
+        color: var(--green);
+      }
+
+      .pill.watch {
+        border-color: rgba(255, 209, 102, 0.45);
+        color: var(--yellow);
+      }
+
+      ul,
+      ol {
+        margin: 0;
+        padding-left: 1.15rem;
+      }
+
+      li {
+        margin: 0 0 10px;
+      }
+
+      .timeline {
+        display: grid;
+        gap: 12px;
+      }
+
+      .timeline article {
+        border-left: 3px solid var(--accent);
+        padding: 2px 0 2px 14px;
+      }
+
+      .timeline strong {
+        display: block;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 10px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        color: var(--muted);
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      @media (max-width: 820px) {
+        main {
+          width: min(100vw - 24px, 720px);
+          padding-top: 24px;
+        }
+
+        .span-4,
+        .span-6,
+        .span-8 {
+          grid-column: span 12;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="eyebrow">synAIpse AI Delivery Harness</div>
+        <h1>Documentation Lifecycle Implementation Notes</h1>
+        <p class="lede">
+          Running implementation record for the Coding Harness documentation architecture work:
+          what changed, what was interpreted, and which tradeoffs matter before this branch is
+          handed to PR review.
+        </p>
+        <div class="status-row">
+          <span class="pill good">Docs lifecycle gate passing</span>
+          <span class="pill good">Docs gate passing</span>
+          <span class="pill watch">Remote CI and PR reviews pending after push</span>
+          <span class="pill">Generated 2026-06-04</span>
+        </div>
+      </header>
+
+      <div class="grid">
+        <section class="span-8">
+          <h2>Source Inputs</h2>
+          <ul>
+            <li>
+              Plan:
+              <code>.harness/plan/2026-06-04-documentation-architecture-comparison-plan.md</code>
+            </li>
+            <li>
+              Research audit:
+              <code>.harness/research/audits/2026-06-04-documentation-architecture-comparison.md</code>
+            </li>
+            <li>
+              Lifecycle metadata spec:
+              <code>.harness/specs/2026-06-04-documentation-research-lifecycle-metadata-spec.md</code>
+            </li>
+            <li>
+              Reader-task eval spec:
+              <code>.harness/specs/2026-06-04-reader-task-documentation-eval-spec.md</code>
+            </li>
+            <li>
+              Linear planning artifact:
+              <code>.harness/linear/2026-06-04-JSC-392-coding-harness-documentation-lifecycle-linear-plan.md</code>
+            </li>
+          </ul>
+        </section>
+
+        <section class="span-4">
+          <h2>Implementation Shape</h2>
+          <p>
+            This branch treats documentation as governed product surface. It adds lifecycle metadata,
+            a manifest, a validator, docs-gate integration, PR-template evidence fields, and a
+            controlled distinction between source docs, downstream-distributed docs, generated
+            artifacts, and historical records.
+          </p>
+        </section>
+
+        <section class="span-12">
+          <h2>Decisions Made During Implementation</h2>
+          <div class="timeline">
+            <article>
+              <strong>Lifecycle metadata is required for governed docs, not every file in the repo.</strong>
+              <span class="muted">
+                The plan called for lifecycle enforcement, but the useful boundary is governed
+                documentation and promoted .harness artifacts. Local runtime output, caches, and
+                advisory research stay outside hard enforcement unless explicitly promoted.
+              </span>
+            </article>
+            <article>
+              <strong>.harness artifacts are validated by role and state.</strong>
+              <span class="muted">
+                Plans, specs, Linear handoffs, and audits can become execution inputs or durable
+                evidence. The checker classifies them separately so Project Brain stays useful
+                without making every temporary artifact canonical.
+              </span>
+            </article>
+            <article>
+              <strong>The docs lifecycle checker was split into deeper modules.</strong>
+              <span class="muted">
+                The first implementation concentrated too much logic in
+                <code>src/lib/docs-surface/doc-lifecycle.ts</code>. It now delegates frontmatter,
+                path classification, distribution checks, .harness artifact checks, and reporting so
+                the size ratchet stays green and future rules have a clearer home.
+              </span>
+            </article>
+            <article>
+              <strong>The distribution guard is source-to-template aware.</strong>
+              <span class="muted">
+                Downstream projects should receive only intentionally distributed docs and templates.
+                The guard checks source metadata against <code>src/templates/**</code> so Coding
+                Harness doctrine can live in this repo without polluting customer projects by accident.
+              </span>
+            </article>
+            <article>
+              <strong>Reader-task evaluation is specified before implementation.</strong>
+              <span class="muted">
+                The next issue should prove whether humans and agents can answer real lifecycle
+                questions from the docs. The spec keeps that evaluation deterministic and advisory
+                first, rather than immediately turning it into a merge-blocking LLM judge.
+              </span>
+            </article>
+          </div>
+        </section>
+
+        <section class="span-6">
+          <h2>Tradeoffs</h2>
+          <ul>
+            <li>
+              <strong>Strict enough to prevent drift, flexible enough to migrate.</strong>
+              Legacy docs can be classified and brought under governance progressively; the branch
+              does not try to rewrite the entire documentation estate in one pass.
+            </li>
+            <li>
+              <strong>SemVer is advisory for now.</strong>
+              Metadata records downstream impact, but release automation is not yet blocked on every
+              SemVer classification. That keeps the first rollout usable while follow-up issues
+              harden policy.
+            </li>
+            <li>
+              <strong>Brand language is introduced as documentation, not a package rename.</strong>
+              The repo can describe synAIpse as the AI Delivery Harness while preserving Coding
+              Harness command/package compatibility until a separate migration is planned.
+            </li>
+          </ul>
+        </section>
+
+        <section class="span-6">
+          <h2>Things Changed While Proving</h2>
+          <ul>
+            <li>
+              Biome reformatted several touched TypeScript files. Remaining unsafe style suggestions
+              were repaired manually by converting string concatenation to template literals.
+            </li>
+            <li>
+              The initial lifecycle implementation exceeded the local file-size ratchet; that became
+              the prompt to split the checker into smaller modules instead of waiving the warning.
+            </li>
+            <li>
+              The PR closeout template now has explicit documentation lifecycle and SemVer fields, so
+              docs changes cannot hide inside a generic validation summary.
+            </li>
+          </ul>
+        </section>
+
+        <section class="span-12">
+          <h2>Validation Evidence Captured Before Final Commit</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Command</th>
+                <th>Status</th>
+                <th>What It Proves</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>pnpm docs:lifecycle --json</code></td>
+                <td>pass</td>
+                <td>Governed documentation and promoted .harness artifacts satisfy lifecycle metadata and manifest rules.</td>
+              </tr>
+              <tr>
+                <td><code>bash scripts/run-harness-gate.sh docs-gate --mode required --json</code></td>
+                <td>pass</td>
+                <td>Docs-gate reports no blocking documentation-governance findings for this slice.</td>
+              </tr>
+              <tr>
+                <td><code>pnpm typecheck</code></td>
+                <td>pass</td>
+                <td>TypeScript contracts compile after the docs lifecycle module split.</td>
+              </tr>
+              <tr>
+                <td><code>pnpm exec vitest run src/lib/docs-surface/doc-lifecycle.test.ts --reporter=verbose</code></td>
+                <td>pass</td>
+                <td>Focused lifecycle checker behavior is covered by targeted tests.</td>
+              </tr>
+              <tr>
+                <td><code>pnpm quality:size</code></td>
+                <td>pass</td>
+                <td>The checker split clears the file-size ratchet warning that appeared in the first implementation.</td>
+              </tr>
+              <tr>
+                <td><code>pnpm test:related</code></td>
+                <td>pass</td>
+                <td>Related tests pass; the run still prints existing drift-gate informational warnings unrelated to this change.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="span-12">
+          <h2>Open Lanes After Push</h2>
+          <ul>
+            <li>
+              In-app browser preview was attempted through both the source
+              <code>file://</code> path and the local
+              <code>http://127.0.0.1:8765/artifacts/implementation-notes.html</code>
+              artifact path. Browser policy blocked the file URL and the local artifact preview
+              returned <code>ERR_BLOCKED_BY_CLIENT</code>, so this tracked HTML file is the durable
+              notes record.
+            </li>
+            <li>Remote CI checks need to run on the pushed branch before merge readiness can be claimed.</li>
+            <li>CodeRabbit and independent review remain separate evidence lanes; this implementation note is not review approval.</li>
+            <li>Follow-up issues should implement the reader-task docs evaluation runner and promote lifecycle findings into richer automation only after the first governed pass is stable.</li>
+          </ul>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>
