@@ -287,7 +287,6 @@ function validateEnvironment(
 			"state must be approval_scope_mismatch when approvalScope differs from expectedApprovalScope.",
 		);
 	}
-	}
 	if (
 		permissionFactsAreKnown(permissions) &&
 		isBlank(asText(value.sandboxPolicyRef))

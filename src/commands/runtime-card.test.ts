@@ -664,6 +664,77 @@ describe("runRuntimeCardCLI", () => {
 		expect(card.codexRuntime.sessionRefs).toContain(
 			"artifact:.harness/runtime/permissions.json",
 		);
+		expect(card.codexRuntime.environmentRefs).toContain(
+			"artifact:.harness/runtime/sandbox-policy.json",
+		);
+	});
+
+	it("includes environment-scoped sandbox policy evidence in environmentRefs", async () => {
+		const repoRoot = setupRepo();
+		const evidencePath = writeCodexRuntimeEvidencePacket(repoRoot);
+		const { exitCode, output, error } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--issue",
+			"JSC-311",
+			"--evidence",
+			evidencePath,
+		]);
+
+		expect(exitCode).toBe(0);
+		expect(error).toBe("");
+		const card = JSON.parse(output);
+		expect(card.codexRuntime.environmentRefs).toBeDefined();
+		expect(card.codexRuntime.environmentRefs).toEqual(
+			expect.arrayContaining([
+				"artifact:.harness/runtime/sandbox-policy.json",
+			]),
+		);
+		const sandboxPolicyReceipt = card.codexRuntime.receiptRefs.find(
+			(ref: string) => ref.includes("sandbox-policy"),
+		);
+		expect(sandboxPolicyReceipt).toBe(
+			"artifact:.harness/runtime/sandbox-policy.json",
+		);
+	});
+
+	it("omits environmentRefs when environment.sandboxPolicyRef is missing", async () => {
+		const repoRoot = setupRepo();
+		const evidencePath = writeCodexRuntimeEvidencePacket(repoRoot, {
+			environment: {
+				environmentId: "codex-desktop:thread-123",
+				cwd: repoRoot,
+				expectedCwd: repoRoot,
+				executorKind: "codex_desktop",
+				approvalScope: "auto_review",
+				expectedApprovalScope: "auto_review",
+				sandboxPolicyRef: null,
+				state: "current",
+				failureClass: "sandbox_policy_ref_missing",
+			},
+		});
+		const { exitCode, output, error } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+			"--issue",
+			"JSC-311",
+			"--evidence",
+			evidencePath,
+		]);
+
+		expect(exitCode).toBe(0);
+		expect(error).toBe("");
+		const card = JSON.parse(output);
+		expect(card.codexRuntime.environmentRefs).toBeDefined();
+		expect(card.codexRuntime.environmentRefs).not.toContain(
+			"artifact:.harness/runtime/sandbox-policy.json",
+		);
+		const sandboxPolicyReceipt = card.codexRuntime.receiptRefs.find(
+			(ref: string) => ref.includes("sandbox-policy"),
+		);
+		expect(sandboxPolicyReceipt).toBeUndefined();
 	});
 
 	it("rejects malformed codex-runtime-evidence/v1 packets through --evidence", async () => {

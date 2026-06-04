@@ -711,9 +711,9 @@
         id: "cnf002-environment-permissions",
         lane: "implementation",
         title: "CNF-002 environment-scoped permissions",
-        status: "PR #332 draft; remote checks blocked",
+        status: "blocked",
         tags: ["permissions", "tool exposure", "environment"],
-        summary: "Implementation adds a codex-runtime-evidence environment snapshot and runtime-card environmentRefs so permission evidence is scoped to cwd, executor, approval scope, and sandbox policy evidence. PR #332 is open as a stacked draft on PR #331.",
+        summary: "PR #332 draft; remote checks blocked. Implementation adds a codex-runtime-evidence environment snapshot and runtime-card environmentRefs so permission evidence is scoped to cwd, executor, approval scope, and sandbox policy evidence. PR #332 is open as a stacked draft on PR #331.",
         evidence: ["docs/goals/.../notes/PU-048-cnf-002-env-permissions-intent.md", "src/lib/runtime/codex-runtime-evidence-{types,validation,producer,references,adapter}.ts", "src/lib/runtime/runtime-card-codex-runtime{,-validation}.ts", "src/lib/runtime/runtime-evidence-adapter.ts", "focused runtime evidence and runtime-card tests -> pass (88 tests)", "pnpm typecheck -> pass", "docs-gate -> pass", "validate-codestyle full -> pass", "pnpm check -> pass", "source checkout pr-template-gate on live PR body -> pass after durable evidence-map repair", "installed harness pr-template-gate on edited PR body -> pass", "PR #332 -> OPEN draft, MERGEABLE/UNSTABLE", "GitHub checks: ci/circleci: pr-template still failed on pre-repair status, Snyk quota failed, most other visible CircleCI lanes passed or completed", "R241: PR #332 body and route-truth freshness repaired", "artifacts/reviews/pu048-cnf-002-skill-lenses.md", "artifacts/reviews/pu048-cnf-002-reviewer-runtime-blocker.md"],
         next: "Push R241 route-truth and validator repair to PR #332 so remote checks rerun on a new head, then triage CircleCI pr-template/pr-pipeline, Snyk quota, and missing independent-review artifacts separately.",
         risk: "Live Codex Desktop extraction of these fields is still unproven; independent reviewer artifacts are blocked; remote CI is not green; delivery-truth consumption, Judge/PM readiness, and parent-goal completion remain separate proof lanes."
