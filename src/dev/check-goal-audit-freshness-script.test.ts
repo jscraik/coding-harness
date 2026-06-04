@@ -252,6 +252,37 @@ describe("check-goal-audit-freshness.py", () => {
 		});
 	});
 
+	it("rejects a declared review artifact when extension is not markdown", () => {
+		const root = createTempRoot("audit-freshness-review-artifact-non-md-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		mkdirSync(join(root, "artifacts/reviews"), { recursive: true });
+		const storedReceipt = {
+			...receipt(root),
+			changed_files: [
+				join(GOAL_DIR, "receipts.jsonl"),
+				"artifacts/reviews/pr336-live-ci-triage.json",
+			],
+		};
+		writeReceipts(root, [storedReceipt]);
+		writeFileSync(
+			join(root, "artifacts/reviews/pr336-live-ci-triage.json"),
+			'{"status":"triage"}\n',
+		);
+		runGit(root, [
+			"add",
+			join(GOAL_DIR, "receipts.jsonl"),
+			"artifacts/reviews/pr336-live-ci-triage.json",
+		]);
+		runGit(root, ["commit", "-m", "record non-markdown review artifact"]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"receipt.head_sha must match current repository HEAD",
+		);
+	});
+
 	it("accepts a shallow self-referential receipt checkout when declared files are goal-route evidence only", () => {
 		const root = createTempRoot("audit-freshness-shallow-source-");
 		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
