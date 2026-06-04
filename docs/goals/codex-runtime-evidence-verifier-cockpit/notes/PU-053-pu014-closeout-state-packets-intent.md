@@ -27,7 +27,7 @@ In scope:
 Out of scope:
 
 - public command authority beyond existing read-only `harness pr-closeout`
-- mutation of `/Users/jamiecraik/dev/codex`
+- mutation of `external-repo:codex`
 - Linear field mutation
 - PR merge, auto-merge, or closeout completion claims
 - treating runtime-card summaries as delivery-truth proof
@@ -50,11 +50,10 @@ Out of scope:
 
 ## Automation Plan
 
-- Add focused unit tests for passing packet derivation.
-- Add negative tests for missing PR head SHA, unavailable GitHub checks, unknown
-  review-thread state, and missing reviewer artifact proof.
-- Run the narrow focused tests before wider validation.
-- Run goal-board and audit-freshness after updating route-truth artifacts.
+- Add focused unit tests for passing packet derivation: run `pnpm exec vitest run src/lib/pr-closeout/state-packets.test.ts` and expect exit code 0 with all new packet derivation tests passing.
+- Add negative tests for missing PR head SHA, unavailable GitHub checks, unknown review-thread state, and missing reviewer artifact proof: run `pnpm exec vitest run src/lib/pr-closeout/state-packets.test.ts` or the broader suite with focused failure-case patterns and expect validator rejection assertions to pass.
+- Run the narrow-focused tests before wider validation: execute `pnpm exec vitest run src/lib/pr-closeout/state-packets.test.ts src/lib/external-state/external-state.test.ts src/lib/review-state/review-state.test.ts src/commands/pr-closeout.test.ts` expecting all tests to pass, then run `pnpm run test:related` expecting exit code 0.
+- Run goal-board and audit-freshness after updating route-truth artifacts: execute `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit` expecting exit code 0, then `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .` expecting exit code 0.
 
 ## Review Intent
 
