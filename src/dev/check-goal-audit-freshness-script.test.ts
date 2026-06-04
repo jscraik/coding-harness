@@ -230,6 +230,8 @@ describe("check-goal-audit-freshness.py", () => {
 				...receipt(root),
 				changed_files: [
 					".harness/active-artifacts.md",
+					".harness/implementation-notes/goal-kanban-board.html",
+					join(GOAL_DIR, "goal.md"),
 					join(GOAL_DIR, "receipts.jsonl"),
 					join(GOAL_DIR, "state.yaml"),
 					"scripts/check-goal-audit-freshness.py",
@@ -237,8 +239,14 @@ describe("check-goal-audit-freshness.py", () => {
 			},
 		]);
 		mkdirSync(join(root, ".harness"), { recursive: true });
+		mkdirSync(join(root, ".harness/implementation-notes"), { recursive: true });
 		mkdirSync(join(root, "scripts"), { recursive: true });
 		writeFileSync(join(root, ".harness/active-artifacts.md"), "route\n");
+		writeFileSync(
+			join(root, ".harness/implementation-notes/goal-kanban-board.html"),
+			"<main>route</main>\n",
+		);
+		writeFileSync(join(root, GOAL_DIR, "goal.md"), "# Goal route\n");
 		writeFileSync(join(root, GOAL_DIR, "state.yaml"), "status: route\n");
 		writeFileSync(
 			join(root, "scripts/check-goal-audit-freshness.py"),
@@ -247,6 +255,8 @@ describe("check-goal-audit-freshness.py", () => {
 		runGit(root, [
 			"add",
 			".harness/active-artifacts.md",
+			".harness/implementation-notes/goal-kanban-board.html",
+			join(GOAL_DIR, "goal.md"),
 			join(GOAL_DIR, "receipts.jsonl"),
 			join(GOAL_DIR, "state.yaml"),
 			"scripts/check-goal-audit-freshness.py",
