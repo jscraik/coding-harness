@@ -120,6 +120,8 @@ function toEnvironmentSource(packet: CodexRuntimeEvidence): RuntimeCardSource {
 		freshness:
 			state === "stale_cwd" || state === "approval_scope_mismatch"
 				? "stale"
+				: state === "missing_sandbox_policy"
+					? "missing"
 				: current
 					? "current"
 					: "unknown",
