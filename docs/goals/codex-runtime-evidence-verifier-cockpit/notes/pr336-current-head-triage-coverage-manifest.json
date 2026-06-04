@@ -1,0 +1,17 @@
+{
+	"schemaVersion": "reviewer-coverage-manifest/v1",
+	"expectedHeadSha": "0432410426f6127336763112f0fcca4a626d2689",
+	"synthesisStatus": "blocked",
+	"retryCount": 1,
+	"requiredReviewers": [
+		{
+			"role": "harness-ci-release-reviewer",
+			"artifact": "pr336-current-head-triage.md"
+		}
+	],
+	"context": {
+		"pr": 336,
+		"branch": "codex/jsc-363-cnf-006-steering-application-receipt",
+		"reason": "A PR triage subagent returned mailbox text claiming WROTE, but the expected artifact was absent when the coordinator verified the file."
+	}
+}

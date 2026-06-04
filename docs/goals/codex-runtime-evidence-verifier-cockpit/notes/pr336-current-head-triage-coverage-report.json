@@ -1,0 +1,32 @@
+{
+	"schemaVersion": "reviewer-coverage-receipt/v1",
+	"status": "blocked",
+	"checkedAt": "2026-06-04T06:45:23.964Z",
+	"manifest": "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/pr336-current-head-triage-coverage-manifest.json",
+	"reviewsDir": "artifacts/reviews",
+	"requestedRoles": [
+		{
+			"artifact": "artifacts/reviews/pr336-current-head-triage.md",
+			"expectedHeadSha": "0432410426f6127336763112f0fcca4a626d2689",
+			"role": "harness-ci-release-reviewer"
+		}
+	],
+	"completedRoles": [],
+	"completedArtifacts": [],
+	"blockedRoles": [],
+	"missingArtifacts": [
+		{
+			"artifact": "artifacts/reviews/pr336-current-head-triage.md",
+			"reason": "artifact_not_found",
+			"role": "harness-ci-release-reviewer"
+		}
+	],
+	"retryCount": 1,
+	"synthesisStatus": "blocked",
+	"evidenceRefs": [
+		"artifacts/reviews/pr336-current-head-triage.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/notes/pr336-current-head-triage-coverage-manifest.json"
+	],
+	"blockerClass": "missing_artifacts",
+	"reason": "one or more required reviewer artifacts are missing or lack proof status"
+}
