@@ -1471,6 +1471,15 @@ const APPROVED_PR_CLOSEOUT_PARENT_IMPORTS = new Map<string, readonly string[]>([
 			"../review-state/index.js",
 		],
 	],
+	[
+		"src/lib/pr-closeout/state-packet-delivery-truth.ts",
+		[
+			"../delivery-truth/index.js",
+			"../evidence/evidence-receipt.js",
+			"../external-state/index.js",
+			"../review-state/index.js",
+		],
+	],
 ]);
 const PR_CLOSEOUT_COMMAND_SUBMODULES = [
 	"./pr-closeout/args.js",

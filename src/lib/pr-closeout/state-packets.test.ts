@@ -45,6 +45,26 @@ describe("PR closeout state packet bridge", () => {
 			"linear",
 			"circleci",
 		]);
+		expect(result.deliveryTruth).toEqual([
+			expect.objectContaining({
+				claim: "remote_checks_current",
+				status: "pass",
+				source: "external_state",
+				evidenceUse: "claim_support",
+				verdictHeadSha: HEAD_SHA,
+			}),
+			expect.objectContaining({
+				claim: "review_threads_resolved",
+				status: "pass",
+				source: "review_state",
+				evidenceUse: "claim_support",
+				verdictHeadSha: HEAD_SHA,
+			}),
+		]);
+		expect(result.deliveryTruth.map((verdict) => verdict.claim)).toEqual([
+			"remote_checks_current",
+			"review_threads_resolved",
+		]);
 	});
 
 	it("keeps Linear orientation evidence from supporting external-state claims", () => {
@@ -152,6 +172,44 @@ describe("PR closeout state packet bridge", () => {
 			expect.arrayContaining([
 				"source_not_claim_support",
 				"source_not_passing",
+			]),
+		);
+		expect(result.deliveryTruth).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "remote_checks_current",
+					status: "blocked",
+					evidenceUse: "orientation",
+					blockerCode: "non_claim_support_evidence",
+				}),
+			]),
+		);
+	});
+
+	it("blocks derived review-thread truth when unresolved threads remain", () => {
+		const input = completeInput({
+			reviewThreads: {
+				unresolved: 2,
+				needsHuman: 1,
+				autofixable: 1,
+			},
+		});
+
+		const result = buildPrCloseoutStatePackets(input, {
+			repository: REPOSITORY,
+			generatedAt: GENERATED_AT,
+			fetchedAt: GENERATED_AT,
+		});
+
+		expect(result.reviewStateValidation.valid).toBe(true);
+		expect(result.deliveryTruth).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "review_threads_resolved",
+					status: "blocked",
+					freshness: "current",
+					blockerCode: "review_threads_unresolved",
+				}),
 			]),
 		);
 	});

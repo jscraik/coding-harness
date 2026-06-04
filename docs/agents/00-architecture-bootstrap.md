@@ -269,8 +269,10 @@ source completeness, TTL-derived staleness, head-SHA binding, and claim-support
 eligibility handled by validators before delivery-truth composition consumes
 those packets. When `src/lib/pr-closeout/` derives those packets from
 normalized closeout input, keep that bridge read-only and validator-backed; it
-must not turn raw PR, CI, review, or Linear summaries into closeout or merge
-authority.
+may compose only claim-scoped `remote_checks_current` and
+`review_threads_resolved` delivery-truth verdicts from validated packets, and
+must not turn raw PR, CI, review, or Linear summaries into closeout, Linear,
+root-hygiene, Judge/PM, or merge authority.
 
 Action-review receipt changes are high-risk-action governance packet work, not
 a new execution rail. Keep `action-review-receipt/v1` inside

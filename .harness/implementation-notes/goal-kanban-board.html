@@ -776,6 +776,17 @@
         risk: "Main delivery does not prove delivery-truth consumption, Judge/PM readiness, runtime producer emission, or parent-goal completion."
       },
       {
+        id: "pu054-closeout-delivery-truth",
+        lane: "implementation",
+        title: "PU-054 closeout delivery-truth seam",
+        status: "local validation passed; reviewer artifacts blocked",
+        tags: ["pr-closeout", "delivery-truth", "PU-054"],
+        summary: "src/lib/pr-closeout now has an opt-in delivery-truth bridge that derives only remote_checks_current and review_threads_resolved verdicts from validated closeout state packets.",
+        evidence: ["docs/goals/.../notes/PU-054-closeout-delivery-truth-intent.md", "src/lib/pr-closeout/state-packet-delivery-truth.ts", "src/lib/pr-closeout/state-packets.ts", "src/lib/pr-closeout/delivery-truth.ts", "src/lib/pr-closeout/evaluator.ts", "src/lib/pr-closeout/state-packets.test.ts", "src/lib/pr-closeout.test.ts", "src/lib/architecture/module-boundaries.test.ts", "ARCHITECTURE.md and governance docs updated", "focused closeout/state-packet tests -> pass", "architecture module-boundary tests -> pass", "pnpm typecheck -> pass", "Biome touched-file check -> pass", "git diff --check -> pass", "docs-gate -> pass", "quality:docstrings -> pass", "validate-codestyle --fast -> pass", "pnpm check -> pass", "artifacts/reviews/pu054-closeout-delivery-truth-skill-lenses.md", "artifacts/reviews/pu054-implementation-reviewer-runtime-blocker.md", "R263: local implementation route truth"],
+        next: "Run goal-board and audit-freshness validators, commit and push the stacked branch, open/update the PR lane, and triage PR/CI/review truth without claiming final merge/Judge/Linear/root delivery-truth support.",
+        risk: "This proves only local implementation and local validation. It does not prove independent reviewer completion, remote CI, review-thread resolution, Linear field updates, merge readiness, Judge/PM readiness, or parent-goal completion."
+      },
+      {
         id: "linear-scope",
         lane: "completed",
         title: "Linear JSC-363 attachment-backed alignment",
@@ -822,13 +833,13 @@
       {
         id: "delivery-truth-consumption",
         lane: "remaining",
-        title: "Delivery-truth consumption",
-        status: "blocked",
+        title: "Final delivery-truth consumption",
+        status: "partially implemented locally",
         tags: ["delivery-truth", "claim support", "closeout"],
-        summary: "Delivery-truth must separate local validation, remote checks, review threads, tracker state, root hygiene, and merge readiness.",
-        evidence: ["goal.md Completion Contract", "state.yaml blocked_done_claims include delivery-truth consumption", "src/lib/delivery-truth/"],
-        next: "Run or produce current evidence that the closeout path consumes delivery-truth verdicts for final claims.",
-        risk: "A green local check or merged PR could still be overclaimed as goal completion."
+        summary: "PU-054 derives only remote-check and review-thread verdicts. Final merge-ready, Judge/PM, Linear, root-hygiene, and runtime-producer claim support remain blocked.",
+        evidence: ["goal.md Completion Contract", "state.yaml blocked_done_claims include final delivery-truth consumption for merge/Judge/Linear/root lanes", "src/lib/delivery-truth/", "src/lib/pr-closeout/state-packet-delivery-truth.ts"],
+        next: "Add or validate current evidence for the remaining final-claim lanes before any closeout or Judge/PM-ready claim.",
+        risk: "A green local check or merged PR could still be overclaimed as goal completion if final claim families are blended."
       },
       {
         id: "final-proof-packets",

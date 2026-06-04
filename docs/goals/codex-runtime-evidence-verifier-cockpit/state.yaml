@@ -147,7 +147,7 @@ current_slice_gate:
     - "live-Codex-Desktop-clientUserMessageId-extraction"
     - "runtime producer emission"
     - "runtime-card-continuity-delivery-truth-consumption"
-    - "delivery-truth consumption"
+    - "final delivery-truth consumption for merge_ready, goal_ready_for_judge_pm, linear_state_aligned, and root_surface_tidy"
     - "Judge/PM-ready"
     - "goal completion"
 slice_review_contract:
