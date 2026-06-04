@@ -13,6 +13,11 @@ import {
 } from "../decision/validators.js";
 import type { RuntimeCardToolExposureProjection } from "../tool-exposure/types.js";
 import { validateRuntimeCardToolExposureProjection } from "../tool-exposure/validation.js";
+import {
+	CODEX_RUNTIME_CONTINUITY_REF_FIELDS,
+	type RuntimeCardCodexRuntimeContinuityProjection,
+} from "./runtime-card-codex-runtime.js";
+import { validateRuntimeCardReferenceArray } from "./runtime-card-reference-validation.js";
 import type {
 	RuntimeCard,
 	RuntimeCardFreshness,
@@ -99,6 +104,8 @@ export interface RuntimeEvidenceBundle {
 	sources: RuntimeCardSource[];
 	/** Optional compact tool-exposure projection for Codex runtime capability state. */
 	toolExposure?: RuntimeCardToolExposureProjection;
+	/** Optional compact Codex runtime continuity refs projected into runtime-card/v1. */
+	continuity?: RuntimeCardCodexRuntimeContinuityProjection;
 	/** Blocking conditions reported by the upstream collector or adapter. */
 	blockers: string[];
 }
@@ -310,6 +317,55 @@ function validateToolExposureSourceRef(
 	}
 }
 
+function validateContinuitySourceRefs(
+	continuity: unknown,
+	sources: unknown,
+	errors: HeValidationError[],
+): void {
+	if (continuity === undefined) return;
+	if (!isRecord(continuity)) {
+		errors.push(
+			toValidationError("continuity must be an object", "continuity"),
+		);
+		return;
+	}
+	const allowedFields = new Set<string>(CODEX_RUNTIME_CONTINUITY_REF_FIELDS);
+	for (const key of Object.keys(continuity)) {
+		if (!allowedFields.has(key)) {
+			errors.push(
+				toValidationError(
+					`continuity.${key} is not part of runtime-evidence-bundle/v1 continuity`,
+					`continuity.${key}`,
+				),
+			);
+		}
+	}
+	const sourceRefs = new Set<string>();
+	if (Array.isArray(sources)) {
+		for (const source of sources) {
+			if (isRecord(source) && typeof source.ref === "string") {
+				sourceRefs.add(source.ref);
+			}
+		}
+	}
+	for (const field of CODEX_RUNTIME_CONTINUITY_REF_FIELDS) {
+		const path = `continuity.${field}`;
+		const value = continuity[field];
+		validateRuntimeCardReferenceArray(value, path, errors);
+		if (!Array.isArray(value)) continue;
+		for (const [index, ref] of value.entries()) {
+			if (typeof ref === "string" && !sourceRefs.has(ref)) {
+				errors.push(
+					toValidationError(
+						`${path} entries must be backed by runtime evidence bundle sources`,
+						`${path}.${String(index)}`,
+					),
+				);
+			}
+		}
+	}
+}
+
 /**
  * Validates a runtime evidence bundle provenance object and appends any validation errors to `errors`.
  *
@@ -407,6 +463,7 @@ export function validateRuntimeEvidenceBundle(
 		}
 		validateToolExposureSourceRef(value.toolExposure, value.sources, errors);
 	}
+	validateContinuitySourceRefs(value.continuity, value.sources, errors);
 	validateStringArray(value.blockers, "blockers", errors);
 	return { valid: errors.length === 0, errors };
 }

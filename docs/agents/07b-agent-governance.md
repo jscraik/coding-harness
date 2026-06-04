@@ -138,6 +138,15 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   state, and failure class in the runtime evidence packet, require receipt
   backing for sandbox policy refs when permission facts are known, and project
   only compact `environmentRefs` into runtime-card summaries
+- runtime-card Codex continuity changes should keep thread, turn, trace, goal,
+  client-message, queue, approval, and heartbeat/automation refs inside
+  `src/lib/runtime` as compact producer-supplied pointers. Validators must
+  prove continuity refs are source-backed and receipt-backed, reject unknown
+  continuity fields and payload-like refs, and keep continuity advisory only:
+  no command authority, delivery-truth support, review-state support,
+  external-state support, merge-readiness proof, Judge/PM proof, or
+  goal-completion proof without a separately implemented and validated
+  consumer boundary.
 - runtime evidence receipt and delivery-truth changes that add or alter
   `evidence-receipt/v1`, `delivery-truth/v1`, claim-support policy,
   freshness, head-SHA, blocker-class, or source-kind rules should stay additive,
@@ -219,6 +228,15 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - Tracked secondary `.harness` context is not enough to authorize implementation; agent execution should still route through admitted `.harness/linear`, `.harness/refactors`, `.harness/specs`, or `.harness/plan` slices.
 - agent-native cockpit changes should keep next-action safety evidence, generated environment action contracts, and docs-gate-required operator surfaces synchronized before the PR can be considered merge-ready
 - RouteDecision lifecycle metadata is part of the agent-native cockpit contract: `route-decision/v1` must remain additive to `harness-decision/v1`, must not make target commands executable authority by itself, and must keep architecture-context plus docs-gate-required governance surfaces synchronized
+- RouteDecision risk-tiered mutation authority remains advisory and
+  non-executable: low-risk repo-local mutation routes may set
+  `requiresHuman=false` only when current evidence, validator ownership,
+  agent-local authority (`authority=agent_local`), and no network dependency
+  (`requiresNetwork=false`) are present, while destructive, external, tracker,
+  production, release, security, credential, merge, public-contract,
+  goal-completion, verifier-disagreement, ambiguous-governance, unknown, or
+  network-dependent mutation still requires human review and must route through
+  the decision-request or action-review authority surface where applicable.
 - generated hook setup or readiness changes should keep agent setup evidence synchronized: `scripts/setup-git-hooks.js` must install generated `prek` shims that derive `WORKTREE_ROOT` with `git rev-parse --show-toplevel` and default `PREK_HOME` to `$WORKTREE_ROOT/.cache/prek`, and `scripts/check-environment.sh` must fail drift across installed `pre-commit`, `pre-push`, and `commit-msg` shims
 - worktree bootstrap and generated Codex environment action changes should keep
   the shared Git common-config guard, detached-worktree branch attachment, and

@@ -206,6 +206,137 @@ describe("codex runtime evidence adapter", () => {
 		);
 	});
 
+	it("projects source-backed continuity refs from runtime-evidence-bundle/v1", () => {
+		const bundle = {
+			schemaVersion: "runtime-evidence-bundle/v1",
+			generatedAt: "2026-05-24T22:45:00Z",
+			issueKey: "JSC-363",
+			provenance: {
+				kind: "codex_runtime",
+				ref: "codex-runtime://turn-456",
+				collectedAt: "2026-05-24T22:40:00Z",
+			},
+			sources: [
+				{
+					kind: "session",
+					ref: "codex-runtime://thread-123",
+					freshness: "current",
+					status: "usable",
+					failureClass: null,
+				},
+				{
+					kind: "session",
+					ref: "codex-runtime://turn-456",
+					freshness: "current",
+					status: "usable",
+					failureClass: null,
+				},
+				{
+					kind: "session",
+					ref: "codex-runtime://trace-789",
+					freshness: "current",
+					status: "usable",
+					failureClass: null,
+				},
+				{
+					kind: "artifact",
+					ref: "codex-runtime://goal/JSC-363",
+					freshness: "current",
+					status: "usable",
+					failureClass: null,
+				},
+				{
+					kind: "session",
+					ref: "codex-runtime://message/client-abc",
+					freshness: "current",
+					status: "usable",
+					failureClass: null,
+				},
+				{
+					kind: "artifact",
+					ref: "codex-runtime://queue/item-1",
+					freshness: "current",
+					status: "usable",
+					failureClass: null,
+				},
+				{
+					kind: "artifact",
+					ref: "codex-runtime://approval/request-1",
+					freshness: "current",
+					status: "usable",
+					failureClass: null,
+				},
+				{
+					kind: "artifact",
+					ref: "codex-runtime://heartbeat/automation-1",
+					freshness: "current",
+					status: "usable",
+					failureClass: null,
+				},
+			],
+			continuity: {
+				threadRefs: ["codex-runtime://thread-123"],
+				turnRefs: ["codex-runtime://turn-456"],
+				traceRefs: ["codex-runtime://trace-789"],
+				goalRefs: ["codex-runtime://goal/JSC-363"],
+				clientMessageRefs: ["codex-runtime://message/client-abc"],
+				queueRefs: ["codex-runtime://queue/item-1"],
+				approvalRefs: ["codex-runtime://approval/request-1"],
+				heartbeatRefs: ["codex-runtime://heartbeat/automation-1"],
+			},
+			blockers: [],
+		};
+
+		expect(validateRuntimeEvidenceBundle(bundle)).toEqual({
+			valid: true,
+			errors: [],
+		});
+		expect(
+			inspectRuntimeEvidenceBundle(bundle, unexpectedPhaseExit).codexRuntime
+				?.continuity,
+		).toEqual(bundle.continuity);
+	});
+
+	it("rejects continuity refs that are not source-backed", () => {
+		const bundle = {
+			schemaVersion: "runtime-evidence-bundle/v1",
+			generatedAt: "2026-05-24T22:45:00Z",
+			issueKey: "JSC-363",
+			provenance: {
+				kind: "codex_runtime",
+				ref: "codex-runtime://turn-456",
+				collectedAt: "2026-05-24T22:40:00Z",
+			},
+			sources: [
+				{
+					kind: "session",
+					ref: "codex-runtime://turn-456",
+					freshness: "current",
+					status: "usable",
+					failureClass: null,
+				},
+			],
+			continuity: {
+				threadRefs: ["codex-runtime://thread-123"],
+				turnRefs: ["codex-runtime://turn-456"],
+				traceRefs: [],
+				goalRefs: [],
+				clientMessageRefs: [],
+				queueRefs: [],
+				approvalRefs: [],
+				heartbeatRefs: [],
+			},
+			blockers: [],
+		};
+
+		expect(validateRuntimeEvidenceBundle(bundle)).toMatchObject({
+			valid: false,
+			errors: expect.arrayContaining([
+				expect.objectContaining({ path: "continuity.threadRefs.0" }),
+			]),
+		});
+	});
+
 	it("downgrades unknown Codex source cleanliness instead of treating it as healthy", () => {
 		const packet = healthyPacket();
 		packet.sourceProvenance.dirtyState = "unknown";

@@ -108,6 +108,15 @@ guards. Keep this guide synchronized with `AGENTS.md`,
 architecture-context or agent-governance surfaces.
 For agent-native cockpit work, treat decision-envelope, generated environment action, hook setup, runtime-card evidence, and diagram-context changes as architecture-adjacent surfaces. Run `bash scripts/check-diagram-freshness.sh` explicitly for those changes, and use `bash scripts/refresh-diagram-context.sh --force` when the check reports stale or missing artifacts. Keep this guide synchronized with `AGENTS.md` and `docs/agents/07b-agent-governance.md` when `docs-gate` asks for architecture-context evidence.
 RouteDecision lifecycle metadata belongs to this cockpit architecture-adjacent lane: keep `route-decision/v1` contract changes additive to `harness-decision/v1`, refresh `AI/context/diagram-context.md`, and commit this guide with the required docs-gate governance surfaces when `docs-gate` reports the architecture-context surface.
+Risk-tiered RouteDecision mutation authority is still advisory route metadata:
+only low-risk repo-local mutation routes with current evidence, validator
+ownership, agent-local authority (`authority=agent_local`), and no network
+dependency (`requiresNetwork=false`) may omit human review, while destructive,
+production, release, security, credential, merge, public-contract,
+goal-completion, verifier-disagreement, ambiguous-governance, external-impact,
+tracker-sensitive, unknown, or network-dependent mutation remains HILT-governed.
+This policy must not turn target commands into execution authority or support
+delivery-truth, merge-readiness, Judge/PM, or goal-completion claims.
 Generated Codex environment action changes that add validation script actions or branch-attachment behavior are architecture-adjacent when they refresh `AI/context/diagram-context.md`; commit the refreshed context pack and this guide with the required docs-gate governance surfaces when docs-gate reports the architecture-context surface.
 Codex preflight changes are architecture-adjacent when they alter Local Memory,
 Project Brain, or runtime-readiness enforcement. Legacy positional
@@ -217,6 +226,14 @@ class inside `codex-runtime-evidence/v1`; project only compact
 `environmentRefs` into runtime-card summaries. Tool-exposure snapshots remain a
 separate exposure-summary module and should not be duplicated to satisfy this
 environment contract.
+Runtime-card Codex continuity belongs in the same runtime deep module. Keep
+thread, turn, trace, goal, client-message, queue, approval, and
+heartbeat/automation continuity as producer-supplied compact refs, validate
+them against runtime evidence bundle sources and runtime-card receipt refs, and
+project them only under `codexRuntime.continuity`. Do not infer continuity from
+timestamps, PR data, branch names, artifact paths, or model output, and do not
+let continuity refs authorize commands or satisfy delivery-truth, review-state,
+external-state, merge-readiness, Judge/PM, or goal-completion claims.
 
 Browser evidence packet changes are runtime-cockpit evidence work, not delivery
 truth. Keep `browser-evidence/v1` validation inside

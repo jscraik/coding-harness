@@ -179,6 +179,7 @@ function buildCodexRuntimeProjection(
 					source.freshness === "stale",
 			),
 		),
+		...(bundle.continuity ? { continuity: bundle.continuity } : {}),
 		...(bundle.toolExposure ? { toolExposure: bundle.toolExposure } : {}),
 	};
 }
