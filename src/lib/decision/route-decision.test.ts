@@ -465,6 +465,35 @@ describe("validateRouteDecision", () => {
 		);
 	});
 
+	it("rejects agent-local mutating routes with network dependency", () => {
+		const result = validateRouteDecision(
+			validRouteDecision({
+				status: "action_required",
+				route: {
+					id: "work",
+					label: "Work",
+					targetCommand: null,
+					targetSkill: "he-work",
+				},
+				mutates: true,
+				requiresHuman: false,
+				requiresNetwork: true,
+				mutationPolicy: {
+					scope: "repo_local",
+					riskTier: "low",
+					evidenceFreshness: "current",
+					validatorOwnership: "present",
+					authority: "agent_local",
+				},
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(errorCodes(result)).toContain(
+			"agent-local mutating routes require low-risk repo-local current validator-owned policy",
+		);
+	});
+
 	it("rejects mutating routes with an incomplete mutation policy", () => {
 		const result = validateRouteDecision(
 			validRouteDecision({

@@ -197,7 +197,7 @@ Validation owns the safety rule:
 
 ## Validation Plan
 
-Run focused validation first:
+Run mandatory pre-handoff gates:
 
 - `pnpm exec vitest run src/lib/decision/route-decision.test.ts`
 - `pnpm exec vitest run src/commands/decision-request.test.ts`
@@ -205,9 +205,6 @@ Run focused validation first:
 - `bash scripts/run-harness-gate.sh docs-gate --mode required --json`
 - `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit`
 - `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .`
-
-Widen if production source or docs-gate surfaces require it:
-
 - `bash scripts/validate-codestyle.sh --fast`
 - `pnpm check`
 
