@@ -28,6 +28,7 @@ export {
 	type PrCloseoutReport,
 	type PrCloseoutReviewArtifactInput,
 	type PrCloseoutReviewArtifactSummary,
+	type PrCloseoutReviewerArtifactProof,
 	type PrCloseoutReviewThreadsInput,
 	type PrCloseoutRollbackInput,
 	type PrCloseoutRuntimeEvidenceSummary,

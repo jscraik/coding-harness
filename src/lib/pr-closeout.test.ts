@@ -465,6 +465,70 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
+	it("blocks present review artifacts that lack matching verifier proof", () => {
+		const path = ".harness/review/pr-258-reviewer.md";
+		const report = buildPrCloseoutReport(
+			baseInput({
+				reviewArtifacts: [
+					{
+						path,
+						producer: "harness-product-code-reviewer",
+						status: "present",
+						evidenceRef: `artifact:${path}`,
+					},
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).toBe("fixable");
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "review_artifact",
+					reason: `Review artifact ${path} is present but lacks matching verifier proof.`,
+					fixableByCodex: true,
+					ref: `artifact:${path}`,
+				}),
+			]),
+		);
+		expect(report.lifecycleSnapshot.continuation.waitingOwner).toBe("reviewer");
+	});
+
+	it("accepts present review artifacts only when matching proof is evidence-verified", () => {
+		const path = ".harness/review/pr-258-reviewer.md";
+		const report = buildPrCloseoutReport(
+			baseInput({
+				reviewArtifacts: [
+					{
+						path,
+						producer: "harness-product-code-reviewer",
+						status: "present",
+						evidenceRef: `artifact:${path}`,
+					},
+				],
+				reviewerArtifactProofs: [
+					{
+						path,
+						producer: "harness-product-code-reviewer",
+						evidenceVerified: true,
+						receipt: `artifact-proof:${path}`,
+					},
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).toBe("ready");
+		expect(report.blockers).not.toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "review_artifact",
+				}),
+			]),
+		);
+	});
+
 	it("projects supplied delivery-truth verdicts without replacing closeout claims", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({

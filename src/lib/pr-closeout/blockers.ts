@@ -12,6 +12,7 @@ import type {
 	PrCloseoutInput,
 	PrCloseoutPullRequestInput,
 	PrCloseoutReviewArtifactInput,
+	PrCloseoutReviewerArtifactProof,
 	PrCloseoutReviewThreadsInput,
 	PrCloseoutToolInput,
 } from "./types.js";
@@ -222,10 +223,29 @@ export function collectReviewBlockers(
 /** Add blockers for expected independent-review artifacts that are unavailable. */
 export function collectReviewArtifactBlockers(
 	reviewArtifacts: readonly PrCloseoutReviewArtifactInput[],
+	reviewerArtifactProofs: readonly PrCloseoutReviewerArtifactProof[],
 	blockers: PrCloseoutBlocker[],
 ): void {
 	for (const artifact of reviewArtifacts) {
-		if (artifact.status === "present") continue;
+		if (artifact.status === "present") {
+			const proof = reviewerArtifactProofs.find(
+				(candidate) =>
+					candidate.path === artifact.path &&
+					candidate.producer === artifact.producer,
+			);
+			if (proof?.evidenceVerified === true) continue;
+			pushBlocker(blockers, {
+				surface: "review_artifact",
+				classification: "unknown",
+				kind: "state",
+				reason: proof
+					? `Review artifact ${artifact.path} is present but its verifier proof is not evidence-verified.`
+					: `Review artifact ${artifact.path} is present but lacks matching verifier proof.`,
+				fixableByCodex: true,
+				ref: proof?.receipt ?? artifact.evidenceRef ?? artifact.path,
+			});
+			continue;
+		}
 		pushBlocker(blockers, {
 			surface: "review_artifact",
 			classification: "unknown",
