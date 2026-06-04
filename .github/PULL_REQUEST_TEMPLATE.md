@@ -1,10 +1,40 @@
 # Pull request checklist
 
+Write for human maintainers first. Use `n.a.` with a concrete reason when a
+field does not apply. Do not paste secrets, raw transcripts, bulky telemetry,
+or local absolute paths.
+
 ## Summary
 
-- What changed (brief):
-- Why this change was needed:
-- Risk and rollback plan:
+- Problem:
+- Why now:
+- Intended outcome:
+- Out of scope:
+- Reviewer focus:
+- Risk and rollback:
+
+## Behavior Proof
+
+Complete this section when the PR changes runtime behavior, CLI behavior,
+generated artifacts, validation behavior, agent workflow behavior, user-facing
+docs, or any observable operator experience. Use `n.a.` with a concrete reason
+for docs-only, metadata-only, or evidence-only changes where no behavior path
+exists.
+
+- Behavior or issue addressed: describe the observable behavior, issue, or n.a. reason
+- Real environment tested: list the real environment, production path, or n.a. reason
+- Exact steps or command run after this patch: list exact steps, command, or n.a. reason
+- Evidence after fix: link artifact, copied output, screenshot, redacted log, runtime-card ref, or n.a. reason
+- Observed result after fix: state the observed result, or n.a. reason
+- What was not tested: list untested paths, or `none` with reason
+- Proof limitations or environment constraints: state limitations, blockers, or `none`
+- Before evidence, if available: link before evidence, summarize baseline, or `n.a.` with reason
+
+Behavior proof guidance: Behavior proof is separate from unit tests, lint,
+typecheck, and CI. Use it to show the actual production path or nearest
+meaningful operator path after the patch. If the exact path could not run,
+state the blocker and the nearest fallback. Do not paste secrets, raw
+transcripts, bulky telemetry, or local absolute paths.
 
 ## Work performed
 

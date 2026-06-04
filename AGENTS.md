@@ -428,7 +428,10 @@ Notes:
   `harness pr-closeout`, required PR metadata, or AI session/traceability
   evidence are agent-governance changes; keep PR template guidance,
   validation docs, CLI docs, and `docs/agents/07b-agent-governance.md`
-  synchronized in the same PR.
+  synchronized in the same PR. If the PR template or downstream scaffolded PR
+  template changes the `Behavior Proof` evidence lane, also keep README
+  guidance, root agent guidance, and affected deep-module README files
+  synchronized so docs-gate can prove the operator-facing contract.
 - `pr-closeout/v1` closeout success is claim/evidence driven: required
   closeout claims must carry current evidence status, source, freshness,
   head SHA, blocker class, and verification timestamp, and missing or stale

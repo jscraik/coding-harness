@@ -3,11 +3,23 @@ import { validatePrTemplateBody } from "./pr-template-validator.js";
 
 const VALID_BODY = `## Summary
 
-- Linear issue: JSC-999
-- Plan IDs: plan-2026-03-12
-- What changed (brief): Added local PR-template gate command.
-- Why this change was needed: Prevent incomplete PR templates before CI.
-- Risk and rollback plan: Revert the command and docs updates.
+- Problem: PR bodies could omit required validation evidence.
+- Why now: CI should catch incomplete PR templates before review.
+- Intended outcome: PR-template gate rejects incomplete evidence.
+- Out of scope: Changing GitHub branch protection.
+- Reviewer focus: Validator behavior and fixture coverage.
+- Risk and rollback: Revert the command and docs updates.
+
+## Behavior Proof
+
+- Behavior or issue addressed: PR-template validation rejects incomplete PR bodies.
+- Real environment tested: local source-repo validator path through Vitest.
+- Exact steps or command run after this patch: pnpm vitest run src/lib/pr-template-validator.test.ts.
+- Evidence after fix: Command output recorded in Testing.
+- Observed result after fix: Complete PR body fixture passed validation.
+- What was not tested: live GitHub PR submission is n.a. because this fixture tests local validator behavior.
+- Proof limitations or environment constraints: none for the local validator path.
+- Before evidence, if available: n.a. because this fixture describes the valid after state.
 
 ## Work performed
 
@@ -212,7 +224,7 @@ describe("validatePrTemplateBody", () => {
 
 	it("does not treat heading names in prose as section starts", () => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			"Added the required `## Work performed` ledger to the PR body.",
 		);
 
@@ -221,6 +233,7 @@ describe("validatePrTemplateBody", () => {
 
 	it("fails when required sections are missing", () => {
 		const errors = validatePrTemplateBody("## Summary\n\nOnly summary.");
+		expect(errors).toContain("Missing required section: ## Behavior Proof");
 		expect(errors).toContain("Missing required section: ## Work performed");
 		expect(errors).toContain("Missing required section: ## Checklist");
 		expect(errors).toContain("Missing required section: ## Testing");
@@ -307,6 +320,7 @@ describe("validatePrTemplateBody", () => {
 
 This PR addresses the Work performed: field, the Checklist: items, Testing: outcomes, Review artifacts: links, and Notes: section.`;
 		const errors = validatePrTemplateBody(body);
+		expect(errors).toContain("Missing required section: ## Behavior Proof");
 		expect(errors).toContain("Missing required section: ## Work performed");
 		expect(errors).toContain("Missing required section: ## Checklist");
 		expect(errors).toContain("Missing required section: ## Testing");
@@ -470,7 +484,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 
 	it("fails repeated error admission without research options and chosen fix", () => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			"The same error happened twice while fixing CI.",
 		).replace(
 			"- Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).",
@@ -484,7 +498,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 
 	it("accepts repeated error admission with researched options and implementation evidence", () => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			"The same error happened twice while fixing CI.",
 		).replace(
 			"- Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).",
@@ -496,7 +510,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 
 	it("fails repeated error admission with keyword-only research evidence", () => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			"The same error happened twice while fixing CI.",
 		).replace(
 			"- Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).",
@@ -510,7 +524,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 
 	it("fails line-level design correction without pattern scope evidence", () => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			"A line-level correction changed one success/failure boolean to a named sentinel error, exposing API design generally.",
 		).replace(
 			"- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.",
@@ -524,7 +538,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 
 	it("accepts line-level design correction with generalized pattern inventory", () => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			"A line-level correction changed one success/failure boolean to a named sentinel error, exposing API design generally.",
 		).replace(
 			"- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.",
@@ -541,7 +555,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		"Codex should apply the same things in multiple places and consider the larger perspective.",
 	])("fails generalized pattern trigger '%s' without full inventory", (trigger) => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			trigger,
 		).replace(
 			"- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.",
@@ -558,7 +572,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		"This is high signal feedback and the user should never give the same feedback twice.",
 	])("fails broad steering trigger '%s' without meta proof", (trigger) => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			trigger,
 		).replace(
 			"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
@@ -576,7 +590,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		"The same exception appeared twice in a row.",
 	])("fails repeated troubleshooting trigger '%s' without research evidence", (trigger) => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			trigger,
 		).replace(
 			"- Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).",
@@ -596,7 +610,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		"Reran checks twice in a row to confirm a flaky test.",
 	])("does not require repeated-error research for broad phrase '%s'", (phrase) => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			phrase,
 		);
 
@@ -605,7 +619,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 
 	it("does not require pattern inventory for ordinary generally prose", () => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			"This generally improves docs without admitting a line-level correction.",
 		);
 
@@ -614,7 +628,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 
 	it("does not require pattern inventory for ordinary one-function prose", () => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			"Refactored one function to reduce duplication without admitting design feedback.",
 		);
 
@@ -623,7 +637,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 
 	it("rejects generic slash phrases as durable meta references", () => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			"Admitted repeated steering feedback into PR metadata.",
 		)
 			.replace(
@@ -678,7 +692,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 
 	it("counts newline-separated repeated-error candidates independently", () => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			"The same failure twice exposed a validator edge case.",
 		).replace(
 			"- Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).",
@@ -690,7 +704,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 
 	it("requires explicit changed-sibling evidence for pattern scope inventory", () => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			"Do not just fix that line; search the same pattern across related adapters.",
 		).replace(
 			"- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.",
@@ -709,7 +723,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		"user had to restate correction",
 	])("fails steering trigger '%s' without durable meta-behavior proof", (trigger) => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			`Jamie reported ${trigger} before the agent updated its operating system.`,
 		)
 			.replace(
@@ -732,7 +746,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 
 	it("fails steering feedback admission without durable meta-behavior proof", () => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			"Admitted repeated steering feedback into PR metadata.",
 		)
 			.replace(
@@ -755,7 +769,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 
 	it("fails current-session stop language without durable meta-behavior proof", () => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			"Jamie said the agent is not permitted to proceed until this becomes a durable control.",
 		)
 			.replace(
@@ -778,7 +792,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 
 	it("accepts steering admission n.a. only when it names a tracked exception", () => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			"Admitted repeated steering feedback into PR metadata.",
 		)
 			.replace(
@@ -795,7 +809,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 
 	it("accepts steering feedback admission with durable guard evidence", () => {
 		const body = VALID_BODY.replace(
-			"Added local PR-template gate command.",
+			"PR bodies could omit required validation evidence.",
 			"Admitted repeated steering feedback into PR metadata.",
 		)
 			.replace(

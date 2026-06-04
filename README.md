@@ -545,6 +545,14 @@ admitted, and record Repeated-error research when the same error happens twice.
 This keeps high-signal review and user steering in the repo operating system
 instead of leaving it in a chat transcript.
 
+PR bodies also carry a dedicated `Behavior Proof` section for changes that
+alter runtime behavior, CLI behavior, generated artifacts, validation behavior,
+agent workflow behavior, user-facing docs, or other observable operator
+experience. This lane is separate from unit tests and CI: it records the exact
+behavior addressed, the production path or nearest meaningful fallback tested,
+the evidence observed after the fix, untested paths, proof limits, and before
+evidence when available.
+
 Documentation changes must also classify documentation lifecycle impact and
 SemVer impact. Use `Documentation lifecycle impact` to state whether a doc was
 created, updated, deprecated, superseded, archived, removed, or not applicable,
