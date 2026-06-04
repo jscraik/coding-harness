@@ -411,13 +411,13 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness warning">origin/main snapshot: 50a6d0b5, 4 open stacked draft PRs (#331, #332, #333, #334), Linear Done, CNF scope adopted</div>
+      <div class="source-chip" aria-label="Source freshness warning">origin/main snapshot: a7692194, 0 open PRs, PR #337/#338 stack-only merged, Linear In Review</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>Paused, full lifecycle</strong></div>
-      <div class="metric"><span>Completed stack</span><strong>11 tracker cards done</strong></div>
-      <div class="metric"><span>Outstanding work</span><strong>7 gates + 6 CNF refinements</strong></div>
+      <div class="metric"><span>Goal status</span><strong>Post-merge reconciliation</strong></div>
+      <div class="metric"><span>Main-delivered PRs</span><strong>#321-#336</strong></div>
+      <div class="metric"><span>Outstanding work</span><strong>7 closeout gates + #337/#338 decision</strong></div>
       <div class="metric"><span>Claim boundary</span><strong>Completion unclaimed</strong></div>
       <div class="metric"><span>Source files</span><strong>goal.md, state.yaml, receipts.jsonl, Kanban</strong></div>
     </section>
@@ -497,7 +497,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts and route-truth receipts through <code>R274</code> plus live GitHub and local reconstruction evidence on 2026-06-04. <code>origin/main</code> is current through merged PR #335 at <code>e612bf3cbe405988b0f33acc66ae265b0fd83fc6</code>. PR #331 and PR #335 are merged route lanes. PR #336 is the active lane: CNF-006 was reconstructed from current main, the stale CodeRabbit commit was not replayed, and the reviewer-artifact proof gap was fixed at the current <code>pr-closeout</code> blocker boundary. Remote push, fresh CI, manual CodeRabbit review, review-thread resolution, Snyk status, merge readiness, delivery-truth consumption, Judge/PM readiness, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, local git ancestry, and Linear refresh evidence on 2026-06-04. <code>origin/main</code> is current at <code>a76921942cdbd8b3e1b449a05993d467700f770c</code>. GitHub reports zero open PRs. PR #331 through PR #336 are main-delivered; PR #337 and PR #338 are merged only into the stacked branch <code>codex/jsc-363-cnf-006-steering-application-receipt</code> and are not ancestors of current <code>origin/main</code>. Linear JSC-363 is <code>In Review</code> with a route-truth comment and full-lifecycle scope-note attachment. Runtime producer evidence, delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -606,7 +606,7 @@
         status: "done",
         tags: ["PR #329", "route cleanup", "merged"],
         summary: "Merged the route cleanup that retired the stale PR #324 lane.",
-        evidence: ["GitHub merged PR list: #329 merged at 2026-06-01T21:47:42Z", "Current live PR list has open PRs #331, #335, and #336 after the newer stack restarted"],
+        evidence: ["GitHub merged PR list: #329 merged at 2026-06-01T21:47:42Z", "R279 live GitHub refresh reports zero open PRs after PR #336 merged"],
         next: "Keep PR #324 out of active routing unless live GitHub shows it reopened.",
         risk: "Stale text can reintroduce old PR lanes if the goal board is not updated."
       },
@@ -617,7 +617,7 @@
         status: "done",
         tags: ["PR #330", "CircleCI", "merged"],
         summary: "Merged the CircleCI env recovery rule and PR #330 conflict/receipt reanchor lane into main.",
-        evidence: ["GitHub merged PR list: #330 merged at 2026-06-03T20:43:56Z", "origin/main top commit 50a6d0b5", "Newer live open PR list contains #331, #335, and #336"],
+        evidence: ["GitHub merged PR list: #330 merged at 2026-06-03T20:43:56Z", "origin/main top commit a76921942cdbd8b3e1b449a05993d467700f770c", "R279 live GitHub refresh reports zero open PRs after PR #336 merged"],
         next: "Move from PR repair to current-main goal re-evaluation and final completion audit.",
         risk: "PR #330 merge does not prove Linear scope alignment, runtime producer emission, delivery-truth consumption, or Judge/PM readiness."
       },
@@ -637,11 +637,11 @@
         lane: "intent",
         title: "Source freshness current",
         status: "done",
-        tags: ["main", "origin/main", "R274"],
-        summary: "The board is sourced from current main after PR #331 and PR #335 merged, plus the local PR #336 reconstruction receipt.",
-        evidence: ["origin/main -> e612bf3cbe405988b0f33acc66ae265b0fd83fc6", "PR #336 pre-repair head -> 841d8225f9897513c4ee87d92d24baaf4c9ae9c5", "local PR #336 repair head -> 29b3b87ed41d2a9015f1d26098f8ce027654a8b1", "R274 records current active PR #336 route truth"],
-        next: "Use this tracker as the current route surface while pushing and triaging PR #336.",
-        risk: "Current route truth proves orientation only. It does not prove CI green, review-thread resolution, Linear field text, or parent-goal completion."
+        tags: ["main", "origin/main", "R279"],
+        summary: "The board is sourced from synced local main plus live GitHub and Linear refresh evidence after PR #336 merged.",
+        evidence: ["origin/main -> a76921942cdbd8b3e1b449a05993d467700f770c", "Live GitHub open PR list -> []", "PR #331 through #336 -> MERGED into the main-delivery line", "PR #337/#338 -> MERGED into stacked branch, not ancestors of origin/main", "Linear comment e34da9b0 records the route-truth split"],
+        next: "Use this tracker as the current route surface while deciding whether PR #337/#338 require a main-delivery branch.",
+        risk: "Current route truth proves orientation only. It does not prove runtime producer evidence, delivery-truth consumption, Linear field text, or parent-goal completion."
       },
       {
         id: "codex-native-refinement",
@@ -693,10 +693,10 @@
         title: "Active PR stack",
         status: "active",
         tags: ["PR #327", "PR #328", "PR #330"],
-        summary: "PR #331 and PR #335 are merged into current main; PR #336 is the remaining active lane being reconstructed and repaired.",
-        evidence: ["PR #331 merged before PR #335 triage", "PR #335 merged with merge commit e612bf3cbe405988b0f33acc66ae265b0fd83fc6", "PR #336 pre-repair head 841d8225 had one unresolved Codex thread and stale conflicting autofix state", "local PR #336 repair head 29b3b87 validates reviewer artifact proof enforcement"],
-        next: "Push the PR #336 reconstruction, manually trigger CodeRabbit, resolve the submitted-head review thread, and refresh live checks.",
-        risk: "Open PR truth is separate from local validation, Snyk quota, review-thread resolution, merge readiness, and parent goal completion."
+        summary: "Live GitHub reports zero open PRs. PR #331 through PR #336 are merged into main; PR #337/#338 are stack-only merged and need an explicit current-main decision.",
+        evidence: ["gh pr list --state open -> []", "PR #336 merge commit -> a76921942cdbd8b3e1b449a05993d467700f770c", "PR #337 baseRefName -> codex/jsc-363-cnf-006-steering-application-receipt", "PR #338 baseRefName -> codex/jsc-363-cnf-006-steering-application-receipt", "git merge-base shows PR #337/#338 merge commits are not ancestors of HEAD"],
+        next: "Do not triage old open PR lanes. Decide whether to deliver PR #337/#338 work to main or mark it owner-accepted out of scope.",
+        risk: "Merged-to-stack is not merged-to-main. Counting stack-only commits as current-main evidence would overclaim."
       },
       {
         id: "browser-preview",
@@ -724,12 +724,12 @@
 		id: "cnf002-environment-permissions",
 		lane: "implementation",
 		title: "CNF-002 environment-scoped permissions",
-		status: "merged into PR #331 stack",
+		status: "done",
 		tags: ["permissions", "tool exposure", "environment"],
-		summary: "Implementation adds a codex-runtime-evidence environment snapshot and runtime-card environmentRefs so permission evidence is scoped to cwd, executor, approval scope, and sandbox policy evidence. The branch content is now present in the PR #331 stack.",
+		summary: "Implementation adds a codex-runtime-evidence environment snapshot and runtime-card environmentRefs so permission evidence is scoped to cwd, executor, approval scope, and sandbox policy evidence. The branch content is main-delivered through the PR #336 stack merge.",
         evidence: ["docs/goals/.../notes/PU-048-cnf-002-env-permissions-intent.md", "src/lib/runtime/codex-runtime-evidence-{types,validation,producer,references,adapter}.ts", "src/lib/runtime/runtime-card-codex-runtime{,-validation}.ts", "src/lib/runtime/runtime-evidence-adapter.ts", "focused runtime evidence and runtime-card tests -> pass (88 tests)", "pnpm typecheck -> pass", "docs-gate -> pass", "validate-codestyle full -> pass", "pnpm check -> pass", "source checkout pr-template-gate on live PR body -> pass after durable evidence-map repair", "installed harness pr-template-gate on edited PR body -> pass", "PR #332 -> OPEN draft, MERGEABLE/UNSTABLE", "GitHub checks: ci/circleci: pr-template still failed on pre-repair status, Snyk quota failed, most other visible CircleCI lanes passed or completed", "R241: PR #332 body and route-truth freshness repaired", "artifacts/reviews/pu048-cnf-002-skill-lenses.md", "artifacts/reviews/pu048-cnf-002-reviewer-runtime-blocker.md"],
-        next: "Validate the environment-source repair on PR #331 and keep Snyk quota plus missing independent-review artifacts separate from local implementation truth.",
-        risk: "Live Codex Desktop extraction of these fields is still unproven; independent reviewer artifacts are blocked; remote CI is not green; delivery-truth consumption, Judge/PM readiness, and parent-goal completion remain separate proof lanes."
+        next: "Use as main-delivered CNF-002 foundation evidence; keep live Codex Desktop extraction and delivery-truth consumption separate.",
+        risk: "Live Codex Desktop extraction of these fields is still unproven; delivery-truth consumption, Judge/PM readiness, and parent-goal completion remain separate proof lanes."
       },
       {
         id: "cnf003-risk-tiered-hilt",
@@ -739,18 +739,18 @@
         tags: ["HILT", "route decision", "agent-native"],
         summary: "RouteDecision now carries a mutationPolicy with scope, risk tier, evidence freshness, validator ownership, and authority. Agent-local mutation is limited to low-risk repo-local work with current evidence, validator ownership, and no network requirement.",
         evidence: ["docs/goals/.../notes/PU-049-cnf-003-risk-tier-authority-intent.md", "src/lib/decision/route-decision.ts", "src/lib/decision/route-decision.test.ts", "ARCHITECTURE.md", "docs/agents/00-architecture-bootstrap.md", "docs/agents/07b-agent-governance.md", "pnpm exec vitest run src/lib/decision/route-decision.test.ts -> pass (49 tests)", "pnpm exec vitest run src/commands/decision-request.test.ts -> pass (13 tests)", "pnpm typecheck -> pass", "docs-gate -> pass", "check-diagram-freshness -> pass", "validate-codestyle --fast -> pass", "artifacts/reviews/pu049-cnf-003-reviewer-runtime-blocker.md", "R242: CNF-003 route-truth refreshed"],
-        next: "Treat PR #333 as merged into PR #331; continue validating CNF-003 evidence through PR #331 and PR #335 rather than reopening a closed PR.",
+        next: "Treat CNF-003 as main-delivered foundation evidence through the merged stack.",
         risk: "The route remains advisory and must not authorize commands, mutate trackers, prove delivery truth, satisfy merge readiness, or close Judge/PM/goal completion. Independent reviewer artifact production is still blocked."
       },
       {
         id: "cnf004-runtime-card-continuity",
-        lane: "remote",
+        lane: "completed",
         title: "CNF-004 runtime-card continuity",
-        status: "active",
+        status: "done",
         tags: ["runtime-card", "continuity", "projection", "stacked PR", "remote unstable"],
         summary: "Runtime-card Codex projection now exposes compact codexRuntime.continuity refs for thread, turn, trace, goal, client message, active queue item, approval request, and heartbeat/automation continuity while preserving pointer-only redaction.",
         evidence: ["docs/goals/.../notes/PU-050-cnf-004-runtime-card-continuity-intent.md", "src/lib/runtime/runtime-card-codex-runtime.ts", "src/lib/runtime/runtime-card-codex-runtime-validation.ts", "src/lib/runtime/runtime-evidence-bundle.ts", "src/lib/runtime/runtime-evidence-adapter.ts", "runtime-card projection tests -> pass", "runtime-evidence adapter tests -> pass", "pnpm typecheck -> pass", "quality:docstrings -> pass", "docs-gate -> pass", "check-diagram-freshness -> pass", "validate-codestyle --fast -> pass", "pr-template-gate -> pass", "make hooks-pre-push -> pass", "PR #334 OPEN draft, base PR #333 branch, head 11cf544a, mergeStateStatus UNSTABLE", "artifacts/reviews/pu050-cnf-004-skill-lenses.md", "artifacts/reviews/pu050-cnf-004-implementation-reviewer-runtime-blocker.md", "R245: CNF-004 PR route-truth refresh"],
-        next: "Treat the CNF-004 branch content as part of the current stack and refresh PR #336 after lower-stack truth is repaired.",
+        next: "Use as main-delivered foundation evidence during the final runtime-card continuity audit.",
         risk: "Continuity refs are source and receipt pointers only; they do not prove live Codex Desktop extraction, delivery-truth consumption, review-state truth, external-state truth, merge readiness, Judge/PM readiness, slice completion, or parent-goal completion."
       },
       {
@@ -766,35 +766,35 @@
       },
       {
         id: "cnf006-application-receipts",
-        lane: "remote",
+        lane: "completed",
         title: "CNF-006 steering application receipts",
-        status: "active",
+        status: "done",
         tags: ["steering queue", "receipts", "runtime-card"],
-        summary: "CNF-006 adds a steering application receipt packet and validator; the active repair additionally makes present reviewer artifacts require matching evidence-verified proof before closeout can pass.",
-        evidence: ["src/lib/steering-queue/application-receipt.ts", "contracts/steering-application-receipt.schema.json", "scripts/validate-steering-application-receipt.cjs", "src/lib/pr-closeout/blockers.ts", "local validation: PR-closeout tests 125 passed, steering/schema tests 50 passed, packet schemas pass, typecheck pass", "R274 route-truth receipt"],
-        next: "Push PR #336, manually trigger CodeRabbit, resolve PRRT_kwDORWZJCc6HKIo4 after submitted-head proof, and refresh CI/review truth.",
-        risk: "Local validation does not prove remote CI green, CodeRabbit current-head review, Snyk status, merge readiness, delivery-truth consumption, Judge/PM readiness, or parent-goal completion."
+        summary: "CNF-006 adds a steering application receipt packet and validator; the repair also makes present reviewer artifacts require matching evidence-verified proof before closeout can pass.",
+        evidence: ["src/lib/steering-queue/application-receipt.ts", "contracts/steering-application-receipt.schema.json", "scripts/validate-steering-application-receipt.cjs", "src/lib/pr-closeout/blockers.ts", "PR #336 merged into main at a76921942cdbd8b3e1b449a05993d467700f770c", "current main includes CNF-006 packet and reviewer-proof repair files"],
+        next: "Use as main-delivered CNF-006 foundation evidence; do not claim PR #337/#338 work from this merge.",
+        risk: "Main delivery does not prove delivery-truth consumption, Judge/PM readiness, runtime producer emission, or parent-goal completion."
       },
       {
         id: "linear-scope",
         lane: "completed",
         title: "Linear JSC-363 attachment-backed alignment",
         status: "done",
-        tags: ["Linear", "tracker", "Done"],
-        summary: "Live Linear now reports JSC-363 as Done with the full-lifecycle scope-note attachment present; the title and description still contain Phase 1 wording.",
-        evidence: ["Linear JSC-363 status -> Done", "completedAt -> 2026-06-03T20:44:00Z", "Attachment: JSC-363 full lifecycle scope note", "PR attachments through #330 present"],
-        next: "Treat tracker alignment as attachment-backed. Do not claim Linear field text is current unless the title and description are updated.",
-        risk: "Linear Done and scope-note attachment prove tracker alignment only. They do not prove runtime producer emission, delivery-truth consumption, implementation completeness, or Judge/PM readiness."
+        tags: ["Linear", "tracker", "In Review"],
+        summary: "Live Linear reports JSC-363 as In Review with the full-lifecycle scope-note attachment present; the title and description still contain Phase 1 wording.",
+        evidence: ["Linear JSC-363 status -> In Review", "Attachment: JSC-363 full lifecycle scope note", "PR attachments through #338 present", "Linear comment e34da9b0 records post-merge route truth"],
+        next: "Treat tracker alignment as refreshed but field-text stale. Do not claim Linear field text is current unless the title and description are updated.",
+        risk: "Linear tracker refresh does not prove runtime producer emission, delivery-truth consumption, implementation completeness, or Judge/PM readiness."
       },
       {
         id: "stale-board-route",
         lane: "completed",
-        title: "Route truth refreshed for open stack",
+        title: "Route truth refreshed after PR merge",
         status: "done",
-        tags: ["goal.md", "state.yaml", "R274"],
-        summary: "state.yaml, receipts.jsonl, and this board now route execution to PR #336 after PR #331 and PR #335 merged.",
-        evidence: ["state.yaml current_slice_gate.status = local_pr336_current_main_reconstruction_validated_push_pending", "R274 head_sha -> 29b3b87ed41d2a9015f1d26098f8ce027654a8b1", "board footer names PR #336 as the active lane"],
-        next: "Keep the tracker synchronized with canonical goal artifacts after every push or merged PR lane.",
+        tags: ["goal.md", "state.yaml", "R279"],
+        summary: "state.yaml, receipts.jsonl, active-artifacts, and this board now route execution to post-merge reconciliation rather than old PR triage.",
+        evidence: ["state.yaml current_slice_gate.status = main_synced_pr_stack_reconciled_next_decision_required", "origin/main -> a76921942cdbd8b3e1b449a05993d467700f770c", "board footer names zero open PRs plus PR #337/#338 stack-only status"],
+        next: "Keep the tracker synchronized with canonical goal artifacts after every merge or route decision.",
         risk: "This fixes stale routing. It does not close remaining runtime, review, CI, delivery-truth, docs, or Judge/PM gates."
       },
       {
