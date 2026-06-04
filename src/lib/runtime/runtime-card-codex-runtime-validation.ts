@@ -6,6 +6,7 @@ import {
 	validateNumber,
 } from "../decision/validators.js";
 import { validateRuntimeCardToolExposureProjection } from "../tool-exposure/validation.js";
+import { CODEX_RUNTIME_CONTINUITY_REF_FIELDS } from "./runtime-card-codex-runtime.js";
 import { validateRuntimeCardReferenceArray } from "./runtime-card-reference-validation.js";
 
 const FORBIDDEN_RAW_EMBEDDING_FIELDS = new Set([
@@ -31,6 +32,7 @@ const CODEX_RUNTIME_PROJECTION_FIELDS = new Set([
 	"sessionRefs",
 	"environmentRefs",
 	"staleStateRefs",
+	"continuity",
 	"toolExposure",
 ]);
 
@@ -96,6 +98,39 @@ function validateRefsAreProjected(
 				),
 			);
 		}
+	}
+}
+
+function validateContinuityProjection(
+	value: unknown,
+	receiptRefs: Set<string>,
+	errors: HeValidationError[],
+): void {
+	if (value === undefined) return;
+	if (!isRecord(value)) {
+		errors.push(
+			toValidationError(
+				"codexRuntime.continuity must be an object",
+				"codexRuntime.continuity",
+			),
+		);
+		return;
+	}
+	const allowedFields = new Set<string>(CODEX_RUNTIME_CONTINUITY_REF_FIELDS);
+	for (const key of Object.keys(value)) {
+		if (!allowedFields.has(key)) {
+			errors.push(
+				toValidationError(
+					`codexRuntime.continuity.${key} is not part of the compact Codex continuity projection`,
+					`codexRuntime.continuity.${key}`,
+				),
+			);
+		}
+	}
+	for (const field of CODEX_RUNTIME_CONTINUITY_REF_FIELDS) {
+		const path = `codexRuntime.continuity.${field}`;
+		validateRuntimeCardReferenceArray(value[field], path, errors);
+		validateRefsAreProjected(value[field], path, receiptRefs, errors);
 	}
 }
 
@@ -231,6 +266,7 @@ function validateProjectionConsistency(
 		receiptRefSet,
 		errors,
 	);
+	validateContinuityProjection(value.continuity, receiptRefSet, errors);
 }
 
 /** Verify codexRuntime projection counts and refs against runtime-card sources. */

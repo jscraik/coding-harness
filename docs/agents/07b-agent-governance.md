@@ -138,6 +138,15 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   state, and failure class in the runtime evidence packet, require receipt
   backing for sandbox policy refs when permission facts are known, and project
   only compact `environmentRefs` into runtime-card summaries
+- runtime-card Codex continuity changes should keep thread, turn, trace, goal,
+  client-message, queue, approval, and heartbeat/automation refs inside
+  `src/lib/runtime` as compact producer-supplied pointers. Validators must
+  prove continuity refs are source-backed and receipt-backed, reject unknown
+  continuity fields and payload-like refs, and keep continuity advisory only:
+  no command authority, delivery-truth support, review-state support,
+  external-state support, merge-readiness proof, Judge/PM proof, or
+  goal-completion proof without a separately implemented and validated
+  consumer boundary.
 - runtime evidence receipt and delivery-truth changes that add or alter
   `evidence-receipt/v1`, `delivery-truth/v1`, claim-support policy,
   freshness, head-SHA, blocker-class, or source-kind rules should stay additive,
