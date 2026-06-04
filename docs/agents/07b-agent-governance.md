@@ -191,7 +191,9 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   claim-support eligibility separate before delivery-truth composition consumes
   those packet families; any `src/lib/pr-closeout/` bridge that derives these
   packets from normalized closeout input must stay read-only and
-  validator-backed, not a merge/readiness authority; refresh architecture
+  validator-backed, may compose only `remote_checks_current` and
+  `review_threads_resolved`, and must not become a merge, Linear, root-hygiene,
+  or Judge/PM readiness authority; refresh architecture
   context and keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and
   this guide synchronized when docs-gate reports architecture-context or
   agent-governance surfaces

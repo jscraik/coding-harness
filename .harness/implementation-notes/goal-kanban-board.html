@@ -399,7 +399,7 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness warning">PU-053 local commit ad06aa82, reviewer artifacts blocked, R262 route truth</div>
+      <div class="source-chip" aria-label="Source freshness warning">PU-054 local validation passed, reviewer artifacts blocked, R263 route truth</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
@@ -461,7 +461,7 @@
           <li><code>src/lib/delivery-truth/</code><small>Private claim-support composition and Judge/PM readiness logic.</small></li>
           <li><code>src/lib/review-state/</code><small>Reviewer artifact and unresolved-thread truth packets.</small></li>
           <li><code>src/lib/external-state/</code><small>PR, CI, review, tracker freshness snapshots.</small></li>
-          <li><code>src/lib/pr-closeout/</code><small>PU-053 bridge derives external-state and review-state packets from normalized closeout input without granting closeout authority.</small></li>
+          <li><code>src/lib/pr-closeout/</code><small>PU-053 derives external-state and review-state packets; PU-054 derives only remote-checks-current and review-threads-resolved delivery-truth verdicts.</small></li>
           <li><code>src/lib/root-hygiene/</code><small>Tracked root-surface and tidy-claim evidence.</small></li>
         </ul>
       </article>
@@ -485,7 +485,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts and route-truth receipts through <code>R262</code>. PU-053/PU-014 is locally implemented at commit <code>ad06aa82</code> with a read-only <code>src/lib/pr-closeout/</code> bridge deriving validated external-state and review-state packets from normalized closeout input. Focused packet tests, nearby packet/closeout tests, typecheck, Biome over touched files, quality gates, related tests, docs-gate, diagram freshness after generated context refresh, docs-style changed, and <code>validate-codestyle --fast</code> passed locally. Required adversarial, agent-native, and best-practices reviewers completed without persisting artifacts, so R261 records the review coverage lane as <code>blocked_runtime</code>; R262 re-anchors the adopted audit and operational-review sources to the current local implementation head. Earlier PR #336 route truth remains separate: PR #336 is still a stacked draft at remote head <code>04324104</code> with current-head remote checks pending/unstable per R259 and PR-triage artifact coverage blocked per R260. This tracked visualization remains an orientation artifact, not proof of independent reviewer completion, push/PR/remote CI, live Codex Desktop extraction, runtime producer emission, delivery-truth consumption, current-head remote green status, Judge/PM readiness, or final goal completion.</p>
+    <p class="footer">Snapshot generated from current goal artifacts and route-truth receipts through <code>R263</code>. PU-054 is locally implemented on base head <code>f765ecd8</code> with an opt-in <code>src/lib/pr-closeout/</code> bridge deriving only <code>remote_checks_current</code> and <code>review_threads_resolved</code> delivery-truth verdicts from validated closeout state packets. Focused closeout/state-packet tests, architecture module-boundary tests, typecheck, Biome over touched files, <code>git diff --check</code>, docs-gate, quality:docstrings, <code>validate-codestyle --fast</code>, and <code>pnpm check</code> passed locally. Required adversarial, agent-native, and best-practices reviewers completed without persisting artifacts, so R263 records the review coverage lane as <code>blocked_runtime</code>. Earlier PU-053 remains local state-packet bridge evidence, and PR #336 route truth remains separate. This tracked visualization remains an orientation artifact, not proof of independent reviewer completion, commit, push, PR/remote CI, live Codex Desktop extraction, runtime producer emission, final delivery-truth consumption for merge/Judge/Linear/root lanes, Judge/PM readiness, or final goal completion.</p>
   </main>
 
   <script>
@@ -765,7 +765,7 @@
       },
       {
         id: "pu053-closeout-state-packets",
-        lane: "local",
+        lane: "implementation",
         title: "PU-053 closeout state-packet bridge",
         status: "local commit ad06aa82; reviewer artifacts blocked",
         tags: ["pr-closeout", "external-state", "review-state", "PU-014"],
@@ -773,6 +773,17 @@
         evidence: ["docs/goals/.../notes/PU-053-pu014-closeout-state-packets-intent.md", "src/lib/pr-closeout/state-packets.ts", "src/lib/pr-closeout/state-packets.test.ts", "src/lib/pr-closeout.ts", "ARCHITECTURE.md and governance docs updated", "AI/context/diagram-context.md refreshed", "focused packet and nearby closeout tests -> pass", "pnpm typecheck -> pass", "Biome touched-file check -> pass", "quality:docstrings -> pass", "quality:size -> pass with non-blocking ratchet warnings", "test:related -> pass", "docs-gate -> pass", "check-diagram-freshness -> pass after refresh", "validate-codestyle --fast -> pass", "artifacts/reviews/pu053-pu014-closeout-state-packets-skill-lenses.md", "artifacts/reviews/pu053-pu014-implementation-adversarial-runtime-blocker.md", "artifacts/reviews/pu053-pu014-implementation-agent-native-runtime-blocker.md", "artifacts/reviews/pu053-pu014-implementation-best-practices-runtime-blocker.md", "R261: local implementation route truth", "R262: audit-source route truth re-anchored to current head"],
         next: "Push this branch, open or update the PR lane, run PR/CI/review triage, and keep independent-review artifact recovery separate from local validation.",
         risk: "This is local implementation evidence only. It does not prove remote CI, review-thread resolution, Linear field updates, delivery-truth consumption, merge readiness, Judge/PM readiness, or parent-goal completion."
+      },
+      {
+        id: "pu054-closeout-delivery-truth",
+        lane: "implementation",
+        title: "PU-054 closeout delivery-truth seam",
+        status: "local validation passed; reviewer artifacts blocked",
+        tags: ["pr-closeout", "delivery-truth", "PU-054"],
+        summary: "src/lib/pr-closeout now has an opt-in delivery-truth bridge that derives only remote_checks_current and review_threads_resolved verdicts from validated closeout state packets.",
+        evidence: ["docs/goals/.../notes/PU-054-closeout-delivery-truth-intent.md", "src/lib/pr-closeout/state-packet-delivery-truth.ts", "src/lib/pr-closeout/state-packets.ts", "src/lib/pr-closeout/delivery-truth.ts", "src/lib/pr-closeout/evaluator.ts", "src/lib/pr-closeout/state-packets.test.ts", "src/lib/pr-closeout.test.ts", "src/lib/architecture/module-boundaries.test.ts", "ARCHITECTURE.md and governance docs updated", "focused closeout/state-packet tests -> pass", "architecture module-boundary tests -> pass", "pnpm typecheck -> pass", "Biome touched-file check -> pass", "git diff --check -> pass", "docs-gate -> pass", "quality:docstrings -> pass", "validate-codestyle --fast -> pass", "pnpm check -> pass", "artifacts/reviews/pu054-closeout-delivery-truth-skill-lenses.md", "artifacts/reviews/pu054-implementation-reviewer-runtime-blocker.md", "R263: local implementation route truth"],
+        next: "Run goal-board and audit-freshness validators, commit and push the stacked branch, open/update the PR lane, and triage PR/CI/review truth without claiming final merge/Judge/Linear/root delivery-truth support.",
+        risk: "This proves only local implementation and local validation. It does not prove independent reviewer completion, remote CI, review-thread resolution, Linear field updates, merge readiness, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "linear-scope",
@@ -821,13 +832,13 @@
       {
         id: "delivery-truth-consumption",
         lane: "remaining",
-        title: "Delivery-truth consumption",
-        status: "blocked",
+        title: "Final delivery-truth consumption",
+        status: "partially implemented locally",
         tags: ["delivery-truth", "claim support", "closeout"],
-        summary: "Delivery-truth must separate local validation, remote checks, review threads, tracker state, root hygiene, and merge readiness.",
-        evidence: ["goal.md Completion Contract", "state.yaml blocked_done_claims include delivery-truth consumption", "src/lib/delivery-truth/"],
-        next: "Run or produce current evidence that the closeout path consumes delivery-truth verdicts for final claims.",
-        risk: "A green local check or merged PR could still be overclaimed as goal completion."
+        summary: "PU-054 derives only remote-check and review-thread verdicts. Final merge-ready, Judge/PM, Linear, root-hygiene, and runtime-producer claim support remain blocked.",
+        evidence: ["goal.md Completion Contract", "state.yaml blocked_done_claims include final delivery-truth consumption for merge/Judge/Linear/root lanes", "src/lib/delivery-truth/", "src/lib/pr-closeout/state-packet-delivery-truth.ts"],
+        next: "Add or validate current evidence for the remaining final-claim lanes before any closeout or Judge/PM-ready claim.",
+        risk: "A green local check or merged PR could still be overclaimed as goal completion if final claim families are blended."
       },
       {
         id: "final-proof-packets",

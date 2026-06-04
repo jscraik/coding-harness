@@ -24,6 +24,10 @@ import {
 	normalizeStatus,
 } from "./evidence.js";
 import {
+	buildPrCloseoutStatePacketDeliveryTruth,
+	type DeliveryTruthVerdict,
+} from "./state-packet-delivery-truth.js";
+import {
 	checkFreshness,
 	currentHeadSha,
 	requiredChecks,
@@ -73,6 +77,7 @@ export interface PrCloseoutStatePackets {
 	externalStateValidation: ExternalStateValidationResult;
 	reviewStateValidation: ReviewStateValidationResult;
 	externalStateClaimSupport: ExternalStateClaimSupportResult;
+	deliveryTruth: DeliveryTruthVerdict[];
 	blockers: string[];
 }
 
@@ -117,6 +122,15 @@ export function buildPrCloseoutStatePackets(
 				canSupportClaim: false,
 				blockers: ["missing_fetch_proof" as const],
 			};
+	const deliveryTruth = buildPrCloseoutStatePacketDeliveryTruth({
+		externalState,
+		reviewState,
+		externalStateValidation,
+		reviewStateValidation,
+		verifiedAt: generatedAt,
+		verdictHeadSha: headSha,
+		verifierTtlSeconds: ttlSeconds,
+	});
 
 	return {
 		externalState,
@@ -124,6 +138,7 @@ export function buildPrCloseoutStatePackets(
 		externalStateValidation,
 		reviewStateValidation,
 		externalStateClaimSupport,
+		deliveryTruth,
 		blockers,
 	};
 }
@@ -533,15 +548,18 @@ function buildReceipt(options: {
 	headSha: string | null;
 	checksum: string;
 	sizeBytes: number;
+	status?: EvidenceReceipt["status"];
+	freshness?: EvidenceReceipt["freshness"];
+	evidenceUse?: EvidenceReceipt["evidenceUse"];
 }): EvidenceReceipt {
 	return {
 		schemaVersion: "evidence-receipt/v1",
 		kind: options.kind,
 		ref: options.ref,
 		producer: options.producer,
-		status: "pass",
-		freshness: "current",
-		evidenceUse: "claim_support",
+		status: options.status ?? "pass",
+		freshness: options.freshness ?? "current",
+		evidenceUse: options.evidenceUse ?? "claim_support",
 		blockerClass: null,
 		verifiedAt: options.verifiedAt,
 		headSha: options.headSha,

@@ -499,6 +499,55 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
+	it("derives only allowed state-packet delivery-truth claims when explicitly requested", () => {
+		const report = buildPrCloseoutReport(
+			baseInput({
+				pullRequest: {
+					...baseInput().pullRequest,
+					headSha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+					headRefName: "codex/jsc-363-closeout",
+					baseRefName: "main",
+				},
+				checks: [
+					{
+						name: "ci/circleci: test",
+						state: "SUCCESS",
+						required: true,
+						headSha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+						source: "circleci",
+					},
+				],
+			}),
+			{
+				now: new Date("2026-05-16T12:00:00.000Z"),
+				deriveDeliveryTruthFromStatePackets: {
+					repository: "jscraik/coding-harness",
+				},
+			},
+		);
+
+		expect(report.deliveryTruth).toMatchObject({
+			present: true,
+			blockingVerdicts: [],
+			mergeReady: null,
+		});
+		expect(
+			report.deliveryTruth.verdicts.map((verdict) => verdict.claim),
+		).toEqual(["remote_checks_current", "review_threads_resolved"]);
+		expect(report.deliveryTruth.verdicts).toEqual([
+			expect.objectContaining({
+				claim: "remote_checks_current",
+				status: "pass",
+				evidenceUse: "claim_support",
+			}),
+			expect.objectContaining({
+				claim: "review_threads_resolved",
+				status: "pass",
+				evidenceUse: "claim_support",
+			}),
+		]);
+	});
+
 	it("blocks closeout when supplied delivery-truth evidence is stale", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({

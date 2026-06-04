@@ -207,7 +207,11 @@ not in docs, templates, generated context, or command facades.
   merge readiness into one blended truth. Its state-packet bridge derives
   validated `external-state-snapshot/v1` and `review-state/v1` packets from
   normalized closeout input while preserving the packet validators as the
-  claim-support boundary.
+  claim-support boundary. The bridge may compose only claim-scoped
+  `remote_checks_current` and `review_threads_resolved` delivery-truth verdicts
+  from those packets; `merge_ready`, `goal_ready_for_judge_pm`,
+  `linear_state_aligned`, and `root_surface_tidy` remain separate evidence
+  lanes.
 - src/lib/review-state/: PR review truth packets, reviewer artifact receipt
   validation, unresolved thread counts, and validation ownership
   classification.
