@@ -399,7 +399,7 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness warning">PU-053 local commit ad06aa82, reviewer artifacts blocked, R262 route truth</div>
+      <div class="source-chip" aria-label="Source freshness warning">PR #336 repair: merging CNF-006 onto PR #335 head 8b70a32d; PR/CI/review truth requires refresh</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
@@ -485,7 +485,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts and route-truth receipts through <code>R262</code>. PU-053/PU-014 is locally implemented at commit <code>ad06aa82</code> with a read-only <code>src/lib/pr-closeout/</code> bridge deriving validated external-state and review-state packets from normalized closeout input. Focused packet tests, nearby packet/closeout tests, typecheck, Biome over touched files, quality gates, related tests, docs-gate, diagram freshness after generated context refresh, docs-style -> pass, and <code>validate-codestyle --fast</code> passed locally. Required adversarial, agent-native, and best-practices reviewers completed without persisting artifacts, so R261 records the review coverage lane as <code>blocked_runtime</code>; R262 re-anchors the adopted audit and operational-review sources to the current local implementation head. Earlier PR #336 route truth remains separate: PR #336 is still a stacked draft at remote head <code>04324104</code> with current-head remote checks pending/unstable per R259 and PR-triage artifact coverage blocked per R260. This tracked visualization remains an orientation artifact, not proof of independent reviewer completion, push/PR/remote CI, live Codex Desktop extraction, runtime producer emission, delivery-truth consumption, current-head remote green status, Judge/PM readiness, or final goal completion.</p>
+    <p class="footer">Snapshot generated from current goal artifacts and route-truth receipts through <code>R267</code> plus live stack refresh on 2026-06-04. Local <code>main</code> and <code>origin/main</code> are synchronized at <code>50a6d0b5d764e35395e12190a465e854c26784fd</code>. PR #335 has advanced to head <code>8b70a32d</code> with the prompt-context instruction-source review fix, and this branch is repairing PR #336 against that updated base before rechecking PR #336 and PR #338. The board remains an orientation artifact, not proof of independent reviewer completion, live Codex Desktop extraction, runtime producer emission, delivery-truth consumption, PR/CI green status, review-thread resolution, merge readiness, Judge/PM readiness, or final goal completion.</p>
   </main>
 
   <script>
@@ -709,12 +709,12 @@
         risk: "The field is nullable and orientation-only when source evidence is unavailable; this slice does not prove live Codex Desktop extraction, runtime producer emission, delivery-truth consumption, Judge/PM readiness, or parent-goal completion."
       },
       {
-        id: "cnf002-environment-permissions",
-        lane: "implementation",
-        title: "CNF-002 environment-scoped permissions",
-        status: "PR #332 draft; remote checks blocked",
-        tags: ["permissions", "tool exposure", "environment"],
-        summary: "Implementation adds a codex-runtime-evidence environment snapshot and runtime-card environmentRefs so permission evidence is scoped to cwd, executor, approval scope, and sandbox policy evidence. PR #332 is open as a stacked draft on PR #331.",
+		id: "cnf002-environment-permissions",
+		lane: "implementation",
+		title: "CNF-002 environment-scoped permissions",
+		status: "PR #332 draft; remote checks blocked",
+		tags: ["permissions", "tool exposure", "environment"],
+		summary: "Implementation adds a codex-runtime-evidence environment snapshot and runtime-card environmentRefs so permission evidence is scoped to cwd, executor, approval scope, and sandbox policy evidence. PR #332 is open as a stacked draft on PR #331.",
         evidence: ["docs/goals/.../notes/PU-048-cnf-002-env-permissions-intent.md", "src/lib/runtime/codex-runtime-evidence-{types,validation,producer,references,adapter}.ts", "src/lib/runtime/runtime-card-codex-runtime{,-validation}.ts", "src/lib/runtime/runtime-evidence-adapter.ts", "focused runtime evidence and runtime-card tests -> pass (88 tests)", "pnpm typecheck -> pass", "docs-gate -> pass", "validate-codestyle full -> pass", "pnpm check -> pass", "source checkout pr-template-gate on live PR body -> pass after durable evidence-map repair", "installed harness pr-template-gate on edited PR body -> pass", "PR #332 -> OPEN draft, MERGEABLE/UNSTABLE", "GitHub checks: ci/circleci: pr-template still failed on pre-repair status, Snyk quota failed, most other visible CircleCI lanes passed or completed", "R241: PR #332 body and route-truth freshness repaired", "artifacts/reviews/pu048-cnf-002-skill-lenses.md", "artifacts/reviews/pu048-cnf-002-reviewer-runtime-blocker.md"],
         next: "Push R241 route-truth and validator repair to PR #332 so remote checks rerun on a new head, then triage CircleCI pr-template/pr-pipeline, Snyk quota, and missing independent-review artifacts separately.",
         risk: "Live Codex Desktop extraction of these fields is still unproven; independent reviewer artifacts are blocked; remote CI is not green; delivery-truth consumption, Judge/PM readiness, and parent-goal completion remain separate proof lanes."
@@ -723,7 +723,7 @@
         id: "cnf003-risk-tiered-hilt",
         lane: "implementation",
         title: "CNF-003 risk-tiered mutation authority",
-        status: "PR #333 draft; remote checks pending",
+        status: "active",
         tags: ["HILT", "route decision", "agent-native"],
         summary: "RouteDecision now carries a mutationPolicy with scope, risk tier, evidence freshness, validator ownership, and authority. Agent-local mutation is limited to low-risk repo-local work with current evidence, validator ownership, and no network requirement.",
         evidence: ["docs/goals/.../notes/PU-049-cnf-003-risk-tier-authority-intent.md", "src/lib/decision/route-decision.ts", "src/lib/decision/route-decision.test.ts", "ARCHITECTURE.md", "docs/agents/00-architecture-bootstrap.md", "docs/agents/07b-agent-governance.md", "pnpm exec vitest run src/lib/decision/route-decision.test.ts -> pass (49 tests)", "pnpm exec vitest run src/commands/decision-request.test.ts -> pass (13 tests)", "pnpm typecheck -> pass", "docs-gate -> pass", "check-diagram-freshness -> pass", "validate-codestyle --fast -> pass", "artifacts/reviews/pu049-cnf-003-reviewer-runtime-blocker.md", "R242: CNF-003 route-truth refreshed"],
@@ -734,8 +734,8 @@
         id: "cnf004-runtime-card-continuity",
         lane: "remote",
         title: "CNF-004 runtime-card continuity",
-        status: "PR #334 draft; remote unstable",
-        tags: ["runtime-card", "continuity", "projection"],
+        status: "active",
+        tags: ["runtime-card", "continuity", "projection", "PR #334 draft", "remote unstable"],
         summary: "Runtime-card Codex projection now exposes compact codexRuntime.continuity refs for thread, turn, trace, goal, client message, active queue item, approval request, and heartbeat/automation continuity while preserving pointer-only redaction.",
         evidence: ["docs/goals/.../notes/PU-050-cnf-004-runtime-card-continuity-intent.md", "src/lib/runtime/runtime-card-codex-runtime.ts", "src/lib/runtime/runtime-card-codex-runtime-validation.ts", "src/lib/runtime/runtime-evidence-bundle.ts", "src/lib/runtime/runtime-evidence-adapter.ts", "runtime-card projection tests -> pass", "runtime-evidence adapter tests -> pass", "pnpm typecheck -> pass", "quality:docstrings -> pass", "docs-gate -> pass", "check-diagram-freshness -> pass", "validate-codestyle --fast -> pass", "pr-template-gate -> pass", "make hooks-pre-push -> pass", "PR #334 OPEN draft, base PR #333 branch, head 11cf544a, mergeStateStatus UNSTABLE", "artifacts/reviews/pu050-cnf-004-skill-lenses.md", "artifacts/reviews/pu050-cnf-004-implementation-reviewer-runtime-blocker.md", "R245: CNF-004 PR route-truth refresh"],
         next: "Run PR #334 triage for remote CI, review threads, CodeRabbit/Codex state, mergeability, and independent reviewer artifact recovery or accepted fallback before any slice-done claim.",
@@ -764,8 +764,6 @@
         risk: "The receipt is contract/schema/test proven only and remains not_yet_emitted; it does not mutate runtime cards, authorize commands, prove delivery truth, prove review/external/root-hygiene truth, update Linear, establish merge readiness, satisfy Judge/PM readiness, or close the parent goal."
       },
       {
-        id: "pu053-closeout-state-packets",
-       {
          id: "pu053-closeout-state-packets",
          lane: "implementation",
          title: "PU-053 closeout state-packet bridge",

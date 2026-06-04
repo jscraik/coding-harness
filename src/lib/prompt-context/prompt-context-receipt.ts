@@ -57,8 +57,19 @@ export const PROMPT_CONTEXT_INSTRUCTION_AUTHORITY_LAYERS = [
 	"user_steering",
 ] as const;
 
+export const PROMPT_CONTEXT_INSTRUCTION_SOURCE_KINDS = [
+	"system",
+	"developer",
+	"user",
+	"agents",
+	"skill",
+] as const;
+
 const PROMPT_CONTEXT_INSTRUCTION_AUTHORITY_LAYER_SET = new Set<string>(
 	PROMPT_CONTEXT_INSTRUCTION_AUTHORITY_LAYERS,
+);
+const PROMPT_CONTEXT_INSTRUCTION_SOURCE_KIND_SET = new Set<string>(
+	PROMPT_CONTEXT_INSTRUCTION_SOURCE_KINDS,
 );
 
 export const PROMPT_CONTEXT_STALE_CLASSIFICATIONS = [
@@ -355,6 +366,17 @@ function validateSourceRef(
 			errors,
 			`${path}.authorityLayer must be instruction authority for instructionSources`,
 			`${path}.authorityLayer`,
+		);
+	}
+	if (
+		options.instructionAuthorityOnly &&
+		typeof value.sourceKind === "string" &&
+		!PROMPT_CONTEXT_INSTRUCTION_SOURCE_KIND_SET.has(value.sourceKind)
+	) {
+		addPromptContextError(
+			errors,
+			`${path}.sourceKind must be an instruction source kind for instructionSources`,
+			`${path}.sourceKind`,
 		);
 	}
 	requireNullableSafeContextPointer(value.hash, `${path}.hash`, errors, {

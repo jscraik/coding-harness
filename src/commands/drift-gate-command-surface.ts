@@ -1,3 +1,4 @@
+import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { readTextFile } from "./drift-gate-types.js";
 
@@ -56,17 +57,30 @@ export function resolveRegistryCommandSpecsSource(
 	if (extractRegistryCommands(commandSpecsSource).length > 0) {
 		return commandSpecsSource;
 	}
-	return [
-		commandSpecsSource,
-		...[
-			"src/lib/cli/command-registry.ts",
-			"src/lib/cli/registry/command-specs-core.ts",
-			"src/lib/cli/registry/learning-evidence-command-specs.ts",
-			"src/lib/cli/registry/source-outline-spec.ts",
-		].map((path) => readTextFile(join(repoRoot, path))),
-	]
+	return [commandSpecsSource, ...collectRegistryFragmentSources(repoRoot)]
 		.filter((source): source is string => typeof source === "string")
 		.join("\n");
+}
+
+function collectRegistryFragmentSources(
+	repoRoot: string,
+): Array<string | undefined> {
+	const registryDir = join(repoRoot, "src/lib/cli/registry");
+	if (!existsSync(registryDir)) {
+		return [readTextFile(join(repoRoot, "src/lib/cli/command-registry.ts"))];
+	}
+	const registryFiles = readdirSync(registryDir)
+		.filter(
+			(file) =>
+				file.endsWith(".ts") &&
+				!file.endsWith(".test.ts") &&
+				!file.endsWith(".d.ts"),
+		)
+		.sort();
+	return [
+		readTextFile(join(repoRoot, "src/lib/cli/command-registry.ts")),
+		...registryFiles.map((file) => readTextFile(join(registryDir, file))),
+	];
 }
 
 /**

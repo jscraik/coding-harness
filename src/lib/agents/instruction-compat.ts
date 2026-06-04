@@ -315,7 +315,7 @@ export function validateInstructionConsistency(
  */
 export function generateDerivedHeader(agent: AgentEcosystem): string {
 	const surface = AGENT_SURFACES.find((entry) => entry.agent === agent);
-	if (!surface || surface.role !== "derived") {
+	if (surface?.role !== "derived") {
 		throw new Error(
 			`generateDerivedHeader only supports derived surfaces. Received: ${agent}`,
 		);

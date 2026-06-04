@@ -87,6 +87,7 @@
 		"docs:root-archive:links": "node scripts/check-root-archive-links.mjs",
 		"docs:ubiquitous:guard": "bash scripts/check-ubiquitous-language-link.sh",
 		"docs:steering:guard": "node scripts/check-steering-feedback-contract.cjs",
+		"docs:lifecycle": "tsx scripts/check-doc-lifecycle.ts",
 		"docs:style:changed": "bash scripts/check-doc-style.sh",
 		"skill:validate": "node scripts/validate-packaged-skill.cjs",
 		"workflow:normalize": "node scripts/normalize-workflow-contracts.cjs",

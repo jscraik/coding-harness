@@ -43,7 +43,7 @@ artifacts, validation, ownership, and review expectations.
 
 When agent work changes tooling/runtime contract surfaces or architecture-context refresh behavior, the matching docs are part of the required gate, not optional polish:
 
-- Every implementation slice must complete PR `Documentation impact` classification before handoff: update applicable root docs (`README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `AGENTS.md`, `ARCHITECTURE.md`), governed docs, and existing deep-module README files, or record `n.a.` with a reason in the PR `Documentation impact` field
+- Every implementation slice must complete PR `Documentation impact`, `Documentation lifecycle impact`, and `SemVer impact` classification before handoff: update applicable root docs (`README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `AGENTS.md`, `ARCHITECTURE.md`), governed docs, and existing deep-module README files, or record `n.a.` with a reason in the matching PR field
 - tooling/runtime changes should update `docs/agents/02-tooling-policy.md` and `docs/agents/06-security-and-governance.md`
 - preflight or Local Memory enforcement changes should keep `AGENTS.md`, `README.md`, `docs/agents/02-tooling-policy.md`, `docs/agents/03-local-memory.md`, `docs/agents/06-security-and-governance.md`, and this guide synchronized; legacy positional `scripts/codex-preflight.sh` invocations must default to required Local Memory mode unless `off` or `optional` is explicitly supplied
 - architecture-context refresh changes should update `docs/agents/00-architecture-bootstrap.md`; Flow Ops closure-evidence, E2E runner, or eval artifact changes that trigger that refresh should keep `AGENTS.md` and this guide synchronized when docs-gate reports the agent-governance category
@@ -248,12 +248,13 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - RouteDecision lifecycle metadata is part of the agent-native cockpit contract: `route-decision/v1` must remain additive to `harness-decision/v1`, must not make target commands executable authority by itself, and must keep architecture-context plus docs-gate-required governance surfaces synchronized
 - RouteDecision risk-tiered mutation authority remains advisory and
   non-executable: low-risk repo-local mutation routes may set
-  `requiresHuman=false` only when current evidence and validator ownership are
-  present, while destructive, external, tracker, production, release, security,
-  credential, merge, public-contract, goal-completion, verifier-disagreement,
-  ambiguous-governance, unknown, or network-dependent mutation still requires
-  human review and must route through the decision-request or action-review
-  authority surface where applicable.
+  `requiresHuman=false` only when current evidence, validator ownership,
+  agent-local authority (`authority=agent_local`), and no network dependency
+  (`requiresNetwork=false`) are present, while destructive, external, tracker,
+  production, release, security, credential, merge, public-contract,
+  goal-completion, verifier-disagreement, ambiguous-governance, unknown, or
+  network-dependent mutation still requires human review and must route through
+  the decision-request or action-review authority surface where applicable.
 - generated hook setup or readiness changes should keep agent setup evidence synchronized: `scripts/setup-git-hooks.js` must install generated `prek` shims that derive `WORKTREE_ROOT` with `git rev-parse --show-toplevel` and default `PREK_HOME` to `$WORKTREE_ROOT/.cache/prek`, and `scripts/check-environment.sh` must fail drift across installed `pre-commit`, `pre-push`, and `commit-msg` shims
 - worktree bootstrap and generated Codex environment action changes should keep
   the shared Git common-config guard, detached-worktree branch attachment, and

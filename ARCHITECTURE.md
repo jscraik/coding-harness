@@ -1,3 +1,31 @@
+---
+doc_schema: coding-harness-doc/v1
+doc_type: architecture
+authority: canon
+canon_class: canonical
+distribution: source-only
+audience:
+  - coding-harness-maintainer
+  - codex-agent
+  - reviewer
+lifecycle_state: active
+owner: coding-harness-maintainers
+created: 2026-06-04
+last_reviewed: 2026-06-04
+review_cadence: quarterly
+maintenance_trigger:
+  - architecture-boundary-change
+  - command-family-change
+  - generated-context-refresh
+semver_impact: minor
+validated_by:
+  - pnpm docs:lifecycle
+depends_on:
+  - AGENTS.md
+  - docs/architecture/documentation-layers.md
+  - AI/context/diagram-context.md
+---
+
 # Architecture
 
 ## Table of Contents
@@ -248,11 +276,13 @@ not in docs, templates, generated context, or command facades.
   adapter explicitly emits and consumes them with synchronized governance docs.
 - src/lib/decision/: advisory cockpit decision and lifecycle route metadata.
   It owns `harness-decision/v1`, `route-decision/v1`, route validation, and the
-  risk-tiered mutation policy that allows only low-risk repo-local advisory
-  mutation routes to omit human review when current evidence and validator
-  ownership are present. It must not make route target commands executable
-  authority, prove delivery truth, mutate trackers, prove merge readiness, or
-  satisfy Judge/PM or goal-completion claims.
+  risk-tiered mutation policy (CNF-003) that allows only low-risk repo-local
+  advisory mutation routes to omit human review (`requiresHuman=false`) when
+  evidence freshness is current, validator ownership is present, mutation
+  authority is agent-local (`authority=agent_local`), and the route requires no
+  network dependency (`requiresNetwork=false`). It must not make route target
+  commands executable authority, prove delivery truth, mutate trackers, prove
+  merge readiness, or satisfy Judge/PM or goal-completion claims.
 - src/lib/decision-request/: read-only governance request packet emission for
   human or operator escalation. It owns intent, authority, option grammar,
   evidence references, escalation metadata, expiry/freshness normalization, and
