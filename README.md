@@ -37,6 +37,12 @@ synAIpse is the AI Delivery Harness implemented by this repository and the `@bra
 
 Short version: thin surface, strong guardrails, durable memory, professional output.
 
+Coding Harness exists to let a solo developer with limited cognitive bandwidth
+orchestrate agentic software work to professional standards through compact
+orientation, executable guardrails, durable memory, and evidence-based handoff.
+Its primary metric is PR lead time from open to merge, and its primary
+bottleneck is the review and rework loop.
+
 ## Table of Contents
 
 - [Start Here](#start-here)
