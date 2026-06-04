@@ -55,6 +55,7 @@ describe("codex runtime source provenance", () => {
 			permissionProfile: "workspace_write",
 			network: "enabled",
 			permissionEvidenceRef: "codex://analytics/turn-resolved-config",
+			sandboxPolicyRef: "codex://analytics/sandbox-policy",
 			permissionFailureClass: null,
 		});
 
@@ -181,6 +182,7 @@ function sourcePacket(options: {
 	permissionProfile?: "workspace_write" | "unknown";
 	network?: "enabled" | "unknown";
 	permissionEvidenceRef?: string | null;
+	sandboxPolicyRef?: string | null;
 	permissionFailureClass: string | null;
 }): CodexRuntimeEvidence {
 	return {
@@ -215,6 +217,27 @@ function sourcePacket(options: {
 			evidenceRef: options.permissionEvidenceRef ?? null,
 			failureClass: options.permissionFailureClass,
 		},
+		environment: {
+			environmentId: null,
+			cwd:
+				options.permissionProfile === "workspace_write"
+					? "/Users/jamiecraik/dev/coding-harness"
+					: null,
+			expectedCwd:
+				options.permissionProfile === "workspace_write"
+					? "/Users/jamiecraik/dev/coding-harness"
+					: null,
+			executorKind: "unknown",
+			approvalScope: "unknown",
+			expectedApprovalScope: null,
+			sandboxPolicyRef: options.sandboxPolicyRef ?? null,
+			state:
+				options.permissionProfile === "workspace_write" ? "current" : "unknown",
+			failureClass:
+				options.permissionProfile === "workspace_write"
+					? null
+					: "source_does_not_expose_environment_scope",
+		},
 		mcp: {
 			servers: [
 				{
@@ -245,6 +268,22 @@ function sourcePacket(options: {
 							schemaVersion: "evidence-receipt/v1" as const,
 							kind: "run_record" as const,
 							ref: options.permissionEvidenceRef,
+							producer: "codex-analytics-fixture",
+							status: "pass" as const,
+							freshness: "current" as const,
+							evidenceUse: "orientation" as const,
+							blockerClass: null,
+							producedAt: "2026-05-24T23:10:00Z",
+						},
+					]),
+			...(options.sandboxPolicyRef === undefined ||
+			options.sandboxPolicyRef === null
+				? []
+				: [
+						{
+							schemaVersion: "evidence-receipt/v1" as const,
+							kind: "run_record" as const,
+							ref: options.sandboxPolicyRef,
 							producer: "codex-analytics-fixture",
 							status: "pass" as const,
 							freshness: "current" as const,

@@ -12,6 +12,7 @@ export interface RuntimeCardCodexRuntimeProjection {
 	validationRefs: string[];
 	reviewRefs: string[];
 	sessionRefs: string[];
+	environmentRefs: string[];
 	staleStateRefs: string[];
 	toolExposure?: RuntimeCardToolExposureProjection;
 }

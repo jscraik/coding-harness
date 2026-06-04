@@ -261,12 +261,16 @@ Notes:
   consumer boundary and synchronized governance update.
 - Codex runtime evidence packet changes that add or alter
   `codex-runtime-evidence/v1`, source-provenance classification, packet
-  validation, client user-message correlation, or evidence-reference integrity
+  validation, client user-message correlation, environment-scoped permission
+  evidence, sandbox-policy references, or evidence-reference integrity
   are architecture-adjacent runtime cockpit changes. Keep the public packet
   surface inside `src/lib/runtime` as a narrow facade over typed contract,
   validation, and reference-integrity modules; nullable client user-message ids
   must come from explicit producer input and must not be synthesized from turn,
-  trace, timestamp, PR, or artifact fields. Refresh
+  trace, timestamp, PR, or artifact fields. Known permission facts must be
+  scoped to explicit environment evidence and receipt-backed sandbox-policy
+  refs, with runtime-card summaries exposing only compact `environmentRefs`.
+  Refresh
   `AI/context/diagram-context.md` and keep `AGENTS.md`,
   `docs/agents/00-architecture-bootstrap.md`, and
   `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports

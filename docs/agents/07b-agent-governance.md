@@ -132,6 +132,12 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   source-classification, validation, and reference-integrity internals before
   any runtime-card adapter consumes them; refresh architecture context and this
   guide when those packet or validator modules change
+- codex-runtime-evidence permission changes should scope known permission facts
+  to explicit environment evidence. Keep environment id, cwd, expected cwd,
+  executor kind, approval scope, expected approval scope, sandbox policy refs,
+  state, and failure class in the runtime evidence packet, require receipt
+  backing for sandbox policy refs when permission facts are known, and project
+  only compact `environmentRefs` into runtime-card summaries
 - runtime evidence receipt and delivery-truth changes that add or alter
   `evidence-receipt/v1`, `delivery-truth/v1`, claim-support policy,
   freshness, head-SHA, blocker-class, or source-kind rules should stay additive,

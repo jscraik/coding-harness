@@ -1,6 +1,9 @@
 import { validateEvidenceReceipt } from "../evidence/evidence-receipt.js";
 import {
 	CODEX_RUNTIME_EVIDENCE_SCHEMA_VERSION,
+	CODEX_RUNTIME_APPROVAL_SCOPES,
+	CODEX_RUNTIME_ENVIRONMENT_STATES,
+	CODEX_RUNTIME_EXECUTOR_KINDS,
 	CODEX_RUNTIME_GOAL_STATES,
 	CODEX_RUNTIME_MCP_SERVER_STATUSES,
 	CODEX_RUNTIME_NETWORK_STATES,
@@ -74,6 +77,7 @@ export function validateCodexRuntimeEvidence(
 	validateSourceProvenance(candidate.sourceProvenance, add);
 	validateIdentity(candidate.codex, add);
 	validatePermissions(candidate.permissions, add);
+	validateEnvironment(candidate.environment, candidate.permissions, add);
 	validateMcp(candidate.mcp, add);
 	validateReceipts(candidate.receipts, add);
 	validateValidationResults(candidate.validationResults, add);
@@ -194,6 +198,140 @@ function validateIdentity(value: unknown, add: AddFinding): void {
 	if (value.model !== undefined) {
 		requireNullableNonEmptyString(value.model, "codex.model", add);
 	}
+}
+
+function validateEnvironment(
+	value: unknown,
+	permissions: unknown,
+	add: AddFinding,
+): void {
+	if (!isRecord(value)) {
+		add("environment", "environment_invalid", "environment must be an object.");
+		return;
+	}
+	requireNullableNonEmptyString(
+		value.environmentId,
+		"environment.environmentId",
+		add,
+	);
+	requireNullableNonEmptyString(value.cwd, "environment.cwd", add);
+	requireNullableNonEmptyString(
+		value.expectedCwd,
+		"environment.expectedCwd",
+		add,
+	);
+	requireEnum(
+		value.executorKind,
+		CODEX_RUNTIME_EXECUTOR_KINDS,
+		"environment.executorKind",
+		add,
+	);
+	requireEnum(
+		value.approvalScope,
+		CODEX_RUNTIME_APPROVAL_SCOPES,
+		"environment.approvalScope",
+		add,
+	);
+	if (value.expectedApprovalScope !== null) {
+		requireEnum(
+			value.expectedApprovalScope,
+			CODEX_RUNTIME_APPROVAL_SCOPES,
+			"environment.expectedApprovalScope",
+			add,
+		);
+	}
+	requireNullableNonEmptyString(
+		value.sandboxPolicyRef,
+		"environment.sandboxPolicyRef",
+		add,
+	);
+	requireEnum(
+		value.state,
+		CODEX_RUNTIME_ENVIRONMENT_STATES,
+		"environment.state",
+		add,
+	);
+	requireNullableNonEmptyString(
+		value.failureClass,
+		"environment.failureClass",
+		add,
+	);
+
+	if (value.state !== "current" && isBlank(asText(value.failureClass))) {
+		add(
+			"environment.failureClass",
+			"environment_failure_class_missing",
+			"failureClass is required when environment state is not current.",
+		);
+	}
+	if (
+		value.cwd !== null &&
+		value.expectedCwd !== null &&
+		value.cwd !== value.expectedCwd &&
+		value.state !== "stale_cwd"
+	) {
+		add(
+			"environment.state",
+			"environment_stale_cwd_missing",
+			"state must be stale_cwd when cwd differs from expectedCwd.",
+		);
+	}
+	if (
+		value.approvalScope !== "unknown" &&
+		value.expectedApprovalScope !== null &&
+		value.approvalScope !== value.expectedApprovalScope &&
+		value.state !== "approval_scope_mismatch"
+	) {
+		add(
+			"environment.state",
+			"approval_scope_mismatch_missing",
+			"state must be approval_scope_mismatch when approvalScope differs from expectedApprovalScope.",
+		);
+	}
+	if (
+		permissionFactsAreKnown(permissions) &&
+		isBlank(asText(value.sandboxPolicyRef))
+	) {
+		add(
+			"environment.sandboxPolicyRef",
+			"sandbox_policy_ref_missing",
+			"sandboxPolicyRef is required when permission and network facts are known.",
+		);
+	}
+	if (value.state === "current" && !isBlank(asText(value.failureClass))) {
+		add(
+			"environment.failureClass",
+			"environment_failure_class_unexpected",
+			"failureClass must be null when environment state is current.",
+		);
+	}
+	if (
+		value.state === "current" &&
+		isBlank(asText(value.environmentId)) &&
+		isBlank(asText(value.cwd)) &&
+		isBlank(asText(value.expectedCwd)) &&
+		isBlank(asText(value.sandboxPolicyRef))
+	) {
+		add(
+			"environment.state",
+			"environment_current_scope_missing",
+			"current environment state requires an explicit environment identity, cwd, expectedCwd, or sandboxPolicyRef.",
+		);
+	}
+}
+
+function permissionFactsAreKnown(value: unknown): boolean {
+	return (
+		isRecord(value) &&
+		value.profile !== "unknown" &&
+		value.network !== "unknown" &&
+		(!isWriteCapablePermissionProfile(value.profile) ||
+			(Array.isArray(value.writableRoots) && value.writableRoots.length > 0))
+	);
+}
+
+function isWriteCapablePermissionProfile(value: unknown): boolean {
+	return value === "workspace_write" || value === "escalated";
 }
 
 function validatePermissions(value: unknown, add: AddFinding): void {

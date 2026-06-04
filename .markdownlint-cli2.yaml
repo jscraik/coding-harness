@@ -20,6 +20,9 @@ config:
 ignores:
   - node_modules
   - .worktrees
+  - .cache
+  - .pnpm-home
+  - .pnpm-store
   - dist
   - .git
   - CODESTYLE.md  # Global canonical codestyle doc is enforced separately

@@ -52,6 +52,7 @@ export function adaptCodexRuntimeEvidenceToRuntimeEvidenceBundle(
 	const sources = mergeRuntimeCardSources([
 		toSourceProvenanceSource(packet),
 		toPermissionSource(packet),
+		toEnvironmentSource(packet),
 		...packet.mcp.servers.map(toMcpSource),
 		...packet.receipts.map(toReceiptSource),
 		...packet.validationResults.map(toValidationResultSource),
@@ -105,6 +106,25 @@ function toPermissionSource(packet: CodexRuntimeEvidence): RuntimeCardSource {
 		freshness: incomplete ? "unknown" : "current",
 		status: incomplete ? "blocked" : "usable",
 		failureClass: packet.permissions.failureClass,
+	};
+}
+
+function toEnvironmentSource(packet: CodexRuntimeEvidence): RuntimeCardSource {
+	const state = packet.environment.state;
+	const current = state === "current";
+	return {
+		kind: "session",
+		ref:
+			packet.environment.sandboxPolicyRef ??
+			`codex-runtime://${packet.codex.turnId}/environment`,
+		freshness:
+			state === "stale_cwd" || state === "approval_scope_mismatch"
+				? "stale"
+				: current
+					? "current"
+					: "unknown",
+		status: current ? "usable" : "blocked",
+		failureClass: packet.environment.failureClass,
 	};
 }
 
@@ -220,6 +240,7 @@ function buildBlockers(packet: CodexRuntimeEvidence): string[] {
 		...sourceProvenanceBlockers(packet),
 		...identityBlockers(packet),
 		...permissionBlockers(packet),
+		...environmentBlockers(packet),
 		...mcpBlockers(packet),
 		...validationResultBlockers(packet),
 		...receiptBlockers(packet),
@@ -265,6 +286,17 @@ function permissionBlockers(packet: CodexRuntimeEvidence): string[] {
 		];
 	}
 	return [];
+}
+
+function environmentBlockers(packet: CodexRuntimeEvidence): string[] {
+	if (packet.environment.state === "current") return [];
+	return [
+		"Codex environment scope is " +
+			packet.environment.state +
+			": " +
+			(packet.environment.failureClass ?? "unknown") +
+			".",
+	];
 }
 
 function mcpBlockers(packet: CodexRuntimeEvidence): string[] {

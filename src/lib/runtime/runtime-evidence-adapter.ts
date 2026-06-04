@@ -165,6 +165,13 @@ function buildCodexRuntimeProjection(
 		sessionRefs: uniqueRefs(
 			bundle.sources.filter((source) => source.kind === "session"),
 		),
+		environmentRefs: uniqueRefs(
+			bundle.sources.filter(
+				(source) =>
+					source.ref.includes("/environment") ||
+					source.ref.includes("sandbox-policy"),
+			),
+		),
 		staleStateRefs: uniqueRefs(
 			bundle.sources.filter(
 				(source) =>

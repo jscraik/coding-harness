@@ -13,6 +13,13 @@ export function validateRuntimeEvidenceReferences(
 		receiptRefs,
 		add,
 	);
+	checkEvidenceRef(
+		packet.environment,
+		"environment.sandboxPolicyRef",
+		receiptRefs,
+		add,
+		"sandboxPolicyRef",
+	);
 	checkValidationResultRefs(packet.validationResults, receiptRefs, add);
 	checkOptionalStateRef(
 		packet.externalState,
@@ -93,14 +100,16 @@ function checkEvidenceRef(
 	path: string,
 	receiptRefs: ReadonlySet<string>,
 	add: AddFinding,
+	fieldName = "evidenceRef",
 ): void {
 	if (!isRecord(container)) return;
-	if (typeof container.evidenceRef !== "string") return;
-	if (!receiptRefs.has(container.evidenceRef)) {
+	const evidenceRef = container[fieldName];
+	if (typeof evidenceRef !== "string") return;
+	if (!receiptRefs.has(evidenceRef)) {
 		add(
 			path,
 			"evidence_ref_missing",
-			"evidenceRef must resolve to an embedded evidence receipt ref.",
+			"evidence ref must resolve to an embedded evidence receipt ref.",
 		);
 	}
 }

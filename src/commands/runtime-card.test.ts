@@ -158,6 +158,7 @@ function writeCodexRuntimeEvidencePacket(
 ): string {
 	const evidencePath = ".harness/runtime/codex-runtime-evidence.json";
 	const permissionRef = "artifact:.harness/runtime/permissions.json";
+	const sandboxPolicyRef = "artifact:.harness/runtime/sandbox-policy.json";
 	const validationRef = "artifact:.harness/runtime/validation.json";
 	const externalRef = "artifact:.harness/runtime/external-state.json";
 	const reviewRef = "artifact:.harness/runtime/review-state.json";
@@ -191,6 +192,17 @@ function writeCodexRuntimeEvidencePacket(
 			evidenceRef: permissionRef,
 			failureClass: null,
 		},
+		environment: {
+			environmentId: "codex-desktop:thread-123",
+			cwd: repoRoot,
+			expectedCwd: repoRoot,
+			executorKind: "codex_desktop",
+			approvalScope: "auto_review",
+			expectedApprovalScope: "auto_review",
+			sandboxPolicyRef,
+			state: "current",
+			failureClass: null,
+		},
 		mcp: {
 			servers: [
 				{
@@ -205,6 +217,18 @@ function writeCodexRuntimeEvidencePacket(
 				schemaVersion: "evidence-receipt/v1",
 				kind: "artifact",
 				ref: permissionRef,
+				producer: "codex-runtime",
+				status: "pass",
+				freshness: "current",
+				evidenceUse: "claim_support",
+				blockerClass: null,
+				verifiedAt: "2026-05-15T12:01:00.000Z",
+				headSha: "a".repeat(40),
+			},
+			{
+				schemaVersion: "evidence-receipt/v1",
+				kind: "artifact",
+				ref: sandboxPolicyRef,
 				producer: "codex-runtime",
 				status: "pass",
 				freshness: "current",
