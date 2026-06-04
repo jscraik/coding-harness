@@ -262,6 +262,15 @@ starter: review candidate siblings, run the listed searches or stronger
 repo-specific equivalents, update the shared owner or matching siblings, and
 record unchanged siblings with reasons.
 
+Specific implementation-detail feedback is systemic until proven isolated. Do
+not assume a review comment, line-level correction, function-specific example,
+or local failure applies only to the visible code path. Classify the correction
+as local or systemic, search equivalent patterns in the touched module family
+and affected governance surfaces, identify the underlying engineering
+preference, and decide whether it belongs in a validator, lint rule, schema
+constraint, shared utility, repository convention, CI check, documented
+invariant, or tracked exception before finalizing.
+
 Example: "return a named sentinel error instead of a success/failure boolean" is not only a request to edit one function. It is API design feedback: search sibling boolean-result APIs in the same command core, adapter family, and tests, then either update the shared pattern or explain why the named function is intentionally different.
 
 Example: a PR closeout fix for one branch is not done until the loop checks sibling stacked PRs, `pr-green-sweep`, CodeRabbit/CircleCI interpretation, Linear references, roadmap status surfaces, and any reflected context needed to observe those lanes.

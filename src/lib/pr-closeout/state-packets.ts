@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import type { EvidenceReceipt } from "../evidence/evidence-receipt.js";
 import {
 	evaluateExternalStateClaimSupport,
@@ -32,6 +31,12 @@ import {
 	currentHeadSha,
 	requiredChecks,
 } from "./claim-helpers.js";
+import {
+	buildStatePacketReceipt,
+	isClaimSupportExternalStateSource,
+	statePacketByteLength,
+	statePacketChecksum,
+} from "./state-packet-evidence.js";
 import type {
 	PrCloseoutCheckInput,
 	PrCloseoutInput,
@@ -179,7 +184,7 @@ function buildExternalStateSnapshot(
 	context: PacketBuildContext,
 ): ExternalStateSnapshot {
 	const fetchReceiptRef = `${EXTERNAL_FETCH_REF_PREFIX}/pr-${String(input.pullRequest.number)}/fetch.json`;
-	const fetchedArtifactHash = checksum({
+	const fetchedArtifactHash = statePacketChecksum({
 		pullRequest: input.pullRequest,
 		checks: input.checks ?? [],
 		reviewThreads: input.reviewThreads ?? null,
@@ -192,17 +197,17 @@ function buildExternalStateSnapshot(
 		buildExternalSource(source, input, sourceContext),
 	);
 	const staleSources = sources.filter((source) => source.status === "stale");
-	const evidenceUse = sources.every(isClaimSupportSource)
+	const evidenceUse = sources.every(isClaimSupportExternalStateSource)
 		? "claim_support"
 		: "orientation";
-	const fetchReceipt = buildReceipt({
+	const fetchReceipt = buildStatePacketReceipt({
 		kind: "external_state",
 		ref: fetchReceiptRef,
 		producer: context.verifierIdentity,
 		verifiedAt: context.generatedAt,
 		headSha: context.headSha,
 		checksum: fetchedArtifactHash,
-		sizeBytes: byteLength(fetchedArtifactHash),
+		sizeBytes: statePacketByteLength(fetchedArtifactHash),
 	});
 
 	return {
@@ -398,15 +403,6 @@ function sourceSnapshot(
 	};
 }
 
-function isClaimSupportSource(source: ExternalStateSourceSnapshot): boolean {
-	return (
-		source.status === "available" &&
-		source.evidenceUse === "claim_support" &&
-		source.freshness === "current" &&
-		source.resultStatus === "pass"
-	);
-}
-
 function buildReviewStatePacket(
 	input: PrCloseoutInput,
 	options: {
@@ -418,7 +414,7 @@ function buildReviewStatePacket(
 	},
 ): ReviewStatePacket {
 	const fetchReceiptRef = `${REVIEW_FETCH_REF_PREFIX}/pr-${String(input.pullRequest.number)}/fetch.json`;
-	const fetchedArtifactHash = checksum({
+	const fetchedArtifactHash = statePacketChecksum({
 		pullRequest: input.pullRequest,
 		reviewThreads: input.reviewThreads,
 		reviewerArtifactProofs: options.reviewerArtifactProofs.map((proof) => ({
@@ -429,14 +425,14 @@ function buildReviewStatePacket(
 		})),
 		generatedAt: options.generatedAt,
 	});
-	const fetchReceipt = buildReceipt({
+	const fetchReceipt = buildStatePacketReceipt({
 		kind: "review_artifact",
 		ref: fetchReceiptRef,
 		producer: options.verifierIdentity,
 		verifiedAt: options.generatedAt,
 		headSha: options.headSha,
 		checksum: fetchedArtifactHash,
-		sizeBytes: byteLength(fetchedArtifactHash),
+		sizeBytes: statePacketByteLength(fetchedArtifactHash),
 	});
 	return {
 		schemaVersion: "review-state/v1",
@@ -538,54 +534,4 @@ function isCircleCiCheck(check: PrCloseoutCheckInput): boolean {
 	return (
 		check.source === "circleci" || /circleci|pr-pipeline/iu.test(check.name)
 	);
-}
-
-function buildReceipt(options: {
-	kind: EvidenceReceipt["kind"];
-	ref: string;
-	producer: string;
-	verifiedAt: string;
-	headSha: string | null;
-	checksum: string;
-	sizeBytes: number;
-	status?: EvidenceReceipt["status"];
-	freshness?: EvidenceReceipt["freshness"];
-	evidenceUse?: EvidenceReceipt["evidenceUse"];
-}): EvidenceReceipt {
-	return {
-		schemaVersion: "evidence-receipt/v1",
-		kind: options.kind,
-		ref: options.ref,
-		producer: options.producer,
-		status: options.status ?? "pass",
-		freshness: options.freshness ?? "current",
-		evidenceUse: options.evidenceUse ?? "claim_support",
-		blockerClass: null,
-		verifiedAt: options.verifiedAt,
-		headSha: options.headSha,
-		sizeBytes: options.sizeBytes,
-		checksum: options.checksum,
-	};
-}
-
-function checksum(value: unknown): string {
-	return createHash("sha256").update(stableStringify(value)).digest("hex");
-}
-
-function byteLength(value: unknown): number {
-	return Buffer.byteLength(stableStringify(value), "utf8");
-}
-
-function stableStringify(value: unknown): string {
-	if (Array.isArray(value)) {
-		return `[${value.map((item) => stableStringify(item)).join(",")}]`;
-	}
-	if (value && typeof value === "object") {
-		const record = value as Record<string, unknown>;
-		return `{${Object.keys(record)
-			.sort()
-			.map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`)
-			.join(",")}}`;
-	}
-	return JSON.stringify(value);
 }
