@@ -1434,7 +1434,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 const COMMAND_IMPORT_PATTERN = /^(?:\.\.\/)+commands\//;
 const EFFECT_IMPORT_PATTERN = /^effect(?:\/.*)?$/;
 const PR_CLOSEOUT_INTERNAL_IMPORT_PATTERN =
-	/^.*lib\/pr-closeout\/(?:blockers|claim-builders|claim-helpers|claims|delivery-truth|evidence|evidence-summaries|evaluator|recovery|report-helpers|state-packet-evidence|state-packets|status|types)\.js$/;
+	/^.*lib\/pr-closeout\/(?:blockers|claim-builders|claim-helpers|claims|delivery-truth|evidence|evidence-summaries|evaluator|recovery|report-helpers|state-packet-delivery-truth|state-packet-evidence|state-packets|status|types)\.js$/;
 const IMPORT_SPECIFIER_PATTERN =
 	/(?:import|export)\s+(?:type\s+)?(?:[\s\S]*?\s+from\s+)?["'](?<specifier>[^"']+)["']/g;
 const APPROVED_EFFECT_BOUNDARIES = new Set([
