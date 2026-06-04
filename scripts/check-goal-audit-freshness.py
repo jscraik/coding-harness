@@ -35,6 +35,7 @@ SELF_REFERENTIAL_DECLARABLE_PATHS = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS | {
     "scripts/check-goal-audit-freshness.py",
     "src/dev/check-goal-audit-freshness-script.test.ts",
 }
+SELF_REFERENTIAL_DECLARABLE_PREFIXES = ("artifacts/reviews/",)
 
 
 class ValidationError(Exception):
@@ -165,11 +166,20 @@ def permits_self_referential_goal_receipt_commit(
         if not isinstance(value, str):
             return False
         declared_paths.add(normalize_repo_relative_path(value, "receipt.changed_files[]"))
-    if not declared_paths <= SELF_REFERENTIAL_DECLARABLE_PATHS:
+    if any(not is_self_referential_declarable_path(path) for path in declared_paths):
         return False
     changed_paths = changed_paths_between(repo_root, receipt_head_sha, current_head)
     allowed_paths = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS | declared_paths
     return bool(changed_paths) and changed_paths <= allowed_paths
+
+
+def is_self_referential_declarable_path(path: str) -> bool:
+    if path in SELF_REFERENTIAL_DECLARABLE_PATHS:
+        return True
+    return any(
+        path.startswith(prefix) and path.endswith(".md")
+        for prefix in SELF_REFERENTIAL_DECLARABLE_PREFIXES
+    )
 
 
 def latest_audit_source(

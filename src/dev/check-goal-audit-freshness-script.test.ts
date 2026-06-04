@@ -218,6 +218,40 @@ describe("check-goal-audit-freshness.py", () => {
 		});
 	});
 
+	it("accepts a self-referential receipt with a declared review artifact", () => {
+		const root = createTempRoot("audit-freshness-review-artifact-self-ref-");
+		const parentHead = tempRootHeads.get(root);
+		if (!parentHead) throw new Error("missing test repository head");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		mkdirSync(join(root, "artifacts/reviews"), { recursive: true });
+		const storedReceipt = {
+			...receipt(root),
+			changed_files: [
+				join(GOAL_DIR, "receipts.jsonl"),
+				"artifacts/reviews/pr336-live-ci-triage.md",
+			],
+		};
+		writeReceipts(root, [storedReceipt]);
+		writeFileSync(
+			join(root, "artifacts/reviews/pr336-live-ci-triage.md"),
+			"coordinator recovery review artifact\n",
+		);
+		runGit(root, [
+			"add",
+			join(GOAL_DIR, "receipts.jsonl"),
+			"artifacts/reviews/pr336-live-ci-triage.md",
+		]);
+		runGit(root, ["commit", "-m", "record review artifact receipt"]);
+
+		const result = runValidator(root);
+
+		expect(result.status, result.stderr).toBe(0);
+		expect(JSON.parse(result.stdout)).toMatchObject({
+			head_sha: parentHead,
+			receipt_id: "R072",
+		});
+	});
+
 	it("accepts a shallow self-referential receipt checkout when declared files are goal-route evidence only", () => {
 		const root = createTempRoot("audit-freshness-shallow-source-");
 		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
