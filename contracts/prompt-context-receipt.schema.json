@@ -203,21 +203,8 @@
 					"pattern": "^(?![\\s\\S]*([\\r\\n]|raw[-_ ]?prompt|system[-_ ]?prompt|developer[-_ ]?prompt|user[-_ ]?prompt|prompt[-_ ]?text|transcript|raw[-_ ]?events?|password\\s*[:=]|secret\\s*[:=]|token\\s*[:=]|credential\\s*[:=]|api[-_ ]?key\\s*[:=]|sk-[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\\{\\s*\\\"schemaVersion\\\")).+$"
 				},
 				"sourceKind": {
-					"description": "Prompt-context source category.",
-					"enum": [
-						"system",
-						"developer",
-						"user",
-						"agents",
-						"skill",
-						"plugin",
-						"mcp",
-						"goal",
-						"environment",
-						"permission",
-						"extension",
-						"unknown"
-					]
+					"description": "Prompt-context source category allowed to steer agent behavior as an instruction source.",
+					"enum": ["system", "developer", "user", "agents", "skill"]
 				},
 				"authorityLayer": {
 					"description": "Instruction sources may only use authority layers that are allowed to steer agent behavior.",
