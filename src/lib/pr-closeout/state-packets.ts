@@ -184,14 +184,15 @@ function buildExternalStateSnapshot(
 	context: PacketBuildContext,
 ): ExternalStateSnapshot {
 	const fetchReceiptRef = `${EXTERNAL_FETCH_REF_PREFIX}/pr-${String(input.pullRequest.number)}/fetch.json`;
-	const fetchedArtifactHash = statePacketChecksum({
+	const payload = {
 		pullRequest: input.pullRequest,
 		checks: input.checks ?? [],
 		reviewThreads: input.reviewThreads ?? null,
 		linearMutation: input.linearMutation ?? "unknown",
 		generatedAt: context.generatedAt,
 		fetchedAt: context.fetchedAt,
-	});
+	};
+	const fetchedArtifactHash = statePacketChecksum(payload);
 	const sourceContext = { ...context, fetchedArtifactHash };
 	const sources = SOURCE_ORDER.map((source) =>
 		buildExternalSource(source, input, sourceContext),
@@ -207,7 +208,7 @@ function buildExternalStateSnapshot(
 		verifiedAt: context.generatedAt,
 		headSha: context.headSha,
 		checksum: fetchedArtifactHash,
-		sizeBytes: statePacketByteLength(fetchedArtifactHash),
+		sizeBytes: statePacketByteLength(payload),
 	});
 
 	return {
@@ -414,7 +415,7 @@ function buildReviewStatePacket(
 	},
 ): ReviewStatePacket {
 	const fetchReceiptRef = `${REVIEW_FETCH_REF_PREFIX}/pr-${String(input.pullRequest.number)}/fetch.json`;
-	const fetchedArtifactHash = statePacketChecksum({
+	const payload = {
 		pullRequest: input.pullRequest,
 		reviewThreads: input.reviewThreads,
 		reviewerArtifactProofs: options.reviewerArtifactProofs.map((proof) => ({
@@ -424,7 +425,8 @@ function buildReviewStatePacket(
 			receipt: proof.receipt,
 		})),
 		generatedAt: options.generatedAt,
-	});
+	};
+	const fetchedArtifactHash = statePacketChecksum(payload);
 	const fetchReceipt = buildStatePacketReceipt({
 		kind: "review_artifact",
 		ref: fetchReceiptRef,
@@ -432,7 +434,7 @@ function buildReviewStatePacket(
 		verifiedAt: options.generatedAt,
 		headSha: options.headSha,
 		checksum: fetchedArtifactHash,
-		sizeBytes: statePacketByteLength(fetchedArtifactHash),
+		sizeBytes: statePacketByteLength(payload),
 	});
 	return {
 		schemaVersion: "review-state/v1",

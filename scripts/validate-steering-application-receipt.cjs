@@ -472,7 +472,30 @@ function main() {
 		);
 		process.exit(2);
 	}
-	const packet = JSON.parse(readFileSync(packetPath, "utf8"));
+	let packet;
+	try {
+		const fileContent = readFileSync(packetPath, "utf8");
+		packet = JSON.parse(fileContent);
+	} catch (error) {
+		console.log(
+			JSON.stringify(
+				{
+					schemaVersion: "steering-application-receipt-validation/v1",
+					status: "fail",
+					errors: [
+						{
+							code: "file_read_or_parse_error",
+							path: packetPath,
+							message: `Failed to read or parse file: ${error.message}`,
+						},
+					],
+				},
+				null,
+				2,
+			),
+		);
+		process.exit(1);
+	}
 	const errors = validate(packet);
 	console.log(
 		JSON.stringify(
