@@ -218,6 +218,14 @@ class inside `codex-runtime-evidence/v1`; project only compact
 `environmentRefs` into runtime-card summaries. Tool-exposure snapshots remain a
 separate exposure-summary module and should not be duplicated to satisfy this
 environment contract.
+Runtime-card Codex continuity belongs in the same runtime deep module. Keep
+thread, turn, trace, goal, client-message, queue, approval, and
+heartbeat/automation continuity as producer-supplied compact refs, validate
+them against runtime evidence bundle sources and runtime-card receipt refs, and
+project them only under `codexRuntime.continuity`. Do not infer continuity from
+timestamps, PR data, branch names, artifact paths, or model output, and do not
+let continuity refs authorize commands or satisfy delivery-truth, review-state,
+external-state, merge-readiness, Judge/PM, or goal-completion claims.
 
 Browser evidence packet changes are runtime-cockpit evidence work, not delivery
 truth. Keep `browser-evidence/v1` validation inside

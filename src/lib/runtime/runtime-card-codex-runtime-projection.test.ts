@@ -102,6 +102,81 @@ function codexRuntimeEvidenceBundle(): RuntimeEvidenceBundle {
 	};
 }
 
+function codexRuntimeEvidenceBundleWithContinuity(): RuntimeEvidenceBundle {
+	return {
+		...codexRuntimeEvidenceBundle(),
+		sources: [
+			...codexRuntimeEvidenceBundle().sources,
+			{
+				kind: "session",
+				ref: "codex-runtime://thread-123",
+				freshness: "current",
+				status: "usable",
+				failureClass: null,
+			},
+			{
+				kind: "session",
+				ref: "codex-runtime://turn-456",
+				freshness: "current",
+				status: "usable",
+				failureClass: null,
+			},
+			{
+				kind: "session",
+				ref: "codex-runtime://trace-789",
+				freshness: "current",
+				status: "usable",
+				failureClass: null,
+			},
+			{
+				kind: "artifact",
+				ref: "codex-runtime://goal/JSC-363",
+				freshness: "current",
+				status: "usable",
+				failureClass: null,
+			},
+			{
+				kind: "session",
+				ref: "codex-runtime://message/client-abc",
+				freshness: "current",
+				status: "usable",
+				failureClass: null,
+			},
+			{
+				kind: "artifact",
+				ref: "codex-runtime://queue/item-1",
+				freshness: "current",
+				status: "usable",
+				failureClass: null,
+			},
+			{
+				kind: "artifact",
+				ref: "codex-runtime://approval/request-1",
+				freshness: "current",
+				status: "usable",
+				failureClass: null,
+			},
+			{
+				kind: "artifact",
+				ref: "codex-runtime://heartbeat/automation-1",
+				freshness: "current",
+				status: "usable",
+				failureClass: null,
+			},
+		],
+		continuity: {
+			threadRefs: ["codex-runtime://thread-123"],
+			turnRefs: ["codex-runtime://turn-456"],
+			traceRefs: ["codex-runtime://trace-789"],
+			goalRefs: ["codex-runtime://goal/JSC-363"],
+			clientMessageRefs: ["codex-runtime://message/client-abc"],
+			queueRefs: ["codex-runtime://queue/item-1"],
+			approvalRefs: ["codex-runtime://approval/request-1"],
+			heartbeatRefs: ["codex-runtime://heartbeat/automation-1"],
+		},
+	};
+}
+
 function toolExposureProjection() {
 	return projectToolExposureToRuntimeCard(
 		JSON.parse(
@@ -200,6 +275,46 @@ describe("runtime-card Codex runtime projection", () => {
 		});
 		expect(JSON.stringify(card.codexRuntime?.toolExposure)).not.toContain(
 			"/Users/",
+		);
+	});
+
+	it("projects source-backed Codex continuity refs into the compact runtime-card surface", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		tempDirs.push(repoRoot);
+		writeActiveArtifacts(repoRoot);
+
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			evidenceBundle: codexRuntimeEvidenceBundleWithContinuity(),
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+
+		expect(validateRuntimeCard(card)).toEqual({ valid: true, errors: [] });
+		expect(card.codexRuntime?.continuity).toEqual({
+			threadRefs: ["codex-runtime://thread-123"],
+			turnRefs: ["codex-runtime://turn-456"],
+			traceRefs: ["codex-runtime://trace-789"],
+			goalRefs: ["codex-runtime://goal/JSC-363"],
+			clientMessageRefs: ["codex-runtime://message/client-abc"],
+			queueRefs: ["codex-runtime://queue/item-1"],
+			approvalRefs: ["codex-runtime://approval/request-1"],
+			heartbeatRefs: ["codex-runtime://heartbeat/automation-1"],
+		});
+		expect(card.codexRuntime?.receiptRefs).toEqual(
+			expect.arrayContaining([
+				"codex-runtime://thread-123",
+				"codex-runtime://turn-456",
+				"codex-runtime://trace-789",
+				"codex-runtime://goal/JSC-363",
+				"codex-runtime://message/client-abc",
+				"codex-runtime://queue/item-1",
+				"codex-runtime://approval/request-1",
+				"codex-runtime://heartbeat/automation-1",
+			]),
+		);
+		expect(JSON.stringify(card.codexRuntime?.continuity)).not.toContain(
+			"rawEvents",
 		);
 	});
 
@@ -306,6 +421,95 @@ describe("runtime-card Codex runtime projection", () => {
 			errors: expect.arrayContaining([
 				expect.objectContaining({ path: "codexRuntime.rawEvents" }),
 				expect.objectContaining({ path: "codexRuntime.fullReviewBody" }),
+			]),
+		});
+	});
+
+	it("rejects continuity projections that are not backed by card receipt refs", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		tempDirs.push(repoRoot);
+		writeActiveArtifacts(repoRoot);
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			evidenceBundle: codexRuntimeEvidenceBundle(),
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+		const invalidCard = {
+			...card,
+			codexRuntime: {
+				...card.codexRuntime,
+				continuity: codexRuntimeEvidenceBundleWithContinuity().continuity,
+			},
+		};
+
+		expect(validateRuntimeCard(invalidCard)).toMatchObject({
+			valid: false,
+			errors: expect.arrayContaining([
+				expect.objectContaining({
+					path: "codexRuntime.continuity.threadRefs.0",
+				}),
+				expect.objectContaining({
+					path: "codexRuntime.continuity.clientMessageRefs.0",
+				}),
+			]),
+		});
+	});
+
+	it("rejects unknown continuity fields and raw payload-like continuity refs", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "runtime-card-"));
+		tempDirs.push(repoRoot);
+		writeActiveArtifacts(repoRoot);
+		const card = buildLocalRuntimeCard({
+			repoRoot,
+			evidenceBundle: codexRuntimeEvidenceBundle(),
+			now: new Date("2026-05-15T12:00:00.000Z"),
+			git: gitRunner(),
+		});
+		const invalidCard = {
+			...card,
+			sources: [
+				...card.sources,
+				{
+					kind: "session",
+					ref: "codex-runtime://turn-456%20%7B%22schemaVersion%22%3A%22raw%22%7D",
+					freshness: "current",
+					status: "usable",
+					failureClass: null,
+				},
+			],
+			codexRuntime: {
+				...card.codexRuntime,
+				receiptRefs: [
+					...(card.codexRuntime?.receiptRefs ?? []),
+					"codex-runtime://turn-456%20%7B%22schemaVersion%22%3A%22raw%22%7D",
+				],
+				sourceCount: (card.codexRuntime?.sourceCount ?? 0) + 1,
+				continuity: {
+					...codexRuntimeEvidenceBundleWithContinuity().continuity,
+					turnRefs: [
+						"codex-runtime://turn-456%20%7B%22schemaVersion%22%3A%22raw%22%7D",
+					],
+					rawPacketRefs: ["codex-runtime://raw-packet"],
+				},
+			},
+		};
+
+		expect(validateRuntimeCard(invalidCard)).toMatchObject({
+			valid: false,
+			errors: expect.arrayContaining([
+				expect.objectContaining({
+					path: "sources.6.ref",
+				}),
+				expect.objectContaining({
+					path: "codexRuntime.receiptRefs.4",
+				}),
+				expect.objectContaining({
+					path: "codexRuntime.continuity.rawPacketRefs",
+				}),
+				expect.objectContaining({
+					path: "codexRuntime.continuity.turnRefs.0",
+				}),
 			]),
 		});
 	});
