@@ -163,7 +163,7 @@ current_slice_gate:
     - "Wait for or recover artifacts/reviews/pr331-337-green-sweep-triage.md from /root/pr_stack_green_sweep before claiming PR sweep coverage."
     - "Prioritize actionable PR blockers from the PR sweep queue, starting with current pr-template/pr-pipeline failures on PR #331, #333, #334, and #335 unless the sweep artifact identifies a higher-leverage stack fix."
     - "Keep Snyk external App quota errors, draft state, CodeRabbit pending state, review-thread truth, mergeability, and local validation as separate lanes."
-    - "Commit PU-054 only after goal-board and audit-freshness validators pass on R263 and the intended ignored review artifacts are force-added as tracked evidence."
+    - "Do not mark PU-054 done until goal-board and audit-freshness validators pass on R263 and the intended ignored review artifacts are force-added as tracked evidence."
     - "Wait for fresh CodeRabbit completion after the PR #338 trigger comment; do not treat the trigger comment itself as review completion or finding resolution."
     - "Use artifacts/reviews/pr331-338-green-sweep-triage.md as the current PR-stack route artifact: repair PR #332 current lint/typecheck/test/check failures before later stacked PR repairs, while keeping PR #338's external Snyk App ERROR as a separate owner/tooling disposition lane."
     - "Do not mark PU-054 done until external Snyk/error disposition, review-thread truth, CodeRabbit/Codex review state, independent reviewer artifact recovery or accepted fallback, and mergeability truth are freshly triaged."
