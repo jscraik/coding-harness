@@ -246,6 +246,7 @@ Notes:
   `pnpm skill:validate`; this guard is part of agent-governance closeout, not
   a prose-only review convention.
 - Rule lifecycle governance changes that alter `.harness/rule-lifecycle-manifest.json`, `docs/rule-lifecycle.schema.json`, `rule-lifecycle-gate`, or lifecycle validation behavior must keep `AGENTS.md`, `README.md`, and `docs/agents/00-architecture-bootstrap.md` synchronized when docs-gate reports contract-policy or architecture-context surfaces.
+- Reader-task documentation eval changes that add or alter `pnpm docs:task-eval`, fixture categories, fixture evidence validation, or docs-surface automation are documentation-lifecycle governance changes. Keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, `docs/agents/07b-agent-governance.md`, generated architecture context, and docs-gate-required surfaces synchronized when the eval lane changes reader journeys, canon boundaries, review-state truth, or downstream distribution assumptions.
 - Agent-native cockpit, generated environment action, hook setup, and architecture-artifact changes must keep the docs-gate required surfaces synchronized in the same PR so `harness next --json` recommendations, local runtime setup, and reviewer-facing evidence describe the current contract.
 - RouteDecision lifecycle metadata is agent-native cockpit contract work. Governance constraints:
   - `route-decision/v1` must remain advisory/read-only
