@@ -42,18 +42,21 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-05 post-PR #343 route-truth refresh after local
+Last updated during the 2026-06-05 PR #345 waiver-record triage after local
 `main` synchronized with `origin/main` at
-`02152b965fb399eb3310e8abde171a099895ad99`.
+`cfda8c6a0aa58f5468a7ca1ab87e74becc7004aa` and the waiver-record branch
+opened draft PR #345 at `6d7a6829ba8d3f8451471aa0d2feaa16263f922c`.
 
 Current route truth:
 
-- `main` and `origin/main` are synchronized at `02152b965fb399eb3310e8abde171a099895ad99`.
-- PR #343 is merged into `main` at 2026-06-05T09:15:55Z as merge commit `02152b965fb399eb3310e8abde171a099895ad99`; its submitted head was `3f72249edb5eca86da5cd96d16ed0bf5fb57fbc2`.
-- Receipt-backed merged JSC-363 route/foundation lanes through PR #343 are completed current-main evidence. Earlier PR #337/#338 stack-only and PR #342 current-main concerns are resolved by the current-main delivery path; do not reopen them unless a fresh current-main audit finds a regression.
-- The external Snyk GitHub App quota failure on PR #343 is recorded as an owner waiver for that quota lane only because it reported `You have used your limit of private tests`. This does not claim external Snyk passed and does not waive repo-run security, CircleCI `snyk-dependency-scan`, Socket, CodeRabbit, review-thread, Linear, Judge/PM, or future security findings.
-- Live Linear `JSC-363` has only historical tracker evidence in this current route surface: earlier probes recorded `Done` and later `In Review` observations with the full-lifecycle scope-note attachment, PR attachments through #338, and comment `e34da9b0-3e16-4fec-a915-5b76f86a0c79` for the earlier route-truth split. Treat current Linear status and field text as unclaimed unless refreshed again after PR #343.
-- Do not keep routing work as if receipt-backed merged JSC-363 route/foundation lanes through PR #343 were open PR-triage lanes. Select the next bounded lifecycle gap only from current `main` after this board, `state.yaml`, and `receipts.jsonl` validate.
+- `main` and `origin/main` are synchronized at `cfda8c6a0aa58f5468a7ca1ab87e74becc7004aa`.
+- PR #344 is merged into `main` at 2026-06-05T10:16:44Z as merge commit `cfda8c6a0aa58f5468a7ca1ab87e74becc7004aa`; its submitted head was `cdb6cf8446a61fe98d1e493c2562c6dd9eb6ab96`.
+- PR #343 remains merged into `main` at 2026-06-05T09:15:55Z as merge commit `02152b965fb399eb3310e8abde171a099895ad99`; its submitted head was `3f72249edb5eca86da5cd96d16ed0bf5fb57fbc2`.
+- Receipt-backed merged JSC-363 route/foundation lanes through PR #344 are completed current-main evidence. Earlier PR #337/#338 stack-only, PR #342 current-main, and PR #343 quota-waiver route concerns are resolved by the current-main delivery path; do not reopen them unless a fresh current-main audit finds a regression.
+- PR #345 is the active draft PR for this waiver-record route update. Its local live PR body passes `pr-template-gate` after the body repair, but GitHub still reports the older CircleCI `ci/circleci: pr-template` status from pipeline 2408/job 26394 as failed until CircleCI reruns or a fresh commit produces a new status.
+- The external Snyk GitHub App quota failure is recorded as an owner waiver for that quota lane only because it reported `You have used your limit of private tests`. This does not claim external Snyk passed and does not waive repo-run security, CircleCI `snyk-dependency-scan`, Socket, CodeRabbit, review-thread, Linear, Judge/PM, future Snyk results, or future security findings.
+- Live Linear `JSC-363` has only historical tracker evidence in this current route surface: earlier probes recorded `Done` and later `In Review` observations with the full-lifecycle scope-note attachment, PR attachments through #338, and comment `e34da9b0-3e16-4fec-a915-5b76f86a0c79` for the earlier route-truth split. Treat current Linear status and field text as unclaimed unless refreshed again after PR #344.
+- Do not keep routing work as if receipt-backed merged JSC-363 route/foundation lanes through PR #344 were open PR-triage lanes. Select the next bounded lifecycle gap only from current `main` after this board, `state.yaml`, and `receipts.jsonl` validate.
 
 Outstanding goal work after conflict reconciliation:
 
@@ -61,12 +64,12 @@ Outstanding goal work after conflict reconciliation:
 - Keep this goal board and the local board tracker synchronized before using either as route truth.
 - Run the goal-board and audit-freshness validators after this route-truth refresh.
 - Treat merged PRs as completed route/foundation evidence, not as final goal completion.
-- Treat Linear `JSC-363` historical tracker observations as stale route context after PR #343, including prior `Done` and `In Review` statuses plus the full-lifecycle scope-note attachment and the 2026-06-04 route-truth comment. Do not call Linear current after PR #343 unless the issue is refreshed again and field text is either updated or explicitly accepted as stale.
+- Treat Linear `JSC-363` historical tracker observations as stale route context after PR #344, including prior `Done` and `In Review` statuses plus the full-lifecycle scope-note attachment and the 2026-06-04 route-truth comment. Do not call Linear current after PR #344 unless the issue is refreshed again and field text is either updated or explicitly accepted as stale.
 - Continue implementation only from the remaining evidence-backed lifecycle gaps: runtime producer evidence, delivery-truth consumption, final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, and final requirement-by-requirement completion audit.
 - Treat the current-main Codex-native refinement addendum as next-slice intent scope. It is not completed implementation evidence until the named source modules, contracts, fixtures, validators, and receipts prove the new fields or record owner-visible blockers.
 - Do not create a new duplicate goal board. Update this board, `state.yaml`, and `receipts.jsonl` as the canonical durable goal surface.
 - From this update onward, every implementation slice must finish sequentially: run the required completion lenses `$simplify`, `$improve-codebase-architecture`, `$sy-review`, and `$testing`; record the independent reviewer outcomes; commit the slice; open/update exactly one slice PR; run `$pr-green-sweep` until faults are fixed, the PR is merged to `main`, and local `main` is pulled; update the board/state/receipt; and only then start the next implementation slice. Stacked implementation PRs are forbidden unless Jamie records a named exception before work begins.
-- Current stop condition: do not start the next implementation slice until this post-PR #343 board/state/receipt refresh validates. PR #343 is merged and local `main` is pulled; the external Snyk GitHub App quota failure is waived only as an external quota blocker, not recorded as a passing security result.
+- Current stop condition: do not start the next implementation slice until PR #345 is resolved, merged to `main`, local `main` is pulled, and the board/state/receipt route truth is refreshed again. The external Snyk GitHub App quota failure is waived only as an external quota blocker, not recorded as a passing security result.
 
 ## Why This Exists
 
@@ -225,7 +228,7 @@ Adoption rules:
 - The ecosystem review is advisory until this section and `state.yaml` adopt specific findings; after adoption, the listed findings are goal steering constraints.
 - Harness must not become a competing Codex app-server, goal store, scheduler, tool registry, or thread engine.
 - Runtime cards remain cockpit summaries and pointers, not warehouses for raw prompts, raw telemetry, review bodies, secrets, or bulky artifacts.
-- Linear `JSC-363` remains the tracker anchor for this goal. Historical Linear evidence recorded a `Done` status with a full-lifecycle scope-note attachment, and later route-truth evidence recorded `In Review`; neither status is current post-PR #343 proof. Future closeout may claim tracker alignment only after a fresh Linear refresh records status, scope-note state, and field-text freshness separately.
+- Linear `JSC-363` remains the tracker anchor for this goal. Historical Linear evidence recorded a `Done` status with a full-lifecycle scope-note attachment, and later route-truth evidence recorded `In Review`; neither status is current post-PR #344 proof. Future closeout may claim tracker alignment only after a fresh Linear refresh records status, scope-note state, and field-text freshness separately.
 - Every future Worker/Judge/PM receipt should include `ecosystem_review_findings` when a slice touches runtime identity, runtime state, claim verification, queueing, tool exposure, review mode, artifacts, memory/retrieval, recovery, schemas, telemetry, hooks, instruction provenance, runtime provenance, or Codex parity.
 
 ## Codex-Native Current-Main Refinement Addendum
@@ -241,11 +244,11 @@ Codex-native: identity correlation, environment-scoped permission evidence,
 risk-tiered mutation authority, richer runtime-card continuity, context
 authority classification, and queue application receipts.
 
-Current-main verification was refreshed after the PR #343 merge at
-`02152b965fb399eb3310e8abde171a099895ad99`. Earlier refinement evidence was
+Current-main verification was refreshed after the PR #344 merge at
+`cfda8c6a0aa58f5468a7ca1ab87e74becc7004aa`. Earlier refinement evidence was
 first recorded at `50a6d0b5d764e35395e12190a465e854c26784fd`; the refreshed
 route truth preserves that scope analysis while recording PR #331 through
-PR #338 plus PR #343 as completed JSC-363 route/foundation evidence on
+PR #338 plus PR #344 as completed JSC-363 route/foundation evidence on
 current `origin/main`.
 
 This supports the refinement as pending scope, not as proof of implementation:
