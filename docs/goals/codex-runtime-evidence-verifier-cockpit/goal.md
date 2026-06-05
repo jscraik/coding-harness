@@ -42,29 +42,31 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-04 post-merge route-truth refresh after local
+Last updated during the 2026-06-04 post-PR #342 route-truth refresh after local
 `main` fast-forwarded to `origin/main` at
-`a76921942cdbd8b3e1b449a05993d467700f770c`.
+`173a3fe0772fcce6d1e960bd0d9f41debbc7d96f`.
 
 Current route truth:
 
-- `main` and `origin/main` are synchronized at `a76921942cdbd8b3e1b449a05993d467700f770c`.
-- Live GitHub reports zero open pull requests for `jscraik/coding-harness`.
-- PR #331, PR #332, PR #333, PR #334, PR #335, and PR #336 are merged into the current main-delivery line. PR #336 merged into `main` at 2026-06-04T20:55:54Z as merge commit `a76921942cdbd8b3e1b449a05993d467700f770c`.
-- PR #337 and PR #338 are live-merged in GitHub, but their base branch was `codex/jsc-363-cnf-006-steering-application-receipt`, not `main`. Their merge commits `54513ae0721d720c4a92fb51e2db78f4b679d33a` and `01179cdefccf34c58fbac54d4f0da344fdaa6155` are not ancestors of current `origin/main`; treat them as stack-branch delivery evidence until a fresh main-delivery path is chosen and validated.
-- Live Linear `JSC-363` was refreshed after the PR merge: status is `In Review`, it has the full-lifecycle scope-note attachment and PR attachments through #338, and comment `e34da9b0-3e16-4fec-a915-5b76f86a0c79` records this post-merge route-truth split. The issue title and description still use Phase 1 wording, so Linear field-text alignment remains stale.
-- Do not keep routing work as if PR #331 through PR #338 were open PR-triage lanes unless a fresh GitHub query shows a reopened or new PR.
+- `main` and `origin/main` are synchronized at `173a3fe0772fcce6d1e960bd0d9f41debbc7d96f`.
+- PR #342 is merged into `main` at 2026-06-04T23:25:43Z as merge commit `173a3fe0772fcce6d1e960bd0d9f41debbc7d96f`; its head was `71fb4041ae8829fce004b661381dd69861dba246`.
+- Receipt-backed merged JSC-363 route/foundation lanes through PR #342 are completed current-main evidence. The earlier PR #337/#338 stack-only concern was resolved by the PR #342 current-main delivery path; do not reopen it unless a fresh current-main audit finds a regression.
+- Live GitHub reports PR #343 as the active sequential JSC-363 governance slice PR on submitted head `cf5be8ad03cb3e7581b3c9bbc96a0a3b22345b0b`. All CircleCI, CodeRabbit, Socket, and repo-run security lanes are green after the review-thread repair; merge remains blocked by the external Snyk GitHub App quota error `You have used your limit of private tests`.
+- Live Linear `JSC-363` has only historical tracker evidence in this current route surface: earlier probes recorded `Done` and later `In Review` observations with the full-lifecycle scope-note attachment, PR attachments through #338, and comment `e34da9b0-3e16-4fec-a915-5b76f86a0c79` for the earlier route-truth split. Treat current Linear status and field text as unclaimed unless refreshed again after PR #342.
+- Do not keep routing work as if receipt-backed merged JSC-363 route/foundation lanes through PR #342 were open PR-triage lanes. Route current PR triage only through PR #343 until it is merged to `main`, pulled locally, or explicitly owner-unblocked.
 
 Outstanding goal work after conflict reconciliation:
 
-- Continue only after deciding whether PR #337 and PR #338 work is still required on `main`; if it is required, create a bounded main-delivery path for those stack-only merged commits before claiming their work is current-main evidence.
+- Continue only after the next remaining lifecycle gap is selected from current `main` and recorded as a bounded slice intent.
 - Keep this goal board and the local board tracker synchronized before using either as route truth.
 - Run the goal-board and audit-freshness validators after this route-truth refresh.
 - Treat merged PRs as completed route/foundation evidence, not as final goal completion.
-- Treat Linear `JSC-363` as tracker-refreshed by current `In Review` status plus the full-lifecycle scope-note attachment and the 2026-06-04 route-truth comment. Do not call Linear fields current unless the title and description are updated.
+- Treat Linear `JSC-363` historical tracker observations as stale route context after PR #342, including prior `Done` and `In Review` statuses plus the full-lifecycle scope-note attachment and the 2026-06-04 route-truth comment. Do not call Linear current after PR #342 unless the issue is refreshed again and field text is either updated or explicitly accepted as stale.
 - Continue implementation only from the remaining evidence-backed lifecycle gaps: runtime producer evidence, delivery-truth consumption, final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, and final requirement-by-requirement completion audit.
 - Treat the current-main Codex-native refinement addendum as next-slice intent scope. It is not completed implementation evidence until the named source modules, contracts, fixtures, validators, and receipts prove the new fields or record owner-visible blockers.
 - Do not create a new duplicate goal board. Update this board, `state.yaml`, and `receipts.jsonl` as the canonical durable goal surface.
+- From this update onward, every implementation slice must finish sequentially: run the required completion lenses `$simplify`, `$improve-codebase-architecture`, `$sy-review`, and `$testing`; record the independent reviewer outcomes; commit the slice; open/update exactly one slice PR; run `$pr-green-sweep` until faults are fixed, the PR is merged to `main`, and local `main` is pulled; update the board/state/receipt; and only then start the next implementation slice. Stacked implementation PRs are forbidden unless Jamie records a named exception before work begins.
+- Current stop condition: do not start the next implementation slice while PR #343 is open. PR #343 is code/review/CI-green except for the external Snyk GitHub App quota status, which requires owner/account-level resolution or an explicit owner decision before merge.
 
 ## Why This Exists
 
@@ -223,7 +225,7 @@ Adoption rules:
 - The ecosystem review is advisory until this section and `state.yaml` adopt specific findings; after adoption, the listed findings are goal steering constraints.
 - Harness must not become a competing Codex app-server, goal store, scheduler, tool registry, or thread engine.
 - Runtime cards remain cockpit summaries and pointers, not warehouses for raw prompts, raw telemetry, review bodies, secrets, or bulky artifacts.
-- Linear `JSC-363` remains the tracker anchor for this goal. Current live Linear evidence records the issue as `Done` with a full-lifecycle scope-note attachment, while the title and description still say Phase 1. Future closeout may claim attachment-backed tracker alignment, but not field-text-current Linear alignment unless those fields are updated.
+- Linear `JSC-363` remains the tracker anchor for this goal. Historical Linear evidence recorded a `Done` status with a full-lifecycle scope-note attachment, and later route-truth evidence recorded `In Review`; neither status is current post-PR #342 proof. Future closeout may claim tracker alignment only after a fresh Linear refresh records status, scope-note state, and field-text freshness separately.
 - Every future Worker/Judge/PM receipt should include `ecosystem_review_findings` when a slice touches runtime identity, runtime state, claim verification, queueing, tool exposure, review mode, artifacts, memory/retrieval, recovery, schemas, telemetry, hooks, instruction provenance, runtime provenance, or Codex parity.
 
 ## Codex-Native Current-Main Refinement Addendum
@@ -239,13 +241,12 @@ Codex-native: identity correlation, environment-scoped permission evidence,
 risk-tiered mutation authority, richer runtime-card continuity, context
 authority classification, and queue application receipts.
 
-Current-main verification was refreshed after the PR #336 merge at
-`a76921942cdbd8b3e1b449a05993d467700f770c`. Earlier refinement evidence was
+Current-main verification was refreshed after the PR #342 merge at
+`173a3fe0772fcce6d1e960bd0d9f41debbc7d96f`. Earlier refinement evidence was
 first recorded at `50a6d0b5d764e35395e12190a465e854c26784fd`; the refreshed
-route truth preserves that scope analysis while adding the current merged-stack
-boundary: PR #331 through PR #336 are on the main-delivery line, while PR #337
-and PR #338 were merged only into the stacked CNF-006 branch and are not
-ancestors of current `origin/main`.
+route truth preserves that scope analysis while recording PR #331 through
+PR #338 plus PR #342 as completed JSC-363 route/foundation evidence on
+current `origin/main`.
 
 This supports the refinement as pending scope, not as proof of implementation:
 
