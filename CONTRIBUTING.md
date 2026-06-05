@@ -142,6 +142,7 @@ Recommended policy:
 - Keep repo-scoped telemetry and learned overrides under `.harness/memory/`, and global telemetry under `~/.codex/`.
 - Treat `scripts/verify-work.sh` as the canonical repo-facing verification command and keep it wired to repo-local preflight defaults.
 - Treat `scripts/validate-codestyle.sh` as the fail-closed code style gate and require exact proof-of-pass in change summaries and PRs.
+- Treat `pnpm docs:archive-candidates -- --json` as advisory stale-document cleanup evidence only; it may identify review candidates and repair hints, but it must not archive, move, delete, demote, or rewrite docs.
 - When executable behavior changes, run the smallest real code path that exercises the exact production code touched before claiming verification.
 - Prefer invoking production functions, classes, CLI commands, shell scripts, validators, or routes directly. If no existing test covers the path, create a temporary reproduction harness under `codex-scripts/` and keep that directory gitignored.
 - If the exact path cannot run because of unavailable credentials, external services, unsafe side effects, or missing generated state, record the blocker clearly, run the nearest meaningful validation, and do not describe production behavior as verified unless the touched path actually ran.

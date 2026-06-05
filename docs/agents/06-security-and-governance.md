@@ -44,6 +44,7 @@ This repository follows conservative defaults:
 - Detached-worktree bootstrap in generated environment actions should create a local feature branch and track `origin/main` before dependency setup so validation, commit, and push evidence stays attached to an auditable branch.
 - Global npm harness fallback checks should run an already-installed executable before requiring private-registry authentication; missing install diagnostics may ask for npm auth, but local readiness must not leak tokens into repo files or generated scaffolds.
 - Flow Ops closure-evidence changes that alter validation routing or source classification are governance-sensitive and must refresh architecture context plus docs-gate-required governance surfaces in the same PR.
+- Advisory stale-document archive-candidate reporting is governance evidence, not mutation authority: `pnpm docs:archive-candidates -- --json` may identify stale candidates and repair hints, but archive, move, delete, demotion, or metadata rewrite actions require a separate reviewed decision.
 - Flow Ops closure-evidence merge repairs that keep generated environment setup
   or init scaffolding behavior current must also keep this guide in the PR when
   docs-gate reports tooling-runtime or init-scaffold categories.

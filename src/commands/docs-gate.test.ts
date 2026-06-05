@@ -1498,4 +1498,36 @@ applies_to:
 			),
 		).toBe(true);
 	});
+
+	it("does not raise docs-gate warnings for generated archive repair hints", () => {
+		const root = createTestRoot("docs-gate-generated-archive-hints");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+		write(join(root, "AI/context/diagram-context.md"), "# Generated\n");
+		write(join(root, ".harness/active-artifacts.md"), "# Active artifacts\n");
+		const env = createIsolatedGitEnv();
+		execFileSync("git", ["init"], { cwd: root, env });
+		execFileSync("git", ["add", "."], { cwd: root, env });
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: [],
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.report.outcome).toBe("ok");
+		expect(result.report.summary.archive_repair_finding_count).toBe(1);
+		expect(
+			result.report.findings.some(
+				(finding) =>
+					finding.rule_id === "docs.archive_candidates.advisory" &&
+					finding.severity === "warning",
+			),
+		).toBe(false);
+	});
 });

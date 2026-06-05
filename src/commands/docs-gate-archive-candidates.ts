@@ -23,7 +23,7 @@ export interface ArchiveCandidateDocsGateProjection {
 		surface: "docs:archive-candidates";
 		rule_result: "not_applicable" | "error";
 		result: "not_applicable" | "error";
-		severity: "warning" | "error";
+		severity: "info" | "warning" | "error";
 		message: string;
 		details?: string;
 		source_of_truth_ref: string;
@@ -65,10 +65,15 @@ export function collectArchiveCandidateDocsGateProjection(
 							`${candidate.path} [${candidate.reasons.join(", ")}]`,
 					)
 					.join("; "),
-				source_of_truth_ref: "pnpm docs:archive-candidates -- --json",
+				source_of_truth_ref: "pnpm --silent docs:archive-candidates -- --json",
 			});
 		}
-		if (report.repairFindings.length > 0) {
+		const blockingRepairFindings = report.repairFindings.filter(
+			(finding) =>
+				finding.code !== "repair_generated_source_link" &&
+				finding.code !== "generated_output_do_not_edit",
+		);
+		if (blockingRepairFindings.length > 0) {
 			findings.push({
 				rule_id: DOCS_ARCHIVE_CANDIDATES_RULE_ID,
 				category: "doc_only",
@@ -76,12 +81,12 @@ export function collectArchiveCandidateDocsGateProjection(
 				rule_result: "not_applicable",
 				result: "not_applicable",
 				severity: "warning",
-				message: `Advisory stale-document repair findings found: ${report.repairFindings.length}`,
-				details: report.repairFindings
+				message: `Advisory stale-document repair findings found: ${blockingRepairFindings.length}`,
+				details: blockingRepairFindings
 					.slice(0, 5)
 					.map((finding) => `${finding.path} [${finding.code}]`)
 					.join("; "),
-				source_of_truth_ref: "pnpm docs:archive-candidates -- --json",
+				source_of_truth_ref: "pnpm --silent docs:archive-candidates -- --json",
 			});
 		}
 		return {
