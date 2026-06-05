@@ -42,9 +42,12 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-05 PR #353 merged-main refresh after local
-`main` fast-forwarded to `origin/main` at
-`c475cd76d0c39e0a44789fb1da92b8a2c606773a`.
+Last updated during the 2026-06-05 PR #354 review-repair refresh. Live
+GitHub shows PR #354 is still OPEN and draft at
+`7f12a2701ce0a086d77abfd69401d86ea0aa8ccb`; it is not merged. PR #353
+remains the latest merged-main route truth at
+`c475cd76d0c39e0a44789fb1da92b8a2c606773a` until PR #354 is merged and
+local `main` is pulled.
 
 Current route truth:
 
@@ -82,7 +85,7 @@ Outstanding goal work after conflict reconciliation:
 - Treat the current-main Codex-native refinement addendum as next-slice intent scope. It is not completed implementation evidence until the named source modules, contracts, fixtures, validators, and receipts prove the new fields or record owner-visible blockers.
 - Do not create a new duplicate goal board. Update this board, `state.yaml`, and `receipts.jsonl` as the canonical durable goal surface.
 - From this update onward, every implementation slice must finish sequentially: run the required completion lenses `$simplify`, `$improve-codebase-architecture`, `$sy-review`, and `$testing`; record the independent reviewer outcomes; commit the slice; open/update exactly one slice PR; run `$pr-green-sweep` until faults are fixed, the PR is merged to `main`, and local `main` is pulled; update the board/state/receipt; and only then start the next implementation slice. Stacked implementation PRs are forbidden unless Jamie records a named exception before work begins.
-- Current route status: PR #353 is merged and local `main` is pulled to `c475cd76d0c39e0a44789fb1da92b8a2c606773a`. The PR lane is complete for the post-PR #352 route refresh and review-thread repair, with the external Snyk GitHub App quota lane owner-waived only as an external quota/status blocker. Linear JSC-363 was refreshed through comment `4f25fd81-35a3-4262-a3c5-ce267acb77ea`, but field-text-current remains unclaimed. The leading-flag validator repair from local commit `fb2e9946adfe21d29861e04f9b5d12596e696d80` is not merged and remains an explicit follow-up candidate. The next implementation slice may start only after this merged-main route refresh validates and a bounded lifecycle-gap intent is recorded.
+- Current route status: PR #354 is the active open draft PR lane for advisory stale-document archive candidate reporting at 7f12a2701ce0a086d77abfd69401d86ea0aa8ccb. Live GitHub shows it is not merged. The current repair head fixes the review-thread parser and browser-board wording gaps and manually triggered CodeRabbit, but CI, review-thread resolution, merge, local-main pull, Linear post-merge refresh, and next-slice selection remain pending. Do not start the next implementation slice until PR #354 is merged, local main is pulled, and the goal board, browser board, and receipt route truth are refreshed.
 
 ## Why This Exists
 

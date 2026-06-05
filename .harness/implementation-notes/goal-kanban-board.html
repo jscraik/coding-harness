@@ -411,12 +411,12 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness warning">PR #353 merged: main synced</div>
+      <div class="source-chip" aria-label="Source freshness warning">PR #354 open: triage active</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>Post-PR #353 route refresh</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>Merged lanes through PR #353</strong></div>
+      <div class="metric"><span>Goal status</span><strong>PR #354 review repair</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>PR #353 latest merged</strong></div>
       <div class="metric"><span>Outstanding work</span><strong>Runtime, delivery truth, docs, Linear, Judge/PM</strong></div>
       <div class="metric"><span>Claim boundary</span><strong>Completion unclaimed</strong></div>
       <div class="metric"><span>Source files</span><strong>goal.md, state.yaml, receipts.jsonl, Kanban</strong></div>
@@ -497,7 +497,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, live Linear, and local git ancestry after PR #353 merged and local <code>main</code> fast-forwarded to <code>c475cd76d0c39e0a44789fb1da92b8a2c606773a</code>. PR #353 submitted head <code>69d758a79b48d243469e8e6978a8b4f04018ae50</code> is merged. GitHub reported CodeRabbit, Socket, repo-owned CircleCI checks, aggregate <code>pr-pipeline</code>, and repo-owned security lanes passing at merge refresh. The external Snyk GitHub App quota/status failure is owner-waived for that external lane only and is not recorded as external Snyk passing. Linear JSC-363 is <code>In Review</code>, comment <code>4f25fd81-35a3-4262-a3c5-ce267acb77ea</code> records the post-PR #353 route truth, PR #353 attachment <code>2613ac6c-2ac7-41f4-bab4-abd2a1c545bb</code> is present, and earlier PR #352/PR #351 tracker artifacts remain provenance; field-text-current remains unclaimed because the title/description still describe Phase 1. Local branch-only leading-flag repair <code>fb2e9946adfe21d29861e04f9b5d12596e696d80</code> was not part of PR #350, PR #351, PR #352, or PR #353 and remains outstanding follow-up work. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot generated from current goal artifacts and live GitHub after PR #354 was refreshed at head <code>7f12a2701ce0a086d77abfd69401d86ea0aa8ccb</code>. PR #354 is <code>OPEN</code> and draft, not merged. The repair head fixes active-artifact table path parsing, source-relative Markdown reference handling, repo-root Markdown reference preservation, and PR #353 squash-merge wording on the Kanban board. CodeRabbit was manually triggered. CircleCI, Socket, CodeRabbit refresh, review-thread resolution, merge, local-main pull, Linear post-merge refresh, runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -657,13 +657,13 @@
       {
         id: "source-freshness",
         lane: "intent",
-        title: "Source freshness current after PR #353",
+        title: "PR #354 review repair active",
         status: "active",
-        tags: ["PR #353", "R331", "Snyk quota waiver"],
-        summary: "The board is sourced from local main synchronized with origin/main after PR #353 merged at c475cd76d0c39e0a44789fb1da92b8a2c606773a. The external Snyk GitHub App quota/status failure is owner-waived only; repo-owned security lanes stay separate.",
-        evidence: ["origin/main -> c475cd76d0c39e0a44789fb1da92b8a2c606773a", "local main -> c475cd76d0c39e0a44789fb1da92b8a2c606773a", "PR #353 -> MERGED at 2026-06-05T20:28:00Z", "PR #353 submitted head -> 69d758a79b48d243469e8e6978a8b4f04018ae50", "PR #353 squash merge -> c475cd76d0c39e0a44789fb1da92b8a2c606773a", "repo-owned CircleCI checks -> SUCCESS at merge refresh", "CodeRabbit -> SUCCESS at merge refresh", "Socket -> SUCCESS at merge refresh", "security/snyk (jscraik) -> ERROR because external app quota/status lane is owner-waived only", "Linear JSC-363 -> In Review after post-PR #353 refresh", "Linear comment -> 4f25fd81-35a3-4262-a3c5-ce267acb77ea", "Linear PR #353 attachment -> 2613ac6c-2ac7-41f4-bab4-abd2a1c545bb", "Prior Linear PR #352 comment -> 06422408-2796-4fe5-a5a5-28f0710f12b8 remains provenance", "Leading-flag repair fb2e9946adfe21d29861e04f9b5d12596e696d80 -> local branch-only, not merged"],
-        next: "Select the next bounded lifecycle gap from current main; if the leading-flag validator repair is selected, promote it through one fresh PR.",
-        risk: "This waiver does not prove external Snyk green, full security verification, Linear field-text-current alignment, Judge/PM readiness, or parent-goal completion."
+        tags: ["PR #354", "R332", "review threads", "CI pending"],
+        summary: "PR #354 is open and draft at 7f12a2701ce0a086d77abfd69401d86ea0aa8ccb; live GitHub does not show it merged. The current repair head fixes the archive-candidate parser review gaps and the Kanban squash-merge wording drift.",
+        evidence: ["PR #354 -> OPEN draft", "head -> 7f12a2701ce0a086d77abfd69401d86ea0aa8ccb", "CodeRabbit manual trigger -> issuecomment-4635992450", "pnpm docs:archive-candidates -> pass advisory-only", "focused docs-surface vitest -> pass", "pnpm typecheck -> pass", "CircleCI/Socket -> pending after push", "review threads -> pending resolution/refresh"],
+        next: "Wait for remote checks and CodeRabbit, resolve fixed review threads with evidence, then mark ready or merge only after PR truth is current.",
+        risk: "This does not prove PR #354 merged, CI green, review threads resolved, Linear post-merge refresh, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "codex-native-refinement",
