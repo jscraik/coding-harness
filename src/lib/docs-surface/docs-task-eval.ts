@@ -278,11 +278,6 @@ function dedupeFindings(
 	}
 	return deduped;
 }
-		seen.add(key);
-		deduped.push(finding);
-	}
-	return deduped;
-}
 
 function resolveRepoRelativePath(
 	repoRoot: string,
