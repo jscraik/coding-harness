@@ -43,8 +43,8 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 ## Current Reconciliation Status
 
 Last updated during the 2026-06-05 PR #354 review-repair refresh. Live
-GitHub shows PR #354 is still OPEN and draft at
-`7f12a2701ce0a086d77abfd69401d86ea0aa8ccb`; it is not merged. PR #353
+GitHub shows PR #354 is still OPEN and no longer draft at
+`8d6bc16a25c6abbfcd09650308b1cd43f8c71dc9`; it is not merged. PR #353
 remains the latest merged-main route truth at
 `c475cd76d0c39e0a44789fb1da92b8a2c606773a` until PR #354 is merged and
 local `main` is pulled.
@@ -85,7 +85,7 @@ Outstanding goal work after conflict reconciliation:
 - Treat the current-main Codex-native refinement addendum as next-slice intent scope. It is not completed implementation evidence until the named source modules, contracts, fixtures, validators, and receipts prove the new fields or record owner-visible blockers.
 - Do not create a new duplicate goal board. Update this board, `state.yaml`, and `receipts.jsonl` as the canonical durable goal surface.
 - From this update onward, every implementation slice must finish sequentially: run the required completion lenses `$simplify`, `$improve-codebase-architecture`, `$sy-review`, and `$testing`; record the independent reviewer outcomes; commit the slice; open/update exactly one slice PR; run `$pr-green-sweep` until faults are fixed, the PR is merged to `main`, and local `main` is pulled; update the board/state/receipt; and only then start the next implementation slice. Stacked implementation PRs are forbidden unless Jamie records a named exception before work begins.
-- Current route status: PR #354 is the active open draft PR lane for advisory stale-document archive candidate reporting at 7f12a2701ce0a086d77abfd69401d86ea0aa8ccb. Live GitHub shows it is not merged. The current repair head fixes the review-thread parser and browser-board wording gaps and manually triggered CodeRabbit, but CI, review-thread resolution, merge, local-main pull, Linear post-merge refresh, and next-slice selection remain pending. Do not start the next implementation slice until PR #354 is merged, local main is pulled, and the goal board, browser board, and receipt route truth are refreshed.
+- Current route status: PR #354 is the active open PR lane for advisory stale-document archive candidate reporting. Live GitHub last confirmed it is not merged at pushed head 8d6bc16a25c6abbfcd09650308b1cd43f8c71dc9, and local commit a928be29b3d4076511d033398a9d355d2ccfb9f8 repairs the remaining current self-reference review thread before push. The current repair set fixes active-artifact table path parsing, source-relative Markdown link resolution, repo-root Markdown reference preservation, self-reference inbound-reference masking, and browser-board squash-merge wording drift. CodeRabbit was manually triggered. Current-head CI, CodeRabbit refresh, review-thread resolution, merge, local-main pull, Linear post-merge refresh, and next-slice selection remain pending. Do not start the next implementation slice until PR #354 is merged, local main is pulled, and the goal board, browser board, and receipt route truth are refreshed.
 
 ## Why This Exists
 
