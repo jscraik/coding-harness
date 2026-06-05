@@ -167,6 +167,7 @@ function collectReferences(
 ): Set<string> {
 	const references = new Set<string>();
 	for (const file of files) {
+		if (isGeneratedProjection(file.path, file.content)) continue;
 		for (const reference of extractRepoPathReferences(
 			file.path,
 			file.content,

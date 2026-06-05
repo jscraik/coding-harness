@@ -137,6 +137,36 @@ describe("runDocsArchiveCandidates", () => {
 		);
 	});
 
+	it("does not count generated projection references as inbound docs", () => {
+		const repoRoot = createFixture({
+			"AI/context/diagram-context.md": "[Generated](docs/supporting.md)\n",
+			"docs/supporting.md": frontmatter({
+				authority: "supporting",
+				canon_class: "supporting",
+			}),
+		});
+
+		const report = runDocsArchiveCandidates({
+			repoRoot,
+			trackedFiles: ["AI/context/diagram-context.md", "docs/supporting.md"],
+			now: new Date("2026-06-05T00:00:00.000Z"),
+			activeArtifactsContent: "",
+		});
+
+		expect(report.ignoredFiles).toContainEqual(
+			expect.objectContaining({
+				path: "AI/context/diagram-context.md",
+				reason: "generated_output_do_not_edit",
+			}),
+		);
+		expect(report.candidates).toContainEqual(
+			expect.objectContaining({
+				path: "docs/supporting.md",
+				reasons: ["no_inbound_references"],
+			}),
+		);
+	});
+
 	it("ignores generated projections and points reviewers at the source", () => {
 		const repoRoot = createFixture({
 			"AI/context/diagram-context.md": "# Generated\n",

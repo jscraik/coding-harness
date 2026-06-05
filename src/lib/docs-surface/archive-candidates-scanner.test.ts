@@ -63,4 +63,23 @@ describe("scanArchiveCandidateSources", () => {
 			"docs/architecture/root-surface-classification.md",
 		]);
 	});
+
+	it("extracts YAML list-valued metadata references", () => {
+		const refs = extractRepoPathReferences(
+			"docs/agents/guide.md",
+			[
+				"depends_on:",
+				"  - docs/support.md",
+				"  - '.harness/specs/current.md'",
+				"validated_by:",
+				"  - docs/agents/checklist.md",
+			].join("\n"),
+		);
+
+		expect(refs).toEqual([
+			".harness/specs/current.md",
+			"docs/agents/checklist.md",
+			"docs/support.md",
+		]);
+	});
 });

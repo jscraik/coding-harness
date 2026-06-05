@@ -23,6 +23,8 @@ const IGNORED_PREFIXES = [
 	"artifacts/",
 	"src/templates/",
 ];
+const REFERENCE_METADATA_KEYS =
+	"(?:path|depends_on|validated_by|source_ref|canonical_destination|superseded_by)";
 
 /** One tracked documentation-like source loaded for archive-candidate analysis. */
 export interface ArchiveCandidateSourceFile {
@@ -117,15 +119,41 @@ export function extractRepoPathReferences(
 		if (ref) refs.add(ref);
 	}
 	for (const match of content.matchAll(
-		/(?:path|depends_on|validated_by|source_ref|canonical_destination|superseded_by):\s*["']?([^"',\]\s]+)["']?/g,
+		new RegExp(
+			`${REFERENCE_METADATA_KEYS}:[ \\t]*["']?([^"',\\]\\s]+)["']?`,
+			"g",
+		),
 	)) {
 		const ref = normaliseStructuredReference(match[1] ?? "");
 		if (ref) refs.add(ref);
+	}
+	for (const ref of extractListMetadataReferences(content)) {
+		refs.add(ref);
 	}
 	for (const match of content.matchAll(
 		/["']((?:docs|\.harness|AI|src)\/[^"'#?]+)["']/g,
 	)) {
 		const ref = normaliseStructuredReference(match[1] ?? "");
+		if (ref) refs.add(ref);
+	}
+	return [...refs].sort();
+}
+
+function extractListMetadataReferences(content: string): readonly string[] {
+	const refs = new Set<string>();
+	let activeListKey = false;
+	for (const line of content.split(/\r?\n/)) {
+		if (new RegExp(`^${REFERENCE_METADATA_KEYS}:\\s*$`).test(line)) {
+			activeListKey = true;
+			continue;
+		}
+		if (/^[A-Za-z_][A-Za-z0-9_-]*:\s*/.test(line)) {
+			activeListKey = false;
+		}
+		if (!activeListKey) continue;
+		const item = line.match(/^\s*-\s*["']?([^"',\]\s]+)["']?/);
+		if (!item) continue;
+		const ref = normaliseStructuredReference(item[1] ?? "");
 		if (ref) refs.add(ref);
 	}
 	return [...refs].sort();
