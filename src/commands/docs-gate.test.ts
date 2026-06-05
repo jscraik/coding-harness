@@ -1508,7 +1508,20 @@ applies_to:
 			rules: [],
 		});
 		write(join(root, "AI/context/diagram-context.md"), "# Generated\n");
-		write(join(root, ".harness/active-artifacts.md"), "# Active artifacts\n");
+		write(
+			join(root, ".harness/plan/source.md"),
+			[
+				"---",
+				"authority: execution-input",
+				"lifecycle_status: execution-input",
+				"---",
+				"# Source",
+			].join("\n"),
+		);
+		write(
+			join(root, ".harness/active-artifacts.md"),
+			"[Source](.harness/plan/source.md)\n",
+		);
 		const env = createIsolatedGitEnv();
 		execFileSync("git", ["init"], { cwd: root, env });
 		execFileSync("git", ["add", "."], { cwd: root, env });

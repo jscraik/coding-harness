@@ -110,6 +110,117 @@ describe("runDocsArchiveCandidates", () => {
 		expect(report.candidates).toEqual([]);
 	});
 
+	it("requires active artifact routes to reference tracked non-empty artifacts", () => {
+		const repoRoot = createFixture({
+			".harness/specs/current.md": frontmatter({
+				authority: "supporting",
+				canon_class: "supporting",
+				lifecycle_state: "superseded",
+			}),
+			".harness/specs/untracked.md": frontmatter({
+				authority: "supporting",
+				canon_class: "supporting",
+			}),
+		});
+
+		const report = runDocsArchiveCandidates({
+			repoRoot,
+			trackedFiles: [".harness/specs/current.md"],
+			now: new Date("2026-06-05T00:00:00.000Z"),
+			activeArtifactsContent:
+				"[Current](.harness/specs/current.md) [Untracked](.harness/specs/untracked.md)",
+		});
+
+		expect(report.repairFindings).toContainEqual(
+			expect.objectContaining({
+				path: ".harness/active-artifacts.md",
+				code: "active_reference_stale_or_unverified",
+				evidenceRefs: expect.arrayContaining([".harness/specs/untracked.md"]),
+			}),
+		);
+		expect(report.protectedFiles).toContainEqual(
+			expect.objectContaining({
+				path: ".harness/specs/current.md",
+				reasons: expect.arrayContaining(["active_artifact_reference"]),
+			}),
+		);
+	});
+
+	it("emits repair evidence for execution inputs missing from active artifacts", () => {
+		const repoRoot = createFixture({
+			".harness/plan/current.md": frontmatter({
+				authority: "execution-input",
+				lifecycle_status: "execution-input",
+			}),
+		});
+
+		const report = runDocsArchiveCandidates({
+			repoRoot,
+			trackedFiles: [".harness/plan/current.md"],
+			now: new Date("2026-06-05T00:00:00.000Z"),
+			activeArtifactsContent: "",
+		});
+
+		expect(report.repairFindings).toContainEqual(
+			expect.objectContaining({
+				path: ".harness/plan/current.md",
+				code: "protection_repair_needed",
+				suggestedAction: "refresh_active_artifact_route",
+			}),
+		);
+		expect(report.protectedFiles).toContainEqual(
+			expect.objectContaining({
+				path: ".harness/plan/current.md",
+				reasons: expect.arrayContaining(["execution_input"]),
+			}),
+		);
+		expect(report.candidates).toEqual([]);
+	});
+
+	it("keeps unsafe active artifacts path values out of report evidence", () => {
+		const repoRoot = createFixture({});
+
+		const report = runDocsArchiveCandidates({
+			repoRoot,
+			trackedFiles: [],
+			now: new Date("2026-06-05T00:00:00.000Z"),
+			activeArtifactsPath: "/Users/jamiecraik/private.md",
+		});
+
+		expect(report.evidenceRefs).toContain(".harness/active-artifacts.md");
+		expect(JSON.stringify(report)).not.toContain(
+			"/Users/jamiecraik/private.md",
+		);
+		expect(report.repairFindings).toContainEqual(
+			expect.objectContaining({
+				path: ".harness/active-artifacts.md",
+				code: "active_reference_stale_or_unverified",
+			}),
+		);
+	});
+
+	it("emits the evaluated active artifacts path in top-level evidence", () => {
+		const repoRoot = createFixture({
+			".harness/specs/current.md": frontmatter({
+				authority: "supporting",
+				canon_class: "supporting",
+			}),
+		});
+
+		const report = runDocsArchiveCandidates({
+			repoRoot,
+			trackedFiles: [".harness/specs/current.md"],
+			now: new Date("2026-06-05T00:00:00.000Z"),
+			activeArtifactsPath: ".harness/custom-active.md",
+			activeArtifactsContent: "[Current](.harness/specs/current.md)",
+		});
+
+		expect(report.evidenceRefs).toEqual([
+			"docs/doc-lifecycle-manifest.json",
+			".harness/custom-active.md",
+		]);
+	});
+
 	it("does not count self-references as inbound documentation evidence", () => {
 		const repoRoot = createFixture({
 			"docs/supporting.md": [
@@ -193,6 +304,32 @@ describe("runDocsArchiveCandidates", () => {
 				suggestedAction: "repair_generated_source_link",
 			}),
 		);
+	});
+
+	it("reports archived missing-index metadata as repair evidence only", () => {
+		const repoRoot = createFixture({
+			"docs/archived.md": frontmatter({
+				authority: "supporting",
+				canon_class: "supporting",
+				lifecycle_state: "archived",
+			}),
+		});
+
+		const report = runDocsArchiveCandidates({
+			repoRoot,
+			trackedFiles: ["docs/archived.md"],
+			now: new Date("2026-06-05T00:00:00.000Z"),
+			activeArtifactsContent: "",
+		});
+
+		expect(report.repairFindings).toContainEqual(
+			expect.objectContaining({
+				path: "docs/archived.md",
+				code: "protection_repair_needed",
+				suggestedAction: "repair_archive_index_reference",
+			}),
+		);
+		expect(report.candidates).toEqual([]);
 	});
 
 	it("renders bounded human output", () => {

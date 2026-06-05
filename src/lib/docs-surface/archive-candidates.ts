@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 import {
 	DOCS_ARCHIVE_CANDIDATES_REPORT_SCHEMA,
 	type ArchiveCandidate,
@@ -47,10 +47,18 @@ export function runDocsArchiveCandidates(
 	}
 	const scan = scanArchiveCandidateSources(scanOptions);
 	const references = collectReferences(scan.files);
-	const activeArtifacts = readActiveArtifacts(options, repoRoot);
+	const trackedPathSet = new Set(scan.trackedFiles);
+	const activeArtifacts = readActiveArtifacts(
+		options,
+		repoRoot,
+		trackedPathSet,
+	);
 	const candidates: ArchiveCandidate[] = [];
 	const protectedFiles: ArchiveProtectedFile[] = [];
-	const repairFindings: ArchiveRepairFinding[] = [...activeArtifacts.findings];
+	const repairFindings: ArchiveRepairFinding[] = [
+		...activeArtifacts.findings,
+		...generatedProjectionRepairFindings(scan.ignoredFiles),
+	];
 	const ignoredFiles: ArchiveIgnoredFile[] = [...scan.ignoredFiles];
 	const now = options.now ?? new Date();
 
@@ -76,6 +84,14 @@ export function runDocsArchiveCandidates(
 		}
 
 		const metadata = parseMetadata(file.content);
+		const inactiveExecutionInputRepair = executionInputRepairFinding(
+			file.path,
+			metadata,
+			activeArtifacts.verifiedPaths,
+		);
+		if (inactiveExecutionInputRepair) {
+			repairFindings.push(inactiveExecutionInputRepair);
+		}
 		const protectionReasons = collectProtectionReasons(
 			file.path,
 			metadata,
@@ -87,6 +103,16 @@ export function runDocsArchiveCandidates(
 				reasons: protectionReasons,
 				evidenceRefs: [file.path],
 			});
+			continue;
+		}
+
+		const archiveIndexRepair = archiveIndexRepairFinding(
+			file.path,
+			metadata,
+			references,
+		);
+		if (archiveIndexRepair) {
+			repairFindings.push(archiveIndexRepair);
 			continue;
 		}
 
@@ -111,15 +137,35 @@ export function runDocsArchiveCandidates(
 		repoRef: ".",
 		headSha: readHeadSha(repoRoot),
 		advisoryOnly: true,
+		actionAuthority: "advisory_only",
+		mutationSupported: false,
 		scannedFiles: summary,
 		summary,
 		candidates: sortByPath(candidates),
 		repairFindings: sortByPath(repairFindings),
 		protectedFiles: sortByPath(protectedFiles),
 		ignoredFiles: sortByPath(ignoredFiles),
-		evidenceRefs: ["docs/doc-lifecycle-manifest.json", ACTIVE_ARTIFACTS_PATH],
+		evidenceRefs: ["docs/doc-lifecycle-manifest.json", activeArtifacts.path],
 	};
 	return report;
+}
+
+function generatedProjectionRepairFindings(
+	ignoredFiles: readonly ArchiveIgnoredFile[],
+): ArchiveRepairFinding[] {
+	return ignoredFiles
+		.filter((file) => file.reason === "generated_output_do_not_edit")
+		.map((file) => ({
+			path: file.path,
+			findingKind: "repair_finding" as const,
+			code: "repair_generated_source_link" as const,
+			message:
+				"Generated documentation projections are ignored by archive-candidate reporting.",
+			suggestedAction: "repair_generated_source_link" as const,
+			actionAuthority: "advisory_only" as const,
+			requiresReviewedDecision: true as const,
+			evidenceRefs: [file.path],
+		}));
 }
 
 /** Render a compact human-readable archive-candidate report. */
@@ -182,8 +228,33 @@ function collectReferences(
 function readActiveArtifacts(
 	options: RunDocsArchiveCandidatesOptions,
 	repoRoot: string,
-): { verifiedPaths: Set<string>; findings: ArchiveRepairFinding[] } {
-	const path = options.activeArtifactsPath ?? ACTIVE_ARTIFACTS_PATH;
+	trackedPathSet: ReadonlySet<string>,
+): {
+	path: string;
+	verifiedPaths: Set<string>;
+	findings: ArchiveRepairFinding[];
+} {
+	const requestedPath = options.activeArtifactsPath ?? ACTIVE_ARTIFACTS_PATH;
+	const path = normaliseActiveArtifactPath(requestedPath);
+	if (!path || isAbsolute(requestedPath)) {
+		return {
+			path: ACTIVE_ARTIFACTS_PATH,
+			verifiedPaths: new Set(),
+			findings: [
+				{
+					path: ACTIVE_ARTIFACTS_PATH,
+					findingKind: "repair_finding",
+					code: "active_reference_stale_or_unverified",
+					message:
+						"Active artifacts path is invalid; only repo-local .harness paths are allowed.",
+					suggestedAction: "refresh_active_artifact_route",
+					actionAuthority: "advisory_only",
+					requiresReviewedDecision: true,
+					evidenceRefs: [ACTIVE_ARTIFACTS_PATH],
+				},
+			],
+		};
+	}
 	const content =
 		options.activeArtifactsContent !== undefined
 			? options.activeArtifactsContent
@@ -192,6 +263,7 @@ function readActiveArtifacts(
 				: null;
 	if (content === null) {
 		return {
+			path,
 			verifiedPaths: new Set(),
 			findings: [
 				{
@@ -210,17 +282,18 @@ function readActiveArtifacts(
 	}
 	const linkedPaths = extractActiveArtifactPaths(content);
 	const stalePaths = linkedPaths.filter(
-		(linkedPath) => !existsSync(resolve(repoRoot, linkedPath)),
+		(linkedPath) =>
+			!isVerifiedActiveArtifact(repoRoot, linkedPath, trackedPathSet),
 	);
 	const stalePathSet = new Set(stalePaths);
 	const findings: ArchiveRepairFinding[] = [];
-	if (stalePaths.length > 0) {
+	if (linkedPaths.length === 0 || stalePaths.length > 0) {
 		findings.push({
 			path,
 			findingKind: "repair_finding",
 			code: "active_reference_stale_or_unverified",
 			message:
-				"Active artifacts index references paths that are missing from this checkout.",
+				"Active artifacts index references paths that are missing, untracked, empty, or unparseable in this checkout.",
 			suggestedAction: "refresh_active_artifact_route",
 			actionAuthority: "advisory_only",
 			requiresReviewedDecision: true,
@@ -228,11 +301,33 @@ function readActiveArtifacts(
 		});
 	}
 	return {
+		path,
 		verifiedPaths: new Set(
 			linkedPaths.filter((linkedPath) => !stalePathSet.has(linkedPath)),
 		),
 		findings,
 	};
+}
+
+function isVerifiedActiveArtifact(
+	repoRoot: string,
+	linkedPath: string,
+	trackedPathSet: ReadonlySet<string>,
+): boolean {
+	const path = normaliseActiveArtifactPath(linkedPath);
+	if (!path || !trackedPathSet.has(path)) return false;
+	const resolved = resolve(repoRoot, path);
+	if (resolved !== repoRoot && !resolved.startsWith(`${repoRoot}/`))
+		return false;
+	if (!existsSync(resolved)) return false;
+	try {
+		const content = readFileSync(resolved, "utf8");
+		if (content.trim().length === 0) return false;
+		parseMetadata(content);
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 function extractActiveArtifactPaths(content: string): string[] {
@@ -307,9 +402,6 @@ function classifyCandidate(
 	) {
 		reasons.push("superseded_status");
 	}
-	if (metadata.lifecycle_state === "archived" && references.has(path)) {
-		reasons.push("archived_status_without_index");
-	}
 	if (
 		metadata.lifecycle_status === "execution-input" &&
 		!references.has(path)
@@ -348,6 +440,51 @@ function classifyCandidate(
 	return candidate;
 }
 
+function archiveIndexRepairFinding(
+	path: string,
+	metadata: Record<string, string | string[]>,
+	references: Set<string>,
+): ArchiveRepairFinding | null {
+	if (metadata.lifecycle_state !== "archived" || references.has(path))
+		return null;
+	return {
+		path,
+		findingKind: "repair_finding",
+		code: "protection_repair_needed",
+		message:
+			"Archived document metadata lacks current inbound archive-index evidence.",
+		suggestedAction: "repair_archive_index_reference",
+		actionAuthority: "advisory_only",
+		requiresReviewedDecision: true,
+		evidenceRefs: [path],
+	};
+}
+
+function executionInputRepairFinding(
+	path: string,
+	metadata: Record<string, string | string[]>,
+	activeArtifactPaths: Set<string>,
+): ArchiveRepairFinding | null {
+	if (
+		(metadata.authority !== "execution-input" &&
+			metadata.lifecycle_status !== "execution-input") ||
+		activeArtifactPaths.has(path)
+	) {
+		return null;
+	}
+	return {
+		path,
+		findingKind: "repair_finding",
+		code: "protection_repair_needed",
+		message:
+			"Execution-input document is not verified by the active artifacts route.",
+		suggestedAction: "refresh_active_artifact_route",
+		actionAuthority: "advisory_only",
+		requiresReviewedDecision: true,
+		evidenceRefs: [path, ACTIVE_ARTIFACTS_PATH],
+	};
+}
+
 function suggestedActionFor(
 	reasons: readonly ArchiveCandidate["reasons"][number][],
 ): ArchiveCandidate["suggestedAction"] {
@@ -356,9 +493,6 @@ function suggestedActionFor(
 	}
 	if (reasons.includes("not_active_artifact")) {
 		return "refresh_active_artifact_route";
-	}
-	if (reasons.includes("archived_status_without_index")) {
-		return "repair_archive_index_reference";
 	}
 	if (reasons.includes("superseded_status")) {
 		return "create_separate_archive_decision";

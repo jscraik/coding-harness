@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -93,5 +93,69 @@ describe("scanArchiveCandidateSources", () => {
 			"docs/agents/checklist.md",
 			"docs/support.md",
 		]);
+	});
+
+	it("ignores generated projection files instead of scanning them as source", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "archive-scan-"));
+		mkdirSync(join(repoRoot, "docs"), { recursive: true });
+		writeFileSync(join(repoRoot, "docs/source.md"), "# Source\n", "utf8");
+		const result = scanArchiveCandidateSources({
+			repoRoot,
+			trackedFiles: [
+				".diagram/manifest.json",
+				"AI/context/diagram-context.md",
+				"docs/source.md",
+			],
+		});
+
+		expect(result.files.map((file) => file.path)).toEqual(["docs/source.md"]);
+		expect(result.ignoredFiles).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					path: ".diagram/manifest.json",
+					reason: "generated_output_do_not_edit",
+				}),
+				expect.objectContaining({
+					path: "AI/context/diagram-context.md",
+					reason: "generated_output_do_not_edit",
+				}),
+			]),
+		);
+	});
+
+	it("rejects tracked symlinks instead of reading target content", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "archive-scan-"));
+		writeFileSync(join(repoRoot, "target.md"), "# Target\n", "utf8");
+		symlinkSync("target.md", join(repoRoot, "linked.md"));
+
+		const result = scanArchiveCandidateSources({
+			repoRoot,
+			trackedFiles: ["linked.md", "target.md"],
+		});
+
+		expect(result.files.map((file) => file.path)).toEqual(["target.md"]);
+		expect(result.ignoredFiles).toContainEqual(
+			expect.objectContaining({
+				path: "linked.md",
+				reason: "symlink_not_allowed",
+			}),
+		);
+	});
+
+	it("ignores Markdown links inside fenced examples", () => {
+		const refs = extractRepoPathReferences(
+			"docs/guide.md",
+			[
+				"[Real](real.md)",
+				"~~~",
+				"[Example](example-only.md)",
+				"~~~",
+				"~~~toml",
+				"depends_on: docs/example-config.md",
+				"~~~",
+			].join("\n"),
+		);
+
+		expect(refs).toEqual(["docs/real.md"]);
 	});
 });

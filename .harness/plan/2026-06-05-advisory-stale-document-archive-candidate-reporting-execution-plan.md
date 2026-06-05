@@ -51,7 +51,7 @@ ownership, and active-artifacts freshness.
 Next action:
 
 ~~~text
-[$sy-work] implement /Users/jamiecraik/dev/coding-harness/.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-execution-plan.md
+[$sy-work] implement .harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-execution-plan.md
 ~~~
 
 ## Slice Boundaries
@@ -469,9 +469,9 @@ Validation performed during simplify/architecture cleanup:
 
 ## Open Risks
 
-- The execution plan is local artifact truth only; it does not prove runtime
+- The execution plan, JSC-395 spec, and trace plan are tracked control-plane
+  artifacts; they document route truth but do not by themselves prove runtime
   implementation behavior.
-- The JSC-395 spec and trace plan are currently untracked local artifacts.
 - Live Linear, PR, CI, review-thread, mergeability, and release-readiness lanes
   are unchecked.
 - The next worker must rerun PU-000 before source edits, especially after

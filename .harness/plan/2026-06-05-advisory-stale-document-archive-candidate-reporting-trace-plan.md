@@ -451,7 +451,7 @@ next_stage: sy-work
 Recommended sy-work prompt:
 
 ~~~text
-[$sy-work] implement /Users/jamiecraik/dev/coding-harness/.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-trace-plan.md
+[$sy-work] implement .harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-trace-plan.md
 ~~~
 
 Resume requirement: before any resumed sy-work edits after interruption,

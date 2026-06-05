@@ -39,7 +39,6 @@ export type ArchiveCandidateReason =
 	| "not_active_artifact"
 	| "not_referenced_by_current_plan_or_spec"
 	| "superseded_status"
-	| "archived_status_without_index"
 	| "raw_research_without_admission"
 	| "generated_projection_without_source_ref"
 	| "stale_review_date"
@@ -114,7 +113,11 @@ export interface ArchiveProtectedFile {
 /** One file ignored by the scanner. */
 export interface ArchiveIgnoredFile {
 	path: string;
-	reason: ArchiveRepairCode | "unsupported_file_type" | "path_outside_repo";
+	reason:
+		| ArchiveRepairCode
+		| "unsupported_file_type"
+		| "path_outside_repo"
+		| "symlink_not_allowed";
 	evidenceRefs: readonly string[];
 }
 
@@ -149,6 +152,8 @@ export interface DocsArchiveCandidatesReport {
 	repoRef: ".";
 	headSha: string | null;
 	advisoryOnly: true;
+	actionAuthority: "advisory_only";
+	mutationSupported: false;
 	scannedFiles: ArchiveCandidatesSummary;
 	summary: ArchiveCandidatesSummary;
 	candidates: readonly ArchiveCandidate[];
@@ -177,7 +182,7 @@ export interface RunDocsArchiveCandidatesOptions {
 }
 
 const REPO_RELATIVE_PATH_PATTERN =
-	/^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))(?!.*\\).+/;
+	/^(?![A-Za-z][A-Za-z0-9+.-]*:)(?![A-Za-z]:)(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))(?!.*\\).+/;
 
 /** Return true when a value is a contained repository-relative path. */
 export function isRepoRelativeArchivePath(value: string): boolean {
@@ -198,6 +203,12 @@ export function validateDocsArchiveCandidatesReport(
 	if (report.advisoryOnly !== true) {
 		errors.push("advisoryOnly must be true");
 	}
+	if (report.actionAuthority !== "advisory_only") {
+		errors.push("actionAuthority must be advisory_only");
+	}
+	if (report.mutationSupported !== false) {
+		errors.push("mutationSupported must be false");
+	}
 	if (report.repoRef !== ".") {
 		errors.push("repoRef must be . for local advisory reports");
 	}
@@ -206,6 +217,12 @@ export function validateDocsArchiveCandidatesReport(
 	}
 	if (report.summary.mutationSupported !== false) {
 		errors.push("summary.mutationSupported must be false");
+	}
+	if (report.scannedFiles.actionAuthority !== "advisory_only") {
+		errors.push("scannedFiles.actionAuthority must be advisory_only");
+	}
+	if (report.scannedFiles.mutationSupported !== false) {
+		errors.push("scannedFiles.mutationSupported must be false");
 	}
 	for (const path of collectReportPaths(report)) {
 		if (!isRepoRelativeArchivePath(path)) {
@@ -238,6 +255,11 @@ export function validateDocsArchiveCandidatesReport(
 		if (finding.requiresReviewedDecision !== true) {
 			errors.push(
 				`repairFinding.requiresReviewedDecision must be true: ${finding.path}`,
+			);
+		}
+		if (containsDestructiveActionText(finding.suggestedAction)) {
+			errors.push(
+				`repairFinding suggestedAction is unsupported: ${finding.path}`,
 			);
 		}
 	}

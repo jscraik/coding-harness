@@ -279,6 +279,8 @@ Required top-level fields:
 - repoRef
 - headSha when available
 - advisoryOnly: true
+- actionAuthority: advisory_only
+- mutationSupported: false
 - scannedFiles
 - candidates
 - repairFindings
@@ -296,6 +298,8 @@ Top-level field contract:
 | repoRef | string | yes | Must be repo-relative or redacted. Use "." for local runs unless a future approved contract defines a stable repo id. |
 | headSha | string or null | yes | Current git HEAD when available; null only when git metadata is unavailable and the report fails. |
 | advisoryOnly | boolean | yes | Must be true. |
+| actionAuthority | string | yes | Must equal advisory_only. The report is not mutation authority. |
+| mutationSupported | boolean | yes | Must equal false. Any mutation requires a separate reviewed decision outside this report. |
 | scannedFiles | object | yes | Include counts by scanned, skipped, ignored, protected, candidate, and repairFinding. |
 | candidates | array | yes | Archive-candidate entries only. Must never contain generated outputs or canon/execution-input files protected by authority alone. |
 | repairFindings | array | yes | Metadata, manifest, active-route, generated-source-link, archive-index, or governance repair findings that are not archive candidates. |
@@ -349,7 +353,6 @@ Reason codes:
 - not_active_artifact
 - not_referenced_by_current_plan_or_spec
 - superseded_status
-- archived_status_without_index
 - raw_research_without_admission
 - generated_projection_without_source_ref
 - stale_review_date
