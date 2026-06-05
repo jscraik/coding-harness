@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-31
+last_validated: 2026-06-04
 ---
 
 # Agent governance
@@ -47,6 +47,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - tooling/runtime changes should update `docs/agents/02-tooling-policy.md` and `docs/agents/06-security-and-governance.md`
 - preflight or Local Memory enforcement changes should keep `AGENTS.md`, `README.md`, `docs/agents/02-tooling-policy.md`, `docs/agents/03-local-memory.md`, `docs/agents/06-security-and-governance.md`, and this guide synchronized; legacy positional `scripts/codex-preflight.sh` invocations must default to required Local Memory mode unless `off` or `optional` is explicitly supplied
 - architecture-context refresh changes should update `docs/agents/00-architecture-bootstrap.md`; Flow Ops closure-evidence, E2E runner, or eval artifact changes that trigger that refresh should keep `AGENTS.md` and this guide synchronized when docs-gate reports the agent-governance category
+- reader-task documentation eval changes that add or alter `pnpm docs:task-eval`, fixture categories, fixture evidence validation, or docs-surface automation should keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, this guide, generated architecture context, and docs-gate-required surfaces synchronized so agents can trace reader journeys, canon boundaries, review-state truth, and downstream distribution assumptions from the governance layer
 - diagram refresh tooling should validate and run through the repo-owned `pnpm exec diagram` path rather than requiring a global `diagram` binary on PATH, so disposable worktrees and hook execution use the same dependency contract
 - generated diagram identity rewrites should update every dependent Mermaid reference, including class selectors, and keep AGENTS, the architecture bootstrap guide, this guide, generated diagram artifacts, and regression coverage synchronized when docs-gate reports architecture-context or agent-governance surfaces
 - Flow Ops closure-evidence and outcome-closeout validation changes should keep
