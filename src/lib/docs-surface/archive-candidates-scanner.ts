@@ -209,7 +209,9 @@ function cleanReference(rawReference: string): string | null {
 }
 
 function normaliseRepoReference(rawReference: string): string | null {
-	const normalized = rawReference.replaceAll(sep, "/");
+	const normalized = rawReference
+		.replaceAll(sep, "/")
+		.replace(/^(?:\.\/)+/, "");
 	if (normalized.startsWith("../") || normalized.includes("/../")) return null;
 	return normalized;
 }

@@ -64,6 +64,18 @@ describe("scanArchiveCandidateSources", () => {
 		]);
 	});
 
+	it("normalizes root-level dot-slash Markdown links to repository paths", () => {
+		const refs = extractRepoPathReferences(
+			"README.md",
+			[
+				"[CLI](./docs/cli-reference.md)",
+				"[Harness](./.harness/README.md#tracked-control-plane)",
+			].join("\n"),
+		);
+
+		expect(refs).toEqual([".harness/README.md", "docs/cli-reference.md"]);
+	});
+
 	it("extracts YAML list-valued metadata references", () => {
 		const refs = extractRepoPathReferences(
 			"docs/agents/guide.md",
