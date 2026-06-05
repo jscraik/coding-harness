@@ -411,7 +411,7 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness warning">origin/main snapshot: 173a3fe, PR #342 merged, no open JSC-363 PRs</div>
+      <div class="source-chip" aria-label="Source freshness warning">PR #343 active: review/CI green, blocked by external Snyk quota</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
@@ -497,7 +497,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and local git ancestry on 2026-06-04 after PR #342 merged. <code>origin/main</code> is current at <code>173a3fe0772fcce6d1e960bd0d9f41debbc7d96f</code>. PR #342 is merged into <code>main</code> at 2026-06-04T23:25:43Z with head <code>71fb4041ae8829fce004b661381dd69861dba246</code>. Live GitHub shows no open JSC-363/cockpit implementation PR lanes; open repo PRs #340 and #341 are unrelated unless future scope evidence says otherwise. Linear JSC-363 needs a fresh post-PR #342 refresh before tracker-current or field-text-current claims. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and local git ancestry after PR #343 review repair. <code>origin/main</code> remains at the PR #342 merge commit <code>173a3fe0772fcce6d1e960bd0d9f41debbc7d96f</code>. PR #343 is open on head <code>caf5b99fdba0fb0f7ac9288b62f64896922722cc</code>; CodeRabbit review threads are resolved/outdated, all CircleCI, Socket, CodeRabbit, and repo-run security lanes pass, and merge remains blocked by the external Snyk GitHub App quota error. Linear JSC-363 needs a fresh post-PR #342 refresh before tracker-current or field-text-current claims. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -702,12 +702,12 @@
         id: "open-pr-lanes",
         lane: "remote",
         title: "Active PR lanes",
-        status: "done",
-        tags: ["PR #342", "no JSC-363 PRs", "live GitHub"],
-        summary: "PR #342 is merged into main and live GitHub shows no open JSC-363/cockpit implementation PR lanes. Open repo PRs #340 and #341 are unrelated unless a future scope check proves they touch this goal.",
-        evidence: ["gh pr view 342 -> MERGED, base main, mergeCommit 173a3fe0772fcce6d1e960bd0d9f41debbc7d96f", "gh pr list --state open -> #340 docs(readme) and #341 reader task eval", "No open PR from the JSC-363/cockpit branches after the PR #342 merge"],
-        next: "Do not triage old JSC-363 stack PRs. Start the next slice only after bounded intent, then keep exactly one slice PR active until merged/pulled.",
-        risk: "Unrelated open PRs can still affect repository-wide CI or branch protection if they become scope-relevant; treat them as separate lanes until proven otherwise."
+        status: "blocked",
+        tags: ["PR #343", "Snyk quota", "pr-green-sweep"],
+        summary: "PR #343 is the active sequential governance slice. Review threads are resolved/outdated and all repo-run lanes pass; merge is blocked by the external Snyk GitHub App quota failure.",
+        evidence: ["gh pr view 343 -> head caf5b99fdba0fb0f7ac9288b62f64896922722cc, mergeStateStatus BLOCKED", "gh pr checks 343 -> CircleCI, CodeRabbit, Socket, and repo-run security lanes pass", "security/snyk (jscraik) -> ERROR: You have used your limit of private tests"],
+        next: "Resolve the external Snyk account quota or record an owner decision before merge; do not start the next implementation slice while PR #343 is open.",
+        risk: "The code/review/CI lane is green, but branch protection still blocks merge until the external Snyk status is handled."
       },
       {
         id: "browser-preview",
@@ -813,10 +813,10 @@
         lane: "completed",
         title: "Route truth refreshed after PR #342 merge",
         status: "done",
-        tags: ["goal.md", "state.yaml", "R286"],
+        tags: ["goal.md", "state.yaml", "R289"],
         summary: "goal.md, state.yaml, receipts.jsonl, and this board now route execution from synced main after PR #342 instead of old stack-triage work.",
-        evidence: ["state.yaml current_slice_gate.status = main_synced_pr342_merged_next_slice_selection_required", "origin/main -> 173a3fe0772fcce6d1e960bd0d9f41debbc7d96f", "PR #342 -> MERGED", "No open JSC-363/cockpit implementation PR lane"],
-        next: "Keep the tracker synchronized with canonical goal artifacts after every merge, route decision, or blocker decision.",
+        evidence: ["state.yaml current_slice_gate.status = pr343_open_external_snyk_quota_blocked", "origin/main -> 173a3fe0772fcce6d1e960bd0d9f41debbc7d96f", "PR #342 -> MERGED", "PR #343 -> open and externally blocked by Snyk quota"],
+        next: "Keep the tracker synchronized with canonical goal artifacts after every merge, route decision, blocker decision, or PR-green-sweep result.",
         risk: "This fixes stale routing. It does not close remaining runtime, review, CI, delivery-truth, docs, Linear, or Judge/PM gates."
       },
       {
