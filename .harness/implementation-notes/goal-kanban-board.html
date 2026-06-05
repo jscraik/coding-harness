@@ -411,7 +411,7 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness warning">PR #345 merged: Snyk quota waiver recorded</div>
+      <div class="source-chip" aria-label="Source freshness warning">PR #346 merged: Snyk quota waiver recorded</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
@@ -497,7 +497,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and local git ancestry after PR #345 merged and local <code>main</code> was pulled. <code>origin/main</code> is synchronized at merge commit <code>fda208a1df5f34fcdf21dc86ef5913b327e87596</code>. PR #345 submitted head <code>e38bd37fa2ff761de8406b8aa12fdf1b0a8ffe03</code> had all repo-owned checks and review-thread lanes pass before merge; the external Snyk GitHub App quota failure is owner-waived for that quota lane only and is not recorded as external Snyk passing. Linear JSC-363 needs a fresh post-PR #345 refresh before tracker-current or field-text-current claims. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and local git ancestry after PR #346 merged and local <code>main</code> was pulled. <code>origin/main</code> is synchronized at merge commit <code>7ebb813bc44f9c63ce44cb2da486164ba75c7928</code>. PR #346 submitted head <code>894101a2c4b8220e931f2a61103dfa36a312331c</code> had all repo-owned checks pass before merge; the external Snyk GitHub App quota failure is owner-waived for that quota lane only and is not recorded as external Snyk passing. Linear JSC-363 needs a fresh post-PR #346 refresh before tracker-current or field-text-current claims. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -646,12 +646,12 @@
       {
         id: "source-freshness",
         lane: "intent",
-        title: "Source freshness current after PR #345",
+        title: "Source freshness current after PR #346",
         status: "done",
-        tags: ["PR #345", "R303", "Snyk quota waiver"],
-        summary: "The board is sourced from local main synchronized with origin/main after PR #345 merged. The external Snyk GitHub App quota failure is owner-waived only; repo-owned security lanes passed before merge.",
-        evidence: ["origin/main -> fda208a1df5f34fcdf21dc86ef5913b327e87596", "PR #345 -> MERGED at 2026-06-05T11:40:05Z", "PR #345 submitted head -> e38bd37fa2ff761de8406b8aa12fdf1b0a8ffe03", "security/snyk (jscraik) -> failed because private-test quota is exhausted; owner waiver applies only to this external app quota lane", "ci/circleci: snyk-dependency-scan -> pass on PR #345", "ci/circleci: security-scan -> pass on PR #345", "CodeRabbit -> pass/review completed and unresolved threads -> none before merge"],
-        next: "Validate this post-PR #345 board/state/receipt refresh, then select the next remaining lifecycle gap from current main with bounded intent before implementation.",
+        tags: ["PR #346", "R305", "Snyk quota waiver"],
+        summary: "The board is sourced from local main synchronized with origin/main after PR #346 merged. The external Snyk GitHub App quota failure is owner-waived only; repo-owned security lanes passed before merge.",
+        evidence: ["origin/main -> 7ebb813bc44f9c63ce44cb2da486164ba75c7928", "PR #346 -> MERGED at 2026-06-05T12:01:25Z", "PR #346 submitted head -> 894101a2c4b8220e931f2a61103dfa36a312331c", "security/snyk (jscraik) -> error because external app quota is exhausted; owner waiver applies only to this external app quota lane", "ci/circleci: snyk-dependency-scan -> pass on PR #346", "ci/circleci: security-scan -> pass on PR #346", "CodeRabbit -> pass before merge"],
+        next: "Validate this post-PR #346 board/state/receipt refresh, then select the next remaining lifecycle gap from current main with bounded intent before implementation.",
         risk: "This waiver does not prove external Snyk green, full security verification, Linear freshness, Judge/PM readiness, or parent-goal completion."
       },
       {
@@ -803,19 +803,19 @@
         title: "Linear JSC-363 attachment-backed alignment",
         status: "done",
         tags: ["Linear", "tracker", "In Review"],
-        summary: "Historical Linear evidence reports JSC-363 tracker observations including Done and In Review with the full-lifecycle scope-note attachment present; post-PR #344 Linear truth is unclaimed until refreshed.",
+        summary: "Historical Linear evidence reports JSC-363 tracker observations including Done and In Review with the full-lifecycle scope-note attachment present; post-PR #346 Linear truth is unclaimed until refreshed.",
         evidence: ["Historical Linear JSC-363 status observations -> Done and In Review", "Attachment: JSC-363 full lifecycle scope note", "PR attachments through #338 present", "Linear comment e34da9b0 records post-merge route truth"],
-        next: "Refresh Linear after PR #344 before claiming tracker-current or field-text-current alignment.",
+        next: "Refresh Linear after PR #346 before claiming tracker-current or field-text-current alignment.",
         risk: "Linear tracker refresh does not prove runtime producer emission, delivery-truth consumption, implementation completeness, or Judge/PM readiness."
       },
       {
         id: "stale-board-route",
         lane: "completed",
-        title: "Route truth refreshed after PR #345",
+        title: "Route truth refreshed after PR #346",
         status: "done",
-        tags: ["goal.md", "state.yaml", "R303"],
-        summary: "goal.md, state.yaml, receipts.jsonl, active-artifacts, and this board now route execution from synced main after PR #345 merged and local main was pulled.",
-        evidence: ["state.yaml current_slice_gate.status = pr345_merged_main_pulled_route_refresh_pending_validation", "origin/main -> fda208a1df5f34fcdf21dc86ef5913b327e87596", "PR #345 -> MERGED", "PR #345 submitted head -> e38bd37fa2ff761de8406b8aa12fdf1b0a8ffe03", "Snyk GitHub App quota failure -> owner-waived for quota lane only"],
+        tags: ["goal.md", "state.yaml", "R305"],
+        summary: "goal.md, state.yaml, receipts.jsonl, active-artifacts, and this board now route execution from synced main after PR #346 merged and local main was pulled.",
+        evidence: ["state.yaml current_slice_gate.status = pr346_merged_main_pulled_route_refresh_pending_validation", "origin/main -> 7ebb813bc44f9c63ce44cb2da486164ba75c7928", "PR #346 -> MERGED", "PR #346 submitted head -> 894101a2c4b8220e931f2a61103dfa36a312331c", "Snyk GitHub App quota failure -> owner-waived for quota lane only"],
         next: "Keep the tracker synchronized with canonical goal artifacts after every merge, route decision, blocker decision, waiver, or PR-green-sweep result.",
         risk: "This fixes stale routing. It does not close remaining runtime, review, CI, delivery-truth, docs, Linear, or Judge/PM gates."
       },
@@ -824,11 +824,22 @@
         lane: "completed",
         title: "Current-main goal validators pass",
         status: "done",
-        tags: ["check-goal-board", "audit freshness", "R304"],
-        summary: "The canonical board and audit-freshness validators pass against R303/R304 after the post-PR #345 route refresh.",
-        evidence: ["PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit -> pass selecting R303", "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo . -> pass selecting R303 with head_relation current", "receipts JSONL parse -> pass for 287 lines", "node --check extracted Kanban script -> pass", "git diff --check -> pass", "pnpm docs:lint -> pass"],
+        tags: ["check-goal-board", "audit freshness", "R306"],
+        summary: "The canonical board and audit-freshness validators pass against R305/R306 after the post-PR #346 route refresh.",
+        evidence: ["PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit -> pass selecting R305", "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo . -> pass selecting R305 with head_relation current", "receipts JSONL parse -> pass for 289 lines", "node --check extracted Kanban script -> pass", "git diff --check -> pass", "pnpm docs:lint -> pass"],
         next: "Select the next remaining lifecycle gap from current main with bounded intent before implementation starts.",
         risk: "Passing board validators prove freshness and structure, not implementation completeness."
+      },
+      {
+        id: "pr346-waiver-record",
+        lane: "remote",
+        title: "PR #346 waiver record merged",
+        status: "done",
+        tags: ["PR #346", "Snyk quota waiver", "merged"],
+        summary: "PR #346 merged to main after repo-owned checks passed. The external Snyk GitHub App quota failure is classified as an owner waiver for that external lane only.",
+        evidence: ["PR #346 -> MERGED at 2026-06-05T12:01:25Z", "merge commit -> 7ebb813bc44f9c63ce44cb2da486164ba75c7928", "submitted head -> 894101a2c4b8220e931f2a61103dfa36a312331c", "Repo-owned CircleCI, Socket, CodeRabbit, pr-pipeline, and security-scan lanes -> pass before merge", "External security/snyk (jscraik) -> owner waiver for quota lane only"],
+        next: "Use PR #346 as merged route evidence only. Validate this post-merge route refresh, then select the next bounded lifecycle gap from current main.",
+        risk: "This waiver record does not prove external Snyk passed, Linear currentness, runtime producer evidence, delivery-truth consumption, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "pr345-waiver-record",
