@@ -10,17 +10,19 @@
 
 ## Scope
 
-Last reconciled: 2026-06-04 during the post-merge route-truth refresh. Local
-`main` fast-forwarded to `origin/main` at
-`a76921942cdbd8b3e1b449a05993d467700f770c`. Live GitHub reports zero open pull
-requests for `jscraik/coding-harness`. PR #331 through PR #336 are merged into
-the current main-delivery line. PR #337 and PR #338 are marked merged by GitHub
-but were merged into the stacked branch
-`codex/jsc-363-cnf-006-steering-application-receipt`, not `main`; their merge
-commits are not ancestors of current `origin/main`. This reconcile does not
-claim PR #337/#338 main delivery, Linear field-text alignment, runtime producer
-evidence, delivery-truth consumption, docs accuracy, Judge/PM readiness, or
-final goal completion.
+Last reconciled: 2026-06-05 after PR #346 merged and local `main` was pulled.
+Local `main` is synchronized with `origin/main` at
+`7ebb813bc44f9c63ce44cb2da486164ba75c7928`. PR #346 is merged into `main`
+as the current-main route-truth repair after the external Snyk GitHub App quota
+waiver record. All repo-owned PR #346 lanes passed before merge, including
+CircleCI `snyk-dependency-scan`, CircleCI `security-scan`, Socket,
+CodeRabbit, review-thread resolution, and aggregate PR/security workflows. This
+reconcile classifies the external Snyk GitHub App quota failure as an
+owner-approved waiver for that quota lane only; it does not claim external Snyk
+passed and does not waive repo-run security, future Snyk results, or future
+security findings. This reconcile also does not claim Linear field-text
+alignment, runtime producer evidence, delivery-truth consumption, docs accuracy,
+Judge/PM readiness, or final goal completion.
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -31,7 +33,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged PR #321 through PR #336, including CNF-001 through CNF-006 current-main delivery through PR #336. PR #337 and PR #338 are stack-branch merged only and cannot be counted as current-main evidence until a main-delivery path lands or a fresh owner decision accepts them as out of scope. Linear JSC-363 is In Review with an owner-visible full-lifecycle scope-note attachment and the 2026-06-04 route-truth comment, but tracker field text remains Phase 1-stale. | Use the goal board as the current execution cockpit. Next safe action is to decide whether PR #337/#338 work is required on main; if yes, create a bounded main-delivery branch from current main and validate it without claiming parent completion. Do not claim parent JSC-363 completion until Linear field alignment or owner acceptance, runtime producer evidence, delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final completion audit are separately refreshed. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged JSC-363 route/foundation lanes through PR #346 at 7ebb813bc44f9c63ce44cb2da486164ba75c7928. The external Snyk GitHub App quota failure is owner-waived only for that external quota lane and is not a passing security result. Linear JSC-363 has historical attachment-backed route context, but post-PR #346 tracker status and field text remain unclaimed until refreshed. | Use the goal board as the current execution cockpit. Next safe action is to select the next bounded lifecycle gap from current main with recorded intent. Do not claim parent JSC-363 completion until Linear field alignment or owner acceptance, runtime producer evidence, delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final completion audit are separately refreshed. |
 
 PU-046 update: PR #330 was refreshed again on head
 163017e16e4611d5d71f5c4c62fc85f8d164b17b after the R205 artifact receipt was
@@ -144,7 +146,10 @@ runtime producer emission, delivery-truth consumption, or final goal completion.
   PR, CI, review-thread, Project Brain, and runtime evidence truth separated in
   receipts. Historical PR #309 continuity remains indexed by branch head
   `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` for validator compatibility;
-  it is not current route truth. R149 records the post-merge refresh after PR
+  it is not current route truth. Current route truth is PR #344 merged into
+  `main` at `cfda8c6a0aa58f5468a7ca1ab87e74becc7004aa`; historical PR
+  #322 through PR #343 ledger entries below are immutable provenance, not active
+  open-PR routing. R149 records the post-merge refresh after PR
   #312 merged into main as squash commit
   `7e8cb93fa16636336194e15e53a592117b9f276a`. R150/R152 record the PR #318
   and PU-040 validator-hardening lane. PR #319 merged into main as squash
