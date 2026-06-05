@@ -27,7 +27,7 @@ const REQUIRED_BOOTSTRAP_COMMANDS = ["harness init --dry-run", "harness init"];
 
 const REQUIRED_MIGRATION_COMMANDS = [
 	"harness ci-migrate prepare --provider circleci --dry-run",
-	"harness ci-migrate prepare --provider circleci --apply",
+	"harness ci-migrate --provider circleci --apply",
 	"harness ci-migrate verify --snapshot <snapshot-id>",
 	"harness ci-migrate commit --snapshot <snapshot-id>",
 	"harness ci-migrate abort --snapshot <snapshot-id>",
@@ -268,7 +268,7 @@ function validateInstallJson() {
 	);
 	for (const [key, expectedValue] of Object.entries({
 		preview: "harness ci-migrate prepare --provider circleci --dry-run",
-		apply: "harness ci-migrate prepare --provider circleci --apply",
+		apply: "harness ci-migrate --provider circleci --apply",
 		verify: "harness ci-migrate verify --snapshot <snapshot-id>",
 		commit: "harness ci-migrate commit --snapshot <snapshot-id>",
 		abort: "harness ci-migrate abort --snapshot <snapshot-id>",
@@ -326,7 +326,7 @@ function validateEvals() {
 		"harness upgrade --dry-run --json",
 		"current repo that needs upgrading",
 		"prepare --provider circleci --dry-run",
-		"prepare --provider circleci --apply",
+		"ci-migrate --provider circleci --apply",
 		"verify --snapshot",
 		"commit --snapshot",
 		"abort --snapshot",

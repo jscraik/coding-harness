@@ -197,7 +197,7 @@ Use this when a PR needs local proof, review wiring checks, and traceability bef
 
 ```bash
 harness ci-migrate prepare --provider circleci --dry-run
-harness ci-migrate prepare --provider circleci --apply
+harness ci-migrate --provider circleci --apply
 harness ci-migrate verify --snapshot <snapshot-id>
 harness ci-migrate commit --snapshot <snapshot-id>
 ```
