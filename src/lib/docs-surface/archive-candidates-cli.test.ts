@@ -4,6 +4,7 @@ import { runDocsArchiveCandidatesCli } from "./archive-candidates-cli.js";
 
 describe("runDocsArchiveCandidatesCli", () => {
 	it("rejects every destructive option with usage exit code 2", () => {
+		expect(DESTRUCTIVE_ARCHIVE_CANDIDATE_OPTIONS.length).toBeGreaterThan(0);
 		for (const option of DESTRUCTIVE_ARCHIVE_CANDIDATE_OPTIONS) {
 			const output = createStreams();
 			const exitCode = runDocsArchiveCandidatesCli(
@@ -31,6 +32,21 @@ describe("runDocsArchiveCandidatesCli", () => {
 		expect(exitCode).toBe(0);
 		expect(output.stdout).toContain("Usage: pnpm docs:archive-candidates");
 		expect(output.stderr).toBe("");
+	});
+
+	it("rejects unexpected positional arguments with usage exit code 2", () => {
+		const output = createStreams();
+		const exitCode = runDocsArchiveCandidatesCli(
+			["archive-now", "--json"],
+			output.streams,
+			process.cwd(),
+		);
+
+		expect(exitCode).toBe(2);
+		expect(output.stdout).toContain('"code": "usage_error"');
+		expect(output.stdout).toContain(
+			'"message": "Unsupported positional argument: archive-now"',
+		);
 	});
 });
 

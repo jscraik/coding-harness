@@ -1,4 +1,4 @@
-#!/usr/bin/env tsx
+#!/usr/bin/env -S node --import tsx
 import { runDocsArchiveCandidatesCli } from "../src/lib/docs-surface/archive-candidates-cli.js";
 
 process.exitCode = runDocsArchiveCandidatesCli(process.argv.slice(2), {

@@ -361,7 +361,7 @@ Why this target first:
 The baseline UI factory loop for this target repo is:
 
 - **Storybook** for component-level development and visual verification,
-- **`Agentation`** for accelerated agent-assisted implementation/iteration,
+- **agent-browser** for accelerated agent-assisted implementation/iteration,
 - **Codex 5.3 Spark** for high-throughput UI coding + refinement.
 
 ### Drift-control requirements for this target

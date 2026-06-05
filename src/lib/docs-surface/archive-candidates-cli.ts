@@ -38,6 +38,17 @@ export function runDocsArchiveCandidatesCli(
 		});
 		return 2;
 	}
+	const positionalArg = effectiveArgs.find((arg) => !arg.startsWith("-"));
+	if (positionalArg) {
+		writeError(streams, json, {
+			schema: DOCS_ARCHIVE_CANDIDATES_ERROR_SCHEMA,
+			status: "error",
+			code: "usage_error",
+			message: `Unsupported positional argument: ${positionalArg}`,
+			option: positionalArg,
+		});
+		return 2;
+	}
 	const unknownOption = effectiveArgs.find(
 		(arg) => arg.startsWith("-") && arg !== "--json" && arg !== "--help",
 	);
