@@ -387,6 +387,7 @@ function validateForbiddenPatterns() {
 	});
 
 	for (const filePath of files) {
+		const extension = filePath.split(".").pop();
 		const content = readFileSync(filePath, "utf8");
 		for (const rule of FORBIDDEN_PATTERNS) {
 			assert(
@@ -394,7 +395,9 @@ function validateForbiddenPatterns() {
 				`${relative(REPO_ROOT, filePath)}: ${rule.message}`,
 			);
 		}
-		for (const { command, context } of findCIMigrateCommands(content)) {
+		for (const { command, context } of findCIMigrateCommands(content, {
+			useMarkdownFlowContext: extension === "md",
+		})) {
 			const facts = classifyCIMigrateCommand(command, context);
 			for (const rule of FORBIDDEN_CI_MIGRATE_COMMANDS) {
 				assert(
@@ -455,15 +458,44 @@ function validateForbiddenCIMigrateCommandRules() {
 			`forbidden ci-migrate command rule rejected allowed example: ${command}`,
 		);
 	}
+
+	const structuredSurfaceCommands = findCIMigrateCommands(
+		[
+			'"prepare": "harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>",',
+			'"apply": "harness ci-migrate --provider circleci --apply",',
+			'"verify": "harness ci-migrate verify --snapshot <snapshot-id>",',
+			'"commit": "harness ci-migrate commit --snapshot <snapshot-id>"',
+		].join("\n"),
+		{ useMarkdownFlowContext: false },
+	);
+	const structuredApplyCommand = structuredSurfaceCommands.find(({ command }) =>
+		command.includes("--apply"),
+	);
+	assert(
+		structuredApplyCommand,
+		"forbidden ci-migrate command rule self-check could not find structured one-shot apply example",
+	);
+	const structuredApplyFacts = classifyCIMigrateCommand(
+		structuredApplyCommand.command,
+		structuredApplyCommand.context,
+	);
+	assert(
+		FORBIDDEN_CI_MIGRATE_COMMANDS.every(
+			(rule) => !rule.matches(structuredApplyFacts),
+		),
+		"forbidden ci-migrate command rule rejected structured one-shot apply example",
+	);
 }
 
-function findCIMigrateCommands(content) {
+function findCIMigrateCommands(content, options = {}) {
 	return Array.from(content.matchAll(CI_MIGRATE_COMMAND_PATTERN), (match) => {
 		const [command] = match;
 		const startIndex = match.index || 0;
 		return {
 			command: command.trim(),
-			context: getMarkdownBlockAround(content, startIndex, command.length),
+			context: options.useMarkdownFlowContext
+				? getMarkdownBlockAround(content, startIndex, command.length)
+				: command,
 		};
 	});
 }
