@@ -45,13 +45,16 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 Last updated during the 2026-06-05 PR #350 route-truth refresh for the
 ci-migrate apply-command repair after local
 `main` synchronized with `origin/main` at
-`f4f2c3da0e41b6347c26d4d1e0e34788554526c1`.
+`f4f2c3da0e41b6347c26d4d1e0e34788554526c1` and live
+`origin/main` later advanced to
+`844de894b2ba15a12297bab0473658c7f4c199de` through unrelated README
+front-door work already contained by PR #350's merge-from-main head.
 
 Current route truth:
 
-- `main` and `origin/main` are synchronized at `f4f2c3da0e41b6347c26d4d1e0e34788554526c1`.
+- `origin/main` is currently `844de894b2ba15a12297bab0473658c7f4c199de`; the local PR #350 branch contains that head through merge commit `9acbcd8f665105ef729c438c2af6096a7a78db21`.
 - PR #349 is merged into `main` at 2026-06-05T14:07:58Z as merge commit `f4f2c3da0e41b6347c26d4d1e0e34788554526c1`; its submitted head was `294278e7e9975c1b47fd7adaf708dc815c9110aa`.
-- PR #350 is open for the focused repair at pushed head `9acbcd8f665105ef729c438c2af6096a7a78db21` after the branch was fast-forwarded from GitHub; CodeRabbit was previously triggered with `@coderabbitai review this pr` at <https://github.com/jscraik/coding-harness/pull/350#issuecomment-4632735959> and must be triggered again for the current head.
+- PR #350 is open for the focused repair at pushed head `d1c18677817da57d18167ae3da1206372a94c068`. CodeRabbit and aggregate CircleCI are green on that head, but GitHub still blocks merge because one Codex review thread, `PRRT_kwDORWZJCc6HaV9A`, is unresolved on order-insensitive stale-command validation.
 - The focused repair commit `57188e392a7f0a591005f4baa244b2e978fd9b08` replaces the rejected ci-migrate prepare-plus-apply guidance in packaged skill surfaces and validator coverage.
 - PR #348 is merged into `main` at 2026-06-05T13:30:31Z as merge commit `a146db5f3876d14c86867cc1e1eb384b49716c4b`; its submitted head was `cee878bbd33a42df309952057dc2b6c9a5c423f5`.
 - PR #347 is merged into `main` at 2026-06-05T12:37:36Z as merge commit `73b2a3019d9f77ad84159839ff14dc2121c88c1c`; its submitted head was `9da268b9164cce8b29f6e4b76fc710bd86a6f206`.
@@ -62,7 +65,7 @@ Current route truth:
 - Receipt-backed merged JSC-363 route/foundation lanes through PR #349 are completed current-main evidence. Earlier PR #337/#338 stack-only, PR #342 current-main, PR #343 quota-waiver, PR #344 route-refresh, PR #345 waiver-record, PR #346 route-refresh, PR #347 PR-body repair, PR #348 review-thread repair, and PR #349 ci-migrate docs-fix concerns are resolved by the current-main delivery path; do not reopen them unless a fresh current-main audit finds a regression.
 - The external Snyk GitHub App quota failure on PR #349 is recorded as an owner waiver for that quota lane only because the GitHub App quota is exhausted. This does not claim external Snyk passed and does not waive repo-run security, CircleCI `snyk-dependency-scan`, Socket, CodeRabbit, review-thread, Linear, Judge/PM, future Snyk results, or future security findings.
 - Live Linear `JSC-363` has only historical tracker evidence in this current route surface: earlier probes recorded `Done` and later `In Review` observations with the full-lifecycle scope-note attachment, PR attachments through #338, and comment `e34da9b0-3e16-4fec-a915-5b76f86a0c79` for the earlier route-truth split. Treat current Linear status and field text as unclaimed unless refreshed again after PR #349.
-- Do not keep routing work as if receipt-backed merged JSC-363 route/foundation lanes through PR #349 were open PR-triage lanes. Select the next bounded lifecycle gap only after PR #350 is swept, merged, local `main` is pulled, and this board, `state.yaml`, and `receipts.jsonl` validate.
+- Do not keep routing work as if receipt-backed merged JSC-363 route/foundation lanes through PR #349 were open PR-triage lanes. Select the next bounded lifecycle gap only after PR #350's remaining Codex thread is fixed or resolved, PR #350 is swept, merged, local `main` is pulled, and this board, `state.yaml`, and `receipts.jsonl` validate.
 
 Outstanding goal work after conflict reconciliation:
 
@@ -75,7 +78,7 @@ Outstanding goal work after conflict reconciliation:
 - Treat the current-main Codex-native refinement addendum as next-slice intent scope. It is not completed implementation evidence until the named source modules, contracts, fixtures, validators, and receipts prove the new fields or record owner-visible blockers.
 - Do not create a new duplicate goal board. Update this board, `state.yaml`, and `receipts.jsonl` as the canonical durable goal surface.
 - From this update onward, every implementation slice must finish sequentially: run the required completion lenses `$simplify`, `$improve-codebase-architecture`, `$sy-review`, and `$testing`; record the independent reviewer outcomes; commit the slice; open/update exactly one slice PR; run `$pr-green-sweep` until faults are fixed, the PR is merged to `main`, and local `main` is pulled; update the board/state/receipt; and only then start the next implementation slice. Stacked implementation PRs are forbidden unless Jamie records a named exception before work begins.
-- Current route status: PR #350 is the active focused ci-migrate staged-flow repair PR at remote head `9acbcd8f665105ef729c438c2af6096a7a78db21`. Its live PR body passed the local `pr-template-gate`, remote CircleCI `pr-template` passed before the fast-forward, CodeRabbit route-truth threads were resolved on the earlier head, and the staged-flow repair is now pushed and must be refreshed against the current head. pr-green-sweep remains active until aggregate CircleCI, CodeRabbit, review-thread, merge-conflict, and PR-body/template truth are current. The next implementation slice may start only after PR #350 is reviewed, faults are repaired or explicitly owner-blocked, merged back to `main`, local `main` is pulled, and a bounded lifecycle-gap intent is recorded. The external Snyk GitHub App quota failure is waived only as an external quota blocker, not recorded as a passing security result.
+- Current route status: PR #350 is the active focused ci-migrate staged-flow repair PR at remote head `d1c18677817da57d18167ae3da1206372a94c068`. Its live PR body, remote CircleCI `pr-template`, aggregate CircleCI, CodeRabbit status, and earlier CodeRabbit route-truth threads pass, but one Codex review thread remains unresolved on `scripts/validate-packaged-skill.cjs`. The local repair now makes stale `prepare` plus `--apply` detection token/order-insensitive and includes regression examples for reordered forms. pr-green-sweep remains active until this fix is pushed, the thread is resolved or answered with evidence, aggregate CircleCI, CodeRabbit, review-thread, merge-conflict, and PR-body/template truth are current, and branch protection allows merge. The next implementation slice may start only after PR #350 is reviewed, faults are repaired or explicitly owner-blocked, merged back to `main`, local `main` is pulled, and a bounded lifecycle-gap intent is recorded. The external Snyk GitHub App quota failure is waived only as an external quota blocker, not recorded as a passing security result.
 
 ## Why This Exists
 

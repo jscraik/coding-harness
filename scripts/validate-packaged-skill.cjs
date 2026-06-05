@@ -35,16 +35,6 @@ const REQUIRED_MIGRATION_COMMANDS = [
 
 const FORBIDDEN_PATTERNS = [
 	{
-		pattern: "harness ci-migrate prepare --provider circleci --apply",
-		message:
-			"stale CI migration apply guidance found; use harness ci-migrate prepare --provider circleci --snapshot <snapshot-id> for the staged write step because prepare conflicts with --apply",
-	},
-	{
-		pattern: "harness ci-migrate --provider circleci --apply",
-		message:
-			"one-shot ci-migrate apply guidance found in the packaged staged migration flow; use harness ci-migrate prepare --provider circleci --snapshot <snapshot-id> before verify and commit",
-	},
-	{
 		pattern: "harness init --ci circleci",
 		message:
 			"stale bootstrap guidance found; current CLI treats `circleci` as a target directory in this flow",
@@ -60,6 +50,32 @@ const FORBIDDEN_PATTERNS = [
 			"stale source-repo runner found; use node --import tsx src/cli.ts to avoid tsx CLI IPC startup failures",
 	},
 ];
+
+const FORBIDDEN_CI_MIGRATE_COMMANDS = [
+	{
+		matches: ({ hasApply, hasCircleCIProvider, hasPrepareAction }) =>
+			hasPrepareAction && hasApply && hasCircleCIProvider,
+		message:
+			"stale CI migration apply guidance found; use harness ci-migrate prepare --provider circleci --snapshot <snapshot-id> for the staged write step because prepare conflicts with --apply",
+	},
+	{
+		matches: ({ hasApply, hasCircleCIProvider, hasKnownAction }) =>
+			!hasKnownAction && hasApply && hasCircleCIProvider,
+		message:
+			"one-shot ci-migrate apply guidance found in the packaged staged migration flow; use harness ci-migrate prepare --provider circleci --snapshot <snapshot-id> before verify and commit",
+	},
+];
+
+const CI_MIGRATE_COMMAND_PATTERN = /harness\s+ci-migrate[^\n`"']*/g;
+const CI_MIGRATE_ACTIONS = new Set([
+	"prepare",
+	"verify",
+	"commit",
+	"abort",
+	"sync-branch-protection",
+	"promote-mode",
+	"rollback",
+]);
 
 const SKILL_KIND_VALUES = new Set(["executable", "advisory"]);
 
@@ -364,7 +380,69 @@ function validateForbiddenPatterns() {
 				`${relative(REPO_ROOT, filePath)}: ${rule.message}`,
 			);
 		}
+		for (const command of findCIMigrateCommands(content)) {
+			const facts = classifyCIMigrateCommand(command);
+			for (const rule of FORBIDDEN_CI_MIGRATE_COMMANDS) {
+				assert(
+					!rule.matches(facts),
+					`${relative(REPO_ROOT, filePath)}: ${rule.message}: ${command}`,
+				);
+			}
+		}
 	}
+}
+
+function validateForbiddenCIMigrateCommandRules() {
+	const rejectedExamples = [
+		"harness ci-migrate prepare --provider circleci --apply",
+		"harness ci-migrate prepare --apply --provider circleci",
+		"harness ci-migrate --provider circleci --apply",
+		"harness ci-migrate --apply --provider circleci",
+	];
+	const allowedExamples = [
+		"harness ci-migrate prepare --provider circleci --dry-run",
+		"harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>",
+		"harness ci-migrate verify --snapshot <snapshot-id>",
+		"harness ci-migrate commit --snapshot <snapshot-id>",
+		"harness ci-migrate abort --snapshot <snapshot-id>",
+	];
+
+	for (const command of rejectedExamples) {
+		const facts = classifyCIMigrateCommand(command);
+		assert(
+			FORBIDDEN_CI_MIGRATE_COMMANDS.some((rule) => rule.matches(facts)),
+			`forbidden ci-migrate command rule missed rejected example: ${command}`,
+		);
+	}
+
+	for (const command of allowedExamples) {
+		const facts = classifyCIMigrateCommand(command);
+		assert(
+			FORBIDDEN_CI_MIGRATE_COMMANDS.every((rule) => !rule.matches(facts)),
+			`forbidden ci-migrate command rule rejected allowed example: ${command}`,
+		);
+	}
+}
+
+function findCIMigrateCommands(content) {
+	return Array.from(content.matchAll(CI_MIGRATE_COMMAND_PATTERN), ([match]) =>
+		match.trim(),
+	);
+}
+
+function classifyCIMigrateCommand(command) {
+	const tokens = command.split(/\s+/).filter(Boolean);
+	const providerIndex = tokens.indexOf("--provider");
+	const hasCircleCIProvider =
+		providerIndex >= 0 && tokens[providerIndex + 1] === "circleci";
+	const action = tokens[2] && !tokens[2].startsWith("--") ? tokens[2] : null;
+
+	return {
+		hasApply: tokens.includes("--apply"),
+		hasCircleCIProvider,
+		hasKnownAction: action ? CI_MIGRATE_ACTIONS.has(action) : false,
+		hasPrepareAction: action === "prepare",
+	};
 }
 
 function validateReferenceContracts() {
@@ -820,6 +898,7 @@ function main() {
 	validateInstallJson();
 	validateEvals();
 	validateForbiddenPatterns();
+	validateForbiddenCIMigrateCommandRules();
 	validateSkillDensity();
 	validateReferenceContracts();
 	console.info("packaged-skill: pass");
