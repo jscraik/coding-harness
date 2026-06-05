@@ -42,20 +42,17 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-05 PR #350 route-truth refresh for the
-ci-migrate apply-command repair after local
-`main` synchronized with `origin/main` at
-`f4f2c3da0e41b6347c26d4d1e0e34788554526c1` and live
-`origin/main` later advanced to
-`94bad425584c6e4b0ae1102d793870452d6f2265` through PR #341
-reader-task documentation eval work now contained by PR #350's local
-merge-from-main head.
+Last updated during the 2026-06-05 PR #350 merged-main refresh after local
+`main` fast-forwarded to `origin/main` at
+`b8ea5b4ad9e36c64f0c5d07305f5318446042c98`.
 
 Current route truth:
 
-- `origin/main` is currently `94bad425584c6e4b0ae1102d793870452d6f2265`; the local PR #350 branch contains that head through merge commit `563e155aa33e333821b93ff5e607f71ab2363d7e`.
+- `origin/main` and local `main` are currently `b8ea5b4ad9e36c64f0c5d07305f5318446042c98`, the PR #350 squash merge commit.
+- PR #350 merged into `main` at 2026-06-05T18:04:02Z as merge commit `b8ea5b4ad9e36c64f0c5d07305f5318446042c98`; its submitted head was `615272dd59f8b86b92f16d181e0f4007efc492ec`.
+- At PR #350 merge refresh, CodeRabbit, Socket, repo-owned CircleCI checks, aggregate `pr-pipeline`, and `security-scan` passed. The external Snyk GitHub App quota lane remained ERROR and is owner-waived for that quota lane only.
+- Local branch-only commit `fb2e9946adfe21d29861e04f9b5d12596e696d80` addresses a leading-flag validator gap where `prepare --apply` can appear after flags such as `--json` or `--provider circleci`. It is not on current `main`; treat it as outstanding follow-up work, not completed PR #350 evidence.
 - PR #349 is merged into `main` at 2026-06-05T14:07:58Z as merge commit `f4f2c3da0e41b6347c26d4d1e0e34788554526c1`; its submitted head was `294278e7e9975c1b47fd7adaf708dc815c9110aa`.
-- PR #350 is open for the focused repair at pushed head `82cdcbc28e4319b78094da84c304c759e7997b35`. CodeRabbit, Socket, repo-owned security checks, the PR body gate, aggregate CircleCI, and visible CircleCI job contexts passed before the latest pushed follow-up, except the owner-waived external Snyk GitHub App quota lane. The default-provider thread `PRRT_kwDORWZJCc6HbjKF` and action-flag thread `PRRT_kwDORWZJCc6HbpRQ` are fixed in that pushed head. The current local cleanup addresses route-truth consistency threads `PRRT_kwDORWZJCc6HbwPV`, `PRRT_kwDORWZJCc6HbwPX`, and `PRRT_kwDORWZJCc6HbwqM`, which found that control-plane surfaces still described the already-pushed action-flag repair as pending.
 - The focused repair commit `57188e392a7f0a591005f4baa244b2e978fd9b08` replaces the rejected ci-migrate prepare-plus-apply guidance in packaged skill surfaces and validator coverage.
 - PR #348 is merged into `main` at 2026-06-05T13:30:31Z as merge commit `a146db5f3876d14c86867cc1e1eb384b49716c4b`; its submitted head was `cee878bbd33a42df309952057dc2b6c9a5c423f5`.
 - PR #347 is merged into `main` at 2026-06-05T12:37:36Z as merge commit `73b2a3019d9f77ad84159839ff14dc2121c88c1c`; its submitted head was `9da268b9164cce8b29f6e4b76fc710bd86a6f206`.
@@ -65,8 +62,8 @@ Current route truth:
 - PR #343 remains merged into `main` at 2026-06-05T09:15:55Z as merge commit `02152b965fb399eb3310e8abde171a099895ad99`; its submitted head was `3f72249edb5eca86da5cd96d16ed0bf5fb57fbc2`.
 - Receipt-backed merged JSC-363 route/foundation lanes through PR #349 are completed current-main evidence. Earlier PR #337/#338 stack-only, PR #342 current-main, PR #343 quota-waiver, PR #344 route-refresh, PR #345 waiver-record, PR #346 route-refresh, PR #347 PR-body repair, PR #348 review-thread repair, and PR #349 ci-migrate docs-fix concerns are resolved by the current-main delivery path; do not reopen them unless a fresh current-main audit finds a regression.
 - The external Snyk GitHub App quota failure on PR #349 is recorded as an owner waiver for that quota lane only because the GitHub App quota is exhausted. This does not claim external Snyk passed and does not waive repo-run security, CircleCI `snyk-dependency-scan`, Socket, CodeRabbit, review-thread, Linear, Judge/PM, future Snyk results, or future security findings.
-- Live Linear `JSC-363` has only historical tracker evidence in this current route surface: earlier probes recorded `Done` and later `In Review` observations with the full-lifecycle scope-note attachment, PR attachments through #338, and comment `e34da9b0-3e16-4fec-a915-5b76f86a0c79` for the earlier route-truth split. Treat current Linear status and field text as unclaimed unless refreshed again after PR #350.
-- Do not keep routing work as if receipt-backed merged JSC-363 route/foundation lanes through PR #349 were open PR-triage lanes. Select the next bounded lifecycle gap only after PR #350's current structured-surface staged-context validator thread is fixed or resolved, PR #350 is swept, merged, local `main` is pulled, and this board, `state.yaml`, and `receipts.jsonl` validate.
+- Live Linear `JSC-363` was refreshed after PR #350: status is `In Review`, PR #350 attachment `e3823cee-3ad0-4342-8a03-e52da6fa4dbb` is present, and comment `a0eafb70-5d58-486b-b041-34e37ec4a1e9` records the post-merge route truth. The Linear title/description still describe Phase 1, so field-text-current remains unclaimed unless accepted by the owner or edited.
+- Do not keep routing work as if receipt-backed merged JSC-363 route/foundation lanes through PR #350 were open PR-triage lanes. Select the next bounded lifecycle gap only after this board, `state.yaml`, and `receipts.jsonl` validate on current `main`; if the leading-flag validator gap is selected next, it must use a fresh one-PR follow-up slice.
 
 Outstanding goal work after conflict reconciliation:
 
@@ -74,12 +71,12 @@ Outstanding goal work after conflict reconciliation:
 - Keep this goal board and the local board tracker synchronized before using either as route truth.
 - Keep the goal-board and audit-freshness validators green after each route-truth refresh.
 - Treat merged PRs as completed route/foundation evidence, not as final goal completion.
-- Treat Linear `JSC-363` historical tracker observations as stale route context after PR #350, including prior `Done` and `In Review` statuses plus the full-lifecycle scope-note attachment and the 2026-06-04 route-truth comment. Do not call Linear current after PR #350 unless the issue is refreshed again and field text is either updated or explicitly accepted as stale.
+- Treat Linear `JSC-363` as refreshed for post-PR #350 tracker status and PR attachment presence only. Do not claim Linear field-text-current because the title/description still describe Phase 1; accept this as owner-approved stale text or edit the issue before final closeout.
 - Continue implementation only from the remaining evidence-backed lifecycle gaps: runtime producer evidence, delivery-truth consumption, final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, and final requirement-by-requirement completion audit.
 - Treat the current-main Codex-native refinement addendum as next-slice intent scope. It is not completed implementation evidence until the named source modules, contracts, fixtures, validators, and receipts prove the new fields or record owner-visible blockers.
 - Do not create a new duplicate goal board. Update this board, `state.yaml`, and `receipts.jsonl` as the canonical durable goal surface.
 - From this update onward, every implementation slice must finish sequentially: run the required completion lenses `$simplify`, `$improve-codebase-architecture`, `$sy-review`, and `$testing`; record the independent reviewer outcomes; commit the slice; open/update exactly one slice PR; run `$pr-green-sweep` until faults are fixed, the PR is merged to `main`, and local `main` is pulled; update the board/state/receipt; and only then start the next implementation slice. Stacked implementation PRs are forbidden unless Jamie records a named exception before work begins.
-- Current route status: PR #350 is the active focused ci-migrate staged-flow repair PR at remote head `82cdcbc28e4319b78094da84c304c759e7997b35` after `origin/main` advanced to `94bad425584c6e4b0ae1102d793870452d6f2265`. Its live PR body, remote CircleCI `pr-template`, visible CircleCI job contexts, Socket, repo-owned security checks, CodeRabbit status, aggregate CircleCI, and earlier stale-command, route-truth, standalone one-shot apply, structured-context, default-provider, action-flag, and merge-from-main review lanes passed before the latest route-truth follow-up, except the owner-waived external Snyk GitHub App quota lane. The current local cleanup addresses route-truth consistency threads `PRRT_kwDORWZJCc6HbwPV`, `PRRT_kwDORWZJCc6HbwPX`, and `PRRT_kwDORWZJCc6HbwqM` by aligning every active route surface with the pushed action-flag repair. Pr-green-sweep remains active until the cleanup receipt is pushed, CodeRabbit is triggered again, all review threads are resolved or answered with evidence, aggregate CircleCI, CodeRabbit, review-thread, merge-conflict, and PR-body/template truth are current, and branch protection allows merge. The next implementation slice may start only after PR #350 is reviewed, faults are repaired or explicitly owner-blocked, merged back to `main`, local `main` is pulled, and a bounded lifecycle-gap intent is recorded. The external Snyk GitHub App quota failure is waived only as an external quota blocker, not recorded as a passing security result.
+- Current route status: PR #350 is merged and local `main` is pulled to `b8ea5b4ad9e36c64f0c5d07305f5318446042c98`. The PR lane is complete for merged-main route truth, with the external Snyk GitHub App quota lane owner-waived only as an external quota blocker. Linear JSC-363 was refreshed through comment `a0eafb70-5d58-486b-b041-34e37ec4a1e9`, but field-text-current remains unclaimed. The leading-flag validator repair from local commit `fb2e9946adfe21d29861e04f9b5d12596e696d80` is not merged and remains an explicit follow-up candidate. The next implementation slice may start only after this merged-main route refresh validates and a bounded lifecycle-gap intent is recorded.
 
 ## Why This Exists
 
