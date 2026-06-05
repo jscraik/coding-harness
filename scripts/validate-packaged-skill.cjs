@@ -59,14 +59,28 @@ const FORBIDDEN_CI_MIGRATE_COMMANDS = [
 			"stale CI migration apply guidance found; use harness ci-migrate prepare --provider circleci --snapshot <snapshot-id> for the staged write step because prepare conflicts with --apply",
 	},
 	{
-		matches: ({ hasApply, hasCircleCIProvider, hasKnownAction }) =>
-			!hasKnownAction && hasApply && hasCircleCIProvider,
+		matches: ({
+			hasApply,
+			hasCircleCIProvider,
+			hasKnownAction,
+			isInStagedMigrationFlow,
+		}) =>
+			!hasKnownAction &&
+			hasApply &&
+			hasCircleCIProvider &&
+			isInStagedMigrationFlow,
 		message:
 			"one-shot ci-migrate apply guidance found in the packaged staged migration flow; use harness ci-migrate prepare --provider circleci --snapshot <snapshot-id> before verify and commit",
 	},
 ];
 
 const CI_MIGRATE_COMMAND_PATTERN = /harness\s+ci-migrate[^\n`"']*/g;
+const STAGED_CI_MIGRATE_COMMAND_PATTERNS = [
+	/harness\s+ci-migrate\s+prepare\b[^\n]*--snapshot/u,
+	/harness\s+ci-migrate\s+verify\b[^\n]*--snapshot/u,
+	/harness\s+ci-migrate\s+commit\b[^\n]*--snapshot/u,
+	/harness\s+ci-migrate\s+abort\b[^\n]*--snapshot/u,
+];
 const CI_MIGRATE_ACTIONS = new Set([
 	"prepare",
 	"verify",
@@ -380,8 +394,8 @@ function validateForbiddenPatterns() {
 				`${relative(REPO_ROOT, filePath)}: ${rule.message}`,
 			);
 		}
-		for (const command of findCIMigrateCommands(content)) {
-			const facts = classifyCIMigrateCommand(command);
+		for (const { command, context } of findCIMigrateCommands(content)) {
+			const facts = classifyCIMigrateCommand(command, context);
 			for (const rule of FORBIDDEN_CI_MIGRATE_COMMANDS) {
 				assert(
 					!rule.matches(facts),
@@ -394,29 +408,48 @@ function validateForbiddenPatterns() {
 
 function validateForbiddenCIMigrateCommandRules() {
 	const rejectedExamples = [
-		"harness ci-migrate prepare --provider circleci --apply",
-		"harness ci-migrate prepare --apply --provider circleci",
-		"harness ci-migrate --provider circleci --apply",
-		"harness ci-migrate --apply --provider circleci",
+		{
+			command: "harness ci-migrate prepare --provider circleci --apply",
+			context: "",
+		},
+		{
+			command: "harness ci-migrate prepare --apply --provider circleci",
+			context: "",
+		},
+		{
+			command: "harness ci-migrate --provider circleci --apply",
+			context: [
+				"Staged migration sequence:",
+				"harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>",
+				"harness ci-migrate --provider circleci --apply",
+				"harness ci-migrate verify --snapshot <snapshot-id>",
+				"harness ci-migrate commit --snapshot <snapshot-id>",
+			].join("\n"),
+		},
 	];
 	const allowedExamples = [
-		"harness ci-migrate prepare --provider circleci --dry-run",
-		"harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>",
-		"harness ci-migrate verify --snapshot <snapshot-id>",
-		"harness ci-migrate commit --snapshot <snapshot-id>",
-		"harness ci-migrate abort --snapshot <snapshot-id>",
+		{ command: "harness ci-migrate prepare --provider circleci --dry-run" },
+		{
+			command:
+				"harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>",
+		},
+		{ command: "harness ci-migrate verify --snapshot <snapshot-id>" },
+		{ command: "harness ci-migrate commit --snapshot <snapshot-id>" },
+		{ command: "harness ci-migrate abort --snapshot <snapshot-id>" },
+		{ command: "harness ci-migrate --provider circleci --apply" },
+		{ command: "harness ci-migrate --apply --provider circleci" },
 	];
 
-	for (const command of rejectedExamples) {
-		const facts = classifyCIMigrateCommand(command);
+	for (const { command, context } of rejectedExamples) {
+		const facts = classifyCIMigrateCommand(command, context);
 		assert(
 			FORBIDDEN_CI_MIGRATE_COMMANDS.some((rule) => rule.matches(facts)),
 			`forbidden ci-migrate command rule missed rejected example: ${command}`,
 		);
 	}
 
-	for (const command of allowedExamples) {
-		const facts = classifyCIMigrateCommand(command);
+	for (const { command, context = "" } of allowedExamples) {
+		const facts = classifyCIMigrateCommand(command, context);
 		assert(
 			FORBIDDEN_CI_MIGRATE_COMMANDS.every((rule) => !rule.matches(facts)),
 			`forbidden ci-migrate command rule rejected allowed example: ${command}`,
@@ -425,12 +458,32 @@ function validateForbiddenCIMigrateCommandRules() {
 }
 
 function findCIMigrateCommands(content) {
-	return Array.from(content.matchAll(CI_MIGRATE_COMMAND_PATTERN), ([match]) =>
-		match.trim(),
-	);
+	return Array.from(content.matchAll(CI_MIGRATE_COMMAND_PATTERN), (match) => {
+		const [command] = match;
+		const startIndex = match.index || 0;
+		return {
+			command: command.trim(),
+			context: getMarkdownBlockAround(content, startIndex, command.length),
+		};
+	});
 }
 
-function classifyCIMigrateCommand(command) {
+function getMarkdownBlockAround(content, startIndex, commandLength) {
+	const previousBreak = content.lastIndexOf("\n\n", startIndex);
+	const nextBreak = content.indexOf("\n\n", startIndex + commandLength);
+	const blockStart = previousBreak === -1 ? 0 : previousBreak + 2;
+	const blockEnd = nextBreak === -1 ? content.length : nextBreak;
+	return content.slice(blockStart, blockEnd);
+}
+
+function isStagedMigrationFlowContext(context) {
+	const markerCount = STAGED_CI_MIGRATE_COMMAND_PATTERNS.filter((pattern) =>
+		pattern.test(context),
+	).length;
+	return markerCount >= 2;
+}
+
+function classifyCIMigrateCommand(command, context = "") {
 	const tokens = command.split(/\s+/).filter(Boolean);
 	const providerIndex = tokens.indexOf("--provider");
 	const hasCircleCIProvider =
@@ -442,6 +495,7 @@ function classifyCIMigrateCommand(command) {
 		hasCircleCIProvider,
 		hasKnownAction: action ? CI_MIGRATE_ACTIONS.has(action) : false,
 		hasPrepareAction: action === "prepare",
+		isInStagedMigrationFlow: isStagedMigrationFlowContext(context),
 	};
 }
 
