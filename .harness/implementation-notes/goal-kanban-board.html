@@ -811,11 +811,11 @@
       {
         id: "stale-board-route",
         lane: "completed",
-        title: "Route truth refreshed after PR #344 merge",
+        title: "Route truth blocks next slice on PR #345",
         status: "done",
-        tags: ["goal.md", "state.yaml", "R296"],
-        summary: "goal.md, state.yaml, receipts.jsonl, active-artifacts, and this board now route execution from synced main after PR #344 instead of older PR #343 route-truth text.",
-        evidence: ["state.yaml current_slice_gate.status = post_pr344_merged_snyk_quota_waived_current_main_validated", "origin/main -> cfda8c6a0aa58f5468a7ca1ab87e74becc7004aa", "PR #344 -> MERGED", "Snyk GitHub App quota failure -> owner-waived for quota lane only"],
+        tags: ["goal.md", "state.yaml", "R299"],
+        summary: "goal.md, state.yaml, receipts.jsonl, active-artifacts, and this board now route execution from synced main after PR #344 while blocking the next slice until PR #345 is resolved, merged, pulled, and route-refreshed.",
+        evidence: ["state.yaml current_slice_gate.status = pr345_open_external_snyk_quota_waiver_recorded_remote_template_refresh_pending", "origin/main -> cfda8c6a0aa58f5468a7ca1ab87e74becc7004aa", "PR #344 -> MERGED", "PR #345 -> active waiver-record triage at a026c9f93e787f012cce9f4fd40470d6089b4b10", "Snyk GitHub App quota failure -> owner-waived for quota lane only"],
         next: "Keep the tracker synchronized with canonical goal artifacts after every merge, route decision, blocker decision, waiver, or PR-green-sweep result.",
         risk: "This fixes stale routing. It does not close remaining runtime, review, CI, delivery-truth, docs, Linear, or Judge/PM gates."
       },
@@ -824,10 +824,10 @@
         lane: "completed",
         title: "Current-main goal validators pass",
         status: "done",
-        tags: ["check-goal-board", "audit freshness", "R296"],
-        summary: "The canonical board and audit-freshness validators must pass against R296 after the PR #344 current-main waiver refresh.",
-        evidence: ["PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit -> pass", "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo . -> pass", "git diff --check -> pass", "node --check /private/tmp/goal-kanban-board-script.js -> pass"],
-        next: "Commit this tracker-governance slice, open the bounded PR, run pr-green-sweep until merged, then pull main before selecting the next implementation slice.",
+        tags: ["check-goal-board", "audit freshness", "R299"],
+        summary: "The canonical board and audit-freshness validators pass against R299 after the PR #345 next-slice blocker repair.",
+        evidence: ["PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit -> pass selecting R299", "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo . -> pass selecting R299", "receipts JSONL parse -> pass for 283 lines", "git diff --check -> pass", "pnpm docs:lint -> pass"],
+        next: "Keep PR #345 in review and merge triage until it is merged to main, then pull main and refresh board/state/receipt before selecting the next implementation slice.",
         risk: "Passing board validators prove freshness and structure, not implementation completeness."
       },
       {
