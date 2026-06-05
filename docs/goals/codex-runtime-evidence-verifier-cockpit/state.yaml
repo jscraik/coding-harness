@@ -88,9 +88,9 @@ completion_contract:
       - "record refreshed main head in goal board and receipt"
     exception_rule: "Only Jamie can authorize a stacked or parallel implementation exception; the exception must name the dependent slice, branch/worktree owner, allowed files, stop condition, and receipt id before any code work begins."
 current_slice_gate:
-  lifecycle_unit: "post-merge-route-truth-refresh"
-  status: "pr343_open_external_snyk_quota_blocked"
-  reason: "Local main fast-forwarded to origin/main at 173a3fe0772fcce6d1e960bd0d9f41debbc7d96f after PR #342 merged at 2026-06-04T23:25:43Z. Receipt-backed merged JSC-363 route/foundation lanes through PR #342 are completed current-main evidence. PR #343 is the active sequential governance slice PR on submitted head cf5be8ad03cb3e7581b3c9bbc96a0a3b22345b0b. Live GitHub reports CodeRabbit review threads resolved/outdated and all CircleCI, Socket, CodeRabbit, and repo-run security lanes passing; mergeStateStatus remains BLOCKED because the external Snyk GitHub App check reports 'You have used your limit of private tests'. Linear JSC-363 must be refreshed again before any tracker-current or field-text-current claim after PR #342. Runtime producer emission, delivery-truth consumption, final review/external/root-hygiene proof, docs accuracy, Judge/PM readiness, and parent goal completion remain unclaimed."
+  lifecycle_unit: "pr345-waiver-record-triage"
+  status: "pr345_open_external_snyk_quota_waiver_recorded_remote_template_refresh_pending"
+  reason: "PR #345 is the active draft delivery vehicle for the post-PR #344 current-main waiver record. Local main and origin/main are synchronized at cfda8c6a0aa58f5468a7ca1ab87e74becc7004aa after PR #344 merged at 2026-06-05T10:16:44Z. PR #345 head 6d7a6829ba8d3f8451471aa0d2feaa16263f922c has a repaired live PR body that passes the local pr-template-gate, but GitHub still reports the older CircleCI ci/circleci: pr-template status from pipeline 2408/job 26394 as failed until a rerun or fresh commit refreshes it. The external Snyk GitHub App quota failure is owner-waived for that quota lane only because it reported 'You have used your limit of private tests'; this does not claim external Snyk passed and does not waive repo-run security, CircleCI snyk-dependency-scan, Socket, CodeRabbit, review-thread, Linear, Judge/PM, future Snyk results, or future security findings. Linear JSC-363 must be refreshed again before any tracker-current or field-text-current claim after PR #344/PR #345. Runtime producer emission, delivery-truth consumption, final review/external/root-hygiene proof, docs accuracy, Judge/PM readiness, and parent goal completion remain unclaimed."
   completed_before_local_validation_claim:
     - "Created and tracked the PR #324 supersession intent artifact before route-state edits."
     - "Fetched current remote refs and verified PR #327 and PR #328 are the current clean JSC-363 stack."
@@ -104,7 +104,7 @@ current_slice_gate:
     - "Refreshed PR #329 after d99f70705a61caf2b437b640db3df7389175d10d; all visible checks passed, mergeability was MERGEABLE/CLEAN, and review threads were resolved."
     - "Refreshed PR #327, PR #328, and PR #329 through GitHub on 2026-06-01; all three open stacked PRs report CLEAN and all visible checks pass."
     - "Verified PR #321 is MERGED and resolved its two remaining historical review threads after checking current main contains the requested fixes."
-    - "Earlier Linear probe on 2026-06-01 showed JSC-363 In Progress with Phase 1 wording and attachments through PR #329; later 2026-06-03 evidence observed Done status and the full-lifecycle scope-note attachment. Both are historical tracker observations, not current post-PR #342 proof."
+    - "Earlier Linear probe on 2026-06-01 showed JSC-363 In Progress with Phase 1 wording and attachments through PR #329; later 2026-06-03 evidence observed Done status and the full-lifecycle scope-note attachment. Both are historical tracker observations, not current post-PR #344 proof."
     - "Created PU-045 intent and promoted the repeated CircleCI ~/.codex/.env recovery rule into Project Brain CI rules."
     - "Committed and pushed the initial PU-045 branch d97e1bb90c0f94670b2facf80c49ae2cde7c6d28 and opened PR #330 against PR #329."
     - "Repaired PR #330 body evidence after local pr-template-gate reproduced the CircleCI failure; exact linked-issue acceptance trace, durable evidence-map, checklist status, and blocked-command syntax now pass locally."
@@ -142,13 +142,13 @@ current_slice_gate:
     - "Recorded CNF-004 reviewer-runtime artifact-output blockers in artifacts/reviews/pu050-cnf-004-intent-reviewer-runtime-blocker.md and artifacts/reviews/pu050-cnf-004-implementation-reviewer-runtime-blocker.md; local skill-lens coverage is in artifacts/reviews/pu050-cnf-004-skill-lenses.md."
     - "Pushed CNF-004 branch head 11cf544aa7ecf3918d780e1118d82b1f49293880 and opened draft stacked PR #334 against codex/jsc-363-cnf-003-risk-tier-authority after the PR body passed pr-template-gate; foreground make hooks-pre-push passed before the no-verify push fallback was used to avoid a silent Git transport hook hang."
   next_required_handoff_steps:
-    - "Treat receipt-backed merged JSC-363 route/foundation lanes through PR #342 as completed current-main evidence at 173a3fe0772fcce6d1e960bd0d9f41debbc7d96f; do not reopen those PR lanes unless fresh GitHub or current-main validation shows a regression."
-    - "Treat PR #343 as the active JSC-363 sequential governance slice PR until it is merged to main and pulled locally or owner-unblocked from the external Snyk quota failure."
-    - "Before the next implementation slice starts, merge PR #343 or record an explicit owner decision for the external Snyk GitHub App quota blocker; then checkout and pull main, update this board/state/receipt, select the next remaining lifecycle gap from current main, and record bounded intent with Project Brain, memory surfaces, plan/spec/audit inputs, and required validation."
+    - "Treat receipt-backed merged JSC-363 route/foundation lanes through PR #344 as completed current-main evidence at cfda8c6a0aa58f5468a7ca1ab87e74becc7004aa; do not reopen those PR lanes unless fresh GitHub or current-main validation shows a regression."
+    - "Treat the external Snyk GitHub App quota failure as owner-waived for that quota lane only, not as external Snyk green or as a blanket security waiver."
+    - "Before the next implementation slice starts, finish PR #345 triage under the owner-approved external Snyk quota waiver, require the PR to be merged to main, checkout main, pull latest remote main, refresh board/state/receipt route truth, and only then select the next remaining lifecycle gap from current main with bounded intent, Project Brain, memory surfaces, plan/spec/audit inputs, and required validation."
     - "For every future slice, run simplify, improve-codebase-architecture, sy-review, and testing before done; then commit atomically, open or update one PR, trigger CodeRabbit manually when required, run pr-green-sweep until faults are fixed or explicitly blocked, merge to main, checkout main, pull latest remote main, update the goal board/state/receipt, and only then start the next slice."
     - "Stacked implementation PRs are forbidden by default. Only Jamie can authorize a named exception in the current slice intent and receipt before any parallel or dependent implementation work begins."
     - "Keep this board and the local board tracker as current route-truth surfaces; synchronize goal.md, state.yaml, goal-kanban-board.html, and receipts.jsonl after every merge, route decision, or blocker decision."
-    - "Refresh Linear JSC-363 after PR #342 before claiming tracker-current, field-text-current, Judge/PM-ready, or parent-goal completion. Earlier Linear evidence remains attachment-backed route context, not current post-PR #342 proof."
+    - "Refresh Linear JSC-363 after PR #344 before claiming tracker-current, field-text-current, Judge/PM-ready, or parent-goal completion. Earlier Linear evidence remains attachment-backed route context, not current post-PR #344 proof."
     - "Continue only from remaining evidence-backed lifecycle gaps: runtime producer evidence, delivery-truth consumption, final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, and final requirement-by-requirement completion audit."
   blocked_done_claims:
     - "Linear-fields-current"
@@ -272,7 +272,7 @@ ecosystem_review_adoption:
 codex_native_refinement_adoption:
   source: "goal-governor-output.yaml"
   source_context: "/Users/jamiecraik/dev/codex review against /Users/jamiecraik/dev/coding-harness"
-  current_main_sha: "173a3fe0772fcce6d1e960bd0d9f41debbc7d96f"
+  current_main_sha: "cfda8c6a0aa58f5468a7ca1ab87e74becc7004aa"
   authority: "adopted_for_next_slice_steering"
   rule: "Use the imported Codex-native review to refine the next activated slice toward message correlation, environment-scoped permission evidence, risk-tiered agent-native mutation authority, runtime-card continuity, context authority classification, and steering application receipts. The findings steer scope but do not prove implementation."
   required_findings:
@@ -421,7 +421,7 @@ linear_tracking:
   project_at_last_probe: "Harness cockpit routing"
   parent_at_last_probe: "JSC-328"
   probed_at: "2026-06-03T20:44:00Z"
-  observed_scope_note: "Linear title and description historically said Phase 1 while this goal board governs the full lifecycle. PU-046 attached an owner-visible full-lifecycle scope note to JSC-363, and the 2026-06-03 live refresh reported Done status, so that observation remains historical attachment-backed context. Field-text-current and post-PR #342 tracker-current alignment remain unclaimed until Linear is refreshed again."
+  observed_scope_note: "Linear title and description historically said Phase 1 while this goal board governs the full lifecycle. PU-046 attached an owner-visible full-lifecycle scope note to JSC-363, and the 2026-06-03 live refresh reported Done status, so that observation remains historical attachment-backed context. Field-text-current and post-PR #344 tracker-current alignment remain unclaimed until Linear is refreshed again."
   latest_linkage_action: "Uploaded docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-01-linear-full-lifecycle-scope-note.md to Linear JSC-363 as attachment 5d4b796b-9129-4561-92b6-489bb6982925 titled 'JSC-363 full lifecycle scope note'. The uploaded note digest is ce1463fba3a0dd7daebe2ff15c55ecb54119d0c9a24456b907757b3e2920e414 and the post-mutation get_issue response included the attachment id, title, subtitle, and upload URL. Linear issue fields still say Phase 1."
   latest_linkage_blocker_class: "linear_fields_stale_tracker_attachment_aligned"
   closeout_rule: "Linear provides planning, ownership, and tracker state only; it cannot prove implementation, runtime truth, review readiness, CI, or merge readiness."
