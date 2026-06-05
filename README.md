@@ -180,7 +180,8 @@ Use this when you need branch naming metadata, traceability text, and file-scope
 
 ```bash
 harness docs-gate --mode advisory --json
-pnpm docs:archive-candidates -- --json
+pnpm docs:archive-candidates
+pnpm --silent docs:archive-candidates -- --json
 harness plan-gate --require-plan-id --require-traceability --json
 harness review-gate --token "$GITHUB_TOKEN" --owner <owner> --repo <repo> --pr <number> --sha <head-sha>
 harness verify-coderabbit --json
@@ -189,6 +190,7 @@ harness verify-coderabbit --json
 **Expected outcomes:**
 - `harness docs-gate`: Advisory mode reports doc drift without blocking (exit 0).
 - `pnpm docs:archive-candidates`: Emits an advisory-only stale-document candidate report; it never archives, moves, deletes, demotes, or rewrites files.
+- `pnpm --silent docs:archive-candidates -- --json`: Emits clean `docs-archive-candidates-report/v1` JSON for docs-gate and review evidence without package-runner banner text on stdout.
 - `harness plan-gate`: Confirms plan-id and traceability metadata present; exits 0 on success, non-zero if missing.
 - `harness review-gate`: Verifies required reviewers and approval state; exits 0 on success, non-zero on missing approvals.
 - `harness verify-coderabbit`: Returns JSON success/validation status.
