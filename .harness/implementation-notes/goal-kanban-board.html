@@ -497,7 +497,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and local git ancestry after PR #343 review repair. <code>origin/main</code> remains at the PR #342 merge commit <code>173a3fe0772fcce6d1e960bd0d9f41debbc7d96f</code>. PR #343 is open on head <code>caf5b99fdba0fb0f7ac9288b62f64896922722cc</code>; CodeRabbit review threads are resolved/outdated, all CircleCI, Socket, CodeRabbit, and repo-run security lanes pass, and merge remains blocked by the external Snyk GitHub App quota error. Linear JSC-363 needs a fresh post-PR #342 refresh before tracker-current or field-text-current claims. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and local git ancestry after PR #343 review repair. <code>origin/main</code> remains at the PR #342 merge commit <code>173a3fe0772fcce6d1e960bd0d9f41debbc7d96f</code>. PR #343 is open on submitted head <code>cf5be8ad03cb3e7581b3c9bbc96a0a3b22345b0b</code>; CodeRabbit review threads are resolved/outdated, all CircleCI, Socket, CodeRabbit, and repo-run security lanes pass, and merge remains blocked by the external Snyk GitHub App quota error. Linear JSC-363 needs a fresh post-PR #342 refresh before tracker-current or field-text-current claims. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -638,7 +638,7 @@
         title: "Slice execution contract",
         status: "active",
         tags: ["intent", "review-first", "no stacked PRs"],
-        summary: "Each slice needs reviewed intent, deterministic validation, simplify, architecture, sy-review, testing, independent reviewers, atomic commit, PR green sweep, merge-to-main proof, local main pull, board update, and receipts.",
+        summary: "Each slice needs reviewed intent, deterministic validation, simplify, improve-codebase-architecture, sy-review, testing, independent reviewers, atomic commit, PR green sweep through faults and merge, local main pull, board update, and receipts.",
         evidence: ["state.yaml slice_review_contract", "state.yaml slice_continuation_policy", "goal.md Review and Validation Contract", "Required lenses: simplify, improve-codebase-architecture, sy-review, testing, adversarial, agent-native, best-practices"],
         next: "Finish the active slice through PR merge and refreshed local main before any next implementation slice begins.",
         risk: "Starting the next implementation slice before PR merge proof recreates stacked PR conflicts and stale review-thread churn."
@@ -649,8 +649,8 @@
         title: "Source freshness current",
         status: "done",
         tags: ["main", "origin/main", "PR #342", "R285"],
-        summary: "The board is sourced from local main synchronized with origin/main after PR #342 merged; no JSC-363/cockpit implementation PR lane is open.",
-        evidence: ["origin/main -> 173a3fe0772fcce6d1e960bd0d9f41debbc7d96f", "PR #342 -> MERGED into main at 2026-06-04T23:25:43Z", "PR #342 head -> 71fb4041ae8829fce004b661381dd69861dba246", "Live GitHub open PR list -> #340 and #341 only; neither is a JSC-363/cockpit implementation lane", "Local main was checked out and pulled after PR #342 merge"],
+        summary: "The board is sourced from local main synchronized with origin/main after PR #342 merged plus the active PR #343 governance slice branch; PR #343 remains the only current JSC-363 PR lane.",
+        evidence: ["origin/main -> 173a3fe0772fcce6d1e960bd0d9f41debbc7d96f", "PR #342 -> MERGED into main at 2026-06-04T23:25:43Z", "PR #342 head -> 71fb4041ae8829fce004b661381dd69861dba246", "PR #343 -> active JSC-363 sequential governance slice on submitted head cf5be8ad03cb3e7581b3c9bbc96a0a3b22345b0b", "Local main was checked out and pulled after PR #342 merge"],
         next: "Select the next remaining lifecycle gap from current main and record bounded intent before implementation.",
         risk: "Current route truth proves orientation only. It does not prove runtime producer evidence, final delivery-truth consumption, Linear field text, or parent-goal completion."
       },
@@ -705,7 +705,7 @@
         status: "blocked",
         tags: ["PR #343", "Snyk quota", "pr-green-sweep"],
         summary: "PR #343 is the active sequential governance slice. Review threads are resolved/outdated and all repo-run lanes pass; merge is blocked by the external Snyk GitHub App quota failure.",
-        evidence: ["gh pr view 343 -> head caf5b99fdba0fb0f7ac9288b62f64896922722cc, mergeStateStatus BLOCKED", "gh pr checks 343 -> CircleCI, CodeRabbit, Socket, and repo-run security lanes pass", "security/snyk (jscraik) -> ERROR: You have used your limit of private tests"],
+        evidence: ["gh pr view 343 -> head cf5be8ad03cb3e7581b3c9bbc96a0a3b22345b0b, mergeStateStatus BLOCKED", "gh pr checks 343 -> CircleCI, CodeRabbit, Socket, and repo-run security lanes pass", "security/snyk (jscraik) -> ERROR: You have used your limit of private tests"],
         next: "Resolve the external Snyk account quota or record an owner decision before merge; do not start the next implementation slice while PR #343 is open.",
         risk: "The code/review/CI lane is green, but branch protection still blocks merge until the external Snyk status is handled."
       },

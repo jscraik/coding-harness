@@ -67,10 +67,10 @@ completion_contract:
     - "Do not weaken the plan or spec to fit already-written code."
     - "Do not blend local validation, remote checks, review threads, tracker state, root hygiene, and merge readiness into one success claim."
     - "Do not mark a slice done without simplify, improve-codebase-architecture, sy-review, testing, adversarial review, agent-native review, and best-practices-researcher coverage or explicit blocked/not-applicable evidence."
-    - "Do not start the next implementation slice until the current slice PR has pr-green-sweep evidence, live merge proof into main, and a refreshed local main head recorded in the board and receipt."
+    - "Do not start the next implementation slice until pr-green-sweep has triaged the current slice PR through fault repair, merge to main, local main pull, and a refreshed board/state/receipt."
     - "Do not use stacked implementation PRs for this goal unless Jamie explicitly authorizes a named exception in the current slice intent and receipt."
     - "Do not approach cleanup or closeout until docs-expert and agents-md accuracy checks are complete when relevant."
-  iteration_policy: "Scout first, then bounded Worker slices with reviewed intent, deterministic validation, reviewer artifacts, atomic commits, GitHub PRs, pr-green-sweep triage, merge-to-main proof, refreshed local main, goal-board update, and append-only receipts. The next implementation slice may start only after the current slice PR is green, merged into main, and pulled locally. PR triage must run either remote-only or in an isolated worktree created for the PR head, but background triage does not authorize stacked continuation."
+  iteration_policy: "Scout first, then bounded Worker slices with reviewed intent, deterministic validation, reviewer artifacts, atomic commits, GitHub PRs, pr-green-sweep triage, merge-to-main proof, refreshed local main, goal-board update, and append-only receipts. The next implementation slice may start only after the current slice PR is reviewed, fixed, green or explicitly owner-blocked, merged into main, and pulled locally. PR triage must run either remote-only or in an isolated worktree created for the PR head, but background triage does not authorize stacked continuation."
   blocked_stop_condition: "Stop if the board is invalid, activation is absent for Worker work, required intent review is missing, validation cannot run, reviewer artifacts are missing after retry, PR or tracker truth is stale, dirty work overlaps required files, or continuing would contaminate a PR under triage."
   slice_continuation_policy:
     stacking_default: "forbidden"
@@ -79,9 +79,10 @@ completion_contract:
       - "run improve-codebase-architecture"
       - "run sy-review"
       - "run testing"
+      - "record independent reviewer outcomes"
       - "commit atomic slice"
       - "push and open or update PR"
-      - "run pr-green-sweep until faults are fixed or explicitly blocked"
+      - "run pr-green-sweep until review comments, CI failures, merge conflicts, and PR body/template faults are fixed or explicitly blocked"
       - "prove PR merged into main"
       - "checkout main and pull latest remote main"
       - "record refreshed main head in goal board and receipt"
@@ -89,7 +90,7 @@ completion_contract:
 current_slice_gate:
   lifecycle_unit: "post-merge-route-truth-refresh"
   status: "pr343_open_external_snyk_quota_blocked"
-  reason: "Local main fast-forwarded to origin/main at 173a3fe0772fcce6d1e960bd0d9f41debbc7d96f after PR #342 merged at 2026-06-04T23:25:43Z. Receipt-backed merged JSC-363 route/foundation lanes through PR #342 are completed current-main evidence. PR #343 is the active sequential governance slice PR on head caf5b99fdba0fb0f7ac9288b62f64896922722cc. Live GitHub reports CodeRabbit review threads resolved/outdated and all CircleCI, Socket, CodeRabbit, and repo-run security lanes passing; mergeStateStatus remains BLOCKED because the external Snyk GitHub App check reports 'You have used your limit of private tests'. Linear JSC-363 must be refreshed again before any tracker-current or field-text-current claim after PR #342. Runtime producer emission, delivery-truth consumption, final review/external/root-hygiene proof, docs accuracy, Judge/PM readiness, and parent goal completion remain unclaimed."
+  reason: "Local main fast-forwarded to origin/main at 173a3fe0772fcce6d1e960bd0d9f41debbc7d96f after PR #342 merged at 2026-06-04T23:25:43Z. Receipt-backed merged JSC-363 route/foundation lanes through PR #342 are completed current-main evidence. PR #343 is the active sequential governance slice PR on submitted head cf5be8ad03cb3e7581b3c9bbc96a0a3b22345b0b. Live GitHub reports CodeRabbit review threads resolved/outdated and all CircleCI, Socket, CodeRabbit, and repo-run security lanes passing; mergeStateStatus remains BLOCKED because the external Snyk GitHub App check reports 'You have used your limit of private tests'. Linear JSC-363 must be refreshed again before any tracker-current or field-text-current claim after PR #342. Runtime producer emission, delivery-truth consumption, final review/external/root-hygiene proof, docs accuracy, Judge/PM readiness, and parent goal completion remain unclaimed."
   completed_before_local_validation_claim:
     - "Created and tracked the PR #324 supersession intent artifact before route-state edits."
     - "Fetched current remote refs and verified PR #327 and PR #328 are the current clean JSC-363 stack."
