@@ -176,6 +176,33 @@ describe("runDocsArchiveCandidates", () => {
 		);
 	});
 
+	it("rejects active artifact routes whose target metadata is unparseable", () => {
+		const repoRoot = createFixture({
+			".harness/specs/current.md": "# Missing metadata\n",
+		});
+
+		const report = runDocsArchiveCandidates({
+			repoRoot,
+			trackedFiles: [".harness/specs/current.md"],
+			now: new Date("2026-06-05T00:00:00.000Z"),
+			activeArtifactsContent: "[Current](.harness/specs/current.md)",
+		});
+
+		expect(report.repairFindings).toContainEqual(
+			expect.objectContaining({
+				path: ".harness/active-artifacts.md",
+				code: "active_reference_stale_or_unverified",
+				evidenceRefs: expect.arrayContaining([".harness/specs/current.md"]),
+			}),
+		);
+		expect(report.protectedFiles).not.toContainEqual(
+			expect.objectContaining({
+				path: ".harness/specs/current.md",
+				reasons: expect.arrayContaining(["active_artifact_reference"]),
+			}),
+		);
+	});
+
 	it("emits repair evidence for execution inputs missing from active artifacts", () => {
 		const repoRoot = createFixture({
 			".harness/plan/current.md": frontmatter({

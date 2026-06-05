@@ -323,7 +323,8 @@ function isVerifiedActiveArtifact(
 	try {
 		const content = readFileSync(resolved, "utf8");
 		if (content.trim().length === 0) return false;
-		parseMetadata(content);
+		const metadata = parseMetadata(content);
+		if (Object.keys(metadata).length === 0) return false;
 		return true;
 	} catch {
 		return false;
