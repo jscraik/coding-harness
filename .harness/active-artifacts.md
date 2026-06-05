@@ -152,10 +152,11 @@ runtime producer emission, delivery-truth consumption, or final goal completion.
   PR, CI, review-thread, Project Brain, and runtime evidence truth separated in
   receipts. Historical PR #309 continuity remains indexed by branch head
   `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` for validator compatibility;
-  it is not current route truth. Current route truth is PR #348 merged into
-  `main` at `a146db5f3876d14c86867cc1e1eb384b49716c4b`; historical PR
-  #322 through PR #347 ledger entries below, including PR #344 route-refresh
-  evidence and PR #347 body repair, are immutable provenance. R149 records
+  it is not current route truth. Current route truth is PR #350 open on the
+  `codex/jsc-363-ci-migrate-apply-command` branch after PR #349 merged into
+  `main` at `f4f2c3da0e41b6347c26d4d1e0e34788554526c1`; historical PR
+  #322 through PR #349 ledger entries below, including PR #344 route-refresh,
+  PR #347 body repair, and PR #348 review-thread repair, are immutable provenance. R149 records
   the post-merge refresh after PR
   #312 merged into main as squash commit
   `7e8cb93fa16636336194e15e53a592117b9f276a`. R150/R152 record the PR #318

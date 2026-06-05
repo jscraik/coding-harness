@@ -234,7 +234,7 @@ Adoption rules:
 - The ecosystem review is advisory until this section and `state.yaml` adopt specific findings; after adoption, the listed findings are goal steering constraints.
 - Harness must not become a competing Codex app-server, goal store, scheduler, tool registry, or thread engine.
 - Runtime cards remain cockpit summaries and pointers, not warehouses for raw prompts, raw telemetry, review bodies, secrets, or bulky artifacts.
-- Linear `JSC-363` remains the tracker anchor for this goal. Historical Linear evidence recorded a `Done` status with a full-lifecycle scope-note attachment, and later route-truth evidence recorded `In Review`; neither status is current post-PR #348 proof. Future closeout may claim tracker alignment only after a fresh Linear refresh records status, scope-note state, and field-text freshness separately.
+- Linear `JSC-363` remains the tracker anchor for this goal. Historical Linear evidence recorded a `Done` status with a full-lifecycle scope-note attachment, and later route-truth evidence recorded `In Review`; neither status is current post-PR #350 proof. Future closeout may claim tracker alignment only after a fresh Linear refresh records status, scope-note state, and field-text freshness separately.
 - Every future Worker/Judge/PM receipt should include `ecosystem_review_findings` when a slice touches runtime identity, runtime state, claim verification, queueing, tool exposure, review mode, artifacts, memory/retrieval, recovery, schemas, telemetry, hooks, instruction provenance, runtime provenance, or Codex parity.
 
 ## Codex-Native Current-Main Refinement Addendum
@@ -250,12 +250,12 @@ Codex-native: identity correlation, environment-scoped permission evidence,
 risk-tiered mutation authority, richer runtime-card continuity, context
 authority classification, and queue application receipts.
 
-Current-main verification was refreshed after the PR #348 merge at
-`a146db5f3876d14c86867cc1e1eb384b49716c4b`. Earlier refinement evidence was
+Current-main verification was refreshed after the PR #349 merge at
+`f4f2c3da0e41b6347c26d4d1e0e34788554526c1`, and active PR #350 now carries the focused ci-migrate apply-command repair. Earlier refinement evidence was
 first recorded at `50a6d0b5d764e35395e12190a465e854c26784fd`; the refreshed
 route truth preserves that scope analysis while recording PR #331 through
-PR #338 plus PR #342 through PR #348 as completed JSC-363
-route/foundation evidence on current `origin/main`.
+PR #338 plus PR #342 through PR #349 as completed JSC-363
+route/foundation evidence on current `origin/main`, with PR #350 still under sweep.
 
 This supports the refinement as pending scope, not as proof of implementation:
 

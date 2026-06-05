@@ -411,12 +411,12 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness warning">PR #347 merged: route truth refreshed</div>
+      <div class="source-chip" aria-label="Source freshness warning">PR #350 open: route truth under sweep</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>Post-merge reconciliation</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>Receipt-backed merged lanes through PR #348</strong></div>
+      <div class="metric"><span>Goal status</span><strong>PR #350 sweep active</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>Merged lanes through PR #349</strong></div>
       <div class="metric"><span>Outstanding work</span><strong>Runtime, delivery truth, docs, Linear, Judge/PM</strong></div>
       <div class="metric"><span>Claim boundary</span><strong>Completion unclaimed</strong></div>
       <div class="metric"><span>Source files</span><strong>goal.md, state.yaml, receipts.jsonl, Kanban</strong></div>
@@ -647,7 +647,7 @@
         id: "ci-migrate-apply-command-repair",
         lane: "remote",
         title: "PR #350: ci-migrate apply command repair",
-        status: "sweeping",
+        status: "active",
         tags: ["P2 review", "ci-migrate", "packaged skill"],
         summary: "PR #350 is open for the documented and packaged CI migration apply-step fix. The repair uses the supported command form instead of the rejected positional prepare plus --apply combination.",
         evidence: ["PR #350 -> OPEN at head 99b0c1db770f87a86ca9efefb78d73f4d3e655d6", "Manual CodeRabbit trigger -> https://github.com/jscraik/coding-harness/pull/350#issuecomment-4632735959", "Old form: pnpm exec harness ci-migrate prepare --provider circleci --apply --json -> reproduces action conflict", "New form: pnpm exec harness ci-migrate --provider circleci --apply --json -> reaches HARNESS_CI_MIGRATE_SIGNING_KEY prerequisite", "Stale command search across README, docs, .agents/skills/coding-harness, and scripts/validate-packaged-skill.cjs -> absent", "node scripts/validate-packaged-skill.cjs -> pass", "pnpm skill:validate -> pass", "bash scripts/validate-codestyle.sh --fast -> pass", "Live PR body pr-template-gate -> pass locally", "Remote ci/circleci: pr-template -> failing; current sweep hypothesis is PR-context/timing or unavailable CircleCI log access, not body content"],
@@ -658,7 +658,7 @@
         id: "source-freshness",
         lane: "intent",
         title: "Source freshness current for PR #350",
-        status: "sweeping",
+        status: "active",
         tags: ["PR #350", "R313", "Snyk quota waiver"],
         summary: "The board is sourced from local main synchronized with origin/main after PR #349 merged, plus open PR #350 for the focused ci-migrate apply-command repair. The external Snyk GitHub App quota failure is owner-waived only; repo-owned security lanes stay separate.",
         evidence: ["origin/main -> f4f2c3da0e41b6347c26d4d1e0e34788554526c1", "PR #349 -> MERGED at 2026-06-05T14:07:58Z", "PR #349 submitted head -> 294278e7e9975c1b47fd7adaf708dc815c9110aa", "PR #350 -> OPEN at head 99b0c1db770f87a86ca9efefb78d73f4d3e655d6", "ci-migrate repair commit -> 57188e392a7f0a591005f4baa244b2e978fd9b08", "security/snyk (jscraik) -> error because external app quota is exhausted; owner waiver applies only to this external app quota lane", "Live PR #350 body pr-template-gate -> pass locally", "ci/circleci: pr-template -> failing remotely and still under sweep"],
@@ -814,18 +814,18 @@
         title: "Linear JSC-363 attachment-backed alignment",
         status: "done",
         tags: ["Linear", "tracker", "In Review"],
-        summary: "Historical Linear evidence reports JSC-363 tracker observations including Done and In Review with the full-lifecycle scope-note attachment present; post-PR #348 Linear truth is unclaimed until refreshed.",
+        summary: "Historical Linear evidence reports JSC-363 tracker observations including Done and In Review with the full-lifecycle scope-note attachment present; post-PR #350 Linear truth is unclaimed until refreshed.",
         evidence: ["Historical Linear JSC-363 status observations -> Done and In Review", "Attachment: JSC-363 full lifecycle scope note", "PR attachments through #338 present", "Linear comment e34da9b0 records post-merge route truth"],
-        next: "Refresh Linear after PR #348 before claiming tracker-current or field-text-current alignment.",
+        next: "Refresh Linear after PR #350 before claiming tracker-current or field-text-current alignment.",
         risk: "Linear tracker refresh does not prove runtime producer emission, delivery-truth consumption, implementation completeness, or Judge/PM readiness."
       },
       {
         id: "stale-board-route",
         lane: "completed",
-        title: "Route truth refreshed after PR #348",
+        title: "Historical route truth refreshed after PR #348",
         status: "done",
         tags: ["goal.md", "state.yaml", "R311"],
-        summary: "goal.md, state.yaml, receipts.jsonl, active-artifacts, and this board now route execution from synced main after PR #348 merged and local main was pulled.",
+        summary: "Historical goal.md, state.yaml, receipts.jsonl, active-artifacts, and board evidence routed execution from synced main after PR #348 merged and local main was pulled. Current route truth has since advanced through PR #349 and active PR #350.",
         evidence: ["state.yaml current_slice_gate.status = pr348_merged_main_pulled_route_refresh_validated", "origin/main -> a146db5f3876d14c86867cc1e1eb384b49716c4b", "PR #348 -> MERGED", "PR #348 submitted head -> cee878bbd33a42df309952057dc2b6c9a5c423f5", "Snyk GitHub App quota failure -> owner-waived for quota lane only"],
         next: "Keep the tracker synchronized with canonical goal artifacts after every merge, route decision, blocker decision, waiver, or PR-green-sweep result.",
         risk: "This fixes stale routing. It does not close remaining runtime, review, CI, delivery-truth, docs, Linear, or Judge/PM gates."
@@ -836,7 +836,7 @@
         title: "Current-main goal validators pass",
         status: "done",
         tags: ["check-goal-board", "audit freshness", "R311"],
-        summary: "The canonical board, audit-freshness, JSONL, Kanban script, docs lint, and whitespace validators pass after the post-PR #348 route refresh.",
+        summary: "The canonical board, audit-freshness, JSONL, Kanban script, docs lint, and whitespace validators passed after the post-PR #348 route refresh and were refreshed again for active PR #350.",
         evidence: ["PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit -> pass selecting R311", "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo . -> pass selecting R311 with head_relation current", "receipts JSONL parse -> pass for 295 lines", "embedded Kanban script compile -> pass", "pnpm docs:lint -> pass, 571 files, 0 errors", "git diff --check -> pass"],
         next: "Select the next remaining lifecycle gap from current main with bounded intent before implementation starts.",
         risk: "Passing board validators prove freshness and structure, not implementation completeness."
