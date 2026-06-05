@@ -267,10 +267,17 @@ function dedupeFindings(
 		const key = [
 			finding.id,
 			finding.fixture_id ?? "",
+			finding.severity,
+			finding.kind,
 			finding.path ?? "",
 			finding.message,
 		].join("\0");
 		if (seen.has(key)) continue;
+		seen.add(key);
+		deduped.push(finding);
+	}
+	return deduped;
+}
 		seen.add(key);
 		deduped.push(finding);
 	}
