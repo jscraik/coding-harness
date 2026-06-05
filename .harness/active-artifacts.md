@@ -11,7 +11,7 @@
 ## Scope
 
 Last reconciled: 2026-06-05 after PR #349 merged, local `main` was pulled,
-and the ci-migrate apply-command repair was committed.
+the ci-migrate apply-command repair was pushed, and PR #350 was opened.
 Local `main` is synchronized with `origin/main` at
 `f4f2c3da0e41b6347c26d4d1e0e34788554526c1`. PR #349 is merged into `main`
 as the current-main route-truth repair plus ci-migrate documentation fix after
@@ -25,7 +25,10 @@ owner-approved waiver for that quota lane only; it does not claim external Snyk
 passed and does not waive repo-run security, future Snyk results, or future
 security findings. This reconcile also does not claim Linear field-text
 alignment, runtime producer evidence, delivery-truth consumption, docs accuracy,
-Judge/PM readiness, or final goal completion.
+Judge/PM readiness, or final goal completion. PR #350 is the current focused
+repair lane; its live PR body passes local template validation and CodeRabbit
+has been manually triggered, but remote CircleCI pr-template remains under
+pr-green-sweep.
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -36,7 +39,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged JSC-363 route/foundation lanes through PR #349 at f4f2c3da0e41b6347c26d4d1e0e34788554526c1 plus the focused ci-migrate apply-command repair at 57188e392a7f0a591005f4baa244b2e978fd9b08. The external Snyk GitHub App quota failure is owner-waived only for that external quota lane and is not a passing security result. Linear JSC-363 has historical attachment-backed route context, but post-PR #349 tracker status and field text remain unclaimed until refreshed. | Use the goal board as the current execution cockpit. Next safe action is to open and sweep the focused ci-migrate apply-command repair PR before selecting the next bounded lifecycle gap. Do not claim parent JSC-363 completion until Linear field alignment or owner acceptance, runtime producer evidence, delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final completion audit are separately refreshed. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged JSC-363 route/foundation lanes through PR #349 at f4f2c3da0e41b6347c26d4d1e0e34788554526c1 plus active PR #350 at head 99b0c1db770f87a86ca9efefb78d73f4d3e655d6 for the focused ci-migrate apply-command repair. The external Snyk GitHub App quota failure is owner-waived only for that external quota lane and is not a passing security result. Linear JSC-363 has historical attachment-backed route context, but post-PR #350 tracker status and field text remain unclaimed until refreshed. | Use the goal board as the current execution cockpit. Next safe action is to sweep PR #350 until remote CircleCI pr-template, CodeRabbit, review-thread, merge-conflict, and PR-body/template faults are fixed or explicitly owner-blocked, then merge, pull local main, and refresh board/state/receipt before selecting the next bounded lifecycle gap. Do not claim parent JSC-363 completion until Linear field alignment or owner acceptance, runtime producer evidence, delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final completion audit are separately refreshed. |
 
 PU-046 update: PR #330 was refreshed again on head
 163017e16e4611d5d71f5c4c62fc85f8d164b17b after the R205 artifact receipt was

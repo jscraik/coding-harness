@@ -497,7 +497,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and local git ancestry after PR #349 merged, local <code>main</code> was pulled, and the focused ci-migrate apply-command repair was validated at <code>57188e392a7f0a591005f4baa244b2e978fd9b08</code>. <code>origin/main</code> is synchronized at merge commit <code>f4f2c3da0e41b6347c26d4d1e0e34788554526c1</code>. PR #349 submitted head <code>294278e7e9975c1b47fd7adaf708dc815c9110aa</code> had repo-owned checks accepted before merge; the external Snyk GitHub App quota failure is owner-waived for that quota lane only and is not recorded as external Snyk passing. Linear JSC-363 needs a fresh post-PR #349 refresh before tracker-current or field-text-current claims. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and local git ancestry after PR #349 merged, local <code>main</code> was pulled, and PR #350 was opened for the focused ci-migrate apply-command repair at head <code>99b0c1db770f87a86ca9efefb78d73f4d3e655d6</code>. <code>origin/main</code> is synchronized at merge commit <code>f4f2c3da0e41b6347c26d4d1e0e34788554526c1</code>. PR #350 has a passing local live-body <code>pr-template-gate</code> and a manual CodeRabbit trigger; remote CircleCI <code>pr-template</code> is still failing and remains under pr-green-sweep. The external Snyk GitHub App quota failure is owner-waived for that quota lane only and is not recorded as external Snyk passing. Linear JSC-363 needs a fresh post-PR #350 refresh before tracker-current or field-text-current claims. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -646,23 +646,23 @@
       {
         id: "ci-migrate-apply-command-repair",
         lane: "remote",
-        title: "P2: ci-migrate apply command repair",
-        status: "validated",
+        title: "PR #350: ci-migrate apply command repair",
+        status: "sweeping",
         tags: ["P2 review", "ci-migrate", "packaged skill"],
-        summary: "The documented and packaged CI migration apply step now uses the supported command form instead of the rejected positional prepare plus --apply combination.",
-        evidence: ["Old form: pnpm exec harness ci-migrate prepare --provider circleci --apply --json -> reproduces action conflict", "New form: pnpm exec harness ci-migrate --provider circleci --apply --json -> reaches HARNESS_CI_MIGRATE_SIGNING_KEY prerequisite", "Stale command search across README, docs, .agents/skills/coding-harness, and scripts/validate-packaged-skill.cjs -> absent", "node scripts/validate-packaged-skill.cjs -> pass", "pnpm skill:validate -> pass", "bash scripts/validate-codestyle.sh --fast -> pass"],
-        next: "Commit this focused review repair, open the slice PR, trigger CodeRabbit, and sweep that PR before returning to runtime verifier implementation.",
+        summary: "PR #350 is open for the documented and packaged CI migration apply-step fix. The repair uses the supported command form instead of the rejected positional prepare plus --apply combination.",
+        evidence: ["PR #350 -> OPEN at head 99b0c1db770f87a86ca9efefb78d73f4d3e655d6", "Manual CodeRabbit trigger -> https://github.com/jscraik/coding-harness/pull/350#issuecomment-4632735959", "Old form: pnpm exec harness ci-migrate prepare --provider circleci --apply --json -> reproduces action conflict", "New form: pnpm exec harness ci-migrate --provider circleci --apply --json -> reaches HARNESS_CI_MIGRATE_SIGNING_KEY prerequisite", "Stale command search across README, docs, .agents/skills/coding-harness, and scripts/validate-packaged-skill.cjs -> absent", "node scripts/validate-packaged-skill.cjs -> pass", "pnpm skill:validate -> pass", "bash scripts/validate-codestyle.sh --fast -> pass", "Live PR body pr-template-gate -> pass locally", "Remote ci/circleci: pr-template -> failing; current sweep hypothesis is PR-context/timing or unavailable CircleCI log access, not body content"],
+        next: "Sweep PR #350 until remote CircleCI pr-template, CodeRabbit, review-thread, merge-conflict, and PR-body/template faults are fixed or explicitly owner-blocked; then merge, pull local main, and refresh goal route truth.",
         risk: "This fixes operator guidance and downstream skill packaging. It does not prove runtime producer emission, delivery-truth consumption, Linear freshness, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "source-freshness",
         lane: "intent",
-        title: "Source freshness current after PR #349",
-        status: "done",
-        tags: ["PR #349", "R312", "Snyk quota waiver"],
-        summary: "The board is sourced from local main synchronized with origin/main after PR #349 merged, plus the focused ci-migrate apply-command repair on this branch. The external Snyk GitHub App quota failure is owner-waived only; repo-owned security lanes stayed separate and merge-accepted.",
-        evidence: ["origin/main -> f4f2c3da0e41b6347c26d4d1e0e34788554526c1", "PR #349 -> MERGED at 2026-06-05T14:07:58Z", "PR #349 submitted head -> 294278e7e9975c1b47fd7adaf708dc815c9110aa", "ci-migrate repair commit -> 57188e392a7f0a591005f4baa244b2e978fd9b08", "security/snyk (jscraik) -> error because external app quota is exhausted; owner waiver applies only to this external app quota lane", "ci/circleci: snyk-dependency-scan -> pass on PR #349", "ci/circleci: security-scan -> pass on PR #349", "Socket, CodeRabbit, review threads, pr-pipeline, and local pre-push governance -> pass or merge-accepted before merge"],
-        next: "Commit this validated receipt refresh, open and sweep the focused ci-migrate apply-command repair PR, then select the next remaining lifecycle gap from current main with bounded intent after merge and pull.",
+        title: "Source freshness current for PR #350",
+        status: "sweeping",
+        tags: ["PR #350", "R313", "Snyk quota waiver"],
+        summary: "The board is sourced from local main synchronized with origin/main after PR #349 merged, plus open PR #350 for the focused ci-migrate apply-command repair. The external Snyk GitHub App quota failure is owner-waived only; repo-owned security lanes stay separate.",
+        evidence: ["origin/main -> f4f2c3da0e41b6347c26d4d1e0e34788554526c1", "PR #349 -> MERGED at 2026-06-05T14:07:58Z", "PR #349 submitted head -> 294278e7e9975c1b47fd7adaf708dc815c9110aa", "PR #350 -> OPEN at head 99b0c1db770f87a86ca9efefb78d73f4d3e655d6", "ci-migrate repair commit -> 57188e392a7f0a591005f4baa244b2e978fd9b08", "security/snyk (jscraik) -> error because external app quota is exhausted; owner waiver applies only to this external app quota lane", "Live PR #350 body pr-template-gate -> pass locally", "ci/circleci: pr-template -> failing remotely and still under sweep"],
+        next: "Push this route-truth refresh to PR #350, refresh remote checks, and continue sweeping only PR #350 until merged and pulled before selecting the next lifecycle gap.",
         risk: "This waiver does not prove external Snyk green, full security verification, Linear freshness, Judge/PM readiness, or parent-goal completion."
       },
       {
