@@ -53,8 +53,7 @@ const FORBIDDEN_PATTERNS = [
 
 const FORBIDDEN_CI_MIGRATE_COMMANDS = [
 	{
-		matches: ({ hasApply, hasCircleCIProvider, hasPrepareAction }) =>
-			hasPrepareAction && hasApply && hasCircleCIProvider,
+		matches: ({ hasApply, hasPrepareAction }) => hasPrepareAction && hasApply,
 		message:
 			"stale CI migration apply guidance found; use harness ci-migrate prepare --provider circleci --snapshot <snapshot-id> for the staged write step because prepare conflicts with --apply",
 	},
@@ -417,6 +416,14 @@ function validateForbiddenCIMigrateCommandRules() {
 		},
 		{
 			command: "harness ci-migrate prepare --apply --provider circleci",
+			context: "",
+		},
+		{
+			command: "harness ci-migrate prepare --apply",
+			context: "",
+		},
+		{
+			command: "harness ci-migrate prepare --apply --json",
 			context: "",
 		},
 		{
