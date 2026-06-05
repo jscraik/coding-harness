@@ -111,7 +111,7 @@ Snapshot-backed CircleCI migration:
 
 ```bash
 harness ci-migrate prepare --provider circleci --dry-run
-harness ci-migrate prepare --provider circleci --apply
+harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>
 harness ci-migrate verify --snapshot <snapshot-id>
 harness ci-migrate commit --snapshot <snapshot-id>
 harness ci-migrate abort --snapshot <snapshot-id>

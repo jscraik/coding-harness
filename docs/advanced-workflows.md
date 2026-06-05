@@ -13,7 +13,7 @@ last_validated: 2026-04-18
 
 ```bash
 harness ci-migrate prepare --provider circleci --dry-run
-harness ci-migrate prepare --provider circleci --apply
+harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>
 harness ci-migrate verify --snapshot <snapshot-id>
 harness ci-migrate commit --snapshot <snapshot-id>
 ```
