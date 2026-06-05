@@ -646,13 +646,13 @@
       {
         id: "source-freshness",
         lane: "intent",
-        title: "Source freshness current",
-        status: "done",
-        tags: ["main", "origin/main", "PR #344", "R296"],
-        summary: "The board is sourced from local main synchronized with origin/main after PR #344 merged. The external Snyk GitHub App quota failure is owner-waived only, not recorded as a passing security lane.",
-        evidence: ["origin/main -> cfda8c6a0aa58f5468a7ca1ab87e74becc7004aa", "PR #344 -> MERGED into main at 2026-06-05T10:16:44Z", "PR #344 head -> cdb6cf8446a61fe98d1e493c2562c6dd9eb6ab96", "External security/snyk (jscraik) quota failure -> owner waiver for quota lane only", "Local main was checked out and pulled after PR #344 merge"],
-        next: "Select the next remaining lifecycle gap from current main and record bounded intent before implementation.",
-        risk: "Current route truth proves orientation only. It does not prove runtime producer evidence, final delivery-truth consumption, Linear field text, or parent-goal completion."
+        title: "Source freshness blocked on PR #345",
+        status: "blocked",
+        tags: ["PR #345", "R302", "Snyk quota waiver"],
+        summary: "The board is now sourced from the active PR #345 route truth, not the older post-PR #344 main refresh. The external Snyk GitHub App quota failure is owner-waived only; repo-owned security lanes remain independently required.",
+        evidence: ["PR #345 head -> b990fb553cf245d02d107578a50533b90c7ff04c", "R302 records Kanban route-truth repair against PR #345 with audit-source anchors", "security/snyk (jscraik) -> failed because private-test quota is exhausted; owner waiver applies only to this external app quota lane", "ci/circleci: snyk-dependency-scan -> pass on PR #345", "ci/circleci: security-scan -> pass on PR #345", "CodeRabbit -> pass/review completed on PR #345 before this Codex thread repair", "Active blocker remains PR #345 merge, local main pull, and route refresh before the next implementation slice"],
+        next: "Finish PR #345 triage, resolve any current review threads, wait for repo-owned CI, merge under the explicit external Snyk quota waiver only if that remains the sole blocker, then pull main and refresh board/state/receipt before selecting any next lifecycle gap.",
+        risk: "This waiver does not prove external Snyk green, full security verification, Linear freshness, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "codex-native-refinement",
