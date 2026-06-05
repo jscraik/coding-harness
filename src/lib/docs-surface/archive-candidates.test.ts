@@ -26,19 +26,23 @@ describe("runDocsArchiveCandidates", () => {
 			activeArtifactsContent: "",
 		});
 
-		expect(report.summary.actionAuthority).toBe("advisory-only");
+		expect(report.repoRef).toBe(".");
+		expect(report.advisoryOnly).toBe(true);
+		expect(report.summary.actionAuthority).toBe("advisory_only");
 		expect(report.summary.mutationSupported).toBe(false);
 		expect(report.protectedFiles).toContainEqual(
 			expect.objectContaining({
 				path: "README.md",
-				reasons: expect.arrayContaining(["canonical_source"]),
+				reasons: expect.arrayContaining(["root_entrypoint"]),
 			}),
 		);
 		expect(report.candidates).toContainEqual(
 			expect.objectContaining({
 				path: "docs/old.md",
 				reasons: ["superseded_status"],
-				suggestedAction: "review_archive_candidate",
+				suggestedAction: "create_separate_archive_decision",
+				actionAuthority: "advisory_only",
+				requiresReviewedDecision: true,
 				confidence: "medium",
 			}),
 		);
@@ -64,7 +68,7 @@ describe("runDocsArchiveCandidates", () => {
 		expect(report.repairFindings).toContainEqual(
 			expect.objectContaining({
 				path: ".harness/active-artifacts.md",
-				code: "active_artifacts_stale",
+				code: "active_reference_stale_or_unverified",
 			}),
 		);
 		expect(report.protectedFiles).toContainEqual(
@@ -99,6 +103,7 @@ describe("runDocsArchiveCandidates", () => {
 			expect.objectContaining({
 				path: "AI/context/diagram-context.md",
 				code: "repair_generated_source_link",
+				suggestedAction: "repair_generated_source_link",
 			}),
 		);
 	});

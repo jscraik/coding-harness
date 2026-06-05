@@ -201,7 +201,7 @@ Validation:
 - Command:
   `pnpm test -- src/lib/docs-surface/archive-candidates-scanner.test.ts -t production-git-index-adapter`
   -> pending sy-work, or repo-equivalent focused test name
-- Command: `pnpm docs:archive-candidates -- --json` -> pending sy-work after PU-004
+- Command: `pnpm --silent docs:archive-candidates -- --json` -> pending sy-work after PU-004
 
 Stop conditions:
 
@@ -267,7 +267,7 @@ Steps:
 Validation:
 
 - Command: `pnpm docs:archive-candidates` -> pending sy-work
-- Command: `pnpm docs:archive-candidates -- --json` -> pending sy-work
+- Command: `pnpm --silent docs:archive-candidates -- --json` -> pending sy-work
 - Command: `pnpm docs:archive-candidates -- --archive` -> pending sy-work, expected exit code 2
 - Command: `pnpm docs:archive-candidates -- --apply` -> pending sy-work, expected exit code 2
 - Command:
@@ -363,7 +363,7 @@ Run in this order unless a narrower failing command points to the exact defect:
 3. Command: `pnpm test -- src/lib/docs-surface/archive-candidates-scanner.test.ts` -> pending sy-work
 4. Command: `pnpm test -- src/lib/docs-surface/archive-candidates.test.ts` -> pending sy-work
 5. Command: `pnpm docs:archive-candidates` -> pending sy-work
-6. Command: `pnpm docs:archive-candidates -- --json` -> pending sy-work
+6. Command: `pnpm --silent docs:archive-candidates -- --json` -> pending sy-work
 7. Command: `pnpm docs:archive-candidates -- --archive` -> pending sy-work, expected exit code 2
 8. Command: `pnpm docs:archive-candidates -- --apply` -> pending sy-work, expected exit code 2
 9. Command:
@@ -444,7 +444,7 @@ Validation performed during sy-work implementation:
   `/Users/jamiecraik/.local/share/mise/installs/node/24.13.1/bin/node --version`
   -> blocked (tool-level `-1`; no version output)
 - Command: `pnpm docs:archive-candidates` -> blocked (same Node runtime blocker)
-- Command: `pnpm docs:archive-candidates -- --json` -> blocked (same Node
+- Command: `pnpm --silent docs:archive-candidates -- --json` -> blocked (same Node
   runtime blocker)
 - Command: `pnpm docs:archive-candidates -- --archive` -> blocked (same Node
   runtime blocker before usage handling could execute)
@@ -464,7 +464,7 @@ Validation performed during simplify/architecture cleanup:
 - Command: `pnpm test -- src/commands/docs-gate.test.ts -t archive` -> blocked (same Node 24 binary verification failure)
 - Command: `pnpm docs:archive-candidates -- --archive` -> pass (expected usage exit code 2 with `destructive_option_unsupported`)
 - Command: `pnpm docs:archive-candidates` -> pass (text report emitted advisory-only summary: 0 candidates, 1 repair finding, 67 protected, 1667 ignored)
-- Command: `pnpm docs:archive-candidates -- --json` -> pass (JSON report emitted schema `docs-archive-candidates-report/v1` with `mutationSupported: false`)
+- Command: `pnpm --silent docs:archive-candidates -- --json` -> pass (JSON report emitted schema `docs-archive-candidates-report/v1` with `mutationSupported: false`)
 - Command: `git diff --check` -> pass (no whitespace or patch hygiene errors after cleanup)
 
 ## Open Risks

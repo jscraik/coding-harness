@@ -34,41 +34,58 @@ export const DESTRUCTIVE_ARCHIVE_CANDIDATE_OPTIONS = [
 
 /** Reason a document was reported as an archive candidate. */
 export type ArchiveCandidateReason =
+	| "no_inbound_references"
+	| "not_in_lifecycle_manifest"
+	| "not_active_artifact"
+	| "not_referenced_by_current_plan_or_spec"
 	| "superseded_status"
-	| "archived_status_still_active"
-	| "stale_execution_input"
-	| "unreferenced_supporting_document"
-	| "expired_remove_after"
-	| "raw_research_without_promotion";
+	| "archived_status_without_index"
+	| "raw_research_without_admission"
+	| "generated_projection_without_source_ref"
+	| "stale_review_date"
+	| "missing_lifecycle_metadata"
+	| "active_reference_stale_or_unverified"
+	| "metadata_repair_needed"
+	| "protection_repair_needed";
 
 /** Reason a document was protected from archive candidacy. */
 export type ArchiveProtectionReason =
-	| "canonical_source"
-	| "active_lifecycle_state"
+	| "canon_or_canonical"
 	| "execution_input"
-	| "recently_reviewed"
+	| "active_artifact_reference"
+	| "manifest_listed"
+	| "package_distribution_surface"
+	| "root_entrypoint"
+	| "agent_instruction_surface"
+	| "current_plan_or_spec_dependency"
 	| "research_value_retained"
-	| "active_artifact_verified";
+	| "generated_output_do_not_edit"
+	| "historical_evidence_retained";
 
 /** Repair class for source-of-truth issues discovered during scanning. */
 export type ArchiveRepairCode =
-	| "active_artifacts_stale"
-	| "active_artifacts_missing"
-	| "active_artifacts_route_mismatch"
+	| "active_reference_stale_or_unverified"
 	| "generated_output_do_not_edit"
 	| "repair_generated_source_link"
+	| "metadata_repair_needed"
+	| "protection_repair_needed"
 	| "metadata_unparseable";
 
 /** Suggested next action for an advisory candidate. */
 export type ArchiveSuggestedAction =
-	| "review_archive_candidate"
-	| "repair_metadata"
-	| "promote_or_archive_research"
-	| "repair_index"
-	| "no_action";
+	| "review_for_retention"
+	| "repair_manifest_registration"
+	| "repair_lifecycle_metadata"
+	| "refresh_active_artifact_route"
+	| "add_supersession_pointer"
+	| "add_research_admission_pointer"
+	| "repair_archive_index_reference"
+	| "repair_generated_source_link"
+	| "regenerate_from_source"
+	| "create_separate_archive_decision";
 
 /** Confidence is intentionally bounded because stale signals are evidence, not verdicts. */
-export type ArchiveCandidateConfidence = "low" | "medium";
+export type ArchiveCandidateConfidence = "low" | "medium" | "high";
 
 /** File-list source used by the scanner. */
 export type ArchiveCandidateFileListSource = "git-index" | "injected-fixture";
@@ -76,9 +93,13 @@ export type ArchiveCandidateFileListSource = "git-index" | "injected-fixture";
 /** One advisory document archive candidate. */
 export interface ArchiveCandidate {
 	path: string;
+	kind: "archive_candidate";
+	lifecycleStatus?: string;
 	reasons: readonly ArchiveCandidateReason[];
 	confidence: ArchiveCandidateConfidence;
 	suggestedAction: ArchiveSuggestedAction;
+	actionAuthority: "advisory_only";
+	requiresReviewedDecision: true;
 	evidenceRefs: readonly string[];
 	notes?: string;
 }
@@ -100,9 +121,12 @@ export interface ArchiveIgnoredFile {
 /** One advisory repair finding discovered while evaluating stale-document state. */
 export interface ArchiveRepairFinding {
 	path: string;
+	findingKind: "repair_finding";
 	code: ArchiveRepairCode;
 	message: string;
-	fix: string;
+	suggestedAction: ArchiveSuggestedAction;
+	actionAuthority: "advisory_only";
+	requiresReviewedDecision: true;
 	evidenceRefs: readonly string[];
 }
 
@@ -113,16 +137,19 @@ export interface ArchiveCandidatesSummary {
 	protectedFileCount: number;
 	ignoredFileCount: number;
 	fileListSource: ArchiveCandidateFileListSource;
-	actionAuthority: "advisory-only";
+	actionAuthority: "advisory_only";
 	mutationSupported: false;
 }
 
 /** Stable JSON report emitted by docs:archive-candidates. */
 export interface DocsArchiveCandidatesReport {
 	schema: typeof DOCS_ARCHIVE_CANDIDATES_REPORT_SCHEMA;
-	status: "pass";
+	advisoryStatus: "pass" | "warn" | "fail";
 	generatedAt: string;
-	repoRoot: string;
+	repoRef: ".";
+	headSha: string | null;
+	advisoryOnly: true;
+	scannedFiles: ArchiveCandidatesSummary;
 	summary: ArchiveCandidatesSummary;
 	candidates: readonly ArchiveCandidate[];
 	repairFindings: readonly ArchiveRepairFinding[];
@@ -165,9 +192,17 @@ export function validateDocsArchiveCandidatesReport(
 	if (report.schema !== DOCS_ARCHIVE_CANDIDATES_REPORT_SCHEMA) {
 		errors.push("schema must be docs-archive-candidates-report/v1");
 	}
-	if (report.status !== "pass") errors.push("status must remain pass");
-	if (report.summary.actionAuthority !== "advisory-only") {
-		errors.push("summary.actionAuthority must be advisory-only");
+	if (!["pass", "warn", "fail"].includes(report.advisoryStatus)) {
+		errors.push("advisoryStatus must be pass, warn, or fail");
+	}
+	if (report.advisoryOnly !== true) {
+		errors.push("advisoryOnly must be true");
+	}
+	if (report.repoRef !== ".") {
+		errors.push("repoRef must be . for local advisory reports");
+	}
+	if (report.summary.actionAuthority !== "advisory_only") {
+		errors.push("summary.actionAuthority must be advisory_only");
 	}
 	if (report.summary.mutationSupported !== false) {
 		errors.push("summary.mutationSupported must be false");
@@ -175,6 +210,35 @@ export function validateDocsArchiveCandidatesReport(
 	for (const path of collectReportPaths(report)) {
 		if (!isRepoRelativeArchivePath(path)) {
 			errors.push(`path must be repository-relative: ${path}`);
+		}
+	}
+	for (const candidate of report.candidates) {
+		if (candidate.actionAuthority !== "advisory_only") {
+			errors.push(
+				`candidate.actionAuthority must be advisory_only: ${candidate.path}`,
+			);
+		}
+		if (candidate.requiresReviewedDecision !== true) {
+			errors.push(
+				`candidate.requiresReviewedDecision must be true: ${candidate.path}`,
+			);
+		}
+		if (containsDestructiveActionText(candidate.suggestedAction)) {
+			errors.push(
+				`candidate suggestedAction is unsupported: ${candidate.path}`,
+			);
+		}
+	}
+	for (const finding of report.repairFindings) {
+		if (finding.actionAuthority !== "advisory_only") {
+			errors.push(
+				`repairFinding.actionAuthority must be advisory_only: ${finding.path}`,
+			);
+		}
+		if (finding.requiresReviewedDecision !== true) {
+			errors.push(
+				`repairFinding.requiresReviewedDecision must be true: ${finding.path}`,
+			);
 		}
 	}
 	if (report.summary.candidateCount !== report.candidates.length) {
@@ -194,6 +258,10 @@ export function validateDocsArchiveCandidatesReport(
 		errors.push("summary.ignoredFileCount does not match ignoredFiles length");
 	}
 	return errors;
+}
+
+function containsDestructiveActionText(value: string): boolean {
+	return /(?:delete|move|archive_now|apply|write|rm|demote)/i.test(value);
 }
 
 function collectReportPaths(report: DocsArchiveCandidatesReport): string[] {

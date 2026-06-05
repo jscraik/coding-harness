@@ -204,7 +204,7 @@ The first implementation should expose local commands similar to:
 
 ~~~bash
 pnpm docs:archive-candidates
-pnpm docs:archive-candidates -- --json
+pnpm --silent docs:archive-candidates -- --json
 ~~~
 
 The exact package script name may change during planning if it better matches existing command families, but the behavior must remain read-only and advisory.
@@ -576,7 +576,7 @@ Required after implementation:
 - Command: pnpm test -- src/lib/docs-surface/archive-candidates.test.ts -> proves archive-candidate classification behavior.
 - Command: pnpm test -- src/lib/docs-surface/archive-candidates-contract.test.ts -> proves JSON schema, exit-code, absolute-path, and action-enum behavior.
 - Command: pnpm test -- src/lib/docs-surface/archive-candidates-scanner.test.ts -> proves include/exclude, symlink, generated-output, and inbound-reference fixture behavior.
-- Command: pnpm docs:archive-candidates -- --json -> proves the operator JSON report path.
+- Command: pnpm --silent docs:archive-candidates -- --json -> proves the operator JSON report path without package-runner banner text on stdout.
 - Command: pnpm docs:archive-candidates -- --archive -> proves destructive options fail closed with usage exit code 2.
 - Command: pnpm docs:archive-candidates -- --apply -> proves mutation-shaped aliases fail closed with usage exit code 2.
 - Command: pnpm docs:lint -> proves docs remain lintable.

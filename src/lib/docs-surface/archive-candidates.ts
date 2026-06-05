@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
@@ -62,10 +63,13 @@ export function runDocsArchiveCandidates(
 			});
 			repairFindings.push({
 				path: file.path,
+				findingKind: "repair_finding",
 				code: "repair_generated_source_link",
 				message:
 					"Generated documentation projections are ignored by archive-candidate reporting.",
-				fix: "Update the source artifact or generator contract instead of editing the generated projection.",
+				suggestedAction: "repair_generated_source_link",
+				actionAuthority: "advisory_only",
+				requiresReviewedDecision: true,
 				evidenceRefs: [file.path],
 			});
 			continue;
@@ -76,7 +80,6 @@ export function runDocsArchiveCandidates(
 			file.path,
 			metadata,
 			activeArtifacts.verifiedPaths,
-			now,
 		);
 		if (protectionReasons.length > 0) {
 			protectedFiles.push({
@@ -87,24 +90,29 @@ export function runDocsArchiveCandidates(
 			continue;
 		}
 
-		const candidate = classifyCandidate(file.path, metadata, references, now);
+		const candidate = classifyCandidate(file.path, metadata, references);
 		if (candidate) candidates.push(candidate);
 	}
 
+	const summary = {
+		candidateCount: candidates.length,
+		repairFindingCount: repairFindings.length,
+		protectedFileCount: protectedFiles.length,
+		ignoredFileCount: ignoredFiles.length,
+		fileListSource: scan.fileListSource,
+		actionAuthority: "advisory_only" as const,
+		mutationSupported: false as const,
+	};
 	const report: DocsArchiveCandidatesReport = {
 		schema: DOCS_ARCHIVE_CANDIDATES_REPORT_SCHEMA,
-		status: "pass",
+		advisoryStatus:
+			candidates.length > 0 || repairFindings.length > 0 ? "warn" : "pass",
 		generatedAt: now.toISOString(),
-		repoRoot,
-		summary: {
-			candidateCount: candidates.length,
-			repairFindingCount: repairFindings.length,
-			protectedFileCount: protectedFiles.length,
-			ignoredFileCount: ignoredFiles.length,
-			fileListSource: scan.fileListSource,
-			actionAuthority: "advisory-only",
-			mutationSupported: false,
-		},
+		repoRef: ".",
+		headSha: readHeadSha(repoRoot),
+		advisoryOnly: true,
+		scannedFiles: summary,
+		summary,
 		candidates: sortByPath(candidates),
 		repairFindings: sortByPath(repairFindings),
 		protectedFiles: sortByPath(protectedFiles),
@@ -137,7 +145,9 @@ export function formatDocsArchiveCandidatesText(
 	if (report.repairFindings.length > 0) {
 		lines.push("", "repair finding samples:");
 		for (const finding of report.repairFindings.slice(0, 5)) {
-			lines.push(`- ${finding.path}: ${finding.code}; ${finding.fix}`);
+			lines.push(
+				`- ${finding.path}: ${finding.code}; action=${finding.suggestedAction}`,
+			);
 		}
 		if (report.repairFindings.length > 5) {
 			lines.push(
@@ -184,10 +194,13 @@ function readActiveArtifacts(
 			findings: [
 				{
 					path,
-					code: "active_artifacts_missing",
+					findingKind: "repair_finding",
+					code: "active_reference_stale_or_unverified",
 					message:
 						"Active artifacts index is unavailable; it cannot protect execution inputs.",
-					fix: "Repair .harness/active-artifacts.md before relying on it for route evidence.",
+					suggestedAction: "refresh_active_artifact_route",
+					actionAuthority: "advisory_only",
+					requiresReviewedDecision: true,
 					evidenceRefs: [path],
 				},
 			],
@@ -205,10 +218,13 @@ function readActiveArtifacts(
 	if (stalePaths.length > 0) {
 		findings.push({
 			path,
-			code: "active_artifacts_stale",
+			findingKind: "repair_finding",
+			code: "active_reference_stale_or_unverified",
 			message:
 				"Active artifacts index references paths that are missing from this checkout.",
-			fix: "Refresh the active artifact route before using it as execution-input evidence.",
+			suggestedAction: "refresh_active_artifact_route",
+			actionAuthority: "advisory_only",
+			requiresReviewedDecision: true,
 			evidenceRefs: [path, ...stalePaths.slice(0, 3)],
 		});
 	}
@@ -231,16 +247,11 @@ function collectProtectionReasons(
 	path: string,
 	metadata: Record<string, string | string[]>,
 	activeArtifactPaths: Set<string>,
-	now: Date,
 ): ArchiveProtectedFile["reasons"] {
 	const reasons: ArchiveProtectedFile["reasons"][number][] = [];
-	if (ROOT_CANONICAL_DOCS.has(path)) reasons.push("canonical_source");
-	if (
-		metadata.authority === "canon" ||
-		metadata.canon_class === "canonical" ||
-		metadata.lifecycle_state === "active"
-	) {
-		reasons.push("active_lifecycle_state");
+	if (ROOT_CANONICAL_DOCS.has(path)) reasons.push("root_entrypoint");
+	if (metadata.authority === "canon" || metadata.canon_class === "canonical") {
+		reasons.push("canon_or_canonical");
 	}
 	if (
 		metadata.authority === "execution-input" ||
@@ -248,18 +259,12 @@ function collectProtectionReasons(
 	) {
 		reasons.push("execution_input");
 	}
-	if (activeArtifactPaths.has(path)) reasons.push("active_artifact_verified");
+	if (activeArtifactPaths.has(path)) reasons.push("active_artifact_reference");
 	if (
 		metadata.authority === "secondary-context" ||
 		path.includes("/research/")
 	) {
 		reasons.push("research_value_retained");
-	}
-	if (
-		metadata.last_reviewed &&
-		daysBetween(metadata.last_reviewed, now) <= 90
-	) {
-		reasons.push("recently_reviewed");
 	}
 	return [...new Set(reasons)];
 }
@@ -268,7 +273,6 @@ function classifyCandidate(
 	path: string,
 	metadata: Record<string, string | string[]>,
 	references: Set<string>,
-	now: Date,
 ): ArchiveCandidate | null {
 	const reasons: ArchiveCandidate["reasons"][number][] = [];
 	if (
@@ -278,56 +282,70 @@ function classifyCandidate(
 		reasons.push("superseded_status");
 	}
 	if (metadata.lifecycle_state === "archived" && references.has(path)) {
-		reasons.push("archived_status_still_active");
+		reasons.push("archived_status_without_index");
 	}
 	if (
 		metadata.lifecycle_status === "execution-input" &&
 		!references.has(path)
 	) {
-		reasons.push("stale_execution_input");
-	}
-	if (
-		metadata.remove_after &&
-		Date.parse(String(metadata.remove_after)) < now.getTime()
-	) {
-		reasons.push("expired_remove_after");
+		reasons.push("not_active_artifact");
 	}
 	if (
 		(metadata.lifecycle_status === "raw" ||
 			metadata.source_type === "research") &&
 		!metadata.canonical_destination
 	) {
-		reasons.push("raw_research_without_promotion");
+		reasons.push("raw_research_without_admission");
 	}
 	if (
 		reasons.length === 0 &&
 		isSupportingDocument(metadata) &&
 		!references.has(path)
 	) {
-		reasons.push("unreferenced_supporting_document");
+		reasons.push("no_inbound_references");
 	}
 	if (reasons.length === 0) return null;
-	return {
+	const candidate: ArchiveCandidate = {
 		path,
+		kind: "archive_candidate",
 		reasons: [...new Set(reasons)],
-		confidence:
-			reasons.includes("superseded_status") ||
-			reasons.includes("expired_remove_after")
-				? "medium"
-				: "low",
+		confidence: reasons.includes("superseded_status") ? "medium" : "low",
 		suggestedAction: suggestedActionFor(reasons),
+		actionAuthority: "advisory_only",
+		requiresReviewedDecision: true,
 		evidenceRefs: [path],
 	};
+	const status = lifecycleStatus(metadata);
+	if (status) {
+		candidate.lifecycleStatus = status;
+	}
+	return candidate;
 }
 
 function suggestedActionFor(
 	reasons: readonly ArchiveCandidate["reasons"][number][],
 ): ArchiveCandidate["suggestedAction"] {
-	if (reasons.includes("raw_research_without_promotion")) {
-		return "promote_or_archive_research";
+	if (reasons.includes("raw_research_without_admission")) {
+		return "add_research_admission_pointer";
 	}
-	if (reasons.includes("stale_execution_input")) return "repair_index";
-	return "review_archive_candidate";
+	if (reasons.includes("not_active_artifact")) {
+		return "refresh_active_artifact_route";
+	}
+	if (reasons.includes("archived_status_without_index")) {
+		return "repair_archive_index_reference";
+	}
+	if (reasons.includes("superseded_status")) {
+		return "create_separate_archive_decision";
+	}
+	return "review_for_retention";
+}
+
+function lifecycleStatus(
+	metadata: Record<string, string | string[]>,
+): string | undefined {
+	const value =
+		metadata.lifecycle_state ?? metadata.lifecycle_status ?? metadata.status;
+	return typeof value === "string" ? value : undefined;
 }
 
 function isSupportingDocument(
@@ -351,11 +369,16 @@ function isGeneratedProjection(path: string, content: string): boolean {
 	);
 }
 
-function daysBetween(date: string | string[], now: Date): number {
-	if (Array.isArray(date)) return Number.POSITIVE_INFINITY;
-	const parsed = Date.parse(date);
-	if (Number.isNaN(parsed)) return Number.POSITIVE_INFINITY;
-	return Math.floor((now.getTime() - parsed) / 86_400_000);
+function readHeadSha(repoRoot: string): string | null {
+	try {
+		return execFileSync("git", ["rev-parse", "HEAD"], {
+			cwd: repoRoot,
+			encoding: "utf8",
+			stdio: ["ignore", "pipe", "ignore"],
+		}).trim();
+	} catch {
+		return null;
+	}
 }
 
 function sortByPath<T extends { path: string }>(items: readonly T[]): T[] {
