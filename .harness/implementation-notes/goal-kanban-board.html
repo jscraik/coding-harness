@@ -415,7 +415,7 @@
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>PR #354 self-reference repair</strong></div>
+      <div class="metric"><span>Goal status</span><strong>PR #354 root-link repair</strong></div>
       <div class="metric"><span>Main-delivered PR lanes</span><strong>PR #353 latest merged</strong></div>
       <div class="metric"><span>Outstanding work</span><strong>Runtime, delivery truth, docs, Linear, Judge/PM</strong></div>
       <div class="metric"><span>Claim boundary</span><strong>Completion unclaimed</strong></div>
@@ -497,7 +497,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts and live GitHub after PR #354 was refreshed at pushed head <code>1a15367d437684eaead23e45f51812f18c017dcd</code>. PR #354 is <code>OPEN</code>, no longer draft, and not merged. Local source-fix commit <code>2301f454b6b2864e6586bdde8ca5a87751d7e11d</code> repairs the generated-projection and YAML-list reference review threads before push. The repair set fixes active-artifact table path parsing, source-relative Markdown reference handling, repo-root Markdown reference preservation, self-reference inbound-reference masking, generated-projection reference exclusion, YAML list-valued metadata references, and PR #353 squash-merge wording on the Kanban board. CodeRabbit was manually triggered. CircleCI, Socket, CodeRabbit refresh, review-thread resolution, merge, local-main pull, Linear post-merge refresh, runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot generated from current goal artifacts and live GitHub after PR #354 was refreshed at remote pushed head <code>950267045524b0da85202841fb787b9045272f9a</code>. PR #354 is <code>OPEN</code>, no longer draft, and not merged. Local source-fix commit <code>e8a9ca29ac61d45acdeb4772b7df9bce8885eab2</code> repairs the root-level dot-slash Markdown reference review thread before push. The repair set fixes active-artifact table path parsing, source-relative Markdown reference handling, repo-root Markdown reference preservation, self-reference inbound-reference masking, generated-projection reference exclusion, YAML list-valued metadata references, root-level <code>./docs/...</code> normalization, and PR #353 squash-merge wording on the Kanban board. CodeRabbit must be manually triggered again after push. CircleCI, Socket, CodeRabbit refresh, review-thread resolution, merge, local-main pull, Linear post-merge refresh, runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -657,12 +657,12 @@
       {
         id: "source-freshness",
         lane: "intent",
-        title: "PR #354 self-reference repair active",
+        title: "PR #354 root-link repair active",
         status: "active",
-        tags: ["PR #354", "R334", "review threads", "CI pending"],
-        summary: "PR #354 is open, no longer draft, and not merged at pushed head 1a15367d437684eaead23e45f51812f18c017dcd. Local source-fix commit 2301f454b6b2864e6586bdde8ca5a87751d7e11d repairs the generated-projection and YAML-list reference review threads before push.",
-        evidence: ["PR #354 -> OPEN not draft", "pushed head -> 1a15367d437684eaead23e45f51812f18c017dcd", "local source fix -> 2301f454b6b2864e6586bdde8ca5a87751d7e11d", "CodeRabbit manual trigger -> issuecomment-4635992450", "focused docs-surface vitest -> pass 11 tests", "scoped docs-surface biome -> pass", "pnpm docs:archive-candidates -> pass advisory-only", "test:related -> inconclusive tool capture", "CircleCI/CodeRabbit -> pending after current-head push", "security/snyk GitHub App -> owner-waived quota failure only", "review threads -> pending resolution/refresh"],
-        next: "Push R334/current repair, refresh PR #354 checks and review threads, resolve fixed/outdated threads with evidence, then merge/pull main before selecting any next lifecycle gap.",
+        tags: ["PR #354", "R335", "review threads", "CI pending"],
+        summary: "PR #354 is open, no longer draft, and not merged at remote pushed head 950267045524b0da85202841fb787b9045272f9a. Local source-fix commit e8a9ca29ac61d45acdeb4772b7df9bce8885eab2 repairs the root-level dot-slash Markdown reference review thread before push.",
+        evidence: ["PR #354 -> OPEN not draft", "remote pushed head -> 950267045524b0da85202841fb787b9045272f9a", "local source fix -> e8a9ca29ac61d45acdeb4772b7df9bce8885eab2", "focused docs-surface vitest -> pass 12 tests", "scoped docs-surface biome -> pass", "pnpm docs:archive-candidates -> pass advisory-only", "root ./docs normalization regression -> covered", "CodeRabbit manual trigger -> required again after push", "CircleCI/CodeRabbit -> pending after current-head push", "security/snyk GitHub App -> owner-waived quota failure only", "review threads -> pending resolution/refresh"],
+        next: "Push R335/current repair, manually trigger CodeRabbit, refresh PR #354 checks and review threads, resolve fixed/outdated threads with evidence, then merge/pull main before selecting any next lifecycle gap.",
         risk: "This does not prove PR #354 merged, CI green, CodeRabbit complete, review threads resolved, Linear post-merge refresh, Judge/PM readiness, or parent-goal completion."
       },
       {
