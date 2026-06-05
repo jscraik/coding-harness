@@ -427,6 +427,16 @@ function validateForbiddenCIMigrateCommandRules() {
 			context: "",
 		},
 		{
+			command:
+				"harness ci-migrate --action prepare --provider circleci --apply",
+			context: "",
+		},
+		{
+			command:
+				"harness ci-migrate --provider circleci --apply --action prepare",
+			context: "",
+		},
+		{
 			command: "harness ci-migrate --provider circleci --apply",
 			context: [
 				"Staged migration sequence:",
@@ -527,7 +537,12 @@ function classifyCIMigrateCommand(command, context = "") {
 	const providerIndex = tokens.indexOf("--provider");
 	const hasCircleCIProvider =
 		providerIndex >= 0 && tokens[providerIndex + 1] === "circleci";
-	const action = tokens[2] && !tokens[2].startsWith("--") ? tokens[2] : null;
+	const actionFlagIndex = tokens.indexOf("--action");
+	const positionalAction =
+		tokens[2] && !tokens[2].startsWith("--") ? tokens[2] : null;
+	const action =
+		positionalAction ||
+		(actionFlagIndex >= 0 ? tokens[actionFlagIndex + 1] : null);
 
 	return {
 		hasApply: tokens.includes("--apply"),
