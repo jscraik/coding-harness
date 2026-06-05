@@ -4,6 +4,12 @@ Write for human maintainers first. Use `n.a.` with a concrete reason when a
 field does not apply. Do not paste secrets, raw transcripts, bulky telemetry,
 or local absolute paths.
 
+## Motivation
+
+- Motivation:
+- Reasoning:
+- Chosen approach:
+
 ## Summary
 
 - Problem:

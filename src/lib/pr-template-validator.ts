@@ -7,6 +7,7 @@ import {
 	LINKED_ISSUE_REFERENCE_PATTERN,
 	PREPARATORY_LINKED_ISSUE_TRACE_PATTERN,
 	REQUIRED_BEHAVIOR_PROOF_FIELDS,
+	REQUIRED_MOTIVATION_FIELDS,
 	REQUIRED_SECTIONS,
 	REQUIRED_TESTING_FIELDS,
 	REQUIRED_WORK_FIELDS,
@@ -168,6 +169,15 @@ function collectBehaviorProofFieldErrors(body: string): string[] {
 		"## Behavior Proof",
 		REQUIRED_BEHAVIOR_PROOF_FIELDS,
 		"behavior proof",
+	);
+}
+
+function collectMotivationFieldErrors(body: string): string[] {
+	return collectFieldErrors(
+		body,
+		"## Motivation",
+		REQUIRED_MOTIVATION_FIELDS,
+		"motivation",
 	);
 }
 
@@ -333,6 +343,7 @@ export function validatePrTemplateBody(body: string): string[] {
 		}
 	}
 
+	errors.push(...collectMotivationFieldErrors(body));
 	errors.push(...collectWorkPerformedFieldErrors(body));
 	errors.push(
 		...collectLinkedIssueRelationshipErrors(body, extractFieldBlockValue),
