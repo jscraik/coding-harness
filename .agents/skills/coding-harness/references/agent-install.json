@@ -52,7 +52,7 @@
 	],
 	"migration_commands": {
 		"preview": "harness ci-migrate prepare --provider circleci --dry-run",
-		"apply": "harness ci-migrate prepare --provider circleci --apply",
+		"prepare": "harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>",
 		"verify": "harness ci-migrate verify --snapshot <snapshot-id>",
 		"commit": "harness ci-migrate commit --snapshot <snapshot-id>",
 		"abort": "harness ci-migrate abort --snapshot <snapshot-id>"
