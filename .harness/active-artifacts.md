@@ -14,8 +14,9 @@ Last reconciled: 2026-06-05 after PR #349 merged, local main was pulled,
 the ci-migrate apply-command repair was pushed, PR #350 was opened, the
 order-insensitive validator repair was pushed to PR #350 head
 ba3a021ff7b7fb285e1a252046564dde06e622d8, the standalone one-shot apply
-validator repair was validated locally at
-de1e6a3200bb9929626846e31e472680cd3b6700, and origin/main advanced to
+validator repair was pushed and later a structured-surface context repair was
+validated locally at ee903d486c3c04961a061f21ccd226af832c20c5 after Codex
+thread PRRT_kwDORWZJCc6HbVQu, and origin/main advanced to
 844de894b2ba15a12297bab0473658c7f4c199de through unrelated README
 front-door work. PR #350 contains that origin/main tip through its
 merge-from-main head. PR #349 is merged into main as the current-main
@@ -35,12 +36,14 @@ Socket checks, repo-owned security checks, and visible CircleCI job contexts
 pass at last refresh. The previous Codex thread PRRT_kwDORWZJCc6HaV9A is
 resolved after the order-insensitive ci-migrate command guard and regression
 examples landed, and the route-truth contradiction threads were resolved after
-R320 was pushed. The latest local blocker is Codex thread
-PRRT_kwDORWZJCc6Ha-dv, which found that the validator overreached by rejecting
-the CLI-supported standalone one-shot apply form everywhere instead of only in
-staged migration blocks. The local repair narrows the guard and must be pushed,
-reviewed, and swept. Push state, thread resolution, aggregate CI, and merge
-readiness remain separate PR sweep truth.
+R320 was pushed. The standalone apply thread PRRT_kwDORWZJCc6Ha-dv was fixed
+and resolved after remote head b251139d6c515b28aed7ebde81f93e028f958366.
+The latest local blocker is Codex thread PRRT_kwDORWZJCc6HbVQu, which found
+that structured skill surfaces were still classified with whole-file staged
+context. The local repair scopes staged-flow context to Markdown blocks and
+classifies JSON/YAML commands against the current command field. It must be
+pushed, reviewed, and swept. Push state, thread resolution, aggregate CI, and
+merge readiness remain separate PR sweep truth.
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -51,7 +54,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged JSC-363 route/foundation lanes through PR #349 at f4f2c3da0e41b6347c26d4d1e0e34788554526c1, unrelated current origin/main head 844de894b2ba15a12297bab0473658c7f4c199de, and active PR #350 at pushed head ba3a021ff7b7fb285e1a252046564dde06e622d8 plus local validator repair de1e6a3200bb9929626846e31e472680cd3b6700 pending push. The previous stale-command and route-truth Codex threads are resolved; the current blocker is PRRT_kwDORWZJCc6Ha-dv on allowing the valid standalone one-shot apply form while still rejecting it inside staged migration flow. The external Snyk GitHub App quota failure is owner-waived only for that external quota lane and is not a passing security result. Linear JSC-363 has historical attachment-backed route context, but post-PR #350 tracker status and field text remain unclaimed until refreshed. | Use the goal board as the current execution cockpit. Next safe action is to append a current-head receipt for the standalone apply validator repair, validate goal-board and audit-freshness guards, commit and push the receipt plus implementation fix, trigger CodeRabbit, resolve or answer PRRT_kwDORWZJCc6Ha-dv with evidence, refresh aggregate CircleCI, CodeRabbit, review-thread, merge-conflict, and PR-body/template truth until fixed or explicitly owner-blocked, then merge, pull local main, and refresh board/state/receipt before selecting the next bounded lifecycle gap. Do not claim parent JSC-363 completion until Linear field alignment or owner acceptance, runtime producer evidence, delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final completion audit are separately refreshed. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged JSC-363 route/foundation lanes through PR #349 at f4f2c3da0e41b6347c26d4d1e0e34788554526c1, unrelated current origin/main head 844de894b2ba15a12297bab0473658c7f4c199de, and active PR #350 at pushed head b251139d6c515b28aed7ebde81f93e028f958366 plus local structured-context validator repair ee903d486c3c04961a061f21ccd226af832c20c5 pending push. The previous stale-command, route-truth, and standalone one-shot apply Codex threads are resolved; the current blocker is PRRT_kwDORWZJCc6HbVQu on scoping staged-flow context to Markdown blocks so structured skill surfaces can keep the valid standalone apply command beside staged snapshot commands. The external Snyk GitHub App quota failure is owner-waived only for that external quota lane and is not a passing security result. Linear JSC-363 has historical attachment-backed route context, but post-PR #350 tracker status and field text remain unclaimed until refreshed. | Use the goal board as the current execution cockpit. Next safe action is to append a current-head receipt for the structured-context validator repair, validate goal-board and audit-freshness guards, commit and push the receipt plus implementation fix, trigger CodeRabbit, resolve or answer PRRT_kwDORWZJCc6HbVQu with evidence, refresh aggregate CircleCI, CodeRabbit, review-thread, merge-conflict, and PR-body/template truth until fixed or explicitly owner-blocked, then merge, pull local main, and refresh board/state/receipt before selecting the next bounded lifecycle gap. Do not claim parent JSC-363 completion until Linear field alignment or owner acceptance, runtime producer evidence, delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final completion audit are separately refreshed. |
 
 PU-046 update: PR #330 was refreshed again on head
 163017e16e4611d5d71f5c4c62fc85f8d164b17b after the R205 artifact receipt was
