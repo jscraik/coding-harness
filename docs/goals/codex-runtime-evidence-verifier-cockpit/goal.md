@@ -49,7 +49,7 @@ Last updated during the 2026-06-05 PR #353 merged-main refresh after local
 Current route truth:
 
 - `origin/main` and local `main` are currently `c475cd76d0c39e0a44789fb1da92b8a2c606773a`, the PR #353 squash merge commit.
-- PR #353 merged into `main` at 2026-06-05T20:28:00Z as merge commit `c475cd76d0c39e0a44789fb1da92b8a2c606773a`; its submitted head was `69d758a79b48d243469e8e6978a8b4f04018ae50`.
+- PR `#353` merged into `main` at 2026-06-05T20:28:00Z as squash merge commit `c475cd76d0c39e0a44789fb1da92b8a2c606773a`; its submitted head was `69d758a79b48d243469e8e6978a8b4f04018ae50`.
 - PR #353 was the post-PR #352 route-truth refresh plus CodeRabbit/Codex review-thread repair. At final refresh, repo-owned CircleCI checks, aggregate `pr-pipeline`, CodeRabbit, Socket, and repo-owned security lanes were green; the external Snyk GitHub App lane remained ERROR and is owner-waived for that quota/status lane only.
 - PR #352 merged into `main` at 2026-06-05T19:30:54Z as merge commit `ead6ce09156a3bc3f82a36d7b920d63b5d410344`; its submitted head was `841ce06062bd63554d1ecb7ca11a9c49642d77fe`.
 - PR #352 was the post-PR #351 route-truth repair and harness doc-history review-proof claim boundary refresh. At final refresh, repo-owned CircleCI checks, aggregate `pr-pipeline`, CodeRabbit, Socket, and repo-owned security lanes were green; the external Snyk GitHub App lane remained ERROR and is owner-waived for that quota/status lane only.
