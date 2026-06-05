@@ -232,7 +232,7 @@ function validateSkillMarkdown() {
 /**
  * Validate that agent-install.json contains required fields and exact command strings for CI, init, and migrations.
  *
- * Asserts that `ci_provider`, `init_command`, and `verify_command` match expected values; that an `init` phase with `steps` exists and includes the required init steps (`harness init --dry-run`, `harness init`, `harness init --check-updates`); and that `migration_commands` defines exact commands for `preview`, `apply`, `verify`, `commit`, and `abort`. Fails the process when any expectation is not met.
+ * Asserts that `ci_provider`, `init_command`, and `verify_command` match expected values; that an `init` phase with `steps` exists and includes the required init steps (`harness init --dry-run`, `harness init`, `harness init --check-updates`); and that `migration_commands` defines exact commands for `preview`, `prepare`, `verify`, `commit`, and `abort`. Fails the process when any expectation is not met.
  */
 function validateInstallJson() {
 	const content = readRepoFile(REQUIRED_FILES.installJson);
@@ -297,7 +297,7 @@ function validateInstallJson() {
  * Verifies presence of:
  * - `schema_version: "2.0"`
  * - eval case IDs: `happy-bootstrap-command-audit`, `happy-ci-migration-sequence`, `happy-existing-repo-upgrade-dry-run`, and `edge-current-repo-needs-upgrading`
- * - coverage/output strings related to init and upgrade dry-runs, update/skip outcomes, compatibility aliasing, adoption/preview/tracked-update indicators, prepare/apply/verify/commit/abort snapshot commands, and the `last_updated: "2026-04-29"` entry.
+ * - coverage/output strings related to init and upgrade dry-runs, update/skip outcomes, compatibility aliasing, adoption/preview/tracked-update indicators, preview/prepare/verify/commit/abort snapshot commands, and the `last_updated: "2026-04-29"` entry.
  *
  * On any missing requirement, the script will fail and exit with a non-zero status.
  */
