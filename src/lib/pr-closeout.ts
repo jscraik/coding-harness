@@ -4,6 +4,12 @@ export {
 	buildPrCloseoutSnapshot,
 } from "./pr-closeout/evaluator.js";
 export {
+	buildPrCloseoutStatePackets,
+	type PrCloseoutStatePacketReviewerArtifactProof,
+	type PrCloseoutStatePacketOptions,
+	type PrCloseoutStatePackets,
+} from "./pr-closeout/state-packets.js";
+export {
 	PR_CLOSEOUT_SCHEMA_VERSION,
 	type PrCloseoutBlocker,
 	type PrCloseoutBlockerClassification,

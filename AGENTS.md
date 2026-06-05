@@ -459,6 +459,13 @@ Notes:
   closeout claims must carry current evidence status, source, freshness,
   head SHA, blocker class, and verification timestamp, and missing or stale
   required evidence must classify as blocked or unknown rather than success.
+- `src/lib/pr-closeout/` may derive validated `external-state-snapshot/v1`
+  and `review-state/v1` packets from normalized closeout input only as a
+  read-only bridge. Those packets may support `remote_checks_current` and
+  `review_threads_resolved` delivery-truth verdicts when validators confirm
+  current head SHA, freshness, source kind, and claim-support eligibility.
+  Present review artifacts still require receipt-backed reviewer proof; do not
+  downgrade missing or self-asserted proof into success.
 - `pr-closeout/v1` delivery lifecycle snapshots are read-only handoff
   evidence. Queue, waiting-state, handoff, approval, worktree-role, Linear
   mutation availability, release-readiness, and review-artifact blockers may

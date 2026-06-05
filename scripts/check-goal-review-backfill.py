@@ -21,10 +21,9 @@ EXPECTED_SCHEMA_VERSION = "goal-review-coverage-backfill/v1"
 EXPECTED_GOAL_SLUG = "codex-runtime-evidence-verifier-cockpit"
 REQUIRED_LIFECYCLE_UNITS = tuple(f"PU-{index:03d}" for index in range(1, 17))
 REQUIRED_SKILL_LENSES = (
-    "improve-codebase-architecture",
     "simplify",
-    "unslopify",
-    "he-code-review",
+    "improve-codebase-architecture",
+    "sy-review",
     "testing",
 )
 REQUIRED_REVIEWERS = (

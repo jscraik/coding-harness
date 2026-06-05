@@ -1,4 +1,9 @@
-import type { PrCloseoutCheckInput, PrCloseoutInput } from "./types.js";
+import type {
+	PrCloseoutCheckInput,
+	PrCloseoutDirtyPathInput,
+	PrCloseoutHarnessGateEvidenceSource,
+	PrCloseoutInput,
+} from "./types.js";
 import { isFailedCheck, isPassingCheck, isPendingCheck } from "./evidence.js";
 
 /** Compact check-state counters included in pr-closeout/v1 reports. */
@@ -47,6 +52,24 @@ export function buildTraceabilitySummary(
 		traceIds.length > 0 ||
 		hasConcreteTraceabilityText(aiSessionTraceability);
 	return { sessionIds, traceIds, aiSessionTraceability, complete };
+}
+
+/** Select the evidence source that supplied closeout gate state. */
+export function selectHarnessGateEvidenceSource(
+	input: PrCloseoutInput,
+): PrCloseoutHarnessGateEvidenceSource {
+	if (input.closeoutGates !== undefined) return "closeout_gates";
+	if (input.phaseExit !== undefined) return "phase_exit";
+	return "missing";
+}
+
+/** Select dirty paths that are explicitly classified as unrelated local noise. */
+export function selectDirtyPathsExcluded(
+	input: PrCloseoutInput,
+): PrCloseoutDirtyPathInput[] {
+	return (input.dirtyPaths ?? []).filter(
+		(path) => path.classification === "unrelated_local_noise",
+	);
 }
 
 function hasConcreteTraceabilityText(value: string | null): boolean {

@@ -42,28 +42,26 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-04 stacked-PR route-truth refresh after PR #333
-and PR #338 merged into their stack bases and PR #331 advanced to
-`02907f95c1a5941e7ba0bc43e519fc66bc23eb84`.
+Last updated during the 2026-06-04 post-merge route-truth refresh after local
+`main` fast-forwarded to `origin/main` at
+`a76921942cdbd8b3e1b449a05993d467700f770c`.
 
 Current route truth:
 
-- `main` and `origin/main` are synchronized at `50a6d0b5d764e35395e12190a465e854c26784fd`.
-- Live GitHub reports open stacked pull requests for `jscraik/coding-harness`: PR #331 is `MERGEABLE/BLOCKED`, PR #335 is `CONFLICTING/DIRTY`, and PR #336 is `MERGEABLE/UNSTABLE`.
-- PR #321, PR #322, PR #323, PR #325, PR #326, PR #327, PR #328, PR #329, and PR #330 are merged route or foundation lanes for this goal.
-- PR #333 merged into the PR #331 branch at 2026-06-04T17:10:10Z as merge commit `02907f95c1a5941e7ba0bc43e519fc66bc23eb84`.
-- PR #338 merged into the PR #336 branch at 2026-06-04T17:12:20Z as merge commit `01179cdefccf34c58fbac54d4f0da344fdaa6155`.
-- PR #330 merged into `main` at 2026-06-03T20:43:56Z as `docs(goal): promote CircleCI env recovery rule`.
-- Live Linear `JSC-363` was refreshed after the PR stack merged: status is `Done`, completed at 2026-06-03T20:44:00Z, and the issue has an attachment titled `JSC-363 full lifecycle scope note`. The issue title and description still use Phase 1 wording, so Linear alignment is attachment-backed rather than field-text-current.
-- Do not keep routing work as if PR #328, PR #329, PR #330, PR #333, or PR #338 were open stacked PRs unless a fresh GitHub query shows a reopened or new PR lane.
+- `main` and `origin/main` are synchronized at `a76921942cdbd8b3e1b449a05993d467700f770c`.
+- Live GitHub reports zero open pull requests for `jscraik/coding-harness`.
+- PR #331, PR #332, PR #333, PR #334, PR #335, and PR #336 are merged into the current main-delivery line. PR #336 merged into `main` at 2026-06-04T20:55:54Z as merge commit `a76921942cdbd8b3e1b449a05993d467700f770c`.
+- PR #337 and PR #338 are live-merged in GitHub, but their base branch was `codex/jsc-363-cnf-006-steering-application-receipt`, not `main`. Their merge commits `54513ae0721d720c4a92fb51e2db78f4b679d33a` and `01179cdefccf34c58fbac54d4f0da344fdaa6155` are not ancestors of current `origin/main`; treat them as stack-branch delivery evidence until a fresh main-delivery path is chosen and validated.
+- Live Linear `JSC-363` was refreshed after the PR merge: status is `In Review`, it has the full-lifecycle scope-note attachment and PR attachments through #338, and comment `e34da9b0-3e16-4fec-a915-5b76f86a0c79` records this post-merge route-truth split. The issue title and description still use Phase 1 wording, so Linear field-text alignment remains stale.
+- Do not keep routing work as if PR #331 through PR #338 were open PR-triage lanes unless a fresh GitHub query shows a reopened or new PR.
 
 Outstanding goal work after conflict reconciliation:
 
-- Continue only from current open-stack truth: repair PR #331 review-thread findings first, then recheck PR #335 conflicts and PR #336 checks/review after PR #331 has a new submitted head.
+- Continue only after deciding whether PR #337 and PR #338 work is still required on `main`; if it is required, create a bounded main-delivery path for those stack-only merged commits before claiming their work is current-main evidence.
 - Keep this goal board and the local board tracker synchronized before using either as route truth.
 - Run the goal-board and audit-freshness validators after this route-truth refresh.
 - Treat merged PRs as completed route/foundation evidence, not as final goal completion.
-- Treat Linear `JSC-363` as tracker-aligned by current `Done` status plus the full-lifecycle scope-note attachment, with a residual field-text mismatch because the title and description still say Phase 1. Do not call Linear fields current unless those fields are updated.
+- Treat Linear `JSC-363` as tracker-refreshed by current `In Review` status plus the full-lifecycle scope-note attachment and the 2026-06-04 route-truth comment. Do not call Linear fields current unless the title and description are updated.
 - Continue implementation only from the remaining evidence-backed lifecycle gaps: runtime producer evidence, delivery-truth consumption, final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, and final requirement-by-requirement completion audit.
 - Treat the current-main Codex-native refinement addendum as next-slice intent scope. It is not completed implementation evidence until the named source modules, contracts, fixtures, validators, and receipts prove the new fields or record owner-visible blockers.
 - Do not create a new duplicate goal board. Update this board, `state.yaml`, and `receipts.jsonl` as the canonical durable goal surface.
@@ -241,8 +239,15 @@ Codex-native: identity correlation, environment-scoped permission evidence,
 risk-tiered mutation authority, richer runtime-card continuity, context
 authority classification, and queue application receipts.
 
-Current-main verification at `50a6d0b5d764e35395e12190a465e854c26784fd`
-supports the refinement as pending scope, not as proof of implementation:
+Current-main verification was refreshed after the PR #336 merge at
+`a76921942cdbd8b3e1b449a05993d467700f770c`. Earlier refinement evidence was
+first recorded at `50a6d0b5d764e35395e12190a465e854c26784fd`; the refreshed
+route truth preserves that scope analysis while adding the current merged-stack
+boundary: PR #331 through PR #336 are on the main-delivery line, while PR #337
+and PR #338 were merged only into the stacked CNF-006 branch and are not
+ancestors of current `origin/main`.
+
+This supports the refinement as pending scope, not as proof of implementation:
 
 | Refinement | Current-main evidence | Required Goal Treatment | Minimum Proof |
 | --- | --- | --- | --- |
@@ -361,21 +366,22 @@ For every slice:
 8. Fix valid findings and rerun the narrowest proving checks.
 9. Record a receipt in `receipts.jsonl` after each completed slice.
 10. Commit the slice atomically, push it, and open or update the matching GitHub PR.
-11. Launch PR triage with `$pr-green-sweep` and continue to the next safe slice while triage runs.
+11. Launch PR triage with `$pr-green-sweep` and keep working that same slice until the PR is green, review threads are resolved or explicitly blocked, and the PR is merged into `main`.
+12. After merge proof, check out `main`, pull the latest remote `main`, record the synced head, update the goal board, and only then start the next implementation slice.
 
-Parallel continuation rule:
+Sequential continuation rule:
 
-- Continue to the next slice only when dependency order and branch state allow it. If the next slice depends on the PR under triage, perform non-mutating prep, intent drafting, or review instead of contaminating the active PR branch.
-- If parallel code work is safe, use an explicit branch or worktree strategy and record which PR branch each agent owns.
+- Stacked implementation PRs are disallowed for this goal unless Jamie explicitly authorizes a named exception in the current slice intent and receipt.
+- Background PR triage is not a done state. The coordinator may perform only non-mutating observation while `$pr-green-sweep` is active; it must not start the next code slice until live GitHub proves the current slice PR is merged and local `main` is refreshed.
+- If the PR cannot be made green or merged, classify the blocker in the receipt and board before any further goal implementation work.
 
 ## Review and Validation Contract
 
 After each slice, validate with these skill lenses or their repo-owned deterministic equivalents:
 
-- `$improve-codebase-architecture`: confirm the slice stays inside the intended deep module boundary, preserves a narrow public seam, and records any architecture tradeoff in the intent or receipt.
 - `$simplify`: confirm the slice did not add unnecessary abstractions, duplicate truth layers, or broad public surfaces.
-- `$unslopify`: remove vague claims, placeholder wording, speculative assertions, and AI-shaped docs or PR text.
-- `$he-code-review`: review the slice against Harness Engineering expectations, evidence contracts, and implementation-risk boundaries.
+- `$improve-codebase-architecture`: confirm the slice stays inside the intended deep module boundary, preserves a narrow public seam, and records any architecture tradeoff in the intent or receipt.
+- `$sy-review`: review the slice claim against separate evidence lanes, readiness boundaries, and SynAIpse Harness stage-risk expectations.
 - `$testing`: prove the touched behavior with the narrowest meaningful tests first, then broaden according to risk.
 
 Before marking any slice done, also run independent review with:
@@ -412,7 +418,8 @@ When the coordinator is happy with a slice:
 2. Push the branch to GitHub.
 3. Open or update a PR with truthful lifecycle scope.
 4. Launch a subagent to run `$pr-green-sweep` against that PR until faults are fixed or explicitly blocked.
-5. While the PR triage subagent works, continue to the next safe slice under the parallel continuation rule.
+5. Trigger or verify CodeRabbit review when required for stacked or freshly updated PR heads, and fix actionable review findings before merge.
+6. Do not continue to the next implementation slice while the PR is open. Continue only after `$pr-green-sweep` records live PR green evidence, the PR is merged into `main`, and the coordinator has pulled the latest `main`.
 
 The PR may claim only the lifecycle unit it actually completes. A PR cannot claim green, tidy, delivered, merged, goal-ready, or merge-ready unless delivery-truth has current claim-support evidence for each separate claim.
 
