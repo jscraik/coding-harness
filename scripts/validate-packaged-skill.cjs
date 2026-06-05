@@ -27,7 +27,7 @@ const REQUIRED_BOOTSTRAP_COMMANDS = ["harness init --dry-run", "harness init"];
 
 const REQUIRED_MIGRATION_COMMANDS = [
 	"harness ci-migrate prepare --provider circleci --dry-run",
-	"harness ci-migrate --provider circleci --apply",
+	"harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>",
 	"harness ci-migrate verify --snapshot <snapshot-id>",
 	"harness ci-migrate commit --snapshot <snapshot-id>",
 	"harness ci-migrate abort --snapshot <snapshot-id>",
@@ -37,7 +37,12 @@ const FORBIDDEN_PATTERNS = [
 	{
 		pattern: "harness ci-migrate prepare --provider circleci --apply",
 		message:
-			"stale CI migration apply guidance found; use harness ci-migrate --provider circleci --apply because the prepare action conflicts with --apply",
+			"stale CI migration apply guidance found; use harness ci-migrate prepare --provider circleci --snapshot <snapshot-id> for the staged write step because prepare conflicts with --apply",
+	},
+	{
+		pattern: "harness ci-migrate --provider circleci --apply",
+		message:
+			"one-shot ci-migrate apply guidance found in the packaged staged migration flow; use harness ci-migrate prepare --provider circleci --snapshot <snapshot-id> before verify and commit",
 	},
 	{
 		pattern: "harness init --ci circleci",
@@ -273,7 +278,8 @@ function validateInstallJson() {
 	);
 	for (const [key, expectedValue] of Object.entries({
 		preview: "harness ci-migrate prepare --provider circleci --dry-run",
-		apply: "harness ci-migrate --provider circleci --apply",
+		prepare:
+			"harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>",
 		verify: "harness ci-migrate verify --snapshot <snapshot-id>",
 		commit: "harness ci-migrate commit --snapshot <snapshot-id>",
 		abort: "harness ci-migrate abort --snapshot <snapshot-id>",
@@ -331,7 +337,7 @@ function validateEvals() {
 		"harness upgrade --dry-run --json",
 		"current repo that needs upgrading",
 		"prepare --provider circleci --dry-run",
-		"harness ci-migrate --provider circleci --apply",
+		"prepare --provider circleci --snapshot",
 		"verify --snapshot",
 		"commit --snapshot",
 		"abort --snapshot",

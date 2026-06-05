@@ -24,7 +24,7 @@ cases:
     anti_overfit_notes: "The expected behavior is the ordered migration lifecycle, not generic CircleCI advice."
     acceptance:
       - type: regex
-        value: "(?i)(prepare --provider circleci --dry-run|harness ci-migrate --provider circleci --apply|verify --snapshot|commit --snapshot|abort --snapshot)"
+        value: "(?i)(prepare --provider circleci --dry-run|prepare --provider circleci --snapshot|verify --snapshot|commit --snapshot|abort --snapshot)"
 
   - id: happy-existing-repo-upgrade-dry-run
     category: happy
