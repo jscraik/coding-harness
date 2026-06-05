@@ -245,12 +245,12 @@ Codex-native: identity correlation, environment-scoped permission evidence,
 risk-tiered mutation authority, richer runtime-card continuity, context
 authority classification, and queue application receipts.
 
-Current-main verification was refreshed after the PR #344 merge at
-`cfda8c6a0aa58f5468a7ca1ab87e74becc7004aa`. Earlier refinement evidence was
+Current-main verification was refreshed after the PR #347 merge at
+`73b2a3019d9f77ad84159839ff14dc2121c88c1c`. Earlier refinement evidence was
 first recorded at `50a6d0b5d764e35395e12190a465e854c26784fd`; the refreshed
 route truth preserves that scope analysis while recording PR #331 through
-PR #338 plus PR #344 as completed JSC-363 route/foundation evidence on
-current `origin/main`.
+PR #338 plus PR #342 through PR #347 as completed JSC-363
+route/foundation evidence on current `origin/main`.
 
 This supports the refinement as pending scope, not as proof of implementation:
 
