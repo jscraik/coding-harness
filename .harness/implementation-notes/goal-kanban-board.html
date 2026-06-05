@@ -411,7 +411,7 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness warning">PR #344 merged: external Snyk quota waived only</div>
+      <div class="source-chip" aria-label="Source freshness warning">PR #345 active: Snyk quota waiver recorded</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
@@ -497,7 +497,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and local git ancestry after PR #344 merged. <code>origin/main</code> is synchronized at merge commit <code>cfda8c6a0aa58f5468a7ca1ab87e74becc7004aa</code>. PR #344 submitted head <code>cdb6cf8446a61fe98d1e493c2562c6dd9eb6ab96</code> is delivered to main; the external Snyk GitHub App quota failure is owner-waived for that quota lane only and is not recorded as external Snyk passing. Linear JSC-363 needs a fresh post-PR #344 refresh before tracker-current or field-text-current claims. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and local git ancestry after PR #344 merged and PR #345 opened as the waiver-record route update. <code>origin/main</code> is synchronized at merge commit <code>cfda8c6a0aa58f5468a7ca1ab87e74becc7004aa</code>. PR #345 head <code>6d7a6829ba8d3f8451471aa0d2feaa16263f922c</code> has a repaired live body that passes the local <code>pr-template-gate</code>, but the remote CircleCI <code>ci/circleci: pr-template</code> status is still the older failed pipeline 2408/job 26394 until refreshed. The external Snyk GitHub App quota failure is owner-waived for that quota lane only and is not recorded as external Snyk passing. Linear JSC-363 needs a fresh post-PR #344/#345 refresh before tracker-current or field-text-current claims. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -829,6 +829,17 @@
         evidence: ["PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit -> pass", "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo . -> pass", "git diff --check -> pass", "node --check /private/tmp/goal-kanban-board-script.js -> pass"],
         next: "Commit this tracker-governance slice, open the bounded PR, run pr-green-sweep until merged, then pull main before selecting the next implementation slice.",
         risk: "Passing board validators prove freshness and structure, not implementation completeness."
+      },
+      {
+        id: "pr345-waiver-record",
+        lane: "remote",
+        title: "PR #345 waiver record active",
+        status: "blocked",
+        tags: ["PR #345", "Snyk quota waiver", "CircleCI refresh"],
+        summary: "PR #345 is the active draft PR carrying the current-main waiver record after PR #344 merged. The local live PR body now passes pr-template-gate, but GitHub still shows the older CircleCI pr-template failure until a rerun or fresh commit refreshes the status.",
+        evidence: ["PR #345 -> OPEN draft at 6d7a6829ba8d3f8451471aa0d2feaa16263f922c", "Live PR body pr-template-gate -> pass after body repair", "Remote ci/circleci: pr-template -> stale fail from pipeline 2408/job 26394", "External security/snyk (jscraik) -> owner waiver for quota lane only", "Repo-owned CircleCI snyk-dependency-scan/security-scan and Socket lanes -> passing in latest PR check view"],
+        next: "Refresh CircleCI status through a rerun or this tracker evidence commit, then keep PR #345 in triage until merged and pulled to main before selecting the next implementation slice.",
+        risk: "This waiver record does not prove external Snyk passed, CodeRabbit review completed, PR #345 merge readiness, Linear currentness, or parent-goal completion."
       },
       {
         id: "runtime-producer",

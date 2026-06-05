@@ -10,18 +10,21 @@
 
 ## Scope
 
-Last reconciled: 2026-06-05 during the post-PR #344 route-truth refresh. Local
-`main` fast-forwarded to `origin/main` at
+Last reconciled: 2026-06-05 during PR #345 waiver-record triage. Local `main`
+is synchronized with `origin/main` at
 `cfda8c6a0aa58f5468a7ca1ab87e74becc7004aa`. PR #344 is merged into `main`
-as the current route-truth repair for PR #343's external Snyk GitHub App quota
-waiver and stale Linear-anchor review-thread fix. This reconcile classifies the
-external Snyk GitHub App quota failure as an owner-approved waiver for that
-quota lane only; it does not claim external Snyk passed and does not waive
-repo-run security, CircleCI `snyk-dependency-scan`, Socket, CodeRabbit,
-review-thread, Linear, Judge/PM, future Snyk results, or future security
-findings. This reconcile also does not claim Linear field-text alignment,
-runtime producer evidence, delivery-truth consumption, docs accuracy, Judge/PM
-readiness, or final goal completion.
+as the current-main route-truth repair for PR #343's external Snyk GitHub App
+quota waiver and stale Linear-anchor review-thread fix. PR #345 is the active
+draft PR carrying this waiver record; its live PR body passes local
+`pr-template-gate`, while GitHub still reports the older CircleCI
+`ci/circleci: pr-template` failure from pipeline 2408/job 26394 until the
+status refreshes. This reconcile classifies the external Snyk GitHub App quota
+failure as an owner-approved waiver for that quota lane only; it does not claim
+external Snyk passed and does not waive repo-run security, CircleCI
+`snyk-dependency-scan`, Socket, CodeRabbit, review-thread, Linear, Judge/PM,
+future Snyk results, or future security findings. This reconcile also does not
+claim Linear field-text alignment, runtime producer evidence, delivery-truth
+consumption, docs accuracy, Judge/PM readiness, or final goal completion.
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -32,7 +35,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged JSC-363 route/foundation lanes through PR #344 at cfda8c6a0aa58f5468a7ca1ab87e74becc7004aa. The external Snyk GitHub App quota failure is owner-waived only for that external quota lane and is not a passing security result. Linear JSC-363 has historical attachment-backed route context, but post-PR #344 tracker status and field text remain unclaimed until refreshed. | Use the goal board as the current execution cockpit. Next safe action is to select the next bounded lifecycle gap from current main after goal-board and audit-freshness validators pass. Do not claim parent JSC-363 completion until Linear field alignment or owner acceptance, runtime producer evidence, delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final completion audit are separately refreshed. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged JSC-363 route/foundation lanes through PR #344 at cfda8c6a0aa58f5468a7ca1ab87e74becc7004aa. PR #345 is the active draft PR for recording the external Snyk GitHub App quota waiver and remote-template refresh evidence. The external Snyk GitHub App quota failure is owner-waived only for that external quota lane and is not a passing security result. Linear JSC-363 has historical attachment-backed route context, but post-PR #344/#345 tracker status and field text remain unclaimed until refreshed. | Use the goal board as the current execution cockpit. Next safe action is to finish PR #345 triage until it is merged to main and local main is pulled, then refresh the board/state/receipt route truth before selecting the next bounded lifecycle gap. Do not claim parent JSC-363 completion until Linear field alignment or owner acceptance, runtime producer evidence, delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final completion audit are separately refreshed. |
 
 PU-046 update: PR #330 was refreshed again on head
 163017e16e4611d5d71f5c4c62fc85f8d164b17b after the R205 artifact receipt was
