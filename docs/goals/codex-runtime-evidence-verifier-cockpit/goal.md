@@ -50,10 +50,10 @@ Current route truth:
 
 - `main` and `origin/main` are synchronized at `173a3fe0772fcce6d1e960bd0d9f41debbc7d96f`.
 - PR #342 is merged into `main` at 2026-06-04T23:25:43Z as merge commit `173a3fe0772fcce6d1e960bd0d9f41debbc7d96f`; its head was `71fb4041ae8829fce004b661381dd69861dba246`.
-- PR #331 through PR #338 and PR #342 are completed JSC-363 route/foundation evidence. The earlier PR #337/#338 stack-only concern was resolved by the PR #342 current-main delivery path; do not reopen it unless a fresh current-main audit finds a regression.
+- Receipt-backed merged JSC-363 route/foundation lanes through PR #342 are completed current-main evidence. The earlier PR #337/#338 stack-only concern was resolved by the PR #342 current-main delivery path; do not reopen it unless a fresh current-main audit finds a regression.
 - Live GitHub reports no open JSC-363/cockpit implementation PR lanes. The repository may still contain unrelated open PRs; those are not this goal's route truth unless they touch JSC-363 scope.
-- Live Linear `JSC-363` was previously refreshed after the PR merge stack: status was `In Review`, it had the full-lifecycle scope-note attachment and PR attachments through #338, and comment `e34da9b0-3e16-4fec-a915-5b76f86a0c79` recorded the earlier route-truth split. Treat current Linear field text as unclaimed unless refreshed again after PR #342.
-- Do not keep routing work as if PR #331 through PR #338 or PR #342 were open PR-triage lanes unless a fresh GitHub query shows a reopened or new JSC-363 PR.
+- Live Linear `JSC-363` has only historical tracker evidence in this current route surface: earlier probes recorded `Done` and later `In Review` observations with the full-lifecycle scope-note attachment, PR attachments through #338, and comment `e34da9b0-3e16-4fec-a915-5b76f86a0c79` for the earlier route-truth split. Treat current Linear status and field text as unclaimed unless refreshed again after PR #342.
+- Do not keep routing work as if receipt-backed merged JSC-363 route/foundation lanes through PR #342 were open PR-triage lanes unless a fresh GitHub query shows a reopened or new JSC-363 PR.
 
 Outstanding goal work after conflict reconciliation:
 
@@ -61,7 +61,7 @@ Outstanding goal work after conflict reconciliation:
 - Keep this goal board and the local board tracker synchronized before using either as route truth.
 - Run the goal-board and audit-freshness validators after this route-truth refresh.
 - Treat merged PRs as completed route/foundation evidence, not as final goal completion.
-- Treat Linear `JSC-363` as previously tracker-refreshed by `In Review` status plus the full-lifecycle scope-note attachment and the 2026-06-04 route-truth comment. Do not call Linear current after PR #342 unless the issue is refreshed again and field text is either updated or explicitly accepted as stale.
+- Treat Linear `JSC-363` historical tracker observations as stale route context after PR #342, including prior `Done` and `In Review` statuses plus the full-lifecycle scope-note attachment and the 2026-06-04 route-truth comment. Do not call Linear current after PR #342 unless the issue is refreshed again and field text is either updated or explicitly accepted as stale.
 - Continue implementation only from the remaining evidence-backed lifecycle gaps: runtime producer evidence, delivery-truth consumption, final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, and final requirement-by-requirement completion audit.
 - Treat the current-main Codex-native refinement addendum as next-slice intent scope. It is not completed implementation evidence until the named source modules, contracts, fixtures, validators, and receipts prove the new fields or record owner-visible blockers.
 - Do not create a new duplicate goal board. Update this board, `state.yaml`, and `receipts.jsonl` as the canonical durable goal surface.
@@ -224,7 +224,7 @@ Adoption rules:
 - The ecosystem review is advisory until this section and `state.yaml` adopt specific findings; after adoption, the listed findings are goal steering constraints.
 - Harness must not become a competing Codex app-server, goal store, scheduler, tool registry, or thread engine.
 - Runtime cards remain cockpit summaries and pointers, not warehouses for raw prompts, raw telemetry, review bodies, secrets, or bulky artifacts.
-- Linear `JSC-363` remains the tracker anchor for this goal. Current live Linear evidence records the issue as `Done` with a full-lifecycle scope-note attachment, while the title and description still say Phase 1. Future closeout may claim attachment-backed tracker alignment, but not field-text-current Linear alignment unless those fields are updated.
+- Linear `JSC-363` remains the tracker anchor for this goal. Historical Linear evidence recorded a `Done` status with a full-lifecycle scope-note attachment, and later route-truth evidence recorded `In Review`; neither status is current post-PR #342 proof. Future closeout may claim tracker alignment only after a fresh Linear refresh records status, scope-note state, and field-text freshness separately.
 - Every future Worker/Judge/PM receipt should include `ecosystem_review_findings` when a slice touches runtime identity, runtime state, claim verification, queueing, tool exposure, review mode, artifacts, memory/retrieval, recovery, schemas, telemetry, hooks, instruction provenance, runtime provenance, or Codex parity.
 
 ## Codex-Native Current-Main Refinement Addendum

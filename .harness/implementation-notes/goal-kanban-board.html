@@ -416,7 +416,7 @@
 
     <section class="metrics" aria-label="Goal status summary">
       <div class="metric"><span>Goal status</span><strong>Post-merge reconciliation</strong></div>
-      <div class="metric"><span>Main-delivered PRs</span><strong>#321-#338 + #342</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>Receipt-backed merged lanes through PR #342</strong></div>
       <div class="metric"><span>Outstanding work</span><strong>Runtime, delivery truth, docs, Linear, Judge/PM</strong></div>
       <div class="metric"><span>Claim boundary</span><strong>Completion unclaimed</strong></div>
       <div class="metric"><span>Source files</span><strong>goal.md, state.yaml, receipts.jsonl, Kanban</strong></div>
@@ -803,9 +803,9 @@
         title: "Linear JSC-363 attachment-backed alignment",
         status: "done",
         tags: ["Linear", "tracker", "In Review"],
-        summary: "Live Linear reports JSC-363 as In Review with the full-lifecycle scope-note attachment present; the title and description still contain Phase 1 wording.",
-        evidence: ["Linear JSC-363 status -> In Review", "Attachment: JSC-363 full lifecycle scope note", "PR attachments through #338 present", "Linear comment e34da9b0 records post-merge route truth"],
-        next: "Treat tracker alignment as refreshed but field-text stale. Do not claim Linear field text is current unless the title and description are updated.",
+        summary: "Historical Linear evidence reports JSC-363 tracker observations including Done and In Review with the full-lifecycle scope-note attachment present; post-PR #342 Linear truth is unclaimed until refreshed.",
+        evidence: ["Historical Linear JSC-363 status observations -> Done and In Review", "Attachment: JSC-363 full lifecycle scope note", "PR attachments through #338 present", "Linear comment e34da9b0 records post-merge route truth"],
+        next: "Refresh Linear after PR #342 before claiming tracker-current or field-text-current alignment.",
         risk: "Linear tracker refresh does not prove runtime producer emission, delivery-truth consumption, implementation completeness, or Judge/PM readiness."
       },
       {

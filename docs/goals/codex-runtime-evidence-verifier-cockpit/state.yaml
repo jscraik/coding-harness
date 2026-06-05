@@ -89,7 +89,7 @@ completion_contract:
 current_slice_gate:
   lifecycle_unit: "post-merge-route-truth-refresh"
   status: "main_synced_pr342_merged_next_slice_selection_required"
-  reason: "Local main fast-forwarded to origin/main at 173a3fe0772fcce6d1e960bd0d9f41debbc7d96f after PR #342 merged at 2026-06-04T23:25:43Z. PR #331 through PR #338 plus PR #342 are completed JSC-363 route/foundation evidence on current main. Live GitHub reports no open JSC-363/cockpit implementation PR lanes; unrelated open PRs #340 and #341 remain outside this goal unless they touch JSC-363 scope. Linear JSC-363 must be refreshed again before any tracker-current or field-text-current claim after PR #342. Runtime producer emission, delivery-truth consumption, final review/external/root-hygiene proof, docs accuracy, Judge/PM readiness, and parent goal completion remain unclaimed."
+  reason: "Local main fast-forwarded to origin/main at 173a3fe0772fcce6d1e960bd0d9f41debbc7d96f after PR #342 merged at 2026-06-04T23:25:43Z. Receipt-backed merged JSC-363 route/foundation lanes through PR #342 are completed current-main evidence. Live GitHub reports no open JSC-363/cockpit implementation PR lanes; unrelated open PRs #340 and #341 remain outside this goal unless they touch JSC-363 scope. Linear JSC-363 must be refreshed again before any tracker-current or field-text-current claim after PR #342. Runtime producer emission, delivery-truth consumption, final review/external/root-hygiene proof, docs accuracy, Judge/PM readiness, and parent goal completion remain unclaimed."
   completed_before_local_validation_claim:
     - "Created and tracked the PR #324 supersession intent artifact before route-state edits."
     - "Fetched current remote refs and verified PR #327 and PR #328 are the current clean JSC-363 stack."
@@ -103,7 +103,7 @@ current_slice_gate:
     - "Refreshed PR #329 after d99f70705a61caf2b437b640db3df7389175d10d; all visible checks passed, mergeability was MERGEABLE/CLEAN, and review threads were resolved."
     - "Refreshed PR #327, PR #328, and PR #329 through GitHub on 2026-06-01; all three open stacked PRs report CLEAN and all visible checks pass."
     - "Verified PR #321 is MERGED and resolved its two remaining historical review threads after checking current main contains the requested fixes."
-    - "Earlier Linear probe on 2026-06-01 showed JSC-363 In Progress with Phase 1 wording and attachments through PR #329; later 2026-06-03 evidence supersedes that tracker state with Done status and the full-lifecycle scope-note attachment."
+    - "Earlier Linear probe on 2026-06-01 showed JSC-363 In Progress with Phase 1 wording and attachments through PR #329; later 2026-06-03 evidence observed Done status and the full-lifecycle scope-note attachment. Both are historical tracker observations, not current post-PR #342 proof."
     - "Created PU-045 intent and promoted the repeated CircleCI ~/.codex/.env recovery rule into Project Brain CI rules."
     - "Committed and pushed the initial PU-045 branch d97e1bb90c0f94670b2facf80c49ae2cde7c6d28 and opened PR #330 against PR #329."
     - "Repaired PR #330 body evidence after local pr-template-gate reproduced the CircleCI failure; exact linked-issue acceptance trace, durable evidence-map, checklist status, and blocked-command syntax now pass locally."
@@ -141,7 +141,7 @@ current_slice_gate:
     - "Recorded CNF-004 reviewer-runtime artifact-output blockers in artifacts/reviews/pu050-cnf-004-intent-reviewer-runtime-blocker.md and artifacts/reviews/pu050-cnf-004-implementation-reviewer-runtime-blocker.md; local skill-lens coverage is in artifacts/reviews/pu050-cnf-004-skill-lenses.md."
     - "Pushed CNF-004 branch head 11cf544aa7ecf3918d780e1118d82b1f49293880 and opened draft stacked PR #334 against codex/jsc-363-cnf-003-risk-tier-authority after the PR body passed pr-template-gate; foreground make hooks-pre-push passed before the no-verify push fallback was used to avoid a silent Git transport hook hang."
   next_required_handoff_steps:
-    - "Treat PR #331 through PR #338 plus PR #342 as completed JSC-363 route/foundation evidence on current main at 173a3fe0772fcce6d1e960bd0d9f41debbc7d96f; do not reopen those PR lanes unless fresh GitHub or current-main validation shows a regression."
+    - "Treat receipt-backed merged JSC-363 route/foundation lanes through PR #342 as completed current-main evidence at 173a3fe0772fcce6d1e960bd0d9f41debbc7d96f; do not reopen those PR lanes unless fresh GitHub or current-main validation shows a regression."
     - "Treat live GitHub as having no open JSC-363/cockpit implementation PR lanes after PR #342; unrelated open PRs #340 and #341 are outside this goal unless they touch JSC-363 scope."
     - "Before the next implementation slice starts, select the next remaining lifecycle gap from current main and record bounded intent with Project Brain, memory surfaces, plan/spec/audit inputs, and required validation."
     - "For every future slice, run simplify, improve-codebase-architecture, sy-review, and testing before done; then commit atomically, open or update one PR, trigger CodeRabbit manually when required, run pr-green-sweep until faults are fixed or explicitly blocked, merge to main, checkout main, pull latest remote main, update the goal board/state/receipt, and only then start the next slice."
@@ -420,7 +420,7 @@ linear_tracking:
   project_at_last_probe: "Harness cockpit routing"
   parent_at_last_probe: "JSC-328"
   probed_at: "2026-06-03T20:44:00Z"
-  observed_scope_note: "Linear title and description currently say Phase 1 while this goal board governs the full lifecycle. PU-046 attached an owner-visible full-lifecycle scope note to JSC-363, and the 2026-06-03 live refresh reports Done status, so tracker alignment is accepted as attachment-backed. Field-text-current alignment remains unclaimed until the title and description are updated."
+  observed_scope_note: "Linear title and description historically said Phase 1 while this goal board governs the full lifecycle. PU-046 attached an owner-visible full-lifecycle scope note to JSC-363, and the 2026-06-03 live refresh reported Done status, so that observation remains historical attachment-backed context. Field-text-current and post-PR #342 tracker-current alignment remain unclaimed until Linear is refreshed again."
   latest_linkage_action: "Uploaded docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-01-linear-full-lifecycle-scope-note.md to Linear JSC-363 as attachment 5d4b796b-9129-4561-92b6-489bb6982925 titled 'JSC-363 full lifecycle scope note'. The uploaded note digest is ce1463fba3a0dd7daebe2ff15c55ecb54119d0c9a24456b907757b3e2920e414 and the post-mutation get_issue response included the attachment id, title, subtitle, and upload URL. Linear issue fields still say Phase 1."
   latest_linkage_blocker_class: "linear_fields_stale_tracker_attachment_aligned"
   closeout_rule: "Linear provides planning, ownership, and tracker state only; it cannot prove implementation, runtime truth, review readiness, CI, or merge readiness."
