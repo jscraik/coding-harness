@@ -497,7 +497,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and local git ancestry after PR #348 merged and local <code>main</code> was pulled. <code>origin/main</code> is synchronized at merge commit <code>a146db5f3876d14c86867cc1e1eb384b49716c4b</code>. PR #348 submitted head <code>cee878bbd33a42df309952057dc2b6c9a5c423f5</code> had repo-owned checks accepted before merge; the external Snyk GitHub App quota failure is owner-waived for that quota lane only and is not recorded as external Snyk passing. Linear JSC-363 needs a fresh post-PR #348 refresh before tracker-current or field-text-current claims. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and local git ancestry after PR #349 merged, local <code>main</code> was pulled, and the focused ci-migrate apply-command repair was validated at <code>57188e392a7f0a591005f4baa244b2e978fd9b08</code>. <code>origin/main</code> is synchronized at merge commit <code>f4f2c3da0e41b6347c26d4d1e0e34788554526c1</code>. PR #349 submitted head <code>294278e7e9975c1b47fd7adaf708dc815c9110aa</code> had repo-owned checks accepted before merge; the external Snyk GitHub App quota failure is owner-waived for that quota lane only and is not recorded as external Snyk passing. Linear JSC-363 needs a fresh post-PR #349 refresh before tracker-current or field-text-current claims. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -657,12 +657,12 @@
       {
         id: "source-freshness",
         lane: "intent",
-        title: "Source freshness current after PR #348",
+        title: "Source freshness current after PR #349",
         status: "done",
-        tags: ["PR #348", "R311", "Snyk quota waiver"],
-        summary: "The board is sourced from local main synchronized with origin/main after PR #348 merged. The external Snyk GitHub App quota failure is owner-waived only; repo-owned security lanes stayed separate and merge-accepted.",
-        evidence: ["origin/main -> a146db5f3876d14c86867cc1e1eb384b49716c4b", "PR #348 -> MERGED at 2026-06-05T13:30:31Z", "PR #348 submitted head -> cee878bbd33a42df309952057dc2b6c9a5c423f5", "security/snyk (jscraik) -> error because external app quota is exhausted; owner waiver applies only to this external app quota lane", "ci/circleci: snyk-dependency-scan -> pass on PR #348", "ci/circleci: security-scan -> pass on PR #348", "Socket, CodeRabbit, review threads, pr-pipeline, and local pre-push governance -> pass or merge-accepted before merge"],
-        next: "Commit and merge this validated post-PR #348 board/state/receipt refresh, then select the next remaining lifecycle gap from current main with bounded intent before implementation.",
+        tags: ["PR #349", "R312", "Snyk quota waiver"],
+        summary: "The board is sourced from local main synchronized with origin/main after PR #349 merged, plus the focused ci-migrate apply-command repair on this branch. The external Snyk GitHub App quota failure is owner-waived only; repo-owned security lanes stayed separate and merge-accepted.",
+        evidence: ["origin/main -> f4f2c3da0e41b6347c26d4d1e0e34788554526c1", "PR #349 -> MERGED at 2026-06-05T14:07:58Z", "PR #349 submitted head -> 294278e7e9975c1b47fd7adaf708dc815c9110aa", "ci-migrate repair commit -> 57188e392a7f0a591005f4baa244b2e978fd9b08", "security/snyk (jscraik) -> error because external app quota is exhausted; owner waiver applies only to this external app quota lane", "ci/circleci: snyk-dependency-scan -> pass on PR #349", "ci/circleci: security-scan -> pass on PR #349", "Socket, CodeRabbit, review threads, pr-pipeline, and local pre-push governance -> pass or merge-accepted before merge"],
+        next: "Commit this validated receipt refresh, open and sweep the focused ci-migrate apply-command repair PR, then select the next remaining lifecycle gap from current main with bounded intent after merge and pull.",
         risk: "This waiver does not prove external Snyk green, full security verification, Linear freshness, Judge/PM readiness, or parent-goal completion."
       },
       {
