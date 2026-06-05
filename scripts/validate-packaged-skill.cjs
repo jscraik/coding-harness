@@ -35,6 +35,11 @@ const REQUIRED_MIGRATION_COMMANDS = [
 
 const FORBIDDEN_PATTERNS = [
 	{
+		pattern: "harness ci-migrate prepare --provider circleci --apply",
+		message:
+			"stale CI migration apply guidance found; use harness ci-migrate --provider circleci --apply because the prepare action conflicts with --apply",
+	},
+	{
 		pattern: "harness init --ci circleci",
 		message:
 			"stale bootstrap guidance found; current CLI treats `circleci` as a target directory in this flow",
