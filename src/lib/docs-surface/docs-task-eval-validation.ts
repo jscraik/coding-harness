@@ -41,9 +41,7 @@ export function validateFixture(
 	}
 	const record = candidate as Record<string, unknown>;
 	const fixtureId =
-		typeof record.id === "string"
-			? record.id
-			: `unknown-fixture-${index ?? 0}`;
+		typeof record.id === "string" ? record.id : `unknown-fixture-${index ?? 0}`;
 	const findings = [
 		...collectUnknownFieldFindings(record, fixtureId, contract.fixtureKeys),
 		...collectRequiredShapeFindings(record, fixtureId),
