@@ -5,6 +5,7 @@ last_validated: 2026-04-18
 # Advanced Workflows
 
 ## Table of Contents
+
 - [Migrate CI with rollback and proof](#migrate-ci-with-rollback-and-proof)
 - [Validate a Symphony workflow contract](#validate-a-symphony-workflow-contract)
 - [Evaluate a pilot before expanding autonomy](#evaluate-a-pilot-before-expanding-autonomy)

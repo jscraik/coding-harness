@@ -51,6 +51,45 @@ const FORBIDDEN_PATTERNS = [
 	},
 ];
 
+const FORBIDDEN_CI_MIGRATE_COMMANDS = [
+	{
+		matches: ({ hasApply, hasPrepareAction }) => hasPrepareAction && hasApply,
+		message:
+			"stale CI migration apply guidance found; use harness ci-migrate prepare --provider circleci --snapshot <snapshot-id> for the staged write step because prepare conflicts with --apply",
+	},
+	{
+		matches: ({
+			hasApply,
+			hasCircleCIProvider,
+			hasKnownAction,
+			isInStagedMigrationFlow,
+		}) =>
+			!hasKnownAction &&
+			hasApply &&
+			hasCircleCIProvider &&
+			isInStagedMigrationFlow,
+		message:
+			"one-shot ci-migrate apply guidance found in the packaged staged migration flow; use harness ci-migrate prepare --provider circleci --snapshot <snapshot-id> before verify and commit",
+	},
+];
+
+const CI_MIGRATE_COMMAND_PATTERN = /harness\s+ci-migrate[^\n`"']*/g;
+const STAGED_CI_MIGRATE_COMMAND_PATTERNS = [
+	/harness\s+ci-migrate\s+prepare\b[^\n]*--snapshot/u,
+	/harness\s+ci-migrate\s+verify\b[^\n]*--snapshot/u,
+	/harness\s+ci-migrate\s+commit\b[^\n]*--snapshot/u,
+	/harness\s+ci-migrate\s+abort\b[^\n]*--snapshot/u,
+];
+const CI_MIGRATE_ACTIONS = new Set([
+	"prepare",
+	"verify",
+	"commit",
+	"abort",
+	"sync-branch-protection",
+	"promote-mode",
+	"rollback",
+]);
+
 const SKILL_KIND_VALUES = new Set(["executable", "advisory"]);
 
 const SKILL_OVERLAP_THRESHOLD = {
@@ -347,6 +386,7 @@ function validateForbiddenPatterns() {
 	});
 
 	for (const filePath of files) {
+		const extension = filePath.split(".").pop();
 		const content = readFileSync(filePath, "utf8");
 		for (const rule of FORBIDDEN_PATTERNS) {
 			assert(
@@ -354,7 +394,163 @@ function validateForbiddenPatterns() {
 				`${relative(REPO_ROOT, filePath)}: ${rule.message}`,
 			);
 		}
+		for (const { command, context } of findCIMigrateCommands(content, {
+			useMarkdownFlowContext: extension === "md",
+		})) {
+			const facts = classifyCIMigrateCommand(command, context);
+			for (const rule of FORBIDDEN_CI_MIGRATE_COMMANDS) {
+				assert(
+					!rule.matches(facts),
+					`${relative(REPO_ROOT, filePath)}: ${rule.message}: ${command}`,
+				);
+			}
+		}
 	}
+}
+
+function validateForbiddenCIMigrateCommandRules() {
+	const rejectedExamples = [
+		{
+			command: "harness ci-migrate prepare --provider circleci --apply",
+			context: "",
+		},
+		{
+			command: "harness ci-migrate prepare --apply --provider circleci",
+			context: "",
+		},
+		{
+			command: "harness ci-migrate prepare --apply",
+			context: "",
+		},
+		{
+			command: "harness ci-migrate prepare --apply --json",
+			context: "",
+		},
+		{
+			command:
+				"harness ci-migrate --action prepare --provider circleci --apply",
+			context: "",
+		},
+		{
+			command:
+				"harness ci-migrate --provider circleci --apply --action prepare",
+			context: "",
+		},
+		{
+			command: "harness ci-migrate --provider circleci --apply",
+			context: [
+				"Staged migration sequence:",
+				"harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>",
+				"harness ci-migrate --provider circleci --apply",
+				"harness ci-migrate verify --snapshot <snapshot-id>",
+				"harness ci-migrate commit --snapshot <snapshot-id>",
+			].join("\n"),
+		},
+	];
+	const allowedExamples = [
+		{ command: "harness ci-migrate prepare --provider circleci --dry-run" },
+		{
+			command:
+				"harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>",
+		},
+		{ command: "harness ci-migrate verify --snapshot <snapshot-id>" },
+		{ command: "harness ci-migrate commit --snapshot <snapshot-id>" },
+		{ command: "harness ci-migrate abort --snapshot <snapshot-id>" },
+		{ command: "harness ci-migrate --provider circleci --apply" },
+		{ command: "harness ci-migrate --apply --provider circleci" },
+	];
+
+	for (const { command, context } of rejectedExamples) {
+		const facts = classifyCIMigrateCommand(command, context);
+		assert(
+			FORBIDDEN_CI_MIGRATE_COMMANDS.some((rule) => rule.matches(facts)),
+			`forbidden ci-migrate command rule missed rejected example: ${command}`,
+		);
+	}
+
+	for (const { command, context = "" } of allowedExamples) {
+		const facts = classifyCIMigrateCommand(command, context);
+		assert(
+			FORBIDDEN_CI_MIGRATE_COMMANDS.every((rule) => !rule.matches(facts)),
+			`forbidden ci-migrate command rule rejected allowed example: ${command}`,
+		);
+	}
+
+	const structuredSurfaceCommands = findCIMigrateCommands(
+		[
+			'"prepare": "harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>",',
+			'"apply": "harness ci-migrate --provider circleci --apply",',
+			'"verify": "harness ci-migrate verify --snapshot <snapshot-id>",',
+			'"commit": "harness ci-migrate commit --snapshot <snapshot-id>"',
+		].join("\n"),
+		{ useMarkdownFlowContext: false },
+	);
+	const structuredApplyCommand = structuredSurfaceCommands.find(({ command }) =>
+		command.includes("--apply"),
+	);
+	assert(
+		structuredApplyCommand,
+		"forbidden ci-migrate command rule self-check could not find structured one-shot apply example",
+	);
+	const structuredApplyFacts = classifyCIMigrateCommand(
+		structuredApplyCommand.command,
+		structuredApplyCommand.context,
+	);
+	assert(
+		FORBIDDEN_CI_MIGRATE_COMMANDS.every(
+			(rule) => !rule.matches(structuredApplyFacts),
+		),
+		"forbidden ci-migrate command rule rejected structured one-shot apply example",
+	);
+}
+
+function findCIMigrateCommands(content, options = {}) {
+	return Array.from(content.matchAll(CI_MIGRATE_COMMAND_PATTERN), (match) => {
+		const [command] = match;
+		const startIndex = match.index || 0;
+		return {
+			command: command.trim(),
+			context: options.useMarkdownFlowContext
+				? getMarkdownBlockAround(content, startIndex, command.length)
+				: command,
+		};
+	});
+}
+
+function getMarkdownBlockAround(content, startIndex, commandLength) {
+	const previousBreak = content.lastIndexOf("\n\n", startIndex);
+	const nextBreak = content.indexOf("\n\n", startIndex + commandLength);
+	const blockStart = previousBreak === -1 ? 0 : previousBreak + 2;
+	const blockEnd = nextBreak === -1 ? content.length : nextBreak;
+	return content.slice(blockStart, blockEnd);
+}
+
+function isStagedMigrationFlowContext(context) {
+	const markerCount = STAGED_CI_MIGRATE_COMMAND_PATTERNS.filter((pattern) =>
+		pattern.test(context),
+	).length;
+	return markerCount >= 2;
+}
+
+function classifyCIMigrateCommand(command, context = "") {
+	const tokens = command.split(/\s+/).filter(Boolean);
+	const providerIndex = tokens.indexOf("--provider");
+	const hasCircleCIProvider =
+		providerIndex >= 0 && tokens[providerIndex + 1] === "circleci";
+	const actionFlagIndex = tokens.indexOf("--action");
+	const positionalAction =
+		tokens[2] && !tokens[2].startsWith("--") ? tokens[2] : null;
+	const action =
+		positionalAction ||
+		(actionFlagIndex >= 0 ? tokens[actionFlagIndex + 1] : null);
+
+	return {
+		hasApply: tokens.includes("--apply"),
+		hasCircleCIProvider,
+		hasKnownAction: action ? CI_MIGRATE_ACTIONS.has(action) : false,
+		hasPrepareAction: action === "prepare",
+		isInStagedMigrationFlow: isStagedMigrationFlowContext(context),
+	};
 }
 
 function validateReferenceContracts() {
@@ -810,6 +1006,7 @@ function main() {
 	validateInstallJson();
 	validateEvals();
 	validateForbiddenPatterns();
+	validateForbiddenCIMigrateCommandRules();
 	validateSkillDensity();
 	validateReferenceContracts();
 	console.info("packaged-skill: pass");
