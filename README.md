@@ -169,12 +169,12 @@ harness blast-radius --files <changed-files> --json
 ```
 
 **Expected outcomes:**
-- `harness linear prepare`: Branch context created and linked to issue KEY.
+- `harness linear prepare`: Metadata printed for issue KEY, including the suggested branch, PR title, link line, closing line, and PR body. It does not create a git branch or mutate Linear.
 - `harness preflight-gate`: Admission declaration written to artifacts/admission/declaration.json; exits 0 on success, non-zero on gate failure.
 - `harness policy-gate`: Policy checks applied to changed files; exits 0 on success, non-zero on policy violation.
 - `harness blast-radius --json`: File-level impact classification JSON output showing change scope and affected areas.
 
-Use this when you need branch context, traceability, and file-scoped gates before implementation.
+Use this when you need branch naming metadata, traceability text, and file-scoped gates before implementation.
 
 ### Submit A Change For Review
 
@@ -197,7 +197,7 @@ Use this when a PR needs local proof, review wiring checks, and traceability bef
 
 ```bash
 harness ci-migrate prepare --provider circleci --dry-run
-harness ci-migrate --provider circleci --apply
+harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>
 harness ci-migrate verify --snapshot <snapshot-id>
 harness ci-migrate commit --snapshot <snapshot-id>
 ```
