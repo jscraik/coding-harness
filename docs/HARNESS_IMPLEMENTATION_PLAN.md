@@ -88,12 +88,12 @@ Each target repo gets `harness.contract.json`:
 - `evidencePolicy`: required browser evidence for UI/critical flows.
 - `diffBudget`: default max files touched and max net LOC, plus approved override mechanism.
 - `uiLoopPolicy`: fast/verify/explore commands and SLO targets.
-- `runtimePolicy`: required runtime baseline (Node `24.x` for the design-system target).
+- `runtimePolicy`: required runtime baseline (Node `26.3.0` for the design-system target).
 - `memoryPolicy`: session/domain/tag contract, read-first requirement, write limits, and closeout summary requirements.
 - `memoryMaintenancePolicy`: validate/reflect cadence, unresolved-question SLA, and duplicate-noise thresholds.
 - `memoryEvalPolicy`: trials per task, required reliability metrics, and fail thresholds.
-- `observabilityPolicy`: OTel integration config (deferred to Phase 5).
-  - `provider`: "otel" | "logs" | "none"
+- `observabilityPolicy`: OpenTelemetry integration config (deferred to Phase 5).
+  - `provider`: "`otel`" | "logs" | "none"
   - `collectorEndpoint`: defaults to `http://localhost:4318`
 - `packageManagerPolicy`: package manager detection and constraints.
   - `allowedManagers`: ["pnpm", "npm", "yarn"]
@@ -119,13 +119,13 @@ This prevents merging against stale “green” review results.
 
 ---
 
-## 6) Canonical rerun writer and dedupe
+## 6) Canonical rerun writer and de-duplication
 
 Only one workflow can request reviewer reruns.
 
 - Marker example: `<!-- review-agent-auto-rerun -->`
 - Trigger token: `sha:<headSha>`
-- Dedup: never post duplicate rerun comment for same SHA.
+- De-duplication: never post duplicate rerun comment for same SHA.
 
 This prevents race conditions and noisy PR threads.
 
@@ -228,7 +228,7 @@ Deliverables:
 ## Phase 3 — GitHub workflow orchestration
 Deliverables:
 - preflight `risk-policy-gate`,
-- CI fanout dependent on preflight success,
+- CI fan-out dependent on preflight success,
 - review gate with strict SHA discipline,
 - mandatory canonical rerun comment writer (deduped).
 
@@ -277,7 +277,7 @@ Deliverables:
 
 ### Integration tests
 - workflow fixture tests for pass/fail matrix:
-  - preflight fail blocks fanout,
+  - preflight fail blocks fan-out,
   - stale review artifact rejected,
   - missing evidence rejected.
 
@@ -338,7 +338,7 @@ Week 6: local-memory gate rollout (warn-only), then fail-closed enforcement
 
 - CI provider: GitHub Actions
 - Runtime: TypeScript + pnpm
-- Node baseline for target rollout: Node 24
+- Node baseline for target rollout: Node 26.3.0
 - Review signal: GitHub check run + JSON artifact
 - Autonomy: agent drafts PR, human merges
 - Scope: control-plane template (no product app code)
@@ -361,7 +361,7 @@ Why this target first:
 The baseline UI factory loop for this target repo is:
 
 - **Storybook** for component-level development and visual verification,
-- **Agentation** for accelerated agent-assisted implementation/iteration,
+- **`Agentation`** for accelerated agent-assisted implementation/iteration,
 - **Codex 5.3 Spark** for high-throughput UI coding + refinement.
 
 ### Drift-control requirements for this target
@@ -474,7 +474,7 @@ The harness will enforce this order:
 4. Wait for code-review agent on current head SHA.
 5. If findings exist: remediation agent patches branch and requests one rerun per SHA.
 6. If no actionable findings: optional resolve bot-only threads.
-7. Start expensive CI fanout only after preflight/review gates pass.
+7. Start expensive CI fan-out only after preflight/review gates pass.
 8. If all required checks pass: human review + merge policy.
 9. If checks fail: fix and rerun from synchronized head.
 
@@ -559,7 +559,7 @@ Add `docs/architecture/blast-radius.md` with deterministic mappings:
 ### 21.4 Retries as documented policy
 
 Add `docs/reliability/retries.md`:
-- retryable operations,
+- retry-capable operations,
 - backoff strategy,
 - max attempts,
 - idempotency requirements,
@@ -662,7 +662,7 @@ For `/Users/jamiecraik/dev/design-system`, rollout is a retrofit of existing wor
 
 Migration sequence:
 1. Add preflight `risk-policy-gate` and required `review-gate` jobs.
-2. Rewire expensive CI fanout jobs to depend on preflight/review success.
+2. Rewire expensive CI fan-out jobs to depend on preflight/review success.
 3. Introduce `pnpm check` as local+CI parity command.
 4. Add/standardize `ui:fast`, `ui:verify`, `ui:explore` command set.
 5. Keep existing job coverage, but enforce deterministic ordering and SHA-bound review validity.
@@ -697,7 +697,7 @@ A target repo is also considered harness-enabled only when:
 
 1. `pnpm check` exists and is the canonical local parity gate.
 2. Review-agent gate is required for all PRs and bound to current head SHA.
-3. Node 24 baseline is green in CI and local development.
+3. Node 26.3.0 baseline is green in CI and local development.
 4. Diff budget guardrails are enforced or explicitly overridden with justification.
 5. UI loop commands (`ui:fast`, `ui:verify`, `ui:explore`) are present and documented.
 6. `memory-policy-gate` is required for `codex/*` branches and validates read-first behavior.
@@ -717,7 +717,7 @@ A target repo is also considered harness-enabled only when:
 3. Stale review artifacts/comments for older SHAs are ignored.
 4. Missing docs updates for mapped control-plane path changes block PR.
 5. `ui:verify` must emit machine-readable evidence consumed by policy gate.
-6. Node 24 compatibility checks pass for mergeability.
+6. Node 26.3.0 compatibility checks pass for mergeability.
 7. Replay command resolves and replays a recorded `trace-id` deterministically.
 8. Missing `bootstrap(..., include_questions=true)` + `search(...)` at task start fails `memory-policy-gate`.
 9. Memory writes above `maxObservationsPerStep` fail `memory-policy-gate`.
@@ -973,10 +973,10 @@ Implemented in `retry-policy.ts`:
 - Jitter: ±20%
 - Max retries: 5
 
-### 33.7 Open question: OTel integration
+### 33.7 Open question: OpenTelemetry integration
 **Status:** Defer to Phase 5 (Evidence + observability hooks)
 
-User has OTel collector at `~/.agents/otel-collector/`. Explore direct emission vs. logs-only at that time.
+User has an OpenTelemetry collector at `~/.agents/otel-collector/`. Explore direct emission vs. logs-only at that time.
 
 ---
 
