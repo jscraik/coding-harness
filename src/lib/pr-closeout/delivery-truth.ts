@@ -3,7 +3,16 @@ import type {
 	PrCloseoutBlockerClassification,
 	PrCloseoutDeliveryTruthSummary,
 	PrCloseoutDeliveryTruthVerdict,
+	PrCloseoutInput,
 } from "./types.js";
+import {
+	buildPrCloseoutStatePackets,
+	type PrCloseoutStatePacketOptions,
+} from "./state-packets.js";
+
+/** Options for deriving delivery-truth verdicts from validated state packets. */
+export type PrCloseoutDeliveryTruthDerivationOptions =
+	PrCloseoutStatePacketOptions;
 
 const PR_CLOSEOUT_DELIVERY_TRUTH_CLAIMS = new Set<
 	PrCloseoutDeliveryTruthVerdict["claim"]
@@ -27,6 +36,25 @@ export function buildDeliveryTruthSummary(
 		blockingVerdicts: normalized.filter(isBlockingDeliveryTruthVerdict),
 		mergeReady: selectMergeReadyVerdict(normalized),
 	};
+}
+
+/** Build supplied plus opt-in state-packet-derived delivery-truth for closeout. */
+export function buildPrCloseoutDeliveryTruthSummary(
+	input: PrCloseoutInput,
+	generatedAt: string,
+	deriveOptions?: PrCloseoutDeliveryTruthDerivationOptions,
+): PrCloseoutDeliveryTruthSummary {
+	const derivedVerdicts = deriveOptions
+		? buildPrCloseoutStatePackets(input, {
+				...deriveOptions,
+				generatedAt: deriveOptions.generatedAt ?? generatedAt,
+				fetchedAt: deriveOptions.fetchedAt ?? generatedAt,
+			}).deliveryTruth
+		: [];
+	return buildDeliveryTruthSummary([
+		...(input.deliveryTruth ?? []),
+		...derivedVerdicts,
+	]);
 }
 
 /** Add blockers for supplied delivery-truth verdicts that cannot support closeout. */

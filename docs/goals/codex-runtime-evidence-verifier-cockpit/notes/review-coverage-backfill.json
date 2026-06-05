@@ -1,17 +1,16 @@
 {
 	"schemaVersion": "goal-review-coverage-backfill/v1",
 	"goalSlug": "codex-runtime-evidence-verifier-cockpit",
-	"generatedAt": "2026-05-29T06:20:00Z",
+	"generatedAt": "2026-06-04T22:11:51Z",
 	"coverageWindow": {
 		"lifecycleUnits": ["PU-001", "PU-016"],
 		"effectiveReviewContractReceiptId": "R064",
-		"rule": "Pre-R064 receipts are not retroactively invalidated; final closeout must carry this executable ratification ledger."
+		"rule": "Pre-R064 receipts are not retroactively invalidated; final closeout must carry this executable ratification ledger for the currently required slice-review lenses."
 	},
 	"requiredSkillLenses": [
-		"improve-codebase-architecture",
 		"simplify",
-		"unslopify",
-		"he-code-review",
+		"improve-codebase-architecture",
+		"sy-review",
 		"testing"
 	],
 	"requiredIndependentReviewers": [
@@ -22,7 +21,8 @@
 	"acceptedExceptionRefs": {
 		"preR064ReviewContract": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064",
 		"memberEvidenceRule": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R067",
-		"historicalBackfillRequirement": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R065"
+		"historicalBackfillRequirement": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R065",
+		"currentSliceLensPolicyRevision": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R280"
 	},
 	"lifecycleUnits": [
 		{
@@ -32,29 +32,23 @@
 				"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R004"
 			],
 			"sliceSkillLensResults": {
-				"improve-codebase-architecture": {
-					"status": "not applicable",
-					"reason": "PU-001 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
-					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
-				},
 				"simplify": {
 					"status": "not applicable",
 					"reason": "PU-001 skill lens 'simplify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"unslopify": {
+				"improve-codebase-architecture": {
 					"status": "not applicable",
-					"reason": "PU-001 skill lens 'unslopify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-001 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"he-code-review": {
+				"sy-review": {
 					"status": "not applicable",
-					"reason": "PU-001 skill lens 'he-code-review' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-001 skill lens 'sy-review' was introduced into the required slice-completion contract after the historical pre-R064 slice; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
+					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R280"
 				},
 				"testing": {
 					"status": "not applicable",
@@ -91,29 +85,23 @@
 				"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R005"
 			],
 			"sliceSkillLensResults": {
-				"improve-codebase-architecture": {
-					"status": "not applicable",
-					"reason": "PU-002 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
-					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
-				},
 				"simplify": {
 					"status": "not applicable",
 					"reason": "PU-002 skill lens 'simplify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"unslopify": {
+				"improve-codebase-architecture": {
 					"status": "not applicable",
-					"reason": "PU-002 skill lens 'unslopify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-002 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"he-code-review": {
+				"sy-review": {
 					"status": "not applicable",
-					"reason": "PU-002 skill lens 'he-code-review' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-002 skill lens 'sy-review' was introduced into the required slice-completion contract after the historical pre-R064 slice; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
+					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R280"
 				},
 				"testing": {
 					"status": "not applicable",
@@ -150,29 +138,23 @@
 				"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R007"
 			],
 			"sliceSkillLensResults": {
-				"improve-codebase-architecture": {
-					"status": "not applicable",
-					"reason": "PU-003 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
-					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
-				},
 				"simplify": {
 					"status": "not applicable",
 					"reason": "PU-003 skill lens 'simplify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"unslopify": {
+				"improve-codebase-architecture": {
 					"status": "not applicable",
-					"reason": "PU-003 skill lens 'unslopify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-003 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"he-code-review": {
+				"sy-review": {
 					"status": "not applicable",
-					"reason": "PU-003 skill lens 'he-code-review' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-003 skill lens 'sy-review' was introduced into the required slice-completion contract after the historical pre-R064 slice; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
+					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R280"
 				},
 				"testing": {
 					"status": "not applicable",
@@ -209,29 +191,23 @@
 				"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R008"
 			],
 			"sliceSkillLensResults": {
-				"improve-codebase-architecture": {
-					"status": "not applicable",
-					"reason": "PU-004 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
-					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
-				},
 				"simplify": {
 					"status": "not applicable",
 					"reason": "PU-004 skill lens 'simplify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"unslopify": {
+				"improve-codebase-architecture": {
 					"status": "not applicable",
-					"reason": "PU-004 skill lens 'unslopify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-004 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"he-code-review": {
+				"sy-review": {
 					"status": "not applicable",
-					"reason": "PU-004 skill lens 'he-code-review' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-004 skill lens 'sy-review' was introduced into the required slice-completion contract after the historical pre-R064 slice; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
+					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R280"
 				},
 				"testing": {
 					"status": "not applicable",
@@ -268,29 +244,23 @@
 				"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R009"
 			],
 			"sliceSkillLensResults": {
-				"improve-codebase-architecture": {
-					"status": "not applicable",
-					"reason": "PU-005 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
-					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
-				},
 				"simplify": {
 					"status": "not applicable",
 					"reason": "PU-005 skill lens 'simplify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"unslopify": {
+				"improve-codebase-architecture": {
 					"status": "not applicable",
-					"reason": "PU-005 skill lens 'unslopify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-005 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"he-code-review": {
+				"sy-review": {
 					"status": "not applicable",
-					"reason": "PU-005 skill lens 'he-code-review' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-005 skill lens 'sy-review' was introduced into the required slice-completion contract after the historical pre-R064 slice; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
+					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R280"
 				},
 				"testing": {
 					"status": "not applicable",
@@ -328,29 +298,23 @@
 				"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R012"
 			],
 			"sliceSkillLensResults": {
-				"improve-codebase-architecture": {
-					"status": "not applicable",
-					"reason": "PU-006 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
-					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
-				},
 				"simplify": {
 					"status": "not applicable",
 					"reason": "PU-006 skill lens 'simplify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"unslopify": {
+				"improve-codebase-architecture": {
 					"status": "not applicable",
-					"reason": "PU-006 skill lens 'unslopify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-006 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"he-code-review": {
+				"sy-review": {
 					"status": "not applicable",
-					"reason": "PU-006 skill lens 'he-code-review' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-006 skill lens 'sy-review' was introduced into the required slice-completion contract after the historical pre-R064 slice; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
+					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R280"
 				},
 				"testing": {
 					"status": "not applicable",
@@ -389,29 +353,23 @@
 				"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R015"
 			],
 			"sliceSkillLensResults": {
-				"improve-codebase-architecture": {
-					"status": "not applicable",
-					"reason": "PU-007 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
-					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
-				},
 				"simplify": {
 					"status": "not applicable",
 					"reason": "PU-007 skill lens 'simplify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"unslopify": {
+				"improve-codebase-architecture": {
 					"status": "not applicable",
-					"reason": "PU-007 skill lens 'unslopify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-007 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"he-code-review": {
+				"sy-review": {
 					"status": "not applicable",
-					"reason": "PU-007 skill lens 'he-code-review' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-007 skill lens 'sy-review' was introduced into the required slice-completion contract after the historical pre-R064 slice; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
+					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R280"
 				},
 				"testing": {
 					"status": "not applicable",
@@ -450,29 +408,23 @@
 				"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R018"
 			],
 			"sliceSkillLensResults": {
-				"improve-codebase-architecture": {
-					"status": "not applicable",
-					"reason": "PU-008 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
-					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
-				},
 				"simplify": {
 					"status": "not applicable",
 					"reason": "PU-008 skill lens 'simplify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"unslopify": {
+				"improve-codebase-architecture": {
 					"status": "not applicable",
-					"reason": "PU-008 skill lens 'unslopify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-008 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"he-code-review": {
+				"sy-review": {
 					"status": "not applicable",
-					"reason": "PU-008 skill lens 'he-code-review' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-008 skill lens 'sy-review' was introduced into the required slice-completion contract after the historical pre-R064 slice; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
+					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R280"
 				},
 				"testing": {
 					"status": "not applicable",
@@ -512,29 +464,23 @@
 				"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R025"
 			],
 			"sliceSkillLensResults": {
-				"improve-codebase-architecture": {
-					"status": "not applicable",
-					"reason": "PU-009 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
-					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
-				},
 				"simplify": {
 					"status": "not applicable",
 					"reason": "PU-009 skill lens 'simplify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"unslopify": {
+				"improve-codebase-architecture": {
 					"status": "not applicable",
-					"reason": "PU-009 skill lens 'unslopify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-009 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"he-code-review": {
+				"sy-review": {
 					"status": "not applicable",
-					"reason": "PU-009 skill lens 'he-code-review' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-009 skill lens 'sy-review' was introduced into the required slice-completion contract after the historical pre-R064 slice; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
+					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R280"
 				},
 				"testing": {
 					"status": "not applicable",
@@ -571,29 +517,23 @@
 				"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R026"
 			],
 			"sliceSkillLensResults": {
-				"improve-codebase-architecture": {
-					"status": "not applicable",
-					"reason": "PU-010 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
-					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
-				},
 				"simplify": {
 					"status": "not applicable",
 					"reason": "PU-010 skill lens 'simplify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"unslopify": {
+				"improve-codebase-architecture": {
 					"status": "not applicable",
-					"reason": "PU-010 skill lens 'unslopify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-010 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"he-code-review": {
+				"sy-review": {
 					"status": "not applicable",
-					"reason": "PU-010 skill lens 'he-code-review' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-010 skill lens 'sy-review' was introduced into the required slice-completion contract after the historical pre-R064 slice; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
+					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R280"
 				},
 				"testing": {
 					"status": "not applicable",
@@ -631,29 +571,23 @@
 				"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R035"
 			],
 			"sliceSkillLensResults": {
-				"improve-codebase-architecture": {
-					"status": "not applicable",
-					"reason": "PU-011 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
-					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
-				},
 				"simplify": {
 					"status": "not applicable",
 					"reason": "PU-011 skill lens 'simplify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"unslopify": {
+				"improve-codebase-architecture": {
 					"status": "not applicable",
-					"reason": "PU-011 skill lens 'unslopify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-011 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"he-code-review": {
+				"sy-review": {
 					"status": "not applicable",
-					"reason": "PU-011 skill lens 'he-code-review' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-011 skill lens 'sy-review' was introduced into the required slice-completion contract after the historical pre-R064 slice; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
+					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R280"
 				},
 				"testing": {
 					"status": "not applicable",
@@ -691,29 +625,23 @@
 				"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R042"
 			],
 			"sliceSkillLensResults": {
-				"improve-codebase-architecture": {
-					"status": "not applicable",
-					"reason": "PU-012 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
-					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
-				},
 				"simplify": {
 					"status": "not applicable",
 					"reason": "PU-012 skill lens 'simplify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"unslopify": {
+				"improve-codebase-architecture": {
 					"status": "not applicable",
-					"reason": "PU-012 skill lens 'unslopify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-012 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"he-code-review": {
+				"sy-review": {
 					"status": "not applicable",
-					"reason": "PU-012 skill lens 'he-code-review' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-012 skill lens 'sy-review' was introduced into the required slice-completion contract after the historical pre-R064 slice; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
+					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R280"
 				},
 				"testing": {
 					"status": "not applicable",
@@ -751,29 +679,23 @@
 				"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R045"
 			],
 			"sliceSkillLensResults": {
-				"improve-codebase-architecture": {
-					"status": "not applicable",
-					"reason": "PU-013 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
-					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
-				},
 				"simplify": {
 					"status": "not applicable",
 					"reason": "PU-013 skill lens 'simplify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"unslopify": {
+				"improve-codebase-architecture": {
 					"status": "not applicable",
-					"reason": "PU-013 skill lens 'unslopify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-013 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"he-code-review": {
+				"sy-review": {
 					"status": "not applicable",
-					"reason": "PU-013 skill lens 'he-code-review' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-013 skill lens 'sy-review' was introduced into the required slice-completion contract after the historical pre-R064 slice; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
+					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R280"
 				},
 				"testing": {
 					"status": "not applicable",
@@ -811,29 +733,23 @@
 				"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R047"
 			],
 			"sliceSkillLensResults": {
-				"improve-codebase-architecture": {
-					"status": "not applicable",
-					"reason": "PU-014 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
-					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
-				},
 				"simplify": {
 					"status": "not applicable",
 					"reason": "PU-014 skill lens 'simplify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"unslopify": {
+				"improve-codebase-architecture": {
 					"status": "not applicable",
-					"reason": "PU-014 skill lens 'unslopify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-014 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"he-code-review": {
+				"sy-review": {
 					"status": "not applicable",
-					"reason": "PU-014 skill lens 'he-code-review' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-014 skill lens 'sy-review' was introduced into the required slice-completion contract after the historical pre-R064 slice; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
+					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R280"
 				},
 				"testing": {
 					"status": "not applicable",
@@ -871,29 +787,23 @@
 				"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R051"
 			],
 			"sliceSkillLensResults": {
-				"improve-codebase-architecture": {
-					"status": "not applicable",
-					"reason": "PU-015 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
-					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
-				},
 				"simplify": {
 					"status": "not applicable",
 					"reason": "PU-015 skill lens 'simplify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"unslopify": {
+				"improve-codebase-architecture": {
 					"status": "not applicable",
-					"reason": "PU-015 skill lens 'unslopify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-015 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"he-code-review": {
+				"sy-review": {
 					"status": "not applicable",
-					"reason": "PU-015 skill lens 'he-code-review' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-015 skill lens 'sy-review' was introduced into the required slice-completion contract after the historical pre-R064 slice; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
+					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R280"
 				},
 				"testing": {
 					"status": "not applicable",
@@ -931,29 +841,23 @@
 				"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R061"
 			],
 			"sliceSkillLensResults": {
-				"improve-codebase-architecture": {
-					"status": "not applicable",
-					"reason": "PU-016 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
-					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
-				},
 				"simplify": {
 					"status": "not applicable",
 					"reason": "PU-016 skill lens 'simplify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"unslopify": {
+				"improve-codebase-architecture": {
 					"status": "not applicable",
-					"reason": "PU-016 skill lens 'unslopify' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-016 skill lens 'improve-codebase-architecture' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
 					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
 				},
-				"he-code-review": {
+				"sy-review": {
 					"status": "not applicable",
-					"reason": "PU-016 skill lens 'he-code-review' predates the R064 full per-slice review member-evidence contract; this ledger ratifies the historical slice without fabricating pass evidence.",
+					"reason": "PU-016 skill lens 'sy-review' was introduced into the required slice-completion contract after the historical pre-R064 slice; this ledger ratifies the historical slice without fabricating pass evidence.",
 					"owner": "goal-coordinator",
-					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R064"
+					"acceptedExceptionRef": "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R280"
 				},
 				"testing": {
 					"status": "not applicable",

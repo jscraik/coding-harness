@@ -190,9 +190,14 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   `src/lib/external-state/`; validators must keep reviewer artifact receipts,
   unresolved review threads, source completeness, TTL freshness, head SHA, and
   claim-support eligibility separate before delivery-truth composition consumes
-  those packet families; refresh architecture context and keep `AGENTS.md`,
-  `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized
-  when docs-gate reports architecture-context or agent-governance surfaces
+  those packet families; any `src/lib/pr-closeout/` bridge that derives these
+  packets from normalized closeout input must stay read-only and
+  validator-backed, may compose only `remote_checks_current` and
+  `review_threads_resolved`, and must not become a merge, Linear, root-hygiene,
+  or Judge/PM readiness authority; refresh architecture
+  context and keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and
+  this guide synchronized when docs-gate reports architecture-context or
+  agent-governance surfaces
 - action-review receipt changes should keep high-risk action review evidence in
   `src/lib/action-review/` as contract-only, `not_yet_emitted` governance
   packets for merge, release, destructive cleanup, and external tracker
