@@ -337,7 +337,7 @@ function extractActiveArtifactPaths(content: string): string[] {
 		if (path) paths.add(path);
 	}
 	for (const match of content.matchAll(
-		/(?:^|[\s|])((?:\.\/)?\.harness\/[A-Za-z0-9._/-]+)(?=$|[\s|.,;:)])/gm,
+		/(?:^|[\s|`])((?:\.\/)?\.harness\/[A-Za-z0-9._/-]+)(?=$|[\s|`.,;:)])/gm,
 	)) {
 		const path = normaliseActiveArtifactPath(match[1] ?? "");
 		if (path) paths.add(path);
