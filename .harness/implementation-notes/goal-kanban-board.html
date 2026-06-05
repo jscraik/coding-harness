@@ -644,6 +644,17 @@
         risk: "Starting the next implementation slice before PR merge proof recreates stacked PR conflicts and stale review-thread churn."
       },
       {
+        id: "ci-migrate-apply-command-repair",
+        lane: "remote",
+        title: "P2: ci-migrate apply command repair",
+        status: "validated",
+        tags: ["P2 review", "ci-migrate", "packaged skill"],
+        summary: "The documented and packaged CI migration apply step now uses the supported command form instead of the rejected positional prepare plus --apply combination.",
+        evidence: ["Old form: pnpm exec harness ci-migrate prepare --provider circleci --apply --json -> reproduces action conflict", "New form: pnpm exec harness ci-migrate --provider circleci --apply --json -> reaches HARNESS_CI_MIGRATE_SIGNING_KEY prerequisite", "Stale command search across README, docs, .agents/skills/coding-harness, and scripts/validate-packaged-skill.cjs -> absent", "node scripts/validate-packaged-skill.cjs -> pass", "pnpm skill:validate -> pass", "bash scripts/validate-codestyle.sh --fast -> pass"],
+        next: "Commit this focused review repair, open the slice PR, trigger CodeRabbit, and sweep that PR before returning to runtime verifier implementation.",
+        risk: "This fixes operator guidance and downstream skill packaging. It does not prove runtime producer emission, delivery-truth consumption, Linear freshness, Judge/PM readiness, or parent-goal completion."
+      },
+      {
         id: "source-freshness",
         lane: "intent",
         title: "Source freshness current after PR #348",
