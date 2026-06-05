@@ -2,6 +2,7 @@
 schema_version: 1
 lifecycle_schema: harness-document-lifecycle/v1
 artifact_id: reader-task-documentation-eval-plan
+plan_id: reader-task-documentation-eval-plan
 artifact_type: he-plan
 canonical_slug: reader-task-documentation-eval
 title: Reader-Task Documentation Eval Plan
@@ -18,10 +19,10 @@ created: 2026-06-04
 last_reviewed: 2026-06-04
 review_cadence: event-driven
 validated_by:
-  - python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-06-04-reader-task-documentation-eval-plan.md
-  - python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-06-04-reader-task-documentation-eval-plan.md
-  - python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/scripts/check_bluf_structure.py .harness/plan/2026-06-04-reader-task-documentation-eval-plan.md --json
-  - python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/scripts/check_generated_artifact_shape.py .harness/plan/2026-06-04-reader-task-documentation-eval-plan.md --kind plan --json
+  - python3 ./Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-06-04-reader-task-documentation-eval-plan.md
+  - python3 ./Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-06-04-reader-task-documentation-eval-plan.md
+  - python3 ./Plugins/harness-engineering/scripts/check_bluf_structure.py .harness/plan/2026-06-04-reader-task-documentation-eval-plan.md --json
+  - python3 ./Plugins/harness-engineering/scripts/check_generated_artifact_shape.py .harness/plan/2026-06-04-reader-task-documentation-eval-plan.md --kind plan --json
   - pnpm docs:lint
   - pnpm docs:lifecycle
 depends_on:
@@ -402,10 +403,10 @@ JSC-394 depends on JSC-393 metadata authority. JSC-397 should wait until JSC-394
 
 | Gate | When | Status | Observable Behavior / Source Proof |
 | --- | --- | --- | --- |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-06-04-reader-task-documentation-eval-plan.md` | Plan creation | required | Proves the plan carries valid Harness Engineering artifact identity metadata before it can drive work. |
-| `python3 /Users/jamiecraik/dev/agent-skills/Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-06-04-reader-task-documentation-eval-plan.md` | Plan creation | required | Proves JSC-394 traceability is present and tied back to parent JSC-392. |
-| `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/scripts/check_bluf_structure.py .harness/plan/2026-06-04-reader-task-documentation-eval-plan.md --json` | Plan creation | required | Proves the handoff has a decision, risks, and next action visible before implementation. |
-| `python3 /Users/jamiecraik/dev/agent-skills/Plugins/harness-engineering/scripts/check_generated_artifact_shape.py .harness/plan/2026-06-04-reader-task-documentation-eval-plan.md --kind plan --json` | Plan creation | required | Proves the plan names source evidence, validation behavior, visual sequence, rollback, and implementation units. |
+| `python3 ./Infrastructure/scripts/validation-and-linting/he_artifact_identity_lint.py .harness/plan/2026-06-04-reader-task-documentation-eval-plan.md` | Plan creation | required | Proves the plan carries valid Harness Engineering artifact identity metadata before it can drive work. |
+| `python3 ./Infrastructure/scripts/validation-and-linting/he_linear_traceability_lint.py .harness/plan/2026-06-04-reader-task-documentation-eval-plan.md` | Plan creation | required | Proves JSC-394 traceability is present and tied back to parent JSC-392. |
+| `python3 ./Plugins/harness-engineering/scripts/check_bluf_structure.py .harness/plan/2026-06-04-reader-task-documentation-eval-plan.md --json` | Plan creation | required | Proves the handoff has a decision, risks, and next action visible before implementation. |
+| `python3 ./Plugins/harness-engineering/scripts/check_generated_artifact_shape.py .harness/plan/2026-06-04-reader-task-documentation-eval-plan.md --kind plan --json` | Plan creation | required | Proves the plan names source evidence, validation behavior, visual sequence, rollback, and implementation units. |
 | `pnpm docs:lint` | Plan and implementation | required | Proves markdown and documentation style remain valid after command or docs updates. |
 | `pnpm docs:lifecycle --json` | Plan and implementation | required | Proves lifecycle metadata still passes after adding or touching documentation surfaces. |
 | `pnpm test -- src/lib/docs-surface/docs-task-eval.test.ts` | After PU-001 | required | Proves fixture validation, report status, missing-source failures, and advisory warning behavior in the source module. |

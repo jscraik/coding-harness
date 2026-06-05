@@ -24,6 +24,7 @@ const KEBAB_CASE_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export function validateFixture(
 	candidate: unknown,
 	contract: FixtureValidationContract,
+	index?: number,
 ): FixtureValidation {
 	if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
 		return {
@@ -40,7 +41,9 @@ export function validateFixture(
 	}
 	const record = candidate as Record<string, unknown>;
 	const fixtureId =
-		typeof record.id === "string" ? record.id : "unknown-fixture";
+		typeof record.id === "string"
+			? record.id
+			: `unknown-fixture-${index ?? 0}`;
 	const findings = [
 		...collectUnknownFieldFindings(record, fixtureId, contract.fixtureKeys),
 		...collectRequiredShapeFindings(record, fixtureId),

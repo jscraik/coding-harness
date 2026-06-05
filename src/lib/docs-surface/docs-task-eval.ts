@@ -63,8 +63,13 @@ export function runDocsTaskEval(
 	const results: DocsTaskEvalFixtureResult[] = [];
 	const evidenceRef = new Set<string>();
 
-	for (const fixture of fixtures) {
-		const evaluation = evaluateFixture({ fixture, repoRoot, evidenceRef });
+	for (let i = 0; i < fixtures.length; i++) {
+		const evaluation = evaluateFixture({
+			fixture: fixtures[i],
+			repoRoot,
+			evidenceRef,
+			index: i,
+		});
 		findings.push(...evaluation.findings);
 		results.push(evaluation.result);
 	}
@@ -101,12 +106,17 @@ function evaluateFixture(options: {
 	fixture: unknown;
 	repoRoot: string;
 	evidenceRef: Set<string>;
+	index: number;
 }): FixtureEvaluation {
-	const validation = validateFixture(options.fixture, {
-		fixtureKeys: FIXTURE_KEYS,
-		categories: DOCS_TASK_EVAL_CATEGORIES,
-		severities: ["advisory", "required"],
-	});
+	const validation = validateFixture(
+		options.fixture,
+		{
+			fixtureKeys: FIXTURE_KEYS,
+			categories: DOCS_TASK_EVAL_CATEGORIES,
+			severities: ["advisory", "required"],
+		},
+		options.index,
+	);
 	const findings = [...validation.findings];
 	if (validation.fixture) {
 		findings.push(
