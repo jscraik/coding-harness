@@ -360,6 +360,30 @@ def check_receipt_local_path_hygiene(receipts_path: Path) -> int:
     return 0
 
 
+def check_duplicate_receipt_ids(receipts_path: Path) -> int:
+    seen: dict[str, int] = {}
+    violations: list[str] = []
+    for line_number, receipt in load_runtime_evidence_receipts(receipts_path):
+        receipt_id = receipt.get("id")
+        if not isinstance(receipt_id, str) or not receipt_id.strip():
+            continue
+        normalized_id = receipt_id.strip()
+        first_line = seen.get(normalized_id)
+        if first_line is None:
+            seen[normalized_id] = line_number
+            continue
+        violations.append(
+            "Runtime evidence cockpit receipt id must be unique: "
+            f"{normalized_id} appears at lines {first_line} and {line_number}. "
+            "Append a new receipt id or remove the duplicate before using this "
+            "goal board as route truth."
+        )
+    if violations:
+        print("\n".join(violations), file=sys.stderr)
+        return 1
+    return 0
+
+
 def run_goal_extensions(argv: list[str]) -> int:
     goal_path = resolve_runtime_evidence_goal_path(argv)
     if goal_path is None:
@@ -457,6 +481,12 @@ def run_goal_extensions(argv: list[str]) -> int:
             file=sys.stderr,
         )
         return 1
+
+    duplicate_receipt_status = check_duplicate_receipt_ids(
+        RUNTIME_EVIDENCE_RECEIPTS_PATH,
+    )
+    if duplicate_receipt_status != 0:
+        return duplicate_receipt_status
 
     receipt_hygiene_status = check_receipt_local_path_hygiene(
         RUNTIME_EVIDENCE_RECEIPTS_PATH,
