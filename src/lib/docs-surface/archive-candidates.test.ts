@@ -80,6 +80,36 @@ describe("runDocsArchiveCandidates", () => {
 		expect(report.candidates).toEqual([]);
 	});
 
+	it("protects active artifact paths listed in Markdown table cells", () => {
+		const repoRoot = createFixture({
+			".harness/specs/current.md": frontmatter({
+				authority: "supporting",
+				canon_class: "supporting",
+				lifecycle_state: "superseded",
+			}),
+		});
+
+		const report = runDocsArchiveCandidates({
+			repoRoot,
+			trackedFiles: [".harness/specs/current.md"],
+			now: new Date("2026-06-05T00:00:00.000Z"),
+			activeArtifactsContent: [
+				"| Route | Artifact |",
+				"| --- | --- |",
+				"| JSC-395 | .harness/specs/current.md |",
+			].join("\n"),
+		});
+
+		expect(report.repairFindings).toEqual([]);
+		expect(report.protectedFiles).toContainEqual(
+			expect.objectContaining({
+				path: ".harness/specs/current.md",
+				reasons: expect.arrayContaining(["active_artifact_reference"]),
+			}),
+		);
+		expect(report.candidates).toEqual([]);
+	});
+
 	it("ignores generated projections and points reviewers at the source", () => {
 		const repoRoot = createFixture({
 			"AI/context/diagram-context.md": "# Generated\n",

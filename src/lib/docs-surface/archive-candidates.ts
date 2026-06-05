@@ -206,10 +206,7 @@ function readActiveArtifacts(
 			],
 		};
 	}
-	const linkedPaths = [...content.matchAll(/\((\.?\.?\/?[^)#]+)\)/g)]
-		.map((match) => match[1] ?? "")
-		.map((value) => value.replace(/^\.\//, ""))
-		.filter((value) => value.startsWith(".harness/"));
+	const linkedPaths = extractActiveArtifactPaths(content);
 	const stalePaths = linkedPaths.filter(
 		(linkedPath) => !existsSync(resolve(repoRoot, linkedPath)),
 	);
@@ -234,6 +231,33 @@ function readActiveArtifacts(
 		),
 		findings,
 	};
+}
+
+function extractActiveArtifactPaths(content: string): string[] {
+	const paths = new Set<string>();
+	for (const match of content.matchAll(/\(([^)#?]+)(?:[#?][^)]*)?\)/g)) {
+		const path = normaliseActiveArtifactPath(match[1] ?? "");
+		if (path) paths.add(path);
+	}
+	for (const match of content.matchAll(
+		/(?:^|[\s|])((?:\.\/)?\.harness\/[A-Za-z0-9._/-]+)(?=$|[\s|.,;:)])/gm,
+	)) {
+		const path = normaliseActiveArtifactPath(match[1] ?? "");
+		if (path) paths.add(path);
+	}
+	return [...paths].sort();
+}
+
+function normaliseActiveArtifactPath(rawPath: string): string | null {
+	const trimmed = rawPath.trim().replace(/^\.\//, "");
+	if (
+		!trimmed.startsWith(".harness/") ||
+		trimmed.includes("\\") ||
+		trimmed.split("/").includes("..")
+	) {
+		return null;
+	}
+	return trimmed;
 }
 
 function parseMetadata(content: string): Record<string, string | string[]> {

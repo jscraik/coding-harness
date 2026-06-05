@@ -44,4 +44,23 @@ describe("scanArchiveCandidateSources", () => {
 			"docs/agents/01-instruction-map.md",
 		]);
 	});
+
+	it("resolves bare Markdown links relative to the source file directory", () => {
+		const refs = extractRepoPathReferences(
+			"docs/agents/guide.md",
+			[
+				"[Sibling](quickstart.md)",
+				"[Nested](references/checklist.md#top)",
+				"[Root](docs/architecture/root-surface-classification.md)",
+				"depends_on: docs/agents/01-instruction-map.md",
+			].join("\n"),
+		);
+
+		expect(refs).toEqual([
+			"docs/agents/01-instruction-map.md",
+			"docs/agents/quickstart.md",
+			"docs/agents/references/checklist.md",
+			"docs/architecture/root-surface-classification.md",
+		]);
+	});
 });

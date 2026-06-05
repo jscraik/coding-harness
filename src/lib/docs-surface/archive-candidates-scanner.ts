@@ -113,19 +113,19 @@ export function extractRepoPathReferences(
 ): readonly string[] {
 	const refs = new Set<string>();
 	for (const match of content.matchAll(/\[[^\]]*\]\(([^)#?:][^)]*)\)/g)) {
-		const ref = normaliseReference(path, match[1] ?? "");
+		const ref = normaliseMarkdownReference(path, match[1] ?? "");
 		if (ref) refs.add(ref);
 	}
 	for (const match of content.matchAll(
 		/(?:path|depends_on|validated_by|source_ref|canonical_destination|superseded_by):\s*["']?([^"',\]\s]+)["']?/g,
 	)) {
-		const ref = normaliseReference(path, match[1] ?? "");
+		const ref = normaliseStructuredReference(match[1] ?? "");
 		if (ref) refs.add(ref);
 	}
 	for (const match of content.matchAll(
 		/["']((?:docs|\.harness|AI|src)\/[^"'#?]+)["']/g,
 	)) {
-		const ref = normaliseReference(path, match[1] ?? "");
+		const ref = normaliseStructuredReference(match[1] ?? "");
 		if (ref) refs.add(ref);
 	}
 	return [...refs].sort();
@@ -139,10 +139,31 @@ function listGitTrackedFiles(repoRoot: string): readonly string[] {
 	return output.split("\0").filter(Boolean).sort();
 }
 
-function normaliseReference(
+function normaliseMarkdownReference(
 	sourcePath: string,
 	rawReference: string,
 ): string | null {
+	const withoutAnchor = cleanReference(rawReference);
+	if (!withoutAnchor) return null;
+	if (isRepoRootReference(withoutAnchor)) {
+		return normaliseRepoReference(withoutAnchor);
+	}
+	const sourceDirectory = sourcePath.includes("/")
+		? sourcePath.slice(0, sourcePath.lastIndexOf("/"))
+		: "";
+	const joined = sourceDirectory
+		? join(sourceDirectory, withoutAnchor)
+		: withoutAnchor;
+	return normaliseRepoReference(joined);
+}
+
+function normaliseStructuredReference(rawReference: string): string | null {
+	const withoutAnchor = cleanReference(rawReference);
+	if (!withoutAnchor) return null;
+	return normaliseRepoReference(withoutAnchor);
+}
+
+function cleanReference(rawReference: string): string | null {
 	const trimmed = rawReference.trim();
 	if (
 		!trimmed ||
@@ -156,13 +177,15 @@ function normaliseReference(
 	}
 	const withoutAnchor = trimmed.split("#")[0]?.split("?")[0] ?? "";
 	if (!withoutAnchor || withoutAnchor.includes("\\")) return null;
-	const sourceDirectory = sourcePath.includes("/")
-		? sourcePath.slice(0, sourcePath.lastIndexOf("/"))
-		: "";
-	const joined = withoutAnchor.startsWith(".")
-		? join(sourceDirectory, withoutAnchor)
-		: withoutAnchor;
-	const normalized = joined.replaceAll(sep, "/");
+	return withoutAnchor;
+}
+
+function normaliseRepoReference(rawReference: string): string | null {
+	const normalized = rawReference.replaceAll(sep, "/");
 	if (normalized.startsWith("../") || normalized.includes("/../")) return null;
 	return normalized;
+}
+
+function isRepoRootReference(rawReference: string): boolean {
+	return /^(?:AI|docs|src|\.harness)\//.test(rawReference);
 }
