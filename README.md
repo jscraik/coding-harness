@@ -625,7 +625,7 @@ in the PR evidence rather than pretending the loop ran.
 
 ```bash
 harness ci-migrate prepare --provider circleci --dry-run
-harness ci-migrate prepare --provider circleci --apply
+harness ci-migrate --provider circleci --apply
 harness ci-migrate verify --snapshot <snapshot-id>
 harness ci-migrate commit --snapshot <snapshot-id>
 ```
