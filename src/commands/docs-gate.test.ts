@@ -1455,4 +1455,47 @@ applies_to:
 			),
 		).toBe(true);
 	});
+
+	it("keeps advisory archive candidates non-blocking in required mode", () => {
+		const root = createTestRoot("docs-gate-archive-candidates");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+		write(
+			join(root, "docs/superseded.md"),
+			[
+				"---",
+				"authority: supporting",
+				"canon_class: supporting",
+				"lifecycle_state: superseded",
+				"last_reviewed: 2025-01-01",
+				"---",
+				"# Superseded",
+			].join("\n"),
+		);
+		const env = createIsolatedGitEnv();
+		execFileSync("git", ["init"], { cwd: root, env });
+		execFileSync("git", ["add", "."], { cwd: root, env });
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: [],
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.report.outcome).toBe("ok");
+		expect(result.report.status).toBe("partial");
+		expect(result.report.summary.archive_candidate_count).toBe(1);
+		expect(
+			result.report.findings.some(
+				(finding) =>
+					finding.rule_id === "docs.archive_candidates.advisory" &&
+					finding.severity === "warning",
+			),
+		).toBe(true);
+	});
 });

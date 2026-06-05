@@ -23,6 +23,7 @@ import {
 	renderGateDecision,
 } from "../lib/output/normalise.js";
 import { isNonWorkflowRequiredCheck } from "../lib/policy/required-checks.js";
+import { collectArchiveCandidateDocsGateProjection } from "./docs-gate-archive-candidates.js";
 
 /** Docs Gate Mode. */
 export type DocsGateMode = "advisory" | "required";
@@ -124,6 +125,10 @@ export interface DocsGateReport {
 		contradiction_count: number;
 		bootstrap_gap_count: number;
 		unknown_category_count: number;
+		archive_candidate_count?: number;
+		archive_repair_finding_count?: number;
+		archive_protected_file_count?: number;
+		archive_ignored_file_count?: number;
 	};
 	findings: DocsFinding[];
 }
@@ -1585,6 +1590,17 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 		mode,
 	);
 	findings.push(...contradictionFindings);
+	const archiveCandidateProjection =
+		collectArchiveCandidateDocsGateProjection(repoRoot);
+	findings.push(...archiveCandidateProjection.findings);
+	if (
+		archiveCandidateProjection.findings.some(
+			(finding) => finding.severity === "error",
+		) &&
+		outcome !== "policy_error"
+	) {
+		outcome = "runtime_error";
+	}
 	if (
 		changedFilesResolutionIsBlocking ||
 		contradictionFindings.some(
@@ -1637,6 +1653,7 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 			contradiction_count: contradictionFindings.length,
 			bootstrap_gap_count: 0,
 			unknown_category_count: unknownFiles.length,
+			...archiveCandidateProjection.counts,
 		},
 		findings,
 	};
