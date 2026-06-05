@@ -105,6 +105,9 @@ Then preview the scaffold before writing files:
 harness init --dry-run
 ```
 
+**Expected:** File list preview showing harness.contract.json, .harness/ directory, and scaffold files.
+**On failure:** Inspect diff output for missing/unexpected files (developer); re-run with `--verbose` for diagnostics (developer).
+
 Apply the standard scaffold only after the preview looks right:
 
 ```bash
@@ -112,6 +115,9 @@ harness init --track
 harness contract validate
 harness health --json
 ```
+
+**Expected:** `harness init --track` creates harness.contract.json and .harness/ directory; `contract validate` reports zero validation errors; `health --json` shows all readiness checks passing.
+**On failure:** For init issues, check file permissions and inspect validation output (developer); for health failures, check service logs or retry health checks (infra).
 
 ### Lite Adoption
 
@@ -124,12 +130,18 @@ harness contract validate
 harness check --json
 ```
 
+**Expected:** `init --minimal --track` creates minimal harness.contract.json; `contract init --preset lite --force` overwrites contract with lite preset (note: `--force` skips confirmation and replaces existing contract); `contract validate` passes with zero errors; `check --json` output contains readiness status.
+**On failure:** Common causes include conflicting existing contracts (remove or back up first), permission issues (check file ownership), or validation errors (inspect output and fix contract schema); developer owns remediation.
+
 Upgrade from lite to the standard policy set when the team is ready:
 
 ```bash
 harness contract init --preset standard --force
 harness contract validate
 ```
+
+**Expected:** `contract init --preset standard --force` updates harness.contract.json to standard preset (note: `--force` replaces existing contract); `contract validate` passes.
+**On failure:** Check for validation errors in output and verify contract schema (developer).
 
 ## Use It
 
@@ -142,6 +154,9 @@ harness contract validate
 harness health --json
 ```
 
+**Expected:** `harness init --dry-run` shows file list preview; `harness init --track` creates harness.contract.json, .harness/ directory, and scaffold files; `harness contract validate` passes with zero errors; `harness health --json` reports all readiness checks green.
+**On failure:** For init or validation failures, inspect output and check file permissions (developer); for health failures, verify service availability or retry checks (infra/developer).
+
 Use this when a repository needs harness-managed contracts, workflow scaffolding, review policy surfaces, repo-local verification scripts, and rollback metadata.
 
 ### Start Work On An Issue
@@ -152,6 +167,12 @@ harness preflight-gate --contract harness.contract.json --files <changed-files> 
 harness policy-gate --contract harness.contract.json --files <changed-files>
 harness blast-radius --files <changed-files> --json
 ```
+
+**Expected outcomes:**
+- `harness linear prepare`: Branch context created and linked to issue KEY.
+- `harness preflight-gate`: Admission declaration written to artifacts/admission/declaration.json; exits 0 on success, non-zero on gate failure.
+- `harness policy-gate`: Policy checks applied to changed files; exits 0 on success, non-zero on policy violation.
+- `harness blast-radius --json`: File-level impact classification JSON output showing change scope and affected areas.
 
 Use this when you need branch context, traceability, and file-scoped gates before implementation.
 
@@ -164,7 +185,13 @@ harness review-gate --token "$GITHUB_TOKEN" --owner <owner> --repo <repo> --pr <
 harness verify-coderabbit --json
 ```
 
-Use this when a PR needs local proof, review wiring checks, and traceability before handoff. See the operator docs for closeout rules.
+**Expected outcomes:**
+- `harness docs-gate`: Advisory mode reports doc drift without blocking (exit 0).
+- `harness plan-gate`: Confirms plan-id and traceability metadata present; exits 0 on success, non-zero if missing.
+- `harness review-gate`: Verifies required reviewers and approval state; exits 0 on success, non-zero on missing approvals.
+- `harness verify-coderabbit`: Returns JSON success/validation status.
+
+Use this when a PR needs local proof, review wiring checks, and traceability before handoff. See [Validation](./docs/agents/04-validation.md) for closeout rules.
 
 ### Migrate CI With Rollback
 
