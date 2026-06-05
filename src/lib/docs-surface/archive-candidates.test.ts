@@ -110,6 +110,33 @@ describe("runDocsArchiveCandidates", () => {
 		expect(report.candidates).toEqual([]);
 	});
 
+	it("does not count self-references as inbound documentation evidence", () => {
+		const repoRoot = createFixture({
+			"docs/supporting.md": [
+				frontmatter({
+					authority: "supporting",
+					canon_class: "supporting",
+					source_ref: "docs/supporting.md",
+				}),
+				"[Self](supporting.md)",
+			].join("\n"),
+		});
+
+		const report = runDocsArchiveCandidates({
+			repoRoot,
+			trackedFiles: ["docs/supporting.md"],
+			now: new Date("2026-06-05T00:00:00.000Z"),
+			activeArtifactsContent: "",
+		});
+
+		expect(report.candidates).toContainEqual(
+			expect.objectContaining({
+				path: "docs/supporting.md",
+				reasons: ["no_inbound_references"],
+			}),
+		);
+	});
+
 	it("ignores generated projections and points reviewers at the source", () => {
 		const repoRoot = createFixture({
 			"AI/context/diagram-context.md": "# Generated\n",

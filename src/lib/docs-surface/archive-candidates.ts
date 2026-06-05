@@ -171,6 +171,7 @@ function collectReferences(
 			file.path,
 			file.content,
 		)) {
+			if (reference === file.path) continue;
 			references.add(reference);
 		}
 	}
