@@ -283,7 +283,7 @@ export function validateDocsArchiveCandidatesReport(
 }
 
 function containsDestructiveActionText(value: string): boolean {
-	return /(?:delete|move|archive_now|apply|write|rm|demote)/i.test(value);
+	return /\b(?:archive|archived|archive_now|delete|move|apply|write|rm|demote)\b/i.test(value);
 }
 
 function collectReportPaths(report: DocsArchiveCandidatesReport): string[] {

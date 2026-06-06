@@ -446,7 +446,8 @@ function archiveIndexRepairFinding(
 	metadata: Record<string, string | string[]>,
 	references: Set<string>,
 ): ArchiveRepairFinding | null {
-	if (metadata.lifecycle_state !== "archived" || references.has(path))
+	const status = lifecycleStatus(metadata);
+	if (status !== "archived" || references.has(path))
 		return null;
 	return {
 		path,

@@ -89,6 +89,15 @@ describe("validatePrTemplateBody", () => {
 		expect(validatePrTemplateBody(VALID_BODY)).toEqual([]);
 	});
 
+	it("fails when the Motivation section is missing", () => {
+		const MISSING_MOTIVATION_BODY = VALID_BODY.replace(
+			/## Motivation\n\n- Motivation:.*?\n.*?\n.*?\n\n/s,
+			"",
+		);
+		const errors = validatePrTemplateBody(MISSING_MOTIVATION_BODY);
+		expect(errors).toContain("Missing required section: ## Motivation");
+	});
+
 	it("fails linked issue bodies without acceptance IDs or preparatory relationship", () => {
 		const body = VALID_BODY.replace(
 			"- Acceptance trace: JSC-999 SA-999-001 -> src/lib/pr-template-validator.test.ts.",

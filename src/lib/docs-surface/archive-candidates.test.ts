@@ -151,21 +151,22 @@ describe("runDocsArchiveCandidates", () => {
 				authority: "supporting",
 				canon_class: "supporting",
 			}),
+			".harness/specs/empty.md": "",
 		});
 
 		const report = runDocsArchiveCandidates({
 			repoRoot,
-			trackedFiles: [".harness/specs/current.md"],
+			trackedFiles: [".harness/specs/current.md", ".harness/specs/empty.md"],
 			now: new Date("2026-06-05T00:00:00.000Z"),
 			activeArtifactsContent:
-				"[Current](.harness/specs/current.md) [Untracked](.harness/specs/untracked.md)",
+				"[Current](.harness/specs/current.md) [Untracked](.harness/specs/untracked.md) [Empty](.harness/specs/empty.md)",
 		});
 
 		expect(report.repairFindings).toContainEqual(
 			expect.objectContaining({
 				path: ".harness/active-artifacts.md",
 				code: "active_reference_stale_or_unverified",
-				evidenceRefs: expect.arrayContaining([".harness/specs/untracked.md"]),
+				evidenceRefs: expect.arrayContaining([".harness/specs/empty.md", ".harness/specs/untracked.md"]),
 			}),
 		);
 		expect(report.protectedFiles).toContainEqual(
@@ -241,13 +242,13 @@ describe("runDocsArchiveCandidates", () => {
 			repoRoot,
 			trackedFiles: [],
 			now: new Date("2026-06-05T00:00:00.000Z"),
-			activeArtifactsPath: "/Users/jamiecraik/private.md",
+			activeArtifactsPath: "/absolute/path/secret.md",
 		});
 
 		expect(report.evidenceRefs).toContain(".harness/active-artifacts.md");
-		expect(JSON.stringify(report)).not.toContain(
-			"/Users/jamiecraik/private.md",
-		);
+		const serialized = JSON.stringify(report);
+		expect(serialized).not.toMatch(/^[A-Za-z]:\\/);
+		expect(serialized).not.toMatch(/"\/[^"]/);
 		expect(report.repairFindings).toContainEqual(
 			expect.objectContaining({
 				path: ".harness/active-artifacts.md",
