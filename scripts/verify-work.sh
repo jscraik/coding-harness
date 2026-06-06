@@ -637,11 +637,16 @@ run_gate_command() {
 				echo "[verify-work] hook-governance scope manifest missing"
 				return 1
 			fi
+			local hook_project_root
+			hook_project_root="$(dirname "$(dirname "$hook_inventory_builder")")"
+			(
+				cd "$hook_project_root"
 				UV_CACHE_DIR="${UV_CACHE_DIR:-$repo_root/.cache/uv-python-types-cache}" \
 				UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-$repo_root/.cache/uv-python-types}" \
 				uv run --python 3.12 --group dev python "$hook_inventory_builder" \
 				--manifest "$hook_scope_manifest" \
 				--out "$hook_inventory_output"
+			)
 			;;
 		hook-governance-rollout-check)
 			echo

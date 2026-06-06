@@ -19,7 +19,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 import yaml
 
 
-REPO_ROOT = Path.cwd()
+REPO_ROOT = Path(__file__).resolve().parent.parent
 DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 JSON_SCHEMA_DRAFTS = {
     "https://json-schema.org/draft/2020-12/schema",
@@ -465,10 +465,20 @@ def validate_tool_versions(errors: list[str]) -> None:
     )
     engines = as_object_map(package_json.get("engines"))
     node_engine = engines.get("node") if engines is not None else None
+    node_version_valid = False
+    if isinstance(node_engine, str) and node_engine.startswith(">="):
+        # Parse the minimum version from formats like ">=24", ">=24.0.0", ">=24.0.0 <25"
+        version_str = node_engine[2:].strip().split()[0]
+        version_parts = version_str.split(".")
+        try:
+            major = int(version_parts[0])
+            node_version_valid = major >= 24
+        except (ValueError, IndexError):
+            pass
     require(
-        isinstance(node_engine, str) and node_engine.startswith(">="),
+        node_version_valid,
         errors,
-        "package.json engines.node must declare a version floor",
+        "package.json engines.node must declare a version floor >= 24.0.0",
     )
 
     tsconfig = as_object_map(load_json(REPO_ROOT / "tsconfig.json"))
@@ -713,18 +723,38 @@ def validate_cli_json_contracts(errors: list[str]) -> tuple[int, int]:
     manifest_path = REPO_ROOT / "contracts/cli-json-contracts.manifest.json"
     try:
         manifest = CliJsonContractsManifest.model_validate(load_json(manifest_path))
-    except ValidationError as exc:
-        details = "; ".join(
-            f"{'.'.join(str(part) for part in error['loc'])}: {error['msg']}"
-            for error in exc.errors()
-        )
-        errors.append(f"contracts/cli-json-contracts.manifest.json: invalid manifest: {details}")
+    except (ValidationError, json.JSONDecodeError, OSError) as exc:
+        if isinstance(exc, ValidationError):
+            details = "; ".join(
+                f"{'.'.join(str(part) for part in error['loc'])}: {error['msg']}"
+                for error in exc.errors()
+            )
+            errors.append(f"contracts/cli-json-contracts.manifest.json: invalid manifest: {details}")
+        else:
+            errors.append(f"contracts/cli-json-contracts.manifest.json: {exc}")
         return (0, 0)
 
     command_catalog_commands = 0
     for contract in manifest.contracts:
-        schema_path = REPO_ROOT / contract.schemaPath
-        example_path = REPO_ROOT / contract.examplePath
+        schema_path = (REPO_ROOT / contract.schemaPath).resolve()
+        example_path = (REPO_ROOT / contract.examplePath).resolve()
+
+        # Ensure paths are within REPO_ROOT to prevent escaping the repository
+        try:
+            schema_path.relative_to(REPO_ROOT)
+        except ValueError:
+            errors.append(
+                f"{contract.name}: schemaPath escapes repository root: {contract.schemaPath}"
+            )
+            continue
+        try:
+            example_path.relative_to(REPO_ROOT)
+        except ValueError:
+            errors.append(
+                f"{contract.name}: examplePath escapes repository root: {contract.examplePath}"
+            )
+            continue
+
         if not schema_path.exists():
             errors.append(f"{contract.name}: schemaPath does not exist: {contract.schemaPath}")
             continue
@@ -732,8 +762,14 @@ def validate_cli_json_contracts(errors: list[str]) -> tuple[int, int]:
             errors.append(f"{contract.name}: examplePath does not exist: {contract.examplePath}")
             continue
 
+        try:
+            example_data = load_json(example_path)
+        except (json.JSONDecodeError, OSError) as exc:
+            errors.append(f"{contract.examplePath}: {exc}")
+            continue
+
         example_count = validate_cli_json_value(
-            load_json(example_path),
+            example_data,
             contract,
             contract.examplePath,
             errors,
