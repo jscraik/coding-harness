@@ -36,10 +36,10 @@ truth with zero review threads and zero unresolved; PR #357 refreshed route trut
 with three CodeRabbit review threads resolved and zero unresolved; PR #358
 refreshed route truth with repo-owned CircleCI, CodeRabbit, Socket, and
 repo-owned security lanes passing before merge. A post-merge PR #358
-review-thread refresh found one unresolved Codex thread requesting latest
-receipt re-anchoring; this route refresh records the corrective current-main
-anchor, but review-thread resolution remains a separate lane until GitHub shows
-the thread resolved or the owner accepts it as review debt. The external Snyk GitHub
+review-thread refresh captured a receipt-anchor caveat at thread
+`PRRT_kwDORWZJCc6Hlynx`; this route refresh records the corrective
+current-main anchor, but review-thread resolution remains a separate lane until
+GitHub shows the thread resolved or the owner accepts it as review debt. The external Snyk GitHub
 App quota/status failure remains an owner-approved waiver for that external
 lane only; it does not claim external Snyk passed and does not waive repo-run
 security, future Snyk results, or future security findings. PR #353 submitted
@@ -193,11 +193,12 @@ runtime producer emission, delivery-truth consumption, or final goal completion.
   PR, CI, review-thread, Project Brain, and runtime evidence truth separated in
   receipts. Historical PR #309 continuity remains indexed by branch head
   `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` for validator compatibility;
-  it is not current route truth. Current route truth is PR #353 merged into
-  `main` at `c475cd76d0c39e0a44789fb1da92b8a2c606773a` after PR #351
-  recorded the post-PR #350 route refresh, PR #352 recorded the
-  doc-history review-proof claim-boundary repair, and PR #353 recorded the
-  post-PR #352 route refresh plus review-thread repairs. Historical
+  it is not current route truth. Current route truth is PR #358 merged into
+  `main` as squash commit
+  `de9db6445acdafb5b9dd7b437ef7476345680cff` with submitted head
+  `30dca4d037062b45d7d119d50606066eece10ec1`; it follows the
+  post-PR #357 route refresh and the PR #358 receipt re-anchoring work.
+  Historical
   PR #322 through PR #350 ledger entries below, including PR #344
   route-refresh, PR #347 body repair, PR #348 review-thread repair, PR #349
   route refresh, and PR #350 ci-migrate repair, are immutable provenance. R149 records
