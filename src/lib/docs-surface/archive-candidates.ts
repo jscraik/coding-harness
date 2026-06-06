@@ -17,6 +17,7 @@ import {
 import { parseMarkdownFrontmatter } from "./doc-lifecycle-frontmatter.js";
 
 const ACTIVE_ARTIFACTS_PATH = ".harness/active-artifacts.md";
+const DOC_LIFECYCLE_MANIFEST_PATH = "docs/doc-lifecycle-manifest.json";
 const ROOT_CANONICAL_DOCS = new Set([
 	"README.md",
 	"AGENTS.md",
@@ -48,6 +49,7 @@ export function runDocsArchiveCandidates(
 	const scan = scanArchiveCandidateSources(scanOptions);
 	const references = collectReferences(scan.files);
 	const trackedPathSet = new Set(scan.trackedFiles);
+	const manifestListedPaths = readLifecycleManifestPaths(repoRoot);
 	const activeArtifacts = readActiveArtifacts(
 		options,
 		repoRoot,
@@ -96,6 +98,7 @@ export function runDocsArchiveCandidates(
 			file.path,
 			metadata,
 			activeArtifacts.verifiedPaths,
+			manifestListedPaths,
 		);
 		if (protectionReasons.length > 0) {
 			protectedFiles.push({
@@ -145,7 +148,7 @@ export function runDocsArchiveCandidates(
 		repairFindings: sortByPath(repairFindings),
 		protectedFiles: sortByPath(protectedFiles),
 		ignoredFiles: sortByPath(ignoredFiles),
-		evidenceRefs: ["docs/doc-lifecycle-manifest.json", activeArtifacts.path],
+		evidenceRefs: [DOC_LIFECYCLE_MANIFEST_PATH, activeArtifacts.path],
 	};
 	return report;
 }
@@ -369,9 +372,11 @@ function collectProtectionReasons(
 	path: string,
 	metadata: Record<string, string | string[]>,
 	activeArtifactPaths: Set<string>,
+	manifestListedPaths: Set<string>,
 ): ArchiveProtectedFile["reasons"] {
 	const reasons: ArchiveProtectedFile["reasons"][number][] = [];
 	if (ROOT_CANONICAL_DOCS.has(path)) reasons.push("root_entrypoint");
+	if (manifestListedPaths.has(path)) reasons.push("manifest_listed");
 	if (metadata.authority === "canon" || metadata.canon_class === "canonical") {
 		reasons.push("canon_or_canonical");
 	}
@@ -389,6 +394,30 @@ function collectProtectionReasons(
 		reasons.push("research_value_retained");
 	}
 	return [...new Set(reasons)];
+}
+
+function readLifecycleManifestPaths(repoRoot: string): Set<string> {
+	const manifestPath = resolve(repoRoot, DOC_LIFECYCLE_MANIFEST_PATH);
+	if (!existsSync(manifestPath)) return new Set();
+	try {
+		const parsed = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+			documents?: unknown;
+		};
+		if (!Array.isArray(parsed.documents)) return new Set();
+		const paths = parsed.documents
+			.map((entry) =>
+				entry &&
+				typeof entry === "object" &&
+				"path" in entry &&
+				typeof entry.path === "string"
+					? entry.path
+					: null,
+			)
+			.filter((path): path is string => Boolean(path));
+		return new Set(paths);
+	} catch {
+		return new Set();
+	}
 }
 
 function classifyCandidate(

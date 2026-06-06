@@ -250,7 +250,7 @@ describe("runDocsArchiveCandidates", () => {
 
 		expect(report.evidenceRefs).toContain(".harness/active-artifacts.md");
 		const serialized = JSON.stringify(report);
-		expect(serialized).not.toMatch(/\"[A-Za-z]:\\/);
+		expect(serialized).not.toMatch(/"[A-Za-z]:\\/);
 		expect(serialized).not.toMatch(/"\/[^"]/);
 		expect(report.repairFindings).toContainEqual(
 			expect.objectContaining({
@@ -306,6 +306,37 @@ describe("runDocsArchiveCandidates", () => {
 				path: "docs/supporting.md",
 				reasons: ["no_inbound_references"],
 			}),
+		);
+	});
+
+	it("protects supporting docs listed in the lifecycle manifest", () => {
+		const repoRoot = createFixture({
+			"docs/doc-lifecycle-manifest.json": JSON.stringify({
+				schema: "coding-harness-doc-lifecycle-manifest/v1",
+				generatedAt: "2026-06-05T00:00:00.000Z",
+				documents: [{ path: "docs/retained.md" }],
+			}),
+			"docs/retained.md": frontmatter({
+				authority: "supporting",
+				canon_class: "supporting",
+			}),
+		});
+
+		const report = runDocsArchiveCandidates({
+			repoRoot,
+			trackedFiles: ["docs/doc-lifecycle-manifest.json", "docs/retained.md"],
+			now: new Date("2026-06-05T00:00:00.000Z"),
+			activeArtifactsContent: "",
+		});
+
+		expect(report.protectedFiles).toContainEqual(
+			expect.objectContaining({
+				path: "docs/retained.md",
+				reasons: expect.arrayContaining(["manifest_listed"]),
+			}),
+		);
+		expect(report.candidates).not.toContainEqual(
+			expect.objectContaining({ path: "docs/retained.md" }),
 		);
 	});
 
