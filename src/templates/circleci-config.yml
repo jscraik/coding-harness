@@ -4,7 +4,7 @@ jobs:
   run-governance-check:
     docker:
       # Pinned to specific minor for reproducibility (JSC-115)
-      - image: cimg/node:24.13
+      - image: cimg/node:26.3.0
     resource_class: small
     parameters:
       check_name:
@@ -39,8 +39,10 @@ jobs:
       - run:
           name: Ensure baseline shell tools
           command: |
+            export GH_BIN="${HARNESS_GH_BIN:-${GH_BIN:-gh}}"
+            echo 'export GH_BIN="${HARNESS_GH_BIN:-${GH_BIN:-gh}}"' >> "$BASH_ENV"
             packages=()
-            if ! command -v gh >/dev/null 2>&1; then
+            if [[ "$GH_BIN" == "gh" ]] && ! command -v gh >/dev/null 2>&1; then
               packages+=("gh")
             fi
             if ! command -v rg >/dev/null 2>&1; then
@@ -62,7 +64,7 @@ jobs:
               sudo apt-get update
               sudo apt-get install -y "${packages[@]}"
             fi
-            gh --version
+            "$GH_BIN" --version
             if ! command -v fd >/dev/null 2>&1 && command -v fdfind >/dev/null 2>&1; then
               mkdir -p "$HOME/.local/bin"
               ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
@@ -139,7 +141,7 @@ jobs:
   snyk-dependency-scan:
     docker:
       # Pinned to specific minor for reproducibility (JSC-115)
-      - image: cimg/node:24.13
+      - image: cimg/node:26.3.0
     resource_class: small
     steps:
       - checkout
@@ -203,7 +205,7 @@ workflows:
               fi
             fi
             if [[ -z "$repo_slug" ]]; then
-              repo_slug="$(gh repo view --json nameWithOwner --jq '.nameWithOwner // ""' 2>/dev/null || true)"
+              repo_slug="$("$GH_BIN" repo view --json nameWithOwner --jq '.nameWithOwner // ""' 2>/dev/null || true)"
             fi
             gh_repo_args=()
             if [[ -n "$repo_slug" ]]; then
@@ -218,14 +220,14 @@ workflows:
                 fi
                 if [[ -z "$resolved" && -n "${CIRCLE_BRANCH:-}" ]]; then
                   if [[ -n "${CIRCLE_PROJECT_USERNAME:-}" ]]; then
-                    resolved="$(gh pr list "${gh_repo_args[@]}" --head "${CIRCLE_PROJECT_USERNAME}:${CIRCLE_BRANCH}" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
+                    resolved="$("$GH_BIN" pr list "${gh_repo_args[@]}" --head "${CIRCLE_PROJECT_USERNAME}:${CIRCLE_BRANCH}" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
                   fi
                 fi
                 if [[ -z "$resolved" && -n "${CIRCLE_BRANCH:-}" ]]; then
-                  resolved="$(gh pr list "${gh_repo_args[@]}" --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
+                  resolved="$("$GH_BIN" pr list "${gh_repo_args[@]}" --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
                 fi
                 if [[ -z "$resolved" && -n "${CIRCLE_SHA1:-}" && -n "$repo_slug" ]]; then
-                  resolved="$(gh api -H "Accept: application/vnd.github+json" "/repos/${repo_slug}/commits/${CIRCLE_SHA1}/pulls" --jq '([.[] | select(.state == "open")][0].html_url // .[0].html_url // "")' 2>/dev/null || true)"
+                  resolved="$("$GH_BIN" api -H "Accept: application/vnd.github+json" "/repos/${repo_slug}/commits/${CIRCLE_SHA1}/pulls" --jq '([.[] | select(.state == "open")][0].html_url // .[0].html_url // "")' 2>/dev/null || true)"
                 fi
                 if [[ -z "$resolved" && "$attempt" -lt 6 ]]; then
                   echo "PR context not available yet for pr-template; retrying ($attempt/6)." >&2
@@ -241,7 +243,7 @@ workflows:
               exit 1
             fi
             export PR_TEMPLATE_BODY
-            PR_TEMPLATE_BODY="$(gh pr view "${gh_repo_args[@]}" "$pr_ref" --json body --jq .body)"
+            PR_TEMPLATE_BODY="$("$GH_BIN" pr view "${gh_repo_args[@]}" "$pr_ref" --json body --jq .body)"
             bash scripts/run-harness-gate.sh pr-template-gate --json
           filters:
             tags:

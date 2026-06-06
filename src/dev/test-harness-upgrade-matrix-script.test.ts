@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { sanitizeGitEnv } from "../lib/workflow-contract/test-harness.js";
 
 const SCRIPT_PATH = resolve("scripts/test-harness-upgrade-matrix.mjs");
-const CODESTYLE_SOURCE_DIR = resolve("codestyle");
+const CODESTYLE_SOURCE_DIR = resolve("src/templates/codestyle");
 const CODESTYLE_SOURCE_FILE = resolve("src/templates/CODESTYLE.md");
 const VALID_DRY_RUN_RESULT = {
 	packageManager: "npm",
@@ -21,8 +21,13 @@ const VALID_DRY_RUN_RESULT = {
 		"harness.contract.json",
 		".coderabbit.yaml",
 		".circleci/config.yml",
+		".github/workflows/pr-pipeline.yml",
 		".harness/ci-required-checks.json",
 		"scripts/check-semgrep-changed.sh",
+		"scripts/check-semgrep-full.sh",
+		"scripts/semgrep-bootstrap.sh",
+		"scripts/semgrep-pre-push.yml",
+		".harness/memory/LEARNINGS.md",
 		".harness/knowledge/INDEX.md",
 		"CODESTYLE.md",
 		"codestyle/CHECKSUMS.sha256",
@@ -31,8 +36,13 @@ const VALID_DRY_RUN_RESULT = {
 		"harness.contract.json",
 		".coderabbit.yaml",
 		".circleci/config.yml",
+		".github/workflows/pr-pipeline.yml",
 		".harness/ci-required-checks.json",
 		"scripts/check-semgrep-changed.sh",
+		"scripts/check-semgrep-full.sh",
+		"scripts/semgrep-bootstrap.sh",
+		"scripts/semgrep-pre-push.yml",
+		".harness/memory/LEARNINGS.md",
 		".harness/knowledge/INDEX.md",
 		"CODESTYLE.md",
 		"codestyle/CHECKSUMS.sha256",
@@ -235,8 +245,13 @@ describe("test-harness-upgrade-matrix", () => {
 					"harness.contract.json",
 					".coderabbit.yaml",
 					".circleci/config.yml",
+					".github/workflows/pr-pipeline.yml",
 					".harness/ci-required-checks.json",
 					"scripts/check-semgrep-changed.sh",
+					"scripts/check-semgrep-full.sh",
+					"scripts/semgrep-bootstrap.sh",
+					"scripts/semgrep-pre-push.yml",
+					".harness/memory/LEARNINGS.md",
 					".harness/knowledge/INDEX.md",
 					"CODESTYLE.md",
 					"codestyle/CHECKSUMS.sha256"
@@ -245,8 +260,13 @@ describe("test-harness-upgrade-matrix", () => {
 					"harness.contract.json",
 					".coderabbit.yaml",
 					".circleci/config.yml",
+					".github/workflows/pr-pipeline.yml",
 					".harness/ci-required-checks.json",
 					"scripts/check-semgrep-changed.sh",
+					"scripts/check-semgrep-full.sh",
+					"scripts/semgrep-bootstrap.sh",
+					"scripts/semgrep-pre-push.yml",
+					".harness/memory/LEARNINGS.md",
 					".harness/knowledge/INDEX.md",
 					"CODESTYLE.md",
 					"codestyle/CHECKSUMS.sha256"

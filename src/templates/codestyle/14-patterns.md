@@ -29,6 +29,7 @@ Secure and maintainable code comes from interfaces that make the correct use nat
 - Return errors with operation context. Bare errors push diagnosis onto callers; boundary code SHOULD preserve the failing operation and original cause.
 - Add helpers only when they remove misuse or represent real domain behavior. Convenience that merely hides a read or parse often makes ownership less clear.
 - Tests SHOULD read like checks against policy. Reusable parsing, resolution, and comparison semantics belong in internal packages; exact current state belongs in checked configuration and tests, not prose.
+- Design corrections MUST be generalized before closeout when they imply a broader principle. If feedback says one boolean success/failure API should instead return a named sentinel error, search sibling APIs and tests in the same command core, adapter family, and affected docs/templates; then either update the shared pattern or record why each sibling is intentionally different.
 
 Examples:
 

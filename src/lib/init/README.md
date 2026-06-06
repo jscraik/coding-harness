@@ -41,6 +41,10 @@ thin and delegate into this deep module.
   documentation changes need proof fields that describe the behavior addressed,
   path tested, evidence observed, untested paths, proof limits, and before
   evidence when available.
+- Generated PR templates must keep the `Motivation` section synchronized with
+  the repository PR template and validator rules. Generated PR bodies need
+  explicit `Motivation`, `Reasoning`, and `Chosen approach` fields near
+  the top so maintainers can review intent before implementation detail.
 
 ## Documentation Alignment
 

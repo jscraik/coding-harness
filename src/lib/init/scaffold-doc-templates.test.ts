@@ -9,6 +9,7 @@ import {
 } from "./scaffold-doc-templates.js";
 import {
 	REQUIRED_BEHAVIOR_PROOF_FIELDS,
+	REQUIRED_MOTIVATION_FIELDS,
 	REQUIRED_WORK_FIELDS,
 } from "../pr-template-validator-rules.js";
 
@@ -133,8 +134,35 @@ const completedBehaviorProofValues = new Map<string, string>([
 	],
 ]);
 
+const completedMotivationValues = new Map<string, string>([
+	[
+		"Motivation",
+		"Generated PR templates need to explain why a change exists before listing what changed.",
+	],
+	[
+		"Reasoning",
+		"Maintainers can review generated PR bodies faster when intent and decision pressure are explicit near the top.",
+	],
+	[
+		"Chosen approach",
+		"Add a required Motivation section to the scaffolded template and validator contract instead of relying on optional Summary prose.",
+	],
+]);
+
 function fillRenderedPullRequestTemplate(template: string): string {
 	let body = template
+		.replace(
+			"- Motivation:",
+			`- Motivation: ${completedMotivationValues.get("Motivation")}`,
+		)
+		.replace(
+			"- Reasoning:",
+			`- Reasoning: ${completedMotivationValues.get("Reasoning")}`,
+		)
+		.replace(
+			"- Chosen approach:",
+			`- Chosen approach: ${completedMotivationValues.get("Chosen approach")}`,
+		)
 		.replace(
 			"- Problem:",
 			"- Problem: Generated PR templates could drift from validator contracts.",
@@ -194,7 +222,7 @@ function fillRenderedPullRequestTemplate(template: string): string {
 			"- verification_commands: pnpm vitest run src/lib/init/scaffold-doc-templates.test.ts",
 		)
 		.replace(
-			"- verification_outcomes: record pass/blocked for each command here",
+			"- verification_outcomes: record pass/fail/blocked for each command here",
 			"- verification_outcomes: pass",
 		)
 		.replace(
@@ -269,6 +297,10 @@ describe("document scaffold templates", () => {
 		);
 		expect(template).toContain("CodeRabbit review completed");
 		expect(template).toContain("Codex review completed");
+		expect(template).toContain("## Motivation");
+		for (const field of REQUIRED_MOTIVATION_FIELDS) {
+			expect(template).toContain(`- ${field.label}:`);
+		}
 		expect(template).toContain("## Behavior Proof");
 		expect(template).toContain("Behavior proof is separate from unit tests");
 		expect(template).toContain("verification_commands");

@@ -131,6 +131,13 @@ not in docs, templates, generated context, or command facades.
   browser-specific machine-readable failure codes while keeping browser
   evidence separate from delivery-truth, review-state, external-state,
   Judge/PM, goal-completion, and merge-readiness proof.
+- src/lib/docs-surface/: documentation lifecycle, reader-task eval,
+  frontmatter metadata, and advisory stale-document archive-candidate
+  reporting. It owns docs-surface contracts, git-index scanning, classifier
+  rules, CLI report formatting, and docs-gate advisory projection. Docs-gate
+  consumes its report as aggregation evidence only; this module must not
+  delete, move, archive, demote, rewrite lifecycle metadata, mutate manifests,
+  update active artifacts, or repair archive indexes.
 - src/lib/runtime/: Codex runtime evidence, runtime evidence bundles, runtime
   cards, producer adapters, runtime-card projections, and
   `runtime-card-handoff/v1` contracts. The runtime-card handoff module binds a

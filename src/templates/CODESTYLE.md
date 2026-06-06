@@ -23,7 +23,7 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 - Rust: rustfmt, Clippy, cargo test.
 - Go: gofmt, go vet where configured, go test.
 - Security/policy: Semgrep, policy guards, supply-chain tooling.
-- Node baseline: repository engine floor `>=24.0.0` from `package.json`; runtime selection follows `.mise.toml`.
+- Node baseline: repository engine floor `>=26.3.0` from `package.json`; runtime selection follows `.mise.toml`.
 - TypeScript baseline: 5.9.x with NodeNext module semantics when TS is used.
 - Rust baseline: 2024 edition (rustc >= 1.85).
 - Security advisories override baselines: patch immediately when a baseline dependency has a published fix.

@@ -65,7 +65,7 @@ function copyRepoFile(dir: string, relativePath: string): void {
 	);
 }
 
-/** Set up a happy-path spawn mock: node 24, pnpm, git all present; gh auth ok */
+/** Set up a happy-path spawn mock: Node 26.3.0, pnpm, git all present; gh auth ok */
 function mockAllToolsOk(): void {
 	mockSpawnSync.mockImplementation((cmd, args) => {
 		const cmdStr = String(cmd);
@@ -74,7 +74,7 @@ function mockAllToolsOk(): void {
 		if (cmdStr === "command" || argsArr.includes("-v")) {
 			return makeSpawnResult(0, "found");
 		}
-		if (cmdStr === "node") return makeSpawnResult(0, "v24.0.0");
+		if (cmdStr === "node") return makeSpawnResult(0, "v26.3.0");
 		if (cmdStr === "pnpm") return makeSpawnResult(0, "10.33.0");
 		if (cmdStr === "git") return makeSpawnResult(0, "git version 2.44.0");
 		if (cmdStr === "gh") return makeSpawnResult(0, "gh version 2.0.0");
@@ -95,10 +95,10 @@ describe("runDoctor — tool checks", () => {
 		vi.restoreAllMocks();
 	});
 
-	it("reports ok for node 24", () => {
+	it("reports ok for node 26.3.0", () => {
 		mockAllToolsOk();
 		mockSpawnSync.mockImplementation((cmd) => {
-			if (String(cmd) === "node") return makeSpawnResult(0, "v24.1.0");
+			if (String(cmd) === "node") return makeSpawnResult(0, "v26.3.0");
 			return makeSpawnResult(0, "found");
 		});
 
@@ -107,16 +107,17 @@ describe("runDoctor — tool checks", () => {
 		expect(nodeCheck?.status).toBe("ok");
 	});
 
-	it("fails for node <24", () => {
+	it("fails for node below 26.3.0", () => {
 		mockAllToolsOk();
 		mockSpawnSync.mockImplementation((cmd) => {
-			if (String(cmd) === "node") return makeSpawnResult(0, "v20.0.0");
+			if (String(cmd) === "node") return makeSpawnResult(0, "v24.9.0");
 			return makeSpawnResult(0, "found");
 		});
 
 		const report = runDoctor({ dir });
 		const nodeCheck = report.checks.find((c) => c.id === "tool:node");
 		expect(nodeCheck?.status).toBe("fail");
+		expect(nodeCheck?.message).toContain("requires v26.3.0+");
 		expect(nodeCheck?.fix).toContain("mise");
 	});
 
@@ -137,13 +138,46 @@ describe("runDoctor — tool checks", () => {
 			if (cmdStr === "gh" && argsArr.includes("status")) {
 				return makeSpawnResult(1, "");
 			}
-			return makeSpawnResult(0, "v24.0.0");
+			return makeSpawnResult(0, "v26.3.0");
 		});
 
 		const report = runDoctor({ dir });
 		const ghCheck = report.checks.find((c) => c.id === "tool:gh");
 		expect(ghCheck?.status).toBe("warn");
 		expect(ghCheck?.fix).toBe("gh auth login");
+	});
+
+	it("surfaces silent GitHub CLI version failures with override diagnostics", () => {
+		const previousOverride = process.env.HARNESS_GH_BIN;
+		process.env.HARNESS_GH_BIN = "/opt/homebrew/bin/gh";
+		mockSpawnSync.mockImplementation((cmd, args) => {
+			const cmdStr = String(cmd);
+			const argsArr = Array.isArray(args) ? args.map(String) : [];
+			if (cmdStr === "/opt/homebrew/bin/gh" && argsArr[0] === "--version") {
+				return makeSpawnResult(-1, "");
+			}
+			if (cmdStr === "node") return makeSpawnResult(0, "v26.3.0");
+			if (cmdStr === "pnpm") return makeSpawnResult(0, "10.33.0");
+			if (cmdStr === "git") return makeSpawnResult(0, "git version 2.44.0");
+			return makeSpawnResult(0, "");
+		});
+		try {
+			const report = runDoctor({ dir });
+			const ghCheck = report.checks.find((c) => c.id === "tool:gh");
+
+			expect(ghCheck?.status).toBe("warn");
+			expect(ghCheck?.message).toContain("github_cli_failed_silently");
+			expect(ghCheck?.message).toContain("command=/opt/homebrew/bin/gh");
+			expect(ghCheck?.message).toContain("source=HARNESS_GH_BIN");
+			expect(ghCheck?.message).toContain("resolved_path=/opt/homebrew/bin/gh");
+			expect(ghCheck?.fix).toContain("HARNESS_GH_BIN/GH_BIN");
+		} finally {
+			if (previousOverride === undefined) {
+				delete process.env.HARNESS_GH_BIN;
+			} else {
+				process.env.HARNESS_GH_BIN = previousOverride;
+			}
+		}
 	});
 
 	it("fails when harness version drift is detected", () => {
@@ -157,7 +191,7 @@ describe("runDoctor — tool checks", () => {
 			const cmdStr = String(cmd);
 			const argsArr = Array.isArray(args) ? args.map(String) : [];
 
-			if (cmdStr === "node") return makeSpawnResult(0, "v24.0.0");
+			if (cmdStr === "node") return makeSpawnResult(0, "v26.3.0");
 			if (cmdStr === "pnpm") return makeSpawnResult(0, "10.33.0");
 			if (cmdStr === "git") return makeSpawnResult(0, "git version 2.44.0");
 			if (cmdStr === "gh" && argsArr.includes("status")) {
@@ -205,7 +239,7 @@ describe("runDoctor — tool checks", () => {
 			const cmdStr = String(cmd);
 			const argsArr = Array.isArray(args) ? args.map(String) : [];
 
-			if (cmdStr === "node") return makeSpawnResult(0, "v24.0.0");
+			if (cmdStr === "node") return makeSpawnResult(0, "v26.3.0");
 			if (cmdStr === "pnpm") return makeSpawnResult(0, "10.33.0");
 			if (cmdStr === "git") return makeSpawnResult(0, "git version 2.44.0");
 			if (cmdStr === "gh" && argsArr.includes("status")) {
@@ -237,7 +271,7 @@ describe("runDoctor — tool checks", () => {
 			const cmdStr = String(cmd);
 			const argsArr = Array.isArray(args) ? args.map(String) : [];
 
-			if (cmdStr === "node") return makeSpawnResult(0, "v24.0.0");
+			if (cmdStr === "node") return makeSpawnResult(0, "v26.3.0");
 			if (cmdStr === "pnpm") return makeSpawnResult(0, "10.33.0");
 			if (cmdStr === "git") return makeSpawnResult(0, "git version 2.44.0");
 			if (cmdStr === "gh" && argsArr.includes("status")) {

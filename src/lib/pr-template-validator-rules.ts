@@ -1,4 +1,5 @@
 export const REQUIRED_SECTIONS = [
+	"## Motivation",
 	"## Summary",
 	"## Behavior Proof",
 	"## Work performed",
@@ -60,6 +61,24 @@ export const REQUIRED_TESTING_FIELDS = [
 	{
 		label: "blocked_steps_reason",
 		placeholder: "none if all planned steps ran",
+	},
+] as const;
+
+export const REQUIRED_MOTIVATION_FIELDS = [
+	{
+		label: "Motivation",
+		placeholder:
+			"explain the motivating problem, operator need, or decision pressure behind this change",
+	},
+	{
+		label: "Reasoning",
+		placeholder:
+			"explain the reasoning that makes this change the right one now",
+	},
+	{
+		label: "Chosen approach",
+		placeholder:
+			"explain why this approach was chosen over simpler, broader, or deferred alternatives",
 	},
 ] as const;
 

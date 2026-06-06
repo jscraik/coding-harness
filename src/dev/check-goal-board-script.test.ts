@@ -676,6 +676,63 @@ describe("check-goal-board.py", () => {
 		expect(result.stderr).not.toContain("/Users/jamiecraik");
 	});
 
+	it("fails when runtime evidence receipt ids are duplicated", () => {
+		const root = createTempRoot("goal-board-duplicate-receipt-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(
+			repo,
+			"docs/goals/codex-runtime-evidence-verifier-cockpit",
+		);
+		const validatorPath = join(root, "check_goal_board.py");
+		mkdirSync(scriptsDir, { recursive: true });
+		mkdirSync(goalDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeValidator(validatorPath, "goal-board");
+		writeRuntimeEvidenceActiveArtifacts(repo);
+		writeRuntimeEvidenceReceiptsFromObjects(repo, [
+			{
+				id: "R151",
+				lifecycle_unit: "first-route-refresh",
+				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
+			},
+			{
+				id: "R151",
+				lifecycle_unit: "duplicate-route-refresh",
+				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
+			},
+		]);
+		writeFileSync(
+			join(scriptsDir, "check-goal-audit-freshness.py"),
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"raise SystemExit(0)",
+				"",
+			].join("\n"),
+		);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", goalDir],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("receipt id must be unique");
+		expect(result.stderr).toContain("R151");
+		expect(result.stderr).toContain("lines 1 and 2");
+	});
+
 	it("does not fail on historical local paths once the cutover receipt exists", () => {
 		const root = createTempRoot("goal-board-historical-local-path-");
 		const repo = join(root, "coding-harness");

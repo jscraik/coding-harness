@@ -88,18 +88,19 @@ Each target repo gets `harness.contract.json`:
 - `evidencePolicy`: required browser evidence for UI/critical flows.
 - `diffBudget`: default max files touched and max net LOC, plus approved override mechanism.
 - `uiLoopPolicy`: fast/verify/explore commands and SLO targets.
-- `runtimePolicy`: required runtime baseline (Node `24.x` for the design-system target).
+- `runtimePolicy`: required runtime baseline (Node `26.3.0` for the design-system target).
 - `memoryPolicy`: session/domain/tag contract, read-first requirement, write limits, and closeout summary requirements.
 - `memoryMaintenancePolicy`: validate/reflect cadence, unresolved-question SLA, and duplicate-noise thresholds.
 - `memoryEvalPolicy`: trials per task, required reliability metrics, and fail thresholds.
-- `observabilityPolicy`: OTel integration config (deferred to Phase 5).
-  - `provider`: "otel" | "logs" | "none"
+- `observabilityPolicy`: OpenTelemetry integration config (deferred to Phase 5).
+  - `provider`: "`otel`" | "logs" | "none"
   - `collectorEndpoint`: defaults to `http://localhost:4318`
 - `packageManagerPolicy`: package manager detection and constraints.
   - `allowedManagers`: ["pnpm", "npm", "yarn"]
   - `requiredManager`: null (auto-detect from lock file)
 
 ### Why this matters
+
 It removes ambiguity and prevents drift between scripts, workflows, docs, and enforcement logic.
 
 ---
@@ -119,13 +120,13 @@ This prevents merging against stale “green” review results.
 
 ---
 
-## 6) Canonical rerun writer and dedupe
+## 6) Canonical rerun writer and de-duplication
 
 Only one workflow can request reviewer reruns.
 
 - Marker example: `<!-- review-agent-auto-rerun -->`
 - Trigger token: `sha:<headSha>`
-- Dedup: never post duplicate rerun comment for same SHA.
+- De-duplication: never post duplicate rerun comment for same SHA.
 
 This prevents race conditions and noisy PR threads.
 
@@ -136,6 +137,7 @@ This prevents race conditions and noisy PR threads.
 For UI/critical flow changes, CI requires machine-verifiable evidence artifact(s), not ad hoc screenshots.
 
 Minimum assertions:
+
 - expected flow IDs exist,
 - expected entrypoint used,
 - expected identity/account context present (if authenticated),
@@ -151,6 +153,7 @@ Minimum assertions:
 - **existing repo retrofit**: applies non-destructive patches + reports skips/conflicts.
 
 Modes:
+
 - `--dry-run`: print planned file operations only.
 - `--mode new|existing`
 - idempotent behavior: repeated runs should be safe.
@@ -212,46 +215,60 @@ Modes:
 ## 10) Phase-by-phase execution plan
 
 ## Phase 1 — Bootstrap and deterministic local gate
+
 Deliverables:
+
 - TS/pnpm workspace,
 - `pnpm check` umbrella command,
 - lint/typecheck/test baseline,
 - fail-fast lint rules for silent catch anti-patterns.
 
 ## Phase 2 — Contract and policy core
+
 Deliverables:
+
 - JSON schema + runtime validator,
 - risk-tier resolver by changed files,
 - docs drift enforcement,
 - strict failure diagnostics.
 
 ## Phase 3 — GitHub workflow orchestration
+
 Deliverables:
+
 - preflight `risk-policy-gate`,
-- CI fanout dependent on preflight success,
+- CI fan-out dependent on preflight success,
 - review gate with strict SHA discipline,
 - mandatory canonical rerun comment writer (deduped).
 
 ## Phase 4 — Installability
+
 Deliverables:
+
 - `harness init` for new/existing repos,
 - dry-run and migration report,
 - idempotent template patching.
 
 ## Phase 5 — Evidence + observability hooks
+
 Deliverables:
+
 - browser evidence schema + verifier,
 - script contracts for logs/metrics/traces query surfaces,
 - policy enforcement for required evidence flows.
 
 ## Phase 6 — Recurring gardening
+
 Deliverables:
+
 - nightly docs/code gardener workflow,
 - stale docs + broken links + generated docs refresh,
 - quality score update and small PR automation.
 
 ## Phase 7 — Memory policy + eval hardening
+
 Deliverables:
+
 - local-memory policy gate + schema validation for memory summary artifacts,
 - read-first/write-discipline/closeout enforcement for `codex/*` branches,
 - reliability metrics (`pass^k`, tool errors, duplicate-memory rate, unresolved-question SLA).
@@ -261,11 +278,13 @@ Deliverables:
 ## 11) Test strategy
 
 ### Approach (hybrid)
+
 - **PR tests:** Real fixture repos in temp directories (fast, deterministic)
 - **Nightly CI:** Integration tests against real GitHub (high confidence, catches API drift)
 - **Unit tests:** Mocked tests for pure logic (contract validation, risk-tier engine)
 
 ### Unit tests
+
 - contract parser/validator,
 - risk-tier engine,
 - SHA matching logic,
@@ -276,12 +295,14 @@ Deliverables:
 - retry-policy exponential backoff with jitter.
 
 ### Integration tests
+
 - workflow fixture tests for pass/fail matrix:
-  - preflight fail blocks fanout,
+  - preflight fail blocks fan-out,
   - stale review artifact rejected,
   - missing evidence rejected.
 
 ### End-to-end dry-run tests
+
 - installer new mode,
 - installer existing mode with conflicts,
 - idempotency (run twice, no drift),
@@ -338,7 +359,7 @@ Week 6: local-memory gate rollout (warn-only), then fail-closed enforcement
 
 - CI provider: GitHub Actions
 - Runtime: TypeScript + pnpm
-- Node baseline for target rollout: Node 24
+- Node baseline for target rollout: Node 26.3.0
 - Review signal: GitHub check run + JSON artifact
 - Autonomy: agent drafts PR, human merges
 - Scope: control-plane template (no product app code)
@@ -352,6 +373,7 @@ This harness will first be applied to the Design System repository at:
 - `/Users/jamiecraik/dev/design-system`
 
 Why this target first:
+
 - documentation drift is currently the highest operational risk,
 - the repo already uses CI checks, custom linters, and GitHub Actions,
 - it is a strong candidate for agent-first frontend delivery loops.
@@ -361,7 +383,7 @@ Why this target first:
 The baseline UI factory loop for this target repo is:
 
 - **Storybook** for component-level development and visual verification,
-- **Agentation** for accelerated agent-assisted implementation/iteration,
+- **agent-browser** for accelerated agent-assisted implementation/iteration,
 - **Codex 5.3 Spark** for high-throughput UI coding + refinement.
 
 ### Drift-control requirements for this target
@@ -378,6 +400,7 @@ For `/Users/jamiecraik/dev/design-system`, the harness must additionally enforce
 ## 17) Current optimization focus (today): frontend UI feedback-loop speed
 
 Current operator intent:
+
 - prioritize **front-end UI iteration speed** with Codex CLI,
 - reduce slow/kludgy feedback loops during component and interaction work,
 - determine the best split of responsibilities across **Storybook**, **Playwright CLI**, and **agent-browser**.
@@ -389,10 +412,12 @@ The current loop works but is too slow for high-frequency UI iteration.
 ### Tool-mix decision track (guided by `tooling.md`)
 
 Baseline guidance from `/Users/jamiecraik/.codex/instructions/tooling.md`:
+
 - Browser automation (agent): `agent-browser` primary.
 - Browser automation (tests): `playwright` primary.
 
 Harness application for `/Users/jamiecraik/dev/design-system`:
+
 1. **Storybook = primary dev surface** for component-level rapid iteration.
 2. **Playwright CLI = deterministic regression/evidence lane** for scripted assertions and CI artifacts.
 3. **agent-browser = exploratory/debug lane** for fast manual-agent interaction and triage.
@@ -412,6 +437,7 @@ The harness should add a repeatable fast-loop protocol with explicit scripts:
 ### Measurement requirements (must be tracked)
 
 Track and report in machine-readable form:
+
 - median time from prompt -> visual feedback,
 - median time from change -> pre-PR evidence pass,
 - flaky run rate for UI checks,
@@ -474,7 +500,7 @@ The harness will enforce this order:
 4. Wait for code-review agent on current head SHA.
 5. If findings exist: remediation agent patches branch and requests one rerun per SHA.
 6. If no actionable findings: optional resolve bot-only threads.
-7. Start expensive CI fanout only after preflight/review gates pass.
+7. Start expensive CI fan-out only after preflight/review gates pass.
 8. If all required checks pass: human review + merge policy.
 9. If checks fail: fix and rerun from synchronized head.
 
@@ -492,6 +518,7 @@ The harness will enforce this order:
 ### 20.1 Prompts are versioned assets
 
 Add and maintain:
+
 - `/Users/jamiecraik/dev/config/codex/prompts/workflow-brainstorm.md` (WHAT-phase prompt; mandatory for ambiguous work before planning),
 - `/Users/jamiecraik/dev/config/codex/prompts/workflow-plan.md` (HOW-phase prompt; mandatory plan generation workflow),
 - `docs/prompts/feature_template.md`
@@ -500,6 +527,7 @@ Add and maintain:
 - `docs/prompts/release_template.md`
 
 Each template must include:
+
 - required inputs (constraints + acceptance criteria),
 - expected outputs (files touched, tests/docs/evidence),
 - explicit “Do not do” list (unnecessary deps, over-abstraction, silent catches).
@@ -507,6 +535,7 @@ Each template must include:
 ### 20.2 Diff-shape guardrails
 
 Default PR budget:
+
 - <= 10 files touched,
 - <= 400 LOC net change.
 
@@ -515,12 +544,14 @@ If exceeded, require explicit justification and split plan.
 ### 20.3 Smallest acceptable solution bias
 
 Default rule:
+
 - implement simplest working version first,
 - add complexity only after failing tests or explicit requirements.
 
 ### 20.4 Anti-goals to prevent architecture drift
 
 Explicitly disallow by default:
+
 - plugin frameworks without clear need,
 - DI containers,
 - repository pattern unless boundary-enforcing,
@@ -534,6 +565,7 @@ Explicitly disallow by default:
 ### 21.1 Cheap staging realism
 
 Target repos should expose:
+
 - `./scripts/stage up`
 - `./scripts/stage seed`
 - `./scripts/stage smoke`
@@ -543,6 +575,7 @@ Purpose: make production-like validation cheap enough for daily use by agent + h
 ### 21.2 Interface contracts are first-class
 
 Require contract artifacts in `docs/generated/`:
+
 - OpenAPI/GraphQL snapshots (where applicable),
 - internal contract tests for schema, error semantics, idempotency.
 
@@ -551,6 +584,7 @@ Policy: if a contract changes, snapshot + tests must change in same PR.
 ### 21.3 Blast radius map
 
 Add `docs/architecture/blast-radius.md` with deterministic mappings:
+
 - touch X -> run Y checks,
 - touch auth -> run auth flows,
 - touch migrations -> run migration invariants,
@@ -559,7 +593,8 @@ Add `docs/architecture/blast-radius.md` with deterministic mappings:
 ### 21.4 Retries as documented policy
 
 Add `docs/reliability/retries.md`:
-- retryable operations,
+
+- retry-capable operations,
 - backoff strategy,
 - max attempts,
 - idempotency requirements,
@@ -570,6 +605,7 @@ Agent rule: retries implemented only if documented in this file.
 ### 21.5 Deterministic replay
 
 Require execution tracing with stable IDs and replay command:
+
 - `./scripts/replay <trace-id>`
 
 Initial scope can be minimal, but trace capture/replay must be part of harness roadmap.
@@ -581,6 +617,7 @@ Initial scope can be minimal, but trace capture/replay must be part of harness r
 ### 22.1 Observability as API
 
 Critical flows must emit:
+
 - one structured start log,
 - one structured end log,
 - one structured error log.
@@ -590,6 +627,7 @@ Also require consistent span names/attributes and stable-cardinality metrics.
 ### 22.2 Cardinality tripwires
 
 Enforce:
+
 - never place raw prompts/user input in metric labels,
 - truncate or hash high-cardinality strings,
 - gate raw payload logging behind explicit debug flags,
@@ -598,6 +636,7 @@ Enforce:
 ### 22.3 Security floor (80/20 baseline)
 
 Every target repo should include:
+
 - secret scanning in CI,
 - dependency vulnerability scanning,
 - `SECURITY.md` covering auth boundaries, token handling, and log redaction.
@@ -609,6 +648,7 @@ Every target repo should include:
 ### 23.1 Multi-pass model review (single tooling, multiple roles)
 
 For meaningful changes run three passes:
+
 1. Builder pass: implement + tests.
 2. Reviewer pass: assume bug exists; find minimal fix.
 3. Red-team pass: enumerate production failure modes.
@@ -616,6 +656,7 @@ For meaningful changes run three passes:
 ### 23.2 Failure-mode memory
 
 Maintain `docs/runbooks/failure-modes.md` with:
+
 - recurring failure pattern,
 - detection method,
 - immediate fix,
@@ -624,14 +665,16 @@ Maintain `docs/runbooks/failure-modes.md` with:
 ### 23.3 Attention budgeting rules
 
 Human review focuses on:
+
 - invariants,
 - diff shape,
 - proof artifacts (tests, repro, telemetry deltas),
-not line-by-line code review by default.
+  not line-by-line code review by default.
 
 ### 23.4 Unknowns must stop and ask
 
 Spec templates and AGENTS guidance must include:
+
 - “Unknowns / Decisions needed”,
 - “Do not invent requirements; stop and ask when unclear.”
 - for ambiguous feature requests, require brainstorm handoff before implementation planning.
@@ -639,6 +682,7 @@ Spec templates and AGENTS guidance must include:
 ### 23.5 Release notes first
 
 Adopt release discipline:
+
 - draft release-note bullets before implementation,
 - implement to match declared deltas,
 - include changelog updates in PR.
@@ -661,8 +705,9 @@ Adopt release discipline:
 For `/Users/jamiecraik/dev/design-system`, rollout is a retrofit of existing workflows and scripts.
 
 Migration sequence:
+
 1. Add preflight `risk-policy-gate` and required `review-gate` jobs.
-2. Rewire expensive CI fanout jobs to depend on preflight/review success.
+2. Rewire expensive CI fan-out jobs to depend on preflight/review success.
 3. Introduce `pnpm check` as local+CI parity command.
 4. Add/standardize `ui:fast`, `ui:verify`, `ui:explore` command set.
 5. Keep existing job coverage, but enforce deterministic ordering and SHA-bound review validity.
@@ -672,6 +717,7 @@ Migration sequence:
 ## 26) Public interface additions (harness CLI + contract)
 
 ### Contract additions
+
 - `diffBudget`: `{ maxFilesTouched, maxNetLoc, overrideLabel }`
 - `uiLoopPolicy`: `{ fastCommand, verifyCommand, exploreCommand, sloTargets }`
 - `runtimePolicy`: `{ nodeVersion }`
@@ -680,6 +726,7 @@ Migration sequence:
 - `memoryEvalPolicy`: `{ trialsPerTask, requiredMetrics, passPowKThreshold }`
 
 ### CLI additions
+
 - `harness enforce-diff-budget --base <sha> --head <sha>`
 - `harness ui-loop-verify --mode fast|verify|explore`
 - `harness docs-drift-check --base <sha> --head <sha>`
@@ -697,7 +744,7 @@ A target repo is also considered harness-enabled only when:
 
 1. `pnpm check` exists and is the canonical local parity gate.
 2. Review-agent gate is required for all PRs and bound to current head SHA.
-3. Node 24 baseline is green in CI and local development.
+3. Node 26.3.0 baseline is green in CI and local development.
 4. Diff budget guardrails are enforced or explicitly overridden with justification.
 5. UI loop commands (`ui:fast`, `ui:verify`, `ui:explore`) are present and documented.
 6. `memory-policy-gate` is required for `codex/*` branches and validates read-first behavior.
@@ -717,7 +764,7 @@ A target repo is also considered harness-enabled only when:
 3. Stale review artifacts/comments for older SHAs are ignored.
 4. Missing docs updates for mapped control-plane path changes block PR.
 5. `ui:verify` must emit machine-readable evidence consumed by policy gate.
-6. Node 24 compatibility checks pass for mergeability.
+6. Node 26.3.0 compatibility checks pass for mergeability.
 7. Replay command resolves and replays a recorded `trace-id` deterministically.
 8. Missing `bootstrap(..., include_questions=true)` + `search(...)` at task start fails `memory-policy-gate`.
 9. Memory writes above `maxObservationsPerStep` fail `memory-policy-gate`.
@@ -734,6 +781,7 @@ A target repo is also considered harness-enabled only when:
 ## 29) Local-memory integration policy (signal > noise)
 
 Scope for initial rollout:
+
 - `/Users/jamiecraik/dev/agent-skills`
 - default domain: `agent_skills`
 - default session format: `repo:agent-skills:<task-id>`
@@ -741,6 +789,7 @@ Scope for initial rollout:
 ### 29.1 Start-of-task contract (read first)
 
 Mandatory sequence before implementation:
+
 1. `bootstrap(mode="minimal", include_questions=true, session_id="<session_id>")`
 2. `search(...)` for prior decisions, patterns, and unresolved contradictions.
 
@@ -749,27 +798,32 @@ Policy: no coding starts until read-first succeeds.
 ### 29.2 During-task write discipline
 
 Use `observe(...)` only for durable facts:
+
 - decisions and invariants,
 - root causes and verified fixes,
 - constraints and interfaces,
 - verified command/result pairs.
 
 Hard limits:
+
 - max `1–3` observations per meaningful step,
 - required tags: `repo:<name>`, `area:<module>`, `type:decision|bug|pattern|constraint|verification`,
 - never store secrets/keys/tokens/raw credentials.
 
 Level progression:
+
 - `observation` (raw fact) -> `learning` (generalized insight) -> `pattern/schema` (reusable rule).
 
 ### 29.3 Reasoning and knowledge hygiene
 
 Use only when needed:
+
 - `explain(...)` for causal ambiguity,
 - `predict(...)` before risky changes,
 - `counterfactual(...)` for incident analysis.
 
 Promote graph quality with:
+
 - `relate(...)` for causal links,
 - `question(...)` for uncertainty/contradiction,
 - `resolve(...)` when clarified,
@@ -778,10 +832,12 @@ Promote graph quality with:
 ### 29.4 Closeout and maintenance
 
 Closeout requirements per task:
+
 1. `validate(...)` + `status()`
 2. exactly one summary observation: “what changed + why + verification”
 
 Weekly maintenance workflow:
+
 - run memory validation in dry-run mode,
 - report duplicate noise, stale unresolved questions, and promotion backlog,
 - open small remediation tasks for policy or documentation drift.
@@ -812,6 +868,7 @@ To keep high signal and avoid overbuilding, the control-plane requires a strict 
    - Merge only after deterministic checks and human approval.
 
 Guardrail:
+
 - If requirements are already concrete, brainstorm may be skipped with explicit justification captured in the exec plan.
 
 ---
@@ -865,11 +922,13 @@ All plan generation in this harness must follow `/Users/jamiecraik/dev/config/co
 ### 32.1 Brainstorm-aware planning gate
 
 Before refinement questions:
+
 1. check `docs/brainstorms/*.md`,
 2. select relevant brainstorm(s) by semantic match and recency (<=14 days),
 3. if multiple candidates, resolve selection explicitly.
 
 If a relevant brainstorm exists:
+
 - treat it as the origin document,
 - carry forward key decisions, constraints, rejected alternatives, open questions, and scope boundaries,
 - preserve source context with references to `docs/brainstorms/<file>.md`.
@@ -877,22 +936,26 @@ If a relevant brainstorm exists:
 ### 32.2 Research contract
 
 Planning always runs local research first:
+
 - repo patterns and AGENTS conventions,
 - institutional learnings from `docs/solutions/`.
 
 External research is conditional:
+
 - always for high-risk topics (security, payments, external APIs, privacy),
 - optional/skipped when strong local context already exists.
 
 ### 32.3 Plan quality contract
 
 Required planning steps:
+
 - issue structure and naming,
 - SpecFlow analysis incorporation,
 - explicit acceptance criteria,
 - risks/dependencies/success metrics (detail level dependent).
 
 Default detail level policy:
+
 - **MORE** by default,
 - **MINIMAL** for clearly small/scoped changes,
 - **A LOT** only for major architectural/integration efforts.
@@ -900,6 +963,7 @@ Default detail level policy:
 ### 32.4 Artifact and naming contract
 
 Plan files are mandatory and must be written before options/handoff:
+
 - directory: `docs/plans/`
 - filename: `YYYY-MM-DD-<type>-<descriptive-name>-plan.md`
 - examples:
@@ -907,6 +971,7 @@ Plan files are mandatory and must be written before options/handoff:
   - `2026-02-03-fix-checkout-race-condition-plan.md`
 
 When plan originates from brainstorm:
+
 - include `origin: docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md` in frontmatter,
 - include brainstorm in Sources with carried-forward decisions.
 
@@ -917,9 +982,11 @@ When plan originates from brainstorm:
 The following decisions were identified through brainstorming and merged into this plan.
 
 ### 33.1 Rollback strategy
+
 **Decision:** Full rollback support required
 
 The `harness init` command must:
+
 - Create a restore point before any modifications (`.harness/restore-manifest.json`)
 - Support `harness init --rollback` to revert all changes
 - Track all files created/modified in a manifest
@@ -927,9 +994,11 @@ The `harness init` command must:
 **Rationale:** Users must be able to safely experiment with harness adoption without risking repository corruption.
 
 ### 33.2 Schema migration
+
 **Decision:** Auto-migration when contract schema changes
 
 When `harness.contract.json` schema evolves (v1 -> v2):
+
 - Harness detects outdated contract version
 - Auto-migrates with backwards-compatible defaults
 - Logs migration changes for user review
@@ -938,6 +1007,7 @@ When `harness.contract.json` schema evolves (v1 -> v2):
 **Rationale:** Reduces friction for harness upgrades; manual migration creates adoption barriers.
 
 ### 33.3 Edge case: concurrent agent PRs
+
 **Decision:** Use branch naming convention with agent ID
 
 Branch format: `<type>/<agent-id>/<slug>` (e.g., `feat/agent-42/user-auth`)
@@ -945,6 +1015,7 @@ Branch format: `<type>/<agent-id>/<slug>` (e.g., `feat/agent-42/user-auth`)
 This avoids lock file complexity and merge queue overhead. Revisit if scale becomes an issue.
 
 ### 33.4 Edge case: non-pnpm package managers
+
 **Decision:** Detect from lock file, abstract operations
 
 - Read `pnpm-lock.yaml`, `package-lock.json`, or `yarn.lock` to detect manager
@@ -952,54 +1023,59 @@ This avoids lock file complexity and merge queue overhead. Revisit if scale beco
 - Harness internals remain pnpm-only
 
 ### 33.5 Edge case: agent timeout handling
-**Decision:** 10 minute default, fail PR on timeout
+
+**Decision:** 10-minute default, fail PR on timeout
 
 Configured in `reviewPolicy` contract:
+
 ```json
 {
-  "reviewPolicy": {
-    "timeoutSeconds": 600,
-    "timeoutAction": "fail"
-  }
+	"reviewPolicy": {
+		"timeoutSeconds": 600,
+		"timeoutAction": "fail"
+	}
 }
 ```
 
 ### 33.6 Edge case: GitHub API rate limiting
+
 **Decision:** Exponential backoff with jitter
 
 Implemented in `retry-policy.ts`:
+
 - Base delay: 1s
 - Max delay: 60s
 - Jitter: ±20%
 - Max retries: 5
 
-### 33.7 Open question: OTel integration
+### 33.7 Open question: OpenTelemetry integration
+
 **Status:** Defer to Phase 5 (Evidence + observability hooks)
 
-User has OTel collector at `~/.agents/otel-collector/`. Explore direct emission vs. logs-only at that time.
+User has an OpenTelemetry collector at `~/.agents/otel-collector/`. Explore direct emission vs. logs-only at that time.
 
 ---
 
 ## 34) Implementation status
 
-| Phase | Status | Notes |
-|-------|--------|-------|
-| Phase 1: Bootstrap | ✅ Complete | Repository structure, build system, testing framework |
-| Phase 2: Contract core | ✅ Complete | Contract parser, validator, risk-tier engine, policy gates |
-| Phase 3: GitHub workflows | ✅ Complete | review-gate, policy-gate, SHA enforcement, GitHub client |
-| Phase 4: Installability | ✅ Complete | init command with --dry-run, --track, --rollback, --migrate |
-| Phase 5: Evidence + observability | ✅ Complete | evidence-verify command, gardener workflow |
-| Phase 6: Gardening | ✅ Complete | nightly gardener workflow, stale docs, broken links |
-| Phase 7: Memory policy | ✅ Complete | memory-gate command, branch enforcement, metrics tracking |
+| Phase                             | Status      | Notes                                                       |
+| --------------------------------- | ----------- | ----------------------------------------------------------- |
+| Phase 1: Bootstrap                | ✅ Complete | Repository structure, build system, testing framework       |
+| Phase 2: Contract core            | ✅ Complete | Contract parser, validator, risk-tier engine, policy gates  |
+| Phase 3: GitHub workflows         | ✅ Complete | review-gate, policy-gate, SHA enforcement, GitHub client    |
+| Phase 4: Installability           | ✅ Complete | init command with --dry-run, --track, --rollback, --migrate |
+| Phase 5: Evidence + observability | ✅ Complete | evidence-verify command, gardener workflow                  |
+| Phase 6: Gardening                | ✅ Complete | nightly gardener workflow, stale docs, broken links         |
+| Phase 7: Memory policy            | ✅ Complete | memory-gate command, branch enforcement, metrics tracking   |
 
-**All core acceptance criteria and optional Section 27 items implemented.**
+**Implementation complete; validation and gating pending**
 
 ### Section 27 Optional Enhancements Status
 
-| Enhancement | Status |
-|-------------|--------|
-| Diff budget guardrails | ✅ Complete - `harness diff-budget` command |
-| UI loop commands | ✅ Complete - `harness ui:fast`, `ui:verify`, `ui:explore` |
+| Enhancement                       | Status                                                        |
+| --------------------------------- | ------------------------------------------------------------- |
+| Diff budget guardrails            | ✅ Complete - `harness diff-budget` command                   |
+| UI loop commands                  | ✅ Complete - `harness ui:fast`, `ui:verify`, `ui:explore`    |
 | Brainstorm/plan artifact workflow | ✅ Complete - `harness brainstorm-gate`, `plan-gate` commands |
 
 ## 35) Roadmap status matrix

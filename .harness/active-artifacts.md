@@ -10,26 +10,39 @@
 
 ## Scope
 
-Last reconciled: 2026-06-05 after PR #352 merged into `main` as squash merge
-`ead6ce09156a3bc3f82a36d7b920d63b5d410344` and local `main` fast-forwarded
-to the same `origin/main` head. PR #352 submitted head
+Current working reconciliation: 2026-06-05 on branch
+`codex/jsc-395-advisory-stale-doc-archive`. The active implementation route is
+JSC-395 advisory stale-document archive candidate reporting, using the tracked
+spec, trace plan, and execution plan listed below as execution-input artifacts.
+This route refresh does not claim live Linear, GitHub, CI, review-thread, merge,
+release, or downstream-template state; those remain separate closeout lanes.
+The older JSC-363 cockpit route remains retained history and parent-goal context,
+not the current implementation slice for this branch.
+
+Last reconciled: 2026-06-05 after PR #353 merged into `main` as squash merge
+`c475cd76d0c39e0a44789fb1da92b8a2c606773a` and local `main` fast-forwarded
+to the same `origin/main` head. PR #353 submitted head
+`69d758a79b48d243469e8e6978a8b4f04018ae50` records the post-PR #352
+route-truth refresh plus review-thread repairs; PR #352 submitted head
 `841ce06062bd63554d1ecb7ca11a9c49642d77fe` records the post-PR #351
 route-truth repair and harness doc-history review-proof claim boundary; PR #351
 remains the merged post-PR #350 route-truth refresh at
 `1a178e7bfe770191348bca198763e3a22f37eea4`, and PR #350 remains the merged
 ci-migrate apply-command repair at `b8ea5b4ad9e36c64f0c5d07305f5318446042c98`.
 GitHub reported repo-owned CircleCI checks, aggregate `pr-pipeline`,
-CodeRabbit, Socket, and repo-owned security lanes passing for PR #352. The
+CodeRabbit, Socket, and repo-owned security lanes passing for PR #353. The
 external Snyk GitHub App quota/status
 failure remains an owner-approved waiver for that external lane only; it does
 not claim external Snyk passed and does not waive repo-run security, future
 Snyk results, or future security findings. A later local branch-only repair
 `fb2e9946adfe21d29861e04f9b5d12596e696d80` for leading flags before
-`prepare --apply` was not part of merged PR #350, PR #351, or PR #352, so it
+`prepare --apply` was not part of merged PR #350, PR #351, PR #352, or PR #353, so it
 is recorded as outstanding follow-up work rather than completed current-main
-evidence. Linear JSC-363 was refreshed after PR #352 through comment
-`06422408-2796-4fe5-a5a5-28f0710f12b8`: the issue is still `In Review`,
-PR #351 attachment `a0e92c30-9075-4425-8f28-5eaa6525f0d9` remains prior
+evidence. Linear JSC-363 was refreshed after PR #353 through comment
+`4f25fd81-35a3-4262-a3c5-ce267acb77ea`: the issue is still `In Review`,
+PR #353 attachment `2613ac6c-2ac7-41f4-bab4-abd2a1c545bb` is present,
+and the earlier PR #352 comment `06422408-2796-4fe5-a5a5-28f0710f12b8` plus
+PR #351 attachment `a0e92c30-9075-4425-8f28-5eaa6525f0d9` remain prior
 tracker provenance, and the title/description still describe Phase 1, so
 field-text-current remains unclaimed unless accepted by the owner or edited.
 This reconcile also does not claim runtime producer evidence, delivery-truth
@@ -44,7 +57,8 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged JSC-363 route/foundation lanes through PR #352 at ead6ce09156a3bc3f82a36d7b920d63b5d410344. PR #352 submitted head 841ce06062bd63554d1ecb7ca11a9c49642d77fe is merged; repo-owned CircleCI, CodeRabbit, Socket, aggregate pr-pipeline, and repo-owned security lanes were green at merge refresh. The external Snyk GitHub App quota/status failure is owner-waived only for that external lane and is not a passing security result. Local branch-only leading-flag validator repair fb2e9946adfe21d29861e04f9b5d12596e696d80 is not on current main and remains a follow-up candidate. Linear JSC-363 was refreshed after PR #352: status is `In Review`, comment `06422408-2796-4fe5-a5a5-28f0710f12b8` records the post-merge route truth, and the earlier PR #351 attachment remains tracker provenance. Linear title/description still describe Phase 1, so field-text-current is unclaimed unless accepted by the owner or edited. | Use the goal board as the current execution cockpit. Next Safe Action: before selecting any next lifecycle gap, perform all of the following validation steps in order: (1) verify goal-board freshness by running the goal-board validator/audit and confirming it passes with no stale evidence; (2) validate `state.yaml` consistency by confirming all machine-readable fields are internally consistent and match the current merged-main evidence; (3) ingest and verify the latest `receipts.jsonl` entry and confirm every referenced commit, artifact, and evidence claim is present and consistent with current main; (4) confirm the goal-board validator plus audit-freshness validator pass is recorded before lifecycle-gap selection proceeds. Additionally, the leading-flag validator repair (commit fb2e9946adfe21d29861e04f9b5d12596e696d80, not on current main) must be either promoted into a fresh one-PR follow-up slice with documented evidence or explicitly rejected with documented evidence before any final completion claim. Do not claim JSC-363 completion until owner acceptance and each of the following validations is individually confirmed: runtime producer evidence, delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final completion audit. |
+| Advisory stale-document archive candidate reporting | JSC-395 | `.harness/specs/2026-06-05-advisory-stale-document-archive-candidate-reporting-spec.md` plus `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-trace-plan.md` plus `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-execution-plan.md` | Active implementation route for this branch. The slice is advisory/read-only: it may report stale-document archive candidates and docs-gate advisory findings, but it must not delete, move, archive, demote, or rewrite documentation artifacts. | Package the implemented JSC-395 scanner, CLI, docs-gate projection, lifecycle route refresh, and Node 26.3.0 toolchain repair into a dedicated PR after local validation. Keep PR, CI, review, Linear, merge, release, and downstream-template truth separate until refreshed during closeout. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged JSC-363 route/foundation lanes through PR #353 at c475cd76d0c39e0a44789fb1da92b8a2c606773a. PR #353 submitted head 69d758a79b48d243469e8e6978a8b4f04018ae50 is merged; repo-owned CircleCI, CodeRabbit, Socket, aggregate pr-pipeline, and repo-owned security lanes were green at merge refresh. The external Snyk GitHub App quota/status failure is owner-waived only for that external lane and is not a passing security result. Local branch-only leading-flag validator repair fb2e9946adfe21d29861e04f9b5d12596e696d80 is not on current main and remains a follow-up candidate. Linear JSC-363 was refreshed after PR #353: status is `In Review`, comment `4f25fd81-35a3-4262-a3c5-ce267acb77ea` records the post-merge route truth, PR #353 attachment `2613ac6c-2ac7-41f4-bab4-abd2a1c545bb` is present, and earlier PR #352/PR #351 tracker artifacts remain provenance. Linear title/description still describe Phase 1, so field-text-current is unclaimed unless accepted by the owner or edited. | Use the goal board as the current execution cockpit. Next Safe Action: before selecting any next lifecycle gap, perform all of the following validation steps in order: (1) verify goal-board freshness by running the goal-board validator/audit and confirming it passes with no stale evidence; (2) validate `state.yaml` consistency by confirming all machine-readable fields are internally consistent and match the current merged-main evidence; (3) ingest and verify the latest `receipts.jsonl` entry and confirm every referenced commit, artifact, and evidence claim is present and consistent with current main; (4) confirm the goal-board validator plus audit-freshness validator pass is recorded before lifecycle-gap selection proceeds. Additionally, the leading-flag validator repair (commit fb2e9946adfe21d29861e04f9b5d12596e696d80, not on current main) must be either promoted into a fresh one-PR follow-up slice with documented evidence or explicitly rejected with documented evidence before any final completion claim. Do not claim JSC-363 completion until owner acceptance and each of the following validations is individually confirmed: runtime producer evidence, delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final completion audit. |
 
 PU-046 update: PR #330 was refreshed again on head
 163017e16e4611d5d71f5c4c62fc85f8d164b17b after the R205 artifact receipt was
@@ -111,6 +125,7 @@ runtime producer emission, delivery-truth consumption, or final goal completion.
 | JSC-311 | he-phase-exit-evidence-gates | `.harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md` | `.harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md` | Implemented in current checkout; validation/PR closeout pending | PR #247 merged the internal `HeGateResult/v1` / `HePhaseExit/v1` contract and worktree baseline. The current checkout adds the operator-visible `harness next --phase-exit <artifact>` path. |
 | JSC-331 | harness-assurance-artifact-handling | n.a. | `.harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md`; `.harness/research/audits/2026-05-20-evidence-led-codebase-gap-audit.md`; `docs/goals/jsc-331-goal-governed-evidence-led-implementation/goal.md` | Active assurance route with ready-not-started Goal Governor board | Selected instead of creating a duplicate issue because live Linear already has a coding-harness apparatus/assurance lane. The audit now adds the Codex runtime-evidence contract and `.agents` observed-state bridge as the next durable hardening targets. The Goal Governor board is prepared for owner kickoff and begins with read-only governor bootstrap, not Worker implementation. JSC-308 remains related HE artifact-policy context. |
 | JSC-363 | codex-runtime-evidence-verifier-cockpit | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` | `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md`; `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`; `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md`; `.harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md`; `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Current active Goal Governor route for this thread | The board governs the full lifecycle, not just Phase 1. The standard goal-board validator now runs audit freshness for the 2026-05-26 evidence-led audit, and the goal board now adopts the 2026-05-27 system-prompt operational analysis as SPG-001 through SPG-012. Future audit or system-prompt-analysis edits must be re-adopted in receipts before done, Judge/PM, closeout, or merge-readiness claims. |
+| JSC-395 | advisory-stale-document-archive-candidate-reporting | `.harness/specs/2026-06-05-advisory-stale-document-archive-candidate-reporting-spec.md` | `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-trace-plan.md`; `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-execution-plan.md` | Current active implementation route for this branch | Implements an advisory, read-only archive-candidate report and docs-gate projection. It must preserve the boundary that candidate findings are not archive, delete, demotion, or movement authority. |
 
 ## Duplicate Resolution
 
@@ -157,10 +172,11 @@ runtime producer emission, delivery-truth consumption, or final goal completion.
   PR, CI, review-thread, Project Brain, and runtime evidence truth separated in
   receipts. Historical PR #309 continuity remains indexed by branch head
   `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` for validator compatibility;
-  it is not current route truth. Current route truth is PR #352 merged into
-  `main` at `ead6ce09156a3bc3f82a36d7b920d63b5d410344` after PR #351
-  recorded the post-PR #350 route refresh and PR #352 recorded the
-  doc-history review-proof claim-boundary repair. Historical
+  it is not current route truth. Current route truth is PR #353 merged into
+  `main` at `c475cd76d0c39e0a44789fb1da92b8a2c606773a` after PR #351
+  recorded the post-PR #350 route refresh, PR #352 recorded the
+  doc-history review-proof claim-boundary repair, and PR #353 recorded the
+  post-PR #352 route refresh plus review-thread repairs. Historical
   PR #322 through PR #350 ledger entries below, including PR #344
   route-refresh, PR #347 body repair, PR #348 review-thread repair, PR #349
   route refresh, and PR #350 ci-migrate repair, are immutable provenance. R149 records
