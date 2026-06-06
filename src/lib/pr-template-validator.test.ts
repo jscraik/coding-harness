@@ -91,7 +91,7 @@ describe("validatePrTemplateBody", () => {
 
 	it("fails when the Motivation section is missing", () => {
 		const MISSING_MOTIVATION_BODY = VALID_BODY.replace(
-			/## Motivation\n\n- Motivation:.*?\n.*?\n.*?\n\n/s,
+			/## Motivation\n[\s\S]*?(?=## )/g,
 			"",
 		);
 		const errors = validatePrTemplateBody(MISSING_MOTIVATION_BODY);

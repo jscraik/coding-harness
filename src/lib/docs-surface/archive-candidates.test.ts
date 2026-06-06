@@ -250,7 +250,7 @@ describe("runDocsArchiveCandidates", () => {
 
 		expect(report.evidenceRefs).toContain(".harness/active-artifacts.md");
 		const serialized = JSON.stringify(report);
-		expect(serialized).not.toMatch(/^[A-Za-z]:\\/);
+		expect(serialized).not.toMatch(/\"[A-Za-z]:\\/);
 		expect(serialized).not.toMatch(/"\/[^"]/);
 		expect(report.repairFindings).toContainEqual(
 			expect.objectContaining({
