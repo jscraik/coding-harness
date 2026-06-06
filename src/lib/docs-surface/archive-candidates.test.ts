@@ -166,7 +166,10 @@ describe("runDocsArchiveCandidates", () => {
 			expect.objectContaining({
 				path: ".harness/active-artifacts.md",
 				code: "active_reference_stale_or_unverified",
-				evidenceRefs: expect.arrayContaining([".harness/specs/empty.md", ".harness/specs/untracked.md"]),
+				evidenceRefs: expect.arrayContaining([
+					".harness/specs/empty.md",
+					".harness/specs/untracked.md",
+				]),
 			}),
 		);
 		expect(report.protectedFiles).toContainEqual(
