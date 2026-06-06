@@ -95,6 +95,36 @@ describe("scanArchiveCandidateSources", () => {
 		]);
 	});
 
+	it("stops YAML list-valued metadata references at the frontmatter end", () => {
+		const refs = extractRepoPathReferences(
+			"docs/agents/guide.md",
+			[
+				"---",
+				"depends_on:",
+				"  - docs/frontmatter.md",
+				"---",
+				"- docs/body-only.md",
+			].join("\n"),
+		);
+
+		expect(refs).toEqual(["docs/frontmatter.md"]);
+	});
+
+	it("does not parse body bullets as metadata when frontmatter is unclosed", () => {
+		const refs = extractRepoPathReferences(
+			"docs/agents/guide.md",
+			[
+				"---",
+				"depends_on:",
+				"  - docs/frontmatter.md",
+				"# Body",
+				"- docs/body-only.md",
+			].join("\n"),
+		);
+
+		expect(refs).toEqual(["docs/frontmatter.md"]);
+	});
+
 	it("ignores generated projection files instead of scanning them as source", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "archive-scan-"));
 		mkdirSync(join(repoRoot, "docs"), { recursive: true });

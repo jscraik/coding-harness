@@ -176,6 +176,10 @@ describe("runDocsArchiveCandidates", () => {
 			expect.objectContaining({
 				path: ".harness/specs/current.md",
 				reasons: expect.arrayContaining(["active_artifact_reference"]),
+				evidenceRefs: expect.arrayContaining([
+					".harness/specs/current.md",
+					".harness/active-artifacts.md",
+				]),
 			}),
 		);
 	});
@@ -203,6 +207,42 @@ describe("runDocsArchiveCandidates", () => {
 			expect.objectContaining({
 				path: ".harness/specs/current.md",
 				reasons: expect.arrayContaining(["active_artifact_reference"]),
+			}),
+		);
+	});
+
+	it("requires the on-disk active artifacts index to be tracked before trusting it", () => {
+		const repoRoot = createFixture({
+			".harness/active-artifacts.md": "[Current](.harness/specs/current.md)",
+			".harness/specs/current.md": frontmatter({
+				authority: "supporting",
+				canon_class: "supporting",
+				lifecycle_state: "superseded",
+			}),
+		});
+
+		const report = runDocsArchiveCandidates({
+			repoRoot,
+			trackedFiles: [".harness/specs/current.md"],
+			now: new Date("2026-06-05T00:00:00.000Z"),
+		});
+
+		expect(report.repairFindings).toContainEqual(
+			expect.objectContaining({
+				path: ".harness/active-artifacts.md",
+				code: "active_reference_stale_or_unverified",
+			}),
+		);
+		expect(report.protectedFiles).not.toContainEqual(
+			expect.objectContaining({
+				path: ".harness/specs/current.md",
+				reasons: expect.arrayContaining(["active_artifact_reference"]),
+			}),
+		);
+		expect(report.candidates).toContainEqual(
+			expect.objectContaining({
+				path: ".harness/specs/current.md",
+				reasons: expect.arrayContaining(["superseded_status"]),
 			}),
 		);
 	});
@@ -365,6 +405,87 @@ describe("runDocsArchiveCandidates", () => {
 		expect(report.protectedFiles).not.toContainEqual(
 			expect.objectContaining({
 				path: "docs/retained.md",
+			}),
+		);
+	});
+
+	it("requires the lifecycle manifest itself to be tracked before protecting entries", () => {
+		const repoRoot = createFixture({
+			"docs/doc-lifecycle-manifest.json": JSON.stringify({
+				schema: "coding-harness-doc-lifecycle-manifest/v1",
+				generatedAt: "2026-06-05T00:00:00.000Z",
+				documents: [{ path: "docs/retained.md" }],
+			}),
+			"docs/retained.md": frontmatter({
+				authority: "supporting",
+				canon_class: "supporting",
+				lifecycle_state: "superseded",
+			}),
+		});
+
+		const report = runDocsArchiveCandidates({
+			repoRoot,
+			trackedFiles: ["docs/retained.md"],
+			now: new Date("2026-06-05T00:00:00.000Z"),
+			activeArtifactsContent: "",
+		});
+
+		expect(report.protectedFiles).not.toContainEqual(
+			expect.objectContaining({
+				path: "docs/retained.md",
+				reasons: expect.arrayContaining(["manifest_listed"]),
+			}),
+		);
+		expect(report.candidates).toContainEqual(
+			expect.objectContaining({
+				path: "docs/retained.md",
+				reasons: expect.arrayContaining(["superseded_status"]),
+			}),
+		);
+	});
+
+	it("requires lifecycle manifest entries to resolve to tracked repo paths", () => {
+		const repoRoot = createFixture({
+			"docs/doc-lifecycle-manifest.json": JSON.stringify({
+				schema: "coding-harness-doc-lifecycle-manifest/v1",
+				generatedAt: "2026-06-05T00:00:00.000Z",
+				documents: [
+					{ path: "./docs/retained.md" },
+					{ path: "../docs/escaped.md" },
+					{ path: "docs/local-only.md" },
+				],
+			}),
+			"docs/retained.md": frontmatter({
+				authority: "supporting",
+				canon_class: "supporting",
+			}),
+			"docs/local-only.md": frontmatter({
+				authority: "supporting",
+				canon_class: "supporting",
+			}),
+		});
+
+		const report = runDocsArchiveCandidates({
+			repoRoot,
+			trackedFiles: ["docs/doc-lifecycle-manifest.json", "docs/retained.md"],
+			now: new Date("2026-06-05T00:00:00.000Z"),
+			activeArtifactsContent: "",
+		});
+
+		expect(report.protectedFiles).toContainEqual(
+			expect.objectContaining({
+				path: "docs/retained.md",
+				reasons: expect.arrayContaining(["manifest_listed"]),
+				evidenceRefs: expect.arrayContaining([
+					"docs/retained.md",
+					"docs/doc-lifecycle-manifest.json",
+				]),
+			}),
+		);
+		expect(report.protectedFiles).not.toContainEqual(
+			expect.objectContaining({
+				path: "docs/local-only.md",
+				reasons: expect.arrayContaining(["manifest_listed"]),
 			}),
 		);
 	});

@@ -49,7 +49,10 @@ export function runDocsArchiveCandidates(
 	const scan = scanArchiveCandidateSources(scanOptions);
 	const references = collectReferences(scan.files);
 	const trackedPathSet = new Set(scan.trackedFiles);
-	const manifestListedPaths = readLifecycleManifestPaths(repoRoot);
+	const lifecycleManifest = readLifecycleManifestPaths(
+		repoRoot,
+		trackedPathSet,
+	);
 	const activeArtifacts = readActiveArtifacts(
 		options,
 		repoRoot,
@@ -59,6 +62,7 @@ export function runDocsArchiveCandidates(
 	const protectedFiles: ArchiveProtectedFile[] = [];
 	const repairFindings: ArchiveRepairFinding[] = [
 		...activeArtifacts.findings,
+		...lifecycleManifest.findings,
 		...generatedProjectionRepairFindings(scan.ignoredFiles),
 	];
 	const ignoredFiles: ArchiveIgnoredFile[] = [...scan.ignoredFiles];
@@ -98,14 +102,12 @@ export function runDocsArchiveCandidates(
 			file.path,
 			metadata,
 			activeArtifacts.verifiedPaths,
-			manifestListedPaths,
+			lifecycleManifest.paths,
 		);
 		if (protectionReasons.length > 0) {
-			protectedFiles.push({
-				path: file.path,
-				reasons: protectionReasons,
-				evidenceRefs: [file.path],
-			});
+			protectedFiles.push(
+				protectedFile(file.path, protectionReasons, activeArtifacts.path),
+			);
 			continue;
 		}
 
@@ -261,7 +263,7 @@ function readActiveArtifacts(
 	const content =
 		options.activeArtifactsContent !== undefined
 			? options.activeArtifactsContent
-			: existsSync(resolve(repoRoot, path))
+			: trackedPathSet.has(path) && existsSync(resolve(repoRoot, path))
 				? readFileSync(resolve(repoRoot, path), "utf8")
 				: null;
 	if (content === null) {
@@ -396,28 +398,94 @@ function collectProtectionReasons(
 	return [...new Set(reasons)];
 }
 
-function readLifecycleManifestPaths(repoRoot: string): Set<string> {
+function protectionEvidenceRefs(
+	path: string,
+	reasons: ArchiveProtectedFile["reasons"],
+	activeArtifactsPath: string,
+): string[] {
+	const evidenceRefs = [path];
+	if (reasons.includes("manifest_listed")) {
+		evidenceRefs.push(DOC_LIFECYCLE_MANIFEST_PATH);
+	}
+	if (reasons.includes("active_artifact_reference")) {
+		evidenceRefs.push(activeArtifactsPath);
+	}
+	return evidenceRefs;
+}
+
+function protectedFile(
+	path: string,
+	reasons: ArchiveProtectedFile["reasons"],
+	activeArtifactsPath: string,
+): ArchiveProtectedFile {
+	return {
+		path,
+		reasons,
+		evidenceRefs: protectionEvidenceRefs(path, reasons, activeArtifactsPath),
+	};
+}
+
+function readLifecycleManifestPaths(
+	repoRoot: string,
+	trackedPathSet: ReadonlySet<string>,
+): { paths: Set<string>; findings: ArchiveRepairFinding[] } {
+	if (!trackedPathSet.has(DOC_LIFECYCLE_MANIFEST_PATH)) {
+		return { paths: new Set(), findings: [] };
+	}
 	const manifestPath = resolve(repoRoot, DOC_LIFECYCLE_MANIFEST_PATH);
-	if (!existsSync(manifestPath)) return new Set();
+	if (!existsSync(manifestPath)) return { paths: new Set(), findings: [] };
 	try {
 		const parsed = JSON.parse(readFileSync(manifestPath, "utf8")) as {
 			documents?: unknown;
 		};
-		if (!Array.isArray(parsed.documents)) return new Set();
+		if (!Array.isArray(parsed.documents)) {
+			return { paths: new Set(), findings: [] };
+		}
 		const paths = parsed.documents
 			.map((entry) =>
 				entry &&
 				typeof entry === "object" &&
 				"path" in entry &&
 				typeof entry.path === "string"
-					? entry.path
+					? normaliseLifecycleManifestPath(entry.path)
 					: null,
 			)
-			.filter((path): path is string => Boolean(path));
-		return new Set(paths);
+			.filter(
+				(path): path is string =>
+					typeof path === "string" && trackedPathSet.has(path),
+			);
+		return { paths: new Set(paths), findings: [] };
 	} catch {
-		return new Set();
+		return {
+			paths: new Set(),
+			findings: [
+				{
+					path: DOC_LIFECYCLE_MANIFEST_PATH,
+					findingKind: "repair_finding",
+					code: "metadata_unparseable",
+					message:
+						"Tracked lifecycle manifest is not valid JSON and cannot protect archive candidates.",
+					suggestedAction: "repair_generated_source_link",
+					actionAuthority: "advisory_only",
+					requiresReviewedDecision: true,
+					evidenceRefs: [DOC_LIFECYCLE_MANIFEST_PATH],
+				},
+			],
+		};
 	}
+}
+
+function normaliseLifecycleManifestPath(rawPath: string): string | null {
+	const path = rawPath.trim().replace(/^\.\//, "");
+	if (
+		!path ||
+		isAbsolute(path) ||
+		path.includes("\\") ||
+		path.split("/").includes("..")
+	) {
+		return null;
+	}
+	return path;
 }
 
 function classifyCandidate(

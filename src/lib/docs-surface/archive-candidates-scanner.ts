@@ -136,13 +136,14 @@ export function extractRepoPathReferences(
 ): readonly string[] {
 	const refs = new Set<string>();
 	const referenceContent = stripFencedMarkdownBlocks(content);
+	const metadataContent = extractMetadataReferenceContent(referenceContent);
 	for (const match of referenceContent.matchAll(
 		/\[[^\]]*\]\(([^)#?:][^)]*)\)/g,
 	)) {
 		const ref = normaliseMarkdownReference(path, match[1] ?? "");
 		if (ref) refs.add(ref);
 	}
-	for (const match of referenceContent.matchAll(
+	for (const match of metadataContent.matchAll(
 		new RegExp(
 			`${REFERENCE_METADATA_KEYS}:[ \\t]*["']?([^"',\\]\\s]+)["']?`,
 			"g",
@@ -151,7 +152,7 @@ export function extractRepoPathReferences(
 		const ref = normaliseStructuredReference(match[1] ?? "");
 		if (ref) refs.add(ref);
 	}
-	for (const ref of extractListMetadataReferences(referenceContent)) {
+	for (const ref of extractListMetadataReferences(metadataContent)) {
 		refs.add(ref);
 	}
 	for (const match of referenceContent.matchAll(
@@ -169,6 +170,17 @@ function stripFencedMarkdownBlocks(content: string): string {
 		.replace(/^\s*```[\s\S]*?^\s*```\s*$/gm, "");
 }
 
+function extractMetadataReferenceContent(content: string): string {
+	const lines = content.split(/\r?\n/);
+	if ((lines[0] ?? "").trim() !== "---") return content;
+	const frontmatterLines: string[] = [];
+	for (const line of lines.slice(1)) {
+		if (line.trim() === "---") return frontmatterLines.join("\n");
+		frontmatterLines.push(line);
+	}
+	return frontmatterLines.join("\n");
+}
+
 function extractListMetadataReferences(content: string): readonly string[] {
 	const refs = new Set<string>();
 	let activeListKey = false;
@@ -182,7 +194,10 @@ function extractListMetadataReferences(content: string): readonly string[] {
 		}
 		if (!activeListKey) continue;
 		const item = line.match(/^\s*-\s*["']?([^"',\]\s]+)["']?/);
-		if (!item) continue;
+		if (!item) {
+			if (line.trim()) activeListKey = false;
+			continue;
+		}
 		const ref = normaliseStructuredReference(item[1] ?? "");
 		if (ref) refs.add(ref);
 	}
