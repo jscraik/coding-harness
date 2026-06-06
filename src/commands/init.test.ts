@@ -807,7 +807,7 @@ describe("runInit", () => {
 			expect(content.issueTrackingPolicy.provider).toBe("linear");
 			expect(content.issueTrackingPolicy.requirePackageBugsUrl).toBe(true);
 			expect(content.issueTrackingPolicy.requirePrIssueKey).toBe(true);
-			expect(content.runtimePolicy.nodeVersion).toBe("26.3.0");
+			expect(content.runtimePolicy.nodeVersion).toBe(">=26.3.0");
 			expect(content.runtimePolicy.createIssueOnAgentFindings).toBe(true);
 			expect(content.loopStageContracts["risk-policy-gate"].schema).toBe(
 				"loop-stage-contract/v1",

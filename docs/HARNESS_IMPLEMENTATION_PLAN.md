@@ -1024,7 +1024,7 @@ This avoids lock file complexity and merge queue overhead. Revisit if scale beco
 
 ### 33.5 Edge case: agent timeout handling
 
-**Decision:** 10 minute default, fail PR on timeout
+**Decision:** 10-minute default, fail PR on timeout
 
 Configured in `reviewPolicy` contract:
 
@@ -1068,7 +1068,7 @@ User has an OpenTelemetry collector at `~/.agents/otel-collector/`. Explore dire
 | Phase 6: Gardening                | ✅ Complete | nightly gardener workflow, stale docs, broken links         |
 | Phase 7: Memory policy            | ✅ Complete | memory-gate command, branch enforcement, metrics tracking   |
 
-**All core acceptance criteria and optional Section 27 items implemented.**
+**Implementation complete; validation and gating pending**
 
 ### Section 27 Optional Enhancements Status
 
