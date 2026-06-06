@@ -436,10 +436,13 @@ describe("runInit", () => {
 				"utf-8",
 			);
 			expect(circleConfig).toContain("name: Ensure baseline shell tools");
+			expect(circleConfig).toContain(
+				'export GH_BIN="${HARNESS_GH_BIN:-${GH_BIN:-gh}}"',
+			);
 			expect(circleConfig).toContain('packages+=("gh")');
 			expect(circleConfig).toContain('packages+=("ripgrep")');
 			expect(circleConfig).toContain('packages+=("fd-find")');
-			expect(circleConfig).toContain("gh --version");
+			expect(circleConfig).toContain('"$GH_BIN" --version');
 			expect(circleConfig).not.toContain("gh --version | head -n 1");
 			expect(circleConfig).toContain(
 				'ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"',
@@ -804,6 +807,7 @@ describe("runInit", () => {
 			expect(content.issueTrackingPolicy.provider).toBe("linear");
 			expect(content.issueTrackingPolicy.requirePackageBugsUrl).toBe(true);
 			expect(content.issueTrackingPolicy.requirePrIssueKey).toBe(true);
+			expect(content.runtimePolicy.nodeVersion).toBe("26.3.0");
 			expect(content.runtimePolicy.createIssueOnAgentFindings).toBe(true);
 			expect(content.loopStageContracts["risk-policy-gate"].schema).toBe(
 				"loop-stage-contract/v1",
@@ -1233,7 +1237,7 @@ describe("runInit", () => {
 			expect(content).toContain("name: Verify tag matches package version");
 			expect(content).toContain("name: Generate build provenance attestation");
 			expect(content).toContain("name: Verify attestations");
-			expect(content).toContain("gh attestation verify");
+			expect(content).toContain('"$GH_BIN" attestation verify');
 			expect(content).toContain("name: Create GitHub Release");
 		});
 

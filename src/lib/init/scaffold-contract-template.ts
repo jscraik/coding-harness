@@ -175,7 +175,7 @@ function renderScaffoldContract(
 			},
 		},
 		runtimePolicy: {
-			nodeVersion: "24.x",
+			nodeVersion: "26.3.0",
 			createIssueOnAgentFindings: true,
 		},
 		memoryPolicy: {

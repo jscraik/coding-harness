@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { isAbsolute, resolve } from "node:path";
+import { isAbsolute, relative, resolve } from "node:path";
 import {
 	DOCS_ARCHIVE_CANDIDATES_REPORT_SCHEMA,
 	type ArchiveCandidate,
@@ -317,8 +317,8 @@ function isVerifiedActiveArtifact(
 	const path = normaliseActiveArtifactPath(linkedPath);
 	if (!path || !trackedPathSet.has(path)) return false;
 	const resolved = resolve(repoRoot, path);
-	if (resolved !== repoRoot && !resolved.startsWith(`${repoRoot}/`))
-		return false;
+	const relativePath = relative(repoRoot, resolved);
+	if (relativePath.startsWith("..") || isAbsolute(relativePath)) return false;
 	if (!existsSync(resolved)) return false;
 	try {
 		const content = readFileSync(resolved, "utf8");
