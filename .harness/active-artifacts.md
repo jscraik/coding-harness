@@ -10,19 +10,21 @@
 
 ## Scope
 
-Current working reconciliation: 2026-06-06 on `main` after PR #358 merged.
+Current working reconciliation: 2026-06-06 on `main` after PR #359 merged.
 JSC-395 advisory stale-document archive candidate reporting is delivered on
-current main through PR #354; JSC-363 route truth is refreshed through PR #358. This route refresh does not claim live Linear,
+current main through PR #354; JSC-363 route truth is refreshed through PR #359. This route refresh does not claim live Linear,
 release, downstream-template state, JSC-363 parent-goal completion, or
-post-PR #358 tracker-current state; those remain separate closeout lanes. The
+post-PR #359 tracker-current state; those remain separate closeout lanes. The
 older JSC-363 cockpit route remains retained history and parent-goal context,
 not a closed parent objective.
 
-Last reconciled: 2026-06-06 after PR #358 merged into `main` as squash merge
-commit `de9db6445acdafb5b9dd7b437ef7476345680cff` and local `main`
-fast-forwarded to the same `origin/main` head. PR #358 submitted head
+Last reconciled: 2026-06-06 after PR #359 merged into `main` as squash merge
+commit `c8bc70c6c841348924017194050de0e126c4a448` and local `main`
+fast-forwarded to the same `origin/main` head. PR #359 submitted head
+`32f6bbb2c038912697d810ed5cacf34a8028f39a` records the post-PR #358
+route-evidence repair. PR #358 submitted head
 `30dca4d037062b45d7d119d50606066eece10ec1` records the post-PR #357
-route-truth refresh. PR #357 submitted head
+route-truth refresh, and PR #357 submitted head
 `30c48b8961f06c0dbf257f3f14505beabfeaf579` records the post-PR #356
 route-truth refresh, PR #356 submitted head
 `1de6572f3ed6d4bb6ca5487cd0a4b12df79b4d8e` records the post-PR #354
@@ -35,11 +37,12 @@ PR #354, with 71 review threads and zero unresolved; PR #356 refreshed route
 truth with zero review threads and zero unresolved; PR #357 refreshed route truth
 with three CodeRabbit review threads resolved and zero unresolved; PR #358
 refreshed route truth with repo-owned CircleCI, CodeRabbit, Socket, and
-repo-owned security lanes passing before merge. A post-merge PR #358
-review-thread refresh captured a receipt-anchor caveat at thread
-`PRRT_kwDORWZJCc6Hlynx`; this route refresh records the corrective
-current-main anchor, but review-thread resolution remains a separate lane until
-GitHub shows the thread resolved or the owner accepts it as review debt. The external Snyk GitHub
+repo-owned security lanes passing before merge; PR #359 repaired the route
+evidence after CodeRabbit review and merged with repo-owned CircleCI,
+CodeRabbit, Socket, aggregate `pr-pipeline`, and aggregate `security-scan`
+green. GitHub reports the PR #359 review threads resolved/outdated after
+CodeRabbit marked the addressed comments in commit
+`32f6bbb2c038912697d810ed5cacf34a8028f39a`. The external Snyk GitHub
 App quota/status failure remains an owner-approved waiver for that external
 lane only; it does not claim external Snyk passed and does not waive repo-run
 security, future Snyk results, or future security findings. PR #353 submitted
@@ -65,7 +68,7 @@ Linear JSC-363 has a post-PR #356 route-truth comment
 `7d2d878f-26fd-4b08-88a1-5a96f77de3f1`, but the title/description still
 describe Phase 1, so field-text-current remains unclaimed unless accepted by
 the owner or edited.
-No post-PR #357 or post-PR #358 Linear mutation is claimed.
+No post-PR #357, post-PR #358, or post-PR #359 Linear mutation is claimed.
 This reconcile also does not claim runtime producer evidence, delivery-truth
 consumption, docs accuracy, Judge/PM readiness, or final goal completion.
 
@@ -79,7 +82,7 @@ unless a live refresh is recorded in the referenced artifact.
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
 | Advisory stale-document archive candidate reporting | JSC-395 | `.harness/specs/2026-06-05-advisory-stale-document-archive-candidate-reporting-spec.md` plus `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-trace-plan.md` plus `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-execution-plan.md` | Delivered on current main by PR #354. The slice remains advisory/read-only: it may report stale-document archive candidates and docs-gate advisory findings, but it must not delete, move, archive, demote, or rewrite documentation artifacts. | Treat PR #354 as merged implementation evidence. Keep release, downstream-template, and any future docs-cleanup action separate unless a later tracked route explicitly promotes them. |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged JSC-363 route/foundation lanes through PR #358 at de9db6445acdafb5b9dd7b437ef7476345680cff. PR #358 submitted head 30dca4d037062b45d7d119d50606066eece10ec1 is merged; repo-owned CircleCI, CodeRabbit, Socket, aggregate pr-pipeline, and repo-owned security lanes were green at merge refresh. Direct post-merge CircleCI API proof is blocked in this session because <REDACTED_HOME_PATH>/.codex/.env is a FIFO, so current CircleCI proof is the live GitHub check-context projection for pipeline 2511. A post-merge PR #358 review-thread refresh reports one unresolved Codex receipt-anchor thread, so review-thread resolution is unclaimed until GitHub shows it resolved or the owner accepts it as review debt. The external Snyk GitHub App quota/status failure is owner-waived only for that external lane and is not a passing security result. Local branch-only leading-flag validator repair fb2e9946adfe21d29861e04f9b5d12596e696d80 is not on current main and remains a follow-up candidate. Linear JSC-363 has post-PR #356 route comment 7d2d878f-26fd-4b08-88a1-5a96f77de3f1; no post-PR #357 or post-PR #358 Linear mutation is claimed, and field-text-current remains unclaimed because the issue title/description still describe Phase 1. | Use the goal board as the current execution cockpit. Next Safe Action: Coordinator must run `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .` and `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit`; proceed only when both commands exit 0, audit freshness reports the latest receipt head is reachable from current HEAD, and goal-board validation reports the board/audit-source/review-backfill checks passed. Canonical validation pointer: `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus the latest `receipts.jsonl` entry. If either validator fails, keep the route blocked, record a receipt with owner, blocker class, failing command, and next action, and do not select the next bounded lifecycle gap from current main. Additionally, the leading-flag validator repair (commit fb2e9946adfe21d29861e04f9b5d12596e696d80, not on current main) must be either promoted into a fresh one-PR follow-up slice with documented evidence or explicitly rejected with documented evidence before any final completion claim. Do not claim JSC-363 completion until owner acceptance and each of the following validations is individually confirmed: runtime producer evidence, delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final completion audit. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged JSC-363 route/foundation lanes through PR #359 at c8bc70c6c841348924017194050de0e126c4a448. PR #359 submitted head 32f6bbb2c038912697d810ed5cacf34a8028f39a is merged; repo-owned CircleCI, CodeRabbit, Socket, aggregate pr-pipeline, aggregate security-scan, and repo-owned security lanes were green at merge refresh. Direct CircleCI proof from <REDACTED_HOME_PATH>/.codex/.env is blocked in this session because that env surface is a FIFO, but GitHub check contexts show the full CircleCI suite passed for PR #359 and the prior authenticated CLI/API probe confirmed the slowest PR #359 CircleCI job, orb-pinning, completed successfully. PR #359 review threads are resolved/outdated after CodeRabbit marked the addressed comments in commit 32f6bbb. The external Snyk GitHub App quota/status failure is owner-waived only for that external lane and is not a passing security result. Local branch-only leading-flag validator repair fb2e9946adfe21d29861e04f9b5d12596e696d80 is not on current main and remains a follow-up candidate. Linear JSC-363 has post-PR #356 route comment 7d2d878f-26fd-4b08-88a1-5a96f77de3f1; no post-PR #357, post-PR #358, or post-PR #359 Linear mutation is claimed, and field-text-current remains unclaimed because the issue title/description still describe Phase 1. | Use the goal board as the current execution cockpit. Next Safe Action: Coordinator must run `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .` and `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit`; proceed only when both commands exit 0, audit freshness reports the latest receipt head is reachable from current HEAD, and goal-board validation reports the board/audit-source/review-backfill checks passed. Canonical validation pointer: `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus the latest `receipts.jsonl` entry. If either validator fails, keep the route blocked, record a receipt with owner, blocker class, failing command, and next action, and do not select the next bounded lifecycle gap from current main. Additionally, the leading-flag validator repair (commit fb2e9946adfe21d29861e04f9b5d12596e696d80, not on current main) must be either promoted into a fresh one-PR follow-up slice with documented evidence or explicitly rejected with documented evidence before any final completion claim. Do not claim JSC-363 completion until owner acceptance and each of the following validations is individually confirmed: runtime producer evidence, delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final completion audit. |
 
 PU-046 update: PR #330 was refreshed again on head
 163017e16e4611d5d71f5c4c62fc85f8d164b17b after the R205 artifact receipt was
@@ -193,11 +196,11 @@ runtime producer emission, delivery-truth consumption, or final goal completion.
   PR, CI, review-thread, Project Brain, and runtime evidence truth separated in
   receipts. Historical PR #309 continuity remains indexed by branch head
   `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` for validator compatibility;
-  it is not current route truth. Current route truth is PR #358 merged into
+  it is not current route truth. Current route truth is PR #359 merged into
   `main` as squash commit
-  `de9db6445acdafb5b9dd7b437ef7476345680cff` with submitted head
-  `30dca4d037062b45d7d119d50606066eece10ec1`; it follows the
-  post-PR #357 route refresh and the PR #358 receipt re-anchoring work.
+  `c8bc70c6c841348924017194050de0e126c4a448` with submitted head
+  `32f6bbb2c038912697d810ed5cacf34a8028f39a`; it follows the
+  post-PR #358 route refresh and the PR #359 CodeRabbit route-evidence repair.
   Historical
   PR #322 through PR #350 ledger entries below, including PR #344
   route-refresh, PR #347 body repair, PR #348 review-thread repair, PR #349
