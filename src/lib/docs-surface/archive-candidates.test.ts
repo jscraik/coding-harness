@@ -340,6 +340,29 @@ describe("runDocsArchiveCandidates", () => {
 		);
 	});
 
+	it("reports lifecycle manifest parse failures as repair evidence", () => {
+		const repoRoot = createFixture({
+			"docs/doc-lifecycle-manifest.json": "{not-json",
+			"docs/retained.md": frontmatter({
+				authority: "supporting",
+				canon_class: "supporting",
+			}),
+		});
+
+		const report = runDocsArchiveCandidates({
+			repoRoot,
+			trackedFiles: ["docs/doc-lifecycle-manifest.json", "docs/retained.md"],
+			now: new Date("2026-06-05T00:00:00.000Z"),
+			activeArtifactsContent: "",
+		});
+
+		expect(report.repairFindings).toContainEqual(
+			expect.objectContaining({
+				path: "docs/doc-lifecycle-manifest.json",
+			}),
+		);
+	});
+
 	it("does not count generated projection references as inbound docs", () => {
 		const repoRoot = createFixture({
 			"AI/context/diagram-context.md": "[Generated](docs/supporting.md)\n",
