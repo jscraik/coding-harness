@@ -32,7 +32,10 @@ from inventory_repos import (
 
 class TestLoadManifest:
     def test_loads_valid_manifest(self, tmp_path: Path) -> None:
-        manifest = {"workspace_root": "../../", "repos": {"in_scope": [], "excluded": []}}
+        manifest: dict[str, object] = {
+            "workspace_root": "../../",
+            "repos": {"in_scope": [], "excluded": []},
+        }
         p = tmp_path / "manifest.json"
         p.write_text(json.dumps(manifest), encoding="utf-8")
         result = load_manifest(p)
@@ -77,7 +80,7 @@ class TestResolveWorkspaceRoot:
     def test_defaults_to_two_levels_up(self, tmp_path: Path) -> None:
         manifest_path = tmp_path / "deep" / "sub" / "manifest.json"
         manifest_path.parent.mkdir(parents=True)
-        manifest = {}  # No workspace_root -> defaults to "../../"
+        manifest: dict[str, object] = {}  # No workspace_root -> defaults to "../../"
         result = resolve_workspace_root(manifest_path, manifest)
         assert result == tmp_path.resolve()
 

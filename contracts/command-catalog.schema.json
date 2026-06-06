@@ -1,0 +1,137 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/command-catalog.schema.json",
+	"title": "Harness Command Catalog",
+	"type": "object",
+	"additionalProperties": false,
+	"required": ["schemaVersion", "generatedAt", "commandCount", "commands"],
+	"properties": {
+		"schemaVersion": {
+			"const": "harness-command-catalog/v3"
+		},
+		"generatedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"commandCount": {
+			"type": "integer",
+			"minimum": 0
+		},
+		"commands": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": [
+					"name",
+					"aliases",
+					"summary",
+					"category",
+					"mutability",
+					"requiredFlags",
+					"expectedArtifacts",
+					"retryability",
+					"safeFirstAlternatives",
+					"tier",
+					"primaryAudience",
+					"orchestratedBy",
+					"agentMode",
+					"visibility"
+				],
+				"properties": {
+					"name": {
+						"type": "string",
+						"minLength": 1
+					},
+					"aliases": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"minLength": 1
+						}
+					},
+					"summary": {
+						"type": "string",
+						"minLength": 1
+					},
+					"example": {
+						"type": "string",
+						"minLength": 1
+					},
+					"category": {
+						"enum": [
+							"discovery",
+							"bootstrap-governance",
+							"review-policy",
+							"workflow-linear",
+							"pilot-remediation",
+							"drift-search-evidence",
+							"uncategorized"
+						]
+					},
+					"mutability": {
+						"enum": ["read", "write"]
+					},
+					"requiredFlags": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"minLength": 1
+						}
+					},
+					"expectedArtifacts": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"minLength": 1
+						}
+					},
+					"retryability": {
+						"enum": ["safe", "conditional", "manual"]
+					},
+					"safeFirstAlternatives": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"minLength": 1
+						}
+					},
+					"tier": {
+						"enum": ["cockpit", "domain", "plumbing", "legacy"]
+					},
+					"primaryAudience": {
+						"enum": ["agent", "human", "both"]
+					},
+					"orchestratedBy": {
+						"type": "array",
+						"items": {
+							"enum": ["next", "pr-ready", "fix-review", "learn"]
+						}
+					},
+					"agentMode": {
+						"enum": [
+							"orient",
+							"plan",
+							"verify",
+							"review",
+							"repair",
+							"handoff",
+							"learn",
+							"admin"
+						]
+					},
+					"visibility": {
+						"enum": [
+							"default",
+							"agent",
+							"advanced",
+							"plumbing",
+							"hidden",
+							"legacy"
+						]
+					}
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,24 @@
+{
+	"schemaVersion": "harness-command-catalog/v3",
+	"generatedAt": "2026-06-06T00:00:00.000Z",
+	"commandCount": 1,
+	"commands": [
+		{
+			"name": "commands",
+			"aliases": [],
+			"summary": "List machine-readable command capability metadata for humans and agents",
+			"example": "commands --json",
+			"category": "discovery",
+			"mutability": "read",
+			"requiredFlags": [],
+			"expectedArtifacts": [],
+			"retryability": "safe",
+			"safeFirstAlternatives": [],
+			"tier": "plumbing",
+			"primaryAudience": "agent",
+			"orchestratedBy": [],
+			"agentMode": "orient",
+			"visibility": "advanced"
+		}
+	]
+}

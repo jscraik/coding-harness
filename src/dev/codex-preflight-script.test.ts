@@ -57,18 +57,7 @@ function resolveTool(tool: string): string {
 
 function pathWithoutLocalMemory(): string {
 	const binDir = mkdtempSync(join(tmpdir(), "codex-preflight-bin-"));
-	for (const tool of [
-		"pnpm",
-		"node",
-		"bash",
-		"git",
-		"sed",
-		"rg",
-		"jq",
-		"curl",
-		"python3",
-		"tsx",
-	]) {
+	for (const tool of ["bash", "git", "sed", "rg", "jq", "curl", "python3"]) {
 		mkdirSync(binDir, { recursive: true });
 		symlinkSync(resolveTool(tool), join(binDir, tool));
 	}

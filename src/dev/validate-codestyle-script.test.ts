@@ -63,6 +63,7 @@ function runValidateCodestyle(root: string) {
 
 const baselineScripts = {
 	lint: "true",
+	"types:check": "true",
 	typecheck: "true",
 	"quality:docstrings": "true",
 	"quality:size": "true",
