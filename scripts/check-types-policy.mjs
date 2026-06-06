@@ -81,6 +81,15 @@ const findViolations = () => {
 const keyFor = (violation) =>
 	`${violation.pattern}\u0000${violation.file}\u0000${violation.snippet}`;
 
+const countByKey = (items) => {
+	const counts = new Map();
+	for (const item of items) {
+		const key = keyFor(item);
+		counts.set(key, (counts.get(key) ?? 0) + 1);
+	}
+	return counts;
+};
+
 const currentViolations = findViolations();
 
 if (updateBaseline) {
@@ -99,15 +108,30 @@ if (updateBaseline) {
 
 const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
 const baselineEntries = Array.isArray(baseline.entries) ? baseline.entries : [];
-const baselineKeys = new Set(baselineEntries.map(keyFor));
-const currentKeys = new Set(currentViolations.map(keyFor));
+const baselineCounts = countByKey(baselineEntries);
+const currentCounts = countByKey(currentViolations);
 
-const newViolations = currentViolations.filter(
-	(violation) => !baselineKeys.has(keyFor(violation)),
-);
-const staleBaselineEntries = baselineEntries.filter(
-	(entry) => !currentKeys.has(keyFor(entry)),
-);
+const newViolations = [];
+for (const violation of currentViolations) {
+	const key = keyFor(violation);
+	const remaining = baselineCounts.get(key) ?? 0;
+	if (remaining > 0) {
+		baselineCounts.set(key, remaining - 1);
+	} else {
+		newViolations.push(violation);
+	}
+}
+
+const staleBaselineEntries = [];
+for (const entry of baselineEntries) {
+	const key = keyFor(entry);
+	const remaining = currentCounts.get(key) ?? 0;
+	if (remaining > 0) {
+		currentCounts.set(key, remaining - 1);
+	} else {
+		staleBaselineEntries.push(entry);
+	}
+}
 
 if (newViolations.length > 0 || staleBaselineEntries.length > 0) {
 	console.error("[check-types-policy] TypeScript escape-hatch policy failed.");
