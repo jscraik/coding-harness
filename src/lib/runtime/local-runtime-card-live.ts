@@ -138,7 +138,9 @@ function defaultGitHubPrSnapshot(
 				status: "blocked",
 				failureClass:
 					"github_pr_unavailable:" +
-					formatGitHubCliFailure(error, args, githubCli, { resolvedPath: null }),
+					formatGitHubCliFailure(error, args, githubCli, {
+						resolvedPath: null,
+					}),
 			},
 			blockers: ["Live GitHub PR state could not be refreshed."],
 		};
