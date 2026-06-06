@@ -85,7 +85,7 @@
 
     .metrics {
       display: grid;
-      grid-template-columns: repeat(5, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 12px;
       margin: 16px 0 18px;
     }
@@ -417,7 +417,11 @@
     <section class="metrics" aria-label="Goal status summary">
       <div class="metric"><span>Goal status</span><strong>Post-PR #357 route refresh</strong></div>
       <div class="metric"><span>Main-delivered PR lanes</span><strong>PR #357 latest merged</strong></div>
-      <div class="metric"><span>Outstanding work</span><strong>Runtime, delivery truth, docs, Linear, Judge/PM</strong></div>
+      <div class="metric"><span>Runtime producer</span><strong>Pending evidence</strong></div>
+      <div class="metric"><span>Delivery truth</span><strong>Partial, final lanes pending</strong></div>
+      <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
+      <div class="metric"><span>Linear tracker</span><strong>Field text unclaimed</strong></div>
+      <div class="metric"><span>Judge / PM</span><strong>Not ready</strong></div>
       <div class="metric"><span>Claim boundary</span><strong>Completion unclaimed</strong></div>
       <div class="metric"><span>Source files</span><strong>goal.md, state.yaml, receipts.jsonl, Kanban</strong></div>
     </section>
@@ -497,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and CircleCI after PR #357 merged at <code>2026-06-06T16:20:21Z</code>. Local <code>main</code> and <code>origin/main</code> are at squash merge commit <code>68277b63f4074036294234fbb3ad5befe735d151</code>; submitted PR head was <code>30c48b8961f06c0dbf257f3f14505beabfeaf579</code>. CircleCI <code>pr-pipeline</code>, CircleCI <code>security-scan</code>, CodeRabbit, Socket, repo-owned security lanes, and review-thread refresh passed for the PR head. Post-merge CircleCI API evidence using the env-loaded <code>CIRCLECI_CLI_TOKEN</code> from <code>~/.codex/.env</code> confirms main pipeline <code>2505</code> for <code>68277b63f4074036294234fbb3ad5befe735d151</code> with <code>pr-pipeline=success</code> and <code>security-scan=success</code>. Linear JSC-363 route comment <code>7d2d878f-26fd-4b08-88a1-5a96f77de3f1</code> records the post-PR #356 truth only; no post-PR #357 Linear mutation is claimed, and field-text-current remains unclaimed because the issue still uses Phase 1 wording. The external Snyk GitHub App quota failure remains an owner-waived quota/status lane only. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and CircleCI after PR #357 merged at <code>2026-06-06T16:20:21Z</code>. Local <code>main</code> and <code>origin/main</code> are at squash merge commit <code>68277b63f4074036294234fbb3ad5befe735d151</code>; submitted PR head was <code>30c48b8961f06c0dbf257f3f14505beabfeaf579</code>. CircleCI <code>pr-pipeline</code>, CircleCI <code>security-scan</code>, CodeRabbit, Socket, repo-owned security lanes, and review-thread refresh passed for the PR head. Post-merge CircleCI API evidence using the env-loaded <code>CIRCLECI_CLI_TOKEN</code> from <code>&lt;REDACTED_HOME_PATH&gt;/.codex/.env</code> confirms main pipeline <code>2505</code> for <code>68277b63f4074036294234fbb3ad5befe735d151</code> with <code>pr-pipeline=success</code> and <code>security-scan=success</code>. Linear JSC-363 route comment <code>7d2d878f-26fd-4b08-88a1-5a96f77de3f1</code> records the post-PR #356 truth only; no post-PR #357 Linear mutation is claimed, and field-text-current remains unclaimed because the issue still uses Phase 1 wording. The external Snyk GitHub App quota failure remains an owner-waived quota/status lane only. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -505,7 +509,11 @@
       { id: "intent", title: "Intent & Contract", color: "var(--blue)" },
       { id: "completed", title: "Completed Work", color: "var(--green)" },
       { id: "implementation", title: "Implemented Foundations", color: "var(--cyan)" },
-      { id: "remote", title: "PR / CI / Review Truth", color: "var(--amber)" },
+      { id: "pr-truth", title: "PR Truth", color: "var(--amber)" },
+      { id: "ci-truth", title: "CI Truth", color: "var(--cyan)" },
+      { id: "review-truth", title: "Review Truth", color: "var(--purple)" },
+      { id: "linear-truth", title: "Linear Truth", color: "var(--pink)" },
+      { id: "artifact-truth", title: "Artifact Truth", color: "var(--blue)" },
       { id: "remaining", title: "Outstanding Work", color: "var(--pink)" },
       { id: "closeout", title: "Closeout Blockers", color: "var(--red)" }
     ];
@@ -645,7 +653,7 @@
       },
       {
         id: "ci-migrate-apply-command-repair",
-        lane: "remote",
+        lane: "pr-truth",
         title: "PR #350: ci-migrate apply command repair",
         status: "done",
         tags: ["merged", "ci-migrate", "packaged skill"],
@@ -664,6 +672,28 @@
         evidence: ["PR #357 -> MERGED at 2026-06-06T16:20:21Z", "Squash merge commit -> 68277b63f4074036294234fbb3ad5befe735d151", "Submitted head -> 30c48b8961f06c0dbf257f3f14505beabfeaf579", "Local main -> 68277b63f4074036294234fbb3ad5befe735d151", "CircleCI PR-head pr-pipeline -> pass", "CircleCI PR-head security-scan -> pass", "CircleCI API main pipeline 2505 -> pr-pipeline=success, security-scan=success", "CodeRabbit -> pass after manual trigger", "Review threads -> 3 total, 0 unresolved", "Linear route comment -> post-PR #356 comment 7d2d878f-26fd-4b08-88a1-5a96f77de3f1 only", "Linear field text -> still Phase 1 wording, unclaimed", "security/snyk GitHub App -> owner-waived quota failure only"],
         next: "Validate the refreshed board/state/receipt set, then select the next bounded lifecycle gap from current main.",
         risk: "This proves PR #357 merge and remote PR lanes for that head. It does not prove Linear field-text-current, runtime producer emission, delivery-truth consumption, Judge/PM readiness, or parent-goal completion."
+      },
+      {
+        id: "current-review-truth",
+        lane: "review-truth",
+        title: "Current review truth boundary",
+        status: "active",
+        tags: ["CodeRabbit", "Codex reviewers", "threads"],
+        summary: "Review truth is tracked separately from CI and PR merge state. PR #357 review threads were resolved at merge refresh; PR #358 review evidence must be refreshed on its own branch before route-truth closeout.",
+        evidence: ["PR #357 review threads -> 3 total, 0 unresolved at merge refresh", "PR #358 CodeRabbit manual trigger -> issuecomment-4639712527", "PR #358 independent reviewers: adversarial, agent-native, and best-practices subagents"],
+        next: "Before merging PR #358, refresh CodeRabbit, independent reviewer evidence, and unresolved review-thread state without treating CircleCI success as review success.",
+        risk: "A green PR or CircleCI pipeline can still carry unresolved review comments or missing independent reviewer proof."
+      },
+      {
+        id: "current-linear-truth",
+        lane: "linear-truth",
+        title: "Linear tracker truth boundary",
+        status: "unclaimed",
+        tags: ["Linear", "JSC-363", "field text"],
+        summary: "Linear JSC-363 has a post-PR #356 route comment, but no post-PR #357 Linear mutation is claimed and the issue fields still describe Phase 1.",
+        evidence: ["Linear route comment -> 7d2d878f-26fd-4b08-88a1-5a96f77de3f1", "goal.md current route truth", "state.yaml current_slice_gate.reason"],
+        next: "Refresh or explicitly block Linear field-text alignment only after PR #358 route-truth evidence is merged and local main is pulled.",
+        risk: "Tracker comments, issue fields, and goal receipts are distinct truth surfaces; one cannot silently stand in for the others."
       },
       {
         id: "codex-native-refinement",
@@ -711,7 +741,7 @@
       },
       {
         id: "pr344-waiver-merged",
-        lane: "remote",
+        lane: "ci-truth",
         title: "PR #344 merged with quota waiver",
         status: "done",
         tags: ["PR #344", "Snyk quota waiver", "pr-green-sweep"],
@@ -722,7 +752,7 @@
       },
       {
         id: "browser-preview",
-        lane: "remote",
+        lane: "artifact-truth",
         title: "Implementation notes browser preview",
         status: "active",
         tags: ["Browser", "artifact-runtime", "preview"],
@@ -843,7 +873,7 @@
       },
       {
         id: "pr348-route-refresh",
-        lane: "remote",
+        lane: "pr-truth",
         title: "PR #348 route refresh merged",
         status: "done",
         tags: ["PR #348", "Snyk quota waiver", "merged"],
@@ -854,7 +884,7 @@
       },
       {
         id: "pr346-waiver-record",
-        lane: "remote",
+        lane: "ci-truth",
         title: "PR #346 waiver record merged",
         status: "done",
         tags: ["PR #346", "Snyk quota waiver", "merged"],
@@ -865,7 +895,7 @@
       },
       {
         id: "pr345-waiver-record",
-        lane: "remote",
+        lane: "ci-truth",
         title: "PR #345 waiver record merged",
         status: "done",
         tags: ["PR #345", "Snyk quota waiver", "merged"],
