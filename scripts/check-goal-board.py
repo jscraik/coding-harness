@@ -17,7 +17,9 @@ import runpy
 import subprocess
 import sys
 import urllib.parse
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any, cast
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -62,6 +64,7 @@ WSL_HOME_PATH = re.compile(
     re.IGNORECASE,
 )
 TILDE_HOME_PATH = re.compile(r"(^|[\s:=,])~/[^\s]+")
+type JsonObject = dict[str, Any]
 
 
 def source_checkout_root() -> Path | None:
@@ -170,20 +173,26 @@ def markdown_section_lines(content: str, heading: str) -> list[str]:
 def snapshot_matches_pr_309(snapshot: object) -> bool:
     if not isinstance(snapshot, dict):
         return False
-    pr_number = snapshot.get("pr") or snapshot.get("number") or snapshot.get("pr_number")
+    snapshot_payload = cast(Mapping[str, object], snapshot)
+    pr_number = (
+        snapshot_payload.get("pr")
+        or snapshot_payload.get("number")
+        or snapshot_payload.get("pr_number")
+    )
     if pr_number == 309 or pr_number == "309":
         return True
-    nested = snapshot.get("pr_309")
+    nested = snapshot_payload.get("pr_309")
     return isinstance(nested, dict)
 
 
 def head_from_snapshot(snapshot: object) -> str | None:
     if not isinstance(snapshot, dict):
         return None
-    candidates = [snapshot]
-    nested = snapshot.get("pr_309")
+    snapshot_payload = cast(Mapping[str, object], snapshot)
+    candidates: list[Mapping[str, object]] = [snapshot_payload]
+    nested = snapshot_payload.get("pr_309")
     if isinstance(nested, dict):
-        candidates.append(nested)
+        candidates.append(cast(Mapping[str, object], nested))
     for candidate in candidates:
         for key in PR_309_HEAD_KEYS:
             value = candidate.get(key)
@@ -192,7 +201,7 @@ def head_from_snapshot(snapshot: object) -> str | None:
     return None
 
 
-def load_runtime_evidence_receipts(receipts_path: Path) -> list[tuple[int, dict[str, object]]]:
+def load_runtime_evidence_receipts(receipts_path: Path) -> list[tuple[int, JsonObject]]:
     if not receipts_path.is_file():
         print(
             f"Runtime evidence cockpit receipts file is missing: {receipts_path}",
@@ -200,7 +209,7 @@ def load_runtime_evidence_receipts(receipts_path: Path) -> list[tuple[int, dict[
         )
         raise SystemExit(1)
 
-    receipts: list[tuple[int, dict[str, object]]] = []
+    receipts: list[tuple[int, JsonObject]] = []
     for line_number, line in enumerate(
         receipts_path.read_text(encoding="utf-8").splitlines(),
         start=1,
@@ -223,7 +232,7 @@ def load_runtime_evidence_receipts(receipts_path: Path) -> list[tuple[int, dict[
                 file=sys.stderr,
             )
             raise SystemExit(1)
-        receipts.append((line_number, receipt))
+        receipts.append((line_number, cast(JsonObject, receipt)))
     return receipts
 
 
@@ -246,7 +255,7 @@ def latest_pr_309_receipt_head(receipts_path: Path) -> str | None:
     return latest_head
 
 
-def receipt_number(receipt: dict[str, object]) -> int | None:
+def receipt_number(receipt: Mapping[str, object]) -> int | None:
     value = receipt.get("id")
     if not isinstance(value, str):
         return None
@@ -256,7 +265,7 @@ def receipt_number(receipt: dict[str, object]) -> int | None:
     return int(match.group(1))
 
 
-def receipt_cutover_candidate_number(receipt: dict[str, object]) -> int | None:
+def receipt_cutover_candidate_number(receipt: Mapping[str, object]) -> int | None:
     value = receipt.get("id")
     if not isinstance(value, str):
         return None
@@ -283,14 +292,14 @@ def iter_string_leaves(value: object, path: str = "$") -> list[tuple[str, str]]:
         return [(path, value)]
     if isinstance(value, dict):
         leaves: list[tuple[str, str]] = []
-        for key, child in value.items():
+        for key, child in cast(Mapping[object, object], value).items():
             if isinstance(key, str):
                 leaves.append((json_path_key(path), key))
             leaves.extend(iter_string_leaves(child, json_path_child(path, key)))
         return leaves
     if isinstance(value, list):
         leaves: list[tuple[str, str]] = []
-        for index, child in enumerate(value):
+        for index, child in enumerate(cast(list[object], value)):
             leaves.extend(iter_string_leaves(child, json_path_child(path, index)))
         return leaves
     return []
@@ -318,9 +327,9 @@ def local_home_path_kind(value: str) -> str | None:
 
 
 def receipts_for_local_path_guard(
-    receipts: list[tuple[int, dict[str, object]]],
-) -> list[tuple[int, dict[str, object]]]:
-    post_cutover: list[tuple[int, dict[str, object]]] = []
+    receipts: list[tuple[int, JsonObject]],
+) -> list[tuple[int, JsonObject]]:
+    post_cutover: list[tuple[int, JsonObject]] = []
     cutover_seen = False
     for line_number, receipt in receipts:
         exact_number = receipt_number(receipt)

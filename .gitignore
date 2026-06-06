@@ -46,6 +46,7 @@ dockercfg*
 *.log
 logs/
 .cache/
+.uv-cache/
 
 # Test coverage
 coverage/

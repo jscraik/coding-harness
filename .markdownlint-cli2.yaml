@@ -21,6 +21,7 @@ ignores:
   - node_modules
   - .worktrees
   - .cache
+  - .uv-cache
   - .pnpm-home
   - .pnpm-store
   - dist

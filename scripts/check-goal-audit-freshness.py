@@ -18,7 +18,7 @@ import subprocess
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 
 GOVERNED_AUDIT_PATH = ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md"
@@ -105,7 +105,7 @@ def load_receipts(path: Path) -> list[dict[str, Any]]:
             raise ValidationError(f"{path}:{line_number} is not valid JSON: {exc}") from exc
         if not isinstance(receipt, dict):
             raise ValidationError(f"{path}:{line_number} is not a JSON object")
-        receipts.append(receipt)
+        receipts.append(cast(dict[str, Any], receipt))
     return receipts
 
 
@@ -161,7 +161,7 @@ def permits_self_referential_goal_receipt_commit(
     if not isinstance(changed_files, list):
         return False
     declared_paths: set[str] = set()
-    for value in changed_files:
+    for value in cast(list[Any], changed_files):
         if not isinstance(value, str):
             return False
         declared_paths.add(normalize_repo_relative_path(value, "receipt.changed_files[]"))
@@ -180,12 +180,13 @@ def latest_audit_source(
         sources = receipt.get("audit_sources_checked")
         if not isinstance(sources, list):
             continue
-        for source in reversed(sources):
+        for source in reversed(cast(list[Any], sources)):
             if not isinstance(source, dict):
                 raise ValidationError("audit_sources_checked entries must be objects")
-            source_path = normalize_repo_relative_path(source.get("path"), "audit_sources_checked[].path")
+            source_object = cast(dict[str, Any], source)
+            source_path = normalize_repo_relative_path(source_object.get("path"), "audit_sources_checked[].path")
             if source_path == audit_path:
-                return receipt, source
+                return receipt, source_object
     raise ValidationError(f"no audit_sources_checked entry found for {audit_path}")
 
 

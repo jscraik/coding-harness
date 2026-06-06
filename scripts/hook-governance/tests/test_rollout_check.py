@@ -6,6 +6,7 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -21,7 +22,6 @@ from rollout_check import (
     _make_path_portable,
     _required_gates_from_arg,
     evaluate_rollout,
-    load_structured_file,
     parse_rfc3339_utc,
 )
 
@@ -63,7 +63,6 @@ class TestParseRfc3339Utc:
 
 class TestMakePathPortable:
     def test_cwd_relative_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        import os
         monkeypatch.chdir(tmp_path)
         sub = tmp_path / "subdir" / "file.json"
         result = _make_path_portable(str(sub))
@@ -168,8 +167,8 @@ class TestRequiredGatesFromArg:
 # ---------------------------------------------------------------------------
 
 
-def _make_valid_artifact(extra: dict | None = None) -> dict:
-    artifact = {
+def _make_valid_artifact(extra: dict[str, Any] | None = None) -> dict[str, Any]:
+    artifact: dict[str, Any] = {
         "schema_version": "hook-conformance.v1",
         "freshness_status": "fresh",
         "stages": [
@@ -187,7 +186,7 @@ def _make_valid_artifact(extra: dict | None = None) -> dict:
     return artifact
 
 
-def _write_conformance_artifact(repo_path: Path, artifact: dict) -> None:
+def _write_conformance_artifact(repo_path: Path, artifact: dict[str, Any]) -> None:
     codex_dir = repo_path / ".codex"
     codex_dir.mkdir(parents=True, exist_ok=True)
     (codex_dir / "hook-conformance.json").write_text(
@@ -450,8 +449,8 @@ class TestEvaluateRepoRollout:
 # ---------------------------------------------------------------------------
 
 
-def _write_inventory(tmp_path: Path, repos: list) -> Path:
-    data = {"schema_version": 1, "repositories": repos}
+def _write_inventory(tmp_path: Path, repos: list[Any]) -> Path:
+    data: dict[str, Any] = {"schema_version": 1, "repositories": repos}
     p = tmp_path / "inventory.json"
     p.write_text(json.dumps(data), encoding="utf-8")
     return p
