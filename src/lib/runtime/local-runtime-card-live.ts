@@ -3,7 +3,7 @@ import {
 	formatGitHubCliFailure,
 	formatGitHubCliRef,
 	resolveGitHubCli,
-} from "../../commands/github-cli.js";
+} from "../github/cli.js";
 import { sanitizeError } from "../input/sanitize.js";
 import { LinearAPIError, LinearClient } from "../linear/client.js";
 import { issueKeysMatch } from "./issue-key.js";
@@ -11,25 +11,18 @@ import type { RuntimeCard, RuntimeCardSource } from "./runtime-card.js";
 
 const LIVE_PROVIDER_TIMEOUT_MS = 10_000;
 
-/** Context passed to live runtime-card provider inspectors. */
+/** Context for bounded live runtime-card provider inspectors. */
 export interface RuntimeCardLiveProviderContext {
-	/** Repository root being inspected. */
 	repoRoot: string;
-	/** Local branch name, when git can determine it. */
 	branchName: string | null;
-	/** Current issue key after local git/artifact inference. */
 	issueKey: string | null;
 }
 
-/** Live provider evidence that can be merged into a local runtime card. */
+/** Live GitHub or Linear evidence merged into a local runtime card. */
 export interface RuntimeCardLiveEvidence {
-	/** Optional live pull-request state. */
 	pullRequest?: RuntimeCard["pullRequest"];
-	/** Optional live tracker state. */
 	linear?: RuntimeCard["linear"];
-	/** Evidence sources inspected by the provider. */
 	sources?: RuntimeCardSource[];
-	/** Provider blockers that should stop continuation. */
 	blockers?: string[];
 }
 

@@ -4,7 +4,7 @@ import {
 	formatGitHubCliFailure,
 	formatGitHubCliVerificationCommand,
 	resolveGitHubCli,
-} from "./github-cli.js";
+} from "../lib/github/cli.js";
 
 vi.mock("node:child_process", async (importOriginal) => {
 	const original = await importOriginal<typeof import("node:child_process")>();

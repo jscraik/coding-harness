@@ -98,7 +98,7 @@
 		"he:artifacts:validate": "bash scripts/validate-he-artifacts.sh",
 		"architecture:check": "node scripts/check-architecture-rules.cjs --format json",
 		"observed:eval-usage": "tsx scripts/collect-observed-eval-usage.ts",
-		"markdownlint": "markdownlint-cli2 \"**/*.md\"",
+		"markdownlint": "markdownlint-cli2 \"**/*.md\" \"!.venv/**\"",
 		"codex:agents:guard": "node scripts/check-codex-agent-roles.cjs",
 		"codestyle:parity": "bash scripts/check-codestyle-parity.sh",
 		"codestyle:validate": "bash scripts/validate-codestyle.sh",

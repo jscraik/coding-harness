@@ -17,7 +17,7 @@ import {
 	formatGitHubCliFailure,
 	formatGitHubCliRef,
 	resolveGitHubCli,
-} from "../github-cli.js";
+} from "../../lib/github/cli.js";
 import type { PrCloseoutCLIOptions } from "./args.js";
 import { loadPrCloseoutEnvFile } from "./env.js";
 import { inspectGitBranch } from "./git-branch.js";

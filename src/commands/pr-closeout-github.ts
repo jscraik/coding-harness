@@ -9,7 +9,7 @@ import {
 	formatGitHubCliFailure,
 	formatGitHubCliRef,
 	resolveGitHubCli,
-} from "./github-cli.js";
+} from "../lib/github/cli.js";
 
 function asString(value: unknown): string | null {
 	return typeof value === "string" ? value : null;

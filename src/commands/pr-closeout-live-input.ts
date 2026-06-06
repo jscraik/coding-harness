@@ -13,7 +13,7 @@ import {
 	formatGitHubCliFailure,
 	formatGitHubCliRef,
 	resolveGitHubCli,
-} from "./github-cli.js";
+} from "../lib/github/cli.js";
 import { parseJsonObject } from "./pr-closeout-input.js";
 
 /**
