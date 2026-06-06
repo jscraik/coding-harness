@@ -1,4 +1,9 @@
 import { execFileSync } from "node:child_process";
+import {
+	formatGitHubCliFailure,
+	formatGitHubCliRef,
+	resolveGitHubCli,
+} from "../../commands/github-cli.js";
 import { sanitizeError } from "../input/sanitize.js";
 import { LinearAPIError, LinearClient } from "../linear/client.js";
 import { issueKeysMatch } from "./issue-key.js";
@@ -78,13 +83,20 @@ function githubMergeBlockers(
 function defaultGitHubPrSnapshot(
 	repoRoot: string,
 	branchName: string | null,
+	env: NodeJS.ProcessEnv,
 ): GitHubLiveSnapshot {
+	const args = [
+		"pr",
+		"view",
+		"--json",
+		"number,state,isDraft,mergeStateStatus,url",
+	];
 	if (!branchName) {
 		return {
 			pullRequest: emptyPullRequest(),
 			source: {
 				kind: "pr",
-				ref: "command:gh pr view",
+				ref: formatGitHubCliRef(args),
 				freshness: "missing",
 				status: "empty",
 				failureClass: "branch_unavailable",
@@ -92,17 +104,15 @@ function defaultGitHubPrSnapshot(
 			blockers: [],
 		};
 	}
+	const githubCli = resolveGitHubCli(env);
 	try {
-		const output = execFileSync(
-			"gh",
-			["pr", "view", "--json", "number,state,isDraft,mergeStateStatus,url"],
-			{
-				cwd: repoRoot,
-				encoding: "utf8",
-				stdio: ["ignore", "pipe", "ignore"],
-				timeout: LIVE_PROVIDER_TIMEOUT_MS,
-			},
-		);
+		const output = execFileSync(githubCli.command, args, {
+			cwd: repoRoot,
+			env,
+			encoding: "utf8",
+			stdio: ["ignore", "pipe", "ignore"],
+			timeout: LIVE_PROVIDER_TIMEOUT_MS,
+		});
 		const parsed = JSON.parse(output) as Partial<RuntimeCard["pullRequest"]>;
 		const pullRequest: RuntimeCard["pullRequest"] = {
 			number: typeof parsed.number === "number" ? parsed.number : null,
@@ -118,7 +128,7 @@ function defaultGitHubPrSnapshot(
 			pullRequest,
 			source: {
 				kind: "pr",
-				ref: "command:gh pr view --json number,state,isDraft,mergeStateStatus,url",
+				ref: formatGitHubCliRef(args),
 				freshness: "current",
 				status: "usable",
 				failureClass: null,
@@ -130,10 +140,12 @@ function defaultGitHubPrSnapshot(
 			pullRequest: emptyPullRequest(),
 			source: {
 				kind: "pr",
-				ref: "command:gh pr view",
+				ref: formatGitHubCliRef(args),
 				freshness: "unknown",
 				status: "blocked",
-				failureClass: `github_pr_unavailable:${sanitizeError(error)}`,
+				failureClass:
+					"github_pr_unavailable:" +
+					formatGitHubCliFailure(error, args, githubCli),
 			},
 			blockers: ["Live GitHub PR state could not be refreshed."],
 		};
@@ -244,7 +256,11 @@ export async function defaultLiveProvider(
 	context: RuntimeCardLiveProviderContext,
 	env: NodeJS.ProcessEnv,
 ): Promise<RuntimeCardLiveEvidence> {
-	const github = defaultGitHubPrSnapshot(context.repoRoot, context.branchName);
+	const github = defaultGitHubPrSnapshot(
+		context.repoRoot,
+		context.branchName,
+		env,
+	);
 	const linear = await defaultLinearSnapshot(context.issueKey, env);
 	return {
 		pullRequest: github.pullRequest,

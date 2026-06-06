@@ -1,4 +1,3 @@
-import { sanitizeError } from "../lib/input/sanitize.js";
 import type {
 	PrCloseoutCheckInput,
 	PrCloseoutReviewThreadsInput,
@@ -6,6 +5,11 @@ import type {
 } from "../lib/pr-closeout.js";
 import type { PrCloseoutCLIOptions } from "./pr-closeout/args.js";
 import type { CommandRunner } from "./pr-closeout/types.js";
+import {
+	formatGitHubCliFailure,
+	formatGitHubCliRef,
+	resolveGitHubCli,
+} from "./github-cli.js";
 
 function asString(value: unknown): string | null {
 	return typeof value === "string" ? value : null;
@@ -160,9 +164,11 @@ function fetchRepoInfo(
 	env: NodeJS.ProcessEnv,
 	runner: CommandRunner,
 ): { owner: string; repo: string } {
+	const githubCli = resolveGitHubCli(env);
+	const args = ["repo", "view", "--json", "owner,name"];
 	return normalizeGhRepo(
 		parseJsonObject(
-			runner("gh", ["repo", "view", "--json", "owner,name"], {
+			runner(githubCli.command, args, {
 				cwd: options.repoRoot,
 				env,
 			}),
@@ -181,6 +187,7 @@ export function fetchCheckHeadProof(
 	headSha: string | null | undefined,
 ): Map<string, string> {
 	if (!headSha) return new Map();
+	const githubCli = resolveGitHubCli(env);
 	try {
 		const repo = fetchRepoInfo(options, env, runner);
 		const proof = new Map<string, string>();
@@ -188,16 +195,16 @@ export function fetchCheckHeadProof(
 		let checkRunsError: unknown = null;
 		try {
 			for (let page = 1; ; page += 1) {
-				const raw = runner(
-					"gh",
-					[
-						"api",
-						`repos/${repo.owner}/${repo.repo}/commits/${headSha}/check-runs?per_page=${perPage}&page=${page}`,
-						"--jq",
-						".check_runs",
-					],
-					{ cwd: options.repoRoot, env },
-				);
+				const args = [
+					"api",
+					`repos/${repo.owner}/${repo.repo}/commits/${headSha}/check-runs?per_page=${perPage}&page=${page}`,
+					"--jq",
+					".check_runs",
+				];
+				const raw = runner(githubCli.command, args, {
+					cwd: options.repoRoot,
+					env,
+				});
 				const parsed = JSON.parse(raw) as unknown;
 				for (const [key, value] of normalizeGhCheckRuns(parsed)) {
 					proof.set(key, value);
@@ -210,17 +217,17 @@ export function fetchCheckHeadProof(
 		if (!hasUnprovenCheck(checks, proof)) return proof;
 		for (let page = 1; ; page += 1) {
 			let parsed: unknown;
+			const args = [
+				"api",
+				`repos/${repo.owner}/${repo.repo}/commits/${headSha}/statuses?per_page=${perPage}&page=${page}`,
+				"--jq",
+				".",
+			];
 			try {
-				const raw = runner(
-					"gh",
-					[
-						"api",
-						`repos/${repo.owner}/${repo.repo}/commits/${headSha}/statuses?per_page=${perPage}&page=${page}`,
-						"--jq",
-						".",
-					],
-					{ cwd: options.repoRoot, env },
-				);
+				const raw = runner(githubCli.command, args, {
+					cwd: options.repoRoot,
+					env,
+				});
 				parsed = JSON.parse(raw) as unknown;
 			} catch (error) {
 				tools.push({
@@ -230,7 +237,9 @@ export function fetchCheckHeadProof(
 						"command:gh api repos/:owner/:repo/commits/:head/statuses page=" +
 						String(page),
 					status: "blocked",
-					failureClass: `pr_check_status_proof_unreadable:${sanitizeError(error)}`,
+					failureClass:
+						"pr_check_status_proof_unreadable:" +
+						formatGitHubCliFailure(error, args, githubCli),
 				});
 				return proof;
 			}
@@ -245,7 +254,13 @@ export function fetchCheckHeadProof(
 				available: true,
 				ref: "command:gh api repos/:owner/:repo/commits/:head/check-runs",
 				status: "blocked",
-				failureClass: `pr_check_head_proof_unreadable:${sanitizeError(checkRunsError)}`,
+				failureClass:
+					"pr_check_head_proof_unreadable:" +
+					formatGitHubCliFailure(
+						checkRunsError,
+						["api", "check-runs"],
+						githubCli,
+					),
 			});
 		}
 		return proof;
@@ -255,7 +270,9 @@ export function fetchCheckHeadProof(
 			available: true,
 			ref: "command:gh api repos/:owner/:repo/commits/:head/check-runs",
 			status: "blocked",
-			failureClass: `pr_check_head_proof_unreadable:${sanitizeError(error)}`,
+			failureClass:
+				"pr_check_head_proof_unreadable:" +
+				formatGitHubCliFailure(error, ["api", "check-runs"], githubCli),
 		});
 		return new Map();
 	}
@@ -328,6 +345,7 @@ export function fetchReviewThreads(
 	runner: CommandRunner,
 	tools: PrCloseoutToolInput[],
 ): PrCloseoutReviewThreadsInput {
+	const githubCli = resolveGitHubCli(env);
 	const query =
 		"query($owner:String!,$repo:String!,$number:Int!,$after:String){repository(owner:$owner,name:$repo){pullRequest(number:$number){reviewThreads(first:100,after:$after){pageInfo{hasNextPage endCursor}nodes{isResolved}}}}}";
 	try {
@@ -348,7 +366,10 @@ export function fetchReviewThreads(
 				`number=${String(options.prNumber)}`,
 			];
 			if (after) args.push("-f", `after=${after}`);
-			const raw = runner("gh", args, { cwd: options.repoRoot, env });
+			const raw = runner(githubCli.command, args, {
+				cwd: options.repoRoot,
+				env,
+			});
 			const page = normalizeReviewThreadsGraphql(
 				parseJsonObject(raw, "gh api graphql reviewThreads"),
 			);
@@ -372,9 +393,11 @@ export function fetchReviewThreads(
 		tools.push({
 			name: "github_cli",
 			available: true,
-			ref: "command:gh api graphql reviewThreads(first:100)",
+			ref: formatGitHubCliRef(["api", "graphql", "reviewThreads(first:100)"]),
 			status: "blocked",
-			failureClass: `pr_review_threads_unreadable:${sanitizeError(error)}`,
+			failureClass:
+				"pr_review_threads_unreadable:" +
+				formatGitHubCliFailure(error, ["api", "graphql"], githubCli),
 		});
 		return { unresolved: null, needsHuman: null, autofixable: null };
 	}

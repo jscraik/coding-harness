@@ -3108,6 +3108,53 @@ describe("runPrCloseoutCLI", () => {
 		);
 	});
 
+	it("uses HARNESS_GH_BIN and reports silent GitHub CLI failures", async () => {
+		const previousOverride = process.env.HARNESS_GH_BIN;
+		process.env.HARNESS_GH_BIN = "/opt/homebrew/bin/gh";
+		const commandsSeen: string[] = [];
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "/opt/homebrew/bin/gh") {
+				commandsSeen.push(args.join(" "));
+				throw { status: -1, stdout: "", stderr: "" };
+			}
+			if (command === "git") return "";
+			return "ok";
+		};
+		try {
+			const result = await capture(["--json", "--pr", "258"], runner);
+			const report = JSON.parse(result.output) as {
+				tools: Array<{ failureClass: string | null; ref: string }>;
+			};
+
+			expect(commandsSeen).toContain("--version");
+			expect(commandsSeen).toContain(
+				"pr view 258 --json number,title,state,isDraft,mergeStateStatus,url,headRefOid,headRefName,baseRefName,reviewDecision,body",
+			);
+			expect(report.tools).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						ref: "command:gh --version",
+						failureClass: expect.stringContaining("github_cli_failed_silently"),
+					}),
+					expect.objectContaining({
+						ref: expect.stringContaining("command:gh pr view 258"),
+						failureClass: expect.stringContaining("source=HARNESS_GH_BIN"),
+					}),
+				]),
+			);
+		} finally {
+			if (previousOverride === undefined) {
+				delete process.env.HARNESS_GH_BIN;
+			} else {
+				process.env.HARNESS_GH_BIN = previousOverride;
+			}
+		}
+	});
+
 	it("falls back to commit statuses when check-runs proof cannot be read", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const closeoutGatesPath = writeCloseoutGates(dir);

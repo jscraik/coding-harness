@@ -9,6 +9,11 @@ import type {
 } from "../lib/pr-closeout.js";
 import type { PrCloseoutCLIOptions } from "./pr-closeout-args.js";
 import { loadEnvFile, type CommandRunner } from "./pr-closeout-env.js";
+import {
+	formatGitHubCliFailure,
+	formatGitHubCliRef,
+	resolveGitHubCli,
+} from "./github-cli.js";
 import { parseJsonObject } from "./pr-closeout-input.js";
 
 /**
@@ -198,14 +203,20 @@ function inspectCommand(
 	name: PrCloseoutToolInput["name"],
 	command: string,
 	args: readonly string[],
-	options: { repoRoot: string; env: NodeJS.ProcessEnv; runner: CommandRunner },
+	options: {
+		repoRoot: string;
+		env: NodeJS.ProcessEnv;
+		runner: CommandRunner;
+		ref?: string;
+		diagnoseFailure?: (error: unknown) => string;
+	},
 ): PrCloseoutToolInput {
 	try {
 		options.runner(command, args, { cwd: options.repoRoot, env: options.env });
 		return {
 			name,
 			available: true,
-			ref: `command:${[command, ...args].join(" ")}`,
+			ref: options.ref ?? `command:${[command, ...args].join(" ")}`,
 			status: "usable",
 			failureClass: null,
 		};
@@ -213,9 +224,9 @@ function inspectCommand(
 		return {
 			name,
 			available: false,
-			ref: `command:${[command, ...args].join(" ")}`,
+			ref: options.ref ?? `command:${[command, ...args].join(" ")}`,
 			status: "missing",
-			failureClass: sanitizeError(error),
+			failureClass: options.diagnoseFailure?.(error) ?? sanitizeError(error),
 		};
 	}
 }
@@ -340,12 +351,14 @@ function fetchReviewThreads(
 	runner: CommandRunner,
 	tools: PrCloseoutToolInput[],
 ): PrCloseoutReviewThreadsInput {
+	const githubCli = resolveGitHubCli(env);
 	const query =
 		"query($owner:String!,$repo:String!,$number:Int!){repository(owner:$owner,name:$repo){pullRequest(number:$number){reviewThreads(first:100){pageInfo{hasNextPage}nodes{isResolved}}}}}";
 	const ref = "command:gh api graphql reviewThreads(first:100)";
 	let repoRaw: string;
+	const repoArgs = ["repo", "view", "--json", "owner,name"];
 	try {
-		repoRaw = runner("gh", ["repo", "view", "--json", "owner,name"], {
+		repoRaw = runner(githubCli.command, repoArgs, {
 			cwd: options.repoRoot,
 			env,
 		});
@@ -355,7 +368,9 @@ function fetchReviewThreads(
 			available: false,
 			ref: "command:gh repo view --json owner,name",
 			status: "blocked",
-			failureClass: `pr_review_threads_unavailable:${sanitizeError(error)}`,
+			failureClass:
+				"pr_review_threads_unavailable:" +
+				formatGitHubCliFailure(error, repoArgs, githubCli),
 		});
 		return { unresolved: null, needsHuman: null, autofixable: null };
 	}
@@ -373,30 +388,32 @@ function fetchReviewThreads(
 		return { unresolved: null, needsHuman: null, autofixable: null };
 	}
 	let raw: string;
+	const graphqlArgs = [
+		"api",
+		"graphql",
+		"-f",
+		`query=${query}`,
+		"-f",
+		`owner=${repo.owner}`,
+		"-f",
+		`repo=${repo.repo}`,
+		"-F",
+		`number=${String(options.prNumber)}`,
+	];
 	try {
-		raw = runner(
-			"gh",
-			[
-				"api",
-				"graphql",
-				"-f",
-				`query=${query}`,
-				"-f",
-				`owner=${repo.owner}`,
-				"-f",
-				`repo=${repo.repo}`,
-				"-F",
-				`number=${String(options.prNumber)}`,
-			],
-			{ cwd: options.repoRoot, env },
-		);
+		raw = runner(githubCli.command, graphqlArgs, {
+			cwd: options.repoRoot,
+			env,
+		});
 	} catch (error) {
 		tools.push({
 			name: "github_cli",
 			available: false,
 			ref,
 			status: "blocked",
-			failureClass: `pr_review_threads_unavailable:${sanitizeError(error)}`,
+			failureClass:
+				"pr_review_threads_unavailable:" +
+				formatGitHubCliFailure(error, graphqlArgs, githubCli),
 		});
 		return { unresolved: null, needsHuman: null, autofixable: null };
 	}
@@ -441,11 +458,15 @@ function inspectCloseoutTools(
 	env: NodeJS.ProcessEnv,
 	runner: CommandRunner,
 ): PrCloseoutToolInput[] {
+	const githubCli = resolveGitHubCli(env);
 	return [
-		inspectCommand("github_cli", "gh", ["--version"], {
+		inspectCommand("github_cli", githubCli.command, ["--version"], {
 			repoRoot: options.repoRoot,
 			env,
 			runner,
+			ref: formatGitHubCliRef(["--version"]),
+			diagnoseFailure: (error) =>
+				formatGitHubCliFailure(error, ["--version"], githubCli),
 		}),
 		inspectCommand("circleci_cli", "circleci", ["version"], {
 			repoRoot: options.repoRoot,
@@ -484,27 +505,29 @@ function fetchPullRequest(
 	runner: CommandRunner,
 	tools: PrCloseoutToolInput[],
 ): PrCloseoutPullRequestInput {
-	const ref = `command:gh pr view ${String(prNumber)} --json number,title,state,isDraft,mergeStateStatus,url,headRefName,baseRefName,reviewDecision,body`;
+	const githubCli = resolveGitHubCli(env);
+	const args = [
+		"pr",
+		"view",
+		String(prNumber),
+		"--json",
+		"number,title,state,isDraft,mergeStateStatus,url,headRefName,baseRefName,reviewDecision,body",
+	];
+	const ref = formatGitHubCliRef(args);
 	let prRaw: string;
 	try {
-		prRaw = runner(
-			"gh",
-			[
-				"pr",
-				"view",
-				String(prNumber),
-				"--json",
-				"number,title,state,isDraft,mergeStateStatus,url,headRefName,baseRefName,reviewDecision,body",
-			],
-			{ cwd: options.repoRoot, env },
-		);
+		prRaw = runner(githubCli.command, args, { cwd: options.repoRoot, env });
 	} catch (error) {
 		tools.push({
 			name: "github_cli",
 			available: false,
 			ref,
 			status: "blocked",
-			failureClass: `pr_view_unavailable:${sanitizeError(error)}`,
+			failureClass: `pr_view_unavailable:${formatGitHubCliFailure(
+				error,
+				args,
+				githubCli,
+			)}`,
 		});
 		return {
 			number: prNumber,
@@ -555,21 +578,21 @@ function fetchChecks(
 	runner: CommandRunner,
 	tools: PrCloseoutToolInput[],
 ): PrCloseoutCheckInput[] {
-	const ref = `command:gh pr checks ${String(prNumber)} --json name,state,link`;
+	const githubCli = resolveGitHubCli(env);
+	const args = ["pr", "checks", String(prNumber), "--json", "name,state,link"];
+	const ref = formatGitHubCliRef(args);
 	let checksRaw: string;
 	try {
-		checksRaw = runner(
-			"gh",
-			["pr", "checks", String(prNumber), "--json", "name,state,link"],
-			{ cwd: options.repoRoot, env },
-		);
+		checksRaw = runner(githubCli.command, args, { cwd: options.repoRoot, env });
 	} catch (error) {
 		tools.push({
 			name: "github_cli",
 			available: false,
 			ref,
 			status: "blocked",
-			failureClass: `pr_checks_unavailable:${sanitizeError(error)}`,
+			failureClass:
+				"pr_checks_unavailable:" +
+				formatGitHubCliFailure(error, args, githubCli),
 		});
 		return [];
 	}
