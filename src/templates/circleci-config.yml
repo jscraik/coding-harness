@@ -128,14 +128,14 @@ jobs:
             }
             export PATH="$HOME/.local/bin:$PATH"
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
-            if ! command -v uv >/dev/null 2>&1; then
-              retry_cmd 3 mise install uv
+            retry_cmd 3 mise install uv
+            uv_path="$(mise which uv)"
+            if [[ -z "$uv_path" ]]; then
+              echo "Error: mise which uv returned nothing" >&2
+              exit 1
             fi
-            uv_path="$(mise which uv 2>/dev/null || true)"
-            if [[ -n "$uv_path" ]]; then
-              mkdir -p "$HOME/.local/bin"
-              ln -sf "$uv_path" "$HOME/.local/bin/uv"
-            fi
+            mkdir -p "$HOME/.local/bin"
+            ln -sf "$uv_path" "$HOME/.local/bin/uv"
             uv --version
 
 {{configureCacheStep}}

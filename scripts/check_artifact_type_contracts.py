@@ -469,10 +469,12 @@ def validate_tool_versions(errors: list[str]) -> None:
     if isinstance(node_engine, str) and node_engine.startswith(">="):
         # Parse the minimum version from formats like ">=24", ">=24.0.0", ">=24.0.0 <25"
         version_str = node_engine[2:].strip().split()[0]
-        version_parts = version_str.split(".")
         try:
-            major = int(version_parts[0])
-            node_version_valid = major >= 24
+            version_parts = version_str.split(".")
+            major = int(version_parts[0]) if len(version_parts) > 0 else 0
+            minor = int(version_parts[1]) if len(version_parts) > 1 else 0
+            patch = int(version_parts[2]) if len(version_parts) > 2 else 0
+            node_version_valid = (major, minor, patch) >= (26, 3, 0)
         except (ValueError, IndexError):
             pass
     require(
