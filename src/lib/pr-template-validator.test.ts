@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { validatePrTemplateBody } from "./pr-template-validator.js";
 
-const VALID_BODY = `## Summary
+const VALID_BODY = `## Motivation
+
+- Motivation: PR bodies need to explain the decision pressure behind the work, not only list changed files.
+- Reasoning: Maintainers can review intent faster when motivation is captured near the top of the PR.
+- Chosen approach: Add a required Motivation section to the template and validator instead of relying on optional prose in Summary.
+
+## Summary
 
 - Problem: PR bodies could omit required validation evidence.
 - Why now: CI should catch incomplete PR templates before review.
@@ -81,6 +87,15 @@ This change adds local PR-template validation so template failures are caught be
 describe("validatePrTemplateBody", () => {
 	it("passes a complete PR body", () => {
 		expect(validatePrTemplateBody(VALID_BODY)).toEqual([]);
+	});
+
+	it("fails when the Motivation section is missing", () => {
+		const MISSING_MOTIVATION_BODY = VALID_BODY.replace(
+			/## Motivation\n[\s\S]*?(?=## )/g,
+			"",
+		);
+		const errors = validatePrTemplateBody(MISSING_MOTIVATION_BODY);
+		expect(errors).toContain("Missing required section: ## Motivation");
 	});
 
 	it("fails linked issue bodies without acceptance IDs or preparatory relationship", () => {

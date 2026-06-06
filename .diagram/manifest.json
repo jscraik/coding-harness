@@ -22,8 +22,8 @@
 			"type": "agent",
 			"file": "agent.mmd",
 			"outputPath": ".diagram/agent.mmd",
-			"lines": 320,
-			"bytes": 43621,
+			"lines": 323,
+			"bytes": 43930,
 			"isPlaceholder": false
 		},
 		{
@@ -55,7 +55,7 @@
 			"file": "class.mmd",
 			"outputPath": ".diagram/class.mmd",
 			"lines": 66,
-			"bytes": 1694,
+			"bytes": 1703,
 			"isPlaceholder": false
 		},
 		{
@@ -102,8 +102,8 @@
 			"type": "rag",
 			"file": "rag.mmd",
 			"outputPath": ".diagram/rag.mmd",
-			"lines": 233,
-			"bytes": 18859,
+			"lines": 236,
+			"bytes": 19166,
 			"isPlaceholder": false
 		},
 		{

@@ -4,6 +4,8 @@ import { commandExists, getCommandVersion } from "./doctor-check-utils.js";
 import type { DoctorCheckFn } from "./doctor-checks.js";
 import { DOCTOR_GITHUB_TOOL_CHECKS } from "./doctor-github-tool-checks.js";
 
+const REQUIRED_NODE_VERSION = "26.3.0";
+
 /** Tool and CLI prerequisite checks used by harness doctor. */
 export const DOCTOR_TOOL_CHECKS: DoctorCheckFn[] = [
 	// ── Tool: Node.js ────────────────────────────────────────────────────────
@@ -16,20 +18,17 @@ export const DOCTOR_TOOL_CHECKS: DoctorCheckFn[] = [
 				label: "Node.js",
 				status: "fail",
 				message: "node not found in PATH",
-				fix: "Install Node.js >= 24 via mise: mise install node@24",
+				fix: `Install Node.js >= ${REQUIRED_NODE_VERSION} via mise: mise install node@${REQUIRED_NODE_VERSION}`,
 			};
 		}
-		// Extract major version number
-		const match = version.match(/v?(\d+)/);
-		const major = match ? Number.parseInt(match[1] ?? "0", 10) : 0;
-		if (major < 24) {
+		if (!semver.satisfies(version, `>=${REQUIRED_NODE_VERSION}`)) {
 			return {
 				id: "tool:node",
 				category: "tool",
 				label: "Node.js",
 				status: "fail",
-				message: `Node ${version} found — harness requires v24+`,
-				fix: "Upgrade via mise: mise install node@24 && mise use node@24",
+				message: `Node ${version} found — harness requires v${REQUIRED_NODE_VERSION}+`,
+				fix: `Upgrade via mise: mise install node@${REQUIRED_NODE_VERSION} && mise use node@${REQUIRED_NODE_VERSION}`,
 			};
 		}
 		return {

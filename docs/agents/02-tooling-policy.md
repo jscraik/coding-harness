@@ -99,6 +99,7 @@ Harness-managed repositories should treat this CLI surface as required:
 - `make`
 
 Repo-managed pins should live in `.mise.toml` where the tool can be managed there. Externally managed CLIs must still be present on `PATH`, and missing commands should block environment readiness rather than degrade silently.
+The source checkout pins Node `26.3.0` through `.mise.toml` and requires package consumers to satisfy `engines.node >=26.3.0`.
 The root `Makefile` is also part of the enforced baseline and must retain the harness contract targets required by `scripts/check-environment.sh`.
 `CODESTYLE.md` and `scripts/validate-codestyle.sh` are part of the same baseline. A harness-managed repo should fail readiness if either file is missing or if the validator no longer maps cleanly to repo-defined scripts.
 `scripts/check-codestyle-parity.sh` is part of the same governed surface and must fail closed when `codestyle/` or `codestyle/CHECKSUMS.sha256` drift.
@@ -114,6 +115,7 @@ Project Brain memory-extension enforcement is also part of this tooling contract
 Selective `.harness` tracking is a tooling contract: Markdown policy/decision/execution/context files and validator-consumed JSON contract files should be tracked, while runtime databases, backups, caches, run output, and bulk snapshots should stay ignored unless promoted to fixtures.
 For repositories with UI or ChatGPT Apps SDK dependency signals, `toolingPolicy.packagePolicy` also requires `@brainwav/design-system-guidance` in `package.json`.
 `docs-gate` now also treats tooling/runtime contract changes as documentation-authoritative work, so changes to hook wiring, readiness scripts, `.mise.toml`, or generated Codex environment actions should be landed with updates to this guide and `docs/agents/06-security-and-governance.md`.
+`pnpm docs:archive-candidates` is the read-only stale-document review command. Use `pnpm --silent docs:archive-candidates -- --json` for machine-readable `docs-archive-candidates-report/v1`; the non-silent pnpm wrapper may print package-runner banner text. Destructive options such as `--archive`, `--delete`, `--move`, `--apply`, `--fix`, and their short aliases must fail closed with usage exit code 2. Archive, move, delete, demotion, metadata rewrite, manifest, active-artifact, and archive-index changes still require a separate reviewed decision.
 When those changes also touch validation/required-check or architecture-context categories, land the same PR with synchronized updates to `README.md`, `AGENTS.md`, `CONTRIBUTING.md`, and `docs/agents/00-architecture-bootstrap.md`.
 For agent-native cockpit changes, keep `harness next --json` command recommendations aligned with this command contract, generated environment actions, and the hook/readiness scripts that prove the recommended next action is safe to run.
 

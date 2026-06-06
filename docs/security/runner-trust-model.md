@@ -48,12 +48,12 @@ All third-party actions are pinned to immutable commit SHAs with version comment
 
 ### Runner type
 
-CircleCI uses the `cimg/node:24.13` Docker convenience image on GitHub-hosted infrastructure.
+CircleCI uses the `cimg/node:26.3.0` Docker convenience image on GitHub-hosted infrastructure.
 
 ### Trust rationale
 
 - CircleCI runs on CircleCI-managed infrastructure with ephemeral containers.
-- Docker image is pinned to a specific minor version (`24.13`) for reproducibility.
+- Docker image is pinned to a specific patch version (`26.3.0`) for reproducibility.
 - `resource_class: small` provides a minimal compute allocation.
 - No SSH access to runners; no persistent storage between runs.
 
@@ -67,7 +67,7 @@ CircleCI uses the `cimg/node:24.13` Docker convenience image on GitHub-hosted in
 
 ### Hardening measures
 
-- Docker image pinned to specific minor version (`cimg/node:24.13`)
+- Docker image pinned to specific patch version (`cimg/node:26.3.0`)
 - `resource_class: small` for minimal privilege
 - No custom runner software or extensions
 - All secrets stored as CircleCI project environment variables

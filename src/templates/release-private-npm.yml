@@ -74,7 +74,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
-          node-version: "24"
+          node-version: "26.3.0"
           registry-url: "https://registry.npmjs.org/"
 
       - name: Configure npm authentication
@@ -268,13 +268,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          GH_BIN="${HARNESS_GH_BIN:-${GH_BIN:-gh}}"
           TARBALL="${{ steps.package-tarball.outputs.path }}"
           if [[ -z "$TARBALL" ]]; then
             VERSION="$(node -p "require('./package.json').version")"
             TARBALL="brainwav-coding-harness-${VERSION}.tgz"
           fi
           if [[ -f "$TARBALL" ]]; then
-            gh attestation verify "$TARBALL" --repo "${{ github.repository }}"
+            "$GH_BIN" attestation verify "$TARBALL" --repo "${{ github.repository }}"
           fi
 
       - name: Create GitHub Release
@@ -282,6 +283,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          GH_BIN="${HARNESS_GH_BIN:-${GH_BIN:-gh}}"
           VERSION="$(node -p "require('./package.json').version")"
           if git rev-parse --verify --quiet "refs/tags/v${VERSION}" >/dev/null; then
             RELEASE_ARGS=(--title "v${VERSION}")
@@ -295,13 +297,13 @@ jobs:
               RELEASE_ARGS+=(--latest)
             fi
 
-            if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            if "$GH_BIN" release view "v${VERSION}" >/dev/null 2>&1; then
               echo "Release v${VERSION} already exists; skipping creation."
             else
               # Fail closed on create errors, but tolerate the duplicate race where
               # another actor creates the release between view and create.
-              if ! gh release create "v${VERSION}" "${RELEASE_ARGS[@]}"; then
-                if gh release view "v${VERSION}" >/dev/null 2>&1; then
+              if ! "$GH_BIN" release create "v${VERSION}" "${RELEASE_ARGS[@]}"; then
+                if "$GH_BIN" release view "v${VERSION}" >/dev/null 2>&1; then
                   echo "Release v${VERSION} appeared during create attempt; continuing."
                 else
                   echo "::error::Failed to create GitHub release v${VERSION}."

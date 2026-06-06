@@ -113,6 +113,17 @@ validation, or docs-surface automation. Keep `AGENTS.md`,
 generated architecture context, and docs-gate-required surfaces synchronized so
 reviewers can trace reader journeys, canon boundaries, review-state truth, and
 downstream distribution assumptions from the architecture bootstrap surface.
+Stale-document archive-candidate reporting is also architecture-adjacent when it
+adds or alters `pnpm docs:archive-candidates`,
+`docs-archive-candidates-report/v1`, scanner/classifier behavior,
+docs-gate projection, or destructive-option rejection. Refresh generated
+architecture context and keep this guide synchronized with `AGENTS.md`,
+`README.md`, `CONTRIBUTING.md`, `docs/agents/02-tooling-policy.md`,
+`docs/agents/06-security-and-governance.md`, and
+`docs/agents/07b-agent-governance.md` when docs-gate reports
+architecture-context or governance surfaces. The report remains advisory-only;
+archive, move, delete, demotion, metadata rewrite, manifest, active-artifact,
+or archive-index repair work requires a separate reviewed decision.
 For agent-native cockpit work, treat decision-envelope, generated environment action, hook setup, runtime-card evidence, and diagram-context changes as architecture-adjacent surfaces. Run `bash scripts/check-diagram-freshness.sh` explicitly for those changes, and use `bash scripts/refresh-diagram-context.sh --force` when the check reports stale or missing artifacts. Keep this guide synchronized with `AGENTS.md` and `docs/agents/07b-agent-governance.md` when `docs-gate` asks for architecture-context evidence.
 RouteDecision lifecycle metadata belongs to this cockpit architecture-adjacent lane: keep `route-decision/v1` contract changes additive to `harness-decision/v1`, refresh `AI/context/diagram-context.md`, and commit this guide with the required docs-gate governance surfaces when `docs-gate` reports the architecture-context surface.
 Risk-tiered RouteDecision mutation authority is still advisory route metadata:

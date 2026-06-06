@@ -1044,7 +1044,7 @@ describe("validateContract", () => {
 					requiredDocumentationTerms: ["node", "pnpm"],
 					requiredBinaries: ["node", "pnpm"],
 					requiredMiseTools: [
-						{ tool: "node", version: "24.13.1" },
+						{ tool: "node", version: "26.3.0" },
 						{ tool: "pnpm", version: "10.33.0" },
 					],
 					miseFilePath: ".mise.toml",
@@ -1094,7 +1094,7 @@ describe("validateContract", () => {
 				toolingPolicy: {
 					requiredDocumentationTerms: ["node"],
 					requiredBinaries: ["node"],
-					requiredMiseTools: [{ tool: "node", version: "24.13.1" }],
+					requiredMiseTools: [{ tool: "node", version: "26.3.0" }],
 					miseFilePath: ".mise.toml",
 					readinessScriptPath: "scripts/check-environment.sh",
 					codexEnvironment: {
@@ -1170,7 +1170,7 @@ describe("validateContract", () => {
 				toolingPolicy: {
 					requiredDocumentationTerms: ["node"],
 					requiredBinaries: ["node"],
-					requiredMiseTools: [{ tool: "node", version: "24.13.1" }],
+					requiredMiseTools: [{ tool: "node", version: "26.3.0" }],
 					miseFilePath: ".mise.toml",
 					readinessScriptPath: "scripts/check-environment.sh",
 					codexEnvironment: {
@@ -1208,7 +1208,7 @@ describe("validateContract", () => {
 				toolingPolicy: {
 					requiredDocumentationTerms: ["node"],
 					requiredBinaries: ["node"],
-					requiredMiseTools: [{ tool: "node", version: "24.13.1" }],
+					requiredMiseTools: [{ tool: "node", version: "26.3.0" }],
 					miseFilePath: ".mise.toml",
 					readinessScriptPath: "scripts/check-environment.sh",
 					codexEnvironment: {
@@ -1246,7 +1246,7 @@ describe("validateContract", () => {
 				toolingPolicy: {
 					requiredDocumentationTerms: ["node"],
 					requiredBinaries: ["node"],
-					requiredMiseTools: [{ tool: "node", version: "24.13.1" }],
+					requiredMiseTools: [{ tool: "node", version: "26.3.0" }],
 					miseFilePath: ".mise.toml",
 					readinessScriptPath: "scripts/check-environment.sh",
 					codexEnvironment: {

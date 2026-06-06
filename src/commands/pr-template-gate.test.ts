@@ -15,7 +15,13 @@ import {
 	runPrTemplateGateCLI,
 } from "./pr-template-gate.js";
 
-const VALID_BODY = `## Summary
+const VALID_BODY = `## Motivation
+
+- Motivation: PR bodies need to explain the decision pressure behind the work, not only list changed files.
+- Reasoning: Maintainers can review intent faster when motivation is captured near the top of the PR.
+- Chosen approach: Add a required Motivation section to the template and validator instead of relying on optional prose in Summary.
+
+## Summary
 
 - Problem: PR bodies could omit required validation evidence.
 - Why now: CI should catch incomplete PR templates before review.
@@ -186,6 +192,24 @@ describe("pr-template-gate command", () => {
 			expect(result.output.errors).toContain(
 				"Replace template placeholder: <link / artifact path / comment ID>",
 			);
+		}
+	});
+
+	it("requires motivation fields near the top of the PR body", () => {
+		const invalid = VALID_BODY.replace(
+			/## Motivation[\s\S]*?(?=## Summary)/,
+			"",
+		);
+
+		const result = runPrTemplateGate({ prBody: invalid });
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.passed).toBe(false);
+			expect(result.output.errors).toContain(
+				"Missing required section: ## Motivation",
+			);
+			expect(result.output.errors).toContain("Missing motivation block.");
 		}
 	});
 

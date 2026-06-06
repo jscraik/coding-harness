@@ -718,7 +718,7 @@
 		"requiredMiseTools": [
 			{
 				"tool": "node",
-				"version": "24.13.1"
+				"version": "26.3.0"
 			},
 			{
 				"tool": "pnpm",
@@ -1073,7 +1073,7 @@
 		}
 	},
 	"runtimePolicy": {
-		"nodeVersion": "24.x",
+		"nodeVersion": "26.3.0",
 		"createIssueOnAgentFindings": true
 	},
 	"memoryPolicy": {

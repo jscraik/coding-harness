@@ -93,6 +93,7 @@
 		"docs:ubiquitous:guard": "bash scripts/check-ubiquitous-language-link.sh",
 		"docs:steering:guard": "node scripts/check-steering-feedback-contract.cjs",
 		"docs:lifecycle": "tsx scripts/check-doc-lifecycle.ts",
+		"docs:archive-candidates": "tsx scripts/check-docs-archive-candidates.ts",
 		"docs:task-eval": "tsx scripts/check-docs-task-eval.ts",
 		"docs:style:changed": "bash scripts/check-doc-style.sh",
 		"contracts:command-catalog": "node --import tsx src/cli.ts commands --json",
@@ -104,7 +105,7 @@
 		"he:artifacts:validate": "bash scripts/validate-he-artifacts.sh",
 		"architecture:check": "node scripts/check-architecture-rules.cjs --format json",
 		"observed:eval-usage": "tsx scripts/collect-observed-eval-usage.ts",
-		"markdownlint": "markdownlint-cli2 \"**/*.md\"",
+		"markdownlint": "markdownlint-cli2 \"**/*.md\" \"!.venv/**\"",
 		"codex:agents:guard": "node scripts/check-codex-agent-roles.cjs",
 		"codestyle:parity": "bash scripts/check-codestyle-parity.sh",
 		"codestyle:validate": "bash scripts/validate-codestyle.sh",
@@ -151,7 +152,7 @@
 	},
 	"packageManager": "pnpm@10.33.0",
 	"engines": {
-		"node": ">=24.0.0"
+		"node": ">=26.3.0"
 	},
 	"dependencies": {
 		"@inquirer/prompts": "^8.3.0",

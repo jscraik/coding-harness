@@ -4,7 +4,7 @@ jobs:
   run-governance-check:
     docker:
       # Pinned to specific minor for reproducibility (JSC-115)
-      - image: cimg/node:24.13
+      - image: cimg/node:26.3.0
     resource_class: small
     parameters:
       check_name:
@@ -192,7 +192,7 @@ jobs:
   snyk-dependency-scan:
     docker:
       # Pinned to specific minor for reproducibility (JSC-115)
-      - image: cimg/node:24.13
+      - image: cimg/node:26.3.0
     resource_class: small
     steps:
       - checkout
