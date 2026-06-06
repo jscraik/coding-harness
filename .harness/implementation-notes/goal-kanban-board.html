@@ -411,12 +411,12 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness warning">PR #354 open: triage active</div>
+      <div class="source-chip" aria-label="Source freshness status">PR #354 merged: main refreshed</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>PR #354 root-link repair</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>PR #353 latest merged</strong></div>
+      <div class="metric"><span>Goal status</span><strong>Post-PR #354 route refresh</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>PR #354 latest merged</strong></div>
       <div class="metric"><span>Outstanding work</span><strong>Runtime, delivery truth, docs, Linear, Judge/PM</strong></div>
       <div class="metric"><span>Claim boundary</span><strong>Completion unclaimed</strong></div>
       <div class="metric"><span>Source files</span><strong>goal.md, state.yaml, receipts.jsonl, Kanban</strong></div>
@@ -497,7 +497,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts and live GitHub after PR #354 was refreshed at remote pushed head <code>950267045524b0da85202841fb787b9045272f9a</code>. PR #354 is <code>OPEN</code>, no longer draft, and not merged. Local source-fix commit <code>e8a9ca29ac61d45acdeb4772b7df9bce8885eab2</code> repairs the root-level dot-slash Markdown reference review thread before push. The repair set fixes active-artifact table path parsing, source-relative Markdown reference handling, repo-root Markdown reference preservation, self-reference inbound-reference masking, generated-projection reference exclusion, YAML list-valued metadata references, root-level <code>./docs/...</code> normalization, and PR #353 squash-merge wording on the Kanban board. CodeRabbit must be manually triggered again after push. CircleCI, Socket, CodeRabbit refresh, review-thread resolution, merge, local-main pull, Linear post-merge refresh, runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, CircleCI, and Linear after PR #354 merged at <code>2026-06-06T14:48:35Z</code>. Local <code>main</code> and <code>origin/main</code> are at merge commit <code>bffec776f59ea90ceb6d75a7c055de3e798dbdd6</code>; submitted PR head was <code>50b549c498204e9d4b54d7c09fd2800907ed108b</code>. CircleCI <code>pr-pipeline</code>, CircleCI <code>security-scan</code>, CodeRabbit, Socket, repo-owned security lanes, and review-thread refresh passed for the PR head. Linear JSC-363 route comment <code>9a49ff74-5475-4afb-b955-0341cdda7343</code> records the post-PR #354 truth, while field-text-current remains unclaimed because the issue still uses Phase 1 wording. The external Snyk GitHub App quota failure remains an owner-waived quota/status lane only. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -656,14 +656,14 @@
       },
       {
         id: "source-freshness",
-        lane: "intent",
-        title: "PR #354 root-link repair active",
-        status: "active",
-        tags: ["PR #354", "R335", "review threads", "CI pending"],
-        summary: "PR #354 is open, no longer draft, and not merged at remote pushed head 950267045524b0da85202841fb787b9045272f9a. Local source-fix commit e8a9ca29ac61d45acdeb4772b7df9bce8885eab2 repairs the root-level dot-slash Markdown reference review thread before push.",
-        evidence: ["PR #354 -> OPEN not draft", "remote pushed head -> 950267045524b0da85202841fb787b9045272f9a", "local source fix -> e8a9ca29ac61d45acdeb4772b7df9bce8885eab2", "focused docs-surface vitest -> pass 12 tests", "scoped docs-surface biome -> pass", "pnpm docs:archive-candidates -> pass advisory-only", "root ./docs normalization regression -> covered", "CodeRabbit manual trigger -> required again after push", "CircleCI/CodeRabbit -> pending after current-head push", "security/snyk GitHub App -> owner-waived quota failure only", "review threads -> pending resolution/refresh"],
-        next: "Push R335/current repair, manually trigger CodeRabbit, refresh PR #354 checks and review threads, resolve fixed/outdated threads with evidence, then merge/pull main before selecting any next lifecycle gap.",
-        risk: "This does not prove PR #354 merged, CI green, CodeRabbit complete, review threads resolved, Linear post-merge refresh, Judge/PM readiness, or parent-goal completion."
+        lane: "completed",
+        title: "PR #354: Advisory archive scanner and source refs",
+        status: "done",
+        tags: ["PR #354", "merged", "CircleCI green", "CodeRabbit green"],
+        summary: "PR #354 is merged into current main. It delivered the advisory stale-document archive candidate reporting lane and the source/reference-corpus repair so tracked source and script files can provide inbound reference evidence without becoming archive candidates.",
+        evidence: ["PR #354 -> MERGED at 2026-06-06T14:48:35Z", "Merge commit -> bffec776f59ea90ceb6d75a7c055de3e798dbdd6", "Submitted head -> 50b549c498204e9d4b54d7c09fd2800907ed108b", "Local main -> bffec776f59ea90ceb6d75a7c055de3e798dbdd6", "CircleCI pr-pipeline -> pass", "CircleCI security-scan -> pass", "CodeRabbit -> pass after manual trigger", "Review threads -> 71 total, 0 unresolved", "Linear route comment -> 9a49ff74-5475-4afb-b955-0341cdda7343", "Linear field text -> still Phase 1 wording, unclaimed", "security/snyk GitHub App -> owner-waived quota failure only"],
+        next: "Validate the refreshed board/state/receipt set, then select the next bounded lifecycle gap from current main.",
+        risk: "This proves PR #354 merge and remote PR lanes for that head. It does not prove Linear post-PR #354 refresh, runtime producer emission, delivery-truth consumption, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "codex-native-refinement",
