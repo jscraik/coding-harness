@@ -359,6 +359,12 @@ describe("runDocsArchiveCandidates", () => {
 		expect(report.repairFindings).toContainEqual(
 			expect.objectContaining({
 				path: "docs/doc-lifecycle-manifest.json",
+				code: "metadata_unparseable",
+			}),
+		);
+		expect(report.protectedFiles).not.toContainEqual(
+			expect.objectContaining({
+				path: "docs/retained.md",
 			}),
 		);
 	});
