@@ -69,6 +69,7 @@ export function runDocsArchiveCandidates(
 	const now = options.now ?? new Date();
 
 	for (const file of scan.files) {
+		if (file.sourceKind === "reference_corpus") continue;
 		if (isGeneratedProjection(file.path, file.content)) {
 			ignoredFiles.push({
 				path: file.path,

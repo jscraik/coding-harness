@@ -349,6 +349,39 @@ describe("runDocsArchiveCandidates", () => {
 		);
 	});
 
+	it("counts tracked source literals as inbound evidence without classifying source files", () => {
+		const repoRoot = createFixture({
+			"docs/supporting.md": frontmatter({
+				authority: "supporting",
+				canon_class: "supporting",
+			}),
+			"src/routes.ts": 'export const supportingDoc = "docs/supporting.md";\n',
+		});
+
+		const report = runDocsArchiveCandidates({
+			repoRoot,
+			trackedFiles: ["docs/supporting.md", "src/routes.ts"],
+			now: new Date("2026-06-05T00:00:00.000Z"),
+			activeArtifactsContent: "",
+		});
+
+		expect(report.candidates).not.toContainEqual(
+			expect.objectContaining({
+				path: "docs/supporting.md",
+				reasons: expect.arrayContaining(["no_inbound_references"]),
+			}),
+		);
+		expect(report.candidates).not.toContainEqual(
+			expect.objectContaining({ path: "src/routes.ts" }),
+		);
+		expect(report.ignoredFiles).toContainEqual(
+			expect.objectContaining({
+				path: "src/routes.ts",
+				reason: "unsupported_file_type",
+			}),
+		);
+	});
+
 	it("protects supporting docs listed in the lifecycle manifest", () => {
 		const repoRoot = createFixture({
 			"docs/doc-lifecycle-manifest.json": JSON.stringify({

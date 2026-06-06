@@ -14,6 +14,17 @@ const DOCUMENT_EXTENSIONS = new Set([
 	".yml",
 	".toml",
 ]);
+const REFERENCE_CORPUS_EXTENSIONS = new Set([
+	".cjs",
+	".cts",
+	".js",
+	".jsx",
+	".mjs",
+	".mts",
+	".sh",
+	".ts",
+	".tsx",
+]);
 
 const IGNORED_PREFIXES = [
 	"node_modules/",
@@ -32,6 +43,7 @@ const REFERENCE_METADATA_KEYS =
 export interface ArchiveCandidateSourceFile {
 	path: string;
 	content: string;
+	sourceKind: "candidate_document" | "reference_corpus";
 }
 
 /** Scanner output used by the advisory archive-candidate classifier. */
@@ -66,13 +78,21 @@ export function scanArchiveCandidateSources(options: {
 			});
 			continue;
 		}
-		if (!isSupportedDocumentPath(path)) {
+		const sourceKind = sourceKindForPath(path);
+		if (!sourceKind) {
 			ignoredFiles.push({
 				path,
 				reason: "unsupported_file_type",
 				evidenceRefs: [path],
 			});
 			continue;
+		}
+		if (sourceKind === "reference_corpus") {
+			ignoredFiles.push({
+				path,
+				reason: "unsupported_file_type",
+				evidenceRefs: [path],
+			});
 		}
 		const resolved = resolve(repoRoot, path);
 		if (!resolved.startsWith(repoRoot + sep) && resolved !== repoRoot) {
@@ -94,7 +114,7 @@ export function scanArchiveCandidateSources(options: {
 				continue;
 			}
 			if (!stat.isFile() || !trackedFileSet.has(path)) continue;
-			files.push({ path, content: readFileSync(resolved, "utf8") });
+			files.push({ path, content: readFileSync(resolved, "utf8"), sourceKind });
 		} catch {
 			ignoredFiles.push({
 				path,
@@ -109,13 +129,22 @@ export function scanArchiveCandidateSources(options: {
 
 /** Return true when a tracked path is a documentation-like source. */
 export function isSupportedDocumentPath(path: string): boolean {
+	return sourceKindForPath(path) === "candidate_document";
+}
+
+function sourceKindForPath(
+	path: string,
+): ArchiveCandidateSourceFile["sourceKind"] | null {
 	if (path.startsWith("/") || path.includes("\\") || path.includes("../")) {
-		return false;
+		return null;
 	}
-	if (ignoredReasonForPath(path)) return false;
+	if (ignoredReasonForPath(path)) return null;
 	const dotIndex = path.lastIndexOf(".");
-	if (dotIndex < 0) return false;
-	return DOCUMENT_EXTENSIONS.has(path.slice(dotIndex));
+	if (dotIndex < 0) return null;
+	const extension = path.slice(dotIndex);
+	if (DOCUMENT_EXTENSIONS.has(extension)) return "candidate_document";
+	if (REFERENCE_CORPUS_EXTENSIONS.has(extension)) return "reference_corpus";
+	return null;
 }
 
 function ignoredReasonForPath(

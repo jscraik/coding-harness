@@ -153,6 +153,42 @@ describe("scanArchiveCandidateSources", () => {
 		);
 	});
 
+	it("loads source files as reference corpus without candidate classification", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "archive-scan-"));
+		mkdirSync(join(repoRoot, "docs"), { recursive: true });
+		mkdirSync(join(repoRoot, "src"), { recursive: true });
+		writeFileSync(join(repoRoot, "docs/source.md"), "# Source\n", "utf8");
+		writeFileSync(
+			join(repoRoot, "src/routes.ts"),
+			'const doc = "docs/source.md";\n',
+			"utf8",
+		);
+
+		const result = scanArchiveCandidateSources({
+			repoRoot,
+			trackedFiles: ["docs/source.md", "src/routes.ts"],
+		});
+
+		expect(result.files).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					path: "docs/source.md",
+					sourceKind: "candidate_document",
+				}),
+				expect.objectContaining({
+					path: "src/routes.ts",
+					sourceKind: "reference_corpus",
+				}),
+			]),
+		);
+		expect(result.ignoredFiles).toContainEqual(
+			expect.objectContaining({
+				path: "src/routes.ts",
+				reason: "unsupported_file_type",
+			}),
+		);
+	});
+
 	it("rejects tracked symlinks instead of reading target content", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "archive-scan-"));
 		writeFileSync(join(repoRoot, "target.md"), "# Target\n", "utf8");
