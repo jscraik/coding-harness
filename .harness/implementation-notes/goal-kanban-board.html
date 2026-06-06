@@ -411,12 +411,12 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness status">PR #356 merged: main refreshed</div>
+      <div class="source-chip" aria-label="Source freshness status">PR #357 merged: main refreshed</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>Post-PR #356 route refresh</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>PR #356 latest merged</strong></div>
+      <div class="metric"><span>Goal status</span><strong>Post-PR #357 route refresh</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>PR #357 latest merged</strong></div>
       <div class="metric"><span>Outstanding work</span><strong>Runtime, delivery truth, docs, Linear, Judge/PM</strong></div>
       <div class="metric"><span>Claim boundary</span><strong>Completion unclaimed</strong></div>
       <div class="metric"><span>Source files</span><strong>goal.md, state.yaml, receipts.jsonl, Kanban</strong></div>
@@ -497,7 +497,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, CircleCI, and Linear after PR #356 merged at <code>2026-06-06T15:34:06Z</code>. Local <code>main</code> and <code>origin/main</code> are at squash merge commit <code>72a6e35bc0fb6c583b9d6d43636be91335a2f241</code>; submitted PR head was <code>1de6572f3ed6d4bb6ca5487cd0a4b12df79b4d8e</code>. CircleCI <code>pr-pipeline</code>, CircleCI <code>security-scan</code>, CodeRabbit, Socket, repo-owned security lanes, and review-thread refresh passed for the PR head. Linear JSC-363 route comment <code>7d2d878f-26fd-4b08-88a1-5a96f77de3f1</code> records the post-PR #356 truth, while field-text-current remains unclaimed because the issue still uses Phase 1 wording. The external Snyk GitHub App quota failure remains an owner-waived quota/status lane only. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and CircleCI after PR #357 merged at <code>2026-06-06T16:20:21Z</code>. Local <code>main</code> and <code>origin/main</code> are at squash merge commit <code>68277b63f4074036294234fbb3ad5befe735d151</code>; submitted PR head was <code>30c48b8961f06c0dbf257f3f14505beabfeaf579</code>. CircleCI <code>pr-pipeline</code>, CircleCI <code>security-scan</code>, CodeRabbit, Socket, repo-owned security lanes, and review-thread refresh passed for the PR head. Post-merge CircleCI API evidence using the env-loaded <code>CIRCLECI_CLI_TOKEN</code> from <code>~/.codex/.env</code> confirms main pipeline <code>2505</code> for <code>68277b63f4074036294234fbb3ad5befe735d151</code> with <code>pr-pipeline=success</code> and <code>security-scan=success</code>. Linear JSC-363 route comment <code>7d2d878f-26fd-4b08-88a1-5a96f77de3f1</code> records the post-PR #356 truth only; no post-PR #357 Linear mutation is claimed, and field-text-current remains unclaimed because the issue still uses Phase 1 wording. The external Snyk GitHub App quota failure remains an owner-waived quota/status lane only. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -657,13 +657,13 @@
       {
         id: "source-freshness",
         lane: "completed",
-        title: "PR #356: Post-PR #354 route truth refresh",
+        title: "PR #357: Post-PR #356 route truth refresh",
         status: "done",
-        tags: ["PR #356", "merged", "CircleCI green", "CodeRabbit green"],
-        summary: "PR #356 is merged into current main. It refreshed post-PR #354 route truth after the advisory archive candidate reporting lane merged, without claiming runtime producer emission, delivery-truth consumption, Judge/PM readiness, or parent-goal completion.",
-        evidence: ["PR #356 -> MERGED at 2026-06-06T15:34:06Z", "Squash merge commit -> 72a6e35bc0fb6c583b9d6d43636be91335a2f241", "Submitted head -> 1de6572f3ed6d4bb6ca5487cd0a4b12df79b4d8e", "Local main -> 72a6e35bc0fb6c583b9d6d43636be91335a2f241", "CircleCI pr-pipeline -> pass", "CircleCI security-scan -> pass", "CodeRabbit -> pass after manual trigger", "Review threads -> 0 total, 0 unresolved", "Linear route comment -> 7d2d878f-26fd-4b08-88a1-5a96f77de3f1", "Linear field text -> still Phase 1 wording, unclaimed", "security/snyk GitHub App -> owner-waived quota failure only"],
+        tags: ["PR #357", "merged", "CircleCI green", "CodeRabbit green"],
+        summary: "PR #357 is merged into current main. It refreshed post-PR #356 route truth after the route artifacts were corrected, without claiming runtime producer emission, delivery-truth consumption, Judge/PM readiness, Linear field-text currency, or parent-goal completion.",
+        evidence: ["PR #357 -> MERGED at 2026-06-06T16:20:21Z", "Squash merge commit -> 68277b63f4074036294234fbb3ad5befe735d151", "Submitted head -> 30c48b8961f06c0dbf257f3f14505beabfeaf579", "Local main -> 68277b63f4074036294234fbb3ad5befe735d151", "CircleCI PR-head pr-pipeline -> pass", "CircleCI PR-head security-scan -> pass", "CircleCI API main pipeline 2505 -> pr-pipeline=success, security-scan=success", "CodeRabbit -> pass after manual trigger", "Review threads -> 3 total, 0 unresolved", "Linear route comment -> post-PR #356 comment 7d2d878f-26fd-4b08-88a1-5a96f77de3f1 only", "Linear field text -> still Phase 1 wording, unclaimed", "security/snyk GitHub App -> owner-waived quota failure only"],
         next: "Validate the refreshed board/state/receipt set, then select the next bounded lifecycle gap from current main.",
-        risk: "This proves PR #356 merge and remote PR lanes for that head. It does not prove Linear field-text-current, runtime producer emission, delivery-truth consumption, Judge/PM readiness, or parent-goal completion."
+        risk: "This proves PR #357 merge and remote PR lanes for that head. It does not prove Linear field-text-current, runtime producer emission, delivery-truth consumption, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "codex-native-refinement",
