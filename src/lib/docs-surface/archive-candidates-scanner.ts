@@ -165,8 +165,8 @@ export function extractRepoPathReferences(
 
 function stripFencedMarkdownBlocks(content: string): string {
 	return content
-		.replace(/^~~~[\s\S]*?^~~~\s*$/gm, "")
-		.replace(/^```[\s\S]*?^```\s*$/gm, "");
+		.replace(/^\s*~~~[\s\S]*?^\s*~~~\s*$/gm, "")
+		.replace(/^\s*
 }
 
 function extractListMetadataReferences(content: string): readonly string[] {
