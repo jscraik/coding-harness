@@ -1,7 +1,7 @@
 # Harness Development Makefile
 # Run `make help` to see available commands
 
-.PHONY: all help install setup preflight worktree-ready verify-work codestyle-parity codestyle hooks hooks-pre-commit hooks-pre-push hooks-commit-msg secrets-staged docs-style-changed related-tests related-tests-staged semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: all help install setup preflight worktree-ready verify-work codestyle-parity codestyle hooks hooks-pre-commit hooks-pre-push hooks-commit-msg validation-locks secrets-staged docs-style-changed related-tests related-tests-staged semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 all: help ## Default aggregate target
@@ -53,6 +53,7 @@ hooks-pre-commit: ## Run local pre-commit gates before creating a commit
 	$(MAKE) related-tests-staged
 
 hooks-pre-push: ## Run local pre-push governance gates before pushing
+	$(MAKE) validation-locks
 	@if base_ref="$$(git merge-base HEAD '@{upstream}' 2>/dev/null || git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main 2>/dev/null || true)" && \
 		[ -n "$$base_ref" ] && \
 		changed_files="$$(git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD --)" && \
@@ -79,6 +80,9 @@ hooks-pre-push: ## Run local pre-push governance gates before pushing
 	$(MAKE) semgrep-changed
 	$(MAKE) codestyle
 	pnpm build
+
+validation-locks: ## Fail fast when a validation lane is already running
+	@bash ./scripts/check-validation-locks.sh
 
 hooks-commit-msg: ## Validate commit message policy (use HOOK_COMMIT_MSG or MSG_FILE=/path)
 	@tmp_file="$$(mktemp)"; \

@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated from local goal artifacts after PR #366 merged and local <code>main</code> was synced with fetched <code>origin/main</code>. Current main evidence is squash merge commit <code>e5797549647adab10d35472da9afac574fa0c3cf</code>; submitted PR #366 head was <code>ce09bfaa11fa2f33fac12fd09f46e1256b425b25</code>, merged at <code>2026-06-07T15:15:04Z</code>. Before merge, repo-owned CircleCI lanes, aggregate <code>pr-pipeline</code>, aggregate <code>security-scan</code>, CircleCI <code>snyk-dependency-scan</code>, Socket, CodeRabbit, and review-thread checks were green or resolved. The external Snyk GitHub App quota failure remains an owner-waived quota/status lane only. Last live Linear JSC-363 evidence was <code>In Review</code> with PR #365, PR #364, PR #363, PR #362, and PR #360 attachments present, but field-text-current remains unclaimed because the issue still uses Phase 1 wording. Receipts <code>R382</code> through <code>R390</code> record the PR #366 route lane, security-scan repair, merge, pull-back, and current-main tracker refresh. PU-013 runtime cockpit integration proof is the next selected candidate after this board/state/receipt refresh validates from current main. Delivery-truth consumption, documentation accuracy, Judge/PM readiness, release readiness, downstream-template state, runtime producer proof beyond the selected PU-012 floor, Linear field-text currency, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated from local goal artifacts after PR #366 merged and local <code>main</code> was synced with fetched <code>origin/main</code>. Current main evidence is squash merge commit <code>e5797549647adab10d35472da9afac574fa0c3cf</code>; submitted PR #366 head was <code>ce09bfaa11fa2f33fac12fd09f46e1256b425b25</code>, merged at <code>2026-06-07T15:15:04Z</code>. Before merge, repo-owned CircleCI lanes, aggregate <code>pr-pipeline</code>, aggregate <code>security-scan</code>, CircleCI <code>snyk-dependency-scan</code>, Socket, CodeRabbit, and review-thread checks were green or resolved. The external Snyk GitHub App quota failure remains an owner-waived quota/status lane only. Last live Linear JSC-363 evidence was <code>In Review</code> with PR #365, PR #364, PR #363, PR #362, and PR #360 attachments present, but field-text-current remains unclaimed because the issue still uses Phase 1 wording. Receipts <code>R382</code> through <code>R391</code> record the PR #366 route lane, security-scan repair, merge, pull-back, current-main tracker refresh, and the validation-lock guard added after stale local validation lanes were found during CI triage. PU-013 runtime cockpit integration proof is the next selected candidate after this board/state/receipt refresh validates from current main and the guard PR lane is closed. Delivery-truth consumption, documentation accuracy, Judge/PM readiness, release readiness, downstream-template state, runtime producer proof beyond the selected PU-012 floor, Linear field-text currency, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -562,6 +562,17 @@
         evidence: ["PR #366 -> MERGED", "Submitted head -> ce09bfaa11fa2f33fac12fd09f46e1256b425b25", "Merge commit -> e5797549647adab10d35472da9afac574fa0c3cf", "CodeRabbit status check -> SUCCESS", "Review threads -> resolved", "ci/circleci lanes -> pass", "pr-pipeline -> pass", "security-scan -> pass", "CircleCI snyk-dependency-scan -> pass", "Socket checks -> pass", "External security/snyk GitHub App -> owner-waived quota/status lane only"],
         next: "Use this as current-main route evidence; do not reopen PR #366 unless fresh validation finds a regression.",
         risk: "Treating the route refresh as parent-goal completion would still blend tracker truth with delivery-truth, docs accuracy, Linear field-text, and Judge/PM lanes."
+      },
+      {
+        id: "validation-lock-guard-r391",
+        lane: "ci-truth",
+        title: "R391: Validation lane lock guard",
+        status: "active",
+        tags: ["R391", "CI triage", "pre-push", "guardrail"],
+        summary: "CI triage found stale local validation process trees from repeated aggregate checks. The durable fix adds repo-owned validation locks for behavior-tests and test:ci, plus a pre-push lock check so duplicate lanes fail fast with an actionable diagnostic.",
+        evidence: ["scripts/with-validation-lock.sh", "scripts/check-validation-locks.sh", "Makefile validation-locks target", "package.json quality:behavior-tests lock wrapper", "package.json test:ci lock wrapper", "src/dev/validation-lock-scripts.test.ts -> pass", "bash scripts/check-validation-locks.sh -> pass", "pnpm run validation:locks -> pass"],
+        next: "Validate the guard through focused lint/type gates, commit it with the tracker refresh, then push the route/guard PR normally.",
+        risk: "The guard prevents duplicate tracked validation lanes; it does not prove remote CircleCI pass, PU-013 implementation, or parent-goal completion."
       },
       {
         id: "next-slice-pu012-reconciliation",
