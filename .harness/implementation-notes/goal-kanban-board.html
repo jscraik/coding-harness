@@ -411,13 +411,13 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness status">PR #366 review-rerun blocker active</div>
+      <div class="source-chip" aria-label="Source freshness status">Main synced after PR #366 merge</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>PR #366 review rerun blocked</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>PR #365 latest merged</strong></div>
-      <div class="metric"><span>Current PR</span><strong>#366 open</strong></div>
+      <div class="metric"><span>Goal status</span><strong>Route refreshed, PU-013 next</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>PR #366 latest merged</strong></div>
+      <div class="metric"><span>Current PR</span><strong>None open for this route</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Partial, final lanes pending</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
       <div class="metric"><span>Linear tracker</span><strong>Field text unclaimed</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated from local goal artifacts after live PR #366 current-head route truth reached green repo-owned checks and review-thread clearance. Latest fetched main evidence remains the PR #365 merge at <code>2026-06-07T09:18:13Z</code>. Local <code>main</code> and fetched <code>origin/main</code> are at squash merge commit <code>bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd</code>; submitted PR #365 head was <code>c3fe2f06bf5ab2f69b59a8882075bfb3e5ff3c79</code>. PR #366 is open at pushed head <code>3142eb8ba4f7a5a31a51bb85a7c3cf196772f099</code> on branch <code>codex/jsc-363-post-pr365-tracker-refresh</code> and targets <code>main</code> at <code>bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd</code>. The live PR body passes <code>pr-template-gate</code> locally after the description repair; repo-owned CircleCI lanes, aggregate <code>pr-pipeline</code>, aggregate <code>security-scan</code>, Socket, and CodeRabbit status checks are green. GitHub review threads total 6 with zero unresolved after the final outdated state.yaml handoff-order thread was resolved. Merge readiness is not claimed because GitHub still reports <code>mergeStateStatus=UNSTABLE</code>. The external Snyk GitHub App quota failure remains an owner-waived quota/status lane only. Last live Linear JSC-363 evidence was <code>In Review</code> with PR #365, PR #364, PR #363, PR #362, and PR #360 attachments present, but field-text-current remains unclaimed because the issue still uses Phase 1 wording. Receipts <code>R372</code> through <code>R387</code> record the current route refresh, PR #365 repair path, transient PR #366 remote-truth blocker, PR #366 template blocker, PR #366 body-gate repair, hook-enforced push, green repo-owned checks, pushed heads <code>f0465382</code> and <code>3142eb8</code>, review-thread clearance, and the current external-Snyk-waived unstable merge state. PU-013 runtime cockpit integration proof remains stopped until PR #366 is merged or superseded, and this board/state/receipt refresh validates from current main. Delivery-truth consumption, documentation accuracy, Judge/PM readiness, release readiness, downstream-template state, runtime producer proof, Linear field-text currency, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated from local goal artifacts after PR #366 merged and local <code>main</code> was synced with fetched <code>origin/main</code>. Current main evidence is squash merge commit <code>e5797549647adab10d35472da9afac574fa0c3cf</code>; submitted PR #366 head was <code>ce09bfaa11fa2f33fac12fd09f46e1256b425b25</code>, merged at <code>2026-06-07T15:15:04Z</code>. Before merge, repo-owned CircleCI lanes, aggregate <code>pr-pipeline</code>, aggregate <code>security-scan</code>, CircleCI <code>snyk-dependency-scan</code>, Socket, CodeRabbit, and review-thread checks were green or resolved. The external Snyk GitHub App quota failure remains an owner-waived quota/status lane only. Last live Linear JSC-363 evidence was <code>In Review</code> with PR #365, PR #364, PR #363, PR #362, and PR #360 attachments present, but field-text-current remains unclaimed because the issue still uses Phase 1 wording. Receipts <code>R382</code> through <code>R390</code> record the PR #366 route lane, security-scan repair, merge, pull-back, and current-main tracker refresh. PU-013 runtime cockpit integration proof is the next selected candidate after this board/state/receipt refresh validates from current main. Delivery-truth consumption, documentation accuracy, Judge/PM readiness, release readiness, downstream-template state, runtime producer proof beyond the selected PU-012 floor, Linear field-text currency, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -531,15 +531,15 @@
         risk: "A PR may complete a slice, but it cannot close the parent goal without separate proof for runtime, CI, review, tracker, docs, and Judge/PM lanes."
       },
       {
-        id: "current-main-pr365",
+        id: "current-main-pr366",
         lane: "completed",
-        title: "Current main: PR #365 tracker repair",
+        title: "Current main: PR #366 tracker/security repair",
         status: "done",
-        tags: ["PR #365", "current main", "route truth"],
-        summary: "Local main and origin/main are synced at PR #365 squash merge bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd. Live GitHub showed zero open PRs after pull-back.",
-        evidence: ["PR #365 -> MERGED at 2026-06-07T09:18:13Z", "Merge commit -> bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd", "Submitted head -> c3fe2f06bf5ab2f69b59a8882075bfb3e5ff3c79", "Open PRs -> none", "Repo-owned CircleCI lanes -> pass", "pr-pipeline -> pass", "security-scan -> pass", "CodeRabbit -> pass", "Socket -> pass", "Review threads -> resolved", "External security/snyk (jscraik) -> owner-waived quota failure only"],
-        next: "Validate this board/state/receipt refresh, then start PU-013 intent from current main.",
-        risk: "PR #365 does not prove delivery-truth consumption, Linear field-text currency, Judge/PM readiness, or parent-goal completion."
+        tags: ["PR #366", "current main", "route truth"],
+        summary: "Local main and origin/main are synced at PR #366 squash merge e5797549647adab10d35472da9afac574fa0c3cf after the route tracker and security-scan repair lane merged.",
+        evidence: ["PR #366 -> MERGED at 2026-06-07T15:15:04Z", "Merge commit -> e5797549647adab10d35472da9afac574fa0c3cf", "Submitted head -> ce09bfaa11fa2f33fac12fd09f46e1256b425b25", "Repo-owned CircleCI lanes -> pass", "pr-pipeline -> pass", "security-scan -> pass", "CircleCI snyk-dependency-scan -> pass", "CodeRabbit -> pass", "Socket -> pass", "Review threads -> resolved", "External security/snyk (jscraik) -> owner-waived quota failure only"],
+        next: "Validate this board/state/receipt refresh, then create PU-013 intent from current main.",
+        risk: "PR #366 does not prove delivery-truth consumption, Linear field-text currency, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "pr362-current-repair",
@@ -555,13 +555,13 @@
       {
         id: "current-route-pr366",
         lane: "pr-truth",
-        title: "Current route: PR #366 tracker refresh",
-        status: "blocked",
-        tags: ["PR #366", "JSC-363", "route truth", "review-thread-open"],
-        summary: "PR #366 is the active tracker PR. It is open at pushed branch head 3142eb8 with repo-owned CircleCI, Socket, CodeRabbit status, pr-pipeline, and security-scan lanes green; GitHub review threads total 6 with zero unresolved after the final outdated state.yaml handoff-order thread was resolved. It remains not merge-ready because GitHub reports mergeStateStatus=UNSTABLE while the external Snyk GitHub App quota/status lane is owner-waived only.",
-        evidence: ["PR #366 -> OPEN", "PR #366 head -> 3142eb8ba4f7a5a31a51bb85a7c3cf196772f099", "PR #366 base -> bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd", "GitHub mergeStateStatus -> UNSTABLE", "CodeRabbit status check -> SUCCESS", "Review threads -> total 6, unresolved 0", "Final unresolved thread -> outdated state.yaml handoff-order thread resolved", "CodeRabbit status check -> SUCCESS", "ci/circleci lanes -> pass", "pr-pipeline -> pass", "security-scan -> pass", "Socket checks -> pass", "live PR body pr-template-gate -> pass after description repair", "External security/snyk GitHub App -> owner-waived quota/status lane only"],
-        next: "Recheck PR #366 merge state, then merge if branch protection allows or record the precise remaining blocker before merging or superseding this tracker lane.",
-        risk: "Starting PU-013 before PR #366 lands would reintroduce the stale route-truth and stacked-PR failure mode."
+        title: "Route lane closed: PR #366",
+        status: "done",
+        tags: ["PR #366", "JSC-363", "route truth", "merged"],
+        summary: "PR #366 is merged into current main. It refreshed the post-PR #365 route surface and repaired the tracked Kanban validator security-scan issue by replacing the Function constructor with node:vm script parsing.",
+        evidence: ["PR #366 -> MERGED", "Submitted head -> ce09bfaa11fa2f33fac12fd09f46e1256b425b25", "Merge commit -> e5797549647adab10d35472da9afac574fa0c3cf", "CodeRabbit status check -> SUCCESS", "Review threads -> resolved", "ci/circleci lanes -> pass", "pr-pipeline -> pass", "security-scan -> pass", "CircleCI snyk-dependency-scan -> pass", "Socket checks -> pass", "External security/snyk GitHub App -> owner-waived quota/status lane only"],
+        next: "Use this as current-main route evidence; do not reopen PR #366 unless fresh validation finds a regression.",
+        risk: "Treating the route refresh as parent-goal completion would still blend tracker truth with delivery-truth, docs accuracy, Linear field-text, and Judge/PM lanes."
       },
       {
         id: "next-slice-pu012-reconciliation",
@@ -569,9 +569,9 @@
         title: "Next slice candidate: PU-013 cockpit proof",
         status: "active",
         tags: ["PU-013", "next candidate", "runtime cockpit"],
-        summary: "PU-012 current-main producer proof and bridge-boundary reconciliation is route-reconciled through PR #365. PU-013 is still the next selected implementation candidate, but PR #366 must be fixed and merged or explicitly superseded first.",
-        evidence: [".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md PU-012", "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/PU-012-current-main-producer-proof-intent.md", "PR #366 -> OPEN/UNSTABLE with repo-owned checks green and review threads resolved", "goal.md corrected backlog", "state.yaml current_slice_gate.reason", "R387 PR #366 current-head route receipt"],
-        next: "After PR #366 lands and main is pulled, validate the board/state/receipt surface, then create PU-013 intent from current main.",
+        summary: "PU-012 current-main producer proof and bridge-boundary reconciliation is route-reconciled through PR #366. PU-013 is now the next selected implementation candidate after this board/state/receipt surface validates from current main.",
+        evidence: [".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md PU-013", "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/PU-012-current-main-producer-proof-intent.md", "PR #366 -> MERGED", "goal.md corrected backlog", "state.yaml current_slice_gate.reason", "R390 post-PR #366 current-main route receipt"],
+        next: "Validate the board/state/receipt surface, then create PU-013 intent from current main.",
         risk: "Starting PU-013 implementation before PR #366 merge/pullback and the intent/reviewer gates would repeat the stale-state failure mode."
       },
       {
