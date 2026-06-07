@@ -89,8 +89,8 @@ completion_contract:
     exception_rule: "Only Jamie can authorize a stacked or parallel implementation exception; the exception must name the dependent slice, branch/worktree owner, allowed files, stop condition, and receipt id before any code work begins."
 current_slice_gate:
   lifecycle_unit: "post-pr364-current-main-route-refresh"
-  status: "pu013_selected_pending_intent"
-  reason: "PR #364 merged into main at 2026-06-07T06:18:34Z as squash merge commit 3b0dfb4f97349cd2d484d2bcf32ada26bda71b6d from submitted head 328d06806a22caffd04cf32691881e2a152fd8dc; local main and origin/main were pulled to that merge commit. Live GitHub showed zero open pull requests after the pull-back refresh. Before merge, repo-owned CircleCI contexts, aggregate pr-pipeline, aggregate security-scan, CodeRabbit, Socket, and review threads were green/resolved. The external Snyk GitHub App quota/status failure is owner-waived for that external lane only and is not external Snyk pass evidence. PU-013 runtime cockpit integration proof is the next selected slice after this board/state/receipt refresh validates from current main."
+  status: "route_tracker_pr365_open_before_pu013"
+  reason: "PR #364 merged into main at 2026-06-07T06:18:34Z as squash merge commit 3b0dfb4f97349cd2d484d2bcf32ada26bda71b6d from submitted head 328d06806a22caffd04cf32691881e2a152fd8dc; local main and origin/main were pulled to that merge commit. PR #365 is now open at head a2f871aca55c4f1ea59e5629d3e985031d7c3c1c as the route-tracker repair lane. Live GitHub shows PR #365 blocked by the PR-template evidence lane and the owner-waived external Snyk quota/status lane; CodeRabbit is successful. PU-013 runtime cockpit integration proof remains the next selected slice only after PR #365 passes or records allowed waivers, merges, local main is pulled, and board/state/receipt are refreshed from current main."
   completed_before_local_validation_claim:
     - "Created and tracked the PR #324 supersession intent artifact before route-state edits."
     - "Fetched current remote refs and verified PR #327 and PR #328 are the current clean JSC-363 stack."

@@ -10,32 +10,38 @@
 
 ## Scope
 
-Current working reconciliation: 2026-06-07 on `main` after PR #360, PR #361, PR #362, and PR #363
-merged and local `main` was synced with `origin/main`.
+Current working reconciliation: 2026-06-07 on the PR #365 route-tracker repair
+branch after PR #364 merged and local `main` was synced with `origin/main`.
 JSC-395 advisory stale-document archive candidate reporting remains delivered on
 current main through PR #354. JSC-363 route truth is refreshed through PR #360,
 the repository typed-contract validation gate lane is refreshed through
 PR #361, the post-PR #361 tracker/evidence repair is refreshed through PR #362,
-and the post-PR #362 route refresh is refreshed through PR #363.
+the post-PR #362 route refresh is refreshed through PR #363, and the route
+refresh after PR #363 is refreshed through PR #364. PR #365 is the active
+route-tracker repair PR that must merge before PU-013 starts.
 This route refresh does not claim release, downstream-template state,
 JSC-363 parent-goal completion, runtime producer proof, delivery-truth
 consumption, documentation accuracy, Linear field-text currency, or Judge/PM
 readiness; those remain separate closeout lanes.
 
-Last reconciled: 2026-06-07 after PR #363 merged into `main` as squash merge
-commit `77d178ab92d17c973f406ae9d336fd1f5d0d9702` from submitted head
-`6e6e9730df70a1f27ed3f9a3c6926e61b806efe0`, and local `main`
-fast-forwarded to the same `origin/main` head. Live GitHub showed zero open
-pull requests after the pull-back refresh. PR #363 had CodeRabbit passing,
-Socket passing, all repo-owned CircleCI contexts passing, aggregate
-`pr-pipeline` passing, aggregate `security-scan` passing, and no unresolved
-review threads before merge.
+Last reconciled: 2026-06-07 after PR #364 merged into `main` as squash merge
+commit `3b0dfb4f97349cd2d484d2bcf32ada26bda71b6d` from submitted head
+`328d06806a22caffd04cf32691881e2a152fd8dc`, and local `main`
+fast-forwarded to the same `origin/main` head. Live GitHub now shows PR #365
+open at `a2f871aca55c4f1ea59e5629d3e985031d7c3c1c`; it is the active
+route-tracker repair lane and is blocked until PR-template evidence passes,
+aggregate `pr-pipeline` clears, CodeRabbit/review state remains clean, and the
+owner-waived external Snyk quota/status lane is recorded without claiming a
+passing external Snyk result. PR #364 had CodeRabbit passing, Socket passing,
+all repo-owned CircleCI contexts passing, aggregate `pr-pipeline` passing,
+aggregate `security-scan` passing, and no unresolved review threads before
+merge.
 The external Snyk GitHub App
 quota/status failure remains an owner-approved waiver for that external lane
 only; it does not claim external Snyk passed and does not waive repo-run
 security, future Snyk results, or future security findings. Live Linear JSC-363
-was refreshed during the PR #363 lane and is `In Review`, has PR #363, PR #362,
-and PR #360 attachments present, and still has Phase 1 title/description
+was refreshed during the PR #364 lane and is `In Review`, has PR #364, PR #363,
+PR #362, and PR #360 attachments present, and still has Phase 1 title/description
 wording, so field-text-current remains unclaimed unless accepted by the owner or
 edited.
 

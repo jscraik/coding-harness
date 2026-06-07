@@ -42,19 +42,22 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-07 post-PR #363 route refresh. Local
-`main` and `origin/main` are synced at
-`77d178ab92d17c973f406ae9d336fd1f5d0d9702`, the PR #363 squash merge
-commit. Live GitHub showed zero open pull requests after the pull-back refresh.
-This section records the current route tracker after the PR #363 one-PR sweep;
-older PR-specific receipt entries remain historical evidence but must not route
-new work unless a fresh current-main audit reopens them.
+Last updated during the 2026-06-07 PR #365 route-tracker repair lane. Local
+`origin/main` is synced at
+`3b0dfb4f97349cd2d484d2bcf32ada26bda71b6d`, the PR #364 squash merge
+commit, while PR #365 is the open route-tracker repair PR at
+`a2f871aca55c4f1ea59e5629d3e985031d7c3c1c`. Live GitHub shows PR #365 is
+open and blocked by the PR-template evidence lane and the owner-waived external
+Snyk quota/status lane. This section records the current route tracker after
+the PR #364 one-PR sweep; older PR-specific receipt entries remain historical
+evidence but must not route new work unless a fresh current-main audit reopens
+them.
 
 Current route truth:
 
 - `origin/main` and local `main` are currently `3b0dfb4f97349cd2d484d2bcf32ada26bda71b6d`, the PR #364 squash merge commit.
 - PR `#364` merged into `main` at 2026-06-07T06:18:34Z as squash merge commit `3b0dfb4f97349cd2d484d2bcf32ada26bda71b6d`; its submitted head was `328d06806a22caffd04cf32691881e2a152fd8dc`. PR #364 delivered the post-PR #363 route-tracker refresh. Before merge, repo-owned CircleCI contexts, aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, Socket, and review-thread checks were green/resolved. The external Snyk GitHub App lane failed because the private-test quota is exhausted and is owner-waived for that external quota/status lane only.
-- PR #364 is now the current route-refresh evidence for selecting PU-013. PR #363 remains historical route evidence, not the current main head.
+- PR #365 is the active route-tracker repair PR for PR #364 evidence. It must pass PR-template validation, preserve CodeRabbit/review cleanliness, merge, and be pulled back to local main before PU-013 implementation starts. PR #364 remains the current main evidence for selecting PU-013; PR #363 remains historical route evidence, not the current main head.
 - PR `#363` merged into `main` at 2026-06-07T05:11:54Z as squash merge commit `77d178ab92d17c973f406ae9d336fd1f5d0d9702`; its submitted head was `6e6e9730df70a1f27ed3f9a3c6926e61b806efe0`. Before merge, repo-owned CircleCI contexts, aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, Socket, and review-thread checks were green/resolved. The external Snyk GitHub App lane failed because the private-test quota is exhausted and is owner-waived for that external quota/status lane only.
 - PR `#362` merged into `main` at 2026-06-07T04:05:32Z as squash merge commit `73d6f162fb8a67674ab05c543eb93aed1f7b2632`; its submitted head was `3f7ab4c2ede5f24b95038eff686ef3e58be2755f`.
 - PR #362 delivered the post-PR #361 route-tracker and evidence repair lane. Before merge, live GitHub showed CodeRabbit passed, Socket passed, all repo-owned CircleCI contexts passed, aggregate `pr-pipeline` passed on pipeline `2529`, and aggregate `security-scan` passed on pipeline `2529`. The external Snyk GitHub App lane failed because the private-test quota is exhausted and is owner-waived for that external quota/status lane only.
