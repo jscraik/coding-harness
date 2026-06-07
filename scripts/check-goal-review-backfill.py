@@ -14,7 +14,7 @@ import posixpath
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 
 EXPECTED_SCHEMA_VERSION = "goal-review-coverage-backfill/v1"
@@ -86,13 +86,13 @@ def require_string(value: Any, field: str) -> str:
 def require_list(value: Any, field: str) -> list[Any]:
     if not isinstance(value, list) or not value:
         raise ValidationError(f"{field} must be a non-empty list")
-    return value
+    return cast(list[Any], value)
 
 
 def require_object(value: Any, field: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValidationError(f"{field} must be an object")
-    return value
+    return cast(dict[str, Any], value)
 
 
 def normalize_repo_relative_path(value: str, field: str) -> str:
@@ -144,13 +144,14 @@ def load_receipts(path: Path) -> dict[str, dict[str, Any]]:
             raise ValidationError(f"{path}:{line_number} is not valid JSON: {exc}") from exc
         if not isinstance(receipt, dict):
             raise ValidationError(f"{path}:{line_number} is not a JSON object")
-        receipt_id = receipt.get("id")
+        receipt_object = cast(dict[str, Any], receipt)
+        receipt_id = receipt_object.get("id")
         if isinstance(receipt_id, str) and receipt_id:
             if receipt_id in receipts:
                 raise ValidationError(
                     f"{path}:{line_number} duplicates receipt id {receipt_id!r}",
                 )
-            receipts[receipt_id] = receipt
+            receipts[receipt_id] = receipt_object
     return receipts
 
 
@@ -195,13 +196,16 @@ def member_receipt_result(receipt: dict[str, Any], member_key: str) -> dict[str,
     for field in ("slice_skill_lens_results", "independent_reviewer_results"):
         value = receipt.get(field)
         if isinstance(value, list):
-            for entry in value:
-                if isinstance(entry, dict) and entry.get("role") == member_key:
-                    return entry
+            for entry in cast(list[Any], value):
+                if isinstance(entry, dict):
+                    entry_object = cast(dict[str, Any], entry)
+                    if entry_object.get("role") == member_key:
+                        return entry_object
         if isinstance(value, dict):
-            entry = value.get(member_key)
+            result_map = cast(dict[str, Any], value)
+            entry = result_map.get(member_key)
             if isinstance(entry, dict):
-                return entry
+                return cast(dict[str, Any], entry)
     return None
 
 

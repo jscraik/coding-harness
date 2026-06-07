@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, cast
 
 try:  # pragma: no cover
     import yaml
@@ -15,6 +17,7 @@ except ModuleNotFoundError:  # pragma: no cover
 
 
 FALSE_POSITIVE_THRESHOLD = 0.05
+type JsonObject = dict[str, Any]
 
 
 class DocstringRatchetError(ValueError):
@@ -53,7 +56,7 @@ def _normalize_false_positive_rates(value: object) -> list[float]:
     if not isinstance(value, list):
         raise DocstringRatchetError("false_positive_rate_weekly must be a list")
     rates: list[float] = []
-    for entry in value:
+    for entry in cast(list[object], value):
         if isinstance(entry, (int, float)):
             rates.append(float(entry))
             continue
@@ -62,10 +65,10 @@ def _normalize_false_positive_rates(value: object) -> list[float]:
 
 
 def evaluate_repo(
-    repo_payload: dict[str, object],
-    metrics_payload: dict[str, object],
+    repo_payload: Mapping[str, object],
+    metrics_payload: Mapping[str, object],
     window_days: int,
-) -> dict[str, object]:
+) -> JsonObject:
     repo_name = repo_payload.get("repo_name")
     repo_path = repo_payload.get("repo_path")
     if not isinstance(repo_name, str) or not repo_name:
@@ -76,14 +79,16 @@ def evaluate_repo(
     repositories_metrics = metrics_payload.get("repositories", {})
     if not isinstance(repositories_metrics, dict):
         repositories_metrics = {}
-    repo_metrics = repositories_metrics.get(repo_name, {})
+    repositories_metrics_map = cast(Mapping[str, object], repositories_metrics)
+    repo_metrics = repositories_metrics_map.get(repo_name, {})
     if not isinstance(repo_metrics, dict):
         repo_metrics = {}
+    repo_metrics_map = cast(Mapping[str, object], repo_metrics)
 
-    false_positive_rates_value = repo_metrics.get("false_positive_rate_weekly", [])
+    false_positive_rates_value = repo_metrics_map.get("false_positive_rate_weekly", [])
     false_positive_rates = _normalize_false_positive_rates(false_positive_rates_value)
 
-    unresolved_suppressions_value = repo_metrics.get(
+    unresolved_suppressions_value = repo_metrics_map.get(
         "unresolved_high_conf_suppressions_over_7d", 0
     )
     if not isinstance(unresolved_suppressions_value, int):
@@ -119,12 +124,13 @@ def evaluate_repo(
         raise DocstringRatchetError(f"classification files for '{repo_name}' must be a list")
 
     evaluated_files: list[dict[str, object]] = []
-    for file_entry in files_payload:
+    for file_entry in cast(list[object], files_payload):
         if not isinstance(file_entry, dict):
             continue
-        path = file_entry.get("path")
-        label = file_entry.get("label")
-        matched_rule_id = file_entry.get("matched_rule_id")
+        file_payload = cast(Mapping[str, object], file_entry)
+        path = file_payload.get("path")
+        label = file_payload.get("label")
+        matched_rule_id = file_payload.get("matched_rule_id")
         if not isinstance(path, str) or not path:
             continue
         if not isinstance(label, str) or not label:
@@ -149,7 +155,7 @@ def evaluate_repo(
             }
         )
 
-    evaluated_files.sort(key=lambda item: item["path"])
+    evaluated_files.sort(key=lambda item: str(item["path"]))
     return {
         "repo_name": repo_name,
         "repo_path": repo_path,
@@ -165,7 +171,7 @@ def evaluate_docstring_ratchet(
     classification_path: Path,
     metrics_path: Path,
     window_days: int,
-) -> dict[str, object]:
+) -> JsonObject:
     working_dir = Path.home()
     if window_days <= 0:
         raise DocstringRatchetError("--window-days must be greater than zero")
@@ -173,24 +179,26 @@ def evaluate_docstring_ratchet(
     classification_payload = load_structured_file(classification_path)
     if not isinstance(classification_payload, dict):
         raise DocstringRatchetError("classification payload must be an object")
-    repositories = classification_payload.get("repositories", [])
+    classification_payload_map = cast(Mapping[str, object], classification_payload)
+    repositories = classification_payload_map.get("repositories", [])
     if not isinstance(repositories, list):
         raise DocstringRatchetError("classification.repositories must be a list")
 
     metrics_payload = load_structured_file(metrics_path)
     if not isinstance(metrics_payload, dict):
         raise DocstringRatchetError("metrics payload must be an object")
+    metrics_payload_map = cast(Mapping[str, object], metrics_payload)
 
-    evaluated_repositories = [
+    evaluated_repositories: list[JsonObject] = [
         evaluate_repo(
-            repo_payload=repo_payload,
-            metrics_payload=metrics_payload,
+            repo_payload=cast(Mapping[str, object], repo_payload),
+            metrics_payload=metrics_payload_map,
             window_days=window_days,
         )
-        for repo_payload in repositories
+        for repo_payload in cast(list[object], repositories)
         if isinstance(repo_payload, dict)
     ]
-    evaluated_repositories.sort(key=lambda item: item["repo_name"])
+    evaluated_repositories.sort(key=lambda item: str(item["repo_name"]))
 
     return {
         "schema_version": "docstring-ratchet-evaluation.v1",

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -40,7 +41,7 @@ class TestLoadStructuredFile:
         result = load_structured_file(f)
         assert result == [1, 2, 3]
 
-    def test_raises_on_invalid_json_and_no_yaml(self, tmp_path: Path, monkeypatch) -> None:
+    def test_raises_on_invalid_json_and_no_yaml(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         import evaluate_docstring_ratchet as module
         monkeypatch.setattr(module, "yaml", None)
         f = tmp_path / "bad.json"
@@ -135,8 +136,8 @@ class TestNormalizeFalsePositiveRates:
 def _make_repo_payload(
     repo_name: str = "my-repo",
     repo_path: str = "/repos/my-repo",
-    files: list | None = None,
-) -> dict:
+    files: list[Any] | None = None,
+) -> dict[str, Any]:
     return {
         "repo_name": repo_name,
         "repo_path": repo_path,
@@ -146,9 +147,9 @@ def _make_repo_payload(
 
 def _make_metrics_payload(
     repo_name: str = "my-repo",
-    false_positive_rate_weekly: list | None = None,
+    false_positive_rate_weekly: list[float] | None = None,
     unresolved: int = 0,
-) -> dict:
+) -> dict[str, Any]:
     return {
         "repositories": {
             repo_name: {
@@ -197,12 +198,12 @@ class TestEvaluateRepo:
         assert len(result["ratchet_reasons"]) == 2
 
     def test_raises_when_repo_name_missing(self) -> None:
-        repo = {"repo_path": "/repos/foo", "files": []}
+        repo: dict[str, Any] = {"repo_path": "/repos/foo", "files": []}
         with pytest.raises(DocstringRatchetError, match="missing repo_name"):
             evaluate_repo(repo, {}, window_days=14)
 
     def test_raises_when_repo_path_missing(self) -> None:
-        repo = {"repo_name": "foo", "files": []}
+        repo: dict[str, Any] = {"repo_name": "foo", "files": []}
         with pytest.raises(DocstringRatchetError, match="missing repo_path"):
             evaluate_repo(repo, {}, window_days=14)
 
@@ -289,7 +290,7 @@ class TestEvaluateRepo:
 
     def test_missing_metrics_for_repo_uses_empty_defaults(self) -> None:
         repo = _make_repo_payload(repo_name="unknown-repo")
-        metrics = {"repositories": {}}
+        metrics: dict[str, Any] = {"repositories": {}}
         result = evaluate_repo(repo, metrics, window_days=14)
         # No metrics at all -> insufficient data points
         assert result["ratchet_ready"] is False
@@ -327,15 +328,15 @@ class TestEvaluateRepo:
 # ---------------------------------------------------------------------------
 
 
-def _write_classification(tmp_path: Path, repos: list) -> Path:
-    data = {"schema_version": "public-api-classification.v1", "repositories": repos}
+def _write_classification(tmp_path: Path, repos: list[Any]) -> Path:
+    data: dict[str, Any] = {"schema_version": "public-api-classification.v1", "repositories": repos}
     p = tmp_path / "classification.json"
     p.write_text(json.dumps(data), encoding="utf-8")
     return p
 
 
-def _write_metrics(tmp_path: Path, repos_metrics: dict) -> Path:
-    data = {"schema_version": "docstring-ratchet-metrics.v1", "repositories": repos_metrics}
+def _write_metrics(tmp_path: Path, repos_metrics: dict[str, Any]) -> Path:
+    data: dict[str, Any] = {"schema_version": "docstring-ratchet-metrics.v1", "repositories": repos_metrics}
     p = tmp_path / "metrics.json"
     p.write_text(json.dumps(data), encoding="utf-8")
     return p
@@ -412,7 +413,7 @@ class TestEvaluateDocstringRatchet:
         assert names == sorted(names)
 
     def test_non_dict_repository_entries_skipped(self, tmp_path: Path) -> None:
-        data = {
+        data: dict[str, Any] = {
             "repositories": [
                 "not-a-dict",
                 None,

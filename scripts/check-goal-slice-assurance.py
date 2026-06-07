@@ -14,7 +14,7 @@ import json
 import posixpath
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 
 REQUIRED_SKILL_LENSES = (
@@ -67,7 +67,7 @@ def load_receipts(path: Path) -> list[dict[str, Any]]:
             raise ValidationError(f"{path}:{line_number} is not valid JSON: {exc}") from exc
         if not isinstance(receipt, dict):
             raise ValidationError(f"{path}:{line_number} is not a JSON object")
-        receipts.append(receipt)
+        receipts.append(cast(dict[str, Any], receipt))
     return receipts
 
 
@@ -106,7 +106,7 @@ def changed_file_identities(receipt: dict[str, Any], repo: Path) -> set[str]:
         raise ValidationError("changed_files must be a non-empty list")
 
     identities: set[str] = set()
-    for index, entry in enumerate(changed_files):
+    for index, entry in enumerate(cast(list[Any], changed_files)):
         lexical = normalize_repo_relative_path(entry, f"changed_files[{index}]")
         identities.add(lexical)
         candidate = repo / lexical
@@ -154,7 +154,7 @@ def require_result_map(receipt: dict[str, Any], field: str) -> dict[str, Any]:
     value = receipt.get(field)
     if not isinstance(value, dict):
         raise ValidationError(f"{field} must be an object")
-    return value
+    return cast(dict[str, Any], value)
 
 
 def validate_required_member(
@@ -170,8 +170,9 @@ def validate_required_member(
     field = f"{group_field}.{member_key}"
     if not isinstance(result, dict):
         raise ValidationError(f"{field} must be a structured object")
+    result_object = cast(dict[str, Any], result)
 
-    status = require_string(result.get("status"), f"{field}.status")
+    status = require_string(result_object.get("status"), f"{field}.status")
     if status not in ALLOWED_STATUSES:
         raise ValidationError(f"{field}.status has unsupported value {status!r}")
 
@@ -179,7 +180,7 @@ def validate_required_member(
         validate_pass_member(
             member_key=member_key,
             field=field,
-            result=result,
+            result=result_object,
             receipt=receipt,
             repo=repo,
             changed_files=changed_files,
@@ -189,7 +190,7 @@ def validate_required_member(
 
     validate_non_pass_member(
         field=field,
-        result=result,
+        result=result_object,
         repo=repo,
         changed_files=changed_files,
         used_evidence_refs=used_evidence_refs,

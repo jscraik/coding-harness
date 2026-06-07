@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-05
+last_validated: 2026-06-06
 ---
 
 # Architecture bootstrap
@@ -161,6 +161,14 @@ changed.
 For release packaging changes that alter runtime dependency metadata, pass the packed CLI smoke path before publish, and commit any required `AI/context/diagram-context.md` refresh and its required docs-gate surfaces (including `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and `docs/agents/07b-agent-governance.md`) that pre-push or docs-gate reports.
 For formatter or linter major-version migrations, expect generated architecture context to drop newly ignored local analysis paths and refresh `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and `docs/agents/07b-agent-governance.md` with the committed `AI/context/diagram-context.md` update so reviewers know the architecture pack changed because tracked tooling rules changed.
 For validation gate graph changes, refresh `AI/context/diagram-context.md` and keep the validation governance surfaces synchronized (`AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and `docs/agents/07b-agent-governance.md`) when typed gate specs, phase-exit evidence gates, local review/validation artifact adapters, `harness next --phase-exit` visibility, parity tests, or resume-checkpoint guards are added or changed. Rollback: revert the branch to remove the typed mirror, evidence-gate contract, adapter wiring, dispatch guard, cockpit visibility, parity tests, and synchronized doc updates.
+Type and artifact contract gate changes are part of this validation graph when
+they alter `pnpm types:check`, `pnpm artifact:types`, Python/Pydantic
+validation, TypeScript escape-hatch policy, JSON Schema contract validation, or
+live CLI JSON contract validation. Keep generated architecture context
+synchronized and commit this guide with the validation changes so future agents
+can find the current typed contract entrypoint from the architecture bootstrap
+surface. Rollback: remove the typed package scripts, CLI JSON manifest entries,
+Python project dependency wiring, and generated context refresh together.
 For runtime-card evidence adapter changes, treat the adapter as an
 agent-native cockpit surface: keep `runtime-card/v1` and
 `runtime-evidence-bundle/v1` advisory and artifact-backed, keep local evidence

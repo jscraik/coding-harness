@@ -220,6 +220,11 @@ Use these files for contribution and agent-operating rules:
 - [Validation](./docs/agents/04-validation.md) for local proof and gate selection.
 - [Security and governance](./docs/agents/06-security-and-governance.md) for secrets, policy, and trust boundaries.
 
+`pnpm check` includes `pnpm types:check`. Contributor and CI environments
+therefore need the repository-pinned `uv` tool available through `.mise.toml`
+so Python/Pydantic artifact-contract validation runs as part of the standard
+quality gate.
+
 ## Where To Go Next
 
 - [Quickstart](./docs/agents/quickstart.md) for the agent-native loop and local verification path.

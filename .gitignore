@@ -46,9 +46,14 @@ dockercfg*
 *.log
 logs/
 .cache/
+.uv-cache/
 
 # Test coverage
 coverage/
+
+# Python runtime artifacts
+__pycache__/
+*.pyc
 
 # Gardener reports
 gardener-report.json

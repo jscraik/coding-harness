@@ -1,0 +1,38 @@
+{
+	"schemaVersion": "cli-json-contracts-manifest/v1",
+	"generatedAt": "2026-06-06T00:00:00.000Z",
+	"contracts": [
+		{
+			"name": "command-catalog",
+			"command": [
+				"node",
+				"--import",
+				"tsx",
+				"src/cli.ts",
+				"commands",
+				"--json"
+			],
+			"expectedSchemaVersion": "harness-command-catalog/v3",
+			"schemaPath": "contracts/command-catalog.schema.json",
+			"examplePath": "contracts/examples/command-catalog.example.json",
+			"liveValidation": {
+				"enabled": true,
+				"allowedExitCodes": [0],
+				"stdoutJson": true
+			}
+		},
+		{
+			"name": "harness-next-decision",
+			"command": ["node", "--import", "tsx", "src/cli.ts", "next", "--json"],
+			"expectedSchemaVersion": "harness-decision/v1",
+			"schemaPath": "contracts/harness-decision.schema.json",
+			"examplePath": "contracts/examples/harness-decision.example.json",
+			"liveValidation": {
+				"enabled": true,
+				"allowedExitCodes": [0, 1],
+				"stdoutJson": true,
+				"reason": "harness next returns 1 for legitimate blocked decision output."
+			}
+		}
+	]
+}

@@ -108,6 +108,35 @@ jobs:
               npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${required_pnpm_version}"
             fi
             pnpm --version
+      - run:
+          name: Ensure uv available
+          command: |
+            retry_cmd() {
+              local max_attempts="${1:-3}"
+              shift
+              local attempt=1
+              until "$@"; do
+                if (( attempt >= max_attempts )); then
+                  return 1
+                fi
+                local sleep_seconds=$(( attempt * 5 ))
+                echo "Command failed (attempt ${attempt}/${max_attempts}): $*"
+                echo "Retrying in ${sleep_seconds}s..."
+                sleep "${sleep_seconds}"
+                attempt=$(( attempt + 1 ))
+              done
+            }
+            export PATH="$HOME/.local/bin:$PATH"
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            retry_cmd 3 mise install uv
+            uv_path="$(mise which uv)"
+            if [[ -z "$uv_path" ]]; then
+              echo "Error: mise which uv returned nothing" >&2
+              exit 1
+            fi
+            mkdir -p "$HOME/.local/bin"
+            ln -sf "$uv_path" "$HOME/.local/bin/uv"
+            uv --version
 
 {{configureCacheStep}}
       - run:

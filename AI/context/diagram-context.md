@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-06T12:24:00Z
+Generated: 2026-06-06T13:45:00Z
 
 ## Table of Contents
 
@@ -30,42 +30,6 @@ Generated: 2026-06-06T12:24:00Z
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
 - `package.json`
-- `src/commands/docs-gate-archive-candidates.ts`
-- `src/commands/docs-gate-core.ts`
-- `src/commands/doctor-github-tool-check.ts`
-- `src/commands/doctor-github-tool-checks.ts`
-- `src/commands/doctor-tool-checks.ts`
-- `src/commands/github-cli.ts`
-- `src/commands/pr-closeout-github.ts`
-- `src/commands/pr-closeout-live-input.ts`
-- `src/commands/pr-closeout/live.ts`
-- `src/lib/docs-surface/archive-candidates-cli.ts`
-- `src/lib/docs-surface/archive-candidates-contract.ts`
-- `src/lib/docs-surface/archive-candidates-scanner.ts`
-- `src/lib/docs-surface/archive-candidates.ts`
-- `src/lib/github/cli.ts`
-- `src/lib/init/README.md`
-- `src/lib/init/scaffold-contract-template.ts`
-- `src/lib/init/scaffold-pr-template.ts`
-- `src/lib/policy/tooling-baseline.ts`
-- `src/lib/pr-template-validator-rules.ts`
-- `src/lib/pr-template-validator.ts`
-- `src/lib/runtime/local-runtime-card-live.ts`
-- `src/presets/go-base.json`
-- `src/presets/minimal.json`
-- `src/presets/python-base.json`
-- `src/presets/rust-base.json`
-- `src/presets/strict.json`
-- `src/presets/swift-base.json`
-- `src/presets/typescript-base.json`
-- `src/templates/CODESTYLE.md`
-- `src/templates/circleci-config.yml`
-- `src/templates/circleci-linear-gate.yml`
-- `src/templates/codestyle/14-patterns.md`
-- `src/templates/codestyle/CHECKSUMS.sha256`
-- `src/templates/pr-pipeline-linear-gate.yml`
-- `src/templates/pr-pipeline.yml`
-- `src/templates/release-private-npm.yml`
 
 ## agent
 
@@ -621,6 +585,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_environment_core_2c16213f_a8a456d9
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_harness_audit_tracking_33e6a72e_eeff5b52
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_check_types_policy_cfbecf01_fb84cd04
   ext_node_child_process_f62b7d19["node:child_process"] --> node_ci_migrate_core_7005b5af_7e295ae3
   ext_node_child_process_f62b7d19["node:child_process"] --> node_cli_5_9c446a0f_12d0ff9c
   ext_node_child_process_f62b7d19["node:child_process"] --> node_collector_0736fd5b_10bc1882
@@ -735,6 +700,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_check_scorecard_regressions_5c7c6445_4b474868
   ext_node_fs_a15b7d96["node:fs"] --> node_check_self_affirming_tests_7638e575_c6155698
   ext_node_fs_a15b7d96["node:fs"] --> node_check_steering_feedback_contract_80134459_abb076fc
+  ext_node_fs_a15b7d96["node:fs"] --> node_check_types_policy_cfbecf01_fb84cd04
   ext_node_fs_a15b7d96["node:fs"] --> node_ci_migrate_core_7005b5af_7e295ae3
   ext_node_fs_a15b7d96["node:fs"] --> node_ci_migrate_merge_queue_window_0070bd6d_03bcdaa9
   ext_node_fs_a15b7d96["node:fs"] --> node_ci_migrate_promotion_evidence_1a2dc527_7ed1a850
@@ -970,6 +936,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_check_scorecard_regressions_5c7c6445_4b474868
   ext_node_path_78811c13["node:path"] --> node_check_self_affirming_tests_7638e575_c6155698
   ext_node_path_78811c13["node:path"] --> node_check_steering_feedback_contract_80134459_abb076fc
+  ext_node_path_78811c13["node:path"] --> node_check_types_policy_cfbecf01_fb84cd04
   ext_node_path_78811c13["node:path"] --> node_checker_d2d2328e_303f205e
   ext_node_path_78811c13["node:path"] --> node_ci_migrate_core_7005b5af_7e295ae3
   ext_node_path_78811c13["node:path"] --> node_ci_migrate_merge_queue_window_0070bd6d_03bcdaa9
@@ -1148,6 +1115,7 @@ graph LR
   ext_node_perf_hooks_906292ff["node:perf_hooks"] --> node_performance_overload_c685bfcf_291ef65a
   ext_node_process_00cdf119["node:process"] --> node_args_090772cf_1bac9202
   ext_node_process_00cdf119["node:process"] --> node_check_20f65c28_48d25399
+  ext_node_process_00cdf119["node:process"] --> node_check_types_policy_cfbecf01_fb84cd04
   ext_node_process_00cdf119["node:process"] --> node_ci_migrate_core_7005b5af_7e295ae3
   ext_node_process_00cdf119["node:process"] --> node_ci_migrate_signing_2d82ac3f_9e5e8974
   ext_node_process_00cdf119["node:process"] --> node_cli_6_eac72be2_9d284979
@@ -1561,6 +1529,8 @@ flowchart TD
   Untrusted["Untrusted input"]
   check_harness_audit_tracking_33e6a72e["check-harness-audit-tracking"]
   Untrusted --> check_harness_audit_tracking_33e6a72e
+  check_types_policy_cfbecf01["check-types-policy"]
+  Untrusted --> check_types_policy_cfbecf01
   validate_audit_references_811f872a["validate-audit-references"]
   Untrusted --> validate_audit_references_811f872a
   validate_goal_completion_audit_receipt_100d252c["validate-goal-completion-audit-receipt"]
@@ -1637,10 +1607,8 @@ flowchart TD
   Untrusted --> risk_tier_1_96b6ff91
   tooling_baseline_50ab2eeb["tooling-baseline"]
   Untrusted --> tooling_baseline_50ab2eeb
-  policy_coverage_dab8febe["policy-coverage"]
-  Untrusted --> policy_coverage_dab8febe
   classDef securityNode fill:#dc2626,color:#fff
-  class check_harness_audit_tracking_33e6a72e,validate_audit_references_811f872a,validate_goal_completion_audit_receipt_100d252c,audit_b81f37a0,evidence_verify_3b73c290,feedback_loop_audit_0ac0ec9d,org_audit_d739e44b,policy_gate_213f7313,tooling_audit_core_328d6a41,tooling_audit_8a8239ff,verify_coderabbit_490b4e71,verify_work_df70ecac,audit_command_spec_5acf0149,evidence_verify_command_spec_e1cbfea2,evidence_verify_options_3505c520,feedback_loop_audit_command_spec_27e599c4,org_audit_command_spec_1a570341,policy_gate_command_spec_71e8726a,tooling_audit_command_spec_e0e57863,verify_coderabbit_command_spec_68cc9ec5,verify_work_command_spec_d6c94ac8,context_compact_policy_3dcaf95d,policy_validators_core_714a3fe7,policy_validators_6682e192,he_gate_trust_policy_b1126dfd,goal_completion_audit_receipt_validation_9d0f4891,goal_completion_audit_receipt_5e4939c3,judge_pm_audit_ccd20b35,policy_823412d1,feedback_loop_audit_cli_fd8f38dc,feedback_loop_audit_1_c7be4304,scaffold_security_scan_template_55bc7465,normalise_policy_gate_90229693,cardinality_ebef8aff,diff_budget_1_9f85eb1c,policy_chain_0c92e343,required_checks_46396214,risk_tier_1_96b6ff91,tooling_baseline_50ab2eeb,policy_coverage_dab8febe securityNode
+  class check_harness_audit_tracking_33e6a72e,check_types_policy_cfbecf01,validate_audit_references_811f872a,validate_goal_completion_audit_receipt_100d252c,audit_b81f37a0,evidence_verify_3b73c290,feedback_loop_audit_0ac0ec9d,org_audit_d739e44b,policy_gate_213f7313,tooling_audit_core_328d6a41,tooling_audit_8a8239ff,verify_coderabbit_490b4e71,verify_work_df70ecac,audit_command_spec_5acf0149,evidence_verify_command_spec_e1cbfea2,evidence_verify_options_3505c520,feedback_loop_audit_command_spec_27e599c4,org_audit_command_spec_1a570341,policy_gate_command_spec_71e8726a,tooling_audit_command_spec_e0e57863,verify_coderabbit_command_spec_68cc9ec5,verify_work_command_spec_d6c94ac8,context_compact_policy_3dcaf95d,policy_validators_core_714a3fe7,policy_validators_6682e192,he_gate_trust_policy_b1126dfd,goal_completion_audit_receipt_validation_9d0f4891,goal_completion_audit_receipt_5e4939c3,judge_pm_audit_ccd20b35,policy_823412d1,feedback_loop_audit_cli_fd8f38dc,feedback_loop_audit_1_c7be4304,scaffold_security_scan_template_55bc7465,normalise_policy_gate_90229693,cardinality_ebef8aff,diff_budget_1_9f85eb1c,policy_chain_0c92e343,required_checks_46396214,risk_tier_1_96b6ff91,tooling_baseline_50ab2eeb securityNode
 
 ```
 

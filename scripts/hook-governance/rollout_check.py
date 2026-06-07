@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, cast
 
 try:  # pragma: no cover
     import yaml
@@ -22,6 +24,7 @@ DEFAULT_REQUIRED_GATE_IDS = (
     "unit",
     "formatting",
 )
+type JsonObject = dict[str, Any]
 
 PROFILE_TO_WAVE = {
     "standard-prek-wrapper": "wave-1",
@@ -76,21 +79,22 @@ def _extract_gate_ids(stages: object) -> set[str]:
     if not isinstance(stages, list):
         return set()
     gate_ids: set[str] = set()
-    for stage in stages:
+    for stage in cast(list[object], stages):
         if not isinstance(stage, dict):
             continue
-        gate_id = stage.get("gate_id")
+        stage_payload = cast(Mapping[str, object], stage)
+        gate_id = stage_payload.get("gate_id")
         if isinstance(gate_id, str) and gate_id:
             gate_ids.add(gate_id)
     return gate_ids
 
 
 def _evaluate_repo(
-    repo: dict[str, object],
+    repo: Mapping[str, object],
     required_gate_ids: tuple[str, ...],
     recovery_slo_hours: int,
     now: datetime,
-) -> dict[str, object]:
+) -> JsonObject:
     repo_name = repo.get("repo_name")
     repo_path_value = repo.get("repo_path")
     profile_type = repo.get("profile_type")
@@ -151,7 +155,8 @@ def _evaluate_repo(
             "warnings": warnings,
         }
 
-    schema_version = artifact.get("schema_version")
+    artifact_payload = cast(Mapping[str, object], artifact)
+    schema_version = artifact_payload.get("schema_version")
     if schema_version != "hook-conformance.v1":
         issues.append(
             f"repo '{repo_name}' artifact schema_version must be 'hook-conformance.v1' (found '{schema_version}')"
@@ -167,29 +172,30 @@ def _evaluate_repo(
             "warnings": warnings,
         }
 
-    freshness_status = artifact.get("freshness_status")
+    freshness_status = artifact_payload.get("freshness_status")
     if freshness_status != "fresh":
         issues.append(
             f"repo '{repo_name}' artifact freshness_status must be 'fresh' (found '{freshness_status}')"
         )
 
-    present_gate_ids = _extract_gate_ids(artifact.get("stages"))
+    present_gate_ids = _extract_gate_ids(artifact_payload.get("stages"))
     for gate_id in required_gate_ids:
         if gate_id not in present_gate_ids:
             issues.append(
                 f"repo '{repo_name}' missing required gate category '{gate_id}' in conformance stages"
             )
 
-    drift_flags = artifact.get("drift_flags", [])
+    drift_flags = artifact_payload.get("drift_flags", [])
     if not isinstance(drift_flags, list):
         drift_flags = []
-    for flag in drift_flags:
+    for flag in cast(list[object], drift_flags):
         if not isinstance(flag, dict):
             continue
-        if flag.get("severity") != "high":
+        flag_payload = cast(Mapping[str, object], flag)
+        if flag_payload.get("severity") != "high":
             continue
-        flag_id = flag.get("id")
-        detected_at = flag.get("detected_at")
+        flag_id = flag_payload.get("id")
+        detected_at = flag_payload.get("detected_at")
         if not isinstance(flag_id, str) or not flag_id:
             flag_id = "unknown-flag"
         if not isinstance(detected_at, str) or not detected_at:
@@ -244,14 +250,15 @@ def evaluate_rollout(
     required_gate_ids: tuple[str, ...],
     recovery_slo_hours: int,
     now_rfc3339: str | None = None,
-) -> dict[str, object]:
+) -> JsonObject:
     if recovery_slo_hours <= 0:
         raise RolloutCheckError("recovery_slo_hours must be greater than zero")
 
     inventory = load_structured_file(inventory_path)
     if not isinstance(inventory, dict):
         raise RolloutCheckError("inventory payload must be an object")
-    repositories = inventory.get("repositories")
+    inventory_payload = cast(Mapping[str, object], inventory)
+    repositories = inventory_payload.get("repositories")
     if not isinstance(repositories, list):
         raise RolloutCheckError("inventory.repositories must be a list")
 
@@ -263,21 +270,25 @@ def evaluate_rollout(
     else:
         now = datetime.now(timezone.utc).replace(microsecond=0)
 
-    repo_summaries: list[dict[str, object]] = []
+    repo_summaries: list[JsonObject] = []
     blocking_issues: list[str] = []
     warnings: list[str] = []
-    for repo in repositories:
+    for repo in cast(list[object], repositories):
         if not isinstance(repo, dict):
             continue
         summary = _evaluate_repo(
-            repo=repo,
+            repo=cast(Mapping[str, object], repo),
             required_gate_ids=required_gate_ids,
             recovery_slo_hours=recovery_slo_hours,
             now=now,
         )
         repo_summaries.append(summary)
-        blocking_issues.extend(summary["issues"])
-        warnings.extend(summary["warnings"])
+        summary_issues = summary["issues"]
+        summary_warnings = summary["warnings"]
+        if isinstance(summary_issues, list):
+            blocking_issues.extend(str(issue) for issue in cast(list[object], summary_issues))
+        if isinstance(summary_warnings, list):
+            warnings.extend(str(warning) for warning in cast(list[object], summary_warnings))
 
     repo_summaries.sort(key=lambda item: str(item["repo_name"]))
 
@@ -341,7 +352,7 @@ def main() -> int:
         print(json.dumps(result, indent=2, sort_keys=True))
 
     if not result["overall_ok"]:
-        for issue in result["blocking_issues"]:
+        for issue in cast(list[str], result["blocking_issues"]):
             print(f"[rollout_check] {issue}")
         return 1
     print("[rollout_check] OK")

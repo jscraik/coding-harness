@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-30
+last_validated: 2026-06-06
 ---
 
 # Tooling policy
@@ -257,6 +257,12 @@ Branch name consumers should treat this pattern as an agent worktree-readiness b
 **Phase 4d** starts PR closeout evidence with `harness pr-closeout`. Supply first-class Coding Harness closeout gate evidence with `--gates <path>`; `--phase-exit <path>` remains a compatibility alias for older workflows. The command is read-only and may load `~/.codex/.env` for CLI credentials, but its report must describe tool availability rather than printing secrets. Missing optional CLIs stay visible as tool evidence; blocked required evidence must prevent a ready-to-merge recommendation.
 
 CircleCI `pr-template` and `linear-gate` jobs resolve PR context through `CIRCLE_PULL_REQUEST`, `CIRCLE_PULL_REQUESTS`, owner-qualified branch lookup, bare branch lookup, and commit-to-PR fallback. Fresh PR pipelines may start before GitHub exposes all association surfaces, so the resolver retries briefly before failing closed. Mirror changes across `.circleci/config.yml`, `src/templates/circleci-config.yml`, `src/templates/circleci-linear-gate.yml`, and scaffold regression tests.
+
+CircleCI reusable governance jobs must bootstrap `uv` through the trusted
+`.mise.toml` before running package-manager gates because `pnpm check`
+includes `pnpm types:check`, and the typed contract lane runs Python/Pydantic
+artifact validation through `uv run`. Keep `.circleci/config.yml` and
+`src/templates/circleci-config.yml` synchronized when this bootstrap changes.
 
 **Phase 4c** promotes the highest-signal scaffold-default learnings into generated-repo regression coverage for auth-free `.npmrc`, repo-local `scripts/harness-cli.sh`, real `CODESTYLE.md` templates, wrapper-first environment checks, first-class `toolingPolicy`, and Codex environment action sync.
 
