@@ -45,13 +45,6 @@ REQUIRED_RUNTIME_EVIDENCE_ROUTE_REFS = (
     "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
     ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
 )
-PR_309_HEAD_KEYS = (
-    "head_sha",
-    "observed_head_sha",
-    "headRefOid",
-    "head_ref_oid",
-    "current_head_sha",
-)
 LOCAL_PATH_GUARD_CUTOFF_RECEIPT_NUMBER = 151
 JSON_OBJECT_KEY = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 UNIX_HOME_PATH = re.compile(r"(^|[^A-Za-z0-9_])/(Users|home|var/home)/[^/\s]+")
@@ -170,37 +163,6 @@ def markdown_section_lines(content: str, heading: str) -> list[str]:
     return section_lines
 
 
-def snapshot_matches_pr_309(snapshot: object) -> bool:
-    if not isinstance(snapshot, dict):
-        return False
-    snapshot_payload = cast(Mapping[str, object], snapshot)
-    pr_number = (
-        snapshot_payload.get("pr")
-        or snapshot_payload.get("number")
-        or snapshot_payload.get("pr_number")
-    )
-    if pr_number == 309 or pr_number == "309":
-        return True
-    nested = snapshot_payload.get("pr_309")
-    return isinstance(nested, dict)
-
-
-def head_from_snapshot(snapshot: object) -> str | None:
-    if not isinstance(snapshot, dict):
-        return None
-    snapshot_payload = cast(Mapping[str, object], snapshot)
-    candidates: list[Mapping[str, object]] = [snapshot_payload]
-    nested = snapshot_payload.get("pr_309")
-    if isinstance(nested, dict):
-        candidates.append(cast(Mapping[str, object], nested))
-    for candidate in candidates:
-        for key in PR_309_HEAD_KEYS:
-            value = candidate.get(key)
-            if isinstance(value, str) and value.strip():
-                return value.strip()
-    return None
-
-
 def load_runtime_evidence_receipts(receipts_path: Path) -> list[tuple[int, JsonObject]]:
     if not receipts_path.is_file():
         print(
@@ -236,23 +198,26 @@ def load_runtime_evidence_receipts(receipts_path: Path) -> list[tuple[int, JsonO
     return receipts
 
 
-def latest_pr_309_receipt_head(receipts_path: Path) -> str | None:
-    latest_head: str | None = None
-    for _line_number, receipt in load_runtime_evidence_receipts(receipts_path):
-        snapshot = receipt.get("pr_state_snapshot")
-        if snapshot_matches_pr_309(snapshot):
-            head = head_from_snapshot(snapshot)
-            if head:
-                latest_head = head
+def latest_route_receipt_head(receipts_path: Path) -> str:
+    receipts = load_runtime_evidence_receipts(receipts_path)
+    for _line_number, receipt in reversed(receipts):
+        head = receipt.get("head_sha")
+        if isinstance(head, str) and head.strip():
+            return head.strip()
 
-    if latest_head is None:
+    if receipts:
         print(
-            f"No PR #309 head found in runtime evidence cockpit receipts: {receipts_path}",
+            "No head_sha found in runtime evidence cockpit receipts: "
+            f"{receipts_path}",
             file=sys.stderr,
         )
         raise SystemExit(1)
 
-    return latest_head
+    print(
+        f"Runtime evidence cockpit receipts file has no receipts: {receipts_path}",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
 
 
 def receipt_number(receipt: Mapping[str, object]) -> int | None:
@@ -481,12 +446,12 @@ def run_goal_extensions(argv: list[str]) -> int:
         )
         return 1
 
-    latest_pr_head = latest_pr_309_receipt_head(RUNTIME_EVIDENCE_RECEIPTS_PATH)
-    if latest_pr_head and not any(latest_pr_head in row for row in jsc_363_rows):
+    latest_route_head = latest_route_receipt_head(RUNTIME_EVIDENCE_RECEIPTS_PATH)
+    if not any(latest_route_head in row for row in jsc_363_rows):
         print(
             "Project Brain active-artifacts index routes JSC-363 with stale "
-            "PR #309 state. Latest receipt head "
-            f"{latest_pr_head} is missing from Current Active Route.",
+            "route state. Latest receipt head "
+            f"{latest_route_head} is missing from Current Active Route.",
             file=sys.stderr,
         )
         return 1
