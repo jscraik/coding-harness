@@ -8,9 +8,7 @@ type PullRequestTemplateOptions = {
 };
 
 function renderRequiredWorkFieldLines(): string {
-	return REQUIRED_WORK_FIELDS.map(
-		(field) => `- ${field.label}: ${field.placeholder}`,
-	).join("\n");
+	return REQUIRED_WORK_FIELDS.map((field) => `- ${field.label}:`).join("\n");
 }
 
 function renderBehaviorProofSection(): string {
@@ -22,14 +20,14 @@ docs, or any observable operator experience. Use \`n.a.\` with a concrete reason
 for docs-only, metadata-only, or evidence-only changes where no behavior path
 exists.
 
-- Behavior or issue addressed: describe the observable behavior, issue, or n.a. reason
-- Real environment tested: list the real environment, production path, or n.a. reason
-- Exact steps or command run after this patch: list exact steps, command, or n.a. reason
-- Evidence after fix: link artifact, copied output, screenshot, redacted log, runtime-card ref, or n.a. reason
-- Observed result after fix: state the observed result, or n.a. reason
-- What was not tested: list untested paths, or \`none\` with reason
-- Proof limitations or environment constraints: state limitations, blockers, or \`none\`
-- Before evidence, if available: link before evidence, summarize baseline, or \`n.a.\` with reason
+- Behavior or issue addressed:
+- Real environment tested:
+- Exact steps or command run after this patch:
+- Evidence after fix:
+- Observed result after fix:
+- What was not tested:
+- Proof limitations or environment constraints:
+- Before evidence, if available:
 
 Behavior proof guidance: Behavior proof is separate from unit tests, lint,
 typecheck, and CI. Use it to show the actual production path or nearest
@@ -50,8 +48,8 @@ export function renderPullRequestTemplate(
 	const codeRabbitChecklist = `- [ ] **(Pending)** CodeRabbit review completed and findings handled (or explicitly waived).
 - [ ] **(Pending)** CodeRabbit review was performed by an independent reviewer (not the coding agent).
 `;
-	const codeRabbitArtifacts = `- CodeRabbit: <link / artifact path / comment ID>
-- Independent reviewer evidence: <reviewer + link>
+	const codeRabbitArtifacts = `- CodeRabbit:
+- Independent reviewer evidence:
 `;
 	return `# Pull request checklist
 
@@ -92,22 +90,24 @@ ${codeRabbitChecklist}- [ ] **(Pending)** Codex review completed and findings ha
 
 ## Testing
 
-- verification_commands: list exact commands run here
-- verification_outcomes: record pass/fail/blocked for each command here
-- blocked_steps_reason: none if all planned steps ran
-- Command: \`${options.codestyleCommand}\` -> pass/fail
-- Command: \`${options.checkCommand}\` -> pass/fail
-- Command: \`${options.memoryValidateCommand}\` -> pass/fail
+- verification_commands:
+- verification_outcomes:
+- blocked_steps_reason:
+<!-- Add one or more evidence lines such as:
+- Command: \`${options.codestyleCommand}\` -> pass
+- Command: \`${options.checkCommand}\` -> blocked (reason)
+- Command: \`${options.memoryValidateCommand}\` -> n.a. (reason)
+-->
 - Any other command(s):
 
 ## Review artifacts
 
-${codeRabbitArtifacts}- Codex: <link / artifact path / comment ID>
-- CodeRabbit Semgrep: fixed / waived with rationale / n.a.
+${codeRabbitArtifacts}- Codex:
+- CodeRabbit Semgrep:
 - Additional evidence (if any):
 
 ## Notes
 
-Add one-paragraph merge rationale here.
+<!-- Add one-paragraph merge rationale before requesting review. -->
 `;
 }

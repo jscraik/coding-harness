@@ -575,6 +575,17 @@
         risk: "The guard prevents duplicate tracked validation lanes; it does not prove remote CircleCI pass, PU-013 implementation, or parent-goal completion."
       },
       {
+        id: "pr367-template-repair-r396",
+        lane: "ci-truth",
+        title: "R396: PR #367 template and pipeline repair",
+        status: "active",
+        tags: ["R396", "PR #367", "pr-template", "pr-pipeline"],
+        summary: "PR #367 failed ci/circleci: pr-template first, which made aggregate pr-pipeline fail downstream. The live PR body was still the raw template, so local reproduction reported 52 blockers. The live body now passes pr-template-gate, and the root/downstream PR templates no longer emit literal gate-blocking placeholder tokens.",
+        evidence: ["CircleCI workflow eafbe559-3bbd-4cf5-afe4-451065684991", "CircleCI pr-template job 28779 -> failed before repair", "live PR #367 body before repair -> 52 pr-template-gate blockers", "gh pr edit 367 --body-file -> pass", "live PR #367 body after repair -> pr-template-gate pass", ".github/PULL_REQUEST_TEMPLATE.md", "src/lib/init/scaffold-pr-template.ts", "focused PR-template/scaffold tests -> pass (224 tests)"],
+        next: "Commit this source/scaffold repair, push PR #367, trigger fresh CodeRabbit review if needed, then wait for fresh CircleCI pr-template and pr-pipeline truth before resuming PU-013.",
+        risk: "The live PR body and local source gate pass, but remote CircleCI has not rerun on the unpushed source-template repair yet."
+      },
+      {
         id: "next-slice-pu012-reconciliation",
         lane: "intent",
         title: "Next slice candidate: PU-013 cockpit proof",
