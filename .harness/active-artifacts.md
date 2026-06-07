@@ -10,67 +10,33 @@
 
 ## Scope
 
-Current working reconciliation: 2026-06-06 on `main` after PR #359 merged.
-JSC-395 advisory stale-document archive candidate reporting is delivered on
-current main through PR #354; JSC-363 route truth is refreshed through PR #359. This route refresh does not claim live Linear,
-release, downstream-template state, JSC-363 parent-goal completion, or
-post-PR #359 tracker-current state; those remain separate closeout lanes. The
-older JSC-363 cockpit route remains retained history and parent-goal context,
-not a closed parent objective.
+Current working reconciliation: 2026-06-07 on `main` after PR #360 and PR #361
+merged and local `main` was synced with `origin/main`.
+JSC-395 advisory stale-document archive candidate reporting remains delivered on
+current main through PR #354. JSC-363 route truth is refreshed through PR #360,
+and the repository typed-contract validation gate lane is refreshed through
+PR #361. This route refresh does not claim release, downstream-template state,
+JSC-363 parent-goal completion, runtime producer proof, delivery-truth
+consumption, documentation accuracy, Linear field-text currency, or Judge/PM
+readiness; those remain separate closeout lanes.
 
-Last reconciled: 2026-06-06 after PR #359 merged into `main` as squash merge
-commit `c8bc70c6c841348924017194050de0e126c4a448` and local `main`
-fast-forwarded to the same `origin/main` head. PR #359 submitted head
-`32f6bbb2c038912697d810ed5cacf34a8028f39a` records the post-PR #358
-route-evidence repair. PR #358 submitted head
-`30dca4d037062b45d7d119d50606066eece10ec1` records the post-PR #357
-route-truth refresh, and PR #357 submitted head
-`30c48b8961f06c0dbf257f3f14505beabfeaf579` records the post-PR #356
-route-truth refresh, PR #356 submitted head
-`1de6572f3ed6d4bb6ca5487cd0a4b12df79b4d8e` records the post-PR #354
-route-truth refresh, and PR #354 submitted head
-`50b549c498204e9d4b54d7c09fd2800907ed108b` remains the advisory
-stale-document archive candidate reporting lane and source-reference corpus
-repair evidence. GitHub reported all repo-owned CircleCI checks, aggregate
-`pr-pipeline`, CodeRabbit, Socket, and repo-owned security lanes passing for
-PR #354, with 71 review threads and zero unresolved; PR #356 refreshed route
-truth with zero review threads and zero unresolved; PR #357 refreshed route truth
-with three CodeRabbit review threads resolved and zero unresolved; PR #358
-refreshed route truth with repo-owned CircleCI, CodeRabbit, Socket, and
-repo-owned security lanes passing before merge; PR #359 repaired the route
-evidence after CodeRabbit review and merged with repo-owned CircleCI,
-CodeRabbit, Socket, aggregate `pr-pipeline`, and aggregate `security-scan`
-green. GitHub reports the PR #359 review threads resolved/outdated after
-CodeRabbit marked the addressed comments in commit
-`32f6bbb2c038912697d810ed5cacf34a8028f39a`. The external Snyk GitHub
-App quota/status failure remains an owner-approved waiver for that external
-lane only; it does not claim external Snyk passed and does not waive repo-run
-security, future Snyk results, or future security findings. PR #353 submitted
-head `69d758a79b48d243469e8e6978a8b4f04018ae50` records the post-PR #352
-route-truth refresh plus review-thread repairs; PR #352 submitted head
-`841ce06062bd63554d1ecb7ca11a9c49642d77fe` records the post-PR #351
-route-truth repair and harness doc-history review-proof claim boundary; PR #351
-remains the merged post-PR #350 route-truth refresh at
-`1a178e7bfe770191348bca198763e3a22f37eea4`, and PR #350 remains the merged
-ci-migrate apply-command repair at `b8ea5b4ad9e36c64f0c5d07305f5318446042c98`.
-A later local branch-only repair
-`fb2e9946adfe21d29861e04f9b5d12596e696d80` for leading flags before
-`prepare --apply` was not part of merged PR #350, PR #351, PR #352, PR #353, PR #354, PR #356, PR #357, or PR #358, so it
-is recorded as outstanding follow-up work rather than completed current-main
-evidence. Linear JSC-363 was refreshed after PR #353 through comment
-`4f25fd81-35a3-4262-a3c5-ce267acb77ea`: the issue is still `In Review`,
-PR #353 attachment `2613ac6c-2ac7-41f4-bab4-abd2a1c545bb` is present,
-and the earlier PR #352 comment `06422408-2796-4fe5-a5a5-28f0710f12b8` plus
-PR #351 attachment `a0e92c30-9075-4425-8f28-5eaa6525f0d9` remain prior
-tracker provenance, and the title/description still describe Phase 1, so
-field-text-current remains unclaimed unless accepted by the owner or edited.
-Linear JSC-363 has a post-PR #356 route-truth comment
-`7d2d878f-26fd-4b08-88a1-5a96f77de3f1`, but the title/description still
-describe Phase 1, so field-text-current remains unclaimed unless accepted by
-the owner or edited.
-No post-PR #357, post-PR #358, or post-PR #359 Linear mutation is claimed.
-This reconcile also does not claim runtime producer evidence, delivery-truth
-consumption, docs accuracy, Judge/PM readiness, or final goal completion.
+Last reconciled: 2026-06-07 after PR #361 merged into `main` as squash merge
+commit `e45384ed84af245e6c5335952c0f7ecf1db7ef86` and local `main`
+fast-forwarded to the same `origin/main` head. PR #361 submitted head
+`fa5a421f46fa643868f69cabff10fd3a4ab9dcc5` records the typed-contract
+validation gate lane. Live GitHub showed zero open PRs at that pre-PR #362
+reconciliation point, and PR #361 had CodeRabbit passing, Socket passing or
+skipping only the non-blocking PR-alert lane, all repo-owned CircleCI contexts
+passing, aggregate `pr-pipeline` passing on pipeline `2524`, and aggregate
+`security-scan` passing on pipeline `2524`. The external Snyk GitHub App
+quota/status failure remains an owner-approved waiver for that external lane
+only; it does not claim external Snyk passed and does not waive repo-run
+security, future Snyk results, or future security findings. PR #360 merged at
+`05da5ad9956b163d6f60cf1df8079392c0b02f23` and is the latest JSC-363 route
+attachment observed in Linear. Live Linear JSC-363 is `In Review`, has PR #360
+attachment `4dbe1293-d506-4d37-ba79-aee8ae605cec`, and still has Phase 1
+title/description wording, so field-text-current remains unclaimed unless
+accepted by the owner or edited.
 
 This index is a local control-plane hygiene artifact. It reconciles tracked
 `.harness/specs` and `.harness/plan` files against local merged-PR evidence and
@@ -82,7 +48,7 @@ unless a live refresh is recorded in the referenced artifact.
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
 | Advisory stale-document archive candidate reporting | JSC-395 | `.harness/specs/2026-06-05-advisory-stale-document-archive-candidate-reporting-spec.md` plus `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-trace-plan.md` plus `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-execution-plan.md` | Delivered on current main by PR #354. The slice remains advisory/read-only: it may report stale-document archive candidates and docs-gate advisory findings, but it must not delete, move, archive, demote, or rewrite documentation artifacts. | Treat PR #354 as merged implementation evidence. Keep release, downstream-template, and any future docs-cleanup action separate unless a later tracked route explicitly promotes them. |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Historical PR #309 continuity is preserved for the goal-board index invariant: PR #309 branch head was 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 and is historical evidence, not a current route blocker. Current main truth includes merged JSC-363 route/foundation lanes through PR #359 at c8bc70c6c841348924017194050de0e126c4a448. PR #359 submitted head 32f6bbb2c038912697d810ed5cacf34a8028f39a is merged; repo-owned CircleCI, CodeRabbit, Socket, aggregate pr-pipeline, aggregate security-scan, and repo-owned security lanes were green at merge refresh. Direct CircleCI proof from <REDACTED_HOME_PATH>/.codex/.env is blocked in this session because that env surface is a FIFO, but GitHub check contexts show the full CircleCI suite passed for PR #359 and the prior authenticated CLI/API probe confirmed the slowest PR #359 CircleCI job, orb-pinning, completed successfully. PR #359 review threads are resolved/outdated after CodeRabbit marked the addressed comments in commit 32f6bbb. The external Snyk GitHub App quota/status failure is owner-waived only for that external lane and is not a passing security result. Local branch-only leading-flag validator repair fb2e9946adfe21d29861e04f9b5d12596e696d80 is not on current main and remains a follow-up candidate. Linear JSC-363 has post-PR #356 route comment 7d2d878f-26fd-4b08-88a1-5a96f77de3f1; no post-PR #357, post-PR #358, or post-PR #359 Linear mutation is claimed, and field-text-current remains unclaimed because the issue title/description still describe Phase 1. | Use the goal board as the current execution cockpit. Next Safe Action: Coordinator must run `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .` and `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit`; proceed only when both commands exit 0, audit freshness reports the latest receipt head is reachable from current HEAD, and goal-board validation reports the board/audit-source/review-backfill checks passed. Canonical validation pointer: `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus the latest `receipts.jsonl` entry. If either validator fails, keep the route blocked, record a receipt with owner, blocker class, failing command, and next action, and do not select the next bounded lifecycle gap from current main. Additionally, the leading-flag validator repair (commit fb2e9946adfe21d29861e04f9b5d12596e696d80, not on current main) must be either promoted into a fresh one-PR follow-up slice with documented evidence or explicitly rejected with documented evidence before any final completion claim. Do not claim JSC-363 completion until owner acceptance and each of the following validations is individually confirmed: runtime producer evidence, delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final completion audit. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Current main is e45384ed84af245e6c5335952c0f7ecf1db7ef86 after PR #361 merged; PR #362 is the current open tracker/evidence PR on branch codex/jsc-363-current-main-route-tracker at head 3d533de7a4894d1d1b136fc1cae292633215f15d, with R364 recording review repair pending commit and push. PR #360 is the latest JSC-363 route-refresh PR attached in Linear, and PR #361 is the separate JSC-398 typed-contract gate lane. Repo-owned PR #361 CircleCI contexts, aggregate pr-pipeline, aggregate security-scan, CodeRabbit, and Socket passed before merge. The external Snyk GitHub App quota/status failure is owner-waived only for that external lane and is not a passing security result. Live Linear JSC-363 is In Review with PR #360 attachment present, but field-text-current remains unclaimed because the issue title/description still describe Phase 1. Receipt R356 validates the current-main route-tracker repair; PU-012 intent review artifacts close the intent gate after adversarial re-review; receipt R361 records the PU-012 validation floor passing without runtime source repair; receipt R362 records the required simplify, architecture, sy-review, and testing completion lenses passing for local pre-PR closeout. Historical PR #309 compatibility head 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 remains non-routing provenance for validator continuity only. | Next Safe Action: commit and push the PR #362 review repair, refresh CodeRabbit threads and repo-owned CI, merge PR #362 only after live review and required gates allow it, then pull main and refresh the board/state/receipt before starting the next slice. Do not claim JSC-363 completion until delivery-truth consumption, documentation accuracy, Linear field-text decision, Judge/PM readiness, and final completion audit are each independently verified or explicitly blocked. |
 
 PU-046 update: PR #330 was refreshed again on head
 163017e16e4611d5d71f5c4c62fc85f8d164b17b after the R205 artifact receipt was
@@ -196,11 +162,11 @@ runtime producer emission, delivery-truth consumption, or final goal completion.
   PR, CI, review-thread, Project Brain, and runtime evidence truth separated in
   receipts. Historical PR #309 continuity remains indexed by branch head
   `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` for validator compatibility;
-  it is not current route truth. Current route truth is PR #359 merged into
+  it is not current route truth. Current route truth is PR #361 merged into
   `main` as squash commit
-  `c8bc70c6c841348924017194050de0e126c4a448` with submitted head
-  `32f6bbb2c038912697d810ed5cacf34a8028f39a`; it follows the
-  post-PR #358 route refresh and the PR #359 CodeRabbit route-evidence repair.
+  `e45384ed84af245e6c5335952c0f7ecf1db7ef86` with submitted head
+  `fa5a421f46fa643868f69cabff10fd3a4ab9dcc5`; it follows the
+  post-PR #360 route refresh and the PR #361 typed-contract validation gate lane.
   Historical
   PR #322 through PR #350 ledger entries below, including PR #344
   route-refresh, PR #347 body repair, PR #348 review-thread repair, PR #349
@@ -211,7 +177,7 @@ runtime producer emission, delivery-truth consumption, or final goal completion.
   and PU-040 validator-hardening lane. PR #319 merged into main as squash
   commit `1afb519f7623f109b7a383688449c031541ff3dd`; R154 is the current
   route-truth reanchor because the latest pre-squash branch receipt R153 is no
-  longer reachable from current main. PR #322 is the current live branch lane
+  longer reachable from current main. PR #322 was the live branch lane
   for `codex/jsc-363-pr320-rerun`; R157 records that its stale PR title/body
   were repaired after `ci/circleci: linear-gate` failed on missing JSC-363 PR
   metadata. R158 records remediation for PR #322 review-thread findings,
