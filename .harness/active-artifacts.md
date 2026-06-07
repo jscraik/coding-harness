@@ -177,7 +177,7 @@ runtime producer emission, delivery-truth consumption, or final goal completion.
   and PU-040 validator-hardening lane. PR #319 merged into main as squash
   commit `1afb519f7623f109b7a383688449c031541ff3dd`; R154 is the current
   route-truth reanchor because the latest pre-squash branch receipt R153 is no
-  longer reachable from current main. PR #322 is the current live branch lane
+  longer reachable from current main. PR #322 was the live branch lane
   for `codex/jsc-363-pr320-rerun`; R157 records that its stale PR title/body
   were repaired after `ci/circleci: linear-gate` failed on missing JSC-363 PR
   metadata. R158 records remediation for PR #322 review-thread findings,
