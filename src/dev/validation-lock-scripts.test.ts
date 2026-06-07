@@ -1,6 +1,11 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import {
+	existsSync,
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -17,7 +22,9 @@ afterEach(() => {
 });
 
 function makeTempDir(): string {
-	const tempDir = mkdtempSync(join(tmpdir(), "harness-validation-lock-"));
+	const tempRoot = join(process.cwd(), ".cache", "validation-lock-test-roots");
+	mkdirSync(tempRoot, { recursive: true });
+	const tempDir = mkdtempSync(join(tempRoot, "harness-validation-lock-"));
 	tempDirs.push(tempDir);
 	return tempDir;
 }
