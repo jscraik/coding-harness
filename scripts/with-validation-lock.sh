@@ -46,11 +46,39 @@ else
 		owner_pid="$(sed -n 's/^pid=//p' "$metadata_path" | head -n 1)"
 	fi
 	if [[ "$owner_pid" =~ ^[0-9]+$ ]] && kill -0 "$owner_pid" 2>/dev/null; then
-		echo "[validation-lock] active $lock_name validation already running for this repository (pid $owner_pid)." >&2
-		echo "[validation-lock] Wait for it to finish or stop the stale validation process before starting another $lock_name lane." >&2
-		exit 1
+		# Verify process identity to avoid PID recycling false positive
+		process_verified=false
+		script_basename="$(basename "${BASH_SOURCE[0]}")"
+
+		# Try /proc first (Linux)
+		if [[ -r "/proc/$owner_pid/cmdline" ]]; then
+			cmdline="$(tr '\0' ' ' < "/proc/$owner_pid/cmdline" 2>/dev/null || echo "")"
+			if [[ "$cmdline" == *"$script_basename"* || "$cmdline" == *"$lock_name"* ]]; then
+				process_verified=true
+			fi
+		# Fallback to ps for systems without /proc
+		elif command -v ps >/dev/null 2>&1; then
+			ps_args="$(ps -p "$owner_pid" -o args= 2>/dev/null || echo "")"
+			if [[ "$ps_args" == *"$script_basename"* || "$ps_args" == *"$lock_name"* ]]; then
+				process_verified=true
+			fi
+		else
+			# If neither /proc nor ps available, conservatively assume verified
+			process_verified=true
+		fi
+
+		if [[ "$process_verified" == true ]]; then
+			echo "[validation-lock] active $lock_name validation already running for this repository (pid $owner_pid)." >&2
+			echo "[validation-lock] Wait for it to finish or stop the stale validation process before starting another $lock_name lane." >&2
+			exit 1
+		else
+			# PID exists but doesn't match expected process - treat as stale/recycled
+			echo "[validation-lock] removing stale $lock_name validation lock (pid $owner_pid recycled)." >&2
+		fi
+	else
+		echo "[validation-lock] removing stale $lock_name validation lock." >&2
 	fi
-	echo "[validation-lock] removing stale $lock_name validation lock." >&2
+
 	rm -rf "$lock_dir"
 	if ! mkdir "$lock_dir" 2>/dev/null; then
 		echo "[validation-lock] failed to acquire $lock_name validation lock after stale cleanup." >&2

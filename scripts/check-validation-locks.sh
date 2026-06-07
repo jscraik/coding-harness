@@ -5,6 +5,32 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd -- "$script_dir/.." && pwd)"
 lock_root="${HARNESS_VALIDATION_LOCK_ROOT:-$repo_root/.cache/validation-locks}"
 
+# Canonicalize paths for safety
+canonical_repo_root="$(cd -- "$repo_root" && pwd -P)"
+if [[ -d "$lock_root" ]]; then
+	canonical_lock_root="$(cd -- "$lock_root" && pwd -P)"
+else
+	# If lock_root doesn't exist yet, canonicalize its parent
+	lock_parent="$(dirname "$lock_root")"
+	if [[ -d "$lock_parent" ]]; then
+		canonical_lock_parent="$(cd -- "$lock_parent" && pwd -P)"
+		canonical_lock_root="$canonical_lock_parent/$(basename "$lock_root")"
+	else
+		canonical_lock_root="$lock_root"
+	fi
+fi
+
+# Verify lock_root is under repo_root before iterating
+case "$canonical_lock_root" in
+	"$canonical_repo_root"/*)
+		# Safe: lock_root is a subpath of repo_root
+		;;
+	*)
+		echo "[validation-lock] lock_root is not under repo_root, skipping cleanup for safety." >&2
+		exit 0
+		;;
+esac
+
 if [[ ! -d "$lock_root" ]]; then
 	echo "[validation-lock] no active validation locks."
 	exit 0
@@ -13,6 +39,11 @@ fi
 status=0
 shopt -s nullglob
 for lock_dir in "$lock_root"/*.lock; do
+	# Skip if not a directory
+	if [[ ! -d "$lock_dir" ]]; then
+		continue
+	fi
+
 	metadata_path="$lock_dir/metadata.env"
 	lock_name="$(basename "$lock_dir" .lock)"
 	owner_pid=""
@@ -25,6 +56,7 @@ for lock_dir in "$lock_root"/*.lock; do
 		continue
 	fi
 	echo "[validation-lock] removing stale $lock_name validation lock."
+	# Only call rm -rf on verified directories under canonical_lock_root
 	rm -rf "$lock_dir"
 done
 

@@ -23,7 +23,7 @@ PR #367 is pushed, fresh remote CI/review truth is refreshed, the route is
 merged or explicitly blocked, local `main` is pulled, and the compact tracker
 validates.
 
-Last reconciled: 2026-06-07 after PR #365 merged into `main` at
+Historical snapshot: Last reconciled: 2026-06-07 after PR #365 merged into `main` at
 2026-06-07T09:18:13Z as squash merge commit
 `bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd` from submitted head
 `c3fe2f06bf5ab2f69b59a8882075bfb3e5ff3c79`, and local `main`

@@ -56,16 +56,43 @@ Current evidence:
 Next action:
 
 1. Validate this tracker reset locally.
+   - Command: `pnpm test:ci && pnpm run validation:locks`
+   - Pass criteria: Exit code 0, no lock conflicts, all tests pass.
+   - Owner fallback: If validation fails, notify Jamie and do not proceed to commit/push.
+
 2. Commit the tracker reset.
+   - Command: `git add <tracker files> && git commit -m "Reset JSC-363 thin tracker after PR #366"`
+   - Pass criteria: Clean commit without hook bypass.
+   - Owner fallback: If pre-commit hooks fail, fix issues before retry.
+
 3. Push `codex/jsc-363-post-pr366-tracker-refresh` without bypassing hooks.
+   - Command: `git push origin codex/jsc-363-post-pr366-tracker-refresh`
+   - Pass criteria: Push succeeds, remote branch updated to local head.
+   - Owner fallback: If push fails, notify Jamie and diagnose network/auth/hook blocker.
+
 4. Trigger CodeRabbit manually on PR #367 if the fresh push does not request a
    new review automatically.
+   - Command: Use GitHub UI to request review from CodeRabbit, or verify automatic trigger.
+   - Pass criteria: CodeRabbit review status shows "pending" or "in progress".
+   - Owner fallback: If CodeRabbit unavailable, notify Jamie and accept manual review-only path.
+
 5. Refresh PR #367 `pr-template`, `pr-pipeline`, review-thread, and
    mergeability truth.
+   - Command: `gh pr view 367 --json state,statusCheckRollup,reviewDecision,mergeable`
+   - Pass criteria: Fresh CI status retrieved, mergeability known, review threads counted.
+   - Owner fallback: If `gh` unavailable, use GitHub web UI and record findings manually.
+
 6. Merge PR #367 only after required repo-owned lanes are green/resolved or a
    precise owner-accepted blocker is recorded.
+   - Command: `gh pr merge 367 --squash` (or web UI merge).
+   - Pass criteria: PR merged, main branch advanced, merge commit SHA known.
+   - Owner fallback: If blocked, record blocker in receipt and notify Jamie before halting feature work.
+
 7. Checkout `main`, pull latest `origin/main`, and record the post-merge
    receipt before PU-013 starts.
+   - Command: `git checkout main && git pull origin main`
+   - Pass criteria: Local main matches origin/main, clean working tree.
+   - Owner fallback: If pull fails, diagnose conflict/network issue and notify Jamie.
 
 ## Queued Slice
 
