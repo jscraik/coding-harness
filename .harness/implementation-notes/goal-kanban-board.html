@@ -411,13 +411,13 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness status">PR #362 open: repair lane active</div>
+      <div class="source-chip" aria-label="Source freshness status">PR #363 active: route refresh triage</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>PR #362 repair active</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>PR #361 latest merged</strong></div>
-      <div class="metric"><span>Current PR</span><strong>#362 tracker repair</strong></div>
+      <div class="metric"><span>Goal status</span><strong>Post-PR #362 route refresh</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>PR #362 latest merged</strong></div>
+      <div class="metric"><span>Current PR</span><strong>#363 draft</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Partial, final lanes pending</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
       <div class="metric"><span>Linear tracker</span><strong>Field text unclaimed</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and live Linear after PR #361 merged at <code>2026-06-07T01:47:00Z</code> and PR #362 opened for the current tracker/evidence repair. Local <code>main</code> and <code>origin/main</code> are at squash merge commit <code>e45384ed84af245e6c5335952c0f7ecf1db7ef86</code>; submitted PR #361 head was <code>fa5a421f46fa643868f69cabff10fd3a4ab9dcc5</code>. PR #362 is the current open tracker/evidence PR on branch <code>codex/jsc-363-current-main-route-tracker</code> at head <code>3d533de7a4894d1d1b136fc1cae292633215f15d</code>; receipt <code>R364</code> records the review repair pending commit and push. PR #361 CodeRabbit, Socket, repo-owned CircleCI lanes, aggregate <code>pr-pipeline</code>, and aggregate <code>security-scan</code> passed before merge; the external Snyk GitHub App quota failure remains an owner-waived quota/status lane only. Live Linear JSC-363 is <code>In Review</code> with PR #360 attachment <code>4dbe1293-d506-4d37-ba79-aee8ae605cec</code> present, but field-text-current remains unclaimed because the issue still uses Phase 1 wording. Receipt <code>R356</code> validates the current-main route-tracker repair, PU-012 intent review artifacts close the intent gate after adversarial re-review, receipt <code>R361</code> records the PU-012 validation floor passing without runtime source repair, and receipt <code>R362</code> records completion lenses passing for local pre-PR closeout. The active action is commit and push the PR #362 repair, refresh CodeRabbit threads and repo-owned CI, merge only after live gates allow it, pull main, and refresh the tracker before any next-slice implementation. Delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and live Linear after PR #362 merged at <code>2026-06-07T04:05:32Z</code>. Local <code>main</code> and <code>origin/main</code> are at squash merge commit <code>73d6f162fb8a67674ab05c543eb93aed1f7b2632</code>; submitted PR #362 head was <code>3f7ab4c2ede5f24b95038eff686ef3e58be2755f</code>. The earlier zero-open-PR observation is historical to the pre-PR #363 reconciliation window, not current live route truth. Draft PR #363 is now the active route-refresh lane after the PR body checklist markers were corrected and local <code>pr-template-gate</code> passed; live GitHub owns the mutable PR head. PR #363 repo-owned CircleCI lanes, aggregate <code>pr-pipeline</code>, aggregate <code>security-scan</code>, CodeRabbit, Socket, and the CircleCI <code>snyk-dependency-scan</code> lane are green; the external Snyk GitHub App quota failure remains an owner-waived quota/status lane only. Live PR #363 still has unresolved review threads, so review-state is not complete. Live Linear JSC-363 is <code>In Review</code> with PR #363, PR #362, and PR #360 attachments present, but field-text-current remains unclaimed because the issue still uses Phase 1 wording. Receipt <code>R365</code> records the post-PR #362 route refresh; receipt <code>R366</code> records the PR #363 body-gate rerun point. PR #363 triage owns the current route lane until review threads, merge-to-main proof, local main pull, and refreshed board/state/receipt evidence are complete. PU-012 intent review artifacts, validation-floor evidence, and completion lenses are merged through PR #362 as route evidence. Delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -531,26 +531,26 @@
         risk: "A PR may complete a slice, but it cannot close the parent goal without separate proof for runtime, CI, review, tracker, docs, and Judge/PM lanes."
       },
       {
-        id: "current-main-pr361",
+        id: "current-main-pr362",
         lane: "completed",
-        title: "Current main: PR #361 typed-contract gate",
+        title: "Current main: PR #362 tracker repair",
         status: "done",
-        tags: ["PR #361", "current main", "typed contracts"],
-        summary: "Local main and origin/main are synced at PR #361 squash merge e45384ed84af245e6c5335952c0f7ecf1db7ef86. PR #362 is now the current open tracker/evidence repair lane.",
-        evidence: ["PR #361 -> MERGED at 2026-06-07T01:47:00Z", "Merge commit -> e45384ed84af245e6c5335952c0f7ecf1db7ef86", "Submitted head -> fa5a421f46fa643868f69cabff10fd3a4ab9dcc5", "Repo-owned CircleCI lanes -> pass", "pr-pipeline -> pass on pipeline 2524", "security-scan -> pass on pipeline 2524", "CodeRabbit -> pass", "Socket -> pass or non-blocking PR alert skipped", "External security/snyk (jscraik) -> owner-waived quota failure only"],
-        next: "Use PR #361 as completed typed-contract gate evidence; route new work from the PU-012 current-main producer proof slice.",
-        risk: "PR #361 does not prove runtime producer emission, delivery-truth consumption, Linear field-text currency, Judge/PM readiness, or parent-goal completion."
+        tags: ["PR #362", "current main", "route truth"],
+        summary: "Local main and origin/main are synced at PR #362 squash merge 73d6f162fb8a67674ab05c543eb93aed1f7b2632. Draft PR #363 is now the active route-refresh lane; live GitHub owns the mutable PR head.",
+        evidence: ["PR #362 -> MERGED at 2026-06-07T04:05:32Z", "Merge commit -> 73d6f162fb8a67674ab05c543eb93aed1f7b2632", "Submitted head -> 3f7ab4c2ede5f24b95038eff686ef3e58be2755f", "Repo-owned CircleCI lanes -> pass", "pr-pipeline -> pass on pipeline 2529", "security-scan -> pass on pipeline 2529", "CodeRabbit -> pass", "Socket -> pass", "External security/snyk (jscraik) -> owner-waived quota failure only"],
+        next: "Resolve PR #363 review threads, then complete merge-to-main proof, local main pull, and refreshed board/state/receipt evidence.",
+        risk: "PR #362 does not prove delivery-truth consumption, Linear field-text currency, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "pr362-current-repair",
         lane: "pr-truth",
         title: "PR #362: tracker evidence repair",
-        status: "active",
-        tags: ["PR #362", "R364", "open PR"],
-        summary: "PR #362 is the current open route-tracker/evidence PR. It repairs stale zero-open-PR wording, receipt portability, R356 causal ordering, and the Project Brain active route row before any next implementation slice can start.",
-        evidence: ["GitHub PR #362 -> OPEN/BLOCKED with MERGEABLE branch", "Head -> 3d533de7a4894d1d1b136fc1cae292633215f15d", "Receipt R364 -> review_repair_validated_pending_commit", "Goal board validator -> pass after active-artifacts route repair"],
-        next: "Commit and push the R364 repair, refresh review threads and repo-owned checks, merge PR #362 only after live gates allow it, then pull main and refresh this board.",
-        risk: "Starting PU-013 or any next slice before PR #362 merges would reintroduce stacked-PR and stale-tracker drift."
+        status: "done",
+        tags: ["PR #362", "R365", "merged"],
+        summary: "PR #362 merged the route-tracker/evidence repair. It repairs stale zero-open-PR wording, receipt portability, R356 causal ordering, and the Project Brain active route row before any next implementation slice can start.",
+        evidence: ["GitHub PR #362 -> MERGED", "Submitted head -> 3f7ab4c2ede5f24b95038eff686ef3e58be2755f", "Merge commit -> 73d6f162fb8a67674ab05c543eb93aed1f7b2632", "Receipt R365 -> post-PR #362 route refresh", "GitHub PR #363 -> draft active route-refresh PR", "Live GitHub owns PR #363 mutable head"],
+        next: "Use PR #362 as merged route evidence, then finish PR #363 review-thread repair, merge, and pull-back before selecting the next lifecycle gap.",
+        risk: "Treating PR #362 as parent-goal completion would blend tracker truth with delivery-truth, documentation, Linear, and Judge/PM lanes."
       },
       {
         id: "current-main-pr360",
@@ -566,13 +566,13 @@
       {
         id: "next-slice-pu012-reconciliation",
         lane: "intent",
-        title: "Next slice: PU-012 producer proof",
+        title: "Next slice candidate: PU-013 cockpit proof",
         status: "active",
-        tags: ["PU-012", "next slice", "runtime producer"],
-        summary: "The current implementation route is PU-012 current-main producer proof and bridge-boundary reconciliation, not a general feature sprint. The intent artifact has passed best-practices, agent-native, and adversarial re-review after fixing two intent gaps, the validation floor passed without runtime source repair, and completion lenses passed for local pre-PR closeout.",
+        tags: ["PU-013", "next candidate", "runtime cockpit"],
+        summary: "PU-012 current-main producer proof and bridge-boundary reconciliation is route-reconciled through PR #362. The next expected implementation route is PU-013 runtime cockpit integration proof, but PR #363 must merge and be pulled back first.",
         evidence: [".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md PU-012", "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/PU-012-current-main-producer-proof-intent.md", "goal.md corrected backlog", "state.yaml current_slice_gate.reason"],
-        next: "Commit this slice, open exactly one PR, run pr-green-sweep until faults are fixed and merged, pull main, then refresh the tracker before starting the next slice.",
-        risk: "Starting the next slice before PR merge and main pullback would repeat the stacked-PR and stale-state failure modes."
+        next: "After PR #363 merges and current-main route truth is refreshed, create PU-013 intent and run the required lenses and independent reviews before implementation.",
+        risk: "Starting PU-013 before PR #363 closes would repeat the stacked-PR and stale-state failure modes."
       },
       {
         id: "pr321",
@@ -731,12 +731,12 @@
       {
         id: "current-review-truth",
         lane: "review-truth",
-        title: "Current review truth boundary",
-        status: "done",
+        title: "PR #363 review threads pending",
+        status: "active",
         tags: ["CodeRabbit", "Codex reviewers", "threads"],
-        summary: "Review truth is tracked separately from CI and PR merge state. Current open-PR truth is empty, and future implementation slices still require fresh independent reviewer artifacts before completion.",
-        evidence: ["Live GitHub open PR list -> []", "PR #361 CodeRabbit -> pass before merge", "state.yaml slice_review_contract still requires simplify, improve-codebase-architecture, sy-review, testing, adversarial, agent-native, and best-practices evidence for future slices"],
-        next: "Keep the review lane closed until PU-012 creates fresh review evidence.",
+        summary: "Review truth is tracked separately from CI and PR merge state. PR #363 CodeRabbit status is green, but live GitHub still reports unresolved, non-outdated review threads on the route-tracker surfaces.",
+        evidence: ["PR #363 CodeRabbit -> pass", "Unresolved thread -> .harness/active-artifacts.md", "Unresolved thread -> .harness/implementation-notes/goal-kanban-board.html", "Unresolved thread -> docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml", "state.yaml slice_review_contract still requires simplify, improve-codebase-architecture, sy-review, testing, adversarial, agent-native, and best-practices evidence for future slices"],
+        next: "Patch the route-truth contradictions, push PR #363, refresh review-thread state, then merge and pull back only after review-state is clean.",
         risk: "A green PR or CircleCI pipeline can still carry unresolved review comments or missing independent reviewer proof."
       },
       {
@@ -963,12 +963,12 @@
         id: "runtime-producer",
         lane: "remaining",
         title: "PU-012 producer proof reconciliation",
-        status: "active",
+        status: "done",
         tags: ["runtime-card", "Codex evidence", "producer"],
-        summary: "The next route must reconcile historical PU-012 receipts against current main and prove whether the producer bridge is sufficient or needs a focused repair.",
-        evidence: ["goal.md corrected backlog", "state.yaml current_slice_gate.reason", "Plan PU-012 Codex Runtime Evidence Producer Bridge", "src/lib/runtime/ is the deep module home"],
-        next: "Treat PU-012 as locally closed only after R362 and validators pass; the next operational step is the one-PR sweep and main pullback.",
-        risk: "Treating old local PU-012 receipts as current proof without reconciliation would repeat the stale-state failure mode."
+        summary: "PU-012 reconciled the current-main producer bridge, passed the selected validation floor without runtime source repair, passed completion lenses, and was carried through the merged PR #362 route lane.",
+        evidence: ["Receipt R361 -> PU-012 validation floor passed", "Receipt R362 -> completion lenses passed", "PR #362 -> merged route-tracker repair", "src/lib/runtime/ remains the deep module home"],
+        next: "Use PU-012 as completed route evidence only; PU-013 owns the next runtime cockpit integration proof.",
+        risk: "PU-012 does not prove final delivery-truth consumption, review/external/root-hygiene closeout, or Judge/PM readiness."
       },
       {
         id: "delivery-truth-consumption",
