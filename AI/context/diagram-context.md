@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-06T13:45:00Z
+Generated: 2026-06-07T16:43:43Z
 
 ## Table of Contents
 
@@ -873,6 +873,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_decision_request_2e5c325e_579d9d4b
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_evidence_patterns_cacd9fb4_240eb37f
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_goal_completion_audit_receipt_100d252c_2d821c1e
+  ext_node_fs_a15b7d96["node:fs"] --> node_validate_goal_kanban_script_268db9bd_4cf9451a
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_intermediary_receipt_coverage_7d63b166_40dcf15d
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_packaged_skill_5e32c890_9228ad58
   ext_node_fs_a15b7d96["node:fs"] --> node_validate_prompt_context_drift_8c949ef6_d32d5759
@@ -1148,6 +1149,7 @@ graph LR
   ext_node_url_d0cb3ad7["node:url"] --> node_validate_intermediary_receipt_coverage_7d63b166_40dcf15d
   ext_node_url_d0cb3ad7["node:url"] --> node_validate_prompt_context_drift_8c949ef6_d32d5759
   ext_node_url_d0cb3ad7["node:url"] --> node_version_5ca4f385_fd75945b
+  ext_node_vm_e83aa31f["node:vm"] --> node_validate_goal_kanban_script_268db9bd_4cf9451a
   ext_node_zlib_bb6e132b["node:zlib"] --> node_png_inspection_3ec3d3d7_c00e0d99
   ext_node_zlib_bb6e132b["node:zlib"] --> node_png_test_fixtures_bd922ecf_25060218
   ext_picomatch_2ebdbf14["picomatch"] --> node_detector_2_b0fc2f46_7ea6b320
@@ -1169,6 +1171,7 @@ graph LR
   ext_typescript_fb9da861["typescript"] --> node_check_code_size_9c5efc3a_154124ae
   ext_typescript_fb9da861["typescript"] --> node_check_public_api_docs_a9604f1b_f824853c
   ext_typescript_fb9da861["typescript"] --> node_check_self_affirming_tests_7638e575_c6155698
+  ext_typescript_fb9da861["typescript"] --> node_check_types_policy_cfbecf01_fb84cd04
   ext_typescript_fb9da861["typescript"] --> node_source_outline_1_54a631fa_8582fb07
   ext_vitest_4c9cfa13["vitest"] --> node_expect_behavior_26b3f69f_5d713658
   ext_vitest_4c9cfa13["vitest"] --> node_vitest_e2e_config_4e2a61bc_3efa3f07
@@ -1190,6 +1193,7 @@ graph LR
   style ext_node_process_00cdf119 fill:#f59e0b,color:#fff
   style ext_node_readline_bb6096cc fill:#f59e0b,color:#fff
   style ext_node_url_d0cb3ad7 fill:#f59e0b,color:#fff
+  style ext_node_vm_e83aa31f fill:#f59e0b,color:#fff
   style ext_node_zlib_bb6e132b fill:#f59e0b,color:#fff
   style ext_octokit_plugin_retry_c9aecc53 fill:#f59e0b,color:#fff
   style ext_octokit_plugin_throttling_7909ece3 fill:#f59e0b,color:#fff
