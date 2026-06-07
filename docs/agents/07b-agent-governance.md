@@ -259,7 +259,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   goal-completion, verifier-disagreement, ambiguous-governance, unknown, or
   network-dependent mutation still requires human review and must route through
   the decision-request or action-review authority surface where applicable.
-- generated hook setup or readiness changes should keep agent setup evidence synchronized: `scripts/setup-git-hooks.js` must install generated `prek` shims that derive `WORKTREE_ROOT` with `git rev-parse --show-toplevel` and default `PREK_HOME` to `$WORKTREE_ROOT/.cache/prek`, and `scripts/check-environment.sh` must fail drift across installed `pre-commit`, `pre-push`, and `commit-msg` shims
+- generated hook setup or readiness changes should keep agent setup evidence synchronized: `scripts/setup-git-hooks.js` must install generated `prek` shims through `scripts/run-prek.sh`; the wrapper and generated shims derive the worktree root with `git rev-parse --show-toplevel` and default `PREK_HOME` to `$WORKTREE_ROOT/.cache/prek`, and `scripts/check-environment.sh` must fail drift across installed `pre-commit`, `pre-push`, and `commit-msg` shims
 - worktree bootstrap and generated Codex environment action changes should keep
   the shared Git common-config guard, detached-worktree branch attachment, and
   canonical tooling baseline synchronized across source scripts, scaffold

@@ -10,6 +10,7 @@
 		"scripts/validate-codestyle.sh",
 		"scripts/with-validation-lock.sh",
 		"scripts/check-validation-locks.sh",
+		"scripts/run-prek.sh",
 		"scripts/check-doc-style.sh",
 		"scripts/check-related-tests.sh",
 		"scripts/refresh-diagram-context.sh",
@@ -135,7 +136,8 @@
 		"harness:ui:capture-browser-evidence": "node --import tsx src/cli.ts ui:explore --mode execute --interactions --output artifacts/ui-evidence --json",
 		"vale": "vale --config .vale.ini AGENTS.md docs",
 		"codex-preflight:check": "node scripts/sync-codex-preflight.cjs --check",
-		"codex-preflight:sync": "node scripts/sync-codex-preflight.cjs --write"
+		"codex-preflight:sync": "node scripts/sync-codex-preflight.cjs --write",
+		"prek:validate-config": "bash scripts/run-prek.sh validate-config"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.15",

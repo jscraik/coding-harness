@@ -136,7 +136,8 @@ export const REQUIRED_CODEX_TOOL_ACTIONS = [
 	{
 		name: "Prek",
 		icon: "test",
-		command: "command -v prek >/dev/null 2>&1\nprek --version",
+		command:
+			"command -v prek >/dev/null 2>&1\nbash scripts/run-prek.sh --version",
 	},
 	{
 		name: "Release Finalize",
@@ -359,6 +360,7 @@ export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/prepare-worktree.sh",
 	"scripts/new-task.sh",
 	"scripts/setup-git-hooks.js",
+	"scripts/run-prek.sh",
 	"scripts/validate-commit-msg.js",
 	"scripts/check-hook-critical-config-sync.sh",
 	"scripts/check-staged-secrets.sh",

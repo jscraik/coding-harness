@@ -22,6 +22,7 @@ describe("scaffold script template registry", () => {
 		expect(paths()).toEqual([
 			"scripts/validate-commit-msg.js",
 			"scripts/setup-git-hooks.js",
+			"scripts/run-prek.sh",
 			"scripts/check-staged-secrets.sh",
 			"scripts/check-hook-critical-config-sync.sh",
 			"scripts/check-doc-style.sh",
