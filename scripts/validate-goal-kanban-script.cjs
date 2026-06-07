@@ -2,6 +2,7 @@
 "use strict";
 
 const fs = require("node:fs");
+const vm = require("node:vm");
 
 function usage() {
 	console.error(
@@ -33,7 +34,7 @@ function main(argv) {
 
 	const script = html.slice(start + "<script>".length, end);
 	try {
-		new Function(script);
+		new vm.Script(script, { filename: htmlPath });
 	} catch (error) {
 		console.error(
 			`Inline script in ${htmlPath} failed to parse: ${error.message}`,
