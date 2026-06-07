@@ -28,14 +28,18 @@ Last reconciled: 2026-06-07 after PR #364 merged into `main` as squash merge
 commit `3b0dfb4f97349cd2d484d2bcf32ada26bda71b6d` from submitted head
 `328d06806a22caffd04cf32691881e2a152fd8dc`, and local `main`
 fast-forwarded to the same `origin/main` head. Live GitHub now shows PR #365
-open at `a2f871aca55c4f1ea59e5629d3e985031d7c3c1c`; it is the active
-route-tracker repair lane and is blocked until PR-template evidence passes,
-aggregate `pr-pipeline` clears, CodeRabbit/review state remains clean, and the
-owner-waived external Snyk quota/status lane is recorded without claiming a
-passing external Snyk result. PR #364 had CodeRabbit passing, Socket passing,
-all repo-owned CircleCI contexts passing, aggregate `pr-pipeline` passing,
-aggregate `security-scan` passing, and no unresolved review threads before
-merge.
+open at `9919a1b1eb35365caed7298a776c6b27922464ed`; it is the active
+route-tracker repair lane. Repo-owned CircleCI contexts, aggregate
+`pr-pipeline`, aggregate `security-scan`, CodeRabbit, Socket, and CircleCI
+`snyk-dependency-scan` are green on that head. The remaining failed check is
+the owner-waived external Snyk quota/status lane, which is recorded without
+claiming a passing external Snyk result. One CodeRabbit receipt-boundary thread
+on PR #365 asked for explicit release-readiness, downstream-template state, and
+runtime-producer-proof non-claims on R371/R372; the current repair applies that
+boundary to R371 through R374 and must be refreshed before merge. PR #364 had
+CodeRabbit passing, Socket passing, all repo-owned CircleCI contexts passing,
+aggregate `pr-pipeline` passing, aggregate `security-scan` passing, and no
+unresolved review threads before merge.
 The external Snyk GitHub App
 quota/status failure remains an owner-approved waiver for that external lane
 only; it does not claim external Snyk passed and does not waive repo-run
