@@ -42,23 +42,20 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-07 PR #366 pushed-head review rerun route-truth refresh. The latest
+Last updated during the 2026-06-07 PR #366 live-head route-truth refresh. The latest
 durable merged-main evidence is still the post-PR #365 route-tracker refresh at
 local `main` and fetched `origin/main`
 `bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd`, the PR #365 squash merge commit.
 The local working branch is `codex/jsc-363-post-pr365-tracker-refresh` at pushed
-head `f0465382be86dfe9465d51da2ecc0257dfe2b3be`, which is also the live PR #366
-head OID after the board-classification tracker repair commit. PR #366 is open,
+head `3142eb8ba4f7a5a31a51bb85a7c3cf196772f099`, which is also the live PR #366
+head OID after the checks-last-verification tracker repair commit. PR #366 is open,
 targets `main`, has a live PR body that passes `pr-template-gate` locally after
 the description repair, and now has repo-owned CircleCI, aggregate
 `pr-pipeline`, aggregate `security-scan`, Socket, and CodeRabbit status checks
-green on pushed head `f0465382`. Merge readiness is not claimed because the prior
-CodeRabbit board-classification thread remains visible, a manual
-`@coderabbitai review this pr` trigger was posted at
-https://github.com/jscraik/coding-harness/pull/366#issuecomment-4642690386, and
-CodeRabbit's latest review-rerun comment reports usage/rate limiting rather than
-fresh review completion on `f0465382`. GitHub reports
-`mergeStateStatus=BLOCKED`. The external Snyk GitHub
+green on pushed head `3142eb8`. GitHub review-thread refresh reports six total
+threads and zero unresolved threads after resolving the final outdated
+state.yaml handoff-order thread. Merge readiness is not claimed because GitHub
+still reports `mergeStateStatus=UNSTABLE` while the external Snyk GitHub
 App quota/status lane remains owner-waived for that external quota lane only.
 PU-013 remains the next candidate only after PR #366 is merged and pulled into
 local `main` or explicitly closed/superseded, and this board/state/receipt
@@ -67,15 +64,15 @@ surface is refreshed again from current main.
 Current route truth:
 
 - Current route PR: PR #366 is OPEN at pushed head
-  `f0465382be86dfe9465d51da2ecc0257dfe2b3be` on branch
+  `3142eb8ba4f7a5a31a51bb85a7c3cf196772f099` on branch
   `codex/jsc-363-post-pr365-tracker-refresh`, targets `main` at
   `bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd`, and reports
-  `mergeStateStatus=BLOCKED`. The live PR body now passes `pr-template-gate`
+  `mergeStateStatus=UNSTABLE`. The live PR body now passes `pr-template-gate`
   locally after the description repair. Repo-owned CircleCI lanes, aggregate
   `pr-pipeline`, aggregate `security-scan`, Socket, and CodeRabbit status checks
-  are green on pushed head `f0465382`; the prior CodeRabbit board-classification
-  thread remains visible, and the manual CodeRabbit rerun was triggered but is
-  not fresh-complete because CodeRabbit reported usage/rate limiting. The external Snyk GitHub
+  are green on pushed head `3142eb8`; GitHub review threads total 6 with zero
+  unresolved after resolving the final outdated state.yaml handoff-order thread.
+  The external Snyk GitHub
   App lane failed because the private-test quota is exhausted and is
   owner-waived for that external quota/status lane only.
 - `origin/main` and local `main` are currently `bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd`, the PR #365 squash merge commit.
@@ -119,10 +116,10 @@ Current route truth:
 Corrected backlog after current-main reconciliation:
 
 - Done on current main: PR #360 route refresh, PR #361 typed-contract validation gate, PR #362 route-tracker repair, PR #363 post-PR #362 route refresh, PR #364 post-PR #363 tracker refresh, and PR #365 post-PR #364 tracker repair are merged and pulled into local main.
-- Current route PR: PR #366 is open at pushed local/remote head `f0465382be86dfe9465d51da2ecc0257dfe2b3be` and targets `main` at `bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd`. Its live PR body passes `pr-template-gate` locally after the description repair, repo-owned CircleCI lanes plus aggregate `pr-pipeline` and `security-scan` are green, Socket checks are green, and CodeRabbit status is `SUCCESS`. The prior CodeRabbit board-classification thread remains visible, and the manual CodeRabbit rerun was triggered but is not fresh-complete because CodeRabbit reported usage/rate limiting. GitHub reports `mergeStateStatus=BLOCKED`, so merge readiness is not claimed. The external Snyk GitHub App quota failure remains waived only for that external quota/status lane.
+- Current route PR: PR #366 is open at pushed local/remote head `3142eb8ba4f7a5a31a51bb85a7c3cf196772f099` and targets `main` at `bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd`. Its live PR body passes `pr-template-gate` locally after the description repair, repo-owned CircleCI lanes plus aggregate `pr-pipeline` and `security-scan` are green, Socket checks are green, CodeRabbit status is `SUCCESS`, and GitHub review threads total 6 with zero unresolved after resolving the final outdated state.yaml handoff-order thread. GitHub reports `mergeStateStatus=UNSTABLE`, so merge readiness is not claimed. The external Snyk GitHub App quota failure remains waived only for that external quota/status lane.
 - Done on current main: repo-owned PR #365 CircleCI lanes, aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, Socket, CircleCI `snyk-dependency-scan`, and review-thread checks passed or resolved before merge; external Snyk GitHub App quota failure is waived only for that external quota/status lane.
-- Current tracker repair: PR #366 is the active tracker-repair PR for the post-PR #365 route surface. Receipt `R382` supersedes the earlier DNS/API blocker admission by recording live PR #366 truth and the failing local `pr-template-gate` reproduction; receipt `R383` records the remote PR body repair and live-body `pr-template-gate` pass; receipt `R384` records the hook-enforced push to PR #366 head `86c54830` plus the earlier pending fresh-check state; receipt `R385` records repo-owned green checks and the unresolved board-classification thread on head `8601a661`; receipt `R386` records pushed head `f0465382`, repo-owned green checks, the manual CodeRabbit rerun trigger, CodeRabbit usage/rate limiting, and the current `mergeStateStatus=BLOCKED` route blocker. Earlier receipts `R356` through `R381` remain route-tracker, intent, validation-floor, completion-lens, PR-review, PR #363/#364/#365 triage, pre-validation, post-merge, and transient-connectivity evidence only; they do not prove release readiness, downstream-template state, runtime producer emission beyond PU-012's selected floor, delivery-truth consumption, Linear field-text currency, Judge/PM readiness, or parent-goal completion.
-- Next route action before PU-013: validate, commit, and push this tracker repair; wait for CodeRabbit review/thread truth or record the explicit remaining blocker; recheck PR #366 merge truth; merge PR #366 if branch protection allows or record the precise remaining blocker; checkout/pull `main` after merge; and append a post-merge route receipt. **PU-013 runtime cockpit integration proof** remains the next implementation candidate only after the PR #366 route lane is reconciled from live remote evidence and the board/state/receipt surface validates again from current `main`. PU-012 current-main producer proof and bridge-boundary reconciliation is locally validated, completion-lens reviewed, and merged back through the current-main route path as route evidence; PU-013 must still start with bounded intent, reuse Project Brain plus the plan/spec/audit matrix, and complete simplify, improve-codebase-architecture, sy-review, testing, adversarial, agent-native, and best-practices evidence before its one-PR sweep.
+- Current tracker repair: PR #366 is the active tracker-repair PR for the post-PR #365 route surface. Receipt `R382` supersedes the earlier DNS/API blocker admission by recording live PR #366 truth and the failing local `pr-template-gate` reproduction; receipt `R383` records the remote PR body repair and live-body `pr-template-gate` pass; receipt `R384` records the hook-enforced push to PR #366 head `86c54830` plus the earlier pending fresh-check state; receipt `R385` records repo-owned green checks and the unresolved board-classification thread on head `8601a661`; receipt `R386` records pushed head `f0465382`, repo-owned green checks, the manual CodeRabbit rerun trigger, CodeRabbit usage/rate limiting, and `mergeStateStatus=BLOCKED`; receipt `R387` records current head `3142eb8`, repo-owned green checks, CodeRabbit status success, zero unresolved review threads, and `mergeStateStatus=UNSTABLE` with the external Snyk GitHub App quota/status lane owner-waived only. Earlier receipts `R356` through `R381` remain route-tracker, intent, validation-floor, completion-lens, PR-review, PR #363/#364/#365 triage, pre-validation, post-merge, and transient-connectivity evidence only; they do not prove release readiness, downstream-template state, runtime producer emission beyond PU-012's selected floor, delivery-truth consumption, Linear field-text currency, Judge/PM readiness, or parent-goal completion.
+- Next route action before PU-013: validate, commit, and push this tracker repair; recheck PR #366 merge truth; merge PR #366 if branch protection allows or record the precise remaining blocker; checkout/pull `main` after merge; and append a post-merge route receipt. **PU-013 runtime cockpit integration proof** remains the next implementation candidate only after the PR #366 route lane is reconciled from live remote evidence and the board/state/receipt surface validates again from current `main`. PU-012 current-main producer proof and bridge-boundary reconciliation is locally validated, completion-lens reviewed, and merged back through the current-main route path as route evidence; PU-013 must still start with bounded intent, reuse Project Brain plus the plan/spec/audit matrix, and complete simplify, improve-codebase-architecture, sy-review, testing, adversarial, agent-native, and best-practices evidence before its one-PR sweep.
 - PU-012 completed route focus: current `main` can validate the selected Harness-owned runtime producer floor without source repair for the current bridge boundary. Treat this as bounded producer-floor evidence, not as final delivery-truth, review-state, external-state, root-hygiene, Linear field-text, Judge/PM, or parent-goal completion proof.
 - PU-012 deep-module home remains `src/lib/runtime/**`; `/Users/jamiecraik/dev/codex` remains read-only unless a separate Codex-side ADR/spec authorizes mutation.
 - PU-013 expected focus: prove runtime cockpit integration from the current producer/adapter evidence into the relevant runtime-card or cockpit projection path without blending orientation evidence into delivery truth.
