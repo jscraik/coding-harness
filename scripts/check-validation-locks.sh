@@ -27,7 +27,7 @@ case "$canonical_lock_root" in
 		;;
 	*)
 		echo "[validation-lock] lock_root is not under repo_root, skipping cleanup for safety." >&2
-		exit 0
+		exit 1
 		;;
 esac
 

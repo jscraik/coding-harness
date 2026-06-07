@@ -56,14 +56,14 @@ Current evidence:
 Next action:
 
 1. Validate this tracker reset locally.
-   - Command: `pnpm test:ci && pnpm run validation:locks`
+   - Command: `pnpm run validation:locks && pnpm test:ci`
    - Pass criteria: Exit code 0, no lock conflicts, all tests pass.
    - Owner fallback: If validation fails, notify Jamie and do not proceed to commit/push.
 
 2. Commit the tracker reset.
-   - Command: `git add <tracker files> && git commit -m "Reset JSC-363 thin tracker after PR #366"`
-   - Pass criteria: Clean commit without hook bypass.
-   - Owner fallback: If pre-commit hooks fail, fix issues before retry.
+   - Command: `git add docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl .harness/active-artifacts.md && git commit -m "Reset JSC-363 thin tracker after PR #366"`
+   - Pass criteria: Commit succeeds with exit code 0, pre-commit hooks pass (no formatting violations, no lock conflicts), commit SHA is generated, and working tree is clean after commit.
+   - Owner fallback: If pre-commit hooks fail due to formatting issues, run `pnpm run format` and retry; if hooks fail due to lock conflicts, resolve conflicts with `pnpm run validation:locks` diagnostics and retry; if hooks fail for other reasons, diagnose the specific hook failure, fix the underlying issue, and do not bypass hooks with --no-verify.
 
 3. Push `codex/jsc-363-post-pr366-tracker-refresh` without bypassing hooks.
    - Command: `git push origin codex/jsc-363-post-pr366-tracker-refresh`
@@ -78,9 +78,9 @@ Next action:
 
 5. Refresh PR #367 `pr-template`, `pr-pipeline`, review-thread, and
    mergeability truth.
-   - Command: `gh pr view 367 --json state,statusCheckRollup,reviewDecision,mergeable`
-   - Pass criteria: Fresh CI status retrieved, mergeability known, review threads counted.
-   - Owner fallback: If `gh` unavailable, use GitHub web UI and record findings manually.
+   - Command: `gh pr view 367 --json state,statusCheckRollup,reviewDecision,mergeable && gh api repos/:owner/:repo/pulls/367/comments --paginate --jq 'map(select(.pull_request_review_id != null)) | length'`
+   - Pass criteria: Fresh CI status retrieved from statusCheckRollup, mergeability state known from mergeable field, reviewDecision shows approval status, and unresolved review-thread count obtained from the API query (exit code 0 for both commands).
+   - Owner fallback: If `gh` unavailable, use GitHub web UI to check PR status, CI checks, review decision, mergeability state, and count unresolved review threads manually, then record findings in a receipt.
 
 6. Merge PR #367 only after required repo-owned lanes are green/resolved or a
    precise owner-accepted blocker is recorded.
