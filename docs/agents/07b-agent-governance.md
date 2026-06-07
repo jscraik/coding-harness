@@ -270,6 +270,12 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   reachable-`origin` branch state must remain a hard stop before attachment
 - generated readiness and environment setup changes should preserve caller-provided `PATH` precedence before adding standard tool fallbacks, so local wrappers, fixture shims, and branch-scoped validation evidence remain auditable
 - environment-only push behavior is a narrow governance exception: if the branch diff contains only `.codex/environments/environment.toml`, `make hooks-pre-push` may run only `scripts/check-environment.sh`; any other changed file must use the full pre-push suite
+- local CI-equivalent validation lanes must be serialized by repo-scoped locks:
+  `make hooks-pre-push` runs `validation-locks` first, `pnpm test:ci` uses
+  the `test-ci` lock, and `pnpm run quality:behavior-tests` uses the
+  `behavior-tests` lock. Treat repeated stale validation processes as
+  governance feedback; update the lock wrapper, checker, package scripts,
+  tests, and environment inventory together when this contract changes.
 - full pre-push diagram freshness must be branch-scoped: `make hooks-pre-push` passes the branch changed-file list into `scripts/check-diagram-freshness.sh --changed-files <path>` so agents do not refresh architecture artifacts for unrelated local worktree dirt
 - full pre-push diagram freshness must use the same package-manager-scoped diagram CLI as manual refreshes; a missing global binary is not a valid blocker when `pnpm --dir "$ROOT_DIR" exec diagram --version` succeeds
 - goal-continuation and approval-plan contract changes should keep explicit
