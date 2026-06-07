@@ -760,7 +760,7 @@ def validate_json_schema_value(
     except (JsonSchemaValidationError, SchemaError) as exc:
         location = ".".join(str(part) for part in exc.absolute_path)
         suffix = f" at {location}" if location else ""
-        message = exc.message if hasattr(exc, 'message') else str(exc)
+        message = exc.message if hasattr(exc, "message") else str(exc)
         errors.append(f"{label}: violates JSON Schema{suffix}: {message}")
 
 

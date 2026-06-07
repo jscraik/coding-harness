@@ -251,14 +251,6 @@ def build_inventory(manifest_path: Path) -> HookInventory:
     in_scope = manifest.repos.in_scope
     excluded = manifest.repos.excluded
 
-    excluded_set = set(excluded)
-    overlap = sorted(repo_name for repo_name in in_scope if repo_name in excluded_set)
-    if overlap:
-        repo_name = overlap[0]
-        raise ManifestValidationError(
-            f"excluded repo '{repo_name}' must not appear in repos.in_scope"
-        )
-
     workspace_root = (manifest_path.parent / manifest.workspace_root).resolve()
     inventory: list[RepositoryInventoryEntry] = []
 
