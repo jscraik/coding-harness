@@ -41,6 +41,13 @@ thin and delegate into this deep module.
   documentation changes need proof fields that describe the behavior addressed,
   path tested, evidence observed, untested paths, proof limits, and before
   evidence when available.
+- Generated PR templates must keep required evidence fields blank by default
+  and place example command/status syntax only in Markdown comments. Literal
+  placeholder text such as `pass/fail`, `<link / artifact path / comment ID>`,
+  or generic merge-rationale prose is intentionally gate-blocking when left in
+  a submitted PR body, so scaffold fixtures must prove those placeholders are
+  absent from freshly rendered templates and that a completed fixture can still
+  satisfy `pr-template-gate`.
 - Generated PR templates must keep the `Motivation` section synchronized with
   the repository PR template and validator rules. Generated PR bodies need
   explicit `Motivation`, `Reasoning`, and `Chosen approach` fields near

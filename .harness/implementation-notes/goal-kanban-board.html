@@ -411,13 +411,13 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness status">PR #366 review-rerun blocker active</div>
+      <div class="source-chip" aria-label="Source freshness status">Thin tracker reset: PR #367 active</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>PR #366 review rerun blocked</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>PR #365 latest merged</strong></div>
-      <div class="metric"><span>Current PR</span><strong>#366 open</strong></div>
+      <div class="metric"><span>Goal status</span><strong>Thin tracker reset</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #366</strong></div>
+      <div class="metric"><span>Current PR</span><strong>PR #367 stale remote head</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Partial, final lanes pending</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
       <div class="metric"><span>Linear tracker</span><strong>Field text unclaimed</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated from local goal artifacts after live PR #366 current-head route truth reached green repo-owned checks and review-thread clearance. Latest fetched main evidence remains the PR #365 merge at <code>2026-06-07T09:18:13Z</code>. Local <code>main</code> and fetched <code>origin/main</code> are at squash merge commit <code>bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd</code>; submitted PR #365 head was <code>c3fe2f06bf5ab2f69b59a8882075bfb3e5ff3c79</code>. PR #366 is open at pushed head <code>3142eb8ba4f7a5a31a51bb85a7c3cf196772f099</code> on branch <code>codex/jsc-363-post-pr365-tracker-refresh</code> and targets <code>main</code> at <code>bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd</code>. The live PR body passes <code>pr-template-gate</code> locally after the description repair; repo-owned CircleCI lanes, aggregate <code>pr-pipeline</code>, aggregate <code>security-scan</code>, Socket, and CodeRabbit status checks are green. GitHub review threads total 6 with zero unresolved after the final outdated state.yaml handoff-order thread was resolved. Merge readiness is not claimed because GitHub still reports <code>mergeStateStatus=UNSTABLE</code>. The external Snyk GitHub App quota failure remains an owner-waived quota/status lane only. Last live Linear JSC-363 evidence was <code>In Review</code> with PR #365, PR #364, PR #363, PR #362, and PR #360 attachments present, but field-text-current remains unclaimed because the issue still uses Phase 1 wording. Receipts <code>R372</code> through <code>R387</code> record the current route refresh, PR #365 repair path, transient PR #366 remote-truth blocker, PR #366 template blocker, PR #366 body-gate repair, hook-enforced push, green repo-owned checks, pushed heads <code>f0465382</code> and <code>3142eb8</code>, review-thread clearance, and the current external-Snyk-waived unstable merge state. PU-013 runtime cockpit integration proof remains stopped until PR #366 is merged or superseded, and this board/state/receipt refresh validates from current main. Delivery-truth consumption, documentation accuracy, Judge/PM readiness, release readiness, downstream-template state, runtime producer proof, Linear field-text currency, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated for the 2026-06-07 thin-tracker reset. PR #366 remains merged provenance at main commit <code>e5797549647adab10d35472da9afac574fa0c3cf</code>. The only active route lane is PR #367. Local branch head is <code>8bfbbfd56a56d291de7a679efbd32dce3779de1a</code>; live PR #367 remote head is <code>25a7eb0f61f75e7b31adc7cd5e819867dbe48c6f</code>, so remote CI and review truth are stale until the local repair stack is pushed. Live PR #367 currently reports aggregate <code>pr-pipeline</code> failure and <code>mergeStateStatus=BLOCKED</code> on the stale remote head. PU-013 runtime cockpit integration proof is queued, not active. Delivery-truth consumption, documentation accuracy, Judge/PM readiness, release readiness, downstream-template state, Linear field-text currency, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -523,23 +523,23 @@
         id: "full-lifecycle",
         lane: "intent",
         title: "Full lifecycle, not Phase 1 only",
-        status: "active",
+        status: "done",
         tags: ["JSC-363", "goal.md", "scope"],
         summary: "The board governs the complete runtime evidence verifier lifecycle through hardening, docs accuracy, PR triage, and Judge/PM evidence.",
         evidence: ["docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md", "Objective section explicitly rejects Phase 1-only completion", "Linear wording remains a separate tracker-alignment lane"],
-        next: "Keep the plan, spec, goal board, and Linear scope note aligned before any full-lifecycle closeout claim.",
+        next: "Use execution-tracker.md for restart control; keep full-lifecycle scope as the parent completion contract.",
         risk: "A PR may complete a slice, but it cannot close the parent goal without separate proof for runtime, CI, review, tracker, docs, and Judge/PM lanes."
       },
       {
-        id: "current-main-pr365",
+        id: "current-main-pr366",
         lane: "completed",
-        title: "Current main: PR #365 tracker repair",
+        title: "Current main: PR #366 tracker/security repair",
         status: "done",
-        tags: ["PR #365", "current main", "route truth"],
-        summary: "Local main and origin/main are synced at PR #365 squash merge bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd. Live GitHub showed zero open PRs after pull-back.",
-        evidence: ["PR #365 -> MERGED at 2026-06-07T09:18:13Z", "Merge commit -> bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd", "Submitted head -> c3fe2f06bf5ab2f69b59a8882075bfb3e5ff3c79", "Open PRs -> none", "Repo-owned CircleCI lanes -> pass", "pr-pipeline -> pass", "security-scan -> pass", "CodeRabbit -> pass", "Socket -> pass", "Review threads -> resolved", "External security/snyk (jscraik) -> owner-waived quota failure only"],
-        next: "Validate this board/state/receipt refresh, then start PU-013 intent from current main.",
-        risk: "PR #365 does not prove delivery-truth consumption, Linear field-text currency, Judge/PM readiness, or parent-goal completion."
+        tags: ["PR #366", "current main", "route truth"],
+        summary: "Local main and origin/main are synced at PR #366 squash merge e5797549647adab10d35472da9afac574fa0c3cf after the route tracker and security-scan repair lane merged.",
+        evidence: ["PR #366 -> MERGED at 2026-06-07T15:15:04Z", "Merge commit -> e5797549647adab10d35472da9afac574fa0c3cf", "Submitted head -> ce09bfaa11fa2f33fac12fd09f46e1256b425b25", "Repo-owned CircleCI lanes -> pass", "pr-pipeline -> pass", "security-scan -> pass", "CircleCI snyk-dependency-scan -> pass", "CodeRabbit -> pass", "Socket -> pass", "Review threads -> resolved", "External security/snyk (jscraik) -> owner-waived quota failure only"],
+        next: "Use as merged provenance only. The active route is PR #367; PU-013 waits for PR #367 route closure and current-main pull-back.",
+        risk: "PR #366 does not prove delivery-truth consumption, Linear field-text currency, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "pr362-current-repair",
@@ -555,24 +555,46 @@
       {
         id: "current-route-pr366",
         lane: "pr-truth",
-        title: "Current route: PR #366 tracker refresh",
-        status: "blocked",
-        tags: ["PR #366", "JSC-363", "route truth", "review-thread-open"],
-        summary: "PR #366 is the active tracker PR. It is open at pushed branch head 3142eb8 with repo-owned CircleCI, Socket, CodeRabbit status, pr-pipeline, and security-scan lanes green; GitHub review threads total 6 with zero unresolved after the final outdated state.yaml handoff-order thread was resolved. It remains not merge-ready because GitHub reports mergeStateStatus=UNSTABLE while the external Snyk GitHub App quota/status lane is owner-waived only.",
-        evidence: ["PR #366 -> OPEN", "PR #366 head -> 3142eb8ba4f7a5a31a51bb85a7c3cf196772f099", "PR #366 base -> bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd", "GitHub mergeStateStatus -> UNSTABLE", "CodeRabbit status check -> SUCCESS", "Review threads -> total 6, unresolved 0", "Final unresolved thread -> outdated state.yaml handoff-order thread resolved", "CodeRabbit status check -> SUCCESS", "ci/circleci lanes -> pass", "pr-pipeline -> pass", "security-scan -> pass", "Socket checks -> pass", "live PR body pr-template-gate -> pass after description repair", "External security/snyk GitHub App -> owner-waived quota/status lane only"],
-        next: "Recheck PR #366 merge state, then merge if branch protection allows or record the precise remaining blocker before merging or superseding this tracker lane.",
-        risk: "Starting PU-013 before PR #366 lands would reintroduce the stale route-truth and stacked-PR failure mode."
+        title: "Route lane closed: PR #366",
+        status: "done",
+        tags: ["PR #366", "JSC-363", "route truth", "merged"],
+        summary: "PR #366 is merged into current main. It refreshed the post-PR #365 route surface and repaired the tracked Kanban validator security-scan issue by replacing the Function constructor with node:vm script parsing.",
+        evidence: ["PR #366 -> MERGED", "Submitted head -> ce09bfaa11fa2f33fac12fd09f46e1256b425b25", "Merge commit -> e5797549647adab10d35472da9afac574fa0c3cf", "CodeRabbit status check -> SUCCESS", "Review threads -> resolved", "ci/circleci lanes -> pass", "pr-pipeline -> pass", "security-scan -> pass", "CircleCI snyk-dependency-scan -> pass", "Socket checks -> pass", "External security/snyk GitHub App -> owner-waived quota/status lane only"],
+        next: "Use this as current-main route evidence; do not reopen PR #366 unless fresh validation finds a regression.",
+        risk: "Treating the route refresh as parent-goal completion would still blend tracker truth with delivery-truth, docs accuracy, Linear field-text, and Judge/PM lanes."
+      },
+      {
+        id: "validation-lock-guard-r391",
+        lane: "ci-truth",
+        title: "R391: Validation lane lock guard",
+        status: "done",
+        tags: ["R391", "CI triage", "pre-push", "guardrail"],
+        summary: "CI triage found stale local validation process trees from repeated aggregate checks. The durable fix adds repo-owned validation locks for behavior-tests and test:ci, plus a pre-push lock check so duplicate lanes fail fast with an actionable diagnostic.",
+        evidence: ["scripts/with-validation-lock.sh", "scripts/check-validation-locks.sh", "Makefile validation-locks target", "package.json quality:behavior-tests lock wrapper", "package.json test:ci lock wrapper", "src/dev/validation-lock-scripts.test.ts -> pass", "bash scripts/check-validation-locks.sh -> pass", "pnpm run validation:locks -> pass"],
+        next: "Use as local guard evidence for PR #367; the active route is now the PR #367 push and remote CI refresh.",
+        risk: "The guard prevents duplicate tracked validation lanes; it does not prove remote CircleCI pass, PU-013 implementation, or parent-goal completion."
+      },
+      {
+        id: "pr367-template-repair-r396",
+        lane: "ci-truth",
+        title: "R396: PR #367 template and pipeline repair",
+        status: "active",
+        tags: ["R396", "PR #367", "pr-template", "pr-pipeline"],
+        summary: "PR #367 is the only active route lane. Local head 8bfbbfd56a56d291de7a679efbd32dce3779de1a is ahead of live PR #367 remote head 25a7eb0f61f75e7b31adc7cd5e819867dbe48c6f, so remote CI is stale and aggregate pr-pipeline is still failing on the old head.",
+        evidence: ["Live PR #367 -> OPEN", "Remote head -> 25a7eb0f61f75e7b31adc7cd5e819867dbe48c6f", "Local head -> 8bfbbfd56a56d291de7a679efbd32dce3779de1a", "Live pr-pipeline -> FAILURE on stale remote head", "Live mergeStateStatus -> BLOCKED", "Local pnpm test:ci -> pass before reset", "Local pnpm run validation:locks -> pass before reset", "execution-tracker.md -> thin restart surface"],
+        next: "Validate and commit the thin tracker reset, push the branch normally, trigger CodeRabbit if needed, refresh PR #367 CI/review truth, merge or explicitly block, then pull main before PU-013.",
+        risk: "Local repairs do not prove remote CircleCI, review-thread resolution, merge readiness, PU-013 implementation, Linear field-text currency, or parent-goal completion."
       },
       {
         id: "next-slice-pu012-reconciliation",
         lane: "intent",
         title: "Next slice candidate: PU-013 cockpit proof",
-        status: "active",
+        status: "blocked",
         tags: ["PU-013", "next candidate", "runtime cockpit"],
-        summary: "PU-012 current-main producer proof and bridge-boundary reconciliation is route-reconciled through PR #365. PU-013 is still the next selected implementation candidate, but PR #366 must be fixed and merged or explicitly superseded first.",
-        evidence: [".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md PU-012", "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/PU-012-current-main-producer-proof-intent.md", "PR #366 -> OPEN/UNSTABLE with repo-owned checks green and review threads resolved", "goal.md corrected backlog", "state.yaml current_slice_gate.reason", "R387 PR #366 current-head route receipt"],
-        next: "After PR #366 lands and main is pulled, validate the board/state/receipt surface, then create PU-013 intent from current main.",
-        risk: "Starting PU-013 implementation before PR #366 merge/pullback and the intent/reviewer gates would repeat the stale-state failure mode."
+        summary: "PU-013 is the next selected implementation candidate, but it is queued behind PR #367 route closure. It is not active while the PR #367 remote head and CI truth are stale.",
+        evidence: [".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md PU-013", "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/PU-012-current-main-producer-proof-intent.md", "PR #366 -> MERGED", "goal.md corrected backlog", "state.yaml current_slice_gate.reason", "R390 post-PR #366 current-main route receipt"],
+        next: "Wait for PR #367 push, remote CI/review refresh, merge or blocker record, local main pull-back, and tracker validation.",
+        risk: "Starting PU-013 now would repeat the stale-state and stacked-route failure mode."
       },
       {
         id: "pr321",
@@ -688,7 +710,7 @@
         id: "slice-contract",
         lane: "intent",
         title: "Slice execution contract",
-        status: "active",
+        status: "done",
         tags: ["intent", "review-first", "no stacked PRs"],
         summary: "Each slice needs reviewed intent, deterministic validation, simplify, improve-codebase-architecture, sy-review, testing, independent reviewers, atomic commit, PR green sweep through faults and merge, local main pull, board update, and receipts.",
         evidence: ["state.yaml slice_review_contract", "state.yaml slice_continuation_policy", "goal.md Review and Validation Contract", "Required lenses: simplify, improve-codebase-architecture, sy-review, testing, adversarial, agent-native, best-practices"],
@@ -754,7 +776,7 @@
         id: "codex-native-refinement",
         lane: "intent",
         title: "Codex-native refinement adopted",
-        status: "active",
+        status: "done",
         tags: ["CNF-001..006", "goal-governor", "current main"],
         summary: "The imported review from ~/dev/codex against this repo is now adopted as next-slice steering, not as implementation proof.",
         evidence: ["goal.md Codex-Native Current-Main Refinement Addendum", "state.yaml codex_native_refinement_adoption", "goal-governor-output.yaml source review context"],
@@ -787,7 +809,7 @@
         id: "runtime-modules",
         lane: "implementation",
         title: "Deep runtime module placement",
-        status: "active",
+        status: "done",
         tags: ["architecture", "modules", "src/lib"],
         summary: "Runtime evidence, delivery truth, review state, external state, root hygiene, artifact surfaces, prompt drift, intermediary receipts, and steering queues have named deep-module homes.",
         evidence: ["ARCHITECTURE.md", "AGENTS.md architecture-adjacent module contracts", "docs/agents/07b-agent-governance.md"],
@@ -809,7 +831,7 @@
         id: "browser-preview",
         lane: "artifact-truth",
         title: "Implementation notes browser preview",
-        status: "active",
+        status: "blocked",
         tags: ["Browser", "artifact-runtime", "preview"],
         summary: "state.yaml says the reviewed MDX source exists, but the live HTML preview is a local runtime projection and no repo-owned watcher exists yet.",
         evidence: ["state.yaml artifact_runtime_surface.browser_preview.status = blocked", ".harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx", ".harness/implementation-notes/implementation-notes.html"],
@@ -820,7 +842,7 @@
         id: "cnf001-message-correlation",
         lane: "implementation",
         title: "CNF-001 message correlation",
-        status: "active",
+        status: "done",
         tags: ["PU-047", "CNF-001", "runtime", "steering", "message id"],
         summary: "Local implementation carries clientUserMessageId as explicit nullable Codex runtime identity and binds steering items to expected/applied client-message IDs without synthesizing missing evidence. PR #331 has merged into main.",
         evidence: ["docs/goals/.../notes/PU-047-cnf-001-source-capability.md", "src/lib/runtime/codex-runtime-evidence-*.ts", "src/lib/steering-queue/{builder,types,validation-item}.ts", "contracts/steering-queue.schema.json", "scripts/validate-steering-queue.cjs", "focused runtime and steering-queue tests -> pass", "verify-work --fast --changed-only -> pass on resume", "R225/R226: earlier review artifact failure and tracking repair recorded", "post-implementation adversarial, agent-native, and best-practices artifacts exist with no material findings", "reviewer-coverage validator with expectedHeadSha -> pass", "R229: full validate-codestyle, pnpm check path, tooling-audit, goal-board, audit-freshness -> pass", "R230: docs-style repair and refreshed goal-surface validation -> pass", "R231: pre-push architecture diagram refresh -> pass", "R232: PR #331 opened; GitHub reports OPEN/MERGEABLE/BLOCKED"],
@@ -985,7 +1007,7 @@
         id: "final-proof-packets",
         lane: "remaining",
         title: "Review, external-state, and root-hygiene proof",
-        status: "active",
+        status: "blocked",
         tags: ["review-state", "external-state", "root-hygiene"],
         summary: "Final proof still needs current review-state packets, external-state snapshots with freshness/TTL/head SHA, and root-hygiene evidence.",
         evidence: ["goal.md lines 398-400", "ARCHITECTURE.md module map", "src/lib/review-state/, src/lib/external-state/, src/lib/root-hygiene/"],
@@ -996,7 +1018,7 @@
         id: "review-backfill",
         lane: "remaining",
         title: "Historical review coverage backfill",
-        status: "active",
+        status: "blocked",
         tags: ["PU-000..016", "review artifacts", "ratification"],
         summary: "Final closeout needs a backfill or ratification ledger mapping every lifecycle unit to required skill lenses and independent reviewer evidence.",
         evidence: ["goal.md Completion Contract", "state.yaml review_backfill references", "docs/goals/.../notes/review-coverage-backfill.json"],
@@ -1007,7 +1029,7 @@
         id: "gap-spg-audit",
         lane: "remaining",
         title: "GAP and SPG completion matrix",
-        status: "active",
+        status: "blocked",
         tags: ["GAP-001..012", "SPG-001..012", "Judge/PM"],
         summary: "All adopted audit gaps and system-prompt operational gaps must be implemented, explicitly blocked, or accepted as follow-ups by Judge/PM.",
         evidence: ["goal.md Completion Contract", ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md", ".harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md"],
@@ -1018,7 +1040,7 @@
         id: "docs-accuracy",
         lane: "remaining",
         title: "Documentation accuracy gate",
-        status: "active",
+        status: "blocked",
         tags: ["docs", "ARCHITECTURE.md", "AGENTS.md"],
         summary: "Documentation and agent instruction surfaces must describe the current merged contract and deep-module placement.",
         evidence: ["goal.md Completion Contract", "AGENTS.md architecture-adjacent documentation rules", "ARCHITECTURE.md"],
@@ -1051,7 +1073,7 @@
         id: "audit-gaps",
         lane: "closeout",
         title: "Adopted GAP and SPG matrices remain completion gates",
-        status: "active",
+        status: "blocked",
         tags: ["GAP-001..012", "SPG-001..012", "audit"],
         summary: "The 2026-05-26 audit and 2026-05-27 system-prompt operational analysis are part of the completion contract.",
         evidence: [".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md", ".harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md", "scripts/check-goal-audit-freshness.py"],
@@ -1062,7 +1084,7 @@
         id: "docs-architecture",
         lane: "closeout",
         title: "Docs and architecture synchronization",
-        status: "active",
+        status: "blocked",
         tags: ["ARCHITECTURE.md", "docs-gate", "agent-governance"],
         summary: "Architecture-adjacent runtime cockpit changes must keep ARCHITECTURE.md, AI context, AGENTS.md, and agent-governance docs synchronized.",
         evidence: ["AGENTS.md architecture-adjacent contracts", "ARCHITECTURE.md source map", "docs/agents/00-architecture-bootstrap.md and 07b-agent-governance.md references"],

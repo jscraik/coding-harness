@@ -228,7 +228,8 @@ Branch name consumers should treat this pattern as an agent worktree-readiness b
 | Lint                           | `pnpm lint`                                                                                         | `biome check .`                                                                                                                                                                         |
 | Typecheck                      | `pnpm typecheck`                                                                                    | `tsc --noEmit`                                                                                                                                                                          |
 | Tests                          | `pnpm test`                                                                                         | `vitest run`                                                                                                                                                                            |
-| Tests (CircleCI hardened lane) | `pnpm test:ci`                                                                                      | Runs standard suites plus isolated `ci-migrate` run with targeted Vitest worker-timeout mitigation                                                                                      |
+| Tests (CircleCI hardened lane) | `pnpm test:ci`                                                                                      | Runs standard suites plus isolated `ci-migrate` run with targeted Vitest worker-timeout mitigation behind the `test-ci` validation lock                                             |
+| Validation lock check          | `pnpm run validation:locks`                                                                         | Fails fast when a repo-scoped local validation lane is already active and removes dead validation lock directories                                                                        |
 | Audit                          | `pnpm audit`                                                                                        | dependency risk check                                                                                                                                                                   |
 | Build                          | `pnpm build`                                                                                        | compile TypeScript and generate `dist/cli.js`                                                                                                                                           |
 | CodeRabbit learnings import    | `harness learnings import --provider coderabbit-csv --source <csv> --repo <repo> --json`            | Import local CodeRabbit CSV evidence into `.harness/learnings/coderabbit.local.json`                                                                                                    |
@@ -326,13 +327,17 @@ Changed production source and tests also carry local ratchet gates:
 `pnpm run quality:docstrings` requires JSDoc on changed exported public API
 declarations, `pnpm run quality:size` enforces changed-file function/file size
 limits with explicit legacy allowlists, `pnpm run quality:self-affirming`
-scans test/spec files for self-affirming assertions, `pnpm run
-quality:behavior-tests` verifies registered evidence-bearing suites use
-`expectBehavior`, `pnpm run quality:git-env-sanitizer` prevents duplicate git
-environment cleanup, `pnpm run harness:audit-tracking` keeps durable audit
-tracking visible, and `pnpm run test:related` runs Vitest related mode without
-a no-tests pass-through. These commands are part of `pnpm check`,
+scans test/spec files for self-affirming assertions,
+`pnpm run quality:behavior-tests` verifies registered behavior-test suites
+behind the `behavior-tests` validation lock,
+`pnpm run quality:git-env-sanitizer` prevents duplicate git environment
+cleanup, `pnpm run harness:audit-tracking` keeps durable audit tracking
+visible, and `pnpm run test:related` runs Vitest related mode without a
+no-tests pass-through. These commands are part of `pnpm check`,
 `bash scripts/validate-codestyle.sh --fast`, and `make hooks-pre-commit`.
+The validation locks are repository-scoped under
+`.cache/validation-locks` by default and can be redirected with
+`HARNESS_VALIDATION_LOCK_ROOT` in tests or controlled runtimes.
 
 ## Recommended command order
 
@@ -351,6 +356,11 @@ source-outline <path> --json`; unwrap only the needed symbol with `--symbol
 For CircleCI parity checks and migration troubleshooting, run:
 
 1. `pnpm test:ci`
+
+If a local validation lane appears stuck or another push reports an active
+validation lock, run `pnpm run validation:locks` first. A live lock means the
+lane is still running and should be allowed to finish or be stopped deliberately;
+a dead lock is removed by the checker before the next gate starts.
 
 For harness setup or scaffold sync verification in this repository, run:
 

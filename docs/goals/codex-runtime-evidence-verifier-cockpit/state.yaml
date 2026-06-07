@@ -16,6 +16,46 @@ rules:
   one_active_task: true
   require_fresh_verification: true
   require_final_audit: true
+thin_execution_tracker:
+  status: "active"
+  admitted_at: "2026-06-07T18:25:09Z"
+  mantra: "Thin surface. Strong guardrails. Durable memory. Professional output."
+  tracker_path: "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md"
+  architecture_finding: "The previous goal board/state shape repeated route history across multiple surfaces, making the active interface shallow and costly for agents to navigate."
+  deepened_interface: "Use a compact active tracker with one route lane, one queued slice, current blockers, resume gates, and provenance links."
+  active_surface_budget:
+    active_route_lanes: 1
+    queued_implementation_slices: 1
+    current_truth_snapshots: 1
+    receipt_style: "compact claim/evidence/blocker records"
+    history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
+  active_route:
+    kind: "pull_request"
+    pr: 367
+    branch: "codex/jsc-363-post-pr366-tracker-refresh"
+    local_head_sha: "8bfbbfd56a56d291de7a679efbd32dce3779de1a"
+    remote_head_sha: "25a7eb0f61f75e7b31adc7cd5e819867dbe48c6f"
+    base_sha: "e5797549647adab10d35472da9afac574fa0c3cf"
+    status: "local_ahead_remote_pr_blocked"
+    blocker: "Remote PR #367 does not include the latest local repair stack; live aggregate pr-pipeline is failing on the stale remote head."
+  queued_slice:
+    lifecycle_unit: "PU-013"
+    name: "runtime cockpit integration proof"
+    status: "queued_not_active"
+  resume_gate:
+    - "Commit and push the thin-tracker reset and local PR #367 repair stack without bypassing hooks."
+    - "Refresh live PR #367 remote CI, review-thread, and mergeability truth."
+    - "Merge PR #367 or record a precise owner-visible blocker."
+    - "Checkout main, pull latest origin/main, and append a post-route receipt."
+    - "Validate goal.md, state.yaml, notes/execution-tracker.md, active-artifacts, Kanban, and receipts before PU-013 starts."
+  explicit_non_claims:
+    - "pr367_remote_ci_green"
+    - "pr367_merge_ready"
+    - "pu013_started"
+    - "linear_fields_current"
+    - "delivery_truth_consumption_complete"
+    - "judge_pm_ready"
+    - "parent_goal_complete"
 artifacts:
   implementation_notes:
     path: ".harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx"
@@ -88,9 +128,9 @@ completion_contract:
       - "record refreshed main head in goal board and receipt"
     exception_rule: "Only Jamie can authorize a stacked or parallel implementation exception; the exception must name the dependent slice, branch/worktree owner, allowed files, stop condition, and receipt id before any code work begins."
 current_slice_gate:
-  lifecycle_unit: "pr366-live-head-route-truth-refresh"
-  status: "pr366_repo_owned_checks_green_review_threads_resolved_unstable_external_snyk_waived_pu013_not_started"
-  reason: "Live GitHub now verifies PR #366 is OPEN at pushed head 3142eb8ba4f7a5a31a51bb85a7c3cf196772f099 on codex/jsc-363-post-pr365-tracker-refresh, targeting main at bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd. The PR body passes pr-template-gate locally, repo-owned CircleCI lanes plus aggregate pr-pipeline and security-scan are green, Socket checks are green, CodeRabbit status is SUCCESS, and review threads total 6 with zero unresolved after resolving the final outdated state.yaml handoff-order thread. Merge readiness is not claimed because GitHub still reports mergeStateStatus=UNSTABLE while the external Snyk GitHub App quota/status lane is owner-waived for that external lane only. PU-013 runtime cockpit integration proof must not start until PR #366 is merged and pulled into local main or explicitly closed/superseded, and this board/state/receipt surface validates from current main."
+  lifecycle_unit: "thin-tracker-reset-pr367-route-closure"
+  status: "active_route_pr367_local_repair_stack_unpushed_remote_pr_pipeline_stale_failing"
+  reason: "Repeated steering showed the goal control surface had become too large and history-heavy. PR #366 remains merged into main at e5797549647adab10d35472da9afac574fa0c3cf, but that is now provenance. The active route is PR #367 only. Local HEAD 8bfbbfd56a56d291de7a679efbd32dce3779de1a is ahead of live PR #367 remote head 25a7eb0f61f75e7b31adc7cd5e819867dbe48c6f, and live GitHub reports aggregate pr-pipeline failure plus mergeStateStatus=BLOCKED on that stale remote head. PU-013 is queued, not active, until PR #367 is pushed, fresh remote CI/review truth is known, the route is merged or explicitly blocked, local main is pulled, and the compact tracker validates."
   completed_before_local_validation_claim:
     - "Created and tracked the PR #324 supersession intent artifact before route-state edits."
     - "Fetched current remote refs and verified PR #327 and PR #328 are the current clean JSC-363 stack."
@@ -142,16 +182,23 @@ current_slice_gate:
     - "Recorded CNF-004 reviewer-runtime artifact-output blockers in artifacts/reviews/pu050-cnf-004-intent-reviewer-runtime-blocker.md and artifacts/reviews/pu050-cnf-004-implementation-reviewer-runtime-blocker.md; local skill-lens coverage is in artifacts/reviews/pu050-cnf-004-skill-lenses.md."
     - "Pushed CNF-004 branch head 11cf544aa7ecf3918d780e1118d82b1f49293880 and opened draft stacked PR #334 against codex/jsc-363-cnf-003-risk-tier-authority after the PR body passed pr-template-gate; foreground make hooks-pre-push passed before the no-verify push fallback was used to avoid a silent Git transport hook hang."
   next_required_handoff_steps:
-    - "Treat receipt-backed merged JSC-363 route/foundation lanes through PR #360, the PR #361 typed-contract gate lane, the PR #362 tracker/evidence repair lane, the PR #363 post-PR #362 route refresh, the PR #364 post-PR #363 tracker refresh, and the PR #365 post-PR #364 tracker repair as completed current-main evidence at bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd; do not reopen those PR lanes unless fresh GitHub or current-main validation shows a regression."
+    - "Use docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md as the thin restart tracker; keep old PR history as provenance, not active route work."
+    - "Push codex/jsc-363-post-pr366-tracker-refresh normally so PR #367 includes local head 8bfbbfd56a56d291de7a679efbd32dce3779de1a or a later validated tracker-reset commit."
+    - "Trigger CodeRabbit manually with @coderabbitai review this pr if fresh push does not start an independent review."
+    - "Refresh live PR #367 ci/circleci: pr-template, aggregate pr-pipeline, review threads, CodeRabbit, Socket, repo-owned security lanes, and mergeStateStatus."
+    - "Treat the external Snyk GitHub App quota/status failure as owner-waived for that external lane only; do not claim external Snyk passed."
+    - "Merge PR #367 only after required repo-owned lanes are green/resolved or a precise owner-visible blocker is recorded."
+    - "After PR #367 merge, checkout main, pull latest origin/main, append a post-route receipt, update the Kanban/state/tracker, and validate before starting PU-013."
+    - "Treat receipt-backed merged JSC-363 route/foundation lanes through PR #360, the PR #361 typed-contract gate lane, the PR #362 tracker/evidence repair lane, the PR #363 post-PR #362 route refresh, the PR #364 post-PR #363 tracker refresh, the PR #365 post-PR #364 tracker repair, and the PR #366 post-PR #365 tracker/security repair as completed current-main evidence at e5797549647adab10d35472da9afac574fa0c3cf; do not reopen those PR lanes unless fresh GitHub or current-main validation shows a regression."
     - "Use receipt R379 as the validated post-PR #365 current-main route-tracker repair evidence for goal.md, state.yaml, receipts.jsonl, .harness/active-artifacts.md, and .harness/implementation-notes/goal-kanban-board.html; use R357 only as PU-012 intent-created evidence, not PU-012 completion evidence."
     - "Use the PU-012 intent review artifacts as the reviewed-intent gate: best-practices pass, agent-native pass, adversarial needs_changes, and adversarial rereview pass after the intent fix."
     - "Use artifacts/reviews/pu012-current-main-producer-proof-intent-completion-lenses.md and receipt R362 as the required simplify, improve-codebase-architecture, sy-review, and testing completion-lens evidence for local pre-PR PU-012 closeout."
-    - "Use PR #365 and receipt R379 as the post-merge route-truth refresh after local main and origin/main were pulled to bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd; treat PR #362/R365, PR #363/R367/R368/R369/R370, PR #364/R371/R372, and PR #365/R373-R377 as historical pre-validation route windows."
+    - "Use PR #366 and receipt R390 as the post-merge route-truth refresh after local main and origin/main were pulled to e5797549647adab10d35472da9afac574fa0c3cf; treat PR #362/R365, PR #363/R367/R368/R369/R370, PR #364/R371/R372, PR #365/R373-R377, and PR #366/R382-R389 as historical pre-validation route windows."
     - "Treat local branch-only leading-flag validator repair fb2e9946adfe21d29861e04f9b5d12596e696d80 as outstanding follow-up work because it is not on merged main."
     - "Treat the external Snyk GitHub App quota failure as owner-waived for that quota lane only, not as external Snyk green or as a blanket security waiver."
-    - "Treat PR #366 as the active tracker PR for the post-PR #365 route surface at pushed head 3142eb8ba4f7a5a31a51bb85a7c3cf196772f099; its body passes pr-template-gate locally, repo-owned checks are green, CodeRabbit status is SUCCESS, and review threads total 6 with zero unresolved after the final outdated state.yaml handoff-order thread was resolved. The next safe action is to recheck merge truth, then either merge/pull/append a post-merge receipt or explicitly close/supersede the PR and refresh board/state/receipt validation from current main before selecting PU-013."
-    - "Select PU-013 runtime cockpit integration proof as the next remaining lifecycle gap only after PR #366 is merged or explicitly superseded and the board/state/receipt surface validates from current main."
-    - "Start PU-013 with bounded intent from current main, Project Brain context, the plan/spec/audit matrix, and the required completion lenses/reviewer checks before any implementation done claim."
+    - "Treat PR #366 as merged current-main route evidence, not an active tracker PR. Its submitted head ce09bfaa11fa2f33fac12fd09f46e1256b425b25 is represented by squash merge commit e5797549647adab10d35472da9afac574fa0c3cf on local main and origin/main."
+    - "Keep PU-013 runtime cockpit integration proof queued until PR #367 is pushed, live PR #367 CI/review/merge truth is refreshed, the route is merged or explicitly blocked, local main is pulled, and the compact tracker validates."
+    - "Start PU-013 only after PR #367 route closure, from fresh current-main evidence, Project Brain context, the plan/spec/audit matrix, and the required completion lenses/reviewer checks before any implementation done claim."
     - "For every future slice, run simplify, improve-codebase-architecture, sy-review, and testing before done; then commit atomically, open or update one PR, trigger CodeRabbit manually when required, run pr-green-sweep until faults are fixed or explicitly blocked, merge to main, checkout main, pull latest remote main, update the goal board/state/receipt, and only then start the next slice."
     - "Stacked implementation PRs are forbidden by default. Only Jamie can authorize a named exception in the current slice intent and receipt before any parallel or dependent implementation work begins."
     - "Keep this board and the local board tracker as current route-truth surfaces; synchronize goal.md, state.yaml, goal-kanban-board.html, and receipts.jsonl after every merge, route decision, or blocker decision."

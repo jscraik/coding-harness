@@ -80,6 +80,12 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 - Baseline gates: `pnpm codestyle:parity`, `pnpm codex:agents:guard`,
   `pnpm check`, `bash scripts/validate-codestyle.sh`, and
   `bash scripts/verify-work.sh`.
+- Local CI-equivalent lanes must not stack silently. `pnpm test:ci` and
+  `pnpm run quality:behavior-tests` run through repo-scoped validation locks,
+  and `make hooks-pre-push` starts with `validation-locks` so active duplicate
+  lanes fail before heavier gates run. If this guard reports an active lane,
+  wait for it or stop it deliberately; if the owner process is gone, the checker
+  removes the dead lock.
 - Iterate with the narrowest proving check first, then
   `bash scripts/validate-codestyle.sh --fast`.
 - Changed production source requires `pnpm run quality:docstrings`,

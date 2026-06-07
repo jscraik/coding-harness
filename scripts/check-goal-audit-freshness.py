@@ -28,10 +28,12 @@ SELF_REFERENTIAL_GOAL_RECEIPT_PATHS = {
     ".harness/active-artifacts.md",
     ".harness/implementation-notes/goal-kanban-board.html",
     "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+    "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md",
     "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
     "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
 }
 SELF_REFERENTIAL_DECLARABLE_PATHS = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS | {
+    "scripts/check-goal-board.py",
     "scripts/check-goal-audit-freshness.py",
     "src/dev/check-goal-audit-freshness-script.test.ts",
 }

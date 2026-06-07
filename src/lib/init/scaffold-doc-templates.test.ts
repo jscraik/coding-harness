@@ -188,46 +188,48 @@ function fillRenderedPullRequestTemplate(template: string): string {
 			"- Risk and rollback: Revert the template change and invariant test.",
 		)
 		.replaceAll("- [ ]", "- [x]")
-		.replaceAll("pass/fail", "pass")
-		.replaceAll(
-			"<link / artifact path / comment ID>",
-			"https://example.com/review-artifact",
-		)
-		.replaceAll(
-			"<reviewer + link>",
-			"Codex https://example.com/independent-review",
+		.replace(
+			"- CodeRabbit:\n",
+			"- CodeRabbit: https://example.com/review-artifact\n",
 		)
 		.replace(
-			"Add one-paragraph merge rationale here.",
+			"- Independent reviewer evidence:\n",
+			"- Independent reviewer evidence: Codex https://example.com/independent-review\n",
+		)
+		.replace("- Codex:\n", "- Codex: https://example.com/review-artifact\n")
+		.replace(
+			"- CodeRabbit Semgrep:\n",
+			"- CodeRabbit Semgrep: n.a. because this fixture does not run Semgrep.\n",
+		)
+		.replace(
+			"<!-- Add one-paragraph merge rationale before requesting review. -->",
 			"Generated PR templates must remain compatible with the validator they ask downstream users to satisfy.",
 		);
 
 	for (const [label, value] of completedWorkPerformedValues) {
 		body = body.replace(
-			new RegExp(`^- ${label}: .*$`, "m"),
+			new RegExp(`^- ${label}:.*$`, "m"),
 			`- ${label}: ${value}`,
 		);
 	}
 
 	for (const [label, value] of completedBehaviorProofValues) {
 		body = body.replace(
-			new RegExp(`^- ${label}: .*$`, "m"),
+			new RegExp(`^- ${label}:.*$`, "m"),
 			`- ${label}: ${value}`,
 		);
 	}
 
 	body = body
 		.replace(
-			"- verification_commands: list exact commands run here",
+			"- verification_commands:",
 			"- verification_commands: pnpm vitest run src/lib/init/scaffold-doc-templates.test.ts",
 		)
+		.replace("- verification_outcomes:", "- verification_outcomes: pass")
+		.replace("- blocked_steps_reason:", "- blocked_steps_reason: none")
 		.replace(
-			"- verification_outcomes: record pass/fail/blocked for each command here",
-			"- verification_outcomes: pass",
-		)
-		.replace(
-			"- blocked_steps_reason: none if all planned steps ran",
-			"- blocked_steps_reason: none",
+			"<!-- Add one or more evidence lines such as:\n- Command: `bash scripts/validate-codestyle.sh` -> pass\n- Command: `pnpm check` -> blocked (reason)\n- Command: `test -f memory.json` -> n.a. (reason)\n-->",
+			"- Command: `pnpm vitest run src/lib/init/scaffold-doc-templates.test.ts` -> pass",
 		)
 		.replace("- Any other command(s):", "- Any other command(s): none");
 
@@ -309,11 +311,17 @@ describe("document scaffold templates", () => {
 			expect(template).toContain(`- ${label}:`);
 		}
 		for (const field of REQUIRED_WORK_FIELDS) {
-			expect(template).toContain(`- ${field.label}: ${field.placeholder}`);
+			expect(template).toContain(`- ${field.label}:`);
+			expect(template).not.toContain(`- ${field.label}: ${field.placeholder}`);
 		}
 		for (const field of REQUIRED_BEHAVIOR_PROOF_FIELDS) {
-			expect(template).toContain(`- ${field.label}: ${field.placeholder}`);
+			expect(template).toContain(`- ${field.label}:`);
+			expect(template).not.toContain(`- ${field.label}: ${field.placeholder}`);
 		}
+		expect(template).not.toContain("pass/fail");
+		expect(template).not.toContain("<link / artifact path / comment ID>");
+		expect(template).not.toContain("<reviewer + link>");
+		expect(template).not.toContain("Add one-paragraph merge rationale here.");
 	});
 
 	it("renders a pull request template that can satisfy the validator contract", () => {

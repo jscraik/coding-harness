@@ -56,6 +56,13 @@ For command-registry deep-module splits, keep the public command spec small,
 move action-specific option builders behind named internal adapter seams,
 refresh `AI/context/diagram-context.md`, and update README command-surface
 guidance when docs-gate reports a CLI-surface requirement.
+For validation-lock, hook, or local CI-equivalent guard changes that refresh
+`AI/context/diagram-context.md`, keep the generated `.diagram/` artifacts,
+this guide, `AGENTS.md`, and `docs/agents/07b-agent-governance.md`
+synchronized. The architecture context must show the current validation
+dependencies, while `docs/agents/02-tooling-policy.md` and
+`docs/agents/06-security-and-governance.md` describe operator execution and
+pre-push governance.
 The prompt-gate split follows this rule: keep `src/commands/prompt-gate.ts`
 as a compatibility facade, keep `prompt-gate-command-spec.ts` as the registry
 adapter, and keep CLI argument parsing plus prompt-template section validation

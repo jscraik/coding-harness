@@ -4683,7 +4683,8 @@ describe("--update flag", () => {
 			".harness/knowledge/tooling/codex-learn-summary.md",
 		);
 		expect(prTemplate).not.toContain("@greptileai");
-		expect(prTemplate).toContain("Codex: <link / artifact path / comment ID>");
+		expect(prTemplate).toContain("Codex:");
+		expect(prTemplate).not.toContain("<link / artifact path / comment ID>");
 	});
 
 	it("fails update when manifest provider and requested provider mismatch", () => {
