@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Literal, cast
 
 from jsonschema import Draft7Validator, Draft202012Validator, validate as validate_json_schema
-from jsonschema.exceptions import ValidationError as JsonSchemaValidationError
+from jsonschema.exceptions import SchemaError, ValidationError as JsonSchemaValidationError
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 import yaml
 
@@ -757,10 +757,11 @@ def validate_json_schema_value(
         else:
             Draft202012Validator.check_schema(schema_map)
         validate_json_schema(instance=value, schema=schema_map)
-    except JsonSchemaValidationError as exc:
+    except (JsonSchemaValidationError, SchemaError) as exc:
         location = ".".join(str(part) for part in exc.absolute_path)
         suffix = f" at {location}" if location else ""
-        errors.append(f"{label}: violates JSON Schema{suffix}: {exc.message}")
+        message = exc.message if hasattr(exc, 'message') else str(exc)
+        errors.append(f"{label}: violates JSON Schema{suffix}: {message}")
 
 
 def validate_cli_json_contracts(errors: list[str]) -> tuple[int, int]:
