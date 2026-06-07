@@ -23,6 +23,29 @@ esac
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd -- "$script_dir/.." && pwd)"
 lock_root="${HARNESS_VALIDATION_LOCK_ROOT:-$repo_root/.cache/validation-locks}"
+
+canonical_repo_root="$(cd -- "$repo_root" && pwd -P)"
+if [[ -d "$lock_root" ]]; then
+	canonical_lock_root="$(cd -- "$lock_root" && pwd -P)"
+else
+	lock_parent="$(dirname "$lock_root")"
+	if [[ -d "$lock_parent" ]]; then
+		canonical_lock_parent="$(cd -- "$lock_parent" && pwd -P)"
+		canonical_lock_root="$canonical_lock_parent/$(basename "$lock_root")"
+	else
+		canonical_lock_root="$lock_root"
+	fi
+fi
+
+case "$canonical_lock_root" in
+	"$canonical_repo_root"/*)
+		;;
+	*)
+		echo "[validation-lock] lock_root is not under repo_root; refusing to acquire validation lock." >&2
+		exit 1
+		;;
+esac
+
 lock_dir="$lock_root/$lock_name.lock"
 metadata_path="$lock_dir/metadata.env"
 

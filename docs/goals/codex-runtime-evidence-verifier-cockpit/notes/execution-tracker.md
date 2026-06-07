@@ -27,8 +27,8 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Parent issue | JSC-363 |
 | Canonical goal | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` |
 | Current branch | `codex/jsc-363-post-pr366-tracker-refresh` |
-| Local head | `8bfbbfd56a56d291de7a679efbd32dce3779de1a` |
-| Remote PR head | `25a7eb0f61f75e7b31adc7cd5e819867dbe48c6f` |
+| Local head | `c880476ab43c0d1063fdcd0eff9d225480e0f7dc` |
+| Remote PR head | `c880476ab43c0d1063fdcd0eff9d225480e0f7dc` |
 | Main baseline | `e5797549647adab10d35472da9afac574fa0c3cf` |
 | Active route count | 1 |
 | Active route | PR #367 |
@@ -43,12 +43,13 @@ Current evidence:
 
 - Live GitHub PR #367 is open and targets `main`.
 - Live GitHub PR #367 remote head is
-  `25a7eb0f61f75e7b31adc7cd5e819867dbe48c6f`.
-- Local branch head is `8bfbbfd56a56d291de7a679efbd32dce3779de1a`, so the
-  remote PR does not include the latest local repairs.
-- Live PR #367 aggregate `pr-pipeline` is failing on the stale remote head.
-- Local `pnpm test:ci` and `pnpm run validation:locks` passed on the local
-  repair stack before this tracker reset.
+  `c880476ab43c0d1063fdcd0eff9d225480e0f7dc`.
+- Local branch head matches the remote PR head after the validation-lock test
+  repair push.
+- Live PR #367 aggregate `pr-pipeline` and repo-owned CircleCI lanes pass on
+  head `c880476ab43c0d1063fdcd0eff9d225480e0f7dc`.
+- Live review-thread refresh still reports unresolved CodeRabbit threads that
+  must be fixed before the route can close.
 - The external Snyk GitHub App quota/status lane remains owner-waived for that
   external lane only; it is not external Snyk success and not a security waiver
   for repo-owned gates.
@@ -57,13 +58,17 @@ Next action:
 
 1. Validate this tracker reset locally.
    - Command: `pnpm run validation:locks && pnpm test:ci`
-   - Pass criteria: Exit code 0, no lock conflicts, all tests pass.
+   - Pass criteria: Lock check passes before the CI-equivalent test lane starts;
+     all tests pass.
    - Owner fallback: If validation fails, notify Jamie and do not proceed to commit/push.
 
 2. Commit the tracker reset.
-   - Command: `git add docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl .harness/active-artifacts.md && git commit -m "Reset JSC-363 thin tracker after PR #366"`
-   - Pass criteria: Commit succeeds with exit code 0, pre-commit hooks pass (no formatting violations, no lock conflicts), commit SHA is generated, and working tree is clean after commit.
-   - Owner fallback: If pre-commit hooks fail due to formatting issues, run `pnpm run format` and retry; if hooks fail due to lock conflicts, resolve conflicts with `pnpm run validation:locks` diagnostics and retry; if hooks fail for other reasons, diagnose the specific hook failure, fix the underlying issue, and do not bypass hooks with --no-verify.
+   - Command: `git add docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl .harness/active-artifacts.md .harness/implementation-notes/goal-kanban-board.html`
+   - Command: `git commit -m "Reset JSC-363 thin tracker after PR #366"`
+   - Pass criteria: Commit succeeds with exit code 0, pre-commit hooks pass,
+     commit SHA is generated, and working tree is clean after commit.
+   - Owner fallback: If pre-commit hooks fail, fix the underlying issue and do
+     not bypass hooks with `--no-verify`.
 
 3. Push `codex/jsc-363-post-pr366-tracker-refresh` without bypassing hooks.
    - Command: `git push origin codex/jsc-363-post-pr366-tracker-refresh`
@@ -78,9 +83,20 @@ Next action:
 
 5. Refresh PR #367 `pr-template`, `pr-pipeline`, review-thread, and
    mergeability truth.
-   - Command: `gh pr view 367 --json state,statusCheckRollup,reviewDecision,mergeable && gh api repos/:owner/:repo/pulls/367/comments --paginate --jq 'map(select(.pull_request_review_id != null)) | length'`
-   - Pass criteria: Fresh CI status retrieved from statusCheckRollup, mergeability state known from mergeable field, reviewDecision shows approval status, and unresolved review-thread count obtained from the API query (exit code 0 for both commands).
-   - Owner fallback: If `gh` unavailable, use GitHub web UI to check PR status, CI checks, review decision, mergeability state, and count unresolved review threads manually, then record findings in a receipt.
+   - Command: `gh pr view 367 --json state,statusCheckRollup,reviewDecision,mergeable`
+   - Command:
+
+     ```bash
+     gh api graphql -f owner=jscraik -f name=coding-harness -F number=367 -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{isResolved isOutdated}}}}}' | jq '.data.repository.pullRequest.reviewThreads.nodes | map(select(.isResolved == false and .isOutdated == false)) | length'
+     ```
+
+   - Pass criteria: Fresh CI status retrieved from `statusCheckRollup`,
+     mergeability known from `mergeable`, review decision known from
+     `reviewDecision`, and unresolved review-thread count retrieved from the
+     GraphQL review-thread surface.
+   - Owner fallback: If `gh` unavailable, use GitHub web UI to check PR status,
+     CI checks, review decision, mergeability state, and unresolved review
+     threads manually, then record findings in a receipt.
 
 6. Merge PR #367 only after required repo-owned lanes are green/resolved or a
    precise owner-accepted blocker is recorded.
@@ -132,7 +148,8 @@ Feature implementation remains stopped until all of these are true:
 
 - PR #367 branch push completes without bypassing hooks.
 - Fresh remote PR #367 repo-owned checks are known.
-- Review-thread truth is refreshed.
+- Review-thread truth is refreshed and unresolved actionable threads are fixed,
+  resolved, or owner-accepted with evidence.
 - PR #367 is merged and pulled to local main, or an owner-visible blocker is
   recorded.
 - `goal.md`, `state.yaml`, `notes/execution-tracker.md`,
@@ -148,12 +165,12 @@ Tightened JSC-363 execution control before restarting the goal.
 
 Current truth:
 - Active route lane: PR #367 only.
-- Local branch head: 8bfbbfd56a56d291de7a679efbd32dce3779de1a.
-- Remote PR #367 head: 25a7eb0f61f75e7b31adc7cd5e819867dbe48c6f.
-- Remote PR #367 still shows stale failing pr-pipeline until the local repair stack is pushed and checks rerun.
+- Local branch head: c880476ab43c0d1063fdcd0eff9d225480e0f7dc.
+- Remote PR #367 head: c880476ab43c0d1063fdcd0eff9d225480e0f7dc.
+- Remote PR #367 repo-owned CI lanes pass at the pushed head; unresolved CodeRabbit review threads remain the active route blocker.
 - PU-013 runtime cockpit integration proof is queued, not active.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
 
 Restart rule:
-No feature work resumes until PR #367 is pushed, remote CI/review truth is refreshed, the route is merged or explicitly blocked, local main is pulled, and the compact goal tracker validates.
+No feature work resumes until PR #367 review threads are fixed or owner-accepted, the route is merged or explicitly blocked, local main is pulled, and the compact goal tracker validates.
 ```

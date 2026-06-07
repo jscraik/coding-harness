@@ -26,7 +26,7 @@ case "$canonical_lock_root" in
 		# Safe: lock_root is a subpath of repo_root
 		;;
 	*)
-		echo "[validation-lock] lock_root is not under repo_root, skipping cleanup for safety." >&2
+		echo "[validation-lock] lock_root is not under repo_root; refusing to validate lock state." >&2
 		exit 1
 		;;
 esac

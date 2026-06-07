@@ -75,6 +75,40 @@ describe("validation lock scripts", () => {
 		);
 	});
 
+	it("fails closed when the lock root escapes the repository", () => {
+		const escapedRoot = mkdtempSync("/tmp/harness-validation-lock-");
+		tempDirs.push(escapedRoot);
+
+		const result = spawnSync("bash", [CHECK_SCRIPT], {
+			encoding: "utf8",
+			env: { ...process.env, HARNESS_VALIDATION_LOCK_ROOT: escapedRoot },
+		});
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"lock_root is not under repo_root; refusing to validate lock state",
+		);
+	});
+
+	it("refuses to acquire a validation lock outside the repository", () => {
+		const escapedRoot = mkdtempSync("/tmp/harness-validation-lock-");
+		tempDirs.push(escapedRoot);
+
+		const result = spawnSync(
+			"bash",
+			[LOCK_SCRIPT, "behavior-tests", "--", "node", "-e", "console.log('ok')"],
+			{
+				encoding: "utf8",
+				env: { ...process.env, HARNESS_VALIDATION_LOCK_ROOT: escapedRoot },
+			},
+		);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"lock_root is not under repo_root; refusing to acquire validation lock",
+		);
+	});
+
 	it("removes the lock after the wrapped command exits", () => {
 		const lockRoot = makeTempDir();
 		const output = execFileSync(
