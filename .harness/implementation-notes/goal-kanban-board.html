@@ -411,13 +411,13 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness status">PR #359 merged: main refreshed</div>
+      <div class="source-chip" aria-label="Source freshness status">PR #361 merged: main refreshed</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>Post-PR #359 route refresh</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>PR #359 latest merged</strong></div>
-      <div class="metric"><span>Runtime producer</span><strong>Pending evidence</strong></div>
+      <div class="metric"><span>Goal status</span><strong>Local closeout passed; PR next</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>PR #361 latest merged</strong></div>
+      <div class="metric"><span>Next slice</span><strong>PU-012 PR sweep</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Partial, final lanes pending</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
       <div class="metric"><span>Linear tracker</span><strong>Field text unclaimed</strong></div>
@@ -474,7 +474,7 @@
       <article class="module-panel" style="--module-color: var(--green)">
         <header>Deep Runtime Modules</header>
         <ul>
-          <li><code>src/lib/runtime/</code><small>PU-047 client message identity now lives here with runtime evidence packets, bundles, and provenance validation.</small></li>
+          <li><code>src/lib/runtime/</code><small>PU-012 producer proof/reconciliation lands here first, alongside runtime evidence packets, bundles, and provenance validation.</small></li>
           <li><code>src/lib/delivery-truth/</code><small>Private claim-support composition and Judge/PM readiness logic.</small></li>
           <li><code>src/lib/review-state/</code><small>Reviewer artifact and unresolved-thread truth packets.</small></li>
           <li><code>src/lib/external-state/</code><small>PR, CI, review, tracker freshness snapshots.</small></li>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts and live GitHub after PR #359 merged at <code>2026-06-06T18:31:48Z</code>. Local <code>main</code> and <code>origin/main</code> are at squash merge commit <code>c8bc70c6c841348924017194050de0e126c4a448</code>; submitted PR head was <code>32f6bbb2c038912697d810ed5cacf34a8028f39a</code>. CircleCI <code>pr-pipeline</code>, CircleCI <code>security-scan</code>, CodeRabbit, Socket, and repo-owned security lanes passed for the PR head through live GitHub check contexts on pipeline <code>2515</code>. Direct CircleCI proof through <code>&lt;REDACTED_HOME_PATH&gt;/.codex/.env</code> is blocked in this session because that env surface is a FIFO and non-blocking read returns <code>Resource temporarily unavailable</code>; the prior authenticated CLI/API probe confirmed PR #359 <code>orb-pinning</code> job success. PR #359 review-thread truth is resolved/outdated after CodeRabbit marked both route-evidence comments addressed in commit <code>32f6bbb2c038912697d810ed5cacf34a8028f39a</code>. Linear JSC-363 route comment <code>7d2d878f-26fd-4b08-88a1-5a96f77de3f1</code> records the post-PR #356 truth only; no post-PR #357, post-PR #358, or post-PR #359 Linear mutation is claimed, and field-text-current remains unclaimed because the issue still uses Phase 1 wording. The external Snyk GitHub App quota failure remains an owner-waived quota/status lane only. Runtime producer evidence, final delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and live Linear after PR #361 merged at <code>2026-06-07T01:47:00Z</code>. Local <code>main</code> and <code>origin/main</code> are at squash merge commit <code>e45384ed84af245e6c5335952c0f7ecf1db7ef86</code>; submitted PR #361 head was <code>fa5a421f46fa643868f69cabff10fd3a4ab9dcc5</code>. Live GitHub shows zero open PRs. PR #361 CodeRabbit, Socket, repo-owned CircleCI lanes, aggregate <code>pr-pipeline</code>, and aggregate <code>security-scan</code> passed before merge; the external Snyk GitHub App quota failure remains an owner-waived quota/status lane only. Live Linear JSC-363 is <code>In Review</code> with PR #360 attachment <code>4dbe1293-d506-4d37-ba79-aee8ae605cec</code> present, but field-text-current remains unclaimed because the issue still uses Phase 1 wording. Receipt <code>R356</code> validates the current-main route-tracker repair, PU-012 intent review artifacts close the intent gate after adversarial re-review, receipt <code>R361</code> records the PU-012 validation floor passing without runtime source repair, and receipt <code>R362</code> records completion lenses passing for local pre-PR closeout. The next slice action is commit, one PR, pr-green-sweep, merge, pull main, and tracker refresh before any next-slice implementation. Delivery-truth consumption, documentation accuracy, Judge/PM readiness, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -529,6 +529,39 @@
         evidence: ["docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md", "Objective section explicitly rejects Phase 1-only completion", "Linear wording remains a separate tracker-alignment lane"],
         next: "Keep the plan, spec, goal board, and Linear scope note aligned before any full-lifecycle closeout claim.",
         risk: "A PR may complete a slice, but it cannot close the parent goal without separate proof for runtime, CI, review, tracker, docs, and Judge/PM lanes."
+      },
+      {
+        id: "current-main-pr361",
+        lane: "completed",
+        title: "Current main: PR #361 typed-contract gate",
+        status: "done",
+        tags: ["PR #361", "current main", "typed contracts"],
+        summary: "Local main and origin/main are synced at PR #361 squash merge e45384ed84af245e6c5335952c0f7ecf1db7ef86. Live GitHub shows zero open PRs.",
+        evidence: ["PR #361 -> MERGED at 2026-06-07T01:47:00Z", "Merge commit -> e45384ed84af245e6c5335952c0f7ecf1db7ef86", "Submitted head -> fa5a421f46fa643868f69cabff10fd3a4ab9dcc5", "Repo-owned CircleCI lanes -> pass", "pr-pipeline -> pass on pipeline 2524", "security-scan -> pass on pipeline 2524", "CodeRabbit -> pass", "Socket -> pass or non-blocking PR alert skipped", "External security/snyk (jscraik) -> owner-waived quota failure only"],
+        next: "Use PR #361 as completed typed-contract gate evidence; route new work from the PU-012 current-main producer proof slice.",
+        risk: "PR #361 does not prove runtime producer emission, delivery-truth consumption, Linear field-text currency, Judge/PM readiness, or parent-goal completion."
+      },
+      {
+        id: "current-main-pr360",
+        lane: "completed",
+        title: "Current route: PR #360 JSC-363 refresh",
+        status: "done",
+        tags: ["PR #360", "JSC-363", "route truth"],
+        summary: "PR #360 refreshed the post-PR #359 route truth before PR #361 advanced main again.",
+        evidence: ["PR #360 -> MERGED at 2026-06-06T23:56:07Z", "Merge commit -> 05da5ad9956b163d6f60cf1df8079392c0b02f23", "Submitted head -> 4d6054dc650dc95d763371b23e0e3380d750d77e", "Linear JSC-363 PR #360 attachment -> 4dbe1293-d506-4d37-ba79-aee8ae605cec present"],
+        next: "Use PR #360 as the latest JSC-363 route-refresh attachment; do not reopen older PR lanes unless current-main validation finds a regression.",
+        risk: "A route-refresh PR is tracker evidence, not implementation completion or Linear field-text proof."
+      },
+      {
+        id: "next-slice-pu012-reconciliation",
+        lane: "intent",
+        title: "Next slice: PU-012 producer proof",
+        status: "active",
+        tags: ["PU-012", "next slice", "runtime producer"],
+        summary: "The current implementation route is PU-012 current-main producer proof and bridge-boundary reconciliation, not a general feature sprint. The intent artifact has passed best-practices, agent-native, and adversarial re-review after fixing two intent gaps, the validation floor passed without runtime source repair, and completion lenses passed for local pre-PR closeout.",
+        evidence: [".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md PU-012", "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/PU-012-current-main-producer-proof-intent.md", "goal.md corrected backlog", "state.yaml current_slice_gate.reason"],
+        next: "Commit this slice, open exactly one PR, run pr-green-sweep until faults are fixed and merged, pull main, then refresh the tracker before starting the next slice.",
+        risk: "Starting the next slice before PR merge and main pullback would repeat the stacked-PR and stale-state failure modes."
       },
       {
         id: "pr321",
@@ -670,7 +703,7 @@
         tags: ["PR #358", "merged", "CircleCI green", "CodeRabbit green"],
         summary: "PR #358 is merged into current main. It refreshed post-PR #357 route truth and split proof lanes without claiming runtime producer emission, delivery-truth consumption, Judge/PM readiness, Linear field-text currency, or parent-goal completion.",
         evidence: ["PR #358 -> MERGED at 2026-06-06T17:28:00Z", "Squash merge commit -> de9db6445acdafb5b9dd7b437ef7476345680cff", "Submitted head -> 30dca4d037062b45d7d119d50606066eece10ec1", "Local main -> de9db6445acdafb5b9dd7b437ef7476345680cff", "CircleCI PR-head pr-pipeline -> pass via GitHub check contexts", "CircleCI PR-head security-scan -> pass via GitHub check contexts", "CircleCI API direct proof -> blocked because <REDACTED_HOME_PATH>/.codex/.env is a FIFO in this session", "CodeRabbit -> SUCCESS after manual trigger", "Receipt-anchor caveat -> PRRT_kwDORWZJCc6Hlynx captured at 2026-06-06T17:38:23Z and superseded by PR #359 route-evidence repair", "Linear route comment -> post-PR #356 comment 7d2d878f-26fd-4b08-88a1-5a96f77de3f1 only", "Linear field text -> still Phase 1 wording, unclaimed", "security/snyk GitHub App -> owner-waived quota failure only"],
-        next: "Use PR #358 as historical route-refresh evidence; current route truth now moves through PR #359.",
+        next: "Use PR #358 as historical route-refresh evidence; current route truth now moves through PR #361 and the PU-012 reconciliation route.",
         risk: "This proves PR #358 merge and remote PR lanes for that head. It does not prove Linear field-text-current, runtime producer emission, delivery-truth consumption, Judge/PM readiness, or parent-goal completion."
       },
       {
@@ -681,7 +714,7 @@
         tags: ["PR #359", "merged", "CircleCI green", "CodeRabbit addressed"],
         summary: "PR #359 is merged into current main. It repaired stale route-evidence wording, clarified branch/global learning-gate evidence, and re-anchored the current board/state/receipt surfaces to reachable current-main truth.",
         evidence: ["PR #359 -> MERGED at 2026-06-06T18:31:48Z", "Squash merge commit -> c8bc70c6c841348924017194050de0e126c4a448", "Submitted head -> 32f6bbb2c038912697d810ed5cacf34a8028f39a", "Local main -> c8bc70c6c841348924017194050de0e126c4a448", "CircleCI pipeline 2515 -> pr-pipeline SUCCESS and security-scan SUCCESS via live GitHub check contexts", "CircleCI contexts -> audit, check, consistency-drift-health, dependency-scan, docs-gate, linear-gate, lint, memory, orb-pinning, pr-template, risk-policy-gate, security-scan, smarter-testing-comparison, snyk-dependency-scan, test, typecheck all SUCCESS", "Direct CircleCI proof through <REDACTED_HOME_PATH>/.codex/.env -> blocked because the env surface is a FIFO and non-blocking read returns Resource temporarily unavailable", "Prior authenticated CLI/API probe -> PR #359 orb-pinning job success", "CodeRabbit -> SUCCESS after manual trigger and addressed comments", "PR #359 review threads -> resolved/outdated", "security/snyk GitHub App -> owner-waived quota failure only"],
-        next: "Validate this post-PR #359 board/state/receipt set and commit it before choosing the next bounded lifecycle gap.",
+        next: "Use PR #359 as historical route-evidence repair; current route truth now moves through PR #361 and the PU-012 reconciliation route.",
         risk: "This proves route-evidence repair and PR-lane refresh. It does not prove Linear field-text-current, runtime producer emission, delivery-truth consumption, documentation accuracy, Judge/PM readiness, or parent-goal completion."
       },
       {
@@ -690,9 +723,9 @@
         title: "Current review truth boundary",
         status: "done",
         tags: ["CodeRabbit", "Codex reviewers", "threads"],
-        summary: "Review truth is tracked separately from CI and PR merge state. Current PR #359 review truth is resolved/outdated, and future implementation slices still require fresh independent reviewer artifacts before completion.",
-        evidence: ["PR #359 CodeRabbit -> SUCCESS after manual trigger", "PR #359 CodeRabbit comments -> addressed in commit 32f6bbb2c038912697d810ed5cacf34a8028f39a", "PR #359 review threads -> resolved/outdated", "state.yaml slice_review_contract still requires simplify, improve-codebase-architecture, sy-review, testing, adversarial, agent-native, and best-practices evidence for future slices"],
-        next: "Keep the review lane closed for PR #359; reopen only when the next bounded slice creates fresh review evidence.",
+        summary: "Review truth is tracked separately from CI and PR merge state. Current open-PR truth is empty, and future implementation slices still require fresh independent reviewer artifacts before completion.",
+        evidence: ["Live GitHub open PR list -> []", "PR #361 CodeRabbit -> pass before merge", "state.yaml slice_review_contract still requires simplify, improve-codebase-architecture, sy-review, testing, adversarial, agent-native, and best-practices evidence for future slices"],
+        next: "Keep the review lane closed until PU-012 creates fresh review evidence.",
         risk: "A green PR or CircleCI pipeline can still carry unresolved review comments or missing independent reviewer proof."
       },
       {
@@ -701,9 +734,9 @@
         title: "Linear tracker truth boundary",
         status: "unclaimed",
         tags: ["Linear", "JSC-363", "field text"],
-        summary: "Linear JSC-363 has a post-PR #356 route comment, but no post-PR #357, post-PR #358, or post-PR #359 Linear mutation is claimed and the issue fields still describe Phase 1.",
-        evidence: ["Linear route comment -> 7d2d878f-26fd-4b08-88a1-5a96f77de3f1", "goal.md current route truth", "state.yaml current_slice_gate.reason"],
-        next: "Refresh or explicitly block Linear field-text alignment only when the next bounded slice selects tracker alignment work.",
+        summary: "Live Linear JSC-363 is In Review and has the PR #360 route-refresh attachment, but the issue fields still describe Phase 1.",
+        evidence: ["Linear JSC-363 status -> In Review", "PR #360 attachment -> 4dbe1293-d506-4d37-ba79-aee8ae605cec present", "No PR #361 attachment claimed because PR #361 is JSC-398 typed-contract gate evidence", "goal.md current route truth", "state.yaml current_slice_gate.reason"],
+        next: "Keep Linear field-text-current unclaimed until Jamie accepts the stale wording or the issue is edited under an explicit tracker-alignment slice.",
         risk: "Tracker comments, issue fields, and goal receipts are distinct truth surfaces; one cannot silently stand in for the others."
       },
       {
@@ -918,13 +951,13 @@
       {
         id: "runtime-producer",
         lane: "remaining",
-        title: "Runtime producer evidence",
-        status: "blocked",
+        title: "PU-012 producer proof reconciliation",
+        status: "active",
         tags: ["runtime-card", "Codex evidence", "producer"],
-        summary: "The goal still requires runtime cards to cite Codex runtime evidence without scraping final response prose.",
-        evidence: ["goal.md completion line for runtime cards", "state.yaml blocked_done_claims include runtime producer emission", "src/lib/runtime/ is the deep module home"],
-        next: "Produce or explicitly block current runtime producer emission evidence with receipt-bound head SHA.",
-        risk: "Without producer evidence, the cockpit can validate contracts but cannot prove live runtime ingestion."
+        summary: "The next route must reconcile historical PU-012 receipts against current main and prove whether the producer bridge is sufficient or needs a focused repair.",
+        evidence: ["goal.md corrected backlog", "state.yaml current_slice_gate.reason", "Plan PU-012 Codex Runtime Evidence Producer Bridge", "src/lib/runtime/ is the deep module home"],
+        next: "Treat PU-012 as locally closed only after R362 and validators pass; the next operational step is the one-PR sweep and main pullback.",
+        risk: "Treating old local PU-012 receipts as current proof without reconciliation would repeat the stale-state failure mode."
       },
       {
         id: "delivery-truth-consumption",

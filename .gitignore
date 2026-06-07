@@ -182,6 +182,7 @@ artifacts/reviews/*
 !artifacts/reviews/pu047-cnf-001-*.json
 !artifacts/reviews/pu048-cnf-002-*.md
 !artifacts/reviews/pu048-cnf-002-*.json
+!artifacts/reviews/pu012-current-main-producer-proof-intent-*.md
 !.harness/artifacts/
 !.harness/artifacts/README.md
 !.harness/artifacts/brownfield-memory-inventory.md
