@@ -175,7 +175,7 @@ Required before a PU-012 done claim:
 - Command: `pnpm typecheck`
 - Command: `git diff --check`
 - Command: `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .`
-- Command: `PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/codex-runtime-evidence-verifier-cockpit`
+- Command: `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit`
 
 Conditional validation:
 

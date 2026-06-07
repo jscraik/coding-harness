@@ -162,11 +162,11 @@ runtime producer emission, delivery-truth consumption, or final goal completion.
   PR, CI, review-thread, Project Brain, and runtime evidence truth separated in
   receipts. Historical PR #309 continuity remains indexed by branch head
   `84bd19b1a5da56800e7cf4239c9f65348ccf2d96` for validator compatibility;
-  it is not current route truth. Current route truth is PR #359 merged into
+  it is not current route truth. Current route truth is PR #361 merged into
   `main` as squash commit
-  `c8bc70c6c841348924017194050de0e126c4a448` with submitted head
-  `32f6bbb2c038912697d810ed5cacf34a8028f39a`; it follows the
-  post-PR #358 route refresh and the PR #359 CodeRabbit route-evidence repair.
+  `e45384ed84af245e6c5335952c0f7ecf1db7ef86` with submitted head
+  `fa5a421f46fa643868f69cabff10fd3a4ab9dcc5`; it follows the
+  post-PR #360 route refresh and the PR #361 typed-contract validation gate lane.
   Historical
   PR #322 through PR #350 ledger entries below, including PR #344
   route-refresh, PR #347 body repair, PR #348 review-thread repair, PR #349
