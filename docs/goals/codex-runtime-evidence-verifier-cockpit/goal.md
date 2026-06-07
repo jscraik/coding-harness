@@ -42,19 +42,22 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-07 post-PR #362 route-truth reconciliation.
-Local `main` and `origin/main` were synced before this route update and are at
+Last updated during the 2026-06-07 PR #363 route-refresh triage. Local
+`main` and `origin/main` were synced before this route update and are at
 `73d6f162fb8a67674ab05c543eb93aed1f7b2632`, the PR #362 squash merge
-commit. Live GitHub showed zero open pull requests during this reconciliation.
-This section records the current route tracker after PR `#362` merged; older
-PR-specific receipt entries remain historical evidence but must not route new
-work unless a fresh current-main audit reopens them.
+commit. Live GitHub showed zero open pull requests during the earlier
+post-PR #362 reconciliation, then draft PR `#363` was opened to carry that route
+refresh. This section records the current route tracker while PR `#363` is
+the active one-PR sweep; older PR-specific receipt entries remain historical
+evidence but must not route new work unless a fresh current-main audit reopens
+them.
 
 Current route truth:
 
 - `origin/main` and local `main` are currently `73d6f162fb8a67674ab05c543eb93aed1f7b2632`, the PR #362 squash merge commit.
 - PR `#362` merged into `main` at 2026-06-07T04:05:32Z as squash merge commit `73d6f162fb8a67674ab05c543eb93aed1f7b2632`; its submitted head was `3f7ab4c2ede5f24b95038eff686ef3e58be2755f`.
 - PR #362 delivered the post-PR #361 route-tracker and evidence repair lane. Before merge, live GitHub showed CodeRabbit passed, Socket passed, all repo-owned CircleCI contexts passed, aggregate `pr-pipeline` passed on pipeline `2529`, and aggregate `security-scan` passed on pipeline `2529`. The external Snyk GitHub App lane failed because the private-test quota is exhausted and is owner-waived for that external quota/status lane only.
+- PR `#363` is the current draft route-refresh PR for the post-PR #362 tracker update. It is on the active PR branch; receipt `R366` records the no-diff CI rerun head used when the PR body checklist markers were corrected and local `pr-template-gate` passed. Live PR #363 repo-owned CircleCI, aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, and Socket lanes are green; the external Snyk GitHub App quota/status failure is owner-waived for that external lane only. PR #363 remains active until unresolved review threads, merge-to-main proof, local main pull, and refreshed board/state/receipt evidence are complete.
 - PR `#361` merged into `main` at 2026-06-07T01:47:00Z as squash merge commit `e45384ed84af245e6c5335952c0f7ecf1db7ef86`; its submitted head was `fa5a421f46fa643868f69cabff10fd3a4ab9dcc5`.
 - PR #361 delivered the repository typed-contract validation gate lane. Before merge, live GitHub showed CodeRabbit passed, Socket passed or skipped only the non-blocking PR-alert lane, all repo-owned CircleCI contexts passed, aggregate `pr-pipeline` passed on pipeline `2524`, and aggregate `security-scan` passed on pipeline `2524`. The external Snyk GitHub App lane failed because the private-test quota is exhausted and is owner-waived for that external quota/status lane only.
 - PR `#360` merged into `main` at 2026-06-06T23:56:07Z as squash merge commit `05da5ad9956b163d6f60cf1df8079392c0b02f23`; its submitted head was `4d6054dc650dc95d763371b23e0e3380d750d77e`. It refreshed the post-PR #359 route truth before PR #361 advanced main again.
@@ -93,7 +96,7 @@ Corrected backlog after current-main reconciliation:
 - Done on current main: no open PRs exist in live GitHub at the time of this reconciliation.
 - Done on current main: repo-owned PR #362 CircleCI lanes, aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, and Socket passed before merge; external Snyk GitHub App quota failure is waived only for that external quota/status lane.
 - Current tracker repair: validated by PR #362 and current-main route receipt `R365` after updating `goal.md`, `state.yaml`, `receipts.jsonl`, `.harness/active-artifacts.md`, and `.harness/implementation-notes/goal-kanban-board.html`. Earlier receipts `R356` through `R364` remain route-tracker, intent, validation-floor, completion-lens, and PR-review evidence only; they do not prove runtime producer emission beyond PU-012's selected floor, delivery-truth consumption, Linear field-text currency, Judge/PM readiness, or parent-goal completion.
-- Next slice after this tracker repair: **PU-013 runtime cockpit integration proof**. PU-012 current-main producer proof and bridge-boundary reconciliation is locally validated, completion-lens reviewed, and merged back through PR #362 as route evidence. The next active slice must start with bounded intent from current `main`, reuse Project Brain plus the plan/spec/audit matrix, and complete simplify, improve-codebase-architecture, sy-review, testing, adversarial, agent-native, and best-practices evidence before its one-PR sweep.
+- Next slice after this tracker repair: **PU-013 runtime cockpit integration proof**. PU-012 current-main producer proof and bridge-boundary reconciliation is locally validated, completion-lens reviewed, and merged back through PR #362 as route evidence. The next active slice must not start until PR #363 is reviewed, merged into `main`, local `main` is pulled, and a fresh board/state/receipt update selects PU-013 from current-main truth. PU-013 must start with bounded intent from current `main`, reuse Project Brain plus the plan/spec/audit matrix, and complete simplify, improve-codebase-architecture, sy-review, testing, adversarial, agent-native, and best-practices evidence before its one-PR sweep.
 - PU-012 completed route focus: current `main` can validate the selected Harness-owned runtime producer floor without source repair for the current bridge boundary. Treat this as bounded producer-floor evidence, not as final delivery-truth, review-state, external-state, root-hygiene, Linear field-text, Judge/PM, or parent-goal completion proof.
 - PU-012 deep-module home remains `src/lib/runtime/**`; `/Users/jamiecraik/dev/codex` remains read-only unless a separate Codex-side ADR/spec authorizes mutation.
 - PU-013 expected focus: prove runtime cockpit integration from the current producer/adapter evidence into the relevant runtime-card or cockpit projection path without blending orientation evidence into delivery truth.
