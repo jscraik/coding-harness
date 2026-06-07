@@ -67,6 +67,7 @@ transcripts, bulky telemetry, or local absolute paths.
 - Runtime impact:
 - CodeRabbit mode coverage:
 - Closeout state:
+<!-- Closeout state must classify PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and any remaining blocker or waiting owner. -->
 - Learning / reinforcement:
 - Deferred work:
 

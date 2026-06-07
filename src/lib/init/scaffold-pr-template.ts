@@ -77,6 +77,7 @@ ${renderBehaviorProofSection()}
 ## Work performed
 
 ${renderRequiredWorkFieldLines()}
+<!-- Closeout state must classify PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and any remaining blocker or waiting owner. -->
 
 ## Checklist
 
