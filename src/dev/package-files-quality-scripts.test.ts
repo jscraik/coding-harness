@@ -13,12 +13,23 @@ type PackOutput = {
 };
 
 const requiredPackagedQualityScripts = {
-	"quality:behavior-tests": "scripts/check-behavior-tests.mjs",
-	"quality:git-env-sanitizer": "scripts/check-git-env-sanitizer.mjs",
-	"harness:audit-tracking": "scripts/check-harness-audit-tracking.mjs",
+	"quality:behavior-tests": {
+		command:
+			"bash scripts/with-validation-lock.sh behavior-tests -- node scripts/check-behavior-tests.mjs",
+		scriptPath: "scripts/check-behavior-tests.mjs",
+	},
+	"quality:git-env-sanitizer": {
+		command: "node scripts/check-git-env-sanitizer.mjs",
+		scriptPath: "scripts/check-git-env-sanitizer.mjs",
+	},
+	"harness:audit-tracking": {
+		command: "node scripts/check-harness-audit-tracking.mjs",
+		scriptPath: "scripts/check-harness-audit-tracking.mjs",
+	},
 } as const;
 
 const requiredRuntimeInputs = [
+	"scripts/with-validation-lock.sh",
 	"src/lib/git/safe-env.ts",
 	"src/lib/testing/behavior-test-suites.json",
 	"src/lib/testing/expect-behavior.ts",
@@ -67,11 +78,11 @@ describe("package files for quality scripts", () => {
 			) as PackageJson;
 			const packageScripts = packageJson.scripts ?? {};
 
-			for (const [scriptName, scriptPath] of Object.entries(
+			for (const [scriptName, script] of Object.entries(
 				requiredPackagedQualityScripts,
 			)) {
-				expect(packageScripts[scriptName]).toBe(`node ${scriptPath}`);
-				expect(tarballFiles.has(packagePath(scriptPath))).toBe(true);
+				expect(packageScripts[scriptName]).toBe(script.command);
+				expect(tarballFiles.has(packagePath(script.scriptPath))).toBe(true);
 			}
 
 			for (const runtimeInput of requiredRuntimeInputs) {
