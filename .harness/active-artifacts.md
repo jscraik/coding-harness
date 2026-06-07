@@ -10,32 +10,42 @@
 
 ## Scope
 
-Current working reconciliation: 2026-06-07 on `main` after PR #360, PR #361, PR #362, and PR #363
-merged and local `main` was synced with `origin/main`.
+Current working reconciliation: 2026-06-07 on the PR #365 route-tracker repair
+branch after PR #364 merged and local `main` was synced with `origin/main`.
 JSC-395 advisory stale-document archive candidate reporting remains delivered on
 current main through PR #354. JSC-363 route truth is refreshed through PR #360,
 the repository typed-contract validation gate lane is refreshed through
 PR #361, the post-PR #361 tracker/evidence repair is refreshed through PR #362,
-and the post-PR #362 route refresh is refreshed through PR #363.
+the post-PR #362 route refresh is refreshed through PR #363, and the route
+refresh after PR #363 is refreshed through PR #364. PR #365 is the active
+route-tracker repair PR that must merge before PU-013 starts.
 This route refresh does not claim release, downstream-template state,
 JSC-363 parent-goal completion, runtime producer proof, delivery-truth
 consumption, documentation accuracy, Linear field-text currency, or Judge/PM
 readiness; those remain separate closeout lanes.
 
-Last reconciled: 2026-06-07 after PR #363 merged into `main` as squash merge
-commit `77d178ab92d17c973f406ae9d336fd1f5d0d9702` from submitted head
-`6e6e9730df70a1f27ed3f9a3c6926e61b806efe0`, and local `main`
-fast-forwarded to the same `origin/main` head. Live GitHub showed zero open
-pull requests after the pull-back refresh. PR #363 had CodeRabbit passing,
-Socket passing, all repo-owned CircleCI contexts passing, aggregate
-`pr-pipeline` passing, aggregate `security-scan` passing, and no unresolved
-review threads before merge.
+Last reconciled: 2026-06-07 after PR #364 merged into `main` as squash merge
+commit `3b0dfb4f97349cd2d484d2bcf32ada26bda71b6d` from submitted head
+`328d06806a22caffd04cf32691881e2a152fd8dc`, and local `main`
+fast-forwarded to the same `origin/main` head. Live GitHub now shows PR #365
+open as the active blocked route-tracker repair lane. Pushed head
+`146b426ec94069a4b85307ba1ce63e41a7545253` exposed follow-up CodeRabbit
+tracker-boundary issues. Local repair commit
+`3f10bb7196ee02bed30e9f307940f8f4f854aeea` addresses those issues, so the
+route must stay blocked until that repaired head is pushed, fresh review and CI
+pass on the repaired head, PR #365 merges, local
+`main` is pulled, and board/state/receipt are refreshed from current main. The
+external Snyk quota/status lane remains owner-waived only and is not a passing
+external Snyk result. PR #364 had
+CodeRabbit passing, Socket passing, all repo-owned CircleCI contexts passing,
+aggregate `pr-pipeline` passing, aggregate `security-scan` passing, and no
+unresolved review threads before merge.
 The external Snyk GitHub App
 quota/status failure remains an owner-approved waiver for that external lane
 only; it does not claim external Snyk passed and does not waive repo-run
 security, future Snyk results, or future security findings. Live Linear JSC-363
-was refreshed during the PR #363 lane and is `In Review`, has PR #363, PR #362,
-and PR #360 attachments present, and still has Phase 1 title/description
+was refreshed during the PR #364 lane and is `In Review`, has PR #364, PR #363,
+PR #362, and PR #360 attachments present, and still has Phase 1 title/description
 wording, so field-text-current remains unclaimed unless accepted by the owner or
 edited.
 
@@ -49,7 +59,7 @@ unless a live refresh is recorded in the referenced artifact.
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
 | Advisory stale-document archive candidate reporting | JSC-395 | `.harness/specs/2026-06-05-advisory-stale-document-archive-candidate-reporting-spec.md` plus `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-trace-plan.md` plus `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-execution-plan.md` | Delivered on current main by PR #354. The slice remains advisory/read-only: it may report stale-document archive candidates and docs-gate advisory findings, but it must not delete, move, archive, demote, or rewrite documentation artifacts. | Treat PR #354 as merged implementation evidence. Keep release, downstream-template, and any future docs-cleanup action separate unless a later tracked route explicitly promotes them. |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Current main is 77d178ab92d17c973f406ae9d336fd1f5d0d9702 after PR #363 merged and local main was pulled to origin/main. PR #363 submitted head 6e6e9730df70a1f27ed3f9a3c6926e61b806efe0 carried the post-PR #362 route refresh. Live GitHub showed zero open pull requests after pull-back. Before merge, PR #363 repo-owned CircleCI lanes, aggregate pr-pipeline, aggregate security-scan, CodeRabbit, Socket, CircleCI snyk-dependency-scan, and review-thread checks were green/resolved. The external Snyk GitHub App quota/status failure is owner-waived only for that external lane and is not a passing security result. Live Linear JSC-363 is In Review with PR #363, PR #362, and PR #360 attachments present, but field-text-current remains unclaimed because the issue title/description still describe Phase 1. Receipt R370 records the validated post-PR #363 current-main route refresh. Historical PR #309 compatibility head 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 remains non-routing provenance for validator continuity only. | Next Safe Action: start PU-013 runtime cockpit integration proof from current main with bounded intent, Project Brain context, the plan/spec/audit matrix, required completion lenses, and independent reviewer checks. Do not claim JSC-363 completion until delivery-truth consumption, documentation accuracy, Linear field-text decision, Judge/PM readiness, and final completion audit are each independently verified or explicitly blocked. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor board for the full lifecycle implementation. Current main is 3b0dfb4f97349cd2d484d2bcf32ada26bda71b6d after PR #364 merged and local main was pulled to origin/main. PR #365 is the open blocked route-tracker repair PR; pushed head 146b426ec94069a4b85307ba1ce63e41a7545253 exposed follow-up CodeRabbit tracker-boundary issues, and local repair commit 3f10bb7196ee02bed30e9f307940f8f4f854aeea addresses those issues pending normal hook-backed push, fresh review, fresh CI, merge, pull-back, and post-merge receipt before PU-013. The external Snyk GitHub App quota/status failure is owner-waived only for that external lane and is not a passing security result. Live Linear JSC-363 is In Review with PR #364, PR #363, PR #362, and PR #360 attachments present, but field-text-current remains unclaimed because the issue title/description still describe Phase 1. Receipt R372 records the validated post-PR #364 current-main route refresh, and R373 through R377 record PR #365 repair state only. Historical PR #309 compatibility head 84bd19b1a5da56800e7cf4239c9f65348ccf2d96 remains non-routing provenance for validator continuity only. | Next Safe Action: finish PR #365 first: push the local tracker-boundary repair, wait for fresh CodeRabbit/CI, merge PR #365, pull local main, and append the post-merge board/state/receipt refresh. Do not start PU-013 until that sequence is complete. |
 
 PU-046 update: PR #330 was refreshed again on head
 163017e16e4611d5d71f5c4c62fc85f8d164b17b after the R205 artifact receipt was
