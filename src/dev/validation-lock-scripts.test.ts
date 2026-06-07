@@ -82,4 +82,19 @@ describe("validation lock scripts", () => {
 		expect(output.trim()).toBe("ok");
 		expect(existsSync(join(lockRoot, "behavior-tests.lock"))).toBe(false);
 	});
+
+	it("propagates wrapped command failure and still releases the lock", () => {
+		const lockRoot = makeTempDir();
+		const result = spawnSync(
+			"bash",
+			[LOCK_SCRIPT, "behavior-tests", "--", "node", "-e", "process.exit(7)"],
+			{
+				encoding: "utf8",
+				env: { ...process.env, HARNESS_VALIDATION_LOCK_ROOT: lockRoot },
+			},
+		);
+
+		expect(result.status).toBe(7);
+		expect(existsSync(join(lockRoot, "behavior-tests.lock"))).toBe(false);
+	});
 });
