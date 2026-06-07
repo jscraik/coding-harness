@@ -3,45 +3,25 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import ts from "typescript";
 
-const repoRoot = process.cwd();
+const resolveRepoRoot = () => {
+	try {
+		return execFileSync("git", ["rev-parse", "--show-toplevel"], {
+			encoding: "utf8",
+		}).trim();
+	} catch {
+		return process.cwd();
+	}
+};
+
+const repoRoot = resolveRepoRoot();
 const baselinePath = path.join(
 	repoRoot,
 	"scripts",
 	"type-policy-baseline.json",
 );
 const updateBaseline = process.argv.includes("--update-baseline");
-
-const policyPatterns = [
-	{
-		id: "explicit-any-annotation",
-		regex: /(?<![\w$]):\s*any\b/g,
-	},
-	{
-		id: "as-any-assertion",
-		regex: /\bas\s+any\b/g,
-	},
-	{
-		id: "promise-any",
-		regex: /\bPromise\s*<\s*any\s*>/g,
-	},
-	{
-		id: "record-string-any",
-		regex: /\bRecord\s*<\s*string\s*,\s*any\s*>/g,
-	},
-	{
-		id: "ts-ignore",
-		regex: /@ts-ignore\b/g,
-	},
-	{
-		id: "ts-nocheck",
-		regex: /@ts-nocheck\b/g,
-	},
-	{
-		id: "double-assertion",
-		regex: /\bas\s+unknown\s+as\b/g,
-	},
-];
 
 const trackedFiles = execFileSync("git", ["ls-files", "src/**/*.ts"], {
 	cwd: repoRoot,
@@ -54,6 +34,71 @@ const trackedFiles = execFileSync("git", ["ls-files", "src/**/*.ts"], {
 	.filter((filePath) => !filePath.includes("/__tests__/"));
 
 const normalizeSnippet = (line) => line.trim().replace(/\s+/g, " ");
+const lineForPosition = (sourceFile, position) =>
+	sourceFile.getLineAndCharacterOfPosition(position).line + 1;
+const lineSnippet = (lines, lineNumber) =>
+	normalizeSnippet(lines[lineNumber - 1] ?? "");
+const typeReferenceName = (node) =>
+	ts.isIdentifier(node.typeName) ? node.typeName.text : undefined;
+const hasAnyType = (node) => node?.kind === ts.SyntaxKind.AnyKeyword;
+const hasUnknownType = (node) => node?.kind === ts.SyntaxKind.UnknownKeyword;
+
+const isExplicitAnyAnnotation = (node) => {
+	if (!hasAnyType(node.type)) {
+		return false;
+	}
+	return (
+		ts.isParameter(node) ||
+		ts.isVariableDeclaration(node) ||
+		ts.isPropertyDeclaration(node) ||
+		ts.isPropertySignature(node) ||
+		ts.isFunctionDeclaration(node) ||
+		ts.isMethodDeclaration(node) ||
+		ts.isMethodSignature(node) ||
+		ts.isFunctionTypeNode(node) ||
+		ts.isCallSignatureDeclaration(node) ||
+		ts.isTypeAliasDeclaration(node)
+	);
+};
+
+const commentViolations = (content, sourceFile, lines, filePath) => {
+	const violations = [];
+	const ranges = [];
+	const scanner = ts.createScanner(
+		ts.ScriptTarget.Latest,
+		false,
+		ts.LanguageVariant.Standard,
+		content,
+	);
+	let token = scanner.scan();
+	while (token !== ts.SyntaxKind.EndOfFileToken) {
+		if (
+			token === ts.SyntaxKind.SingleLineCommentTrivia ||
+			token === ts.SyntaxKind.MultiLineCommentTrivia
+		) {
+			ranges.push({
+				pos: scanner.getTokenPos(),
+				end: scanner.getTextPos(),
+			});
+		}
+		token = scanner.scan();
+	}
+	for (const range of ranges) {
+		const comment = content.slice(range.pos, range.end);
+		for (const pattern of ["ts-ignore", "ts-nocheck"]) {
+			if (comment.includes(`@${pattern}`)) {
+				const line = lineForPosition(sourceFile, range.pos);
+				violations.push({
+					pattern,
+					file: filePath,
+					line,
+					snippet: lineSnippet(lines, line),
+				});
+			}
+		}
+	}
+	return violations;
+};
 
 const findViolations = () => {
 	const violations = [];
@@ -61,19 +106,61 @@ const findViolations = () => {
 		const absolutePath = path.join(repoRoot, filePath);
 		const content = readFileSync(absolutePath, "utf8");
 		const lines = content.split("\n");
-		lines.forEach((line, index) => {
-			for (const pattern of policyPatterns) {
-				pattern.regex.lastIndex = 0;
-				if (pattern.regex.test(line)) {
-					violations.push({
-						pattern: pattern.id,
-						file: filePath,
-						line: index + 1,
-						snippet: normalizeSnippet(line),
-					});
+		const sourceFile = ts.createSourceFile(
+			filePath,
+			content,
+			ts.ScriptTarget.Latest,
+			true,
+			ts.ScriptKind.TS,
+		);
+		violations.push(...commentViolations(content, sourceFile, lines, filePath));
+		const pushViolation = (pattern, node) => {
+			const line = lineForPosition(sourceFile, node.getStart(sourceFile));
+			violations.push({
+				pattern,
+				file: filePath,
+				line,
+				snippet: lineSnippet(lines, line),
+			});
+		};
+		const visit = (node) => {
+			if (isExplicitAnyAnnotation(node)) {
+				pushViolation("explicit-any-annotation", node);
+			}
+			if (ts.isAsExpression(node) && hasAnyType(node.type)) {
+				pushViolation("as-any-assertion", node);
+			}
+			if (
+				ts.isAsExpression(node) &&
+				ts.isAsExpression(node.expression) &&
+				hasUnknownType(node.expression.type)
+			) {
+				pushViolation("double-assertion", node.expression.type);
+			}
+			if (
+				ts.isTypeReferenceNode(node) &&
+				typeReferenceName(node) === "Promise"
+			) {
+				const [firstArgument] = node.typeArguments ?? [];
+				if (hasAnyType(firstArgument)) {
+					pushViolation("promise-any", node);
 				}
 			}
-		});
+			if (
+				ts.isTypeReferenceNode(node) &&
+				typeReferenceName(node) === "Record"
+			) {
+				const [keyArgument, valueArgument] = node.typeArguments ?? [];
+				if (
+					keyArgument?.kind === ts.SyntaxKind.StringKeyword &&
+					hasAnyType(valueArgument)
+				) {
+					pushViolation("record-string-any", node);
+				}
+			}
+			ts.forEachChild(node, visit);
+		};
+		visit(sourceFile);
 	}
 	return violations;
 };

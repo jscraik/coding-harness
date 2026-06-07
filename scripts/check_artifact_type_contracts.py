@@ -15,6 +15,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 from typing import Literal, cast
 
+from jsonschema import Draft7Validator, Draft202012Validator, validate as validate_json_schema
+from jsonschema.exceptions import ValidationError as JsonSchemaValidationError
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 import yaml
 
@@ -368,20 +370,39 @@ class ArtifactReport:
     errors: tuple[str, ...] = ()
 
 
-def run_command(args: Sequence[str]) -> subprocess.CompletedProcess[str]:
-    """Run a command at the repository root and capture text output."""
-    return subprocess.run(
-        args,
-        cwd=REPO_ROOT,
-        check=False,
-        text=True,
-        capture_output=True,
-    )
+def run_command(
+    args: Sequence[str], *, timeout_seconds: float = 60
+) -> subprocess.CompletedProcess[str]:
+    """Run a bounded command at the repository root and capture text output."""
+    try:
+        return subprocess.run(
+            args,
+            cwd=REPO_ROOT,
+            check=False,
+            text=True,
+            capture_output=True,
+            stdin=subprocess.DEVNULL,
+            timeout=timeout_seconds,
+        )
+    except subprocess.TimeoutExpired as exc:
+        stdout = exc.stdout if isinstance(exc.stdout, str) else ""
+        stderr = exc.stderr if isinstance(exc.stderr, str) else ""
+        detail = stderr or f"command timed out after {timeout_seconds:g}s: {' '.join(args)}"
+        return subprocess.CompletedProcess(
+            args=args,
+            returncode=124,
+            stdout=stdout,
+            stderr=detail,
+        )
 
 
-def tracked_files(patterns: Sequence[str] | None = None) -> list[Path]:
-    """Return tracked plus untracked non-ignored paths, optionally limited by pathspecs."""
-    command = ["git", "ls-files", "--cached", "--others", "--exclude-standard"]
+def tracked_files(
+    patterns: Sequence[str] | None = None, *, include_untracked: bool = False
+) -> list[Path]:
+    """Return git-tracked paths, optionally including untracked non-ignored paths."""
+    command = ["git", "ls-files", "--cached"]
+    if include_untracked:
+        command.extend(["--others", "--exclude-standard"])
     if patterns:
         command.extend(patterns)
     result = run_command(command)
@@ -480,7 +501,7 @@ def validate_tool_versions(errors: list[str]) -> None:
     require(
         node_version_valid,
         errors,
-        "package.json engines.node must declare a version floor >= 24.0.0",
+        "package.json engines.node must declare a version floor >= 26.3.0",
     )
 
     tsconfig = as_object_map(load_json(REPO_ROOT / "tsconfig.json"))
@@ -581,7 +602,7 @@ def validate_yaml_file(path: Path, errors: list[str]) -> None:
 
 def is_yaml_config_surface(path: Path) -> bool:
     path_text = path.as_posix()
-    if path_text.startswith(("src/templates/", "templates/", "docs/goals/")):
+    if path_text.startswith(("templates/", "docs/goals/")):
         return False
     return path_text.startswith(
         (
@@ -721,6 +742,27 @@ def validate_cli_json_value(
     return 0
 
 
+def validate_json_schema_value(
+    schema: object, value: object, label: str, errors: list[str]
+) -> None:
+    """Validate a parsed JSON value against its declared JSON Schema."""
+    schema_map = as_object_map(schema)
+    if schema_map is None:
+        errors.append(f"{label}: JSON Schema root must be an object")
+        return
+
+    try:
+        if schema_map.get("$schema") == "http://json-schema.org/draft-07/schema#":
+            Draft7Validator.check_schema(schema_map)
+        else:
+            Draft202012Validator.check_schema(schema_map)
+        validate_json_schema(instance=value, schema=schema_map)
+    except JsonSchemaValidationError as exc:
+        location = ".".join(str(part) for part in exc.absolute_path)
+        suffix = f" at {location}" if location else ""
+        errors.append(f"{label}: violates JSON Schema{suffix}: {exc.message}")
+
+
 def validate_cli_json_contracts(errors: list[str]) -> tuple[int, int]:
     manifest_path = REPO_ROOT / "contracts/cli-json-contracts.manifest.json"
     try:
@@ -765,11 +807,23 @@ def validate_cli_json_contracts(errors: list[str]) -> tuple[int, int]:
             continue
 
         try:
+            schema_data = load_json(schema_path)
+        except (json.JSONDecodeError, OSError) as exc:
+            errors.append(f"{contract.schemaPath}: {exc}")
+            continue
+
+        try:
             example_data = load_json(example_path)
         except (json.JSONDecodeError, OSError) as exc:
             errors.append(f"{contract.examplePath}: {exc}")
             continue
 
+        validate_json_schema_value(
+            schema_data,
+            example_data,
+            contract.examplePath,
+            errors,
+        )
         example_count = validate_cli_json_value(
             example_data,
             contract,
@@ -796,6 +850,12 @@ def validate_cli_json_contracts(errors: list[str]) -> tuple[int, int]:
         except json.JSONDecodeError as exc:
             errors.append(f"{contract.name}: live command emitted invalid JSON: {exc}")
             continue
+        validate_json_schema_value(
+            schema_data,
+            data,
+            " ".join(contract.command),
+            errors,
+        )
         live_count = validate_cli_json_value(
             data,
             contract,

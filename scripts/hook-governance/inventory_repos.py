@@ -9,7 +9,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Literal, TypedDict, cast
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 
 class ManifestValidationError(ValueError):
@@ -52,10 +52,28 @@ class HookInventory(TypedDict):
 class RepoScopeModel(BaseModel):
     """Validated repository include/exclude scope from the manifest."""
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="forbid")
 
     in_scope: list[str] = Field(default_factory=list)
     excluded: list[str] = Field(default_factory=list)
+
+    @field_validator("in_scope", "excluded")
+    @classmethod
+    def repo_names_must_be_unique(cls, value: list[str]) -> list[str]:
+        duplicates = sorted({repo_name for repo_name in value if value.count(repo_name) > 1})
+        if duplicates:
+            raise ValueError(f"duplicate repo names: {', '.join(duplicates)}")
+        return value
+
+    @model_validator(mode="after")
+    def in_scope_and_excluded_must_not_overlap(self) -> RepoScopeModel:
+        overlap = sorted(set(self.in_scope) & set(self.excluded))
+        if overlap:
+            raise ValueError(
+                "repo names must not appear in both repos.in_scope and repos.excluded: "
+                + ", ".join(overlap)
+            )
+        return self
 
 
 class RepoScopeManifestModel(BaseModel):
@@ -82,6 +100,11 @@ def _validation_error_message(exc: ValidationError) -> str:
 
     if location == ("workspace_root",):
         return "workspace_root must be a non-empty string"
+    if location == ("repos",) and "repo names must not appear" in message:
+        repo_name = message.rsplit(": ", 1)[-1].split(", ", maxsplit=1)[0]
+        return f"excluded repo '{repo_name}' must not appear in repos.in_scope"
+    if location == ("repos",) and "duplicate repo names:" in message:
+        return message
     if location == ("repos",):
         return "repos must be an object"
     if location[:2] == ("repos", "in_scope"):
