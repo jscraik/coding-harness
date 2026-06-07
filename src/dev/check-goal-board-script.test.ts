@@ -72,7 +72,7 @@ function writeRuntimeEvidenceActiveArtifacts(repo: string, content?: string) {
 				"",
 				"| Route | Linear Key | Canonical Artifacts |",
 				"| --- | --- | --- |",
-				"| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus latest externally verified PR #309 head current-pr-head |",
+				"| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus latest route head current-pr-head |",
 				"",
 			].join("\n"),
 	);
@@ -97,6 +97,7 @@ function writeRuntimeEvidenceReceipts(repo: string, headSha: string) {
 	writeRuntimeEvidenceReceiptsFromObjects(repo, [
 		{
 			id: "R999",
+			head_sha: headSha,
 			lifecycle_unit: "pr-309-current-state-refresh",
 			pr_state_snapshot: {
 				pr: 309,
@@ -508,7 +509,7 @@ describe("check-goal-board.py", () => {
 		expect(existsSync(markerPath)).toBe(true);
 	});
 
-	it("fails when active artifacts omit the latest PR 309 receipt head", () => {
+	it("fails when active artifacts omit the latest route receipt head", () => {
 		const root = createTempRoot("goal-board-stale-pr-head-");
 		const repo = join(root, "coding-harness");
 		const scriptsDir = join(repo, "scripts");
@@ -562,11 +563,11 @@ describe("check-goal-board.py", () => {
 
 		expect(result.status).toBe(1);
 		expect(result.stdout).toContain(`goal-board:${goalDir}`);
-		expect(result.stderr).toContain("stale PR #309 state");
+		expect(result.stderr).toContain("stale route state");
 		expect(result.stderr).toContain("new-pr-head");
 	});
 
-	it("passes when active artifacts include the latest PR 309 receipt head", () => {
+	it("passes when active artifacts include the latest route receipt head", () => {
 		const root = createTempRoot("goal-board-current-pr-head-");
 		const repo = join(root, "coding-harness");
 		const scriptsDir = join(repo, "scripts");
@@ -589,7 +590,7 @@ describe("check-goal-board.py", () => {
 				"",
 				"| Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |",
 				"| --- | --- | --- | --- | --- |",
-				"| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md | latest externally verified PR #309 head current-pr-head | continue |",
+				"| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md | latest route head current-pr-head | continue |",
 				"",
 			].join("\n"),
 		);
@@ -639,6 +640,7 @@ describe("check-goal-board.py", () => {
 		writeRuntimeEvidenceReceiptsFromObjects(repo, [
 			{
 				id: "R150",
+				head_sha: "current-pr-head",
 				lifecycle_unit: "pre-cutover-latest-receipt",
 				memory_surfaces_read: ["/Users/jamiecraik/.codex/memories/MEMORY.md"],
 				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
@@ -693,11 +695,13 @@ describe("check-goal-board.py", () => {
 		writeRuntimeEvidenceReceiptsFromObjects(repo, [
 			{
 				id: "R151",
+				head_sha: "current-pr-head",
 				lifecycle_unit: "first-route-refresh",
 				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
 			},
 			{
 				id: "R151",
+				head_sha: "current-pr-head",
 				lifecycle_unit: "duplicate-route-refresh",
 				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
 			},
@@ -750,12 +754,14 @@ describe("check-goal-board.py", () => {
 		writeRuntimeEvidenceReceiptsFromObjects(repo, [
 			{
 				id: "R150",
+				head_sha: "old-pr-head",
 				lifecycle_unit: "pre-cutover-historical-receipt",
 				memory_surfaces_read: ["/Users/jamiecraik/.codex/memories/MEMORY.md"],
 				pr_state_snapshot: { pr: 309, head_sha: "old-pr-head" },
 			},
 			{
 				id: "R151",
+				head_sha: "current-pr-head",
 				lifecycle_unit: "receipt-local-path-guard",
 				memory_surfaces_read: ["<REDACTED_HOME_PATH>/memories/MEMORY.md"],
 				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
@@ -807,6 +813,7 @@ describe("check-goal-board.py", () => {
 		writeRuntimeEvidenceReceiptsFromObjects(repo, [
 			{
 				id: "R151",
+				head_sha: "old-pr-head",
 				lifecycle_unit: "receipt-local-path-guard",
 				evidence: {
 					source: "file:///Users/jamie/.codex/memories/MEMORY.md",
@@ -815,6 +822,7 @@ describe("check-goal-board.py", () => {
 			},
 			{
 				id: "R152",
+				head_sha: "current-pr-head",
 				lifecycle_unit: "clean-later-receipt",
 				evidence: { source: "docs/goals/current-receipt.md" },
 				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
@@ -868,6 +876,7 @@ describe("check-goal-board.py", () => {
 		writeRuntimeEvidenceReceiptsFromObjects(repo, [
 			{
 				id: "R151a",
+				head_sha: "old-pr-head",
 				lifecycle_unit: "malformed-cutover-receipt",
 				evidence: {
 					source: "file:///Users/jamie/.codex/memories/MEMORY.md",
@@ -876,6 +885,7 @@ describe("check-goal-board.py", () => {
 			},
 			{
 				id: "R152",
+				head_sha: "current-pr-head",
 				lifecycle_unit: "clean-later-receipt",
 				evidence: { source: "docs/goals/current-receipt.md" },
 				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
@@ -929,6 +939,7 @@ describe("check-goal-board.py", () => {
 		writeRuntimeEvidenceReceiptsFromObjects(repo, [
 			{
 				id: "R151",
+				head_sha: "current-pr-head",
 				lifecycle_unit: "receipt-local-path-guard",
 				evidence: {
 					"/Users/jamie/.codex/memories/MEMORY.md": "memory-index",
@@ -991,6 +1002,7 @@ describe("check-goal-board.py", () => {
 		writeRuntimeEvidenceReceiptsFromObjects(repo, [
 			{
 				id: "R151",
+				head_sha: "current-pr-head",
 				lifecycle_unit: "receipt-local-path-guard",
 				evidence: {
 					unixHome: "/home/jamie/.codex/memories/MEMORY.md",
