@@ -411,13 +411,13 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness status">PR #365: tracker repair before PU-013</div>
+      <div class="source-chip" aria-label="Source freshness status">PR #366 review-rerun blocker active</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>PR #365 route repair</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>PR #364 latest merged</strong></div>
-      <div class="metric"><span>Current PR</span><strong>#365 blocked / review refresh</strong></div>
+      <div class="metric"><span>Goal status</span><strong>PR #366 review rerun blocked</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>PR #365 latest merged</strong></div>
+      <div class="metric"><span>Current PR</span><strong>#366 open</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Partial, final lanes pending</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
       <div class="metric"><span>Linear tracker</span><strong>Field text unclaimed</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot generated from current goal artifacts, live GitHub, and live Linear after PR #364 merged at <code>2026-06-07T06:18:34Z</code>. Local <code>main</code> and <code>origin/main</code> are at squash merge commit <code>3b0dfb4f97349cd2d484d2bcf32ada26bda71b6d</code>; submitted PR #364 head was <code>328d06806a22caffd04cf32691881e2a152fd8dc</code>. PR #365 is the open route-tracker repair PR; its pushed repair head <code>146b426ec94069a4b85307ba1ce63e41a7545253</code> exposed follow-up CodeRabbit tracker-boundary issues, and local repair commit <code>3f10bb7196ee02bed30e9f307940f8f4f854aeea</code> addresses them pending normal hook-backed push. The route remains blocked until that repaired head has a fresh review/CI pass, merge, pull-back, and post-merge receipt refresh. The external Snyk GitHub App quota failure remains an owner-waived quota/status lane only. Live Linear JSC-363 is <code>In Review</code> with PR #364, PR #363, PR #362, and PR #360 attachments present, but field-text-current remains unclaimed because the issue still uses Phase 1 wording. Receipts <code>R372</code> through <code>R377</code> record the current route refresh and PR #365 repair. PU-013 runtime cockpit integration proof is the next selected slice only after PR #365 merges and local main is pulled. Delivery-truth consumption, documentation accuracy, Judge/PM readiness, release readiness, downstream-template state, runtime producer proof, Linear field-text currency, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated from local goal artifacts after live PR #366 current-head route truth reached green repo-owned checks and review-thread clearance. Latest fetched main evidence remains the PR #365 merge at <code>2026-06-07T09:18:13Z</code>. Local <code>main</code> and fetched <code>origin/main</code> are at squash merge commit <code>bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd</code>; submitted PR #365 head was <code>c3fe2f06bf5ab2f69b59a8882075bfb3e5ff3c79</code>. PR #366 is open at pushed head <code>3142eb8ba4f7a5a31a51bb85a7c3cf196772f099</code> on branch <code>codex/jsc-363-post-pr365-tracker-refresh</code> and targets <code>main</code> at <code>bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd</code>. The live PR body passes <code>pr-template-gate</code> locally after the description repair; repo-owned CircleCI lanes, aggregate <code>pr-pipeline</code>, aggregate <code>security-scan</code>, Socket, and CodeRabbit status checks are green. GitHub review threads total 6 with zero unresolved after the final outdated state.yaml handoff-order thread was resolved. Merge readiness is not claimed because GitHub still reports <code>mergeStateStatus=UNSTABLE</code>. The external Snyk GitHub App quota failure remains an owner-waived quota/status lane only. Last live Linear JSC-363 evidence was <code>In Review</code> with PR #365, PR #364, PR #363, PR #362, and PR #360 attachments present, but field-text-current remains unclaimed because the issue still uses Phase 1 wording. Receipts <code>R372</code> through <code>R387</code> record the current route refresh, PR #365 repair path, transient PR #366 remote-truth blocker, PR #366 template blocker, PR #366 body-gate repair, hook-enforced push, green repo-owned checks, pushed heads <code>f0465382</code> and <code>3142eb8</code>, review-thread clearance, and the current external-Snyk-waived unstable merge state. PU-013 runtime cockpit integration proof remains stopped until PR #366 is merged or superseded, and this board/state/receipt refresh validates from current main. Delivery-truth consumption, documentation accuracy, Judge/PM readiness, release readiness, downstream-template state, runtime producer proof, Linear field-text currency, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -531,15 +531,15 @@
         risk: "A PR may complete a slice, but it cannot close the parent goal without separate proof for runtime, CI, review, tracker, docs, and Judge/PM lanes."
       },
       {
-        id: "current-main-pr363",
+        id: "current-main-pr365",
         lane: "completed",
-        title: "Current main: PR #364 tracker refresh",
+        title: "Current main: PR #365 tracker repair",
         status: "done",
-        tags: ["PR #364", "current main", "route truth"],
-        summary: "Local main and origin/main are synced at PR #364 squash merge 3b0dfb4f97349cd2d484d2bcf32ada26bda71b6d. Live GitHub showed zero open PRs after pull-back.",
-        evidence: ["PR #364 -> MERGED at 2026-06-07T06:18:34Z", "Merge commit -> 3b0dfb4f97349cd2d484d2bcf32ada26bda71b6d", "Submitted head -> 328d06806a22caffd04cf32691881e2a152fd8dc", "Repo-owned CircleCI lanes -> pass", "pr-pipeline -> pass", "security-scan -> pass", "CodeRabbit -> pass", "Socket -> pass", "Review threads -> resolved", "External security/snyk (jscraik) -> owner-waived quota failure only"],
+        tags: ["PR #365", "current main", "route truth"],
+        summary: "Local main and origin/main are synced at PR #365 squash merge bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd. Live GitHub showed zero open PRs after pull-back.",
+        evidence: ["PR #365 -> MERGED at 2026-06-07T09:18:13Z", "Merge commit -> bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd", "Submitted head -> c3fe2f06bf5ab2f69b59a8882075bfb3e5ff3c79", "Open PRs -> none", "Repo-owned CircleCI lanes -> pass", "pr-pipeline -> pass", "security-scan -> pass", "CodeRabbit -> pass", "Socket -> pass", "Review threads -> resolved", "External security/snyk (jscraik) -> owner-waived quota failure only"],
         next: "Validate this board/state/receipt refresh, then start PU-013 intent from current main.",
-        risk: "PR #364 does not prove delivery-truth consumption, Linear field-text currency, Judge/PM readiness, or parent-goal completion."
+        risk: "PR #365 does not prove delivery-truth consumption, Linear field-text currency, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "pr362-current-repair",
@@ -553,15 +553,15 @@
         risk: "Treating PR #362 as parent-goal completion would blend tracker truth with delivery-truth, documentation, Linear, and Judge/PM lanes."
       },
       {
-        id: "current-main-pr360",
-        lane: "completed",
-        title: "Current route: PR #360 JSC-363 refresh",
-        status: "done",
-        tags: ["PR #360", "JSC-363", "route truth"],
-        summary: "PR #360 refreshed the post-PR #359 route truth before PR #361 advanced main again.",
-        evidence: ["PR #360 -> MERGED at 2026-06-06T23:56:07Z", "Merge commit -> 05da5ad9956b163d6f60cf1df8079392c0b02f23", "Submitted head -> 4d6054dc650dc95d763371b23e0e3380d750d77e", "Linear JSC-363 PR #360 attachment -> 4dbe1293-d506-4d37-ba79-aee8ae605cec present"],
-        next: "Use PR #360 as the latest JSC-363 route-refresh attachment; do not reopen older PR lanes unless current-main validation finds a regression.",
-        risk: "A route-refresh PR is tracker evidence, not implementation completion or Linear field-text proof."
+        id: "current-route-pr366",
+        lane: "pr-truth",
+        title: "Current route: PR #366 tracker refresh",
+        status: "blocked",
+        tags: ["PR #366", "JSC-363", "route truth", "review-thread-open"],
+        summary: "PR #366 is the active tracker PR. It is open at pushed branch head 3142eb8 with repo-owned CircleCI, Socket, CodeRabbit status, pr-pipeline, and security-scan lanes green; GitHub review threads total 6 with zero unresolved after the final outdated state.yaml handoff-order thread was resolved. It remains not merge-ready because GitHub reports mergeStateStatus=UNSTABLE while the external Snyk GitHub App quota/status lane is owner-waived only.",
+        evidence: ["PR #366 -> OPEN", "PR #366 head -> 3142eb8ba4f7a5a31a51bb85a7c3cf196772f099", "PR #366 base -> bec3bca5f1c3a7f24d1f4b79fb2c02b64252bfbd", "GitHub mergeStateStatus -> UNSTABLE", "CodeRabbit status check -> SUCCESS", "Review threads -> total 6, unresolved 0", "Final unresolved thread -> outdated state.yaml handoff-order thread resolved", "CodeRabbit status check -> SUCCESS", "ci/circleci lanes -> pass", "pr-pipeline -> pass", "security-scan -> pass", "Socket checks -> pass", "live PR body pr-template-gate -> pass after description repair", "External security/snyk GitHub App -> owner-waived quota/status lane only"],
+        next: "Recheck PR #366 merge state, then merge if branch protection allows or record the precise remaining blocker before merging or superseding this tracker lane.",
+        risk: "Starting PU-013 before PR #366 lands would reintroduce the stale route-truth and stacked-PR failure mode."
       },
       {
         id: "next-slice-pu012-reconciliation",
@@ -569,10 +569,10 @@
         title: "Next slice candidate: PU-013 cockpit proof",
         status: "active",
         tags: ["PU-013", "next candidate", "runtime cockpit"],
-        summary: "PU-012 current-main producer proof and bridge-boundary reconciliation is route-reconciled through PR #364. PR #365 is the active route-tracker repair and must merge before PU-013 starts.",
-        evidence: [".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md PU-012", "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/PU-012-current-main-producer-proof-intent.md", "goal.md corrected backlog", "state.yaml current_slice_gate.reason", "R377 PR #365 local current-head repair anchor"],
-        next: "Resolve PR #365 review refresh, merge, pull main, append the post-merge route receipt, then create PU-013 intent.",
-        risk: "Starting PU-013 before PR #365 merges would repeat the stale-state failure mode."
+        summary: "PU-012 current-main producer proof and bridge-boundary reconciliation is route-reconciled through PR #365. PU-013 is still the next selected implementation candidate, but PR #366 must be fixed and merged or explicitly superseded first.",
+        evidence: [".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md PU-012", "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/PU-012-current-main-producer-proof-intent.md", "PR #366 -> OPEN/UNSTABLE with repo-owned checks green and review threads resolved", "goal.md corrected backlog", "state.yaml current_slice_gate.reason", "R387 PR #366 current-head route receipt"],
+        next: "After PR #366 lands and main is pulled, validate the board/state/receipt surface, then create PU-013 intent from current main.",
+        risk: "Starting PU-013 implementation before PR #366 merge/pullback and the intent/reviewer gates would repeat the stale-state failure mode."
       },
       {
         id: "pr321",
