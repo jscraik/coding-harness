@@ -45,9 +45,10 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 Last updated during the 2026-06-07 current-main route-truth reconciliation.
 Local `main` and `origin/main` were synced before this route update and are at
 `e45384ed84af245e6c5335952c0f7ecf1db7ef86`, the PR #361 squash merge
-commit. Live GitHub shows zero open pull requests. This section is the current
-route tracker; older PR-specific receipt entries remain historical evidence but
-must not route new work unless a fresh current-main audit reopens them.
+commit. Live GitHub showed zero open pull requests at that pre-PR #362
+reconciliation point. This section records the route tracker used to open PR
+`#362`; older PR-specific receipt entries remain historical evidence but must
+not route new work unless a fresh current-main audit reopens them.
 
 Current route truth:
 
