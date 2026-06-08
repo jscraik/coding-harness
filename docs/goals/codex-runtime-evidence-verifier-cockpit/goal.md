@@ -43,16 +43,20 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-08 post-PR374 merge pullback. PR #366,
-PR #367, PR #369, PR #370, PR #371, PR #372, PR #373, and PR #374 are
-historical route provenance. PR #374 is merged into `main` as squash merge
-commit `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`.
+Last updated during the 2026-06-08 post-PR375 merge pullback. PR #366,
+PR #367, PR #369, PR #370, PR #371, PR #372, PR #373, PR #374, and PR #375
+are historical route provenance. PR #375 is merged into `main` as squash
+merge commit `99df7f971530f490a5a37e2f55339ebf5a8ed1f9`.
 
 Current live route truth:
 
 - Local `main` and `origin/main` are synced at
-  `b7b5d9f48fb9369c29a4cd9902acde88285bfb22` after PR #374 merge pullback.
+  `99df7f971530f490a5a37e2f55339ebf5a8ed1f9` after PR #375 merge pullback.
 - Current branch is `main`.
+- PR #375 merged the post-PR374 tracker review-fix route into `main` from
+  submitted head `be214cd3c64eea16758f8bc57f58de813b37f35f` after current-head
+  CodeRabbit and repo-owned CircleCI lanes passed. The external Snyk GitHub App
+  status remained owner-waived for the quota/status lane only.
 - Local delivery-truth validation reached `pnpm test:deep`; local check,
   unit, integration, artifact, and audit lanes passed, then the E2E tail blocked
   because GitHub and Linear credentials were not visible in the process
@@ -150,17 +154,17 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: none. PR #374 is merged and pulled back to local `main`.
-- Provenance: See `receipts.jsonl` for merged PR #343 through PR #374 route history.
+- Current route: none. PR #375 is merged and pulled back to local `main`.
+- Provenance: See `receipts.jsonl` for merged PR #343 through PR #375 route history.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #374 merged at
-  `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`. See `receipts.jsonl` for
+- Done on current main: PR #375 merged at
+  `99df7f971530f490a5a37e2f55339ebf5a8ed1f9`. See `receipts.jsonl` for
   complete merged PR history.
 - Current route PR: none.
 - Selected next slice: not selected. The next slice must be chosen from the
-  remaining backlog after the post-PR374 tracker validates.
+  remaining backlog after the post-PR375 tracker validates.
 - Remaining backlog: review/external/root-hygiene proof, documentation accuracy,
   historical review-coverage backfill, Linear field-text decision, PU-015
   Judge/PM audit, and final completion audit.
