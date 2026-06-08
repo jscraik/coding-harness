@@ -22,34 +22,40 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 
 ## Current Control Surface
 
-| Field               | Current Truth                                                       |
-| ------------------- | ------------------------------------------------------------------- |
-| Parent issue        | JSC-363                                                             |
-| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`        |
-| Current branch      | `codex/jsc-363-post-pr374-tracker-refresh`                          |
-| Local head          | `b404a12087a3aadc7212934ee19d22a39928ee91`                          |
-| Remote branch head  | `6653589ab5d5049fc58dd111a31964a2905d2fc9`                          |
-| Main baseline       | `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`                          |
-| Active route count  | 1                                                                   |
-| Active route        | PR #375 tracker review-fix lane                                     |
-| Last closed route   | PR #374 merged                                                      |
-| Current slice       | Backlog reconciliation                                              |
-| Feature work status | Stopped until PR #375 is pushed, refreshed, merged, and pulled back |
+| Field               | Current Truth                                                                                  |
+| ------------------- | ---------------------------------------------------------------------------------------------- |
+| Parent issue        | JSC-363                                                                                        |
+| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`                                   |
+| Current branch      | `main`                                                                                         |
+| Local head          | `99df7f971530f490a5a37e2f55339ebf5a8ed1f9`                                                     |
+| Remote branch head  | `99df7f971530f490a5a37e2f55339ebf5a8ed1f9`                                                     |
+| Main baseline       | `99df7f971530f490a5a37e2f55339ebf5a8ed1f9`                                                     |
+| Active route count  | 0                                                                                              |
+| Active route        | none                                                                                           |
+| Last closed route   | PR #375 merged                                                                                 |
+| Current slice       | Backlog reconciliation                                                                         |
+| Feature work status | Stopped until this post-PR375 tracker refresh validates and one next bounded slice is selected |
 
 ## Active Route
 
-PR #375 is the active tracker review-fix route. Local head
-`b404a12087a3aadc7212934ee19d22a39928ee91` fixes CodeRabbit stale-route
-truth findings, but the hosted PR still points at
-`6653589ab5d5049fc58dd111a31964a2905d2fc9` until the branch is pushed.
-This route closes only the tracker-review-fix lane; it does not claim Linear
-field-text currency, root-hygiene proof, documentation accuracy, Judge/PM
-readiness, or parent-goal completion.
+No PR route is active. PR #375 is merged and local `main` is synced with
+`origin/main` at `99df7f971530f490a5a37e2f55339ebf5a8ed1f9`. This closes
+only the post-PR375 tracker review-fix lane; it does not claim Linear field-text
+currency, root-hygiene proof, documentation accuracy, Judge/PM readiness, or
+parent-goal completion.
 
 Current evidence:
 
 - Local `main` and `origin/main` are synced at
-  `b7b5d9f48fb9369c29a4cd9902acde88285bfb22` after PR #374 merge pullback.
+  `99df7f971530f490a5a37e2f55339ebf5a8ed1f9` after PR #375 merge pullback.
+- Live GitHub reports PR #375 merged at 2026-06-08T21:10:04Z from submitted
+  head `be214cd3c64eea16758f8bc57f58de813b37f35f` as squash merge commit
+  `99df7f971530f490a5a37e2f55339ebf5a8ed1f9`.
+- PR #375 repo-owned CircleCI lanes, aggregate `pr-pipeline`, CodeRabbit
+  status, Socket, and CircleCI Snyk dependency scan passed before merge.
+- The external Snyk GitHub App quota/status lane remains owner-waived for that
+  external lane only; it is not external Snyk success and not a security waiver
+  for repo-owned gates.
 - Live GitHub reports PR #374 merged from submitted head
   `ca7bc92aeeeb5fa357732fbad8f49f62f54abc2b`.
 - The PR body was repaired after the local source-checkout `pr-template-gate`
@@ -60,8 +66,7 @@ Current evidence:
 - PR #374 repo-owned CircleCI lanes, aggregate `pr-pipeline`, CodeRabbit
   status, Socket, and CircleCI Snyk dependency scan passed before merge.
 - R419 records the PR #375 CodeRabbit review-fix commit and sibling-pattern
-  sweep. Next safe action is push the branch, trigger current-head CodeRabbit,
-  and wait for PR #375 CI/review truth before merge.
+  sweep. R420 records PR #375 merge pullback and current-main route refresh.
 - PR #374 review-thread refresh returned zero unresolved threads before merge.
 - The external Snyk GitHub App quota/status lane remains owner-waived for that
   external lane only; it is not external Snyk success and not a security waiver
@@ -100,8 +105,8 @@ Completed route-refresh action:
    - Command: `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit`
    - Command: `node scripts/validate-goal-kanban-script.cjs .harness/implementation-notes/goal-kanban-board.html`
    - Command: `git diff --check`
-   - Pass criteria: Goal state, board, visual tracker, audit freshness, and receipt
-     syntax agree on current `main`.
+   - Pass criteria: Goal state, board, visual tracker, audit freshness, and
+     receipt syntax agree on current `main`.
 
 2. Committed the current-main tracker refresh.
    - Command: `git add docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl .harness/active-artifacts.md .harness/implementation-notes/goal-kanban-board.html`
@@ -167,7 +172,7 @@ Non-claims:
 
 - This slice does not produce root-hygiene evidence, Judge/PM readiness, Linear
   field-text currency, or parent goal completion.
-- No PR lane is active after PR #374 merge pullback.
+- No PR lane is active after PR #375 merge pullback.
 
 ## Outstanding Work
 
@@ -181,7 +186,7 @@ Non-claims:
 
 ## History Boundary
 
-Merged PR lanes through PR #374 remain provenance. They are not active route
+Merged PR lanes through PR #375 remain provenance. They are not active route
 lanes and must not be expanded in the active board unless a fresh current-main
 regression reopens them.
 
@@ -192,8 +197,9 @@ claim/evidence/blocker records, not narrative diary entries.
 
 Feature implementation remains stopped until all of these are true:
 
-- Delivery-truth consumption projection is merged through PR #374 and the
-  post-PR374 tracker refresh is validated against local `main`.
+- Delivery-truth consumption projection is merged through PR #374, PR #375
+  tracker review-fix is merged, and the post-PR375 tracker refresh is validated
+  against local `main`.
 - Linear JSC-363 has compact post-merge route-truth comment
   `34a50024-24be-4853-af6e-3219cbc0d845`.
 - `goal.md`, `state.yaml`, `notes/execution-tracker.md`,
@@ -205,21 +211,21 @@ Feature implementation remains stopped until all of these are true:
 Use this payload for the JSC-363 Linear progress update:
 
 ```md
-Refreshed JSC-363 current-main route truth and PU-013 merged proof.
+Refreshed JSC-363 current-main route truth after PR #375 merge.
 
 Current truth:
 
 - Active route lane: none.
-- Latest merged route: PR #374.
-- Local main head: b7b5d9f48fb9369c29a4cd9902acde88285bfb22.
-- Origin main head: b7b5d9f48fb9369c29a4cd9902acde88285bfb22.
-- Repo-owned CircleCI lanes for PR #374 passed before merge.
+- Latest merged route: PR #375.
+- Local main head: 99df7f971530f490a5a37e2f55339ebf5a8ed1f9.
+- Origin main head: 99df7f971530f490a5a37e2f55339ebf5a8ed1f9.
+- Repo-owned CircleCI lanes for PR #375 passed before merge.
 - PU-013 runtime cockpit integration proof is merged and pulled back to local `main`.
-- PR #374 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
+- PR #375 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
 - No production code patch was required; current main already projects Codex runtime evidence into `runtime-card` and consumes it narrowly through `harness next`.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
-- Linear JSC-363 was refreshed with post-merge route-truth comment `34a50024-24be-4853-af6e-3219cbc0d845`; field-text currency remains unclaimed because the issue title still says Phase 1.
+- Linear JSC-363 was refreshed with pre-PR372 post-merge route-truth comment `34a50024-24be-4853-af6e-3219cbc0d845`; post-PR375 field-text currency remains unclaimed because the issue title still says Phase 1.
 
 Restart rule:
-No next slice starts until the board/state/receipt validators pass on the post-PR374 current-main tracker and one bounded backlog item is selected.
+No next slice starts until the board/state/receipt validators pass on the post-PR375 current-main tracker and one bounded backlog item is selected.
 ```

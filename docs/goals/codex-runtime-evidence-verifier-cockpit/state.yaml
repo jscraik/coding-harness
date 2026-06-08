@@ -30,28 +30,25 @@ thin_execution_tracker:
     receipt_style: "compact claim/evidence/blocker records"
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
-    kind: "github_pr"
-    pr: 375
-    pr_url: "https://github.com/jscraik/coding-harness/pull/375"
-    branch: "codex/jsc-363-post-pr374-tracker-refresh"
-    local_head_sha: "b404a12087a3aadc7212934ee19d22a39928ee91"
-    remote_head_sha: "6653589ab5d5049fc58dd111a31964a2905d2fc9"
-    base_sha: "b7b5d9f48fb9369c29a4cd9902acde88285bfb22"
-    status: "pr375_review_fix_committed_pending_push_ci_review_refresh"
-    blocker: "PR #375 remote head is stale until b404a12087a3aadc7212934ee19d22a39928ee91 is pushed and CI/CodeRabbit rerun."
-    last_merged_pr: 374
-    last_merged_sha: "b7b5d9f48fb9369c29a4cd9902acde88285bfb22"
-    last_merged_submitted_head_sha: "ca7bc92aeeeb5fa357732fbad8f49f62f54abc2b"
-    open_pr_count: 1
-    open_prs:
-      - 375
+    kind: "none"
+    status: "no_active_pr_route_current_main_synced_after_pr375_merge"
+    blocker: null
+    last_merged_pr: 375
+    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/375"
+    last_merged_sha: "99df7f971530f490a5a37e2f55339ebf5a8ed1f9"
+    last_merged_submitted_head_sha: "be214cd3c64eea16758f8bc57f58de813b37f35f"
+    last_merge_verified_at: "2026-06-08T21:10:04Z"
+    local_main_sha: "99df7f971530f490a5a37e2f55339ebf5a8ed1f9"
+    origin_main_sha: "99df7f971530f490a5a37e2f55339ebf5a8ed1f9"
+    open_pr_count: 0
+    open_prs: []
   queued_slice:
     lifecycle_unit: "backlog-reconciliation"
     name: "select next bounded closeout slice"
-    status: "pr375_review_fix_committed_pending_push_ci_review_refresh"
-    evidence_receipt: "R419"
+    status: "ready_to_select_after_pr375_merge_pullback_validation"
+    evidence_receipt: "R421"
   resume_gate:
-    - "Do not start feature work until PR #375 is pushed, current-head CI and CodeRabbit review pass or are explicitly blocked, the PR merges, and local main is refreshed."
+    - "Do not start feature work until this post-PR375 tracker refresh validates and exactly one next bounded backlog slice is selected."
     - "Select exactly one next bounded backlog slice from review/external/root-hygiene proof, documentation accuracy, historical review-coverage backfill, Linear field-text decision, PU-015 Judge/PM audit, or final completion audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
   review_artifacts:
