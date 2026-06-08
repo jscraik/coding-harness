@@ -5,7 +5,7 @@
 - [Purpose](#purpose)
 - [Current Control Surface](#current-control-surface)
 - [Active Route](#active-route)
-- [Queued Slice](#queued-slice)
+- [Active Slice](#active-slice)
 - [Outstanding Work](#outstanding-work)
 - [History Boundary](#history-boundary)
 - [Resume Gate](#resume-gate)
@@ -26,104 +26,100 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | --- | --- |
 | Parent issue | JSC-363 |
 | Canonical goal | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` |
-| Current branch | `codex/jsc-363-post-pr366-tracker-refresh` |
-| Local head | `c880476ab43c0d1063fdcd0eff9d225480e0f7dc` |
-| Remote PR head | `c880476ab43c0d1063fdcd0eff9d225480e0f7dc` |
-| Main baseline | `e5797549647adab10d35472da9afac574fa0c3cf` |
+| Current branch | `codex/jsc-363-pu013-runtime-cockpit-proof` |
+| Local head | `d772aaa0fc158ef996a057111af7df58e7e33bf2` |
+| Remote main head | `1d0c3baaa76d1de68c633b086a5dcf07472ddbef` |
+| Main baseline | `1d0c3baaa76d1de68c633b086a5dcf07472ddbef` |
 | Active route count | 1 |
-| Active route | PR #367 |
-| Queued implementation slice | PU-013 runtime cockpit integration proof |
-| Feature work status | Paused |
+| Active route | PR #370: PU-013 proof tracker route |
+| Last closed route | PR #369 merged |
+| Current slice | PU-013 runtime cockpit integration proof |
+| Feature work status | PU-013 local proof complete; PR #370 open and waiting for CI/review/merge/pull-back |
 
 ## Active Route
 
-PR #367 is the only active route lane.
+PR #370 is the active route lane after the PR #369 pull-back to current
+`main`. It is a proof-tracker PR for PU-013; it does not claim production
+code changes, Linear field-text currency, delivery-truth completion, Judge/PM
+readiness, or parent-goal completion.
 
 Current evidence:
 
-- Live GitHub PR #367 is open and targets `main`.
-- Live GitHub PR #367 remote head is
-  `c880476ab43c0d1063fdcd0eff9d225480e0f7dc`.
-- Local branch head matches the remote PR head after the validation-lock test
-  repair push.
-- Live PR #367 aggregate `pr-pipeline` and repo-owned CircleCI lanes pass on
-  head `c880476ab43c0d1063fdcd0eff9d225480e0f7dc`.
-- Live review-thread refresh still reports unresolved CodeRabbit threads that
-  must be fixed before the route can close.
+- Live GitHub reports PR #370 open on branch
+  `codex/jsc-363-pu013-runtime-cockpit-proof`.
+- PR #370 head is `d772aaa0fc158ef996a057111af7df58e7e33bf2`.
+- PR #370 mergeability is separate from local PU-013 proof, CI truth, review
+  truth, and owner-waived external Snyk quota state.
+- PR #369 merged into `main` at
+  `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`.
+- Local `main` and `origin/main` both point at
+  `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`.
+- PR #369 repo-owned CircleCI lanes passed, including `pr-template`,
+  `linear-gate`, `risk-policy-gate`, `check`, `test`, `lint`,
+  `typecheck`, `docs-gate`, and aggregate `pr-pipeline`.
 - The external Snyk GitHub App quota/status lane remains owner-waived for that
   external lane only; it is not external Snyk success and not a security waiver
   for repo-owned gates.
+- CodeRabbit and Codex review-status contexts were not counted as independent
+  review proof because usage and rate-limit comments were present.
 
-Next action:
+Completed route-refresh action:
 
-1. Validate this tracker reset locally.
-   - Command: `pnpm run validation:locks && pnpm test:ci`
-   - Pass criteria: Lock check passes before the CI-equivalent test lane starts;
-     all tests pass.
-   - Owner fallback: If validation fails, notify Jamie and do not proceed to commit/push.
+1. Validated the current-main tracker refresh locally.
+   - Command: `jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null`
+   - Command: `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .`
+   - Command: `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit`
+   - Command: `node scripts/validate-goal-kanban-script.cjs .harness/implementation-notes/goal-kanban-board.html`
+   - Command: `git diff --check`
+   - Pass criteria: Goal state, board, visual tracker, audit freshness, and receipt
+     syntax agree on current `main`.
 
-2. Commit the tracker reset.
+2. Committed the current-main tracker refresh.
    - Command: `git add docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl .harness/active-artifacts.md .harness/implementation-notes/goal-kanban-board.html`
-   - Command: `git commit -m "Reset JSC-363 thin tracker after PR #366"`
-   - Pass criteria: Commit succeeds with exit code 0, pre-commit hooks pass,
-     commit SHA is generated, and working tree is clean after commit.
-   - Owner fallback: If pre-commit hooks fail, fix the underlying issue and do
-     not bypass hooks with `--no-verify`.
+   - Command: `git commit -m "Refresh JSC-363 goal state after PR #369"`
+   - Pass criteria: Commit succeeds with exit code 0 and hooks pass.
 
-3. Push `codex/jsc-363-post-pr366-tracker-refresh` without bypassing hooks.
-   - Command: `git push origin codex/jsc-363-post-pr366-tracker-refresh`
-   - Pass criteria: Push succeeds, remote branch updated to local head.
-   - Owner fallback: If push fails, notify Jamie and diagnose network/auth/hook blocker.
+3. Discussed and bounded PU-013 as a proof-first slice.
+   - Scope: verify current-main `runtime-card` and `harness next` behavior first.
+   - Boundary: keep work inside `src/lib/runtime/**`, `src/commands/runtime-card*`,
+     and `src/commands/next*` unless docs-gate requires synchronized docs.
+   - Non-claims: runtime-card remains advisory, does not store evidence, does not
+     execute actions, and does not imply PR merge readiness.
 
-4. Trigger CodeRabbit manually on PR #367 if the fresh push does not request a
-   new review automatically.
-   - Command: Use GitHub UI to request review from CodeRabbit, or verify automatic trigger.
-   - Pass criteria: CodeRabbit review status shows "pending" or "in progress".
-   - Owner fallback: If CodeRabbit unavailable, notify Jamie and accept manual review-only path.
+4. Proved PU-013 current behavior without production code changes.
+   - Command: `node --import tsx src/cli.ts runtime-card --json --repo . --issue JSC-363 --evidence codex-scripts/pu013-codex-runtime-evidence-bundle.json --out codex-scripts/pu013-runtime-card-with-codex.json --evidence-out codex-scripts/pu013-runtime-evidence-out.json`
+   - Result: pass; runtime-card projected `codexRuntime.receiptRefs`,
+     `validationRefs`, `reviewRefs`, `sessionRefs`, `environmentRefs`,
+     `staleStateRefs`, and a visible stale Linear blocker.
+   - Command: `node --import tsx src/cli.ts next --json --worktree-role dirty-with-justification --runtime-card codex-scripts/pu013-runtime-card-with-codex.json`
+   - Result: blocked as expected; `harness next` surfaced the runtime-card
+     blocker and one next safe action without executing work.
+   - Command: `node --import tsx src/cli.ts runtime-card --json --repo . --issue JSC-363 --evidence codex-scripts/missing-runtime-evidence.json`
+   - Result: fail as expected; missing evidence was not treated as support.
+   - Command: `pnpm vitest run src/lib/runtime/*.test.ts src/commands/runtime-card.test.ts src/commands/next*.test.ts`
+   - Result: pass; 13 files and 199 tests passed.
+   - Command: `pnpm exec tsx src/cli.ts runtime-card --json --repo .`
+   - Result: pass; local runtime-card emitted `runtime-card/v1` with no
+     Codex-runtime projection when no evidence bundle was supplied.
+   - Command: `pnpm exec tsx src/cli.ts next --json --worktree-role dirty-with-justification`
+   - Result: pass; `harness next` returned one advisory next action from local
+     worktree state.
 
-5. Refresh PR #367 `pr-template`, `pr-pipeline`, review-thread, and
-   mergeability truth.
-   - Command: `gh pr view 367 --json state,statusCheckRollup,reviewDecision,mergeable`
-   - Command:
+## Active Slice
 
-     ```bash
-     gh api graphql -f owner=jscraik -f name=coding-harness -F number=367 -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{isResolved isOutdated}}}}}' | jq '.data.repository.pullRequest.reviewThreads.nodes | map(select(.isResolved == false and .isOutdated == false)) | length'
-     ```
+PU-013 runtime cockpit integration proof is locally proved on this branch.
 
-   - Pass criteria: Fresh CI status retrieved from `statusCheckRollup`,
-     mergeability known from `mergeable`, review decision known from
-     `reviewDecision`, and unresolved review-thread count retrieved from the
-     GraphQL review-thread surface.
-   - Owner fallback: If `gh` unavailable, use GitHub web UI to check PR status,
-     CI checks, review decision, mergeability state, and unresolved review
-     threads manually, then record findings in a receipt.
-
-6. Merge PR #367 only after required repo-owned lanes are green/resolved or a
-   precise owner-accepted blocker is recorded.
-   - Command: `gh pr merge 367 --squash` (or web UI merge).
-   - Pass criteria: PR merged, main branch advanced, merge commit SHA known.
-   - Owner fallback: If blocked, record blocker in receipt and notify Jamie before halting feature work.
-
-7. Checkout `main`, pull latest `origin/main`, and record the post-merge
-   receipt before PU-013 starts.
-   - Command: `git checkout main && git pull origin main`
-   - Pass criteria: Local main matches origin/main, clean working tree.
-   - Owner fallback: If pull fails, diagnose conflict/network issue and notify Jamie.
-
-## Queued Slice
-
-PU-013 runtime cockpit integration proof is queued, not active.
-
-PU-013 may start only after PR #367 is closed by merge or explicitly blocked,
-local `main` is refreshed, and the goal board/state/receipt surfaces validate
-from the resulting current main.
+No production code patch was required because current main already implements
+the PU-013 runtime-card projection and `harness next` advisory consumption
+contract. The remaining PU-013 route work is to commit the proof tracker update,
+push the PR route update, run required review/skill gates, merge, pull `main`,
+refresh Linear JSC-363, and then move to the next backlog item.
 
 ## Outstanding Work
 
-- Close PR #367 route lane through push, fresh CI, review-thread refresh,
-  merge, and main pull-back.
-- Start PU-013 with bounded intent, Project Brain inputs, plan/spec/audit
-  matrix, and required review lenses.
+- Resolve PR #370 review comments and CI checks without widening PU-013.
+- Merge PR #370, pull local `main`, refresh Linear JSC-363, and revalidate the
+  goal tracker before selecting another slice.
 - Prove final delivery-truth consumption.
 - Prove review-state, external-state, and root-hygiene closeout surfaces from
   current evidence.
@@ -135,7 +131,7 @@ from the resulting current main.
 
 ## History Boundary
 
-Merged PR lanes through PR #366 remain provenance. They are not active route
+Merged PR lanes through PR #369 remain provenance. They are not active route
 lanes and must not be expanded in the active board unless a fresh current-main
 regression reopens them.
 
@@ -146,31 +142,33 @@ claim/evidence/blocker records, not narrative diary entries.
 
 Feature implementation remains stopped until all of these are true:
 
-- PR #367 branch push completes without bypassing hooks.
-- Fresh remote PR #367 repo-owned checks are known.
-- Review-thread truth is refreshed and unresolved actionable threads are fixed,
-  resolved, or owner-accepted with evidence.
-- PR #367 is merged and pulled to local main, or an owner-visible blocker is
-  recorded.
+- PU-013 proof tracker update is committed and pushed to PR #370.
+- PR #370 is reviewed, green or explicitly owner-blocked, merged, and
+  pulled back to local `main`.
+- Linear JSC-363 receives a compact current-truth update after merge.
 - `goal.md`, `state.yaml`, `notes/execution-tracker.md`,
   `.harness/active-artifacts.md`, the tracker board, and `receipts.jsonl`
-  validate together.
+  validate together after the merge pull-back.
 
 ## Linear Update Payload
 
 Use this payload for the JSC-363 Linear progress update:
 
 ```md
-Tightened JSC-363 execution control before restarting the goal.
+Refreshed JSC-363 current-main route truth and PU-013 local proof.
 
 Current truth:
-- Active route lane: PR #367 only.
-- Local branch head: c880476ab43c0d1063fdcd0eff9d225480e0f7dc.
-- Remote PR #367 head: c880476ab43c0d1063fdcd0eff9d225480e0f7dc.
-- Remote PR #367 repo-owned CI lanes pass at the pushed head; unresolved CodeRabbit review threads remain the active route blocker.
-- PU-013 runtime cockpit integration proof is queued, not active.
+- Active route lane: PR #370.
+- Latest merged route: PR #369.
+- Local main head: 1d0c3baaa76d1de68c633b086a5dcf07472ddbef.
+- Origin main head: 1d0c3baaa76d1de68c633b086a5dcf07472ddbef.
+- Repo-owned CircleCI lanes for PR #369 passed before merge.
+- PU-013 runtime cockpit integration proof is locally proved on branch `codex/jsc-363-pu013-runtime-cockpit-proof`.
+- PR #370 is open for the proof tracker route and remains separate from runtime, CI, review, Linear, and merge-readiness truth.
+- No production code patch was required; current main already projects Codex runtime evidence into `runtime-card` and consumes it narrowly through `harness next`.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
+- CodeRabbit/Codex review-status contexts are not being treated as independent review proof because usage/rate-limit comments were present.
 
 Restart rule:
-No feature work resumes until PR #367 review threads are fixed or owner-accepted, the route is merged or explicitly blocked, local main is pulled, and the compact goal tracker validates.
+No next slice starts until PR #370 is reviewed, merged, pulled back to local `main`, Linear JSC-363 is refreshed, and the board/state/receipt validators pass.
 ```

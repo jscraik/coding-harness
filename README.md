@@ -42,6 +42,8 @@ orchestrate agentic software work to professional standards through compact
 orientation, executable guardrails, durable memory, and evidence-based handoff.
 Its primary metric is PR lead time from open to merge, and its primary
 bottleneck is the review and rework loop.
+The weekly reviewed status surface for that contract is
+[docs/roadmap/agent-first-status.md](./docs/roadmap/agent-first-status.md).
 
 ## Table of Contents
 
