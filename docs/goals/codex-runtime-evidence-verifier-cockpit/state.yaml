@@ -24,33 +24,34 @@ thin_execution_tracker:
   architecture_finding: "The previous goal board/state shape repeated route history across multiple surfaces, making the active interface shallow and costly for agents to navigate."
   deepened_interface: "Use a compact active tracker with one route lane, one queued slice, current blockers, resume gates, and provenance links."
   active_surface_budget:
-    active_route_lanes: 0
+    active_route_lanes: 1
     queued_implementation_slices: 0
     current_truth_snapshots: 1
     receipt_style: "compact claim/evidence/blocker records"
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
-    kind: "none"
-    pr: null
-    pr_url: null
-    branch: "main"
-    local_head_sha: "b7b5d9f48fb9369c29a4cd9902acde88285bfb22"
-    remote_head_sha: "b7b5d9f48fb9369c29a4cd9902acde88285bfb22"
+    kind: "github_pr"
+    pr: 375
+    pr_url: "https://github.com/jscraik/coding-harness/pull/375"
+    branch: "codex/jsc-363-post-pr374-tracker-refresh"
+    local_head_sha: "b404a12087a3aadc7212934ee19d22a39928ee91"
+    remote_head_sha: "6653589ab5d5049fc58dd111a31964a2905d2fc9"
     base_sha: "b7b5d9f48fb9369c29a4cd9902acde88285bfb22"
-    status: "current_main_synced_pr374_merged_delivery_truth_consumption_projection_delivered"
-    blocker: null
+    status: "pr375_review_fix_committed_pending_push_ci_review_refresh"
+    blocker: "PR #375 remote head is stale until b404a12087a3aadc7212934ee19d22a39928ee91 is pushed and CI/CodeRabbit rerun."
     last_merged_pr: 374
     last_merged_sha: "b7b5d9f48fb9369c29a4cd9902acde88285bfb22"
     last_merged_submitted_head_sha: "ca7bc92aeeeb5fa357732fbad8f49f62f54abc2b"
-    open_pr_count: 0
-    open_prs: []
+    open_pr_count: 1
+    open_prs:
+      - 375
   queued_slice:
     lifecycle_unit: "backlog-reconciliation"
     name: "select next bounded closeout slice"
-    status: "post_pr374_tracker_validated_pending_commit_pr"
-    evidence_receipt: "R418"
+    status: "pr375_review_fix_committed_pending_push_ci_review_refresh"
+    evidence_receipt: "R419"
   resume_gate:
-    - "Do not start feature work until the post-PR374 tracker receipt validates on current main."
+    - "Do not start feature work until PR #375 is pushed, current-head CI and CodeRabbit review pass or are explicitly blocked, the PR merges, and local main is refreshed."
     - "Select exactly one next bounded backlog slice from review/external/root-hygiene proof, documentation accuracy, historical review-coverage backfill, Linear field-text decision, PU-015 Judge/PM audit, or final completion audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
   review_artifacts:

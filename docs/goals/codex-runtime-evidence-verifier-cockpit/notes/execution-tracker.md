@@ -26,24 +26,25 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | ------------------- | -------------------------------------------------------------------------------------- |
 | Parent issue        | JSC-363                                                                                |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`                           |
-| Current branch      | `main`                                                                                 |
-| Local head          | `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`                                             |
-| Remote main head    | `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`                                             |
+| Current branch      | `codex/jsc-363-post-pr374-tracker-refresh`                                            |
+| Local head          | `b404a12087a3aadc7212934ee19d22a39928ee91`                                             |
+| Remote branch head  | `6653589ab5d5049fc58dd111a31964a2905d2fc9`                                             |
 | Main baseline       | `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`                                             |
-| Active route count  | 0                                                                                      |
-| Active route        | None                                                                                   |
+| Active route count  | 1                                                                                      |
+| Active route        | PR #375 tracker review-fix lane                                                        |
 | Last closed route   | PR #374 merged                                                                         |
 | Current slice       | Backlog reconciliation                                                                 |
-| Feature work status | Stopped until this post-PR374 tracker validates and the next bounded slice is selected |
+| Feature work status | Stopped until PR #375 is pushed, refreshed, merged, and pulled back                    |
 
 ## Active Route
 
-There is no active PR route. PR #374 merged the delivery-truth consumption
-projection from branch `codex/jsc-363-delivery-truth-consumption` into
-`main` at squash commit `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`.
-This closes the PR lane only; it does not claim Linear field-text currency,
-root-hygiene proof, documentation accuracy, Judge/PM readiness, or parent-goal
-completion.
+PR #375 is the active tracker review-fix route. Local head
+`b404a12087a3aadc7212934ee19d22a39928ee91` fixes CodeRabbit stale-route
+truth findings, but the hosted PR still points at
+`6653589ab5d5049fc58dd111a31964a2905d2fc9` until the branch is pushed.
+This route closes only the tracker-review-fix lane; it does not claim Linear
+field-text currency, root-hygiene proof, documentation accuracy, Judge/PM
+readiness, or parent-goal completion.
 
 Current evidence:
 
@@ -58,6 +59,9 @@ Current evidence:
   https://github.com/jscraik/coding-harness/pull/374#issuecomment-4652005383.
 - PR #374 repo-owned CircleCI lanes, aggregate `pr-pipeline`, CodeRabbit
   status, Socket, and CircleCI Snyk dependency scan passed before merge.
+- R419 records the PR #375 CodeRabbit review-fix commit and sibling-pattern
+  sweep. Next safe action is push the branch, trigger current-head CodeRabbit,
+  and wait for PR #375 CI/review truth before merge.
 - PR #374 review-thread refresh returned zero unresolved threads before merge.
 - The external Snyk GitHub App quota/status lane remains owner-waived for that
   external lane only; it is not external Snyk success and not a security waiver
