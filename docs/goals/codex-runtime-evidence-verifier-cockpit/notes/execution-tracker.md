@@ -22,29 +22,42 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 
 ## Current Control Surface
 
-| Field | Current Truth |
-| --- | --- |
-| Parent issue | JSC-363 |
-| Canonical goal | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` |
-| Current branch | `codex/jsc-363-delivery-truth-consumption` |
-| Local head | `d011cd5555bfc90fe1d4e24d5f5fad4cd7bec702` plus tracker receipt repair |
-| Remote main head | `37aec5fb97a8358f766166330affbced6bd31c5a` |
-| Main baseline | `37aec5fb97a8358f766166330affbced6bd31c5a` |
-| Active route count | 0 |
-| Active route | none |
-| Last closed route | PR #373 merged |
-| Current slice | delivery-truth consumption |
-| Feature work status | local delivery-truth code/artifact commit recorded; E2E credential surface blocked; no PR lane active yet |
+| Field               | Current Truth                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------------ |
+| Parent issue        | JSC-363                                                                                          |
+| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`                                     |
+| Current branch      | `codex/jsc-363-delivery-truth-consumption`                                                       |
+| Local head          | `a07e881b717902bcc3a8a3a2d7e065b9b125d58f` before this PR-lane receipt refresh                   |
+| Remote main head    | `37aec5fb97a8358f766166330affbced6bd31c5a`                                                       |
+| Main baseline       | `37aec5fb97a8358f766166330affbced6bd31c5a`                                                       |
+| Active route count  | 1                                                                                                |
+| Active route        | PR #374                                                                                          |
+| Last closed route   | PR #373 merged                                                                                   |
+| Current slice       | delivery-truth consumption                                                                       |
+| Feature work status | PR #374 open; PR body repaired and locally re-validated; hosted CI/review still pending or stale |
 
 ## Active Route
 
-No PR lane is active after PR #373 merged into current `main` as squash commit
-`37aec5fb97a8358f766166330affbced6bd31c5a`. PR #373 was the post-PR372
-tracker refresh; it does not claim Linear field-text currency, delivery-truth
-completion, Judge/PM readiness, or parent-goal completion.
+PR #374 is the active route for the delivery-truth consumption slice. It is open
+at https://github.com/jscraik/coding-harness/pull/374 from branch
+`codex/jsc-363-delivery-truth-consumption`. PR #373 remains the latest merged
+`main` provenance at squash commit
+`37aec5fb97a8358f766166330affbced6bd31c5a`; it does not claim Linear
+field-text currency, delivery-truth completion, Judge/PM readiness, or
+parent-goal completion.
 
 Current evidence:
 
+- Live GitHub reports PR #374 open at submitted head
+  `a07e881b717902bcc3a8a3a2d7e065b9b125d58f` before this tracker refresh.
+- The PR body was repaired after the local source-checkout `pr-template-gate`
+  reproduced eight findings and then passed with zero findings against the
+  repaired body artifact.
+- CodeRabbit was manually triggered with `@coderabbitai review this pr` at
+  https://github.com/jscraik/coding-harness/pull/374#issuecomment-4652005383.
+- Hosted PR #374 still shows stale pre-repair `ci/circleci: pr-template` and
+  aggregate `pr-pipeline` failures; this tracker refresh is a fresh submitted
+  head for CircleCI to re-evaluate.
 - Live GitHub reported PR #373 merged at 2026-06-08T16:48:42Z from submitted
   head `2e8d94785edd2c10ab97a175633e341ef9fa2c49` as merge commit
   `37aec5fb97a8358f766166330affbced6bd31c5a`.
@@ -194,6 +207,7 @@ Use this payload for the JSC-363 Linear progress update:
 Refreshed JSC-363 current-main route truth and PU-013 merged proof.
 
 Current truth:
+
 - Active route lane: none.
 - Latest merged route: PR #371.
 - Local main head: 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856.

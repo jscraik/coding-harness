@@ -44,7 +44,8 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 ## Current Reconciliation Status
 
 Last updated during the 2026-06-08 delivery-truth consumption slice after
-PR #373 merged the post-PR372 tracker refresh into `main`. PR #366, PR #367,
+PR #374 opened for the delivery-truth consumption branch and its hosted PR body
+was repaired against the local `pr-template-gate`. PR #366, PR #367,
 PR #369, PR #370, PR #371, PR #372, and PR #373 are historical route
 provenance. PR #373 is merged into `main` as squash merge commit
 `37aec5fb97a8358f766166330affbced6bd31c5a`.
@@ -65,7 +66,19 @@ Current live route truth:
   `spawn_agent` tool is exposed.
 - Local code and review-artifact commit
   `d011cd5555bfc90fe1d4e24d5f5fad4cd7bec702` records the delivery-truth
-  projection patch. No PR lane exists yet for that commit.
+  projection patch. Tracker repair commit
+  `a07e881b717902bcc3a8a3a2d7e065b9b125d58f` is the current PR #374 head
+  before this PR-lane receipt refresh.
+- Live GitHub has PR #374 open at
+  https://github.com/jscraik/coding-harness/pull/374. The PR body was repaired
+  after local `pr-template-gate` reproduced eight blocking findings and then
+  passed with zero findings against the repaired body. CodeRabbit was manually
+  triggered with `@coderabbitai review this pr`.
+- Hosted PR #374 check truth is not green yet. The stale pre-repair
+  `ci/circleci: pr-template` and aggregate `pr-pipeline` contexts still show
+  failure, and this tracker refresh exists to give CircleCI a fresh submitted
+  head. The external Snyk GitHub App status remains owner-waived for that
+  external quota/status lane only.
 - Live GitHub has PR #373 merged from submitted head
   `2e8d94785edd2c10ab97a175633e341ef9fa2c49`.
 - Live GitHub has PR #372 merged from submitted head
@@ -96,10 +109,10 @@ Current live route truth:
   `34a50024-24be-4853-af6e-3219cbc0d845` before PR #372 merged, while the
   issue title still contains older Phase 1 wording. Field-text currency remains
   unclaimed until a fresh Linear update or owner decision records otherwise.
-- Delivery-truth consumption is locally implemented and committed locally, but
-  not complete until the credential-surface blocker, independent reviewer coverage, PR
-  review/CI/review-thread lanes, merge, main pullback, and tracker refresh are
-  recorded.
+- Delivery-truth consumption is locally implemented and open in PR #374, but
+  not complete until the credential-surface blocker, independent reviewer
+  coverage, PR review/CI/review-thread lanes, merge, main pullback, and tracker
+  refresh are recorded.
 
 ## Thin Execution Tracker
 
@@ -143,14 +156,15 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: no active PR lane after PR #373 merged and local `main`
-  fast-forwarded to `37aec5fb97a8358f766166330affbced6bd31c5a`.
+- Current route: PR #374 is the only active PR lane for delivery-truth
+  consumption. It is open at current submitted head
+  `a07e881b717902bcc3a8a3a2d7e065b9b125d58f` before this tracker refresh.
 - Provenance: See `receipts.jsonl` for merged PR #343 through PR #373 route history.
 
 Corrected backlog after current-main reconciliation:
 
 - Done on current main: PR #373 merged at `37aec5fb97a8358f766166330affbced6bd31c5a`. See `receipts.jsonl` for complete merged PR history.
-- Current route PR: none.
+- Current route PR: PR #374.
 - Selected next slice: delivery-truth consumption. The slice is limited to
   making final closeout delivery-truth claim families visible as current,
   receipt-backed pass/block/unknown verdicts in the existing deep modules.
