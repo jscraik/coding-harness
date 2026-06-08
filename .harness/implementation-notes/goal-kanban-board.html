@@ -416,7 +416,7 @@
 
     <section class="metrics" aria-label="Goal status summary">
       <div class="metric"><span>Goal status</span><strong>PU-013 proof merged</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #371</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #372</strong></div>
       <div class="metric"><span>Current PR</span><strong>None active</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Partial, final lanes pending</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated for the 2026-06-08 post-PR371 tracker refresh. PR #371 is merged provenance at main commit <code>528b9e1d04b7d7a555e05b505ac2ca45c2cc4856</code>. PU-013 runtime cockpit integration proof remains merged through PR #370 with no production code patch required, and PR #371 merged the post-PR370 tracker repair. Linear JSC-363 has post-merge route-truth comment <code>34a50024-24be-4853-af6e-3219cbc0d845</code>. Linear field-text currency, delivery-truth consumption, documentation accuracy, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated for the 2026-06-08 post-PR372 tracker refresh. PR #372 is merged provenance at main commit <code>3d91248269736b36a8e3e203683de9310d107d14</code>. PU-013 runtime cockpit integration proof remains merged through PR #370 with no production code patch required, PR #371 merged the post-PR370 tracker repair, and PR #372 merged the post-PR371 tracker repair plus narrow CodeRabbit learning-contract validator support. Linear JSC-363 has pre-PR372 post-merge route-truth comment <code>34a50024-24be-4853-af6e-3219cbc0d845</code>. Linear field-text currency, delivery-truth consumption, documentation accuracy, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -571,7 +571,7 @@
         tags: ["R391", "CI triage", "pre-push", "guardrail"],
         summary: "CI triage found stale local validation process trees from repeated aggregate checks. The durable fix adds repo-owned validation locks for behavior-tests and test:ci, plus a pre-push lock check so duplicate lanes fail fast with an actionable diagnostic.",
         evidence: ["scripts/with-validation-lock.sh", "scripts/check-validation-locks.sh", "Makefile validation-locks target", "package.json quality:behavior-tests lock wrapper", "package.json test:ci lock wrapper", "src/dev/validation-lock-scripts.test.ts -> pass", "bash scripts/check-validation-locks.sh -> pass", "pnpm run validation:locks -> pass"],
-        next: "Use as historical local guard evidence. No PR lane is active after PR #371 merged.",
+        next: "Use as historical local guard evidence. No PR lane is active after PR #372 merged.",
         risk: "The guard prevents duplicate tracked validation lanes; it does not prove remote CircleCI pass, PU-013 implementation, or parent-goal completion."
       },
       {
@@ -582,7 +582,7 @@
         tags: ["R404", "R405", "PR #369", "current-main", "tracker refresh"],
         summary: "The PR #369 implementation route is closed. R404 records that local main and origin/main are synced at PR #369, while R405 binds the same refresh to the governed audit sources so freshness validation stays current.",
         evidence: ["PR #369 -> MERGED at 2026-06-08T13:08:31Z", "Local main baseline -> 1d0c3baaa76d1de68c633b086a5dcf07472ddbef", "origin/main baseline -> 1d0c3baaa76d1de68c633b086a5dcf07472ddbef", "Next active route was PR #370 -> now merged", "R405 audit_sources_checked -> current main head"],
-        next: "Use as historical route-refresh evidence. PR #371 is now merged current-main provenance.",
+        next: "Use as historical route-refresh evidence. PR #372 is now merged current-main provenance.",
         risk: "The refresh proves route closure and tracker alignment only. It does not prove delivery-truth consumption, Linear field-text currency, or parent-goal completion."
       },
       {
@@ -615,8 +615,19 @@
         tags: ["PR #371", "R410", "route truth", "merged"],
         summary: "PR #371 merged the post-PR370 tracker refresh and corrected stale PR #369/#370 route wording after CodeRabbit review. It closes the current route lane and leaves the next implementation slice unselected.",
         evidence: ["Submitted head -> a77a7f0ec3ccf2950c75a7b10b56067e32648e02", "Merge commit -> 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856", "Local main and origin/main -> 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856", "CircleCI pr-pipeline -> success", "CodeRabbit -> success", "Unresolved review threads -> none", "Linear comment -> 34a50024-24be-4853-af6e-3219cbc0d845", "External Snyk GitHub App -> owner-waived quota/status lane only"],
-        next: "Validate the post-PR371 tracker, then choose exactly one bounded next backlog item before opening another PR.",
+        next: "Use as merged post-PR370 route evidence. PR #372 now carries the latest current-main tracker refresh.",
         risk: "PR #371 proves route-tracker freshness only. It does not prove delivery-truth consumption, documentation accuracy, Linear field-text currency, Judge/PM readiness, or parent-goal completion."
+      },
+      {
+        id: "pr372-post-pr371-tracker-refresh",
+        lane: "pr-truth",
+        title: "PR #372: post-PR371 tracker refresh merged",
+        status: "done",
+        tags: ["PR #372", "R411", "route truth", "CodeRabbit learning", "merged"],
+        summary: "PR #372 merged the post-PR371 tracker refresh and added narrow validator support for deterministic CodeRabbit learning contracts. It closes the current route lane and leaves the next implementation slice unselected.",
+        evidence: ["Submitted head -> ae0975afbde9acbf0fd1a59f30476fff9a044886", "Merge commit -> 3d91248269736b36a8e3e203683de9310d107d14", "Local main and origin/main -> 3d91248269736b36a8e3e203683de9310d107d14", "CircleCI pr-pipeline -> success", "CircleCI pr-template rerun -> success", "Live PR body gate -> pass", "CodeRabbit status -> success with quota/rate-limit comment recorded as non-proof", "Unresolved review threads -> none", "External Snyk GitHub App -> owner-waived quota/status lane only"],
+        next: "Validate the post-PR372 tracker, then choose exactly one bounded next backlog item before opening another PR.",
+        risk: "PR #372 proves route-tracker freshness and a narrow evidence-pattern validator rule only. It does not prove delivery-truth consumption, documentation accuracy, Linear field-text currency, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "pr321",

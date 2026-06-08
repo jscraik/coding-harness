@@ -10,12 +10,13 @@
 
 ## Scope
 
-Current working reconciliation: 2026-06-08 post-PR371 tracker refresh for
-JSC-363. PR #371 is merged into `main` as squash merge commit
-`528b9e1d04b7d7a555e05b505ac2ca45c2cc4856`; local `main` and `origin/main`
+Current working reconciliation: 2026-06-08 post-PR372 tracker refresh for
+JSC-363. PR #372 is merged into `main` as squash merge commit
+`3d91248269736b36a8e3e203683de9310d107d14`; local `main` and `origin/main`
 are synced to that head. PU-013 runtime cockpit integration proof remains merged
-through PR #370, and PR #371 merged the post-PR370 tracker repair. Linear
-JSC-363 has post-merge route-truth comment
+through PR #370, PR #371 merged the post-PR370 tracker repair, and PR #372
+merged the post-PR371 tracker repair plus narrow CodeRabbit learning-contract
+validator support. Linear JSC-363 has pre-PR372 post-merge route-truth comment
 `34a50024-24be-4853-af6e-3219cbc0d845`.
 Delivery-truth consumption, Linear field-text currency, documentation accuracy,
 Judge/PM readiness, and parent-goal completion remain unclaimed.
@@ -46,7 +47,7 @@ unless a live refresh is recorded in the referenced artifact.
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
 | Advisory stale-document archive candidate reporting | JSC-395 | `.harness/specs/2026-06-05-advisory-stale-document-archive-candidate-reporting-spec.md` plus `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-trace-plan.md` plus `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-execution-plan.md` | Delivered on current main by PR #354. The slice remains advisory/read-only: it may report stale-document archive candidates and docs-gate advisory findings, but it must not delete, move, archive, demote, or rewrite documentation artifacts. | Treat PR #354 as merged implementation evidence. Keep release, downstream-template, and any future docs-cleanup action separate unless a later tracked route explicitly promotes them. |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor route with a thin execution tracker. PR #371 is merged provenance at current-main commit 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856. No PR lane is active. PU-013 runtime cockpit integration proof is merged and pulled back with no production code patch required. Linear field-text-current remains unclaimed unless accepted by the owner or updated. | Next Safe Action: validate the post-PR #371 tracker, then select one bounded next backlog slice before opening another PR. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor route with a thin execution tracker. PR #372 is merged provenance at current-main commit 3d91248269736b36a8e3e203683de9310d107d14. No PR lane is active. PU-013 runtime cockpit integration proof is merged and pulled back with no production code patch required. Linear field-text-current remains unclaimed unless accepted by the owner or updated. | Next Safe Action: validate the post-PR #372 tracker, then select one bounded next backlog slice before opening another PR. |
 
 PU-046 update: PR #330 was refreshed again on head
 163017e16e4611d5d71f5c4c62fc85f8d164b17b after the R205 artifact receipt was
