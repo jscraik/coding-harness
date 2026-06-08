@@ -2,6 +2,7 @@ import { Effect } from "effect";
 import {
 	buildHarnessGateSummary,
 	collectCheckBlockers,
+	collectCiTelemetryBlockers,
 	collectHarnessGateBlockers,
 	collectPullRequestBlockers,
 	collectReviewArtifactBlockers,
@@ -39,8 +40,7 @@ import type {
 	PrCloseoutInput,
 	PrCloseoutReport,
 } from "./types.js";
-
-/** Options controlling report timestamping and opt-in derived verifier evidence. */
+/** Options controlling report timestamping and derived verifier evidence. */
 export interface PrCloseoutReportOptions {
 	now?: Date;
 	deriveDeliveryTruthFromStatePackets?: PrCloseoutDeliveryTruthDerivationOptions;
@@ -73,6 +73,7 @@ function buildPrCloseoutReportValue(
 	collectWorktreeBlockers(input, dirtyPathsExcluded, blockers);
 	collectPullRequestBlockers(pr, blockers);
 	collectCheckBlockers(checks, blockers);
+	collectCiTelemetryBlockers(input, checks, blockers);
 	collectReviewBlockers(pr, reviewThreads, blockers);
 	collectReviewArtifactBlockers(
 		input.reviewArtifacts ?? [],
@@ -125,17 +126,13 @@ function buildPrCloseoutReportValue(
 		blockers,
 		claims,
 		checks: summarizeChecks(checks),
+		ciTelemetry: input.ciTelemetry ?? [],
 		reviewThreads: {
 			unresolved: reviewThreads.unresolved,
 			needsHuman: reviewThreads.needsHuman ?? null,
 			autofixable: reviewThreads.autofixable ?? null,
 		},
-		traceability: {
-			sessionIds: traceability.sessionIds,
-			traceIds: traceability.traceIds,
-			aiSessionTraceability: traceability.aiSessionTraceability,
-			complete: traceability.complete,
-		},
+		traceability,
 		harnessGates,
 		assurance: buildAssuranceSummary(input),
 		runtimeEvidence: buildRuntimeEvidenceSummary(input),

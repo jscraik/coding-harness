@@ -950,6 +950,134 @@ describe("runPrCloseoutCLI", () => {
 		});
 	});
 
+	it("blocks CI closeout when CircleCI telemetry cannot identify failures", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const inputPath = join(dir, "input.json");
+		writeFileSync(
+			inputPath,
+			JSON.stringify({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					headSha: "abc123",
+					body: "Refs JSC-363",
+					reviewDecision: "APPROVED",
+				},
+				branch: {
+					clean: true,
+					pushed: true,
+					behindBase: false,
+					hasConflicts: false,
+					matchesPullRequestHead: true,
+					headSha: "abc123",
+					worktreeRole: "implementation",
+				},
+				checks: [
+					{
+						name: "unit-tests",
+						state: "SUCCESS",
+						required: true,
+						headSha: "abc123",
+						source: "github",
+					},
+				],
+				ciTelemetry: [
+					{
+						provider: "circleci",
+						source: "circleci_otel",
+						evidenceRef:
+							"~/.agents/otel-collector/data/processed/stats.json#circleci_issues",
+						freshness: "current",
+						totalSpans: 5786,
+						statusCounts: { unknown: 5786 },
+						canIdentifyIssues: false,
+						blockedReason:
+							"CircleCI spans do not include status or failure attributes",
+					},
+				],
+				reviewThreads: { unresolved: 0 },
+				traceability: {
+					sessionIds: ["codex-session:2026-06-08"],
+					traceIds: ["circleci:otel-stats"],
+					aiSessionTraceability:
+						"JSC-363 -> CircleCI telemetry visibility -> pr-closeout",
+				},
+				rollback: { notApplicable: true, evidenceRef: "pr-body:rollback" },
+				closeoutGates: PASSING_PHASE_EXIT,
+				assurance: PASSING_ASSURANCE,
+				runtimeEvidence: PASSING_RUNTIME_EVIDENCE,
+				linearMutation: "available",
+				releaseReadinessImpact: "none",
+			}),
+		);
+
+		const result = await capture(["--json", "--input", inputPath]);
+		const report = JSON.parse(result.output) as {
+			status: string;
+			nextAction: string;
+			blockers: Array<{
+				surface: string;
+				classification: string;
+				ref?: string;
+				reason: string;
+			}>;
+			ciTelemetry: Array<{ provider: string; canIdentifyIssues: boolean }>;
+			lifecycleSnapshot: {
+				handoffRequiredEvidence: Array<{
+					lane: string;
+					evidenceRef: string;
+				}>;
+				lanes: Array<{
+					lane: string;
+					status: string;
+					blockerClass: string | null;
+					evidenceRef: string | null;
+				}>;
+			};
+		};
+		const ciLane = report.lifecycleSnapshot.lanes.find(
+			(lane) => lane.lane === "ci_state",
+		);
+
+		expect(result.exitCode).toBe(0);
+		expect(report.status).toBe("waiting");
+		expect(report.nextAction).toBe("wait_for_external_check");
+		expect(report.ciTelemetry).toEqual([
+			expect.objectContaining({
+				provider: "circleci",
+				canIdentifyIssues: false,
+			}),
+		]);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "checks",
+					classification: "external_service",
+					ref: "~/.agents/otel-collector/data/processed/stats.json#circleci_issues",
+					reason: expect.stringContaining(
+						"CircleCI telemetry is present but cannot identify CI failures",
+					),
+				}),
+			]),
+		);
+		expect(ciLane).toMatchObject({
+			status: "blocked",
+			blockerClass: "external_service",
+			evidenceRef:
+				"~/.agents/otel-collector/data/processed/stats.json#circleci_issues",
+		});
+		expect(report.lifecycleSnapshot.handoffRequiredEvidence).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					lane: "ci_state",
+					evidenceRef:
+						"~/.agents/otel-collector/data/processed/stats.json#circleci_issues",
+				}),
+			]),
+		);
+	});
+
 	it("blocks closeout when an expected review artifact is missing", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const inputPath = join(dir, "input.json");
