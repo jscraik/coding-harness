@@ -32,24 +32,27 @@ thin_execution_tracker:
   active_route:
     kind: "none"
     pr: null
-    branch: null
-    local_head_sha: "3d91248269736b36a8e3e203683de9310d107d14"
-    remote_head_sha: "3d91248269736b36a8e3e203683de9310d107d14"
-    base_sha: "3d91248269736b36a8e3e203683de9310d107d14"
-    status: "route_closed_pr372_merged_current_main_synced"
+    branch: "codex/jsc-363-delivery-truth-consumption"
+    local_head_sha: "37aec5fb97a8358f766166330affbced6bd31c5a"
+    remote_head_sha: "37aec5fb97a8358f766166330affbced6bd31c5a"
+    base_sha: "37aec5fb97a8358f766166330affbced6bd31c5a"
+    status: "route_closed_pr373_merged_current_main_synced_delivery_truth_slice_selected"
     blocker: null
-    last_merged_pr: 372
-    last_merged_sha: "3d91248269736b36a8e3e203683de9310d107d14"
+    last_merged_pr: 373
+    last_merged_sha: "37aec5fb97a8358f766166330affbced6bd31c5a"
     open_pr_count: 0
     open_prs: []
   queued_slice:
-    lifecycle_unit: "next"
-    name: "select next bounded backlog slice"
-    status: "not_started_post_pr372_tracker_validated"
-    evidence_receipt: "R411"
+    lifecycle_unit: "delivery-truth-consumption"
+    name: "final delivery-truth consumption projection"
+    status: "local_review_lenses_recorded_e2e_and_independent_reviewers_blocked_pending_pr"
+    evidence_receipt: "R414"
   resume_gate:
-    - "Choose one next bounded backlog slice before opening a new PR."
+    - "Resolve or explicitly carry the E2E credential-surface blocker and unavailable independent-reviewer lane, then open or update exactly one PR lane for this slice."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
+  review_artifacts:
+    - path: "artifacts/reviews/delivery-truth-consumption-skill-lenses.md"
+      status: "local_skill_lenses_passed_independent_reviewer_subagents_unavailable"
   explicit_non_claims:
     - "linear_fields_current"
     - "delivery_truth_consumption_complete"

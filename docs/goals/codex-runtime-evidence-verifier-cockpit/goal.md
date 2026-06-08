@@ -43,16 +43,28 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-08 post-PR372 route refresh after PR #372
-merged the post-PR371 tracker repair and CodeRabbit learning-contract validator
-support into `main`. PR #366, PR #367, PR #369, PR #370, PR #371, and
-PR #372 are historical route provenance. PR #372 is merged into `main` as
-squash merge commit `3d91248269736b36a8e3e203683de9310d107d14`.
+Last updated during the 2026-06-08 delivery-truth consumption slice after
+PR #373 merged the post-PR372 tracker refresh into `main`. PR #366, PR #367,
+PR #369, PR #370, PR #371, PR #372, and PR #373 are historical route
+provenance. PR #373 is merged into `main` as squash merge commit
+`37aec5fb97a8358f766166330affbced6bd31c5a`.
 
 Current live route truth:
 
-- Local `main` head is `3d91248269736b36a8e3e203683de9310d107d14`.
-- `origin/main` head is `3d91248269736b36a8e3e203683de9310d107d14`.
+- Local `main` and `origin/main` were synced at
+  `37aec5fb97a8358f766166330affbced6bd31c5a` before the current slice branch
+  edits.
+- Current branch is `codex/jsc-363-delivery-truth-consumption`.
+- Local delivery-truth validation reached `pnpm test:deep`; local check,
+  unit, integration, artifact, and audit lanes passed, then the E2E tail blocked
+  because GitHub and Linear credentials were not visible in the process
+  environment and `<REDACTED_HOME_PATH>/.codex/.env` is a FIFO in this sandbox.
+- Local simplify, improve-codebase-architecture, sy-review, and testing lenses
+  are recorded in `artifacts/reviews/delivery-truth-consumption-skill-lenses.md`.
+  Independent reviewer subagents remain blocked in this runtime because no
+  `spawn_agent` tool is exposed.
+- Live GitHub has PR #373 merged from submitted head
+  `2e8d94785edd2c10ab97a175633e341ef9fa2c49`.
 - Live GitHub has PR #372 merged from submitted head
   `ae0975afbde9acbf0fd1a59f30476fff9a044886`.
 - Live GitHub has PR #371 merged from submitted head
@@ -81,6 +93,10 @@ Current live route truth:
   `34a50024-24be-4853-af6e-3219cbc0d845` before PR #372 merged, while the
   issue title still contains older Phase 1 wording. Field-text currency remains
   unclaimed until a fresh Linear update or owner decision records otherwise.
+- Delivery-truth consumption is locally implemented but not complete until the
+  credential-surface blocker, independent reviewer coverage, PR
+  review/CI/review-thread lanes, merge, main pullback, and tracker refresh are
+  recorded.
 
 ## Thin Execution Tracker
 
@@ -124,19 +140,20 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: no active PR lane after PR #372 merged and local `main`
-  fast-forwarded to `3d91248269736b36a8e3e203683de9310d107d14`.
-- Provenance: See `receipts.jsonl` for merged PR #343 through PR #372 route history.
+- Current route: no active PR lane after PR #373 merged and local `main`
+  fast-forwarded to `37aec5fb97a8358f766166330affbced6bd31c5a`.
+- Provenance: See `receipts.jsonl` for merged PR #343 through PR #373 route history.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #372 merged at `3d91248269736b36a8e3e203683de9310d107d14`. See `receipts.jsonl` for complete merged PR history.
+- Done on current main: PR #373 merged at `37aec5fb97a8358f766166330affbced6bd31c5a`. See `receipts.jsonl` for complete merged PR history.
 - Current route PR: none.
-- Next route action: choose the next bounded non-feature slice from the remaining
-  backlog before opening any new PR.
-- Remaining backlog: delivery-truth consumption, review/external/root-hygiene
-  proof, documentation accuracy, historical review-coverage backfill, Linear
-  field-text decision, PU-015 Judge/PM audit, and final completion audit.
+- Selected next slice: delivery-truth consumption. The slice is limited to
+  making final closeout delivery-truth claim families visible as current,
+  receipt-backed pass/block/unknown verdicts in the existing deep modules.
+- Remaining backlog after this slice: review/external/root-hygiene proof,
+  documentation accuracy, historical review-coverage backfill, Linear field-text
+  decision, PU-015 Judge/PM audit, and final completion audit.
 
 ## Why This Exists
 

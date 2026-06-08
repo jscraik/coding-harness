@@ -60,11 +60,65 @@ describe("PR closeout state packet bridge", () => {
 				evidenceUse: "claim_support",
 				verdictHeadSha: HEAD_SHA,
 			}),
+			expect.objectContaining({
+				claim: "linear_state_aligned",
+				status: "blocked",
+				source: "external_state",
+				evidenceUse: "orientation",
+				blockerCode: "non_claim_support_evidence",
+				verdictHeadSha: HEAD_SHA,
+			}),
+			expect.objectContaining({
+				claim: "merge_ready",
+				status: "pass",
+				evidenceUse: "claim_support",
+				verdictHeadSha: HEAD_SHA,
+			}),
+			expect.objectContaining({
+				claim: "root_surface_tidy",
+				status: "unknown",
+				freshness: "missing",
+				blockerCode: "missing_evidence",
+			}),
+			expect.objectContaining({
+				claim: "goal_ready_for_judge_pm",
+				status: "unknown",
+				freshness: "missing",
+				blockerCode: "missing_evidence",
+			}),
 		]);
 		expect(result.deliveryTruth.map((verdict) => verdict.claim)).toEqual([
 			"remote_checks_current",
 			"review_threads_resolved",
+			"linear_state_aligned",
+			"merge_ready",
+			"root_surface_tidy",
+			"goal_ready_for_judge_pm",
 		]);
+	});
+
+	it("lets Linear claim support pass only when mutation evidence is available", () => {
+		const result = buildPrCloseoutStatePackets(
+			completeInput({ linearMutation: "available" }),
+			{
+				repository: REPOSITORY,
+				generatedAt: GENERATED_AT,
+				fetchedAt: GENERATED_AT,
+				reviewerArtifactProofs: [reviewerArtifactProof()],
+			},
+		);
+
+		expect(result.deliveryTruth).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "linear_state_aligned",
+					status: "pass",
+					source: "external_state",
+					evidenceUse: "claim_support",
+					verdictHeadSha: HEAD_SHA,
+				}),
+			]),
+		);
 	});
 
 	it("keeps Linear orientation evidence from supporting external-state claims", () => {
@@ -75,16 +129,14 @@ describe("PR closeout state packet bridge", () => {
 		});
 
 		expect(result.externalStateValidation.valid).toBe(true);
-		expect(result.externalStateClaimSupport).toEqual({
-			canSupportClaim: false,
-			blockers: [
+		expect(result.externalStateClaimSupport.canSupportClaim).toBe(false);
+		expect(result.externalStateClaimSupport.blockers).toEqual(
+			expect.arrayContaining([
 				"snapshot_not_claim_support",
 				"source_not_claim_support",
-				"source_unknown",
-				"source_not_current",
 				"source_not_passing",
-			],
-		});
+			]),
+		);
 	});
 
 	it("blocks review-state packet derivation without PR head SHA", () => {

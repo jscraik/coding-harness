@@ -592,12 +592,41 @@ describe("buildPrCloseoutReport", () => {
 
 		expect(report.deliveryTruth).toMatchObject({
 			present: true,
-			blockingVerdicts: [],
-			mergeReady: null,
+			mergeReady: expect.objectContaining({
+				claim: "merge_ready",
+				status: "pass",
+				freshness: "current",
+			}),
 		});
 		expect(
 			report.deliveryTruth.verdicts.map((verdict) => verdict.claim),
-		).toEqual(["remote_checks_current", "review_threads_resolved"]);
+		).toEqual([
+			"remote_checks_current",
+			"review_threads_resolved",
+			"linear_state_aligned",
+			"merge_ready",
+			"root_surface_tidy",
+			"goal_ready_for_judge_pm",
+		]);
+		expect(report.deliveryTruth.blockingVerdicts).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					claim: "linear_state_aligned",
+					status: "blocked",
+					blockerCode: "non_claim_support_evidence",
+				}),
+				expect.objectContaining({
+					claim: "root_surface_tidy",
+					status: "unknown",
+					blockerCode: "missing_evidence",
+				}),
+				expect.objectContaining({
+					claim: "goal_ready_for_judge_pm",
+					status: "unknown",
+					blockerCode: "missing_evidence",
+				}),
+			]),
+		);
 		expect(report.deliveryTruth.verdicts).toEqual([
 			expect.objectContaining({
 				claim: "remote_checks_current",
@@ -608,6 +637,26 @@ describe("buildPrCloseoutReport", () => {
 				claim: "review_threads_resolved",
 				status: "pass",
 				evidenceUse: "claim_support",
+			}),
+			expect.objectContaining({
+				claim: "linear_state_aligned",
+				status: "blocked",
+				evidenceUse: "orientation",
+			}),
+			expect.objectContaining({
+				claim: "merge_ready",
+				status: "pass",
+				evidenceUse: "claim_support",
+			}),
+			expect.objectContaining({
+				claim: "root_surface_tidy",
+				status: "unknown",
+				freshness: "missing",
+			}),
+			expect.objectContaining({
+				claim: "goal_ready_for_judge_pm",
+				status: "unknown",
+				freshness: "missing",
 			}),
 		]);
 	});

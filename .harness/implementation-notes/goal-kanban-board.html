@@ -415,10 +415,10 @@
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>PU-013 proof merged</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #372</strong></div>
+      <div class="metric"><span>Goal status</span><strong>E2E credential blocker</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #373</strong></div>
       <div class="metric"><span>Current PR</span><strong>None active</strong></div>
-      <div class="metric"><span>Delivery truth</span><strong>Partial, final lanes pending</strong></div>
+      <div class="metric"><span>Delivery truth</span><strong>Local deep lanes proved</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
       <div class="metric"><span>Linear tracker</span><strong>Field text unclaimed</strong></div>
       <div class="metric"><span>Judge / PM</span><strong>Not ready</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated for the 2026-06-08 post-PR372 tracker refresh. PR #372 is merged provenance at main commit <code>3d91248269736b36a8e3e203683de9310d107d14</code>. PU-013 runtime cockpit integration proof remains merged through PR #370 with no production code patch required, PR #371 merged the post-PR370 tracker repair, and PR #372 merged the post-PR371 tracker repair plus narrow CodeRabbit learning-contract validator support. Linear JSC-363 has pre-PR372 post-merge route-truth comment <code>34a50024-24be-4853-af6e-3219cbc0d845</code>. Linear field-text currency, delivery-truth consumption, documentation accuracy, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated for the 2026-06-08 delivery-truth consumption slice. PR #373 is merged provenance at main commit <code>37aec5fb97a8358f766166330affbced6bd31c5a</code>. PU-013 runtime cockpit integration proof remains merged through PR #370 with no production code patch required, PR #371 merged the post-PR370 tracker repair, PR #372 merged the post-PR371 tracker repair plus narrow CodeRabbit learning-contract validator support, and PR #373 merged the post-PR372 tracker refresh. The active local branch is <code>codex/jsc-363-delivery-truth-consumption</code>. Linear field-text currency, documentation accuracy, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -628,6 +628,17 @@
         evidence: ["Submitted head -> ae0975afbde9acbf0fd1a59f30476fff9a044886", "Merge commit -> 3d91248269736b36a8e3e203683de9310d107d14", "Local main and origin/main -> 3d91248269736b36a8e3e203683de9310d107d14", "CircleCI pr-pipeline -> success", "CircleCI pr-template rerun -> success", "Live PR body gate -> pass", "CodeRabbit status -> success with quota/rate-limit comment recorded as non-proof", "Unresolved review threads -> none", "External Snyk GitHub App -> owner-waived quota/status lane only"],
         next: "Validate the post-PR372 tracker, then choose exactly one bounded next backlog item before opening another PR.",
         risk: "PR #372 proves route-tracker freshness and a narrow evidence-pattern validator rule only. It does not prove delivery-truth consumption, documentation accuracy, Linear field-text currency, Judge/PM readiness, or parent-goal completion."
+      },
+      {
+        id: "pr373-post-pr372-tracker-refresh",
+        lane: "pr-truth",
+        title: "PR #373: post-PR372 tracker refresh merged",
+        status: "done",
+        tags: ["PR #373", "route truth", "merged"],
+        summary: "PR #373 merged the post-PR372 tracker refresh into current main. It closes the route-refresh lane and hands the board to the delivery-truth consumption slice.",
+        evidence: ["Submitted head -> 2e8d94785edd2c10ab97a175633e341ef9fa2c49", "Merge commit -> 37aec5fb97a8358f766166330affbced6bd31c5a", "Local main and origin/main -> 37aec5fb97a8358f766166330affbced6bd31c5a", "Open PR list -> none before this slice branch"],
+        next: "Use as merged route provenance only. The active local work is delivery-truth consumption.",
+        risk: "PR #373 proves route-tracker refresh only. It does not prove delivery-truth completion, Linear field-text currency, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "pr321",
@@ -1029,12 +1040,12 @@
         id: "delivery-truth-consumption",
         lane: "remaining",
         title: "Final delivery-truth consumption",
-        status: "partially implemented locally",
+        status: "in progress",
         tags: ["delivery-truth", "claim support", "closeout"],
-        summary: "PU-054 derives only remote-check and review-thread verdicts. Final merge-ready, Judge/PM, Linear, root-hygiene, and runtime-producer claim support remain blocked.",
-        evidence: ["goal.md Completion Contract", "state.yaml blocked_done_claims include final delivery-truth consumption for merge/Judge/Linear/root lanes", "src/lib/delivery-truth/", "src/lib/pr-closeout/state-packet-delivery-truth.ts"],
-        next: "Add or validate current evidence for the remaining final-claim lanes before any closeout or Judge/PM-ready claim.",
-        risk: "A green local check or merged PR could still be overclaimed as goal completion if final claim families are blended."
+        summary: "The current branch extends the state-packet delivery-truth bridge so final closeout claim families are emitted as explicit pass, blocked, or unknown verdicts instead of disappearing when unsupported.",
+        evidence: ["goal.md Completion Contract", "state.yaml blocked_done_claims include final delivery-truth consumption for merge/Judge/Linear/root lanes", "src/lib/delivery-truth/judge-pm-audit.ts", "src/lib/pr-closeout/state-packet-delivery-truth.ts", "pnpm vitest run src/lib/pr-closeout/state-packets.test.ts src/lib/delivery-truth/judge-pm-audit.test.ts -> pass", "bash scripts/validate-codestyle.sh --fast -> pass", "pnpm test:deep -> local check, unit, integration, artifact, and audit lanes passed; E2E blocked by missing GitHub/Linear env and FIFO <REDACTED_HOME_PATH>/.codex/.env", "artifacts/reviews/delivery-truth-consumption-skill-lenses.md -> local simplify, architecture, sy-review, and testing lenses passed; independent reviewer subagents unavailable"],
+        next: "Resolve or explicitly carry the E2E credential-surface blocker and unavailable independent-reviewer lane, commit, open one PR, triage it to merge, pull main, then refresh this tracker.",
+        risk: "Local deep validation is not PR CI, independent review proof, Linear field-text currency, or goal completion."
       },
       {
         id: "final-proof-packets",

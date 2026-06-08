@@ -6,6 +6,7 @@ import {
 import type { EvidenceReceipt } from "../evidence/evidence-receipt.js";
 import type {
 	ExternalStateSnapshot,
+	ExternalStateSource,
 	ExternalStateValidationResult,
 } from "../external-state/index.js";
 import type {
@@ -49,30 +50,65 @@ export function buildPrCloseoutStatePacketDeliveryTruth(options: {
 			verdictHeadSha: options.verdictHeadSha,
 			...statePacketVerifierTtlOption(options.verifierTtlSeconds),
 		}),
+		composeDeliveryTruth({
+			claim: "linear_state_aligned",
+			source: "external_state",
+			evidence: externalStateDeliveryTruthEvidence(options, ["linear"]),
+			verifiedAt: options.verifiedAt,
+			verdictHeadSha: options.verdictHeadSha,
+			...statePacketVerifierTtlOption(options.verifierTtlSeconds),
+		}),
+		composeDeliveryTruth({
+			claim: "merge_ready",
+			source: "pr_closeout",
+			evidence: mergeReadyDeliveryTruthEvidence(options),
+			verifiedAt: options.verifiedAt,
+			verdictHeadSha: options.verdictHeadSha,
+			...statePacketVerifierTtlOption(options.verifierTtlSeconds),
+		}),
+		composeDeliveryTruth({
+			claim: "root_surface_tidy",
+			source: "root_hygiene",
+			evidence: [],
+			verifiedAt: options.verifiedAt,
+			verdictHeadSha: options.verdictHeadSha,
+			...statePacketVerifierTtlOption(options.verifierTtlSeconds),
+		}),
+		composeDeliveryTruth({
+			claim: "goal_ready_for_judge_pm",
+			source: "pr_closeout",
+			evidence: [],
+			verifiedAt: options.verifiedAt,
+			verdictHeadSha: options.verdictHeadSha,
+			...statePacketVerifierTtlOption(options.verifierTtlSeconds),
+		}),
 	];
 }
 
 const REMOTE_CHECK_CLAIM_SOURCE_NAMES = ["github_checks", "circleci"] as const;
 
-function externalStateDeliveryTruthEvidence(options: {
-	externalState: ExternalStateSnapshot | null;
-	externalStateValidation: ExternalStateValidationResult;
-	verifierTtlSeconds?: number;
-}): DeliveryTruthEvidence[] {
+function externalStateDeliveryTruthEvidence(
+	options: {
+		externalState: ExternalStateSnapshot | null;
+		externalStateValidation: ExternalStateValidationResult;
+		verifierTtlSeconds?: number;
+	},
+	requiredSourceNames: readonly ExternalStateSource[] = REMOTE_CHECK_CLAIM_SOURCE_NAMES,
+): DeliveryTruthEvidence[] {
 	const snapshot = options.externalState;
 	if (!snapshot || !options.externalStateValidation.valid) return [];
 	const sources = snapshot.sources.filter((source) =>
-		REMOTE_CHECK_CLAIM_SOURCE_NAMES.some((name) => name === source.source),
+		requiredSourceNames.some((name) => name === source.source),
 	);
-	if (sources.length !== REMOTE_CHECK_CLAIM_SOURCE_NAMES.length) return [];
+	if (sources.length !== requiredSourceNames.length) return [];
 	const remoteChecksPayload = {
-		claim: "remote_checks_current",
+		claim: requiredSourceNames.join("+"),
 		fetchReceiptRef: snapshot.fetchReceiptRef,
 		sources,
 	};
 	const receipt = buildStatePacketReceipt({
 		kind: "external_state",
-		ref: `external-state:pr-closeout/pr-${String(snapshot.prNumber)}/remote-checks.json`,
+		ref: `external-state:pr-closeout/pr-${String(snapshot.prNumber)}/${requiredSourceNames.join("-")}.json`,
 		producer: snapshot.verifierIdentity,
 		verifiedAt: snapshot.generatedAt,
 		headSha: snapshot.headSha,
@@ -92,13 +128,67 @@ function externalStateDeliveryTruthEvidence(options: {
 		{
 			receipt,
 			source: "external_state",
-			externalStateSources: REMOTE_CHECK_CLAIM_SOURCE_NAMES,
+			externalStateSources: requiredSourceNames,
 			producerTtlSeconds: Math.max(
 				...sources.map((source) => source.ttlSeconds),
 			),
 			...statePacketVerifierTtlOption(options.verifierTtlSeconds),
 			fetchedAt: snapshot.fetchedAt,
 			recomputedHeadSha: snapshot.headSha,
+		},
+	];
+}
+
+function mergeReadyDeliveryTruthEvidence(options: {
+	externalState: ExternalStateSnapshot | null;
+	reviewState: ReviewStatePacket | null;
+	externalStateValidation: ExternalStateValidationResult;
+	reviewStateValidation: ReviewStateValidationResult;
+	verifiedAt: string;
+	verdictHeadSha: string | null;
+	verifierTtlSeconds?: number;
+}): DeliveryTruthEvidence[] {
+	return [
+		...externalStateDeliveryTruthEvidence(options),
+		...reviewStateDeliveryTruthEvidence(options),
+		...prCloseoutMergeReadyEvidence(options),
+	];
+}
+
+function prCloseoutMergeReadyEvidence(options: {
+	externalState: ExternalStateSnapshot | null;
+	reviewState: ReviewStatePacket | null;
+	verifiedAt: string;
+	verdictHeadSha: string | null;
+	verifierTtlSeconds?: number;
+}): DeliveryTruthEvidence[] {
+	const snapshot = options.externalState;
+	const reviewState = options.reviewState;
+	if (!snapshot || !reviewState) return [];
+	const payload = {
+		claim: "merge_ready",
+		externalStateRef: snapshot.fetchReceiptRef,
+		reviewStateRef: reviewState.fetchReceiptRef,
+		prNumber: snapshot.prNumber,
+		headSha: options.verdictHeadSha,
+	};
+	return [
+		{
+			receipt: buildStatePacketReceipt({
+				kind: "artifact",
+				ref: `pr-closeout:pr-closeout/pr-${String(snapshot.prNumber)}/merge-ready.json`,
+				producer: snapshot.verifierIdentity,
+				verifiedAt: options.verifiedAt,
+				headSha: options.verdictHeadSha,
+				checksum: statePacketChecksum(payload),
+				sizeBytes: statePacketByteLength(payload),
+				status: "pass",
+				freshness: "current",
+				evidenceUse: "claim_support",
+			}),
+			source: "pr_closeout",
+			...statePacketVerifierTtlOption(options.verifierTtlSeconds),
+			recomputedHeadSha: options.verdictHeadSha,
 		},
 	];
 }

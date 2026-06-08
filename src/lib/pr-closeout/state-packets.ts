@@ -389,6 +389,7 @@ function linearSource(
 	input: PrCloseoutInput,
 	context: SourceBuildContext,
 ): ExternalStateSourceSnapshot {
+	const mutationAvailability = input.linearMutation ?? "unknown";
 	if (!hasLinearReference(input.pullRequest.body)) {
 		return sourceSnapshot("linear", context, {
 			status: "unknown",
@@ -399,12 +400,25 @@ function linearSource(
 			evidenceUse: "orientation",
 		});
 	}
+	if (
+		mutationAvailability === "available" ||
+		mutationAvailability === "not_needed"
+	) {
+		return sourceSnapshot("linear", context, {
+			status: "available",
+			freshness: "current",
+			headSha: context.headSha,
+			prHeadSensitive: true,
+			resultStatus: "pass",
+			evidenceUse: "claim_support",
+		});
+	}
 	return sourceSnapshot("linear", context, {
-		status: "unknown",
-		freshness: "unknown",
+		status: mutationAvailability === "blocked" ? "available" : "unknown",
+		freshness: mutationAvailability === "blocked" ? "current" : "unknown",
 		headSha: null,
 		prHeadSensitive: false,
-		resultStatus: "unknown",
+		resultStatus: mutationAvailability === "blocked" ? "blocked" : "unknown",
 		evidenceUse: "orientation",
 	});
 }
