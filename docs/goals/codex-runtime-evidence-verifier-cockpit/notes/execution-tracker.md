@@ -40,7 +40,7 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 
 No PR route is active. PR #375 is merged and local `main` is synced with
 `origin/main` at `99df7f971530f490a5a37e2f55339ebf5a8ed1f9`. This closes
-only the post-PR374 tracker review-fix lane; it does not claim Linear field-text
+only the post-PR375 tracker review-fix lane; it does not claim Linear field-text
 currency, root-hygiene proof, documentation accuracy, Judge/PM readiness, or
 parent-goal completion.
 
