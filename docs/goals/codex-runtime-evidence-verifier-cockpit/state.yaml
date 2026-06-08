@@ -33,10 +33,10 @@ thin_execution_tracker:
     kind: "none"
     pr: null
     branch: "codex/jsc-363-delivery-truth-consumption"
-    local_head_sha: "37aec5fb97a8358f766166330affbced6bd31c5a"
+    local_head_sha: "d011cd5555bfc90fe1d4e24d5f5fad4cd7bec702"
     remote_head_sha: "37aec5fb97a8358f766166330affbced6bd31c5a"
     base_sha: "37aec5fb97a8358f766166330affbced6bd31c5a"
-    status: "route_closed_pr373_merged_current_main_synced_delivery_truth_slice_selected"
+    status: "delivery_truth_slice_committed_pr_lane_pending"
     blocker: null
     last_merged_pr: 373
     last_merged_sha: "37aec5fb97a8358f766166330affbced6bd31c5a"
@@ -45,8 +45,8 @@ thin_execution_tracker:
   queued_slice:
     lifecycle_unit: "delivery-truth-consumption"
     name: "final delivery-truth consumption projection"
-    status: "local_review_lenses_recorded_e2e_and_independent_reviewers_blocked_pending_pr"
-    evidence_receipt: "R414"
+    status: "local_code_artifact_commit_recorded_e2e_and_independent_reviewers_blocked_pending_pr"
+    evidence_receipt: "R415"
   resume_gate:
     - "Resolve or explicitly carry the E2E credential-surface blocker and unavailable independent-reviewer lane, then open or update exactly one PR lane for this slice."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."

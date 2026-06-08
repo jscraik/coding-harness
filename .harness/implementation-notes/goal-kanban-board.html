@@ -415,7 +415,7 @@
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>E2E credential blocker</strong></div>
+      <div class="metric"><span>Goal status</span><strong>Commit ready for PR</strong></div>
       <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #373</strong></div>
       <div class="metric"><span>Current PR</span><strong>None active</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Local deep lanes proved</strong></div>
@@ -1044,7 +1044,7 @@
         tags: ["delivery-truth", "claim support", "closeout"],
         summary: "The current branch extends the state-packet delivery-truth bridge so final closeout claim families are emitted as explicit pass, blocked, or unknown verdicts instead of disappearing when unsupported.",
         evidence: ["goal.md Completion Contract", "state.yaml blocked_done_claims include final delivery-truth consumption for merge/Judge/Linear/root lanes", "src/lib/delivery-truth/judge-pm-audit.ts", "src/lib/pr-closeout/state-packet-delivery-truth.ts", "pnpm vitest run src/lib/pr-closeout/state-packets.test.ts src/lib/delivery-truth/judge-pm-audit.test.ts -> pass", "bash scripts/validate-codestyle.sh --fast -> pass", "pnpm test:deep -> local check, unit, integration, artifact, and audit lanes passed; E2E blocked by missing GitHub/Linear env and FIFO <REDACTED_HOME_PATH>/.codex/.env", "artifacts/reviews/delivery-truth-consumption-skill-lenses.md -> local simplify, architecture, sy-review, and testing lenses passed; independent reviewer subagents unavailable"],
-        next: "Resolve or explicitly carry the E2E credential-surface blocker and unavailable independent-reviewer lane, commit, open one PR, triage it to merge, pull main, then refresh this tracker.",
+        next: "Resolve or explicitly carry the E2E credential-surface blocker and unavailable independent-reviewer lane, open one PR, triage it to merge, pull main, then refresh this tracker.",
         risk: "Local deep validation is not PR CI, independent review proof, Linear field-text currency, or goal completion."
       },
       {

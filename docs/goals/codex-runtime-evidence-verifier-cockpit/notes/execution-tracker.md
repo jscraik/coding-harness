@@ -27,14 +27,14 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Parent issue | JSC-363 |
 | Canonical goal | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` |
 | Current branch | `codex/jsc-363-delivery-truth-consumption` |
-| Local head | `37aec5fb97a8358f766166330affbced6bd31c5a` plus local slice edits |
+| Local head | `d011cd5555bfc90fe1d4e24d5f5fad4cd7bec702` plus tracker receipt repair |
 | Remote main head | `37aec5fb97a8358f766166330affbced6bd31c5a` |
 | Main baseline | `37aec5fb97a8358f766166330affbced6bd31c5a` |
 | Active route count | 0 |
 | Active route | none |
 | Last closed route | PR #373 merged |
 | Current slice | delivery-truth consumption |
-| Feature work status | local validation reached deep gate; E2E credential surface blocked; no PR lane active yet |
+| Feature work status | local delivery-truth code/artifact commit recorded; E2E credential surface blocked; no PR lane active yet |
 
 ## Active Route
 
@@ -142,6 +142,9 @@ Current implementation boundary:
   `artifacts/reviews/delivery-truth-consumption-skill-lenses.md`. Independent
   reviewer subagents remain blocked in this runtime because no `spawn_agent`
   tool is exposed.
+- Local code and review-artifact commit
+  `d011cd5555bfc90fe1d4e24d5f5fad4cd7bec702` records the delivery-truth
+  projection patch before PR handoff.
 
 Non-claims:
 

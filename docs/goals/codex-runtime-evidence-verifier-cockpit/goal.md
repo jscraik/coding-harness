@@ -63,6 +63,9 @@ Current live route truth:
   are recorded in `artifacts/reviews/delivery-truth-consumption-skill-lenses.md`.
   Independent reviewer subagents remain blocked in this runtime because no
   `spawn_agent` tool is exposed.
+- Local code and review-artifact commit
+  `d011cd5555bfc90fe1d4e24d5f5fad4cd7bec702` records the delivery-truth
+  projection patch. No PR lane exists yet for that commit.
 - Live GitHub has PR #373 merged from submitted head
   `2e8d94785edd2c10ab97a175633e341ef9fa2c49`.
 - Live GitHub has PR #372 merged from submitted head
@@ -93,8 +96,8 @@ Current live route truth:
   `34a50024-24be-4853-af6e-3219cbc0d845` before PR #372 merged, while the
   issue title still contains older Phase 1 wording. Field-text currency remains
   unclaimed until a fresh Linear update or owner decision records otherwise.
-- Delivery-truth consumption is locally implemented but not complete until the
-  credential-surface blocker, independent reviewer coverage, PR
+- Delivery-truth consumption is locally implemented and committed locally, but
+  not complete until the credential-surface blocker, independent reviewer coverage, PR
   review/CI/review-thread lanes, merge, main pullback, and tracker refresh are
   recorded.
 
