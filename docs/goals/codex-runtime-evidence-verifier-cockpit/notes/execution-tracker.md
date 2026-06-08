@@ -5,7 +5,7 @@
 - [Purpose](#purpose)
 - [Current Control Surface](#current-control-surface)
 - [Active Route](#active-route)
-- [Queued Slice](#queued-slice)
+- [Active Slice](#active-slice)
 - [Outstanding Work](#outstanding-work)
 - [History Boundary](#history-boundary)
 - [Resume Gate](#resume-gate)
@@ -26,23 +26,30 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | --- | --- |
 | Parent issue | JSC-363 |
 | Canonical goal | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` |
-| Current branch | `codex/JSC-363-post-pr369-goal-state-refresh` |
-| Local head | `bdd89fac4e17995d182108339d1fc798ef6dc9ac` |
+| Current branch | `codex/jsc-363-pu013-runtime-cockpit-proof` |
+| Local head | `d772aaa0fc158ef996a057111af7df58e7e33bf2` |
 | Remote main head | `1d0c3baaa76d1de68c633b086a5dcf07472ddbef` |
 | Main baseline | `1d0c3baaa76d1de68c633b086a5dcf07472ddbef` |
-| Active route count | 0 |
-| Active route | none open |
+| Active route count | 1 |
+| Active route | PR #370: PU-013 proof tracker route |
 | Last closed route | PR #369 merged |
 | Current slice | PU-013 runtime cockpit integration proof |
-| Feature work status | PU-013 local proof complete; PR/merge route not yet opened |
+| Feature work status | PU-013 local proof complete; PR #370 open and waiting for CI/review/merge/pull-back |
 
 ## Active Route
 
-There is no active route lane after the PR #369 pull-back to current `main`.
+PR #370 is the active route lane after the PR #369 pull-back to current
+`main`. It is a proof-tracker PR for PU-013; it does not claim production
+code changes, Linear field-text currency, delivery-truth completion, Judge/PM
+readiness, or parent-goal completion.
 
 Current evidence:
 
-- Live GitHub reports no open PRs for `jscraik/coding-harness`.
+- Live GitHub reports PR #370 open on branch
+  `codex/jsc-363-pu013-runtime-cockpit-proof`.
+- PR #370 head is `d772aaa0fc158ef996a057111af7df58e7e33bf2`.
+- PR #370 mergeability is separate from local PU-013 proof, CI truth, review
+  truth, and owner-waived external Snyk quota state.
 - PR #369 merged into `main` at
   `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`.
 - Local `main` and `origin/main` both point at
@@ -98,20 +105,21 @@ Completed route-refresh action:
    - Result: pass; `harness next` returned one advisory next action from local
      worktree state.
 
-## Queued Slice
+## Active Slice
 
 PU-013 runtime cockpit integration proof is locally proved on this branch.
 
 No production code patch was required because current main already implements
 the PU-013 runtime-card projection and `harness next` advisory consumption
 contract. The remaining PU-013 route work is to commit the proof tracker update,
-open or update the PR lane, run required review/skill gates, merge, pull
-`main`, refresh Linear JSC-363, and then move to the next backlog item.
+push the PR route update, run required review/skill gates, merge, pull `main`,
+refresh Linear JSC-363, and then move to the next backlog item.
 
 ## Outstanding Work
 
-- Commit and route the PU-013 proof tracker update through PR/merge/main
-  pull-back without claiming parent-goal completion.
+- Resolve PR #370 review comments and CI checks without widening PU-013.
+- Merge PR #370, pull local `main`, refresh Linear JSC-363, and revalidate the
+  goal tracker before selecting another slice.
 - Prove final delivery-truth consumption.
 - Prove review-state, external-state, and root-hygiene closeout surfaces from
   current evidence.
@@ -134,8 +142,8 @@ claim/evidence/blocker records, not narrative diary entries.
 
 Feature implementation remains stopped until all of these are true:
 
-- PU-013 proof tracker update is committed.
-- The PU-013 PR lane is reviewed, green or explicitly owner-blocked, merged, and
+- PU-013 proof tracker update is committed and pushed to PR #370.
+- PR #370 is reviewed, green or explicitly owner-blocked, merged, and
   pulled back to local `main`.
 - Linear JSC-363 receives a compact current-truth update after merge.
 - `goal.md`, `state.yaml`, `notes/execution-tracker.md`,
@@ -150,16 +158,17 @@ Use this payload for the JSC-363 Linear progress update:
 Refreshed JSC-363 current-main route truth and PU-013 local proof.
 
 Current truth:
-- Active route lane: none.
+- Active route lane: PR #370.
 - Latest merged route: PR #369.
 - Local main head: 1d0c3baaa76d1de68c633b086a5dcf07472ddbef.
 - Origin main head: 1d0c3baaa76d1de68c633b086a5dcf07472ddbef.
 - Repo-owned CircleCI lanes for PR #369 passed before merge.
-- PU-013 runtime cockpit integration proof is locally proved on branch `codex/JSC-363-post-pr369-goal-state-refresh`.
+- PU-013 runtime cockpit integration proof is locally proved on branch `codex/jsc-363-pu013-runtime-cockpit-proof`.
+- PR #370 is open for the proof tracker route and remains separate from runtime, CI, review, Linear, and merge-readiness truth.
 - No production code patch was required; current main already projects Codex runtime evidence into `runtime-card` and consumes it narrowly through `harness next`.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
 - CodeRabbit/Codex review-status contexts are not being treated as independent review proof because usage/rate-limit comments were present.
 
 Restart rule:
-No next slice starts until the PU-013 proof tracker update is committed, reviewed, merged, pulled back to local `main`, Linear JSC-363 is refreshed, and the board/state/receipt validators pass.
+No next slice starts until PR #370 is reviewed, merged, pulled back to local `main`, Linear JSC-363 is refreshed, and the board/state/receipt validators pass.
 ```

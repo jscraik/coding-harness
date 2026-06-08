@@ -43,28 +43,33 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-08 current-main refresh after PR #369 merged
-the recurring pre-commit worktree-cache guardrail into `main`. PR #366 and PR #367
-are historical route provenance. PR #369 is merged into `main` as squash merge
-commit `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`. There is no active PR
-route lane after the pull-back to current `main`.
+Last updated during the 2026-06-08 PU-013 proof route after PR #369 merged the
+recurring pre-commit worktree-cache guardrail into `main`. PR #366, PR #367,
+and PR #369 are historical route provenance. PR #369 is merged into `main` as
+squash merge commit `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`. PR #370 is the
+active route lane for the PU-013 proof tracker update.
 
 Current live route truth:
 
 - Local `main` head is `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`.
 - `origin/main` head is `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`.
-- Live GitHub has no open PRs for this repository.
+- Live GitHub has PR #370 open on branch
+  `codex/jsc-363-pu013-runtime-cockpit-proof`.
+- PR #370 head is `d772aaa0fc158ef996a057111af7df58e7e33bf2`; CI, review,
+  mergeability, and owner-waived external Snyk quota truth remain separate
+  lanes.
 - PR #369 is merged; repo-owned CircleCI lanes on that PR were green.
 - The external Snyk GitHub App status remained an owner-waived external lane
   only; the repo-owned CircleCI Snyk dependency scan passed.
 - CodeRabbit and Codex review-status contexts were not treated as independent
   review proof because usage and rate-limit comments were present.
 - PU-013 runtime cockpit integration proof has local current-main proof on branch
-  `codex/JSC-363-post-pr369-goal-state-refresh`; no production code patch was
+  `codex/jsc-363-pu013-runtime-cockpit-proof`; no production code patch was
   required because current main already projects Codex runtime evidence into
   `runtime-card` and consumes it narrowly through `harness next`.
-- PU-013 is not delivery-complete until the proof tracker update is committed,
-  reviewed, merged, pulled back to local `main`, and Linear JSC-363 is refreshed.
+- PU-013 is not delivery-complete until PR #370 is reviewed, green or explicitly
+  owner-blocked, merged, pulled back to local `main`, and Linear JSC-363 is
+  refreshed.
 
 ## Thin Execution Tracker
 
@@ -94,9 +99,9 @@ Architecture check:
 
 Stop conditions:
 
-- Do not claim PU-013 delivery-complete until its proof tracker update is
-  committed, reviewed, merged, pulled back to local `main`, and Linear JSC-363
-  is refreshed.
+- Do not claim PU-013 delivery-complete until PR #370 is reviewed, green or
+  explicitly owner-blocked, merged, pulled back to local `main`, and Linear
+  JSC-363 is refreshed.
 - Do not create route-refresh-only PRs unless live truth changed, a validator
   requires a new reachable receipt anchor, or Jamie records an explicit
   exception.
@@ -108,14 +113,16 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: none open; last merged: PR #369 at main commit `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`.
+- Current route: PR #370 open for the PU-013 proof tracker update; last merged:
+  PR #369 at main commit `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`.
 - Provenance: See `receipts.jsonl` for merged PR #343 through PR #369 route history.
 
 Corrected backlog after current-main reconciliation:
 
 - Done on current main: PR #369 merged at `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`. See `receipts.jsonl` for complete merged PR history.
-- Current route PR: none open after the PR #369 pull-back to `main`.
-- Next route action: commit and route the PU-013 proof tracker update through PR review, merge, local `main` pull-back, and Linear refresh.
+- Current route PR: PR #370 open after the PR #369 pull-back to `main`.
+- Next route action: resolve PR #370 review/CI blockers, merge, pull local
+  `main`, and refresh Linear JSC-363.
 - Remaining backlog: PU-013 PR/merge pull-back, delivery-truth consumption, review/external/root-hygiene proof, documentation accuracy, historical review-coverage backfill, Linear field-text decision, PU-015 Judge/PM audit, and final completion audit.
 
 ## Why This Exists
