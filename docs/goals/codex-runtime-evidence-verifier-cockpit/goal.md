@@ -43,19 +43,16 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-08 delivery-truth consumption slice after
-PR #374 opened for the delivery-truth consumption branch and its hosted PR body
-was repaired against the local `pr-template-gate`. PR #366, PR #367,
-PR #369, PR #370, PR #371, PR #372, and PR #373 are historical route
-provenance. PR #373 is merged into `main` as squash merge commit
-`37aec5fb97a8358f766166330affbced6bd31c5a`.
+Last updated during the 2026-06-08 post-PR374 merge pullback. PR #366,
+PR #367, PR #369, PR #370, PR #371, PR #372, PR #373, and PR #374 are
+historical route provenance. PR #374 is merged into `main` as squash merge
+commit `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`.
 
 Current live route truth:
 
-- Local `main` and `origin/main` were synced at
-  `37aec5fb97a8358f766166330affbced6bd31c5a` before the current slice branch
-  edits.
-- Current branch is `codex/jsc-363-delivery-truth-consumption`.
+- Local `main` and `origin/main` are synced at
+  `b7b5d9f48fb9369c29a4cd9902acde88285bfb22` after PR #374 merge pullback.
+- Current branch is `main`.
 - Local delivery-truth validation reached `pnpm test:deep`; local check,
   unit, integration, artifact, and audit lanes passed, then the E2E tail blocked
   because GitHub and Linear credentials were not visible in the process
@@ -64,21 +61,18 @@ Current live route truth:
   are recorded in `artifacts/reviews/delivery-truth-consumption-skill-lenses.md`.
   Independent reviewer subagents remain blocked in this runtime because no
   `spawn_agent` tool is exposed.
-- Local code and review-artifact commit
-  `d011cd5555bfc90fe1d4e24d5f5fad4cd7bec702` records the delivery-truth
-  projection patch. Tracker repair commit
-  `a07e881b717902bcc3a8a3a2d7e065b9b125d58f` is the current PR #374 head
-  before this PR-lane receipt refresh.
-- Live GitHub has PR #374 open at
-  https://github.com/jscraik/coding-harness/pull/374. The PR body was repaired
-  after local `pr-template-gate` reproduced eight blocking findings and then
-  passed with zero findings against the repaired body. CodeRabbit was manually
-  triggered with `@coderabbitai review this pr`.
-- Hosted PR #374 check truth is not green yet. The stale pre-repair
-  `ci/circleci: pr-template` and aggregate `pr-pipeline` contexts still show
-  failure, and this tracker refresh exists to give CircleCI a fresh submitted
-  head. The external Snyk GitHub App status remains owner-waived for that
-  external quota/status lane only.
+- PR #374 merged the delivery-truth consumption projection into `main` from
+  submitted head `ca7bc92aeeeb5fa357732fbad8f49f62f54abc2b`.
+- PR #374 review-thread refresh returned zero unresolved threads before merge.
+- PR #374 repo-owned CircleCI lanes, aggregate `pr-pipeline`, CodeRabbit
+  status, Socket, and CircleCI Snyk dependency scan passed before merge. The
+  external Snyk GitHub App status remains owner-waived for that external
+  quota/status lane only and is not external Snyk success.
+- PR #374 still carries the local E2E credential-surface blocker and unavailable
+  independent reviewer subagent blocker as disclosed process gaps. Those gaps do
+  not reopen the merged PR lane, but they remain relevant to final closeout.
+- Helper lanes are now bounded and closed as soon as their artifact or blocker
+  evidence is recorded; they must not linger as implicit active work.
 - Live GitHub has PR #373 merged from submitted head
   `2e8d94785edd2c10ab97a175633e341ef9fa2c49`.
 - Live GitHub has PR #372 merged from submitted head
@@ -109,10 +103,10 @@ Current live route truth:
   `34a50024-24be-4853-af6e-3219cbc0d845` before PR #372 merged, while the
   issue title still contains older Phase 1 wording. Field-text currency remains
   unclaimed until a fresh Linear update or owner decision records otherwise.
-- Delivery-truth consumption is locally implemented and open in PR #374, but
-  not complete until the credential-surface blocker, independent reviewer
-  coverage, PR review/CI/review-thread lanes, merge, main pullback, and tracker
-  refresh are recorded.
+- Delivery-truth consumption projection is delivered on current `main`.
+  Remaining final-closeout work is review/external/root-hygiene proof,
+  documentation accuracy, Linear field-text decision, historical review-coverage
+  backfill, PU-015 Judge/PM audit, and final requirement-by-requirement audit.
 
 ## Thin Execution Tracker
 
@@ -156,21 +150,20 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: PR #374 is the only active PR lane for delivery-truth
-  consumption. It is open at current submitted head
-  `a07e881b717902bcc3a8a3a2d7e065b9b125d58f` before this tracker refresh.
-- Provenance: See `receipts.jsonl` for merged PR #343 through PR #373 route history.
+- Current route: none. PR #374 is merged and pulled back to local `main`.
+- Provenance: See `receipts.jsonl` for merged PR #343 through PR #374 route history.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #373 merged at `37aec5fb97a8358f766166330affbced6bd31c5a`. See `receipts.jsonl` for complete merged PR history.
-- Current route PR: PR #374.
-- Selected next slice: delivery-truth consumption. The slice is limited to
-  making final closeout delivery-truth claim families visible as current,
-  receipt-backed pass/block/unknown verdicts in the existing deep modules.
-- Remaining backlog after this slice: review/external/root-hygiene proof,
-  documentation accuracy, historical review-coverage backfill, Linear field-text
-  decision, PU-015 Judge/PM audit, and final completion audit.
+- Done on current main: PR #374 merged at
+  `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`. See `receipts.jsonl` for
+  complete merged PR history.
+- Current route PR: none.
+- Selected next slice: not selected. The next slice must be chosen from the
+  remaining backlog after the post-PR374 tracker validates.
+- Remaining backlog: review/external/root-hygiene proof, documentation accuracy,
+  historical review-coverage backfill, Linear field-text decision, PU-015
+  Judge/PM audit, and final completion audit.
 
 ## Why This Exists
 

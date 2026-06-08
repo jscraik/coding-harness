@@ -22,42 +22,50 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 
 ## Current Control Surface
 
-| Field               | Current Truth                                                                                    |
-| ------------------- | ------------------------------------------------------------------------------------------------ |
-| Parent issue        | JSC-363                                                                                          |
-| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`                                     |
-| Current branch      | `codex/jsc-363-delivery-truth-consumption`                                                       |
-| Local head          | `a07e881b717902bcc3a8a3a2d7e065b9b125d58f` before this PR-lane receipt refresh                   |
-| Remote main head    | `37aec5fb97a8358f766166330affbced6bd31c5a`                                                       |
-| Main baseline       | `37aec5fb97a8358f766166330affbced6bd31c5a`                                                       |
-| Active route count  | 1                                                                                                |
-| Active route        | PR #374                                                                                          |
-| Last closed route   | PR #373 merged                                                                                   |
-| Current slice       | delivery-truth consumption                                                                       |
-| Feature work status | PR #374 open; PR body repaired and locally re-validated; hosted CI/review still pending or stale |
+| Field               | Current Truth                                                       |
+| ------------------- | ------------------------------------------------------------------- |
+| Parent issue        | JSC-363                                                             |
+| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`        |
+| Current branch      | `codex/jsc-363-post-pr374-tracker-refresh`                          |
+| Local head          | `b404a12087a3aadc7212934ee19d22a39928ee91`                          |
+| Remote branch head  | `6653589ab5d5049fc58dd111a31964a2905d2fc9`                          |
+| Main baseline       | `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`                          |
+| Active route count  | 1                                                                   |
+| Active route        | PR #375 tracker review-fix lane                                     |
+| Last closed route   | PR #374 merged                                                      |
+| Current slice       | Backlog reconciliation                                              |
+| Feature work status | Stopped until PR #375 is pushed, refreshed, merged, and pulled back |
 
 ## Active Route
 
-PR #374 is the active route for the delivery-truth consumption slice. It is open
-at https://github.com/jscraik/coding-harness/pull/374 from branch
-`codex/jsc-363-delivery-truth-consumption`. PR #373 remains the latest merged
-`main` provenance at squash commit
-`37aec5fb97a8358f766166330affbced6bd31c5a`; it does not claim Linear
-field-text currency, delivery-truth completion, Judge/PM readiness, or
-parent-goal completion.
+PR #375 is the active tracker review-fix route. Local head
+`b404a12087a3aadc7212934ee19d22a39928ee91` fixes CodeRabbit stale-route
+truth findings, but the hosted PR still points at
+`6653589ab5d5049fc58dd111a31964a2905d2fc9` until the branch is pushed.
+This route closes only the tracker-review-fix lane; it does not claim Linear
+field-text currency, root-hygiene proof, documentation accuracy, Judge/PM
+readiness, or parent-goal completion.
 
 Current evidence:
 
-- Live GitHub reports PR #374 open at submitted head
-  `a07e881b717902bcc3a8a3a2d7e065b9b125d58f` before this tracker refresh.
+- Local `main` and `origin/main` are synced at
+  `b7b5d9f48fb9369c29a4cd9902acde88285bfb22` after PR #374 merge pullback.
+- Live GitHub reports PR #374 merged from submitted head
+  `ca7bc92aeeeb5fa357732fbad8f49f62f54abc2b`.
 - The PR body was repaired after the local source-checkout `pr-template-gate`
   reproduced eight findings and then passed with zero findings against the
   repaired body artifact.
 - CodeRabbit was manually triggered with `@coderabbitai review this pr` at
   https://github.com/jscraik/coding-harness/pull/374#issuecomment-4652005383.
-- Hosted PR #374 still shows stale pre-repair `ci/circleci: pr-template` and
-  aggregate `pr-pipeline` failures; this tracker refresh is a fresh submitted
-  head for CircleCI to re-evaluate.
+- PR #374 repo-owned CircleCI lanes, aggregate `pr-pipeline`, CodeRabbit
+  status, Socket, and CircleCI Snyk dependency scan passed before merge.
+- R419 records the PR #375 CodeRabbit review-fix commit and sibling-pattern
+  sweep. Next safe action is push the branch, trigger current-head CodeRabbit,
+  and wait for PR #375 CI/review truth before merge.
+- PR #374 review-thread refresh returned zero unresolved threads before merge.
+- The external Snyk GitHub App quota/status lane remains owner-waived for that
+  external lane only; it is not external Snyk success and not a security waiver
+  for repo-owned gates.
 - Live GitHub reported PR #373 merged at 2026-06-08T16:48:42Z from submitted
   head `2e8d94785edd2c10ab97a175633e341ef9fa2c49` as merge commit
   `37aec5fb97a8358f766166330affbced6bd31c5a`.
@@ -76,18 +84,12 @@ Current evidence:
   `83d7b6dab5cda761889d1708a304aa87edc2b9fa`.
 - PR #369 merged into `main` at
   `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`.
-- Local `main` and `origin/main` both point at
-  `37aec5fb97a8358f766166330affbced6bd31c5a` before the current slice branch
-  edits.
 - PR #369 repo-owned CircleCI lanes passed, including `pr-template`,
   `linear-gate`, `risk-policy-gate`, `check`, `test`, `lint`,
   `typecheck`, `docs-gate`, and aggregate `pr-pipeline`.
-- The external Snyk GitHub App quota/status lane remains owner-waived for that
-  external lane only; it is not external Snyk success and not a security waiver
-  for repo-owned gates.
 - Linear JSC-363 has pre-PR372 post-merge route-truth comment
   `34a50024-24be-4853-af6e-3219cbc0d845`; its title still carries older
-  Phase 1 wording, so field-text currency and post-PR373 tracker currency remain
+  Phase 1 wording, so field-text currency and post-PR374 tracker currency remain
   unclaimed.
 
 Completed route-refresh action:
@@ -103,7 +105,7 @@ Completed route-refresh action:
 
 2. Committed the current-main tracker refresh.
    - Command: `git add docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl .harness/active-artifacts.md .harness/implementation-notes/goal-kanban-board.html`
-   - Command: `git commit -m "docs(goal): refresh post-pr370 tracker"`
+   - Command: `git commit -m "docs(goal): refresh post-pr374 tracker"`
    - Pass criteria: Commit succeeds with exit code 0 and hooks pass.
 
 3. Discussed and bounded PU-013 as a proof-first slice.
@@ -134,7 +136,7 @@ Completed route-refresh action:
 
 ## Active Slice
 
-Delivery-truth consumption is the selected bounded slice.
+Delivery-truth consumption projection is delivered on current `main`.
 
 Current implementation boundary:
 
@@ -142,8 +144,8 @@ Current implementation boundary:
   the existing `src/lib/pr-closeout/state-packets.ts` evidence projection.
 - Focused proof: `src/lib/pr-closeout/state-packets.test.ts` plus
   `src/lib/delivery-truth/judge-pm-audit.test.ts`.
-- Current behavior under implementation: final delivery-truth claim families are
-  emitted as pass, blocked, or unknown verdicts instead of being silently absent.
+- Current delivered behavior: final delivery-truth claim families are emitted as
+  pass, blocked, or unknown verdicts instead of being silently absent.
 - Local validation evidence: focused delivery-truth tests, related tests,
   codestyle fast, docs-gate, goal-board validators, audit-freshness, and
   `pnpm test:deep` local/deep lanes passed until the E2E tail required GitHub
@@ -157,19 +159,18 @@ Current implementation boundary:
   tool is exposed.
 - Local code and review-artifact commit
   `d011cd5555bfc90fe1d4e24d5f5fad4cd7bec702` records the delivery-truth
-  projection patch before PR handoff.
+  projection patch before PR handoff. Follow-up commit
+  `ca7bc92aeeeb5fa357732fbad8f49f62f54abc2b` blocks unverifiable CircleCI
+  telemetry before the PR #374 merge.
 
 Non-claims:
 
 - This slice does not produce root-hygiene evidence, Judge/PM readiness, Linear
   field-text currency, or parent goal completion.
-- No PR lane is active until this branch is committed and opened as a PR.
+- No PR lane is active after PR #374 merge pullback.
 
 ## Outstanding Work
 
-- Resolve or explicitly carry the E2E credential-surface blocker and unavailable
-  independent-reviewer lane, then open exactly one PR lane for the
-  delivery-truth consumption slice.
 - Prove review-state, external-state, and root-hygiene closeout surfaces from
   current evidence.
 - Complete documentation accuracy checks.
@@ -180,7 +181,7 @@ Non-claims:
 
 ## History Boundary
 
-Merged PR lanes through PR #373 remain provenance. They are not active route
+Merged PR lanes through PR #374 remain provenance. They are not active route
 lanes and must not be expanded in the active board unless a fresh current-main
 regression reopens them.
 
@@ -191,8 +192,8 @@ claim/evidence/blocker records, not narrative diary entries.
 
 Feature implementation remains stopped until all of these are true:
 
-- PU-013 proof tracker update is merged through PR #370 and the post-PR370
-  tracker refresh is merged through PR #371, both pulled back to local `main`.
+- Delivery-truth consumption projection is merged through PR #374 and the
+  post-PR374 tracker refresh is validated against local `main`.
 - Linear JSC-363 has compact post-merge route-truth comment
   `34a50024-24be-4853-af6e-3219cbc0d845`.
 - `goal.md`, `state.yaml`, `notes/execution-tracker.md`,
@@ -209,16 +210,16 @@ Refreshed JSC-363 current-main route truth and PU-013 merged proof.
 Current truth:
 
 - Active route lane: none.
-- Latest merged route: PR #371.
-- Local main head: 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856.
-- Origin main head: 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856.
-- Repo-owned CircleCI lanes for PR #371 passed before merge.
+- Latest merged route: PR #374.
+- Local main head: b7b5d9f48fb9369c29a4cd9902acde88285bfb22.
+- Origin main head: b7b5d9f48fb9369c29a4cd9902acde88285bfb22.
+- Repo-owned CircleCI lanes for PR #374 passed before merge.
 - PU-013 runtime cockpit integration proof is merged and pulled back to local `main`.
-- PR #371 remains separate from runtime, CI, review, Linear, and delivery-truth claims.
+- PR #374 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
 - No production code patch was required; current main already projects Codex runtime evidence into `runtime-card` and consumes it narrowly through `harness next`.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
 - Linear JSC-363 was refreshed with post-merge route-truth comment `34a50024-24be-4853-af6e-3219cbc0d845`; field-text currency remains unclaimed because the issue title still says Phase 1.
 
 Restart rule:
-No next slice starts until the board/state/receipt validators pass on the post-PR #371 current-main tracker and one bounded backlog item is selected.
+No next slice starts until the board/state/receipt validators pass on the post-PR374 current-main tracker and one bounded backlog item is selected.
 ```
