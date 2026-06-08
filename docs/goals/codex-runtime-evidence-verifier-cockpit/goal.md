@@ -43,28 +43,25 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-07 thin-tracker reset after repeated route,
-CI, PR-template, and context-debt steering showed the active goal surface had
-become too noisy to restart safely. PR #366 remains merged into `main` as
-squash merge commit `e5797549647adab10d35472da9afac574fa0c3cf`, but that is
-now historical route provenance. The only active route lane is PR #367 on
-`codex/jsc-363-post-pr366-tracker-refresh`.
+Last updated during the 2026-06-08 current-main refresh after PR #369 merged
+the recurring pre-commit worktree-cache guardrail into `main`. PR #366 and PR #367
+are historical route provenance. PR #369 is merged into `main` as squash merge
+commit `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`. There is no active PR
+route lane after the pull-back to current `main`.
 
 Current live route truth:
 
-- Local branch head is `8bfbbfd56a56d291de7a679efbd32dce3779de1a`.
-- Live GitHub PR #367 remote head is
-  `25a7eb0f61f75e7b31adc7cd5e819867dbe48c6f`.
-- Local is ahead of the remote PR branch, so remote CI and review truth are
-  stale until the local repair stack is pushed.
-- Live GitHub PR #367 currently reports aggregate `pr-pipeline` failure and
-  `mergeStateStatus=BLOCKED` on the stale remote head.
-- Local `pnpm test:ci` and `pnpm run validation:locks` passed on the local
-  repair stack before this reset.
-- PU-013 runtime cockpit integration proof is queued, not active.
-- Feature work remains stopped until PR #367 is pushed, fresh remote
-  CI/review/merge truth is known, PR #367 is merged or explicitly blocked,
-  local `main` is pulled, and this tracker validates again.
+- Local `main` head is `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`.
+- `origin/main` head is `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`.
+- Live GitHub has no open PRs for this repository.
+- PR #369 is merged; repo-owned CircleCI lanes on that PR were green.
+- The external Snyk GitHub App status remained an owner-waived external lane
+  only; the repo-owned CircleCI Snyk dependency scan passed.
+- CodeRabbit and Codex review-status contexts were not treated as independent
+  review proof because usage and rate-limit comments were present.
+- PU-013 runtime cockpit integration proof is queued for discussion, not active.
+- Feature work remains stopped until this route refresh validates and Jamie
+  confirms the PU-013 intent boundary.
 
 ## Thin Execution Tracker
 
@@ -94,7 +91,8 @@ Architecture check:
 
 Stop conditions:
 
-- Do not start PU-013 while PR #367 remote truth is stale or failing.
+- Do not start PU-013 until the current-main route refresh validates and Jamie
+  confirms the PU-013 intent boundary.
 - Do not create route-refresh-only PRs unless live truth changed, a validator
   requires a new reachable receipt anchor, or Jamie records an explicit
   exception.
@@ -106,14 +104,14 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: PR #367 OPEN; last merged: PR #366 at main commit `e5797549647adab10d35472da9afac574fa0c3cf`.
-- Provenance: See `receipts.jsonl` for merged PR #343 through PR #366 route history.
+- Current route: none open; last merged: PR #369 at main commit `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`.
+- Provenance: See `receipts.jsonl` for merged PR #343 through PR #369 route history.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #366 merged at `e5797549647adab10d35472da9afac574fa0c3cf`. See `receipts.jsonl` for complete merged PR history.
-- Current route PR: PR #367 is the only active route lane. Local branch head `8bfbbfd56a56d291de7a679efbd32dce3779de1a` is ahead of live PR #367 remote head `25a7eb0f61f75e7b31adc7cd5e819867dbe48c6f`.
-- Next route action: validate, commit, and push PR #367; trigger CodeRabbit; refresh CI/review/merge truth; merge or block; pull main; then evaluate PU-013.
+- Done on current main: PR #369 merged at `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`. See `receipts.jsonl` for complete merged PR history.
+- Current route PR: none open after the PR #369 pull-back to `main`.
+- Next route action: validate and commit this current-main tracker refresh, update Linear JSC-363, then discuss and bound PU-013 before implementation starts.
 - Remaining backlog: PU-013 runtime cockpit integration, delivery-truth consumption, review/external/root-hygiene proof, documentation accuracy, historical review-coverage backfill, Linear field-text decision, PU-015 Judge/PM audit, and final completion audit.
 
 ## Why This Exists
