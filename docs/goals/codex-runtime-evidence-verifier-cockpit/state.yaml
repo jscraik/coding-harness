@@ -30,34 +30,37 @@ thin_execution_tracker:
     receipt_style: "compact claim/evidence/blocker records"
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
-    kind: "pull_request"
-    pr: 374
-    pr_url: "https://github.com/jscraik/coding-harness/pull/374"
-    branch: "codex/jsc-363-delivery-truth-consumption"
-    local_head_sha: "a07e881b717902bcc3a8a3a2d7e065b9b125d58f"
-    remote_head_sha: "a07e881b717902bcc3a8a3a2d7e065b9b125d58f"
-    base_sha: "37aec5fb97a8358f766166330affbced6bd31c5a"
-    status: "pr374_open_body_repaired_ci_rerun_pending"
-    blocker: "Hosted PR #374 still shows stale failing pr-template and pr-pipeline contexts from the pre-repair PR body; this tracker commit exists to give CircleCI a fresh head."
-    last_merged_pr: 373
-    last_merged_sha: "37aec5fb97a8358f766166330affbced6bd31c5a"
-    open_pr_count: 1
-    open_prs:
-      - 374
+    kind: "none"
+    pr: null
+    pr_url: null
+    branch: "main"
+    local_head_sha: "b7b5d9f48fb9369c29a4cd9902acde88285bfb22"
+    remote_head_sha: "b7b5d9f48fb9369c29a4cd9902acde88285bfb22"
+    base_sha: "b7b5d9f48fb9369c29a4cd9902acde88285bfb22"
+    status: "current_main_synced_pr374_merged_delivery_truth_consumption_projection_delivered"
+    blocker: null
+    last_merged_pr: 374
+    last_merged_sha: "b7b5d9f48fb9369c29a4cd9902acde88285bfb22"
+    last_merged_submitted_head_sha: "ca7bc92aeeeb5fa357732fbad8f49f62f54abc2b"
+    open_pr_count: 0
+    open_prs: []
   queued_slice:
-    lifecycle_unit: "delivery-truth-consumption"
-    name: "final delivery-truth consumption projection"
-    status: "pr374_open_body_repaired_ci_review_pending"
-    evidence_receipt: "R416"
+    lifecycle_unit: "backlog-reconciliation"
+    name: "select next bounded closeout slice"
+    status: "post_pr374_tracker_validated_pending_commit_pr"
+    evidence_receipt: "R418"
   resume_gate:
-    - "Triage PR #374 only: wait for fresh CircleCI and CodeRabbit truth on the latest head, then fix only failing lanes or record explicit blockers."
+    - "Do not start feature work until the post-PR374 tracker receipt validates on current main."
+    - "Select exactly one next bounded backlog slice from review/external/root-hygiene proof, documentation accuracy, historical review-coverage backfill, Linear field-text decision, PU-015 Judge/PM audit, or final completion audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
   review_artifacts:
     - path: "artifacts/reviews/delivery-truth-consumption-skill-lenses.md"
       status: "local_skill_lenses_passed_independent_reviewer_subagents_unavailable"
   explicit_non_claims:
     - "linear_fields_current"
-    - "delivery_truth_consumption_complete"
+    - "final_closeout_claim_families_complete"
+    - "review_external_root_hygiene_complete"
+    - "documentation_accuracy_complete"
     - "judge_pm_ready"
     - "parent_goal_complete"
 artifacts:
@@ -205,7 +208,7 @@ current_slice_gate:
     - "Stacked implementation PRs are forbidden by default. Only Jamie can authorize a named exception in the current slice intent and receipt before any parallel or dependent implementation work begins."
     - "Keep this board and the local board tracker as current route-truth surfaces; synchronize goal.md, state.yaml, goal-kanban-board.html, and receipts.jsonl after every merge, route decision, or blocker decision."
     - "Use live Linear JSC-363 as tracker-current only for status In Review and attachment-backed provenance through PR #365 attachment f34c2183-1e8c-4314-b5e4-d0e9d2168afa, PR #364 attachment 54b11cbc-0fe9-4661-a8f4-213074463cd8, PR #363 attachment ce89f58e-eb35-48e6-be07-f1726a09788b, PR #362 attachment 3c421694-cf60-4a4a-a05b-1cba453bf643, and PR #360 attachment 4dbe1293-d506-4d37-ba79-aee8ae605cec. No PR #361 attachment is claimed for JSC-363 because PR #361 is tracked as the separate JSC-398 typed-contract gate lane. Do not claim field-text-current, Judge/PM-ready, or parent-goal completion because the issue title/description still describe Phase 1."
-    - "Continue only from remaining evidence-backed lifecycle gaps: runtime producer evidence, delivery-truth consumption, final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, and final requirement-by-requirement completion audit."
+    - "Continue only from remaining evidence-backed lifecycle gaps: final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, Linear field-text decision, and final requirement-by-requirement completion audit."
   blocked_done_claims:
     - "Linear-fields-current"
     - "live-Codex-Desktop-clientUserMessageId-extraction"

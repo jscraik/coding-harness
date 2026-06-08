@@ -415,10 +415,10 @@
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>Commit ready for PR</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #373</strong></div>
+      <div class="metric"><span>Goal status</span><strong>Backlog reconciliation</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #374</strong></div>
       <div class="metric"><span>Current PR</span><strong>None active</strong></div>
-      <div class="metric"><span>Delivery truth</span><strong>Local deep lanes proved</strong></div>
+      <div class="metric"><span>Delivery truth</span><strong>Projection merged</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
       <div class="metric"><span>Linear tracker</span><strong>Field text unclaimed</strong></div>
       <div class="metric"><span>Judge / PM</span><strong>Not ready</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated for the 2026-06-08 delivery-truth consumption slice. PR #373 is merged provenance at main commit <code>37aec5fb97a8358f766166330affbced6bd31c5a</code>. PU-013 runtime cockpit integration proof remains merged through PR #370 with no production code patch required, PR #371 merged the post-PR370 tracker repair, PR #372 merged the post-PR371 tracker repair plus narrow CodeRabbit learning-contract validator support, and PR #373 merged the post-PR372 tracker refresh. The active local branch is <code>codex/jsc-363-delivery-truth-consumption</code>. Linear field-text currency, documentation accuracy, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated after PR #374 merged and local <code>main</code> was pulled to <code>b7b5d9f48fb9369c29a4cd9902acde88285bfb22</code>. PR #374 delivered the delivery-truth consumption projection in <code>src/lib/pr-closeout/</code> and <code>src/lib/delivery-truth/</code>. PU-013 runtime cockpit integration proof remains merged through PR #370 with no production code patch required, PR #371 merged the post-PR370 tracker repair, PR #372 merged the post-PR371 tracker repair plus narrow CodeRabbit learning-contract validator support, and PR #373 merged the post-PR372 tracker refresh. No PR route is active. Linear field-text currency, documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -1038,14 +1038,14 @@
       },
       {
         id: "delivery-truth-consumption",
-        lane: "remaining",
+        lane: "completed",
         title: "Final delivery-truth consumption",
-        status: "in progress",
+        status: "done",
         tags: ["delivery-truth", "claim support", "closeout"],
-        summary: "PR #374 is open for the delivery-truth consumption slice. The branch extends the state-packet delivery-truth bridge so final closeout claim families are emitted as explicit pass, blocked, or unknown verdicts instead of disappearing when unsupported.",
-        evidence: ["PR #374 -> OPEN at head a07e881b717902bcc3a8a3a2d7e065b9b125d58f before this tracker refresh", "PR body repaired after local pr-template-gate reproduced eight findings and then passed with zero findings", "CodeRabbit manually triggered -> https://github.com/jscraik/coding-harness/pull/374#issuecomment-4652005383", "goal.md Completion Contract", "state.yaml blocked_done_claims include final delivery-truth consumption for merge/Judge/Linear/root lanes", "src/lib/delivery-truth/judge-pm-audit.ts", "src/lib/pr-closeout/state-packet-delivery-truth.ts", "pnpm vitest run src/lib/pr-closeout/state-packets.test.ts src/lib/delivery-truth/judge-pm-audit.test.ts -> pass", "bash scripts/validate-codestyle.sh --fast -> pass", "pnpm test:deep -> local check, unit, integration, artifact, and audit lanes passed; E2E blocked by missing GitHub/Linear env and FIFO <REDACTED_HOME_PATH>/.codex/.env", "artifacts/reviews/delivery-truth-consumption-skill-lenses.md -> local simplify, architecture, sy-review, and testing lenses passed; independent reviewer subagents unavailable"],
-        next: "Triage PR #374 only: wait for fresh CircleCI and CodeRabbit truth on the latest head, then fix failing lanes or record explicit blockers before any next slice.",
-        risk: "This slice still does not prove external Linear field text, root hygiene, Judge/PM readiness, merge readiness, independent reviewer completion, or parent-goal completion."
+        summary: "PR #374 merged the delivery-truth consumption slice. The implementation extends the state-packet delivery-truth bridge so final closeout claim families are emitted as explicit pass, blocked, or unknown verdicts instead of disappearing when unsupported.",
+        evidence: ["PR #374 -> MERGED into main at b7b5d9f48fb9369c29a4cd9902acde88285bfb22", "Submitted head -> ca7bc92aeeeb5fa357732fbad8f49f62f54abc2b", "PR body repaired after local pr-template-gate reproduced eight findings and then passed with zero findings", "CodeRabbit manually triggered -> https://github.com/jscraik/coding-harness/pull/374#issuecomment-4652005383", "PR #374 repo-owned CircleCI lanes, pr-pipeline, CodeRabbit status, Socket, and CircleCI Snyk dependency scan passed before merge", "PR #374 review-thread refresh -> zero unresolved threads", "src/lib/delivery-truth/judge-pm-audit.ts", "src/lib/pr-closeout/state-packet-delivery-truth.ts", "src/lib/pr-closeout/blockers.ts -> unverifiable CircleCI telemetry blocks closeout", "pnpm vitest run src/lib/pr-closeout/state-packets.test.ts src/lib/delivery-truth/judge-pm-audit.test.ts -> pass", "pnpm vitest run src/commands/pr-closeout.test.ts src/lib/pr-closeout.test.ts src/lib/pr-closeout/state-packets.test.ts -> pass", "artifacts/reviews/delivery-truth-consumption-skill-lenses.md -> local simplify, architecture, sy-review, and testing lenses passed; independent reviewer subagents unavailable"],
+        next: "Use this as merged delivery-truth projection evidence. Select the next bounded slice from the remaining closeout backlog after this tracker validates.",
+        risk: "This slice still does not prove external Linear field text, root hygiene, documentation accuracy, Judge/PM readiness, independent reviewer completion, or parent-goal completion."
       },
       {
         id: "final-proof-packets",
