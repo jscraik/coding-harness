@@ -416,7 +416,7 @@
 
     <section class="metrics" aria-label="Goal status summary">
       <div class="metric"><span>Goal status</span><strong>Backlog reconciliation</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #375</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #376</strong></div>
       <div class="metric"><span>Current PR</span><strong>None active</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Projection merged</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated after PR #375 merged and local <code>main</code> was pulled to <code>99df7f971530f490a5a37e2f55339ebf5a8ed1f9</code>. PR #374 delivered the delivery-truth consumption projection in <code>src/lib/pr-closeout/</code> and <code>src/lib/delivery-truth/</code>. PR #375 delivered the post-PR374 tracker review-fix route. PU-013 runtime cockpit integration proof remains merged through PR #370 with no production code patch required, PR #371 merged the post-PR370 tracker repair, PR #372 merged the post-PR371 tracker repair plus narrow CodeRabbit learning-contract validator support, and PR #373 merged the post-PR372 tracker refresh. No PR route is active. Linear field-text currency, documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated after PR #376 merged and local <code>main</code> was pulled to <code>0812644947e482601c8f43b02f03879f578b1b1d</code>. PR #374 delivered the delivery-truth consumption projection in <code>src/lib/pr-closeout/</code> and <code>src/lib/delivery-truth/</code>. PR #375 delivered the post-PR374 tracker review-fix route. PR #376 delivered the post-PR375 tracker refresh and review-note repair route. PU-013 runtime cockpit integration proof remains merged through PR #370 with no production code patch required, PR #371 merged the post-PR370 tracker repair, PR #372 merged the post-PR371 tracker repair plus narrow CodeRabbit learning-contract validator support, and PR #373 merged the post-PR372 tracker refresh. No PR route is active. Linear field-text currency, documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -1055,6 +1055,17 @@
         tags: ["PR #375", "route truth", "merged"],
         summary: "PR #375 merged the post-PR374 tracker review-fix route into current main, closing the stale-route sibling-pattern comments without starting a feature slice.",
         evidence: ["PR #375 -> MERGED at 2026-06-08T21:10:04Z", "Squash merge commit -> 99df7f971530f490a5a37e2f55339ebf5a8ed1f9", "Submitted head -> be214cd3c64eea16758f8bc57f58de813b37f35f", "CodeRabbit -> pass after current-head review", "CircleCI pr-pipeline -> pass", "Local main and origin/main -> synced at 99df7f971530f490a5a37e2f55339ebf5a8ed1f9", "External security/snyk GitHub App -> owner-waived quota/status lane only"],
+        next: "Validate this post-merge tracker refresh, then choose exactly one bounded next slice from the remaining backlog.",
+        risk: "This route proves tracker synchronization only. It does not prove Linear field text, documentation accuracy, root hygiene, Judge/PM readiness, or parent-goal completion."
+      },
+      {
+        id: "post-pr376-tracker-refresh",
+        lane: "completed",
+        title: "PR #376: Tracker refresh merged",
+        status: "done",
+        tags: ["PR #376", "route truth", "merged"],
+        summary: "PR #376 merged the post-PR375 tracker refresh and review-note repair route into current main, preserving the one-PR route contract and leaving the next feature slice unselected.",
+        evidence: ["PR #376 -> MERGED at 2026-06-08T22:39:33Z", "Squash merge commit -> 0812644947e482601c8f43b02f03879f578b1b1d", "Submitted head -> f6df03c7336e23de5b6b98c6a100e68e71be0fc3", "CodeRabbit -> pass after current-head review", "CircleCI pr-pipeline -> pass", "Local main and origin/main -> synced at 0812644947e482601c8f43b02f03879f578b1b1d", "External security/snyk GitHub App -> owner-waived quota/status lane only"],
         next: "Validate this post-merge tracker refresh, then choose exactly one bounded next slice from the remaining backlog.",
         risk: "This route proves tracker synchronization only. It does not prove Linear field text, documentation accuracy, root hygiene, Judge/PM readiness, or parent-goal completion."
       },
