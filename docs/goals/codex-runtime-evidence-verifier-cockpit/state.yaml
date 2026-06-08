@@ -31,24 +31,24 @@ thin_execution_tracker:
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
     kind: "none"
-    status: "no_active_pr_route_current_main_synced_after_pr376_merge"
+    status: "no_active_pr_route_current_main_synced_after_pr377_merge"
     blocker: null
-    last_merged_pr: 376
-    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/376"
-    last_merged_sha: "0812644947e482601c8f43b02f03879f578b1b1d"
-    last_merged_submitted_head_sha: "f6df03c7336e23de5b6b98c6a100e68e71be0fc3"
-    last_merge_verified_at: "2026-06-08T22:39:33Z"
-    local_main_sha: "0812644947e482601c8f43b02f03879f578b1b1d"
-    origin_main_sha: "0812644947e482601c8f43b02f03879f578b1b1d"
+    last_merged_pr: 377
+    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/377"
+    last_merged_sha: "b1e29c117ee5089fa67af7be39fe2970857eb36a"
+    last_merged_submitted_head_sha: "499b060437986ebcfc55e679233abb8f24bdf8e6"
+    last_merge_verified_at: "2026-06-08T23:07:13Z"
+    local_main_sha: "b1e29c117ee5089fa67af7be39fe2970857eb36a"
+    origin_main_sha: "b1e29c117ee5089fa67af7be39fe2970857eb36a"
     open_pr_count: 0
     open_prs: []
   queued_slice:
     lifecycle_unit: "backlog-reconciliation"
     name: "select next bounded closeout slice"
-    status: "ready_to_select_after_pr376_merge_pullback_validation"
-    evidence_receipt: "R423"
+    status: "ready_to_select_after_pr377_merge_pullback_validation"
+    evidence_receipt: "R425"
   resume_gate:
-    - "Do not start feature work until this post-PR376 tracker refresh validates and exactly one next bounded backlog slice is selected."
+    - "Do not start feature work until this post-PR377 tracker refresh validates and exactly one next bounded backlog slice is selected."
     - "Select exactly one next bounded backlog slice from review/external/root-hygiene proof, documentation accuracy, historical review-coverage backfill, Linear field-text decision, PU-015 Judge/PM audit, or final completion audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
   review_artifacts:
