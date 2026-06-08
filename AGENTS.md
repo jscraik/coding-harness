@@ -129,3 +129,7 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 - Project Brain files under `.harness/` are operational surfaces. Verify live paths
   before relying on them, and keep durable memory separate from local
   databases, caches, backups, generated run output, and secrets.
+- The weekly reviewed north-star status surface is
+  [docs/roadmap/agent-first-status.md](./docs/roadmap/agent-first-status.md);
+  refresh it with `harness.contract.json` when drift-gate reports an
+  agent-first-status-matrix cadence breach.

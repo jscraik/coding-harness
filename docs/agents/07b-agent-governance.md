@@ -44,6 +44,10 @@ artifacts, validation, ownership, and review expectations.
 When agent work changes tooling/runtime contract surfaces or architecture-context refresh behavior, the matching docs are part of the required gate, not optional polish:
 
 - Every implementation slice must complete PR `Documentation impact`, `Documentation lifecycle impact`, and `SemVer impact` classification before handoff: update applicable root docs (`README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `AGENTS.md`, `ARCHITECTURE.md`), governed docs, and existing deep-module README files, or record `n.a.` with a reason in the matching PR field
+- north-star status cadence repairs should refresh
+  `docs/roadmap/agent-first-status.md` with `harness.contract.json` and keep
+  `README.md`, `AGENTS.md`, and this guide synchronized when drift-gate reports
+  an agent-first-status-matrix cadence breach
 - tooling/runtime changes should update `docs/agents/02-tooling-policy.md` and `docs/agents/06-security-and-governance.md`
 - preflight or Local Memory enforcement changes should keep `AGENTS.md`, `README.md`, `docs/agents/02-tooling-policy.md`, `docs/agents/03-local-memory.md`, `docs/agents/06-security-and-governance.md`, and this guide synchronized; legacy positional `scripts/codex-preflight.sh` invocations must default to required Local Memory mode unless `off` or `optional` is explicitly supplied
 - architecture-context refresh changes should update `docs/agents/00-architecture-bootstrap.md`; Flow Ops closure-evidence, E2E runner, or eval artifact changes that trigger that refresh should keep `AGENTS.md` and this guide synchronized when docs-gate reports the agent-governance category
