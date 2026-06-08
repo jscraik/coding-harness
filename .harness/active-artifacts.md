@@ -10,12 +10,13 @@
 
 ## Scope
 
-Current working reconciliation: 2026-06-08 PU-013 proof route for JSC-363.
-PR #370 is merged into `main` as squash merge commit
-`83d7b6dab5cda761889d1708a304aa87edc2b9fa`; local `main` and `origin/main`
-are synced to that head. PU-013 runtime cockpit integration proof is merged and
-pulled back with no production code patch required. Linear JSC-363 has
-post-merge route-truth comment `8ea7f8a4-74f1-458a-aca1-bb072e27864c`.
+Current working reconciliation: 2026-06-08 post-PR371 tracker refresh for
+JSC-363. PR #371 is merged into `main` as squash merge commit
+`528b9e1d04b7d7a555e05b505ac2ca45c2cc4856`; local `main` and `origin/main`
+are synced to that head. PU-013 runtime cockpit integration proof remains merged
+through PR #370, and PR #371 merged the post-PR370 tracker repair. Linear
+JSC-363 has post-merge route-truth comment
+`34a50024-24be-4853-af6e-3219cbc0d845`.
 Delivery-truth consumption, Linear field-text currency, documentation accuracy,
 Judge/PM readiness, and parent-goal completion remain unclaimed.
 
@@ -45,7 +46,7 @@ unless a live refresh is recorded in the referenced artifact.
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
 | Advisory stale-document archive candidate reporting | JSC-395 | `.harness/specs/2026-06-05-advisory-stale-document-archive-candidate-reporting-spec.md` plus `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-trace-plan.md` plus `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-execution-plan.md` | Delivered on current main by PR #354. The slice remains advisory/read-only: it may report stale-document archive candidates and docs-gate advisory findings, but it must not delete, move, archive, demote, or rewrite documentation artifacts. | Treat PR #354 as merged implementation evidence. Keep release, downstream-template, and any future docs-cleanup action separate unless a later tracked route explicitly promotes them. |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor route with a thin execution tracker. PR #370 is merged provenance at current-main commit 83d7b6dab5cda761889d1708a304aa87edc2b9fa. No PR lane is active. PU-013 runtime cockpit integration proof is merged and pulled back with no production code patch required. Linear field-text-current remains unclaimed unless accepted by the owner or updated. | Next Safe Action: validate the post-PR #370 tracker, then select one bounded next backlog slice before opening another PR. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor route with a thin execution tracker. PR #371 is merged provenance at current-main commit 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856. No PR lane is active. PU-013 runtime cockpit integration proof is merged and pulled back with no production code patch required. Linear field-text-current remains unclaimed unless accepted by the owner or updated. | Next Safe Action: validate the post-PR #371 tracker, then select one bounded next backlog slice before opening another PR. |
 
 PU-046 update: PR #330 was refreshed again on head
 163017e16e4611d5d71f5c4c62fc85f8d164b17b after the R205 artifact receipt was
@@ -160,10 +161,10 @@ runtime producer emission, delivery-truth consumption, or final goal completion.
   `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md`
   freshness enforced through `scripts/check-goal-board.py`, and keep Linear,
   PR, CI, review-thread, Project Brain, and runtime evidence truth separated in
-  receipts. Historical compatibility evidence and PR #322 through PR #370 route
+  receipts. Historical compatibility evidence and PR #322 through PR #371 route
   ledgers are immutable provenance only; they are not current route truth. Current
-  main route provenance is PR #370 merged into `main` as squash
-  commit `83d7b6dab5cda761889d1708a304aa87edc2b9fa`. No PR lane is active.
+  main route provenance is PR #371 merged into `main` as squash
+  commit `528b9e1d04b7d7a555e05b505ac2ca45c2cc4856`. No PR lane is active.
   PU-013 runtime cockpit integration proof is merged and pulled back with no
   production code patch required. Delivery-truth consumption, Linear field-text
   currency, documentation accuracy, Judge/PM readiness, and parent completion

@@ -43,19 +43,22 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-08 PU-013 proof route after PR #370 merged the
-runtime-cockpit projection proof tracker into `main`. PR #366, PR #367, PR #369,
-and PR #370 are historical route provenance. PR #370 is merged into `main` as
-squash merge commit `83d7b6dab5cda761889d1708a304aa87edc2b9fa`.
+Last updated during the 2026-06-08 post-PR371 route refresh after PR #371
+merged the post-PR370 tracker repair into `main`. PR #366, PR #367, PR #369,
+PR #370, and PR #371 are historical route provenance. PR #371 is merged into
+`main` as squash merge commit
+`528b9e1d04b7d7a555e05b505ac2ca45c2cc4856`.
 
 Current live route truth:
 
-- Local `main` head is `83d7b6dab5cda761889d1708a304aa87edc2b9fa`.
-- `origin/main` head is `83d7b6dab5cda761889d1708a304aa87edc2b9fa`.
-- Live GitHub has PR #370 merged from submitted head
-  `31ac06c0094bc611835a862d55ee89db9d29cac7`.
-- PR #370 repo-owned CircleCI lanes, `pr-pipeline`, CodeRabbit status, and
+- Local `main` head is `528b9e1d04b7d7a555e05b505ac2ca45c2cc4856`.
+- `origin/main` head is `528b9e1d04b7d7a555e05b505ac2ca45c2cc4856`.
+- Live GitHub has PR #371 merged from submitted head
+  `a77a7f0ec3ccf2950c75a7b10b56067e32648e02`.
+- PR #371 repo-owned CircleCI lanes, `pr-pipeline`, CodeRabbit status, and
   unresolved-review-thread refresh were green or empty before merge.
+- PR #370 is merged PU-013 proof-route provenance at
+  `83d7b6dab5cda761889d1708a304aa87edc2b9fa`.
 - PR #369 is merged historical provenance at
   `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`.
 - The external Snyk GitHub App status remained an owner-waived external lane
@@ -67,7 +70,7 @@ Current live route truth:
   projects Codex runtime evidence into `runtime-card` and consumes it narrowly
   through `harness next`.
 - Linear JSC-363 was refreshed with comment
-  `8ea7f8a4-74f1-458a-aca1-bb072e27864c`, while the issue title still contains
+  `34a50024-24be-4853-af6e-3219cbc0d845`, while the issue title still contains
   older Phase 1 wording. Field-text currency remains unclaimed.
 
 ## Thin Execution Tracker
@@ -112,13 +115,13 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: no active PR lane after PR #370 merged and local `main`
-  fast-forwarded to `83d7b6dab5cda761889d1708a304aa87edc2b9fa`.
-- Provenance: See `receipts.jsonl` for merged PR #343 through PR #370 route history.
+- Current route: no active PR lane after PR #371 merged and local `main`
+  fast-forwarded to `528b9e1d04b7d7a555e05b505ac2ca45c2cc4856`.
+- Provenance: See `receipts.jsonl` for merged PR #343 through PR #371 route history.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #370 merged at `83d7b6dab5cda761889d1708a304aa87edc2b9fa`. See `receipts.jsonl` for complete merged PR history.
+- Done on current main: PR #371 merged at `528b9e1d04b7d7a555e05b505ac2ca45c2cc4856`. See `receipts.jsonl` for complete merged PR history.
 - Current route PR: none.
 - Next route action: choose the next bounded non-feature slice from the remaining
   backlog before opening any new PR.
