@@ -52,6 +52,11 @@ thin and delegate into this deep module.
   the repository PR template and validator rules. Generated PR bodies need
   explicit `Motivation`, `Reasoning`, and `Chosen approach` fields near
   the top so maintainers can review intent before implementation detail.
+- Generated hook setup must route direct `prek` execution through
+  `scripts/run-prek.sh`. The wrapper sets `PREK_HOME` to the worktree cache
+  before invoking `prek`, so sandboxed Codex runs and downstream repositories do
+  not fall back to a non-writable home-directory cache during hook installation,
+  validation, or push triage.
 
 ## Documentation Alignment
 

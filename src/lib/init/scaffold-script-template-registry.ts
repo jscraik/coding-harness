@@ -55,6 +55,10 @@ export const QUALITY_AND_HOOK_SCRIPT_TEMPLATES: readonly Template[] = [
 		render: () => renderSetupGitHooksScript(),
 	},
 	{
+		path: "scripts/run-prek.sh",
+		render: () => renderPackagedRootFile("scripts/run-prek.sh"),
+	},
+	{
 		path: "scripts/check-staged-secrets.sh",
 		render: () => renderCheckStagedSecretsScript(),
 	},

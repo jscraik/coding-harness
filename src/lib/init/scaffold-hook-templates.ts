@@ -145,7 +145,7 @@ function renderSetupGitHooksScriptPrelude(): string {
  * This script:
  *   1. Verifies prek.toml exists
  *   2. Verifies scripts/validate-commit-msg.js exists
- *   3. Runs \`prek install --overwrite\`
+ *   3. Runs \`scripts/run-prek.sh install --overwrite\`
  *   4. Prints the canonical wrapper targets used by local governance
  */
 
@@ -265,7 +265,7 @@ function main() {
 		console.info("Installing prek git hooks...");
 		mkdirSync(PREK_HOME, { recursive: true });
 		// Keep canonical hook shims and remove legacy migration wrappers.
-		execFileSync("prek", ["install", "--overwrite"], { env: { ...process.env, PREK_HOME }, stdio: "inherit" });
+		execFileSync("bash", ["scripts/run-prek.sh", "install", "--overwrite"], { env: { ...process.env, PREK_HOME }, stdio: "inherit" });
 		const patchedCount = patchInstalledPrekHooks();
 		if (patchedCount > 0) {
 			console.info(
@@ -281,7 +281,7 @@ function main() {
 		console.info('  • make hooks-commit-msg HOOK_COMMIT_MSG="feat: example"');
 		console.info("  • make hooks-pre-push");
 	} catch (error) {
-		console.error("\\n⚠️  Failed to run \`prek install --overwrite\`.");
+		console.error("\\n⚠️  Failed to run \`scripts/run-prek.sh install --overwrite\`.");
 		if (error instanceof Error && "message" in error && error.message) {
 			console.error("   " + error.message);
 		}

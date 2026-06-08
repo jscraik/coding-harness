@@ -68,6 +68,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/validate-commit-msg.js",
 	"scripts/check-hook-critical-config-sync.sh",
 	"scripts/setup-git-hooks.js",
+	"scripts/run-prek.sh",
 	"scripts/check-staged-secrets.sh",
 	"scripts/check-doc-style.sh",
 	"scripts/check-related-tests.sh",
@@ -964,7 +965,7 @@ describe("runInit", () => {
 			);
 			expect(content).toContain("git pull --ff-only origin main");
 			expect(content).toContain("npm install");
-			expect(content).toContain("prek --version");
+			expect(content).toContain("bash scripts/run-prek.sh --version");
 			expect(content).toContain(
 				"Expected a release branch matching codex/release-* or release-*",
 			);
@@ -1738,8 +1739,16 @@ describe("runInit", () => {
 				'return process.env.PREK_HOME ?? resolve(repoRoot, ".cache/prek")',
 			);
 			expect(setupHooks).toContain(
-				'execFileSync("prek", ["install", "--overwrite"]',
+				'execFileSync("bash", ["scripts/run-prek.sh", "install", "--overwrite"]',
 			);
+			const runPrek = require("node:fs").readFileSync(
+				join(tempDir, "scripts/run-prek.sh"),
+				"utf-8",
+			);
+			expect(runPrek).toContain(
+				'PREK_HOME="${PREK_HOME:-$repo_root/.cache/prek}"',
+			);
+			expect(runPrek).toContain('exec prek "$@"');
 			expect(setupHooks).toContain("patchInstalledPrekHooks");
 			expect(setupHooks).toContain(
 				'WORKTREE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"',
@@ -2266,6 +2275,7 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain(
 				'"scripts/codex-preflight-local-memory-legacy.sh"',
 			);
+			expect(environmentCheck).toContain('"scripts/run-prek.sh"');
 			expect(environmentCheck).toContain("required_make_targets=(");
 			expect(environmentCheck).toContain('"preflight"');
 			expect(environmentCheck).toContain('"worktree-ready"');

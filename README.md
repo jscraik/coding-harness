@@ -225,6 +225,10 @@ therefore need the repository-pinned `uv` tool available through `.mise.toml`
 so Python/Pydantic artifact-contract validation runs as part of the standard
 quality gate.
 
+Use `bash scripts/run-prek.sh <args>` for direct `prek` operations in this
+repository. The wrapper pins `PREK_HOME` to the worktree cache so hook setup and
+push triage do not depend on a writable home-directory cache.
+
 ## Where To Go Next
 
 - [Quickstart](./docs/agents/quickstart.md) for the agent-native loop and local verification path.

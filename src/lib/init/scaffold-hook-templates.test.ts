@@ -38,7 +38,9 @@ describe("git-hook scaffold templates", () => {
 		);
 		expect(script).toContain("const gitHooksDir = getGitHooksDir()");
 		expect(script).toContain("mkdirSync(PREK_HOME, { recursive: true })");
-		expect(script).toContain('execFileSync("prek", ["install", "--overwrite"]');
+		expect(script).toContain(
+			'execFileSync("bash", ["scripts/run-prek.sh", "install", "--overwrite"]',
+		);
 		expect(script).toContain("env: { ...process.env, PREK_HOME }");
 		expect(script).toContain("patchInstalledPrekHooks");
 		expect(script).toContain("LEGACY_PREK_HOOK_PATCH");

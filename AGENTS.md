@@ -94,6 +94,9 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 - Runtime or artifact behavior changes require `pnpm test:deep`.
 - Docs-gate categories require
   `bash scripts/run-harness-gate.sh docs-gate --mode required --json`.
+- Direct `prek` operations must use `bash scripts/run-prek.sh <args>` so hook
+  validation uses the worktree cache instead of a home-directory cache that may
+  be non-writable in sandboxed Codex runs.
 - Report exact commands with explicit `pass`, `fail`, or `blocked` outcomes.
 
 ## Routing

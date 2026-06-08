@@ -334,7 +334,7 @@ Ensure \`artifacts/test-results\` is created before running tests (CI scaffolds 
 export function renderPrekConfigTemplate(): string {
 	return `# Prek configuration (Rust-based pre-commit replacement)
 # Install prek: mise install cargo-prek || cargo install prek
-# Run: prek install --overwrite && prek run --all-files
+# Run: bash scripts/run-prek.sh install --overwrite
 
 default_install_hook_types = [${REQUIRED_PREK_INSTALL_HOOK_TYPES.map((hookType) => `"${hookType}"`).join(", ")}]
 
