@@ -101,7 +101,7 @@ Completed route-refresh action:
 
 2. Committed the current-main tracker refresh.
    - Command: `git add docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl .harness/active-artifacts.md .harness/implementation-notes/goal-kanban-board.html`
-   - Command: `git commit -m "docs(goal): refresh post-pr370 tracker"`
+   - Command: `git commit -m "docs(goal): refresh post-pr374 tracker"`
    - Pass criteria: Commit succeeds with exit code 0 and hooks pass.
 
 3. Discussed and bounded PU-013 as a proof-first slice.
@@ -177,7 +177,7 @@ Non-claims:
 
 ## History Boundary
 
-Merged PR lanes through PR #373 remain provenance. They are not active route
+Merged PR lanes through PR #374 remain provenance. They are not active route
 lanes and must not be expanded in the active board unless a fresh current-main
 regression reopens them.
 
@@ -188,8 +188,8 @@ claim/evidence/blocker records, not narrative diary entries.
 
 Feature implementation remains stopped until all of these are true:
 
-- PU-013 proof tracker update is merged through PR #370 and the post-PR370
-  tracker refresh is merged through PR #371, both pulled back to local `main`.
+- Delivery-truth consumption projection is merged through PR #374 and the
+  post-PR374 tracker refresh is validated against local `main`.
 - Linear JSC-363 has compact post-merge route-truth comment
   `34a50024-24be-4853-af6e-3219cbc0d845`.
 - `goal.md`, `state.yaml`, `notes/execution-tracker.md`,
@@ -206,16 +206,16 @@ Refreshed JSC-363 current-main route truth and PU-013 merged proof.
 Current truth:
 
 - Active route lane: none.
-- Latest merged route: PR #371.
-- Local main head: 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856.
-- Origin main head: 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856.
-- Repo-owned CircleCI lanes for PR #371 passed before merge.
+- Latest merged route: PR #374.
+- Local main head: b7b5d9f48fb9369c29a4cd9902acde88285bfb22.
+- Origin main head: b7b5d9f48fb9369c29a4cd9902acde88285bfb22.
+- Repo-owned CircleCI lanes for PR #374 passed before merge.
 - PU-013 runtime cockpit integration proof is merged and pulled back to local `main`.
-- PR #371 remains separate from runtime, CI, review, Linear, and delivery-truth claims.
+- PR #374 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
 - No production code patch was required; current main already projects Codex runtime evidence into `runtime-card` and consumes it narrowly through `harness next`.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
 - Linear JSC-363 was refreshed with post-merge route-truth comment `34a50024-24be-4853-af6e-3219cbc0d845`; field-text currency remains unclaimed because the issue title still says Phase 1.
 
 Restart rule:
-No next slice starts until the board/state/receipt validators pass on the post-PR #371 current-main tracker and one bounded backlog item is selected.
+No next slice starts until the board/state/receipt validators pass on the post-PR374 current-main tracker and one bounded backlog item is selected.
 ```

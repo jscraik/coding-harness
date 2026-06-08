@@ -73,8 +73,6 @@ Current live route truth:
   not reopen the merged PR lane, but they remain relevant to final closeout.
 - Helper lanes are now bounded and closed as soon as their artifact or blocker
   evidence is recorded; they must not linger as implicit active work.
-- PR #373 is merged from submitted head
-  `2e8d94785edd2c10ab97a175633e341ef9fa2c49`.
 - Live GitHub has PR #373 merged from submitted head
   `2e8d94785edd2c10ab97a175633e341ef9fa2c49`.
 - Live GitHub has PR #372 merged from submitted head
