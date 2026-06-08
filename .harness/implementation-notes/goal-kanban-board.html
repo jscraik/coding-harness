@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated for the 2026-06-08 current-main refresh. PR #369 is merged provenance at main commit <code>1d0c3baaa76d1de68c633b086a5dcf07472ddbef</code>. Local main and origin/main are synced at that commit, and GitHub currently has no open PR route lane. PU-013 runtime cockpit integration proof is queued for discussion, not active implementation. Delivery-truth consumption, documentation accuracy, Judge/PM readiness, release readiness, downstream-template state, Linear field-text currency, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated for the 2026-06-08 PU-013 proof refresh. PR #369 is merged provenance at main commit <code>1d0c3baaa76d1de68c633b086a5dcf07472ddbef</code>. Local main and origin/main are synced at that commit, and GitHub currently has no open PR route lane. PU-013 runtime cockpit integration proof is locally proved on branch <code>codex/JSC-363-post-pr369-goal-state-refresh</code> with no production code patch required. PR merge, local main pull-back, Linear field-text currency, delivery-truth consumption, documentation accuracy, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -538,7 +538,7 @@
         tags: ["PR #369", "current main", "route truth"],
         summary: "Local main and origin/main are synced at PR #369 squash merge 1d0c3baaa76d1de68c633b086a5dcf07472ddbef after the recurring Prek home-cache failure was routed through the worktree cache.",
         evidence: ["PR #369 -> MERGED at 2026-06-08T13:08:31Z", "Merge commit -> 1d0c3baaa76d1de68c633b086a5dcf07472ddbef", "Open PR list -> []", "Repo-owned CircleCI lanes -> pass", "pr-pipeline -> pass", "External Snyk GitHub App -> owner-waived quota lane only"],
-        next: "Use as current-main route provenance. Validate and commit this tracker refresh, then discuss the PU-013 intent boundary before implementation starts.",
+        next: "Use as current-main route provenance. PU-013 proof is now the active tracker lane.",
         risk: "PR #369 does not prove delivery-truth consumption, Linear field-text currency, Judge/PM readiness, or parent-goal completion."
       },
       {
@@ -571,7 +571,7 @@
         tags: ["R391", "CI triage", "pre-push", "guardrail"],
         summary: "CI triage found stale local validation process trees from repeated aggregate checks. The durable fix adds repo-owned validation locks for behavior-tests and test:ci, plus a pre-push lock check so duplicate lanes fail fast with an actionable diagnostic.",
         evidence: ["scripts/with-validation-lock.sh", "scripts/check-validation-locks.sh", "Makefile validation-locks target", "package.json quality:behavior-tests lock wrapper", "package.json test:ci lock wrapper", "src/dev/validation-lock-scripts.test.ts -> pass", "bash scripts/check-validation-locks.sh -> pass", "pnpm run validation:locks -> pass"],
-        next: "Use as historical local guard evidence. The active route is now closed on current main; PU-013 remains queued for discussion.",
+        next: "Use as historical local guard evidence. The active route is now closed on current main; PU-013 proof is the current tracker lane.",
         risk: "The guard prevents duplicate tracked validation lanes; it does not prove remote CircleCI pass, PU-013 implementation, or parent-goal completion."
       },
       {
@@ -582,19 +582,19 @@
         tags: ["R404", "R405", "PR #369", "current-main", "tracker refresh"],
         summary: "The active implementation route is closed. R404 records that local main and origin/main are synced at PR #369, while R405 binds the same refresh to the governed audit sources so freshness validation stays current.",
         evidence: ["PR #369 -> MERGED at 2026-06-08T13:08:31Z", "Local HEAD -> 1d0c3baaa76d1de68c633b086a5dcf07472ddbef", "origin/main -> 1d0c3baaa76d1de68c633b086a5dcf07472ddbef", "Open PR list -> []", "R405 audit_sources_checked -> current main head", "state.yaml active_route.status -> route_closed_current_main_synced"],
-        next: "Validate this tracker refresh, commit it, update Linear JSC-363 with compact route truth, then discuss PU-013 boundaries before implementation starts.",
-        risk: "The refresh proves route closure and tracker alignment only. It does not prove PU-013 implementation, independent review proof, Linear field-text currency, or parent-goal completion."
+        next: "Use as historical route-refresh evidence. PU-013 proof is now the current active tracker lane.",
+        risk: "The refresh proves route closure and tracker alignment only. It does not prove delivery-truth consumption, Linear field-text currency, or parent-goal completion."
       },
       {
-        id: "next-slice-pu012-reconciliation",
+        id: "pu013-runtime-cockpit-proof-r406",
         lane: "intent",
-        title: "Next slice candidate: PU-013 cockpit proof",
-        status: "blocked",
-        tags: ["PU-013", "next candidate", "runtime cockpit"],
-        summary: "PU-013 is the next selected implementation candidate, but it remains queued for discussion. It is not active until the current-main tracker refresh validates and Jamie confirms the intent boundary.",
-        evidence: [".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md PU-013", "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/PU-012-current-main-producer-proof-intent.md", "PR #369 -> MERGED", "goal.md current reconciliation status", "state.yaml current_slice_gate.reason", "R404 post-PR #369 current-main route receipt"],
-        next: "Validate and commit this route refresh, update Linear JSC-363, then discuss the PU-013 boundary before implementation.",
-        risk: "Starting PU-013 now would repeat the stale-state and stacked-route failure mode."
+        title: "PU-013: runtime cockpit proof",
+        status: "active",
+        tags: ["PU-013", "R406", "runtime-card", "harness next"],
+        summary: "PU-013 current-main behavior is locally proved without production code changes. runtime-card projects Codex-runtime receipt refs and stale-state blockers, and harness next consumes the card narrowly as advisory/blocking state.",
+        evidence: ["runtime-card --evidence codex-scripts/pu013-codex-runtime-evidence-bundle.json -> pass", "runtime-card codexRuntime.receiptRefs -> validation/review/session/stale refs visible", "runtime-card stale Linear evidence -> lifecycle blocked", "harness next --runtime-card stale card -> runtime_card_blocked", "runtime-card missing evidence path -> fail, not support", "pnpm vitest run src/lib/runtime/*.test.ts src/commands/runtime-card.test.ts src/commands/next*.test.ts -> 13 files, 199 tests passed", "pnpm exec tsx src/cli.ts runtime-card --json --repo . -> pass", "pnpm exec tsx src/cli.ts next --json --worktree-role dirty-with-justification -> pass"],
+        next: "Commit and route this PU-013 proof tracker update through PR review, merge, local main pull-back, and Linear refresh.",
+        risk: "Local proof does not equal PR merge readiness, independent review proof, Linear field-text currency, delivery-truth consumption, or parent-goal completion."
       },
       {
         id: "pr321",

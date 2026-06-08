@@ -25,7 +25,7 @@ thin_execution_tracker:
   deepened_interface: "Use a compact active tracker with one route lane, one queued slice, current blockers, resume gates, and provenance links."
   active_surface_budget:
     active_route_lanes: 0
-    queued_implementation_slices: 1
+    queued_implementation_slices: 0
     current_truth_snapshots: 1
     receipt_style: "compact claim/evidence/blocker records"
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
@@ -44,13 +44,14 @@ thin_execution_tracker:
   queued_slice:
     lifecycle_unit: "PU-013"
     name: "runtime cockpit integration proof"
-    status: "queued_for_discussion_not_active"
+    status: "local_proof_complete_pending_pr_merge_pullback"
+    evidence_receipt: "R406"
   resume_gate:
-    - "Validate the current-main goal-state refresh."
-    - "Commit the current-main tracker refresh without bypassing hooks."
-    - "Update Linear JSC-363 with compact route truth."
-    - "Discuss and agree the PU-013 intent boundary before implementation starts."
-    - "Validate goal.md, state.yaml, notes/execution-tracker.md, active-artifacts, Kanban, and receipts before PU-013 starts."
+    - "Commit the PU-013 proof tracker update without bypassing hooks."
+    - "Route the PU-013 proof tracker update through PR review and required checks."
+    - "Merge the PR, checkout main, and pull latest origin/main."
+    - "Update Linear JSC-363 with compact post-merge route truth."
+    - "Validate goal.md, state.yaml, notes/execution-tracker.md, active-artifacts, Kanban, and receipts after pull-back."
   explicit_non_claims:
     - "pu013_started"
     - "linear_fields_current"
@@ -129,9 +130,9 @@ completion_contract:
       - "record refreshed main head in goal board and receipt"
     exception_rule: "Only Jamie can authorize a stacked or parallel implementation exception; the exception must name the dependent slice, branch/worktree owner, allowed files, stop condition, and receipt id before any code work begins."
 current_slice_gate:
-  lifecycle_unit: "post-pr369-current-main-route-refresh"
-  status: "route_closed_current_main_synced_pu013_queued_for_discussion"
-  reason: "Repeated steering showed the goal control surface had become too large and history-heavy. PR #369 is merged into main at 1d0c3baaa76d1de68c633b086a5dcf07472ddbef, local main and origin/main are synced at that commit, and GitHub currently has no open PR route lane. PU-013 is queued for discussion, not active implementation, until this tracker refresh validates, the refreshed state is committed, Linear JSC-363 is updated from compact route truth, and Jamie confirms the PU-013 intent boundary."
+  lifecycle_unit: "PU-013"
+  status: "runtime_cockpit_projection_locally_proved_pending_pr_merge_pullback"
+  reason: "Current-main runtime-card and harness next already satisfy the narrow PU-013 projection contract. Local command probes proved Codex-runtime receipt refs, stale-state blockers, missing evidence failure, and harness next advisory blocking. No production code patch was required. Delivery remains unclaimed until the proof tracker update is committed, reviewed, merged, pulled back to local main, and Linear JSC-363 is refreshed."
   completed_before_local_validation_claim:
     - "Created and tracked the PR #324 supersession intent artifact before route-state edits."
     - "Fetched current remote refs and verified PR #327 and PR #328 are the current clean JSC-363 stack."
@@ -186,8 +187,8 @@ current_slice_gate:
     - "Use docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md as the thin restart tracker; keep old PR history as provenance, not active route work."
     - "Validate this current-main tracker refresh with receipts JSON parsing, audit freshness, goal-board validation, Kanban script validation, and git diff whitespace validation."
     - "Commit the validated tracker refresh before starting PU-013 or other implementation work."
-    - "Update Linear JSC-363 with compact current route truth: PR #369 merged, no active PR lane, PU-013 queued for discussion, owner-waived external Snyk quota lane only, and no parent-goal completion claim."
-    - "Discuss and confirm the PU-013 intent boundary with Jamie before implementation starts."
+    - "Update Linear JSC-363 with compact current route truth: PR #369 merged, no active PR lane, PU-013 local proof complete pending PR/merge/pull-back, owner-waived external Snyk quota lane only, and no parent-goal completion claim."
+    - "Route PU-013 proof through PR review, merge, local main pull-back, and Linear refresh before selecting the next slice."
     - "Treat receipt-backed merged JSC-363 route/foundation lanes through PR #360, the PR #361 typed-contract gate lane, the PR #362 tracker/evidence repair lane, the PR #363 post-PR #362 route refresh, the PR #364 post-PR #363 tracker refresh, the PR #365 post-PR #364 tracker repair, the PR #366 post-PR #365 tracker/security repair, and the PR #369 recurring Prek cache repair as completed current-main evidence at 1d0c3baaa76d1de68c633b086a5dcf07472ddbef; do not reopen those PR lanes unless fresh GitHub or current-main validation shows a regression."
     - "Use receipt R379 as the validated post-PR #365 current-main route-tracker repair evidence for goal.md, state.yaml, receipts.jsonl, .harness/active-artifacts.md, and .harness/implementation-notes/goal-kanban-board.html; use R357 only as PU-012 intent-created evidence, not PU-012 completion evidence."
     - "Use the PU-012 intent review artifacts as the reviewed-intent gate: best-practices pass, agent-native pass, adversarial needs_changes, and adversarial rereview pass after the intent fix."
@@ -196,8 +197,8 @@ current_slice_gate:
     - "Treat local branch-only leading-flag validator repair fb2e9946adfe21d29861e04f9b5d12596e696d80 as outstanding follow-up work because it is not on merged main."
     - "Treat the external Snyk GitHub App quota failure as owner-waived for that quota lane only, not as external Snyk green or as a blanket security waiver."
     - "Treat PR #369 as merged current-main route evidence, not an active tracker PR. Its squash merge commit 1d0c3baaa76d1de68c633b086a5dcf07472ddbef is the shared local HEAD and origin/main head for this refresh."
-    - "Keep PU-013 runtime cockpit integration proof queued until this tracker refresh validates, the refreshed state is committed, Linear JSC-363 is updated from compact route truth, and Jamie confirms the PU-013 intent boundary."
-    - "Start PU-013 only after that boundary is confirmed, from fresh current-main evidence, Project Brain context, the plan/spec/audit matrix, and the required completion lenses/reviewer checks before any implementation done claim."
+    - "Keep PU-013 delivery unclaimed until the proof tracker update is committed, reviewed, merged, pulled back to local main, and Linear JSC-363 is refreshed."
+    - "Select the next implementation slice only after PU-013 PR/merge/pull-back route proof is recorded."
     - "For every future slice, run simplify, improve-codebase-architecture, sy-review, and testing before done; then commit atomically, open or update one PR, trigger CodeRabbit manually when required, run pr-green-sweep until faults are fixed or explicitly blocked, merge to main, checkout main, pull latest remote main, update the goal board/state/receipt, and only then start the next slice."
     - "Stacked implementation PRs are forbidden by default. Only Jamie can authorize a named exception in the current slice intent and receipt before any parallel or dependent implementation work begins."
     - "Keep this board and the local board tracker as current route-truth surfaces; synchronize goal.md, state.yaml, goal-kanban-board.html, and receipts.jsonl after every merge, route decision, or blocker decision."

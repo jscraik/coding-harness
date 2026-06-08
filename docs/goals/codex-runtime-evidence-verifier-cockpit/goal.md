@@ -59,9 +59,12 @@ Current live route truth:
   only; the repo-owned CircleCI Snyk dependency scan passed.
 - CodeRabbit and Codex review-status contexts were not treated as independent
   review proof because usage and rate-limit comments were present.
-- PU-013 runtime cockpit integration proof is queued for discussion, not active.
-- Feature work remains stopped until this route refresh validates and Jamie
-  confirms the PU-013 intent boundary.
+- PU-013 runtime cockpit integration proof has local current-main proof on branch
+  `codex/JSC-363-post-pr369-goal-state-refresh`; no production code patch was
+  required because current main already projects Codex runtime evidence into
+  `runtime-card` and consumes it narrowly through `harness next`.
+- PU-013 is not delivery-complete until the proof tracker update is committed,
+  reviewed, merged, pulled back to local `main`, and Linear JSC-363 is refreshed.
 
 ## Thin Execution Tracker
 
@@ -91,8 +94,9 @@ Architecture check:
 
 Stop conditions:
 
-- Do not start PU-013 until the current-main route refresh validates and Jamie
-  confirms the PU-013 intent boundary.
+- Do not claim PU-013 delivery-complete until its proof tracker update is
+  committed, reviewed, merged, pulled back to local `main`, and Linear JSC-363
+  is refreshed.
 - Do not create route-refresh-only PRs unless live truth changed, a validator
   requires a new reachable receipt anchor, or Jamie records an explicit
   exception.
@@ -111,8 +115,8 @@ Corrected backlog after current-main reconciliation:
 
 - Done on current main: PR #369 merged at `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`. See `receipts.jsonl` for complete merged PR history.
 - Current route PR: none open after the PR #369 pull-back to `main`.
-- Next route action: validate and commit this current-main tracker refresh, update Linear JSC-363, then discuss and bound PU-013 before implementation starts.
-- Remaining backlog: PU-013 runtime cockpit integration, delivery-truth consumption, review/external/root-hygiene proof, documentation accuracy, historical review-coverage backfill, Linear field-text decision, PU-015 Judge/PM audit, and final completion audit.
+- Next route action: commit and route the PU-013 proof tracker update through PR review, merge, local `main` pull-back, and Linear refresh.
+- Remaining backlog: PU-013 PR/merge pull-back, delivery-truth consumption, review/external/root-hygiene proof, documentation accuracy, historical review-coverage backfill, Linear field-text decision, PU-015 Judge/PM audit, and final completion audit.
 
 ## Why This Exists
 

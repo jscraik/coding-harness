@@ -27,14 +27,14 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Parent issue | JSC-363 |
 | Canonical goal | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` |
 | Current branch | `codex/JSC-363-post-pr369-goal-state-refresh` |
-| Local head | `1d0c3baaa76d1de68c633b086a5dcf07472ddbef` |
+| Local head | `bdd89fac4e17995d182108339d1fc798ef6dc9ac` |
 | Remote main head | `1d0c3baaa76d1de68c633b086a5dcf07472ddbef` |
 | Main baseline | `1d0c3baaa76d1de68c633b086a5dcf07472ddbef` |
 | Active route count | 0 |
 | Active route | none open |
 | Last closed route | PR #369 merged |
-| Queued implementation slice | PU-013 runtime cockpit integration proof |
-| Feature work status | Paused pending PU-013 discussion |
+| Current slice | PU-013 runtime cockpit integration proof |
+| Feature work status | PU-013 local proof complete; PR/merge route not yet opened |
 
 ## Active Route
 
@@ -56,9 +56,9 @@ Current evidence:
 - CodeRabbit and Codex review-status contexts were not counted as independent
   review proof because usage and rate-limit comments were present.
 
-Next action:
+Completed route-refresh action:
 
-1. Validate this current-main tracker refresh locally.
+1. Validated the current-main tracker refresh locally.
    - Command: `jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null`
    - Command: `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .`
    - Command: `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit`
@@ -67,30 +67,51 @@ Next action:
    - Pass criteria: Goal state, board, visual tracker, audit freshness, and receipt
      syntax agree on current `main`.
 
-2. Commit the current-main tracker refresh.
+2. Committed the current-main tracker refresh.
    - Command: `git add docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl .harness/active-artifacts.md .harness/implementation-notes/goal-kanban-board.html`
    - Command: `git commit -m "Refresh JSC-363 goal state after PR #369"`
    - Pass criteria: Commit succeeds with exit code 0 and hooks pass.
 
-3. Update Linear JSC-363 with current route truth.
-   - Pass criteria: Linear records no active PR route, PR #369 merged, local and
-     remote `main` synced, and PU-013 queued for discussion.
+3. Discussed and bounded PU-013 as a proof-first slice.
+   - Scope: verify current-main `runtime-card` and `harness next` behavior first.
+   - Boundary: keep work inside `src/lib/runtime/**`, `src/commands/runtime-card*`,
+     and `src/commands/next*` unless docs-gate requires synchronized docs.
+   - Non-claims: runtime-card remains advisory, does not store evidence, does not
+     execute actions, and does not imply PR merge readiness.
 
-4. Discuss PU-013 intent boundary before implementation starts.
-   - Pass criteria: PU-013 scope, deep-module placement, validation gates,
-     review lenses, and non-claims are agreed before code changes.
+4. Proved PU-013 current behavior without production code changes.
+   - Command: `node --import tsx src/cli.ts runtime-card --json --repo . --issue JSC-363 --evidence codex-scripts/pu013-codex-runtime-evidence-bundle.json --out codex-scripts/pu013-runtime-card-with-codex.json --evidence-out codex-scripts/pu013-runtime-evidence-out.json`
+   - Result: pass; runtime-card projected `codexRuntime.receiptRefs`,
+     `validationRefs`, `reviewRefs`, `sessionRefs`, `environmentRefs`,
+     `staleStateRefs`, and a visible stale Linear blocker.
+   - Command: `node --import tsx src/cli.ts next --json --worktree-role dirty-with-justification --runtime-card codex-scripts/pu013-runtime-card-with-codex.json`
+   - Result: blocked as expected; `harness next` surfaced the runtime-card
+     blocker and one next safe action without executing work.
+   - Command: `node --import tsx src/cli.ts runtime-card --json --repo . --issue JSC-363 --evidence codex-scripts/missing-runtime-evidence.json`
+   - Result: fail as expected; missing evidence was not treated as support.
+   - Command: `pnpm vitest run src/lib/runtime/*.test.ts src/commands/runtime-card.test.ts src/commands/next*.test.ts`
+   - Result: pass; 13 files and 199 tests passed.
+   - Command: `pnpm exec tsx src/cli.ts runtime-card --json --repo .`
+   - Result: pass; local runtime-card emitted `runtime-card/v1` with no
+     Codex-runtime projection when no evidence bundle was supplied.
+   - Command: `pnpm exec tsx src/cli.ts next --json --worktree-role dirty-with-justification`
+   - Result: pass; `harness next` returned one advisory next action from local
+     worktree state.
 
 ## Queued Slice
 
-PU-013 runtime cockpit integration proof is queued, not active.
+PU-013 runtime cockpit integration proof is locally proved on this branch.
 
-PU-013 may start only after this current-main tracker refresh validates and
-Jamie confirms the PU-013 intent boundary.
+No production code patch was required because current main already implements
+the PU-013 runtime-card projection and `harness next` advisory consumption
+contract. The remaining PU-013 route work is to commit the proof tracker update,
+open or update the PR lane, run required review/skill gates, merge, pull
+`main`, refresh Linear JSC-363, and then move to the next backlog item.
 
 ## Outstanding Work
 
-- Discuss and start PU-013 with bounded intent, Project Brain inputs, plan/spec/audit
-  matrix, and required review lenses.
+- Commit and route the PU-013 proof tracker update through PR/merge/main
+  pull-back without claiming parent-goal completion.
 - Prove final delivery-truth consumption.
 - Prove review-state, external-state, and root-hygiene closeout surfaces from
   current evidence.
@@ -113,19 +134,20 @@ claim/evidence/blocker records, not narrative diary entries.
 
 Feature implementation remains stopped until all of these are true:
 
-- The current-main tracker refresh validates.
-- Linear JSC-363 receives a compact current-truth update.
-- Jamie confirms the PU-013 intent boundary.
+- PU-013 proof tracker update is committed.
+- The PU-013 PR lane is reviewed, green or explicitly owner-blocked, merged, and
+  pulled back to local `main`.
+- Linear JSC-363 receives a compact current-truth update after merge.
 - `goal.md`, `state.yaml`, `notes/execution-tracker.md`,
   `.harness/active-artifacts.md`, the tracker board, and `receipts.jsonl`
-  validate together.
+  validate together after the merge pull-back.
 
 ## Linear Update Payload
 
 Use this payload for the JSC-363 Linear progress update:
 
 ```md
-Refreshed JSC-363 current-main route truth before discussing PU-013.
+Refreshed JSC-363 current-main route truth and PU-013 local proof.
 
 Current truth:
 - Active route lane: none.
@@ -133,10 +155,11 @@ Current truth:
 - Local main head: 1d0c3baaa76d1de68c633b086a5dcf07472ddbef.
 - Origin main head: 1d0c3baaa76d1de68c633b086a5dcf07472ddbef.
 - Repo-owned CircleCI lanes for PR #369 passed before merge.
-- PU-013 runtime cockpit integration proof is queued for discussion, not active.
+- PU-013 runtime cockpit integration proof is locally proved on branch `codex/JSC-363-post-pr369-goal-state-refresh`.
+- No production code patch was required; current main already projects Codex runtime evidence into `runtime-card` and consumes it narrowly through `harness next`.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
 - CodeRabbit/Codex review-status contexts are not being treated as independent review proof because usage/rate-limit comments were present.
 
 Restart rule:
-No feature work resumes until the compact goal tracker validates and the PU-013 intent boundary is agreed.
+No next slice starts until the PU-013 proof tracker update is committed, reviewed, merged, pulled back to local `main`, Linear JSC-363 is refreshed, and the board/state/receipt validators pass.
 ```
