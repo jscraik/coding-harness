@@ -411,13 +411,13 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness status">Active route: PR #370</div>
+      <div class="source-chip" aria-label="Source freshness status">Active route: none</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>PU-013 proof route</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #369</strong></div>
-      <div class="metric"><span>Current PR</span><strong>PR #370 open</strong></div>
+      <div class="metric"><span>Goal status</span><strong>PU-013 proof merged</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #370</strong></div>
+      <div class="metric"><span>Current PR</span><strong>None active</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Partial, final lanes pending</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
       <div class="metric"><span>Linear tracker</span><strong>Field text unclaimed</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated for the 2026-06-08 PU-013 proof route. PR #369 is merged provenance at main commit <code>1d0c3baaa76d1de68c633b086a5dcf07472ddbef</code>. PR #370 is the active route on branch <code>codex/jsc-363-pu013-runtime-cockpit-proof</code> at head <code>d772aaa0fc158ef996a057111af7df58e7e33bf2</code>. PU-013 runtime cockpit integration proof is locally proved with no production code patch required. PR #370 merge, local main pull-back, Linear field-text currency, delivery-truth consumption, documentation accuracy, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated for the 2026-06-08 PU-013 proof route. PR #370 is merged provenance at main commit <code>83d7b6dab5cda761889d1708a304aa87edc2b9fa</code>. PU-013 runtime cockpit integration proof is merged and pulled back with no production code patch required. Linear JSC-363 has post-merge route-truth comment <code>8ea7f8a4-74f1-458a-aca1-bb072e27864c</code>. Linear field-text currency, delivery-truth consumption, documentation accuracy, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -537,8 +537,8 @@
         status: "done",
         tags: ["PR #369", "current main", "route truth"],
         summary: "Local main and origin/main are synced at PR #369 squash merge 1d0c3baaa76d1de68c633b086a5dcf07472ddbef after the recurring Prek home-cache failure was routed through the worktree cache.",
-        evidence: ["PR #369 -> MERGED at 2026-06-08T13:08:31Z", "Merge commit -> 1d0c3baaa76d1de68c633b086a5dcf07472ddbef", "Active route now -> PR #370", "Repo-owned CircleCI lanes -> pass", "pr-pipeline -> pass", "External Snyk GitHub App -> owner-waived quota lane only"],
-        next: "Use as current-main route provenance. PU-013 proof is now the active tracker lane.",
+        evidence: ["PR #369 -> MERGED at 2026-06-08T13:08:31Z", "Merge commit -> 1d0c3baaa76d1de68c633b086a5dcf07472ddbef", "Superseded active route -> PR #370 merged", "Repo-owned CircleCI lanes -> pass", "pr-pipeline -> pass", "External Snyk GitHub App -> owner-waived quota lane only"],
+        next: "Use as historical route provenance. PU-013 proof is now merged through PR #370.",
         risk: "PR #369 does not prove delivery-truth consumption, Linear field-text currency, Judge/PM readiness, or parent-goal completion."
       },
       {
@@ -559,7 +559,7 @@
         status: "done",
         tags: ["PR #369", "JSC-363", "route truth", "merged"],
         summary: "PR #369 is merged into current main. It encoded the recurring Prek hook-runtime failure as a worktree-cache guardrail so plain hook invocation does not depend on a non-writable home cache.",
-        evidence: ["PR #369 -> MERGED", "Merge commit -> 1d0c3baaa76d1de68c633b086a5dcf07472ddbef", "Local main baseline -> 1d0c3baaa76d1de68c633b086a5dcf07472ddbef", "origin/main baseline -> 1d0c3baaa76d1de68c633b086a5dcf07472ddbef", "Active route now -> PR #370", "ci/circleci lanes -> pass", "pr-pipeline -> pass", "External Snyk GitHub App -> owner-waived quota/status lane only"],
+        evidence: ["PR #369 -> MERGED", "Merge commit -> 1d0c3baaa76d1de68c633b086a5dcf07472ddbef", "Local main baseline -> 1d0c3baaa76d1de68c633b086a5dcf07472ddbef", "origin/main baseline -> 1d0c3baaa76d1de68c633b086a5dcf07472ddbef", "Next active route was PR #370 -> now merged", "ci/circleci lanes -> pass", "pr-pipeline -> pass", "External Snyk GitHub App -> owner-waived quota/status lane only"],
         next: "Use this as current-main route evidence; do not reopen PR #369 unless fresh validation finds a regression.",
         risk: "Treating the route refresh as parent-goal completion would still blend tracker truth with delivery-truth, docs accuracy, Linear field-text, and Judge/PM lanes."
       },
@@ -571,7 +571,7 @@
         tags: ["R391", "CI triage", "pre-push", "guardrail"],
         summary: "CI triage found stale local validation process trees from repeated aggregate checks. The durable fix adds repo-owned validation locks for behavior-tests and test:ci, plus a pre-push lock check so duplicate lanes fail fast with an actionable diagnostic.",
         evidence: ["scripts/with-validation-lock.sh", "scripts/check-validation-locks.sh", "Makefile validation-locks target", "package.json quality:behavior-tests lock wrapper", "package.json test:ci lock wrapper", "src/dev/validation-lock-scripts.test.ts -> pass", "bash scripts/check-validation-locks.sh -> pass", "pnpm run validation:locks -> pass"],
-        next: "Use as historical local guard evidence. PR #370 is the current active route lane.",
+        next: "Use as historical local guard evidence. No PR lane is active after PR #370 merged.",
         risk: "The guard prevents duplicate tracked validation lanes; it does not prove remote CircleCI pass, PU-013 implementation, or parent-goal completion."
       },
       {
@@ -581,8 +581,8 @@
         status: "done",
         tags: ["R404", "R405", "PR #369", "current-main", "tracker refresh"],
         summary: "The PR #369 implementation route is closed. R404 records that local main and origin/main are synced at PR #369, while R405 binds the same refresh to the governed audit sources so freshness validation stays current.",
-        evidence: ["PR #369 -> MERGED at 2026-06-08T13:08:31Z", "Local main baseline -> 1d0c3baaa76d1de68c633b086a5dcf07472ddbef", "origin/main baseline -> 1d0c3baaa76d1de68c633b086a5dcf07472ddbef", "Active route now -> PR #370", "R405 audit_sources_checked -> current main head"],
-        next: "Use as historical route-refresh evidence. PR #370 is now the current active route lane.",
+        evidence: ["PR #369 -> MERGED at 2026-06-08T13:08:31Z", "Local main baseline -> 1d0c3baaa76d1de68c633b086a5dcf07472ddbef", "origin/main baseline -> 1d0c3baaa76d1de68c633b086a5dcf07472ddbef", "Next active route was PR #370 -> now merged", "R405 audit_sources_checked -> current main head"],
+        next: "Use as historical route-refresh evidence. PR #370 is now merged current-main provenance.",
         risk: "The refresh proves route closure and tracker alignment only. It does not prove delivery-truth consumption, Linear field-text currency, or parent-goal completion."
       },
       {
@@ -593,19 +593,19 @@
         tags: ["PU-013", "R406", "runtime-card", "harness next"],
         summary: "PU-013 current-main behavior is locally proved without production code changes. runtime-card projects Codex-runtime receipt refs and stale-state blockers, and harness next consumes the card narrowly as advisory/blocking state.",
         evidence: ["runtime-card --evidence codex-scripts/pu013-codex-runtime-evidence-bundle.json -> pass", "runtime-card codexRuntime.receiptRefs -> validation/review/session/stale refs visible", "runtime-card stale Linear evidence -> lifecycle blocked", "harness next --runtime-card stale card -> runtime_card_blocked", "runtime-card missing evidence path -> fail, not support", "pnpm vitest run src/lib/runtime/*.test.ts src/commands/runtime-card.test.ts src/commands/next*.test.ts -> 13 files, 199 tests passed", "pnpm exec tsx src/cli.ts runtime-card --json --repo . -> pass", "pnpm exec tsx src/cli.ts next --json --worktree-role dirty-with-justification -> pass"],
-        next: "Use as local PU-013 proof evidence inside PR #370. Do not treat local proof as delivery complete until PR #370 is merged and pulled back.",
+        next: "Use as merged PU-013 proof evidence. Select the next bounded backlog item only after the post-merge tracker validates.",
         risk: "Local proof does not equal PR merge readiness, independent review proof, Linear field-text currency, delivery-truth consumption, or parent-goal completion."
       },
       {
         id: "pr370-pu013-proof-route",
         lane: "pr-truth",
-        title: "PR #370: PU-013 proof route",
-        status: "active",
+        title: "PR #370: PU-013 proof route merged",
+        status: "done",
         tags: ["PR #370", "PU-013", "CodeRabbit", "CircleCI"],
-        summary: "PR #370 is the active route for the PU-013 proof tracker update. It carries tracker and receipt evidence for current-main runtime-card and harness next behavior without production code changes or merge-readiness authority.",
-        evidence: ["Head branch -> codex/jsc-363-pu013-runtime-cockpit-proof", "Head SHA -> d772aaa0fc158ef996a057111af7df58e7e33bf2", "Local PU-013 proof -> R406/R407", "CodeRabbit comments -> tracker route-state repair required", "CircleCI orb-pinning/pr-pipeline -> pending at latest refresh", "External Snyk GitHub App -> owner-waived quota/status lane only"],
-        next: "Resolve PR #370 tracker comments, verify CI/review state from live GitHub and CircleCI, merge when allowed, pull local main, refresh Linear JSC-363, then revalidate the tracker.",
-        risk: "PR #370 can prove the PU-013 proof route only after review/CI/merge/pull-back. It still does not prove delivery-truth consumption, Linear field-text currency, Judge/PM readiness, or parent-goal completion."
+        summary: "PR #370 merged the PU-013 proof tracker update. It carries tracker and receipt evidence for current-main runtime-card and harness next behavior without production code changes or merge-readiness authority.",
+        evidence: ["Submitted head -> 31ac06c0094bc611835a862d55ee89db9d29cac7", "Merge commit -> 83d7b6dab5cda761889d1708a304aa87edc2b9fa", "Local main and origin/main -> 83d7b6dab5cda761889d1708a304aa87edc2b9fa", "Local PU-013 proof -> R406/R407", "Route repair -> R408", "CircleCI orb-pinning/pr-pipeline -> success", "CodeRabbit status -> success", "Unresolved review threads -> none", "Linear comment -> 8ea7f8a4-74f1-458a-aca1-bb072e27864c", "External Snyk GitHub App -> owner-waived quota/status lane only"],
+        next: "Validate the post-PR #370 tracker and choose one bounded next backlog item.",
+        risk: "PR #370 proves the PU-013 proof route only. It still does not prove delivery-truth consumption, Linear field-text currency, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "pr321",
