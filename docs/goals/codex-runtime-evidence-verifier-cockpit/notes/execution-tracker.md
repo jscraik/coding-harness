@@ -22,19 +22,19 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 
 ## Current Control Surface
 
-| Field               | Current Truth                                                                          |
-| ------------------- | -------------------------------------------------------------------------------------- |
-| Parent issue        | JSC-363                                                                                |
-| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`                           |
-| Current branch      | `codex/jsc-363-post-pr374-tracker-refresh`                                            |
-| Local head          | `b404a12087a3aadc7212934ee19d22a39928ee91`                                             |
-| Remote branch head  | `6653589ab5d5049fc58dd111a31964a2905d2fc9`                                             |
-| Main baseline       | `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`                                             |
-| Active route count  | 1                                                                                      |
-| Active route        | PR #375 tracker review-fix lane                                                        |
-| Last closed route   | PR #374 merged                                                                         |
-| Current slice       | Backlog reconciliation                                                                 |
-| Feature work status | Stopped until PR #375 is pushed, refreshed, merged, and pulled back                    |
+| Field               | Current Truth                                                       |
+| ------------------- | ------------------------------------------------------------------- |
+| Parent issue        | JSC-363                                                             |
+| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`        |
+| Current branch      | `codex/jsc-363-post-pr374-tracker-refresh`                          |
+| Local head          | `b404a12087a3aadc7212934ee19d22a39928ee91`                          |
+| Remote branch head  | `6653589ab5d5049fc58dd111a31964a2905d2fc9`                          |
+| Main baseline       | `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`                          |
+| Active route count  | 1                                                                   |
+| Active route        | PR #375 tracker review-fix lane                                     |
+| Last closed route   | PR #374 merged                                                      |
+| Current slice       | Backlog reconciliation                                              |
+| Feature work status | Stopped until PR #375 is pushed, refreshed, merged, and pulled back |
 
 ## Active Route
 
