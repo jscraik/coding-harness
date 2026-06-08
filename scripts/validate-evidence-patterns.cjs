@@ -18,6 +18,22 @@ const ADOPTED_STATUSES = new Set([
 	"enforcement_backed",
 	"implementation_backed",
 ]);
+const CODE_RABBIT_SOURCE_KIND = "coderabbit_learning_contract";
+const CODE_RABBIT_VALID_STATUSES = new Set([
+	"enforcement_backed",
+	"implementation_backed",
+]);
+const CODE_RABBIT_VALID_ENFORCEMENT_TYPES = new Set([
+	"ast_grep_rule",
+	"docs_gate",
+	"generated_artifact_guard",
+	"hook_guard",
+	"package_script",
+	"pr_template_gate",
+	"schema_contract",
+	"validation_gate",
+]);
+const EXTERNAL_SOURCE_PREFIX = "external:";
 const VALID_STATUSES = new Set([
 	"documented_only",
 	"planning_only",
@@ -151,6 +167,10 @@ function isAdoptedPattern(pattern) {
 	return ADOPTED_STATUSES.has(pattern.status) || pattern.status === "adopted";
 }
 
+function isExternalSource(source) {
+	return source.startsWith(EXTERNAL_SOURCE_PREFIX);
+}
+
 function normalizePatternStatus(status) {
 	if (status === "adopted") return "implementation_backed";
 	if (status === "rejected") return "deferred";
@@ -204,6 +224,125 @@ function validateTargetSurface(pattern, target, errors) {
 	}
 }
 
+function validateStringArray(pattern, propertyName, value, errors) {
+	if (!Array.isArray(value) || value.length === 0) {
+		errors.push({
+			code: `${propertyName}_invalid`,
+			patternId: pattern.id,
+			message: `pattern.${propertyName} must be a non-empty array`,
+		});
+		return;
+	}
+	for (const [index, entry] of value.entries()) {
+		if (!hasText(entry)) {
+			errors.push({
+				code: `${propertyName}_entry_invalid`,
+				index,
+				patternId: pattern.id,
+				message: `pattern.${propertyName} entries must be non-empty strings`,
+			});
+		}
+	}
+}
+
+function validateCodeRabbitRule(pattern, rule, index, errors) {
+	if (!isRecord(rule)) {
+		errors.push({
+			code: "coderabbit_rule_not_object",
+			index,
+			patternId: pattern.id,
+			message: "CodeRabbit enforcement rules must be objects",
+		});
+		return;
+	}
+	if (!hasText(rule.id)) {
+		errors.push({
+			code: "coderabbit_rule_id_missing",
+			index,
+			patternId: pattern.id,
+			message: "CodeRabbit enforcement rules must declare id",
+		});
+	}
+	if (!hasText(rule.findingClass)) {
+		errors.push({
+			code: "coderabbit_rule_finding_class_missing",
+			index,
+			patternId: pattern.id,
+			message: "CodeRabbit enforcement rules must declare findingClass",
+		});
+	}
+	if (!CODE_RABBIT_VALID_ENFORCEMENT_TYPES.has(rule.enforcementType)) {
+		errors.push({
+			code: "coderabbit_rule_enforcement_type_invalid",
+			index,
+			patternId: pattern.id,
+			message:
+				"CodeRabbit enforcementType must be ast_grep_rule, docs_gate, generated_artifact_guard, hook_guard, package_script, pr_template_gate, schema_contract, or validation_gate",
+		});
+	}
+	validateStringArray(
+		pattern,
+		`enforcementRules[${index}].targetSurfaces`,
+		rule.targetSurfaces,
+		errors,
+	);
+	validateStringArray(
+		pattern,
+		`enforcementRules[${index}].validationCommands`,
+		rule.validationCommands,
+		errors,
+	);
+	if (Array.isArray(rule.targetSurfaces)) {
+		for (const target of rule.targetSurfaces) {
+			validateTargetSurface(pattern, target, errors);
+		}
+	}
+}
+
+function validateCodeRabbitLearningContract(pattern, errors) {
+	if (pattern.sourceKind !== CODE_RABBIT_SOURCE_KIND) {
+		return;
+	}
+	if (!CODE_RABBIT_VALID_STATUSES.has(pattern.status)) {
+		errors.push({
+			code: "coderabbit_learning_not_enforcement_backed",
+			patternId: pattern.id,
+			message:
+				"CodeRabbit learning contracts must be enforcement_backed or implementation_backed",
+		});
+	}
+	if (pattern.learningMode !== "deterministic_enforcement") {
+		errors.push({
+			code: "coderabbit_learning_mode_invalid",
+			patternId: pattern.id,
+			message:
+				"CodeRabbit learning contracts must set learningMode to deterministic_enforcement",
+		});
+	}
+	if (pattern.proseOnlyAllowed !== false) {
+		errors.push({
+			code: "coderabbit_prose_only_not_allowed",
+			patternId: pattern.id,
+			message:
+				"CodeRabbit learning contracts must set proseOnlyAllowed to false",
+		});
+	}
+	if (
+		!Array.isArray(pattern.enforcementRules) ||
+		pattern.enforcementRules.length === 0
+	) {
+		errors.push({
+			code: "coderabbit_enforcement_rules_missing",
+			patternId: pattern.id,
+			message: "CodeRabbit learning contracts must include enforcementRules",
+		});
+		return;
+	}
+	for (const [index, rule] of pattern.enforcementRules.entries()) {
+		validateCodeRabbitRule(pattern, rule, index, errors);
+	}
+}
+
 function validatePattern(
 	pattern,
 	index,
@@ -246,24 +385,36 @@ function validatePattern(
 		});
 	} else {
 		const sourcePath = toPosixPath(pattern.source);
-		seenSources.add(sourcePath);
-		const relativeDeepDir = relative(deepDir);
-		const expectedPrefix = relativeDeepDir === "." ? "" : `${relativeDeepDir}/`;
-		if (expectedPrefix && !sourcePath.startsWith(expectedPrefix)) {
-			errors.push({
-				code: "source_not_deep_evidence",
-				patternId: pattern.id,
-				path: sourcePath,
-				message: `pattern.source must point under ${relativeDeepDir}`,
-			});
-		}
-		if (!pathExists(sourcePath)) {
-			errors.push({
-				code: "source_missing_file",
-				patternId: pattern.id,
-				path: sourcePath,
-				message: "pattern.source does not exist",
-			});
+		if (isExternalSource(sourcePath)) {
+			if (pattern.sourceKind !== CODE_RABBIT_SOURCE_KIND) {
+				errors.push({
+					code: "external_source_kind_missing",
+					patternId: pattern.id,
+					path: sourcePath,
+					message: "external sources must declare a recognized sourceKind",
+				});
+			}
+		} else {
+			seenSources.add(sourcePath);
+			const relativeDeepDir = relative(deepDir);
+			const expectedPrefix =
+				relativeDeepDir === "." ? "" : `${relativeDeepDir}/`;
+			if (expectedPrefix && !sourcePath.startsWith(expectedPrefix)) {
+				errors.push({
+					code: "source_not_deep_evidence",
+					patternId: pattern.id,
+					path: sourcePath,
+					message: `pattern.source must point under ${relativeDeepDir}`,
+				});
+			}
+			if (!pathExists(sourcePath)) {
+				errors.push({
+					code: "source_missing_file",
+					patternId: pattern.id,
+					path: sourcePath,
+					message: "pattern.source does not exist",
+				});
+			}
 		}
 	}
 
@@ -323,6 +474,7 @@ function validatePattern(
 	for (const target of pattern.targetSurfaces) {
 		validateTargetSurface(pattern, target, errors);
 	}
+	validateCodeRabbitLearningContract(pattern, errors);
 }
 
 function validateManifest(manifest, deepDir, strictAdopted) {

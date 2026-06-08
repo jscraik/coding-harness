@@ -27,34 +27,36 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Parent issue | JSC-363 |
 | Canonical goal | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` |
 | Current branch | `main` |
-| Local head | `83d7b6dab5cda761889d1708a304aa87edc2b9fa` |
-| Remote main head | `83d7b6dab5cda761889d1708a304aa87edc2b9fa` |
-| Main baseline | `83d7b6dab5cda761889d1708a304aa87edc2b9fa` |
+| Local head | `528b9e1d04b7d7a555e05b505ac2ca45c2cc4856` |
+| Remote main head | `528b9e1d04b7d7a555e05b505ac2ca45c2cc4856` |
+| Main baseline | `528b9e1d04b7d7a555e05b505ac2ca45c2cc4856` |
 | Active route count | 0 |
 | Active route | none |
-| Last closed route | PR #370 merged |
+| Last closed route | PR #371 merged |
 | Current slice | PU-013 runtime cockpit integration proof |
 | Feature work status | PU-013 proof route merged and pulled back; next slice not selected |
 
 ## Active Route
 
-No PR lane is active after PR #370 merged into current `main` as squash commit
-`83d7b6dab5cda761889d1708a304aa87edc2b9fa`. PR #370 was a proof-tracker PR
-for PU-013; it does not claim production code changes, Linear field-text
-currency, delivery-truth completion, Judge/PM readiness, or parent-goal
-completion.
+No PR lane is active after PR #371 merged into current `main` as squash commit
+`528b9e1d04b7d7a555e05b505ac2ca45c2cc4856`. PR #371 was a post-PR370
+tracker-refresh PR; it does not claim production code changes, Linear
+field-text currency, delivery-truth completion, Judge/PM readiness, or
+parent-goal completion.
 
 Current evidence:
 
-- Live GitHub reports PR #370 merged at 2026-06-08T14:50:57Z from submitted
-  head `31ac06c0094bc611835a862d55ee89db9d29cac7`.
-- PR #370 repo-owned CircleCI lanes, aggregate `pr-pipeline`, CodeRabbit
+- Live GitHub reports PR #371 merged at 2026-06-08T15:39:17Z from submitted
+  head `a77a7f0ec3ccf2950c75a7b10b56067e32648e02`.
+- PR #371 repo-owned CircleCI lanes, aggregate `pr-pipeline`, CodeRabbit
   status, and unresolved-review-thread refresh were green or empty before
   merge.
+- PR #370 merged PU-013 proof-route provenance at
+  `83d7b6dab5cda761889d1708a304aa87edc2b9fa`.
 - PR #369 merged into `main` at
   `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`.
 - Local `main` and `origin/main` both point at
-  `83d7b6dab5cda761889d1708a304aa87edc2b9fa`.
+  `528b9e1d04b7d7a555e05b505ac2ca45c2cc4856`.
 - PR #369 repo-owned CircleCI lanes passed, including `pr-template`,
   `linear-gate`, `risk-policy-gate`, `check`, `test`, `lint`,
   `typecheck`, `docs-gate`, and aggregate `pr-pipeline`.
@@ -62,7 +64,7 @@ Current evidence:
   external lane only; it is not external Snyk success and not a security waiver
   for repo-owned gates.
 - Linear JSC-363 has post-merge route-truth comment
-  `8ea7f8a4-74f1-458a-aca1-bb072e27864c`; its title still carries older
+  `34a50024-24be-4853-af6e-3219cbc0d845`; its title still carries older
   Phase 1 wording, so field-text currency remains unclaimed.
 
 Completed route-refresh action:
@@ -110,7 +112,8 @@ Completed route-refresh action:
 ## Active Slice
 
 PU-013 runtime cockpit integration proof is merged and pulled back to local
-`main`.
+`main`; the post-PR370 tracker refresh is also merged and pulled back through
+PR #371.
 
 No production code patch was required because current main already implements
 the PU-013 runtime-card projection and `harness next` advisory consumption
@@ -131,7 +134,7 @@ select exactly one next bounded backlog item.
 
 ## History Boundary
 
-Merged PR lanes through PR #370 remain provenance. They are not active route
+Merged PR lanes through PR #371 remain provenance. They are not active route
 lanes and must not be expanded in the active board unless a fresh current-main
 regression reopens them.
 
@@ -142,10 +145,10 @@ claim/evidence/blocker records, not narrative diary entries.
 
 Feature implementation remains stopped until all of these are true:
 
-- PU-013 proof tracker update is merged through PR #370 and pulled back to local
-  `main`.
+- PU-013 proof tracker update is merged through PR #370 and the post-PR370
+  tracker refresh is merged through PR #371, both pulled back to local `main`.
 - Linear JSC-363 has compact post-merge route-truth comment
-  `8ea7f8a4-74f1-458a-aca1-bb072e27864c`.
+  `34a50024-24be-4853-af6e-3219cbc0d845`.
 - `goal.md`, `state.yaml`, `notes/execution-tracker.md`,
   `.harness/active-artifacts.md`, the tracker board, and `receipts.jsonl`
   validate together after the merge pull-back.
@@ -159,16 +162,16 @@ Refreshed JSC-363 current-main route truth and PU-013 merged proof.
 
 Current truth:
 - Active route lane: none.
-- Latest merged route: PR #370.
-- Local main head: 83d7b6dab5cda761889d1708a304aa87edc2b9fa.
-- Origin main head: 83d7b6dab5cda761889d1708a304aa87edc2b9fa.
-- Repo-owned CircleCI lanes for PR #370 passed before merge.
+- Latest merged route: PR #371.
+- Local main head: 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856.
+- Origin main head: 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856.
+- Repo-owned CircleCI lanes for PR #371 passed before merge.
 - PU-013 runtime cockpit integration proof is merged and pulled back to local `main`.
-- PR #370 remains separate from runtime, CI, review, Linear, and delivery-truth claims.
+- PR #371 remains separate from runtime, CI, review, Linear, and delivery-truth claims.
 - No production code patch was required; current main already projects Codex runtime evidence into `runtime-card` and consumes it narrowly through `harness next`.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
-- Linear JSC-363 was refreshed with post-merge route-truth comment `8ea7f8a4-74f1-458a-aca1-bb072e27864c`; field-text currency remains unclaimed because the issue title still says Phase 1.
+- Linear JSC-363 was refreshed with post-merge route-truth comment `34a50024-24be-4853-af6e-3219cbc0d845`; field-text currency remains unclaimed because the issue title still says Phase 1.
 
 Restart rule:
-No next slice starts until the board/state/receipt validators pass on the post-PR #370 current-main tracker and one bounded backlog item is selected.
+No next slice starts until the board/state/receipt validators pass on the post-PR #371 current-main tracker and one bounded backlog item is selected.
 ```

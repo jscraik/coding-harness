@@ -204,6 +204,151 @@
 			],
 			"validationCommand": "node scripts/validate-system-prompt-gap-adoption.cjs --json",
 			"dispositionReason": "Admitted into the Codex Runtime Evidence Verifier Cockpit goal as SPG-001 through SPG-012; future goal-board receipts must keep the adopted system-prompt operational findings aligned with the plan, spec, receipts, and runtime evidence contracts without copying private prompt text, secrets, or runtime internals."
+		},
+		{
+			"id": "2026-06-08-coderabbit-code-fixes-learning-contract",
+			"source": "external:code-fixes/coderabbit-learning-csv/2026-06-08",
+			"sourceKind": "coderabbit_learning_contract",
+			"status": "enforcement_backed",
+			"owner": "codex",
+			"learningMode": "deterministic_enforcement",
+			"proseOnlyAllowed": false,
+			"targetSurfaces": [
+				".harness/research/evidence-patterns.json",
+				"scripts/validate-evidence-patterns.cjs",
+				"docs/agents/02-tooling-policy.md",
+				"docs/agents/04-validation.md",
+				"docs/agents/06-security-and-governance.md"
+			],
+			"validationCommand": "node scripts/validate-evidence-patterns.cjs --json",
+			"enforcementRules": [
+				{
+					"id": "cr-wrapper-validation-contract",
+					"findingClass": "repo wrappers are proof surfaces, not interchangeable command lists",
+					"enforcementType": "validation_gate",
+					"targetSurfaces": [
+						"scripts/validate-codestyle.sh",
+						"scripts/verify-work.sh",
+						"scripts/codex-preflight.sh",
+						"docs/agents/04-validation.md"
+					],
+					"validationCommands": [
+						"pnpm research:evidence:validate",
+						"bash scripts/validate-codestyle.sh --fast"
+					]
+				},
+				{
+					"id": "cr-doc-governance-sync",
+					"findingClass": "tooling and runtime contract changes must synchronize operator docs",
+					"enforcementType": "docs_gate",
+					"targetSurfaces": [
+						"docs/agents/02-tooling-policy.md",
+						"docs/agents/04-validation.md",
+						"docs/agents/06-security-and-governance.md",
+						"docs/agents/07b-agent-governance.md"
+					],
+					"validationCommands": [
+						"bash scripts/run-harness-gate.sh docs-gate --mode required --json",
+						"pnpm research:evidence:validate"
+					]
+				},
+				{
+					"id": "cr-harness-contract-surface",
+					"findingClass": "tooling policy belongs in harness.contract.json when it needs rollout enforcement",
+					"enforcementType": "schema_contract",
+					"targetSurfaces": [
+						"harness.contract.json",
+						"docs/agents/02-tooling-policy.md",
+						"scripts/check-harness-audit-tracking.mjs"
+					],
+					"validationCommands": [
+						"pnpm harness:audit-tracking",
+						"pnpm research:evidence:validate"
+					]
+				},
+				{
+					"id": "cr-repo-local-cli-first",
+					"findingClass": "generated readiness should prefer repo-local CLI paths before global binaries",
+					"enforcementType": "generated_artifact_guard",
+					"targetSurfaces": [
+						"scripts/harness-cli.sh",
+						"scripts/check-environment.sh",
+						"docs/agents/02-tooling-policy.md"
+					],
+					"validationCommands": [
+						"bash scripts/run-harness-setup-checks.sh",
+						"pnpm research:evidence:validate"
+					]
+				},
+				{
+					"id": "cr-generated-source-not-output",
+					"findingClass": "generated artifacts must be fixed at the generator or template source",
+					"enforcementType": "generated_artifact_guard",
+					"targetSurfaces": [
+						"scripts/sync-codex-preflight.cjs",
+						"src/templates/codex-preflight.sh",
+						"scripts/codex-preflight.sh",
+						"scripts/check-diagram-freshness.sh"
+					],
+					"validationCommands": [
+						"pnpm codex-preflight:check",
+						"pnpm research:evidence:validate"
+					]
+				},
+				{
+					"id": "cr-security-supply-chain-defaults",
+					"findingClass": "scaffolded security posture is part of runtime contract",
+					"enforcementType": "validation_gate",
+					"targetSurfaces": [
+						"scripts/check-semgrep-changed.sh",
+						"scripts/check-staged-secrets.sh",
+						"docs/agents/06-security-and-governance.md",
+						".npmrc"
+					],
+					"validationCommands": ["pnpm safety:local", "pnpm audit"]
+				},
+				{
+					"id": "cr-hooks-worktree-sandbox",
+					"findingClass": "git hooks and worktree bootstrap must be sandbox-aware",
+					"enforcementType": "hook_guard",
+					"targetSurfaces": [
+						"scripts/setup-git-hooks.js",
+						"scripts/run-prek.sh",
+						"scripts/prepare-worktree.sh",
+						"scripts/validate-codestyle.sh"
+					],
+					"validationCommands": [
+						"pnpm prek:validate-config",
+						"pnpm quality:git-env-sanitizer"
+					]
+				},
+				{
+					"id": "cr-relative-esm-imports",
+					"findingClass": "relative ESM imports must include .js extensions",
+					"enforcementType": "ast_grep_rule",
+					"targetSurfaces": [
+						"rules/require-relative-import-js-extension.yml",
+						"rules/require-relative-import-js-extension.javascript.yml",
+						"docs/agents/02-tooling-policy.md"
+					],
+					"validationCommands": ["pnpm lint", "pnpm research:evidence:validate"]
+				},
+				{
+					"id": "cr-pr-proof-packet",
+					"findingClass": "PR bodies are traceable proof packets, not summaries",
+					"enforcementType": "pr_template_gate",
+					"targetSurfaces": [
+						".github/PULL_REQUEST_TEMPLATE.md",
+						"docs/agents/04-validation.md",
+						"src/lib/pr-template-validator.ts"
+					],
+					"validationCommands": [
+						"pnpm test:related",
+						"pnpm research:evidence:validate"
+					]
+				}
+			],
+			"dispositionReason": "Admitted from the June 8 CodeRabbit learning export as deterministic learning only: future CodeRabbit-derived learning must be represented as enforcementRules with target surfaces and validation commands, not as prose-only memory."
 		}
 	]
 }

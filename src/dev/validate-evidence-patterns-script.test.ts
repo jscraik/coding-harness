@@ -12,8 +12,18 @@ const SCRIPT_PATH = fileURLToPath(
 const roots: string[] = [];
 
 type PatternFixture = {
+	enforcementRules?: {
+		enforcementType?: string;
+		findingClass?: string;
+		id?: string;
+		targetSurfaces?: string[];
+		validationCommands?: string[];
+	}[];
 	id: string;
+	learningMode?: string;
+	proseOnlyAllowed?: boolean;
 	source?: string;
+	sourceKind?: string;
 	status: string;
 	targetSurfaces: string[];
 	validationCommand?: string;
@@ -317,6 +327,71 @@ describe("validate-evidence-patterns script", () => {
 		expect(report.status).toBe("pass");
 		expect(report.errors).toEqual([]);
 		expect(report.strictAdopted).toBe(false);
+	});
+
+	it("accepts CodeRabbit learning only as a deterministic enforcement contract", () => {
+		const root = makeRoot();
+		writeManifest(root, {
+			enforced: {
+				enforcementRules: [
+					{
+						enforcementType: "validation_gate",
+						findingClass:
+							"repo wrappers are proof surfaces, not interchangeable command lists",
+						id: "cr-wrapper-validation-contract",
+						targetSurfaces: ["scripts/enforce.sh"],
+						validationCommands: [
+							"node scripts/validate-evidence-patterns.cjs --json",
+						],
+					},
+				],
+				learningMode: "deterministic_enforcement",
+				proseOnlyAllowed: false,
+				source: "external:code-fixes/coderabbit-learning-csv/2026-06-08",
+				sourceKind: "coderabbit_learning_contract",
+			},
+		});
+
+		const result = runValidator(root);
+		const report = parseReport(result);
+
+		expect(result.status).toBe(0);
+		expect(report.status).toBe("pass");
+		expect(report.errors).toEqual([]);
+	});
+
+	it("rejects prose-only CodeRabbit learning contracts", () => {
+		const root = makeRoot();
+		writeManifest(root, {
+			enforced: {
+				learningMode: "prose_summary",
+				proseOnlyAllowed: true,
+				source: "external:code-fixes/coderabbit-learning-csv/2026-06-08",
+				sourceKind: "coderabbit_learning_contract",
+			},
+		});
+
+		const result = runValidator(root);
+		const report = parseReport(result);
+
+		expect(result.status).toBe(1);
+		expect(report.status).toBe("fail");
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "coderabbit_learning_mode_invalid",
+					patternId: "enforced",
+				}),
+				expect.objectContaining({
+					code: "coderabbit_prose_only_not_allowed",
+					patternId: "enforced",
+				}),
+				expect.objectContaining({
+					code: "coderabbit_enforcement_rules_missing",
+					patternId: "enforced",
+				}),
+			]),
+		);
 	});
 
 	it("resolves manifest and deep-dir values relative to the configured root", () => {
