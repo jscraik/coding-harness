@@ -33,20 +33,20 @@ thin_execution_tracker:
     kind: "none"
     pr: null
     branch: null
-    local_head_sha: "528b9e1d04b7d7a555e05b505ac2ca45c2cc4856"
-    remote_head_sha: "528b9e1d04b7d7a555e05b505ac2ca45c2cc4856"
-    base_sha: "528b9e1d04b7d7a555e05b505ac2ca45c2cc4856"
-    status: "route_closed_pr371_merged_current_main_synced"
+    local_head_sha: "3d91248269736b36a8e3e203683de9310d107d14"
+    remote_head_sha: "3d91248269736b36a8e3e203683de9310d107d14"
+    base_sha: "3d91248269736b36a8e3e203683de9310d107d14"
+    status: "route_closed_pr372_merged_current_main_synced"
     blocker: null
-    last_merged_pr: 371
-    last_merged_sha: "528b9e1d04b7d7a555e05b505ac2ca45c2cc4856"
+    last_merged_pr: 372
+    last_merged_sha: "3d91248269736b36a8e3e203683de9310d107d14"
     open_pr_count: 0
     open_prs: []
   queued_slice:
     lifecycle_unit: "next"
     name: "select next bounded backlog slice"
-    status: "not_started_post_pr371_tracker_validated"
-    evidence_receipt: "R410"
+    status: "not_started_post_pr372_tracker_validated"
+    evidence_receipt: "R411"
   resume_gate:
     - "Choose one next bounded backlog slice before opening a new PR."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
@@ -128,8 +128,8 @@ completion_contract:
     exception_rule: "Only Jamie can authorize a stacked or parallel implementation exception; the exception must name the dependent slice, branch/worktree owner, allowed files, stop condition, and receipt id before any code work begins."
 current_slice_gate:
   lifecycle_unit: "PU-013"
-  status: "runtime_cockpit_projection_proved_pr371_tracker_refresh_merged_current_main_pulled"
-  reason: "Current-main runtime-card and harness next satisfy the narrow PU-013 projection contract. Local command probes proved Codex-runtime receipt refs, stale-state blockers, missing evidence failure, and harness next advisory blocking. PR #370 merged the proof tracker route, PR #371 merged the post-PR370 tracker refresh, local main was pulled to 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856, and Linear JSC-363 was refreshed by comment. No production code patch was required. Delivery-truth consumption, Linear field-text currency, Judge/PM readiness, and parent completion remain unclaimed."
+  status: "runtime_cockpit_projection_proved_pr372_tracker_refresh_merged_current_main_pulled"
+  reason: "Current-main runtime-card and harness next satisfy the narrow PU-013 projection contract. Local command probes proved Codex-runtime receipt refs, stale-state blockers, missing evidence failure, and harness next advisory blocking. PR #370 merged the proof tracker route, PR #371 merged the post-PR370 tracker refresh, PR #372 merged the post-PR371 tracker refresh plus narrow CodeRabbit learning-contract validator support, and local main was pulled to 3d91248269736b36a8e3e203683de9310d107d14. Linear JSC-363 was last refreshed before PR #372 by comment, so Linear field-text currency remains unclaimed. No production code patch was required. Delivery-truth consumption, Judge/PM readiness, and parent completion remain unclaimed."
   completed_before_local_validation_claim:
     - "Created and tracked the PR #324 supersession intent artifact before route-state edits."
     - "Fetched current remote refs and verified PR #327 and PR #328 are the current clean JSC-363 stack."

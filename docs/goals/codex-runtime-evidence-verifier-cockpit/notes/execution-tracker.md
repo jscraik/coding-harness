@@ -27,25 +27,31 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Parent issue | JSC-363 |
 | Canonical goal | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` |
 | Current branch | `main` |
-| Local head | `528b9e1d04b7d7a555e05b505ac2ca45c2cc4856` |
-| Remote main head | `528b9e1d04b7d7a555e05b505ac2ca45c2cc4856` |
-| Main baseline | `528b9e1d04b7d7a555e05b505ac2ca45c2cc4856` |
+| Local head | `3d91248269736b36a8e3e203683de9310d107d14` |
+| Remote main head | `3d91248269736b36a8e3e203683de9310d107d14` |
+| Main baseline | `3d91248269736b36a8e3e203683de9310d107d14` |
 | Active route count | 0 |
 | Active route | none |
-| Last closed route | PR #371 merged |
+| Last closed route | PR #372 merged |
 | Current slice | PU-013 runtime cockpit integration proof |
 | Feature work status | PU-013 proof route merged and pulled back; next slice not selected |
 
 ## Active Route
 
-No PR lane is active after PR #371 merged into current `main` as squash commit
-`528b9e1d04b7d7a555e05b505ac2ca45c2cc4856`. PR #371 was a post-PR370
-tracker-refresh PR; it does not claim production code changes, Linear
-field-text currency, delivery-truth completion, Judge/PM readiness, or
-parent-goal completion.
+No PR lane is active after PR #372 merged into current `main` as squash commit
+`3d91248269736b36a8e3e203683de9310d107d14`. PR #372 was a post-PR371
+tracker-refresh PR plus narrow CodeRabbit learning-contract validator support;
+it does not claim Linear field-text currency, delivery-truth completion,
+Judge/PM readiness, or parent-goal completion.
 
 Current evidence:
 
+- Live GitHub reports PR #372 merged at 2026-06-08T16:21:19Z from submitted
+  head `ae0975afbde9acbf0fd1a59f30476fff9a044886` as merge commit
+  `3d91248269736b36a8e3e203683de9310d107d14`.
+- PR #372 repo-owned CircleCI lanes, aggregate `pr-pipeline`, CodeRabbit
+  status, live PR body gate, and unresolved-review-thread refresh were green or
+  empty before merge.
 - Live GitHub reports PR #371 merged at 2026-06-08T15:39:17Z from submitted
   head `a77a7f0ec3ccf2950c75a7b10b56067e32648e02`.
 - PR #371 repo-owned CircleCI lanes, aggregate `pr-pipeline`, CodeRabbit
@@ -56,14 +62,14 @@ Current evidence:
 - PR #369 merged into `main` at
   `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`.
 - Local `main` and `origin/main` both point at
-  `528b9e1d04b7d7a555e05b505ac2ca45c2cc4856`.
+  `3d91248269736b36a8e3e203683de9310d107d14`.
 - PR #369 repo-owned CircleCI lanes passed, including `pr-template`,
   `linear-gate`, `risk-policy-gate`, `check`, `test`, `lint`,
   `typecheck`, `docs-gate`, and aggregate `pr-pipeline`.
 - The external Snyk GitHub App quota/status lane remains owner-waived for that
   external lane only; it is not external Snyk success and not a security waiver
   for repo-owned gates.
-- Linear JSC-363 has post-merge route-truth comment
+- Linear JSC-363 has pre-PR372 post-merge route-truth comment
   `34a50024-24be-4853-af6e-3219cbc0d845`; its title still carries older
   Phase 1 wording, so field-text currency remains unclaimed.
 
@@ -112,8 +118,8 @@ Completed route-refresh action:
 ## Active Slice
 
 PU-013 runtime cockpit integration proof is merged and pulled back to local
-`main`; the post-PR370 tracker refresh is also merged and pulled back through
-PR #371.
+`main`; the post-PR370 and post-PR371 tracker refreshes are also merged and
+pulled back through PR #371 and PR #372.
 
 No production code patch was required because current main already implements
 the PU-013 runtime-card projection and `harness next` advisory consumption

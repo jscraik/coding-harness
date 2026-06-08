@@ -43,20 +43,28 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-08 post-PR371 route refresh after PR #371
-merged the post-PR370 tracker repair into `main`. PR #366, PR #367, PR #369,
-PR #370, and PR #371 are historical route provenance. PR #371 is merged into
-`main` as squash merge commit
-`528b9e1d04b7d7a555e05b505ac2ca45c2cc4856`.
+Last updated during the 2026-06-08 post-PR372 route refresh after PR #372
+merged the post-PR371 tracker repair and CodeRabbit learning-contract validator
+support into `main`. PR #366, PR #367, PR #369, PR #370, PR #371, and
+PR #372 are historical route provenance. PR #372 is merged into `main` as
+squash merge commit `3d91248269736b36a8e3e203683de9310d107d14`.
 
 Current live route truth:
 
-- Local `main` head is `528b9e1d04b7d7a555e05b505ac2ca45c2cc4856`.
-- `origin/main` head is `528b9e1d04b7d7a555e05b505ac2ca45c2cc4856`.
+- Local `main` head is `3d91248269736b36a8e3e203683de9310d107d14`.
+- `origin/main` head is `3d91248269736b36a8e3e203683de9310d107d14`.
+- Live GitHub has PR #372 merged from submitted head
+  `ae0975afbde9acbf0fd1a59f30476fff9a044886`.
 - Live GitHub has PR #371 merged from submitted head
   `a77a7f0ec3ccf2950c75a7b10b56067e32648e02`.
+- PR #372 repo-owned CircleCI lanes, aggregate `pr-pipeline`, CodeRabbit
+  status, live PR body gate, and unresolved-review-thread refresh were green or
+  empty before merge; the GitHub merge used normal GraphQL merge authority, not
+  an admin or force bypass.
 - PR #371 repo-owned CircleCI lanes, `pr-pipeline`, CodeRabbit status, and
   unresolved-review-thread refresh were green or empty before merge.
+- PR #372 adds narrow validator support for deterministic CodeRabbit learning
+  contracts and records the post-PR371 route truth refresh.
 - PR #370 is merged PU-013 proof-route provenance at
   `83d7b6dab5cda761889d1708a304aa87edc2b9fa`.
 - PR #369 is merged historical provenance at
@@ -69,9 +77,10 @@ Current live route truth:
   `main`; no production code patch was required because current main already
   projects Codex runtime evidence into `runtime-card` and consumes it narrowly
   through `harness next`.
-- Linear JSC-363 was refreshed with comment
-  `34a50024-24be-4853-af6e-3219cbc0d845`, while the issue title still contains
-  older Phase 1 wording. Field-text currency remains unclaimed.
+- Linear JSC-363 was last refreshed with comment
+  `34a50024-24be-4853-af6e-3219cbc0d845` before PR #372 merged, while the
+  issue title still contains older Phase 1 wording. Field-text currency remains
+  unclaimed until a fresh Linear update or owner decision records otherwise.
 
 ## Thin Execution Tracker
 
@@ -115,13 +124,13 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: no active PR lane after PR #371 merged and local `main`
-  fast-forwarded to `528b9e1d04b7d7a555e05b505ac2ca45c2cc4856`.
-- Provenance: See `receipts.jsonl` for merged PR #343 through PR #371 route history.
+- Current route: no active PR lane after PR #372 merged and local `main`
+  fast-forwarded to `3d91248269736b36a8e3e203683de9310d107d14`.
+- Provenance: See `receipts.jsonl` for merged PR #343 through PR #372 route history.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #371 merged at `528b9e1d04b7d7a555e05b505ac2ca45c2cc4856`. See `receipts.jsonl` for complete merged PR history.
+- Done on current main: PR #372 merged at `3d91248269736b36a8e3e203683de9310d107d14`. See `receipts.jsonl` for complete merged PR history.
 - Current route PR: none.
 - Next route action: choose the next bounded non-feature slice from the remaining
   backlog before opening any new PR.
