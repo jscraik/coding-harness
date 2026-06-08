@@ -22,19 +22,19 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 
 ## Current Control Surface
 
-| Field               | Current Truth                                                                                    |
-| ------------------- | ------------------------------------------------------------------------------------------------ |
-| Parent issue        | JSC-363                                                                                          |
-| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`                                     |
-| Current branch      | `main`                                                                                           |
-| Local head          | `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`                                                       |
-| Remote main head    | `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`                                                       |
-| Main baseline       | `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`                                                       |
-| Active route count  | 0                                                                                                |
-| Active route        | None                                                                                             |
-| Last closed route   | PR #374 merged                                                                                   |
-| Current slice       | Backlog reconciliation                                                                           |
-| Feature work status | Stopped until this post-PR374 tracker validates and the next bounded slice is selected           |
+| Field               | Current Truth                                                                          |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| Parent issue        | JSC-363                                                                                |
+| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`                           |
+| Current branch      | `main`                                                                                 |
+| Local head          | `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`                                             |
+| Remote main head    | `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`                                             |
+| Main baseline       | `b7b5d9f48fb9369c29a4cd9902acde88285bfb22`                                             |
+| Active route count  | 0                                                                                      |
+| Active route        | None                                                                                   |
+| Last closed route   | PR #374 merged                                                                         |
+| Current slice       | Backlog reconciliation                                                                 |
+| Feature work status | Stopped until this post-PR374 tracker validates and the next bounded slice is selected |
 
 ## Active Route
 
