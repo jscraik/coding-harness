@@ -82,6 +82,7 @@ export function parseInput(value: string, source: string): PrCloseoutInput {
 	}
 	assertOptionalObject(parsed.branch, `${source} branch`);
 	assertOptionalArray(parsed.checks, `${source} checks`);
+	assertOptionalArray(parsed.ciTelemetry, `${source} ciTelemetry`);
 	assertOptionalObject(parsed.reviewThreads, `${source} reviewThreads`);
 	assertOptionalObject(parsed.traceability, `${source} traceability`);
 	assertOptionalArray(parsed.dirtyPaths, `${source} dirtyPaths`);

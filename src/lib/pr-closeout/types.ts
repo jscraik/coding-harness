@@ -168,6 +168,24 @@ export interface PrCloseoutCheckInput {
 	source?: "github" | "circleci" | "coderabbit" | "other" | null;
 }
 
+/** Low-cardinality CI telemetry visibility consumed as orientation evidence. */
+export interface PrCloseoutCiTelemetryInput {
+	provider: "circleci";
+	source?: "circleci_otel" | "circleci_api" | "github_checks" | "other" | null;
+	evidenceRef?: string | null;
+	headSha?: string | null;
+	freshness?: PrCloseoutEvidenceFreshness | null;
+	totalSpans?: number | null;
+	statusCounts?: Record<string, number> | null;
+	canIdentifyIssues?: boolean | null;
+	blockedReason?: string | null;
+	issueCandidates?: Array<{
+		name?: string | null;
+		spanName?: string | null;
+		count?: number | null;
+	}> | null;
+}
+
 /** Local branch/worktree state consumed by the closeout classifier. */
 export interface PrCloseoutBranchInput {
 	clean?: boolean | null;
@@ -288,6 +306,7 @@ export interface PrCloseoutInput {
 	pullRequest: PrCloseoutPullRequestInput;
 	branch?: PrCloseoutBranchInput;
 	checks?: PrCloseoutCheckInput[];
+	ciTelemetry?: PrCloseoutCiTelemetryInput[];
 	reviewThreads?: PrCloseoutReviewThreadsInput;
 	traceability?: PrCloseoutTraceabilityInput;
 	rollback?: PrCloseoutRollbackInput;
@@ -461,6 +480,7 @@ export interface PrCloseoutReport {
 		passed: number;
 		unknown: number;
 	};
+	ciTelemetry: PrCloseoutCiTelemetryInput[];
 	reviewThreads: {
 		unresolved: number | null;
 		needsHuman: number | null;

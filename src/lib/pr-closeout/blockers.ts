@@ -6,6 +6,7 @@ import {
 import type {
 	PrCloseoutBlocker,
 	PrCloseoutCheckInput,
+	PrCloseoutCiTelemetryInput,
 	PrCloseoutDirtyPathInput,
 	PrCloseoutHarnessGateEvidenceSource,
 	PrCloseoutHarnessGateSummary,
@@ -20,6 +21,7 @@ import {
 	hasLinearReference,
 	isFailedCheck,
 	isPendingCheck,
+	isPassingCheck,
 	normalizeStatus,
 } from "./evidence.js";
 
@@ -183,6 +185,75 @@ export function collectCheckBlockers(
 			});
 		}
 	}
+}
+
+function hasActionableCircleCiCheck(
+	checks: readonly PrCloseoutCheckInput[],
+): boolean {
+	return checks.some((check) => {
+		const isCircleCi =
+			check.source === "circleci" ||
+			/\b(?:circleci|pr-pipeline)\b/iu.test(check.name);
+		return (
+			isCircleCi &&
+			(isPassingCheck(check) || isFailedCheck(check) || isPendingCheck(check))
+		);
+	});
+}
+
+function positiveStatusCountEntries(
+	statusCounts: PrCloseoutCiTelemetryInput["statusCounts"],
+): Array<[string, number]> {
+	if (!statusCounts) return [];
+	return Object.entries(statusCounts).filter(
+		([, count]) =>
+			typeof count === "number" && Number.isFinite(count) && count > 0,
+	);
+}
+
+function onlyUnknownCircleCiStatuses(
+	telemetry: PrCloseoutCiTelemetryInput,
+): boolean {
+	const entries = positiveStatusCountEntries(telemetry.statusCounts);
+	return (
+		entries.length > 0 && entries.every(([status]) => status === "unknown")
+	);
+}
+
+function isUninterpretableCircleCiTelemetry(
+	telemetry: PrCloseoutCiTelemetryInput,
+): boolean {
+	if (telemetry.provider !== "circleci") return false;
+	if (telemetry.canIdentifyIssues === false) return true;
+	if (onlyUnknownCircleCiStatuses(telemetry)) return true;
+	return /status|failure|unknown/iu.test(telemetry.blockedReason ?? "");
+}
+
+/** Add blockers for CircleCI telemetry that is present but cannot prove CI state. */
+export function collectCiTelemetryBlockers(
+	input: PrCloseoutInput,
+	checks: readonly PrCloseoutCheckInput[],
+	blockers: PrCloseoutBlocker[],
+): void {
+	if (hasActionableCircleCiCheck(checks)) return;
+	const uninterpretable = (input.ciTelemetry ?? []).find(
+		isUninterpretableCircleCiTelemetry,
+	);
+	if (!uninterpretable) return;
+	const reason =
+		uninterpretable.blockedReason ??
+		"CircleCI telemetry does not include actionable status or failure evidence";
+	pushBlocker(blockers, {
+		surface: "checks",
+		classification: "external_service",
+		kind: "state",
+		reason:
+			"CircleCI telemetry is present but cannot identify CI failures: " +
+			reason +
+			". Use current-head GitHub checks or CircleCI API status before closeout.",
+		fixableByCodex: false,
+		ref: uninterpretable.evidenceRef ?? "circleci:telemetry:uninterpretable",
+	});
 }
 
 /** Add blockers for review-thread and review-decision evidence. */

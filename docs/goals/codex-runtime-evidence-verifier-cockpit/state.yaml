@@ -30,26 +30,31 @@ thin_execution_tracker:
     receipt_style: "compact claim/evidence/blocker records"
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
-    kind: "none"
-    pr: null
-    branch: null
-    local_head_sha: "3d91248269736b36a8e3e203683de9310d107d14"
-    remote_head_sha: "3d91248269736b36a8e3e203683de9310d107d14"
-    base_sha: "3d91248269736b36a8e3e203683de9310d107d14"
-    status: "route_closed_pr372_merged_current_main_synced"
-    blocker: null
-    last_merged_pr: 372
-    last_merged_sha: "3d91248269736b36a8e3e203683de9310d107d14"
-    open_pr_count: 0
-    open_prs: []
+    kind: "pull_request"
+    pr: 374
+    pr_url: "https://github.com/jscraik/coding-harness/pull/374"
+    branch: "codex/jsc-363-delivery-truth-consumption"
+    local_head_sha: "a07e881b717902bcc3a8a3a2d7e065b9b125d58f"
+    remote_head_sha: "a07e881b717902bcc3a8a3a2d7e065b9b125d58f"
+    base_sha: "37aec5fb97a8358f766166330affbced6bd31c5a"
+    status: "pr374_open_body_repaired_ci_rerun_pending"
+    blocker: "Hosted PR #374 still shows stale failing pr-template and pr-pipeline contexts from the pre-repair PR body; this tracker commit exists to give CircleCI a fresh head."
+    last_merged_pr: 373
+    last_merged_sha: "37aec5fb97a8358f766166330affbced6bd31c5a"
+    open_pr_count: 1
+    open_prs:
+      - 374
   queued_slice:
-    lifecycle_unit: "next"
-    name: "select next bounded backlog slice"
-    status: "not_started_post_pr372_tracker_validated"
-    evidence_receipt: "R411"
+    lifecycle_unit: "delivery-truth-consumption"
+    name: "final delivery-truth consumption projection"
+    status: "pr374_open_body_repaired_ci_review_pending"
+    evidence_receipt: "R416"
   resume_gate:
-    - "Choose one next bounded backlog slice before opening a new PR."
+    - "Triage PR #374 only: wait for fresh CircleCI and CodeRabbit truth on the latest head, then fix only failing lanes or record explicit blockers."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
+  review_artifacts:
+    - path: "artifacts/reviews/delivery-truth-consumption-skill-lenses.md"
+      status: "local_skill_lenses_passed_independent_reviewer_subagents_unavailable"
   explicit_non_claims:
     - "linear_fields_current"
     - "delivery_truth_consumption_complete"
