@@ -79,6 +79,7 @@ function receipt(root: string, overrides: Record<string, unknown> = {}) {
 		id: "R072",
 		created_at: "2026-05-27T01:05:00Z",
 		head_sha: headSha,
+		changed_files: [],
 		audit_sources_checked: [
 			{
 				path: AUDIT_PATH,
@@ -473,6 +474,56 @@ describe("check-goal-audit-freshness.py", () => {
 		expect(result.stderr).toContain("missing required field(s): head_sha");
 	});
 
+	it("fails when the latest audit receipt omits required receipt fields", () => {
+		const root = createTempRoot("audit-freshness-missing-receipt-field-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		const incomplete = receipt(root);
+		delete (incomplete as Record<string, unknown>).changed_files;
+		writeReceipts(root, [incomplete]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"receipt missing required field(s): changed_files",
+		);
+	});
+
+	it("fails when the latest audit receipt introduces an unknown field", () => {
+		const root = createTempRoot("audit-freshness-unknown-receipt-field-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		writeReceipts(root, [
+			{
+				...receipt(root),
+				unsupported_new_claim_lane: "self-asserted",
+			},
+		]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"receipt contains unknown field(s): unsupported_new_claim_lane",
+		);
+	});
+
+	it("fails when the latest audit source introduces an unknown field", () => {
+		const root = createTempRoot("audit-freshness-unknown-source-field-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		writeReceipts(root, [
+			receipt(root, {
+				unsupported_source_note: "self-asserted",
+			}),
+		]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"audit_sources_checked entry contains unknown field(s): unsupported_source_note",
+		);
+	});
+
 	it("fails when the recorded evidence head is not reachable from repository history", () => {
 		const root = createTempRoot("audit-freshness-unreachable-head-");
 		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
@@ -558,6 +609,44 @@ describe("check-goal-audit-freshness.py", () => {
 		expect(result.status).toBe(0);
 		expect(JSON.parse(result.stdout)).toMatchObject({
 			head_relation: "non_ancestor_tree_diff",
+			head_sha: recordedHead,
+		});
+	});
+
+	it("accepts a self-referential tracker receipt when goal governor output changed", () => {
+		const root = createTempRoot("audit-freshness-goal-governor-output-");
+		const recordedHead = tempRootHeads.get(root);
+		if (!recordedHead) throw new Error("missing test repository head");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		writeReceipts(root, [
+			{
+				...receipt(root),
+				changed_files: [
+					".harness/active-artifacts.md",
+					join(GOAL_DIR, "receipts.jsonl"),
+					join(GOAL_DIR, "state.yaml"),
+					"goal-governor-output.yaml",
+				],
+			},
+		]);
+		mkdirSync(join(root, ".harness"), { recursive: true });
+		writeFileSync(join(root, ".harness/active-artifacts.md"), "route\n");
+		writeFileSync(join(root, GOAL_DIR, "state.yaml"), "status: route\n");
+		writeFileSync(join(root, "goal-governor-output.yaml"), "status: route\n");
+		runGit(root, [
+			"add",
+			".harness/active-artifacts.md",
+			join(GOAL_DIR, "receipts.jsonl"),
+			join(GOAL_DIR, "state.yaml"),
+			"goal-governor-output.yaml",
+		]);
+		runGit(root, ["commit", "-m", "record tracker refresh"]);
+
+		const result = runValidator(root);
+
+		expect(result.status, result.stderr).toBe(0);
+		expect(JSON.parse(result.stdout)).toMatchObject({
+			head_relation: "ancestor",
 			head_sha: recordedHead,
 		});
 	});
