@@ -31,22 +31,22 @@ thin_execution_tracker:
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
     kind: "github_pr"
-    status: "no_active_pr_after_pr380_merge_pullback"
+    status: "no_active_pr_after_pr381_merge_pullback"
     blocker: "Linear field-text decision is active but externally blocked: this session has no exposed Linear MCP tools and no LINEAR_API_KEY."
-    last_merged_pr: 380
-    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/380"
-    last_merged_sha: "b436db70eea4b0f2a29473235cadcf7789dc81fb"
-    last_merged_submitted_head_sha: "958f642a23892b806a4a2ffa0b6ca1b491922c23"
-    last_merge_verified_at: "2026-06-09T01:03:00Z"
-    local_main_sha: "b436db70eea4b0f2a29473235cadcf7789dc81fb"
-    origin_main_sha: "b436db70eea4b0f2a29473235cadcf7789dc81fb"
+    last_merged_pr: 381
+    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/381"
+    last_merged_sha: "14918c8d20df6da29f3b2531820da24405e727d2"
+    last_merged_submitted_head_sha: "f0e115b744b0bbc32268343ed3d6d1efe679cf40"
+    last_merge_verified_at: "2026-06-09T01:25:32Z"
+    local_main_sha: "14918c8d20df6da29f3b2531820da24405e727d2"
+    origin_main_sha: "14918c8d20df6da29f3b2531820da24405e727d2"
     open_pr_count: 0
     open_prs: []
   queued_slice:
     lifecycle_unit: "linear-field-text-decision"
     name: "refresh or owner-classify JSC-363 Linear field-text currency"
     status: "active_blocked_missing_linear_tools_or_token"
-    evidence_receipt: "R432"
+    evidence_receipt: "R433"
   resume_gate:
     - "Do not start broader feature or closeout work until the Linear field-text decision slice is either completed through live Linear or explicitly owner-classified as accepted stale field text."
     - "Execute the Linear field-text decision as a bounded external-tracker slice before broader review/external/root-hygiene proof, documentation accuracy, PU-015 Judge/PM audit, or final completion audit."

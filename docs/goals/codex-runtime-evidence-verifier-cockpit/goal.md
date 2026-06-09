@@ -43,17 +43,22 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-09 post-PR380 merge pullback. PR #366,
+Last updated during the 2026-06-09 post-PR381 merge pullback. PR #366,
 PR #367, PR #369, PR #370, PR #371, PR #372, PR #373, PR #374, PR #375,
-PR #376, PR #377, PR #378, PR #379, and PR #380 are historical route provenance. PR #380 is
+PR #376, PR #377, PR #378, PR #379, PR #380, and PR #381 are historical route provenance. PR #381 is
 merged into `main` as squash merge commit
-`b436db70eea4b0f2a29473235cadcf7789dc81fb`.
+`14918c8d20df6da29f3b2531820da24405e727d2`.
 
 Current live route truth:
 
 - Local `main` and `origin/main` are synced at
-  `b436db70eea4b0f2a29473235cadcf7789dc81fb` after PR #380 merge pullback.
-- Current work branch is `codex/jsc-363-linear-field-text-decision`; local `main` is the synced baseline.
+  `14918c8d20df6da29f3b2531820da24405e727d2` after PR #381 merge pullback.
+- Current work branch is `codex/jsc-363-post-pr381-tracker-refresh`; local `main` is the synced baseline.
+- PR #381 merged the Linear field blocker tracker route into `main` from
+  submitted head `f0e115b744b0bbc32268343ed3d6d1efe679cf40` after
+  repo-owned CircleCI lanes, aggregate `pr-pipeline`, CodeRabbit, and
+  review-thread refresh passed. The external Snyk GitHub App status remained
+  owner-waived for the quota/status lane only.
 - PR #380 merged the post-PR379 tracker refresh route
   into `main` from submitted head
   `958f642a23892b806a4a2ffa0b6ca1b491922c23` after the PR body was repaired
@@ -164,15 +169,15 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: no active PR route after PR #380 merged and local `main` was
-  pulled to `b436db70eea4b0f2a29473235cadcf7789dc81fb`.
-- Provenance: See `receipts.jsonl` for merged PR #343 through PR #380 route
+- Current route: no active PR route after PR #381 merged and local `main` was
+  pulled to `14918c8d20df6da29f3b2531820da24405e727d2`.
+- Provenance: See `receipts.jsonl` for merged PR #343 through PR #381 route
   history.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #380 merged at
-  `b436db70eea4b0f2a29473235cadcf7789dc81fb`. See `receipts.jsonl` for
+- Done on current main: PR #381 merged at
+  `14918c8d20df6da29f3b2531820da24405e727d2`. See `receipts.jsonl` for
   complete merged PR history.
 - Current route PR: none.
 - Active slice: Linear field-text decision. It must refresh or explicitly

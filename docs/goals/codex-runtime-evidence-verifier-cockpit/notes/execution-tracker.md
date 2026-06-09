@@ -26,21 +26,21 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | ------------------- | ----------------------------------------------------------------------- |
 | Parent issue        | JSC-363                                                                 |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`            |
-| Current branch      | `codex/jsc-363-linear-field-text-decision`                              |
-| Local main head     | `b436db70eea4b0f2a29473235cadcf7789dc81fb`                              |
-| Origin main head    | `b436db70eea4b0f2a29473235cadcf7789dc81fb`                              |
-| Main baseline       | `b436db70eea4b0f2a29473235cadcf7789dc81fb`                              |
+| Current branch      | `codex/jsc-363-post-pr381-tracker-refresh`                              |
+| Local main head     | `14918c8d20df6da29f3b2531820da24405e727d2`                              |
+| Origin main head    | `14918c8d20df6da29f3b2531820da24405e727d2`                              |
+| Main baseline       | `14918c8d20df6da29f3b2531820da24405e727d2`                              |
 | Active route count  | 0                                                                       |
 | Active route        | none                                                                    |
-| Last closed route   | PR #380 merged                                                          |
+| Last closed route   | PR #381 merged                                                          |
 | Current route       | Linear field-text decision                                              |
 | Current slice       | Linear field-text decision                                              |
 | Feature work status | Blocked on Linear tools or `LINEAR_API_KEY`; no broader slice may start |
 
 ## Active Route
 
-PR #380 is merged and local `main` is synced with `origin/main` at
-`b436db70eea4b0f2a29473235cadcf7789dc81fb`; that route is closed provenance.
+PR #381 is merged and local `main` is synced with `origin/main` at
+`14918c8d20df6da29f3b2531820da24405e727d2`; that route is closed provenance.
 No PR route is active. The Linear field-text decision slice is active, but live
 Linear read/write is blocked in this session because Linear MCP tools are not
 exposed and `LINEAR_API_KEY` is absent from the process environment. This does
@@ -50,10 +50,14 @@ accuracy, Judge/PM readiness, or parent-goal completion.
 Current evidence:
 
 - Local `main` and `origin/main` are synced at
-  `b436db70eea4b0f2a29473235cadcf7789dc81fb` after PR #380 merge pullback.
-- Live GitHub reports PR #380 merged at 2026-06-09T01:02:35Z from submitted
-  head `958f642a23892b806a4a2ffa0b6ca1b491922c23` as squash merge commit
-  `b436db70eea4b0f2a29473235cadcf7789dc81fb`.
+  `14918c8d20df6da29f3b2531820da24405e727d2` after PR #381 merge pullback.
+- Live GitHub reports PR #381 merged at 2026-06-09T01:25:32Z from submitted
+  head `f0e115b744b0bbc32268343ed3d6d1efe679cf40` as squash merge commit
+  `14918c8d20df6da29f3b2531820da24405e727d2`.
+- PR #381 repo-owned CircleCI lanes, aggregate `pr-pipeline`, CodeRabbit, and
+  review-thread refresh passed before merge. The external Snyk GitHub App
+  status remained owner-waived for the quota/status lane only.
+- PR #381 review-thread refresh returned zero unresolved threads before merge.
 - PR #380 repo-owned CircleCI lanes, aggregate `pr-pipeline`, CodeRabbit
   status, Socket, and CircleCI Snyk dependency scan passed before merge after a
   body-only `pr-template` repair and failed-job rerun.
@@ -186,7 +190,7 @@ Non-claims:
 
 - This slice does not produce root-hygiene evidence, Judge/PM readiness, Linear
   field-text currency, or parent goal completion.
-- No PR lane is active after PR #380 merge pullback.
+- No PR lane is active after PR #381 merge pullback.
 
 ## Outstanding Work
 
@@ -200,7 +204,7 @@ Non-claims:
 
 ## History Boundary
 
-Merged PR lanes through PR #380 remain provenance. They are not active route
+Merged PR lanes through PR #381 remain provenance. They are not active route
 lanes and must not be expanded in the active board unless a fresh current-main
 regression reopens them.
 
