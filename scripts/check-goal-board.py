@@ -60,6 +60,91 @@ TILDE_HOME_PATH = re.compile(r"(^|[\s:=,])~/[^\s]+")
 type JsonObject = dict[str, Any]
 
 
+def strip_yaml_comment(value: str) -> str:
+    quote: str | None = None
+    escaped = False
+    for index, char in enumerate(value):
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\":
+            escaped = True
+            continue
+        if char in {"'", '"'}:
+            if quote is None:
+                quote = char
+            elif quote == char:
+                quote = None
+            continue
+        if char == "#" and quote is None:
+            return value[:index].strip()
+    return value.strip()
+
+
+def parse_yaml_scalar(value: str) -> object:
+    cleaned = strip_yaml_comment(value)
+    if cleaned in {"", "null", "Null", "NULL", "~"}:
+        return None
+    if cleaned in {"true", "True", "TRUE"}:
+        return True
+    if cleaned in {"false", "False", "FALSE"}:
+        return False
+    if (
+        (cleaned.startswith('"') and cleaned.endswith('"'))
+        or (cleaned.startswith("'") and cleaned.endswith("'"))
+    ):
+        return cleaned[1:-1]
+    try:
+        return int(cleaned)
+    except ValueError:
+        return cleaned
+
+
+def parse_yaml_mapping_fallback(text: str) -> dict[str, object]:
+    root: dict[str, object] = {}
+    stack: list[tuple[int, dict[str, object]]] = [(-1, root)]
+
+    for raw_line in text.splitlines():
+        if not raw_line.strip() or raw_line.lstrip().startswith("#"):
+            continue
+        indent = len(raw_line) - len(raw_line.lstrip())
+        line = raw_line.strip()
+        if ":" not in line:
+            continue
+        key, raw_value = line.split(":", 1)
+        key = key.strip().strip('"').strip("'")
+        if not key:
+            continue
+        while stack and indent <= stack[-1][0]:
+            stack.pop()
+        parent = stack[-1][1]
+        if raw_value.strip() == "":
+            child: dict[str, object] = {}
+            parent[key] = child
+            stack.append((indent, child))
+        else:
+            parent[key] = parse_yaml_scalar(raw_value)
+
+    return root
+
+
+def load_state_mapping(state_path: Path) -> object:
+    text = state_path.read_text(encoding="utf-8")
+    try:
+        import yaml  # type: ignore[import-untyped]
+    except ModuleNotFoundError:
+        return parse_yaml_mapping_fallback(text)
+
+    try:
+        return yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        print(
+            f"Runtime evidence cockpit state file is not valid YAML: {state_path}: {exc}",
+            file=sys.stderr,
+        )
+        raise SystemExit(1) from exc
+
+
 def source_checkout_root() -> Path | None:
     try:
         common_dir = subprocess.check_output(
@@ -358,6 +443,85 @@ def check_duplicate_receipt_ids(receipts_path: Path) -> int:
     return 0
 
 
+def parse_runtime_active_route(state_path: Path) -> dict[str, str]:
+    if not state_path.is_file():
+        print(
+            f"Runtime evidence cockpit state file is missing: {state_path}",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
+    state = load_state_mapping(state_path)
+
+    if not isinstance(state, Mapping):
+        return {}
+    state_mapping = cast(Mapping[str, object], state)
+
+    thin_execution_tracker = state_mapping.get("thin_execution_tracker")
+    if not isinstance(thin_execution_tracker, Mapping):
+        return {}
+    tracker_mapping = cast(Mapping[str, object], thin_execution_tracker)
+
+    active_route = tracker_mapping.get("active_route")
+    if active_route is None:
+        # Missing active_route is intentionally a no-op for this narrow guard:
+        # the stale-route check only rejects an explicitly declared GitHub PR route.
+        return {}
+    if not isinstance(active_route, Mapping):
+        print(
+            "Runtime evidence cockpit active_route must be a mapping when present.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+    active_route_mapping = cast(Mapping[object, object], active_route)
+
+    fields: dict[str, str] = {}
+    for key, value in active_route_mapping.items():
+        if isinstance(key, str) and value is not None:
+            fields[key] = str(value)
+    return fields
+
+
+def check_stale_runtime_pr_route(
+    goal_path: Path,
+    jsc_363_rows: list[str],
+) -> int:
+    active_route = parse_runtime_active_route(goal_path / "state.yaml")
+    violations: list[str] = []
+
+    route_kind = active_route.get("kind")
+    open_pr_count = active_route.get("open_pr_count")
+    active_branch = active_route.get("active_branch", "")
+    stale_merge_phrases = ("merge this post-PR", "merge and pull this post-PR")
+    route_text = "\n".join(jsc_363_rows)
+
+    if (
+        route_kind == "github_pr"
+        and open_pr_count == "0"
+        and active_branch.startswith("codex/")
+    ):
+        violations.append(
+            "Runtime evidence cockpit state has a github_pr active_route with "
+            "open_pr_count: 0 but still names active_branch "
+            f"{active_branch}. After a PR merges and main is pulled, the route "
+            "must either record no active PR branch or set open_pr_count to the "
+            "real open PR count."
+        )
+
+    violations.extend(
+        "Project Brain active-artifacts index contains stale post-merge "
+        f"route text: {phrase!r}. Current-main route truth must not tell "
+        "operators to merge a blocker-refresh PR that has already merged."
+        for phrase in stale_merge_phrases
+        if phrase in route_text
+    )
+
+    if violations:
+        print("\n".join(violations), file=sys.stderr)
+        return 1
+    return 0
+
+
 def run_goal_extensions(argv: list[str]) -> int:
     goal_path = resolve_runtime_evidence_goal_path(argv)
     if goal_path is None:
@@ -455,6 +619,10 @@ def run_goal_extensions(argv: list[str]) -> int:
             file=sys.stderr,
         )
         return 1
+
+    stale_route_status = check_stale_runtime_pr_route(goal_path, jsc_363_rows)
+    if stale_route_status != 0:
+        return stale_route_status
 
     duplicate_receipt_status = check_duplicate_receipt_ids(
         RUNTIME_EVIDENCE_RECEIPTS_PATH,

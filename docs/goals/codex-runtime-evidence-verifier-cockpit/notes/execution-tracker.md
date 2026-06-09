@@ -26,23 +26,23 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | ------------------- | ---------------------------------------------------------------- |
 | Parent issue        | JSC-363                                                          |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`     |
-| Current branch      | `codex/jsc-363-post-pr384-linear-blocker-refresh`                |
-| Local main head     | `96846c31b7d3b1bade77b1145543ab1c92c797ae`                       |
-| Origin main head    | `96846c31b7d3b1bade77b1145543ab1c92c797ae`                       |
-| Main baseline       | `96846c31b7d3b1bade77b1145543ab1c92c797ae`                       |
-| Active route count  | 1                                                                |
-| Active route        | Linear blocker refresh branch pending PR                         |
-| Last closed route   | PR #384 merged                                                   |
-| Current route       | post-PR384 Linear blocker refresh                                |
+| Current branch      | `main`                                                           |
+| Local main head     | `5452ce126acabdd5e921c6bed59e23d70dbe4b79`                       |
+| Origin main head    | `5452ce126acabdd5e921c6bed59e23d70dbe4b79`                       |
+| Main baseline       | `5452ce126acabdd5e921c6bed59e23d70dbe4b79`                       |
+| Active route count  | 0                                                                |
+| Active route        | none                                                             |
+| Last closed route   | PR #385 merged                                                   |
+| Current route       | Linear field-text decision access blocker                        |
 | Current slice       | Linear field-text decision access blocker                        |
 | Feature work status | Blocked until Linear access or owner classification is available |
 
 ## Active Route
 
-PR #384 is merged and local `main` is synced with `origin/main` at
-`96846c31b7d3b1bade77b1145543ab1c92c797ae`; that route is closed provenance.
-The active branch is `codex/jsc-363-post-pr384-linear-blocker-refresh`. It
-records that the Linear field-text decision remains blocked in this session
+PR #385 is merged and local `main` is synced with `origin/main` at
+`5452ce126acabdd5e921c6bed59e23d70dbe4b79`; that route is closed provenance.
+No JSC-363 PR lane is active after the pullback. The selected next bounded
+slice is the Linear field-text decision, which remains blocked in this session
 because `harness linear prepare --issue JSC-363 --json` and
 `harness linear triage --dry-run --json` fail without `LINEAR_API_KEY`, and
 `~/.codex/.env` is a FIFO rather than a safely sourceable regular env file.
@@ -53,6 +53,14 @@ Judge/PM readiness, or parent-goal completion.
 Current evidence:
 
 - Local `main` and `origin/main` are synced at
+  `5452ce126acabdd5e921c6bed59e23d70dbe4b79` after PR #385 merge pullback.
+- Live GitHub reports PR #385 merged at 2026-06-09T04:00:10Z from submitted
+  head `b6951de3a5d8627c80b78cc911c10d526dd4e24b` as squash merge commit
+  `5452ce126acabdd5e921c6bed59e23d70dbe4b79`.
+- PR #385 repo-owned required checks passed on the submitted head, CodeRabbit
+  passed, review-thread refresh returned zero unresolved threads, and post-merge
+  audit-freshness, goal-board, and tracker-board validators passed on current main.
+- Local `main` and `origin/main` were previously synced at
   `96846c31b7d3b1bade77b1145543ab1c92c797ae` after PR #384 merge pullback.
 - Live GitHub reports PR #384 merged at 2026-06-09T03:05:01Z from submitted
   head `19b193cd4d628f3cd50c215976890ca743e259dd` as squash merge commit

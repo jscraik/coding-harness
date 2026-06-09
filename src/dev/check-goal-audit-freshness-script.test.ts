@@ -219,6 +219,44 @@ describe("check-goal-audit-freshness.py", () => {
 		});
 	});
 
+	it("accepts a self-referential receipt for the goal-board guard and its regression test", () => {
+		const root = createTempRoot("audit-freshness-goal-board-guard-self-ref-");
+		const parentHead = tempRootHeads.get(root);
+		if (!parentHead) throw new Error("missing test repository head");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		mkdirSync(join(root, "scripts"), { recursive: true });
+		mkdirSync(join(root, "src/dev"), { recursive: true });
+		const storedReceipt = {
+			...receipt(root),
+			changed_files: [
+				join(GOAL_DIR, "receipts.jsonl"),
+				"scripts/check-goal-board.py",
+				"src/dev/check-goal-board-script.test.ts",
+			],
+		};
+		writeReceipts(root, [storedReceipt]);
+		writeFileSync(join(root, "scripts/check-goal-board.py"), "# route guard\n");
+		writeFileSync(
+			join(root, "src/dev/check-goal-board-script.test.ts"),
+			"test('route guard', () => undefined);\n",
+		);
+		runGit(root, [
+			"add",
+			join(GOAL_DIR, "receipts.jsonl"),
+			"scripts/check-goal-board.py",
+			"src/dev/check-goal-board-script.test.ts",
+		]);
+		runGit(root, ["commit", "-m", "repair route guard"]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(0);
+		expect(JSON.parse(result.stdout)).toMatchObject({
+			head_sha: parentHead,
+			receipt_id: "R072",
+		});
+	});
+
 	it("accepts a shallow self-referential receipt checkout when declared files are goal-route evidence only", () => {
 		const root = createTempRoot("audit-freshness-shallow-source-");
 		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));

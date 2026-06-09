@@ -43,18 +43,29 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-09 post-PR384 merge pullback and Linear
-access probe. PR #366,
+Last updated during the 2026-06-09 post-PR385 merge pullback and stale-route
+guard. PR #366,
 PR #367, PR #369, PR #370, PR #371, PR #372, PR #373, PR #374, PR #375,
 PR #376, PR #377, PR #378, PR #379, PR #380, PR #381, PR #382, PR #383,
-and PR #384 are historical route provenance. PR #384 is merged into `main`
-as squash merge commit `96846c31b7d3b1bade77b1145543ab1c92c797ae`.
+PR #384, and PR #385 are historical route provenance. PR #385 is merged into
+`main` as squash merge commit
+`5452ce126acabdd5e921c6bed59e23d70dbe4b79`.
 
 Current live route truth:
 
 - Local `main` and `origin/main` are synced at
-  `96846c31b7d3b1bade77b1145543ab1c92c797ae` after PR #384 merge pullback.
-- Current work branch is `codex/jsc-363-post-pr384-linear-blocker-refresh`; local `main` is the synced baseline.
+  `5452ce126acabdd5e921c6bed59e23d70dbe4b79` after PR #385 merge pullback.
+- No JSC-363 PR lane is active after the pullback; local `main` is the synced
+  baseline.
+- PR #385 merged the post-PR384 Linear blocker refresh into `main` from
+  submitted head `b6951de3a5d8627c80b78cc911c10d526dd4e24b` after repo-owned
+  CircleCI lanes, CodeRabbit, Socket, and review-thread refresh passed. The
+  external Snyk GitHub App status remained owner-waived for the quota/status
+  lane only.
+- This branch adds a narrow goal-board stale-route guard so future tracker
+  validation rejects a `github_pr` active route with `open_pr_count: 0` that
+  still names a `codex/...` branch or tells operators to merge an already
+  merged blocker-refresh PR.
 - PR #384 merged the post-PR383 tracker refresh into `main` from submitted
   head `19b193cd4d628f3cd50c215976890ca743e259dd` after repo-owned
   CircleCI lanes, CodeRabbit, Socket, and review-thread refresh passed. The
@@ -189,28 +200,26 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: active local branch
-  `codex/jsc-363-post-pr384-linear-blocker-refresh` records that PR #384 is
-  merged and that the Linear field-text decision is blocked in this session by
-  unavailable Linear credentials/tools.
-- Provenance: See `receipts.jsonl` for merged PR #343 through PR #384 route
+- Current route: no active JSC-363 PR lane after PR #385 pullback. The Linear
+  field-text decision is blocked in this session by unavailable Linear
+  credentials/tools.
+- Provenance: See `receipts.jsonl` for merged PR #343 through PR #385 route
   history.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #384 merged at
-  `96846c31b7d3b1bade77b1145543ab1c92c797ae`. See `receipts.jsonl` for
+- Done on current main: PR #385 merged at
+  `5452ce126acabdd5e921c6bed59e23d70dbe4b79`. See `receipts.jsonl` for
   complete merged PR history.
-- Current route PR: pending for `codex/jsc-363-post-pr384-linear-blocker-refresh`.
-- Active slice: Linear field-text decision blocker refresh. It must record that
+- Current route PR: none.
+- Active slice: Linear field-text decision. It must record that
   `harness linear prepare --issue JSC-363 --json` and
   `harness linear triage --dry-run --json` still fail with missing
   `LINEAR_API_KEY`, while `~/.codex/.env` is a FIFO and cannot be safely
   sourced in this sandbox.
-- Next broader slice after this refresh: Linear field-text decision. It must refresh or explicitly
-  owner-classify JSC-363 Linear title/description currency before broader
-  closeout claims resume, but the live Linear path is currently blocked because
-  this session exposes neither Linear MCP tools nor `LINEAR_API_KEY`.
+- Next broader slice after the Linear decision: review/external/root-hygiene
+  proof. Do not start it until Linear field text is refreshed or explicitly
+  owner-classified.
 - Remaining backlog: review/external/root-hygiene proof, documentation accuracy,
   historical review-coverage backfill, Linear field-text decision, PU-015
   Judge/PM audit, and final completion audit.
