@@ -55,8 +55,8 @@ Current live route truth:
 
 - Local `main` and `origin/main` are synced at
   `8003f0f84c07f80e93400d4c8f46378d83398142` after PR #390 merge pullback.
-- The active local branch is `codex/jsc-363-next-clean-worktree-state`; no PR
-  has been opened for that branch yet.
+- The active branch is `codex/jsc-363-next-clean-worktree-state`; PR #391 is
+  open for that branch.
 - The active slice is a narrow `harness next` clean-worktree-state repair:
   clean empty `git status --short --untracked-files=all` output must remain a
   valid clean-state signal rather than becoming missing evidence and a false
@@ -213,8 +213,8 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: active local `harness next` clean-worktree-state repair on
-  `codex/jsc-363-next-clean-worktree-state`; PR not opened yet.
+- Current route: active `harness next` clean-worktree-state repair on
+  `codex/jsc-363-next-clean-worktree-state`; PR #391 is open.
 - Provenance: See `receipts.jsonl` for merged PR #343 through PR #390 route
   history.
 
@@ -223,7 +223,7 @@ Corrected backlog after current-main reconciliation:
 - Done on current main: PR #390 merged at
   `8003f0f84c07f80e93400d4c8f46378d83398142`. See `receipts.jsonl` for
   complete merged PR history.
-- Current route PR: none yet for
+- Current route PR: PR #391 for
   `codex/jsc-363-next-clean-worktree-state`.
 - Active slice: `harness next` clean-worktree-state repair. It preserves empty
   clean git status output as valid clean-state evidence and adds a regression

@@ -33,7 +33,7 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Active route count  | 1                                                                |
 | Active route        | `harness next` clean-worktree-state repair                       |
 | Last closed route   | PR #390 merged                                                   |
-| Current route       | Local implementation branch, PR not opened yet                   |
+| Current route       | Implementation branch, PR #391 open                              |
 | Current slice       | Preserve empty git status as clean worktree evidence             |
 | Feature work status | Narrow local validation complete except credential-bound E2E tail |
 
@@ -227,8 +227,8 @@ Completed route-refresh action:
 ## Active Slice
 
 The selected active slice is the `harness next` clean-worktree-state repair.
-It is local-validation complete except for the credential-bound E2E tail and has
-not yet been opened as a PR.
+It is local-validation complete except for the credential-bound E2E tail and is
+open as PR #391.
 
 Current slice boundary:
 
