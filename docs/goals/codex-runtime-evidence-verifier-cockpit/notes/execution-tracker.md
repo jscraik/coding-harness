@@ -26,31 +26,36 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | ------------------- | ---------------------------------------------------------------- |
 | Parent issue        | JSC-363                                                          |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`     |
-| Current branch      | `codex/jsc-363-post-pr391-tracker-refresh`                       |
-| Local main head     | `2950e7a59a7031c3b2d927c6eb859a3973499c9e`                       |
-| Origin main head    | `2950e7a59a7031c3b2d927c6eb859a3973499c9e`                       |
-| Main baseline       | `2950e7a59a7031c3b2d927c6eb859a3973499c9e`                       |
+| Current branch      | `codex/jsc-363-post-pr392-tracker-refresh`                       |
+| Local main head     | `4bb43fa666315a649f3bd9a10b538142e4f3b47d`                       |
+| Origin main head    | `4bb43fa666315a649f3bd9a10b538142e4f3b47d`                       |
+| Main baseline       | `4bb43fa666315a649f3bd9a10b538142e4f3b47d`                       |
 | Active route count  | 1                                                                |
-| Active route        | Post-PR391 tracker refresh                                        |
-| Last closed route   | PR #391 merged                                                   |
-| Current route       | Post-PR391 tracker refresh branch                                |
-| Current slice       | Refresh route truth after the harness next repair merged         |
+| Active route        | Linear field-text decision blocker                               |
+| Last closed route   | PR #392 merged                                                   |
+| Current route       | Linear field-text decision or owner classification                |
+| Current slice       | Resolve or explicitly classify stale Linear field text            |
 | Feature work status | No next feature slice started                                    |
 
 ## Active Route
 
-PR #391 is merged and local `main` is synced with `origin/main` at
-`2950e7a59a7031c3b2d927c6eb859a3973499c9e`; that route is closed
-provenance. The active route is now the local
-`codex/jsc-363-post-pr391-tracker-refresh` branch, which only refreshes
-route truth after the merge. This does not claim Linear field-text currency,
+PR #392 is merged and local `main` is synced with `origin/main` at
+`4bb43fa666315a649f3bd9a10b538142e4f3b47d`; that route is closed
+provenance. The active route is now the blocked Linear field-text decision or
+owner classification lane. This does not claim Linear field-text currency,
 root-hygiene proof, documentation accuracy, Judge/PM readiness, release
 readiness, or parent-goal completion.
 
 Current evidence:
 
 - Local `main` and `origin/main` are synced at
-  `2950e7a59a7031c3b2d927c6eb859a3973499c9e` after PR #391 merge pullback.
+  `4bb43fa666315a649f3bd9a10b538142e4f3b47d` after PR #392 merge pullback.
+- Live GitHub reports PR #392 merged at `2026-06-09T11:10:16Z` from submitted
+  head `d9bd5c42c25a315dc4e112b546003402422fbdae`; repo-owned CircleCI,
+  aggregate `pr-pipeline`, aggregate `security-scan`, Socket, CodeRabbit
+  status, and review-thread checks passed or had no unresolved threads. The
+  external Snyk GitHub App private-test quota failure remains owner-waived for
+  that external lane only.
 - Live GitHub reports PR #391 merged at `2026-06-09T10:44:15Z` from submitted
   head `624bde7f10d7caf4f3b53a786da9b940bced9237`; visible PR checks passed
   before merge, including CodeRabbit, repo-owned CircleCI, Socket, aggregate

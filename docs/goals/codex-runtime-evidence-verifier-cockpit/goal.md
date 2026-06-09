@@ -43,20 +43,22 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-09 post-PR391 pullback and route-truth
+Last updated during the 2026-06-09 post-PR392 pullback and route-truth
 refresh. PR #366,
 PR #367, PR #369, PR #370, PR #371, PR #372, PR #373, PR #374, PR #375,
 PR #376, PR #377, PR #378, PR #379, PR #380, PR #381, PR #382, PR #383,
-PR #384, PR #385, PR #386, PR #387, PR #388, PR #389, PR #390, and PR #391
-are historical route provenance. PR #391 is merged into `main` at
-`2950e7a59a7031c3b2d927c6eb859a3973499c9e`.
+PR #384, PR #385, PR #386, PR #387, PR #388, PR #389, PR #390, PR #391,
+and PR #392 are historical route provenance. PR #392 is merged into `main`
+at `4bb43fa666315a649f3bd9a10b538142e4f3b47d`.
 
 Current live route truth:
 
 - Local `main` and `origin/main` are synced at
-  `2950e7a59a7031c3b2d927c6eb859a3973499c9e` after PR #391 merge pullback.
-- The active branch is `codex/jsc-363-post-pr391-tracker-refresh`; no next
-  feature slice has started.
+  `4bb43fa666315a649f3bd9a10b538142e4f3b47d` after PR #392 merge pullback.
+- The active route is the blocked Linear field-text decision or owner
+  classification lane; no next feature slice has started.
+- PR #392 merged the source-tracked post-PR391 route refresh from submitted
+  head `d9bd5c42c25a315dc4e112b546003402422fbdae`.
 - PR #391 delivered the narrow `harness next` clean-worktree-state repair:
   clean empty `git status --short --untracked-files=all` output remains a
   valid clean-state signal rather than becoming missing evidence and a false
@@ -213,26 +215,20 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: active post-PR391 tracker refresh on
-  `codex/jsc-363-post-pr391-tracker-refresh`; no next feature slice has
-  started.
-- Provenance: See `receipts.jsonl` for merged PR #343 through PR #391 route
+- Current route: blocked Linear field-text decision or owner classification
+  lane; no next feature slice has started.
+- Provenance: See `receipts.jsonl` for merged PR #343 through PR #392 route
   history.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #391 merged at
-  `2950e7a59a7031c3b2d927c6eb859a3973499c9e`. See `receipts.jsonl` for
+- Done on current main: PR #392 merged at
+  `4bb43fa666315a649f3bd9a10b538142e4f3b47d`. See `receipts.jsonl` for
   complete merged PR history.
-- Current route PR: none yet for
-  `codex/jsc-363-post-pr391-tracker-refresh`.
-- Active slice: post-PR391 tracker refresh. It records the merged
-  `harness next` clean-worktree-state repair and keeps Linear, documentation,
-  root-hygiene, Judge/PM, and parent-goal completion unclaimed.
-- Next broader slice after this tracker refresh merges and pulls back: Linear
-  field-text decision, still blocked until a usable Linear tool/token path
-  exists or the owner explicitly classifies stale Linear field text as
-  historical.
+- Current route PR: none.
+- Active slice: Linear field-text decision, blocked until a usable Linear
+  tool/token path exists or Jamie owner-classifies stale Linear field text as
+  historical while repo tracker truth remains canonical.
 - Remaining backlog: review/external/root-hygiene proof, documentation accuracy,
   historical review-coverage backfill, Linear field-text decision, PU-015
   Judge/PM audit, and final completion audit.
