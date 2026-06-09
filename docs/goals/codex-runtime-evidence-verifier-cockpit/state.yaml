@@ -32,7 +32,7 @@ thin_execution_tracker:
   active_route:
     kind: "implementation_pr"
     status: "active_pr_review_repair"
-    blocker: "The current narrow route fixes a current-main harness next worktree-state regression: clean git status output was collapsed to null and surfaced as a false dirty-worktree blocker. Local focused and broad gates have run; verification_surface lists the exact check-goal-board.py and check-goal-audit-freshness.py commands and outcomes. pnpm test:deep reached the E2E tail and is blocked because GitHub and Linear credentials are not visible in this process and <REDACTED_HOME_PATH>/.codex/.env is a FIFO. PR #391 is open; CI, review-thread, Linear, merge-readiness, and parent-goal completion remain separate lanes until refreshed after the review-repair commit."
+    blocker: "The current narrow route fixes a current-main harness next worktree-state regression: empty stdout from `git status --short --untracked-files=all` was collapsed to null and surfaced as a false dirty-worktree blocker. Local focused and broad gates have run; verification_surface lists the exact check-goal-board.py and check-goal-audit-freshness.py commands and outcomes. pnpm test:deep reached the E2E tail and is blocked because GitHub and Linear credentials are not visible in this process and <REDACTED_HOME_PATH>/.codex/.env is a FIFO. PR `#391` is open; CI, review-thread, Linear, merge-readiness, and parent-goal completion remain separate lanes until refreshed after the review-repair commit."
     active_branch: "codex/jsc-363-next-clean-worktree-state"
     active_pr: 391
     active_pr_url: "https://github.com/jscraik/coding-harness/pull/391"
