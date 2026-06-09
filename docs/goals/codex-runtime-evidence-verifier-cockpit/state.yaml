@@ -30,30 +30,30 @@ thin_execution_tracker:
     receipt_style: "compact claim/evidence/blocker records"
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
-    kind: "post_merge_tracker_refresh_pr_triage"
-    status: "pr387_open_coderabbit_r441_proof_gap_repair_validated_push_needed"
-    blocker: "PR #387 must complete repo-owned CI and review lanes, merge, and be pulled back before the Linear field-text decision resumes. The live PR body passes local pr-template validation; R443 carries local pass evidence for the CodeRabbit R441 validation-evidence thread and now needs commit, push, and remote PR refresh."
-    active_branch: "codex/jsc-363-post-pr386-tracker-refresh"
-    active_pr: 387
-    active_pr_url: "https://github.com/jscraik/coding-harness/pull/387"
-    active_pr_head_sha: "6e8f94f655ce240165bffea3ee0b2404dacb0ab1"
-    last_merged_pr: 386
-    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/386"
-    last_merged_sha: "3f3122b61cba470e91da94ca5c7b44c911dfe79d"
-    last_merged_submitted_head_sha: "1ca9aa8144cb90819e2649a1a325d53376db2baa"
-    last_merge_verified_at: "2026-06-09T05:41:10Z"
-    local_main_sha: "3f3122b61cba470e91da94ca5c7b44c911dfe79d"
-    origin_main_sha: "3f3122b61cba470e91da94ca5c7b44c911dfe79d"
+    kind: "pr_triage"
+    status: "pr388_open_review_thread_repair_repo_owned_checks_green_snyk_quota_waived"
+    blocker: "PR #388 is open for the post-PR387 tracker refresh. Repo-owned CircleCI lanes, aggregate pr-pipeline, Socket, and CodeRabbit are green at head ec550bd87b20884c316268be37c57dd66213cbaf after the PR-context rerun. GitHub merge state remains blocked by the external Snyk GitHub App quota/status lane, which is owner-waived only and not a pass. The active work is to repair route-truth review drift, refresh checks after the follow-up commit, then merge/pull back only if repo-owned CI and review lanes remain green."
+    active_branch: "codex/jsc-363-post-pr387-tracker-refresh"
+    active_pr: 388
+    active_pr_url: "https://github.com/jscraik/coding-harness/pull/388"
+    active_pr_head_sha: "ec550bd87b20884c316268be37c57dd66213cbaf"
+    last_merged_pr: 387
+    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/387"
+    last_merged_sha: "5ca228d2cb17944c72fc5ed8da4c7b1a4dd1fc53"
+    last_merged_submitted_head_sha: "014477beec4d174947923d5dbee3958ae7f4444f"
+    last_merge_verified_at: "2026-06-09T07:01:42Z"
+    local_main_sha: "5ca228d2cb17944c72fc5ed8da4c7b1a4dd1fc53"
+    origin_main_sha: "5ca228d2cb17944c72fc5ed8da4c7b1a4dd1fc53"
     open_pr_count: 1
     open_prs:
-      - 387
+      - 388
   queued_slice:
-    lifecycle_unit: "post-pr386-tracker-refresh-pr-triage"
-    name: "triage PR #387 until repo-owned CI and review lanes pass, merge it, pull main, then resume Linear field-text decision"
-    status: "active_pr_open_pr_template_body_repaired"
-    evidence_receipt: "R443"
+    lifecycle_unit: "linear-field-text-decision"
+    name: "decide JSC-363 Linear field-text currency with live tool/token evidence or owner classification"
+    status: "blocked_until_pr388_merges_and_main_is_pulled"
+    evidence_receipt: "R447"
   resume_gate:
-    - "Do not start broader feature or closeout work until goal-board and audit-freshness validators pass from current main after the latest merged PR route refresh."
+    - "Do not start broader feature or closeout work until PR #388 is triaged, merged, local main is pulled, and goal-board and audit-freshness validators pass from current main."
     - "Execute the Linear field-text decision only if a regular LINEAR_API_KEY source, Linear MCP tool, or explicit owner classification is available."
     - "Execute the Linear field-text decision as a bounded external-tracker slice before broader review/external/root-hygiene proof, documentation accuracy, PU-015 Judge/PM audit, or final completion audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
@@ -211,6 +211,7 @@ current_slice_gate:
     - "For every future slice, run simplify, improve-codebase-architecture, sy-review, and testing before done; then commit atomically, open or update one PR, trigger CodeRabbit manually when required, run pr-green-sweep until faults are fixed or explicitly blocked, merge to main, checkout main, pull latest remote main, update the goal board/state/receipt, and only then start the next slice."
     - "Stacked implementation PRs are forbidden by default. Only Jamie can authorize a named exception in the current slice intent and receipt before any parallel or dependent implementation work begins."
     - "Keep this board and the local board tracker as current route-truth surfaces; synchronize goal.md, state.yaml, goal-kanban-board.html, and receipts.jsonl after every merge, route decision, or blocker decision."
+    - "Use receipt R444 as the validated post-PR #387 current-main route refresh. PR #387 merged at 2026-06-09T07:01:42Z as squash merge commit 5ca228d2cb17944c72fc5ed8da4c7b1a4dd1fc53 from submitted head 014477beec4d174947923d5dbee3958ae7f4444f; local main and origin/main were pulled to that merge commit before the refresh branch was created."
     - "Use live Linear JSC-363 as tracker-current only for status In Review and attachment-backed provenance through PR #365 attachment f34c2183-1e8c-4314-b5e4-d0e9d2168afa, PR #364 attachment 54b11cbc-0fe9-4661-a8f4-213074463cd8, PR #363 attachment ce89f58e-eb35-48e6-be07-f1726a09788b, PR #362 attachment 3c421694-cf60-4a4a-a05b-1cba453bf643, and PR #360 attachment 4dbe1293-d506-4d37-ba79-aee8ae605cec. No PR #361 attachment is claimed for JSC-363 because PR #361 is tracked as the separate JSC-398 typed-contract gate lane. Do not claim field-text-current, Judge/PM-ready, or parent-goal completion because the issue title/description still describe Phase 1."
     - "Continue only from remaining evidence-backed lifecycle gaps: final review-state/external-state/root-hygiene proof, Judge/PM audit packet, historical review-coverage backfill, documentation accuracy, Linear field-text decision, and final requirement-by-requirement completion audit."
   blocked_done_claims:

@@ -415,9 +415,9 @@
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>PR #387 triage</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #386</strong></div>
-      <div class="metric"><span>Current PR</span><strong>None active</strong></div>
+      <div class="metric"><span>Goal status</span><strong>PR #388 triage</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #387</strong></div>
+      <div class="metric"><span>Current PR</span><strong>#388 open</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Projection merged</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
       <div class="metric"><span>Linear tracker</span><strong>Field text unclaimed</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated while PR #387 is open from <code>codex/jsc-363-post-pr386-tracker-refresh</code> at submitted head <code>6e8f94f655ce240165bffea3ee0b2404dacb0ab1</code>. Its live PR body passes the local pr-template validator after body repair, CodeRabbit was manually triggered, and R443 records the follow-up evidence lane for the R441 reviewer-proof thread. PR #386 merged and local <code>main</code> was pulled to <code>3f3122b61cba470e91da94ca5c7b44c911dfe79d</code>. PR #374 delivered the delivery-truth consumption projection in <code>src/lib/pr-closeout/</code> and <code>src/lib/delivery-truth/</code>. PR #375 delivered the post-PR374 tracker review-fix route. PR #376 delivered the post-PR375 tracker refresh and review-note repair route. PR #377 delivered the post-PR376 tracker refresh route. PR #378 delivered the post-PR377 tracker refresh route. PR #379 delivered the post-PR378 tracker refresh route. PR #380 delivered the post-PR379 tracker refresh route. PR #381 delivered the Linear field blocker tracker route. PR #382 delivered the post-PR381 tracker refresh route after the original CircleCI workflow was rerun from failed jobs to emit required <code>linear-gate</code> and <code>risk-policy-gate</code> contexts. PR #383 delivered the audit-freshness governor-output validator repair plus receipt-key-contract guard after CodeRabbit was manually retriggered and the active review thread was resolved. PR #384 delivered the tracker refresh that followed PR #383. PR #385 delivered the post-PR384 Linear blocker refresh. PR #386 delivered the stale-route guard review repair. PU-013 runtime cockpit integration proof remains merged through PR #370 with no production code patch required. Linear field-text decision remains blocked until a usable tool/token path or owner classification is available after PR #387 merges and main is pulled. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated after PR #388 opened for the post-PR387 route refresh at head <code>1047c8e1488a7c48bb3526e0e34ef920a80772e7</code>. The remote PR body passes <code>pr-template-gate</code> locally and CodeRabbit was manually triggered; visible CircleCI <code>pr-template</code> and aggregate <code>pr-pipeline</code> failures are stale pre-PR contexts from before CircleCI could resolve PR #388. PR #387 merged at 2026-06-09T07:01:42Z as squash merge commit <code>5ca228d2cb17944c72fc5ed8da4c7b1a4dd1fc53</code> from submitted head <code>014477beec4d174947923d5dbee3958ae7f4444f</code>, and local <code>main</code> was pulled to match <code>origin/main</code>. PR #387 delivered the post-PR386 route refresh and the R441 reviewer-proof repair recorded in R443; repo-owned CI, CodeRabbit, Socket, and review-thread lanes passed or resolved before merge, while the external Snyk GitHub App quota failure remains owner-waived only. PR #374 delivered the delivery-truth consumption projection in <code>src/lib/pr-closeout/</code> and <code>src/lib/delivery-truth/</code>. PR #375 delivered the post-PR374 tracker review-fix route. PR #376 delivered the post-PR375 tracker refresh and review-note repair route. PR #377 delivered the post-PR376 tracker refresh route. PR #378 delivered the post-PR377 tracker refresh route. PR #379 delivered the post-PR378 tracker refresh route. PR #380 delivered the post-PR379 tracker refresh route. PR #381 delivered the Linear field blocker tracker route. PR #382 delivered the post-PR381 tracker refresh route after the original CircleCI workflow was rerun from failed jobs to emit required <code>linear-gate</code> and <code>risk-policy-gate</code> contexts. PR #383 delivered the audit-freshness governor-output validator repair plus receipt-key-contract guard after CodeRabbit was manually retriggered and the active review thread was resolved. PR #384 delivered the tracker refresh that followed PR #383. PR #385 delivered the post-PR384 Linear blocker refresh. PR #386 delivered the stale-route guard review repair. PU-013 runtime cockpit integration proof remains merged through PR #370 with no production code patch required. Linear field-text decision remains blocked until PR #388 is merged and pulled back, then a usable Linear tool/token path or owner classification is available. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -823,7 +823,7 @@
         status: "blocked",
         tags: ["Linear", "JSC-363", "field text"],
         summary: "The next bounded slice is to refresh Linear JSC-363 field text if authorized, or record an explicit owner classification that stale Phase 1 wording is historical while the repo tracker remains canonical. It is blocked in this session because usable Linear credentials/tools are unavailable.",
-        evidence: ["Linear JSC-363 status -> not refreshed in this session", "Pre-PR372 route-truth comment -> 34a50024-24be-4853-af6e-3219cbc0d845", "Current main -> 3f3122b61cba470e91da94ca5c7b44c911dfe79d", "PR #386 -> MERGED at 2026-06-09T05:41:10Z", "harness linear prepare --issue JSC-363 --json -> previously failed missing LINEAR_API_KEY", "harness linear triage --dry-run --json -> previously failed missing LINEAR_API_KEY", "~/.codex/.env -> FIFO, not safely sourceable as regular env file"],
+        evidence: ["Linear JSC-363 status -> not refreshed in this session", "Pre-PR372 route-truth comment -> 34a50024-24be-4853-af6e-3219cbc0d845", "Current main -> 5ca228d2cb17944c72fc5ed8da4c7b1a4dd1fc53", "PR #387 -> MERGED at 2026-06-09T07:01:42Z", "PR #388 -> active tracker-refresh triage at ec550bd87b20884c316268be37c57dd66213cbaf", "harness linear prepare --issue JSC-363 --json -> previously failed missing LINEAR_API_KEY", "harness linear triage --dry-run --json -> previously failed missing LINEAR_API_KEY", "~/.codex/.env -> FIFO, not safely sourceable as regular env file"],
         next: "Provide a usable Linear tool/token path or owner-classify the stale Linear field text as historical while the repo tracker remains canonical; then record the decision before broader closeout work.",
         risk: "Tracker comments, issue fields, and goal receipts are distinct truth surfaces; one cannot silently stand in for the others."
       },
@@ -886,7 +886,7 @@
         id: "browser-preview",
         lane: "artifact-truth",
         title: "Implementation notes browser preview",
-        status: "blocked",
+        status: "review-thread-repair",
         tags: ["Browser", "artifact-runtime", "preview"],
         summary: "state.yaml says the reviewed MDX source exists, but the live HTML preview is a local runtime projection and no repo-owned watcher exists yet.",
         evidence: ["state.yaml artifact_runtime_surface.browser_preview.status = blocked", ".harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx", ".harness/implementation-notes/implementation-notes.html"],
@@ -1181,14 +1181,25 @@
       },
       {
         id: "post-pr386-tracker-refresh-pr387",
+        lane: "completed",
+        title: "PR #387: Post-PR386 tracker refresh merged",
+        status: "done",
+        tags: ["PR #387", "route truth", "merged"],
+        summary: "PR #387 merged the post-PR386 route refresh and R441 reviewer-proof repair into current main; local main was pulled to 5ca228d2cb17944c72fc5ed8da4c7b1a4dd1fc53 before this tracker refresh.",
+        evidence: ["PR #387 -> MERGED at 2026-06-09T07:01:42Z", "Squash merge commit -> 5ca228d2cb17944c72fc5ed8da4c7b1a4dd1fc53", "Submitted head -> 014477beec4d174947923d5dbee3958ae7f4444f", "Manual CodeRabbit trigger -> https://github.com/jscraik/coding-harness/pull/387#issuecomment-4656689316", "R443 -> R441 validation-evidence repair lane", "Repo-owned CircleCI lanes -> pass", "CodeRabbit -> pass", "Review threads -> zero unresolved", "External Snyk GitHub App quota -> owner-waived lane only"],
+        next: "Use as merged route-refresh provenance. Continue only through the Linear field-text decision blocker lane.",
+        risk: "PR #387 proves route-refresh delivery and reviewer-proof repair only. It does not prove Linear field text, documentation accuracy, root hygiene, Judge/PM readiness, or parent-goal completion."
+      },
+      {
+        id: "post-pr387-tracker-refresh-pr388",
         lane: "doing",
-        title: "PR #387: Post-PR386 tracker refresh triage",
-        status: "active",
-        tags: ["PR #387", "route truth", "CI"],
-        summary: "PR #387 is open to deliver the post-PR386 route refresh. The live PR body passes local pr-template validation, CodeRabbit was manually triggered, and R443 covers the R441 reviewer-proof evidence gap.",
-        evidence: ["PR #387 -> OPEN", "Submitted head -> 6e8f94f655ce240165bffea3ee0b2404dacb0ab1", "Manual CodeRabbit trigger -> https://github.com/jscraik/coding-harness/pull/387#issuecomment-4656689316", "Live PR body validator -> pass", "R443 -> R441 validation-evidence repair lane", "CircleCI v2 rerun attempt with CODEX_CI -> 401", "<REDACTED_HOME_PATH>/.codex/.env -> FIFO, not safely sourceable as a regular env file"],
-        next: "Commit and push this locally validated review-thread repair, then refresh PR #387 remote CI and review lanes before merge and main pullback.",
-        risk: "PR #387 proves route-refresh triage only. It does not prove Linear field text, documentation accuracy, root hygiene, Judge/PM readiness, or parent-goal completion."
+        title: "PR #388: Post-PR387 tracker refresh triage",
+        status: "blocked",
+        tags: ["PR #388", "route truth", "CI rerun"],
+        summary: "PR #388 is open for the post-PR387 tracker refresh. The remote PR body passes the local template gate, CodeRabbit was manually triggered, and the PR-context rerun now has repo-owned CircleCI lanes, aggregate pr-pipeline, Socket, and CodeRabbit green. GitHub merge state remains blocked by the owner-waived external Snyk GitHub App quota/status lane.",
+        evidence: ["PR #388 -> OPEN", "Head -> ec550bd87b20884c316268be37c57dd66213cbaf", "Remote PR body pr-template-gate -> pass", "Manual CodeRabbit trigger -> https://github.com/jscraik/coding-harness/pull/388#issuecomment-4657261420", "ci/circleci: pr-template -> pass at PR context", "pr-pipeline -> pass", "CodeRabbit -> success", "External Snyk GitHub App -> owner-waived quota/status lane only"],
+        next: "Resolve the route-truth review drift, refresh checks after this follow-up commit, and merge only if repo-owned CI plus review lanes remain green while keeping the external Snyk waiver separate.",
+        risk: "PR #388 proves tracker-refresh triage only. It does not prove Linear field text, documentation accuracy, root hygiene, Judge/PM readiness, parent-goal completion, or external Snyk GitHub App health."
       },
       {
         id: "final-proof-packets",
