@@ -421,13 +421,13 @@ def check_stale_runtime_pr_route(
             "real open PR count."
         )
 
-    for phrase in stale_merge_phrases:
-        if phrase in route_text:
-            violations.append(
-                "Project Brain active-artifacts index contains stale post-merge "
-                f"route text: {phrase!r}. Current-main route truth must not tell "
-                "operators to merge a blocker-refresh PR that has already merged."
-            )
+    violations.extend(
+        "Project Brain active-artifacts index contains stale post-merge "
+        f"route text: {phrase!r}. Current-main route truth must not tell "
+        "operators to merge a blocker-refresh PR that has already merged."
+        for phrase in stale_merge_phrases
+        if phrase in route_text
+    )
 
     if violations:
         print("\n".join(violations), file=sys.stderr)
