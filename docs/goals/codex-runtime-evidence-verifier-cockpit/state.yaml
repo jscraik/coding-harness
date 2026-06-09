@@ -31,12 +31,12 @@ thin_execution_tracker:
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
     kind: "post_merge_tracker_refresh_pr_triage"
-    status: "pr387_open_pr_template_body_repaired_ci_rerun_needed"
-    blocker: "PR #387 must complete repo-owned CI and review lanes, merge, and be pulled back before the Linear field-text decision resumes. The live PR body now passes local pr-template validation; the earlier CircleCI pr-template failure is stale remote evidence until rerun by this tracker commit or CircleCI rerun."
+    status: "pr387_open_coderabbit_r441_proof_gap_repair_validated_push_needed"
+    blocker: "PR #387 must complete repo-owned CI and review lanes, merge, and be pulled back before the Linear field-text decision resumes. The live PR body passes local pr-template validation; R443 carries local pass evidence for the CodeRabbit R441 validation-evidence thread and now needs commit, push, and remote PR refresh."
     active_branch: "codex/jsc-363-post-pr386-tracker-refresh"
     active_pr: 387
     active_pr_url: "https://github.com/jscraik/coding-harness/pull/387"
-    active_pr_head_sha: "bc555efe53b37dee18718e1db16ec949de75c693"
+    active_pr_head_sha: "6e8f94f655ce240165bffea3ee0b2404dacb0ab1"
     last_merged_pr: 386
     last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/386"
     last_merged_sha: "3f3122b61cba470e91da94ca5c7b44c911dfe79d"
@@ -51,7 +51,7 @@ thin_execution_tracker:
     lifecycle_unit: "post-pr386-tracker-refresh-pr-triage"
     name: "triage PR #387 until repo-owned CI and review lanes pass, merge it, pull main, then resume Linear field-text decision"
     status: "active_pr_open_pr_template_body_repaired"
-    evidence_receipt: "R442"
+    evidence_receipt: "R443"
   resume_gate:
     - "Do not start broader feature or closeout work until goal-board and audit-freshness validators pass from current main after the latest merged PR route refresh."
     - "Execute the Linear field-text decision only if a regular LINEAR_API_KEY source, Linear MCP tool, or explicit owner classification is available."
