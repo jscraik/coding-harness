@@ -3,56 +3,55 @@ mode: continue
 goal_path: docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md
 native_goal_status: unknown
 board_status: valid
-next_action: triage_pr379_then_pull_main_and_refresh_tracker
+next_action: validate_post_pr379_tracker_refresh_then_start_linear_field_text_decision
 interpreted_objective: >
-  Continue the JSC-363 Goal Governor route through active PR #379, preserving lane separation and keeping the Linear field-text decision slice queued until PR #379 is triaged, merged, local main is pulled back, and the tracker is refreshed.
+  Continue the JSC-363 Goal Governor route after PR #379 merge pullback, preserving lane separation and keeping the Linear field-text decision slice queued until the post-PR379 tracker refresh validates and is committed.
 native_blocker_audit:
   gate_met: false
-  blocker_class: active_pr_route
+  blocker_class: post_merge_tracker_refresh
   worker_must_pause: true
   work_should_pause: true
   reason: >
-    PR #379 is open for the post-PR378 tracker refresh. The live PR body gate passes and CodeRabbit was manually triggered, but the route is not complete until PR #379 is green except any owner-waived external Snyk quota lane, reviewed, merged, local main is pulled back, and the tracker is refreshed.
+    PR #379 is merged and local main is pulled to 0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533. The route is not ready for the next slice until this post-PR379 tracker refresh validates and is committed.
 truth_lanes:
   local_validation: pass
   generated_artifacts: pass
-  remote_pr_checks: pending_pr379
-  review_threads: pending_pr379_refresh
+  remote_pr_checks: pass_except_owner_waived_external_snyk_quota_before_merge
+  review_threads: zero_unresolved_before_merge
   tracker_state: pass
-  merge_readiness: blocked_active_pr379
+  merge_readiness: pr379_merged
   tracker_state_evidence: >
-    PR #378 merged at 2026-06-08T23:33:58Z from submitted head
-    9b003db2bec03f0638e8fbd4d296c8bc38816167 as squash merge commit
-    28b0bf30091689559afad2e3240f1f849122cf48. R426 records the post-merge
-    route refresh; R427 records validation. The external Snyk GitHub App
+    PR #379 merged from submitted head ac6d883a4568e048db47dad8f6106b5c266f3f73
+    as squash merge commit 0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533. R431 records
+    the post-merge route refresh. The external Snyk GitHub App
     private-test quota failure remains an owner-waived external status lane
     only, not external Snyk success and not a security waiver.
 continuation_gate:
   queued_user_input: absent
   pending_work: present
-  decision: continue_with_selected_slice_after_tracker_pr_routes
+  decision: validate_tracker_refresh_before_selected_slice
   reason: >
-    The tracker now names PR #379 as the active route and keeps Linear field-text decision as the queued next slice. It must not begin until the PR #379 route closes and main is refreshed.
+    The tracker now names no active PR route and keeps Linear field-text decision as the queued next slice. It must not begin until the post-PR379 tracker refresh validates and is committed.
   read_order:
     - read goal.md and state.yaml first
     - receipts.jsonl
     - notes/execution-tracker.md
 validation_evidence:
-  - command: "gh pr view 378 --repo jscraik/coding-harness --json state,mergedAt,mergeCommit,headRefOid,url"
+  - command: "gh pr view 379 --repo jscraik/coding-harness --json state,mergeStateStatus,headRefOid,url"
     outcome: pass
-    note: "PR #378 is MERGED at 2026-06-08T23:33:58Z."
+    note: "PR #379 is MERGED at submitted head ac6d883a4568e048db47dad8f6106b5c266f3f73."
   - command: "git checkout main"
     outcome: pass
-    note: "Switched to local main after PR #378 merge."
+    note: "Switched to local main after PR #379 merge."
   - command: "git pull --ff-only origin main"
     outcome: pass
-    note: "Fast-forwarded local main to 28b0bf30091689559afad2e3240f1f849122cf48."
+    note: "Fast-forwarded local main to 0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533."
   - command: "jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null"
     outcome: pass
-    note: "Receipt ledger parses after R427 append."
+    note: "Receipt ledger parses after R431 append."
   - command: "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo ."
     outcome: pass
-    note: "Audit freshness selects R427 with head_relation current."
+    note: "Audit freshness selects R431 after this tracker refresh validates."
   - command: "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
     outcome: pass
     note: "Goal board validates with review coverage backfill."
@@ -66,12 +65,12 @@ validation_evidence:
     outcome: pass
     note: "No whitespace errors."
 claim_ledger:
-  - claim: "PR #378 is merged into current main."
+  - claim: "PR #379 is merged into current main."
     classification: verified
     evidence_surface:
-      - gh pr view 378 --repo jscraik/coding-harness --json state,mergedAt,mergeCommit,headRefOid,url
+      - gh pr view 379 --repo jscraik/coding-harness --json state,mergeStateStatus,headRefOid,url
       - git pull --ff-only origin main
-    remaining_uncertainty: "None for PR #378 merge state; this does not prove future PR, CI, Linear, or final closeout state."
+    remaining_uncertainty: "None for PR #379 merge state; this does not prove future PR, CI, Linear, or final closeout state."
   - claim: "The tracker refresh is valid on current main."
     classification: verified
     evidence_surface:
@@ -79,13 +78,13 @@ claim_ledger:
       - scripts/check-goal-board.py
       - scripts/check-goal-audit-freshness.py
     remaining_uncertainty: "The validation proves tracker consistency, not completion of remaining closeout slices."
-  - claim: "PR #379 is the active route and Linear field-text decision is queued."
+  - claim: "No PR route is active after PR #379 merge pullback and Linear field-text decision is queued."
     classification: verified_from_repo_tracker
     evidence_surface:
       - docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml
       - docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md
       - .harness/implementation-notes/goal-kanban-board.html
-    remaining_uncertainty: "Live Linear fields still need refresh or owner classification after PR #379 merges and the tracker is refreshed."
+    remaining_uncertainty: "Live Linear fields still need refresh or owner classification after this post-PR379 tracker refresh is validated."
 evidence_surface:
   current_goal: docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md
   current_state: docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml
@@ -108,7 +107,7 @@ prohibited_actions:
   - do not start broader closeout work before the selected slice is routed
   - do not treat external Snyk quota waiver as external Snyk success
 remaining_uncertainty:
-  - "PR #379 is open and must be triaged/merged before the queued Linear field-text decision starts."
+  - "This post-PR379 tracker refresh must be validated before the queued Linear field-text decision starts."
   - "Live Linear field text has not yet been refreshed in this tracker PR."
   - "Review/external/root-hygiene proof, documentation accuracy, PU-015 Judge/PM audit, and final completion audit remain open."
 risks:
