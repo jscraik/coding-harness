@@ -26,33 +26,65 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | ------------------- | ---------------------------------------------------------------- |
 | Parent issue        | JSC-363                                                          |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`     |
-| Current branch      | `main`                                                           |
-| Local main head     | `5452ce126acabdd5e921c6bed59e23d70dbe4b79`                       |
-| Origin main head    | `5452ce126acabdd5e921c6bed59e23d70dbe4b79`                       |
-| Main baseline       | `5452ce126acabdd5e921c6bed59e23d70dbe4b79`                       |
-| Active route count  | 0                                                                |
-| Active route        | none                                                             |
-| Last closed route   | PR #385 merged                                                   |
-| Current route       | Linear field-text decision access blocker                        |
-| Current slice       | Linear field-text decision access blocker                        |
-| Feature work status | Blocked until Linear access or owner classification is available |
+| Current branch      | `codex/jsc-363-next-clean-worktree-state`                        |
+| Local main head     | `8003f0f84c07f80e93400d4c8f46378d83398142`                       |
+| Origin main head    | `8003f0f84c07f80e93400d4c8f46378d83398142`                       |
+| Main baseline       | `8003f0f84c07f80e93400d4c8f46378d83398142`                       |
+| Active route count  | 1                                                                |
+| Active route        | `harness next` clean-worktree-state repair                       |
+| Last closed route   | PR #390 merged                                                   |
+| Current route       | Implementation branch, PR #391 open                              |
+| Current slice       | Preserve empty git status as clean worktree evidence             |
+| Feature work status | Narrow local validation complete except credential-bound E2E tail |
 
 ## Active Route
 
-PR #385 is merged and local `main` is synced with `origin/main` at
-`5452ce126acabdd5e921c6bed59e23d70dbe4b79`; that route is closed provenance.
-No JSC-363 PR lane is active after the pullback. The selected next bounded
-slice is the Linear field-text decision, which remains blocked in this session
-because `harness linear prepare --issue JSC-363 --json` and
-`harness linear triage --dry-run --json` fail without `LINEAR_API_KEY`, and
-`~/.codex/.env` is a FIFO rather than a safely sourceable regular env file.
-This does not claim
+PR #390 is merged and local `main` is synced with `origin/main` at
+`8003f0f84c07f80e93400d4c8f46378d83398142`; that route is closed provenance.
+The active route is now the local
+`codex/jsc-363-next-clean-worktree-state` branch. It fixes a current-main
+`harness next` classifier regression where clean empty
+`git status --short --untracked-files=all` output was collapsed to missing
+evidence and surfaced as a false dirty-worktree blocker. This does not claim
 Linear field-text currency, root-hygiene proof, documentation accuracy,
-Judge/PM readiness, or parent-goal completion.
+Judge/PM readiness, PR merge readiness, or parent-goal completion.
 
 Current evidence:
 
 - Local `main` and `origin/main` are synced at
+  `8003f0f84c07f80e93400d4c8f46378d83398142` after PR #390 merge pullback.
+- Live GitHub currently reports zero open JSC-363 PRs; this branch has not yet
+  opened its PR.
+- Pre-patch command probe on clean current main returned a false
+  `worktree_state_blocked` result from `node --import tsx src/cli.ts next --json`.
+- The local patch keeps empty status output as a valid clean signal only for
+  `git status --short --untracked-files=all`; other git metadata commands keep
+  their previous empty-output handling.
+- `pnpm vitest run src/commands/next.test.ts`, `pnpm check`,
+  `pnpm lint -- src/commands/next-runner-inputs.ts src/commands/next.test.ts`,
+  `pnpm typecheck`, `pnpm run quality:docstrings`,
+  `pnpm run quality:size`, `pnpm run test:related`, and
+  `bash scripts/validate-codestyle.sh --fast` passed locally.
+- `pnpm test:deep` reached the E2E tail and stopped because GitHub and Linear
+  credentials were not visible in the process environment and
+  `<REDACTED_HOME_PATH>/.codex/.env` is a FIFO in this sandbox.
+- Local validation lanes were rerun sequentially after an accidental concurrent
+  broad-gate run produced invalid artifact/temp contention failures; the
+  sequential `pnpm check` pass is the valid local broad-gate evidence.
+- The Linear field-text decision remains outstanding and blocked until a usable
+  Linear MCP/tool/token path exists or the owner classifies stale Linear fields
+  as historical while repo tracker truth remains canonical.
+- PR #390 merged the post-PR389 route truth refresh at
+  `8003f0f84c07f80e93400d4c8f46378d83398142`.
+- Local `main` and `origin/main` were previously synced at
+  `2b1b20cbaab259041b53e53fcabfa24a248528a2` after PR #389 merge pullback.
+- Live GitHub reports PR #389 merged at 2026-06-09T08:54:35Z from submitted
+  head `edae037da4bc46457f2412bb0a1506fe8d689abe` as squash merge commit
+  `2b1b20cbaab259041b53e53fcabfa24a248528a2`.
+- PR #389 repo-owned required checks passed on the submitted head, CodeRabbit
+  passed, review threads were resolved, and post-merge route-truth refresh
+  landed through PR #390.
+- Local `main` and `origin/main` were previously synced at
   `5452ce126acabdd5e921c6bed59e23d70dbe4b79` after PR #385 merge pullback.
 - Live GitHub reports PR #385 merged at 2026-06-09T04:00:10Z from submitted
   head `b6951de3a5d8627c80b78cc911c10d526dd4e24b` as squash merge commit
@@ -194,29 +226,32 @@ Completed route-refresh action:
 
 ## Active Slice
 
-The selected next slice is the Linear field-text decision, and it is now active
-but blocked on Linear access in this session.
+The selected active slice is the `harness next` clean-worktree-state repair.
+It is local-validation complete except for the credential-bound E2E tail and is
+open as PR #391.
 
 Current slice boundary:
 
-- External tracker: Linear JSC-363.
-- Objective: refresh the JSC-363 title/description/comments if authorized, or
-  record an explicit owner classification that the stale Phase 1 field text is
-  accepted as historical while the repo tracker remains canonical.
-- Output: compact Linear receipt plus synchronized goal/state/tracker update.
-- Boundary: this slice must not reopen runtime-card, delivery-truth, or
-  closeout code unless a fresh current-main regression is found.
-- Current blocker: Linear MCP tools are not exposed, `LINEAR_API_KEY` is absent
-  from the process environment, and `~/.codex/.env` is a FIFO in this sandbox.
-  `harness linear prepare --issue JSC-363 --json` and
-  `harness linear triage --dry-run --json` both failed with missing-token
-  validation errors.
+- Project area: `src/commands/next-runner-inputs.ts` and
+  `src/commands/next.test.ts`.
+- Objective: preserve empty clean `git status --short --untracked-files=all`
+  output as explicit clean-state evidence so `harness next` does not block a
+  clean checkout as dirty.
+- Output: code patch, regression test, compact receipt, synchronized
+  goal/state/tracker/Kanban update, one PR, PR triage, merge, and pullback.
+- Boundary: this slice must not make `harness next` execute actions, act as
+  merge authority, reopen runtime-card evidence storage, or claim Linear field
+  text.
+- Current blocker: exact `pnpm test:deep` completion is blocked at the E2E tail
+  because GitHub and Linear credentials are not visible in the process
+  environment and `~/.codex/.env` is a FIFO in this sandbox. Focused tests and
+  broad local `pnpm check` pass.
 
 Non-claims:
 
 - This slice does not produce root-hygiene evidence, Judge/PM readiness, Linear
-  field-text currency, or parent goal completion.
-- No broader feature lane is active during the validator-repair route.
+  field-text currency, PR merge readiness, or parent goal completion.
+- No broader feature lane is active during this repair route.
 
 ## Outstanding Work
 

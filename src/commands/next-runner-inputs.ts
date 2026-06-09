@@ -33,7 +33,10 @@ export function inspectGitChangedFiles(repoRoot: string): string[] {
 
 /** Resolve local worktree state from git metadata required for role-aware nexting. */
 export function inspectWorktreeState(repoRoot: string): NextWorktreeState {
-	const run = (args: string[]): string | null => {
+	const run = (
+		args: string[],
+		options?: { emptyIsValue?: boolean },
+	): string | null => {
 		try {
 			const output = execFileSync("git", args, {
 				cwd: repoRoot,
@@ -42,7 +45,8 @@ export function inspectWorktreeState(repoRoot: string): NextWorktreeState {
 				stdio: ["ignore", "pipe", "ignore"],
 				timeout: 10_000,
 			}).trim();
-			return output.length > 0 ? output : null;
+			if (output.length > 0) return output;
+			return options?.emptyIsValue === true ? "" : null;
 		} catch {
 			return null;
 		}
@@ -54,7 +58,9 @@ export function inspectWorktreeState(repoRoot: string): NextWorktreeState {
 		return Number.isNaN(parsed) ? null : parsed;
 	};
 
-	const status = run(["status", "--short", "--untracked-files=all"]);
+	const status = run(["status", "--short", "--untracked-files=all"], {
+		emptyIsValue: true,
+	});
 	const branch = run(["rev-parse", "--abbrev-ref", "HEAD"]);
 	const upstream = run([
 		"rev-parse",

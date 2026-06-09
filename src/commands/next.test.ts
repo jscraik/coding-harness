@@ -15,7 +15,10 @@ import {
 	validateHarnessDecision,
 	validateHarnessDecisionOperationalMeta,
 } from "../lib/decision/harness-decision.js";
-import { blocksDirtyWorktree } from "./next-runner-inputs.js";
+import {
+	blocksDirtyWorktree,
+	inspectWorktreeState,
+} from "./next-runner-inputs.js";
 import {
 	HE_GATE_RESULT_SCHEMA_VERSION,
 	aggregateHePhaseExit,
@@ -449,6 +452,18 @@ describe("runHarnessNext", () => {
 			expect(decision.nextAction).toContain(
 				"Use --worktree-role dirty-with-justification",
 			);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("preserves empty git status output as a clean worktree state", () => {
+		const repoRoot = createGitRepoWithCommit();
+		try {
+			const state = inspectWorktreeState(repoRoot);
+
+			expect(state.clean).toBe(true);
+			expect(blocksDirtyWorktree("clean", state)).toBe(false);
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });
 		}

@@ -10,14 +10,21 @@
 
 ## Scope
 
-Current working reconciliation: 2026-06-09 post-PR #389 pullback for JSC-363.
+Current working reconciliation: 2026-06-09 post-PR #390 pullback plus narrow
+`harness next` worktree-state repair for JSC-363. PR #390 is merged into
+`main` at `8003f0f84c07f80e93400d4c8f46378d83398142`; local `main` and
+`origin/main` are synced to that head. The current active branch is
+`codex/jsc-363-next-clean-worktree-state` with PR #391 open at
+https://github.com/jscraik/coding-harness/pull/391. This route fixes a
+current-main `harness next` classifier bug where
+empty clean `git status --short --untracked-files=all` output was collapsed to
+missing evidence and surfaced as a false dirty-worktree blocker.
 PR #389 merged into `main` at 2026-06-09T08:54:35Z as squash merge commit
 `2b1b20cbaab259041b53e53fcabfa24a248528a2` from submitted head
-`edae037da4bc46457f2412bb0a1506fe8d689abe`; local `main` and
-`origin/main` are synced to that head. Before merge, repo-owned CircleCI,
-aggregate `pr-pipeline`, Socket, CodeRabbit, and review-thread lanes passed or
-resolved. External Snyk GitHub App status remains a separate owner-waived
-quota/status lane only, not a pass.
+`edae037da4bc46457f2412bb0a1506fe8d689abe`; before merge, repo-owned
+CircleCI, aggregate `pr-pipeline`, Socket, CodeRabbit, and review-thread lanes
+passed or resolved. External Snyk GitHub App status remains a separate
+owner-waived quota/status lane only, not a pass.
 PR #388 merged into `main` at 2026-06-09T08:13:09Z as squash merge commit
 `58781159524b361317f3651d1cc70682e5e47db6` from submitted head
 `d93e00c584e1e69935195cc448cb6e1dee7a2dd5`.
@@ -51,13 +58,13 @@ PU-013 runtime cockpit integration proof remains merged through PR #370, PR #371
 merged the post-PR370 tracker repair, PR #372 merged the post-PR371 tracker
 repair plus narrow CodeRabbit learning-contract validator support, and PR #373
 merged the post-PR372 tracker refresh. Linear JSC-363 has pre-PR372 post-merge
-route-truth comment `34a50024-24be-4853-af6e-3219cbc0d845`. No JSC-363 PR lane
-is active after PR #389 was merged and pulled back to local `main`. PR,
-repo-owned CI, CodeRabbit completion, review-thread state, mergeability, and
-merge execution remain separate evidence lanes. The selected next bounded slice
-is still the Linear field-text decision, which remains blocked because the repo Linear
-commands fail without `LINEAR_API_KEY`, while `<REDACTED_HOME_PATH>/.codex/.env`
-is a FIFO rather than a safely sourceable regular env file.
+route-truth comment `34a50024-24be-4853-af6e-3219cbc0d845`. PR, repo-owned CI,
+CodeRabbit completion, review-thread state, mergeability, and merge execution
+remain separate evidence lanes. The selected active slice is now the
+`harness next` clean-worktree-state repair; the Linear field-text decision
+remains outstanding and blocked because the repo Linear commands fail without
+`LINEAR_API_KEY`, while `<REDACTED_HOME_PATH>/.codex/.env` is a FIFO rather
+than a safely sourceable regular env file.
 Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness,
 and parent-goal completion remain unclaimed.
 
@@ -87,7 +94,7 @@ unless a live refresh is recorded in the referenced artifact.
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
 | Advisory stale-document archive candidate reporting | JSC-395 | `.harness/specs/2026-06-05-advisory-stale-document-archive-candidate-reporting-spec.md` plus `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-trace-plan.md` plus `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-execution-plan.md` | Delivered on current main by PR #354. The slice remains advisory/read-only: it may report stale-document archive candidates and docs-gate advisory findings, but it must not delete, move, archive, demote, or rewrite documentation artifacts. | Treat PR #354 as merged implementation evidence. Keep release, downstream-template, and any future docs-cleanup action separate unless a later tracked route explicitly promotes them. |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor route with a thin execution tracker. PR #389 is merged into current main at 2b1b20cbaab259041b53e53fcabfa24a248528a2 after repo-owned CircleCI lanes, aggregate `pr-pipeline`, Socket, CodeRabbit, and review threads passed or resolved; external Snyk GitHub App remains quota-waived only. PR #388 remains merged route-refresh provenance at 58781159524b361317f3651d1cc70682e5e47db6. PR #387 remains merged route-refresh provenance at 5ca228d2cb17944c72fc5ed8da4c7b1a4dd1fc53. PR #386 remains merged stale-route guard review-repair provenance from submitted head 1ca9aa8144cb90819e2649a1a325d53376db2baa and merge commit 3f3122b61cba470e91da94ca5c7b44c911dfe79d. PR #385 remains merged provenance at 5452ce126acabdd5e921c6bed59e23d70dbe4b79. PR #384 remains merged post-PR383 tracker provenance at 96846c31b7d3b1bade77b1145543ab1c92c797ae. PR #374 remains merged provenance and delivered final delivery-truth projection in the existing pr-closeout and delivery-truth deep modules. PR #381 remains Linear-blocker tracker provenance only. | Next Safe Action: execute the Linear field-text decision only with a usable Linear tool/token path or explicit owner classification; broader closeout remains blocked. Latest route receipt head: 2b1b20cbaab259041b53e53fcabfa24a248528a2. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor route with a thin execution tracker. PR #390 is merged into current main at 8003f0f84c07f80e93400d4c8f46378d83398142. The active branch is codex/jsc-363-next-clean-worktree-state and PR #391 is open for the harness next clean-worktree classifier repair. PR #389, PR #388, PR #387, PR #386, PR #385, PR #384, PR #381, and PR #374 remain merged provenance only. | Next Safe Action: repair the PR #391 CodeRabbit route-truth comments, push the repair commit, refresh CI/review truth, then merge, pull main, and return to the blocked Linear field-text decision or owner classification lane. Latest route receipt head: 675319f2f42847fb9185cc5d3c4c490d5bcfb8df. |
 
 PU-046 update: PR #330 was refreshed again on head
 163017e16e4611d5d71f5c4c62fc85f8d164b17b after the R205 artifact receipt was
@@ -153,7 +160,7 @@ runtime producer emission, delivery-truth consumption, or final goal completion.
 | JSC-301 | route-decision-contract | `.harness/specs/2026-05-11-jsc-301-route-decision-contract-spec.md` | `.harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md` | Archived PR closeout context | Not the next active implementation slice. Keep as dependency context for JSC-311 control-plane work. |
 | JSC-311 | he-phase-exit-evidence-gates | `.harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md` | `.harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md` | Implemented in current checkout; validation/PR closeout pending | PR #247 merged the internal `HeGateResult/v1` / `HePhaseExit/v1` contract and worktree baseline. The current checkout adds the operator-visible `harness next --phase-exit <artifact>` path. |
 | JSC-331 | harness-assurance-artifact-handling | n.a. | `.harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md`; `.harness/research/audits/2026-05-20-evidence-led-codebase-gap-audit.md`; `docs/goals/jsc-331-goal-governed-evidence-led-implementation/goal.md` | Active assurance route with ready-not-started Goal Governor board | Selected instead of creating a duplicate issue because live Linear already has a coding-harness apparatus/assurance lane. The audit now adds the Codex runtime-evidence contract and `.agents` observed-state bridge as the next durable hardening targets. The Goal Governor board is prepared for owner kickoff and begins with read-only governor bootstrap, not Worker implementation. JSC-308 remains related HE artifact-policy context. |
-| JSC-363 | codex-runtime-evidence-verifier-cockpit | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` | `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md`; `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`; `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md`; `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md`; `.harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md`; `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Current active Goal Governor route for this thread | The board governs the full lifecycle, not just Phase 1. The thin execution tracker is the restart surface. No JSC-363 PR lane is active after PR #389 merged into current main at `2b1b20cbaab259041b53e53fcabfa24a248528a2` from submitted head `edae037da4bc46457f2412bb0a1506fe8d689abe`. Current route action is execute the Linear field-text decision only with a usable Linear tool/token path or owner classification; broader closeout remains blocked. |
+| JSC-363 | codex-runtime-evidence-verifier-cockpit | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` | `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md`; `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`; `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md`; `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md`; `.harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md`; `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Current active Goal Governor route for this thread | The board governs the full lifecycle, not just Phase 1. The thin execution tracker is the restart surface. Current main is PR #390 at `8003f0f84c07f80e93400d4c8f46378d83398142`. The active route is `codex/jsc-363-next-clean-worktree-state`, which repairs `harness next` clean-worktree classification before PR triage. Linear field-text decision remains blocked by unavailable usable Linear access or owner classification; broader closeout remains blocked. |
 | JSC-395 | advisory-stale-document-archive-candidate-reporting | `.harness/specs/2026-06-05-advisory-stale-document-archive-candidate-reporting-spec.md` | `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-trace-plan.md`; `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-execution-plan.md` | Current active implementation route for this branch | Implements an advisory, read-only archive-candidate report and docs-gate projection. It must preserve the boundary that candidate findings are not archive, delete, demotion, or movement authority. |
 
 ## Duplicate Resolution
