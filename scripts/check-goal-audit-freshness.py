@@ -22,7 +22,141 @@ from typing import Any, cast
 
 
 GOVERNED_AUDIT_PATH = ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md"
+REQUIRED_RECEIPT_FIELDS = (
+    "id",
+    "head_sha",
+    "created_at",
+    "changed_files",
+    "audit_sources_checked",
+)
 REQUIRED_SOURCE_FIELDS = ("path", "sha256", "checked_at", "head_sha")
+ALLOWED_AUDIT_RECEIPT_FIELDS = {
+    "action_type",
+    "actor",
+    "architecture_review",
+    "artifact_runtime_surface_refs",
+    "assignee",
+    "audit_gap_ids",
+    "audit_sources_checked",
+    "blocked_done_claims",
+    "blocked_lanes",
+    "blocker_class",
+    "blockers",
+    "board_truth_lane_split",
+    "branch",
+    "changed_files",
+    "changed_surfaces",
+    "ci_truth",
+    "circleci_credential_policy",
+    "circleci_direct_api",
+    "circleci_evidence",
+    "circleci_truth",
+    "codex_native_refinement_ids",
+    "codex_runtime_state_inputs",
+    "commands",
+    "committed_slice_files",
+    "created_at",
+    "current_slice_gate",
+    "decision_request_boundary_refs",
+    "deferred_follow_up_or_blocker",
+    "documented_surfaces",
+    "durable_improvement",
+    "durable_system_improvement",
+    "ecosystem_review_findings",
+    "environment_permission_refs",
+    "evidence_commit_changed_files",
+    "evidence_observed",
+    "explicit_non_claims",
+    "external_state_checked",
+    "failure_category",
+    "feedback_signal",
+    "final_independent_review_results",
+    "follow_up_candidates",
+    "generated_architecture_surfaces",
+    "github_pr_truth",
+    "goal_governor_results",
+    "head_sha",
+    "id",
+    "implementation_changed_files",
+    "implementation_commit",
+    "implementation_files",
+    "implementation_review_findings_adopted",
+    "independent_reviewer_results",
+    "initial_reviewer_findings",
+    "instruction_provenance_refs",
+    "intent_review_results",
+    "learning_gate_summary",
+    "lifecycle_unit",
+    "linear_evidence",
+    "linear_tracker_snapshot",
+    "linear_truth",
+    "local_main_sync",
+    "local_runtime_artifacts",
+    "memory_surfaces_read",
+    "next_action",
+    "next_actions",
+    "no_hidden_work_statement",
+    "open_lifecycle_truth",
+    "origin_main_sha",
+    "pending_external_surfaces",
+    "pr",
+    "pr_state_snapshot",
+    "project_brain_inputs",
+    "prompt_context_refs",
+    "proof_artifacts_ignored",
+    "remaining_work",
+    "remote_status_truth",
+    "replay_packet_refs",
+    "review_artifacts",
+    "review_artifacts_normalized",
+    "review_artifacts_promoted",
+    "review_evidence",
+    "review_feedback_addressed",
+    "review_finding",
+    "review_findings_adopted",
+    "review_findings_fixed",
+    "review_findings_resolved",
+    "review_lifecycle_refs",
+    "review_recovery_attempts",
+    "review_status",
+    "review_thread",
+    "review_thread_refs",
+    "review_thread_truth",
+    "review_threads",
+    "review_truth",
+    "reviewer_evidence",
+    "reviewer_findings_resolved",
+    "reviewer_results",
+    "root_operational_failure",
+    "route_truth",
+    "route_validation_commands",
+    "runtime_card_continuity_refs",
+    "runtime_identity_refs",
+    "runtime_recovery_class",
+    "scope_guardrails_checked",
+    "sibling_pattern_sweep",
+    "slice_completion_contract",
+    "slice_skill_lens_results",
+    "slice_status",
+    "source_receipt",
+    "source_repair_commit",
+    "stack_dependency",
+    "status",
+    "steering_queue_refs",
+    "subagent_artifacts",
+    "summary",
+    "superseded_route_files",
+    "system_prompt_gap_ids",
+    "task_id",
+    "tool_exposure_snapshot",
+    "ubiquitous_language_results",
+    "validation",
+    "validation_commands",
+    "validation_commands_pending_after_append",
+    "validation_results",
+    "waiver_scope",
+}
+ALLOWED_AUDIT_SOURCE_FIELDS = set(REQUIRED_SOURCE_FIELDS) | {"status"}
 CHECKED_AT_FUTURE_SKEW = timedelta(minutes=5)
 SELF_REFERENTIAL_GOAL_RECEIPT_PATHS = {
     ".harness/active-artifacts.md",
@@ -31,6 +165,7 @@ SELF_REFERENTIAL_GOAL_RECEIPT_PATHS = {
     "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md",
     "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
     "docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+    "goal-governor-output.yaml",
 }
 SELF_REFERENTIAL_DECLARABLE_PATHS = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS | {
     "scripts/check-goal-board.py",
@@ -139,8 +274,7 @@ def changed_paths_between(repo_root: Path, base_head: str, current_head: str) ->
             ["git", "diff", "--name-only", f"{base_head}..{current_head}"],
             cwd=repo_root,
             check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
         )
     except (OSError, subprocess.CalledProcessError) as exc:
@@ -192,6 +326,34 @@ def latest_audit_source(
     raise ValidationError(f"no audit_sources_checked entry found for {audit_path}")
 
 
+def validate_receipt_key_contract(receipt: dict[str, Any], source: dict[str, Any]) -> None:
+    missing_receipt_fields = [field for field in REQUIRED_RECEIPT_FIELDS if field not in receipt]
+    if missing_receipt_fields:
+        raise ValidationError(
+            f"receipt missing required field(s): {', '.join(missing_receipt_fields)}",
+        )
+    unknown_receipt_fields = sorted(set(receipt) - ALLOWED_AUDIT_RECEIPT_FIELDS)
+    if unknown_receipt_fields:
+        raise ValidationError(
+            f"receipt contains unknown field(s): {', '.join(unknown_receipt_fields)}",
+        )
+
+    changed_files = receipt.get("changed_files")
+    if not isinstance(changed_files, list):
+        raise ValidationError("receipt.changed_files must be a list")
+    for value in cast(list[Any], changed_files):
+        if not isinstance(value, str):
+            raise ValidationError("receipt.changed_files[] must be a string")
+        normalize_repo_relative_path(value, "receipt.changed_files[]")
+
+    unknown_source_fields = sorted(set(source) - ALLOWED_AUDIT_SOURCE_FIELDS)
+    if unknown_source_fields:
+        raise ValidationError(
+            "audit_sources_checked entry contains unknown field(s): "
+            f"{', '.join(unknown_source_fields)}",
+        )
+
+
 def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
     repo_root = repo.resolve()
     audit_path = normalize_repo_relative_path(audit_arg, "--audit")
@@ -217,8 +379,7 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
             ["git", "rev-parse", "HEAD"],
             cwd=repo_root,
             check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
         ).stdout.strip()
     except (OSError, subprocess.CalledProcessError) as exc:
@@ -226,6 +387,7 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
 
     current_sha256 = sha256_file(audit_file)
     receipt, source = latest_audit_source(receipts, audit_path)
+    validate_receipt_key_contract(receipt, source)
     current_head_normalized = current_head.lower()
 
     missing_fields = [field for field in REQUIRED_SOURCE_FIELDS if field not in source]
@@ -317,8 +479,7 @@ def classify_head_relation(repo_root: Path, head_sha: str, current_head: str, fi
             ["git", "merge-base", "--is-ancestor", normalized_head_sha, "HEAD"],
             cwd=repo_root,
             check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
         )
     except OSError as exc:
@@ -345,8 +506,7 @@ def is_shallow_repository(repo_root: Path) -> bool:
             ["git", "rev-parse", "--is-shallow-repository"],
             cwd=repo_root,
             check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
         )
     except OSError:
@@ -360,8 +520,7 @@ def fetch_commit_from_origin(repo_root: Path, head_sha: str) -> bool:
             ["git", "fetch", "--depth=1", "--no-tags", "origin", head_sha],
             cwd=repo_root,
             check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
         )
     except OSError:
@@ -380,8 +539,7 @@ def classify_non_ancestor_tree_relation(
             ["git", "diff", "--quiet", f"{head_sha}..{current_head}"],
             cwd=repo_root,
             check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
         )
     except OSError as exc:

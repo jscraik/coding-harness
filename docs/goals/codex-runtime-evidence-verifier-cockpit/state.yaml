@@ -31,24 +31,26 @@ thin_execution_tracker:
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
     kind: "github_pr"
-    status: "no_active_pr_after_pr381_merge_pullback"
-    blocker: "Linear field-text decision is active but externally blocked: this session has no exposed Linear MCP tools and no LINEAR_API_KEY."
-    last_merged_pr: 381
-    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/381"
-    last_merged_sha: "14918c8d20df6da29f3b2531820da24405e727d2"
-    last_merged_submitted_head_sha: "f0e115b744b0bbc32268343ed3d6d1efe679cf40"
-    last_merge_verified_at: "2026-06-09T01:25:32Z"
-    local_main_sha: "14918c8d20df6da29f3b2531820da24405e727d2"
-    origin_main_sha: "14918c8d20df6da29f3b2531820da24405e727d2"
+    status: "active_local_branch_after_pr382_merge_pullback"
+    blocker: "No feature work may resume until the audit-freshness validator repair and post-PR382 tracker refresh are merged, pulled to main, and validator-clean."
+    active_branch: "codex/jsc-363-audit-freshness-governor-output"
+    last_merged_pr: 382
+    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/382"
+    last_merged_sha: "b6f31c3f4027eee331fc98579c24eb560fb67d22"
+    last_merged_submitted_head_sha: "784070cb93a8fe0204d05bfb909608711128c0d0"
+    last_merge_verified_at: "2026-06-09T01:58:34Z"
+    local_main_sha: "b6f31c3f4027eee331fc98579c24eb560fb67d22"
+    origin_main_sha: "b6f31c3f4027eee331fc98579c24eb560fb67d22"
     open_pr_count: 0
     open_prs: []
   queued_slice:
-    lifecycle_unit: "linear-field-text-decision"
-    name: "refresh or owner-classify JSC-363 Linear field-text currency"
-    status: "active_blocked_missing_linear_tools_or_token"
-    evidence_receipt: "R433"
+    lifecycle_unit: "audit-freshness-governor-output-route-repair"
+    name: "merge the narrow validator repair that keeps post-squash tracker receipts valid when goal-governor-output.yaml changes"
+    status: "active_local_validation_passed_pending_pr"
+    evidence_receipt: "R434"
   resume_gate:
-    - "Do not start broader feature or closeout work until the Linear field-text decision slice is either completed through live Linear or explicitly owner-classified as accepted stale field text."
+    - "Do not start broader feature or closeout work until the post-PR382 audit-freshness validator repair is merged, main is pulled locally, and goal-board/audit-freshness validators pass from current main."
+    - "After the validator repair is merged and pulled, return to the Linear field-text decision slice unless Jamie changes the route."
     - "Execute the Linear field-text decision as a bounded external-tracker slice before broader review/external/root-hygiene proof, documentation accuracy, PU-015 Judge/PM audit, or final completion audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
   review_artifacts:

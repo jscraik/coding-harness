@@ -26,31 +26,38 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | ------------------- | ----------------------------------------------------------------------- |
 | Parent issue        | JSC-363                                                                 |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`            |
-| Current branch      | `codex/jsc-363-post-pr381-tracker-refresh`                              |
-| Local main head     | `14918c8d20df6da29f3b2531820da24405e727d2`                              |
-| Origin main head    | `14918c8d20df6da29f3b2531820da24405e727d2`                              |
-| Main baseline       | `14918c8d20df6da29f3b2531820da24405e727d2`                              |
+| Current branch      | `codex/jsc-363-audit-freshness-governor-output`                         |
+| Local main head     | `b6f31c3f4027eee331fc98579c24eb560fb67d22`                              |
+| Origin main head    | `b6f31c3f4027eee331fc98579c24eb560fb67d22`                              |
+| Main baseline       | `b6f31c3f4027eee331fc98579c24eb560fb67d22`                              |
 | Active route count  | 0                                                                       |
-| Active route        | none                                                                    |
-| Last closed route   | PR #381 merged                                                          |
-| Current route       | Linear field-text decision                                              |
-| Current slice       | Linear field-text decision                                              |
-| Feature work status | Blocked on Linear tools or `LINEAR_API_KEY`; no broader slice may start |
+| Active route        | local branch pending PR                                                 |
+| Last closed route   | PR #382 merged                                                          |
+| Current route       | audit-freshness governor-output route repair                            |
+| Current slice       | validator repair and post-PR382 tracker refresh                         |
+| Feature work status | Blocked until this repair is merged, pulled to main, and validated       |
 
 ## Active Route
 
-PR #381 is merged and local `main` is synced with `origin/main` at
-`14918c8d20df6da29f3b2531820da24405e727d2`; that route is closed provenance.
-No PR route is active. The Linear field-text decision slice is active, but live
-Linear read/write is blocked in this session because Linear MCP tools are not
-exposed and `LINEAR_API_KEY` is absent from the process environment. This does
-not claim Linear field-text currency, root-hygiene proof, documentation
-accuracy, Judge/PM readiness, or parent-goal completion.
+PR #382 is merged and local `main` is synced with `origin/main` at
+`b6f31c3f4027eee331fc98579c24eb560fb67d22`; that route is closed provenance.
+The active branch is `codex/jsc-363-audit-freshness-governor-output`. It
+repairs the recurring post-squash audit-freshness failure where
+`goal-governor-output.yaml` changed with tracker state but was not included in
+the validator's self-referential goal receipt surface. This does not claim
+Linear field-text currency, root-hygiene proof, documentation accuracy,
+Judge/PM readiness, or parent-goal completion.
 
 Current evidence:
 
 - Local `main` and `origin/main` are synced at
-  `14918c8d20df6da29f3b2531820da24405e727d2` after PR #381 merge pullback.
+  `b6f31c3f4027eee331fc98579c24eb560fb67d22` after PR #382 merge pullback.
+- Live GitHub reports PR #382 merged at 2026-06-09T01:58:34Z from submitted
+  head `784070cb93a8fe0204d05bfb909608711128c0d0` as squash merge commit
+  `b6f31c3f4027eee331fc98579c24eb560fb67d22`.
+- PR #382 required contexts passed only after the original failed CircleCI
+  workflow was rerun from failed jobs, which emitted the required
+  `ci/circleci: linear-gate` and `ci/circleci: risk-policy-gate` contexts.
 - Live GitHub reports PR #381 merged at 2026-06-09T01:25:32Z from submitted
   head `f0e115b744b0bbc32268343ed3d6d1efe679cf40` as squash merge commit
   `14918c8d20df6da29f3b2531820da24405e727d2`.
@@ -190,7 +197,7 @@ Non-claims:
 
 - This slice does not produce root-hygiene evidence, Judge/PM readiness, Linear
   field-text currency, or parent goal completion.
-- No PR lane is active after PR #381 merge pullback.
+- No broader feature lane is active during the validator-repair route.
 
 ## Outstanding Work
 
@@ -204,7 +211,7 @@ Non-claims:
 
 ## History Boundary
 
-Merged PR lanes through PR #381 remain provenance. They are not active route
+Merged PR lanes through PR #382 remain provenance. They are not active route
 lanes and must not be expanded in the active board unless a fresh current-main
 regression reopens them.
 
