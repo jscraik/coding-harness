@@ -157,18 +157,22 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: none. PR #378 is merged and pulled back to local `main`.
-- Provenance: See `receipts.jsonl` for merged PR #343 through PR #378 route history.
+- Current route: PR #379 tracker refresh is open on
+  `codex/jsc-363-post-pr378-tracker-refresh`.
+- Provenance: See `receipts.jsonl` for merged PR #343 through PR #378 route history
+  and PR #379 route evidence.
 
 Corrected backlog after current-main reconciliation:
 
 - Done on current main: PR #378 merged at
   `28b0bf30091689559afad2e3240f1f849122cf48`. See `receipts.jsonl` for
   complete merged PR history.
-- Current route PR: none.
+- Current route PR: #379.
 - Selected next slice: Linear field-text decision. The next slice must refresh
   or explicitly owner-classify JSC-363 Linear title/description currency before
-  broader closeout claims resume.
+  broader closeout claims resume, but it starts only after PR #379 is reviewed,
+  green except any owner-waived external Snyk quota lane, merged, local main is
+  pulled back, and the tracker is refreshed.
 - Remaining backlog: review/external/root-hygiene proof, documentation accuracy,
   historical review-coverage backfill, Linear field-text decision, PU-015
   Judge/PM audit, and final completion audit.

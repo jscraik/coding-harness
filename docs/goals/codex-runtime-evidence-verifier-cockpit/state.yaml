@@ -30,9 +30,9 @@ thin_execution_tracker:
     receipt_style: "compact claim/evidence/blocker records"
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
-    kind: "none"
-    status: "no_active_pr_route_current_main_synced_after_pr378_merge"
-    blocker: null
+    kind: "github_pr"
+    status: "pr379_open_after_post_pr378_tracker_refresh"
+    blocker: "Do not start the Linear field-text decision slice until PR #379 is reviewed, green except owner-waived external Snyk quota if still present, merged, main is pulled back, and the tracker is refreshed."
     last_merged_pr: 378
     last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/378"
     last_merged_sha: "28b0bf30091689559afad2e3240f1f849122cf48"
@@ -40,15 +40,21 @@ thin_execution_tracker:
     last_merge_verified_at: "2026-06-08T23:33:58Z"
     local_main_sha: "28b0bf30091689559afad2e3240f1f849122cf48"
     origin_main_sha: "28b0bf30091689559afad2e3240f1f849122cf48"
-    open_pr_count: 0
-    open_prs: []
+    open_pr_count: 1
+    open_prs:
+      - number: 379
+        url: "https://github.com/jscraik/coding-harness/pull/379"
+        branch: "codex/jsc-363-post-pr378-tracker-refresh"
+        head_sha: "cc76c8c001991ea43b5bf27a067de10df0931660"
+        status: "open_pending_ci_refresh_after_live_pr_body_gate_pass"
+        coderabbit: "triggered_by_comment_4654615344"
   queued_slice:
     lifecycle_unit: "linear-field-text-decision"
     name: "refresh or owner-classify JSC-363 Linear field-text currency"
-    status: "selected_after_pr378_merge_pullback_pending_tracker_validation"
-    evidence_receipt: "R427"
+    status: "selected_after_pr378_merge_pullback_blocked_by_active_pr379_route"
+    evidence_receipt: "R428"
   resume_gate:
-    - "Do not start feature work until this post-PR378 tracker refresh validates and the Linear field-text decision slice is the only selected backlog slice."
+    - "Do not start feature work until PR #379 merges, local main is pulled back, this tracker refresh is reconciled, and the Linear field-text decision slice is the only selected backlog slice."
     - "Execute the Linear field-text decision as a bounded external-tracker slice before broader review/external/root-hygiene proof, documentation accuracy, PU-015 Judge/PM audit, or final completion audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
   review_artifacts:

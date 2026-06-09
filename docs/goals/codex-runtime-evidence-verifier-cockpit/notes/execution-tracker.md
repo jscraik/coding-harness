@@ -33,8 +33,9 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Active route count  | 0                                                                                            |
 | Active route        | none                                                                                         |
 | Last closed route   | PR #378 merged                                                                               |
+| Current route       | PR #379 tracker refresh                                                                      |
 | Current slice       | Linear field-text decision                                                                   |
-| Feature work status | Stopped until this post-PR378 tracker refresh validates the selected Linear field-text slice |
+| Feature work status | Stopped until PR #379 merges, main is pulled back, and the tracker is refreshed              |
 
 ## Active Route
 
@@ -143,7 +144,8 @@ Completed route-refresh action:
 
 ## Active Slice
 
-The selected next slice is the Linear field-text decision.
+The selected next slice is the Linear field-text decision, but it remains
+blocked behind active route PR #379.
 
 Current slice boundary:
 
@@ -215,5 +217,8 @@ Current truth:
 - Linear JSC-363 was refreshed with pre-PR372 post-merge route-truth comment `34a50024-24be-4853-af6e-3219cbc0d845`; post-PR378 field-text currency remains unclaimed because the issue title still says Phase 1.
 
 Restart rule:
-The next selected slice is the Linear field-text decision. It starts only after the board/state/receipt validators pass on the post-PR378 current-main tracker.
+The next selected slice is the Linear field-text decision. It starts only after
+PR #379 is reviewed, green except any owner-waived external Snyk quota lane,
+merged, local main is pulled back, and the board/state/receipt validators pass
+on the post-PR379 tracker refresh.
 ```
