@@ -27,8 +27,8 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Parent issue        | JSC-363                                                                         |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`                    |
 | Current branch      | `codex/jsc-363-post-pr378-tracker-refresh`                                      |
-| Local head          | `fd5499e2e20dd345ce4111fd5004612170f0f161`                                      |
-| Remote branch head  | `cc76c8c001991ea43b5bf27a067de10df0931660`                                      |
+| Local head          | `fec638150bf690d1499ec8d8d7e1fb34e09d9be3`                                      |
+| Remote branch head  | `fec638150bf690d1499ec8d8d7e1fb34e09d9be3`                                      |
 | Main baseline       | `28b0bf30091689559afad2e3240f1f849122cf48`                                      |
 | Active route count  | 1                                                                               |
 | Active route        | PR #379                                                                         |
@@ -39,11 +39,14 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 
 ## Active Route
 
-No PR route is active. PR #378 is merged and local `main` is synced with
-`origin/main` at `28b0bf30091689559afad2e3240f1f849122cf48`. This closes
-only the post-PR378 tracker-refresh lane; it does not claim Linear field-text
-currency, root-hygiene proof, documentation accuracy, Judge/PM readiness, or
-parent-goal completion.
+PR #378 is merged and local `main` is synced with `origin/main` at
+`28b0bf30091689559afad2e3240f1f849122cf48`; that route is closed provenance.
+PR #379 is the current active tracker-refresh route on branch
+`codex/jsc-363-post-pr378-tracker-refresh` at
+`fec638150bf690d1499ec8d8d7e1fb34e09d9be3`. The Linear field-text decision
+slice is queued behind PR #379 review, checks, merge, main pullback, and tracker
+refresh. This does not claim Linear field-text currency, root-hygiene proof,
+documentation accuracy, Judge/PM readiness, or parent-goal completion.
 
 Current evidence:
 
