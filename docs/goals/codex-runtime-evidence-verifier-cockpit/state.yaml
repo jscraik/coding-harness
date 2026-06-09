@@ -31,30 +31,30 @@ thin_execution_tracker:
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
     kind: "external_tracker_decision"
-    status: "linear_field_text_decision_blocked"
-    blocker: "PR #393 merged the post-PR392 route refresh and local main/origin main are synced to the PR #393 merge commit. The next active lane is the Linear field-text decision or owner classification. It remains blocked until a usable Linear tool/token path exists or Jamie classifies stale Linear Phase 1 field text as historical while repo tracker truth remains canonical. This does not claim Linear field-text currency, review/external/root-hygiene proof, documentation accuracy, Judge/PM readiness, or parent-goal completion."
+    status: "post_pr394_linear_comment_aligned_backlog_audit_next"
+    blocker: "PR #394 merged the post-PR393 route refresh and local main/origin main are synced to the PR #394 merge commit by ref update. Linear JSC-363 was reachable through the Linear MCP tool, and comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 records that the original Phase 1 field text is historical scope context while repo tracker truth remains canonical. This does not claim Linear field-text currency beyond that comment, review/external/root-hygiene proof, documentation accuracy, Judge/PM readiness, or parent-goal completion."
     active_branch: "main"
     active_pr: null
     active_pr_url: null
     active_pr_head_sha: null
-    last_merged_pr: 393
-    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/393"
-    last_merged_sha: "566a0a78286f5a1999eee4c332256475d4f19508"
-    last_merged_submitted_head_sha: "e1adee25ab692d3a554f1ae318b816762c3d045c"
-    last_merge_verified_at: "2026-06-09T11:29:52Z"
-    local_main_sha: "566a0a78286f5a1999eee4c332256475d4f19508"
-    origin_main_sha: "566a0a78286f5a1999eee4c332256475d4f19508"
+    last_merged_pr: 394
+    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/394"
+    last_merged_sha: "9014b416f170ef6069416aa2d356845232cf2de1"
+    last_merged_submitted_head_sha: "8b98cc6299d566ccf3b472781ee6def606c9ea79"
+    last_merge_verified_at: "2026-06-09T12:09:12Z"
+    local_main_sha: "9014b416f170ef6069416aa2d356845232cf2de1"
+    origin_main_sha: "9014b416f170ef6069416aa2d356845232cf2de1"
     open_pr_count: 0
     open_prs: []
   queued_slice:
-    lifecycle_unit: "linear-field-text-decision"
-    name: "resolve or owner-classify JSC-363 Linear field text"
-    status: "blocked_external_authority"
-    evidence_receipt: "R454"
+    lifecycle_unit: "remaining-closeout-backlog-audit"
+    name: "run remaining closeout/backlog audit from current main"
+    status: "ready_current_main"
+    evidence_receipt: "R455"
   resume_gate:
-    - "Do not start broader feature or closeout work until the harness-next clean-worktree-state fix is committed, opened as one PR, triaged through CI/review, merged, pulled back to local main, and recorded in the route tracker."
-    - "Execute the Linear field-text decision only if a regular LINEAR_API_KEY source, Linear MCP tool, or explicit owner classification is available."
-    - "Execute the Linear field-text decision as a bounded external-tracker slice before broader review/external/root-hygiene proof, documentation accuracy, PU-015 Judge/PM audit, or final completion audit."
+    - "Do not start broader feature or closeout work until PR #394 is recorded in the route tracker with the Linear comment evidence."
+    - "Treat Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 as tracker-alignment evidence only, not field-text-current or completion evidence."
+    - "Run the remaining closeout/backlog audit before broader review/external/root-hygiene proof, documentation accuracy, PU-015 Judge/PM audit, or final completion audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
   review_artifacts:
     - path: "artifacts/reviews/delivery-truth-consumption-skill-lenses.md"

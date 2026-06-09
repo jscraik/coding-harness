@@ -27,29 +27,40 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Parent issue        | JSC-363                                                          |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`     |
 | Current branch      | `main`                                                           |
-| Local main head     | `566a0a78286f5a1999eee4c332256475d4f19508`                       |
-| Origin main head    | `566a0a78286f5a1999eee4c332256475d4f19508`                       |
-| Main baseline       | `566a0a78286f5a1999eee4c332256475d4f19508`                       |
+| Local main head     | `9014b416f170ef6069416aa2d356845232cf2de1`                       |
+| Origin main head    | `9014b416f170ef6069416aa2d356845232cf2de1`                       |
+| Main baseline       | `9014b416f170ef6069416aa2d356845232cf2de1`                       |
 | Active route count  | 1                                                                |
-| Active route        | Linear field-text decision blocker                               |
-| Last closed route   | PR #393 merged                                                   |
-| Current route       | Linear field-text decision or owner classification                |
-| Current slice       | Resolve or explicitly classify stale Linear field text            |
+| Active route        | Post-PR394 tracker and Linear comment alignment                  |
+| Last closed route   | PR #394 merged                                                   |
+| Current route       | Remaining closeout/backlog audit                                 |
+| Current slice       | Audit remaining unclaimed proof lanes                            |
 | Feature work status | No next feature slice started                                    |
 
 ## Active Route
 
-PR #393 is merged and local `main` is synced with `origin/main` at
-`566a0a78286f5a1999eee4c332256475d4f19508`; that route is closed
-provenance. The active route is now the blocked Linear field-text decision or
-owner classification lane. This does not claim Linear field-text currency,
-root-hygiene proof, documentation accuracy, Judge/PM readiness, release
-readiness, or parent-goal completion.
+PR #394 is merged and local `main` is synced with `origin/main` at
+`9014b416f170ef6069416aa2d356845232cf2de1` by ref update; that route is
+closed provenance. Linear JSC-363 was reachable through the Linear MCP tool and
+comment `81cfdd41-ff0e-4df1-b884-c01789e30a50` records the repo-truth
+classification. This does not claim Linear field-text currency beyond that
+comment, root-hygiene proof, documentation accuracy, Judge/PM readiness,
+release readiness, or parent-goal completion.
 
 Current evidence:
 
 - Local `main` and `origin/main` are synced at
-  `566a0a78286f5a1999eee4c332256475d4f19508` after PR #393 merge pullback.
+  `9014b416f170ef6069416aa2d356845232cf2de1` after PR #394 merge pullback by
+  local ref update.
+- Live GitHub reports PR #394 merged at `2026-06-09T12:09:12Z` from submitted
+  head `8b98cc6299d566ccf3b472781ee6def606c9ea79` as squash merge commit
+  `9014b416f170ef6069416aa2d356845232cf2de1`; repo-owned CircleCI,
+  aggregate `pr-pipeline`, aggregate `security-scan`, Socket, CodeRabbit,
+  and Snyk status passed before merge.
+- Linear JSC-363 fetch returned status `In Review`, Phase 1 title/description
+  text, and PR #394 attachment; comment
+  `81cfdd41-ff0e-4df1-b884-c01789e30a50` records the current repo-truth
+  classification without claiming parent-goal completion.
 - Live GitHub reports PR #393 merged at `2026-06-09T11:29:52Z` from submitted
   head `e1adee25ab692d3a554f1ae318b816762c3d045c` as squash merge commit
   `566a0a78286f5a1999eee4c332256475d4f19508`; repo-owned CircleCI,
