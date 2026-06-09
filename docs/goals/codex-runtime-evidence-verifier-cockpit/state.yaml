@@ -32,25 +32,25 @@ thin_execution_tracker:
   active_route:
     kind: "external_tracker_decision"
     status: "linear_field_text_decision_blocked_missing_usable_linear_access"
-    blocker: "PR #388 merged at 2026-06-09T08:13:09Z and local main was pulled to 58781159524b361317f3651d1cc70682e5e47db6. No JSC-363 PR lane is active. The selected next slice is the Linear field-text decision, blocked until a usable Linear MCP/tool/token path exists or the owner explicitly classifies stale Linear field text as historical while repo tracker truth remains canonical."
+    blocker: "PR #389 merged at 2026-06-09T08:54:35Z and local main was pulled to 2b1b20cbaab259041b53e53fcabfa24a248528a2. No JSC-363 PR lane is active. The selected next slice is the Linear field-text decision, blocked until a usable Linear MCP/tool/token path exists or the owner explicitly classifies stale Linear field text as historical while repo tracker truth remains canonical."
     active_branch: null
     active_pr: null
     active_pr_url: null
     active_pr_head_sha: null
-    last_merged_pr: 388
-    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/388"
-    last_merged_sha: "58781159524b361317f3651d1cc70682e5e47db6"
-    last_merged_submitted_head_sha: "d93e00c584e1e69935195cc448cb6e1dee7a2dd5"
-    last_merge_verified_at: "2026-06-09T08:13:09Z"
-    local_main_sha: "58781159524b361317f3651d1cc70682e5e47db6"
-    origin_main_sha: "58781159524b361317f3651d1cc70682e5e47db6"
+    last_merged_pr: 389
+    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/389"
+    last_merged_sha: "2b1b20cbaab259041b53e53fcabfa24a248528a2"
+    last_merged_submitted_head_sha: "edae037da4bc46457f2412bb0a1506fe8d689abe"
+    last_merge_verified_at: "2026-06-09T08:54:35Z"
+    local_main_sha: "2b1b20cbaab259041b53e53fcabfa24a248528a2"
+    origin_main_sha: "2b1b20cbaab259041b53e53fcabfa24a248528a2"
     open_pr_count: 0
     open_prs: []
   queued_slice:
     lifecycle_unit: "linear-field-text-decision"
     name: "decide JSC-363 Linear field-text currency with live tool/token evidence or owner classification"
     status: "blocked_missing_usable_linear_access_or_owner_classification"
-    evidence_receipt: "R448"
+    evidence_receipt: "R449"
   resume_gate:
     - "Do not start broader feature or closeout work until the Linear field-text decision is executed with usable Linear access or explicit owner classification."
     - "Execute the Linear field-text decision only if a regular LINEAR_API_KEY source, Linear MCP tool, or explicit owner classification is available."
