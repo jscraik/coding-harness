@@ -43,20 +43,27 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-09 post-PR393 pullback and route-truth
-refresh. PR #366,
+Last updated during the 2026-06-09 post-PR394 pullback, Linear tracker
+alignment, and route-truth refresh. PR #366,
 PR #367, PR #369, PR #370, PR #371, PR #372, PR #373, PR #374, PR #375,
 PR #376, PR #377, PR #378, PR #379, PR #380, PR #381, PR #382, PR #383,
 PR #384, PR #385, PR #386, PR #387, PR #388, PR #389, PR #390, PR #391,
-PR #392, and PR #393 are historical route provenance. PR #393 is merged into
-`main` at `566a0a78286f5a1999eee4c332256475d4f19508`.
+PR #392, PR #393, and PR #394 are historical route provenance. PR #394 is
+merged into `main` at `9014b416f170ef6069416aa2d356845232cf2de1`.
 
 Current live route truth:
 
 - Local `main` and `origin/main` are synced at
-  `566a0a78286f5a1999eee4c332256475d4f19508` after PR #393 merge pullback.
-- The active route is the blocked Linear field-text decision or owner
-  classification lane; no next feature slice has started.
+  `9014b416f170ef6069416aa2d356845232cf2de1` after PR #394 merge pullback by
+  local ref update.
+- Linear JSC-363 was fetched through the Linear MCP tool and comment
+  `81cfdd41-ff0e-4df1-b884-c01789e30a50` records the repo-truth
+  classification. The original Phase 1 title/description remain historical
+  scope context, not completion evidence.
+- The active route is the remaining closeout/backlog audit from current main;
+  no next feature slice has started.
+- PR #394 merged the source-tracked post-PR393 route refresh from submitted
+  head `8b98cc6299d566ccf3b472781ee6def606c9ea79`.
 - PR #393 merged the source-tracked post-PR392 route refresh from submitted
   head `e1adee25ab692d3a554f1ae318b816762c3d045c`.
 - PR #392 merged the source-tracked post-PR391 route refresh from submitted
@@ -217,23 +224,21 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: blocked Linear field-text decision or owner classification
-  lane; no next feature slice has started.
-- Provenance: See `receipts.jsonl` for merged PR #343 through PR #393 route
+- Current route: remaining closeout/backlog audit from current main; no next
+  feature slice has started.
+- Provenance: See `receipts.jsonl` for merged PR #343 through PR #394 route
   history.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #393 merged at
-  `566a0a78286f5a1999eee4c332256475d4f19508`. See `receipts.jsonl` for
+- Done on current main: PR #394 merged at
+  `9014b416f170ef6069416aa2d356845232cf2de1`. See `receipts.jsonl` for
   complete merged PR history.
 - Current route PR: none.
-- Active slice: Linear field-text decision, blocked until a usable Linear
-  tool/token path exists or Jamie owner-classifies stale Linear field text as
-  historical while repo tracker truth remains canonical.
+- Active slice: remaining closeout/backlog audit from current main.
 - Remaining backlog: review/external/root-hygiene proof, documentation accuracy,
-  historical review-coverage backfill, Linear field-text decision, PU-015
-  Judge/PM audit, and final completion audit.
+  historical review-coverage backfill, Linear field-text currency beyond the
+  current comment, PU-015 Judge/PM audit, and final completion audit.
 
 ## Why This Exists
 
