@@ -710,6 +710,75 @@ describe("check-goal-board.py", () => {
 		expect(result.stderr).toContain("merge this post-PR");
 	});
 
+	it("parses runtime active_route through YAML rather than line regexes", () => {
+		const root = createTempRoot("goal-board-yaml-active-route-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(
+			repo,
+			"docs/goals/codex-runtime-evidence-verifier-cockpit",
+		);
+		const validatorPath = join(root, "check_goal_board.py");
+		mkdirSync(scriptsDir, { recursive: true });
+		mkdirSync(goalDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeValidator(validatorPath, "goal-board");
+		writeRuntimeEvidenceReceipts(repo, "merged-main-head");
+		writeRuntimeEvidenceActiveArtifacts(
+			repo,
+			[
+				"# Active Harness Specs And Plans",
+				"",
+				"## Current Active Route",
+				"",
+				"| Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |",
+				"| --- | --- | --- | --- | --- |",
+				"| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md | merged-main-head | continue |",
+				"",
+			].join("\n"),
+		);
+		writeFileSync(
+			join(goalDir, "state.yaml"),
+			[
+				"version: 2",
+				"thin_execution_tracker:",
+				"  active_route:",
+				"    kind: 'github_pr' # single quotes and comment need YAML parsing",
+				"    active_branch: 'codex/jsc-363-post-pr384-linear-blocker-refresh'",
+				"    open_pr_count: 0",
+				"",
+			].join("\n"),
+		);
+		writeFileSync(
+			join(scriptsDir, "check-goal-audit-freshness.py"),
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"raise SystemExit(0)",
+				"",
+			].join("\n"),
+		);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", goalDir],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("github_pr active_route");
+		expect(result.stderr).toContain("open_pr_count: 0");
+	});
+
 	it("fails when the current runtime evidence receipt contains a local home path", () => {
 		const root = createTempRoot("goal-board-local-path-");
 		const repo = join(root, "coding-harness");

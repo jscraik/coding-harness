@@ -57,8 +57,92 @@ WSL_HOME_PATH = re.compile(
     re.IGNORECASE,
 )
 TILDE_HOME_PATH = re.compile(r"(^|[\s:=,])~/[^\s]+")
-YAML_SIMPLE_FIELD = re.compile(r"^\s+([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$")
 type JsonObject = dict[str, Any]
+
+
+def strip_yaml_comment(value: str) -> str:
+    quote: str | None = None
+    escaped = False
+    for index, char in enumerate(value):
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\":
+            escaped = True
+            continue
+        if char in {"'", '"'}:
+            if quote is None:
+                quote = char
+            elif quote == char:
+                quote = None
+            continue
+        if char == "#" and quote is None:
+            return value[:index].strip()
+    return value.strip()
+
+
+def parse_yaml_scalar(value: str) -> object:
+    cleaned = strip_yaml_comment(value)
+    if cleaned in {"", "null", "Null", "NULL", "~"}:
+        return None
+    if cleaned in {"true", "True", "TRUE"}:
+        return True
+    if cleaned in {"false", "False", "FALSE"}:
+        return False
+    if (
+        (cleaned.startswith('"') and cleaned.endswith('"'))
+        or (cleaned.startswith("'") and cleaned.endswith("'"))
+    ):
+        return cleaned[1:-1]
+    try:
+        return int(cleaned)
+    except ValueError:
+        return cleaned
+
+
+def parse_yaml_mapping_fallback(text: str) -> dict[str, object]:
+    root: dict[str, object] = {}
+    stack: list[tuple[int, dict[str, object]]] = [(-1, root)]
+
+    for raw_line in text.splitlines():
+        if not raw_line.strip() or raw_line.lstrip().startswith("#"):
+            continue
+        indent = len(raw_line) - len(raw_line.lstrip())
+        line = raw_line.strip()
+        if ":" not in line:
+            continue
+        key, raw_value = line.split(":", 1)
+        key = key.strip().strip('"').strip("'")
+        if not key:
+            continue
+        while stack and indent <= stack[-1][0]:
+            stack.pop()
+        parent = stack[-1][1]
+        if raw_value.strip() == "":
+            child: dict[str, object] = {}
+            parent[key] = child
+            stack.append((indent, child))
+        else:
+            parent[key] = parse_yaml_scalar(raw_value)
+
+    return root
+
+
+def load_state_mapping(state_path: Path) -> object:
+    text = state_path.read_text(encoding="utf-8")
+    try:
+        import yaml  # type: ignore[import-untyped]
+    except ModuleNotFoundError:
+        return parse_yaml_mapping_fallback(text)
+
+    try:
+        return yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        print(
+            f"Runtime evidence cockpit state file is not valid YAML: {state_path}: {exc}",
+            file=sys.stderr,
+        )
+        raise SystemExit(1) from exc
 
 
 def source_checkout_root() -> Path | None:
@@ -367,31 +451,34 @@ def parse_runtime_active_route(state_path: Path) -> dict[str, str]:
         )
         raise SystemExit(1)
 
+    state = load_state_mapping(state_path)
+
+    if not isinstance(state, Mapping):
+        return {}
+    state_mapping = cast(Mapping[str, object], state)
+
+    thin_execution_tracker = state_mapping.get("thin_execution_tracker")
+    if not isinstance(thin_execution_tracker, Mapping):
+        return {}
+    tracker_mapping = cast(Mapping[str, object], thin_execution_tracker)
+
+    active_route = tracker_mapping.get("active_route")
+    if active_route is None:
+        # Missing active_route is intentionally a no-op for this narrow guard:
+        # the stale-route check only rejects an explicitly declared GitHub PR route.
+        return {}
+    if not isinstance(active_route, Mapping):
+        print(
+            "Runtime evidence cockpit active_route must be a mapping when present.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+    active_route_mapping = cast(Mapping[object, object], active_route)
+
     fields: dict[str, str] = {}
-    in_active_route = False
-    active_route_indent: int | None = None
-    for line in state_path.read_text(encoding="utf-8").splitlines():
-        if not in_active_route:
-            if line.strip() == "active_route:":
-                in_active_route = True
-                active_route_indent = len(line) - len(line.lstrip())
-            continue
-
-        indent = len(line) - len(line.lstrip())
-        if line.strip() and active_route_indent is not None and indent <= active_route_indent:
-            break
-
-        match = YAML_SIMPLE_FIELD.match(line)
-        if match is None:
-            continue
-        key, raw_value = match.groups()
-        value = raw_value.strip()
-        if value.startswith('"') and value.endswith('"'):
-            value = value[1:-1]
-        fields[key] = value
-
-    # Missing active_route is intentionally a no-op for this narrow guard: the
-    # stale-route check only rejects an explicitly declared GitHub PR route.
+    for key, value in active_route_mapping.items():
+        if isinstance(key, str) and value is not None:
+            fields[key] = str(value)
     return fields
 
 
