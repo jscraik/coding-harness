@@ -31,23 +31,23 @@ thin_execution_tracker:
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
     kind: "external_tracker_decision"
-    status: "pr385_merged_main_pulled_linear_access_blocker_current"
-    blocker: "Linear field-text decision cannot proceed in this session because `harness linear prepare --issue JSC-363 --json` and `harness linear triage --dry-run --json` fail with missing LINEAR_API_KEY, and ~/.codex/.env is a FIFO rather than a safely sourceable regular env file."
+    status: "pr386_merged_main_pulled_linear_access_blocker_current"
+    blocker: "Linear field-text decision cannot proceed until a usable Linear tool/token path is available or the owner classifies the stale Linear Phase 1 field text as historical while the repo tracker remains canonical."
     active_branch: ""
-    last_merged_pr: 385
-    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/385"
-    last_merged_sha: "5452ce126acabdd5e921c6bed59e23d70dbe4b79"
-    last_merged_submitted_head_sha: "b6951de3a5d8627c80b78cc911c10d526dd4e24b"
-    last_merge_verified_at: "2026-06-09T04:00:10Z"
-    local_main_sha: "5452ce126acabdd5e921c6bed59e23d70dbe4b79"
-    origin_main_sha: "5452ce126acabdd5e921c6bed59e23d70dbe4b79"
+    last_merged_pr: 386
+    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/386"
+    last_merged_sha: "3f3122b61cba470e91da94ca5c7b44c911dfe79d"
+    last_merged_submitted_head_sha: "1ca9aa8144cb90819e2649a1a325d53376db2baa"
+    last_merge_verified_at: "2026-06-09T05:41:10Z"
+    local_main_sha: "3f3122b61cba470e91da94ca5c7b44c911dfe79d"
+    origin_main_sha: "3f3122b61cba470e91da94ca5c7b44c911dfe79d"
     open_pr_count: 0
     open_prs: []
   queued_slice:
     lifecycle_unit: "linear-field-text-decision"
     name: "refresh Linear JSC-363 field text if authorized or record explicit owner classification that stale Phase 1 wording is historical while the repo tracker remains canonical"
     status: "blocked_on_linear_access_or_owner_classification"
-    evidence_receipt: "R437"
+    evidence_receipt: "R441"
   resume_gate:
     - "Do not start broader feature or closeout work until goal-board and audit-freshness validators pass from current main after the latest merged PR route refresh."
     - "Execute the Linear field-text decision only if a regular LINEAR_API_KEY source, Linear MCP tool, or explicit owner classification is available."

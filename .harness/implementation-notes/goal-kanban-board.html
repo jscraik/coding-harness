@@ -416,7 +416,7 @@
 
     <section class="metrics" aria-label="Goal status summary">
       <div class="metric"><span>Goal status</span><strong>Linear field-text decision</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #384</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #386</strong></div>
       <div class="metric"><span>Current PR</span><strong>None active</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Projection merged</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated after PR #385 merged and local <code>main</code> was pulled to <code>5452ce126acabdd5e921c6bed59e23d70dbe4b79</code>. PR #374 delivered the delivery-truth consumption projection in <code>src/lib/pr-closeout/</code> and <code>src/lib/delivery-truth/</code>. PR #375 delivered the post-PR374 tracker review-fix route. PR #376 delivered the post-PR375 tracker refresh and review-note repair route. PR #377 delivered the post-PR376 tracker refresh route. PR #378 delivered the post-PR377 tracker refresh route. PR #379 delivered the post-PR378 tracker refresh route. PR #380 delivered the post-PR379 tracker refresh route. PR #381 delivered the Linear field blocker tracker route. PR #382 delivered the post-PR381 tracker refresh route after the original CircleCI workflow was rerun from failed jobs to emit required <code>linear-gate</code> and <code>risk-policy-gate</code> contexts. PR #383 delivered the audit-freshness governor-output validator repair plus receipt-key-contract guard after CodeRabbit was manually retriggered and the active review thread was resolved. PR #384 delivered the tracker refresh that followed PR #383. PR #385 delivered the post-PR384 Linear blocker refresh. No JSC-363 PR lane is active after the pullback. PU-013 runtime cockpit integration proof remains merged through PR #370 with no production code patch required. Linear field-text decision remains blocked until a usable tool/token path or owner classification is available. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated after PR #386 merged and local <code>main</code> was pulled to <code>3f3122b61cba470e91da94ca5c7b44c911dfe79d</code>. PR #374 delivered the delivery-truth consumption projection in <code>src/lib/pr-closeout/</code> and <code>src/lib/delivery-truth/</code>. PR #375 delivered the post-PR374 tracker review-fix route. PR #376 delivered the post-PR375 tracker refresh and review-note repair route. PR #377 delivered the post-PR376 tracker refresh route. PR #378 delivered the post-PR377 tracker refresh route. PR #379 delivered the post-PR378 tracker refresh route. PR #380 delivered the post-PR379 tracker refresh route. PR #381 delivered the Linear field blocker tracker route. PR #382 delivered the post-PR381 tracker refresh route after the original CircleCI workflow was rerun from failed jobs to emit required <code>linear-gate</code> and <code>risk-policy-gate</code> contexts. PR #383 delivered the audit-freshness governor-output validator repair plus receipt-key-contract guard after CodeRabbit was manually retriggered and the active review thread was resolved. PR #384 delivered the tracker refresh that followed PR #383. PR #385 delivered the post-PR384 Linear blocker refresh. PR #386 delivered the stale-route guard review repair. No JSC-363 PR lane is active after the pullback. PU-013 runtime cockpit integration proof remains merged through PR #370 with no production code patch required. Linear field-text decision remains blocked until a usable tool/token path or owner classification is available. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -823,7 +823,7 @@
         status: "blocked",
         tags: ["Linear", "JSC-363", "field text"],
         summary: "The next bounded slice is to refresh Linear JSC-363 field text if authorized, or record an explicit owner classification that stale Phase 1 wording is historical while the repo tracker remains canonical. It is blocked in this session because usable Linear credentials/tools are unavailable.",
-        evidence: ["Linear JSC-363 status -> not refreshed in this session", "Pre-PR372 route-truth comment -> 34a50024-24be-4853-af6e-3219cbc0d845", "Current main -> 5452ce126acabdd5e921c6bed59e23d70dbe4b79", "harness linear prepare --issue JSC-363 --json -> fail missing LINEAR_API_KEY", "harness linear triage --dry-run --json -> fail missing LINEAR_API_KEY", "~/.codex/.env -> FIFO, not safely sourceable as regular env file"],
+        evidence: ["Linear JSC-363 status -> not refreshed in this session", "Pre-PR372 route-truth comment -> 34a50024-24be-4853-af6e-3219cbc0d845", "Current main -> 3f3122b61cba470e91da94ca5c7b44c911dfe79d", "PR #386 -> MERGED at 2026-06-09T05:41:10Z", "harness linear prepare --issue JSC-363 --json -> previously failed missing LINEAR_API_KEY", "harness linear triage --dry-run --json -> previously failed missing LINEAR_API_KEY", "~/.codex/.env -> FIFO, not safely sourceable as regular env file"],
         next: "Provide a usable Linear tool/token path or owner-classify the stale Linear field text as historical while the repo tracker remains canonical; then record the decision before broader closeout work.",
         risk: "Tracker comments, issue fields, and goal receipts are distinct truth surfaces; one cannot silently stand in for the others."
       },
@@ -1154,7 +1154,7 @@
         tags: ["PR #383", "audit freshness", "merged"],
         summary: "PR #383 merged the audit-freshness governor-output validator repair and receipt key-contract guard into current main.",
         evidence: ["PR #383 -> MERGED at 2026-06-09T02:39:02Z", "Squash merge commit -> b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174", "Submitted head -> 777b3fd38b64b71edf6a3e5286596cec087e6ed5", "CodeRabbit thread -> resolved after commit 777b3fd", "Required PR checks -> passed before merge", "Post-merge validators -> goal-board, audit-freshness, Kanban pass"],
-        next: "Use PR #383 as merged validator-repair provenance. The current active route is the Linear field-text decision blocker after PR #385 pullback.",
+        next: "Use PR #383 as merged validator-repair provenance. The current active route is the Linear field-text decision blocker after PR #386 pullback.",
         risk: "This route proves validator repair delivery only. It does not prove Linear field text, documentation accuracy, root hygiene, Judge/PM readiness, or parent-goal completion."
       },
       {
@@ -1163,10 +1163,21 @@
         title: "PR #384: Tracker refresh merged",
         status: "done",
         tags: ["PR #384", "route truth", "merged"],
-        summary: "PR #384 merged the tracker refresh that followed PR #383 into current main at 96846c31b7d3b1bade77b1145543ab1c92c797ae. PR #385 later closed the post-PR384 Linear blocker refresh and left no active JSC-363 PR lane.",
+        summary: "PR #384 merged the tracker refresh that followed PR #383 into current main at 96846c31b7d3b1bade77b1145543ab1c92c797ae. PR #385 later closed the post-PR384 Linear blocker refresh, and PR #386 delivered the stale-route guard review repair.",
         evidence: ["PR #384 -> MERGED at 2026-06-09T03:05:01Z", "Squash merge commit -> 96846c31b7d3b1bade77b1145543ab1c92c797ae", "Submitted head -> 19b193cd4d628f3cd50c215976890ca743e259dd", "Repo-owned CircleCI lanes -> pass", "CodeRabbit -> pass", "Review threads -> zero unresolved", "External Snyk GitHub App quota -> owner-waived lane only"],
         next: "Retry Linear only with a usable tool/token path or an owner classification.",
         risk: "This route proves tracker delivery only; it does not update or align live Linear fields."
+      },
+      {
+        id: "post-pr386-stale-route-guard-route",
+        lane: "completed",
+        title: "PR #386: Stale-route guard review repair merged",
+        status: "done",
+        tags: ["PR #386", "route truth", "merged"],
+        summary: "PR #386 merged the stale-route guard review repair into current main and local main was pulled to 3f3122b61cba470e91da94ca5c7b44c911dfe79d.",
+        evidence: ["PR #386 -> MERGED at 2026-06-09T05:41:10Z", "Squash merge commit -> 3f3122b61cba470e91da94ca5c7b44c911dfe79d", "Submitted head -> 1ca9aa8144cb90819e2649a1a325d53376db2baa", "Repo-owned CircleCI lanes -> pass", "CodeRabbit -> pass after manual @coderabbitai review trigger", "Review threads -> zero unresolved", "External Snyk GitHub App quota -> owner-waived lane only"],
+        next: "Use as merged stale-route guard provenance. Continue only through the Linear field-text decision blocker lane.",
+        risk: "This route proves stale-route guard delivery and PR closeout only; it does not update live Linear fields or prove parent-goal completion."
       },
       {
         id: "final-proof-packets",
