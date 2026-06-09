@@ -57,6 +57,7 @@ WSL_HOME_PATH = re.compile(
     re.IGNORECASE,
 )
 TILDE_HOME_PATH = re.compile(r"(^|[\s:=,])~/[^\s]+")
+YAML_SIMPLE_FIELD = re.compile(r"^\s+([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$")
 type JsonObject = dict[str, Any]
 
 
@@ -358,6 +359,80 @@ def check_duplicate_receipt_ids(receipts_path: Path) -> int:
     return 0
 
 
+def parse_runtime_active_route(state_path: Path) -> dict[str, str]:
+    if not state_path.is_file():
+        print(
+            f"Runtime evidence cockpit state file is missing: {state_path}",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
+    fields: dict[str, str] = {}
+    in_active_route = False
+    active_route_indent: int | None = None
+    for line in state_path.read_text(encoding="utf-8").splitlines():
+        if not in_active_route:
+            if line.strip() == "active_route:":
+                in_active_route = True
+                active_route_indent = len(line) - len(line.lstrip())
+            continue
+
+        indent = len(line) - len(line.lstrip())
+        if line.strip() and active_route_indent is not None and indent <= active_route_indent:
+            break
+
+        match = YAML_SIMPLE_FIELD.match(line)
+        if match is None:
+            continue
+        key, raw_value = match.groups()
+        value = raw_value.strip()
+        if value.startswith('"') and value.endswith('"'):
+            value = value[1:-1]
+        fields[key] = value
+
+    return fields
+
+
+def check_stale_runtime_pr_route(
+    goal_path: Path,
+    jsc_363_rows: list[str],
+) -> int:
+    active_route = parse_runtime_active_route(goal_path / "state.yaml")
+    violations: list[str] = []
+
+    route_kind = active_route.get("kind")
+    open_pr_count = active_route.get("open_pr_count")
+    active_branch = active_route.get("active_branch", "")
+    stale_merge_phrases = ("merge this post-PR", "merge and pull this post-PR")
+    route_text = "\n".join(jsc_363_rows)
+
+    if (
+        route_kind == "github_pr"
+        and open_pr_count == "0"
+        and active_branch.startswith("codex/")
+    ):
+        violations.append(
+            "Runtime evidence cockpit state has a github_pr active_route with "
+            "open_pr_count: 0 but still names active_branch "
+            f"{active_branch}. After a PR merges and main is pulled, the route "
+            "must either record no active PR branch or set open_pr_count to the "
+            "real open PR count."
+        )
+
+    for phrase in stale_merge_phrases:
+        if phrase in route_text:
+            violations.append(
+                "Project Brain active-artifacts index contains stale post-merge "
+                f"route text: {phrase!r}. Current-main route truth must not tell "
+                "operators to merge a blocker-refresh PR that has already merged."
+            )
+
+    if violations:
+        print("\n".join(violations), file=sys.stderr)
+        return 1
+    return 0
+
+
 def run_goal_extensions(argv: list[str]) -> int:
     goal_path = resolve_runtime_evidence_goal_path(argv)
     if goal_path is None:
@@ -455,6 +530,10 @@ def run_goal_extensions(argv: list[str]) -> int:
             file=sys.stderr,
         )
         return 1
+
+    stale_route_status = check_stale_runtime_pr_route(goal_path, jsc_363_rows)
+    if stale_route_status != 0:
+        return stale_route_status
 
     duplicate_receipt_status = check_duplicate_receipt_ids(
         RUNTIME_EVIDENCE_RECEIPTS_PATH,
