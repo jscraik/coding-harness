@@ -30,29 +30,29 @@ thin_execution_tracker:
     receipt_style: "compact claim/evidence/blocker records"
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
-    kind: "external_tracker_decision"
-    status: "linear_field_text_decision_blocked_missing_usable_linear_access"
-    blocker: "PR #389 merged at 2026-06-09T08:54:35Z and local main was pulled to 2b1b20cbaab259041b53e53fcabfa24a248528a2. No JSC-363 PR lane is active. The selected next slice is the Linear field-text decision, blocked until a usable Linear MCP/tool/token path exists or the owner explicitly classifies stale Linear field text as historical while repo tracker truth remains canonical."
-    active_branch: null
+    kind: "implementation_pr"
+    status: "active_local_validation_pending_pr"
+    blocker: "The current narrow route fixes a current-main harness next worktree-state regression: clean git status output was collapsed to null and surfaced as a false dirty-worktree blocker. Local focused and broad gates have run; pnpm test:deep reached the E2E tail and is blocked because GitHub and Linear credentials are not visible in this process and <REDACTED_HOME_PATH>/.codex/.env is a FIFO. PR, CI, review-thread, Linear, merge-readiness, and parent-goal completion remain unclaimed."
+    active_branch: "codex/jsc-363-next-clean-worktree-state"
     active_pr: null
     active_pr_url: null
     active_pr_head_sha: null
-    last_merged_pr: 389
-    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/389"
-    last_merged_sha: "2b1b20cbaab259041b53e53fcabfa24a248528a2"
-    last_merged_submitted_head_sha: "edae037da4bc46457f2412bb0a1506fe8d689abe"
-    last_merge_verified_at: "2026-06-09T08:54:35Z"
-    local_main_sha: "2b1b20cbaab259041b53e53fcabfa24a248528a2"
-    origin_main_sha: "2b1b20cbaab259041b53e53fcabfa24a248528a2"
+    last_merged_pr: 390
+    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/390"
+    last_merged_sha: "8003f0f84c07f80e93400d4c8f46378d83398142"
+    last_merged_submitted_head_sha: null
+    last_merge_verified_at: "2026-06-09T09:00:00Z"
+    local_main_sha: "8003f0f84c07f80e93400d4c8f46378d83398142"
+    origin_main_sha: "8003f0f84c07f80e93400d4c8f46378d83398142"
     open_pr_count: 0
     open_prs: []
   queued_slice:
-    lifecycle_unit: "linear-field-text-decision"
-    name: "decide JSC-363 Linear field-text currency with live tool/token evidence or owner classification"
-    status: "blocked_missing_usable_linear_access_or_owner_classification"
-    evidence_receipt: "R449"
+    lifecycle_unit: "harness-next-clean-worktree-state"
+    name: "preserve empty git status output as clean worktree evidence for harness next"
+    status: "active_local_validation_pending_pr"
+    evidence_receipt: "R450"
   resume_gate:
-    - "Do not start broader feature or closeout work until the Linear field-text decision is executed with usable Linear access or explicit owner classification."
+    - "Do not start broader feature or closeout work until the harness-next clean-worktree-state fix is committed, opened as one PR, triaged through CI/review, merged, pulled back to local main, and recorded in the route tracker."
     - "Execute the Linear field-text decision only if a regular LINEAR_API_KEY source, Linear MCP tool, or explicit owner classification is available."
     - "Execute the Linear field-text decision as a bounded external-tracker slice before broader review/external/root-hygiene proof, documentation accuracy, PU-015 Judge/PM audit, or final completion audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."

@@ -43,20 +43,33 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-09 post-PR385 merge pullback and stale-route
-guard. PR #366,
+Last updated during the 2026-06-09 post-PR390 pullback and narrow
+`harness next` clean-worktree-state repair. PR #366,
 PR #367, PR #369, PR #370, PR #371, PR #372, PR #373, PR #374, PR #375,
 PR #376, PR #377, PR #378, PR #379, PR #380, PR #381, PR #382, PR #383,
-PR #384, and PR #385 are historical route provenance. PR #385 is merged into
-`main` as squash merge commit
-`5452ce126acabdd5e921c6bed59e23d70dbe4b79`.
+PR #384, PR #385, PR #386, PR #387, PR #388, PR #389, and PR #390 are
+historical route provenance. PR #390 is merged into `main` at
+`8003f0f84c07f80e93400d4c8f46378d83398142`.
 
 Current live route truth:
 
 - Local `main` and `origin/main` are synced at
+  `8003f0f84c07f80e93400d4c8f46378d83398142` after PR #390 merge pullback.
+- The active local branch is `codex/jsc-363-next-clean-worktree-state`; no PR
+  has been opened for that branch yet.
+- The active slice is a narrow `harness next` clean-worktree-state repair:
+  clean empty `git status --short --untracked-files=all` output must remain a
+  valid clean-state signal rather than becoming missing evidence and a false
+  dirty-worktree blocker.
+- Local focused and broad validation passed for the repair, while
+  `pnpm test:deep` reached the E2E tail and blocked because GitHub and Linear
+  credentials were not visible in the process environment and
+  `<REDACTED_HOME_PATH>/.codex/.env` is a FIFO in this sandbox.
+- PR #390 merged the post-PR389 route truth refresh into `main`.
+- PR #389 remains merged route-refresh provenance at
+  `2b1b20cbaab259041b53e53fcabfa24a248528a2`.
+- Local `main` and `origin/main` were previously synced at
   `5452ce126acabdd5e921c6bed59e23d70dbe4b79` after PR #385 merge pullback.
-- No JSC-363 PR lane is active after the pullback; local `main` is the synced
-  baseline.
 - PR #385 merged the post-PR384 Linear blocker refresh into `main` from
   submitted head `b6951de3a5d8627c80b78cc911c10d526dd4e24b` after repo-owned
   CircleCI lanes, CodeRabbit, Socket, and review-thread refresh passed. The
@@ -200,26 +213,24 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: no active JSC-363 PR lane after PR #385 pullback. The Linear
-  field-text decision is blocked in this session by unavailable Linear
-  credentials/tools.
-- Provenance: See `receipts.jsonl` for merged PR #343 through PR #385 route
+- Current route: active local `harness next` clean-worktree-state repair on
+  `codex/jsc-363-next-clean-worktree-state`; PR not opened yet.
+- Provenance: See `receipts.jsonl` for merged PR #343 through PR #390 route
   history.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #385 merged at
-  `5452ce126acabdd5e921c6bed59e23d70dbe4b79`. See `receipts.jsonl` for
+- Done on current main: PR #390 merged at
+  `8003f0f84c07f80e93400d4c8f46378d83398142`. See `receipts.jsonl` for
   complete merged PR history.
-- Current route PR: none.
-- Active slice: Linear field-text decision. It must record that
-  `harness linear prepare --issue JSC-363 --json` and
-  `harness linear triage --dry-run --json` still fail with missing
-  `LINEAR_API_KEY`, while `~/.codex/.env` is a FIFO and cannot be safely
-  sourced in this sandbox.
-- Next broader slice after the Linear decision: review/external/root-hygiene
-  proof. Do not start it until Linear field text is refreshed or explicitly
-  owner-classified.
+- Current route PR: none yet for
+  `codex/jsc-363-next-clean-worktree-state`.
+- Active slice: `harness next` clean-worktree-state repair. It preserves empty
+  clean git status output as valid clean-state evidence and adds a regression
+  test before PR triage.
+- Next broader slice after this repair merges and pulls back: Linear field-text
+  decision, still blocked until a usable Linear tool/token path exists or the
+  owner explicitly classifies stale Linear field text as historical.
 - Remaining backlog: review/external/root-hygiene proof, documentation accuracy,
   historical review-coverage backfill, Linear field-text decision, PU-015
   Judge/PM audit, and final completion audit.

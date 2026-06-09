@@ -411,13 +411,13 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness status">Active route: none</div>
+      <div class="source-chip" aria-label="Source freshness status">Active route: harness next repair</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>Linear decision blocked</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #389</strong></div>
-      <div class="metric"><span>Current PR</span><strong>None active</strong></div>
+      <div class="metric"><span>Goal status</span><strong>Repair slice active</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #390</strong></div>
+      <div class="metric"><span>Current PR</span><strong>Not opened</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Projection merged</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
       <div class="metric"><span>Linear tracker</span><strong>Field text unclaimed</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated after PR #389 merged at 2026-06-09T08:54:35Z as squash merge commit <code>2b1b20cbaab259041b53e53fcabfa24a248528a2</code> from submitted head <code>edae037da4bc46457f2412bb0a1506fe8d689abe</code>, and local <code>main</code> was pulled to match <code>origin/main</code>. PR #389 delivered the post-PR388 tracker refresh and PR #388 Kanban-card review-thread repair; repo-owned CI, aggregate <code>pr-pipeline</code>, CodeRabbit, Socket, and review-thread lanes passed or resolved before merge, while the external Snyk GitHub App quota failure remains owner-waived only. PR #388 merged at 2026-06-09T08:13:09Z as squash merge commit <code>58781159524b361317f3651d1cc70682e5e47db6</code> from submitted head <code>d93e00c584e1e69935195cc448cb6e1dee7a2dd5</code>. PR #387 merged at 2026-06-09T07:01:42Z as squash merge commit <code>5ca228d2cb17944c72fc5ed8da4c7b1a4dd1fc53</code> from submitted head <code>014477beec4d174947923d5dbee3958ae7f4444f</code>. PR #374 delivered the delivery-truth consumption projection in <code>src/lib/pr-closeout/</code> and <code>src/lib/delivery-truth/</code>. PR #375 delivered the post-PR374 tracker review-fix route. PR #376 delivered the post-PR375 tracker refresh and review-note repair route. PR #377 delivered the post-PR376 tracker refresh route. PR #378 delivered the post-PR377 tracker refresh route. PR #379 delivered the post-PR378 tracker refresh route. PR #380 delivered the post-PR379 tracker refresh route. PR #381 delivered the Linear field blocker tracker route. PR #382 delivered the post-PR381 tracker refresh route after the original CircleCI workflow was rerun from failed jobs to emit required <code>linear-gate</code> and <code>risk-policy-gate</code> contexts. PR #383 delivered the audit-freshness governor-output validator repair plus receipt-key-contract guard after CodeRabbit was manually retriggered and the active review thread was resolved. PR #384 delivered the tracker refresh that followed PR #383. PR #385 delivered the post-PR384 Linear blocker refresh. PR #386 delivered the stale-route guard review repair. PU-013 runtime cockpit integration proof remains merged through PR #370 with no production code patch required. Linear field-text decision is the selected next bounded slice and remains blocked until a usable Linear tool/token path or owner classification is available. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated after PR #390 merged into <code>main</code> at <code>8003f0f84c07f80e93400d4c8f46378d83398142</code>. The active route is <code>codex/jsc-363-next-clean-worktree-state</code>, a narrow <code>harness next</code> repair that preserves empty clean <code>git status --short --untracked-files=all</code> output as valid clean-state evidence instead of a false dirty-worktree blocker. Focused tests, local quality gates, and <code>pnpm check</code> passed; <code>pnpm test:deep</code> reached the E2E tail and blocked because GitHub and Linear credentials were not visible in the process environment and <code>&lt;REDACTED_HOME_PATH&gt;/.codex/.env</code> is a FIFO in this sandbox. PR #389 through PR #370 remain merged route provenance only. The Linear field-text decision is still outstanding and blocked until a usable Linear tool/token path or owner classification is available. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -819,13 +819,35 @@
       {
         id: "current-linear-truth",
         lane: "linear-truth",
-        title: "Active blocked slice: Linear field-text decision",
+        title: "Outstanding blocked slice: Linear field-text decision",
         status: "blocked",
         tags: ["Linear", "JSC-363", "field text"],
-        summary: "The next bounded slice is to refresh Linear JSC-363 field text if authorized, or record an explicit owner classification that stale Phase 1 wording is historical while the repo tracker remains canonical. It is blocked in this session because usable Linear credentials/tools are unavailable.",
-        evidence: ["Linear JSC-363 status -> not refreshed in this session", "Pre-PR372 route-truth comment -> 34a50024-24be-4853-af6e-3219cbc0d845", "Current main -> 58781159524b361317f3651d1cc70682e5e47db6", "PR #388 -> MERGED at 2026-06-09T08:13:09Z", "PR #388 submitted head -> d93e00c584e1e69935195cc448cb6e1dee7a2dd5", "harness linear prepare --issue JSC-363 --json -> previously failed missing LINEAR_API_KEY", "harness linear triage --dry-run --json -> previously failed missing LINEAR_API_KEY", "~/.codex/.env -> FIFO, not safely sourceable as regular env file"],
+        summary: "After the active harness next repair merges and main is pulled back, this lane refreshes Linear JSC-363 field text if authorized or records an owner classification that stale Phase 1 wording is historical while the repo tracker remains canonical. It is blocked in this session because usable Linear credentials/tools are unavailable.",
+        evidence: ["Linear JSC-363 status -> not refreshed in this session", "Pre-PR372 route-truth comment -> 34a50024-24be-4853-af6e-3219cbc0d845", "Current main -> 8003f0f84c07f80e93400d4c8f46378d83398142", "PR #390 -> MERGED", "harness linear prepare --issue JSC-363 --json -> previously failed missing LINEAR_API_KEY", "harness linear triage --dry-run --json -> previously failed missing LINEAR_API_KEY", "~/.codex/.env -> FIFO, not safely sourceable as regular env file"],
         next: "Provide a usable Linear tool/token path or owner-classify the stale Linear field text as historical while the repo tracker remains canonical; then record the decision before broader closeout work.",
         risk: "Tracker comments, issue fields, and goal receipts are distinct truth surfaces; one cannot silently stand in for the others."
+      },
+      {
+        id: "active-next-clean-worktree-repair",
+        lane: "implementation",
+        title: "Active slice: harness next clean-worktree repair",
+        status: "active",
+        tags: ["harness next", "worktree", "R450"],
+        summary: "The active branch repairs a current-main classifier bug where clean empty git status output was treated as missing evidence and surfaced as a false dirty-worktree blocker.",
+        evidence: ["Branch -> codex/jsc-363-next-clean-worktree-state", "Base main -> 8003f0f84c07f80e93400d4c8f46378d83398142", "Changed files -> src/commands/next-runner-inputs.ts and src/commands/next.test.ts", "Focused next tests -> pass", "pnpm check -> pass", "pnpm test:deep -> blocked at E2E credential tail"],
+        next: "Commit, open one PR, trigger CodeRabbit, triage CI and review threads, merge, pull main, then refresh the goal tracker before returning to Linear field-text decision work.",
+        risk: "This repair proves only local harness next worktree-state behavior. It does not prove PR merge readiness, Linear field text, root hygiene, documentation accuracy, Judge/PM readiness, or parent-goal completion."
+      },
+      {
+        id: "post-pr389-tracker-refresh-pr390",
+        lane: "completed",
+        title: "PR #390: Post-PR389 route truth merged",
+        status: "done",
+        tags: ["PR #390", "route truth", "merged"],
+        summary: "PR #390 merged the post-PR389 route truth refresh into current main. It is the base for the active harness next repair branch.",
+        evidence: ["PR #390 -> MERGED", "Main and origin/main -> 8003f0f84c07f80e93400d4c8f46378d83398142", "Open PR count before this branch -> 0"],
+        next: "Use as current-main base provenance only. The active route is the harness next clean-worktree repair branch.",
+        risk: "PR #390 proves tracker-refresh delivery only. It does not prove the active code repair, Linear field text, documentation accuracy, root hygiene, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "codex-native-refinement",
