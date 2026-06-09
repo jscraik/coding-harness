@@ -43,19 +43,20 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-08 post-PR377 merge pullback. PR #366,
+Last updated during the 2026-06-08 post-PR378 merge pullback. PR #366,
 PR #367, PR #369, PR #370, PR #371, PR #372, PR #373, PR #374, PR #375,
-PR #376, and PR #377 are historical route provenance. PR #377 is merged into
-`main` as squash merge commit `b1e29c117ee5089fa67af7be39fe2970857eb36a`.
+PR #376, PR #377, and PR #378 are historical route provenance. PR #378 is
+merged into `main` as squash merge commit
+`28b0bf30091689559afad2e3240f1f849122cf48`.
 
 Current live route truth:
 
 - Local `main` and `origin/main` are synced at
-  `b1e29c117ee5089fa67af7be39fe2970857eb36a` after PR #377 merge pullback.
+  `28b0bf30091689559afad2e3240f1f849122cf48` after PR #378 merge pullback.
 - Current branch is `main`.
-- PR #377 merged the post-PR376 tracker refresh route
+- PR #378 merged the post-PR377 tracker refresh route
   into `main` from submitted head
-  `499b060437986ebcfc55e679233abb8f24bdf8e6` after current-head
+  `9b003db2bec03f0638e8fbd4d296c8bc38816167` after current-head
   CodeRabbit and repo-owned CircleCI lanes passed. Review-thread refresh returned
   zero unresolved non-outdated threads. The external Snyk GitHub App status
   remained owner-waived for the quota/status lane only.
@@ -156,17 +157,22 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: none. PR #377 is merged and pulled back to local `main`.
-- Provenance: See `receipts.jsonl` for merged PR #343 through PR #377 route history.
+- Current route: PR #379 tracker refresh is open on
+  `codex/jsc-363-post-pr378-tracker-refresh`.
+- Provenance: See `receipts.jsonl` for merged PR #343 through PR #378 route history
+  and PR #379 route evidence.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #377 merged at
-  `b1e29c117ee5089fa67af7be39fe2970857eb36a`. See `receipts.jsonl` for
+- Done on current main: PR #378 merged at
+  `28b0bf30091689559afad2e3240f1f849122cf48`. See `receipts.jsonl` for
   complete merged PR history.
-- Current route PR: none.
-- Selected next slice: not selected. The next slice must be chosen from the
-  remaining backlog after the post-PR377 tracker validates.
+- Current route PR: #379.
+- Selected next slice: Linear field-text decision. The next slice must refresh
+  or explicitly owner-classify JSC-363 Linear title/description currency before
+  broader closeout claims resume, but it starts only after PR #379 is reviewed,
+  green except any owner-waived external Snyk quota lane, merged, local main is
+  pulled back, and the tracker is refreshed.
 - Remaining backlog: review/external/root-hygiene proof, documentation accuracy,
   historical review-coverage backfill, Linear field-text decision, PU-015
   Judge/PM audit, and final completion audit.
