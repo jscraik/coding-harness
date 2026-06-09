@@ -171,6 +171,7 @@ SELF_REFERENTIAL_DECLARABLE_PATHS = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS | {
     "scripts/check-goal-board.py",
     "scripts/check-goal-audit-freshness.py",
     "src/dev/check-goal-audit-freshness-script.test.ts",
+    "src/dev/check-goal-board-script.test.ts",
 }
 
 

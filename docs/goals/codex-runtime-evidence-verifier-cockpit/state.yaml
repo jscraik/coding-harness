@@ -49,7 +49,7 @@ thin_execution_tracker:
     status: "blocked_on_linear_access_or_owner_classification"
     evidence_receipt: "R437"
   resume_gate:
-    - "Do not start broader feature or closeout work until PR #385 is merged, main is pulled locally, and goal-board/audit-freshness validators pass from current main."
+    - "Do not start broader feature or closeout work until goal-board and audit-freshness validators pass from current main after the latest merged PR route refresh."
     - "Execute the Linear field-text decision only if a regular LINEAR_API_KEY source, Linear MCP tool, or explicit owner classification is available."
     - "Execute the Linear field-text decision as a bounded external-tracker slice before broader review/external/root-hygiene proof, documentation accuracy, PU-015 Judge/PM audit, or final completion audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."

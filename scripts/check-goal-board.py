@@ -390,6 +390,8 @@ def parse_runtime_active_route(state_path: Path) -> dict[str, str]:
             value = value[1:-1]
         fields[key] = value
 
+    # Missing active_route is intentionally a no-op for this narrow guard: the
+    # stale-route check only rejects an explicitly declared GitHub PR route.
     return fields
 
 
