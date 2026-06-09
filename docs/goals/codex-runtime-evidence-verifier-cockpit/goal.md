@@ -43,17 +43,24 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-09 post-PR379 merge pullback. PR #366,
+Last updated during the 2026-06-09 post-PR380 merge pullback. PR #366,
 PR #367, PR #369, PR #370, PR #371, PR #372, PR #373, PR #374, PR #375,
-PR #376, PR #377, PR #378, and PR #379 are historical route provenance. PR #379 is
+PR #376, PR #377, PR #378, PR #379, and PR #380 are historical route provenance. PR #380 is
 merged into `main` as squash merge commit
-`0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533`.
+`b436db70eea4b0f2a29473235cadcf7789dc81fb`.
 
 Current live route truth:
 
 - Local `main` and `origin/main` are synced at
-  `0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533` after PR #379 merge pullback.
-- Current branch is `main`.
+  `b436db70eea4b0f2a29473235cadcf7789dc81fb` after PR #380 merge pullback.
+- Current work branch is `codex/jsc-363-linear-field-text-decision`; local `main` is the synced baseline.
+- PR #380 merged the post-PR379 tracker refresh route
+  into `main` from submitted head
+  `958f642a23892b806a4a2ffa0b6ca1b491922c23` after the PR body was repaired
+  against `pr-template-gate`, CodeRabbit was manually triggered, repo-owned
+  CircleCI lanes passed on rerun, and review-thread refresh returned zero
+  unresolved threads. The external Snyk GitHub App status remained owner-waived
+  for the quota/status lane only.
 - PR #379 merged the post-PR378 tracker refresh route
   into `main` from submitted head
   `ac6d883a4568e048db47dad8f6106b5c266f3f73` after current-head
@@ -157,21 +164,21 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: no active PR route after PR #379 merged and local `main` was
-  pulled to `0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533`.
-- Provenance: See `receipts.jsonl` for merged PR #343 through PR #379 route
+- Current route: no active PR route after PR #380 merged and local `main` was
+  pulled to `b436db70eea4b0f2a29473235cadcf7789dc81fb`.
+- Provenance: See `receipts.jsonl` for merged PR #343 through PR #380 route
   history.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #379 merged at
-  `0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533`. See `receipts.jsonl` for
+- Done on current main: PR #380 merged at
+  `b436db70eea4b0f2a29473235cadcf7789dc81fb`. See `receipts.jsonl` for
   complete merged PR history.
 - Current route PR: none.
-- Selected next slice: Linear field-text decision. The next slice must refresh
-  or explicitly owner-classify JSC-363 Linear title/description currency before
-  broader closeout claims resume, but it starts only after this post-PR379
-  tracker refresh validates and is committed.
+- Active slice: Linear field-text decision. It must refresh or explicitly
+  owner-classify JSC-363 Linear title/description currency before broader
+  closeout claims resume, but the live Linear path is currently blocked because
+  this session exposes neither Linear MCP tools nor `LINEAR_API_KEY`.
 - Remaining backlog: review/external/root-hygiene proof, documentation accuracy,
   historical review-coverage backfill, Linear field-text decision, PU-015
   Judge/PM audit, and final completion audit.
