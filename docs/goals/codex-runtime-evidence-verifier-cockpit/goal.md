@@ -43,18 +43,23 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-09 post-PR383 merge pullback and tracker
-refresh. PR #366,
+Last updated during the 2026-06-09 post-PR384 merge pullback and Linear
+access probe. PR #366,
 PR #367, PR #369, PR #370, PR #371, PR #372, PR #373, PR #374, PR #375,
-PR #376, PR #377, PR #378, PR #379, PR #380, PR #381, PR #382, and PR #383 are historical route provenance. PR #383 is
-merged into `main` as squash merge commit
-`b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174`.
+PR #376, PR #377, PR #378, PR #379, PR #380, PR #381, PR #382, PR #383,
+and PR #384 are historical route provenance. PR #384 is merged into `main`
+as squash merge commit `96846c31b7d3b1bade77b1145543ab1c92c797ae`.
 
 Current live route truth:
 
 - Local `main` and `origin/main` are synced at
-  `b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174` after PR #383 merge pullback.
-- Current work branch is `codex/jsc-363-post-pr383-tracker-refresh`; local `main` is the synced baseline.
+  `96846c31b7d3b1bade77b1145543ab1c92c797ae` after PR #384 merge pullback.
+- Current work branch is `codex/jsc-363-post-pr384-linear-blocker-refresh`; local `main` is the synced baseline.
+- PR #384 merged the post-PR383 tracker refresh into `main` from submitted
+  head `19b193cd4d628f3cd50c215976890ca743e259dd` after repo-owned
+  CircleCI lanes, CodeRabbit, Socket, and review-thread refresh passed. The
+  external Snyk GitHub App status remained owner-waived for the quota/status
+  lane only.
 - PR #383 merged the audit-freshness governor-output validator repair into
   `main` from submitted head `777b3fd38b64b71edf6a3e5286596cec087e6ed5`
   after repo-owned required checks passed, CodeRabbit resolved the
@@ -184,19 +189,24 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: active local branch `codex/jsc-363-post-pr383-tracker-refresh`
-  refreshes route state after PR #383 merged; no implementation PR is active.
-- Provenance: See `receipts.jsonl` for merged PR #343 through PR #383 route
+- Current route: active local branch
+  `codex/jsc-363-post-pr384-linear-blocker-refresh` records that PR #384 is
+  merged and that the Linear field-text decision is blocked in this session by
+  unavailable Linear credentials/tools.
+- Provenance: See `receipts.jsonl` for merged PR #343 through PR #384 route
   history.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #383 merged at
-  `b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174`. See `receipts.jsonl` for
+- Done on current main: PR #384 merged at
+  `96846c31b7d3b1bade77b1145543ab1c92c797ae`. See `receipts.jsonl` for
   complete merged PR history.
-- Current route PR: pending for `codex/jsc-363-post-pr383-tracker-refresh`.
-- Active slice: post-PR383 tracker refresh. It must merge and be pulled back to
-  `main` before broader feature or closeout work resumes.
+- Current route PR: pending for `codex/jsc-363-post-pr384-linear-blocker-refresh`.
+- Active slice: Linear field-text decision blocker refresh. It must record that
+  `harness linear prepare --issue JSC-363 --json` and
+  `harness linear triage --dry-run --json` still fail with missing
+  `LINEAR_API_KEY`, while `~/.codex/.env` is a FIFO and cannot be safely
+  sourced in this sandbox.
 - Next broader slice after this refresh: Linear field-text decision. It must refresh or explicitly
   owner-classify JSC-363 Linear title/description currency before broader
   closeout claims resume, but the live Linear path is currently blocked because

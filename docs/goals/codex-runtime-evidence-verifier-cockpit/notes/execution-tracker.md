@@ -22,27 +22,30 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 
 ## Current Control Surface
 
-| Field               | Current Truth                                                           |
-| ------------------- | ----------------------------------------------------------------------- |
-| Parent issue        | JSC-363                                                                 |
-| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`            |
-| Current branch      | `codex/jsc-363-post-pr383-tracker-refresh`                              |
-| Local main head     | `b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174`                              |
-| Origin main head    | `b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174`                              |
-| Main baseline       | `b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174`                              |
-| Active route count  | 0                                                                       |
-| Active route        | tracker refresh branch pending PR                                       |
-| Last closed route   | PR #383 merged                                                          |
-| Current route       | post-PR383 tracker refresh                                              |
-| Current slice       | tracker refresh after validator repair merge                            |
-| Feature work status | Blocked until this refresh is merged, pulled to main, and validated      |
+| Field               | Current Truth                                                    |
+| ------------------- | ---------------------------------------------------------------- |
+| Parent issue        | JSC-363                                                          |
+| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`     |
+| Current branch      | `codex/jsc-363-post-pr384-linear-blocker-refresh`                |
+| Local main head     | `96846c31b7d3b1bade77b1145543ab1c92c797ae`                       |
+| Origin main head    | `96846c31b7d3b1bade77b1145543ab1c92c797ae`                       |
+| Main baseline       | `96846c31b7d3b1bade77b1145543ab1c92c797ae`                       |
+| Active route count  | 1                                                                |
+| Active route        | Linear blocker refresh branch pending PR                         |
+| Last closed route   | PR #384 merged                                                   |
+| Current route       | post-PR384 Linear blocker refresh                                |
+| Current slice       | Linear field-text decision access blocker                        |
+| Feature work status | Blocked until Linear access or owner classification is available |
 
 ## Active Route
 
-PR #383 is merged and local `main` is synced with `origin/main` at
-`b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174`; that route is closed provenance.
-The active branch is `codex/jsc-363-post-pr383-tracker-refresh`. It refreshes
-route state after the audit-freshness governor-output validator repair merged.
+PR #384 is merged and local `main` is synced with `origin/main` at
+`96846c31b7d3b1bade77b1145543ab1c92c797ae`; that route is closed provenance.
+The active branch is `codex/jsc-363-post-pr384-linear-blocker-refresh`. It
+records that the Linear field-text decision remains blocked in this session
+because `harness linear prepare --issue JSC-363 --json` and
+`harness linear triage --dry-run --json` fail without `LINEAR_API_KEY`, and
+`~/.codex/.env` is a FIFO rather than a safely sourceable regular env file.
 This does not claim
 Linear field-text currency, root-hygiene proof, documentation accuracy,
 Judge/PM readiness, or parent-goal completion.
@@ -50,13 +53,16 @@ Judge/PM readiness, or parent-goal completion.
 Current evidence:
 
 - Local `main` and `origin/main` are synced at
-  `b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174` after PR #383 merge pullback.
-- Live GitHub reports PR #383 merged at 2026-06-09T02:39:02Z from submitted
-  head `777b3fd38b64b71edf6a3e5286596cec087e6ed5` as squash merge commit
-  `b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174`.
-- PR #383 repo-owned required checks passed on the submitted head, CodeRabbit
-  resolved the receipt-key-contract review thread, and post-merge
+  `96846c31b7d3b1bade77b1145543ab1c92c797ae` after PR #384 merge pullback.
+- Live GitHub reports PR #384 merged at 2026-06-09T03:05:01Z from submitted
+  head `19b193cd4d628f3cd50c215976890ca743e259dd` as squash merge commit
+  `96846c31b7d3b1bade77b1145543ab1c92c797ae`.
+- PR #384 repo-owned required checks passed on the submitted head, CodeRabbit
+  passed, review-thread refresh returned zero unresolved threads, and post-merge
   audit-freshness, goal-board, and tracker-board validators passed on current main.
+- PR #383 remains merged validator-repair provenance from submitted head
+  `777b3fd38b64b71edf6a3e5286596cec087e6ed5` as squash merge commit
+  `b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174`.
 - Live GitHub reports PR #382 merged at 2026-06-09T01:58:34Z from submitted
   head `784070cb93a8fe0204d05bfb909608711128c0d0` as squash merge commit
   `b6f31c3f4027eee331fc98579c24eb560fb67d22`.
@@ -241,25 +247,29 @@ Feature implementation remains stopped until all of these are true:
 
 ## Linear Update Payload
 
-Use this payload for the JSC-363 Linear progress update:
+Use this payload only after Linear access is available or an owner explicitly
+approves posting the blocker classification for JSC-363:
 
 ```md
-Refreshed JSC-363 current-main route truth after PR #383 merge.
+Refreshed JSC-363 current-main route truth after PR #384 merge and recorded
+the post-PR384 Linear field-text access blocker.
 
 Current truth:
 
-- Active route lane: none.
-- Latest merged route: PR #383.
-- Local main head: b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174.
-- Origin main head: b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174.
-- Repo-owned required checks for PR #383 passed before merge.
+- Active route lane: post-PR384 Linear blocker refresh.
+- Latest merged route: PR #384.
+- Local main head: 96846c31b7d3b1bade77b1145543ab1c92c797ae.
+- Origin main head: 96846c31b7d3b1bade77b1145543ab1c92c797ae.
+- Repo-owned required checks for PR #384 passed before merge.
 - PU-013 runtime cockpit integration proof is merged and pulled back to local `main`.
-- PR #383 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
+- PR #384 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
 - No production code patch was required; current main already projects Codex runtime evidence into `runtime-card` and consumes it narrowly through `harness next`.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
-- Linear JSC-363 was refreshed with pre-PR372 post-merge route-truth comment `34a50024-24be-4853-af6e-3219cbc0d845`; post-PR383 field-text currency remains unclaimed because the issue title still says Phase 1.
+- Linear JSC-363 was refreshed with pre-PR372 post-merge route-truth comment `34a50024-24be-4853-af6e-3219cbc0d845`; post-PR384 field-text currency remains unclaimed because `harness linear prepare --issue JSC-363 --json` and `harness linear triage --dry-run --json` fail without `LINEAR_API_KEY` in this session.
 
 Restart rule:
 The next selected slice is the Linear field-text decision. It starts only after
-the board/state/receipt validators pass on this post-PR383 tracker refresh.
+this post-PR384 blocker refresh is merged, main is pulled, validators pass from
+current main, and a usable Linear tool/token path or owner classification is
+available.
 ```
