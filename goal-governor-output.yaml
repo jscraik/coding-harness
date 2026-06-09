@@ -3,57 +3,59 @@ mode: continue
 goal_path: docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md
 native_goal_status: unknown
 board_status: valid
-next_action: merge_post_pr383_tracker_refresh_then_start_linear_field_text_decision
+next_action: merge_post_pr384_linear_blocker_refresh_then_unblock_linear_or_get_owner_classification
 interpreted_objective: >
-  Continue the JSC-363 Goal Governor route after PR #383 merge pullback,
-  preserving lane separation and treating this tracker refresh as the active
+  Continue the JSC-363 Goal Governor route after PR #384 merge pullback,
+  preserving lane separation and treating this blocker refresh as the active
   bounded slice before returning to the Linear field-text decision.
 native_blocker_audit:
   gate_met: false
-  blocker_class: post_merge_tracker_refresh_pending_pr
+  blocker_class: linear_access_or_owner_classification_required
   worker_must_pause: true
   work_should_pause: true
   reason: >
-    PR #383 is merged and local main is pulled to
-    b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174. The current branch refreshes
-    route truth after the audit-freshness governor-output validator repair.
-    No broader feature or closeout work may resume until this tracker refresh is
-    merged, pulled back to main, and validator-clean.
+    PR #384 is merged and local main is pulled to
+    96846c31b7d3b1bade77b1145543ab1c92c797ae. The current branch records that
+    the Linear field-text decision cannot proceed in this session because
+    harness linear prepare and triage fail without LINEAR_API_KEY, and
+    ~/.codex/.env is a FIFO rather than a safely sourceable regular env file.
+    No broader feature or closeout work may resume until this blocker refresh
+    is merged, pulled back to main, and validator-clean.
 truth_lanes:
   local_validation: pass
   generated_artifacts: pass
-  remote_pr_checks: pass_for_pr383_before_merge
-  review_threads: zero_unresolved_for_pr383_before_merge
-  tracker_state: refreshed_in_progress
-  merge_readiness: post_pr383_tracker_refresh_pending_pr
+  remote_pr_checks: pass_for_pr384_before_merge_except_owner_waived_external_snyk_quota
+  review_threads: zero_unresolved_for_pr384_before_merge
+  tracker_state: linear_access_blocker_refreshed_in_progress
+  merge_readiness: post_pr384_linear_blocker_refresh_pending_pr
   tracker_state_evidence: >
-    PR #383 merged from submitted head
-    777b3fd38b64b71edf6a3e5286596cec087e6ed5 as squash merge commit
-    b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174 after required repo-owned checks
-    passed, CodeRabbit resolved the receipt-key-contract review thread, and
-    post-merge goal-board, audit-freshness, and Kanban validators passed on
-    current main. The external Snyk GitHub App private-test quota/status lane
+    PR #384 merged from submitted head
+    19b193cd4d628f3cd50c215976890ca743e259dd as squash merge commit
+    96846c31b7d3b1bade77b1145543ab1c92c797ae after repo-owned checks passed,
+    CodeRabbit passed, review threads were empty, and post-merge goal-board,
+    audit-freshness, and Kanban validators passed on current main. The external
+    Snyk GitHub App private-test quota/status lane
     remains an owner-waived external status lane only.
 continuation_gate:
   queued_user_input: absent
   pending_work: present
-  decision: merge_tracker_refresh_then_resolve_linear_access_or_owner_classification
+  decision: merge_linear_blocker_refresh_then_resolve_linear_access_or_owner_classification
   reason: >
-    The tracker now closes the validator repair route and selects Linear
-    field-text decision as the next bounded slice. Linear field-text currency
-    remains unclaimed until live Linear is updated or Jamie records an explicit
-    owner classification.
+    The tracker now closes the post-PR383 tracker refresh route and selects
+    Linear field-text decision as the next bounded slice. Linear field-text
+    currency remains unclaimed until live Linear is updated or Jamie records an
+    explicit owner classification.
   read_order:
     - read goal.md and state.yaml first
     - receipts.jsonl
     - notes/execution-tracker.md
 validation_evidence:
-  - command: "gh pr view 383 --repo jscraik/coding-harness --json number,state,mergeCommit,mergedAt,headRefOid,url"
+  - command: "gh pr view 384 --repo jscraik/coding-harness --json number,state,mergeCommit,mergedAt,headRefOid,url"
     outcome: pass
-    note: "PR #383 is MERGED at submitted head 777b3fd38b64b71edf6a3e5286596cec087e6ed5 with squash merge b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174."
+    note: "PR #384 is MERGED at submitted head 19b193cd4d628f3cd50c215976890ca743e259dd with squash merge 96846c31b7d3b1bade77b1145543ab1c92c797ae."
   - command: "git checkout main && git pull --ff-only origin main"
     outcome: pass
-    note: "Local main fast-forwarded to b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174 after PR #383 merge."
+    note: "Local main fast-forwarded to 96846c31b7d3b1bade77b1145543ab1c92c797ae after PR #384 merge."
   - command: "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo ."
     outcome: pass
     note: "Post-merge current-main audit freshness passed before this tracker refresh branch."
@@ -65,14 +67,14 @@ validation_evidence:
     note: "Post-merge current-main Kanban script passed before this tracker refresh branch."
   - command: "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo . && PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit && node scripts/validate-goal-kanban-script.cjs .harness/implementation-notes/goal-kanban-board.html && git diff --check"
     outcome: pass
-    note: "Edited post-PR383 tracker refresh selected R435, validated the goal board and Kanban script, and had no whitespace errors."
+    note: "Edited post-PR384 Linear blocker refresh selects R436, validates the goal board and Kanban script, and has no whitespace errors."
 claim_ledger:
-  - claim: "PR #383 is merged into current main."
+  - claim: "PR #384 is merged into current main."
     classification: verified
     evidence_surface:
-      - gh pr view 383 --repo jscraik/coding-harness --json number,state,mergeCommit,mergedAt,headRefOid,url
+      - gh pr view 384 --repo jscraik/coding-harness --json number,state,mergeCommit,mergedAt,headRefOid,url
       - git pull --ff-only origin main
-    remaining_uncertainty: "None for PR #383 merge state; this does not prove future PR, CI, Linear, or final closeout state."
+    remaining_uncertainty: "None for PR #384 merge state; this does not prove future PR, CI, Linear, or final closeout state."
   - claim: "The audit-freshness validator accepts governor-output route receipts and receipt key shape is guarded."
     classification: verified_for_pr383
     evidence_surface:
@@ -80,13 +82,13 @@ claim_ledger:
       - src/dev/check-goal-audit-freshness-script.test.ts
       - docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R434
     remaining_uncertainty: "This proves the merged validator repair route, not Linear field-text currency or parent-goal completion."
-  - claim: "The active route is this post-PR383 tracker refresh; Linear field-text decision remains next."
+  - claim: "The active route is this post-PR384 Linear blocker refresh; Linear field-text decision remains next but blocked."
     classification: verified_from_repo_tracker
     evidence_surface:
       - docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml
       - docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md
       - .harness/implementation-notes/goal-kanban-board.html
-    remaining_uncertainty: "Live Linear fields still need refresh or owner classification after this tracker refresh is merged and pulled."
+    remaining_uncertainty: "Live Linear fields still need refresh or owner classification after this blocker refresh is merged and pulled."
 evidence_surface:
   current_goal: docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md
   current_state: docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml
@@ -106,11 +108,11 @@ selected_next_slice:
     - do not claim Judge/PM readiness or parent-goal completion
 prohibited_actions:
   - do not claim linear_fields_current before live Linear refresh or owner classification
-  - do not start broader closeout work before this tracker refresh PR is merged and pulled
+  - do not start broader closeout work before this blocker refresh PR is merged and pulled
   - do not treat external Snyk quota waiver as external Snyk success
 remaining_uncertainty:
-  - "This tracker refresh must be merged, pulled, and validated before the Linear field-text decision slice starts."
-  - "Live Linear field text has not yet been refreshed because Linear MCP tools and LINEAR_API_KEY are unavailable in this session."
+  - "This blocker refresh must be merged, pulled, and validated before another attempt at the Linear field-text decision starts."
+  - "Live Linear field text has not yet been refreshed because Linear MCP tools are unavailable and LINEAR_API_KEY is absent from the active environment."
   - "Review/external/root-hygiene proof, documentation accuracy, PU-015 Judge/PM audit, and final completion audit remain open."
 risks:
   - "A route-refresh PR can become context churn if it is not immediately followed by the selected bounded slice."
