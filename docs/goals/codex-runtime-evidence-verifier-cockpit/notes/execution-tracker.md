@@ -22,20 +22,20 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 
 ## Current Control Surface
 
-| Field               | Current Truth                                                                                |
-| ------------------- | -------------------------------------------------------------------------------------------- |
-| Parent issue        | JSC-363                                                                                      |
-| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`                                 |
-| Current branch      | `main`                                                                                       |
-| Local head          | `28b0bf30091689559afad2e3240f1f849122cf48`                                                   |
-| Remote branch head  | `28b0bf30091689559afad2e3240f1f849122cf48`                                                   |
-| Main baseline       | `28b0bf30091689559afad2e3240f1f849122cf48`                                                   |
-| Active route count  | 0                                                                                            |
-| Active route        | none                                                                                         |
-| Last closed route   | PR #378 merged                                                                               |
-| Current route       | PR #379 tracker refresh                                                                      |
-| Current slice       | Linear field-text decision                                                                   |
-| Feature work status | Stopped until PR #379 merges, main is pulled back, and the tracker is refreshed              |
+| Field               | Current Truth                                                                   |
+| ------------------- | ------------------------------------------------------------------------------- |
+| Parent issue        | JSC-363                                                                         |
+| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`                    |
+| Current branch      | `codex/jsc-363-post-pr378-tracker-refresh`                                      |
+| Local head          | `fd5499e2e20dd345ce4111fd5004612170f0f161`                                      |
+| Remote branch head  | `cc76c8c001991ea43b5bf27a067de10df0931660`                                      |
+| Main baseline       | `28b0bf30091689559afad2e3240f1f849122cf48`                                      |
+| Active route count  | 1                                                                               |
+| Active route        | PR #379                                                                         |
+| Last closed route   | PR #378 merged                                                                  |
+| Current route       | PR #379 tracker refresh                                                         |
+| Current slice       | Linear field-text decision                                                      |
+| Feature work status | Stopped until PR #379 merges, main is pulled back, and the tracker is refreshed |
 
 ## Active Route
 
