@@ -823,7 +823,7 @@
         status: "blocked",
         tags: ["Linear", "JSC-363", "field text"],
         summary: "The next bounded slice is to refresh Linear JSC-363 field text if authorized, or record an explicit owner classification that stale Phase 1 wording is historical while the repo tracker remains canonical. It is blocked in this session because usable Linear credentials/tools are unavailable.",
-        evidence: ["Linear JSC-363 status -> not refreshed in this session", "Pre-PR372 route-truth comment -> 34a50024-24be-4853-af6e-3219cbc0d845", "Current main -> 3f3122b61cba470e91da94ca5c7b44c911dfe79d", "PR #386 -> MERGED at 2026-06-09T05:41:10Z", "harness linear prepare --issue JSC-363 --json -> previously failed missing LINEAR_API_KEY", "harness linear triage --dry-run --json -> previously failed missing LINEAR_API_KEY", "~/.codex/.env -> FIFO, not safely sourceable as regular env file"],
+        evidence: ["Linear JSC-363 status -> not refreshed in this session", "Pre-PR372 route-truth comment -> 34a50024-24be-4853-af6e-3219cbc0d845", "Current main -> 5ca228d2cb17944c72fc5ed8da4c7b1a4dd1fc53", "PR #387 -> MERGED at 2026-06-09T07:01:42Z", "PR #388 -> active tracker-refresh triage at ec550bd87b20884c316268be37c57dd66213cbaf", "harness linear prepare --issue JSC-363 --json -> previously failed missing LINEAR_API_KEY", "harness linear triage --dry-run --json -> previously failed missing LINEAR_API_KEY", "~/.codex/.env -> FIFO, not safely sourceable as regular env file"],
         next: "Provide a usable Linear tool/token path or owner-classify the stale Linear field text as historical while the repo tracker remains canonical; then record the decision before broader closeout work.",
         risk: "Tracker comments, issue fields, and goal receipts are distinct truth surfaces; one cannot silently stand in for the others."
       },
@@ -886,7 +886,7 @@
         id: "browser-preview",
         lane: "artifact-truth",
         title: "Implementation notes browser preview",
-        status: "blocked",
+        status: "review-thread-repair",
         tags: ["Browser", "artifact-runtime", "preview"],
         summary: "state.yaml says the reviewed MDX source exists, but the live HTML preview is a local runtime projection and no repo-owned watcher exists yet.",
         evidence: ["state.yaml artifact_runtime_surface.browser_preview.status = blocked", ".harness/implementation-notes/codex-runtime-evidence-verifier-cockpit.mdx", ".harness/implementation-notes/implementation-notes.html"],
@@ -1196,10 +1196,10 @@
         title: "PR #388: Post-PR387 tracker refresh triage",
         status: "blocked",
         tags: ["PR #388", "route truth", "CI rerun"],
-        summary: "PR #388 is open for the post-PR387 tracker refresh. The remote PR body passes the local template gate, CodeRabbit was manually triggered, and the only repo-owned red remote contexts are stale pre-PR CircleCI pr-template and aggregate pr-pipeline checks.",
-        evidence: ["PR #388 -> OPEN", "Head -> 1047c8e1488a7c48bb3526e0e34ef920a80772e7", "Remote PR body pr-template-gate -> pass", "Manual CodeRabbit trigger -> https://github.com/jscraik/coding-harness/pull/388#issuecomment-4657261420", "ci/circleci: pr-template -> failed before PR context existed", "pr-pipeline -> failed as aggregate of stale pr-template context", "External Snyk GitHub App -> owner-waived quota/status lane only"],
-        next: "Rerun or refresh PR #388 so CircleCI pr-template executes with PR context, wait for CodeRabbit completion, and merge only after repo-owned CI and review lanes pass.",
-        risk: "PR #388 is not merge-ready while repo-owned CI and CodeRabbit are not current green evidence. This triage card does not prove Linear field text, documentation accuracy, root hygiene, Judge/PM readiness, or parent-goal completion."
+        summary: "PR #388 is open for the post-PR387 tracker refresh. The remote PR body passes the local template gate, CodeRabbit was manually triggered, and the PR-context rerun now has repo-owned CircleCI lanes, aggregate pr-pipeline, Socket, and CodeRabbit green. GitHub merge state remains blocked by the owner-waived external Snyk GitHub App quota/status lane.",
+        evidence: ["PR #388 -> OPEN", "Head -> ec550bd87b20884c316268be37c57dd66213cbaf", "Remote PR body pr-template-gate -> pass", "Manual CodeRabbit trigger -> https://github.com/jscraik/coding-harness/pull/388#issuecomment-4657261420", "ci/circleci: pr-template -> pass at PR context", "pr-pipeline -> pass", "CodeRabbit -> success", "External Snyk GitHub App -> owner-waived quota/status lane only"],
+        next: "Resolve the route-truth review drift, refresh checks after this follow-up commit, and merge only if repo-owned CI plus review lanes remain green while keeping the external Snyk waiver separate.",
+        risk: "PR #388 proves tracker-refresh triage only. It does not prove Linear field text, documentation accuracy, root hygiene, Judge/PM readiness, parent-goal completion, or external Snyk GitHub App health."
       },
       {
         id: "final-proof-packets",

@@ -31,12 +31,12 @@ thin_execution_tracker:
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
     kind: "pr_triage"
-    status: "pr388_open_stale_pre_pr_circleci_contexts_coderabbit_pending"
-    blocker: "PR #388 is open for the post-PR387 tracker refresh. The remote PR body passes pr-template-gate locally, but the visible CircleCI pr-template and aggregate pr-pipeline failures are stale pre-PR contexts that started before PR #388 existed and could resolve PR context. CodeRabbit is manually triggered and pending. External Snyk GitHub App status remains an owner-waived quota/status lane only."
+    status: "pr388_open_review_thread_repair_repo_owned_checks_green_snyk_quota_waived"
+    blocker: "PR #388 is open for the post-PR387 tracker refresh. Repo-owned CircleCI lanes, aggregate pr-pipeline, Socket, and CodeRabbit are green at head ec550bd87b20884c316268be37c57dd66213cbaf after the PR-context rerun. GitHub merge state remains blocked by the external Snyk GitHub App quota/status lane, which is owner-waived only and not a pass. The active work is to repair route-truth review drift, refresh checks after the follow-up commit, then merge/pull back only if repo-owned CI and review lanes remain green."
     active_branch: "codex/jsc-363-post-pr387-tracker-refresh"
     active_pr: 388
     active_pr_url: "https://github.com/jscraik/coding-harness/pull/388"
-    active_pr_head_sha: "1047c8e1488a7c48bb3526e0e34ef920a80772e7"
+    active_pr_head_sha: "ec550bd87b20884c316268be37c57dd66213cbaf"
     last_merged_pr: 387
     last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/387"
     last_merged_sha: "5ca228d2cb17944c72fc5ed8da4c7b1a4dd1fc53"
@@ -51,7 +51,7 @@ thin_execution_tracker:
     lifecycle_unit: "linear-field-text-decision"
     name: "decide JSC-363 Linear field-text currency with live tool/token evidence or owner classification"
     status: "blocked_until_pr388_merges_and_main_is_pulled"
-    evidence_receipt: "R445"
+    evidence_receipt: "R447"
   resume_gate:
     - "Do not start broader feature or closeout work until PR #388 is triaged, merged, local main is pulled, and goal-board and audit-freshness validators pass from current main."
     - "Execute the Linear field-text decision only if a regular LINEAR_API_KEY source, Linear MCP tool, or explicit owner classification is available."
