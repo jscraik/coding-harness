@@ -22,35 +22,42 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 
 ## Current Control Surface
 
-| Field               | Current Truth                                                            |
-| ------------------- | ------------------------------------------------------------------------ |
-| Parent issue        | JSC-363                                                                  |
-| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`             |
-| Current branch      | `main`                                                                   |
-| Local head          | `0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533`                               |
-| Remote branch head  | `0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533`                               |
-| Main baseline       | `0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533`                               |
-| Active route count  | 0                                                                        |
-| Active route        | none                                                                     |
-| Last closed route   | PR #379 merged                                                           |
-| Current route       | post-PR379 tracker refresh on main                                       |
-| Current slice       | Linear field-text decision                                               |
-| Feature work status | Stopped until this post-PR379 tracker refresh is validated and committed |
+| Field               | Current Truth                                                           |
+| ------------------- | ----------------------------------------------------------------------- |
+| Parent issue        | JSC-363                                                                 |
+| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`            |
+| Current branch      | `codex/jsc-363-linear-field-text-decision`                              |
+| Local main head     | `b436db70eea4b0f2a29473235cadcf7789dc81fb`                              |
+| Origin main head    | `b436db70eea4b0f2a29473235cadcf7789dc81fb`                              |
+| Main baseline       | `b436db70eea4b0f2a29473235cadcf7789dc81fb`                              |
+| Active route count  | 0                                                                       |
+| Active route        | none                                                                    |
+| Last closed route   | PR #380 merged                                                          |
+| Current route       | Linear field-text decision                                              |
+| Current slice       | Linear field-text decision                                              |
+| Feature work status | Blocked on Linear tools or `LINEAR_API_KEY`; no broader slice may start |
 
 ## Active Route
 
-PR #379 is merged and local `main` is synced with `origin/main` at
-`0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533`; that route is closed provenance.
-No PR route is active. The Linear field-text decision slice is the selected next
-slice, but feature work remains stopped until this post-PR379 tracker refresh is
-validated and committed. This does not claim Linear field-text currency,
-root-hygiene proof, documentation accuracy, Judge/PM readiness, or parent-goal
-completion.
+PR #380 is merged and local `main` is synced with `origin/main` at
+`b436db70eea4b0f2a29473235cadcf7789dc81fb`; that route is closed provenance.
+No PR route is active. The Linear field-text decision slice is active, but live
+Linear read/write is blocked in this session because Linear MCP tools are not
+exposed and `LINEAR_API_KEY` is absent from the process environment. This does
+not claim Linear field-text currency, root-hygiene proof, documentation
+accuracy, Judge/PM readiness, or parent-goal completion.
 
 Current evidence:
 
 - Local `main` and `origin/main` are synced at
-  `0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533` after PR #379 merge pullback.
+  `b436db70eea4b0f2a29473235cadcf7789dc81fb` after PR #380 merge pullback.
+- Live GitHub reports PR #380 merged at 2026-06-09T01:02:35Z from submitted
+  head `958f642a23892b806a4a2ffa0b6ca1b491922c23` as squash merge commit
+  `b436db70eea4b0f2a29473235cadcf7789dc81fb`.
+- PR #380 repo-owned CircleCI lanes, aggregate `pr-pipeline`, CodeRabbit
+  status, Socket, and CircleCI Snyk dependency scan passed before merge after a
+  body-only `pr-template` repair and failed-job rerun.
+- PR #380 review-thread refresh returned zero unresolved threads before merge.
 - Live GitHub reports PR #379 merged from submitted head
   `ac6d883a4568e048db47dad8f6106b5c266f3f73` as squash merge commit
   `0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533`.
@@ -157,8 +164,8 @@ Completed route-refresh action:
 
 ## Active Slice
 
-The selected next slice is the Linear field-text decision, but it remains
-blocked until this post-PR379 tracker refresh is validated and committed.
+The selected next slice is the Linear field-text decision, and it is now active
+but blocked on Linear access in this session.
 
 Current slice boundary:
 
@@ -169,12 +176,17 @@ Current slice boundary:
 - Output: compact Linear receipt plus synchronized goal/state/tracker update.
 - Boundary: this slice must not reopen runtime-card, delivery-truth, or
   closeout code unless a fresh current-main regression is found.
+- Current blocker: Linear MCP tools are not exposed, `LINEAR_API_KEY` is absent
+  from the process environment, and `~/.codex/.env` is a FIFO in this sandbox.
+  `harness linear prepare --issue JSC-363 --json` and
+  `harness linear triage --dry-run --json` both failed with missing-token
+  validation errors.
 
 Non-claims:
 
 - This slice does not produce root-hygiene evidence, Judge/PM readiness, Linear
   field-text currency, or parent goal completion.
-- No PR lane is active after PR #379 merge pullback.
+- No PR lane is active after PR #380 merge pullback.
 
 ## Outstanding Work
 
@@ -188,7 +200,7 @@ Non-claims:
 
 ## History Boundary
 
-Merged PR lanes through PR #379 remain provenance. They are not active route
+Merged PR lanes through PR #380 remain provenance. They are not active route
 lanes and must not be expanded in the active board unless a fresh current-main
 regression reopens them.
 
@@ -201,9 +213,8 @@ Feature implementation remains stopped until all of these are true:
 
 - Delivery-truth consumption projection is merged through PR #374, PR #375
   tracker review-fix is merged, PR #376 tracker refresh is merged, PR #377
-  tracker refresh is merged, PR #378 tracker refresh is merged, PR #379 tracker
-  refresh is merged, and the post-PR379 tracker refresh is validated against
-  local `main`.
+  tracker refresh is merged, PR #378 tracker refresh is merged, PR #379 tracker refresh is merged, and PR #380
+  tracker refresh is merged into local `main`.
 - Linear JSC-363 has compact post-merge route-truth comment
   `34a50024-24be-4853-af6e-3219cbc0d845`.
 - `goal.md`, `state.yaml`, `notes/execution-tracker.md`,

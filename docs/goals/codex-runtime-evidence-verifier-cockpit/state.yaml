@@ -31,24 +31,24 @@ thin_execution_tracker:
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
     kind: "github_pr"
-    status: "no_active_pr_after_pr379_merge_pullback"
-    blocker: "Do not start the Linear field-text decision slice until this post-PR379 tracker refresh validates and is committed."
-    last_merged_pr: 379
-    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/379"
-    last_merged_sha: "0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533"
-    last_merged_submitted_head_sha: "ac6d883a4568e048db47dad8f6106b5c266f3f73"
-    last_merge_verified_at: "2026-06-09T00:30:00Z"
-    local_main_sha: "0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533"
-    origin_main_sha: "0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533"
+    status: "no_active_pr_after_pr380_merge_pullback"
+    blocker: "Linear field-text decision is active but externally blocked: this session has no exposed Linear MCP tools and no LINEAR_API_KEY."
+    last_merged_pr: 380
+    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/380"
+    last_merged_sha: "b436db70eea4b0f2a29473235cadcf7789dc81fb"
+    last_merged_submitted_head_sha: "958f642a23892b806a4a2ffa0b6ca1b491922c23"
+    last_merge_verified_at: "2026-06-09T01:03:00Z"
+    local_main_sha: "b436db70eea4b0f2a29473235cadcf7789dc81fb"
+    origin_main_sha: "b436db70eea4b0f2a29473235cadcf7789dc81fb"
     open_pr_count: 0
     open_prs: []
   queued_slice:
     lifecycle_unit: "linear-field-text-decision"
     name: "refresh or owner-classify JSC-363 Linear field-text currency"
-    status: "selected_after_pr379_merge_pullback_blocked_by_post_pr379_tracker_validation"
-    evidence_receipt: "R431"
+    status: "active_blocked_missing_linear_tools_or_token"
+    evidence_receipt: "R432"
   resume_gate:
-    - "Do not start feature work until this post-PR379 tracker refresh is reconciled and the Linear field-text decision slice is the only selected backlog slice."
+    - "Do not start broader feature or closeout work until the Linear field-text decision slice is either completed through live Linear or explicitly owner-classified as accepted stale field text."
     - "Execute the Linear field-text decision as a bounded external-tracker slice before broader review/external/root-hygiene proof, documentation accuracy, PU-015 Judge/PM audit, or final completion audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
   review_artifacts:
