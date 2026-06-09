@@ -26,21 +26,21 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | ------------------- | ---------------------------------------------------------------- |
 | Parent issue        | JSC-363                                                          |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`     |
-| Current branch      | `codex/jsc-363-post-pr392-tracker-refresh`                       |
-| Local main head     | `4bb43fa666315a649f3bd9a10b538142e4f3b47d`                       |
-| Origin main head    | `4bb43fa666315a649f3bd9a10b538142e4f3b47d`                       |
-| Main baseline       | `4bb43fa666315a649f3bd9a10b538142e4f3b47d`                       |
+| Current branch      | `main`                                                           |
+| Local main head     | `566a0a78286f5a1999eee4c332256475d4f19508`                       |
+| Origin main head    | `566a0a78286f5a1999eee4c332256475d4f19508`                       |
+| Main baseline       | `566a0a78286f5a1999eee4c332256475d4f19508`                       |
 | Active route count  | 1                                                                |
 | Active route        | Linear field-text decision blocker                               |
-| Last closed route   | PR #392 merged                                                   |
+| Last closed route   | PR #393 merged                                                   |
 | Current route       | Linear field-text decision or owner classification                |
 | Current slice       | Resolve or explicitly classify stale Linear field text            |
 | Feature work status | No next feature slice started                                    |
 
 ## Active Route
 
-PR #392 is merged and local `main` is synced with `origin/main` at
-`4bb43fa666315a649f3bd9a10b538142e4f3b47d`; that route is closed
+PR #393 is merged and local `main` is synced with `origin/main` at
+`566a0a78286f5a1999eee4c332256475d4f19508`; that route is closed
 provenance. The active route is now the blocked Linear field-text decision or
 owner classification lane. This does not claim Linear field-text currency,
 root-hygiene proof, documentation accuracy, Judge/PM readiness, release
@@ -49,7 +49,12 @@ readiness, or parent-goal completion.
 Current evidence:
 
 - Local `main` and `origin/main` are synced at
-  `4bb43fa666315a649f3bd9a10b538142e4f3b47d` after PR #392 merge pullback.
+  `566a0a78286f5a1999eee4c332256475d4f19508` after PR #393 merge pullback.
+- Live GitHub reports PR #393 merged at `2026-06-09T11:29:52Z` from submitted
+  head `e1adee25ab692d3a554f1ae318b816762c3d045c` as squash merge commit
+  `566a0a78286f5a1999eee4c332256475d4f19508`; repo-owned CircleCI,
+  aggregate `pr-pipeline`, aggregate `security-scan`, Socket, CodeRabbit
+  status, and review-thread checks passed or had no unresolved threads.
 - Live GitHub reports PR #392 merged at `2026-06-09T11:10:16Z` from submitted
   head `d9bd5c42c25a315dc4e112b546003402422fbdae`; repo-owned CircleCI,
   aggregate `pr-pipeline`, aggregate `security-scan`, Socket, CodeRabbit

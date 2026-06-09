@@ -416,7 +416,7 @@
 
     <section class="metrics" aria-label="Goal status summary">
       <div class="metric"><span>Goal status</span><strong>Linear decision blocked</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #392</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #393</strong></div>
       <div class="metric"><span>Current PR</span><strong>No open PR</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Projection merged</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated after PR #392 merged into <code>main</code> at <code>4bb43fa666315a649f3bd9a10b538142e4f3b47d</code> from submitted head <code>d9bd5c42c25a315dc4e112b546003402422fbdae</code>. PR #392 merged the source-tracked post-PR391 route refresh; PR #391 remains the merged <code>harness next</code> repair that preserves empty clean <code>git status --short --untracked-files=all</code> output as valid clean-state evidence. The active route is now the blocked Linear field-text decision or owner classification lane. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated after PR #393 merged into <code>main</code> at <code>566a0a78286f5a1999eee4c332256475d4f19508</code> from submitted head <code>e1adee25ab692d3a554f1ae318b816762c3d045c</code>. PR #393 merged the source-tracked post-PR392 route refresh; PR #391 remains the merged <code>harness next</code> repair that preserves empty clean <code>git status --short --untracked-files=all</code> output as valid clean-state evidence. The active route is now the blocked Linear field-text decision or owner classification lane. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -822,19 +822,19 @@
         title: "Outstanding blocked slice: Linear field-text decision",
         status: "blocked",
         tags: ["Linear", "JSC-363", "field text"],
-        summary: "After PR #392 merged and main was pulled back, this is the active blocked lane: refresh Linear JSC-363 field text if authorized or record an owner classification that stale Phase 1 wording is historical while the repo tracker remains canonical. It is blocked in this session because usable Linear credentials/tools are unavailable.",
-        evidence: ["Linear JSC-363 status -> not refreshed in this session", "Pre-PR372 route-truth comment -> 34a50024-24be-4853-af6e-3219cbc0d845", "Current main -> 4bb43fa666315a649f3bd9a10b538142e4f3b47d", "PR #392 -> MERGED", "harness linear prepare --issue JSC-363 --json -> previously failed missing LINEAR_API_KEY", "harness linear triage --dry-run --json -> previously failed missing LINEAR_API_KEY", "~/.codex/.env -> unavailable as a usable token source in this thread"],
+        summary: "After PR #393 merged and main was pulled back, this is the active blocked lane: refresh Linear JSC-363 field text if authorized or record an owner classification that stale Phase 1 wording is historical while the repo tracker remains canonical. It is blocked in this session because usable Linear credentials/tools are unavailable.",
+        evidence: ["Linear JSC-363 status -> not refreshed in this session", "Pre-PR372 route-truth comment -> 34a50024-24be-4853-af6e-3219cbc0d845", "Current main -> 566a0a78286f5a1999eee4c332256475d4f19508", "PR #393 -> MERGED", "harness linear prepare --issue JSC-363 --json -> failed missing LINEAR_API_KEY", "harness linear triage --dry-run --json -> failed missing LINEAR_API_KEY", "~/.codex/.env -> unavailable as a usable token source in this thread"],
         next: "Provide a usable Linear tool/token path or owner-classify the stale Linear field text as historical while the repo tracker remains canonical; then record the decision before broader closeout work.",
         risk: "Tracker comments, issue fields, and goal receipts are distinct truth surfaces; one cannot silently stand in for the others."
       },
       {
-        id: "post-pr392-tracker-refresh",
+        id: "post-pr393-tracker-refresh",
         lane: "completed",
-        title: "PR #392: Post-PR391 route refresh merged",
+        title: "PR #393: Post-PR392 route refresh merged",
         status: "done",
-        tags: ["tracker", "post-merge", "R453"],
-        summary: "PR #392 merged the source-tracked post-PR391 route refresh and local main was pulled to the merge commit. The board now routes to the blocked Linear field-text decision lane.",
-        evidence: ["PR #392 -> MERGED at 2026-06-09T11:10:16Z", "Submitted head -> d9bd5c42c25a315dc4e112b546003402422fbdae", "Merge commit -> 4bb43fa666315a649f3bd9a10b538142e4f3b47d", "Repo-owned CircleCI -> pass", "CodeRabbit status -> pass", "Review comments -> none", "External Snyk GitHub App -> owner-waived quota lane"],
+        tags: ["tracker", "post-merge", "R454"],
+        summary: "PR #393 merged the source-tracked post-PR392 route refresh and local main was pulled to the merge commit. The board now routes to the blocked Linear field-text decision lane.",
+        evidence: ["PR #393 -> MERGED at 2026-06-09T11:29:52Z", "Submitted head -> e1adee25ab692d3a554f1ae318b816762c3d045c", "Merge commit -> 566a0a78286f5a1999eee4c332256475d4f19508", "Repo-owned CircleCI -> pass", "CodeRabbit status -> pass", "Review comments -> none", "External Snyk GitHub App -> pass on PR #393"],
         next: "Use as merged route provenance only. Continue through the blocked Linear field-text decision or owner classification lane.",
         risk: "This refresh proves route-truth alignment only. It does not prove Linear field text, root hygiene, documentation accuracy, Judge/PM readiness, or parent-goal completion."
       },
