@@ -26,32 +26,37 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | ------------------- | ----------------------------------------------------------------------- |
 | Parent issue        | JSC-363                                                                 |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`            |
-| Current branch      | `codex/jsc-363-audit-freshness-governor-output`                         |
-| Local main head     | `b6f31c3f4027eee331fc98579c24eb560fb67d22`                              |
-| Origin main head    | `b6f31c3f4027eee331fc98579c24eb560fb67d22`                              |
-| Main baseline       | `b6f31c3f4027eee331fc98579c24eb560fb67d22`                              |
+| Current branch      | `codex/jsc-363-post-pr383-tracker-refresh`                              |
+| Local main head     | `b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174`                              |
+| Origin main head    | `b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174`                              |
+| Main baseline       | `b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174`                              |
 | Active route count  | 0                                                                       |
-| Active route        | local branch pending PR                                                 |
-| Last closed route   | PR #382 merged                                                          |
-| Current route       | audit-freshness governor-output route repair                            |
-| Current slice       | validator repair and post-PR382 tracker refresh                         |
-| Feature work status | Blocked until this repair is merged, pulled to main, and validated       |
+| Active route        | tracker refresh branch pending PR                                       |
+| Last closed route   | PR #383 merged                                                          |
+| Current route       | post-PR383 tracker refresh                                              |
+| Current slice       | tracker refresh after validator repair merge                            |
+| Feature work status | Blocked until this refresh is merged, pulled to main, and validated      |
 
 ## Active Route
 
-PR #382 is merged and local `main` is synced with `origin/main` at
-`b6f31c3f4027eee331fc98579c24eb560fb67d22`; that route is closed provenance.
-The active branch is `codex/jsc-363-audit-freshness-governor-output`. It
-repairs the recurring post-squash audit-freshness failure where
-`goal-governor-output.yaml` changed with tracker state but was not included in
-the validator's self-referential goal receipt surface. This does not claim
+PR #383 is merged and local `main` is synced with `origin/main` at
+`b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174`; that route is closed provenance.
+The active branch is `codex/jsc-363-post-pr383-tracker-refresh`. It refreshes
+route state after the audit-freshness governor-output validator repair merged.
+This does not claim
 Linear field-text currency, root-hygiene proof, documentation accuracy,
 Judge/PM readiness, or parent-goal completion.
 
 Current evidence:
 
 - Local `main` and `origin/main` are synced at
-  `b6f31c3f4027eee331fc98579c24eb560fb67d22` after PR #382 merge pullback.
+  `b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174` after PR #383 merge pullback.
+- Live GitHub reports PR #383 merged at 2026-06-09T02:39:02Z from submitted
+  head `777b3fd38b64b71edf6a3e5286596cec087e6ed5` as squash merge commit
+  `b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174`.
+- PR #383 repo-owned required checks passed on the submitted head, CodeRabbit
+  resolved the receipt-key-contract review thread, and post-merge
+  audit-freshness, goal-board, and tracker-board validators passed on current main.
 - Live GitHub reports PR #382 merged at 2026-06-09T01:58:34Z from submitted
   head `784070cb93a8fe0204d05bfb909608711128c0d0` as squash merge commit
   `b6f31c3f4027eee331fc98579c24eb560fb67d22`.
@@ -211,7 +216,7 @@ Non-claims:
 
 ## History Boundary
 
-Merged PR lanes through PR #382 remain provenance. They are not active route
+Merged PR lanes through PR #383 remain provenance. They are not active route
 lanes and must not be expanded in the active board unless a fresh current-main
 regression reopens them.
 
@@ -224,8 +229,10 @@ Feature implementation remains stopped until all of these are true:
 
 - Delivery-truth consumption projection is merged through PR #374, PR #375
   tracker review-fix is merged, PR #376 tracker refresh is merged, PR #377
-  tracker refresh is merged, PR #378 tracker refresh is merged, PR #379 tracker refresh is merged, and PR #380
-  tracker refresh is merged into local `main`.
+  tracker refresh is merged, PR #378 tracker refresh is merged, PR #379 tracker refresh is merged, PR #380
+  tracker refresh is merged, PR #381 Linear blocker tracker route is merged,
+  PR #382 tracker refresh is merged, and PR #383 validator repair is merged
+  into local `main`.
 - Linear JSC-363 has compact post-merge route-truth comment
   `34a50024-24be-4853-af6e-3219cbc0d845`.
 - `goal.md`, `state.yaml`, `notes/execution-tracker.md`,
@@ -237,22 +244,22 @@ Feature implementation remains stopped until all of these are true:
 Use this payload for the JSC-363 Linear progress update:
 
 ```md
-Refreshed JSC-363 current-main route truth after PR #379 merge.
+Refreshed JSC-363 current-main route truth after PR #383 merge.
 
 Current truth:
 
 - Active route lane: none.
-- Latest merged route: PR #379.
-- Local main head: 0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533.
-- Origin main head: 0d25c6ac410c4d4f1d0a5c5231ce835e8ed1f533.
-- Repo-owned CircleCI lanes for PR #379 passed before merge.
+- Latest merged route: PR #383.
+- Local main head: b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174.
+- Origin main head: b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174.
+- Repo-owned required checks for PR #383 passed before merge.
 - PU-013 runtime cockpit integration proof is merged and pulled back to local `main`.
-- PR #379 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
+- PR #383 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
 - No production code patch was required; current main already projects Codex runtime evidence into `runtime-card` and consumes it narrowly through `harness next`.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
-- Linear JSC-363 was refreshed with pre-PR372 post-merge route-truth comment `34a50024-24be-4853-af6e-3219cbc0d845`; post-PR379 field-text currency remains unclaimed because the issue title still says Phase 1.
+- Linear JSC-363 was refreshed with pre-PR372 post-merge route-truth comment `34a50024-24be-4853-af6e-3219cbc0d845`; post-PR383 field-text currency remains unclaimed because the issue title still says Phase 1.
 
 Restart rule:
 The next selected slice is the Linear field-text decision. It starts only after
-the board/state/receipt validators pass on this post-PR379 tracker refresh.
+the board/state/receipt validators pass on this post-PR383 tracker refresh.
 ```

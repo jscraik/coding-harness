@@ -43,18 +43,24 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-09 post-PR382 merge pullback and audit-freshness
-validator repair. PR #366,
+Last updated during the 2026-06-09 post-PR383 merge pullback and tracker
+refresh. PR #366,
 PR #367, PR #369, PR #370, PR #371, PR #372, PR #373, PR #374, PR #375,
-PR #376, PR #377, PR #378, PR #379, PR #380, PR #381, and PR #382 are historical route provenance. PR #382 is
+PR #376, PR #377, PR #378, PR #379, PR #380, PR #381, PR #382, and PR #383 are historical route provenance. PR #383 is
 merged into `main` as squash merge commit
-`b6f31c3f4027eee331fc98579c24eb560fb67d22`.
+`b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174`.
 
 Current live route truth:
 
 - Local `main` and `origin/main` are synced at
-  `b6f31c3f4027eee331fc98579c24eb560fb67d22` after PR #382 merge pullback.
-- Current work branch is `codex/jsc-363-audit-freshness-governor-output`; local `main` is the synced baseline.
+  `b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174` after PR #383 merge pullback.
+- Current work branch is `codex/jsc-363-post-pr383-tracker-refresh`; local `main` is the synced baseline.
+- PR #383 merged the audit-freshness governor-output validator repair into
+  `main` from submitted head `777b3fd38b64b71edf6a3e5286596cec087e6ed5`
+  after repo-owned required checks passed, CodeRabbit resolved the
+  receipt-key-contract review thread, and post-merge goal-board,
+  audit-freshness, and tracker-board validators passed on current main. The external
+  Snyk GitHub App status remained owner-waived for the quota/status lane only.
 - PR #382 merged the post-PR381 tracker refresh into `main` from submitted
   head `784070cb93a8fe0204d05bfb909608711128c0d0` after CodeRabbit passed,
   repo-owned required CircleCI contexts passed, and review-thread refresh
@@ -178,21 +184,20 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: active local branch `codex/jsc-363-audit-freshness-governor-output`
-  repairing the audit-freshness validator so post-squash tracker receipts remain
-  valid when `goal-governor-output.yaml` changes with the goal route state.
-- Provenance: See `receipts.jsonl` for merged PR #343 through PR #382 route
+- Current route: active local branch `codex/jsc-363-post-pr383-tracker-refresh`
+  refreshes route state after PR #383 merged; no implementation PR is active.
+- Provenance: See `receipts.jsonl` for merged PR #343 through PR #383 route
   history.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #382 merged at
-  `b6f31c3f4027eee331fc98579c24eb560fb67d22`. See `receipts.jsonl` for
+- Done on current main: PR #383 merged at
+  `b0fadd87c023cfeaa474bc6bfb5e7d0cf5cdf174`. See `receipts.jsonl` for
   complete merged PR history.
-- Current route PR: pending for `codex/jsc-363-audit-freshness-governor-output`.
-- Active slice: audit-freshness governor-output route repair. It must merge and
-  be pulled back to `main` before broader feature or closeout work resumes.
-- Next broader slice after this repair: Linear field-text decision. It must refresh or explicitly
+- Current route PR: pending for `codex/jsc-363-post-pr383-tracker-refresh`.
+- Active slice: post-PR383 tracker refresh. It must merge and be pulled back to
+  `main` before broader feature or closeout work resumes.
+- Next broader slice after this refresh: Linear field-text decision. It must refresh or explicitly
   owner-classify JSC-363 Linear title/description currency before broader
   closeout claims resume, but the live Linear path is currently blocked because
   this session exposes neither Linear MCP tools nor `LINEAR_API_KEY`.
