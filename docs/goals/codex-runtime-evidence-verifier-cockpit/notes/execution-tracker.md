@@ -26,35 +26,35 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | ------------------- | ---------------------------------------------------------------- |
 | Parent issue        | JSC-363                                                          |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`     |
-| Current branch      | `codex/jsc-363-next-clean-worktree-state`                        |
-| Local main head     | `8003f0f84c07f80e93400d4c8f46378d83398142`                       |
-| Origin main head    | `8003f0f84c07f80e93400d4c8f46378d83398142`                       |
-| Main baseline       | `8003f0f84c07f80e93400d4c8f46378d83398142`                       |
+| Current branch      | `codex/jsc-363-post-pr391-tracker-refresh`                       |
+| Local main head     | `2950e7a59a7031c3b2d927c6eb859a3973499c9e`                       |
+| Origin main head    | `2950e7a59a7031c3b2d927c6eb859a3973499c9e`                       |
+| Main baseline       | `2950e7a59a7031c3b2d927c6eb859a3973499c9e`                       |
 | Active route count  | 1                                                                |
-| Active route        | `harness next` clean-worktree-state repair                       |
-| Last closed route   | PR #390 merged                                                   |
-| Current route       | Implementation branch, PR #391 open                              |
-| Current slice       | Preserve empty git status as clean worktree evidence             |
-| Feature work status | Narrow local validation complete except credential-bound E2E tail |
+| Active route        | Post-PR391 tracker refresh                                        |
+| Last closed route   | PR #391 merged                                                   |
+| Current route       | Post-PR391 tracker refresh branch                                |
+| Current slice       | Refresh route truth after the harness next repair merged         |
+| Feature work status | No next feature slice started                                    |
 
 ## Active Route
 
-PR #390 is merged and local `main` is synced with `origin/main` at
-`8003f0f84c07f80e93400d4c8f46378d83398142`; that route is closed provenance.
-The active route is now the local
-`codex/jsc-363-next-clean-worktree-state` branch. It fixes a current-main
-`harness next` classifier regression where clean empty
-`git status --short --untracked-files=all` output was collapsed to missing
-evidence and surfaced as a false dirty-worktree blocker. This does not claim
-Linear field-text currency, root-hygiene proof, documentation accuracy,
-Judge/PM readiness, PR merge readiness, or parent-goal completion.
+PR #391 is merged and local `main` is synced with `origin/main` at
+`2950e7a59a7031c3b2d927c6eb859a3973499c9e`; that route is closed
+provenance. The active route is now the local
+`codex/jsc-363-post-pr391-tracker-refresh` branch, which only refreshes
+route truth after the merge. This does not claim Linear field-text currency,
+root-hygiene proof, documentation accuracy, Judge/PM readiness, release
+readiness, or parent-goal completion.
 
 Current evidence:
 
 - Local `main` and `origin/main` are synced at
-  `8003f0f84c07f80e93400d4c8f46378d83398142` after PR #390 merge pullback.
-- Live GitHub currently reports zero open JSC-363 PRs; this branch has not yet
-  opened its PR.
+  `2950e7a59a7031c3b2d927c6eb859a3973499c9e` after PR #391 merge pullback.
+- Live GitHub reports PR #391 merged at `2026-06-09T10:44:15Z` from submitted
+  head `624bde7f10d7caf4f3b53a786da9b940bced9237`; visible PR checks passed
+  before merge, including CodeRabbit, repo-owned CircleCI, Socket, aggregate
+  `pr-pipeline`, aggregate `security-scan`, and Snyk status.
 - Pre-patch command probe on clean current main returned a false
   `worktree_state_blocked` result from `node --import tsx src/cli.ts next --json`.
 - The local patch keeps empty status output as a valid clean signal only for
