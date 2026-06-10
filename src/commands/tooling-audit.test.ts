@@ -489,6 +489,59 @@ describe("tooling-audit command", () => {
 		}
 	});
 
+	it("flags Prek hooks that invoke nested hook orchestration", async () => {
+		const tempRoot = mkdtempSync(join(tmpdir(), "tooling-audit-prek-nested-"));
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir, true);
+		writeRepoFile(
+			repoDir,
+			"prek.toml",
+			`default_install_hook_types = ["pre-commit", "pre-push"]
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "pre-commit"
+name = "${REQUIRED_PREK_HOOKS["pre-commit"].name}"
+entry = "make hooks-pre-commit"
+language = "${REQUIRED_PREK_HOOKS["pre-commit"].language}"
+pass_filenames = ${String(REQUIRED_PREK_HOOKS["pre-commit"].pass_filenames)}
+
+[[repos.hooks]]
+id = "pre-push"
+name = "${REQUIRED_PREK_HOOKS["pre-push"].name}"
+entry = "pre-commit run --hook-stage pre-push"
+language = "${REQUIRED_PREK_HOOKS["pre-push"].language}"
+pass_filenames = ${String(REQUIRED_PREK_HOOKS["pre-push"].pass_filenames)}
+stages = ${JSON.stringify(REQUIRED_PREK_HOOKS["pre-push"].stages)}
+`,
+		);
+
+		try {
+			const result = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+				const findings = result.value.result.results[0]?.findings.filter(
+					(item) => item.description.includes("nested hook orchestration"),
+				);
+				expect(findings).toHaveLength(2);
+				expect(findings?.map((finding) => finding.actual)).toEqual([
+					"make hooks-pre-commit",
+					"pre-commit run --hook-stage pre-push",
+				]);
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
 	it("rejects unknown CLI flags", async () => {
 		const result = await runToolingAuditCLI(["--unsupported"]);
 		expect(result.exitCode).toBe(EXIT_CODES.INVALID_ARGUMENT);

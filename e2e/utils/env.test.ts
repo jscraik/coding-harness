@@ -1,4 +1,5 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -6,11 +7,13 @@ import {
 	ensureGitHubTokenForE2E,
 	getGitHubAppE2EEnvStatus,
 	hasGitHubAuthForE2E,
+	loadCodexEnvForE2E,
 	loadGitHubAppE2EEnv,
 } from "./env.js";
 
 const managedEnvKeys = [
 	"GITHUB_PERSONAL_ACCESS_TOKEN",
+	"LINEAR_API_KEY",
 	"GITHUB_TOKEN",
 	"GH_TOKEN",
 	"E2E_GITHUB_APP_ID",
@@ -113,5 +116,51 @@ describe("E2E GitHub App env loading", () => {
 		await expect(ensureGitHubTokenForE2E()).resolves.toBe(
 			"GITHUB_PERSONAL_ACCESS_TOKEN",
 		);
+	});
+
+	it("loads missing E2E credentials from a regular Codex env file without exposing values", () => {
+		clearManagedEnv();
+		const dir = mkdtempSync(join(tmpdir(), "e2e-codex-env-"));
+		const envPath = join(dir, ".env");
+		writeFileSync(
+			envPath,
+			[
+				"GITHUB_PERSONAL_ACCESS_TOKEN=ghp_fixturetoken",
+				"LINEAR_API_KEY=lin_api_fixture",
+			].join("\n"),
+			"utf-8",
+		);
+
+		const result = loadCodexEnvForE2E(envPath);
+
+		expect(result).toEqual({
+			status: "loaded",
+			path: envPath,
+			loadedNames: ["GITHUB_PERSONAL_ACCESS_TOKEN", "LINEAR_API_KEY"],
+			missingNames: [],
+		});
+		expect(process.env.GITHUB_PERSONAL_ACCESS_TOKEN).toBe("ghp_fixturetoken");
+		expect(process.env.LINEAR_API_KEY).toBe("lin_api_fixture");
+		rmSync(dir, { recursive: true, force: true });
+	});
+
+	it("classifies FIFO Codex env surfaces without reading from them", () => {
+		clearManagedEnv();
+		const dir = mkdtempSync(join(tmpdir(), "e2e-codex-env-fifo-"));
+		const envPath = join(dir, ".env");
+		execFileSync("mkfifo", [envPath]);
+
+		const result = loadCodexEnvForE2E(envPath);
+
+		expect(result).toEqual({
+			status: "blocked_env_fifo_timeout",
+			path: envPath,
+			loadedNames: [],
+			missingNames: [
+				"GITHUB_PERSONAL_ACCESS_TOKEN/GitHub App credentials",
+				"LINEAR_API_KEY",
+			],
+		});
+		rmSync(dir, { recursive: true, force: true });
 	});
 });

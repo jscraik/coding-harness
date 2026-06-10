@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-07T16:43:43Z
+Generated: 2026-06-10T22:32:09Z
 
 ## Table of Contents
 
@@ -29,7 +29,12 @@ Generated: 2026-06-07T16:43:43Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `package.json`
+- `src/commands/tooling-audit-core.ts`
+- `src/lib/init/README.md`
+- `src/lib/init/scaffold-hook-templates.ts`
+- `src/lib/init/scaffold-root-command-templates.ts`
+- `src/lib/init/scaffold-script-template-registry.ts`
+- `src/lib/policy/tooling-baseline.ts`
 
 ## agent
 
@@ -900,6 +905,7 @@ graph LR
   ext_node_module_ca1b42af["node:module"] --> node_health_core_2b2fdada_341de678
   ext_node_os_d93fe73a["node:os"] --> node_check_behavior_tests_2577f6be_58dc87b2
   ext_node_os_d93fe73a["node:os"] --> node_env_1_b6f6b232_dda31a93
+  ext_node_os_d93fe73a["node:os"] --> node_env_b77349bf_420e4120
   ext_node_os_d93fe73a["node:os"] --> node_github_e2e_2891a341_af6f1610
   ext_node_os_d93fe73a["node:os"] --> node_link_checker_d0fa555f_abfe9020
   ext_node_os_d93fe73a["node:os"] --> node_overload_guard_2748c559_3eff560b

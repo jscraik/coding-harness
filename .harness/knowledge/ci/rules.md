@@ -23,7 +23,8 @@
   - Env-surface probe contract: first test that `~/.codex/.env` is a regular
     readable file before sourcing it. If it is a pipe, socket, missing, or
     unreadable, do not source it; classify the blocker as
-    `env_surface_unreadable` or `env_surface_fifo_without_writer`, then use
+    `blocked_env_fifo_timeout` when the approved env surface is a FIFO/no-writer
+    path, or as the concrete missing/unreadable file class otherwise, then use
     only already-authenticated CLIs or public GitHub check evidence for the
     lanes those sources prove. Bounded CircleCI API/log triage may load the env
     file only after the regular-file probe passes.

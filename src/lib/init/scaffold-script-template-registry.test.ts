@@ -23,6 +23,8 @@ describe("scaffold script template registry", () => {
 			"scripts/validate-commit-msg.js",
 			"scripts/setup-git-hooks.js",
 			"scripts/run-prek.sh",
+			"scripts/hook-pre-commit.sh",
+			"scripts/hook-pre-push.sh",
 			"scripts/check-staged-secrets.sh",
 			"scripts/check-hook-critical-config-sync.sh",
 			"scripts/check-doc-style.sh",
@@ -78,5 +80,21 @@ describe("scaffold script template registry", () => {
 			"check-code-size",
 		);
 		expect(semgrepChanged?.render("pnpm", renderContext)).toContain("semgrep");
+	});
+
+	it("renders hook adapters from deterministic templates", () => {
+		const preCommit = QUALITY_AND_HOOK_SCRIPT_TEMPLATES.find(
+			(template) => template.path === "scripts/hook-pre-commit.sh",
+		);
+		const prePush = QUALITY_AND_HOOK_SCRIPT_TEMPLATES.find(
+			(template) => template.path === "scripts/hook-pre-push.sh",
+		);
+
+		expect(preCommit?.render("pnpm", renderContext)).toContain(
+			"check-hook-critical-config-sync.sh",
+		);
+		expect(prePush?.render("pnpm", renderContext)).toContain(
+			"check-validation-locks.sh",
+		);
 	});
 });

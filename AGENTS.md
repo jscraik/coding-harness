@@ -82,8 +82,9 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   `bash scripts/verify-work.sh`.
 - Local CI-equivalent lanes must not stack silently. `pnpm test:ci` and
   `pnpm run quality:behavior-tests` run through repo-scoped validation locks,
-  and `make hooks-pre-push` starts with `validation-locks` so active duplicate
-  lanes fail before heavier gates run. If this guard reports an active lane,
+  and `scripts/hook-pre-push.sh` starts with `validation-locks` so active
+  duplicate lanes fail before heavier gates run. The `make hooks-pre-push`
+  target is a manual wrapper around that leaf adapter. If this guard reports an active lane,
   wait for it or stop it deliberately; if the owner process is gone, the checker
   removes the dead lock.
 - Iterate with the narrowest proving check first, then

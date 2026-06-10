@@ -38,48 +38,10 @@ hooks: ## Setup git hooks
 	node scripts/setup-git-hooks.js
 
 hooks-pre-commit: ## Run local pre-commit gates before creating a commit
-	@bash ./scripts/check-hook-critical-config-sync.sh
-	$(MAKE) codestyle-parity
-	pnpm lint
-	pnpm docs:lint
-	pnpm typecheck
-	pnpm run quality:docstrings
-	pnpm run quality:size
-	pnpm run quality:behavior-tests
-	pnpm run quality:git-env-sanitizer
-	pnpm run harness:audit-tracking
-	$(MAKE) secrets-staged
-	$(MAKE) docs-style-changed
-	$(MAKE) related-tests-staged
+	@bash ./scripts/hook-pre-commit.sh
 
 hooks-pre-push: ## Run local pre-push governance gates before pushing
-	$(MAKE) validation-locks
-	@if base_ref="$$(git merge-base HEAD '@{upstream}' 2>/dev/null || git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main 2>/dev/null || true)" && \
-		[ -n "$$base_ref" ] && \
-		changed_files="$$(git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD --)" && \
-		[ -n "$$changed_files" ] && \
-		! printf '%s\n' "$$changed_files" | grep -v '^\.codex/environments/environment\.toml$$' >/dev/null; then \
-		echo "Environment-only push detected; running check-environment only."; \
-		bash ./scripts/check-environment.sh; \
-		exit 0; \
-	fi
-	pnpm exec tsx src/cli.ts docs-gate --mode required --json
-	@tmp_changed_files="$$(mktemp)"; \
-	trap 'rm -f "$$tmp_changed_files"' EXIT; \
-	base_ref="$$(git merge-base HEAD '@{upstream}' 2>/dev/null || git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main 2>/dev/null || true)"; \
-	if [ -n "$$base_ref" ]; then \
-		git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD -- > "$$tmp_changed_files"; \
-	fi; \
-	if [ -s "$$tmp_changed_files" ]; then \
-		bash ./scripts/check-diagram-freshness.sh --changed-files "$$tmp_changed_files"; \
-	else \
-		bash ./scripts/check-diagram-freshness.sh --changed-files "$$tmp_changed_files"; \
-	fi
-	pnpm exec tsx src/cli.ts tooling-audit --path . --json
-	@bash ./scripts/check-environment.sh
-	$(MAKE) semgrep-changed
-	$(MAKE) codestyle
-	pnpm build
+	@bash ./scripts/hook-pre-push.sh
 
 validation-locks: ## Fail fast when a validation lane is already running
 	@bash ./scripts/check-validation-locks.sh

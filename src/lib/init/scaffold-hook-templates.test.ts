@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
 	renderCheckHookCriticalConfigSyncScript,
 	renderCheckStagedSecretsScript,
+	renderPreCommitHookScript,
+	renderPrePushHookScript,
 	renderSetupGitHooksScript,
 	renderValidateCommitMsgScript,
 } from "./scaffold-hook-templates.js";
@@ -48,10 +50,24 @@ describe("git-hook scaffold templates", () => {
 		expect(script).toContain(
 			'PREK_HOME="${PREK_HOME:-$WORKTREE_ROOT/.cache/prek}"',
 		);
-		expect(script).toContain("make hooks-pre-commit");
-		expect(script).toContain("make hooks-pre-push");
+		expect(script).toContain("bash scripts/hook-pre-commit.sh");
+		expect(script).toContain("bash scripts/hook-pre-push.sh");
 		expect(script).toContain("make hooks-commit-msg");
 		expect(script).not.toContain("simple-git-hooks");
+	});
+
+	it("renders leaf hook adapters without nested hook orchestration", () => {
+		const preCommit = renderPreCommitHookScript();
+		const prePush = renderPrePushHookScript();
+
+		expect(preCommit).toContain("check-hook-critical-config-sync.sh");
+		expect(preCommit).toContain("make related-tests-staged");
+		expect(preCommit).not.toContain("make hooks-pre-commit");
+		expect(preCommit).not.toContain("pre-commit run");
+		expect(prePush).toContain("check-validation-locks.sh");
+		expect(prePush).toContain("run-harness-gate.sh tooling-audit");
+		expect(prePush).not.toContain("make hooks-pre-push");
+		expect(prePush).not.toContain("pre-commit run");
 	});
 
 	it("renders staged secret scanning with gitleaks", () => {

@@ -168,56 +168,18 @@ hooks: ## Setup git hooks
  * Render the "Hooks" section of the repository Makefile containing pre-commit, pre-push,
  * commit-message, and related governance targets.
  *
- * Interpolates the provided Makefile command strings into the appropriate targets so the
- * generated section invokes linting, typechecking, docs checks, security scans, and other
- * pre-commit/pre-push workflows.
+ * Keeps manual Make hook targets as thin wrappers around hook leaf adapters.
  *
- * @param commands - An object with command strings for Makefile targets (see MakefileCommands)
  * @returns The text content for the Makefile "Hooks" section
  */
 function renderMakefileHookSection(commands: MakefileCommands): string {
 	return `
 
 hooks-pre-commit: ## Run local pre-commit gates before creating a commit
-	@bash ./scripts/check-hook-critical-config-sync.sh
-	$(MAKE) codestyle-parity
-	@bash ./scripts/validate-codestyle.sh --fast
-	${commands.lint}
-	${commands.docsLint}
-	${commands.typecheck}
-	${commands.docstrings}
-	${commands.size}
-	$(MAKE) secrets-staged
-	$(MAKE) docs-style-changed
-	$(MAKE) related-tests
+	@bash ./scripts/hook-pre-commit.sh
 
 hooks-pre-push: ## Run local pre-push governance gates before pushing
-	@if base_ref="$$(git merge-base HEAD '@{upstream}' 2>/dev/null || git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main 2>/dev/null || true)" && \
-		[ -n "$$base_ref" ] && \
-		changed_files="$$(git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD --)" && \
-		[ -n "$$changed_files" ] && \
-		! printf '%s\\n' "$$changed_files" | grep -v '^\\.codex/environments/environment\\.toml$$' >/dev/null; then \
-		echo "Environment-only push detected; running check-environment only."; \
-		bash ./scripts/check-environment.sh; \
-		exit 0; \
-	fi
-	@bash ./scripts/run-harness-gate.sh docs-gate --mode required --json
-	@tmp_changed_files="$$(mktemp)"; \
-	trap 'rm -f "$$tmp_changed_files"' EXIT; \
-	base_ref="$$(git merge-base HEAD '@{upstream}' 2>/dev/null || git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main 2>/dev/null || true)"; \
-	if [ -n "$$base_ref" ]; then \
-		git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD -- > "$$tmp_changed_files"; \
-	fi; \
-	if [ -s "$$tmp_changed_files" ]; then \
-		bash ./scripts/check-diagram-freshness.sh --changed-files "$$tmp_changed_files"; \
-	else \
-		bash ./scripts/check-diagram-freshness.sh --changed-files "$$tmp_changed_files"; \
-	fi
-	@bash ./scripts/run-harness-gate.sh tooling-audit --path . --json
-	@bash ./scripts/check-environment.sh
-	$(MAKE) semgrep-changed
-	$(MAKE) codestyle
-	${commands.build}
+	@bash ./scripts/hook-pre-push.sh
 
 hooks-commit-msg: ## Validate commit message policy (use HOOK_COMMIT_MSG or MSG_FILE=/path)
 	@tmp_file="$(mktemp)"; \

@@ -58,13 +58,13 @@ The weekly reviewed status surface for that contract is
 
 Pick the job that matches your situation; the reference links can wait until you need them.
 
-| Job | First command | Then read |
-| --- | --- | --- |
-| Agent in an existing repo | `harness next --json` | [Use It](#use-it) |
-| Human trying harness | `harness init --dry-run` | [Install](#install) |
-| Solo or small-team adopter | `harness init --minimal --track` | [Lite adoption](#lite-adoption) |
-| Maintainer changing this repo | `AGENTS.md` | [For Contributors](#for-contributors) |
-| Expert looking for commands | `harness commands --json` | [CLI reference](./docs/cli-reference.md) |
+| Job                           | First command                    | Then read                                |
+| ----------------------------- | -------------------------------- | ---------------------------------------- |
+| Agent in an existing repo     | `harness next --json`            | [Use It](#use-it)                        |
+| Human trying harness          | `harness init --dry-run`         | [Install](#install)                      |
+| Solo or small-team adopter    | `harness init --minimal --track` | [Lite adoption](#lite-adoption)          |
+| Maintainer changing this repo | `AGENTS.md`                      | [For Contributors](#for-contributors)    |
+| Expert looking for commands   | `harness commands --json`        | [CLI reference](./docs/cli-reference.md) |
 
 The cockpit command is read-only and recommends an existing safe command instead of inventing a workflow:
 
@@ -171,6 +171,7 @@ harness blast-radius --files <changed-files> --json
 ```
 
 **Expected outcomes:**
+
 - `harness linear prepare`: Metadata printed for issue KEY, including the suggested branch, PR title, link line, closing line, and PR body. It does not create a git branch or mutate Linear.
 - `harness preflight-gate`: Admission declaration written to artifacts/admission/declaration.json; exits 0 on success, non-zero on gate failure.
 - `harness policy-gate`: Policy checks applied to changed files; exits 0 on success, non-zero on policy violation.
@@ -190,6 +191,7 @@ harness verify-coderabbit --json
 ```
 
 **Expected outcomes:**
+
 - `harness docs-gate`: Advisory mode reports doc drift without blocking (exit 0).
 - `pnpm docs:archive-candidates`: Emits an advisory-only stale-document candidate report; it never archives, moves, deletes, demotes, or rewrites files.
 - `pnpm --silent docs:archive-candidates -- --json`: Emits clean `docs-archive-candidates-report/v1` JSON for docs-gate and review evidence without package-runner banner text on stdout.
@@ -230,6 +232,11 @@ quality gate.
 Use `bash scripts/run-prek.sh <args>` for direct `prek` operations in this
 repository. The wrapper pins `PREK_HOME` to the worktree cache so hook setup and
 push triage do not depend on a writable home-directory cache.
+
+Installed `prek` hook entries call leaf adapters at
+`scripts/hook-pre-commit.sh` and `scripts/hook-pre-push.sh`. The Make targets
+`make hooks-pre-commit` and `make hooks-pre-push` remain manual wrappers
+around those adapters for local operator use.
 
 ## Where To Go Next
 

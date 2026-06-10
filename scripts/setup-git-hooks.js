@@ -129,8 +129,8 @@ function main() {
 		}
 		console.info("\n✓ Git hooks installed and active!");
 		console.info("\nInstalled git-hook entrypoints:");
-		console.info("  • pre-commit: make hooks-pre-commit");
-		console.info("  • pre-push: make hooks-pre-push");
+		console.info("  • pre-commit: bash scripts/hook-pre-commit.sh");
+		console.info("  • pre-push: bash scripts/hook-pre-push.sh");
 		console.info("\nAvailable governance wrapper targets:");
 		console.info("  • make hooks-pre-commit");
 		console.info('  • make hooks-commit-msg HOOK_COMMIT_MSG="feat: example"');

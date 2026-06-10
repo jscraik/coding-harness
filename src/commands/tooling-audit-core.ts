@@ -86,6 +86,14 @@ interface PackageManifest {
 	devDependencies?: Record<string, string>;
 }
 
+const FORBIDDEN_PREK_HOOK_ENTRY_PATTERNS = [
+	/\bmake\s+hooks-(?:pre-commit|pre-push|commit-msg)\b/,
+	/\bpre-commit\s+run\b/,
+	/\bprek\s+run\b/,
+	/(?:^|\s)\.git\/hooks\//,
+	/\bscripts\/run-prek\.sh\s+hook\b/,
+] as const;
+
 function validatePathInput(
 	rawPath: string,
 	field: string,
@@ -146,6 +154,30 @@ function readJsonObject(path: string): Record<string, unknown> | null {
 		throw new Error("JSON root must be an object");
 	}
 	return parsed as Record<string, unknown>;
+}
+
+function auditPrekHookEntryBoundaries(
+	findings: ToolingAuditFinding[],
+	prekContent: string,
+): void {
+	const hookEntryPattern =
+		/\[\[repos\.hooks\]\][\s\S]*?id = "([^"]+)"[\s\S]*?entry = "([^"]+)"/g;
+	for (const match of prekContent.matchAll(hookEntryPattern)) {
+		const [, hookName, entry] = match;
+		if (
+			entry &&
+			FORBIDDEN_PREK_HOOK_ENTRY_PATTERNS.some((pattern) => pattern.test(entry))
+		) {
+			findings.push({
+				path: TOOLING_PREK_CONFIG_PATH,
+				severity: "critical",
+				description: `Prek hook '${hookName}' invokes nested hook orchestration instead of a leaf adapter`,
+				expected:
+					"Hook entrypoints call scripts/hook-pre-commit.sh or scripts/hook-pre-push.sh leaf adapters",
+				actual: entry,
+			});
+		}
+	}
 }
 
 function collectPackageDependencies(manifest: PackageManifest): Set<string> {
@@ -673,6 +705,7 @@ function auditLocalHooks(
 				});
 			}
 		}
+		auditPrekHookEntryBoundaries(findings, prekContent);
 	}
 
 	const packagePath = join(repoPath, TOOLING_PACKAGE_JSON_PATH);

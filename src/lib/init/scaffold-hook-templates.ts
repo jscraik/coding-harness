@@ -13,6 +13,89 @@ const PRE_COMMIT_MAKE_TARGET = REQUIRED_PREK_HOOKS["pre-commit"].entry;
 const PRE_PUSH_MAKE_TARGET = REQUIRED_PREK_HOOKS["pre-push"].entry;
 
 /**
+ * Render the pre-commit leaf hook adapter installed by Prek.
+ *
+ * @returns Shell contents for `scripts/hook-pre-commit.sh`.
+ */
+export function renderPreCommitHookScript(): string {
+	return `#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+bash ./scripts/check-hook-critical-config-sync.sh
+make codestyle-parity
+pnpm lint
+pnpm docs:lint
+pnpm typecheck
+pnpm run quality:docstrings
+pnpm run quality:size
+pnpm run quality:behavior-tests
+pnpm run quality:git-env-sanitizer
+pnpm run harness:audit-tracking
+make secrets-staged
+make docs-style-changed
+make related-tests-staged
+`;
+}
+
+/**
+ * Render the pre-push leaf hook adapter installed by Prek.
+ *
+ * @returns Shell contents for `scripts/hook-pre-push.sh`.
+ */
+export function renderPrePushHookScript(): string {
+	return `#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+bash ./scripts/check-validation-locks.sh
+
+base_ref="$(git merge-base HEAD '@{upstream}' 2>/dev/null || git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main 2>/dev/null || true)"
+changed_files=""
+if [[ -n "$base_ref" ]]; then
+	changed_files="$(git diff --name-only --diff-filter=ACMRDT "$base_ref"...HEAD --)"
+fi
+
+only_environment_change=false
+if [[ -n "$changed_files" ]]; then
+	only_environment_change=true
+	while IFS= read -r changed_file; do
+		[[ -z "$changed_file" ]] && continue
+		if [[ "$changed_file" != ".codex/environments/environment.toml" ]]; then
+			only_environment_change=false
+			break
+		fi
+	done <<< "$changed_files"
+fi
+
+if [[ "$only_environment_change" == true ]]; then
+	echo "Environment-only push detected; running check-environment only."
+	bash ./scripts/check-environment.sh
+	exit 0
+fi
+
+bash ./scripts/run-harness-gate.sh docs-gate --mode required --json
+
+tmp_changed_files="$(mktemp)"
+trap 'rm -f "$tmp_changed_files"' EXIT
+if [[ -n "$base_ref" ]]; then
+	git diff --name-only --diff-filter=ACMRDT "$base_ref"...HEAD -- > "$tmp_changed_files"
+fi
+bash ./scripts/check-diagram-freshness.sh --changed-files "$tmp_changed_files"
+
+bash ./scripts/run-harness-gate.sh tooling-audit --path . --json
+bash ./scripts/check-environment.sh
+make semgrep-changed
+make codestyle
+pnpm build
+`;
+}
+
+/**
  * Render the commit-message validation hook script.
  *
  * @param agentBranchPrefix - Branch prefix that requires Codex co-authorship.

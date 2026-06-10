@@ -33,18 +33,10 @@ describe("scaffold root command templates", () => {
 		const makefile = renderMakefileTemplate();
 
 		expect(makefile).toContain("hooks-pre-push:");
-		expect(makefile).toContain("bash ./scripts/validate-codestyle.sh --fast");
-		expect(makefile).toContain("bash ./scripts/run-harness-gate.sh docs-gate");
-		expect(makefile).toContain(
-			'git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD -- > "$$tmp_changed_files"',
-		);
-		expect(makefile).toContain(
-			'bash ./scripts/check-diagram-freshness.sh --changed-files "$$tmp_changed_files"',
-		);
-		expect(makefile).toContain(
-			"bash ./scripts/run-harness-gate.sh tooling-audit",
-		);
-		expect(makefile).toContain("pnpm quality:size");
+		expect(makefile).toContain("bash ./scripts/hook-pre-commit.sh");
+		expect(makefile).toContain("bash ./scripts/hook-pre-push.sh");
+		expect(makefile).not.toContain("make hooks-pre-commit");
+		expect(makefile).not.toContain("make hooks-pre-push");
 		expect(makefile).toContain(
 			"bash ./scripts/refresh-diagram-context.sh --force",
 		);
@@ -55,7 +47,7 @@ describe("scaffold root command templates", () => {
 
 		expect(makefile).toContain("\tnpm install");
 		expect(makefile).toContain("\tnpm run lint");
-		expect(makefile).toContain("\tnpm run quality:size");
+		expect(makefile).toContain("@bash ./scripts/hook-pre-commit.sh");
 		expect(makefile).toContain("\tnpm run test:related");
 		expect(makefile).not.toContain("pnpm run quality:size");
 	});

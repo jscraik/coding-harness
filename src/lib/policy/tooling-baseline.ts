@@ -15,13 +15,13 @@ export const REQUIRED_PREK_INSTALL_HOOK_TYPES = [
 export const REQUIRED_PREK_HOOKS = {
 	"pre-commit": {
 		name: "Pre-commit",
-		entry: "make hooks-pre-commit",
+		entry: "bash scripts/hook-pre-commit.sh",
 		language: "system",
 		pass_filenames: false,
 	},
 	"pre-push": {
 		name: "Pre-push",
-		entry: "make hooks-pre-push",
+		entry: "bash scripts/hook-pre-push.sh",
 		language: "system",
 		pass_filenames: false,
 		stages: ["pre-push"],
@@ -361,6 +361,8 @@ export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/new-task.sh",
 	"scripts/setup-git-hooks.js",
 	"scripts/run-prek.sh",
+	"scripts/hook-pre-commit.sh",
+	"scripts/hook-pre-push.sh",
 	"scripts/validate-commit-msg.js",
 	"scripts/check-hook-critical-config-sync.sh",
 	"scripts/check-staged-secrets.sh",

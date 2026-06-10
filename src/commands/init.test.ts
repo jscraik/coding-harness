@@ -67,6 +67,8 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".github/PULL_REQUEST_TEMPLATE.md",
 	"scripts/validate-commit-msg.js",
 	"scripts/check-hook-critical-config-sync.sh",
+	"scripts/hook-pre-commit.sh",
+	"scripts/hook-pre-push.sh",
 	"scripts/setup-git-hooks.js",
 	"scripts/run-prek.sh",
 	"scripts/check-staged-secrets.sh",
@@ -1631,6 +1633,14 @@ describe("runInit", () => {
 				join(tempDir, "scripts/check-hook-critical-config-sync.sh"),
 				"utf-8",
 			);
+			const hookPreCommit = require("node:fs").readFileSync(
+				join(tempDir, "scripts/hook-pre-commit.sh"),
+				"utf-8",
+			);
+			const hookPrePush = require("node:fs").readFileSync(
+				join(tempDir, "scripts/hook-pre-push.sh"),
+				"utf-8",
+			);
 			const docStyle = require("node:fs").readFileSync(
 				join(tempDir, "scripts/check-doc-style.sh"),
 				"utf-8",
@@ -1759,10 +1769,19 @@ describe("runInit", () => {
 			expect(setupHooks).toContain(
 				'"Error: scripts/validate-commit-msg.js is required for commit message validation."',
 			);
-			expect(setupHooks).toContain("make hooks-pre-commit");
-			expect(setupHooks).toContain("make hooks-pre-push");
+			expect(setupHooks).toContain("bash scripts/hook-pre-commit.sh");
+			expect(setupHooks).toContain("bash scripts/hook-pre-push.sh");
 			expect(setupHooks).toContain("make hooks-commit-msg");
 			expect(setupHooks).not.toContain("simple-git-hooks");
+			expect(hookPreCommit).toContain(
+				"bash ./scripts/check-hook-critical-config-sync.sh",
+			);
+			expect(hookPreCommit).not.toContain("make hooks-pre-commit");
+			expect(hookPrePush).toContain("bash ./scripts/check-validation-locks.sh");
+			expect(hookPrePush).toContain(
+				"Environment-only push detected; running check-environment only.",
+			);
+			expect(hookPrePush).not.toContain("make hooks-pre-push");
 			expect(stagedSecrets).toContain("gitleaks git");
 			expect(stagedSecrets).toContain("--staged");
 			expect(hookCriticalConfigSync).toContain('critical_files=("biome.json")');
@@ -1827,46 +1846,21 @@ describe("runInit", () => {
 			expect(makefile).toContain(
 				"hooks-pre-commit: ## Run local pre-commit gates before creating a commit",
 			);
-			expect(makefile).toContain(
-				"\t@bash ./scripts/check-hook-critical-config-sync.sh",
-			);
+			expect(makefile).toContain("\t@bash ./scripts/hook-pre-commit.sh");
 			expect(makefile).toContain(
 				"hooks-pre-push: ## Run local pre-push governance gates before pushing",
 			);
-			expect(makefile).toContain(
-				'changed_files="$$(git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD --)"',
-			);
-			expect(makefile).toContain(
-				"grep -v '^\\.codex/environments/environment\\.toml$$'",
-			);
-			expect(makefile).toContain(
-				"Environment-only push detected; running check-environment only.",
-			);
+			expect(makefile).toContain("\t@bash ./scripts/hook-pre-push.sh");
 			expect(makefile).toContain(
 				"hooks-commit-msg: ## Validate commit message policy (use HOOK_COMMIT_MSG or MSG_FILE=/path)",
 			);
 
-			expect(makefile).toContain("\tnpm run quality:docstrings");
-			expect(makefile).toContain("\tnpm run quality:size");
-
-			expect(makefile).toContain("\t$(MAKE) secrets-staged");
-			expect(makefile).toContain("\t$(MAKE) docs-style-changed");
-			expect(makefile).toContain("\t$(MAKE) related-tests");
-			expect(makefile).toContain("\t$(MAKE) semgrep-changed");
-			expect(makefile).toContain(
-				"\t@bash ./scripts/run-harness-gate.sh docs-gate --mode required --json",
-			);
-			expect(makefile).toContain(
-				'git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD -- > "$$tmp_changed_files"',
-			);
-			expect(makefile).toContain(
-				'bash ./scripts/check-diagram-freshness.sh --changed-files "$$tmp_changed_files"',
-			);
-			expect(makefile).toContain(
-				"\t@bash ./scripts/run-harness-gate.sh tooling-audit --path . --json",
-			);
-			expect(makefile).toContain("\t@bash ./scripts/check-environment.sh");
-			expect(makefile).toContain("\tnpm run build");
+			expect(makefile).toContain("\tnpm run secrets:staged");
+			expect(makefile).toContain("\tnpm run docs:style:changed");
+			expect(makefile).toContain("\tnpm run test:related");
+			expect(makefile).toContain("\tnpm run semgrep:changed");
+			expect(makefile).not.toContain("make hooks-pre-commit");
+			expect(makefile).not.toContain("make hooks-pre-push");
 			expect(makefile).toContain(
 				"diagrams-check: ## Refresh architecture diagrams when sensitive paths change and fail on drift",
 			);
@@ -1875,9 +1869,9 @@ describe("runInit", () => {
 			);
 			expect(prek).toContain("[[repos.hooks]]");
 			expect(prek).toContain('id = "pre-commit"');
-			expect(prek).toContain("make hooks-pre-commit");
+			expect(prek).toContain('entry = "bash scripts/hook-pre-commit.sh"');
 			expect(prek).toContain('id = "pre-push"');
-			expect(prek).toContain("make hooks-pre-push");
+			expect(prek).toContain('entry = "bash scripts/hook-pre-push.sh"');
 			expect(prek).toContain('stages = ["pre-push"]');
 			expect(miseToml).toContain('"cargo:prek" = "0.3.4"');
 			expect(miseToml).toContain('"npm:@brainwav/diagram" = "1.1.0"');

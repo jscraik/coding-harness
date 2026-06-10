@@ -6,7 +6,8 @@
  */
 
 import { createSign } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync, type Stats } from "node:fs";
+import { homedir } from "node:os";
 
 export interface E2EEnv {
 	// GitHub Configuration
@@ -43,6 +44,24 @@ export interface GitHubAppE2EEnvStatus {
 	usesPrivateKeyPath: boolean;
 }
 
+export const DEFAULT_CODEX_ENV_FILE = `${homedir()}/.codex/.env`;
+
+export type CodexE2EEnvRecoveryStatus =
+	| "not_needed"
+	| "loaded"
+	| "missing"
+	| "blocked_env_fifo_timeout"
+	| "not_regular_file"
+	| "unreadable"
+	| "incomplete";
+
+export interface CodexE2EEnvRecoveryResult {
+	status: CodexE2EEnvRecoveryStatus;
+	path: string;
+	loadedNames: string[];
+	missingNames: string[];
+}
+
 /**
  * Retrieve an environment variable by name, optionally enforcing that it exists.
  *
@@ -74,6 +93,114 @@ function getFirstEnvVar(names: readonly string[]): string | undefined {
 		}
 	}
 	return undefined;
+}
+
+function getMissingE2ECredentialNames(): string[] {
+	const missing: string[] = [];
+	if (!hasGitHubAuthForE2E()) {
+		missing.push("GITHUB_PERSONAL_ACCESS_TOKEN/GitHub App credentials");
+	}
+	if (!process.env.LINEAR_API_KEY?.trim()) {
+		missing.push("LINEAR_API_KEY");
+	}
+	return missing;
+}
+
+function parseCodexEnvLine(line: string): [string, string] | null {
+	const match = /^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$/.exec(
+		line.trim(),
+	);
+	if (!match) {
+		return null;
+	}
+	const [, name, rawValue] = match;
+	if (!name || rawValue === undefined) {
+		return null;
+	}
+	let value = rawValue.trim();
+	if (
+		(value.startsWith('"') && value.endsWith('"')) ||
+		(value.startsWith("'") && value.endsWith("'"))
+	) {
+		value = value.slice(1, -1);
+	}
+	return [name, value];
+}
+
+export function loadCodexEnvForE2E(
+	envFilePath = DEFAULT_CODEX_ENV_FILE,
+): CodexE2EEnvRecoveryResult {
+	const missingBefore = getMissingE2ECredentialNames();
+	if (missingBefore.length === 0) {
+		return {
+			status: "not_needed",
+			path: envFilePath,
+			loadedNames: [],
+			missingNames: [],
+		};
+	}
+
+	let envStat: Stats;
+	try {
+		envStat = statSync(envFilePath);
+	} catch {
+		return {
+			status: "missing",
+			path: envFilePath,
+			loadedNames: [],
+			missingNames: missingBefore,
+		};
+	}
+
+	if (envStat.isFIFO()) {
+		return {
+			status: "blocked_env_fifo_timeout",
+			path: envFilePath,
+			loadedNames: [],
+			missingNames: missingBefore,
+		};
+	}
+	if (!envStat.isFile()) {
+		return {
+			status: "not_regular_file",
+			path: envFilePath,
+			loadedNames: [],
+			missingNames: missingBefore,
+		};
+	}
+
+	let content: string;
+	try {
+		content = readFileSync(envFilePath, "utf-8");
+	} catch {
+		return {
+			status: "unreadable",
+			path: envFilePath,
+			loadedNames: [],
+			missingNames: missingBefore,
+		};
+	}
+
+	const loadedNames: string[] = [];
+	for (const line of content.split(/\r?\n/)) {
+		const parsed = parseCodexEnvLine(line);
+		if (!parsed) {
+			continue;
+		}
+		const [name, value] = parsed;
+		if (!process.env[name]?.trim() && value.trim()) {
+			process.env[name] = value;
+			loadedNames.push(name);
+		}
+	}
+
+	const missingAfter = getMissingE2ECredentialNames();
+	return {
+		status: missingAfter.length === 0 ? "loaded" : "incomplete",
+		path: envFilePath,
+		loadedNames,
+		missingNames: missingAfter,
+	};
 }
 
 /**
