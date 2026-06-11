@@ -14,8 +14,8 @@ truth_lanes:
     status: current_main_synced_before_branch
     evidence: "local main and origin/main were fdcd577a77fb660b9b71e058bcbd33fff06c67bf before codex/jsc-363-post-pr401-tracker-refresh was created"
   github_pr:
-    status: zero_open_prs_after_pr401_merge
-    evidence: "gh pr list returned [] and gh pr view 401 returned MERGED at 2026-06-11T04:49:40Z"
+    status: pr402_review_ci_active
+    evidence: "PR #402 is the active review/CI route after PR #401 merged; the zero-open-PR evidence applies only to the refresh point before PR #402 opened."
   ci:
     status: pr401_repo_owned_lanes_passed_before_merge
     evidence: "GitHub PR #401 status rollup showed repo-owned CircleCI lanes, pr-pipeline, security-scan, CodeRabbit, and Socket success; external security/snyk app remained owner-waived only"
@@ -23,8 +23,8 @@ truth_lanes:
     status: refreshed_to_r463_after_review_tightening
     evidence: "state.yaml, goal.md, execution-tracker.md, active-artifacts.md, kanban HTML, receipts.jsonl, and this governor output were rechecked after stale current-route text was collapsed to the PR #401/R463 restart snapshot"
 next_action:
-  lifecycle_unit: remaining-closeout-backlog-audit
-  instruction: "Run the remaining goal/spec/backlog audit from current main and state the exact next bounded slice or blocker before any feature work resumes."
+  lifecycle_unit: pr402-review-ci-route
+  instruction: "Finish PR #402 review/CI, merge it, pull main, then run the remaining goal/spec/backlog audit from current main before any feature work resumes."
 non_claims:
   - linear_fields_current_beyond_comment
   - review_external_root_hygiene_complete
