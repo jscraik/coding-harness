@@ -37,7 +37,7 @@ thin_execution_tracker:
     active_pr: null
     active_pr_url: null
     active_pr_last_checked_head_sha: null
-    active_pr_head_sha_contract: "No active PR head exists after PR #404 merge and branch cleanup; the next PR head must be created only after the current-main closeout/backlog audit selects a bounded next slice."
+    active_pr_head_sha_contract: "No active PR head exists after PR #404 merge and branch cleanup; the next PR head must be created only after the remaining closeout/backlog audit selects a bounded next slice."
     last_merged_pr: 404
     last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/404"
     last_merged_sha: "68c8019515641f4fe2ff8ada917d4f2b1a170b1e"
@@ -208,7 +208,7 @@ current_slice_gate:
     - "Treat the external Snyk GitHub App quota failure as owner-waived for that quota lane only, not as external Snyk green or as a blanket security waiver."
     - "Treat PR #369 as historical merged route evidence, not current-main route truth and not an active tracker PR. Its squash merge commit 1d0c3baaa76d1de68c633b086a5dcf07472ddbef is retained as PR #369 provenance only."
     - "Treat PU-013 proof-route delivery through PR #370 as merged and pulled back, and treat post-PR370 tracker repair through PR #371 as merged and pulled back to local main at 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856."
-    - "Select the next implementation slice only after the current-main closeout/backlog audit records the exact bounded slice, required gates, and any blocked owner decisions."
+    - "Select the next implementation slice only after the remaining closeout/backlog audit records the exact bounded slice, required gates, and any blocked owner decisions."
     - "For every future slice, run simplify, improve-codebase-architecture, sy-review, and testing before done; then commit atomically, open or update one PR, trigger CodeRabbit manually when required, run pr-green-sweep until faults are fixed or explicitly blocked, merge to main, checkout main, pull latest remote main, update the goal board/state/receipt, and only then start the next slice."
     - "Stacked implementation PRs are forbidden by default. Only Jamie can authorize a named exception in the current slice intent and receipt before any parallel or dependent implementation work begins."
     - "Keep this board and the local board tracker as current route-truth surfaces; synchronize goal.md, state.yaml, goal-kanban-board.html, and receipts.jsonl after every merge, route decision, or blocker decision."
