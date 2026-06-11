@@ -50,30 +50,24 @@ truth.
 
 Current live route truth:
 
-- PR #409 merged the PU-055 closeout matrix and route-truth repair from
-  submitted head `c5f4095bcd2484668acfa0195fdddf9e6cb2517e` as merge commit
-  `c3d476541351ccd08fb832d08ba9749a9f203e4c`; repo-owned CircleCI lanes,
+- PR #410 merged the PU-056 active-route runtime-card selection guard from
+  submitted head `2067365c6149ebdf96aa181377ca5c151536c216` as merge commit
+  `41ac068ae7c9e9425681a5d42358eaf120f24c04`; repo-owned CircleCI lanes,
   aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, Socket,
   and review-thread checks were successful or resolved before merge. The
   external Snyk GitHub App quota/error lane remains owner-waived for that
   external app status only.
 - Local `main` and `origin/main` were synced at
-  `c3d476541351ccd08fb832d08ba9749a9f203e4c` after PR #409 was merged and
+  `41ac068ae7c9e9425681a5d42358eaf120f24c04` after PR #410 was merged and
   pulled back.
-- Live GitHub now has PR #410 open for
-  `codex/jsc-363-pu056-runtime-card-active-route-key`; its current head and CI
-  state are live PR truth until a post-merge pullback receipt records the final
-  squash merge. R475 remains pre-PR local guard provenance, not the submitted-head
-  anchor for the evolving review branch.
+- Live GitHub reported zero open pull requests at this pullback refresh point.
+- Runtime-card on pulled current main returns `issueKey: "JSC-363"` with the
+  JSC-363 active spec and plan, closing the PU-056 route-key guard.
 - Branch and worktree cleanup removed obsolete auxiliary worktrees and stale
   local/remote `codex/*` branches; only `main` and `origin/main` remain.
-- The remaining closeout/backlog audit selected `PU-056 active-route
-  runtime-card selection guard` as the active bounded slice after proving the
-  focused current-main closeout test surfaces and finding that runtime-card
-  could drop the active route issue key from the wider Current Active Route
-  table shape.
-- The next safe action is to complete, review, merge, and pull back this PU-056
-  guard before Judge/PM packet work resumes.
+- The next safe action is `PU-015 Judge/PM audit packet`: produce the live
+  packet only from current-main evidence and keep Linear field-text currency as
+  an explicit owner/external lane until accepted, refreshed, or classified.
 - Earlier Linear JSC-363 evidence includes comment
   `81cfdd41-ff0e-4df1-b884-c01789e30a50` with the repo-truth
   classification. This refresh does not claim a fresh Linear MCP fetch. The
@@ -122,23 +116,21 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: PU-056 active-route runtime-card selection guard in PR #410.
-- Provenance: See `receipts.jsonl` for merged route history through PR #409.
+- Current route: PU-015 Judge/PM audit packet preparation after PR #410 pullback.
+- Provenance: See `receipts.jsonl` for merged route history through PR #410.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #409 merged at
-  `c3d476541351ccd08fb832d08ba9749a9f203e4c`. See `receipts.jsonl` for
+- Done on current main: PR #410 merged at
+  `41ac068ae7c9e9425681a5d42358eaf120f24c04`. See `receipts.jsonl` for
   complete merged route history.
-- Current route PR: PR #410 is open for
-  `codex/jsc-363-pu056-runtime-card-active-route-key`; live PR head/CI/review
-  state decide submitted-branch truth until post-merge pullback.
-- Active slice: PU-056 active-route runtime-card selection guard in progress;
-  runtime-card now derives `issueKey: "JSC-363"` from the active route row
-  on this branch.
-- Remaining backlog: review/external/root-hygiene proof, documentation accuracy,
-  historical review-coverage backfill, Linear field-text currency beyond the
-  current comment, PU-015 Judge/PM audit, and final completion audit.
+- Current route PR: none open at this pullback refresh point.
+- Completed slice: PU-056 active-route runtime-card selection guard; runtime-card
+  on current main derives `issueKey: "JSC-363"` with the active JSC-363 spec
+  and plan.
+- Remaining backlog: Linear field-text currency beyond the current comment,
+  PU-015 Judge/PM audit packet, final documentation accuracy, and final
+  requirement-by-requirement completion audit.
 
 ## Why This Exists
 

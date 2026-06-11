@@ -5,8 +5,8 @@ native_reconciliation:
   native_goal_id: null
   native_status: unknown
   source: "state.yaml native_goal_id and native_status are null"
-board_status: valid_after_repair
-next_action: complete_review_merge_and_pull_back_pu056_active_route_runtime_card_selection_guard
+board_status: valid_after_post_pr410_pullback_refresh
+next_action: start_pu015_judge_pm_audit_packet_after_post_pr410_tracker_refresh
 decision_markers:
   - read goal.md and state.yaml first
   - receipts.jsonl
@@ -21,32 +21,33 @@ truth_lanes:
       - "Command: node --import tsx src/cli.ts runtime-card --json --repo . | jq '{issueKey, activeSpec:.artifacts.activeSpec, activePlan:.artifacts.activePlan}' -> pass, issueKey JSC-363 with active spec and plan"
       - "Command: goal-board, audit-freshness, kanban script, docs-gate, docs:lint, quality:docstrings, quality:size, test:related, test:deep, typecheck, pnpm check, git diff --check -> pass; drift-gate emitted non-blocking README index warnings inside aggregate checks"
   generated_artifacts:
-    status: current_branch_update_in_progress
+    status: current_main_pu056_merged
     evidence:
-      - "R475 records the post-PR409 PU-056 guard start and local proof"
-      - "PU-056 repairs runtime-card active-route issue-key derivation for wide Current Active Route rows"
+      - "R477 records the post-PR410 pullback refresh"
+      - "PU-056 is merged on current main and runtime-card derives issueKey JSC-363 from the wide active-route row"
   remote_pr_checks:
-    status: pr410_open_check_lane_failing_until_latest_fix_push
+    status: pr410_merged_repo_owned_checks_passed
     evidence:
       - "PR #409 state=MERGED, mergedAt=2026-06-11T16:36:45Z, mergeCommit=c3d476541351ccd08fb832d08ba9749a9f203e4c"
       - "PR #409 head c5f4095bcd2484668acfa0195fdddf9e6cb2517e had repo-owned CircleCI lanes, pr-pipeline, security-scan, Socket, and CodeRabbit passing before merge; external security/snyk GitHub App quota/error lane remains owner-waived only"
-      - "PR #410 is open for codex/jsc-363-pu056-runtime-card-active-route-key; CircleCI check remains failing until the docstring fix and route-state refresh are pushed and rerun"
+      - "PR #410 state=MERGED, mergedAt=2026-06-11T18:24:41Z, mergeCommit=41ac068ae7c9e9425681a5d42358eaf120f24c04, submitted head=2067365c6149ebdf96aa181377ca5c151536c216"
+      - "PR #410 repo-owned CircleCI lanes, pr-pipeline, security-scan, Socket, CodeRabbit, and review-thread lanes passed or resolved before merge; external security/snyk GitHub App quota/error lane remains owner-waived only"
   review_threads:
-    status: pr410_open_review_lane_active
+    status: pr410_review_threads_resolved
     evidence:
-      - "Current branch codex/jsc-363-pu056-runtime-card-active-route-key is open as PR #410; live PR head is submitted-branch truth until the post-merge pullback receipt records the final squash merge"
+      - "All four PR #410 review threads identified during merge triage were resolved before auto-merge completed"
   tracker_state:
-    status: pu056_in_progress
+    status: pu056_merged_pu015_selected
     evidence:
-      - "state.yaml active route records PR #409 as merged baseline and PU-056 as active"
-      - "runtime-card now derives issueKey JSC-363 from the active route row"
+      - "state.yaml records PR #410 as merged baseline and PU-015 as the selected next slice"
+      - "runtime-card on pulled current main derives issueKey JSC-363 from the active route row"
   merge_readiness:
-    status: not_ready_until_pu056_pr_green_merged_and_pulled
+    status: not_ready_until_pu015_packet_and_final_audit
     evidence:
-      - "Focused local proof passes, but PR, CI, review-thread, merge, and post-merge pullback lanes are still unproven for PU-056"
+      - "PU-056 PR, CI, review-thread, merge, and post-merge pullback lanes are proven; Linear field-text, PU-015 packet, and final audit remain unproven"
 continuation_gate:
-  status: continue_pu056_only
-  reason: "PU-056 is the active bounded slice. Do not start Judge/PM packet work until the guard is reviewed, merged, and pulled back to main."
+  status: continue_pu015_after_tracker_refresh
+  reason: "PU-056 is merged and pulled back. Start PU-015 only after this post-PR410 tracker refresh validates and merges."
 native_blocker_audit:
   status: not_blocked
   blocker_history: []
@@ -70,6 +71,6 @@ validation_evidence:
     - "pnpm check"
     - "git diff --check"
 risks:
-  - "Remote PR, CI, review-thread, merge, and post-merge pullback lanes still need to run before PU-056 can be closed."
+  - "PU-015 still needs a live Judge/PM packet and Linear field-text disposition before parent completion can be claimed."
   - "External Snyk GitHub App quota remains owner-waived only, not a green security lane."
-  - "Judge/PM readiness and parent-goal completion remain unclaimed until PU-056 is merged, Linear field-text disposition is resolved, and the final audit packet exists."
+  - "Judge/PM readiness and parent-goal completion remain unclaimed until Linear field-text disposition is resolved, the PU-015 packet exists, and the final audit passes."
