@@ -41,7 +41,7 @@ thin_execution_tracker:
       - "Judge/PM live audit packet"
       - "Final documentation accuracy beyond current validators"
       - "Parent-goal completion"
-    active_branch: "codex/jsc-363-post-pr411-tracker-refresh"
+    active_branch: null
     active_pr: null
     active_pr_url: null
     active_pr_last_checked_head_sha: null

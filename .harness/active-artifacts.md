@@ -13,18 +13,18 @@
 Current working reconciliation: 2026-06-11 post-PR #411 pullback for JSC-363.
 PR #410 merged the PU-056 active-route runtime-card selection guard into
 `main` at `41ac068ae7c9e9425681a5d42358eaf120f24c04` from submitted head
-`2067365c6149ebdf96aa181377ca5c151536c216`; local `main` and
-`origin/main` are synced to that head. PR #404 and PR #394 remain historical
+`2067365c6149ebdf96aa181377ca5c151536c216`. PR #411 then merged the
+post-PR410 tracker refresh into `main` at
+`aa020ee7deaef4974ee8c78761192e818416e906` from submitted head
+`dc2d19bfc14d32621eed5b082565168ab177a631`; local `main` and
+`origin/main` are synced to the PR #411 merge commit. PR #404 and PR #394 remain historical
 route and Linear tracker-alignment provenance. PR #391 delivered the narrow
 `harness next` classifier fix where empty clean
 `git status --short --untracked-files=all` output was preserved as clean
 evidence instead of being surfaced as a false dirty-worktree blocker. The
 current active route is PU-015 Judge/PM audit packet preparation, with Linear
-field-text currency still unclaimed as an input to final closeout. PR #411
-merged that tracker refresh into `main` at
-`aa020ee7deaef4974ee8c78761192e818416e906` from submitted head
-`dc2d19bfc14d32621eed5b082565168ab177a631`; it is not PU-015 implementation
-evidence and does not claim parent completion. Obsolete auxiliary
+field-text currency still unclaimed as an input to final closeout. PR #411 is
+not PU-015 implementation evidence and does not claim parent completion. Obsolete auxiliary
 worktrees and stale local/remote `codex/*` branches remained absent during
 this refresh.
 PR #389 merged into `main` at 2026-06-09T08:54:35Z as squash merge commit
