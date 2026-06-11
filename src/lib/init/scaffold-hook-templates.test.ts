@@ -67,6 +67,7 @@ describe("git-hook scaffold templates", () => {
 		expect(preCommit).not.toContain("pre-commit run");
 		expect(prePush).toContain("check-validation-locks.sh");
 		expect(prePush).toContain("run-harness-gate.sh tooling-audit");
+		expect(prePush).toContain("HARNESS_PRE_PUSH_FULL_CODESTYLE");
 		expect(prePush).not.toContain("make hooks-pre-push");
 		expect(prePush).not.toContain("pre-commit run");
 	});

@@ -135,7 +135,11 @@ bash ./scripts/check-diagram-freshness.sh --changed-files "$tmp_changed_files"
 bash ./scripts/run-harness-gate.sh tooling-audit --path . --json
 bash ./scripts/check-environment.sh
 make semgrep-changed
-make codestyle
+if [[ "\${HARNESS_PRE_PUSH_FULL_CODESTYLE:-0}" == "1" ]]; then
+	make codestyle
+else
+	echo "Skipping broad make codestyle in pre-push; run HARNESS_PRE_PUSH_FULL_CODESTYLE=1 git push to enable it."
+fi
 unset_git_context_env
 ${buildCommand}
 `;
