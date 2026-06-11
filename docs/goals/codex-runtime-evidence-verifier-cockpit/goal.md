@@ -43,30 +43,28 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-11 post-PR401 pullback tracker refresh. Merged
+Last updated during the 2026-06-11 post-PR402 pullback tracker refresh. Merged
 PR history is receipt provenance, not the active route. Use `receipts.jsonl` for
 the complete PR ledger and keep this section limited to the current restart
 truth.
 
 Current live route truth:
 
-- PR #401 merged the post-PR400 static route-truth review fix from submitted
-  head `c357007368015a161a3ee51a91b90e6bc83f0999` as squash merge commit
-  `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`; repo-owned CircleCI lanes,
+- PR #402 merged the post-PR401 route-truth review fix from submitted head
+  `765769147db3f1ccee704e521475d4a20ab65934` as squash merge commit
+  `fd750626ece4d1f3786ef564485dd8c7d2c04230`; repo-owned CircleCI lanes,
   aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, Socket,
   and review-thread checks were successful or resolved before merge. The
   external Snyk GitHub App quota/error lane remains owner-waived for that
   external app status only.
 - Local `main` and `origin/main` were synced at
-  `fdcd577a77fb660b9b71e058bcbd33fff06c67bf` before this tracker-refresh
+  `fd750626ece4d1f3786ef564485dd8c7d2c04230` before this tracker-refresh
   branch was created.
-- Live GitHub reported no open PRs at the PR #401 pullback refresh point before
-  PR #402 opened; PR #402 is now the active review/CI route.
-- The remaining closeout/backlog audit is queued until PR #402 merges and local
-  main is pulled; no next feature slice has started.
-- The next safe action is to finish PR #402 review/CI, merge it, pull current
-  `main`, then run the remaining closeout/backlog audit and state the exact
-  next implementation slice or blocker.
+- Live GitHub reported no open PRs at the PR #402 pullback refresh point.
+- The remaining closeout/backlog audit is now the active route; no next feature
+  slice has started.
+- The next safe action is to run the remaining closeout/backlog audit from
+  current `main` and state the exact next implementation slice or blocker.
 - Earlier Linear JSC-363 evidence includes comment
   `81cfdd41-ff0e-4df1-b884-c01789e30a50` with the repo-truth
   classification. This refresh does not claim a fresh Linear MCP fetch. The
@@ -115,18 +113,16 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: PR #402 review/CI repair. The remaining closeout/backlog audit
-  is queued until PR #402 merges and local main is pulled.
-- Provenance: See `receipts.jsonl` for merged route history through PR #401.
+- Current route: remaining closeout/backlog audit from current main.
+- Provenance: See `receipts.jsonl` for merged route history through PR #402.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #401 merged at
-  `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`. See `receipts.jsonl` for
+- Done on current main: PR #402 merged at
+  `fd750626ece4d1f3786ef564485dd8c7d2c04230`. See `receipts.jsonl` for
   complete merged route history.
-- Current route PR: #402.
-- Active slice: finish PR #402 review/CI repair, merge it, and pull main before
-  running the remaining closeout/backlog audit.
+- Current route PR: none.
+- Active slice: run the remaining closeout/backlog audit before feature work.
 - Remaining backlog: review/external/root-hygiene proof, documentation accuracy,
   historical review-coverage backfill, Linear field-text currency beyond the
   current comment, PU-015 Judge/PM audit, and final completion audit.

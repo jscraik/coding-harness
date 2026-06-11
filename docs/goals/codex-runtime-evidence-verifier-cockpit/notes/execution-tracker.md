@@ -27,55 +27,52 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Parent issue        | JSC-363                                                         |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`    |
 | Current branch      | `main` pulled, tracker refresh branch active                    |
-| Local main head     | `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`                      |
-| Origin main head    | `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`                      |
-| Main baseline       | `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`                      |
+| Local main head     | `fd750626ece4d1f3786ef564485dd8c7d2c04230`                      |
+| Origin main head    | `fd750626ece4d1f3786ef564485dd8c7d2c04230`                      |
+| Main baseline       | `fd750626ece4d1f3786ef564485dd8c7d2c04230`                      |
 | Active route count  | 1                                                               |
-| Active route        | PR #402 review repair                                           |
-| Last closed route   | PR #401 merged                                                  |
-| Current route       | PR #402 post-PR401 route-truth review repair                    |
-| Current slice       | Resolve PR #402 review/CI, then audit remaining backlog         |
+| Active route        | Remaining closeout/backlog audit                                |
+| Last closed route   | PR #402 merged                                                  |
+| Current route       | Post-PR402 current-main audit route                              |
+| Current slice       | Audit remaining goal/spec/backlog obligations                    |
 | Feature work status | No next feature slice started                                   |
 
 ## Active Route
 
-PR #402 is the active JSC-363 PR repair route after PR #401 merged and local
-`main` was pulled to `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`. This
-tracker refresh closes the post-PR400 tracker route and keeps the remaining
-closeout/backlog audit queued for after PR #402 merges. It does not claim Linear
-field-text currency, root-hygiene proof, documentation accuracy, Judge/PM
-readiness, release readiness, or parent-goal completion.
+PR #402 is merged and local `main` plus `origin/main` are synced at
+`fd750626ece4d1f3786ef564485dd8c7d2c04230`. This tracker refresh closes the
+post-PR401 route repair and makes the remaining closeout/backlog audit the
+active route. It does not claim Linear field-text currency, root-hygiene proof,
+documentation accuracy, Judge/PM readiness, release readiness, or parent-goal
+completion.
 
 Current evidence:
 
 - Local `main` and `origin/main` were synced at
-  `fdcd577a77fb660b9b71e058bcbd33fff06c67bf` before this tracker-refresh
+  `fd750626ece4d1f3786ef564485dd8c7d2c04230` before this tracker-refresh
   branch was created.
-- Live GitHub reported PR #401 merged at `2026-06-11T04:49:40Z` from submitted
-  head `c357007368015a161a3ee51a91b90e6bc83f0999` as squash merge commit
-  `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`; repo-owned CircleCI,
+- Live GitHub reported PR #402 merged at `2026-06-11T06:46:51Z` from submitted
+  head `765769147db3f1ccee704e521475d4a20ab65934` as squash merge commit
+  `fd750626ece4d1f3786ef564485dd8c7d2c04230`; repo-owned CircleCI,
   aggregate `pr-pipeline`, aggregate `security-scan`, Socket, CodeRabbit,
   and review-thread checks passed or resolved before merge. The external
   `security/snyk (jscraik)` GitHub App quota/error lane remains owner-waived
   only for that external app status.
-- Live GitHub reported zero open pull requests before this tracker-refresh PR
-  was opened; PR #402 is the active route for this review repair.
+- Live GitHub reported zero open pull requests at this pullback refresh point.
 - Earlier Linear JSC-363 evidence recorded status `In Review`, Phase 1
   title/description text, and repo-truth comment
   `81cfdd41-ff0e-4df1-b884-c01789e30a50`. This tracker refresh does not claim a
   fresh Linear fetch, Linear field-text currency, or parent-goal completion.
-- Next safe action: finish PR #402 review/CI, merge it, pull current `main`,
-  then run the remaining closeout/backlog audit and state the next exact
-  implementation slice or blocker.
+- Next safe action: run the remaining closeout/backlog audit and state the next
+  exact implementation slice or blocker.
 - Historical PR details remain in `receipts.jsonl`; they are not active restart
   instructions.
 
 ## Active Slice
 
-No implementation slice is active. PR #402 review/CI repair is the active route.
-The remaining closeout/backlog audit is queued until PR #402 merges and current
-`main` is pulled; after that pullback it must produce either the next bounded
-implementation slice or a current blocker before feature work resumes.
+No implementation slice is active. The remaining closeout/backlog audit is the
+active route and must produce either the next bounded implementation slice or a
+current blocker before feature work resumes.
 
 Non-claims:
 
@@ -108,17 +105,18 @@ claim/evidence/blocker records, not narrative diary entries.
 
 Feature implementation remains stopped until all of these are true:
 
-- Delivery-truth consumption projection is merged through PR #374, PR #375
-  tracker review-fix is merged, PR #376 tracker refresh is merged, PR #377
-  tracker refresh is merged, PR #378 tracker refresh is merged, PR #379 tracker refresh is merged, PR #380
-  tracker refresh is merged, PR #381 Linear blocker tracker route is merged,
-  PR #382 tracker refresh is merged, and PR #383 validator repair is merged
-  into local `main`.
-- Linear JSC-363 has compact post-merge route-truth comment
-  `34a50024-24be-4853-af6e-3219cbc0d845`.
+- PR #402 is merged into local `main` and `origin/main`, both synced at
+  `fd750626ece4d1f3786ef564485dd8c7d2c04230`.
+- Live GitHub reports zero open PRs for `jscraik/coding-harness` at this
+  refresh point.
+- Linear JSC-363 has repo-truth comment
+  `81cfdd41-ff0e-4df1-b884-c01789e30a50`, but field-text currency remains a
+  separate unclaimed lane.
 - `goal.md`, `state.yaml`, `notes/execution-tracker.md`,
   `.harness/active-artifacts.md`, the tracker board, and `receipts.jsonl`
   validate together after the merge pull-back.
+- The remaining closeout/backlog audit records the exact next bounded slice or
+  blocker.
 
 ## Linear Update Payload
 
@@ -126,25 +124,26 @@ Use this payload only after Linear access is available or an owner explicitly
 approves posting the blocker classification for JSC-363:
 
 ```md
-Refreshed JSC-363 current-main route truth after PR #393 merge and recorded
-the post-PR393 Linear field-text access blocker.
+Refreshed JSC-363 current-main route truth after PR #402 merge and recorded
+that the remaining closeout/backlog audit is now active.
 
 Current truth:
 
-- Active route lane: post-PR393 Linear blocker refresh.
-- Latest merged route: PR #393.
-- Local main head: 566a0a78286f5a1999eee4c332256475d4f19508.
-- Origin main head: 566a0a78286f5a1999eee4c332256475d4f19508.
-- Repo-owned required checks for PR #393 passed before merge.
+- Active route lane: remaining closeout/backlog audit from current main.
+- Latest merged route: PR #402.
+- Local main head: fd750626ece4d1f3786ef564485dd8c7d2c04230.
+- Origin main head: fd750626ece4d1f3786ef564485dd8c7d2c04230.
+- Repo-owned required checks for PR #402 passed before merge.
+- Live GitHub reports zero open PRs at this refresh point.
 - PU-013 runtime cockpit integration proof is merged and pulled back to local `main`.
-- PR #393 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
+- PR #402 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
 - No production code patch was required; current main already projects Codex runtime evidence into `runtime-card` and consumes it narrowly through `harness next`.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
-- Linear JSC-363 was refreshed with pre-PR372 post-merge route-truth comment `34a50024-24be-4853-af6e-3219cbc0d845`; post-PR393 field-text currency remains unclaimed because `harness linear prepare --issue JSC-363 --json` and `harness linear triage --dry-run --json` fail without `LINEAR_API_KEY` in this session.
+- Linear JSC-363 has repo-truth comment `81cfdd41-ff0e-4df1-b884-c01789e30a50`; field-text currency remains unclaimed until a fresh Linear fetch or owner classification is recorded.
 
 Restart rule:
-The next selected slice is the Linear field-text decision. It starts only after
-this post-PR384 blocker refresh is merged, main is pulled, validators pass from
-current main, and a usable Linear tool/token path or owner classification is
-available.
+The next selected slice is not chosen yet. It starts only after this post-PR402
+tracker refresh is merged or accepted, main is pulled, validators pass from
+current main, and the remaining closeout/backlog audit states the exact next
+bounded implementation slice or blocker.
 ```
