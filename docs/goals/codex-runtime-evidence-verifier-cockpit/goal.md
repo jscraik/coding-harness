@@ -43,7 +43,8 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-11 post-PR407 pullback tracker refresh. Merged
+Last updated during the 2026-06-11 post-PR410 pullback tracker refresh, with
+PR #411 open for this tracker-refresh PR. Merged
 PR history is receipt provenance, not the active route. Use `receipts.jsonl` for
 the complete PR ledger and keep this section limited to the current restart
 truth.
