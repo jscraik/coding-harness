@@ -50,23 +50,25 @@ truth.
 
 Current live route truth:
 
-- PR #407 merged the post-PR406 route-truth refresh from submitted head
-  `8a53c95ae2f3a9cd9be1a32df433e1a6fc233b09` as squash merge commit
-  `89b67bffc2b13caee315f04d384209359ca64c23`; repo-owned CircleCI lanes,
+- PR #408 merged the post-PR407 route-truth refresh from submitted head
+  `bfdbd8b551d9282810f55b050a7ab9e8439450ef` as squash merge commit
+  `48ff402e6ee4fd99f84412eff7fc1592d8acb32b`; repo-owned CircleCI lanes,
   aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, Socket,
   and review-thread checks were successful or resolved before merge. The
   external Snyk GitHub App quota/error lane remains owner-waived for that
   external app status only.
 - Local `main` and `origin/main` were synced at
-  `89b67bffc2b13caee315f04d384209359ca64c23` after PR #407 was merged and
+  `48ff402e6ee4fd99f84412eff7fc1592d8acb32b` after PR #408 was merged and
   pulled back.
-- Live GitHub reported no open PRs at the PR #407 pullback refresh point.
+- Live GitHub reported no open PRs at the PR #408 pullback refresh point.
 - Branch and worktree cleanup removed obsolete auxiliary worktrees and stale
   local/remote `codex/*` branches; only `main` and `origin/main` remain.
-- The remaining closeout/backlog audit is now the active route; no next feature
-  slice has started.
-- The next safe action is to run the remaining closeout/backlog audit from
-  current `main` and state the exact next implementation slice or blocker.
+- The remaining closeout/backlog audit selected `PU-056 active-route
+  runtime-card selection guard` as the next bounded slice after proving the
+  focused current-main closeout test surfaces and finding that runtime-card
+  selected JSC-395 from a two-row active-route table.
+- The next safe action is to merge and pull back this PU-055 tracker repair,
+  then implement PU-056 before Judge/PM packet work resumes.
 - Earlier Linear JSC-363 evidence includes comment
   `81cfdd41-ff0e-4df1-b884-c01789e30a50` with the repo-truth
   classification. This refresh does not claim a fresh Linear MCP fetch. The
@@ -116,15 +118,16 @@ Stop conditions:
 Current route truth:
 
 - Current route: remaining closeout/backlog audit from current main.
-- Provenance: See `receipts.jsonl` for merged route history through PR #407.
+- Provenance: See `receipts.jsonl` for merged route history through PR #408.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #407 merged at
-  `89b67bffc2b13caee315f04d384209359ca64c23`. See `receipts.jsonl` for
+- Done on current main: PR #408 merged at
+  `48ff402e6ee4fd99f84412eff7fc1592d8acb32b`. See `receipts.jsonl` for
   complete merged route history.
 - Current route PR: none.
-- Active slice: run the remaining closeout/backlog audit before feature work.
+- Active slice: PU-056 active-route runtime-card selection guard, queued after
+  this PU-055 tracker repair merges and local main is pulled back.
 - Remaining backlog: review/external/root-hygiene proof, documentation accuracy,
   historical review-coverage backfill, Linear field-text currency beyond the
   current comment, PU-015 Judge/PM audit, and final completion audit.

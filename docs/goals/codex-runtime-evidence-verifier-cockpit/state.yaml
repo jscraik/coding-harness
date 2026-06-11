@@ -31,31 +31,39 @@ thin_execution_tracker:
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
     kind: "current_main_closeout_audit"
-    status: "remaining_closeout_backlog_audit_active"
-    blocker: "No implementation PR lane is active. PR #407 merged and local main plus origin/main are synced at 89b67bffc2b13caee315f04d384209359ca64c23. This branch is a route-truth refresh only. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, Linear field-text currency beyond the repo-truth comment, and parent-goal completion remain unclaimed until the remaining closeout/backlog audit produces the exact next bounded slice or blocker."
-    active_branch: "codex/jsc-363-post-pr407-tracker-refresh"
+    status: "pu055_current_main_matrix_recorded_next_slice_selected"
+    blocker: "PU-055 recorded the current-main closeout matrix and queued PU-056; parent completion remains blocked by the active-route guard, Linear disposition, and final Judge/PM packet."
+    current_pr_state: "PR #408 merged and local main plus origin/main are synced at 48ff402e6ee4fd99f84412eff7fc1592d8acb32b; no implementation PR lane is active and live GitHub reported zero open PRs."
+    test_and_audit_status: "Focused review-state, external-state, root-hygiene, delivery-truth, Judge/PM, runtime-card, and harness-next tests pass; documentation accuracy is partially proven by docs validators and historical review coverage backfill is proven by the board validator."
+    active_route_drift_finding: "PU-055 found the current-route table had two active rows, causing runtime-card to select JSC-395 rather than JSC-363 before the route table was narrowed."
+    unclaimed_surfaces:
+      - "Linear field-text currency beyond repo-truth comment 81cfdd41-ff0e-4df1-b884-c01789e30a50"
+      - "Judge/PM live audit packet"
+      - "Final documentation accuracy beyond current validators"
+      - "Parent-goal completion"
+    active_branch: "codex/jsc-363-pu055-closeout-matrix"
     active_pr: null
     active_pr_url: null
     active_pr_last_checked_head_sha: null
-    active_pr_head_sha_contract: "No implementation PR head exists after PR #407 merge and branch cleanup; this route-refresh branch must merge and pull back before PU-055 starts."
-    last_merged_pr: 407
-    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/407"
-    last_merged_sha: "89b67bffc2b13caee315f04d384209359ca64c23"
-    last_merged_submitted_head_sha: "8a53c95ae2f3a9cd9be1a32df433e1a6fc233b09"
-    last_merge_verified_at: "2026-06-11T14:58:13Z"
-    local_main_sha: "89b67bffc2b13caee315f04d384209359ca64c23"
-    origin_main_sha: "89b67bffc2b13caee315f04d384209359ca64c23"
+    active_pr_head_sha_contract: "No implementation PR head exists after PR #408 merge and branch cleanup; this PU-055 tracker branch must merge and pull back before PU-056 starts."
+    last_merged_pr: 408
+    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/408"
+    last_merged_sha: "48ff402e6ee4fd99f84412eff7fc1592d8acb32b"
+    last_merged_submitted_head_sha: "bfdbd8b551d9282810f55b050a7ab9e8439450ef"
+    last_merge_verified_at: "2026-06-11T15:35:48Z"
+    local_main_sha: "48ff402e6ee4fd99f84412eff7fc1592d8acb32b"
+    origin_main_sha: "48ff402e6ee4fd99f84412eff7fc1592d8acb32b"
     open_pr_count: 0
     open_prs: []
   queued_slice:
-    lifecycle_unit: "PU-055"
-    name: "current-main closeout evidence matrix"
-    status: "active"
-    evidence_receipt: "R473"
+    lifecycle_unit: "PU-056"
+    name: "active-route runtime-card selection guard"
+    status: "queued_after_pu055_tracker_pr"
+    evidence_receipt: "R474"
   resume_gate:
-    - "Do not start feature work until the remaining closeout/backlog audit states the exact next slice from current main and records any blocked obligations separately."
+    - "Do not start feature work until this PU-055 tracker repair merges, local main is pulled back, and PU-056 repairs or guards the active-route selection issue found by runtime-card."
     - "Treat Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 as tracker-alignment evidence only, not field-text-current or completion evidence."
-    - "PR #396 through PR #407 are merged provenance; do not reopen their repair lanes unless a fresh current-main regression proves a new blocker."
+    - "PR #396 through PR #408 are merged provenance; do not reopen their repair lanes unless a fresh current-main regression proves a new blocker."
     - "The next selected slice must preserve the one-PR-at-a-time route contract and must not claim Judge/PM readiness or parent-goal completion before the final audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
   review_artifacts:
@@ -64,8 +72,8 @@ thin_execution_tracker:
   explicit_non_claims:
     - "linear_fields_current"
     - "final_closeout_claim_families_complete"
-    - "review_external_root_hygiene_complete"
-    - "documentation_accuracy_complete"
+    - "active_route_runtime_card_selection_guard_complete"
+    - "documentation_accuracy_complete_beyond_current_docs_validators"
     - "judge_pm_ready"
     - "parent_goal_complete"
 artifacts:
@@ -196,9 +204,9 @@ current_slice_gate:
   next_required_handoff_steps:
     - "Use docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md as the thin restart tracker; keep old PR history as provenance, not active route work."
     - "Validate this current-main tracker refresh with receipts JSON parsing, audit freshness, goal-board validation, Kanban script validation, and git diff whitespace validation."
-    - "Use the pulled main checkout at 89b67bffc2b13caee315f04d384209359ca64c23 as the only route baseline before starting other implementation work."
+    - "Use the pulled main checkout at 48ff402e6ee4fd99f84412eff7fc1592d8acb32b as the only route baseline before starting other implementation work."
     - "Linear JSC-363 has compact post-merge route truth via comment 34a50024-24be-4853-af6e-3219cbc0d845; do not claim field-text currency until the older Phase 1 title/description wording is owner-accepted or updated."
-    - "Select one bounded next backlog slice only after the remaining closeout/backlog audit runs against current main and records the exact next slice or blocker."
+    - "Start PU-056 active-route runtime-card selection guard only after this PU-055 tracker repair merges and local main is pulled back."
     - "Treat receipt-backed merged JSC-363 route/foundation lanes through PR #371 as completed current-main evidence at 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856; do not reopen those PR lanes unless fresh GitHub or current-main validation shows a regression."
     - "Use receipt R379 as the validated post-PR #365 current-main route-tracker repair evidence for goal.md, state.yaml, receipts.jsonl, .harness/active-artifacts.md, and .harness/implementation-notes/goal-kanban-board.html; use R357 only as PU-012 intent-created evidence, not PU-012 completion evidence."
     - "Use the PU-012 intent review artifacts as the reviewed-intent gate: best-practices pass, agent-native pass, adversarial needs_changes, and adversarial rereview pass after the intent fix."
