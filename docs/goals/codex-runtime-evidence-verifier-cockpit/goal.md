@@ -43,34 +43,37 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-11 PR #396 conflict-repair lane. PR #366,
+Last updated during the 2026-06-11 post-PR397 pullback tracker refresh. PR #366,
 PR #367, PR #369, PR #370, PR #371, PR #372, PR #373, PR #374, PR #375,
 PR #376, PR #377, PR #378, PR #379, PR #380, PR #381, PR #382, PR #383,
 PR #384, PR #385, PR #386, PR #387, PR #388, PR #389, PR #390, PR #391,
 PR #392, PR #393, and PR #394 are historical route provenance. PR #394 is
 merged into `main` at `9014b416f170ef6069416aa2d356845232cf2de1`.
+PR #396 and PR #397 are also historical merged provenance.
 
 Current live route truth:
 
 - Local `main` and `origin/main` are synced at
-  `fbf3c215608f25ede94a066e2003b4c5e6188189`.
-- PR #396 is the active draft repair lane for
-  `codex/jsc-363-post-pr393-tracker-refresh`. GitHub reported the branch
-  `DIRTY` with failing `pr-pipeline` and `linear-gate` checks before this
-  repair. The local branch merged `origin/main` at
-  `b8ec50057338f3d7bea0973330d830c93bccee51`, then refreshed generated
-  diagram/context artifacts at `c5d38f112897449d8dbfc24b0b84329488e2a056`,
-  preserving current-main route truth and the hook/environment check repairs.
-- The next safe action is to push PR #396, manually trigger CodeRabbit with
-  `@coderabbitai review this pr`, refresh `pr-pipeline` and `linear-gate`,
-  fix only current-head failures, then merge/pull back before selecting the
-  remaining closeout/backlog audit.
+  `fa67dd5268fbff1fc785a098825aebcc1e5cf3ff` after PR #397 merged.
+- PR #396 merged the Prek hook leaf-adapter repair from submitted head
+  `687a3ca9721bb19336fd24f6a8b91fb6488098fe` as squash merge commit
+  `02245c5735add2f2990f0203a4dbd4708f72353a`; repo-owned CircleCI lanes,
+  aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, and Socket
+  were successful before merge. The external Snyk GitHub App quota/error lane
+  remains owner-waived for that external app status only.
+- PR #397 merged the hook review-regression proof from submitted head
+  `264b7ac105bb5d7a44ffe97b80e27f51ff857d3e` as squash merge commit
+  `fa67dd5268fbff1fc785a098825aebcc1e5cf3ff`.
+- Live GitHub reports no open PRs for this repository at this refresh point.
+- The next safe action is to run the remaining closeout/backlog audit from
+  current `main`, state the exact next implementation slice or blocker, and
+  keep feature work paused until that route is explicit.
 - Linear JSC-363 was fetched through the Linear MCP tool and comment
   `81cfdd41-ff0e-4df1-b884-c01789e30a50` records the repo-truth
   classification. The original Phase 1 title/description remain historical
   scope context, not completion evidence.
-- The remaining closeout/backlog audit is paused behind the PR #396 repair
-  lane; no next feature slice has started.
+- The remaining closeout/backlog audit is the queued lane; no next feature
+  slice has started.
 - PR #394 merged the source-tracked post-PR393 route refresh from submitted
   head `8b98cc6299d566ccf3b472781ee6def606c9ea79`.
 - PR #393 merged the source-tracked post-PR392 route refresh from submitted

@@ -26,47 +26,44 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | ------------------- | ------------------------------------------------------------------ |
 | Parent issue        | JSC-363                                                            |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`       |
-| Current branch      | `codex/jsc-363-post-pr393-tracker-refresh`                         |
-| Local main head     | `fbf3c215608f25ede94a066e2003b4c5e6188189`                         |
-| Origin main head    | `fbf3c215608f25ede94a066e2003b4c5e6188189`                         |
-| Main baseline       | `fbf3c215608f25ede94a066e2003b4c5e6188189`                         |
-| Active route count  | 1                                                                  |
-| Active route        | PR #396 conflict repair and remote truth refresh                   |
-| Last closed route   | PR #394 merged                                                     |
-| Current route       | PR #396 draft repair                                               |
-| Current slice       | Push repair, trigger CodeRabbit again, refresh CI and review truth |
+| Current branch      | `main` pulled, tracker refresh branch active                       |
+| Local main head     | `fa67dd5268fbff1fc785a098825aebcc1e5cf3ff`                         |
+| Origin main head    | `fa67dd5268fbff1fc785a098825aebcc1e5cf3ff`                         |
+| Main baseline       | `fa67dd5268fbff1fc785a098825aebcc1e5cf3ff`                         |
+| Active route count  | 0                                                                  |
+| Active route        | none                                                               |
+| Last closed route   | PR #397 merged                                                     |
+| Current route       | post-PR397 route truth refresh                                     |
+| Current slice       | Audit remaining goal/spec/backlog obligations from current main    |
 | Feature work status | No next feature slice started                                      |
 
 ## Active Route
 
-PR #396 is the active draft repair lane for
-`codex/jsc-363-post-pr393-tracker-refresh`. GitHub reported the PR
-`DIRTY` with failing `pr-pipeline` and `linear-gate` checks before this
-repair. The branch has merged `origin/main` at
-`b8ec50057338f3d7bea0973330d830c93bccee51`, then refreshed generated
-diagram/context artifacts at `c5d38f112897449d8dbfc24b0b84329488e2a056`,
-preserving current-main route truth and hook/environment check repairs. This route does not claim remote push,
-fresh CI, CodeRabbit freshness, review-thread resolution, merge readiness,
-Linear field-text currency, root-hygiene proof, documentation accuracy,
-Judge/PM readiness, release readiness, or parent-goal completion.
+No JSC-363 PR repair route is active after PR #396 and PR #397 merged and local
+`main` was pulled to `fa67dd5268fbff1fc785a098825aebcc1e5cf3ff`. This
+tracker refresh closes the stale PR #396 route and queues the remaining
+closeout/backlog audit. It does not claim Linear field-text currency,
+root-hygiene proof, documentation accuracy, Judge/PM readiness, release
+readiness, or parent-goal completion.
 
 Current evidence:
 
 - Local `main` and `origin/main` are synced at
-  `fbf3c215608f25ede94a066e2003b4c5e6188189`.
-- Live GitHub reports PR #396 open, draft, and `DIRTY` at pre-repair remote
-  head `de0ba15f93998fc2adc4cf8fe17a7e97c0f53cfb`; visible failing lanes are
-  `pr-pipeline` and `ci/circleci: linear-gate`. The external
-  `security/snyk (jscraik)` GitHub App quota/error lane remains owner-waived
-  only for that external app status.
-- Local repair head
-  `b8ec50057338f3d7bea0973330d830c93bccee51` merges current
-  `origin/main` into the PR #396 branch; generated diagram/context refresh head
-  `c5d38f112897449d8dbfc24b0b84329488e2a056` is the latest local
-  evidence anchor before push.
-- Next safe action: push the repair, trigger CodeRabbit again with
-  `@coderabbitai review this pr`, refresh `pr-pipeline` and `linear-gate`,
-  fix only current-head failures, then merge/pull back and refresh this tracker.
+  `fa67dd5268fbff1fc785a098825aebcc1e5cf3ff`.
+- Live GitHub reports PR #396 merged at `2026-06-11T02:00:49Z` from submitted
+  head `687a3ca9721bb19336fd24f6a8b91fb6488098fe` as squash merge commit
+  `02245c5735add2f2990f0203a4dbd4708f72353a`; repo-owned CircleCI,
+  aggregate `pr-pipeline`, aggregate `security-scan`, Socket, and CodeRabbit
+  status passed before merge. The external `security/snyk (jscraik)` GitHub
+  App quota/error lane remains owner-waived only for that external app status.
+- Live GitHub reports PR #397 merged at `2026-06-11T02:23:34Z` from submitted
+  head `264b7ac105bb5d7a44ffe97b80e27f51ff857d3e` as squash merge commit
+  `fa67dd5268fbff1fc785a098825aebcc1e5cf3ff`.
+- Live GitHub reports zero open pull requests for the repository at this
+  refresh point.
+- Next safe action: run the remaining closeout/backlog audit from current
+  `main`, state the next exact implementation slice or blocker, and keep
+  feature work paused until the tracker records that route.
 - Live GitHub reports PR #394 merged at `2026-06-09T12:09:12Z` from submitted
   head `8b98cc6299d566ccf3b472781ee6def606c9ea79` as squash merge commit
   `9014b416f170ef6069416aa2d356845232cf2de1`; repo-owned CircleCI,

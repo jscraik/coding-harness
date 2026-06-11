@@ -411,13 +411,13 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness status">Active route: PR #396 repair</div>
+      <div class="source-chip" aria-label="Source freshness status">Current main: PR #397 merged</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>PR repair active</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #394</strong></div>
-      <div class="metric"><span>Current PR</span><strong>#396 draft</strong></div>
+      <div class="metric"><span>Goal status</span><strong>Backlog audit queued</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #397</strong></div>
+      <div class="metric"><span>Current PR</span><strong>None open</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Projection merged</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
       <div class="metric"><span>Linear tracker</span><strong>Comment aligned</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated during PR #396 conflict repair. Local repair head <code>b8ec50057338f3d7bea0973330d830c93bccee51</code> merges <code>origin/main</code> <code>fbf3c215608f25ede94a066e2003b4c5e6188189</code> into <code>codex/jsc-363-post-pr393-tracker-refresh</code> after GitHub reported the PR <code>DIRTY</code> with failing <code>pr-pipeline</code> and <code>linear-gate</code>; generated diagram/context refresh head <code>c5d38f112897449d8dbfc24b0b84329488e2a056</code> is the latest local evidence anchor. The next safe action is push, manual CodeRabbit review request, current-head CI/review refresh, and merge/pullback before selecting the remaining closeout/backlog audit. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated after PR #396 and PR #397 merged and local main was pulled to <code>fa67dd5268fbff1fc785a098825aebcc1e5cf3ff</code>. Live GitHub reported zero open pull requests at this refresh point. The next safe action is to run the remaining closeout/backlog audit from current main, state the exact next implementation slice or blocker, and keep feature work paused until that route is explicit. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, Linear field-text currency beyond the repo-truth comment, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -533,13 +533,35 @@
       {
         id: "pr396-conflict-repair",
         lane: "pr-truth",
-        title: "PR #396: Conflict repair active",
+        title: "PR #396: Hook leaf-adapter repair merged",
+        status: "done",
+        tags: ["PR #396", "R457", "merged", "hook guardrail"],
+        summary: "PR #396 merged the Prek hook leaf-adapter repair after the conflict lane was resolved and remote checks refreshed.",
+        evidence: ["PR #396 -> MERGED at 2026-06-11T02:00:49Z", "Submitted head -> 687a3ca9721bb19336fd24f6a8b91fb6488098fe", "Merge commit -> 02245c5735add2f2990f0203a4dbd4708f72353a", "Repo-owned CircleCI lanes -> success", "pr-pipeline -> success", "security-scan -> success", "CodeRabbit -> success", "Socket -> success", "External security/snyk GitHub App quota lane -> owner-waived only"],
+        next: "Use as merged hook-runtime repair evidence. Current main advanced through PR #397.",
+        risk: "PR #396 proves the hook repair lane only. It does not prove Linear field currency, Judge/PM readiness, or parent-goal completion."
+      },
+      {
+        id: "post-pr397-current-main",
+        lane: "pr-truth",
+        title: "PR #397: Hook regression proof merged",
+        status: "done",
+        tags: ["PR #397", "R458", "merged", "tracker refresh"],
+        summary: "PR #397 merged the review-regression proof for generated hook gate contracts. Local main and origin/main are synced at fa67dd5268fbff1fc785a098825aebcc1e5cf3ff.",
+        evidence: ["PR #397 -> MERGED at 2026-06-11T02:23:34Z", "Submitted head -> 264b7ac105bb5d7a44ffe97b80e27f51ff857d3e", "Merge commit -> fa67dd5268fbff1fc785a098825aebcc1e5cf3ff", "Live GitHub open PR list -> []", "Local main and origin/main -> fa67dd5268fbff1fc785a098825aebcc1e5cf3ff"],
+        next: "Run the remaining closeout/backlog audit from current main before starting feature work.",
+        risk: "This refresh closes PR-route ambiguity only. It does not prove documentation accuracy, root hygiene, Judge/PM readiness, Linear field text, or parent-goal completion."
+      },
+      {
+        id: "remaining-closeout-backlog-audit",
+        lane: "remaining",
+        title: "Next: remaining goal/spec/backlog audit",
         status: "active",
-        tags: ["PR #396", "R457", "merge conflict", "push pending"],
-        summary: "PR #396 is the active draft repair lane. The branch has merged current origin/main at b8ec50057338f3d7bea0973330d830c93bccee51 after GitHub reported DIRTY merge state plus failing pr-pipeline and linear-gate checks; c5d38f112897449d8dbfc24b0b84329488e2a056 is the latest generated-context evidence head.",
-        evidence: ["PR #396 -> OPEN draft before repair", "Pre-repair remote head -> de0ba15f93998fc2adc4cf8fe17a7e97c0f53cfb", "Local repair head -> b8ec50057338f3d7bea0973330d830c93bccee51", "Generated context head -> c5d38f112897449d8dbfc24b0b84329488e2a056", "origin/main baseline -> fbf3c215608f25ede94a066e2003b4c5e6188189", "External security/snyk GitHub App quota lane -> owner-waived only"],
-        next: "Push the repair, comment @coderabbitai review this pr, refresh pr-pipeline and linear-gate, fix only current-head failures, then merge and pull back before selecting the closeout/backlog audit.",
-        risk: "Local conflict repair does not prove remote push, fresh CI, CodeRabbit freshness, review-thread resolution, merge readiness, Linear field currency, Judge/PM readiness, or parent-goal completion."
+        tags: ["next slice", "R458", "closeout", "backlog"],
+        summary: "The next work is not feature implementation. It is a current-main audit against goal.md, spec, plan, adopted gap sources, and receipts to state the exact next slice or blocker.",
+        evidence: ["Current main -> fa67dd5268fbff1fc785a098825aebcc1e5cf3ff", "Open PR list -> []", "state.yaml queued_slice -> remaining-closeout-backlog-audit", "goal.md current reconciliation status -> post-PR397 pullback"],
+        next: "Audit outstanding obligations, choose one bounded slice, then run the slice through the one-PR-at-a-time completion path.",
+        risk: "Starting feature work before this audit would reintroduce stale-route and context-debt failure modes."
       },
       {
         id: "current-main-pr369",
