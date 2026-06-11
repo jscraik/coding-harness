@@ -417,7 +417,7 @@
     <section class="metrics" aria-label="Goal status summary">
       <div class="metric"><span>Goal status</span><strong>PU-015 selected</strong></div>
       <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #410</strong></div>
-      <div class="metric"><span>Current PR</span><strong>None open</strong></div>
+      <div class="metric"><span>Current PR</span><strong>#411 tracker refresh</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Projection merged</strong></div>
       <div class="metric"><span>Documentation</span><strong>Validators passing</strong></div>
       <div class="metric"><span>Linear tracker</span><strong>Comment aligned</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated after PR #410 merged and local main was pulled to <code>41ac068ae7c9e9425681a5d42358eaf120f24c04</code>. PU-056 is closed on current main; <code>runtime-card --json --repo .</code> returns <code>issueKey: "JSC-363"</code> with the JSC-363 active spec and plan. PU-015 Judge/PM audit packet is the next selected slice, with Linear field-text currency, final documentation accuracy, release readiness, and parent goal completion still unclaimed.</p>
+    <p class="footer">Snapshot updated after PR #410 merged and local main was pulled to <code>41ac068ae7c9e9425681a5d42358eaf120f24c04</code>. PR #411 is the current tracker-refresh PR; it is not PU-015 implementation evidence. PU-056 is closed on current main; <code>runtime-card --json --repo .</code> returns <code>issueKey: "JSC-363"</code> with the JSC-363 active spec and plan. PU-015 Judge/PM audit packet is the next selected slice after PR #411 merges and main is pulled back, with Linear field-text currency, final documentation accuracy, release readiness, and parent goal completion still unclaimed.</p>
   </main>
 
   <script>
@@ -604,7 +604,7 @@
         tags: ["PR #402", "R464", "merged", "tracker refresh"],
         summary: "PR #402 merged the post-PR401 route-truth review fix. Local main and origin/main were synced at fd750626ece4d1f3786ef564485dd8c7d2c04230.",
         evidence: ["PR #402 -> MERGED at 2026-06-11T06:46:51Z", "Submitted head -> 765769147db3f1ccee704e521475d4a20ab65934", "Merge commit -> fd750626ece4d1f3786ef564485dd8c7d2c04230", "Repo-owned CircleCI lanes -> success", "pr-pipeline -> success", "security-scan -> success", "CodeRabbit -> success", "Review threads -> resolved before merge", "External security/snyk GitHub App quota lane -> owner-waived only", "Live GitHub open PR list -> []"],
-        next: "Use as merged route provenance only; current route truth is PR #409 and R475.",
+        next: "Use as merged route provenance only; current route truth is PR #411 tracker refresh over the PR #410 main baseline and R477.",
         risk: "This refresh closed PR-route ambiguity only. It did not prove documentation accuracy, root hygiene, Judge/PM readiness, Linear field text, or parent-goal completion."
       },
       {

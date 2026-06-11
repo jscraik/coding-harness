@@ -33,7 +33,7 @@ thin_execution_tracker:
     kind: "post_pr410_current_main_route_refresh"
     status: "pu056_merged_pu015_selected"
     blocker: "Parent completion remains blocked by Linear field-text disposition, PU-015 Judge/PM live audit packet, final documentation accuracy, and final requirement-by-requirement completion audit."
-    current_pr_state: "PR #410 merged at 2026-06-11T18:24:41Z as squash merge 41ac068ae7c9e9425681a5d42358eaf120f24c04 from submitted head 2067365c6149ebdf96aa181377ca5c151536c216; local main plus origin/main are synced to that merge commit and live GitHub reports zero open pull requests."
+    current_pr_state: "PR #410 merged at 2026-06-11T18:24:41Z as squash merge 41ac068ae7c9e9425681a5d42358eaf120f24c04 from submitted head 2067365c6149ebdf96aa181377ca5c151536c216; local main plus origin/main are synced to that merge commit. Live GitHub reported zero open pull requests before this tracker-refresh branch was opened; PR #411 is now open for codex/jsc-363-post-pr410-tracker-refresh and only carries the post-PR410 tracker refresh, not PU-015 implementation evidence."
     test_and_audit_status: "Runtime-card on pulled current main returns issueKey JSC-363 with the active JSC-363 spec and plan; harness next returns a clean-worktree handoff recommendation. Repo-owned PR #410 CI, pr-pipeline, security-scan, Socket, CodeRabbit, and review-thread lanes passed or resolved before merge; external Snyk GitHub App quota remains owner-waived only."
     active_route_drift_finding: "PU-055 found active-route selection drift and PU-056 fixed it on current main; runtime-card no longer drops the JSC-363 route key for wide Current Active Route rows."
     unclaimed_surfaces:
@@ -42,10 +42,10 @@ thin_execution_tracker:
       - "Final documentation accuracy beyond current validators"
       - "Parent-goal completion"
     active_branch: "codex/jsc-363-post-pr410-tracker-refresh"
-    active_pr: null
-    active_pr_url: null
-    active_pr_last_checked_head_sha: null
-    active_pr_head_sha_contract: "No implementation PR is open at this pullback refresh point; the next PR must be for PU-015 or a narrower blocker repair selected by the refreshed tracker."
+    active_pr: 411
+    active_pr_url: "https://github.com/jscraik/coding-harness/pull/411"
+    active_pr_last_checked_head_sha: "f2c26ed5cf1b630e332b830a3de8611ad1658b9c"
+    active_pr_head_sha_contract: "Use live PR #411 head/CI/review state as the submitted-branch truth while this tracker-refresh PR is open; it is not PU-015 implementation evidence. Durable post-PR411 anchoring waits for merge and main pullback."
     last_merged_pr: 410
     last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/410"
     last_merged_sha: "41ac068ae7c9e9425681a5d42358eaf120f24c04"
@@ -53,8 +53,9 @@ thin_execution_tracker:
     last_merge_verified_at: "2026-06-11T18:24:41Z"
     local_main_sha: "41ac068ae7c9e9425681a5d42358eaf120f24c04"
     origin_main_sha: "41ac068ae7c9e9425681a5d42358eaf120f24c04"
-    open_pr_count: 0
-    open_prs: []
+    open_pr_count: 1
+    open_prs:
+      - 411
   queued_slice:
     lifecycle_unit: "PU-015"
     name: "Judge/PM audit packet"

@@ -35,7 +35,7 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Last closed route   | PR #410 merged                                               |
 | Current route       | PU-015 Judge/PM audit packet                                 |
 | Current slice       | PU-015 selected, not yet implemented                         |
-| Feature work status | Stopped until post-PR410 tracker refresh merges              |
+| Feature work status | Stopped until PR #411 tracker refresh merges and pulls back   |
 
 ## Active Route
 
@@ -55,7 +55,9 @@ Current evidence:
   and review-thread checks resolved before merge. The external
   `security/snyk (jscraik)` GitHub App quota/error lane remains owner-waived
   only for that external app status.
-- Live GitHub reported zero open pull requests at this pullback refresh point.
+- Live GitHub reported zero open pull requests before this tracker-refresh
+  branch was opened. PR #411 is now open for the post-PR410 tracker refresh;
+  it is not PU-015 implementation evidence.
 - Runtime-card on pulled current main returned `issueKey: "JSC-363"` with the
   active JSC-363 spec and plan.
 - `harness next --json` on the clean pulled checkout returned a pass status and
@@ -71,7 +73,8 @@ Current evidence:
 
 ## Active Slice
 
-Selected next slice: `PU-015 Judge/PM audit packet`.
+Selected next slice after PR #411 merges and main is pulled back: `PU-015
+Judge/PM audit packet`.
 
 PU-056 closed the active-route/runtime-card mismatch. PU-015 must now produce
 the live Judge/PM audit packet from current-main evidence without treating the

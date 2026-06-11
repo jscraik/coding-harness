@@ -20,9 +20,11 @@ route and Linear tracker-alignment provenance. PR #391 delivered the narrow
 `git status --short --untracked-files=all` output was preserved as clean
 evidence instead of being surfaced as a false dirty-worktree blocker. The
 current active route is PU-015 Judge/PM audit packet preparation, with Linear
-field-text currency still unclaimed as an input to final closeout. Obsolete
-auxiliary worktrees and stale local/remote `codex/*` branches remained absent
-during this refresh.
+field-text currency still unclaimed as an input to final closeout. PR #411 is
+the current tracker-refresh PR for this post-PR410 route state; it is not PU-015
+implementation evidence and does not claim parent completion. Obsolete auxiliary
+worktrees and stale local/remote `codex/*` branches remained absent during
+this refresh.
 PR #389 merged into `main` at 2026-06-09T08:54:35Z as squash merge commit
 `2b1b20cbaab259041b53e53fcabfa24a248528a2` from submitted head
 `edae037da4bc46457f2412bb0a1506fe8d689abe`; before merge, repo-owned
@@ -68,10 +70,11 @@ truth remains canonical. PR, repo-owned CI,
 CodeRabbit completion, review-thread state, mergeability, and merge execution
 remain separate evidence lanes. Historical selector provenance: the
 current-main closeout/backlog audit selected PU-056, and PR #410 merged that
-guard. Active route: PU-015 Judge/PM audit packet preparation is the next
-bounded slice. Linear field-text currency beyond the new comment, final
-documentation accuracy, Judge/PM readiness, and parent-goal completion remain
-unclaimed until the packet and final audit prove them.
+guard. That selector note is historical provenance only. Active route: PU-015
+Judge/PM audit packet preparation is the next bounded slice after PR #411
+merges and main is pulled back. Linear field-text currency beyond the new
+comment, final documentation accuracy, Judge/PM readiness, and parent-goal
+completion remain unclaimed until the packet and final audit prove them.
 
 Historical snapshot: Last reconciled: 2026-06-07 after PR #365 merged into `main` at
 2026-06-07T09:18:13Z as squash merge commit
@@ -98,7 +101,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor route with a thin execution tracker. PR #396 through PR #410 are merged provenance. Local main and origin/main are synced at `41ac068ae7c9e9425681a5d42358eaf120f24c04`. PR #410 merged PU-056 from submitted head `2067365c6149ebdf96aa181377ca5c151536c216`, and runtime-card on current main now derives `issueKey: "JSC-363"` with the active JSC-363 spec and plan. Linear JSC-363 has repo-truth comment 81cfdd41-ff0e-4df1-b884-c01789e30a50, but field-text currency beyond that comment remains unclaimed. R477 anchors the post-PR410 pullback refresh to current main head `41ac068ae7c9e9425681a5d42358eaf120f24c04`. | Next Safe Action: run PU-015 Judge/PM audit packet preparation with Linear field-text disposition kept explicit; do not claim parent completion until the packet and final requirement audit pass. Latest route receipt anchor: R477 / `41ac068ae7c9e9425681a5d42358eaf120f24c04`. |
+| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor route with a thin execution tracker. PR #396 through PR #410 are merged provenance. Local main and origin/main are synced at `41ac068ae7c9e9425681a5d42358eaf120f24c04`. PR #410 merged PU-056 from submitted head `2067365c6149ebdf96aa181377ca5c151536c216`, and runtime-card on current main now derives `issueKey: "JSC-363"` with the active JSC-363 spec and plan. PR #411 is the current tracker-refresh PR for this route state, not PU-015 implementation evidence. Linear JSC-363 has repo-truth comment 81cfdd41-ff0e-4df1-b884-c01789e30a50, but field-text currency beyond that comment remains unclaimed. R477 anchors the post-PR410 pullback refresh to current main head `41ac068ae7c9e9425681a5d42358eaf120f24c04`; PR #411 head truth remains live GitHub until merge/pullback records the next durable anchor. | Next Safe Action: merge and pull back PR #411, then run PU-015 Judge/PM audit packet preparation with Linear field-text disposition kept explicit; do not claim parent completion until the packet and final requirement audit pass. Latest route receipt anchor: R477 / `41ac068ae7c9e9425681a5d42358eaf120f24c04`; current PR: #411. |
 
 JSC-395 is delivered provenance in the artifact index, not the current active
 route. It must not appear in the Current Active Route table unless a later

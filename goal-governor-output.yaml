@@ -40,6 +40,7 @@ truth_lanes:
     status: pu056_merged_pu015_selected
     evidence:
       - "state.yaml records PR #410 as merged baseline and PU-015 as the selected next slice"
+      - "PR #411 is the current tracker-refresh PR for the post-PR410 route state; it is not PU-015 implementation evidence"
       - "runtime-card on pulled current main derives issueKey JSC-363 from the active route row"
   merge_readiness:
     status: not_ready_until_pu015_packet_and_final_audit
