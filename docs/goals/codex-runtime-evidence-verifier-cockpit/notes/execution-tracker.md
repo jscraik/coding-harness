@@ -27,21 +27,21 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Parent issue        | JSC-363                                                      |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` |
 | Current branch      | `main` pulled and branch/worktree cleanup complete           |
-| Local main head     | `68c8019515641f4fe2ff8ada917d4f2b1a170b1e`                   |
-| Origin main head    | `68c8019515641f4fe2ff8ada917d4f2b1a170b1e`                   |
-| Main baseline       | `68c8019515641f4fe2ff8ada917d4f2b1a170b1e`                   |
+| Local main head     | `2118c189b62caff8ce197fc242c0253aab4ad3d5`                   |
+| Origin main head    | `2118c189b62caff8ce197fc242c0253aab4ad3d5`                   |
+| Main baseline       | `2118c189b62caff8ce197fc242c0253aab4ad3d5`                   |
 | Active route count  | 1                                                            |
 | Active route        | Remaining closeout/backlog audit                             |
-| Last closed route   | PR #404 merged                                               |
-| Current route       | Post-PR404 current-main audit route                          |
+| Last closed route   | PR #405 merged                                               |
+| Current route       | Post-PR405 current-main audit route                          |
 | Current slice       | Audit remaining goal/spec/backlog obligations                |
 | Feature work status | No next feature slice started                                |
 
 ## Active Route
 
-PR #404 is merged and local `main` plus `origin/main` are synced at
-`68c8019515641f4fe2ff8ada917d4f2b1a170b1e`. This tracker refresh closes the
-post-PR403 route-truth refresh and makes the remaining closeout/backlog audit the
+PR #405 is merged and local `main` plus `origin/main` are synced at
+`2118c189b62caff8ce197fc242c0253aab4ad3d5`. This tracker refresh closes the
+post-PR404 route-truth refresh and keeps the remaining closeout/backlog audit the
 active route. It does not claim Linear field-text currency, root-hygiene proof,
 documentation accuracy, Judge/PM readiness, release readiness, or parent-goal
 completion.
@@ -49,11 +49,11 @@ completion.
 Current evidence:
 
 - Local `main` and `origin/main` were synced at
-  `68c8019515641f4fe2ff8ada917d4f2b1a170b1e` after PR #404 was merged and
+  `2118c189b62caff8ce197fc242c0253aab4ad3d5` after PR #405 was merged and
   pulled back.
-- Live GitHub reported PR #404 merged at `2026-06-11T10:52:14Z` from submitted
-  head `1b1a292f3009a49f422286d9a65cb4fc7e3fc254` as squash merge commit
-  `68c8019515641f4fe2ff8ada917d4f2b1a170b1e`; repo-owned CircleCI,
+- Live GitHub reported PR #405 merged at `2026-06-11T12:47:10Z` from submitted
+  head `ca050543bb4906cef046649edcc94eba7f0feda2` as squash merge commit
+  `2118c189b62caff8ce197fc242c0253aab4ad3d5`; repo-owned CircleCI,
   aggregate `pr-pipeline`, aggregate `security-scan`, Socket, CodeRabbit,
   and review-thread checks passed or resolved before merge. The external
   `security/snyk (jscraik)` GitHub App quota/error lane remains owner-waived
@@ -122,8 +122,8 @@ claim/evidence/blocker records, not narrative diary entries.
 
 Feature implementation remains stopped until all of these are true:
 
-- PR #404 is merged into local `main` and `origin/main`, both synced at
-  `68c8019515641f4fe2ff8ada917d4f2b1a170b1e`.
+- PR #405 is merged into local `main` and `origin/main`, both synced at
+  `2118c189b62caff8ce197fc242c0253aab4ad3d5`.
 - Live GitHub reports zero open PRs for `jscraik/coding-harness` at this
   refresh point.
 - Linear JSC-363 has repo-truth comment
@@ -141,26 +141,26 @@ Use this payload only after Linear access is available or an owner explicitly
 approves posting the blocker classification for JSC-363:
 
 ```md
-Refreshed JSC-363 current-main route truth after PR #404 merge and recorded
+Refreshed JSC-363 current-main route truth after PR #405 merge and recorded
 that the remaining closeout/backlog audit is now active.
 
 Current truth:
 
 - Active route lane: remaining closeout/backlog audit from current main.
-- Latest merged route: PR #404.
-- Local main head: 68c8019515641f4fe2ff8ada917d4f2b1a170b1e.
-- Origin main head: 68c8019515641f4fe2ff8ada917d4f2b1a170b1e.
-- Repo-owned required checks for PR #404 passed before merge.
+- Latest merged route: PR #405.
+- Local main head: 2118c189b62caff8ce197fc242c0253aab4ad3d5.
+- Origin main head: 2118c189b62caff8ce197fc242c0253aab4ad3d5.
+- Repo-owned required checks for PR #405 passed before merge.
 - Live GitHub reports zero open PRs at this refresh point.
 - PU-013 runtime cockpit integration proof is merged and pulled back to local `main`.
-- PR #404 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
+- PR #405 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
 - No production code patch was required; current main already projects Codex runtime evidence into `runtime-card` and consumes it narrowly through `harness next`.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
 - Linear JSC-363 has repo-truth comment `81cfdd41-ff0e-4df1-b884-c01789e30a50`; field-text currency remains unclaimed until a fresh Linear fetch or owner classification is recorded.
 
 Restart rule:
 The next selected slice is `PU-055 current-main closeout evidence matrix`. It
-starts only after this post-PR404 tracker refresh validates from current main,
+starts only after this post-PR405 tracker refresh validates from current main,
 and it must state the exact next bounded implementation slice or blocker before
 any feature work resumes.
 ```
