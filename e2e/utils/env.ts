@@ -45,18 +45,24 @@ export interface GitHubAppE2EEnvStatus {
 }
 
 export const DEFAULT_CODEX_ENV_FILE = `${homedir()}/.codex/.env`;
-const CODEX_E2E_ENV_RECOVERY_KEYS = new Set([
+const CODEX_E2E_GITHUB_PAT_RECOVERY_KEYS = [
 	"GITHUB_PERSONAL_ACCESS_TOKEN",
-	"LINEAR_API_KEY",
+] as const;
+const CODEX_E2E_GITHUB_APP_ID_RECOVERY_KEYS = [
 	"E2E_GITHUB_APP_ID",
 	"GITHUB_APP_ID",
+] as const;
+const CODEX_E2E_GITHUB_APP_INSTALLATION_RECOVERY_KEYS = [
 	"E2E_GITHUB_APP_INSTALLATION_ID",
 	"GITHUB_APP_INSTALLATION_ID",
+] as const;
+const CODEX_E2E_GITHUB_APP_PRIVATE_KEY_RECOVERY_KEYS = [
 	"E2E_GITHUB_APP_PRIVATE_KEY",
 	"GITHUB_APP_PRIVATE_KEY",
 	"E2E_GITHUB_APP_PRIVATE_KEY_PATH",
 	"GITHUB_APP_PRIVATE_KEY_PATH",
-]);
+] as const;
+const CODEX_E2E_LINEAR_RECOVERY_KEYS = ["LINEAR_API_KEY"] as const;
 
 export type CodexE2EEnvRecoveryStatus =
 	| "not_needed"
@@ -139,6 +145,66 @@ function parseCodexEnvLine(line: string): [string, string] | null {
 	return [name, value];
 }
 
+function getRecoveryValue(
+	envValues: ReadonlyMap<string, string>,
+	names: readonly string[],
+): [string, string] | null {
+	for (const name of names) {
+		const value = envValues.get(name)?.trim();
+		if (value) {
+			return [name, value];
+		}
+	}
+	return null;
+}
+
+function getCompleteGitHubAppRecoveryValues(
+	envValues: ReadonlyMap<string, string>,
+): Array<[string, string]> {
+	const appId = getRecoveryValue(
+		envValues,
+		CODEX_E2E_GITHUB_APP_ID_RECOVERY_KEYS,
+	);
+	const installationId = getRecoveryValue(
+		envValues,
+		CODEX_E2E_GITHUB_APP_INSTALLATION_RECOVERY_KEYS,
+	);
+	const privateKey = getRecoveryValue(
+		envValues,
+		CODEX_E2E_GITHUB_APP_PRIVATE_KEY_RECOVERY_KEYS,
+	);
+	return appId && installationId && privateKey
+		? [appId, installationId, privateKey]
+		: [];
+}
+
+function getCodexE2EEnvRecoveryValues(
+	envValues: ReadonlyMap<string, string>,
+	missingBefore: readonly string[],
+): Array<[string, string]> {
+	const recoveryValues: Array<[string, string]> = [];
+	if (
+		missingBefore.includes(
+			"GITHUB_PERSONAL_ACCESS_TOKEN/GitHub App credentials",
+		)
+	) {
+		const pat = getRecoveryValue(envValues, CODEX_E2E_GITHUB_PAT_RECOVERY_KEYS);
+		recoveryValues.push(
+			...(pat ? [pat] : getCompleteGitHubAppRecoveryValues(envValues)),
+		);
+	}
+	if (missingBefore.includes("LINEAR_API_KEY")) {
+		const linearToken = getRecoveryValue(
+			envValues,
+			CODEX_E2E_LINEAR_RECOVERY_KEYS,
+		);
+		if (linearToken) {
+			recoveryValues.push(linearToken);
+		}
+	}
+	return recoveryValues;
+}
+
 export function loadCodexEnvForE2E(
 	envFilePath = DEFAULT_CODEX_ENV_FILE,
 ): CodexE2EEnvRecoveryResult {
@@ -208,16 +274,21 @@ export function loadCodexEnvForE2E(
 		};
 	}
 
-	const loadedNames: string[] = [];
+	const envValues = new Map<string, string>();
 	for (const line of content.split(/\r?\n/)) {
 		const parsed = parseCodexEnvLine(line);
 		if (!parsed) {
 			continue;
 		}
 		const [name, value] = parsed;
-		if (!CODEX_E2E_ENV_RECOVERY_KEYS.has(name)) {
-			continue;
-		}
+		envValues.set(name, value);
+	}
+
+	const loadedNames: string[] = [];
+	for (const [name, value] of getCodexE2EEnvRecoveryValues(
+		envValues,
+		missingBefore,
+	)) {
 		if (!process.env[name]?.trim() && value.trim()) {
 			process.env[name] = value;
 			loadedNames.push(name);
