@@ -27,21 +27,21 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Parent issue        | JSC-363                                                            |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`       |
 | Current branch      | `main` pulled, tracker refresh branch active                       |
-| Local main head     | `287a67c0f81c7f2c31d96e5c7bb7d00dfaac2e64`                         |
-| Origin main head    | `287a67c0f81c7f2c31d96e5c7bb7d00dfaac2e64`                         |
-| Main baseline       | `287a67c0f81c7f2c31d96e5c7bb7d00dfaac2e64`                         |
+| Local main head     | `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`                         |
+| Origin main head    | `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`                         |
+| Main baseline       | `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`                         |
 | Active route count  | 0                                                                  |
 | Active route        | none                                                               |
-| Last closed route   | PR #400 merged                                                     |
-| Current route       | post-PR400 route truth refresh                                     |
+| Last closed route   | PR #401 merged                                                     |
+| Current route       | post-PR401 route truth refresh                                     |
 | Current slice       | Audit remaining goal/spec/backlog obligations from current main    |
 | Feature work status | No next feature slice started                                      |
 
 ## Active Route
 
-No JSC-363 PR repair route is active after PR #400 merged and local `main`
-was pulled to `287a67c0f81c7f2c31d96e5c7bb7d00dfaac2e64`. This tracker
-refresh closes the post-PR399 tracker route and keeps the remaining
+No JSC-363 PR repair route is active after PR #401 merged and local `main`
+was pulled to `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`. This tracker
+refresh closes the post-PR400 tracker route and keeps the remaining
 closeout/backlog audit queued. It does not claim Linear field-text currency,
 root-hygiene proof, documentation accuracy, Judge/PM readiness, release
 readiness, or parent-goal completion.
@@ -76,6 +76,13 @@ Current evidence:
 - Live GitHub reports PR #400 merged at `2026-06-11T04:17:05Z` from submitted
   head `7cfcaadb34a2f86c142a39974117704e0ebad951` as squash merge commit
   `287a67c0f81c7f2c31d96e5c7bb7d00dfaac2e64`; repo-owned CircleCI,
+  aggregate `pr-pipeline`, aggregate `security-scan`, Socket, CodeRabbit,
+  and review-thread checks passed or resolved before merge. The external
+  `security/snyk (jscraik)` GitHub App quota/error lane remains owner-waived
+  only for that external app status.
+- Live GitHub reports PR #401 merged at `2026-06-11T04:49:40Z` from submitted
+  head `c357007368015a161a3ee51a91b90e6bc83f0999` as squash merge commit
+  `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`; repo-owned CircleCI,
   aggregate `pr-pipeline`, aggregate `security-scan`, Socket, CodeRabbit,
   and review-thread checks passed or resolved before merge. The external
   `security/snyk (jscraik)` GitHub App quota/error lane remains owner-waived

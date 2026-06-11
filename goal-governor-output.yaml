@@ -1,112 +1,37 @@
-schema_version: 1
 mode: continue
 goal_path: docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md
-native_goal_status: unknown
-board_status: valid
-next_action: unblock_linear_access_or_get_owner_classification
-interpreted_objective: >
-  Continue the JSC-363 Goal Governor route after PR #385 merge pullback,
-  preserving lane separation and keeping the Linear field-text decision as the
-  only selected next bounded slice.
-native_blocker_audit:
-  gate_met: false
-  blocker_class: linear_access_or_owner_classification_required
-  worker_must_pause: true
-  work_should_pause: true
-  reason: >
-    PR #385 is merged and local main is pulled to
-    5452ce126acabdd5e921c6bed59e23d70dbe4b79. No JSC-363 PR lane is active.
-    The Linear field-text decision cannot proceed in this session because
-    harness linear prepare and triage fail without LINEAR_API_KEY, and
-    ~/.codex/.env is a FIFO rather than a safely sourceable regular env file.
+board_health:
+  status: valid
+  evidence:
+    - command: "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
+      outcome: "pass after this output file was included in the final changed-file set"
+native_reconciliation:
+  native_goal_id: null
+  native_status: unknown
+  source: "state.yaml native_goal_id is null"
 truth_lanes:
-  local_validation: pass
-  generated_artifacts: pass
-  remote_pr_checks: pass_for_pr385_before_merge_except_owner_waived_external_snyk_quota
-  review_threads: zero_resolved_threads_for_pr385_before_merge
-  tracker_state: no_active_pr_lane_linear_access_blocked
-  merge_readiness: no_active_pr_lane
-  tracker_state_evidence: >
-    PR #385 merged from submitted head
-    b6951de3a5d8627c80b78cc911c10d526dd4e24b as squash merge commit
-    5452ce126acabdd5e921c6bed59e23d70dbe4b79 after repo-owned checks passed,
-    CodeRabbit passed, review threads were resolved, and post-merge
-    audit-freshness, goal-board, and Kanban validators passed on current main.
-    The external Snyk GitHub App private-test quota/status lane remains an
-    owner-waived external status lane only.
-continuation_gate:
-  queued_user_input: absent
-  pending_work: present
-  decision: resolve_linear_access_or_owner_classification
-  reason: >
-    The tracker now closes the post-PR384 blocker-refresh route and selects
-    Linear field-text decision as the next bounded slice. Linear field-text
-    currency remains unclaimed until live Linear is updated or Jamie records an
-    explicit owner classification.
-  read_order:
-    - read goal.md and state.yaml first
-    - receipts.jsonl
-    - notes/execution-tracker.md
-validation_evidence:
-  - command: "gh pr view 385 --repo jscraik/coding-harness --json number,state,mergeCommit,mergedAt,headRefOid,url"
-    outcome: pass
-    note: "PR #385 is MERGED at submitted head b6951de3a5d8627c80b78cc911c10d526dd4e24b with squash merge 5452ce126acabdd5e921c6bed59e23d70dbe4b79."
-  - command: "git checkout main && git pull --ff-only origin main"
-    outcome: pass
-    note: "Local main fast-forwarded to 5452ce126acabdd5e921c6bed59e23d70dbe4b79 after PR #385 merge."
-  - command: "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo ."
-    outcome: pass
-    note: "Post-merge current-main audit freshness passed after PR #385 pullback."
-  - command: "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
-    outcome: pass
-    note: "Post-merge current-main goal board passed after PR #385 pullback."
-  - command: "node scripts/validate-goal-kanban-script.cjs .harness/implementation-notes/goal-kanban-board.html"
-    outcome: pass
-    note: "Post-merge current-main Kanban script passed after PR #385 pullback."
-claim_ledger:
-  - claim: "PR #385 is merged into current main."
-    classification: verified
-    evidence_surface:
-      - gh pr view 385 --repo jscraik/coding-harness --json number,state,mergeCommit,mergedAt,headRefOid,url
-      - git pull --ff-only origin main
-    remaining_uncertainty: "None for PR #385 merge state; this does not prove future PR, CI, Linear, or final closeout state."
-  - claim: "The goal-board validator now rejects stale merged-PR route text."
-    classification: implemented_in_current_branch
-    evidence_surface:
-      - scripts/check-goal-board.py
-      - src/dev/check-goal-board-script.test.ts
-    remaining_uncertainty: "This branch still needs validation, PR review, merge, and pullback before the guard is current-main truth."
-  - claim: "No JSC-363 PR lane is active; Linear field-text decision remains next but blocked."
-    classification: verified_from_repo_tracker
-    evidence_surface:
-      - docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml
-      - docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md
-      - .harness/implementation-notes/goal-kanban-board.html
-    remaining_uncertainty: "Live Linear fields still need refresh or owner classification."
-evidence_surface:
-  current_goal: docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md
-  current_state: docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml
-  current_tracker: docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md
-  current_kanban: .harness/implementation-notes/goal-kanban-board.html
-  current_receipts: docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl
-  durable_output: goal-governor-output.yaml
-selected_next_slice:
-  lifecycle_unit: linear-field-text-decision
-  objective: >
-    Refresh JSC-363 Linear title/description/comments if authorized, or record
-    an explicit owner classification that the stale Phase 1 field text is
-    historical while the repo tracker remains canonical.
-  boundaries:
-    - do not reopen runtime-card unless current-main regression is found
-    - do not reopen delivery-truth unless current-main regression is found
-    - do not claim Judge/PM readiness or parent-goal completion
-prohibited_actions:
-  - do not claim linear_fields_current before live Linear refresh or owner classification
-  - do not start broader closeout work before Linear access or owner classification is available
-  - do not treat external Snyk quota waiver as external Snyk success
+  local_git:
+    status: current_main_synced_before_branch
+    evidence: "local main and origin/main were fdcd577a77fb660b9b71e058bcbd33fff06c67bf before codex/jsc-363-post-pr401-tracker-refresh was created"
+  github_pr:
+    status: zero_open_prs_after_pr401_merge
+    evidence: "gh pr list returned [] and gh pr view 401 returned MERGED at 2026-06-11T04:49:40Z"
+  ci:
+    status: pr401_repo_owned_lanes_passed_before_merge
+    evidence: "GitHub PR #401 status rollup showed repo-owned CircleCI lanes, pr-pipeline, security-scan, CodeRabbit, and Socket success; external security/snyk app remained owner-waived only"
+  tracker:
+    status: refreshed_to_r463
+    evidence: "state.yaml, goal.md, execution-tracker.md, active-artifacts.md, kanban HTML, and receipts.jsonl now point at R463/current main"
+next_action:
+  lifecycle_unit: remaining-closeout-backlog-audit
+  instruction: "Run the remaining goal/spec/backlog audit from current main and state the exact next bounded slice or blocker before any feature work resumes."
+non_claims:
+  - linear_fields_current_beyond_comment
+  - review_external_root_hygiene_complete
+  - documentation_accuracy_complete
+  - judge_pm_ready
+  - release_ready
+  - parent_goal_complete
 remaining_uncertainty:
-  - "Live Linear field text has not yet been refreshed because Linear MCP tools are unavailable and LINEAR_API_KEY is absent from the active environment."
-  - "Review/external/root-hygiene proof, documentation accuracy, PU-015 Judge/PM audit, and final completion audit remain open."
-risks:
-  - "A route-refresh PR can become context churn if it is not immediately followed by the selected bounded slice."
-  - "Linear comments, Linear issue fields, repo receipts, and Kanban state remain separate truth lanes."
+  - "Goal Governor output itself must be included in the final validator pass before PR creation."
+  - "External security/snyk GitHub App remains an owner-waived external status lane only."
