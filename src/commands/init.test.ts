@@ -2048,6 +2048,13 @@ describe("runInit", () => {
 			expect(semgrepBootstrap).toContain(
 				'echo "Error: python3 is required to install Semgrep." >&2',
 			);
+			expect(semgrepBootstrap).toContain("resolve_semgrep_python_cache_tag()");
+			expect(semgrepBootstrap).toContain(
+				'SEMGREP_PYTHON_CACHE_TAG="python-unavailable"',
+			);
+			expect(semgrepBootstrap).toContain("local probe_pid=$!");
+			expect(semgrepBootstrap).toContain("local watchdog_pid=$!");
+			expect(semgrepBootstrap).toContain('kill -9 "$probe_pid"');
 			expect(semgrepBootstrap).toContain(
 				'SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}-${SEMGREP_PYTHON_CACHE_TAG}"',
 			);

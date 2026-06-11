@@ -43,6 +43,13 @@ describe("Semgrep scaffold templates", () => {
 		);
 		expect(bootstrap).toContain("set -euo pipefail");
 		expect(bootstrap).toContain("semgrep_version_usable()");
+		expect(bootstrap).toContain("resolve_semgrep_python_cache_tag()");
+		expect(bootstrap).toContain(
+			'SEMGREP_PYTHON_CACHE_TAG="python-unavailable"',
+		);
+		expect(bootstrap).toContain("local probe_pid=$!");
+		expect(bootstrap).toContain("local watchdog_pid=$!");
+		expect(bootstrap).toContain('kill -9 "$probe_pid"');
 		expect(bootstrap).toContain("install_semgrep_with_site_packages()");
 		expect(rules).toContain("ts-no-eval");
 		expect(rules).toContain("ts-no-shell-true");

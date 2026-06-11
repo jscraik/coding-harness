@@ -25,11 +25,19 @@ HOST_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 SEMGREP_RUNTIME_CACHE_ROOT="${SEMGREP_RUNTIME_CACHE_ROOT:-$SEMGREP_STATE_ROOT/cache}"
 SEMGREP_RUNTIME_USER_HOME="${SEMGREP_USER_HOME:-$SEMGREP_STATE_ROOT/home}"
 SEMGREP_RUNTIME_LOG_FILE="${SEMGREP_LOG_FILE:-$SEMGREP_STATE_ROOT/semgrep.log}"
-SEMGREP_PYTHON_CACHE_TAG="${SEMGREP_PYTHON_CACHE_TAG:-$(python3 - <<'PY'
+resolve_semgrep_python_cache_tag() {
+  python3 - <<'PY'
 import sys
 print(f"py{sys.version_info.major}.{sys.version_info.minor}")
 PY
-)}"
+}
+if [[ -z "${SEMGREP_PYTHON_CACHE_TAG:-}" ]]; then
+  if command -v python3 >/dev/null 2>&1; then
+    SEMGREP_PYTHON_CACHE_TAG="$(resolve_semgrep_python_cache_tag)"
+  else
+    SEMGREP_PYTHON_CACHE_TAG="python-unavailable"
+  fi
+fi
 
 if [[ -z "${SSL_CERT_FILE:-}" ]]; then
   for cert_path in /etc/ssl/cert.pem /etc/ssl/certs/ca-certificates.crt; do
@@ -57,7 +65,24 @@ semgrep_probe_command() {
     gtimeout "$SEMGREP_PROBE_TIMEOUT_SECONDS" "$@"
     return
   fi
-  "$@"
+  "$@" &
+  local probe_pid=$!
+  (
+    sleep "$SEMGREP_PROBE_TIMEOUT_SECONDS"
+    kill "$probe_pid" >/dev/null 2>&1 || true
+    sleep 1
+    kill -9 "$probe_pid" >/dev/null 2>&1 || true
+  ) &
+  local watchdog_pid=$!
+  local probe_status=0
+  if wait "$probe_pid"; then
+    probe_status=0
+  else
+    probe_status=$?
+  fi
+  kill "$watchdog_pid" >/dev/null 2>&1 || true
+  wait "$watchdog_pid" >/dev/null 2>&1 || true
+  return "$probe_status"
 }
 
 resolve_semgrep_bin() {
