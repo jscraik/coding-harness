@@ -24,6 +24,8 @@ import {
 	validateE2EEnv,
 } from "./utils/env.js";
 
+const CODEX_ENV_RECOVERY_LABEL = "~/.codex/.env";
+
 export interface RunOptions {
 	testPattern?: string;
 	bail?: boolean;
@@ -382,7 +384,7 @@ async function validateEnvironment(
 		if (envRecovery.status === "loaded") {
 			console.info(
 				"Env-backed validation recovery loaded variable names from " +
-					envRecovery.path +
+					CODEX_ENV_RECOVERY_LABEL +
 					": " +
 					envRecovery.loadedNames.join(", ") +
 					"\n",
@@ -401,7 +403,11 @@ async function validateEnvironment(
 		console.error("❌ Environment validation failed:\n");
 		if (envRecovery?.status === "blocked_env_fifo_timeout") {
 			console.error(
-				`Approved env-backed validation recovery path ${envRecovery.path} is a FIFO/no-writer surface in this session; credential values were not read or printed.\n`,
+				`Approved env-backed validation recovery path ${CODEX_ENV_RECOVERY_LABEL} is blocked_env_fifo_timeout: a FIFO/no-writer surface in this session; credential values were not read or printed. Switch to a regular env surface or use the approved env-recovery lane before rerunning.\n`,
+			);
+		} else if (envRecovery && envRecovery.status !== "not_needed") {
+			console.error(
+				`Env-backed validation recovery checked ${CODEX_ENV_RECOVERY_LABEL} first and returned ${envRecovery.status}; credential values were not printed.\n`,
 			);
 		}
 		console.error(error instanceof Error ? error.message : String(error));

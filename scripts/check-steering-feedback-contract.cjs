@@ -76,7 +76,7 @@ const CLOSEOUT_COMPLETION_PATTERN =
 const ENV_BACKED_VALIDATION_PATTERN =
 	/(Env-Backed Validation Recovery|env-backed validation recovery|~\/\.codex\/\.env|set -a; source ~\/\.codex\/\.env; set \+a|inspect.*required.*variable names.*without printing values|missing credential.*env-loaded rerun)/i;
 const ENV_FIFO_TIMEOUT_PATTERN =
-	/(blocked_env_fifo_timeout|regular readable file|FIFO\/no-writer|FIFO without a writer|do not source it)/i;
+	/blocked_env_fifo_timeout[\s\S]{0,260}(FIFO\/no-writer|FIFO without a writer|do not source it|regular env surface|regular readable file)|(FIFO\/no-writer|FIFO without a writer|do not source it)[\s\S]{0,260}blocked_env_fifo_timeout/i;
 const CIRCLECI_ENV_API_TRIAGE_PATTERN =
 	/(CircleCI API|CircleCI log|CircleCI job)[\s\S]{0,260}(~\/\.codex\/\.env|set -a; source ~\/\.codex\/\.env; set \+a|CIRCLECI_TOKEN|CIRCLE_TOKEN|CIRCLE_API_TOKEN|Circle-Token|bounded network call|--max-time)/i;
 const SAFE_PR_BODY_FILE_HANDOFF_PATTERN =

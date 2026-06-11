@@ -32,6 +32,10 @@ prepend_standard_tool_paths() {
 
 prepend_standard_tool_paths
 
+escape_regex_literal() {
+	printf '%s' "$1" | sed 's/[][(){}.^$*+?|\\]/\\&/g'
+}
+
 if [[ "${BASH_VERSINFO[0]:-0}" -lt 4 && -z "${CHECK_ENVIRONMENT_REEXECED:-}" ]]; then
 	if [[ -x "/opt/homebrew/bin/bash" ]]; then
 		export CHECK_ENVIRONMENT_REEXECED=1
@@ -208,6 +212,7 @@ fi
 	required_prek_hooks=("pre-commit|Pre-commit|bash scripts/hook-pre-commit.sh|system|false|pre-commit" "pre-push|Pre-push|bash scripts/hook-pre-push.sh|system|false|pre-push")
 	for hook_spec in "${required_prek_hooks[@]}"; do
 		IFS='|' read -r hook_name hook_display_name hook_command hook_language hook_pass_filenames hook_stages <<< "$hook_spec"
+		hook_command_pattern="$(escape_regex_literal "$hook_command")"
 		if ! rg -q "^[[:space:]]*id[[:space:]]*=[[:space:]]*\"${hook_name}\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
 			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
@@ -216,7 +221,7 @@ fi
 			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if ! rg -q "^[[:space:]]*entry[[:space:]]*=[[:space:]]*\"${hook_command}\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
+		if ! rg -q "^[[:space:]]*entry[[:space:]]*=[[:space:]]*\"${hook_command_pattern}\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
 			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi

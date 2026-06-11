@@ -411,16 +411,16 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness status">Active route: Linear field-text blocker</div>
+      <div class="source-chip" aria-label="Source freshness status">Active route: Backlog audit after Linear sync</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>Linear decision blocked</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #393</strong></div>
+      <div class="metric"><span>Goal status</span><strong>Backlog audit next</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #394</strong></div>
       <div class="metric"><span>Current PR</span><strong>No open PR</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Projection merged</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
-      <div class="metric"><span>Linear tracker</span><strong>Field text unclaimed</strong></div>
+      <div class="metric"><span>Linear tracker</span><strong>Comment aligned</strong></div>
       <div class="metric"><span>Judge / PM</span><strong>Not ready</strong></div>
       <div class="metric"><span>Claim boundary</span><strong>Completion unclaimed</strong></div>
       <div class="metric"><span>Source files</span><strong>goal.md, state.yaml, receipts.jsonl, Kanban</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated after PR #393 merged into <code>main</code> at <code>566a0a78286f5a1999eee4c332256475d4f19508</code> from submitted head <code>e1adee25ab692d3a554f1ae318b816762c3d045c</code>. PR #393 merged the source-tracked post-PR392 route refresh; PR #391 remains the merged <code>harness next</code> repair that preserves empty clean <code>git status --short --untracked-files=all</code> output as valid clean-state evidence. The active route is now the blocked Linear field-text decision or owner classification lane. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated after PR #394 merged into <code>main</code> at <code>9014b416f170ef6069416aa2d356845232cf2de1</code> from submitted head <code>8b98cc6299d566ccf3b472781ee6def606c9ea79</code>. PR #394 merged the source-tracked post-PR393 route refresh; Linear JSC-363 comment <code>81cfdd41-ff0e-4df1-b884-c01789e30a50</code> records repo-truth alignment while preserving the Phase 1 issue field text as historical scope context. The active route is now the remaining closeout/backlog audit from current main. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -819,24 +819,24 @@
       {
         id: "current-linear-truth",
         lane: "linear-truth",
-        title: "Outstanding blocked slice: Linear field-text decision",
+        title: "Linear sync: Repo-truth comment recorded",
         status: "blocked",
         tags: ["Linear", "JSC-363", "field text"],
-        summary: "After PR #393 merged and main was pulled back, this is the active blocked lane: refresh Linear JSC-363 field text if authorized or record an owner classification that stale Phase 1 wording is historical while the repo tracker remains canonical. It is blocked in this session because usable Linear credentials/tools are unavailable.",
-        evidence: ["Linear JSC-363 status -> not refreshed in this session", "Pre-PR372 route-truth comment -> 34a50024-24be-4853-af6e-3219cbc0d845", "Current main -> 566a0a78286f5a1999eee4c332256475d4f19508", "PR #393 -> MERGED", "harness linear prepare --issue JSC-363 --json -> failed missing LINEAR_API_KEY", "harness linear triage --dry-run --json -> failed missing LINEAR_API_KEY", "~/.codex/.env -> unavailable as a usable token source in this thread"],
-        next: "Provide a usable Linear tool/token path or owner-classify the stale Linear field text as historical while the repo tracker remains canonical; then record the decision before broader closeout work.",
-        risk: "Tracker comments, issue fields, and goal receipts are distinct truth surfaces; one cannot silently stand in for the others."
+        summary: "After PR #394 merged and main was synced, Linear JSC-363 was fetched through the Linear MCP tool and a current repo-truth comment was recorded. The original Phase 1 issue title/description remain historical scope context, not parent-goal completion evidence; the local env recovery surface was classified as blocked_env_fifo_timeout.",
+        evidence: ["Linear JSC-363 status -> In Review", "Linear comment -> 81cfdd41-ff0e-4df1-b884-c01789e30a50", "Current main -> 9014b416f170ef6069416aa2d356845232cf2de1", "PR #394 -> MERGED", "PR #394 attachment -> present on JSC-363", "<REDACTED_HOME_PATH>/.codex/.env -> blocked_env_fifo_timeout, but Linear MCP tool was callable"],
+        next: "Run the remaining closeout/backlog audit from current main, keeping Linear comments, issue fields, repo tracker truth, and final completion evidence separate.",
+        risk: "The Linear comment aligns repo-truth context only. It does not prove documentation accuracy, root hygiene, Judge/PM readiness, or parent-goal completion."
       },
       {
-        id: "post-pr393-tracker-refresh",
+        id: "post-pr394-tracker-refresh",
         lane: "completed",
-        title: "PR #393: Post-PR392 route refresh merged",
+        title: "PR #394: Post-PR393 route refresh merged",
         status: "done",
-        tags: ["tracker", "post-merge", "R454"],
-        summary: "PR #393 merged the source-tracked post-PR392 route refresh and local main was pulled to the merge commit. The board now routes to the blocked Linear field-text decision lane.",
-        evidence: ["PR #393 -> MERGED at 2026-06-09T11:29:52Z", "Submitted head -> e1adee25ab692d3a554f1ae318b816762c3d045c", "Merge commit -> 566a0a78286f5a1999eee4c332256475d4f19508", "Repo-owned CircleCI -> pass", "CodeRabbit status -> pass", "Review comments -> none", "External Snyk GitHub App -> pass on PR #393"],
-        next: "Use as merged route provenance only. Continue through the blocked Linear field-text decision or owner classification lane.",
-        risk: "This refresh proves route-truth alignment only. It does not prove Linear field text, root hygiene, documentation accuracy, Judge/PM readiness, or parent-goal completion."
+        tags: ["tracker", "post-merge", "R455"],
+        summary: "PR #394 merged the source-tracked post-PR393 route refresh and local main was synced to the merge commit by ref update. The board now routes to the remaining closeout/backlog audit.",
+        evidence: ["PR #394 -> MERGED at 2026-06-09T12:09:12Z", "Submitted head -> 8b98cc6299d566ccf3b472781ee6def606c9ea79", "Merge commit -> 9014b416f170ef6069416aa2d356845232cf2de1", "Repo-owned CircleCI -> pass", "CodeRabbit status -> pass", "Snyk -> pass on PR #394"],
+        next: "Use as merged route provenance only. Continue through the remaining closeout/backlog audit.",
+        risk: "This refresh proves route-truth alignment only. It does not prove root hygiene, documentation accuracy, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "post-pr389-tracker-refresh-pr390",

@@ -45,6 +45,18 @@ export interface GitHubAppE2EEnvStatus {
 }
 
 export const DEFAULT_CODEX_ENV_FILE = `${homedir()}/.codex/.env`;
+const CODEX_E2E_ENV_RECOVERY_KEYS = new Set([
+	"GITHUB_PERSONAL_ACCESS_TOKEN",
+	"LINEAR_API_KEY",
+	"E2E_GITHUB_APP_ID",
+	"GITHUB_APP_ID",
+	"E2E_GITHUB_APP_INSTALLATION_ID",
+	"GITHUB_APP_INSTALLATION_ID",
+	"E2E_GITHUB_APP_PRIVATE_KEY",
+	"GITHUB_APP_PRIVATE_KEY",
+	"E2E_GITHUB_APP_PRIVATE_KEY_PATH",
+	"GITHUB_APP_PRIVATE_KEY_PATH",
+]);
 
 export type CodexE2EEnvRecoveryStatus =
 	| "not_needed"
@@ -143,7 +155,22 @@ export function loadCodexEnvForE2E(
 	let envStat: Stats;
 	try {
 		envStat = statSync(envFilePath);
-	} catch {
+	} catch (error) {
+		const errorCode =
+			error && typeof error === "object" && "code" in error
+				? (error as { code?: unknown }).code
+				: undefined;
+		if (errorCode === "EACCES" || errorCode === "EPERM") {
+			return {
+				status: "unreadable",
+				path: envFilePath,
+				loadedNames: [],
+				missingNames: missingBefore,
+			};
+		}
+		if (errorCode !== "ENOENT") {
+			throw error;
+		}
 		return {
 			status: "missing",
 			path: envFilePath,
@@ -188,6 +215,9 @@ export function loadCodexEnvForE2E(
 			continue;
 		}
 		const [name, value] = parsed;
+		if (!CODEX_E2E_ENV_RECOVERY_KEYS.has(name)) {
+			continue;
+		}
 		if (!process.env[name]?.trim() && value.trim()) {
 			process.env[name] = value;
 			loadedNames.push(name);

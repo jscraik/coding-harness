@@ -27,29 +27,40 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Parent issue        | JSC-363                                                          |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`     |
 | Current branch      | `main`                                                           |
-| Local main head     | `566a0a78286f5a1999eee4c332256475d4f19508`                       |
-| Origin main head    | `566a0a78286f5a1999eee4c332256475d4f19508`                       |
-| Main baseline       | `566a0a78286f5a1999eee4c332256475d4f19508`                       |
+| Local main head     | `9014b416f170ef6069416aa2d356845232cf2de1`                       |
+| Origin main head    | `9014b416f170ef6069416aa2d356845232cf2de1`                       |
+| Main baseline       | `9014b416f170ef6069416aa2d356845232cf2de1`                       |
 | Active route count  | 1                                                                |
-| Active route        | Linear field-text decision blocker                               |
-| Last closed route   | PR #393 merged                                                   |
-| Current route       | Linear field-text decision or owner classification                |
-| Current slice       | Resolve or explicitly classify stale Linear field text            |
+| Active route        | Post-PR394 tracker and Linear comment alignment                  |
+| Last closed route   | PR #394 merged                                                   |
+| Current route       | Remaining closeout/backlog audit                                 |
+| Current slice       | Audit remaining unclaimed proof lanes                            |
 | Feature work status | No next feature slice started                                    |
 
 ## Active Route
 
-PR #393 is merged and local `main` is synced with `origin/main` at
-`566a0a78286f5a1999eee4c332256475d4f19508`; that route is closed
-provenance. The active route is now the blocked Linear field-text decision or
-owner classification lane. This does not claim Linear field-text currency,
-root-hygiene proof, documentation accuracy, Judge/PM readiness, release
-readiness, or parent-goal completion.
+PR #394 is merged and local `main` is synced with `origin/main` at
+`9014b416f170ef6069416aa2d356845232cf2de1` by ref update; that route is
+closed provenance. Linear JSC-363 was reachable through the Linear MCP tool and
+comment `81cfdd41-ff0e-4df1-b884-c01789e30a50` records the repo-truth
+classification. This does not claim Linear field-text currency beyond that
+comment, root-hygiene proof, documentation accuracy, Judge/PM readiness,
+release readiness, or parent-goal completion.
 
 Current evidence:
 
 - Local `main` and `origin/main` are synced at
-  `566a0a78286f5a1999eee4c332256475d4f19508` after PR #393 merge pullback.
+  `9014b416f170ef6069416aa2d356845232cf2de1` after PR #394 merge pullback by
+  local ref update.
+- Live GitHub reports PR #394 merged at `2026-06-09T12:09:12Z` from submitted
+  head `8b98cc6299d566ccf3b472781ee6def606c9ea79` as squash merge commit
+  `9014b416f170ef6069416aa2d356845232cf2de1`; repo-owned CircleCI,
+  aggregate `pr-pipeline`, aggregate `security-scan`, Socket, CodeRabbit,
+  and Snyk status passed before merge.
+- Linear JSC-363 fetch returned status `In Review`, Phase 1 title/description
+  text, and PR #394 attachment; comment
+  `81cfdd41-ff0e-4df1-b884-c01789e30a50` records the current repo-truth
+  classification without claiming parent-goal completion.
 - Live GitHub reports PR #393 merged at `2026-06-09T11:29:52Z` from submitted
   head `e1adee25ab692d3a554f1ae318b816762c3d045c` as squash merge commit
   `566a0a78286f5a1999eee4c332256475d4f19508`; repo-owned CircleCI,
@@ -254,7 +265,8 @@ Current slice boundary:
   text.
 - Current blocker: exact `pnpm test:deep` completion is blocked at the E2E tail
   because GitHub and Linear credentials are not visible in the process
-  environment and `~/.codex/.env` is a FIFO in this sandbox. Focused tests and
+  environment and `<REDACTED_HOME_PATH>/.codex/.env` is
+  `blocked_env_fifo_timeout` in this sandbox. Focused tests and
   broad local `pnpm check` pass.
 
 Non-claims:
@@ -304,21 +316,21 @@ Use this payload only after Linear access is available or an owner explicitly
 approves posting the blocker classification for JSC-363:
 
 ```md
-Refreshed JSC-363 current-main route truth after PR #384 merge and recorded
-the post-PR384 Linear field-text access blocker.
+Refreshed JSC-363 current-main route truth after PR #393 merge and recorded
+the post-PR393 Linear field-text access blocker.
 
 Current truth:
 
-- Active route lane: post-PR384 Linear blocker refresh.
-- Latest merged route: PR #384.
-- Local main head: 96846c31b7d3b1bade77b1145543ab1c92c797ae.
-- Origin main head: 96846c31b7d3b1bade77b1145543ab1c92c797ae.
-- Repo-owned required checks for PR #384 passed before merge.
+- Active route lane: post-PR393 Linear blocker refresh.
+- Latest merged route: PR #393.
+- Local main head: 566a0a78286f5a1999eee4c332256475d4f19508.
+- Origin main head: 566a0a78286f5a1999eee4c332256475d4f19508.
+- Repo-owned required checks for PR #393 passed before merge.
 - PU-013 runtime cockpit integration proof is merged and pulled back to local `main`.
-- PR #384 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
+- PR #393 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
 - No production code patch was required; current main already projects Codex runtime evidence into `runtime-card` and consumes it narrowly through `harness next`.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
-- Linear JSC-363 was refreshed with pre-PR372 post-merge route-truth comment `34a50024-24be-4853-af6e-3219cbc0d845`; post-PR384 field-text currency remains unclaimed because `harness linear prepare --issue JSC-363 --json` and `harness linear triage --dry-run --json` fail without `LINEAR_API_KEY` in this session.
+- Linear JSC-363 was refreshed with pre-PR372 post-merge route-truth comment `34a50024-24be-4853-af6e-3219cbc0d845`; post-PR393 field-text currency remains unclaimed because `harness linear prepare --issue JSC-363 --json` and `harness linear triage --dry-run --json` fail without `LINEAR_API_KEY` in this session.
 
 Restart rule:
 The next selected slice is the Linear field-text decision. It starts only after
