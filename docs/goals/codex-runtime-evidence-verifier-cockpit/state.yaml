@@ -31,30 +31,30 @@ thin_execution_tracker:
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
     kind: "current_main_tracker_refresh"
-    status: "post_pr397_route_truth_refreshed"
-    blocker: "No open JSC-363 PR is active after PR #396 and PR #397 merged and local main was pulled to fa67dd5268fbff1fc785a098825aebcc1e5cf3ff. The next bounded lane is the remaining closeout/backlog audit from current main. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, Linear field-text currency beyond the repo-truth comment, and parent-goal completion remain unclaimed."
+    status: "post_pr398_route_truth_refreshed"
+    blocker: "No open JSC-363 PR is active after PR #398 merged and local main was pulled to 5ce54e9aad858789df6fd6361b679817d079d53e. The next bounded lane remains the remaining closeout/backlog audit from current main. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, Linear field-text currency beyond the repo-truth comment, and parent-goal completion remain unclaimed."
     active_branch: null
     active_pr: null
     active_pr_url: null
     active_pr_head_sha: null
-    last_merged_pr: 397
-    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/397"
-    last_merged_sha: "fa67dd5268fbff1fc785a098825aebcc1e5cf3ff"
-    last_merged_submitted_head_sha: "264b7ac105bb5d7a44ffe97b80e27f51ff857d3e"
-    last_merge_verified_at: "2026-06-11T02:23:34Z"
-    local_main_sha: "fa67dd5268fbff1fc785a098825aebcc1e5cf3ff"
-    origin_main_sha: "fa67dd5268fbff1fc785a098825aebcc1e5cf3ff"
+    last_merged_pr: 398
+    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/398"
+    last_merged_sha: "5ce54e9aad858789df6fd6361b679817d079d53e"
+    last_merged_submitted_head_sha: "fe8f2dc830fadd640e327db388e458721ebb9a1c"
+    last_merge_verified_at: "2026-06-11T03:04:26Z"
+    local_main_sha: "5ce54e9aad858789df6fd6361b679817d079d53e"
+    origin_main_sha: "5ce54e9aad858789df6fd6361b679817d079d53e"
     open_pr_count: 0
     open_prs: []
   queued_slice:
     lifecycle_unit: "remaining-closeout-backlog-audit"
     name: "audit remaining goal/spec/backlog obligations from current main"
-    status: "queued_after_pr397_pullback"
-    evidence_receipt: "R458"
+    status: "queued_after_pr398_pullback"
+    evidence_receipt: "R459"
   resume_gate:
     - "Do not start feature work until the remaining closeout/backlog audit states the exact next slice from current main and records any blocked obligations separately."
     - "Treat Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 as tracker-alignment evidence only, not field-text-current or completion evidence."
-    - "PR #396 and PR #397 are merged provenance; do not reopen their repair lanes unless a fresh current-main regression proves a new blocker."
+    - "PR #396, PR #397, and PR #398 are merged provenance; do not reopen their repair lanes unless a fresh current-main regression proves a new blocker."
     - "The next selected slice must preserve the one-PR-at-a-time route contract and must not claim Judge/PM readiness or parent-goal completion before the final audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
   review_artifacts:

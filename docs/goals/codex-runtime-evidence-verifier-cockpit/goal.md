@@ -43,18 +43,18 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-11 post-PR397 pullback tracker refresh. PR #366,
+Last updated during the 2026-06-11 post-PR398 pullback tracker refresh. PR #366,
 PR #367, PR #369, PR #370, PR #371, PR #372, PR #373, PR #374, PR #375,
 PR #376, PR #377, PR #378, PR #379, PR #380, PR #381, PR #382, PR #383,
 PR #384, PR #385, PR #386, PR #387, PR #388, PR #389, PR #390, PR #391,
 PR #392, PR #393, and PR #394 are historical route provenance. PR #394 is
 merged into `main` at `9014b416f170ef6069416aa2d356845232cf2de1`.
-PR #396 and PR #397 are also historical merged provenance.
+PR #396, PR #397, and PR #398 are also historical merged provenance.
 
 Current live route truth:
 
 - Local `main` and `origin/main` are synced at
-  `fa67dd5268fbff1fc785a098825aebcc1e5cf3ff` after PR #397 merged.
+  `5ce54e9aad858789df6fd6361b679817d079d53e` after PR #398 merged.
 - PR #396 merged the Prek hook leaf-adapter repair from submitted head
   `687a3ca9721bb19336fd24f6a8b91fb6488098fe` as squash merge commit
   `02245c5735add2f2990f0203a4dbd4708f72353a`; repo-owned CircleCI lanes,
@@ -64,6 +64,13 @@ Current live route truth:
 - PR #397 merged the hook review-regression proof from submitted head
   `264b7ac105bb5d7a44ffe97b80e27f51ff857d3e` as squash merge commit
   `fa67dd5268fbff1fc785a098825aebcc1e5cf3ff`.
+- PR #398 merged the post-PR397 route truth refresh from submitted head
+  `fe8f2dc830fadd640e327db388e458721ebb9a1c` as squash merge commit
+  `5ce54e9aad858789df6fd6361b679817d079d53e`; repo-owned CircleCI lanes,
+  aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, Socket,
+  and review-thread checks were successful or resolved before merge. The
+  external Snyk GitHub App quota/error lane remains owner-waived for that
+  external app status only.
 - Live GitHub reports no open PRs for this repository at this refresh point.
 - The next safe action is to run the remaining closeout/backlog audit from
   current `main`, state the exact next implementation slice or blocker, and
