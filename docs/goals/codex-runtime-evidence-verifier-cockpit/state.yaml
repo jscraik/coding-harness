@@ -203,9 +203,9 @@ current_slice_gate:
   next_required_handoff_steps:
     - "Use docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md as the thin restart tracker; keep old PR history as provenance, not active route work."
     - "Validate this current-main tracker refresh with receipts JSON parsing, audit freshness, goal-board validation, Kanban script validation, and git diff whitespace validation."
-    - "Use the pulled main checkout at 41ac068ae7c9e9425681a5d42358eaf120f24c04 as the route baseline for PU-015."
-    - "Linear JSC-363 has compact post-merge route truth via comment 34a50024-24be-4853-af6e-3219cbc0d845; do not claim field-text currency until the older Phase 1 title/description wording is owner-accepted or updated."
-    - "Treat PU-056 active-route runtime-card selection guard as merged and pulled back through PR #410; start PU-015 Judge/PM audit packet only after this post-PR410 tracker refresh validates and merges."
+    - "Use the pulled main checkout at aa020ee7deaef4974ee8c78761192e818416e906 as the route baseline for PU-015."
+    - "Linear JSC-363 has compact repo-truth route alignment via comment 81cfdd41-ff0e-4df1-b884-c01789e30a50; do not claim field-text currency until the older Phase 1 title/description wording is owner-accepted or updated."
+    - "Treat PU-056 active-route runtime-card selection guard as merged through PR #410 and the post-PR410 tracker refresh as merged through PR #411; start PU-015 Judge/PM audit packet only after the post-PR411 route refresh validates and merges."
     - "Treat receipt-backed merged JSC-363 route/foundation lanes through PR #371 as completed current-main evidence at 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856; do not reopen those PR lanes unless fresh GitHub or current-main validation shows a regression."
     - "Use receipt R379 as the validated post-PR #365 current-main route-tracker repair evidence for goal.md, state.yaml, receipts.jsonl, .harness/active-artifacts.md, and .harness/implementation-notes/goal-kanban-board.html; use R357 only as PU-012 intent-created evidence, not PU-012 completion evidence."
     - "Use the PU-012 intent review artifacts as the reviewed-intent gate: best-practices pass, agent-native pass, adversarial needs_changes, and adversarial rereview pass after the intent fix."

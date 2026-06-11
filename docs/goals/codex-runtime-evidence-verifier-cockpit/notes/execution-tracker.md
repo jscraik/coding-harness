@@ -135,18 +135,18 @@ claim/evidence/blocker records, not narrative diary entries.
 
 ## Resume Gate
 
-Judge/PM packet work may start only after this post-PR410 tracker refresh
+Judge/PM packet work may start only after the post-PR411 tracker refresh
 validates and merges. The packet must stop if any of these are false:
 
 - Local `main` and `origin/main` remain synced at
-  `41ac068ae7c9e9425681a5d42358eaf120f24c04`.
+  `aa020ee7deaef4974ee8c78761192e818416e906`.
 - Runtime-card on pulled current main returns `issueKey: "JSC-363"` with the
   JSC-363 active spec and plan.
 - Linear JSC-363 field-text currency is refreshed, owner-classified as not
   required, or recorded as an explicit blocker.
 - `goal.md`, `state.yaml`, `notes/execution-tracker.md`,
   `.harness/active-artifacts.md`, the tracker board, and `receipts.jsonl`
-  validate together after the post-PR410 refresh.
+  validate together after the post-PR411 refresh.
 - The Judge/PM packet records claim support, unsupported claims, stale evidence,
   and remaining risks without claiming parent-goal completion by itself.
 
@@ -156,24 +156,24 @@ Use this payload only after Linear access is available or an owner explicitly
 approves posting the blocker classification for JSC-363:
 
 ```md
-Refreshed JSC-363 current-main route truth after PR #410 merge.
+Refreshed JSC-363 current-main route truth after PR #411 merge.
 
 Current truth:
 
 - Active route lane: PU-015 Judge/PM audit packet preparation.
-- Latest merged route: PR #410.
-- Local main head: 41ac068ae7c9e9425681a5d42358eaf120f24c04.
-- Origin main head: 41ac068ae7c9e9425681a5d42358eaf120f24c04.
-- Current GitHub check rollup showed repo-owned required checks for PR #410 pass before merge.
+- Latest merged route: PR #411.
+- Local main head: aa020ee7deaef4974ee8c78761192e818416e906.
+- Origin main head: aa020ee7deaef4974ee8c78761192e818416e906.
+- Current GitHub check rollup showed repo-owned required checks for PR #411 pass before merge.
 - Runtime-card current-main output returns issueKey JSC-363 with the JSC-363 active spec and plan.
 - PU-013 runtime cockpit integration proof is merged and pulled back to local `main`.
-- PR #410 remains separate from Linear field-text currency, Judge/PM readiness, and parent goal completion claims.
+- PR #411 remains separate from Linear field-text currency, Judge/PM readiness, and parent goal completion claims.
 - PU-056 deterministic guard coverage is merged and pulled back.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
 - Linear JSC-363 has repo-truth comment `81cfdd41-ff0e-4df1-b884-c01789e30a50`; field-text currency remains unclaimed until a fresh Linear fetch or owner classification is recorded.
 
 Restart rule:
 The next selected slice is `PU-015 Judge/PM audit packet`. It starts only
-after this post-PR410 tracker refresh validates, merges, and local main is
+after this post-PR411 tracker refresh validates, merges, and local main is
 pulled back.
 ```
