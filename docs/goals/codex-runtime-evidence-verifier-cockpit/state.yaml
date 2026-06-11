@@ -32,9 +32,9 @@ thin_execution_tracker:
   active_route:
     kind: "current_main_closeout_audit"
     status: "pu056_active_route_runtime_card_guard_in_progress"
-    blocker: "PU-056 is active; parent completion remains blocked by PR merge/pullback for this guard, Linear disposition, and final Judge/PM packet."
-    current_pr_state: "PR #409 merged and local main plus origin/main are synced at c3d476541351ccd08fb832d08ba9749a9f203e4c; PU-056 is implemented locally on codex/jsc-363-pu056-runtime-card-active-route-key and has not opened a PR yet."
-    test_and_audit_status: "Focused runtime-card test and current checkout runtime-card probe pass after the active-route key guard; broader slice gates remain required before PR closeout."
+    blocker: "PU-056 is active in PR #410; parent completion remains blocked by PR merge/pullback for this guard, Linear disposition, and final Judge/PM packet."
+    current_pr_state: "PR #409 merged and local main plus origin/main are synced at c3d476541351ccd08fb832d08ba9749a9f203e4c; PU-056 is open as PR #410 on codex/jsc-363-pu056-runtime-card-active-route-key. Live PR head/CI/review state is submitted-branch truth until the post-merge pullback receipt records the final squash merge."
+    test_and_audit_status: "Focused runtime-card tests, module-boundary ratchet test, current checkout runtime-card probe, and CircleCI test job 31556 pass after the active-route key guard; CircleCI check lane remains the active PR blocker until refreshed on the latest pushed head."
     active_route_drift_finding: "PU-055 found the current-route table had two active rows and runtime-card route selection drift; PU-056 repairs the remaining issue-key projection gap by deriving the Linear key from wide Current Active Route rows."
     unclaimed_surfaces:
       - "Linear field-text currency beyond repo-truth comment 81cfdd41-ff0e-4df1-b884-c01789e30a50"
@@ -42,10 +42,10 @@ thin_execution_tracker:
       - "Final documentation accuracy beyond current validators"
       - "Parent-goal completion"
     active_branch: "codex/jsc-363-pu056-runtime-card-active-route-key"
-    active_pr: null
-    active_pr_url: null
+    active_pr: 410
+    active_pr_url: "https://github.com/jscraik/coding-harness/pull/410"
     active_pr_last_checked_head_sha: null
-    active_pr_head_sha_contract: "No PR exists yet for PU-056; open one only after local validation and review-slice evidence are recorded."
+    active_pr_head_sha_contract: "Use live PR #410 head as submitted-branch truth while review fixes continue; defer the durable receipt anchor until post-merge pullback records the final squash merge."
     last_merged_pr: 409
     last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/409"
     last_merged_sha: "c3d476541351ccd08fb832d08ba9749a9f203e4c"
@@ -53,8 +53,9 @@ thin_execution_tracker:
     last_merge_verified_at: "2026-06-11T16:36:45Z"
     local_main_sha: "c3d476541351ccd08fb832d08ba9749a9f203e4c"
     origin_main_sha: "c3d476541351ccd08fb832d08ba9749a9f203e4c"
-    open_pr_count: 0
-    open_prs: []
+    open_pr_count: 1
+    open_prs:
+      - 410
   queued_slice:
     lifecycle_unit: "PU-056"
     name: "active-route runtime-card selection guard"

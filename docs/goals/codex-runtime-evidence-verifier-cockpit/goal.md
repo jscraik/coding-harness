@@ -60,8 +60,11 @@ Current live route truth:
 - Local `main` and `origin/main` were synced at
   `c3d476541351ccd08fb832d08ba9749a9f203e4c` after PR #409 was merged and
   pulled back.
-- Live GitHub reported no open PRs at the PR #409 pullback refresh point; this
-  PU-056 branch has not opened a PR yet.
+- Live GitHub now has PR #410 open for
+  `codex/jsc-363-pu056-runtime-card-active-route-key`; its current head and CI
+  state are live PR truth until a post-merge pullback receipt records the final
+  squash merge. R475 remains pre-PR local guard provenance, not the submitted-head
+  anchor for the evolving review branch.
 - Branch and worktree cleanup removed obsolete auxiliary worktrees and stale
   local/remote `codex/*` branches; only `main` and `origin/main` remain.
 - The remaining closeout/backlog audit selected `PU-056 active-route
@@ -119,7 +122,7 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: remaining closeout/backlog audit from current main.
+- Current route: PU-056 active-route runtime-card selection guard in PR #410.
 - Provenance: See `receipts.jsonl` for merged route history through PR #409.
 
 Corrected backlog after current-main reconciliation:
@@ -127,8 +130,9 @@ Corrected backlog after current-main reconciliation:
 - Done on current main: PR #409 merged at
   `c3d476541351ccd08fb832d08ba9749a9f203e4c`. See `receipts.jsonl` for
   complete merged route history.
-- Current route PR: not opened yet for
-  `codex/jsc-363-pu056-runtime-card-active-route-key`.
+- Current route PR: PR #410 is open for
+  `codex/jsc-363-pu056-runtime-card-active-route-key`; live PR head/CI/review
+  state decide submitted-branch truth until post-merge pullback.
 - Active slice: PU-056 active-route runtime-card selection guard in progress;
   runtime-card now derives `issueKey: "JSC-363"` from the active route row
   on this branch.

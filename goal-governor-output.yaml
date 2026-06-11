@@ -26,14 +26,15 @@ truth_lanes:
       - "R475 records the post-PR409 PU-056 guard start and local proof"
       - "PU-056 repairs runtime-card active-route issue-key derivation for wide Current Active Route rows"
   remote_pr_checks:
-    status: no_pu056_pr_yet
+    status: pr410_open_check_lane_failing_until_latest_fix_push
     evidence:
       - "PR #409 state=MERGED, mergedAt=2026-06-11T16:36:45Z, mergeCommit=c3d476541351ccd08fb832d08ba9749a9f203e4c"
       - "PR #409 head c5f4095bcd2484668acfa0195fdddf9e6cb2517e had repo-owned CircleCI lanes, pr-pipeline, security-scan, Socket, and CodeRabbit passing before merge; external security/snyk GitHub App quota/error lane remains owner-waived only"
+      - "PR #410 is open for codex/jsc-363-pu056-runtime-card-active-route-key; CircleCI check remains failing until the docstring fix and route-state refresh are pushed and rerun"
   review_threads:
-    status: no_pu056_pr_yet
+    status: pr410_open_review_lane_active
     evidence:
-      - "Current branch codex/jsc-363-pu056-runtime-card-active-route-key has not opened its PR"
+      - "Current branch codex/jsc-363-pu056-runtime-card-active-route-key is open as PR #410; live PR head is submitted-branch truth until the post-merge pullback receipt records the final squash merge"
   tracker_state:
     status: pu056_in_progress
     evidence:
