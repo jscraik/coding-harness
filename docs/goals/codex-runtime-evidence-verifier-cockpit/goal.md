@@ -60,16 +60,18 @@ Current live route truth:
 - Local `main` and `origin/main` were synced at
   `fdcd577a77fb660b9b71e058bcbd33fff06c67bf` before this tracker-refresh
   branch was created.
-- Live GitHub reported no open PRs for this repository at the refresh point.
-- The remaining closeout/backlog audit is the queued lane; no next feature slice
-  has started.
-- The next safe action is to run the remaining closeout/backlog audit from
-  current `main`, state the exact next implementation slice or blocker, and
-  keep feature work paused until that route is explicit.
-- Linear JSC-363 was fetched through the Linear MCP tool and comment
-  `81cfdd41-ff0e-4df1-b884-c01789e30a50` records the repo-truth
-  classification. The original Phase 1 title/description remain historical
-  scope context, not completion evidence.
+- Live GitHub reported no open PRs at the PR #401 pullback refresh point before
+  PR #402 opened; PR #402 is now the active review/CI route.
+- The remaining closeout/backlog audit is queued until PR #402 merges and local
+  main is pulled; no next feature slice has started.
+- The next safe action is to finish PR #402 review/CI, merge it, pull current
+  `main`, then run the remaining closeout/backlog audit and state the exact
+  next implementation slice or blocker.
+- Earlier Linear JSC-363 evidence includes comment
+  `81cfdd41-ff0e-4df1-b884-c01789e30a50` with the repo-truth
+  classification. This refresh does not claim a fresh Linear MCP fetch. The
+  original Phase 1 title/description remain historical scope context, not
+  completion evidence.
 
 ## Thin Execution Tracker
 
@@ -113,8 +115,8 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: remaining closeout/backlog audit from current main; no next
-  feature slice has started.
+- Current route: PR #402 review/CI repair. The remaining closeout/backlog audit
+  is queued until PR #402 merges and local main is pulled.
 - Provenance: See `receipts.jsonl` for merged route history through PR #401.
 
 Corrected backlog after current-main reconciliation:
@@ -122,8 +124,9 @@ Corrected backlog after current-main reconciliation:
 - Done on current main: PR #401 merged at
   `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`. See `receipts.jsonl` for
   complete merged route history.
-- Current route PR: none.
-- Active slice: remaining closeout/backlog audit from current main.
+- Current route PR: #402.
+- Active slice: finish PR #402 review/CI repair, merge it, and pull main before
+  running the remaining closeout/backlog audit.
 - Remaining backlog: review/external/root-hygiene proof, documentation accuracy,
   historical review-coverage backfill, Linear field-text currency beyond the
   current comment, PU-015 Judge/PM audit, and final completion audit.
