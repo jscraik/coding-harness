@@ -411,13 +411,13 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness status">Current main: PR #410 merged</div>
+      <div class="source-chip" aria-label="Source freshness status">Current main: PR #411 merged</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
       <div class="metric"><span>Goal status</span><strong>PU-015 selected</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #410</strong></div>
-      <div class="metric"><span>Current PR</span><strong>#411 tracker refresh</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #411</strong></div>
+      <div class="metric"><span>Current PR</span><strong>None open</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Projection merged</strong></div>
       <div class="metric"><span>Documentation</span><strong>Validators passing</strong></div>
       <div class="metric"><span>Linear tracker</span><strong>Comment aligned</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated after PR #410 merged and local main was pulled to <code>41ac068ae7c9e9425681a5d42358eaf120f24c04</code>. PR #411 is the current tracker-refresh PR; it is not PU-015 implementation evidence. PU-056 is closed on current main; <code>runtime-card --json --repo .</code> returns <code>issueKey: "JSC-363"</code> with the JSC-363 active spec and plan. PU-015 Judge/PM audit packet is the next selected slice after PR #411 merges and main is pulled back, with Linear field-text currency, final documentation accuracy, release readiness, and parent goal completion still unclaimed.</p>
+    <p class="footer">Snapshot updated after PR #411 merged and local main was pulled to <code>aa020ee7deaef4974ee8c78761192e818416e906</code>. PR #411 was a tracker-refresh PR; it is not PU-015 implementation evidence. PU-056 is closed on current main; <code>runtime-card --json --repo .</code> returns <code>issueKey: "JSC-363"</code> with the JSC-363 active spec and plan. PU-015 Judge/PM audit packet is the next selected slice from pulled current main, with Linear field-text currency, final documentation accuracy, release readiness, and parent goal completion still unclaimed.</p>
   </main>
 
   <script>
@@ -670,18 +670,29 @@
         tags: ["PR #410", "PU-056", "R477", "merged", "runtime-card"],
         summary: "PR #410 merged the active-route runtime-card selection guard. Local main and origin/main are synced at 41ac068ae7c9e9425681a5d42358eaf120f24c04, and runtime-card now derives JSC-363 from the active route.",
         evidence: ["PR #410 -> MERGED at 2026-06-11T18:24:41Z", "Submitted head -> 2067365c6149ebdf96aa181377ca5c151536c216", "Merge commit -> 41ac068ae7c9e9425681a5d42358eaf120f24c04", "Local main and origin/main -> 41ac068ae7c9e9425681a5d42358eaf120f24c04", "runtime-card --json --repo . -> issueKey JSC-363 with the active JSC-363 spec and plan", "Repo-owned CircleCI lanes, pr-pipeline, security-scan, Socket, CodeRabbit, and review threads -> passed or resolved", "External security/snyk GitHub App quota lane -> owner-waived only"],
-        next: "Use as merged route provenance only. Continue with PU-015 Judge/PM audit packet after the post-PR410 tracker refresh merges.",
+        next: "Use as merged route provenance only. PR #411 merged the tracker refresh; PU-015 is next from pulled current main.",
         risk: "This proves the route-key guard only. It does not prove Linear field text, Judge/PM readiness, final documentation accuracy, or parent-goal completion."
+      },
+      {
+        id: "post-pr411-tracker-refresh",
+        lane: "pr-truth",
+        title: "PR #411: tracker refresh merged",
+        status: "done",
+        tags: ["PR #411", "R479", "merged", "tracker"],
+        summary: "PR #411 merged the post-PR410 tracker refresh. Local main and origin/main are synced at aa020ee7deaef4974ee8c78761192e818416e906, and live GitHub reports zero open PRs.",
+        evidence: ["PR #411 -> MERGED at 2026-06-11T20:41:25Z", "Submitted head -> dc2d19bfc14d32621eed5b082565168ab177a631", "Merge commit -> aa020ee7deaef4974ee8c78761192e818416e906", "Local main and origin/main -> aa020ee7deaef4974ee8c78761192e818416e906", "Live GitHub open PR list -> []", "runtime-card --json --repo . -> issueKey JSC-363 with the active JSC-363 spec and plan", "harness next --json -> pass with clean-worktree handoff recommendation"],
+        next: "Start PU-015 Judge/PM audit packet from pulled current main, keeping Linear field-text disposition explicit.",
+        risk: "This receipt is route-truth only. It does not prove PU-015 implementation, Linear field-text currency, Judge/PM readiness, release readiness, or parent-goal completion."
       },
       {
         id: "pu015-judge-pm-audit-packet",
         lane: "remaining",
         title: "Active: PU-015 Judge/PM audit packet",
         status: "active",
-        tags: ["PU-015", "selected", "Judge/PM", "R477", "current main"],
+        tags: ["PU-015", "selected", "Judge/PM", "R479", "current main"],
         summary: "PU-015 is the next selected slice: produce a live Judge/PM audit packet from current-main evidence while keeping merge authority, Linear field text, and parent completion separate.",
-        evidence: ["Current main after PR #410 -> 41ac068ae7c9e9425681a5d42358eaf120f24c04", "runtime-card --json --repo . -> issueKey JSC-363 with active spec and plan", "harness next --json -> pass with clean-worktree handoff recommendation", "Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 -> repo-truth context only", "state.yaml queued_slice -> PU-015 selected"],
-        next: "Validate and merge this post-PR410 tracker refresh, pull main, then implement PU-015 as the next one-PR slice.",
+        evidence: ["Current main after PR #411 -> aa020ee7deaef4974ee8c78761192e818416e906", "runtime-card --json --repo . -> issueKey JSC-363 with active spec and plan", "harness next --json -> pass with clean-worktree handoff recommendation", "Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 -> repo-truth context only", "state.yaml queued_slice -> PU-015 selected from post-PR411 current main"],
+        next: "Implement PU-015 as the next one-PR slice from pulled current main.",
         risk: "The packet must classify unsupported or stale claims explicitly and cannot claim parent completion by itself."
       },
       {

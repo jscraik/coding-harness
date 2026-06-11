@@ -26,21 +26,21 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | ------------------- | ------------------------------------------------------------ |
 | Parent issue        | JSC-363                                                      |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` |
-| Current branch      | `codex/jsc-363-post-pr410-tracker-refresh`                  |
-| Local main head     | `41ac068ae7c9e9425681a5d42358eaf120f24c04`                   |
-| Origin main head    | `41ac068ae7c9e9425681a5d42358eaf120f24c04`                   |
-| Main baseline       | `41ac068ae7c9e9425681a5d42358eaf120f24c04`                   |
+| Current branch      | `codex/jsc-363-post-pr411-tracker-refresh`                  |
+| Local main head     | `aa020ee7deaef4974ee8c78761192e818416e906`                   |
+| Origin main head    | `aa020ee7deaef4974ee8c78761192e818416e906`                   |
+| Main baseline       | `aa020ee7deaef4974ee8c78761192e818416e906`                   |
 | Active route count  | 1                                                            |
 | Active route        | PU-015 Judge/PM audit packet preparation                     |
-| Last closed route   | PR #410 merged                                               |
+| Last closed route   | PR #411 merged                                               |
 | Current route       | PU-015 Judge/PM audit packet                                 |
 | Current slice       | PU-015 selected, not yet implemented                         |
-| Feature work status | Stopped until PR #411 tracker refresh merges and pulls back   |
+| Feature work status | Ready to start from pulled current main                       |
 
 ## Active Route
 
-PR #410 is merged and local `main` plus `origin/main` are synced at
-`41ac068ae7c9e9425681a5d42358eaf120f24c04`. PU-056 is closed on current main:
+PR #411 is merged and local `main` plus `origin/main` are synced at
+`aa020ee7deaef4974ee8c78761192e818416e906`. PU-056 is closed on current main:
 runtime-card now projects `issueKey: "JSC-363"` with the JSC-363 active spec
 and plan from the wide Current Active Route row. This tracker does not claim
 Linear field-text currency, final documentation accuracy beyond current
@@ -55,9 +55,11 @@ Current evidence:
   and review-thread checks resolved before merge. The external
   `security/snyk (jscraik)` GitHub App quota/error lane remains owner-waived
   only for that external app status.
-- Live GitHub reported zero open pull requests before this tracker-refresh
-  branch was opened. PR #411 is now open for the post-PR410 tracker refresh;
-  it is not PU-015 implementation evidence.
+- Live GitHub reported PR #411 merged at `2026-06-11T20:41:25Z` from submitted
+  head `dc2d19bfc14d32621eed5b082565168ab177a631` as merge commit
+  `aa020ee7deaef4974ee8c78761192e818416e906`; it carried the post-PR410
+  tracker refresh only and is not PU-015 implementation evidence.
+- Live GitHub reported zero open pull requests after the PR #411 pullback.
 - Runtime-card on pulled current main returned `issueKey: "JSC-363"` with the
   active JSC-363 spec and plan.
 - `harness next --json` on the clean pulled checkout returned a pass status and
@@ -73,8 +75,7 @@ Current evidence:
 
 ## Active Slice
 
-Selected next slice after PR #411 merges and main is pulled back: `PU-015
-Judge/PM audit packet`.
+Selected next slice from pulled current main: `PU-015 Judge/PM audit packet`.
 
 PU-056 closed the active-route/runtime-card mismatch. PU-015 must now produce
 the live Judge/PM audit packet from current-main evidence without treating the
@@ -117,7 +118,8 @@ PU-055 current-main closeout evidence matrix:
 
 Selected next slice: `PU-015 Judge/PM audit packet`.
 
-Reason: PU-056 is merged and pulled back. Runtime-card current-main proof now
+Reason: PU-056 and the post-PR411 tracker refresh are merged and pulled back.
+Runtime-card current-main proof now
 shows `issueKey: "JSC-363"` with the active JSC-363 spec and plan, so the next
 remaining bounded closeout slice is the live Judge/PM packet with Linear
 field-text disposition kept explicit.
