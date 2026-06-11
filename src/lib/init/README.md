@@ -70,9 +70,9 @@ thin and delegate into this deep module.
   package manager. Downstream npm or yarn repositories must not receive pnpm-only
   hook commands unless pnpm is the selected package manager.
 - Generated Semgrep bootstrap scripts must not execute `python3` at source time.
-  Cache-tag detection needs to be guarded so missing `python3` reaches the
-  explicit Semgrep install error path instead of failing before bootstrap
-  control flow starts.
+  Cache-tag and cache-path discovery must be deferred behind runtime helpers so
+  missing `python3` reaches the explicit Semgrep install error path instead of
+  failing before bootstrap control flow starts.
 - Generated Semgrep executable probes must stay bounded even when `timeout` and
   `gtimeout` are unavailable. The fallback watchdog is part of the hook and CI
   reliability contract because stale scanner binaries must fail fast rather than

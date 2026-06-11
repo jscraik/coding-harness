@@ -2050,7 +2050,14 @@ describe("runInit", () => {
 			);
 			expect(semgrepBootstrap).toContain("resolve_semgrep_python_cache_tag()");
 			expect(semgrepBootstrap).toContain(
-				'SEMGREP_PYTHON_CACHE_TAG="python-unavailable"',
+				'SEMGREP_PYTHON_CACHE_TAG="${SEMGREP_PYTHON_CACHE_TAG:-}"',
+			);
+			expect(semgrepBootstrap).toContain("ensure_semgrep_cache_paths()");
+			expect(semgrepBootstrap).toContain(
+				"ensure_semgrep_cache_paths || return 1",
+			);
+			expect(semgrepBootstrap).toContain(
+				"if ! ensure_semgrep_cache_paths; then",
 			);
 			expect(semgrepBootstrap).toContain("local probe_pid=$!");
 			expect(semgrepBootstrap).toContain("local watchdog_pid=$!");

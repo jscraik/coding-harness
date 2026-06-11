@@ -31,13 +31,7 @@ import sys
 print(f"py{sys.version_info.major}.{sys.version_info.minor}")
 PY
 }
-if [[ -z "${SEMGREP_PYTHON_CACHE_TAG:-}" ]]; then
-  if command -v python3 >/dev/null 2>&1; then
-    SEMGREP_PYTHON_CACHE_TAG="$(resolve_semgrep_python_cache_tag)"
-  else
-    SEMGREP_PYTHON_CACHE_TAG="python-unavailable"
-  fi
-fi
+SEMGREP_PYTHON_CACHE_TAG="${SEMGREP_PYTHON_CACHE_TAG:-}"
 
 if [[ -z "${SSL_CERT_FILE:-}" ]]; then
   for cert_path in /etc/ssl/cert.pem /etc/ssl/certs/ca-certificates.crt; do
@@ -49,12 +43,32 @@ if [[ -z "${SSL_CERT_FILE:-}" ]]; then
 fi
 
 SEMGREP_CACHE_ROOT="${SEMGREP_CACHE_ROOT:-$SEMGREP_STATE_ROOT/tool-cache}"
-SEMGREP_VENV_DIR="${SEMGREP_CACHE_ROOT}/semgrep-venv-${SEMGREP_VERSION}-${SEMGREP_PYTHON_CACHE_TAG}"
-SEMGREP_BIN="$SEMGREP_VENV_DIR/bin/semgrep"
-SEMGREP_PYSEMGREP_BIN="$SEMGREP_VENV_DIR/bin/pysemgrep"
-SEMGREP_PYTHON="$SEMGREP_VENV_DIR/bin/python"
-SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}-${SEMGREP_PYTHON_CACHE_TAG}"
+SEMGREP_VENV_DIR="${SEMGREP_VENV_DIR:-}"
+SEMGREP_BIN="${SEMGREP_BIN:-}"
+SEMGREP_PYSEMGREP_BIN="${SEMGREP_PYSEMGREP_BIN:-}"
+SEMGREP_PYTHON="${SEMGREP_PYTHON:-}"
+SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_SITE_PACKAGES_DIR:-}"
 SEMGREP_PROBE_TIMEOUT_SECONDS="${SEMGREP_PROBE_TIMEOUT_SECONDS:-20}"
+
+ensure_semgrep_cache_paths() {
+  if [[ -n "${SEMGREP_CACHE_PATHS_READY:-}" ]]; then
+    return 0
+  fi
+
+  if [[ -z "${SEMGREP_PYTHON_CACHE_TAG:-}" ]]; then
+    if ! command -v python3 >/dev/null 2>&1; then
+      return 1
+    fi
+    SEMGREP_PYTHON_CACHE_TAG="$(resolve_semgrep_python_cache_tag)"
+  fi
+
+  SEMGREP_VENV_DIR="${SEMGREP_CACHE_ROOT}/semgrep-venv-${SEMGREP_VERSION}-${SEMGREP_PYTHON_CACHE_TAG}"
+  SEMGREP_BIN="$SEMGREP_VENV_DIR/bin/semgrep"
+  SEMGREP_PYSEMGREP_BIN="$SEMGREP_VENV_DIR/bin/pysemgrep"
+  SEMGREP_PYTHON="$SEMGREP_VENV_DIR/bin/python"
+  SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}-${SEMGREP_PYTHON_CACHE_TAG}"
+  SEMGREP_CACHE_PATHS_READY=1
+}
 
 semgrep_probe_command() {
   if command -v timeout >/dev/null 2>&1; then
@@ -86,6 +100,7 @@ semgrep_probe_command() {
 }
 
 resolve_semgrep_bin() {
+  ensure_semgrep_cache_paths || return 1
   if [[ -x "$SEMGREP_PYSEMGREP_BIN" ]]; then
     printf '%s\n' "$SEMGREP_PYSEMGREP_BIN"
     return 0
@@ -98,6 +113,7 @@ resolve_semgrep_bin() {
 }
 
 semgrep_binary_usable() {
+  ensure_semgrep_cache_paths || return 1
   local semgrep_bin
   if ! semgrep_bin="$(resolve_semgrep_bin)"; then
     return 1
@@ -110,6 +126,7 @@ semgrep_binary_usable() {
 }
 
 semgrep_site_packages_usable() {
+  ensure_semgrep_cache_paths || return 1
   if [[ ! -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]]; then
     return 1
   fi
@@ -122,6 +139,7 @@ semgrep_site_packages_usable() {
 }
 
 detect_semgrep_package_version() {
+  ensure_semgrep_cache_paths || return 1
   if semgrep_binary_usable; then
     "$SEMGREP_PYTHON" - <<'PY' 2>/dev/null
 import importlib.metadata
@@ -138,6 +156,7 @@ PY
 }
 
 run_semgrep() {
+  ensure_semgrep_cache_paths || return 1
   local semgrep_bin
   if semgrep_binary_usable && semgrep_bin="$(resolve_semgrep_bin)"; then
     XDG_CACHE_HOME="$SEMGREP_RUNTIME_CACHE_ROOT" \
@@ -208,6 +227,7 @@ ensure_python_packaging_tools() {
 }
 
 install_semgrep_with_venv() {
+  ensure_semgrep_cache_paths || return 1
   rm -rf "$SEMGREP_VENV_DIR"
   if ! python3 -m venv "$SEMGREP_VENV_DIR" >/dev/null 2>&1; then
     return 1
@@ -219,6 +239,7 @@ install_semgrep_with_venv() {
 }
 
 install_semgrep_with_site_packages() {
+  ensure_semgrep_cache_paths || return 1
   if ! python3 -m pip --version >/dev/null 2>&1; then
     return 1
   fi
@@ -235,6 +256,10 @@ install_semgrep_with_site_packages() {
 install_semgrep() {
   if ! command -v python3 >/dev/null 2>&1; then
     echo "Error: python3 is required to install Semgrep." >&2
+    exit 1
+  fi
+  if ! ensure_semgrep_cache_paths; then
+    echo "Error: unable to resolve Semgrep Python cache paths." >&2
     exit 1
   fi
 

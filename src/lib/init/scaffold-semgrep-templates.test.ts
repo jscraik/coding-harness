@@ -45,8 +45,11 @@ describe("Semgrep scaffold templates", () => {
 		expect(bootstrap).toContain("semgrep_version_usable()");
 		expect(bootstrap).toContain("resolve_semgrep_python_cache_tag()");
 		expect(bootstrap).toContain(
-			'SEMGREP_PYTHON_CACHE_TAG="python-unavailable"',
+			'SEMGREP_PYTHON_CACHE_TAG="${SEMGREP_PYTHON_CACHE_TAG:-}"',
 		);
+		expect(bootstrap).toContain("ensure_semgrep_cache_paths()");
+		expect(bootstrap).toContain("ensure_semgrep_cache_paths || return 1");
+		expect(bootstrap).toContain("if ! ensure_semgrep_cache_paths; then");
 		expect(bootstrap).toContain("local probe_pid=$!");
 		expect(bootstrap).toContain("local watchdog_pid=$!");
 		expect(bootstrap).toContain('kill -9 "$probe_pid"');
