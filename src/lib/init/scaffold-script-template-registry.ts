@@ -61,6 +61,14 @@ export const QUALITY_AND_HOOK_SCRIPT_TEMPLATES: readonly Template[] = [
 		render: () => renderPackagedRootFile("scripts/run-prek.sh"),
 	},
 	{
+		path: "scripts/with-validation-lock.sh",
+		render: () => renderPackagedRootFile("scripts/with-validation-lock.sh"),
+	},
+	{
+		path: "scripts/check-validation-locks.sh",
+		render: () => renderPackagedRootFile("scripts/check-validation-locks.sh"),
+	},
+	{
 		path: "scripts/hook-pre-commit.sh",
 		render: (pm) => renderPreCommitHookScript(pm),
 	},

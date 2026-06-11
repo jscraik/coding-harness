@@ -118,6 +118,8 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/codex-enforced",
 	"scripts/verify-work.sh",
 	"scripts/validate-codestyle.sh",
+	"scripts/with-validation-lock.sh",
+	"scripts/check-validation-locks.sh",
 	"scripts/check-codestyle-parity.sh",
 	"scripts/check-git-common-config.sh",
 	"scripts/prepare-worktree.sh",
@@ -1755,10 +1757,22 @@ describe("runInit", () => {
 				join(tempDir, "scripts/run-prek.sh"),
 				"utf-8",
 			);
+			const withValidationLock = require("node:fs").readFileSync(
+				join(tempDir, "scripts/with-validation-lock.sh"),
+				"utf-8",
+			);
+			const checkValidationLocks = require("node:fs").readFileSync(
+				join(tempDir, "scripts/check-validation-locks.sh"),
+				"utf-8",
+			);
 			expect(runPrek).toContain(
 				'PREK_HOME="${PREK_HOME:-$repo_root/.cache/prek}"',
 			);
 			expect(runPrek).toContain('exec prek "$@"');
+			expect(withValidationLock).toContain(
+				"Usage: bash scripts/with-validation-lock.sh",
+			);
+			expect(checkValidationLocks).toContain("no active validation locks");
 			expect(setupHooks).toContain("patchInstalledPrekHooks");
 			expect(setupHooks).toContain(
 				'WORKTREE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"',
