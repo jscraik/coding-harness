@@ -1,37 +1,72 @@
+schema_version: goal-governor-output/v1
 mode: continue
 goal_path: docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md
-board_health:
-  status: valid
-  evidence:
-    - command: "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
-      outcome: "pass after this output file was included in the final changed-file set"
-native_reconciliation:
-  native_goal_id: null
-  native_status: unknown
-  source: "state.yaml native_goal_id is null"
+native_goal_status: active
+board_status: valid_after_repair
+next_action: open_pr_for_post_pr406_route_refresh_then_merge_before_pu055
+decision_markers:
+  - read goal.md and state.yaml first
+  - receipts.jsonl
+  - claim_ledger
+  - evidence_surface
+  - remaining_uncertainty
 truth_lanes:
-  local_git:
-    status: current_main_synced_before_branch
-    evidence: "local main and origin/main were 4c9c905f39c9fa8d772d096025e33d79642c3c96 before codex/jsc-363-post-pr403-tracker-refresh was created"
-  github_pr:
-    status: no_open_prs_after_pr403_merge
-    evidence: "PR #403 merged at 2026-06-11T07:26:00Z and live GitHub open PR list returned []."
-  ci:
-    status: pr403_repo_owned_lanes_passed_before_merge
-    evidence: "GitHub PR #403 status rollup showed repo-owned CircleCI lanes, pr-pipeline, security-scan, CodeRabbit, and Socket success; external security/snyk app remained owner-waived only"
-  tracker:
-    status: refreshed_to_r465_after_pr403_merge
-    evidence: "state.yaml, goal.md, execution-tracker.md, active-artifacts.md, kanban HTML, receipts.jsonl, and this governor output were rechecked after PR #403 merged and local main was pulled"
-next_action:
-  lifecycle_unit: remaining-closeout-backlog-audit
-  instruction: "Run the remaining goal/spec/backlog audit from current main before any feature work resumes; record the exact next bounded slice or blocker."
-non_claims:
-  - linear_fields_current_beyond_comment
-  - review_external_root_hygiene_complete
-  - documentation_accuracy_complete
-  - judge_pm_ready
-  - release_ready
-  - parent_goal_complete
-remaining_uncertainty:
-  - "Goal Governor output itself must be included in the final validator pass before PR creation."
-  - "External security/snyk GitHub App remains an owner-waived external status lane only."
+  local_validation:
+    status: pass
+    evidence:
+      - "Command: jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null -> pass"
+      - "Command: PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit -> pass"
+      - "Command: PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo . -> pass"
+      - "Command: node scripts/validate-goal-kanban-script.cjs .harness/implementation-notes/goal-kanban-board.html -> pass"
+      - "Command: bash scripts/run-harness-gate.sh docs-gate --mode required --json -> pass"
+      - "Command: pnpm docs:lint -> pass"
+      - "Command: git diff --check -> pass"
+      - "Command: PR_TEMPLATE_BODY=\"$(gh pr view 406 --repo jscraik/coding-harness --json body --jq .body)\" bash scripts/run-harness-gate.sh pr-template-gate --json -> pass"
+      - "Command: gh pr checks 406 --repo jscraik/coding-harness --watch=false -> pass_with_owner_waiver; repo-owned lanes pass, external Snyk quota remains owner-waived only"
+      - "Command: bash scripts/validate-codestyle.sh && pnpm check && bash scripts/run-harness-gate.sh tooling-audit --path . --json -> pass"
+  generated_artifacts:
+    status: current
+    evidence:
+      - "R472 appended to docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl"
+      - "Goal Kanban board updated to PR #406/R472 current route truth"
+  remote_pr_checks:
+    status: not_started_for_this_branch
+    evidence:
+      - "PR for codex/jsc-363-post-pr406-tracker-refresh has not been opened yet"
+  review_threads:
+    status: not_started_for_this_branch
+    evidence:
+      - "CodeRabbit/manual review must be triggered after PR creation"
+  tracker_state:
+    status: current_after_repair
+    evidence:
+      - "state.yaml active route now records PR #406 and d0ae8ecfc78165690c9070aee3d66bfd7a85307a"
+      - "queued_slice remains PU-055 current-main closeout evidence matrix"
+  merge_readiness:
+    status: not_ready
+    evidence:
+      - "Route-refresh branch is not committed, pushed, reviewed, or merged yet"
+continuation_gate:
+  status: stop_feature_work_until_route_refresh_pr_merges
+  reason: "The goal board is valid locally, but the post-PR406 tracker refresh still needs its own one-PR closeout before PU-055 feature/audit work starts."
+native_blocker_audit:
+  status: not_blocked
+  blocker_history: []
+  reason: "No repeated impasse exists; meaningful route-refresh progress is available."
+validation_evidence:
+  outcome: pass
+  commands:
+    - "jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null"
+    - "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
+    - "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo ."
+    - "node scripts/validate-goal-kanban-script.cjs .harness/implementation-notes/goal-kanban-board.html"
+    - "bash scripts/run-harness-gate.sh docs-gate --mode required --json"
+    - "pnpm docs:lint"
+    - "git diff --check"
+    - "PR_TEMPLATE_BODY=\"$(gh pr view 406 --repo jscraik/coding-harness --json body --jq .body)\" bash scripts/run-harness-gate.sh pr-template-gate --json"
+    - "gh pr checks 406 --repo jscraik/coding-harness --watch=false"
+    - "bash scripts/validate-codestyle.sh && pnpm check && bash scripts/run-harness-gate.sh tooling-audit --path . --json"
+risks:
+  - "Squash-merged tracker PRs create a post-merge route-refresh need; keep this as a compact route receipt only and do not expand it into feature work."
+  - "External Snyk GitHub App quota remains owner-waived only, not a green security lane."
+  - "PU-055 remains unstarted until this route-refresh branch is merged and local main is pulled again."
