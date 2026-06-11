@@ -63,6 +63,19 @@ describe("git-hook scaffold templates", () => {
 		expect(preCommit).toContain("check-hook-critical-config-sync.sh");
 		expect(preCommit).toContain("bash ./scripts/validate-codestyle.sh --fast");
 		expect(preCommit).toContain("make related-tests-staged");
+		expect(preCommit).toContain("package_script_exists()");
+		expect(preCommit).toContain(
+			"Skipping optional package script ${script_name}; package.json does not define it.",
+		);
+		expect(preCommit).toContain(
+			'run_optional_package_script "quality:behavior-tests" pnpm quality:behavior-tests',
+		);
+		expect(preCommit).toContain(
+			'run_optional_package_script "quality:git-env-sanitizer" pnpm quality:git-env-sanitizer',
+		);
+		expect(preCommit).toContain(
+			'run_optional_package_script "harness:audit-tracking" pnpm harness:audit-tracking',
+		);
 		expect(preCommit).not.toContain("make hooks-pre-commit");
 		expect(preCommit).not.toContain("pre-commit run");
 		expect(prePush).toContain("check-validation-locks.sh");
@@ -79,6 +92,9 @@ describe("git-hook scaffold templates", () => {
 		expect(preCommit).toContain("npm run lint");
 		expect(preCommit).toContain("npm run docs:lint");
 		expect(preCommit).toContain("npm run quality:docstrings");
+		expect(preCommit).toContain(
+			'run_optional_package_script "quality:behavior-tests" npm run quality:behavior-tests',
+		);
 		expect(preCommit).not.toContain("pnpm lint");
 		expect(prePush).toContain("npm run build");
 		expect(prePush).not.toContain("pnpm build");

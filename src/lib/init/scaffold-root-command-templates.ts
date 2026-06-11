@@ -86,6 +86,7 @@ type MakefileCommands = {
 	install: string;
 	lint: string;
 	relatedTests: string;
+	relatedTestsStaged: string;
 	secretsStaged: string;
 	semgrepChanged: string;
 	size: string;
@@ -106,6 +107,7 @@ function buildMakefileCommands(packageManager: string): MakefileCommands {
 		install: renderInstallCommand(packageManager),
 		lint: renderScriptCommand(packageManager, "lint"),
 		relatedTests: renderScriptCommand(packageManager, "test:related"),
+		relatedTestsStaged: "bash scripts/check-related-tests.sh --staged",
 		secretsStaged: renderScriptCommand(packageManager, "secrets:staged"),
 		semgrepChanged: renderScriptCommand(packageManager, "semgrep:changed"),
 		size: renderScriptCommand(packageManager, "quality:size"),
@@ -118,7 +120,7 @@ function renderMakefileHeader(): string {
 	return `# Harness Development Makefile
 # Run \`make help\` to see available commands
 
-.PHONY: help install setup preflight worktree-ready verify-work codestyle-parity codestyle hooks hooks-pre-commit hooks-pre-push hooks-commit-msg secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: help install setup preflight worktree-ready verify-work codestyle-parity codestyle hooks hooks-pre-commit hooks-pre-push hooks-commit-msg secrets-staged docs-style-changed related-tests related-tests-staged semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 help: ## Show this help message
@@ -202,6 +204,9 @@ docs-style-changed: ## Run Vale on staged authoritative docs only
 
 related-tests: ## Run Vitest related mode for staged src implementation files
 	${commands.relatedTests}
+
+related-tests-staged: ## Run related tests for staged src implementation files
+	${commands.relatedTestsStaged}
 
 semgrep-changed: ## Run narrow Semgrep rules against changed src implementation files
 	${commands.semgrepChanged}

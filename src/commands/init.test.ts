@@ -2245,6 +2245,7 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"secrets-staged"');
 			expect(environmentCheck).toContain('"docs-style-changed"');
 			expect(environmentCheck).toContain('"related-tests"');
+			expect(environmentCheck).toContain('"related-tests-staged"');
 			expect(environmentCheck).toContain('"semgrep-changed"');
 			expect(environmentCheck).toContain('"diagrams-check"');
 			expect(environmentCheck).toContain(

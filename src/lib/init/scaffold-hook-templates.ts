@@ -13,6 +13,16 @@ import { renderScriptCommand } from "./scaffold-root-command-templates.js";
 const PRE_COMMIT_MAKE_TARGET = REQUIRED_PREK_HOOKS["pre-commit"].entry;
 const PRE_PUSH_MAKE_TARGET = REQUIRED_PREK_HOOKS["pre-push"].entry;
 
+function renderOptionalPackageScriptCommand(
+	packageManager: string,
+	scriptName: string,
+): string {
+	return `run_optional_package_script "${scriptName}" ${renderScriptCommand(
+		packageManager,
+		scriptName,
+	)}`;
+}
+
 /**
  * Render the pre-commit leaf hook adapter installed by Prek.
  *
@@ -30,15 +40,15 @@ export function renderPreCommitHookScript(packageManager = "pnpm"): string {
 		packageManager,
 		"quality:size",
 	);
-	const qualityBehaviorTestsCommand = renderScriptCommand(
+	const qualityBehaviorTestsCommand = renderOptionalPackageScriptCommand(
 		packageManager,
 		"quality:behavior-tests",
 	);
-	const qualityGitEnvSanitizerCommand = renderScriptCommand(
+	const qualityGitEnvSanitizerCommand = renderOptionalPackageScriptCommand(
 		packageManager,
 		"quality:git-env-sanitizer",
 	);
-	const auditTrackingCommand = renderScriptCommand(
+	const auditTrackingCommand = renderOptionalPackageScriptCommand(
 		packageManager,
 		"harness:audit-tracking",
 	);
@@ -54,6 +64,21 @@ unset_git_context_env() {
 	while IFS= read -r git_env_name; do
 		[[ -n "$git_env_name" ]] && unset "$git_env_name"
 	done < <(compgen -v GIT_)
+}
+
+package_script_exists() {
+	local script_name="$1"
+	node -e 'const fs = require("node:fs"); const script = process.argv[1]; const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")); process.exit(pkg.scripts && Object.prototype.hasOwnProperty.call(pkg.scripts, script) ? 0 : 1);' "$script_name"
+}
+
+run_optional_package_script() {
+	local script_name="$1"
+	shift
+	if package_script_exists "$script_name"; then
+		"$@"
+	else
+		echo "Skipping optional package script ${"${"}script_name}; package.json does not define it."
+	fi
 }
 
 bash ./scripts/check-hook-critical-config-sync.sh

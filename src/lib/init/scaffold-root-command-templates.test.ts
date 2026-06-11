@@ -35,6 +35,8 @@ describe("scaffold root command templates", () => {
 		expect(makefile).toContain("hooks-pre-push:");
 		expect(makefile).toContain("bash ./scripts/hook-pre-commit.sh");
 		expect(makefile).toContain("bash ./scripts/hook-pre-push.sh");
+		expect(makefile).toContain("related-tests-staged:");
+		expect(makefile).toContain("bash scripts/check-related-tests.sh --staged");
 		expect(makefile).not.toContain("make hooks-pre-commit");
 		expect(makefile).not.toContain("make hooks-pre-push");
 		expect(makefile).toContain(
@@ -49,6 +51,9 @@ describe("scaffold root command templates", () => {
 		expect(makefile).toContain("\tnpm run lint");
 		expect(makefile).toContain("@bash ./scripts/hook-pre-commit.sh");
 		expect(makefile).toContain("\tnpm run test:related");
+		expect(makefile).toContain(
+			"related-tests-staged: ## Run related tests for staged src implementation files",
+		);
 		expect(makefile).not.toContain("pnpm run quality:size");
 	});
 });

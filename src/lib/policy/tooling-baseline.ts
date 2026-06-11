@@ -299,6 +299,7 @@ export const REQUIRED_MAKEFILE_TARGETS = [
 	"secrets-staged",
 	"docs-style-changed",
 	"related-tests",
+	"related-tests-staged",
 	"semgrep-changed",
 	"diagrams-check",
 	"lint",
