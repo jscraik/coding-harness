@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated after PR #402 merged and local main was pulled to <code>fd750626ece4d1f3786ef564485dd8c7d2c04230</code>. Live GitHub reported zero open pull requests at this refresh point. The active route is the remaining closeout/backlog audit from current main: state the exact next implementation slice or blocker, and keep feature work paused until that route is explicit. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, Linear field-text currency beyond the repo-truth comment, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated after PR #403 merged and local main was pulled to <code>4c9c905f39c9fa8d772d096025e33d79642c3c96</code>. Live GitHub reported zero open pull requests at this refresh point. The active route is the remaining closeout/backlog audit from current main: state the exact next implementation slice or blocker, and keep feature work paused until that route is explicit. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, Linear field-text currency beyond the repo-truth comment, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -602,8 +602,19 @@
         title: "PR #402: Route review fix merged",
         status: "done",
         tags: ["PR #402", "R464", "merged", "tracker refresh"],
-        summary: "PR #402 merged the post-PR401 route-truth review fix. Local main and origin/main are synced at fd750626ece4d1f3786ef564485dd8c7d2c04230.",
+        summary: "PR #402 merged the post-PR401 route-truth review fix. Local main and origin/main were synced at fd750626ece4d1f3786ef564485dd8c7d2c04230.",
         evidence: ["PR #402 -> MERGED at 2026-06-11T06:46:51Z", "Submitted head -> 765769147db3f1ccee704e521475d4a20ab65934", "Merge commit -> fd750626ece4d1f3786ef564485dd8c7d2c04230", "Repo-owned CircleCI lanes -> success", "pr-pipeline -> success", "security-scan -> success", "CodeRabbit -> success", "Review threads -> resolved before merge", "External security/snyk GitHub App quota lane -> owner-waived only", "Live GitHub open PR list -> []"],
+        next: "Use as merged route provenance only; current route truth is PR #403 and R465.",
+        risk: "This refresh closed PR-route ambiguity only. It did not prove documentation accuracy, root hygiene, Judge/PM readiness, Linear field text, or parent-goal completion."
+      },
+      {
+        id: "post-pr403-current-main",
+        lane: "pr-truth",
+        title: "PR #403: Route review fix merged",
+        status: "done",
+        tags: ["PR #403", "R465", "merged", "tracker refresh"],
+        summary: "PR #403 merged the post-PR402 route-truth refresh. Local main and origin/main are synced at 4c9c905f39c9fa8d772d096025e33d79642c3c96.",
+        evidence: ["PR #403 -> MERGED at 2026-06-11T07:26:00Z", "Submitted head -> c92fb7ec329fea4edb00413cabf357fc7d63996f", "Merge commit -> 4c9c905f39c9fa8d772d096025e33d79642c3c96", "Repo-owned CircleCI lanes -> success", "pr-pipeline -> success", "security-scan -> success", "CodeRabbit -> success", "Review threads -> resolved before merge", "External security/snyk GitHub App quota lane -> owner-waived only", "Live GitHub open PR list -> []"],
         next: "Run the remaining closeout/backlog audit from current main before starting feature work.",
         risk: "This refresh closes PR-route ambiguity only. It does not prove documentation accuracy, root hygiene, Judge/PM readiness, Linear field text, or parent-goal completion."
       },
@@ -612,9 +623,9 @@
         lane: "remaining",
         title: "Next: remaining goal/spec/backlog audit",
         status: "active",
-        tags: ["active after PR #402", "R464", "closeout", "backlog"],
+        tags: ["active after PR #403", "R465", "closeout", "backlog"],
         summary: "The next work is not feature implementation. It is a current-main audit against goal.md, spec, plan, adopted gap sources, and receipts to state the exact next slice or blocker.",
-        evidence: ["Current main after PR #402 -> fd750626ece4d1f3786ef564485dd8c7d2c04230", "PR #402 -> merged", "Live GitHub open PR list -> []", "state.yaml queued_slice -> remaining-closeout-backlog-audit", "goal.md current reconciliation status -> post-PR402 pullback"],
+        evidence: ["Current main after PR #403 -> 4c9c905f39c9fa8d772d096025e33d79642c3c96", "PR #403 -> merged", "Live GitHub open PR list -> []", "state.yaml queued_slice -> remaining-closeout-backlog-audit", "goal.md current reconciliation status -> post-PR403 pullback"],
         next: "Run the remaining closeout/backlog audit before any feature work.",
         risk: "Starting feature work before this audit would reintroduce stale-route and context-debt failure modes."
       },

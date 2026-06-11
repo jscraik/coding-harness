@@ -25,6 +25,11 @@ HOST_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 SEMGREP_RUNTIME_CACHE_ROOT="${SEMGREP_RUNTIME_CACHE_ROOT:-$SEMGREP_STATE_ROOT/cache}"
 SEMGREP_RUNTIME_USER_HOME="${SEMGREP_USER_HOME:-$SEMGREP_STATE_ROOT/home}"
 SEMGREP_RUNTIME_LOG_FILE="${SEMGREP_LOG_FILE:-$SEMGREP_STATE_ROOT/semgrep.log}"
+SEMGREP_PYTHON_CACHE_TAG="${SEMGREP_PYTHON_CACHE_TAG:-$(python3 - <<'PY'
+import sys
+print(f"py{sys.version_info.major}.{sys.version_info.minor}")
+PY
+)}"
 
 if [[ -z "${SSL_CERT_FILE:-}" ]]; then
   for cert_path in /etc/ssl/cert.pem /etc/ssl/certs/ca-certificates.crt; do
@@ -36,20 +41,59 @@ if [[ -z "${SSL_CERT_FILE:-}" ]]; then
 fi
 
 SEMGREP_CACHE_ROOT="${SEMGREP_CACHE_ROOT:-$SEMGREP_STATE_ROOT/tool-cache}"
-SEMGREP_VENV_DIR="${SEMGREP_CACHE_ROOT}/semgrep-venv-${SEMGREP_VERSION}"
+SEMGREP_VENV_DIR="${SEMGREP_CACHE_ROOT}/semgrep-venv-${SEMGREP_VERSION}-${SEMGREP_PYTHON_CACHE_TAG}"
 SEMGREP_BIN="$SEMGREP_VENV_DIR/bin/semgrep"
+SEMGREP_PYSEMGREP_BIN="$SEMGREP_VENV_DIR/bin/pysemgrep"
 SEMGREP_PYTHON="$SEMGREP_VENV_DIR/bin/python"
-SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}"
+SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}-${SEMGREP_PYTHON_CACHE_TAG}"
+SEMGREP_PROBE_TIMEOUT_SECONDS="${SEMGREP_PROBE_TIMEOUT_SECONDS:-20}"
+
+semgrep_probe_command() {
+  if command -v timeout >/dev/null 2>&1; then
+    timeout "$SEMGREP_PROBE_TIMEOUT_SECONDS" "$@"
+    return
+  fi
+  if command -v gtimeout >/dev/null 2>&1; then
+    gtimeout "$SEMGREP_PROBE_TIMEOUT_SECONDS" "$@"
+    return
+  fi
+  "$@"
+}
+
+resolve_semgrep_bin() {
+  if [[ -x "$SEMGREP_PYSEMGREP_BIN" ]]; then
+    printf '%s\n' "$SEMGREP_PYSEMGREP_BIN"
+    return 0
+  fi
+  if [[ -x "$SEMGREP_BIN" ]]; then
+    printf '%s\n' "$SEMGREP_BIN"
+    return 0
+  fi
+  return 1
+}
 
 semgrep_binary_usable() {
-  if [[ ! -x "$SEMGREP_BIN" ]]; then
+  local semgrep_bin
+  if ! semgrep_bin="$(resolve_semgrep_bin)"; then
     return 1
   fi
 
   XDG_CACHE_HOME="$SEMGREP_RUNTIME_CACHE_ROOT" \
     SEMGREP_USER_HOME="$SEMGREP_RUNTIME_USER_HOME" \
     SEMGREP_LOG_FILE="$SEMGREP_RUNTIME_LOG_FILE" \
-    "$SEMGREP_BIN" --version >/dev/null 2>&1
+    semgrep_probe_command "$semgrep_bin" --version >/dev/null 2>&1
+}
+
+semgrep_site_packages_usable() {
+  if [[ ! -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]]; then
+    return 1
+  fi
+
+  PYTHONPATH="$SEMGREP_SITE_PACKAGES_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+    XDG_CACHE_HOME="$SEMGREP_RUNTIME_CACHE_ROOT" \
+    SEMGREP_USER_HOME="$SEMGREP_RUNTIME_USER_HOME" \
+    SEMGREP_LOG_FILE="$SEMGREP_RUNTIME_LOG_FILE" \
+    semgrep_probe_command python3 -c 'import sys; from semgrep.console_scripts.entrypoint import main; raise SystemExit(main())' --version >/dev/null 2>&1
 }
 
 detect_semgrep_package_version() {
@@ -69,11 +113,12 @@ PY
 }
 
 run_semgrep() {
-  if semgrep_binary_usable; then
+  local semgrep_bin
+  if semgrep_binary_usable && semgrep_bin="$(resolve_semgrep_bin)"; then
     XDG_CACHE_HOME="$SEMGREP_RUNTIME_CACHE_ROOT" \
       SEMGREP_USER_HOME="$SEMGREP_RUNTIME_USER_HOME" \
       SEMGREP_LOG_FILE="$SEMGREP_RUNTIME_LOG_FILE" \
-      "$SEMGREP_BIN" "$@"
+      "$semgrep_bin" "$@"
     return
   fi
 
@@ -81,7 +126,7 @@ run_semgrep() {
     XDG_CACHE_HOME="$SEMGREP_RUNTIME_CACHE_ROOT" \
     SEMGREP_USER_HOME="$SEMGREP_RUNTIME_USER_HOME" \
     SEMGREP_LOG_FILE="$SEMGREP_RUNTIME_LOG_FILE" \
-    python3 -m semgrep "$@"
+    python3 -c 'import sys; from semgrep.console_scripts.entrypoint import main; raise SystemExit(main())' "$@"
 }
 
 semgrep_version_usable() {
@@ -159,7 +204,7 @@ install_semgrep_with_site_packages() {
   if ! python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "$SEMGREP_PIP_SPEC"; then
     return 1
   fi
-  semgrep_version_usable
+  semgrep_site_packages_usable && semgrep_version_usable
 }
 
 install_semgrep() {
@@ -172,7 +217,7 @@ install_semgrep() {
   mkdir -p "$(dirname "$SEMGREP_RUNTIME_LOG_FILE")"
   mkdir -p "$SEMGREP_CACHE_ROOT"
 
-  local legacy_venv_dir="$HOST_CACHE_HOME/coding-harness/semgrep-venv-${SEMGREP_VERSION}"
+  local legacy_venv_dir="$HOST_CACHE_HOME/coding-harness/semgrep-venv-${SEMGREP_VERSION}-${SEMGREP_PYTHON_CACHE_TAG}"
   if [[ -d "$legacy_venv_dir" ]]; then
     rm -rf "$SEMGREP_VENV_DIR"
     # `cp -a` is GNU-only; `cp -Rp` works on both GNU and BSD/macOS.
@@ -207,7 +252,7 @@ has_semgrep_installation() {
     return 0
   fi
 
-  if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]] && semgrep_version_usable; then
+  if semgrep_site_packages_usable && semgrep_version_usable; then
     return 0
   fi
 

@@ -1625,10 +1625,69 @@ describe("runInit", () => {
 			expect(hookPreCommit).toContain("npm run docs:lint");
 			expect(hookPreCommit).toContain("npm run typecheck");
 			expect(hookPreCommit).toContain(
+				"bash ./scripts/validate-codestyle.sh --fast",
+			);
+			expect(hookPreCommit.indexOf("make codestyle-parity")).toBeLessThan(
+				hookPreCommit.indexOf("bash ./scripts/validate-codestyle.sh --fast"),
+			);
+			expect(
+				hookPreCommit.indexOf("bash ./scripts/validate-codestyle.sh --fast"),
+			).toBeLessThan(hookPreCommit.indexOf("npm run lint"));
+			expect(
+				hookPreCommit.indexOf("bash ./scripts/validate-codestyle.sh --fast"),
+			).toBeLessThan(hookPreCommit.indexOf("npm run typecheck"));
+			expect(hookPreCommit).toContain(
 				'run_optional_package_script "quality:behavior-tests" npm run quality:behavior-tests',
 			);
 			expect(hookPreCommit).not.toContain("pnpm lint");
 			expect(hookPrePush).toContain("npm run build");
+			expect(hookPrePush).not.toContain("pnpm build");
+		});
+
+		it("uses yarn commands for yarn repos in generated hooks", () => {
+			writeFileSync(
+				join(tempDir, "package.json"),
+				JSON.stringify(
+					{
+						name: "@acme/my-yarn-app",
+						repository: "git+https://github.com/acme/my-yarn-app.git",
+					},
+					null,
+					2,
+				),
+				"utf-8",
+			);
+			writeFileSync(join(tempDir, "yarn.lock"), "# yarn lockfile\n", "utf-8");
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const hookPreCommit = require("node:fs").readFileSync(
+				join(tempDir, "scripts/hook-pre-commit.sh"),
+				"utf-8",
+			);
+			const hookPrePush = require("node:fs").readFileSync(
+				join(tempDir, "scripts/hook-pre-push.sh"),
+				"utf-8",
+			);
+
+			expect(hookPreCommit).toContain(
+				"bash ./scripts/validate-codestyle.sh --fast",
+			);
+			expect(hookPreCommit.indexOf("make codestyle-parity")).toBeLessThan(
+				hookPreCommit.indexOf("bash ./scripts/validate-codestyle.sh --fast"),
+			);
+			expect(
+				hookPreCommit.indexOf("bash ./scripts/validate-codestyle.sh --fast"),
+			).toBeLessThan(hookPreCommit.indexOf("yarn lint"));
+			expect(hookPreCommit).toContain("yarn lint");
+			expect(hookPreCommit).toContain("yarn docs:lint");
+			expect(hookPreCommit).toContain("yarn typecheck");
+			expect(hookPreCommit).toContain(
+				'run_optional_package_script "quality:behavior-tests" yarn quality:behavior-tests',
+			);
+			expect(hookPreCommit).not.toContain("pnpm lint");
+			expect(hookPrePush).toContain("yarn build");
 			expect(hookPrePush).not.toContain("pnpm build");
 		});
 
@@ -1990,7 +2049,7 @@ describe("runInit", () => {
 				'echo "Error: python3 is required to install Semgrep." >&2',
 			);
 			expect(semgrepBootstrap).toContain(
-				'SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}"',
+				'SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}-${SEMGREP_PYTHON_CACHE_TAG}"',
 			);
 			expect(semgrepBootstrap).toContain(
 				'PYTHONPATH="$SEMGREP_SITE_PACKAGES_DIR${PYTHONPATH:+:$PYTHONPATH}" \\',
@@ -2000,7 +2059,7 @@ describe("runInit", () => {
 			);
 			expect(semgrepBootstrap).toContain("has_semgrep_installation()");
 			expect(semgrepBootstrap).toContain(
-				'if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]] && semgrep_version_usable; then',
+				"if semgrep_site_packages_usable && semgrep_version_usable; then",
 			);
 			expect(semgrepBootstrap).toContain(
 				'if [[ -z "${CI:-}" && -z "${CIRCLECI:-}" ]]; then',
@@ -2016,7 +2075,7 @@ describe("runInit", () => {
 			);
 			expect(semgrepBootstrap).toContain("has_semgrep_installation()");
 			expect(semgrepBootstrap).toContain(
-				'if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]] && semgrep_version_usable; then',
+				"if semgrep_site_packages_usable && semgrep_version_usable; then",
 			);
 			expect(semgrepBootstrap).toContain(
 				'if [[ -z "${CI:-}" && -z "${CIRCLECI:-}" ]]; then',

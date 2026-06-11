@@ -275,6 +275,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - generated readiness and environment setup changes should preserve caller-provided `PATH` precedence before adding standard tool fallbacks, so local wrappers, fixture shims, and branch-scoped validation evidence remain auditable
 - environment-only push behavior is a narrow governance exception: if the branch diff contains only `.codex/environments/environment.toml`, the `scripts/hook-pre-push.sh` leaf adapter may run only `scripts/check-environment.sh`; any other changed file must use the full pre-push suite. The `make hooks-pre-push` target is a manual wrapper around the same adapter.
 - generated hook command rendering must preserve both validation order and package-manager selection: pre-commit leaf adapters must run `bash ./scripts/validate-codestyle.sh --fast` after codestyle parity and before lint/typecheck, and generated package-script commands must follow the detected package manager rather than hard-coding pnpm.
+- Semgrep hook and CI scan bootstrap must use Python-runtime-scoped worktree
+  caches and executable probe checks before reusing cached scanner installs;
+  stale metadata or ABI-mismatched site-packages are blocked scanner state, not
+  proof.
 - local CI-equivalent validation lanes must be serialized by repo-scoped locks:
   `scripts/hook-pre-push.sh` runs `validation-locks` first, `pnpm test:ci` uses
   the `test-ci` lock, and `pnpm run quality:behavior-tests` uses the
