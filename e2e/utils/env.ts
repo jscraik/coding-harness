@@ -181,6 +181,19 @@ export function loadCodexEnvForE2E(
 		};
 	}
 
+	const CODEX_E2E_ENV_ALLOWLIST = new Set([
+		"LINEAR_API_KEY",
+		"GITHUB_PERSONAL_ACCESS_TOKEN",
+		"E2E_GITHUB_APP_ID",
+		"GITHUB_APP_ID",
+		"E2E_GITHUB_APP_INSTALLATION_ID",
+		"GITHUB_APP_INSTALLATION_ID",
+		"E2E_GITHUB_APP_PRIVATE_KEY",
+		"GITHUB_APP_PRIVATE_KEY",
+		"E2E_GITHUB_APP_PRIVATE_KEY_PATH",
+		"GITHUB_APP_PRIVATE_KEY_PATH",
+	]);
+
 	const loadedNames: string[] = [];
 	for (const line of content.split(/\r?\n/)) {
 		const parsed = parseCodexEnvLine(line);
@@ -188,10 +201,15 @@ export function loadCodexEnvForE2E(
 			continue;
 		}
 		const [name, value] = parsed;
-		if (!process.env[name]?.trim() && value.trim()) {
+		if (
+			CODEX_E2E_ENV_ALLOWLIST.has(name) &&
+			!process.env[name]?.trim() &&
+			value.trim()
+		) {
 			process.env[name] = value;
 			loadedNames.push(name);
 		}
+	}
 	}
 
 	const missingAfter = getMissingE2ECredentialNames();
