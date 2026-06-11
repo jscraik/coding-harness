@@ -159,7 +159,8 @@ Current truth:
 - Linear JSC-363 has repo-truth comment `81cfdd41-ff0e-4df1-b884-c01789e30a50`; field-text currency remains unclaimed until a fresh Linear fetch or owner classification is recorded.
 
 Restart rule:
-The next selected slice is not chosen yet. It starts only after this post-PR404
-tracker refresh validates from current main and the remaining closeout/backlog
-audit states the exact next bounded implementation slice or blocker.
+The next selected slice is `PU-055 current-main closeout evidence matrix`. It
+starts only after this post-PR404 tracker refresh validates from current main,
+and it must state the exact next bounded implementation slice or blocker before
+any feature work resumes.
 ```
