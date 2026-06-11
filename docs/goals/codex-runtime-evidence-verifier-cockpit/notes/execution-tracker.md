@@ -64,17 +64,18 @@ Current evidence:
   title/description text, and repo-truth comment
   `81cfdd41-ff0e-4df1-b884-c01789e30a50`. This tracker refresh does not claim a
   fresh Linear fetch, Linear field-text currency, or parent-goal completion.
-- Next safe action: run the remaining closeout/backlog audit from current
-  `main`, state the next exact implementation slice or blocker, and keep
-  feature work paused until the tracker records that route.
+- Next safe action: finish PR #402 review/CI, merge it, pull current `main`,
+  then run the remaining closeout/backlog audit and state the next exact
+  implementation slice or blocker.
 - Historical PR details remain in `receipts.jsonl`; they are not active restart
   instructions.
 
 ## Active Slice
 
-No implementation slice is active. The selected next lane is the remaining
-closeout/backlog audit from current `main`; it must produce either the next
-bounded implementation slice or a current blocker before feature work resumes.
+No implementation slice is active. PR #402 review/CI repair is the active route.
+The remaining closeout/backlog audit is queued until PR #402 merges and current
+`main` is pulled; after that pullback it must produce either the next bounded
+implementation slice or a current blocker before feature work resumes.
 
 Non-claims:
 
