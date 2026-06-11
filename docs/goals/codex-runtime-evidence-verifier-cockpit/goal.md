@@ -65,12 +65,16 @@ Current live route truth:
 - Local `main` and `origin/main` were synced at
   `aa020ee7deaef4974ee8c78761192e818416e906` after PR #411 was merged and
   pulled back.
-- Live GitHub reported zero open pull requests after the PR #411 pullback.
+- The PR #411 pullback snapshot is historical because PR #412 was opened
+  afterward for this post-PR411 tracker refresh. PR #412 is the active gate
+  before PU-015 may start.
 - Runtime-card on pulled current main returns `issueKey: "JSC-363"` with the
   JSC-363 active spec and plan, closing the PU-056 route-key guard.
 - Branch and worktree cleanup removed obsolete auxiliary worktrees and stale
   local/remote `codex/*` branches; only `main` and `origin/main` remain.
-- The next safe action is `PU-015 Judge/PM audit packet`: produce the live
+- The next safe action is to merge PR #412, pull local `main` to the PR #412
+  merge commit, reconcile route truth from that current-main checkout, and only
+  then start `PU-015 Judge/PM audit packet`. PU-015 must produce the live
   packet only from current-main evidence and keep Linear field-text currency as
   an explicit owner/external lane until accepted, refreshed, or classified.
 - Earlier Linear JSC-363 evidence includes comment
@@ -121,7 +125,8 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: PU-015 Judge/PM audit packet preparation after PR #411 pullback.
+- Current route: PR #412 post-PR411 tracker refresh merge/pullback gate before
+  PU-015 Judge/PM audit packet preparation.
 - Provenance: See `receipts.jsonl` for merged route history through PR #411.
 
 Corrected backlog after current-main reconciliation:
@@ -129,14 +134,16 @@ Corrected backlog after current-main reconciliation:
 - Done on current main: PR #411 merged at
   `aa020ee7deaef4974ee8c78761192e818416e906`. See `receipts.jsonl` for
   complete merged route history.
-- Current route PR: none. Live GitHub reported zero open pull requests after
-  PR #411 merged and local main was pulled back.
+- Current route PR: #412. The post-PR411 pullback snapshot was superseded when
+  PR #412 opened for this post-PR411 tracker refresh. PR #412 is tracker
+  evidence only, not PU-015 implementation evidence.
 - Completed slice: PU-056 active-route runtime-card selection guard; runtime-card
   on current main derives `issueKey: "JSC-363"` with the active JSC-363 spec
   and plan.
-- Remaining backlog: Linear field-text currency beyond the current comment,
-  PU-015 Judge/PM audit packet, final documentation accuracy, and final
-  requirement-by-requirement completion audit.
+- Remaining backlog after PR #412 merges and local main is pulled back: Linear
+  field-text currency beyond the current comment, PU-015 Judge/PM audit packet,
+  final documentation accuracy, and final requirement-by-requirement completion
+  audit.
 
 ## Why This Exists
 

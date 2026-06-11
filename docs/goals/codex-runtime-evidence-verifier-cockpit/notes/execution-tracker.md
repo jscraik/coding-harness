@@ -41,9 +41,10 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 
 PR #411 is merged and local `main` plus `origin/main` are synced at
 `aa020ee7deaef4974ee8c78761192e818416e906`. PR #412 is the active
-post-PR411 tracker-refresh PR at submitted head
-`5b19b610e3b672fcfa0836a021a48bdd8c261836`; it must merge and be pulled into
-local `main` before PU-015 work starts. PU-056 is closed on current main:
+post-PR411 tracker-refresh PR; its live head must be read from GitHub during
+closeout because review-fix commits can move it after any committed tracker
+snapshot. It must merge and be pulled into local `main` before PU-015 work
+starts. PU-056 is closed on current main:
 runtime-card now projects `issueKey: "JSC-363"` with the JSC-363 active spec
 and plan from the wide Current Active Route row. This tracker does not claim
 Linear field-text currency, final documentation accuracy beyond current
