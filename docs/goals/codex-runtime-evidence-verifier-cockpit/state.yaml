@@ -32,7 +32,7 @@ thin_execution_tracker:
   active_route:
     kind: "pr_review_repair"
     status: "pr404_review_repair_active"
-    blocker: "PR #404 is the active post-PR403 review-repair lane. Repo-owned CI and CodeRabbit status were green on pushed head 574b533e138863a4ca95a2fabb479abc5e904d76, but new current review threads reopened Semgrep source-time Python and tracker-provenance repairs. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, Linear field-text currency beyond the repo-truth comment, and parent-goal completion remain unclaimed."
+    blocker: "PR #404 is the active post-PR403 review-repair lane. Local repair commit 062a3ca6ba996cad0ec24b6dd2e5287915bb057c addresses the new Semgrep source-time Python, route-state, and receipt-provenance review threads; live PR truth remains pending until this R468 route repair is pushed and refreshed. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, Linear field-text currency beyond the repo-truth comment, and parent-goal completion remain unclaimed."
     active_branch: "codex/jsc-363-post-pr403-tracker-refresh"
     active_pr: 404
     active_pr_url: "https://github.com/jscraik/coding-harness/pull/404"
@@ -52,7 +52,7 @@ thin_execution_tracker:
     lifecycle_unit: "remaining-closeout-backlog-audit"
     name: "audit remaining goal/spec/backlog obligations from current main"
     status: "blocked_until_pr404_merges_and_main_is_pulled_back"
-    evidence_receipt: "R467"
+    evidence_receipt: "R468"
   resume_gate:
     - "Do not start feature work until the remaining closeout/backlog audit states the exact next slice from current main and records any blocked obligations separately."
     - "Treat Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 as tracker-alignment evidence only, not field-text-current or completion evidence."

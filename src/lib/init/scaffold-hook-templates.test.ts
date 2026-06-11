@@ -98,6 +98,7 @@ describe("git-hook scaffold templates", () => {
 		const preCommit = renderPreCommitHookScript("npm");
 		const prePush = renderPrePushHookScript("npm");
 
+		expect(preCommit).toContain("bash ./scripts/validate-codestyle.sh --fast");
 		expect(preCommit).toContain("npm run lint");
 		expect(preCommit).toContain("npm run docs:lint");
 		expect(preCommit).toContain("npm run quality:docstrings");
@@ -107,6 +108,24 @@ describe("git-hook scaffold templates", () => {
 		expect(preCommit).not.toContain("pnpm lint");
 		expect(prePush).toContain("npm run build");
 		expect(prePush).not.toContain("pnpm build");
+	});
+
+	it("renders yarn hook package-script commands without pnpm fallbacks", () => {
+		const preCommit = renderPreCommitHookScript("yarn");
+		const prePush = renderPrePushHookScript("yarn");
+
+		expect(preCommit).toContain("bash ./scripts/validate-codestyle.sh --fast");
+		expect(preCommit).toContain("yarn lint");
+		expect(preCommit).toContain("yarn docs:lint");
+		expect(preCommit).toContain("yarn quality:docstrings");
+		expect(preCommit).toContain(
+			'run_optional_package_script "quality:behavior-tests" yarn quality:behavior-tests',
+		);
+		expect(preCommit).not.toContain("pnpm lint");
+		expect(preCommit).not.toContain("npm run lint");
+		expect(prePush).toContain("yarn build");
+		expect(prePush).not.toContain("pnpm build");
+		expect(prePush).not.toContain("npm run build");
 	});
 
 	it("renders staged secret scanning with gitleaks", () => {
