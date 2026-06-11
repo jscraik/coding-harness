@@ -31,21 +31,21 @@ thin_execution_tracker:
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
     kind: "post_pr411_current_main_route_refresh"
-    status: "pr411_merged_pu015_selected"
-    blocker: "Parent completion remains blocked by Linear field-text disposition, PU-015 Judge/PM live audit packet, final documentation accuracy, and final requirement-by-requirement completion audit."
-    current_pr_state: "PR #411 merged at 2026-06-11T20:41:25Z as squash merge aa020ee7deaef4974ee8c78761192e818416e906 from submitted head dc2d19bfc14d32621eed5b082565168ab177a631; local main plus origin/main are synced to that merge commit. Live GitHub reports zero open pull requests after pullback. PR #411 carried the post-PR410 tracker refresh only, not PU-015 implementation evidence."
-    test_and_audit_status: "Runtime-card on pulled current main returns issueKey JSC-363 with the active JSC-363 spec and plan; harness next returns a clean-worktree handoff recommendation. PR #411 merge/pullback is verified; external Snyk GitHub App quota remains owner-waived only where applicable."
+    status: "pr412_tracker_refresh_pending_merge"
+    blocker: "Parent completion remains blocked by the active PR #412 tracker-refresh merge, local main pullback, Linear field-text disposition, PU-015 Judge/PM live audit packet, final documentation accuracy, and final requirement-by-requirement completion audit."
+    current_pr_state: "PR #412 is the active post-PR411 tracker-refresh PR at submitted head dde5d7b815d81a1a6eaa6118d8f88462d2b381be; it is tracker-refresh evidence only, not PU-015 implementation evidence. PR #411 merged at 2026-06-11T20:41:25Z as squash merge aa020ee7deaef4974ee8c78761192e818416e906 from submitted head dc2d19bfc14d32621eed5b082565168ab177a631; local main plus origin/main are synced to that merge commit until PR #412 merges and is pulled locally."
+    test_and_audit_status: "Runtime-card on pulled current main returns issueKey JSC-363 with the active JSC-363 spec and plan; harness next returns a clean-worktree handoff recommendation. PR #411 merge/pullback is verified; PR #412 route repairs have local validators passing and remain awaiting merge. External Snyk GitHub App quota remains owner-waived only where applicable."
     active_route_drift_finding: "PU-055 found active-route selection drift and PU-056 fixed it on current main; runtime-card no longer drops the JSC-363 route key for wide Current Active Route rows."
     unclaimed_surfaces:
       - "Linear field-text currency beyond repo-truth comment 81cfdd41-ff0e-4df1-b884-c01789e30a50"
       - "Judge/PM live audit packet"
       - "Final documentation accuracy beyond current validators"
       - "Parent-goal completion"
-    active_branch: null
-    active_pr: null
-    active_pr_url: null
-    active_pr_last_checked_head_sha: null
-    active_pr_head_sha_contract: "No active PR exists after PR #411 pullback. The next implementation PR must be opened from current main aa020ee7deaef4974ee8c78761192e818416e906 and tracked separately."
+    active_branch: "codex/jsc-363-post-pr411-tracker-refresh"
+    active_pr: 412
+    active_pr_url: "https://github.com/jscraik/coding-harness/pull/412"
+    active_pr_last_checked_head_sha: "dde5d7b815d81a1a6eaa6118d8f88462d2b381be"
+    active_pr_head_sha_contract: "PU-015 must remain blocked until PR #412 merges, local main is pulled to the PR #412 merge commit, and the route tracker is reconciled from that current-main checkout."
     last_merged_pr: 411
     last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/411"
     last_merged_sha: "aa020ee7deaef4974ee8c78761192e818416e906"
@@ -53,17 +53,18 @@ thin_execution_tracker:
     last_merge_verified_at: "2026-06-11T20:41:25Z"
     local_main_sha: "aa020ee7deaef4974ee8c78761192e818416e906"
     origin_main_sha: "aa020ee7deaef4974ee8c78761192e818416e906"
-    open_pr_count: 0
-    open_prs: []
+    open_pr_count: 1
+    open_prs:
+      - 412
   queued_slice:
     lifecycle_unit: "PU-015"
     name: "Judge/PM audit packet"
-    status: "selected_from_post_pr411_current_main"
+    status: "selected_but_blocked_until_pr412_merge_and_pullback"
     evidence_receipt: "R479"
   resume_gate:
-    - "Start PU-015 only from pulled current main at aa020ee7deaef4974ee8c78761192e818416e906, and keep Linear field-text currency as explicit evidence, owner disposition, or blocker."
+    - "Do not start PU-015 until PR #412 merges, local main is pulled to the PR #412 merge commit, and the route tracker is reconciled from that current-main checkout."
     - "Treat Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 as tracker-alignment evidence only, not field-text-current or completion evidence."
-    - "PR #396 through PR #410 are merged provenance; do not reopen their repair lanes unless a fresh current-main regression proves a new blocker."
+    - "PR #396 through PR #411 are merged provenance; do not reopen their repair lanes unless a fresh current-main regression proves a new blocker."
     - "The next selected slice must preserve the one-PR-at-a-time route contract and must not claim Judge/PM readiness or parent-goal completion before the final audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
   review_artifacts:
@@ -203,9 +204,9 @@ current_slice_gate:
   next_required_handoff_steps:
     - "Use docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md as the thin restart tracker; keep old PR history as provenance, not active route work."
     - "Validate this current-main tracker refresh with receipts JSON parsing, audit freshness, goal-board validation, Kanban script validation, and git diff whitespace validation."
-    - "Use the pulled main checkout at aa020ee7deaef4974ee8c78761192e818416e906 as the route baseline for PU-015."
+    - "Use the pulled main checkout at aa020ee7deaef4974ee8c78761192e818416e906 as the current baseline only until PR #412 merges; PU-015 must use the PR #412 merge commit after local pullback."
     - "Linear JSC-363 has compact repo-truth route alignment via comment 81cfdd41-ff0e-4df1-b884-c01789e30a50; do not claim field-text currency until the older Phase 1 title/description wording is owner-accepted or updated."
-    - "Treat PU-056 active-route runtime-card selection guard as merged through PR #410 and the post-PR410 tracker refresh as merged through PR #411; start PU-015 Judge/PM audit packet only after the post-PR411 route refresh validates and merges."
+    - "Treat PU-056 active-route runtime-card selection guard as merged through PR #410 and the post-PR410 tracker refresh as merged through PR #411; start PU-015 Judge/PM audit packet only after PR #412, the post-PR411 route refresh, validates, merges, and is pulled into local main."
     - "Treat receipt-backed merged JSC-363 route/foundation lanes through PR #371 as completed current-main evidence at 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856; do not reopen those PR lanes unless fresh GitHub or current-main validation shows a regression."
     - "Use receipt R379 as the validated post-PR #365 current-main route-tracker repair evidence for goal.md, state.yaml, receipts.jsonl, .harness/active-artifacts.md, and .harness/implementation-notes/goal-kanban-board.html; use R357 only as PU-012 intent-created evidence, not PU-012 completion evidence."
     - "Use the PU-012 intent review artifacts as the reviewed-intent gate: best-practices pass, agent-native pass, adversarial needs_changes, and adversarial rereview pass after the intent fix."
