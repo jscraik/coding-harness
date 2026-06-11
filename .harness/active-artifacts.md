@@ -10,10 +10,10 @@
 
 ## Scope
 
-Current working reconciliation: 2026-06-11 post-PR #398 pullback for JSC-363.
-PR #398 merged the source-tracked post-PR #397 route refresh into `main` at
-`5ce54e9aad858789df6fd6361b679817d079d53e` from submitted head
-`fe8f2dc830fadd640e327db388e458721ebb9a1c`; local `main` and
+Current working reconciliation: 2026-06-11 post-PR #399 pullback for JSC-363.
+PR #399 merged the source-tracked post-PR #398 route refresh into `main` at
+`abf2a459e54e5390675b58bb49400840947ef7eb` from submitted head
+`488a1e73f4fd4fe430d6b7fb0e17e69a426b038d`; local `main` and
 `origin/main` are synced to that head. PR #394 remains historical Linear
 tracker-alignment provenance. PR #391 delivered the narrow
 `harness next` classifier fix where empty clean
@@ -97,7 +97,7 @@ unless a live refresh is recorded in the referenced artifact.
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
 | Advisory stale-document archive candidate reporting | JSC-395 | `.harness/specs/2026-06-05-advisory-stale-document-archive-candidate-reporting-spec.md` plus `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-trace-plan.md` plus `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-execution-plan.md` | Delivered on current main by PR #354. The slice remains advisory/read-only: it may report stale-document archive candidates and docs-gate advisory findings, but it must not delete, move, archive, demote, or rewrite documentation artifacts. | Treat PR #354 as merged implementation evidence. Keep release, downstream-template, and any future docs-cleanup action separate unless a later tracked route explicitly promotes them. |
-| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor route with a thin execution tracker. PR #396, PR #397, and PR #398 are merged provenance; local main and origin/main are synced at 5ce54e9aad858789df6fd6361b679817d079d53e, and live GitHub reports zero open pull requests at this refresh point. Linear JSC-363 has repo-truth comment 81cfdd41-ff0e-4df1-b884-c01789e30a50, but field-text currency beyond that comment remains unclaimed. | Next Safe Action: run the remaining closeout/backlog audit from current main, state the exact next implementation slice or blocker, and keep feature work paused until that route is explicit. Latest route receipt anchor: R459 / 5ce54e9aad858789df6fd6361b679817d079d53e. |
+| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md plus .harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md plus .harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md | Active Goal Governor route with a thin execution tracker. PR #396, PR #397, PR #398, and PR #399 are merged provenance; local main and origin/main are synced at abf2a459e54e5390675b58bb49400840947ef7eb, and live GitHub reports zero open pull requests at this refresh point. Linear JSC-363 has repo-truth comment 81cfdd41-ff0e-4df1-b884-c01789e30a50, but field-text currency beyond that comment remains unclaimed. | Next Safe Action: run the remaining closeout/backlog audit from current main, state the exact next implementation slice or blocker, and keep feature work paused until that route is explicit. Latest route receipt anchor: R460 / abf2a459e54e5390675b58bb49400840947ef7eb. |
 
 PU-046 update: PR #330 was refreshed again on head
 163017e16e4611d5d71f5c4c62fc85f8d164b17b after the R205 artifact receipt was
