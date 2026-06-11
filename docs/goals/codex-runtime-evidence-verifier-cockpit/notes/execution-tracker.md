@@ -27,21 +27,21 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Parent issue        | JSC-363                                                            |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`       |
 | Current branch      | `main` pulled, tracker refresh branch active                       |
-| Local main head     | `5ce54e9aad858789df6fd6361b679817d079d53e`                         |
-| Origin main head    | `5ce54e9aad858789df6fd6361b679817d079d53e`                         |
-| Main baseline       | `5ce54e9aad858789df6fd6361b679817d079d53e`                         |
+| Local main head     | `abf2a459e54e5390675b58bb49400840947ef7eb`                         |
+| Origin main head    | `abf2a459e54e5390675b58bb49400840947ef7eb`                         |
+| Main baseline       | `abf2a459e54e5390675b58bb49400840947ef7eb`                         |
 | Active route count  | 0                                                                  |
 | Active route        | none                                                               |
-| Last closed route   | PR #398 merged                                                     |
-| Current route       | post-PR398 route truth refresh                                     |
+| Last closed route   | PR #399 merged                                                     |
+| Current route       | post-PR399 route truth refresh                                     |
 | Current slice       | Audit remaining goal/spec/backlog obligations from current main    |
 | Feature work status | No next feature slice started                                      |
 
 ## Active Route
 
-No JSC-363 PR repair route is active after PR #398 merged and local `main`
-was pulled to `5ce54e9aad858789df6fd6361b679817d079d53e`. This tracker
-refresh closes the post-PR397 tracker route and keeps the remaining
+No JSC-363 PR repair route is active after PR #399 merged and local `main`
+was pulled to `abf2a459e54e5390675b58bb49400840947ef7eb`. This tracker
+refresh closes the post-PR398 tracker route and keeps the remaining
 closeout/backlog audit queued. It does not claim Linear field-text currency,
 root-hygiene proof, documentation accuracy, Judge/PM readiness, release
 readiness, or parent-goal completion.
@@ -49,7 +49,7 @@ readiness, or parent-goal completion.
 Current evidence:
 
 - Local `main` and `origin/main` are synced at
-  `5ce54e9aad858789df6fd6361b679817d079d53e`.
+  `abf2a459e54e5390675b58bb49400840947ef7eb`.
 - Live GitHub reports PR #396 merged at `2026-06-11T02:00:49Z` from submitted
   head `687a3ca9721bb19336fd24f6a8b91fb6488098fe` as squash merge commit
   `02245c5735add2f2990f0203a4dbd4708f72353a`; repo-owned CircleCI,
@@ -62,6 +62,13 @@ Current evidence:
 - Live GitHub reports PR #398 merged at `2026-06-11T03:04:26Z` from submitted
   head `fe8f2dc830fadd640e327db388e458721ebb9a1c` as squash merge commit
   `5ce54e9aad858789df6fd6361b679817d079d53e`; repo-owned CircleCI,
+  aggregate `pr-pipeline`, aggregate `security-scan`, Socket, CodeRabbit,
+  and review-thread checks passed or resolved before merge. The external
+  `security/snyk (jscraik)` GitHub App quota/error lane remains owner-waived
+  only for that external app status.
+- Live GitHub reports PR #399 merged at `2026-06-11T03:36:07Z` from submitted
+  head `488a1e73f4fd4fe430d6b7fb0e17e69a426b038d` as squash merge commit
+  `abf2a459e54e5390675b58bb49400840947ef7eb`; repo-owned CircleCI,
   aggregate `pr-pipeline`, aggregate `security-scan`, Socket, CodeRabbit,
   and review-thread checks passed or resolved before merge. The external
   `security/snyk (jscraik)` GitHub App quota/error lane remains owner-waived
