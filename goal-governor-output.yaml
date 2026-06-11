@@ -20,8 +20,8 @@ truth_lanes:
     status: pr401_repo_owned_lanes_passed_before_merge
     evidence: "GitHub PR #401 status rollup showed repo-owned CircleCI lanes, pr-pipeline, security-scan, CodeRabbit, and Socket success; external security/snyk app remained owner-waived only"
   tracker:
-    status: refreshed_to_r463
-    evidence: "state.yaml, goal.md, execution-tracker.md, active-artifacts.md, kanban HTML, and receipts.jsonl now point at R463/current main"
+    status: refreshed_to_r463_after_review_tightening
+    evidence: "state.yaml, goal.md, execution-tracker.md, active-artifacts.md, kanban HTML, receipts.jsonl, and this governor output were rechecked after stale current-route text was collapsed to the PR #401/R463 restart snapshot"
 next_action:
   lifecycle_unit: remaining-closeout-backlog-audit
   instruction: "Run the remaining goal/spec/backlog audit from current main and state the exact next bounded slice or blocker before any feature work resumes."

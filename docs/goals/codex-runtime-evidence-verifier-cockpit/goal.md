@@ -43,49 +43,13 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-11 post-PR401 pullback tracker refresh. PR #366,
-PR #367, PR #369, PR #370, PR #371, PR #372, PR #373, PR #374, PR #375,
-PR #376, PR #377, PR #378, PR #379, PR #380, PR #381, PR #382, PR #383,
-PR #384, PR #385, PR #386, PR #387, PR #388, PR #389, PR #390, PR #391,
-PR #392, PR #393, and PR #394 are historical route provenance. PR #394 is
-merged into `main` at `9014b416f170ef6069416aa2d356845232cf2de1`.
-PR #396, PR #397, PR #398, PR #399, PR #400, and PR #401 are also historical
-merged provenance.
+Last updated during the 2026-06-11 post-PR401 pullback tracker refresh. Merged
+PR history is receipt provenance, not the active route. Use `receipts.jsonl` for
+the complete PR ledger and keep this section limited to the current restart
+truth.
 
 Current live route truth:
 
-- Local `main` and `origin/main` are synced at
-  `fdcd577a77fb660b9b71e058bcbd33fff06c67bf` after PR #401 merged.
-- PR #396 merged the Prek hook leaf-adapter repair from submitted head
-  `687a3ca9721bb19336fd24f6a8b91fb6488098fe` as squash merge commit
-  `02245c5735add2f2990f0203a4dbd4708f72353a`; repo-owned CircleCI lanes,
-  aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, and Socket
-  were successful before merge. The external Snyk GitHub App quota/error lane
-  remains owner-waived for that external app status only.
-- PR #397 merged the hook review-regression proof from submitted head
-  `264b7ac105bb5d7a44ffe97b80e27f51ff857d3e` as squash merge commit
-  `fa67dd5268fbff1fc785a098825aebcc1e5cf3ff`.
-- PR #398 merged the post-PR397 route truth refresh from submitted head
-  `fe8f2dc830fadd640e327db388e458721ebb9a1c` as squash merge commit
-  `5ce54e9aad858789df6fd6361b679817d079d53e`; repo-owned CircleCI lanes,
-  aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, Socket,
-  and review-thread checks were successful or resolved before merge. The
-  external Snyk GitHub App quota/error lane remains owner-waived for that
-  external app status only.
-- PR #399 merged the post-PR398 route truth refresh from submitted head
-  `488a1e73f4fd4fe430d6b7fb0e17e69a426b038d` as squash merge commit
-  `abf2a459e54e5390675b58bb49400840947ef7eb`; repo-owned CircleCI lanes,
-  aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, Socket,
-  and review-thread checks were successful or resolved before merge. The
-  external Snyk GitHub App quota/error lane remains owner-waived for that
-  external app status only.
-- PR #400 merged the post-PR399 route truth refresh from submitted head
-  `7cfcaadb34a2f86c142a39974117704e0ebad951` as squash merge commit
-  `287a67c0f81c7f2c31d96e5c7bb7d00dfaac2e64`; repo-owned CircleCI lanes,
-  aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, Socket,
-  and review-thread checks were successful or resolved before merge. The
-  external Snyk GitHub App quota/error lane remains owner-waived for that
-  external app status only.
 - PR #401 merged the post-PR400 static route-truth review fix from submitted
   head `c357007368015a161a3ee51a91b90e6bc83f0999` as squash merge commit
   `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`; repo-owned CircleCI lanes,
@@ -93,7 +57,12 @@ Current live route truth:
   and review-thread checks were successful or resolved before merge. The
   external Snyk GitHub App quota/error lane remains owner-waived for that
   external app status only.
-- Live GitHub reports no open PRs for this repository at this refresh point.
+- Local `main` and `origin/main` were synced at
+  `fdcd577a77fb660b9b71e058bcbd33fff06c67bf` before this tracker-refresh
+  branch was created.
+- Live GitHub reported no open PRs for this repository at the refresh point.
+- The remaining closeout/backlog audit is the queued lane; no next feature slice
+  has started.
 - The next safe action is to run the remaining closeout/backlog audit from
   current `main`, state the exact next implementation slice or blocker, and
   keep feature work paused until that route is explicit.
@@ -101,127 +70,6 @@ Current live route truth:
   `81cfdd41-ff0e-4df1-b884-c01789e30a50` records the repo-truth
   classification. The original Phase 1 title/description remain historical
   scope context, not completion evidence.
-- The remaining closeout/backlog audit is the queued lane; no next feature
-  slice has started.
-- PR #394 merged the source-tracked post-PR393 route refresh from submitted
-  head `8b98cc6299d566ccf3b472781ee6def606c9ea79`.
-- PR #393 merged the source-tracked post-PR392 route refresh from submitted
-  head `e1adee25ab692d3a554f1ae318b816762c3d045c`.
-- PR #392 merged the source-tracked post-PR391 route refresh from submitted
-  head `d9bd5c42c25a315dc4e112b546003402422fbdae`.
-- PR #391 delivered the narrow `harness next` clean-worktree-state repair:
-  clean empty `git status --short --untracked-files=all` output remains a
-  valid clean-state signal rather than becoming missing evidence and a false
-  dirty-worktree blocker.
-- Local focused and broad validation passed for the repair, while
-  `pnpm test:deep` reached the E2E tail and blocked because GitHub and Linear
-  credentials were not visible in the process environment and
-  `<REDACTED_HOME_PATH>/.codex/.env` is a FIFO in this sandbox.
-- PR #390 merged the post-PR389 route truth refresh into `main`.
-- PR #389 remains merged route-refresh provenance at
-  `2b1b20cbaab259041b53e53fcabfa24a248528a2`.
-- Local `main` and `origin/main` were previously synced at
-  `5452ce126acabdd5e921c6bed59e23d70dbe4b79` after PR #385 merge pullback.
-- PR #385 merged the post-PR384 Linear blocker refresh into `main` from
-  submitted head `b6951de3a5d8627c80b78cc911c10d526dd4e24b` after repo-owned
-  CircleCI lanes, CodeRabbit, Socket, and review-thread refresh passed. The
-  external Snyk GitHub App status remained owner-waived for the quota/status
-  lane only.
-- This branch adds a narrow goal-board stale-route guard so future tracker
-  validation rejects a `github_pr` active route with `open_pr_count: 0` that
-  still names a `codex/...` branch or tells operators to merge an already
-  merged blocker-refresh PR.
-- PR #384 merged the post-PR383 tracker refresh into `main` from submitted
-  head `19b193cd4d628f3cd50c215976890ca743e259dd` after repo-owned
-  CircleCI lanes, CodeRabbit, Socket, and review-thread refresh passed. The
-  external Snyk GitHub App status remained owner-waived for the quota/status
-  lane only.
-- PR #383 merged the audit-freshness governor-output validator repair into
-  `main` from submitted head `777b3fd38b64b71edf6a3e5286596cec087e6ed5`
-  after repo-owned required checks passed, CodeRabbit resolved the
-  receipt-key-contract review thread, and post-merge goal-board,
-  audit-freshness, and tracker-board validators passed on current main. The external
-  Snyk GitHub App status remained owner-waived for the quota/status lane only.
-- PR #382 merged the post-PR381 tracker refresh into `main` from submitted
-  head `784070cb93a8fe0204d05bfb909608711128c0d0` after CodeRabbit passed,
-  repo-owned required CircleCI contexts passed, and review-thread refresh
-  returned zero unresolved threads. The initial partial CircleCI rerun left
-  `ci/circleci: linear-gate` and `ci/circleci: risk-policy-gate` expected;
-  rerunning the original workflow from failed jobs emitted both required
-  contexts and unblocked merge. The external Snyk GitHub App status remained
-  owner-waived for the quota/status lane only.
-- PR #381 merged the Linear field blocker tracker route into `main` from
-  submitted head `f0e115b744b0bbc32268343ed3d6d1efe679cf40` after
-  repo-owned CircleCI lanes, aggregate `pr-pipeline`, CodeRabbit, and
-  review-thread refresh passed. The external Snyk GitHub App status remained
-  owner-waived for the quota/status lane only.
-- PR #380 merged the post-PR379 tracker refresh route
-  into `main` from submitted head
-  `958f642a23892b806a4a2ffa0b6ca1b491922c23` after the PR body was repaired
-  against `pr-template-gate`, CodeRabbit was manually triggered, repo-owned
-  CircleCI lanes passed on rerun, and review-thread refresh returned zero
-  unresolved threads. The external Snyk GitHub App status remained owner-waived
-  for the quota/status lane only.
-- PR #379 merged the post-PR378 tracker refresh route
-  into `main` from submitted head
-  `ac6d883a4568e048db47dad8f6106b5c266f3f73` after current-head
-  CodeRabbit and repo-owned CircleCI lanes passed. Review-thread refresh returned
-  zero unresolved threads. The external Snyk GitHub App status
-  remained owner-waived for the quota/status lane only.
-- Local delivery-truth validation reached `pnpm test:deep`; local check,
-  unit, integration, artifact, and audit lanes passed, then the E2E tail blocked
-  because GitHub and Linear credentials were not visible in the process
-  environment and `<REDACTED_HOME_PATH>/.codex/.env` is a FIFO in this sandbox.
-- Local simplify, improve-codebase-architecture, sy-review, and testing lenses
-  are recorded in `artifacts/reviews/delivery-truth-consumption-skill-lenses.md`.
-  Independent reviewer subagents remain blocked in this runtime because no
-  `spawn_agent` tool is exposed.
-- PR #374 merged the delivery-truth consumption projection into `main` from
-  submitted head `ca7bc92aeeeb5fa357732fbad8f49f62f54abc2b`.
-- PR #374 review-thread refresh returned zero unresolved threads before merge.
-- PR #374 repo-owned CircleCI lanes, aggregate `pr-pipeline`, CodeRabbit
-  status, Socket, and CircleCI Snyk dependency scan passed before merge. The
-  external Snyk GitHub App status remains owner-waived for that external
-  quota/status lane only and is not external Snyk success.
-- PR #374 still carries the local E2E credential-surface blocker and unavailable
-  independent reviewer subagent blocker as disclosed process gaps. Those gaps do
-  not reopen the merged PR lane, but they remain relevant to final closeout.
-- Helper lanes are now bounded and closed as soon as their artifact or blocker
-  evidence is recorded; they must not linger as implicit active work.
-- Live GitHub has PR #373 merged from submitted head
-  `2e8d94785edd2c10ab97a175633e341ef9fa2c49`.
-- Live GitHub has PR #372 merged from submitted head
-  `ae0975afbde9acbf0fd1a59f30476fff9a044886`.
-- Live GitHub has PR #371 merged from submitted head
-  `a77a7f0ec3ccf2950c75a7b10b56067e32648e02`.
-- PR #372 repo-owned CircleCI lanes, aggregate `pr-pipeline`, CodeRabbit
-  status, live PR body gate, and unresolved-review-thread refresh were green or
-  empty before merge; the GitHub merge used normal GraphQL merge authority, not
-  an admin or force bypass.
-- PR #371 repo-owned CircleCI lanes, `pr-pipeline`, CodeRabbit status, and
-  unresolved-review-thread refresh were green or empty before merge.
-- PR #372 adds narrow validator support for deterministic CodeRabbit learning
-  contracts and records the post-PR371 route truth refresh.
-- PR #370 is merged PU-013 proof-route provenance at
-  `83d7b6dab5cda761889d1708a304aa87edc2b9fa`.
-- PR #369 is merged historical provenance at
-  `1d0c3baaa76d1de68c633b086a5dcf07472ddbef`.
-- The external Snyk GitHub App status remained an owner-waived external lane
-  only; the repo-owned CircleCI Snyk dependency scan passed.
-- CodeRabbit and Codex review-status contexts were not treated as independent
-  review proof because usage and rate-limit comments were present.
-- PU-013 runtime cockpit integration proof is merged and pulled back to local
-  `main`; no production code patch was required because current main already
-  projects Codex runtime evidence into `runtime-card` and consumes it narrowly
-  through `harness next`.
-- Linear JSC-363 was last refreshed with comment
-  `34a50024-24be-4853-af6e-3219cbc0d845` before PR #372 merged, while the
-  issue title still contains older Phase 1 wording. Field-text currency remains
-  unclaimed until a fresh Linear update or owner decision records otherwise.
-- Delivery-truth consumption projection is delivered on current `main`.
-  Remaining final-closeout work is review/external/root-hygiene proof,
-  documentation accuracy, Linear field-text decision, historical review-coverage
-  backfill, PU-015 Judge/PM audit, and final requirement-by-requirement audit.
 
 ## Thin Execution Tracker
 
@@ -267,14 +115,13 @@ Current route truth:
 
 - Current route: remaining closeout/backlog audit from current main; no next
   feature slice has started.
-- Provenance: See `receipts.jsonl` for merged PR #343 through PR #394 route
-  history.
+- Provenance: See `receipts.jsonl` for merged route history through PR #401.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #394 merged at
-  `9014b416f170ef6069416aa2d356845232cf2de1`. See `receipts.jsonl` for
-  complete merged PR history.
+- Done on current main: PR #401 merged at
+  `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`. See `receipts.jsonl` for
+  complete merged route history.
 - Current route PR: none.
 - Active slice: remaining closeout/backlog audit from current main.
 - Remaining backlog: review/external/root-hygiene proof, documentation accuracy,
