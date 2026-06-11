@@ -43,24 +43,24 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-11 post-PR406 pullback tracker refresh. Merged
+Last updated during the 2026-06-11 post-PR407 pullback tracker refresh. Merged
 PR history is receipt provenance, not the active route. Use `receipts.jsonl` for
 the complete PR ledger and keep this section limited to the current restart
 truth.
 
 Current live route truth:
 
-- PR #406 merged the post-PR405 route-truth refresh from submitted head
-  `3964585ec6712de2deb248e8a9cc34531e6afd93` as squash merge commit
-  `d0ae8ecfc78165690c9070aee3d66bfd7a85307a`; repo-owned CircleCI lanes,
+- PR #407 merged the post-PR406 route-truth refresh from submitted head
+  `8a53c95ae2f3a9cd9be1a32df433e1a6fc233b09` as squash merge commit
+  `89b67bffc2b13caee315f04d384209359ca64c23`; repo-owned CircleCI lanes,
   aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, Socket,
   and review-thread checks were successful or resolved before merge. The
   external Snyk GitHub App quota/error lane remains owner-waived for that
   external app status only.
 - Local `main` and `origin/main` were synced at
-  `d0ae8ecfc78165690c9070aee3d66bfd7a85307a` after PR #406 was merged and
+  `89b67bffc2b13caee315f04d384209359ca64c23` after PR #407 was merged and
   pulled back.
-- Live GitHub reported no open PRs at the PR #406 pullback refresh point.
+- Live GitHub reported no open PRs at the PR #407 pullback refresh point.
 - Branch and worktree cleanup removed obsolete auxiliary worktrees and stale
   local/remote `codex/*` branches; only `main` and `origin/main` remain.
 - The remaining closeout/backlog audit is now the active route; no next feature
@@ -116,12 +116,12 @@ Stop conditions:
 Current route truth:
 
 - Current route: remaining closeout/backlog audit from current main.
-- Provenance: See `receipts.jsonl` for merged route history through PR #406.
+- Provenance: See `receipts.jsonl` for merged route history through PR #407.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #406 merged at
-  `d0ae8ecfc78165690c9070aee3d66bfd7a85307a`. See `receipts.jsonl` for
+- Done on current main: PR #407 merged at
+  `89b67bffc2b13caee315f04d384209359ca64c23`. See `receipts.jsonl` for
   complete merged route history.
 - Current route PR: none.
 - Active slice: run the remaining closeout/backlog audit before feature work.

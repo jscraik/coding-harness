@@ -411,12 +411,12 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness status">Current main: PR #406 merged</div>
+      <div class="source-chip" aria-label="Source freshness status">Current main: PR #407 merged</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
       <div class="metric"><span>Goal status</span><strong>Backlog audit queued</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #406</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #407</strong></div>
       <div class="metric"><span>Current PR</span><strong>None open</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Projection merged</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated after PR #406 merged and local main was pulled to <code>d0ae8ecfc78165690c9070aee3d66bfd7a85307a</code>. Live GitHub reported zero open pull requests at this refresh point, and cleanup left <code>main</code>, <code>origin/main</code>, and this single route-refresh branch. The active route is the remaining closeout/backlog audit from current main: state the exact next implementation slice or blocker, and keep feature work paused until that route is explicit. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, Linear field-text currency beyond the repo-truth comment, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated after PR #407 merged and local main was pulled to <code>89b67bffc2b13caee315f04d384209359ca64c23</code>. Live GitHub reported zero open pull requests at this refresh point, and cleanup left <code>main</code>, <code>origin/main</code>, and this single route-refresh branch. The active route is to merge this post-PR407 tracker refresh, pull main, then run the remaining closeout/backlog audit from current main: state the exact next implementation slice or blocker, and keep feature work paused until that route is explicit. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, Linear field-text currency beyond the repo-truth comment, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -604,7 +604,7 @@
         tags: ["PR #402", "R464", "merged", "tracker refresh"],
         summary: "PR #402 merged the post-PR401 route-truth review fix. Local main and origin/main were synced at fd750626ece4d1f3786ef564485dd8c7d2c04230.",
         evidence: ["PR #402 -> MERGED at 2026-06-11T06:46:51Z", "Submitted head -> 765769147db3f1ccee704e521475d4a20ab65934", "Merge commit -> fd750626ece4d1f3786ef564485dd8c7d2c04230", "Repo-owned CircleCI lanes -> success", "pr-pipeline -> success", "security-scan -> success", "CodeRabbit -> success", "Review threads -> resolved before merge", "External security/snyk GitHub App quota lane -> owner-waived only", "Live GitHub open PR list -> []"],
-        next: "Use as merged route provenance only; current route truth is PR #406 and R472.",
+        next: "Use as merged route provenance only; current route truth is PR #407 and R473.",
         risk: "This refresh closed PR-route ambiguity only. It did not prove documentation accuracy, root hygiene, Judge/PM readiness, Linear field text, or parent-goal completion."
       },
       {
@@ -652,15 +652,26 @@
         risk: "This refresh closes the PR #406 route lane only. It does not prove documentation accuracy, root hygiene, Judge/PM readiness, Linear field text, or parent-goal completion."
       },
       {
+        id: "post-pr407-current-main",
+        lane: "pr-truth",
+        title: "PR #407: Route refresh merged",
+        status: "done",
+        tags: ["PR #407", "R473", "merged", "tracker refresh"],
+        summary: "PR #407 merged the post-PR406 route refresh. Local main and origin/main are synced at 89b67bffc2b13caee315f04d384209359ca64c23.",
+        evidence: ["PR #407 -> MERGED at 2026-06-11T14:58:13Z", "Submitted head -> 8a53c95ae2f3a9cd9be1a32df433e1a6fc233b09", "Merge commit -> 89b67bffc2b13caee315f04d384209359ca64c23", "Local main and origin/main -> 89b67bffc2b13caee315f04d384209359ca64c23", "Repo-owned CircleCI lanes -> success", "pr-pipeline -> success", "security-scan -> success", "CodeRabbit -> success", "Review thread repair -> merged before route pullback", "Live GitHub open PR list -> []", "External security/snyk GitHub App quota lane -> owner-waived only"],
+        next: "Merge this post-PR407 tracker refresh, pull main, then run the remaining closeout/backlog audit from current main before starting feature work.",
+        risk: "This refresh closes the PR #407 route lane only. It does not prove documentation accuracy, root hygiene, Judge/PM readiness, Linear field text, or parent-goal completion."
+      },
+      {
         id: "remaining-closeout-backlog-audit",
         lane: "remaining",
         title: "Next: PU-055 closeout evidence matrix",
         status: "active",
-        tags: ["PU-055", "active after PR #406", "R472", "closeout", "matrix"],
+        tags: ["PU-055", "active after PR #407", "R473", "closeout", "matrix"],
         summary: "The next work is not feature implementation. It is a current-main evidence matrix that classifies each remaining closeout lane as complete, blocked, not applicable, or the next bounded implementation slice.",
-        evidence: ["Current main after PR #406 -> d0ae8ecfc78165690c9070aee3d66bfd7a85307a", "PR #406 -> merged", "Live GitHub open PR list -> []", "state.yaml queued_slice -> PU-055 current-main closeout evidence matrix", "goal.md current reconciliation status -> post-PR406 pullback"],
-        next: "Run PU-055 before any feature work: reconcile goal, plan, spec, adopted audit sources, receipts, docs, Linear field state, review coverage, and closeout packet requirements.",
-        risk: "Starting feature work before this audit would reintroduce stale-route and context-debt failure modes."
+        evidence: ["Current main after PR #407 -> 89b67bffc2b13caee315f04d384209359ca64c23", "PR #407 -> merged", "Live GitHub open PR list -> []", "state.yaml queued_slice -> PU-055 current-main closeout evidence matrix", "goal.md current reconciliation status -> post-PR407 pullback"],
+        next: "Merge this post-PR407 tracker refresh first. Then run PU-055 before any feature work: reconcile goal, plan, spec, adopted audit sources, receipts, docs, Linear field state, review coverage, and closeout packet requirements.",
+        risk: "Starting feature work before this tracker refresh and audit would reintroduce stale-route and context-debt failure modes."
       },
       {
         id: "current-main-pr369",

@@ -27,21 +27,21 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Parent issue        | JSC-363                                                      |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` |
 | Current branch      | `main` pulled and branch/worktree cleanup complete           |
-| Local main head     | `d0ae8ecfc78165690c9070aee3d66bfd7a85307a`                   |
-| Origin main head    | `d0ae8ecfc78165690c9070aee3d66bfd7a85307a`                   |
-| Main baseline       | `d0ae8ecfc78165690c9070aee3d66bfd7a85307a`                   |
+| Local main head     | `89b67bffc2b13caee315f04d384209359ca64c23`                   |
+| Origin main head    | `89b67bffc2b13caee315f04d384209359ca64c23`                   |
+| Main baseline       | `89b67bffc2b13caee315f04d384209359ca64c23`                   |
 | Active route count  | 1                                                            |
 | Active route        | Remaining closeout/backlog audit                             |
-| Last closed route   | PR #406 merged                                               |
-| Current route       | Post-PR406 current-main audit route                          |
+| Last closed route   | PR #407 merged                                               |
+| Current route       | Post-PR407 current-main audit route                          |
 | Current slice       | Audit remaining goal/spec/backlog obligations                |
 | Feature work status | No next feature slice started                                |
 
 ## Active Route
 
-PR #406 is merged and local `main` plus `origin/main` are synced at
-`d0ae8ecfc78165690c9070aee3d66bfd7a85307a`. This tracker refresh closes the
-post-PR405 route-truth refresh and keeps the remaining closeout/backlog audit the
+PR #407 is merged and local `main` plus `origin/main` are synced at
+`89b67bffc2b13caee315f04d384209359ca64c23`. This tracker refresh closes the
+post-PR406 route-truth refresh and keeps the remaining closeout/backlog audit the
 active route. It does not claim Linear field-text currency, root-hygiene proof,
 documentation accuracy, Judge/PM readiness, release readiness, or parent-goal
 completion.
@@ -49,16 +49,14 @@ completion.
 Current evidence:
 
 - Local `main` and `origin/main` were synced at
-  `d0ae8ecfc78165690c9070aee3d66bfd7a85307a` after PR #406 was merged and
+  `89b67bffc2b13caee315f04d384209359ca64c23` after PR #407 was merged and
   pulled back.
-- Live GitHub reported PR #406 merged at `2026-06-11T14:02:40Z` from submitted
-  head `3964585ec6712de2deb248e8a9cc34531e6afd93` as squash merge commit
-  `d0ae8ecfc78165690c9070aee3d66bfd7a85307a`; the current GitHub check rollup
+- Live GitHub reported PR #407 merged at `2026-06-11T14:58:13Z` from submitted
+  head `8a53c95ae2f3a9cd9be1a32df433e1a6fc233b09` as squash merge commit
+  `89b67bffc2b13caee315f04d384209359ca64c23`; the current GitHub check rollup
   shows repo-owned CircleCI, aggregate `pr-pipeline`, aggregate
   `security-scan`, Socket, and CodeRabbit passing, and review-thread checks
-  resolved or non-blocking. The earlier failing `pr-template` job
-  `31303`/workflow `fdc04f9d-3eba-496c-9000-948c5f9ff579` is superseded by
-  current passing check jobs. The external
+  resolved or non-blocking. The external
   `security/snyk (jscraik)` GitHub App quota/error lane remains owner-waived
   only for that external app status.
 - Live GitHub reported zero open pull requests at this pullback refresh point.
@@ -125,8 +123,8 @@ claim/evidence/blocker records, not narrative diary entries.
 
 Feature implementation remains stopped until all of these are true:
 
-- PR #406 is merged into local `main` and `origin/main`, both synced at
-  `d0ae8ecfc78165690c9070aee3d66bfd7a85307a`.
+- PR #407 is merged into local `main` and `origin/main`, both synced at
+  `89b67bffc2b13caee315f04d384209359ca64c23`.
 - Live GitHub reports zero open PRs for `jscraik/coding-harness` at this
   refresh point.
 - Linear JSC-363 has repo-truth comment
@@ -144,26 +142,26 @@ Use this payload only after Linear access is available or an owner explicitly
 approves posting the blocker classification for JSC-363:
 
 ```md
-Refreshed JSC-363 current-main route truth after PR #406 merge and recorded
+Refreshed JSC-363 current-main route truth after PR #407 merge and recorded
 that the remaining closeout/backlog audit is now active.
 
 Current truth:
 
 - Active route lane: remaining closeout/backlog audit from current main.
-- Latest merged route: PR #406.
-- Local main head: d0ae8ecfc78165690c9070aee3d66bfd7a85307a.
-- Origin main head: d0ae8ecfc78165690c9070aee3d66bfd7a85307a.
-- Current GitHub check rollup shows repo-owned required checks for PR #406 pass.
+- Latest merged route: PR #407.
+- Local main head: 89b67bffc2b13caee315f04d384209359ca64c23.
+- Origin main head: 89b67bffc2b13caee315f04d384209359ca64c23.
+- Current GitHub check rollup shows repo-owned required checks for PR #407 pass.
 - Live GitHub reports zero open PRs at this refresh point.
 - PU-013 runtime cockpit integration proof is merged and pulled back to local `main`.
-- PR #406 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
+- PR #407 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
 - No production code patch was required; current main already projects Codex runtime evidence into `runtime-card` and consumes it narrowly through `harness next`.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
 - Linear JSC-363 has repo-truth comment `81cfdd41-ff0e-4df1-b884-c01789e30a50`; field-text currency remains unclaimed until a fresh Linear fetch or owner classification is recorded.
 
 Restart rule:
 The next selected slice is `PU-055 current-main closeout evidence matrix`. It
-starts only after this post-PR406 tracker refresh validates from current main,
+starts only after this post-PR407 tracker refresh validates from current main,
 and it must state the exact next bounded implementation slice or blocker before
 any feature work resumes.
 ```

@@ -6,7 +6,7 @@ native_reconciliation:
   native_status: unknown
   source: "state.yaml native_goal_id and native_status are null"
 board_status: valid_after_repair
-next_action: merge_pr407_then_pull_main_before_pu055
+next_action: merge_post_pr407_tracker_refresh_then_pull_main_before_pu055
 decision_markers:
   - read goal.md and state.yaml first
   - receipts.jsonl
@@ -24,35 +24,35 @@ truth_lanes:
       - "Command: bash scripts/run-harness-gate.sh docs-gate --mode required --json -> pass"
       - "Command: pnpm docs:lint -> pass"
       - "Command: git diff --check -> pass"
-      - "Command: PR_TEMPLATE_BODY=\"$(gh pr view 406 --repo jscraik/coding-harness --json body --jq .body)\" bash scripts/run-harness-gate.sh pr-template-gate --json -> pass"
-      - "Command: gh pr checks 406 --repo jscraik/coding-harness --watch=false -> pass_with_owner_waiver; repo-owned lanes pass, external Snyk quota remains owner-waived only"
+      - "Command: gh pr checks 407 --repo jscraik/coding-harness --watch=false -> pass_with_owner_waiver; repo-owned lanes pass, external Snyk quota remains owner-waived only"
       - "Command: bash scripts/validate-codestyle.sh && pnpm check && bash scripts/run-harness-gate.sh tooling-audit --path . --json -> pass"
   generated_artifacts:
     status: current
     evidence:
-      - "R472 appended to docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl"
-      - "Goal Kanban board updated to PR #406/R472 current route truth"
+      - "R473 pending on codex/jsc-363-post-pr407-tracker-refresh"
+      - "Goal Kanban board updated to PR #407/R473 current route truth"
   remote_pr_checks:
-    status: pr407_repo_owned_pass_external_snyk_waived
+    status: pr407_merged_repo_owned_pass_external_snyk_waived
     evidence:
-      - "PR #407 head f86ea9b90a5cf58119ef6237ac1bb25da0b2c178 has repo-owned CircleCI lanes, pr-pipeline, security-scan, Socket, and CodeRabbit status passing"
+      - "PR #407 state=MERGED, mergedAt=2026-06-11T14:58:13Z, mergeCommit=89b67bffc2b13caee315f04d384209359ca64c23"
+      - "PR #407 head 8a53c95ae2f3a9cd9be1a32df433e1a6fc233b09 had repo-owned CircleCI lanes, pr-pipeline, security-scan, Socket, and CodeRabbit status passing"
       - "External security/snyk GitHub App quota/error lane remains owner-waived only"
   review_threads:
-    status: review_thread_repair_pending_push
+    status: repaired_and_merged
     evidence:
-      - "PR #407 had one unresolved Codex review thread about native-goal reconciliation; this repair restores explicit null/unknown reconciliation"
+      - "PR #407 review-thread repair merged before route pullback"
   tracker_state:
-    status: current_after_repair
+    status: post_pr407_refresh_in_progress
     evidence:
-      - "state.yaml active route now records PR #406 and d0ae8ecfc78165690c9070aee3d66bfd7a85307a"
+      - "state.yaml active route now records PR #407 and 89b67bffc2b13caee315f04d384209359ca64c23"
       - "queued_slice remains PU-055 current-main closeout evidence matrix"
   merge_readiness:
-    status: blocked_until_review_thread_resolved
+    status: route_refresh_pr_required_before_pu055
     evidence:
-      - "PR #407 normal merge was blocked by an unresolved conversation after repo-owned checks passed and external Snyk quota was owner-waived"
+      - "PR #407 is merged, but this post-merge tracker refresh branch must merge and main must be pulled before PU-055 starts"
 continuation_gate:
-  status: stop_feature_work_until_route_refresh_pr_merges
-  reason: "The goal board is valid locally, but PR #407 must merge and main must be pulled before PU-055 feature/audit work starts."
+  status: stop_feature_work_until_post_pr407_tracker_refresh_merges
+  reason: "PR #407 is merged and main is pulled locally, but the durable board/state/receipt surfaces now need the post-PR407 tracker refresh merged and pulled before PU-055 feature/audit work starts."
 native_blocker_audit:
   status: not_blocked
   blocker_history: []
@@ -67,10 +67,9 @@ validation_evidence:
     - "bash scripts/run-harness-gate.sh docs-gate --mode required --json"
     - "pnpm docs:lint"
     - "git diff --check"
-    - "PR_TEMPLATE_BODY=\"$(gh pr view 406 --repo jscraik/coding-harness --json body --jq .body)\" bash scripts/run-harness-gate.sh pr-template-gate --json"
-    - "gh pr checks 406 --repo jscraik/coding-harness --watch=false"
+    - "gh pr checks 407 --repo jscraik/coding-harness --watch=false"
     - "bash scripts/validate-codestyle.sh && pnpm check && bash scripts/run-harness-gate.sh tooling-audit --path . --json"
 risks:
   - "Squash-merged tracker PRs create a post-merge route-refresh need; keep this as a compact route receipt only and do not expand it into feature work."
   - "External Snyk GitHub App quota remains owner-waived only, not a green security lane."
-  - "PU-055 remains unstarted until this route-refresh branch is merged and local main is pulled again."
+  - "PU-055 remains unstarted until this post-PR407 route-refresh branch is merged and local main is pulled again."
