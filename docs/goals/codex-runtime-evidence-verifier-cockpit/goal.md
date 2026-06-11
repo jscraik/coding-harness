@@ -43,24 +43,26 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-11 post-PR403 pullback tracker refresh. Merged
+Last updated during the 2026-06-11 post-PR404 pullback tracker refresh. Merged
 PR history is receipt provenance, not the active route. Use `receipts.jsonl` for
 the complete PR ledger and keep this section limited to the current restart
 truth.
 
 Current live route truth:
 
-- PR #403 merged the post-PR402 route-truth refresh from submitted head
-  `c92fb7ec329fea4edb00413cabf357fc7d63996f` as squash merge commit
-  `4c9c905f39c9fa8d772d096025e33d79642c3c96`; repo-owned CircleCI lanes,
+- PR #404 merged the post-PR403 route-truth refresh from submitted head
+  `1b1a292f3009a49f422286d9a65cb4fc7e3fc254` as squash merge commit
+  `68c8019515641f4fe2ff8ada917d4f2b1a170b1e`; repo-owned CircleCI lanes,
   aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, Socket,
   and review-thread checks were successful or resolved before merge. The
   external Snyk GitHub App quota/error lane remains owner-waived for that
   external app status only.
 - Local `main` and `origin/main` were synced at
-  `4c9c905f39c9fa8d772d096025e33d79642c3c96` before this tracker-refresh
-  branch was created.
-- Live GitHub reported no open PRs at the PR #403 pullback refresh point.
+  `68c8019515641f4fe2ff8ada917d4f2b1a170b1e` after PR #404 was merged and
+  pulled back.
+- Live GitHub reported no open PRs at the PR #404 pullback refresh point.
+- Branch and worktree cleanup removed obsolete auxiliary worktrees and stale
+  local/remote `codex/*` branches; only `main` and `origin/main` remain.
 - The remaining closeout/backlog audit is now the active route; no next feature
   slice has started.
 - The next safe action is to run the remaining closeout/backlog audit from
@@ -114,12 +116,12 @@ Stop conditions:
 Current route truth:
 
 - Current route: remaining closeout/backlog audit from current main.
-- Provenance: See `receipts.jsonl` for merged route history through PR #403.
+- Provenance: See `receipts.jsonl` for merged route history through PR #404.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #403 merged at
-  `4c9c905f39c9fa8d772d096025e33d79642c3c96`. See `receipts.jsonl` for
+- Done on current main: PR #404 merged at
+  `68c8019515641f4fe2ff8ada917d4f2b1a170b1e`. See `receipts.jsonl` for
   complete merged route history.
 - Current route PR: none.
 - Active slice: run the remaining closeout/backlog audit before feature work.
@@ -216,15 +218,16 @@ Protected or constrained scope:
 
 Execute the plan's PU units in lifecycle order unless a reviewed intent artifact proves a safer split:
 
-| Stage | Units                                             | Completion Meaning                                                                                                                                                                                                                                                                                |
-| ----- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| L0    | steering admission                                | Human correction is captured as a repo artifact before normal implementation resumes.                                                                                                                                                                                                             |
-| L1    | PU-000                                            | Intent, review receipt, baseline, and acceptance coverage exist before runtime implementation.                                                                                                                                                                                                    |
-| L2    | PU-001 through PU-008                             | Fixture-backed verifier foundation exists, including receipts, Codex packet validation, adapter projection, private delivery-truth, root, redaction, and non-blending tests.                                                                                                                      |
-| L3    | PU-009 through PU-011                             | Production review-state, external-state, delivery-truth, and root hygiene paths are wired.                                                                                                                                                                                                        |
-| L4    | PU-012 through PU-013                             | Codex runtime producer bridge feeds validated runtime evidence into runtime cards and the cockpit.                                                                                                                                                                                                |
-| L5    | PU-014 through PU-015                             | PR, CI, review, Linear, root tidiness, and Judge/PM audit readiness become claim-verifiable.                                                                                                                                                                                                      |
-| L6    | PU-016 plus audit and operational review adoption | Documentation, architecture context, CI, validators, maintenance ownership, Project Brain memory use, Linear tracker alignment, the 2026-05-26 audit gap closure plan, the Codex ecosystem operational review adoption plan, and the Codex system-prompt operational gap matrix are synchronized. |
+| Stage        | Units                                             | Completion Meaning                                                                                                                                                                                                                                                                                                       |
+| ------------ | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| L0           | steering admission                                | Human correction is captured as a repo artifact before normal implementation resumes.                                                                                                                                                                                                                                    |
+| L1           | PU-000                                            | Intent, review receipt, baseline, and acceptance coverage exist before runtime implementation.                                                                                                                                                                                                                           |
+| L2           | PU-001 through PU-008                             | Fixture-backed verifier foundation exists, including receipts, Codex packet validation, adapter projection, private delivery-truth, root, redaction, and non-blending tests.                                                                                                                                             |
+| L3           | PU-009 through PU-011                             | Production review-state, external-state, delivery-truth, and root hygiene paths are wired.                                                                                                                                                                                                                               |
+| L4           | PU-012 through PU-013                             | Codex runtime producer bridge feeds validated runtime evidence into runtime cards and the cockpit.                                                                                                                                                                                                                       |
+| L5           | PU-014 through PU-015                             | PR, CI, review, Linear, root tidiness, and Judge/PM audit readiness become claim-verifiable.                                                                                                                                                                                                                             |
+| L6           | PU-016 plus audit and operational review adoption | Documentation, architecture context, CI, validators, maintenance ownership, Project Brain memory use, Linear tracker alignment, the 2026-05-26 audit gap closure plan, the Codex ecosystem operational review adoption plan, and the Codex system-prompt operational gap matrix are synchronized.                        |
+| Restart/meta | PU-055 and later tracker-governance slices        | Restart and closeout-decision slices are sourced from `state.yaml`, `notes/execution-tracker.md`, and receipts. PU-055 is the current-main closeout evidence matrix that must classify the remaining backlog as complete, blocked, not applicable, or the next bounded implementation slice before feature work resumes. |
 
 Each slice should be small enough for one clear branch, one PR, one primary module family, and one unambiguous validation story.
 
