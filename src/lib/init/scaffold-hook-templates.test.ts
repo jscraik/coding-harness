@@ -63,6 +63,15 @@ describe("git-hook scaffold templates", () => {
 		expect(preCommit).toContain("check-hook-critical-config-sync.sh");
 		expect(preCommit).toContain("bash ./scripts/validate-codestyle.sh --fast");
 		expect(preCommit).toContain("make related-tests-staged");
+		expect(preCommit.indexOf("make codestyle-parity")).toBeLessThan(
+			preCommit.indexOf("bash ./scripts/validate-codestyle.sh --fast"),
+		);
+		expect(
+			preCommit.indexOf("bash ./scripts/validate-codestyle.sh --fast"),
+		).toBeLessThan(preCommit.indexOf("pnpm lint"));
+		expect(
+			preCommit.indexOf("bash ./scripts/validate-codestyle.sh --fast"),
+		).toBeLessThan(preCommit.indexOf("pnpm typecheck"));
 		expect(preCommit).toContain("package_script_exists()");
 		expect(preCommit).toContain(
 			"Skipping optional package script ${script_name}; package.json does not define it.",

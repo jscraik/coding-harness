@@ -89,6 +89,10 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   removes the dead lock.
 - Iterate with the narrowest proving check first, then
   `bash scripts/validate-codestyle.sh --fast`.
+- Pre-commit leaf adapters must keep
+  `bash ./scripts/validate-codestyle.sh --fast` between codestyle parity and
+  lint/typecheck, and generated hook commands must follow the detected package
+  manager rather than hard-coding pnpm.
 - Changed production source requires `pnpm run quality:docstrings`,
   `pnpm run quality:size`, and `pnpm run test:related`; changed tests require
   `pnpm run quality:self-affirming`.

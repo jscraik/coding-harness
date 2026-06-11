@@ -62,6 +62,13 @@ thin and delegate into this deep module.
   Make targets stay as manual wrappers around those adapters. This prevents
   recursive hook orchestration and keeps installed hooks, scaffold fixtures, and
   environment drift checks aligned.
+- Generated pre-commit adapters must run
+  `bash ./scripts/validate-codestyle.sh --fast` after codestyle parity and
+  before lint/typecheck so fast local commits cannot skip the codestyle
+  enforcement point.
+- Generated hook adapters must render package-script commands from the detected
+  package manager. Downstream npm or yarn repositories must not receive pnpm-only
+  hook commands unless pnpm is the selected package manager.
 
 ## Documentation Alignment
 

@@ -1590,7 +1590,7 @@ describe("runInit", () => {
 			);
 		});
 
-		it("uses npm ci for npm repos in WORKFLOW.md bootstrap hooks", () => {
+		it("uses npm commands for npm repos in generated workflow and hooks", () => {
 			writeFileSync(
 				join(tempDir, "package.json"),
 				JSON.stringify(
@@ -1610,9 +1610,26 @@ describe("runInit", () => {
 
 			const workflowPath = join(tempDir, "WORKFLOW.md");
 			const content = require("node:fs").readFileSync(workflowPath, "utf-8");
+			const hookPreCommit = require("node:fs").readFileSync(
+				join(tempDir, "scripts/hook-pre-commit.sh"),
+				"utf-8",
+			);
+			const hookPrePush = require("node:fs").readFileSync(
+				join(tempDir, "scripts/hook-pre-push.sh"),
+				"utf-8",
+			);
 
 			expect(content).toContain("npm ci");
 			expect(content).not.toContain("npm install --frozen-lockfile");
+			expect(hookPreCommit).toContain("npm run lint");
+			expect(hookPreCommit).toContain("npm run docs:lint");
+			expect(hookPreCommit).toContain("npm run typecheck");
+			expect(hookPreCommit).toContain(
+				'run_optional_package_script "quality:behavior-tests" npm run quality:behavior-tests',
+			);
+			expect(hookPreCommit).not.toContain("pnpm lint");
+			expect(hookPrePush).toContain("npm run build");
+			expect(hookPrePush).not.toContain("pnpm build");
 		});
 
 		it("enforces strict commit and hook governance in templates", () => {
