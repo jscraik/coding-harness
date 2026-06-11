@@ -36,6 +36,25 @@ if [[ ! -d "$lock_root" ]]; then
 	exit 0
 fi
 
+metadata_value() {
+	local metadata_path="$1"
+	local metadata_key="$2"
+	python3 - "$metadata_path" "$metadata_key" <<'PY'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+wanted = sys.argv[2]
+for raw in path.read_text(encoding="utf-8").splitlines():
+    if "=" not in raw:
+        continue
+    key, value = raw.split("=", 1)
+    if key == wanted:
+        print(value)
+        raise SystemExit(0)
+PY
+}
+
 status=0
 shopt -s nullglob
 for lock_dir in "$lock_root"/*.lock; do
@@ -48,7 +67,7 @@ for lock_dir in "$lock_root"/*.lock; do
 	lock_name="$(basename "$lock_dir" .lock)"
 	owner_pid=""
 	if [[ -f "$metadata_path" ]]; then
-		owner_pid="$(sed -n 's/^pid=//p' "$metadata_path" | head -n 1)"
+		owner_pid="$(metadata_value "$metadata_path" pid)"
 	fi
 	if [[ "$owner_pid" =~ ^[0-9]+$ ]] && kill -0 "$owner_pid" 2>/dev/null; then
 		echo "[validation-lock] active $lock_name validation already running for this repository (pid $owner_pid)." >&2

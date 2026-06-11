@@ -61,6 +61,7 @@ describe("git-hook scaffold templates", () => {
 		const prePush = renderPrePushHookScript();
 
 		expect(preCommit).toContain("check-hook-critical-config-sync.sh");
+		expect(preCommit).toContain("bash ./scripts/validate-codestyle.sh --fast");
 		expect(preCommit).toContain("make related-tests-staged");
 		expect(preCommit).not.toContain("make hooks-pre-commit");
 		expect(preCommit).not.toContain("pre-commit run");
@@ -68,6 +69,18 @@ describe("git-hook scaffold templates", () => {
 		expect(prePush).toContain("run-harness-gate.sh tooling-audit");
 		expect(prePush).not.toContain("make hooks-pre-push");
 		expect(prePush).not.toContain("pre-commit run");
+	});
+
+	it("renders leaf hook package-script commands for the selected package manager", () => {
+		const preCommit = renderPreCommitHookScript("npm");
+		const prePush = renderPrePushHookScript("npm");
+
+		expect(preCommit).toContain("npm run lint");
+		expect(preCommit).toContain("npm run docs:lint");
+		expect(preCommit).toContain("npm run quality:docstrings");
+		expect(preCommit).not.toContain("pnpm lint");
+		expect(prePush).toContain("npm run build");
+		expect(prePush).not.toContain("pnpm build");
 	});
 
 	it("renders staged secret scanning with gitleaks", () => {

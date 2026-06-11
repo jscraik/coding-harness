@@ -8,6 +8,7 @@
  */
 
 import { REQUIRED_PREK_HOOKS } from "../policy/tooling-baseline.js";
+import { renderScriptCommand } from "./scaffold-root-command-templates.js";
 
 const PRE_COMMIT_MAKE_TARGET = REQUIRED_PREK_HOOKS["pre-commit"].entry;
 const PRE_PUSH_MAKE_TARGET = REQUIRED_PREK_HOOKS["pre-push"].entry;
@@ -17,7 +18,31 @@ const PRE_PUSH_MAKE_TARGET = REQUIRED_PREK_HOOKS["pre-push"].entry;
  *
  * @returns Shell contents for `scripts/hook-pre-commit.sh`.
  */
-export function renderPreCommitHookScript(): string {
+export function renderPreCommitHookScript(packageManager = "pnpm"): string {
+	const lintCommand = renderScriptCommand(packageManager, "lint");
+	const docsLintCommand = renderScriptCommand(packageManager, "docs:lint");
+	const typecheckCommand = renderScriptCommand(packageManager, "typecheck");
+	const qualityDocstringsCommand = renderScriptCommand(
+		packageManager,
+		"quality:docstrings",
+	);
+	const qualitySizeCommand = renderScriptCommand(
+		packageManager,
+		"quality:size",
+	);
+	const qualityBehaviorTestsCommand = renderScriptCommand(
+		packageManager,
+		"quality:behavior-tests",
+	);
+	const qualityGitEnvSanitizerCommand = renderScriptCommand(
+		packageManager,
+		"quality:git-env-sanitizer",
+	);
+	const auditTrackingCommand = renderScriptCommand(
+		packageManager,
+		"harness:audit-tracking",
+	);
+
 	return `#!/usr/bin/env bash
 set -euo pipefail
 
@@ -34,14 +59,15 @@ unset_git_context_env() {
 bash ./scripts/check-hook-critical-config-sync.sh
 make codestyle-parity
 unset_git_context_env
-pnpm lint
-pnpm docs:lint
-pnpm typecheck
-pnpm run quality:docstrings
-pnpm run quality:size
-pnpm run quality:behavior-tests
-pnpm run quality:git-env-sanitizer
-pnpm run harness:audit-tracking
+bash ./scripts/validate-codestyle.sh --fast
+${lintCommand}
+${docsLintCommand}
+${typecheckCommand}
+${qualityDocstringsCommand}
+${qualitySizeCommand}
+${qualityBehaviorTestsCommand}
+${qualityGitEnvSanitizerCommand}
+${auditTrackingCommand}
 make secrets-staged
 make docs-style-changed
 make related-tests-staged
@@ -53,7 +79,9 @@ make related-tests-staged
  *
  * @returns Shell contents for `scripts/hook-pre-push.sh`.
  */
-export function renderPrePushHookScript(): string {
+export function renderPrePushHookScript(packageManager = "pnpm"): string {
+	const buildCommand = renderScriptCommand(packageManager, "build");
+
 	return `#!/usr/bin/env bash
 set -euo pipefail
 
@@ -109,7 +137,7 @@ bash ./scripts/check-environment.sh
 make semgrep-changed
 make codestyle
 unset_git_context_env
-pnpm build
+${buildCommand}
 `;
 }
 

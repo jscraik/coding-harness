@@ -41,14 +41,14 @@ if [[ "$only_environment_change" == true ]]; then
 	exit 0
 fi
 
-pnpm exec tsx src/cli.ts docs-gate --mode required --json
+bash ./scripts/run-harness-gate.sh docs-gate --mode required --json
 
 tmp_changed_files="$(mktemp)"
 trap 'rm -f "$tmp_changed_files"' EXIT
 git diff --name-only --diff-filter=ACMRDT "$base_ref"...HEAD -- > "$tmp_changed_files"
 bash ./scripts/check-diagram-freshness.sh --changed-files "$tmp_changed_files"
 
-pnpm exec tsx src/cli.ts tooling-audit --path . --json
+bash ./scripts/run-harness-gate.sh tooling-audit --path . --json
 bash ./scripts/check-environment.sh
 make semgrep-changed
 make codestyle

@@ -14,6 +14,7 @@ unset_git_context_env() {
 bash ./scripts/check-hook-critical-config-sync.sh
 make codestyle-parity
 unset_git_context_env
+bash ./scripts/validate-codestyle.sh --fast
 pnpm lint
 pnpm docs:lint
 pnpm typecheck

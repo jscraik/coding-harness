@@ -9,6 +9,96 @@ if [[ $# -eq 0 ]]; then
 	exit 2
 fi
 
+run_with_process_storm_guard() {
+	if ! command -v python3 >/dev/null 2>&1; then
+		exec "$@"
+	fi
+
+	HARNESS_GATE_CWD="$REPO_ROOT" python3 - "$@" <<'PY'
+import os
+import signal
+import subprocess
+import sys
+import time
+
+FORBIDDEN_NEEDLES = (
+    "npm view @openai/codex versions time --json",
+    "npm view @openai/codex dist-tags --json",
+)
+
+cmd = sys.argv[1:]
+proc = subprocess.Popen(cmd, cwd=os.environ["HARNESS_GATE_CWD"], start_new_session=True)
+
+
+def process_snapshot():
+    output = subprocess.check_output(["ps", "-axo", "pid=,ppid=,command="], text=True)
+    parents = {}
+    commands = {}
+    for raw in output.splitlines():
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            pid_raw, ppid_raw, command = raw.split(None, 2)
+        except ValueError:
+            continue
+        pid = int(pid_raw)
+        parents[pid] = int(ppid_raw)
+        commands[pid] = command
+    return parents, commands
+
+
+def descendants(root_pid, parents):
+    found = {root_pid}
+    changed = True
+    while changed:
+        changed = False
+        for pid, ppid in parents.items():
+            if ppid in found and pid not in found:
+                found.add(pid)
+                changed = True
+    return found
+
+
+def stop_group():
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        try:
+            os.killpg(proc.pid, sig)
+        except ProcessLookupError:
+            return
+        time.sleep(1)
+
+
+while True:
+    status = proc.poll()
+    if status is not None:
+        raise SystemExit(status)
+
+    try:
+        parents, commands = process_snapshot()
+    except (OSError, subprocess.SubprocessError):
+        time.sleep(1)
+        continue
+    branch = descendants(proc.pid, parents)
+    matches = [
+        (pid, commands.get(pid, ""))
+        for pid in sorted(branch)
+        if any(needle in commands.get(pid, "") for needle in FORBIDDEN_NEEDLES)
+    ]
+    if matches:
+        stop_group()
+        print(
+            "Error: harness gate spawned Codex npm metadata lookups; stopped process branch to prevent a local process storm.",
+            file=sys.stderr,
+        )
+        for pid, command in matches[:10]:
+            print(f"blocked_process pid={pid} command={command}", file=sys.stderr)
+        raise SystemExit(124)
+
+    time.sleep(1)
+PY
+}
+
 is_harness_source_repo() {
 	[[ -f "$REPO_ROOT/src/cli.ts" ]] || return 1
 	[[ -f "$REPO_ROOT/package.json" ]] || return 1
@@ -31,11 +121,13 @@ if is_harness_source_repo; then
 		echo "Error: source checkout detected but tsx cannot be resolved from $REPO_ROOT; run the repository install first." >&2
 		exit 1
 	fi
-	exec node --import tsx "$REPO_ROOT/src/cli.ts" "$@"
+	run_with_process_storm_guard node --import tsx "$REPO_ROOT/src/cli.ts" "$@"
+	exit "$?"
 fi
 
 if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
-	exec node "$REPO_ROOT/dist/cli.js" "$@"
+	run_with_process_storm_guard node "$REPO_ROOT/dist/cli.js" "$@"
+	exit "$?"
 fi
 
 if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
@@ -54,12 +146,14 @@ fi
 if command -v mise >/dev/null 2>&1; then
 	MISE_RESOLVED="$(mise which harness 2>/dev/null || true)"
 	if [[ -n "$MISE_RESOLVED" && -x "$MISE_RESOLVED" ]]; then
-		exec "$MISE_RESOLVED" "$@"
+		run_with_process_storm_guard "$MISE_RESOLVED" "$@"
+		exit "$?"
 	fi
 fi
 
 if command -v harness >/dev/null 2>&1; then
-	exec harness "$@"
+	run_with_process_storm_guard harness "$@"
+	exit "$?"
 fi
 
 echo "Error: unable to resolve a harness runner for this repository." >&2

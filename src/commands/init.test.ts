@@ -1915,6 +1915,18 @@ describe("runInit", () => {
 				'echo "Error: source checkout detected but node is unavailable; refusing fallback to avoid stale harness binaries." >&2',
 			);
 			expect(runHarnessGate).toContain(
+				'run_with_process_storm_guard node --import tsx "$REPO_ROOT/src/cli.ts" "$@"',
+			);
+			expect(runHarnessGate).toContain(
+				"npm view @openai/codex versions time --json",
+			);
+			expect(runHarnessGate).toContain(
+				"npm view @openai/codex dist-tags --json",
+			);
+			expect(runHarnessGate).toContain(
+				"harness gate spawned Codex npm metadata lookups",
+			);
+			expect(runHarnessGate).not.toContain(
 				'exec node --import tsx "$REPO_ROOT/src/cli.ts" "$@"',
 			);
 			expect(runHarnessGate).not.toContain("harness-gate-tsx-stderr");
@@ -1925,7 +1937,7 @@ describe("runInit", () => {
 				'if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then',
 			);
 			expect(runHarnessGate).toContain(
-				'exec node "$REPO_ROOT/dist/cli.js" "$@"',
+				'run_with_process_storm_guard node "$REPO_ROOT/dist/cli.js" "$@"',
 			);
 			expect(runHarnessGate).toContain(
 				'bash "$REPO_ROOT/scripts/harness-cli.sh" "$@" || wrapper_exit=$?',
@@ -2505,7 +2517,10 @@ printf '%s\\n' '{"passed":true}'
 				},
 			);
 
-			expect(gateRun.status).toBe(0);
+			expect(
+				gateRun.status,
+				`stdout:\n${gateRun.stdout}\nstderr:\n${gateRun.stderr}`,
+			).toBe(0);
 			expect(gateRun.stderr).not.toContain(
 				"source checkout detected but tsx is not installed locally",
 			);

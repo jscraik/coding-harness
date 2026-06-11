@@ -99,16 +99,25 @@ describe("scaffold shell templates", () => {
 			"tsx cannot be resolved from $REPO_ROOT; run the repository install first.",
 		);
 		expect(runner).toContain(
+			'run_with_process_storm_guard node --import tsx "$REPO_ROOT/src/cli.ts" "$@"',
+		);
+		expect(runner).toContain("npm view @openai/codex versions time --json");
+		expect(runner).toContain("npm view @openai/codex dist-tags --json");
+		expect(runner).toContain("harness gate spawned Codex npm metadata lookups");
+		expect(runner).not.toContain(
 			'exec node --import tsx "$REPO_ROOT/src/cli.ts" "$@"',
 		);
 		expect(runner).not.toContain("harness-gate-tsx-stderr");
 		expect(runner).not.toContain("dist_freshness_marker");
 		expect(runner).not.toContain("newest_dist_file");
 		expect(runner).not.toContain("tsx IPC startup failed with EPERM");
-		expect(runner).toContain('exec node "$REPO_ROOT/dist/cli.js" "$@"');
+		expect(runner).toContain(
+			'run_with_process_storm_guard node "$REPO_ROOT/dist/cli.js" "$@"',
+		);
 		expect(runner).toContain('bash "$REPO_ROOT/scripts/harness-cli.sh"');
 		expect(runner).toContain("mise which harness");
-		expect(runner).toContain("exec harness");
+		expect(runner).toContain("run_with_process_storm_guard harness");
+		expect(runner).not.toContain('exec harness "$@"');
 		expect(runner).toContain("pnpm install");
 		expect(runner).toContain("pnpm exec harness <command>");
 	});

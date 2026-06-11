@@ -62,11 +62,11 @@ export const QUALITY_AND_HOOK_SCRIPT_TEMPLATES: readonly Template[] = [
 	},
 	{
 		path: "scripts/hook-pre-commit.sh",
-		render: () => renderPreCommitHookScript(),
+		render: (pm) => renderPreCommitHookScript(pm),
 	},
 	{
 		path: "scripts/hook-pre-push.sh",
-		render: () => renderPrePushHookScript(),
+		render: (pm) => renderPrePushHookScript(pm),
 	},
 	{
 		path: "scripts/check-staged-secrets.sh",
