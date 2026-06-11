@@ -2,10 +2,12 @@ import { detectIssueKey } from "./issue-key.js";
 
 export const MARKDOWN_CODE_MARKER = String.fromCharCode(96);
 
+/** Return whether a Markdown table row contains a backticked path prefix. */
 export function hasCodePath(line: string, path: string): boolean {
 	return line.includes(MARKDOWN_CODE_MARKER + path);
 }
 
+/** Extract the first backticked path from a Markdown table row by prefix. */
 export function extractCodePath(line: string, prefix: string): string | null {
 	const expression = new RegExp(
 		`${MARKDOWN_CODE_MARKER}([^${MARKDOWN_CODE_MARKER}]+)${MARKDOWN_CODE_MARKER}`,
@@ -29,6 +31,7 @@ function detectStandaloneIssueKey(
 	return null;
 }
 
+/** Extract the route issue key from a Markdown active-artifact table row. */
 export function extractRowIssueKey(line: string): string | null {
 	const [firstContentCell, ...remainingCells] = line
 		.split("|")
