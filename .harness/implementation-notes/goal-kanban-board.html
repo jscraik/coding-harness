@@ -600,12 +600,12 @@
         id: "remaining-closeout-backlog-audit",
         lane: "remaining",
         title: "Next: remaining goal/spec/backlog audit",
-        status: "active",
-        tags: ["next slice", "R463", "closeout", "backlog"],
-        summary: "The next work is not feature implementation. It is a current-main audit against goal.md, spec, plan, adopted gap sources, and receipts to state the exact next slice or blocker.",
-        evidence: ["Current main -> fdcd577a77fb660b9b71e058bcbd33fff06c67bf", "Open PR list -> []", "state.yaml queued_slice -> remaining-closeout-backlog-audit", "goal.md current reconciliation status -> post-PR401 pullback"],
-        next: "Audit outstanding obligations, choose one bounded slice, then run the slice through the one-PR-at-a-time completion path.",
-        risk: "Starting feature work before this audit would reintroduce stale-route and context-debt failure modes."
+        status: "blocked",
+        tags: ["queued after PR #402", "R463", "closeout", "backlog"],
+        summary: "The next work after PR #402 closes is not feature implementation. It is a current-main audit against goal.md, spec, plan, adopted gap sources, and receipts to state the exact next slice or blocker.",
+        evidence: ["Current main before PR #402 -> fdcd577a77fb660b9b71e058bcbd33fff06c67bf", "PR #402 -> active review/CI route", "state.yaml queued_slice -> remaining-closeout-backlog-audit", "goal.md current reconciliation status -> post-PR401 pullback"],
+        next: "Finish PR #402 review/CI, merge it, pull main, then run the remaining closeout/backlog audit before any feature work.",
+        risk: "Starting this audit before PR #402 merges would make the browser board contradict the active route and reintroduce stale-route failure modes."
       },
       {
         id: "current-main-pr369",
