@@ -58,8 +58,9 @@ Current live route truth:
   `codex/jsc-363-post-pr393-tracker-refresh`. GitHub reported the branch
   `DIRTY` with failing `pr-pipeline` and `linear-gate` checks before this
   repair. The local branch merged `origin/main` at
-  `b8ec50057338f3d7bea0973330d830c93bccee51`, preserving current-main route
-  truth and the hook/environment check repairs.
+  `b8ec50057338f3d7bea0973330d830c93bccee51`, then refreshed generated
+  diagram/context artifacts at `c5d38f112897449d8dbfc24b0b84329488e2a056`,
+  preserving current-main route truth and the hook/environment check repairs.
 - The next safe action is to push PR #396, manually trigger CodeRabbit with
   `@coderabbitai review this pr`, refresh `pr-pipeline` and `linear-gate`,
   fix only current-head failures, then merge/pull back before selecting the

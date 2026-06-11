@@ -43,8 +43,9 @@ PR #396 is the active draft repair lane for
 `codex/jsc-363-post-pr393-tracker-refresh`. GitHub reported the PR
 `DIRTY` with failing `pr-pipeline` and `linear-gate` checks before this
 repair. The branch has merged `origin/main` at
-`b8ec50057338f3d7bea0973330d830c93bccee51`, preserving current-main route
-truth and hook/environment check repairs. This route does not claim remote push,
+`b8ec50057338f3d7bea0973330d830c93bccee51`, then refreshed generated
+diagram/context artifacts at `c5d38f112897449d8dbfc24b0b84329488e2a056`,
+preserving current-main route truth and hook/environment check repairs. This route does not claim remote push,
 fresh CI, CodeRabbit freshness, review-thread resolution, merge readiness,
 Linear field-text currency, root-hygiene proof, documentation accuracy,
 Judge/PM readiness, release readiness, or parent-goal completion.
@@ -60,7 +61,9 @@ Current evidence:
   only for that external app status.
 - Local repair head
   `b8ec50057338f3d7bea0973330d830c93bccee51` merges current
-  `origin/main` into the PR #396 branch.
+  `origin/main` into the PR #396 branch; generated diagram/context refresh head
+  `c5d38f112897449d8dbfc24b0b84329488e2a056` is the latest local
+  evidence anchor before push.
 - Next safe action: push the repair, trigger CodeRabbit again with
   `@coderabbitai review this pr`, refresh `pr-pipeline` and `linear-gate`,
   fix only current-head failures, then merge/pull back and refresh this tracker.
