@@ -238,6 +238,12 @@ Installed `prek` hook entries call leaf adapters at
 `make hooks-pre-commit` and `make hooks-pre-push` remain manual wrappers
 around those adapters for local operator use.
 
+Generated pre-commit adapters keep
+`bash ./scripts/validate-codestyle.sh --fast` between codestyle parity and the
+lint/typecheck gates. Generated hook package-script commands follow the detected
+package manager, so npm and yarn repositories do not receive pnpm-only hook
+commands.
+
 ## Where To Go Next
 
 - [Quickstart](./docs/agents/quickstart.md) for the agent-native loop and local verification path.
