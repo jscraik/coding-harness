@@ -411,13 +411,13 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness status">Active route: Backlog audit after Linear sync</div>
+      <div class="source-chip" aria-label="Source freshness status">Active route: PR #396 repair</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>Backlog audit next</strong></div>
+      <div class="metric"><span>Goal status</span><strong>PR repair active</strong></div>
       <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #394</strong></div>
-      <div class="metric"><span>Current PR</span><strong>No open PR</strong></div>
+      <div class="metric"><span>Current PR</span><strong>#396 draft</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Projection merged</strong></div>
       <div class="metric"><span>Documentation</span><strong>Accuracy gate pending</strong></div>
       <div class="metric"><span>Linear tracker</span><strong>Comment aligned</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated after PR #394 merged into <code>main</code> at <code>9014b416f170ef6069416aa2d356845232cf2de1</code> from submitted head <code>8b98cc6299d566ccf3b472781ee6def606c9ea79</code>. PR #394 merged the source-tracked post-PR393 route refresh; Linear JSC-363 comment <code>81cfdd41-ff0e-4df1-b884-c01789e30a50</code> records repo-truth alignment while preserving the Phase 1 issue field text as historical scope context. The active route is now the remaining closeout/backlog audit from current main. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated during PR #396 conflict repair. Local repair head <code>b8ec50057338f3d7bea0973330d830c93bccee51</code> merges <code>origin/main</code> <code>fbf3c215608f25ede94a066e2003b4c5e6188189</code> into <code>codex/jsc-363-post-pr393-tracker-refresh</code> after GitHub reported the PR <code>DIRTY</code> with failing <code>pr-pipeline</code> and <code>linear-gate</code>; generated diagram/context refresh head <code>c5d38f112897449d8dbfc24b0b84329488e2a056</code> is the latest local evidence anchor. The next safe action is push, manual CodeRabbit review request, current-head CI/review refresh, and merge/pullback before selecting the remaining closeout/backlog audit. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, release readiness, downstream-template state, and final goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -529,6 +529,17 @@
         evidence: ["docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md", "Objective section explicitly rejects Phase 1-only completion", "Linear wording remains a separate tracker-alignment lane"],
         next: "Use execution-tracker.md for restart control; keep full-lifecycle scope as the parent completion contract.",
         risk: "A PR may complete a slice, but it cannot close the parent goal without separate proof for runtime, CI, review, tracker, docs, and Judge/PM lanes."
+      },
+      {
+        id: "pr396-conflict-repair",
+        lane: "pr-truth",
+        title: "PR #396: Conflict repair active",
+        status: "active",
+        tags: ["PR #396", "R457", "merge conflict", "push pending"],
+        summary: "PR #396 is the active draft repair lane. The branch has merged current origin/main at b8ec50057338f3d7bea0973330d830c93bccee51 after GitHub reported DIRTY merge state plus failing pr-pipeline and linear-gate checks; c5d38f112897449d8dbfc24b0b84329488e2a056 is the latest generated-context evidence head.",
+        evidence: ["PR #396 -> OPEN draft before repair", "Pre-repair remote head -> de0ba15f93998fc2adc4cf8fe17a7e97c0f53cfb", "Local repair head -> b8ec50057338f3d7bea0973330d830c93bccee51", "Generated context head -> c5d38f112897449d8dbfc24b0b84329488e2a056", "origin/main baseline -> fbf3c215608f25ede94a066e2003b4c5e6188189", "External security/snyk GitHub App quota lane -> owner-waived only"],
+        next: "Push the repair, comment @coderabbitai review this pr, refresh pr-pipeline and linear-gate, fix only current-head failures, then merge and pull back before selecting the closeout/backlog audit.",
+        risk: "Local conflict repair does not prove remote push, fresh CI, CodeRabbit freshness, review-thread resolution, merge readiness, Linear field currency, Judge/PM readiness, or parent-goal completion."
       },
       {
         id: "current-main-pr369",
@@ -822,8 +833,8 @@
         title: "Linear sync: Repo-truth comment recorded",
         status: "blocked",
         tags: ["Linear", "JSC-363", "field text"],
-        summary: "After PR #394 merged and main was synced, Linear JSC-363 was fetched through the Linear MCP tool and a current repo-truth comment was recorded. The original Phase 1 issue title/description remain historical scope context, not parent-goal completion evidence.",
-        evidence: ["Linear JSC-363 status -> In Review", "Linear comment -> 81cfdd41-ff0e-4df1-b884-c01789e30a50", "Current main -> 9014b416f170ef6069416aa2d356845232cf2de1", "PR #394 -> MERGED", "PR #394 attachment -> present on JSC-363", "~/.codex/.env -> FIFO in this thread, but Linear MCP tool was callable"],
+        summary: "After PR #394 merged and main was synced, Linear JSC-363 was fetched through the Linear MCP tool and a current repo-truth comment was recorded. The original Phase 1 issue title/description remain historical scope context, not parent-goal completion evidence; the local env recovery surface was classified as blocked_env_fifo_timeout.",
+        evidence: ["Linear JSC-363 status -> In Review", "Linear comment -> 81cfdd41-ff0e-4df1-b884-c01789e30a50", "Current main -> 9014b416f170ef6069416aa2d356845232cf2de1", "PR #394 -> MERGED", "PR #394 attachment -> present on JSC-363", "<REDACTED_HOME_PATH>/.codex/.env -> blocked_env_fifo_timeout, but Linear MCP tool was callable"],
         next: "Run the remaining closeout/backlog audit from current main, keeping Linear comments, issue fields, repo tracker truth, and final completion evidence separate.",
         risk: "The Linear comment aligns repo-truth context only. It does not prove documentation accuracy, root hygiene, Judge/PM readiness, or parent-goal completion."
       },

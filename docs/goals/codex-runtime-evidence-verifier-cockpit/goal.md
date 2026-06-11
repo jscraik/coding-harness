@@ -43,8 +43,7 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-09 post-PR394 pullback, Linear tracker
-alignment, and route-truth refresh. PR #366,
+Last updated during the 2026-06-11 PR #396 conflict-repair lane. PR #366,
 PR #367, PR #369, PR #370, PR #371, PR #372, PR #373, PR #374, PR #375,
 PR #376, PR #377, PR #378, PR #379, PR #380, PR #381, PR #382, PR #383,
 PR #384, PR #385, PR #386, PR #387, PR #388, PR #389, PR #390, PR #391,
@@ -54,14 +53,24 @@ merged into `main` at `9014b416f170ef6069416aa2d356845232cf2de1`.
 Current live route truth:
 
 - Local `main` and `origin/main` are synced at
-  `9014b416f170ef6069416aa2d356845232cf2de1` after PR #394 merge pullback by
-  local ref update.
+  `fbf3c215608f25ede94a066e2003b4c5e6188189`.
+- PR #396 is the active draft repair lane for
+  `codex/jsc-363-post-pr393-tracker-refresh`. GitHub reported the branch
+  `DIRTY` with failing `pr-pipeline` and `linear-gate` checks before this
+  repair. The local branch merged `origin/main` at
+  `b8ec50057338f3d7bea0973330d830c93bccee51`, then refreshed generated
+  diagram/context artifacts at `c5d38f112897449d8dbfc24b0b84329488e2a056`,
+  preserving current-main route truth and the hook/environment check repairs.
+- The next safe action is to push PR #396, manually trigger CodeRabbit with
+  `@coderabbitai review this pr`, refresh `pr-pipeline` and `linear-gate`,
+  fix only current-head failures, then merge/pull back before selecting the
+  remaining closeout/backlog audit.
 - Linear JSC-363 was fetched through the Linear MCP tool and comment
   `81cfdd41-ff0e-4df1-b884-c01789e30a50` records the repo-truth
   classification. The original Phase 1 title/description remain historical
   scope context, not completion evidence.
-- The active route is the remaining closeout/backlog audit from current main;
-  no next feature slice has started.
+- The remaining closeout/backlog audit is paused behind the PR #396 repair
+  lane; no next feature slice has started.
 - PR #394 merged the source-tracked post-PR393 route refresh from submitted
   head `8b98cc6299d566ccf3b472781ee6def606c9ea79`.
 - PR #393 merged the source-tracked post-PR392 route refresh from submitted

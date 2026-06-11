@@ -51,6 +51,25 @@ metadata_path="$lock_dir/metadata.env"
 
 mkdir -p "$lock_root"
 
+metadata_value() {
+	local metadata_path="$1"
+	local metadata_key="$2"
+	python3 - "$metadata_path" "$metadata_key" <<'PY'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+wanted = sys.argv[2]
+for raw in path.read_text(encoding="utf-8").splitlines():
+    if "=" not in raw:
+        continue
+    key, value = raw.split("=", 1)
+    if key == wanted:
+        print(value)
+        raise SystemExit(0)
+PY
+}
+
 write_metadata() {
 	{
 		printf 'pid=%s\n' "$$"
@@ -66,7 +85,7 @@ if mkdir "$lock_dir" 2>/dev/null; then
 else
 	owner_pid=""
 	if [[ -f "$metadata_path" ]]; then
-		owner_pid="$(sed -n 's/^pid=//p' "$metadata_path" | head -n 1)"
+		owner_pid="$(metadata_value "$metadata_path" pid)"
 	fi
 	if [[ "$owner_pid" =~ ^[0-9]+$ ]] && kill -0 "$owner_pid" 2>/dev/null; then
 		# Verify process identity to avoid PID recycling false positive

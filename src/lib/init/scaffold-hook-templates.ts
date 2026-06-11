@@ -8,9 +8,167 @@
  */
 
 import { REQUIRED_PREK_HOOKS } from "../policy/tooling-baseline.js";
+import { renderScriptCommand } from "./scaffold-root-command-templates.js";
 
 const PRE_COMMIT_MAKE_TARGET = REQUIRED_PREK_HOOKS["pre-commit"].entry;
 const PRE_PUSH_MAKE_TARGET = REQUIRED_PREK_HOOKS["pre-push"].entry;
+
+function renderOptionalPackageScriptCommand(
+	packageManager: string,
+	scriptName: string,
+): string {
+	return `run_optional_package_script "${scriptName}" ${renderScriptCommand(
+		packageManager,
+		scriptName,
+	)}`;
+}
+
+/**
+ * Render the pre-commit leaf hook adapter installed by Prek.
+ *
+ * @returns Shell contents for `scripts/hook-pre-commit.sh`.
+ */
+export function renderPreCommitHookScript(packageManager = "pnpm"): string {
+	const lintCommand = renderScriptCommand(packageManager, "lint");
+	const docsLintCommand = renderScriptCommand(packageManager, "docs:lint");
+	const typecheckCommand = renderScriptCommand(packageManager, "typecheck");
+	const qualityDocstringsCommand = renderScriptCommand(
+		packageManager,
+		"quality:docstrings",
+	);
+	const qualitySizeCommand = renderScriptCommand(
+		packageManager,
+		"quality:size",
+	);
+	const qualityBehaviorTestsCommand = renderOptionalPackageScriptCommand(
+		packageManager,
+		"quality:behavior-tests",
+	);
+	const qualityGitEnvSanitizerCommand = renderOptionalPackageScriptCommand(
+		packageManager,
+		"quality:git-env-sanitizer",
+	);
+	const auditTrackingCommand = renderOptionalPackageScriptCommand(
+		packageManager,
+		"harness:audit-tracking",
+	);
+
+	return `#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+unset_git_context_env() {
+	local git_env_name
+	while IFS= read -r git_env_name; do
+		[[ -n "$git_env_name" ]] && unset "$git_env_name"
+	done < <(compgen -v GIT_)
+}
+
+package_script_exists() {
+	local script_name="$1"
+	node -e 'const fs = require("node:fs"); const script = process.argv[1]; const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")); process.exit(pkg.scripts && Object.prototype.hasOwnProperty.call(pkg.scripts, script) ? 0 : 1);' "$script_name"
+}
+
+run_optional_package_script() {
+	local script_name="$1"
+	shift
+	if package_script_exists "$script_name"; then
+		"$@"
+	else
+		echo "Skipping optional package script ${"${"}script_name}; package.json does not define it."
+	fi
+}
+
+bash ./scripts/check-hook-critical-config-sync.sh
+make codestyle-parity
+unset_git_context_env
+bash ./scripts/validate-codestyle.sh --fast
+${lintCommand}
+${docsLintCommand}
+${typecheckCommand}
+${qualityDocstringsCommand}
+${qualitySizeCommand}
+${qualityBehaviorTestsCommand}
+${qualityGitEnvSanitizerCommand}
+${auditTrackingCommand}
+make secrets-staged
+make docs-style-changed
+make related-tests-staged
+`;
+}
+
+/**
+ * Render the pre-push leaf hook adapter installed by Prek.
+ *
+ * @returns Shell contents for `scripts/hook-pre-push.sh`.
+ */
+export function renderPrePushHookScript(packageManager = "pnpm"): string {
+	const buildCommand = renderScriptCommand(packageManager, "build");
+
+	return `#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+unset_git_context_env() {
+	local git_env_name
+	while IFS= read -r git_env_name; do
+		[[ -n "$git_env_name" ]] && unset "$git_env_name"
+	done < <(compgen -v GIT_)
+}
+
+bash ./scripts/check-validation-locks.sh
+
+base_ref="$(git merge-base HEAD '@{upstream}' 2>/dev/null || git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main 2>/dev/null || true)"
+if [[ -z "$base_ref" ]]; then
+	echo "Error: unable to resolve a base ref for pre-push changed-file gates." >&2
+	echo "Set an upstream branch or ensure origin/main is available before pushing." >&2
+	exit 1
+fi
+
+changed_files=""
+changed_files="$(git diff --name-only --diff-filter=ACMRDT "$base_ref"...HEAD --)"
+
+only_environment_change=false
+if [[ -n "$changed_files" ]]; then
+	only_environment_change=true
+	while IFS= read -r changed_file; do
+		[[ -z "$changed_file" ]] && continue
+		if [[ "$changed_file" != ".codex/environments/environment.toml" ]]; then
+			only_environment_change=false
+			break
+		fi
+	done <<< "$changed_files"
+fi
+
+if [[ "$only_environment_change" == true ]]; then
+	echo "Environment-only push detected; running check-environment only."
+	bash ./scripts/check-environment.sh
+	exit 0
+fi
+
+bash ./scripts/run-harness-gate.sh docs-gate --mode required --json
+
+tmp_changed_files="$(mktemp)"
+trap 'rm -f "$tmp_changed_files"' EXIT
+git diff --name-only --diff-filter=ACMRDT "$base_ref"...HEAD -- > "$tmp_changed_files"
+bash ./scripts/check-diagram-freshness.sh --changed-files "$tmp_changed_files"
+
+bash ./scripts/run-harness-gate.sh tooling-audit --path . --json
+bash ./scripts/check-environment.sh
+make semgrep-changed
+if [[ "\${HARNESS_PRE_PUSH_FULL_CODESTYLE:-0}" == "1" ]]; then
+	make codestyle
+else
+	echo "Skipping broad make codestyle in pre-push; run HARNESS_PRE_PUSH_FULL_CODESTYLE=1 git push to enable it."
+fi
+unset_git_context_env
+${buildCommand}
+`;
+}
 
 /**
  * Render the commit-message validation hook script.

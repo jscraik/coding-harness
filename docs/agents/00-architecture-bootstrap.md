@@ -468,7 +468,7 @@ bash scripts/refresh-diagram-context.sh --force
 jq -r '.generated_at, .diagram_count, .changed' .diagram/context/diagram-context.meta.json
 ```
 
-The local `make hooks-pre-push` path also runs `scripts/check-diagram-freshness.sh`. That gate now skips refresh work unless architecture-sensitive implementation paths changed, and it ignores test-only source changes to keep the local loop tighter.
+The `scripts/hook-pre-push.sh` leaf adapter, and the manual `make hooks-pre-push` wrapper around it, run `scripts/check-diagram-freshness.sh`. That gate now skips refresh work unless architecture-sensitive implementation paths changed, and it ignores test-only source changes to keep the local loop tighter.
 The refresh script must use repo-owned package-manager execution for both
 availability checks and generation: `pnpm --dir "$ROOT_DIR" exec diagram --version`
 for the pre-`pushd` availability probe, and `pnpm exec diagram` after entering

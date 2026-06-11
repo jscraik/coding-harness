@@ -67,6 +67,8 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".github/PULL_REQUEST_TEMPLATE.md",
 	"scripts/validate-commit-msg.js",
 	"scripts/check-hook-critical-config-sync.sh",
+	"scripts/hook-pre-commit.sh",
+	"scripts/hook-pre-push.sh",
 	"scripts/setup-git-hooks.js",
 	"scripts/run-prek.sh",
 	"scripts/check-staged-secrets.sh",
@@ -116,6 +118,8 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/codex-enforced",
 	"scripts/verify-work.sh",
 	"scripts/validate-codestyle.sh",
+	"scripts/with-validation-lock.sh",
+	"scripts/check-validation-locks.sh",
 	"scripts/check-codestyle-parity.sh",
 	"scripts/check-git-common-config.sh",
 	"scripts/prepare-worktree.sh",
@@ -1631,6 +1635,14 @@ describe("runInit", () => {
 				join(tempDir, "scripts/check-hook-critical-config-sync.sh"),
 				"utf-8",
 			);
+			const hookPreCommit = require("node:fs").readFileSync(
+				join(tempDir, "scripts/hook-pre-commit.sh"),
+				"utf-8",
+			);
+			const hookPrePush = require("node:fs").readFileSync(
+				join(tempDir, "scripts/hook-pre-push.sh"),
+				"utf-8",
+			);
 			const docStyle = require("node:fs").readFileSync(
 				join(tempDir, "scripts/check-doc-style.sh"),
 				"utf-8",
@@ -1745,10 +1757,22 @@ describe("runInit", () => {
 				join(tempDir, "scripts/run-prek.sh"),
 				"utf-8",
 			);
+			const withValidationLock = require("node:fs").readFileSync(
+				join(tempDir, "scripts/with-validation-lock.sh"),
+				"utf-8",
+			);
+			const checkValidationLocks = require("node:fs").readFileSync(
+				join(tempDir, "scripts/check-validation-locks.sh"),
+				"utf-8",
+			);
 			expect(runPrek).toContain(
 				'PREK_HOME="${PREK_HOME:-$repo_root/.cache/prek}"',
 			);
 			expect(runPrek).toContain('exec prek "$@"');
+			expect(withValidationLock).toContain(
+				"Usage: bash scripts/with-validation-lock.sh",
+			);
+			expect(checkValidationLocks).toContain("no active validation locks");
 			expect(setupHooks).toContain("patchInstalledPrekHooks");
 			expect(setupHooks).toContain(
 				'WORKTREE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"',
@@ -1759,10 +1783,19 @@ describe("runInit", () => {
 			expect(setupHooks).toContain(
 				'"Error: scripts/validate-commit-msg.js is required for commit message validation."',
 			);
-			expect(setupHooks).toContain("make hooks-pre-commit");
-			expect(setupHooks).toContain("make hooks-pre-push");
+			expect(setupHooks).toContain("bash scripts/hook-pre-commit.sh");
+			expect(setupHooks).toContain("bash scripts/hook-pre-push.sh");
 			expect(setupHooks).toContain("make hooks-commit-msg");
 			expect(setupHooks).not.toContain("simple-git-hooks");
+			expect(hookPreCommit).toContain(
+				"bash ./scripts/check-hook-critical-config-sync.sh",
+			);
+			expect(hookPreCommit).not.toContain("make hooks-pre-commit");
+			expect(hookPrePush).toContain("bash ./scripts/check-validation-locks.sh");
+			expect(hookPrePush).toContain(
+				"Environment-only push detected; running check-environment only.",
+			);
+			expect(hookPrePush).not.toContain("make hooks-pre-push");
 			expect(stagedSecrets).toContain("gitleaks git");
 			expect(stagedSecrets).toContain("--staged");
 			expect(hookCriticalConfigSync).toContain('critical_files=("biome.json")');
@@ -1827,46 +1860,21 @@ describe("runInit", () => {
 			expect(makefile).toContain(
 				"hooks-pre-commit: ## Run local pre-commit gates before creating a commit",
 			);
-			expect(makefile).toContain(
-				"\t@bash ./scripts/check-hook-critical-config-sync.sh",
-			);
+			expect(makefile).toContain("\t@bash ./scripts/hook-pre-commit.sh");
 			expect(makefile).toContain(
 				"hooks-pre-push: ## Run local pre-push governance gates before pushing",
 			);
-			expect(makefile).toContain(
-				'changed_files="$$(git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD --)"',
-			);
-			expect(makefile).toContain(
-				"grep -v '^\\.codex/environments/environment\\.toml$$'",
-			);
-			expect(makefile).toContain(
-				"Environment-only push detected; running check-environment only.",
-			);
+			expect(makefile).toContain("\t@bash ./scripts/hook-pre-push.sh");
 			expect(makefile).toContain(
 				"hooks-commit-msg: ## Validate commit message policy (use HOOK_COMMIT_MSG or MSG_FILE=/path)",
 			);
 
-			expect(makefile).toContain("\tnpm run quality:docstrings");
-			expect(makefile).toContain("\tnpm run quality:size");
-
-			expect(makefile).toContain("\t$(MAKE) secrets-staged");
-			expect(makefile).toContain("\t$(MAKE) docs-style-changed");
-			expect(makefile).toContain("\t$(MAKE) related-tests");
-			expect(makefile).toContain("\t$(MAKE) semgrep-changed");
-			expect(makefile).toContain(
-				"\t@bash ./scripts/run-harness-gate.sh docs-gate --mode required --json",
-			);
-			expect(makefile).toContain(
-				'git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD -- > "$$tmp_changed_files"',
-			);
-			expect(makefile).toContain(
-				'bash ./scripts/check-diagram-freshness.sh --changed-files "$$tmp_changed_files"',
-			);
-			expect(makefile).toContain(
-				"\t@bash ./scripts/run-harness-gate.sh tooling-audit --path . --json",
-			);
-			expect(makefile).toContain("\t@bash ./scripts/check-environment.sh");
-			expect(makefile).toContain("\tnpm run build");
+			expect(makefile).toContain("\tnpm run secrets:staged");
+			expect(makefile).toContain("\tnpm run docs:style:changed");
+			expect(makefile).toContain("\tnpm run test:related");
+			expect(makefile).toContain("\tnpm run semgrep:changed");
+			expect(makefile).not.toContain("make hooks-pre-commit");
+			expect(makefile).not.toContain("make hooks-pre-push");
 			expect(makefile).toContain(
 				"diagrams-check: ## Refresh architecture diagrams when sensitive paths change and fail on drift",
 			);
@@ -1875,9 +1883,9 @@ describe("runInit", () => {
 			);
 			expect(prek).toContain("[[repos.hooks]]");
 			expect(prek).toContain('id = "pre-commit"');
-			expect(prek).toContain("make hooks-pre-commit");
+			expect(prek).toContain('entry = "bash scripts/hook-pre-commit.sh"');
 			expect(prek).toContain('id = "pre-push"');
-			expect(prek).toContain("make hooks-pre-push");
+			expect(prek).toContain('entry = "bash scripts/hook-pre-push.sh"');
 			expect(prek).toContain('stages = ["pre-push"]');
 			expect(miseToml).toContain('"cargo:prek" = "0.3.4"');
 			expect(miseToml).toContain('"npm:@brainwav/diagram" = "1.1.0"');
@@ -1921,6 +1929,18 @@ describe("runInit", () => {
 				'echo "Error: source checkout detected but node is unavailable; refusing fallback to avoid stale harness binaries." >&2',
 			);
 			expect(runHarnessGate).toContain(
+				'run_with_process_storm_guard node --import tsx "$REPO_ROOT/src/cli.ts" "$@"',
+			);
+			expect(runHarnessGate).toContain(
+				"npm view @openai/codex versions time --json",
+			);
+			expect(runHarnessGate).toContain(
+				"npm view @openai/codex dist-tags --json",
+			);
+			expect(runHarnessGate).toContain(
+				"harness gate spawned Codex npm metadata lookups",
+			);
+			expect(runHarnessGate).not.toContain(
 				'exec node --import tsx "$REPO_ROOT/src/cli.ts" "$@"',
 			);
 			expect(runHarnessGate).not.toContain("harness-gate-tsx-stderr");
@@ -1931,7 +1951,7 @@ describe("runInit", () => {
 				'if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then',
 			);
 			expect(runHarnessGate).toContain(
-				'exec node "$REPO_ROOT/dist/cli.js" "$@"',
+				'run_with_process_storm_guard node "$REPO_ROOT/dist/cli.js" "$@"',
 			);
 			expect(runHarnessGate).toContain(
 				'bash "$REPO_ROOT/scripts/harness-cli.sh" "$@" || wrapper_exit=$?',
@@ -2225,6 +2245,7 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"secrets-staged"');
 			expect(environmentCheck).toContain('"docs-style-changed"');
 			expect(environmentCheck).toContain('"related-tests"');
+			expect(environmentCheck).toContain('"related-tests-staged"');
 			expect(environmentCheck).toContain('"semgrep-changed"');
 			expect(environmentCheck).toContain('"diagrams-check"');
 			expect(environmentCheck).toContain(
@@ -2511,7 +2532,10 @@ printf '%s\\n' '{"passed":true}'
 				},
 			);
 
-			expect(gateRun.status).toBe(0);
+			expect(
+				gateRun.status,
+				`stdout:\n${gateRun.stdout}\nstderr:\n${gateRun.stderr}`,
+			).toBe(0);
 			expect(gateRun.stderr).not.toContain(
 				"source checkout detected but tsx is not installed locally",
 			);

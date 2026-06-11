@@ -11,6 +11,8 @@ import { renderCheckEnvironmentScript } from "./scaffold-environment-templates.j
 import {
 	renderCheckHookCriticalConfigSyncScript,
 	renderCheckStagedSecretsScript,
+	renderPreCommitHookScript,
+	renderPrePushHookScript,
 	renderSetupGitHooksScript,
 	renderValidateCommitMsgScript,
 } from "./scaffold-hook-templates.js";
@@ -57,6 +59,22 @@ export const QUALITY_AND_HOOK_SCRIPT_TEMPLATES: readonly Template[] = [
 	{
 		path: "scripts/run-prek.sh",
 		render: () => renderPackagedRootFile("scripts/run-prek.sh"),
+	},
+	{
+		path: "scripts/with-validation-lock.sh",
+		render: () => renderPackagedRootFile("scripts/with-validation-lock.sh"),
+	},
+	{
+		path: "scripts/check-validation-locks.sh",
+		render: () => renderPackagedRootFile("scripts/check-validation-locks.sh"),
+	},
+	{
+		path: "scripts/hook-pre-commit.sh",
+		render: (pm) => renderPreCommitHookScript(pm),
+	},
+	{
+		path: "scripts/hook-pre-push.sh",
+		render: (pm) => renderPrePushHookScript(pm),
 	},
 	{
 		path: "scripts/check-staged-secrets.sh",

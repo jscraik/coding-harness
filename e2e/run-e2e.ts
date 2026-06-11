@@ -16,11 +16,15 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+	type CodexE2EEnvRecoveryResult,
 	ensureGitHubTokenForE2E,
+	loadCodexEnvForE2E,
 	loadE2EEnv,
 	maskSensitiveData,
 	validateE2EEnv,
 } from "./utils/env.js";
+
+const CODEX_ENV_RECOVERY_LABEL = "~/.codex/.env";
 
 export interface RunOptions {
 	testPattern?: string;
@@ -374,13 +378,38 @@ async function validateEnvironment(
 	console.info("🔍 Validating E2E environment...\n");
 
 	let authSource: string;
+	let envRecovery: CodexE2EEnvRecoveryResult | undefined;
 	try {
+		envRecovery = loadCodexEnvForE2E();
+		if (envRecovery.status === "loaded") {
+			console.info(
+				"Env-backed validation recovery loaded variable names from " +
+					CODEX_ENV_RECOVERY_LABEL +
+					": " +
+					envRecovery.loadedNames.join(", ") +
+					"\n",
+			);
+		} else if (
+			envRecovery.status !== "not_needed" &&
+			envRecovery.status !== "missing"
+		) {
+			console.info(`Env-backed validation recovery: ${envRecovery.status}.\n`);
+		}
 		validateE2EEnv();
 		authSource = await ensureGitHubTokenForE2E();
 		console.info("✅ Environment variables validated\n");
 		console.info(`🔐 GitHub auth source: ${authSource}\n`);
 	} catch (error) {
 		console.error("❌ Environment validation failed:\n");
+		if (envRecovery?.status === "blocked_env_fifo_timeout") {
+			console.error(
+				`Approved env-backed validation recovery path ${CODEX_ENV_RECOVERY_LABEL} is blocked_env_fifo_timeout: a FIFO/no-writer surface in this session; credential values were not read or printed. Switch to a regular env surface or use the approved env-recovery lane before rerunning.\n`,
+			);
+		} else if (envRecovery && envRecovery.status !== "not_needed") {
+			console.error(
+				`Env-backed validation recovery checked ${CODEX_ENV_RECOVERY_LABEL} first and returned ${envRecovery.status}; credential values were not printed.\n`,
+			);
+		}
 		console.error(error instanceof Error ? error.message : String(error));
 		process.exit(1);
 	}

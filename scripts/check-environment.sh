@@ -32,6 +32,10 @@ prepend_standard_tool_paths() {
 
 prepend_standard_tool_paths
 
+escape_regex_literal() {
+	printf '%s' "$1" | sed 's/[][(){}.^$*+?|\\]/\\&/g'
+}
+
 if [[ "${BASH_VERSINFO[0]:-0}" -lt 4 && -z "${CHECK_ENVIRONMENT_REEXECED:-}" ]]; then
 	if [[ -x "/opt/homebrew/bin/bash" ]]; then
 		export CHECK_ENVIRONMENT_REEXECED=1
@@ -93,7 +97,7 @@ fi
 		exit 1
 	fi
 
-	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/with-validation-lock.sh" "scripts/check-validation-locks.sh" "scripts/run-prek.sh" "scripts/check-public-api-docs.mjs" "scripts/check-code-size.mjs" "scripts/lib/changed-files.mjs" "scripts/check-codestyle-parity.sh" "scripts/check-git-common-config.sh" "scripts/prepare-worktree.sh" "scripts/new-task.sh" "scripts/setup-git-hooks.js" "scripts/validate-commit-msg.js" "scripts/check-hook-critical-config-sync.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/check-semgrep-full.sh" "scripts/semgrep-bootstrap.sh" "scripts/semgrep-pre-push.yml")
+	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/with-validation-lock.sh" "scripts/check-validation-locks.sh" "scripts/run-prek.sh" "scripts/hook-pre-commit.sh" "scripts/hook-pre-push.sh" "scripts/check-public-api-docs.mjs" "scripts/check-code-size.mjs" "scripts/lib/changed-files.mjs" "scripts/check-codestyle-parity.sh" "scripts/check-git-common-config.sh" "scripts/prepare-worktree.sh" "scripts/new-task.sh" "scripts/setup-git-hooks.js" "scripts/validate-commit-msg.js" "scripts/check-hook-critical-config-sync.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/check-semgrep-full.sh" "scripts/semgrep-bootstrap.sh" "scripts/semgrep-pre-push.yml")
 	for support_file in "${required_support_files[@]}"; do
 		if [[ ! -f "$REPO_ROOT/${support_file}" ]]; then
 			echo "Error: missing required hook support file at $REPO_ROOT/${support_file}"
@@ -205,9 +209,10 @@ fi
 		fi
 	done
 
-	required_prek_hooks=("pre-commit|Pre-commit|make hooks-pre-commit|system|false|pre-commit" "pre-push|Pre-push|make hooks-pre-push|system|false|pre-push")
+	required_prek_hooks=("pre-commit|Pre-commit|bash scripts/hook-pre-commit.sh|system|false|pre-commit" "pre-push|Pre-push|bash scripts/hook-pre-push.sh|system|false|pre-push")
 	for hook_spec in "${required_prek_hooks[@]}"; do
 		IFS='|' read -r hook_name hook_display_name hook_command hook_language hook_pass_filenames hook_stages <<< "$hook_spec"
+		hook_command_pattern="$(escape_regex_literal "$hook_command")"
 		if ! rg -q "^[[:space:]]*id[[:space:]]*=[[:space:]]*\"${hook_name}\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
 			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
@@ -216,7 +221,7 @@ fi
 			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if ! rg -q "^[[:space:]]*entry[[:space:]]*=[[:space:]]*\"${hook_command}\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
+		if ! rg -q "^[[:space:]]*entry[[:space:]]*=[[:space:]]*\"${hook_command_pattern}\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
 			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi

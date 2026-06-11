@@ -1,4 +1,5 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -6,11 +7,13 @@ import {
 	ensureGitHubTokenForE2E,
 	getGitHubAppE2EEnvStatus,
 	hasGitHubAuthForE2E,
+	loadCodexEnvForE2E,
 	loadGitHubAppE2EEnv,
 } from "./env.js";
 
 const managedEnvKeys = [
 	"GITHUB_PERSONAL_ACCESS_TOKEN",
+	"LINEAR_API_KEY",
 	"GITHUB_TOKEN",
 	"GH_TOKEN",
 	"E2E_GITHUB_APP_ID",
@@ -113,5 +116,165 @@ describe("E2E GitHub App env loading", () => {
 		await expect(ensureGitHubTokenForE2E()).resolves.toBe(
 			"GITHUB_PERSONAL_ACCESS_TOKEN",
 		);
+	});
+
+	it("loads missing E2E credentials from a regular Codex env file without exposing values", () => {
+		clearManagedEnv();
+		const dir = mkdtempSync(join(tmpdir(), "e2e-codex-env-"));
+		const envPath = join(dir, ".env");
+		try {
+			writeFileSync(
+				envPath,
+				[
+					"GITHUB_PERSONAL_ACCESS_TOKEN=ghp_fixturetoken",
+					"LINEAR_API_KEY=lin_api_fixture",
+					"UNRELATED_SECRET=must_not_load",
+				].join("\n"),
+				"utf-8",
+			);
+
+			const result = loadCodexEnvForE2E(envPath);
+
+			expect(result).toEqual({
+				status: "loaded",
+				path: envPath,
+				loadedNames: ["GITHUB_PERSONAL_ACCESS_TOKEN", "LINEAR_API_KEY"],
+				missingNames: [],
+			});
+			expect(process.env.GITHUB_PERSONAL_ACCESS_TOKEN).toBe("ghp_fixturetoken");
+			expect(process.env.LINEAR_API_KEY).toBe("lin_api_fixture");
+			expect(process.env.UNRELATED_SECRET).toBeUndefined();
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("does not load partial GitHub App recovery vars when PAT auth is already configured", () => {
+		clearManagedEnv();
+		process.env.GITHUB_PERSONAL_ACCESS_TOKEN = "ghp_existingtoken";
+		const dir = mkdtempSync(join(tmpdir(), "e2e-codex-env-pat-"));
+		const envPath = join(dir, ".env");
+		try {
+			writeFileSync(
+				envPath,
+				[
+					"LINEAR_API_KEY=lin_api_fixture",
+					"GITHUB_APP_ID=123",
+					"UNRELATED_SECRET=must_not_load",
+				].join("\n"),
+				"utf-8",
+			);
+
+			const result = loadCodexEnvForE2E(envPath);
+
+			expect(result).toEqual({
+				status: "loaded",
+				path: envPath,
+				loadedNames: ["LINEAR_API_KEY"],
+				missingNames: [],
+			});
+			expect(process.env.GITHUB_PERSONAL_ACCESS_TOKEN).toBe(
+				"ghp_existingtoken",
+			);
+			expect(process.env.LINEAR_API_KEY).toBe("lin_api_fixture");
+			expect(process.env.GITHUB_APP_ID).toBeUndefined();
+			expect(process.env.UNRELATED_SECRET).toBeUndefined();
+			expect(hasGitHubAuthForE2E()).toBe(true);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("prefers PAT recovery over partial GitHub App recovery vars", () => {
+		clearManagedEnv();
+		const dir = mkdtempSync(join(tmpdir(), "e2e-codex-env-pat-recovery-"));
+		const envPath = join(dir, ".env");
+		try {
+			writeFileSync(
+				envPath,
+				[
+					"GITHUB_PERSONAL_ACCESS_TOKEN=ghp_fixturetoken",
+					"GITHUB_APP_ID=123",
+					"LINEAR_API_KEY=lin_api_fixture",
+				].join("\n"),
+				"utf-8",
+			);
+
+			const result = loadCodexEnvForE2E(envPath);
+
+			expect(result).toEqual({
+				status: "loaded",
+				path: envPath,
+				loadedNames: ["GITHUB_PERSONAL_ACCESS_TOKEN", "LINEAR_API_KEY"],
+				missingNames: [],
+			});
+			expect(process.env.GITHUB_PERSONAL_ACCESS_TOKEN).toBe("ghp_fixturetoken");
+			expect(process.env.LINEAR_API_KEY).toBe("lin_api_fixture");
+			expect(process.env.GITHUB_APP_ID).toBeUndefined();
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("loads complete GitHub App recovery vars when no PAT is available", () => {
+		clearManagedEnv();
+		const dir = mkdtempSync(join(tmpdir(), "e2e-codex-env-app-recovery-"));
+		const envPath = join(dir, ".env");
+		try {
+			writeFileSync(
+				envPath,
+				[
+					"GITHUB_APP_ID=123",
+					"GITHUB_APP_INSTALLATION_ID=456",
+					"GITHUB_APP_PRIVATE_KEY=fixture-private-key",
+					"LINEAR_API_KEY=lin_api_fixture",
+				].join("\n"),
+				"utf-8",
+			);
+
+			const result = loadCodexEnvForE2E(envPath);
+
+			expect(result).toEqual({
+				status: "loaded",
+				path: envPath,
+				loadedNames: [
+					"GITHUB_APP_ID",
+					"GITHUB_APP_INSTALLATION_ID",
+					"GITHUB_APP_PRIVATE_KEY",
+					"LINEAR_API_KEY",
+				],
+				missingNames: [],
+			});
+			expect(process.env.GITHUB_PERSONAL_ACCESS_TOKEN).toBeUndefined();
+			expect(getGitHubAppE2EEnvStatus()).toMatchObject({
+				configured: true,
+				partial: false,
+			});
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("classifies FIFO Codex env surfaces without reading from them", () => {
+		clearManagedEnv();
+		const dir = mkdtempSync(join(tmpdir(), "e2e-codex-env-fifo-"));
+		const envPath = join(dir, ".env");
+		try {
+			execFileSync("mkfifo", [envPath]);
+
+			const result = loadCodexEnvForE2E(envPath);
+
+			expect(result).toEqual({
+				status: "blocked_env_fifo_timeout",
+				path: envPath,
+				loadedNames: [],
+				missingNames: [
+					"GITHUB_PERSONAL_ACCESS_TOKEN/GitHub App credentials",
+					"LINEAR_API_KEY",
+				],
+			});
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
 	});
 });

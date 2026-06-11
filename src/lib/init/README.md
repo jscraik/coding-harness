@@ -57,6 +57,11 @@ thin and delegate into this deep module.
   before invoking `prek`, so sandboxed Codex runs and downstream repositories do
   not fall back to a non-writable home-directory cache during hook installation,
   validation, or push triage.
+- Generated `prek` hook entries must call leaf adapters such as
+  `scripts/hook-pre-commit.sh` and `scripts/hook-pre-push.sh`, while generated
+  Make targets stay as manual wrappers around those adapters. This prevents
+  recursive hook orchestration and keeps installed hooks, scaffold fixtures, and
+  environment drift checks aligned.
 
 ## Documentation Alignment
 

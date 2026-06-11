@@ -8,6 +8,7 @@
 		"scripts/codex-preflight-local-memory-legacy.sh",
 		"scripts/verify-work.sh",
 		"scripts/validate-codestyle.sh",
+		"scripts/run-harness-gate.sh",
 		"scripts/with-validation-lock.sh",
 		"scripts/check-validation-locks.sh",
 		"scripts/run-prek.sh",

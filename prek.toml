@@ -10,7 +10,7 @@ repo = "local"
 [[repos.hooks]]
 id = "pre-commit"
 name = "Pre-commit"
-entry = "make hooks-pre-commit"
+entry = "bash scripts/hook-pre-commit.sh"
 language = "system"
 pass_filenames = false
 stages = ["pre-commit"]
@@ -18,7 +18,7 @@ stages = ["pre-commit"]
 [[repos.hooks]]
 id = "pre-push"
 name = "Pre-push"
-entry = "make hooks-pre-push"
+entry = "bash scripts/hook-pre-push.sh"
 language = "system"
 pass_filenames = false
 stages = ["pre-push"]

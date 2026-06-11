@@ -86,6 +86,7 @@ type MakefileCommands = {
 	install: string;
 	lint: string;
 	relatedTests: string;
+	relatedTestsStaged: string;
 	secretsStaged: string;
 	semgrepChanged: string;
 	size: string;
@@ -106,6 +107,7 @@ function buildMakefileCommands(packageManager: string): MakefileCommands {
 		install: renderInstallCommand(packageManager),
 		lint: renderScriptCommand(packageManager, "lint"),
 		relatedTests: renderScriptCommand(packageManager, "test:related"),
+		relatedTestsStaged: "bash scripts/check-related-tests.sh --staged",
 		secretsStaged: renderScriptCommand(packageManager, "secrets:staged"),
 		semgrepChanged: renderScriptCommand(packageManager, "semgrep:changed"),
 		size: renderScriptCommand(packageManager, "quality:size"),
@@ -118,7 +120,7 @@ function renderMakefileHeader(): string {
 	return `# Harness Development Makefile
 # Run \`make help\` to see available commands
 
-.PHONY: help install setup preflight worktree-ready verify-work codestyle-parity codestyle hooks hooks-pre-commit hooks-pre-push hooks-commit-msg secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: help install setup preflight worktree-ready verify-work codestyle-parity codestyle hooks hooks-pre-commit hooks-pre-push hooks-commit-msg secrets-staged docs-style-changed related-tests related-tests-staged semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 help: ## Show this help message
@@ -168,56 +170,18 @@ hooks: ## Setup git hooks
  * Render the "Hooks" section of the repository Makefile containing pre-commit, pre-push,
  * commit-message, and related governance targets.
  *
- * Interpolates the provided Makefile command strings into the appropriate targets so the
- * generated section invokes linting, typechecking, docs checks, security scans, and other
- * pre-commit/pre-push workflows.
+ * Keeps manual Make hook targets as thin wrappers around hook leaf adapters.
  *
- * @param commands - An object with command strings for Makefile targets (see MakefileCommands)
  * @returns The text content for the Makefile "Hooks" section
  */
 function renderMakefileHookSection(commands: MakefileCommands): string {
 	return `
 
 hooks-pre-commit: ## Run local pre-commit gates before creating a commit
-	@bash ./scripts/check-hook-critical-config-sync.sh
-	$(MAKE) codestyle-parity
-	@bash ./scripts/validate-codestyle.sh --fast
-	${commands.lint}
-	${commands.docsLint}
-	${commands.typecheck}
-	${commands.docstrings}
-	${commands.size}
-	$(MAKE) secrets-staged
-	$(MAKE) docs-style-changed
-	$(MAKE) related-tests
+	@bash ./scripts/hook-pre-commit.sh
 
 hooks-pre-push: ## Run local pre-push governance gates before pushing
-	@if base_ref="$$(git merge-base HEAD '@{upstream}' 2>/dev/null || git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main 2>/dev/null || true)" && \
-		[ -n "$$base_ref" ] && \
-		changed_files="$$(git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD --)" && \
-		[ -n "$$changed_files" ] && \
-		! printf '%s\\n' "$$changed_files" | grep -v '^\\.codex/environments/environment\\.toml$$' >/dev/null; then \
-		echo "Environment-only push detected; running check-environment only."; \
-		bash ./scripts/check-environment.sh; \
-		exit 0; \
-	fi
-	@bash ./scripts/run-harness-gate.sh docs-gate --mode required --json
-	@tmp_changed_files="$$(mktemp)"; \
-	trap 'rm -f "$$tmp_changed_files"' EXIT; \
-	base_ref="$$(git merge-base HEAD '@{upstream}' 2>/dev/null || git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main 2>/dev/null || true)"; \
-	if [ -n "$$base_ref" ]; then \
-		git diff --name-only --diff-filter=ACMRDT "$$base_ref"...HEAD -- > "$$tmp_changed_files"; \
-	fi; \
-	if [ -s "$$tmp_changed_files" ]; then \
-		bash ./scripts/check-diagram-freshness.sh --changed-files "$$tmp_changed_files"; \
-	else \
-		bash ./scripts/check-diagram-freshness.sh --changed-files "$$tmp_changed_files"; \
-	fi
-	@bash ./scripts/run-harness-gate.sh tooling-audit --path . --json
-	@bash ./scripts/check-environment.sh
-	$(MAKE) semgrep-changed
-	$(MAKE) codestyle
-	${commands.build}
+	@bash ./scripts/hook-pre-push.sh
 
 hooks-commit-msg: ## Validate commit message policy (use HOOK_COMMIT_MSG or MSG_FILE=/path)
 	@tmp_file="$(mktemp)"; \
@@ -240,6 +204,9 @@ docs-style-changed: ## Run Vale on staged authoritative docs only
 
 related-tests: ## Run Vitest related mode for staged src implementation files
 	${commands.relatedTests}
+
+related-tests-staged: ## Run related tests for staged src implementation files
+	${commands.relatedTestsStaged}
 
 semgrep-changed: ## Run narrow Semgrep rules against changed src implementation files
 	${commands.semgrepChanged}
