@@ -12,19 +12,19 @@ native_reconciliation:
 truth_lanes:
   local_git:
     status: current_main_synced_before_branch
-    evidence: "local main and origin/main were fdcd577a77fb660b9b71e058bcbd33fff06c67bf before codex/jsc-363-post-pr401-tracker-refresh was created"
+    evidence: "local main and origin/main were fd750626ece4d1f3786ef564485dd8c7d2c04230 before codex/jsc-363-post-pr402-tracker-refresh was created"
   github_pr:
-    status: pr402_review_ci_active
-    evidence: "PR #402 is the active review/CI route after PR #401 merged; the zero-open-PR evidence applies only to the refresh point before PR #402 opened."
+    status: no_open_prs_after_pr402_merge
+    evidence: "PR #402 merged at 2026-06-11T06:46:51Z and live GitHub open PR list returned []."
   ci:
-    status: pr401_repo_owned_lanes_passed_before_merge
-    evidence: "GitHub PR #401 status rollup showed repo-owned CircleCI lanes, pr-pipeline, security-scan, CodeRabbit, and Socket success; external security/snyk app remained owner-waived only"
+    status: pr402_repo_owned_lanes_passed_before_merge
+    evidence: "GitHub PR #402 status rollup showed repo-owned CircleCI lanes, pr-pipeline, security-scan, CodeRabbit, and Socket success; external security/snyk app remained owner-waived only"
   tracker:
-    status: refreshed_to_r463_after_review_tightening
-    evidence: "state.yaml, goal.md, execution-tracker.md, active-artifacts.md, kanban HTML, receipts.jsonl, and this governor output were rechecked after stale current-route text was collapsed to the PR #401/R463 restart snapshot"
+    status: refreshed_to_r464_after_pr402_merge
+    evidence: "state.yaml, goal.md, execution-tracker.md, active-artifacts.md, kanban HTML, receipts.jsonl, and this governor output were rechecked after PR #402 merged and local main was pulled"
 next_action:
-  lifecycle_unit: pr402-review-ci-route
-  instruction: "Finish PR #402 review/CI, merge it, pull main, then run the remaining goal/spec/backlog audit from current main before any feature work resumes."
+  lifecycle_unit: remaining-closeout-backlog-audit
+  instruction: "Run the remaining goal/spec/backlog audit from current main before any feature work resumes; record the exact next bounded slice or blocker."
 non_claims:
   - linear_fields_current_beyond_comment
   - review_external_root_hygiene_complete
