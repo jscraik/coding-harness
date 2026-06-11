@@ -22,36 +22,48 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 
 ## Current Control Surface
 
-| Field               | Current Truth                                                    |
-| ------------------- | ---------------------------------------------------------------- |
-| Parent issue        | JSC-363                                                          |
-| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`     |
-| Current branch      | `main`                                                           |
-| Local main head     | `9014b416f170ef6069416aa2d356845232cf2de1`                       |
-| Origin main head    | `9014b416f170ef6069416aa2d356845232cf2de1`                       |
-| Main baseline       | `9014b416f170ef6069416aa2d356845232cf2de1`                       |
-| Active route count  | 1                                                                |
-| Active route        | Post-PR394 tracker and Linear comment alignment                  |
-| Last closed route   | PR #394 merged                                                   |
-| Current route       | Remaining closeout/backlog audit                                 |
-| Current slice       | Audit remaining unclaimed proof lanes                            |
-| Feature work status | No next feature slice started                                    |
+| Field               | Current Truth                                                      |
+| ------------------- | ------------------------------------------------------------------ |
+| Parent issue        | JSC-363                                                            |
+| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`       |
+| Current branch      | `codex/jsc-363-post-pr393-tracker-refresh`                         |
+| Local main head     | `fbf3c215608f25ede94a066e2003b4c5e6188189`                         |
+| Origin main head    | `fbf3c215608f25ede94a066e2003b4c5e6188189`                         |
+| Main baseline       | `fbf3c215608f25ede94a066e2003b4c5e6188189`                         |
+| Active route count  | 1                                                                  |
+| Active route        | PR #396 conflict repair and remote truth refresh                   |
+| Last closed route   | PR #394 merged                                                     |
+| Current route       | PR #396 draft repair                                               |
+| Current slice       | Push repair, trigger CodeRabbit again, refresh CI and review truth |
+| Feature work status | No next feature slice started                                      |
 
 ## Active Route
 
-PR #394 is merged and local `main` is synced with `origin/main` at
-`9014b416f170ef6069416aa2d356845232cf2de1` by ref update; that route is
-closed provenance. Linear JSC-363 was reachable through the Linear MCP tool and
-comment `81cfdd41-ff0e-4df1-b884-c01789e30a50` records the repo-truth
-classification. This does not claim Linear field-text currency beyond that
-comment, root-hygiene proof, documentation accuracy, Judge/PM readiness,
-release readiness, or parent-goal completion.
+PR #396 is the active draft repair lane for
+`codex/jsc-363-post-pr393-tracker-refresh`. GitHub reported the PR
+`DIRTY` with failing `pr-pipeline` and `linear-gate` checks before this
+repair. The branch has merged `origin/main` at
+`b8ec50057338f3d7bea0973330d830c93bccee51`, preserving current-main route
+truth and hook/environment check repairs. This route does not claim remote push,
+fresh CI, CodeRabbit freshness, review-thread resolution, merge readiness,
+Linear field-text currency, root-hygiene proof, documentation accuracy,
+Judge/PM readiness, release readiness, or parent-goal completion.
 
 Current evidence:
 
 - Local `main` and `origin/main` are synced at
-  `9014b416f170ef6069416aa2d356845232cf2de1` after PR #394 merge pullback by
-  local ref update.
+  `fbf3c215608f25ede94a066e2003b4c5e6188189`.
+- Live GitHub reports PR #396 open, draft, and `DIRTY` at pre-repair remote
+  head `de0ba15f93998fc2adc4cf8fe17a7e97c0f53cfb`; visible failing lanes are
+  `pr-pipeline` and `ci/circleci: linear-gate`. The external
+  `security/snyk (jscraik)` GitHub App quota/error lane remains owner-waived
+  only for that external app status.
+- Local repair head
+  `b8ec50057338f3d7bea0973330d830c93bccee51` merges current
+  `origin/main` into the PR #396 branch.
+- Next safe action: push the repair, trigger CodeRabbit again with
+  `@coderabbitai review this pr`, refresh `pr-pipeline` and `linear-gate`,
+  fix only current-head failures, then merge/pull back and refresh this tracker.
 - Live GitHub reports PR #394 merged at `2026-06-09T12:09:12Z` from submitted
   head `8b98cc6299d566ccf3b472781ee6def606c9ea79` as squash merge commit
   `9014b416f170ef6069416aa2d356845232cf2de1`; repo-owned CircleCI,
