@@ -30,13 +30,13 @@ thin_execution_tracker:
     receipt_style: "compact claim/evidence/blocker records"
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
-    kind: "current_main_tracker_refresh"
-    status: "post_pr401_route_truth_refreshed"
-    blocker: "No open JSC-363 PR is active after PR #401 merged and local main was pulled to fdcd577a77fb660b9b71e058bcbd33fff06c67bf. The next bounded lane remains the remaining closeout/backlog audit from current main. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, Linear field-text currency beyond the repo-truth comment, and parent-goal completion remain unclaimed."
-    active_branch: null
-    active_pr: null
-    active_pr_url: null
-    active_pr_head_sha: null
+    kind: "pr_review_repair"
+    status: "pr402_review_ci_active"
+    blocker: "PR #402 is the active JSC-363 review-repair route after PR #401 merged and local main was pulled to fdcd577a77fb660b9b71e058bcbd33fff06c67bf. The next bounded lane remains the remaining closeout/backlog audit from current main after PR #402 merges and local main is pulled. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, Linear field-text currency beyond the repo-truth comment, and parent-goal completion remain unclaimed."
+    active_branch: "codex/jsc-363-post-pr401-tracker-refresh"
+    active_pr: 402
+    active_pr_url: "https://github.com/jscraik/coding-harness/pull/402"
+    active_pr_head_sha: "31f3cf367f0aef3ae5ce3f71a5c57e2d7b7b327d"
     last_merged_pr: 401
     last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/401"
     last_merged_sha: "fdcd577a77fb660b9b71e058bcbd33fff06c67bf"
@@ -44,12 +44,13 @@ thin_execution_tracker:
     last_merge_verified_at: "2026-06-11T04:49:40Z"
     local_main_sha: "fdcd577a77fb660b9b71e058bcbd33fff06c67bf"
     origin_main_sha: "fdcd577a77fb660b9b71e058bcbd33fff06c67bf"
-    open_pr_count: 0
-    open_prs: []
+    open_pr_count: 1
+    open_prs:
+      - 402
   queued_slice:
     lifecycle_unit: "remaining-closeout-backlog-audit"
     name: "audit remaining goal/spec/backlog obligations from current main"
-    status: "queued_after_pr401_pullback"
+    status: "queued_after_pr402_merge_pullback"
     evidence_receipt: "R463"
   resume_gate:
     - "Do not start feature work until the remaining closeout/backlog audit states the exact next slice from current main and records any blocked obligations separately."
