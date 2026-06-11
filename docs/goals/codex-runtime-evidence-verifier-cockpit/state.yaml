@@ -32,30 +32,30 @@ thin_execution_tracker:
   active_route:
     kind: "current_main_closeout_audit"
     status: "remaining_closeout_backlog_audit_active"
-    blocker: "No PR lane is active. PR #404 merged and local main plus origin/main are synced at 68c8019515641f4fe2ff8ada917d4f2b1a170b1e. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, Linear field-text currency beyond the repo-truth comment, and parent-goal completion remain unclaimed until the remaining closeout/backlog audit produces the exact next bounded slice or blocker."
+    blocker: "No PR lane is active. PR #405 merged and local main plus origin/main are synced at 2118c189b62caff8ce197fc242c0253aab4ad3d5. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, Linear field-text currency beyond the repo-truth comment, and parent-goal completion remain unclaimed until the remaining closeout/backlog audit produces the exact next bounded slice or blocker."
     active_branch: "main"
     active_pr: null
     active_pr_url: null
     active_pr_last_checked_head_sha: null
-    active_pr_head_sha_contract: "No active PR head exists after PR #404 merge and branch cleanup; the next PR head must be created only after the remaining closeout/backlog audit selects a bounded next slice."
-    last_merged_pr: 404
-    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/404"
-    last_merged_sha: "68c8019515641f4fe2ff8ada917d4f2b1a170b1e"
-    last_merged_submitted_head_sha: "1b1a292f3009a49f422286d9a65cb4fc7e3fc254"
-    last_merge_verified_at: "2026-06-11T10:52:14Z"
-    local_main_sha: "68c8019515641f4fe2ff8ada917d4f2b1a170b1e"
-    origin_main_sha: "68c8019515641f4fe2ff8ada917d4f2b1a170b1e"
+    active_pr_head_sha_contract: "No active PR head exists after PR #405 merge and branch cleanup; the next PR head must be created only after the remaining closeout/backlog audit selects a bounded next slice."
+    last_merged_pr: 405
+    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/405"
+    last_merged_sha: "2118c189b62caff8ce197fc242c0253aab4ad3d5"
+    last_merged_submitted_head_sha: "ca050543bb4906cef046649edcc94eba7f0feda2"
+    last_merge_verified_at: "2026-06-11T12:47:10Z"
+    local_main_sha: "2118c189b62caff8ce197fc242c0253aab4ad3d5"
+    origin_main_sha: "2118c189b62caff8ce197fc242c0253aab4ad3d5"
     open_pr_count: 0
     open_prs: []
   queued_slice:
     lifecycle_unit: "PU-055"
     name: "current-main closeout evidence matrix"
     status: "active"
-    evidence_receipt: "R470"
+    evidence_receipt: "R471"
   resume_gate:
     - "Do not start feature work until the remaining closeout/backlog audit states the exact next slice from current main and records any blocked obligations separately."
     - "Treat Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 as tracker-alignment evidence only, not field-text-current or completion evidence."
-    - "PR #396 through PR #404 are merged provenance; do not reopen their repair lanes unless a fresh current-main regression proves a new blocker."
+    - "PR #396 through PR #405 are merged provenance; do not reopen their repair lanes unless a fresh current-main regression proves a new blocker."
     - "The next selected slice must preserve the one-PR-at-a-time route contract and must not claim Judge/PM readiness or parent-goal completion before the final audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
   review_artifacts:
@@ -196,7 +196,7 @@ current_slice_gate:
   next_required_handoff_steps:
     - "Use docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md as the thin restart tracker; keep old PR history as provenance, not active route work."
     - "Validate this current-main tracker refresh with receipts JSON parsing, audit freshness, goal-board validation, Kanban script validation, and git diff whitespace validation."
-    - "Use the pulled main checkout at 68c8019515641f4fe2ff8ada917d4f2b1a170b1e as the only route baseline before starting other implementation work."
+    - "Use the pulled main checkout at 2118c189b62caff8ce197fc242c0253aab4ad3d5 as the only route baseline before starting other implementation work."
     - "Linear JSC-363 has compact post-merge route truth via comment 34a50024-24be-4853-af6e-3219cbc0d845; do not claim field-text currency until the older Phase 1 title/description wording is owner-accepted or updated."
     - "Select one bounded next backlog slice only after the remaining closeout/backlog audit runs against current main and records the exact next slice or blocker."
     - "Treat receipt-backed merged JSC-363 route/foundation lanes through PR #371 as completed current-main evidence at 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856; do not reopen those PR lanes unless fresh GitHub or current-main validation shows a regression."
