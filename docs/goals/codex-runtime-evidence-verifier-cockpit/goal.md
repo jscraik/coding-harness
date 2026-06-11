@@ -43,18 +43,19 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-11 post-PR399 pullback tracker refresh. PR #366,
+Last updated during the 2026-06-11 post-PR400 pullback tracker refresh. PR #366,
 PR #367, PR #369, PR #370, PR #371, PR #372, PR #373, PR #374, PR #375,
 PR #376, PR #377, PR #378, PR #379, PR #380, PR #381, PR #382, PR #383,
 PR #384, PR #385, PR #386, PR #387, PR #388, PR #389, PR #390, PR #391,
 PR #392, PR #393, and PR #394 are historical route provenance. PR #394 is
 merged into `main` at `9014b416f170ef6069416aa2d356845232cf2de1`.
-PR #396, PR #397, PR #398, and PR #399 are also historical merged provenance.
+PR #396, PR #397, PR #398, PR #399, and PR #400 are also historical merged
+provenance.
 
 Current live route truth:
 
 - Local `main` and `origin/main` are synced at
-  `abf2a459e54e5390675b58bb49400840947ef7eb` after PR #399 merged.
+  `287a67c0f81c7f2c31d96e5c7bb7d00dfaac2e64` after PR #400 merged.
 - PR #396 merged the Prek hook leaf-adapter repair from submitted head
   `687a3ca9721bb19336fd24f6a8b91fb6488098fe` as squash merge commit
   `02245c5735add2f2990f0203a4dbd4708f72353a`; repo-owned CircleCI lanes,
@@ -74,6 +75,13 @@ Current live route truth:
 - PR #399 merged the post-PR398 route truth refresh from submitted head
   `488a1e73f4fd4fe430d6b7fb0e17e69a426b038d` as squash merge commit
   `abf2a459e54e5390675b58bb49400840947ef7eb`; repo-owned CircleCI lanes,
+  aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, Socket,
+  and review-thread checks were successful or resolved before merge. The
+  external Snyk GitHub App quota/error lane remains owner-waived for that
+  external app status only.
+- PR #400 merged the post-PR399 route truth refresh from submitted head
+  `7cfcaadb34a2f86c142a39974117704e0ebad951` as squash merge commit
+  `287a67c0f81c7f2c31d96e5c7bb7d00dfaac2e64`; repo-owned CircleCI lanes,
   aggregate `pr-pipeline`, aggregate `security-scan`, CodeRabbit, Socket,
   and review-thread checks were successful or resolved before merge. The
   external Snyk GitHub App quota/error lane remains owner-waived for that
