@@ -101,10 +101,24 @@ describe("scaffold script template registry", () => {
 		expect(preCommit?.render("pnpm", renderContext)).toContain(
 			"check-hook-critical-config-sync.sh",
 		);
+		expect(preCommit?.render("pnpm", renderContext)).toContain(
+			"bash ./scripts/validate-codestyle.sh --fast",
+		);
 		expect(preCommit?.render("npm", renderContext)).toContain("npm run lint");
+		expect(preCommit?.render("npm", renderContext)).toContain(
+			"bash ./scripts/validate-codestyle.sh --fast",
+		);
+		expect(preCommit?.render("npm", renderContext)).not.toContain("pnpm lint");
+		expect(preCommit?.render("yarn", renderContext)).toContain("yarn lint");
+		expect(preCommit?.render("yarn", renderContext)).not.toContain("pnpm lint");
+		expect(preCommit?.render("yarn", renderContext)).not.toContain(
+			"npm run lint",
+		);
 		expect(prePush?.render("pnpm", renderContext)).toContain(
 			"check-validation-locks.sh",
 		);
 		expect(prePush?.render("npm", renderContext)).toContain("npm run build");
+		expect(prePush?.render("yarn", renderContext)).toContain("yarn build");
+		expect(prePush?.render("yarn", renderContext)).not.toContain("pnpm build");
 	});
 });

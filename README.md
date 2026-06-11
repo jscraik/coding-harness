@@ -244,6 +244,11 @@ lint/typecheck gates. Generated hook package-script commands follow the detected
 package manager, so npm and yarn repositories do not receive pnpm-only hook
 commands.
 
+The repo-owned Semgrep security lane reuses a worktree-local scanner cache only
+after an executable `pysemgrep` or `semgrep --version` probe passes. Cache keys
+include the Python major/minor runtime so stale metadata or ABI-mismatched
+site-packages cannot satisfy the security scan.
+
 ## Where To Go Next
 
 - [Quickstart](./docs/agents/quickstart.md) for the agent-native loop and local verification path.

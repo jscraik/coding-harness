@@ -30,32 +30,33 @@ thin_execution_tracker:
     receipt_style: "compact claim/evidence/blocker records"
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
-    kind: "current_main_audit"
-    status: "remaining_closeout_backlog_audit_active"
-    blocker: "PR #402 merged and local main plus origin/main are synced at fd750626ece4d1f3786ef564485dd8c7d2c04230. No open PRs are live at this refresh point. The active lane is now the remaining closeout/backlog audit from current main before any feature work. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, Linear field-text currency beyond the repo-truth comment, and parent-goal completion remain unclaimed."
-    active_branch: "codex/jsc-363-post-pr402-tracker-refresh"
-    active_pr: null
-    active_pr_url: null
-    active_pr_last_checked_head_sha: null
-    active_pr_head_sha_contract: "no active PR at this refresh point; verify live GitHub before any PR, CI, or review-thread claim"
-    last_merged_pr: 402
-    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/402"
-    last_merged_sha: "fd750626ece4d1f3786ef564485dd8c7d2c04230"
-    last_merged_submitted_head_sha: "765769147db3f1ccee704e521475d4a20ab65934"
-    last_merge_verified_at: "2026-06-11T06:46:51Z"
-    local_main_sha: "fd750626ece4d1f3786ef564485dd8c7d2c04230"
-    origin_main_sha: "fd750626ece4d1f3786ef564485dd8c7d2c04230"
-    open_pr_count: 0
-    open_prs: []
+    kind: "pr_review_repair"
+    status: "pr404_review_repair_active"
+    blocker: "PR #404 is the active post-PR403 review-repair lane. Local repair commit 6d951cbe08dc18057010b336c440a275d43e250b addresses the Semgrep source-time Python, route-state, receipt-provenance, hook fast-codestyle, and selected-package-manager review threads; live PR truth remains pending until this R469 route repair is pushed and refreshed. Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness, Linear field-text currency beyond the repo-truth comment, and parent-goal completion remain unclaimed."
+    active_branch: "codex/jsc-363-post-pr403-tracker-refresh"
+    active_pr: 404
+    active_pr_url: "https://github.com/jscraik/coding-harness/pull/404"
+    active_pr_last_checked_head_sha: "574b533e138863a4ca95a2fabb479abc5e904d76"
+    active_pr_head_sha_contract: "PR #404 review-repair truth must be refreshed from live GitHub after the next push before any merge, main-pullback, or parent-goal claim"
+    last_merged_pr: 403
+    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/403"
+    last_merged_sha: "4c9c905f39c9fa8d772d096025e33d79642c3c96"
+    last_merged_submitted_head_sha: "c92fb7ec329fea4edb00413cabf357fc7d63996f"
+    last_merge_verified_at: "2026-06-11T07:26:00Z"
+    local_main_sha: "4c9c905f39c9fa8d772d096025e33d79642c3c96"
+    origin_main_sha: "4c9c905f39c9fa8d772d096025e33d79642c3c96"
+    open_pr_count: 1
+    open_prs:
+      - 404
   queued_slice:
     lifecycle_unit: "remaining-closeout-backlog-audit"
     name: "audit remaining goal/spec/backlog obligations from current main"
-    status: "active_after_pr402_merge_pullback"
-    evidence_receipt: "R464"
+    status: "blocked_until_pr404_merges_and_main_is_pulled_back"
+    evidence_receipt: "R469"
   resume_gate:
     - "Do not start feature work until the remaining closeout/backlog audit states the exact next slice from current main and records any blocked obligations separately."
     - "Treat Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 as tracker-alignment evidence only, not field-text-current or completion evidence."
-    - "PR #396, PR #397, PR #398, PR #399, PR #400, PR #401, and PR #402 are merged provenance; do not reopen their repair lanes unless a fresh current-main regression proves a new blocker."
+    - "PR #396, PR #397, PR #398, PR #399, PR #400, PR #401, PR #402, and PR #403 are merged provenance; do not reopen their repair lanes unless a fresh current-main regression proves a new blocker."
     - "The next selected slice must preserve the one-PR-at-a-time route contract and must not claim Judge/PM readiness or parent-goal completion before the final audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
   review_artifacts:
@@ -196,9 +197,9 @@ current_slice_gate:
   next_required_handoff_steps:
     - "Use docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md as the thin restart tracker; keep old PR history as provenance, not active route work."
     - "Validate this current-main tracker refresh with receipts JSON parsing, audit freshness, goal-board validation, Kanban script validation, and git diff whitespace validation."
-    - "Commit the validated post-PR #371 tracker refresh before starting other implementation work."
+    - "Commit and push the validated PR #404 review repair before starting other implementation work."
     - "Linear JSC-363 has compact post-merge route truth via comment 34a50024-24be-4853-af6e-3219cbc0d845; do not claim field-text currency until the older Phase 1 title/description wording is owner-accepted or updated."
-    - "Select one bounded next backlog slice only after the post-PR #371 tracker PR validates, merges, and is pulled back to local main."
+    - "Select one bounded next backlog slice only after PR #404 validates, merges, and is pulled back to local main."
     - "Treat receipt-backed merged JSC-363 route/foundation lanes through PR #371 as completed current-main evidence at 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856; do not reopen those PR lanes unless fresh GitHub or current-main validation shows a regression."
     - "Use receipt R379 as the validated post-PR #365 current-main route-tracker repair evidence for goal.md, state.yaml, receipts.jsonl, .harness/active-artifacts.md, and .harness/implementation-notes/goal-kanban-board.html; use R357 only as PU-012 intent-created evidence, not PU-012 completion evidence."
     - "Use the PU-012 intent review artifacts as the reviewed-intent gate: best-practices pass, agent-native pass, adversarial needs_changes, and adversarial rereview pass after the intent fix."
@@ -208,7 +209,7 @@ current_slice_gate:
     - "Treat the external Snyk GitHub App quota failure as owner-waived for that quota lane only, not as external Snyk green or as a blanket security waiver."
     - "Treat PR #369 as historical merged route evidence, not current-main route truth and not an active tracker PR. Its squash merge commit 1d0c3baaa76d1de68c633b086a5dcf07472ddbef is retained as PR #369 provenance only."
     - "Treat PU-013 proof-route delivery through PR #370 as merged and pulled back, and treat post-PR370 tracker repair through PR #371 as merged and pulled back to local main at 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856."
-    - "Select the next implementation slice only after the post-PR #371 tracker refresh PR is reviewed, green or explicitly owner-blocked, merged, pulled back to local main, and recorded in the goal surfaces."
+    - "Select the next implementation slice only after PR #404 is reviewed, green or explicitly owner-blocked, merged, pulled back to local main, and recorded in the goal surfaces."
     - "For every future slice, run simplify, improve-codebase-architecture, sy-review, and testing before done; then commit atomically, open or update one PR, trigger CodeRabbit manually when required, run pr-green-sweep until faults are fixed or explicitly blocked, merge to main, checkout main, pull latest remote main, update the goal board/state/receipt, and only then start the next slice."
     - "Stacked implementation PRs are forbidden by default. Only Jamie can authorize a named exception in the current slice intent and receipt before any parallel or dependent implementation work begins."
     - "Keep this board and the local board tracker as current route-truth surfaces; synchronize goal.md, state.yaml, goal-kanban-board.html, and receipts.jsonl after every merge, route decision, or blocker decision."

@@ -12,16 +12,16 @@ native_reconciliation:
 truth_lanes:
   local_git:
     status: current_main_synced_before_branch
-    evidence: "local main and origin/main were fd750626ece4d1f3786ef564485dd8c7d2c04230 before codex/jsc-363-post-pr402-tracker-refresh was created"
+    evidence: "local main and origin/main were 4c9c905f39c9fa8d772d096025e33d79642c3c96 before codex/jsc-363-post-pr403-tracker-refresh was created"
   github_pr:
-    status: no_open_prs_after_pr402_merge
-    evidence: "PR #402 merged at 2026-06-11T06:46:51Z and live GitHub open PR list returned []."
+    status: no_open_prs_after_pr403_merge
+    evidence: "PR #403 merged at 2026-06-11T07:26:00Z and live GitHub open PR list returned []."
   ci:
-    status: pr402_repo_owned_lanes_passed_before_merge
-    evidence: "GitHub PR #402 status rollup showed repo-owned CircleCI lanes, pr-pipeline, security-scan, CodeRabbit, and Socket success; external security/snyk app remained owner-waived only"
+    status: pr403_repo_owned_lanes_passed_before_merge
+    evidence: "GitHub PR #403 status rollup showed repo-owned CircleCI lanes, pr-pipeline, security-scan, CodeRabbit, and Socket success; external security/snyk app remained owner-waived only"
   tracker:
-    status: refreshed_to_r464_after_pr402_merge
-    evidence: "state.yaml, goal.md, execution-tracker.md, active-artifacts.md, kanban HTML, receipts.jsonl, and this governor output were rechecked after PR #402 merged and local main was pulled"
+    status: refreshed_to_r465_after_pr403_merge
+    evidence: "state.yaml, goal.md, execution-tracker.md, active-artifacts.md, kanban HTML, receipts.jsonl, and this governor output were rechecked after PR #403 merged and local main was pulled"
 next_action:
   lifecycle_unit: remaining-closeout-backlog-audit
   instruction: "Run the remaining goal/spec/backlog audit from current main before any feature work resumes; record the exact next bounded slice or blocker."

@@ -102,6 +102,10 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 - Direct `prek` operations must use `bash scripts/run-prek.sh <args>` so hook
   validation uses the worktree cache instead of a home-directory cache that may
   be non-writable in sandboxed Codex runs.
+- Repo-owned Semgrep security lanes must use Python-runtime-scoped worktree
+  caches and an executable `pysemgrep` or `semgrep --version` probe before
+  reusing scanner state; stale metadata or ABI-mismatched site-packages are
+  blocked scanner state, not proof.
 - Report exact commands with explicit `pass`, `fail`, or `blocked` outcomes.
 
 ## Routing
