@@ -31,39 +31,40 @@ thin_execution_tracker:
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
     kind: "current_main_closeout_audit"
-    status: "pu055_current_main_matrix_recorded_next_slice_selected"
-    blocker: "PU-055 recorded the current-main closeout matrix and queued PU-056; parent completion remains blocked by the active-route guard, Linear disposition, and final Judge/PM packet."
-    current_pr_state: "PR #408 merged and local main plus origin/main are synced at 48ff402e6ee4fd99f84412eff7fc1592d8acb32b; no implementation PR lane is active and live GitHub reported zero open PRs."
-    test_and_audit_status: "Focused review-state, external-state, root-hygiene, delivery-truth, Judge/PM, runtime-card, and harness-next tests pass; documentation accuracy is partially proven by docs validators and historical review coverage backfill is proven by the board validator."
-    active_route_drift_finding: "PU-055 found the current-route table had two active rows, causing runtime-card to select JSC-395 rather than JSC-363 before the route table was narrowed."
+    status: "pu056_active_route_runtime_card_guard_in_progress"
+    blocker: "PU-056 is active in PR #410; parent completion remains blocked by PR merge/pullback for this guard, Linear disposition, and final Judge/PM packet."
+    current_pr_state: "PR #409 merged and local main plus origin/main are synced at c3d476541351ccd08fb832d08ba9749a9f203e4c; PU-056 is open as PR #410 on codex/jsc-363-pu056-runtime-card-active-route-key. Live PR head/CI/review state is submitted-branch truth until the post-merge pullback receipt records the final squash merge."
+    test_and_audit_status: "Focused runtime-card tests, module-boundary ratchet test, current checkout runtime-card probe, and CircleCI test job 31556 pass after the active-route key guard; CircleCI check lane remains the active PR blocker until refreshed on the latest pushed head."
+    active_route_drift_finding: "PU-055 found the current-route table had two active rows and runtime-card route selection drift; PU-056 repairs the remaining issue-key projection gap by deriving the Linear key from wide Current Active Route rows."
     unclaimed_surfaces:
       - "Linear field-text currency beyond repo-truth comment 81cfdd41-ff0e-4df1-b884-c01789e30a50"
       - "Judge/PM live audit packet"
       - "Final documentation accuracy beyond current validators"
       - "Parent-goal completion"
-    active_branch: "codex/jsc-363-pu055-closeout-matrix"
-    active_pr: null
-    active_pr_url: null
+    active_branch: "codex/jsc-363-pu056-runtime-card-active-route-key"
+    active_pr: 410
+    active_pr_url: "https://github.com/jscraik/coding-harness/pull/410"
     active_pr_last_checked_head_sha: null
-    active_pr_head_sha_contract: "No implementation PR head exists after PR #408 merge and branch cleanup; this PU-055 tracker branch must merge and pull back before PU-056 starts."
-    last_merged_pr: 408
-    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/408"
-    last_merged_sha: "48ff402e6ee4fd99f84412eff7fc1592d8acb32b"
-    last_merged_submitted_head_sha: "bfdbd8b551d9282810f55b050a7ab9e8439450ef"
-    last_merge_verified_at: "2026-06-11T15:35:48Z"
-    local_main_sha: "48ff402e6ee4fd99f84412eff7fc1592d8acb32b"
-    origin_main_sha: "48ff402e6ee4fd99f84412eff7fc1592d8acb32b"
-    open_pr_count: 0
-    open_prs: []
+    active_pr_head_sha_contract: "Use live PR #410 head as submitted-branch truth while review fixes continue; defer the durable receipt anchor until post-merge pullback records the final squash merge."
+    last_merged_pr: 409
+    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/409"
+    last_merged_sha: "c3d476541351ccd08fb832d08ba9749a9f203e4c"
+    last_merged_submitted_head_sha: "c5f4095bcd2484668acfa0195fdddf9e6cb2517e"
+    last_merge_verified_at: "2026-06-11T16:36:45Z"
+    local_main_sha: "c3d476541351ccd08fb832d08ba9749a9f203e4c"
+    origin_main_sha: "c3d476541351ccd08fb832d08ba9749a9f203e4c"
+    open_pr_count: 1
+    open_prs:
+      - 410
   queued_slice:
     lifecycle_unit: "PU-056"
     name: "active-route runtime-card selection guard"
-    status: "queued_after_pu055_tracker_pr"
-    evidence_receipt: "R474"
+    status: "in_progress"
+    evidence_receipt: "R475"
   resume_gate:
-    - "Do not start feature work until this PU-055 tracker repair merges, local main is pulled back, and PU-056 repairs or guards the active-route selection issue found by runtime-card."
+    - "Do not start Judge/PM packet work until this PU-056 guard merges, local main is pulled back, and runtime-card current-main output proves issueKey JSC-363 with the active spec and plan."
     - "Treat Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 as tracker-alignment evidence only, not field-text-current or completion evidence."
-    - "PR #396 through PR #408 are merged provenance; do not reopen their repair lanes unless a fresh current-main regression proves a new blocker."
+    - "PR #396 through PR #409 are merged provenance; do not reopen their repair lanes unless a fresh current-main regression proves a new blocker."
     - "The next selected slice must preserve the one-PR-at-a-time route contract and must not claim Judge/PM readiness or parent-goal completion before the final audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
   review_artifacts:
@@ -204,9 +205,9 @@ current_slice_gate:
   next_required_handoff_steps:
     - "Use docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md as the thin restart tracker; keep old PR history as provenance, not active route work."
     - "Validate this current-main tracker refresh with receipts JSON parsing, audit freshness, goal-board validation, Kanban script validation, and git diff whitespace validation."
-    - "Use the pulled main checkout at 48ff402e6ee4fd99f84412eff7fc1592d8acb32b as the only route baseline before starting other implementation work."
+    - "Use the pulled main checkout at c3d476541351ccd08fb832d08ba9749a9f203e4c as the route baseline for PU-056."
     - "Linear JSC-363 has compact post-merge route truth via comment 34a50024-24be-4853-af6e-3219cbc0d845; do not claim field-text currency until the older Phase 1 title/description wording is owner-accepted or updated."
-    - "Start PU-056 active-route runtime-card selection guard only after this PU-055 tracker repair merges and local main is pulled back."
+    - "Complete PU-056 active-route runtime-card selection guard, then merge, pull main, and record the post-merge route refresh before Judge/PM packet work."
     - "Treat receipt-backed merged JSC-363 route/foundation lanes through PR #371 as completed current-main evidence at 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856; do not reopen those PR lanes unless fresh GitHub or current-main validation shows a regression."
     - "Use receipt R379 as the validated post-PR #365 current-main route-tracker repair evidence for goal.md, state.yaml, receipts.jsonl, .harness/active-artifacts.md, and .harness/implementation-notes/goal-kanban-board.html; use R357 only as PU-012 intent-created evidence, not PU-012 completion evidence."
     - "Use the PU-012 intent review artifacts as the reviewed-intent gate: best-practices pass, agent-native pass, adversarial needs_changes, and adversarial rereview pass after the intent fix."

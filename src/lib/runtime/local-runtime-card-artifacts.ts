@@ -2,13 +2,18 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { sanitizeError } from "../input/sanitize.js";
 import { detectIssueKey, issueKeysMatch } from "./issue-key.js";
+import {
+	extractCodePath,
+	extractRowIssueKey,
+	hasCodePath,
+	MARKDOWN_CODE_MARKER,
+} from "./local-runtime-card-artifact-row.js";
 import type {
 	RuntimeCardArtifactState,
 	RuntimeCardSource,
 } from "./runtime-card.js";
 
 const ACTIVE_ARTIFACTS_PATH = ".harness/active-artifacts.md";
-const MARKDOWN_CODE_MARKER = String.fromCharCode(96);
 
 /** Collapsed active-artifact index evidence for runtime-card generation. */
 export interface RuntimeCardArtifactSnapshot {
@@ -20,28 +25,6 @@ export interface RuntimeCardArtifactSnapshot {
 	source: RuntimeCardSource;
 	/** Artifact blockers that should prevent continuation. */
 	blockers: string[];
-}
-
-function hasCodePath(line: string, path: string): boolean {
-	return line.includes(MARKDOWN_CODE_MARKER + path);
-}
-
-function extractCodePath(line: string, prefix: string): string | null {
-	const expression = new RegExp(
-		`${MARKDOWN_CODE_MARKER}([^${MARKDOWN_CODE_MARKER}]+)${MARKDOWN_CODE_MARKER}`,
-		"gu",
-	);
-	const matches = line.matchAll(expression);
-	for (const match of matches) {
-		const path = match[1];
-		if (path?.startsWith(prefix)) return path;
-	}
-	return null;
-}
-
-function extractRowIssueKey(line: string): string | null {
-	const cells = line.split("|").map((cell) => cell.trim());
-	return cells[1] ?? null;
 }
 
 function findArtifactLine(
@@ -119,10 +102,8 @@ export function inspectRuntimeCardArtifacts(
 	const line = findArtifactLine(activeArtifacts, issueKey);
 	const activeSpec = line ? extractCodePath(line, ".harness/specs/") : null;
 	const activePlan = line ? extractCodePath(line, ".harness/plan/") : null;
-	const derivedIssueKey = detectIssueKey(
-		extractRowIssueKey(line ?? ""),
-		issueKey,
-	);
+	const rowIssueKey = extractRowIssueKey(line ?? "");
+	const derivedIssueKey = detectIssueKey(rowIssueKey, issueKey);
 	const staleRefs = [activeSpec, activePlan].filter(
 		(path): path is string =>
 			path !== null && !existsSync(join(repoRoot, path)),
