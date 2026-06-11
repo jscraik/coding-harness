@@ -6,7 +6,7 @@ native_reconciliation:
   native_status: unknown
   source: "state.yaml native_goal_id and native_status are null"
 board_status: valid_after_repair
-next_action: merge_pu055_tracker_repair_then_run_pu056_active_route_runtime_card_selection_guard
+next_action: complete_review_merge_and_pull_back_pu056_active_route_runtime_card_selection_guard
 decision_markers:
   - read goal.md and state.yaml first
   - receipts.jsonl
@@ -17,57 +17,58 @@ truth_lanes:
   local_validation:
     status: pass
     evidence:
-      - "Command: jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null -> pass"
-      - "Command: PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo . -> pass"
-      - "Command: PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit -> pass"
-      - "Command: node scripts/validate-goal-kanban-script.cjs .harness/implementation-notes/goal-kanban-board.html -> pass"
-      - "Command: node --import tsx src/cli.ts runtime-card --json --repo . -> pass, but exposed active-route selection drift before the tracker repair"
-      - "Command: node --import tsx src/cli.ts next --json -> pass"
-      - "Command: gh pr list --repo jscraik/coding-harness --state open --json number,title,headRefName,headRefOid,isDraft,mergeable,reviewDecision,statusCheckRollup --limit 50 -> pass, []"
-      - "Command: gh pr view 408 --repo jscraik/coding-harness --json number,state,mergedAt,mergeCommit,headRefOid,url,title,statusCheckRollup --jq . -> pass"
-      - "Command: pnpm vitest run src/lib/review-state/review-state.test.ts src/lib/review-state/review-lifecycle.test.ts src/lib/external-state/external-state.test.ts src/lib/root-hygiene/root-hygiene.test.ts src/lib/pr-closeout/state-packets.test.ts src/lib/pr-closeout/lifecycle-snapshot.test.ts src/commands/pr-closeout.test.ts src/lib/delivery-truth/delivery-truth-composition.test.ts src/lib/delivery-truth/delivery-truth-freshness-policy.test.ts src/lib/delivery-truth/goal-completion-audit-receipt.test.ts src/lib/delivery-truth/judge-pm-audit.test.ts src/commands/runtime-card.test.ts src/commands/next.test.ts --reporter dot -> pass, 13 files / 311 tests"
+      - "Command: pnpm vitest run src/commands/runtime-card.test.ts --reporter dot -> pass, 1 file / 33 tests"
+      - "Command: node --import tsx src/cli.ts runtime-card --json --repo . | jq '{issueKey, activeSpec:.artifacts.activeSpec, activePlan:.artifacts.activePlan}' -> pass, issueKey JSC-363 with active spec and plan"
+      - "Command: goal-board, audit-freshness, kanban script, docs-gate, docs:lint, quality:docstrings, quality:size, test:related, test:deep, typecheck, pnpm check, git diff --check -> pass; drift-gate emitted non-blocking README index warnings inside aggregate checks"
   generated_artifacts:
-    status: current
+    status: current_branch_update_in_progress
     evidence:
-      - "R474 pending on codex/jsc-363-pu055-closeout-matrix"
-      - "PU-055 matrix records next slice PU-056 active-route runtime-card selection guard"
+      - "R475 records the post-PR409 PU-056 guard start and local proof"
+      - "PU-056 repairs runtime-card active-route issue-key derivation for wide Current Active Route rows"
   remote_pr_checks:
-    status: pr408_merged_repo_owned_pass_external_snyk_waived
+    status: no_pu056_pr_yet
     evidence:
-      - "PR #408 state=MERGED, mergedAt=2026-06-11T15:35:48Z, mergeCommit=48ff402e6ee4fd99f84412eff7fc1592d8acb32b"
-      - "PR #408 head bfdbd8b551d9282810f55b050a7ab9e8439450ef had repo-owned CircleCI lanes, pr-pipeline, security-scan, Socket, and CodeRabbit status passing"
-      - "External security/snyk GitHub App quota/error lane remains owner-waived only"
+      - "PR #409 state=MERGED, mergedAt=2026-06-11T16:36:45Z, mergeCommit=c3d476541351ccd08fb832d08ba9749a9f203e4c"
+      - "PR #409 head c5f4095bcd2484668acfa0195fdddf9e6cb2517e had repo-owned CircleCI lanes, pr-pipeline, security-scan, Socket, and CodeRabbit passing before merge; external security/snyk GitHub App quota/error lane remains owner-waived only"
   review_threads:
-    status: no_open_pr_threads_current_lane
+    status: no_pu056_pr_yet
     evidence:
-      - "No open PR lane exists; PR #408 is merged and current branch has not opened its PR yet"
+      - "Current branch codex/jsc-363-pu056-runtime-card-active-route-key has not opened its PR"
   tracker_state:
-    status: pu055_matrix_in_progress
+    status: pu056_in_progress
     evidence:
-      - "state.yaml active route records PR #408 and queued PU-056"
-      - "runtime-card selected JSC-395 before the active-route table was narrowed to JSC-363"
+      - "state.yaml active route records PR #409 as merged baseline and PU-056 as active"
+      - "runtime-card now derives issueKey JSC-363 from the active route row"
   merge_readiness:
-    status: pu055_tracker_pr_required_before_pu056
+    status: not_ready_until_pu056_pr_green_merged_and_pulled
     evidence:
-      - "PR #408 is merged, but this PU-055 tracker repair branch must merge and main must be pulled before PU-056 starts"
+      - "Focused local proof passes, but PR, CI, review-thread, merge, and post-merge pullback lanes are still unproven for PU-056"
 continuation_gate:
-  status: stop_feature_work_until_pu055_tracker_repair_merges
-  reason: "PU-055 found active-route/runtime-card selection drift. Merge this tracker repair, pull main, then run PU-056 before Judge/PM packet work."
+  status: continue_pu056_only
+  reason: "PU-056 is the active bounded slice. Do not start Judge/PM packet work until the guard is reviewed, merged, and pulled back to main."
 native_blocker_audit:
   status: not_blocked
   blocker_history: []
-  reason: "No repeated impasse exists; meaningful route repair and next-slice selection progress is available."
+  reason: "No repeated impasse exists; the current branch has a focused runtime-card guard fix and local proof."
 validation_evidence:
   outcome: pass
   commands:
+    - "pnpm vitest run src/commands/runtime-card.test.ts --reporter dot"
+    - "node --import tsx src/cli.ts runtime-card --json --repo . | jq '{issueKey, activeSpec:.artifacts.activeSpec, activePlan:.artifacts.activePlan}'"
     - "jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null"
     - "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo ."
     - "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
     - "node scripts/validate-goal-kanban-script.cjs .harness/implementation-notes/goal-kanban-board.html"
     - "bash scripts/run-harness-gate.sh docs-gate --mode required --json"
     - "pnpm docs:lint"
+    - "pnpm run quality:docstrings"
+    - "pnpm run quality:size"
+    - "pnpm run test:related"
+    - "pnpm test:deep"
+    - "pnpm typecheck"
+    - "pnpm check"
     - "git diff --check"
 risks:
-  - "The active-route table previously exposed two rows and runtime-card selected JSC-395; PU-056 must enforce single active route selection before closeout proceeds."
+  - "Remote PR, CI, review-thread, merge, and post-merge pullback lanes still need to run before PU-056 can be closed."
   - "External Snyk GitHub App quota remains owner-waived only, not a green security lane."
-  - "Judge/PM readiness and parent-goal completion remain unclaimed until PU-056, Linear field-text disposition, and the final audit packet are resolved."
+  - "Judge/PM readiness and parent-goal completion remain unclaimed until PU-056 is merged, Linear field-text disposition is resolved, and the final audit packet exists."

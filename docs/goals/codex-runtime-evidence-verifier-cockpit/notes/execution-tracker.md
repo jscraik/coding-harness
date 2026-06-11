@@ -26,34 +26,34 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | ------------------- | ------------------------------------------------------------ |
 | Parent issue        | JSC-363                                                      |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` |
-| Current branch      | `main` pulled and branch/worktree cleanup complete           |
-| Local main head     | `48ff402e6ee4fd99f84412eff7fc1592d8acb32b`                   |
-| Origin main head    | `48ff402e6ee4fd99f84412eff7fc1592d8acb32b`                   |
-| Main baseline       | `48ff402e6ee4fd99f84412eff7fc1592d8acb32b`                   |
+| Current branch      | `codex/jsc-363-pu056-runtime-card-active-route-key`          |
+| Local main head     | `c3d476541351ccd08fb832d08ba9749a9f203e4c`                   |
+| Origin main head    | `c3d476541351ccd08fb832d08ba9749a9f203e4c`                   |
+| Main baseline       | `c3d476541351ccd08fb832d08ba9749a9f203e4c`                   |
 | Active route count  | 1                                                            |
-| Active route        | Remaining closeout/backlog audit                             |
-| Last closed route   | PR #408 merged                                               |
-| Current route       | PU-055 current-main audit route                              |
-| Current slice       | PU-056 active-route runtime-card selection guard queued      |
-| Feature work status | No next feature slice started                                |
+| Active route        | PU-056 active-route runtime-card selection guard              |
+| Last closed route   | PR #409 merged                                               |
+| Current route       | PU-056 runtime-card route-key guard                          |
+| Current slice       | PU-056 active-route runtime-card selection guard in progress |
+| Feature work status | Narrow guard implementation active                           |
 
 ## Active Route
 
-PR #408 is merged and local `main` plus `origin/main` are synced at
-`48ff402e6ee4fd99f84412eff7fc1592d8acb32b`. PU-055 has run enough current-main
-evidence to classify the remaining lanes and select the next bounded slice. It
-does not claim Linear field-text currency, final documentation accuracy beyond
-current validators, Judge/PM readiness, release readiness, or parent-goal
-completion.
+PR #409 is merged and local `main` plus `origin/main` are synced at
+`c3d476541351ccd08fb832d08ba9749a9f203e4c`. PU-055 has run enough current-main
+evidence to classify the remaining lanes, and PU-056 is now the active bounded
+slice. This tracker does not claim Linear field-text currency, final
+documentation accuracy beyond current validators, Judge/PM readiness, release
+readiness, or parent-goal completion.
 
 Current evidence:
 
 - Local `main` and `origin/main` were synced at
-  `48ff402e6ee4fd99f84412eff7fc1592d8acb32b` after PR #408 was merged and
+  `c3d476541351ccd08fb832d08ba9749a9f203e4c` after PR #409 was merged and
   pulled back.
-- Live GitHub reported PR #408 merged at `2026-06-11T15:35:48Z` from submitted
-  head `bfdbd8b551d9282810f55b050a7ab9e8439450ef` as squash merge commit
-  `48ff402e6ee4fd99f84412eff7fc1592d8acb32b`; the current GitHub check rollup
+- Live GitHub reported PR #409 merged at `2026-06-11T16:36:45Z` from submitted
+  head `c5f4095bcd2484668acfa0195fdddf9e6cb2517e` as merge commit
+  `c3d476541351ccd08fb832d08ba9749a9f203e4c`; the current GitHub check rollup
   shows repo-owned CircleCI, aggregate `pr-pipeline`, aggregate
   `security-scan`, Socket, and CodeRabbit passing, and review-thread checks
   resolved or non-blocking. The external
@@ -66,20 +66,27 @@ Current evidence:
   title/description text, and repo-truth comment
   `81cfdd41-ff0e-4df1-b884-c01789e30a50`. This tracker refresh does not claim a
   fresh Linear fetch, Linear field-text currency, or parent-goal completion.
-- Next safe action: merge this PU-055 tracker repair, pull main, then run
+- Next safe action: complete, review, merge, and pull back
   `PU-056 active-route runtime-card selection guard`.
 - Historical PR details remain in `receipts.jsonl`; they are not active restart
   instructions.
 
 ## Active Slice
 
-Selected next slice: `PU-056 active-route runtime-card selection guard`.
+Active slice: `PU-056 active-route runtime-card selection guard`.
 
 PU-055 completed the route-decision matrix and found active-route selection
-drift: runtime-card selected JSC-395 while JSC-363 was the active goal route.
-PU-056 must add the smallest deterministic guard so runtime-card and active
-artifacts cannot drift back to a multi-active-route interpretation before
-Judge/PM packet work resumes.
+drift. PU-056 adds the smallest deterministic guard so runtime-card derives the
+Linear key from the active route row when the Current Active Route table has a
+Route column before Linear Key.
+
+Current PU-056 local proof:
+
+- `pnpm vitest run src/commands/runtime-card.test.ts --reporter dot` -> pass,
+  1 file / 33 tests.
+- `node --import tsx src/cli.ts runtime-card --json --repo . | jq '{issueKey,
+  activeSpec:.artifacts.activeSpec, activePlan:.artifacts.activePlan}'` ->
+  pass, `issueKey: "JSC-363"` with the JSC-363 active spec and plan.
 
 - a single bounded implementation slice with required gates and owner/blocker
   decisions
@@ -126,19 +133,21 @@ claim/evidence/blocker records, not narrative diary entries.
 
 ## Resume Gate
 
-Feature implementation remains stopped until all of these are true:
+Judge/PM packet work remains stopped until all of these are true:
 
-- PR #408 is merged into local `main` and `origin/main`, both synced at
-  `48ff402e6ee4fd99f84412eff7fc1592d8acb32b`.
-- Live GitHub reports zero open PRs for `jscraik/coding-harness` at this
-  refresh point.
+- PR #409 is merged into local `main` and `origin/main`, both synced at
+  `c3d476541351ccd08fb832d08ba9749a9f203e4c`.
+- PU-056 is validated, opened as a PR, merged, and pulled back to local
+  `main`.
+- Runtime-card on pulled current main returns `issueKey: "JSC-363"` with the
+  JSC-363 active spec and plan.
 - Linear JSC-363 has repo-truth comment
   `81cfdd41-ff0e-4df1-b884-c01789e30a50`, but field-text currency remains a
   separate unclaimed lane.
 - `goal.md`, `state.yaml`, `notes/execution-tracker.md`,
   `.harness/active-artifacts.md`, the tracker board, and `receipts.jsonl`
   validate together after the merge pull-back.
-- The remaining closeout/backlog audit records the exact next bounded slice or
+- The post-PU-056 closeout audit records the exact next bounded slice or
   blocker.
 
 ## Linear Update Payload
@@ -147,20 +156,20 @@ Use this payload only after Linear access is available or an owner explicitly
 approves posting the blocker classification for JSC-363:
 
 ```md
-Refreshed JSC-363 current-main route truth after PR #408 merge and recorded
-that PU-056 active-route runtime-card selection guard is now queued.
+Refreshed JSC-363 current-main route truth after PR #409 merge and started
+PU-056 active-route runtime-card selection guard.
 
 Current truth:
 
 - Active route lane: PU-056 active-route runtime-card selection guard.
-- Latest merged route: PR #408.
-- Local main head: 48ff402e6ee4fd99f84412eff7fc1592d8acb32b.
-- Origin main head: 48ff402e6ee4fd99f84412eff7fc1592d8acb32b.
-- Current GitHub check rollup shows repo-owned required checks for PR #408 pass.
-- Live GitHub reports zero open PRs at this refresh point.
+- Latest merged route: PR #409.
+- Local main head: c3d476541351ccd08fb832d08ba9749a9f203e4c.
+- Origin main head: c3d476541351ccd08fb832d08ba9749a9f203e4c.
+- Current GitHub check rollup shows repo-owned required checks for PR #409 pass.
+- PU-056 branch: codex/jsc-363-pu056-runtime-card-active-route-key.
 - PU-013 runtime cockpit integration proof is merged and pulled back to local `main`.
-- PR #408 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
-- PU-055 repaired the active-route table so runtime-card now projects JSC-363, but PU-056 must add deterministic guard coverage before final closeout.
+- PR #409 remains separate from runtime, CI, review, Linear, and parent goal completion claims.
+- PU-056 now adds deterministic guard coverage so runtime-card derives JSC-363 from the wide active-route row.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
 - Linear JSC-363 has repo-truth comment `81cfdd41-ff0e-4df1-b884-c01789e30a50`; field-text currency remains unclaimed until a fresh Linear fetch or owner classification is recorded.
 

@@ -41,7 +41,7 @@ function extractCodePath(line: string, prefix: string): string | null {
 
 function extractRowIssueKey(line: string): string | null {
 	const cells = line.split("|").map((cell) => cell.trim());
-	return cells[1] ?? null;
+	return detectIssueKey(...cells);
 }
 
 function findArtifactLine(

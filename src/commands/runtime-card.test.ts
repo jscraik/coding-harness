@@ -368,6 +368,55 @@ describe("runRuntimeCardCLI", () => {
 		});
 	});
 
+	it("derives the issue key from a wide current active route table", async () => {
+		const repoRoot = setupRepo();
+		const specPath = ".harness/specs/2026-05-13-jsc-311-spec.md";
+		const planPath = ".harness/plan/2026-05-13-JSC-311-plan.md";
+		writeFileSync(
+			join(repoRoot, ".harness/active-artifacts.md"),
+			[
+				"## Current Active Route",
+				"",
+				"| Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |",
+				"| --- | --- | --- | --- | --- |",
+				"| Runtime cockpit | JSC-311 | " +
+					CODE +
+					specPath +
+					CODE +
+					" plus " +
+					CODE +
+					planPath +
+					CODE +
+					" | Active | Keep route narrow. |",
+				"",
+			].join("\\n"),
+		);
+
+		const { exitCode, output, error } = await captureRuntimeCardCLI([
+			"--json",
+			"--repo",
+			repoRoot,
+		]);
+
+		expect(error).toBe("");
+		expect(exitCode).toBe(0);
+		const card = JSON.parse(output);
+		expectBehavior({
+			given: "a wide Current Active Route row with a Linear Key column",
+			should: "derive the runtime-card issue key from the active route row",
+			actual: {
+				activePlan: card.artifacts.activePlan,
+				activeSpec: card.artifacts.activeSpec,
+				issueKey: card.issueKey,
+			},
+			expected: {
+				activePlan: planPath,
+				activeSpec: specPath,
+				issueKey: "JSC-311",
+			},
+		});
+	});
+
 	it("matches mixed-case issue flags against active artifact rows", async () => {
 		const repoRoot = setupRepo();
 		rewriteActiveArtifactsIssueRow(repoRoot, "jsc-311");
