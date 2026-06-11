@@ -65,14 +65,12 @@ comment `81cfdd41-ff0e-4df1-b884-c01789e30a50`, which classifies the
 original Phase 1 field text as historical scope context while repo tracker
 truth remains canonical. PR, repo-owned CI,
 CodeRabbit completion, review-thread state, mergeability, and merge execution
-remain separate evidence lanes. The remaining closeout/backlog audit from
-current main selected PU-056 as the active slice; PU-056 remains active until
-the runtime-card route-key guard is reviewed, merged, pulled back, and recorded
-as current-main evidence. Linear field-text currency beyond the new comment,
-documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness,
-and parent-goal completion remain unclaimed.
-Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness,
-and parent-goal completion remain unclaimed.
+remain separate evidence lanes. Historical selector provenance: the
+current-main closeout/backlog audit selected PU-056. Active route: PU-056 remains
+active until the runtime-card route-key guard is reviewed, merged, pulled back,
+and recorded as current-main evidence. Linear field-text currency beyond the new
+comment, documentation accuracy, review/external/root-hygiene proof, Judge/PM
+readiness, and parent-goal completion remain unclaimed.
 
 Historical snapshot: Last reconciled: 2026-06-07 after PR #365 merged into `main` at
 2026-06-07T09:18:13Z as squash merge commit
