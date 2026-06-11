@@ -30,21 +30,21 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Local main head     | `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`                      |
 | Origin main head    | `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`                      |
 | Main baseline       | `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`                      |
-| Active route count  | 0                                                               |
-| Active route        | none                                                            |
+| Active route count  | 1                                                               |
+| Active route        | PR #402 review repair                                           |
 | Last closed route   | PR #401 merged                                                  |
-| Current route       | post-PR401 route truth refresh                                  |
-| Current slice       | Audit remaining goal/spec/backlog obligations from current main |
+| Current route       | PR #402 post-PR401 route-truth review repair                    |
+| Current slice       | Resolve PR #402 review/CI, then audit remaining backlog         |
 | Feature work status | No next feature slice started                                   |
 
 ## Active Route
 
-No JSC-363 PR repair route is active after PR #401 merged and local `main`
-was pulled to `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`. This tracker
-refresh closes the post-PR400 tracker route and keeps the remaining
-closeout/backlog audit queued. It does not claim Linear field-text currency,
-root-hygiene proof, documentation accuracy, Judge/PM readiness, release
-readiness, or parent-goal completion.
+PR #402 is the active JSC-363 PR repair route after PR #401 merged and local
+`main` was pulled to `fdcd577a77fb660b9b71e058bcbd33fff06c67bf`. This
+tracker refresh closes the post-PR400 tracker route and keeps the remaining
+closeout/backlog audit queued for after PR #402 merges. It does not claim Linear
+field-text currency, root-hygiene proof, documentation accuracy, Judge/PM
+readiness, release readiness, or parent-goal completion.
 
 Current evidence:
 
