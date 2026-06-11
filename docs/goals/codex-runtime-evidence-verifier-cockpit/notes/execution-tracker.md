@@ -58,11 +58,12 @@ Current evidence:
   and review-thread checks passed or resolved before merge. The external
   `security/snyk (jscraik)` GitHub App quota/error lane remains owner-waived
   only for that external app status.
-- Live GitHub reported zero open pull requests for the repository at this
-  refresh point.
-- Linear JSC-363 fetch returned status `In Review`, Phase 1 title/description
-  text, and repo-truth comment `81cfdd41-ff0e-4df1-b884-c01789e30a50`. This
-  does not claim parent-goal completion.
+- Live GitHub reported zero open pull requests before this tracker-refresh PR
+  was opened; PR #402 is the active route for this review repair.
+- Earlier Linear JSC-363 evidence recorded status `In Review`, Phase 1
+  title/description text, and repo-truth comment
+  `81cfdd41-ff0e-4df1-b884-c01789e30a50`. This tracker refresh does not claim a
+  fresh Linear fetch, Linear field-text currency, or parent-goal completion.
 - Next safe action: run the remaining closeout/backlog audit from current
   `main`, state the next exact implementation slice or blocker, and keep
   feature work paused until the tracker records that route.
