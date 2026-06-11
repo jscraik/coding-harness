@@ -65,10 +65,12 @@ comment `81cfdd41-ff0e-4df1-b884-c01789e30a50`, which classifies the
 original Phase 1 field text as historical scope context while repo tracker
 truth remains canonical. PR, repo-owned CI,
 CodeRabbit completion, review-thread state, mergeability, and merge execution
-remain separate evidence lanes. The selected active slice is now the remaining
-closeout/backlog audit from current main; Linear field-text currency beyond the
-new comment, documentation accuracy, review/external/root-hygiene proof,
-Judge/PM readiness, and parent-goal completion remain unclaimed.
+remain separate evidence lanes. The remaining closeout/backlog audit from
+current main selected PU-056 as the active slice; PU-056 remains active until
+the runtime-card route-key guard is reviewed, merged, pulled back, and recorded
+as current-main evidence. Linear field-text currency beyond the new comment,
+documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness,
+and parent-goal completion remain unclaimed.
 Documentation accuracy, review/external/root-hygiene proof, Judge/PM readiness,
 and parent-goal completion remain unclaimed.
 
@@ -97,7 +99,7 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor route with a thin execution tracker. PR #396 through PR #409 are merged provenance. Local main and origin/main are synced at `c3d476541351ccd08fb832d08ba9749a9f203e4c`. The active implementation branch is `codex/jsc-363-pu056-runtime-card-active-route-key`, not yet opened as a PR. Linear JSC-363 has repo-truth comment 81cfdd41-ff0e-4df1-b884-c01789e30a50, but field-text currency beyond that comment remains unclaimed. PU-056 repairs the route-key guard so runtime-card derives `issueKey: "JSC-363"` from this wide active-route table instead of dropping the key or selecting historical route evidence. | Next Safe Action: complete, review, merge, and pull back PU-056 before Judge/PM packet work resumes. Latest route receipt anchor: R475 / b0e9b1db544cb515302fec662a6cc0d1fbcb2421. |
+| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor route with a thin execution tracker. PR #396 through PR #409 are merged provenance. Local main and origin/main are synced at `c3d476541351ccd08fb832d08ba9749a9f203e4c`. The active implementation branch is `codex/jsc-363-pu056-runtime-card-active-route-key`, opened as PR #410. Linear JSC-363 has repo-truth comment 81cfdd41-ff0e-4df1-b884-c01789e30a50, but field-text currency beyond that comment remains unclaimed. PU-056 repairs the route-key guard so runtime-card derives `issueKey: "JSC-363"` from this wide active-route table instead of dropping the key or selecting historical route evidence. | Next Safe Action: complete review, merge, and pull back PU-056 before Judge/PM packet work resumes. Latest route receipt anchor: R475 / b0e9b1db544cb515302fec662a6cc0d1fbcb2421. |
 
 JSC-395 is delivered provenance in the artifact index, not the current active
 route. It must not appear in the Current Active Route table unless a later

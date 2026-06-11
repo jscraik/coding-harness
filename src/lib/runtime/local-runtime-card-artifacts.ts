@@ -39,9 +39,28 @@ function extractCodePath(line: string, prefix: string): string | null {
 	return null;
 }
 
+function detectStandaloneIssueKey(
+	...values: Array<string | null | undefined>
+): string | null {
+	for (const value of values) {
+		const cell = value?.trim();
+		const issueKey = detectIssueKey(cell);
+		if (issueKey && issueKey === cell) return issueKey;
+	}
+	return null;
+}
+
 function extractRowIssueKey(line: string): string | null {
-	const cells = line.split("|").map((cell) => cell.trim());
-	return detectIssueKey(...cells);
+	const [firstContentCell, ...remainingCells] = line
+		.split("|")
+		.map((cell) => cell.trim())
+		.filter(Boolean);
+	return (
+		detectStandaloneIssueKey(...remainingCells) ??
+		detectStandaloneIssueKey(firstContentCell) ??
+		detectIssueKey(...remainingCells) ??
+		detectIssueKey(firstContentCell)
+	);
 }
 
 function findArtifactLine(
@@ -119,10 +138,8 @@ export function inspectRuntimeCardArtifacts(
 	const line = findArtifactLine(activeArtifacts, issueKey);
 	const activeSpec = line ? extractCodePath(line, ".harness/specs/") : null;
 	const activePlan = line ? extractCodePath(line, ".harness/plan/") : null;
-	const derivedIssueKey = detectIssueKey(
-		extractRowIssueKey(line ?? ""),
-		issueKey,
-	);
+	const rowIssueKey = extractRowIssueKey(line ?? "");
+	const derivedIssueKey = detectIssueKey(rowIssueKey, issueKey);
 	const staleRefs = [activeSpec, activePlan].filter(
 		(path): path is string =>
 			path !== null && !existsSync(join(repoRoot, path)),

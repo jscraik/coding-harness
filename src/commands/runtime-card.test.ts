@@ -379,7 +379,7 @@ describe("runRuntimeCardCLI", () => {
 				"",
 				"| Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |",
 				"| --- | --- | --- | --- | --- |",
-				"| Runtime cockpit | JSC-311 | " +
+				"| JSC-999 historical cockpit | JSC-311 | " +
 					CODE +
 					specPath +
 					CODE +
@@ -389,7 +389,7 @@ describe("runRuntimeCardCLI", () => {
 					CODE +
 					" | Active | Keep route narrow. |",
 				"",
-			].join("\\n"),
+			].join("\n"),
 		);
 
 		const { exitCode, output, error } = await captureRuntimeCardCLI([
@@ -402,8 +402,9 @@ describe("runRuntimeCardCLI", () => {
 		expect(exitCode).toBe(0);
 		const card = JSON.parse(output);
 		expectBehavior({
-			given: "a wide Current Active Route row with a Linear Key column",
-			should: "derive the runtime-card issue key from the active route row",
+			given:
+				"a wide Current Active Route row with an issue-key-shaped route label",
+			should: "derive the runtime-card issue key from the Linear Key cell",
 			actual: {
 				activePlan: card.artifacts.activePlan,
 				activeSpec: card.artifacts.activeSpec,
