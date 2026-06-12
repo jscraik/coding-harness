@@ -367,6 +367,36 @@ describe("check-goal-audit-freshness.py", () => {
 		);
 	});
 
+	it("rejects unreachable reviewed heads when the current commit does not change the receipt ledger", () => {
+		const root = createTempRoot("audit-freshness-unreachable-prior-receipt-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		const unreachableHead = "1".repeat(40);
+		const storedReceipt = {
+			...receipt(root),
+			head_sha: unreachableHead,
+			changed_files: [
+				join(GOAL_DIR, "receipts.jsonl"),
+				join(GOAL_DIR, "goal.md"),
+			],
+		};
+		const storedSource = storedReceipt.audit_sources_checked[0];
+		if (!storedSource) throw new Error("missing audit source");
+		storedSource.head_sha = unreachableHead;
+		writeReceipts(root, [storedReceipt]);
+		runGit(root, ["add", join(GOAL_DIR, "receipts.jsonl")]);
+		runGit(root, ["commit", "-m", "record stale receipt"]);
+		writeFileSync(join(root, GOAL_DIR, "goal.md"), "# Goal route\n");
+		runGit(root, ["add", join(GOAL_DIR, "goal.md")]);
+		runGit(root, ["commit", "-m", "change goal route only"]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"receipt.head_sha must be reachable from current repository HEAD",
+		);
+	});
+
 	it("accepts a shallow self-referential receipt checkout when declared files are goal-route evidence only", () => {
 		const root = createTempRoot("audit-freshness-shallow-source-");
 		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));

@@ -364,7 +364,8 @@ def permits_current_commit_self_referential_goal_receipt(
         return False
     changed_paths = changed_paths_in_current_commit(repo_root, current_head)
     allowed_paths = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS | declared_paths
-    return bool(changed_paths) and changed_paths <= allowed_paths
+    receipts_path = f"{GOVERNED_GOAL_DIR}/receipts.jsonl"
+    return receipts_path in changed_paths and changed_paths <= allowed_paths
 
 
 def is_commit_sha(value: str) -> bool:

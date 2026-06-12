@@ -22,20 +22,20 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 
 ## Current Control Surface
 
-| Field               | Current Truth                                                |
-| ------------------- | ------------------------------------------------------------ |
-| Parent issue        | JSC-363                                                      |
-| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` |
-| Current branch      | `codex/jsc-363-pu015-live-judge-pm-packet`                  |
-| Local main head     | `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`                   |
-| Origin main head    | `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`                   |
-| Main baseline       | `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`                   |
-| Active route count  | 1                                                            |
-| Active route        | PU-015 live Judge/PM audit packet                            |
-| Last closed route   | PR #415 merged                                               |
-| Current route       | PU-015 PR #416 packet validation-reference, route-freshness, and receipt-freshness repair |
-| Current slice       | PU-015 blocked packet evidence and closeout proof            |
-| Feature work status | PR #416 repair active at receipt anchor `1e6b822937008ecc7dd3ec57bda650fe3d578065`; reviewers still missing; packet validation surface is explicitly stale/blocked |
+| Field               | Current Truth                                                                                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Parent issue        | JSC-363                                                                                                                                                                  |
+| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`                                                                                                             |
+| Current branch      | `codex/jsc-363-pu015-live-judge-pm-packet`                                                                                                                               |
+| Local main head     | `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`                                                                                                                               |
+| Origin main head    | `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`                                                                                                                               |
+| Main baseline       | `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`                                                                                                                               |
+| Active route count  | 1                                                                                                                                                                        |
+| Active route        | PU-015 live Judge/PM audit packet                                                                                                                                        |
+| Last closed route   | PR #415 merged                                                                                                                                                           |
+| Current route       | PU-015 PR #416 packet validation-reference, route-freshness, receipt-freshness, and receipt-ledger-change repair                                                         |
+| Current slice       | PU-015 blocked packet evidence and closeout proof                                                                                                                        |
+| Feature work status | PR #416 repair active at local receipt anchor `b2c7b345ecbd67826e12267388e66f7a233194f8`; reviewers still missing; packet validation surface is explicitly stale/blocked |
 
 ## Active Route
 
@@ -46,9 +46,10 @@ carried the post-PR414 tracker refresh. The first live PU-015 packet now exists
 and is blocked on missing independent reviewer artifacts. PU-056 remains
 closed on current main: runtime-card projects `issueKey: "JSC-363"` with the
 JSC-363 active spec and plan from the wide Current Active Route row. This
-tracker records PR #416 as the active packet validation-reference and route-freshness
-repair and does not claim Linear field-text currency, final documentation accuracy
-beyond current validators, Judge/PM readiness, release readiness, or parent-goal
+tracker records PR #416 as the active packet validation-reference,
+route-freshness, receipt-freshness, and receipt-ledger-change repair and does
+not claim Linear field-text currency, final documentation accuracy beyond
+current validators, Judge/PM readiness, release readiness, or parent-goal
 completion.
 
 Current evidence:
@@ -98,9 +99,10 @@ Current evidence:
   verdicts, review-state, external-state, Linear state or blocker, validation
   receipts, root hygiene, unresolved-risk classification, and issueAuthorityMap
   proof.
-- PR #416 is the active PR lane for the R492/R493/R494 packet validation-reference
-  and route-freshness repair. Historical PR details remain in `receipts.jsonl`; they are not active restart
-  instructions.
+- PR #416 is the active PR lane for the R492/R493/R494/R495/R496/R497/R498
+  packet validation-reference, route-freshness, receipt-freshness, and
+  receipt-ledger-change repair. Historical PR details remain in
+  `receipts.jsonl`; they are not active restart instructions.
 
 ## Active Slice
 
@@ -143,7 +145,7 @@ PU-055 current-main closeout evidence matrix:
 | Documentation accuracy checks                                    | partial; current validators pass                                        | board validator, audit-freshness validator, board script parser, docs-gate, and docs-lint for this tracker branch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Keep docs accuracy unclaimed beyond current validators until final Judge/PM audit.                  |
 | Linear field-text currency for JSC-363                           | blocked owner/external lane                                             | repo-truth comment `81cfdd41-ff0e-4df1-b884-c01789e30a50`; no fresh Linear field-text fetch/edit proof in current checkout                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Owner must accept stale field text or provide/update live Linear field proof before final closeout. |
 | Historical review-coverage backfill                              | complete for board contract                                             | `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit` returned `goal-review-coverage-backfill/v1` pass                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Keep validator in final completion audit.                                                           |
-| PU-015 Judge/PM audit packet                                     | generated and blocked                                                   | `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json` -> `status: blocked`, `blockerCode: missing_reviewer_artifact`, blocker ref `review-state:adversarial-reviewer`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Collect or explicitly block independent reviewer artifacts, then rerun the packet and final audit. |
+| PU-015 Judge/PM audit packet                                     | generated and blocked                                                   | `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json` -> `status: blocked`, `blockerCode: missing_reviewer_artifact`, blocker ref `review-state:adversarial-reviewer`                                                                                                                                                                                                                                                                                                                                                                                                                                               | Collect or explicitly block independent reviewer artifacts, then rerun the packet and final audit.  |
 | Final requirement-by-requirement completion audit                | blocked by Linear disposition, Judge/PM packet, and final docs accuracy | goal.md completion contract still requires PU/GAP/SPG reconciliation and Judge/PM packet                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Do not claim parent completion.                                                                     |
 
 Selected next slice: `PU-015 reviewer artifact and final audit disposition`.
