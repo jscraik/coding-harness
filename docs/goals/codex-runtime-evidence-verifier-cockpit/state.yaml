@@ -33,7 +33,7 @@ thin_execution_tracker:
     kind: "pu015_judge_pm_audit_packet_guardrail"
     status: "local_guardrails_committed_pending_pr"
     blocker: "Parent completion remains blocked by PU-015 PR/review/merge pullback, live Judge/PM audit packet generation, reviewer artifacts, Linear field-text disposition, final documentation accuracy, and final requirement-by-requirement completion audit."
-    current_pr_state: "PR #412 merged at 2026-06-12T00:24:41Z as squash merge 7e0dde9c0408388fc228e8c2afe049593f1b0b71 from submitted head a81d783aeef3f05d6e3668a4e33ed4e216e6a756. PU-015 guardrail implementation is committed locally at 89c73c64d48a9b09c6d8e6eadb77bd0f4267fdce; no active PR exists yet for this branch, so the next action is push and open one PR."
+    current_pr_state: "PR #412 merged at 2026-06-12T00:24:41Z as squash merge 7e0dde9c0408388fc228e8c2afe049593f1b0b71 from submitted head a81d783aeef3f05d6e3668a4e33ed4e216e6a756. PU-015 guardrail implementation is committed locally at bee72115b4499677d64108494c6f9add11fd2f1d; no active PR exists yet for this branch, so the next action is push and open one PR."
     test_and_audit_status: "PU-015 local code validation passed for receipt-backed reviewer proof and claimed-authority mismatch fixtures. Commands passed: pnpm vitest run src/lib/delivery-truth/*.test.ts src/lib/pr-closeout/*.test.ts; bash scripts/validate-codestyle.sh --fast; pnpm run quality:docstrings; pnpm run quality:size; pnpm run quality:self-affirming; pnpm run test:related. test:related reported non-blocking drift-gate README command-index warnings unrelated to this slice."
     active_route_drift_finding: "PU-055 found active-route selection drift and PU-056 fixed it on current main; runtime-card no longer drops the JSC-363 route key for wide Current Active Route rows."
     unclaimed_surfaces:
@@ -59,7 +59,7 @@ thin_execution_tracker:
     lifecycle_unit: "PU-015"
     name: "Judge/PM audit packet"
     status: "local_guardrails_committed_pending_pr"
-    evidence_receipt: "R484"
+    evidence_receipt: "R485"
   resume_gate:
     - "Do not claim PU-015 complete until this local implementation is opened as one PR, reviewed, merged, pulled back to main, and reconciled with a fresh tracker receipt."
     - "A live Judge/PM audit packet still needs current runtime-card refs, delivery-truth verdicts, review-state, external-state, Linear state or blocker, validation receipts, root hygiene, unresolved-risk classification, and issueAuthorityMap proof."
