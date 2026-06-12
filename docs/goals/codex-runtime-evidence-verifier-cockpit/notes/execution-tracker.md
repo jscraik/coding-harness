@@ -89,7 +89,7 @@ Selected active slice after PR #412 landed and local `main` was pulled:
 `PU-015 Judge/PM audit packet`.
 
 PU-056 closed the active-route/runtime-card mismatch. The current PU-015 PR
-#413 patch adds guardrails for receipt-backed reviewer proofs and claimed
+413 patch adds guardrails for receipt-backed reviewer proofs and claimed
 authority matching. It does not yet prove Judge/PM readiness: the live packet,
 reviewer artifacts, PR merge/pullback, Linear field-text disposition, and final
 closeout audit remain separate lanes.
