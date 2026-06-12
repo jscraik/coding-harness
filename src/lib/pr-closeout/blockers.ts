@@ -347,20 +347,27 @@ function isUsableReviewerArtifactProof(
 		proof.receipt.freshness === "current" &&
 		proof.receipt.evidenceUse === "claim_support" &&
 		proof.receipt.blockerClass === null &&
-		hasReceiptTimestamp(proof.receipt) &&
+		hasValidReceiptTimestamp(proof.receipt) &&
 		matchesPrHeadSha(proof.receipt.headSha, prHeadSha) &&
 		typeof proof.receipt.sizeBytes === "number" &&
 		proof.receipt.sizeBytes > 0
 	);
 }
 
-function hasReceiptTimestamp(
+function hasValidReceiptTimestamp(
 	receipt: PrCloseoutReviewerArtifactProof["receipt"],
 ): boolean {
-	return (
-		(typeof receipt.producedAt === "string" && receipt.producedAt.length > 0) ||
-		(typeof receipt.verifiedAt === "string" && receipt.verifiedAt.length > 0)
-	);
+	const producedAt =
+		typeof receipt.producedAt === "string" ? receipt.producedAt : null;
+	const verifiedAt =
+		typeof receipt.verifiedAt === "string" ? receipt.verifiedAt : null;
+	if (!producedAt && !verifiedAt) return false;
+	if (producedAt && !isStrictIsoTimestamp(producedAt)) return false;
+	if (verifiedAt && !isStrictIsoTimestamp(verifiedAt)) return false;
+	if (producedAt && verifiedAt) {
+		return Date.parse(verifiedAt) >= Date.parse(producedAt);
+	}
+	return true;
 }
 
 function matchesPrHeadSha(
@@ -369,6 +376,36 @@ function matchesPrHeadSha(
 ): boolean {
 	if (typeof prHeadSha !== "string" || prHeadSha.length === 0) return true;
 	return receiptHeadSha === prHeadSha;
+}
+
+function isStrictIsoTimestamp(value: string): boolean {
+	const match =
+		/^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.\d+)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/u.exec(
+			value,
+		);
+	if (!match) return false;
+
+	const [, yearText, monthText, dayText, hourText, minuteText, secondText] =
+		match;
+	const year = Number(yearText);
+	const month = Number(monthText);
+	const day = Number(dayText);
+	const hour = Number(hourText);
+	const minute = Number(minuteText);
+	const second = Number(secondText);
+	const utcDate = new Date(
+		Date.UTC(year, month - 1, day, hour, minute, second),
+	);
+
+	return (
+		utcDate.getUTCFullYear() === year &&
+		utcDate.getUTCMonth() === month - 1 &&
+		utcDate.getUTCDate() === day &&
+		utcDate.getUTCHours() === hour &&
+		utcDate.getUTCMinutes() === minute &&
+		utcDate.getUTCSeconds() === second &&
+		!Number.isNaN(Date.parse(value))
+	);
 }
 
 function receiptRef(receipt: unknown): string | null {
