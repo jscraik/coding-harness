@@ -43,7 +43,7 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-12 post-PR415 pullback and PU-015 packet generation refresh. Merged
+Last updated during the 2026-06-12 post-PR416 pullback and PU-015 packet blocker refresh. Merged
 PR history is receipt provenance, not the active route. Use `receipts.jsonl` for
 the complete PR ledger and keep this section limited to the current restart
 truth.
@@ -82,11 +82,15 @@ Current live route truth:
   `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2` at
   `2026-06-12T05:41:54Z`; it is tracker evidence only, not parent completion
   evidence.
+- PR #416 merged the packet validation-staleness, validation-reference,
+  route-freshness, receipt-freshness, and receipt-ledger-change repair from
+  submitted head `650969a4217b335a1dfb9184e18cae6f83e7dd3b` as squash merge
+  `f262c6c4c6646ada3821cdc3a0e9a7300b871746` at
+  `2026-06-12T08:34:40Z`; it is repair provenance, not packet readiness or
+  parent completion evidence.
 - Local `main` and `origin/main` are synced at
-  `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2` after PR #415 was merged and
+  `f262c6c4c6646ada3821cdc3a0e9a7300b871746` after PR #416 was merged and
   pulled back.
-- Live GitHub reported PR #415 merged before this PU-015 packet branch was
-  created.
 - Runtime-card on pulled current main returns `issueKey: "JSC-363"` with the
   JSC-363 active spec and plan, closing the PU-056 route-key guard.
 - Branch and worktree cleanup removed obsolete auxiliary worktrees and stale
@@ -96,11 +100,9 @@ Current live route truth:
   It is blocked on missing independent reviewer artifacts and does not claim
   Judge/PM readiness, Linear field-text currency, or parent completion. Its
   validation surface is explicitly stale/blocked because PR #416 repair
-  receipts do not validate the packet/verdict head. PR #416 repair receipt anchor
-  `1e6b822937008ecc7dd3ec57bda650fe3d578065` is the active packet
-  validation-staleness, validation-reference, route-freshness, and receipt-freshness repair for
-  this packet receipt; merge/pullback remains unclaimed until GitHub records
-  PR #416 merged and local main is pulled.
+  receipts do not validate the packet/verdict head. R499 records the PR #416
+  merge/pullback to current main and keeps packet readiness, Linear field-text
+  currency, and parent completion unclaimed.
 - Earlier Linear JSC-363 evidence includes comment
   `81cfdd41-ff0e-4df1-b884-c01789e30a50` with the repo-truth
   classification. This refresh does not claim a fresh Linear MCP fetch. The
@@ -150,24 +152,23 @@ Stop conditions:
 Current route truth:
 
 - Current route: PU-015 Judge/PM audit packet guardrails are merged through
-  PR #413, tracker refreshes are merged through PR #415, and the live packet is
+  PR #413, repair/tracker provenance is merged through PR #416, and the live packet is
   generated but blocked on independent reviewer artifacts.
-- Provenance: See `receipts.jsonl` for merged route history through PR #415.
+- Provenance: See `receipts.jsonl` for merged route history through PR #416.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #415 merged at
-  `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`. See `receipts.jsonl` for
+- Done on current main: PR #416 merged at
+  `f262c6c4c6646ada3821cdc3a0e9a7300b871746`. See `receipts.jsonl` for
   complete merged route history.
-- Current route PR: #416, still open as the PU-015 packet validation-reference,
-  route-freshness, receipt-freshness, and receipt-ledger-change guardrail
-  repair. Latest local repair receipt: R498 /
-  `b2c7b345ecbd67826e12267388e66f7a233194f8`.
+- Current route PR: none. PR #416 merged at `2026-06-12T08:34:40Z` as
+  squash merge `f262c6c4c6646ada3821cdc3a0e9a7300b871746` from
+  submitted head `650969a4217b335a1dfb9184e18cae6f83e7dd3b`; R499
+  records local main pullback.
 - Completed slice: PU-056 active-route runtime-card selection guard; runtime-card
   on current main derives `issueKey: "JSC-363"` with the active JSC-363 spec
   and plan.
-- Remaining backlog after PR #415 and the first live packet: merge and pull
-  PR #416 only after live GitHub records it merged, collect or
+- Remaining backlog after PR #416 and the first live packet: collect or
   explicitly block independent reviewer artifacts, refresh or owner-classify
   Linear field-text currency, prove final documentation accuracy, and run the
   final requirement-by-requirement completion audit.
