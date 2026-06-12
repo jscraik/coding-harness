@@ -33,9 +33,9 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Active route count  | 1                                                            |
 | Active route        | PU-015 live Judge/PM audit packet                            |
 | Last closed route   | PR #415 merged                                               |
-| Current route       | PU-015 PR #416 route-freshness repair for live packet        |
+| Current route       | PU-015 PR #416 packet validation-reference and route-freshness repair |
 | Current slice       | PU-015 blocked packet evidence and closeout proof            |
-| Feature work status | PR #416 route-freshness repair active; reviewers still missing |
+| Feature work status | PR #416 repair active at `ce1ddfa2110a4d4520fec45832c314ee1ecd7b95`; reviewers still missing |
 
 ## Active Route
 
@@ -46,7 +46,8 @@ carried the post-PR414 tracker refresh. The first live PU-015 packet now exists
 and is blocked on missing independent reviewer artifacts. PU-056 remains
 closed on current main: runtime-card projects `issueKey: "JSC-363"` with the
 JSC-363 active spec and plan from the wide Current Active Route row. This
-tracker records PR #416 as the active route-freshness repair and does not claim Linear field-text currency, final documentation accuracy
+tracker records PR #416 as the active packet validation-reference and route-freshness
+repair and does not claim Linear field-text currency, final documentation accuracy
 beyond current validators, Judge/PM readiness, release readiness, or parent-goal
 completion.
 
@@ -97,7 +98,8 @@ Current evidence:
   verdicts, review-state, external-state, Linear state or blocker, validation
   receipts, root hygiene, unresolved-risk classification, and issueAuthorityMap
   proof.
-- PR #416 is the active PR lane for the R492/R493 route-freshness repair. Historical PR details remain in `receipts.jsonl`; they are not active restart
+- PR #416 is the active PR lane for the R492/R493/R494 packet validation-reference
+  and route-freshness repair. Historical PR details remain in `receipts.jsonl`; they are not active restart
   instructions.
 
 ## Active Slice

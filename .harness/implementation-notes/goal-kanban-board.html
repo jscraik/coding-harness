@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated after PR #415 merged and local <code>main</code> plus <code>origin/main</code> were pulled to <code>29dd0f0465cadcbedbaeb16f06ac0f4607177fa2</code>. PR #413 merged PU-015 guardrails; PR #414 and PR #415 were tracker-refresh PRs, not parent-completion evidence. PU-056 is closed on current main; <code>runtime-card --json --repo .</code> returns <code>issueKey: "JSC-363"</code> with the JSC-363 active spec and plan. The live PU-015 packet exists at <code>docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json</code> and is blocked on <code>missing_reviewer_artifact</code>. PR #416 is the active route-freshness repair. Linear field-text currency, final documentation accuracy, release readiness, Judge/PM readiness, and parent goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated after PR #415 merged and local <code>main</code> plus <code>origin/main</code> were pulled to <code>29dd0f0465cadcbedbaeb16f06ac0f4607177fa2</code>. PR #413 merged PU-015 guardrails; PR #414 and PR #415 were tracker-refresh PRs, not parent-completion evidence. PU-056 is closed on current main; <code>runtime-card --json --repo .</code> returns <code>issueKey: "JSC-363"</code> with the JSC-363 active spec and plan. The live PU-015 packet exists at <code>docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json</code> and is blocked on <code>missing_reviewer_artifact</code>. PR #416 is the active packet validation-reference and route-freshness repair at <code>ce1ddfa2110a4d4520fec45832c314ee1ecd7b95</code>. Linear field-text currency, final documentation accuracy, release readiness, Judge/PM readiness, and parent goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -700,9 +700,9 @@
         lane: "remaining",
         title: "PU-015: live Judge/PM packet",
         status: "blocked",
-        tags: ["PU-015", "R492", "Judge/PM", "blocked"],
+        tags: ["PU-015", "R492", "R494", "Judge/PM", "blocked"],
         summary: "The live PU-015 packet was generated from pulled current-main evidence and fails closed before Judge/PM readiness because independent reviewer artifacts are missing.",
-        evidence: ["Current main after PR #415 -> 29dd0f0465cadcbedbaeb16f06ac0f4607177fa2", "Packet -> docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json", "Packet status -> blocked", "Active PR -> #416 route-freshness repair", "Packet blockerCode -> missing_reviewer_artifact", "Packet blockerRefs -> review-state:adversarial-reviewer", "Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 -> repo-truth context only"],
+        evidence: ["Current main after PR #415 -> 29dd0f0465cadcbedbaeb16f06ac0f4607177fa2", "Packet -> docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json", "Packet status -> blocked", "Active PR -> #416 packet validation-reference and route-freshness repair", "Latest repair receipt -> R494 / ce1ddfa2110a4d4520fec45832c314ee1ecd7b95", "Packet blockerCode -> missing_reviewer_artifact", "Packet blockerRefs -> review-state:adversarial-reviewer", "Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 -> repo-truth context only"],
         next: "Collect or explicitly block adversarial-reviewer, agent-native-reviewer, and best-practices-researcher artifacts; refresh or owner-classify Linear field text; then rerun the packet and final audit.",
         risk: "A blocked packet proves the guardrail is working, not that Judge/PM readiness, Linear field-text currency, release readiness, or parent-goal completion are satisfied."
       },

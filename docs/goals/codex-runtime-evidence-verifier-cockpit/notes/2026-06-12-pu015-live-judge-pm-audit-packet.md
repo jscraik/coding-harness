@@ -48,15 +48,15 @@ This artifact records the first live PU-015 Judge/PM audit packet generated from
 - Blocker code: `missing_reviewer_artifact`
 - Blocker class: `unknown`
 - Blocker refs: `review-state:adversarial-reviewer`
-- JSON size: `4459` bytes
-- JSON SHA-256: `593a075cf3af876aea098b77ae30441e7662a2e1879f9785459f1fc50d764bcf`
+- JSON size: `4471` bytes
+- JSON SHA-256: `0ff1435017de293206d7054647c5eb6d8fcdeb9cd6d8d59145129b92e4d9ce80`
 
 ## Evidence Inputs
 
 - Runtime-card surface: `runtime-card:current-main-jsc-363`
 - Review-state surface: `review-state:review-state`
 - External-state surface: `external-state:external-state`
-- Validation surface: `validation:R491-route-validators`
+- Validation surface: `validation:R493-route-freshness-repair`
 - Root-hygiene surface: `root-hygiene:root-hygiene`
 - Linear disposition: field-text currency remains explicit owner/external blocker; comment `81cfdd41-ff0e-4df1-b884-c01789e30a50` is route-alignment evidence only, and the supporting verdict is blocked until field text is verified or owner-classified.
 

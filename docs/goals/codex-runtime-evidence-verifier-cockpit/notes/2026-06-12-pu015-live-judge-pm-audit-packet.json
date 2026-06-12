@@ -58,7 +58,7 @@
 				"name": "validation",
 				"status": "pass",
 				"freshness": "current",
-				"evidenceRef": "validation:R491-route-validators"
+				"evidenceRef": "validation:R493-route-freshness-repair"
 			},
 			{
 				"name": "root-hygiene",
@@ -129,7 +129,7 @@
 		"runtimeCardRef": "runtime-card:current-main-jsc-363",
 		"reviewStateRef": "review-state:review-state",
 		"externalStateRef": "external-state:external-state",
-		"validationRefs": ["validation:R491-route-validators"],
+		"validationRefs": ["validation:R493-route-freshness-repair"],
 		"rootHygieneRef": "root-hygiene:root-hygiene",
 		"linearDisposition": "explicit blocker: field-text currency unverified"
 	},
