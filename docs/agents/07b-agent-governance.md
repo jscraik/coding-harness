@@ -176,9 +176,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - Judge/PM readiness is a delivery-truth composition rule, not a separate
   public closeout rail. Changes to `goal_ready_for_judge_pm`,
   issue-authority blockers, clean-worktree evidence, local-validation evidence,
-  or external-state eligibility should keep the private audit logic under
-  `src/lib/delivery-truth/`, preserve PR closeout as the claim/evidence
-  consumer, and synchronize `AGENTS.md`,
+  or external-state eligibility should keep issue, PR, and goal authority
+  matching in `src/lib/delivery-truth/judge-pm-audit-authority.ts`, keep the
+  packet composer under `src/lib/delivery-truth/judge-pm-audit.ts`, preserve PR
+  closeout as the claim/evidence consumer, and synchronize `AGENTS.md`,
   `docs/agents/00-architecture-bootstrap.md`, and this guide when docs-gate
   reports architecture-context or agent-governance surfaces
 - root-hygiene evidence changes should keep repository inventory,

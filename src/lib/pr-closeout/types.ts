@@ -272,12 +272,35 @@ export interface PrCloseoutReviewArtifactInput {
 	evidenceRef?: string | null;
 }
 
+/** Receipt-shaped proof accepted at the PR closeout boundary. */
+export interface PrCloseoutReviewerArtifactReceipt {
+	schemaVersion: "evidence-receipt/v1";
+	kind:
+		| "validation"
+		| "artifact"
+		| "review_artifact"
+		| "external_state"
+		| "runtime_card"
+		| "run_record";
+	ref: string;
+	producer: string;
+	status: "pass" | "fail" | "blocked" | "unknown" | "not_applicable";
+	freshness: "current" | "stale" | "missing" | "unknown" | "not_applicable";
+	evidenceUse: "orientation" | "claim_support" | "audit_trail";
+	blockerClass: string | null;
+	producedAt?: string;
+	verifiedAt?: string;
+	headSha?: string | null;
+	sizeBytes?: number | null;
+	checksum?: string | null;
+}
+
 /** Verifier proof that a present reviewer artifact was inspected and bound to evidence. */
 export interface PrCloseoutReviewerArtifactProof {
 	path: string;
 	producer: string;
 	evidenceVerified: boolean;
-	receipt: string;
+	receipt: PrCloseoutReviewerArtifactReceipt;
 	verifiedAt?: string | null;
 }
 

@@ -78,6 +78,7 @@ function buildPrCloseoutReportValue(
 	collectReviewArtifactBlockers(
 		input.reviewArtifacts ?? [],
 		input.reviewerArtifactProofs ?? [],
+		input.pullRequest.headSha ?? null,
 		blockers,
 	);
 	collectTraceabilityBlocker(traceability.complete, blockers);

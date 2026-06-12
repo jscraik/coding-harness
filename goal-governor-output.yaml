@@ -5,8 +5,8 @@ native_reconciliation:
   native_goal_id: null
   native_status: unknown
   source: "state.yaml native_goal_id and native_status are null"
-board_status: post_pr411_refresh_pr412_pending_merge
-next_action: merge_pr412_then_pull_main_before_pu015
+board_status: pu015_local_guardrails_committed_pending_pr
+next_action: push_open_pr_and_triage_pu015
 decision_markers:
   - read goal.md and state.yaml first
   - receipts.jsonl
@@ -20,9 +20,10 @@ truth_lanes:
       - "Command: node --import tsx src/cli.ts runtime-card --json --repo . | jq '{issueKey, activeSpec:.artifacts.activeSpec, activePlan:.artifacts.activePlan}' -> pass, issueKey JSC-363 with active spec and plan"
       - "Command: node --import tsx src/cli.ts next --json | jq '{status, summary, nextAction, nextCommand}' -> pass, clean-worktree handoff recommendation"
   generated_artifacts:
-    status: post_pr411_refresh_pending_pr412_merge
+    status: post_pr412_refresh_pu015_selected
     evidence:
       - "R479 records the post-PR411 pullback refresh"
+      - "R481 records the post-PR412 pullback refresh"
       - "PU-056 is merged on current main and runtime-card derives issueKey JSC-363 from the wide active-route row"
   remote_pr_checks:
     status: pr411_merged
@@ -32,25 +33,27 @@ truth_lanes:
       - "PR #410 state=MERGED, mergedAt=2026-06-11T18:24:41Z, mergeCommit=41ac068ae7c9e9425681a5d42358eaf120f24c04, submitted head=2067365c6149ebdf96aa181377ca5c151536c216"
       - "PR #410 repo-owned CircleCI lanes, pr-pipeline, security-scan, Socket, CodeRabbit, and review-thread lanes passed or resolved before merge; external security/snyk GitHub App quota/error lane remains owner-waived only"
       - "PR #411 state=MERGED, mergedAt=2026-06-11T20:41:25Z, mergeCommit=aa020ee7deaef4974ee8c78761192e818416e906, submitted head=dc2d19bfc14d32621eed5b082565168ab177a631"
-      - "PR #412 carries the post-PR411 tracker refresh; PU-015 remains behind PR #412 merge and local main pullback"
+      - "PR #412 state=MERGED, mergedAt=2026-06-12T00:24:41Z, mergeCommit=7e0dde9c0408388fc228e8c2afe049593f1b0b71, submitted head=a81d783aeef3f05d6e3668a4e33ed4e216e6a756"
+      - "Live GitHub reported zero open PRs before this local tracker-refresh branch was created"
   review_threads:
-    status: pr412_threads_under_triage
+    status: no_open_pr_threads_checked_before_local_tracker_branch
     evidence:
       - "All four PR #410 review threads identified during merge triage were resolved before auto-merge completed"
-      - "PR #412 review feedback requires keeping PU-015 behind this refresh merge until PR #412 is merged and pulled locally"
+      - "PR #412 merged after review-fix triage; thread state is PR-lane provenance, not parent-goal completion evidence"
   tracker_state:
-    status: pr411_merged_pr412_refresh_pending_pu015_selected
+    status: pu015_local_guardrails_committed_pending_pr
     evidence:
-      - "state.yaml records PR #411 as merged baseline and PU-015 as the selected next slice"
+      - "state.yaml records PR #412 as merged baseline and PU-015 as the selected next slice"
       - "PR #411 and PR #412 are tracker-refresh PRs only; neither is PU-015 implementation evidence"
       - "runtime-card on pulled current main derives issueKey JSC-363 from the active route row"
+      - "PU-015 local tests now prove claimed authority mismatches block Judge/PM readiness and review artifacts require current receipt-backed proof"
   merge_readiness:
     status: not_ready_until_pu015_packet_and_final_audit
     evidence:
       - "PU-056 PR, CI, review-thread, merge, and post-merge pullback lanes are proven; Linear field-text, PU-015 packet, and final audit remain unproven"
 continuation_gate:
-  status: wait_for_pr412_merge_and_pullback
-  reason: "PU-056 and PR #411 are merged and pulled back, but PR #412 carries the post-PR411 refresh repairs. Start PU-015 only after PR #412 merges and local main is pulled to the PR #412 merge commit."
+  status: push_open_pr_and_triage_pu015
+  reason: "PU-015 guardrails are committed locally. The slice is not complete until reviewed, merged, pulled back to main, and refreshed in the tracker."
 native_blocker_audit:
   status: not_blocked
   blocker_history: []

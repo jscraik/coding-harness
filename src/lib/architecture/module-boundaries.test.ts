@@ -1458,7 +1458,10 @@ const APPROVED_PR_CLOSEOUT_PARENT_IMPORTS = new Map<string, readonly string[]>([
 		"src/lib/pr-closeout/evidence-summaries.ts",
 		["../harness-assurance.js", "../runtime/runtime-evidence-contract.js"],
 	],
-	["src/lib/pr-closeout/blockers.ts", ["../decision/he-phase-exit.js"]],
+	[
+		"src/lib/pr-closeout/blockers.ts",
+		["../decision/he-phase-exit.js", "../evidence/evidence-receipt.js"],
+	],
 	[
 		"src/lib/pr-closeout/claim-helpers.ts",
 		["../missing-context/classifier.js"],

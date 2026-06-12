@@ -3,6 +3,7 @@ import {
 	HARNESS_CLOSEOUT_GATE_IDS,
 	type HePhaseExit,
 } from "../decision/he-phase-exit.js";
+import { isSafeEvidenceReceiptPointer } from "../evidence/evidence-receipt.js";
 import type {
 	PrCloseoutBlocker,
 	PrCloseoutCheckInput,
@@ -295,25 +296,34 @@ export function collectReviewBlockers(
 export function collectReviewArtifactBlockers(
 	reviewArtifacts: readonly PrCloseoutReviewArtifactInput[],
 	reviewerArtifactProofs: readonly PrCloseoutReviewerArtifactProof[],
+	prHeadSha: string | null | undefined,
 	blockers: PrCloseoutBlocker[],
 ): void {
 	for (const artifact of reviewArtifacts) {
 		if (artifact.status === "present") {
-			const proof = reviewerArtifactProofs.find(
+			const matchingProofs = reviewerArtifactProofs.filter(
 				(candidate) =>
 					candidate.path === artifact.path &&
 					candidate.producer === artifact.producer,
 			);
-			if (proof?.evidenceVerified === true) continue;
+			if (
+				matchingProofs.some((proof) =>
+					isUsableReviewerArtifactProof(proof, artifact, prHeadSha),
+				)
+			) {
+				continue;
+			}
+			const proof = matchingProofs[0];
 			pushBlocker(blockers, {
 				surface: "review_artifact",
 				classification: "unknown",
 				kind: "state",
 				reason: proof
-					? `Review artifact ${artifact.path} is present but its verifier proof is not evidence-verified.`
+					? `Review artifact ${artifact.path} is present but its verifier proof is not backed by a current claim-support receipt.`
 					: `Review artifact ${artifact.path} is present but lacks matching verifier proof.`,
 				fixableByCodex: true,
-				ref: proof?.receipt ?? artifact.evidenceRef ?? artifact.path,
+				ref:
+					receiptRef(proof?.receipt) ?? artifact.evidenceRef ?? artifact.path,
 			});
 			continue;
 		}
@@ -326,6 +336,115 @@ export function collectReviewArtifactBlockers(
 			ref: artifact.evidenceRef ?? artifact.path,
 		});
 	}
+}
+
+function isUsableReviewerArtifactProof(
+	proof: PrCloseoutReviewerArtifactProof,
+	artifact: PrCloseoutReviewArtifactInput,
+	prHeadSha: string | null | undefined,
+): boolean {
+	if (!isReviewArtifactReceipt(proof.receipt)) {
+		return false;
+	}
+	const receipt = proof.receipt;
+	const sizeBytes = receipt.sizeBytes;
+	return (
+		proof.evidenceVerified === true &&
+		receipt.kind === "review_artifact" &&
+		receipt.ref === `review-state:${artifact.path}` &&
+		receipt.producer === artifact.producer &&
+		receipt.status === "pass" &&
+		receipt.freshness === "current" &&
+		receipt.evidenceUse === "claim_support" &&
+		receipt.blockerClass === null &&
+		hasValidReceiptTimestamp(receipt) &&
+		matchesPrHeadSha(receipt.headSha, prHeadSha) &&
+		typeof sizeBytes === "number" &&
+		Number.isInteger(sizeBytes) &&
+		sizeBytes > 0
+	);
+}
+
+function hasValidReceiptTimestamp(
+	receipt: PrCloseoutReviewerArtifactProof["receipt"],
+): boolean {
+	const producedAt =
+		typeof receipt.producedAt === "string" ? receipt.producedAt : null;
+	const verifiedAt =
+		typeof receipt.verifiedAt === "string" ? receipt.verifiedAt : null;
+	if (!producedAt && !verifiedAt) return false;
+	if (producedAt && !isStrictIsoTimestamp(producedAt)) return false;
+	if (verifiedAt && !isStrictIsoTimestamp(verifiedAt)) return false;
+	if (producedAt && verifiedAt) {
+		return Date.parse(verifiedAt) >= Date.parse(producedAt);
+	}
+	return true;
+}
+
+function matchesPrHeadSha(
+	receiptHeadSha: string | null | undefined,
+	prHeadSha: string | null | undefined,
+): boolean {
+	if (typeof prHeadSha !== "string" || prHeadSha.length === 0) return false;
+	return receiptHeadSha === prHeadSha;
+}
+
+function isStrictIsoTimestamp(value: string): boolean {
+	const match =
+		/^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.\d+)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/u.exec(
+			value,
+		);
+	if (!match) return false;
+
+	const [, yearText, monthText, dayText, hourText, minuteText, secondText] =
+		match;
+	const year = Number(yearText);
+	const month = Number(monthText);
+	const day = Number(dayText);
+	const hour = Number(hourText);
+	const minute = Number(minuteText);
+	const second = Number(secondText);
+	const utcDate = new Date(
+		Date.UTC(year, month - 1, day, hour, minute, second),
+	);
+
+	return (
+		utcDate.getUTCFullYear() === year &&
+		utcDate.getUTCMonth() === month - 1 &&
+		utcDate.getUTCDate() === day &&
+		utcDate.getUTCHours() === hour &&
+		utcDate.getUTCMinutes() === minute &&
+		utcDate.getUTCSeconds() === second &&
+		!Number.isNaN(Date.parse(value))
+	);
+}
+
+function receiptRef(receipt: unknown): string | null {
+	return isRecord(receipt) &&
+		typeof receipt.ref === "string" &&
+		isSafeEvidenceReceiptPointer(receipt.ref)
+		? receipt.ref
+		: null;
+}
+
+function isReviewArtifactReceipt(receipt: unknown): boolean {
+	return (
+		isRecord(receipt) &&
+		receipt.schemaVersion === "evidence-receipt/v1" &&
+		typeof receipt.ref === "string" &&
+		receipt.ref.length > 0 &&
+		isSafeEvidenceReceiptPointer(receipt.ref) &&
+		typeof receipt.producer === "string" &&
+		receipt.producer.length > 0 &&
+		isSafeEvidenceReceiptPointer(receipt.producer) &&
+		(receipt.producedAt === undefined ||
+			typeof receipt.producedAt === "string") &&
+		(receipt.verifiedAt === undefined || typeof receipt.verifiedAt === "string")
+	);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** Add a blocker when PR handoff lacks session or traceability evidence. */

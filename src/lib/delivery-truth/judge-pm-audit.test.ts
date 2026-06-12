@@ -6,6 +6,7 @@ import {
 	buildJudgePmAuditVerdict,
 } from "./judge-pm-audit.js";
 import type {
+	JudgePmAuditClaimedAuthority,
 	JudgePmAuditIssueAuthorityMap,
 	JudgePmAuditReviewerArtifact,
 	JudgePmAuditVerdictInput,
@@ -266,6 +267,90 @@ describe("buildJudgePmAuditVerdict", () => {
 		});
 	});
 
+	it("fails closed when the issue authority map uses a fractional PR number", () => {
+		const input = baseInput({
+			issueAuthorityMap: {
+				...issueAuthorityMap(),
+				prNumber: 305.5,
+			},
+			claimedAuthority: {
+				...claimedAuthorityMap(),
+				prNumber: 305.5,
+			},
+		});
+		const verdict = buildJudgePmAuditVerdict(input);
+		const packet = buildJudgePmAuditPacket(input);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "missing",
+			blockerClass: "needs_jamie_decision",
+			blockerCode: "missing_issue_authority",
+			blockerRefs: ["linear:JSC-363"],
+		});
+		expect(packet.issueAuthority.prNumber).toBeNull();
+		expect(packet.issueAuthority.claimed.prNumber).toBeNull();
+	});
+
+	it("fails closed when claimed authority uses a fractional PR number", () => {
+		const input = baseInput({
+			claimedAuthority: {
+				...claimedAuthorityMap(),
+				prNumber: 305.5,
+			},
+		});
+		const verdict = buildJudgePmAuditVerdict(input);
+		const packet = buildJudgePmAuditPacket(input);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "unknown",
+			blockerClass: "needs_jamie_decision",
+			blockerCode: "invalid_issue_authority",
+			blockerRefs: ["linear:JSC-363"],
+		});
+		expect(packet.issueAuthority.prNumber).toBe(305);
+		expect(packet.issueAuthority.claimed.prNumber).toBeNull();
+	});
+
+	it.each([
+		{
+			name: "closeout issue",
+			claimedAuthority: { closeoutIssueId: "JSC-999" },
+		},
+		{
+			name: "parent issue",
+			claimedAuthority: { parentIssueId: "JSC-999" },
+		},
+		{
+			name: "pull request",
+			claimedAuthority: { prNumber: 999 },
+		},
+		{
+			name: "external goal",
+			claimedAuthority: { externalGoalId: "wrong-goal" },
+		},
+	] as const)("fails closed when claimed $name does not match authorized lifecycle mapping", ({
+		claimedAuthority,
+	}) => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				claimedAuthority: {
+					...claimedAuthorityMap(),
+					...claimedAuthority,
+				},
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "unknown",
+			blockerClass: "needs_jamie_decision",
+			blockerCode: "invalid_issue_authority",
+			blockerRefs: ["linear:JSC-363"],
+		});
+	});
+
 	it("requires owner-backed not-applicable authority for omitted tracker surfaces", () => {
 		const missingLinearDecision = buildJudgePmAuditVerdict(
 			baseInput({
@@ -289,6 +374,44 @@ describe("buildJudgePmAuditVerdict", () => {
 		expect(explicitLinearDecision).toMatchObject({
 			status: "pass",
 			freshness: "current",
+		});
+	});
+
+	it("fails closed when authority map timestamps are impossible calendar dates", () => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				issueAuthorityMap: {
+					...issueAuthorityMap(),
+					decidedAt: "2026-02-31T00:00:00Z",
+				},
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "missing",
+			blockerClass: "needs_jamie_decision",
+			blockerCode: "missing_issue_authority",
+			blockerRefs: ["linear:JSC-363"],
+		});
+	});
+
+	it("fails closed when not-applicable authority timestamps are impossible dates", () => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				linearStateRef: null,
+				linearStateNotApplicable: {
+					...notApplicableDecision("linear:JSC-363"),
+					decidedAt: "2026-02-31T00:00:00Z",
+				},
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "missing",
+			blockerClass: "needs_jamie_decision",
+			blockerCode: "missing_audit_surface",
 		});
 	});
 
@@ -490,6 +613,7 @@ function baseInput(
 		validationReceiptRefs: [auditSurface("validation", "validation")],
 		rootHygieneRef: auditSurface("root-hygiene", "artifact"),
 		issueAuthorityMap: issueAuthorityMap(),
+		claimedAuthority: claimedAuthorityMap(),
 		unresolvedRiskClassifications: [],
 		supportingVerdicts: supportingVerdicts(),
 		...overrides,
@@ -509,6 +633,15 @@ function issueAuthorityMap(): JudgePmAuditIssueAuthorityMap {
 		decisionSourceRef: "linear:JSC-363",
 		decidedAt: VERIFIED_AT,
 		rationale: "Judge/PM audit is required before goal closeout.",
+	};
+}
+
+function claimedAuthorityMap(): JudgePmAuditClaimedAuthority {
+	return {
+		closeoutIssueId: "JSC-363",
+		parentIssueId: "JSC-300",
+		prNumber: 305,
+		externalGoalId: "codex-runtime-evidence-verifier-cockpit",
 	};
 }
 

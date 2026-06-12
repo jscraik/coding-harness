@@ -411,13 +411,13 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness status">Current main: PR #411 merged</div>
+      <div class="source-chip" aria-label="Source freshness status">Current PR lane: #413 open</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>PR #412 gate active</strong></div>
-      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #411</strong></div>
-      <div class="metric"><span>Current PR</span><strong>PR #412</strong></div>
+      <div class="metric"><span>Goal status</span><strong>PU-015 in PR review</strong></div>
+      <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #412</strong></div>
+      <div class="metric"><span>Current PR</span><strong>PR #413 open</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Projection merged</strong></div>
       <div class="metric"><span>Documentation</span><strong>Validators passing</strong></div>
       <div class="metric"><span>Linear tracker</span><strong>Comment aligned</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated while PR #412 is the active post-PR411 tracker-refresh gate. PR #411 was a tracker-refresh PR; it is not PU-015 implementation evidence. PU-056 is closed on current main; <code>runtime-card --json --repo .</code> returns <code>issueKey: "JSC-363"</code> with the JSC-363 active spec and plan. PU-015 Judge/PM audit packet remains blocked until PR #412 merges and local <code>main</code> is pulled to the PR #412 merge commit, with Linear field-text currency, final documentation accuracy, release readiness, and parent goal completion still unclaimed.</p>
+    <p class="footer">Snapshot updated after PR #412 merged and local <code>main</code> plus <code>origin/main</code> were pulled to <code>7e0dde9c0408388fc228e8c2afe049593f1b0b71</code>. PR #411 and PR #412 were tracker-refresh PRs; they are not PU-015 implementation evidence. PU-056 is closed on current main; <code>runtime-card --json --repo .</code> returns <code>issueKey: "JSC-363"</code> with the JSC-363 active spec and plan. PU-015 guardrails are in PR #413 review and validate receipt-backed reviewer proofs and claimed authority matching, but PR merge, main pullback, live Judge/PM packet generation, Linear field-text currency, final documentation accuracy, release readiness, and parent goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -604,7 +604,7 @@
         tags: ["PR #402", "R464", "merged", "tracker refresh"],
         summary: "PR #402 merged the post-PR401 route-truth review fix. Local main and origin/main were synced at fd750626ece4d1f3786ef564485dd8c7d2c04230.",
         evidence: ["PR #402 -> MERGED at 2026-06-11T06:46:51Z", "Submitted head -> 765769147db3f1ccee704e521475d4a20ab65934", "Merge commit -> fd750626ece4d1f3786ef564485dd8c7d2c04230", "Repo-owned CircleCI lanes -> success", "pr-pipeline -> success", "security-scan -> success", "CodeRabbit -> success", "Review threads -> resolved before merge", "External security/snyk GitHub App quota lane -> owner-waived only", "Live GitHub open PR list -> []"],
-        next: "Use as merged route provenance only; current route truth is PR #411 tracker refresh over current main aa020ee7deaef4974ee8c78761192e818416e906 and R479.",
+        next: "Use as merged route provenance only; current route truth is PR #412 tracker refresh over current main 7e0dde9c0408388fc228e8c2afe049593f1b0b71 and R481.",
         risk: "This refresh closed PR-route ambiguity only. It did not prove documentation accuracy, root hygiene, Judge/PM readiness, Linear field text, or parent-goal completion."
       },
       {
@@ -668,9 +668,9 @@
         title: "PR #410: PU-056 route guard merged",
         status: "done",
         tags: ["PR #410", "PU-056", "R477", "merged", "runtime-card"],
-        summary: "PR #410 merged the active-route runtime-card selection guard. At PR #410 pullback, local main and origin/main were synced at 41ac068ae7c9e9425681a5d42358eaf120f24c04; current route truth moved forward through PR #411/R479.",
+        summary: "PR #410 merged the active-route runtime-card selection guard. At PR #410 pullback, local main and origin/main were synced at 41ac068ae7c9e9425681a5d42358eaf120f24c04; current route truth moved forward through PR #412/R481.",
         evidence: ["PR #410 -> MERGED at 2026-06-11T18:24:41Z", "Submitted head -> 2067365c6149ebdf96aa181377ca5c151536c216", "Merge commit -> 41ac068ae7c9e9425681a5d42358eaf120f24c04", "PR #410 pullback main/origin-main -> 41ac068ae7c9e9425681a5d42358eaf120f24c04", "runtime-card --json --repo . -> issueKey JSC-363 with the active JSC-363 spec and plan", "Repo-owned CircleCI lanes, pr-pipeline, security-scan, Socket, CodeRabbit, and review threads -> passed or resolved", "External security/snyk GitHub App quota lane -> owner-waived only"],
-        next: "Use as merged route provenance only. PR #411 merged the tracker refresh; PU-015 is next from pulled current main.",
+        next: "Use as merged route provenance only. PR #412 merged the tracker refresh; PU-015 is next from pulled current main.",
         risk: "This proves the route-key guard only. It does not prove Linear field text, Judge/PM readiness, final documentation accuracy, or parent-goal completion."
       },
       {
@@ -679,21 +679,32 @@
         title: "PR #411: tracker refresh merged",
         status: "done",
         tags: ["PR #411", "R479", "merged", "tracker"],
-        summary: "PR #411 merged the post-PR410 tracker refresh. Local main and origin/main are synced at aa020ee7deaef4974ee8c78761192e818416e906, but that pullback snapshot is now historical because PR #412 is the active post-PR411 tracker-refresh gate.",
-        evidence: ["PR #411 -> MERGED at 2026-06-11T20:41:25Z", "Submitted head -> dc2d19bfc14d32621eed5b082565168ab177a631", "Merge commit -> aa020ee7deaef4974ee8c78761192e818416e906", "Local main and origin/main -> aa020ee7deaef4974ee8c78761192e818416e906", "PR #412 -> active post-PR411 tracker-refresh gate before PU-015", "runtime-card --json --repo . -> issueKey JSC-363 with the active JSC-363 spec and plan", "harness next --json -> pass with clean-worktree handoff recommendation"],
-        next: "Merge PR #412 and pull local main to its merge commit before starting PU-015.",
+        summary: "PR #411 merged the post-PR410 tracker refresh. Local main and origin/main were synced at aa020ee7deaef4974ee8c78761192e818416e906 before PR #412 advanced route truth.",
+        evidence: ["PR #411 -> MERGED at 2026-06-11T20:41:25Z", "Submitted head -> dc2d19bfc14d32621eed5b082565168ab177a631", "Merge commit -> aa020ee7deaef4974ee8c78761192e818416e906", "Local main and origin/main -> aa020ee7deaef4974ee8c78761192e818416e906", "PR #412 -> merged post-PR411 tracker refresh before PU-015", "runtime-card --json --repo . -> issueKey JSC-363 with the active JSC-363 spec and plan", "harness next --json -> pass with clean-worktree handoff recommendation"],
+        next: "Use as merged route provenance only. PR #412 merged the tracker refresh; PU-015 is next from pulled current main.",
+        risk: "This receipt is route-truth only. It does not prove PU-015 implementation, Linear field-text currency, Judge/PM readiness, release readiness, or parent-goal completion."
+      },
+      {
+        id: "post-pr412-tracker-refresh",
+        lane: "pr-truth",
+        title: "PR #412: tracker refresh merged",
+        status: "done",
+        tags: ["PR #412", "R481", "merged", "tracker"],
+        summary: "PR #412 merged the post-PR411 tracker refresh. Local main and origin/main are synced at 7e0dde9c0408388fc228e8c2afe049593f1b0b71, and live GitHub reported zero open PRs before this local tracker-refresh branch was created.",
+        evidence: ["PR #412 -> MERGED at 2026-06-12T00:24:41Z", "Submitted head -> a81d783aeef3f05d6e3668a4e33ed4e216e6a756", "Merge commit -> 7e0dde9c0408388fc228e8c2afe049593f1b0b71", "Local main and origin/main -> 7e0dde9c0408388fc228e8c2afe049593f1b0b71", "Live GitHub open PR list -> []", "runtime-card --json --repo . -> issueKey JSC-363 with the active JSC-363 spec and plan", "harness next --json -> pass with clean-worktree handoff recommendation"],
+        next: "Accept or explicitly waive this local tracker refresh, then start PU-015 from the PR #412 merge commit.",
         risk: "This receipt is route-truth only. It does not prove PU-015 implementation, Linear field-text currency, Judge/PM readiness, release readiness, or parent-goal completion."
       },
       {
         id: "pu015-judge-pm-audit-packet",
         lane: "remaining",
-        title: "Blocked next: PU-015 Judge/PM audit packet",
-        status: "blocked",
-        tags: ["PU-015", "blocked", "PR #412", "R480", "Judge/PM"],
-        summary: "PU-015 is the next selected slice, but it must not start until PR #412 merges and local main is pulled to the PR #412 merge commit.",
-        evidence: ["Current main after PR #411 -> aa020ee7deaef4974ee8c78761192e818416e906", "PR #412 -> active post-PR411 tracker-refresh gate", "runtime-card --json --repo . -> issueKey JSC-363 with active spec and plan", "harness next --json -> pass with clean-worktree handoff recommendation", "Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 -> repo-truth context only", "state.yaml queued_slice -> PU-015 selected only after PR #412 merge/pullback"],
-        next: "After PR #412 merges, pull local main and reconcile route truth; then implement PU-015 as the next one-PR slice.",
-        risk: "The packet must classify unsupported or stale claims explicitly and cannot claim parent completion by itself."
+        title: "PU-015: Judge/PM audit packet guardrails",
+        status: "local-validated",
+        tags: ["PU-015", "R482", "local validation", "Judge/PM"],
+        summary: "Committed PU-015 guardrails now require receipt-backed reviewer proof and claimed issue/PR/goal authority matching before Judge/PM readiness can pass.",
+        evidence: ["Current main after PR #412 -> 7e0dde9c0408388fc228e8c2afe049593f1b0b71", "Branch -> codex/jsc-363-pu015-judge-pm-audit-packet", "pnpm vitest run src/lib/delivery-truth/*.test.ts src/lib/pr-closeout/*.test.ts -> pass", "bash scripts/validate-codestyle.sh --fast -> pass", "pnpm run quality:docstrings && pnpm run quality:size && pnpm run quality:self-affirming && pnpm run test:related -> pass with non-blocking drift-gate README command-index warnings", "Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 -> repo-truth context only"],
+        next: "Keep PR #413 under review/CI triage, merge it only when required lanes are satisfied or explicitly waived, pull main after merge, then generate the live Judge/PM packet with Linear disposition explicit.",
+        risk: "Local guardrail tests do not prove live packet generation, reviewer artifacts, Linear field-text currency, PR merge, final documentation accuracy, or parent-goal completion."
       },
       {
         id: "current-main-pr369",
@@ -1492,7 +1503,15 @@
     const statusColor = {
       active: "var(--blue)",
       blocked: "var(--red)",
-      done: "var(--green)"
+      done: "var(--green)",
+      "local-validated": "var(--amber)"
+    };
+
+    const statusFilterMap = {
+      all: () => true,
+      active: status => status === "active" || status === "local-validated",
+      blocked: status => status === "blocked",
+      done: status => status === "done"
     };
 
     const board = document.querySelector("#board");
@@ -1506,7 +1525,7 @@
       for (const lane of lanes) {
         const laneCards = cards.filter(card => {
           const inLane = card.lane === lane.id;
-          const inFilter = currentFilter === "all" || card.status === currentFilter;
+          const inFilter = (statusFilterMap[currentFilter] ?? (() => true))(card.status);
           const haystack = [card.title, card.summary, card.status, ...card.tags, ...card.evidence].join(" ").toLowerCase();
           return inLane && inFilter && (!query || haystack.includes(query));
         });
@@ -1526,7 +1545,7 @@
           const button = document.createElement("button");
           button.type = "button";
           button.className = "card";
-          button.style.setProperty("--status-color", statusColor[card.status]);
+          button.style.setProperty("--status-color", statusColor[card.status] ?? "var(--blue)");
           button.dataset.card = card.id;
           button.innerHTML = `
             <span class="card-title">${card.title}</span>
