@@ -8,6 +8,7 @@ import {
 	type HeGateResult,
 	type HePhaseExit,
 } from "./decision/he-phase-exit.js";
+import type { EvidenceReceipt } from "./evidence/evidence-receipt.js";
 import {
 	buildPrCloseoutReport,
 	buildPrCloseoutReportEffect,
@@ -264,6 +265,27 @@ function deliveryTruthVerdict(
 	};
 }
 
+function reviewArtifactReceipt(
+	path: string,
+	producer: string,
+	overrides: Partial<EvidenceReceipt> = {},
+): EvidenceReceipt {
+	return {
+		schemaVersion: "evidence-receipt/v1",
+		kind: "review_artifact",
+		ref: `review-state:${path}`,
+		producer,
+		status: "pass",
+		freshness: "current",
+		evidenceUse: "claim_support",
+		blockerClass: null,
+		verifiedAt: "2026-05-16T12:00:00.000Z",
+		headSha: "abc123",
+		sizeBytes: 2048,
+		...overrides,
+	};
+}
+
 describe("buildPrCloseoutReport", () => {
 	it("marks a fully evidenced PR ready to merge", () => {
 		const report = buildPrCloseoutReport(baseInput(), {
@@ -495,14 +517,15 @@ describe("buildPrCloseoutReport", () => {
 		expect(report.lifecycleSnapshot.continuation.waitingOwner).toBe("reviewer");
 	});
 
-	it("accepts present review artifacts only when matching proof is evidence-verified", () => {
+	it("accepts present review artifacts only when matching proof is receipt-backed", () => {
 		const path = ".harness/review/pr-258-reviewer.md";
+		const producer = "harness-product-code-reviewer";
 		const report = buildPrCloseoutReport(
 			baseInput({
 				reviewArtifacts: [
 					{
 						path,
-						producer: "harness-product-code-reviewer",
+						producer,
 						status: "present",
 						evidenceRef: `artifact:${path}`,
 					},
@@ -510,9 +533,9 @@ describe("buildPrCloseoutReport", () => {
 				reviewerArtifactProofs: [
 					{
 						path,
-						producer: "harness-product-code-reviewer",
+						producer,
 						evidenceVerified: true,
-						receipt: `artifact-proof:${path}`,
+						receipt: reviewArtifactReceipt(path, producer),
 					},
 				],
 			}),
@@ -524,6 +547,43 @@ describe("buildPrCloseoutReport", () => {
 			expect.arrayContaining([
 				expect.objectContaining({
 					surface: "review_artifact",
+				}),
+			]),
+		);
+	});
+
+	it("blocks boolean-only review artifact proofs without receipt-backed evidence", () => {
+		const path = ".harness/review/pr-258-reviewer.md";
+		const producer = "harness-product-code-reviewer";
+		const report = buildPrCloseoutReport(
+			baseInput({
+				reviewArtifacts: [
+					{
+						path,
+						producer,
+						status: "present",
+						evidenceRef: `artifact:${path}`,
+					},
+				],
+				reviewerArtifactProofs: [
+					{
+						path,
+						producer,
+						evidenceVerified: true,
+						receipt: `artifact-proof:${path}` as unknown as EvidenceReceipt,
+					},
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).toBe("fixable");
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "review_artifact",
+					reason: `Review artifact ${path} is present but its verifier proof is not backed by a current claim-support receipt.`,
+					ref: `artifact:${path}`,
 				}),
 			]),
 		);

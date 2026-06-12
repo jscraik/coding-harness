@@ -221,6 +221,25 @@ const PASSING_RUNTIME_EVIDENCE = {
 	},
 };
 
+function reviewerArtifactReceipt(
+	path = ".harness/review/pr-258-codex.md",
+	producer = "codex",
+) {
+	return {
+		schemaVersion: "evidence-receipt/v1",
+		kind: "review_artifact",
+		ref: `review-state:${path}`,
+		producer,
+		status: "pass",
+		freshness: "current",
+		evidenceUse: "claim_support",
+		blockerClass: null,
+		verifiedAt: "2026-05-22T00:01:00.000Z",
+		headSha: "abc123",
+		sizeBytes: 2048,
+	};
+}
+
 function writeCloseoutGates(
 	dir: string,
 	artifact: unknown = PASSING_CLOSEOUT_GATES,
@@ -451,7 +470,7 @@ describe("runPrCloseoutCLI", () => {
 						path: ".harness/review/pr-258-codex.md",
 						producer: "codex",
 						evidenceVerified: true,
-						receipt: "artifact-proof:.harness/review/pr-258-codex.md",
+						receipt: reviewerArtifactReceipt(),
 					},
 				],
 				linearMutation: "available",
@@ -556,7 +575,7 @@ describe("runPrCloseoutCLI", () => {
 							path: ".harness/review/pr-258-codex.md",
 							producer: "codex",
 							evidenceVerified: true,
-							receipt: "artifact-proof:.harness/review/pr-258-codex.md",
+							receipt: reviewerArtifactReceipt(),
 						},
 					],
 					linearMutation: linearMutationCase.mutation,

@@ -3,6 +3,7 @@ import type {
 	HeGateStatus,
 	HePhaseExit,
 } from "../decision/he-phase-exit.js";
+import type { EvidenceReceipt } from "../evidence/evidence-receipt.js";
 import type {
 	HarnessAssuranceEntry,
 	HarnessAssuranceFinding,
@@ -277,7 +278,7 @@ export interface PrCloseoutReviewerArtifactProof {
 	path: string;
 	producer: string;
 	evidenceVerified: boolean;
-	receipt: string;
+	receipt: EvidenceReceipt;
 	verifiedAt?: string | null;
 }
 

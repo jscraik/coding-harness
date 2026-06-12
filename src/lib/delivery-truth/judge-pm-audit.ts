@@ -17,6 +17,18 @@ import {
 	type DeliveryTruthClaim,
 	type DeliveryTruthVerdict,
 } from "./types.js";
+import { issueAuthorityBlocker } from "./judge-pm-audit-authority.js";
+import type {
+	JudgePmAuditClaimedAuthority,
+	JudgePmAuditIssueAuthorityMap,
+	JudgePmAuditNotApplicableDecision,
+} from "./judge-pm-audit-authority.js";
+
+export type {
+	JudgePmAuditClaimedAuthority,
+	JudgePmAuditIssueAuthorityMap,
+	JudgePmAuditNotApplicableDecision,
+} from "./judge-pm-audit-authority.js";
 
 export const JUDGE_PM_AUDIT_PACKET_SCHEMA_VERSION =
 	"judge-pm-audit/v1" as const;
@@ -71,29 +83,6 @@ export interface JudgePmAuditReviewerArtifact {
 	receipt: EvidenceReceipt;
 }
 
-/** Explicit owner-backed authority decision for a not-applicable closeout surface. */
-export interface JudgePmAuditNotApplicableDecision {
-	owner: string;
-	rationale: string;
-	decidedAt: string;
-	decisionSourceRef: string;
-}
-
-/** Issue, PR, and goal authority mapping that proves the closeout decision boundary. */
-export interface JudgePmAuditIssueAuthorityMap {
-	lifecycleIssueId: string;
-	parentIssueId: string | null;
-	parentNotApplicable: JudgePmAuditNotApplicableDecision | null;
-	prNumber: number | null;
-	prNotApplicable: JudgePmAuditNotApplicableDecision | null;
-	externalGoalId: string | null;
-	externalGoalNotApplicable: JudgePmAuditNotApplicableDecision | null;
-	authorityOwner: string;
-	decisionSourceRef: string;
-	decidedAt: string;
-	rationale: string;
-}
-
 /** Required receipt-backed audit surface outside the reviewer-artifact lane. */
 export interface JudgePmAuditEvidenceSurface {
 	name: string;
@@ -125,6 +114,7 @@ export interface JudgePmAuditVerdictInput {
 	requiredReviewerRoles: readonly string[];
 	reviewerArtifacts: readonly JudgePmAuditReviewerArtifact[];
 	issueAuthorityMap: JudgePmAuditIssueAuthorityMap;
+	claimedAuthority: JudgePmAuditClaimedAuthority;
 	unresolvedRiskClassifications: readonly JudgePmAuditRiskClassification[];
 	supportingVerdicts: readonly DeliveryTruthVerdict[];
 }
@@ -147,6 +137,16 @@ export interface JudgePmAuditPacket {
 	issueAuthority: {
 		status: PrCloseoutClaimStatus;
 		evidenceRef: string | null;
+		lifecycleIssueId: string | null;
+		parentIssueId: string | null;
+		prNumber: number | null;
+		externalGoalId: string | null;
+		claimed: {
+			closeoutIssueId: string | null;
+			parentIssueId: string | null;
+			prNumber: number | null;
+			externalGoalId: string | null;
+		};
 	};
 	auditSurfaces: Array<{
 		name: string;
@@ -227,10 +227,23 @@ export function buildJudgePmAuditPacket(
 			missing: missingRoles,
 		},
 		issueAuthority: {
-			status: issueAuthorityBlocker(input.issueAuthorityMap)
+			status: issueAuthorityBlocker(
+				input.issueAuthorityMap,
+				input.claimedAuthority,
+			)
 				? "blocked"
 				: "pass",
 			evidenceRef: safeRef(input.issueAuthorityMap.decisionSourceRef),
+			lifecycleIssueId: safeRef(input.issueAuthorityMap.lifecycleIssueId),
+			parentIssueId: safeRef(input.issueAuthorityMap.parentIssueId),
+			prNumber: input.issueAuthorityMap.prNumber,
+			externalGoalId: safeRef(input.issueAuthorityMap.externalGoalId),
+			claimed: {
+				closeoutIssueId: safeRef(input.claimedAuthority.closeoutIssueId),
+				parentIssueId: safeRef(input.claimedAuthority.parentIssueId),
+				prNumber: input.claimedAuthority.prNumber,
+				externalGoalId: safeRef(input.claimedAuthority.externalGoalId),
+			},
 		},
 		auditSurfaces: auditSurfaceSummaries(input),
 		supportingVerdicts: input.supportingVerdicts.map((verdict) => ({
@@ -255,7 +268,10 @@ function firstAuditBlocker(
 	if (roleBlocker) return roleBlocker;
 	const artifactBlocker = reviewerArtifactBlocker(input);
 	if (artifactBlocker) return artifactBlocker;
-	const authorityBlocker = issueAuthorityBlocker(input.issueAuthorityMap);
+	const authorityBlocker = issueAuthorityBlocker(
+		input.issueAuthorityMap,
+		input.claimedAuthority,
+	);
 	if (authorityBlocker) return authorityBlocker;
 	const auditSurfaceBlocker = requiredAuditSurfaceBlocker(input);
 	if (auditSurfaceBlocker) return auditSurfaceBlocker;
@@ -503,107 +519,6 @@ function auditSurfaceRefMatches(surface: JudgePmAuditEvidenceSurface): boolean {
 		return surface.receipt.ref.startsWith(refPrefix);
 	}
 	return surface.receipt.ref === refPrefix + surfaceName;
-}
-
-function issueAuthorityBlocker(
-	map: JudgePmAuditIssueAuthorityMap,
-): JudgePmAuditBlocker | null {
-	if (
-		!safeRef(map.lifecycleIssueId) ||
-		!safeRef(map.authorityOwner) ||
-		!safeRef(map.decisionSourceRef) ||
-		!isIsoTimestamp(map.decidedAt) ||
-		map.rationale.trim() === ""
-	) {
-		return blocker(
-			"missing_issue_authority",
-			"missing",
-			map.decisionSourceRef,
-			"needs_jamie_decision",
-		);
-	}
-	if (!map.parentNotApplicable && !safeRef(map.parentIssueId)) {
-		return blocker(
-			"missing_issue_authority",
-			"missing",
-			map.decisionSourceRef,
-			"needs_jamie_decision",
-		);
-	}
-	if (map.parentNotApplicable && map.parentIssueId !== null) {
-		return blocker(
-			"invalid_issue_authority",
-			"unknown",
-			map.decisionSourceRef,
-			"needs_jamie_decision",
-		);
-	}
-	if (
-		map.parentNotApplicable &&
-		!validNotApplicableDecision(map.parentNotApplicable)
-	) {
-		return blocker(
-			"missing_issue_authority",
-			"missing",
-			map.decisionSourceRef,
-			"needs_jamie_decision",
-		);
-	}
-	if (
-		!map.prNotApplicable &&
-		(typeof map.prNumber !== "number" || map.prNumber <= 0)
-	) {
-		return blocker(
-			"missing_issue_authority",
-			"missing",
-			map.decisionSourceRef,
-			"needs_jamie_decision",
-		);
-	}
-	if (map.prNotApplicable && map.prNumber !== null) {
-		return blocker(
-			"invalid_issue_authority",
-			"unknown",
-			map.decisionSourceRef,
-			"needs_jamie_decision",
-		);
-	}
-	if (map.prNotApplicable && !validNotApplicableDecision(map.prNotApplicable)) {
-		return blocker(
-			"missing_issue_authority",
-			"missing",
-			map.decisionSourceRef,
-			"needs_jamie_decision",
-		);
-	}
-	if (!map.externalGoalNotApplicable && !safeRef(map.externalGoalId)) {
-		return blocker(
-			"missing_issue_authority",
-			"missing",
-			map.decisionSourceRef,
-			"needs_jamie_decision",
-		);
-	}
-	if (map.externalGoalNotApplicable && map.externalGoalId !== null) {
-		return blocker(
-			"invalid_issue_authority",
-			"unknown",
-			map.decisionSourceRef,
-			"needs_jamie_decision",
-		);
-	}
-	if (
-		map.externalGoalNotApplicable &&
-		!validNotApplicableDecision(map.externalGoalNotApplicable)
-	) {
-		return blocker(
-			"missing_issue_authority",
-			"missing",
-			map.decisionSourceRef,
-			"needs_jamie_decision",
-		);
-	}
-	return null;
 }
 
 function auditSurfaceSummaries(

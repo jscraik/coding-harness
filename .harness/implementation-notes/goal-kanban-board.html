@@ -415,7 +415,7 @@
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>PU-015 selected</strong></div>
+      <div class="metric"><span>Goal status</span><strong>PU-015 local validation</strong></div>
       <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #412</strong></div>
       <div class="metric"><span>Current PR</span><strong>None open</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Projection merged</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated after PR #412 merged and local <code>main</code> plus <code>origin/main</code> were pulled to <code>7e0dde9c0408388fc228e8c2afe049593f1b0b71</code>. PR #411 and PR #412 were tracker-refresh PRs; they are not PU-015 implementation evidence. PU-056 is closed on current main; <code>runtime-card --json --repo .</code> returns <code>issueKey: "JSC-363"</code> with the JSC-363 active spec and plan. PU-015 Judge/PM audit packet is selected next after this tracker refresh is accepted or explicitly waived, with Linear field-text currency, final documentation accuracy, release readiness, and parent goal completion still unclaimed.</p>
+    <p class="footer">Snapshot updated after PR #412 merged and local <code>main</code> plus <code>origin/main</code> were pulled to <code>7e0dde9c0408388fc228e8c2afe049593f1b0b71</code>. PR #411 and PR #412 were tracker-refresh PRs; they are not PU-015 implementation evidence. PU-056 is closed on current main; <code>runtime-card --json --repo .</code> returns <code>issueKey: "JSC-363"</code> with the JSC-363 active spec and plan. PU-015 local guardrails now validate receipt-backed reviewer proofs and claimed authority matching, but PR review/merge, live Judge/PM packet generation, Linear field-text currency, final documentation accuracy, release readiness, and parent goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -698,13 +698,13 @@
       {
         id: "pu015-judge-pm-audit-packet",
         lane: "remaining",
-        title: "Next selected: PU-015 Judge/PM audit packet",
-        status: "active",
-        tags: ["PU-015", "selected", "PR #412", "R481", "Judge/PM"],
-        summary: "PU-015 is the next selected slice from the PR #412 merge commit. Start only after this local post-PR412 tracker refresh is accepted or explicitly waived.",
-        evidence: ["Current main after PR #412 -> 7e0dde9c0408388fc228e8c2afe049593f1b0b71", "Live GitHub open PR list before this branch -> []", "runtime-card --json --repo . -> issueKey JSC-363 with active spec and plan", "harness next --json -> pass with clean-worktree handoff recommendation", "Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 -> repo-truth context only", "state.yaml queued_slice -> PU-015 selected from PR #412 current main"],
-        next: "Implement PU-015 as the next one-PR slice after this tracker refresh is accepted or waived.",
-        risk: "The packet must classify unsupported or stale claims explicitly and cannot claim parent completion by itself."
+        title: "PU-015: Judge/PM audit packet guardrails",
+        status: "local-validated",
+        tags: ["PU-015", "R482", "local validation", "Judge/PM"],
+        summary: "Local PU-015 guardrails now require receipt-backed reviewer proof and claimed issue/PR/goal authority matching before Judge/PM readiness can pass.",
+        evidence: ["Current main after PR #412 -> 7e0dde9c0408388fc228e8c2afe049593f1b0b71", "Branch -> codex/jsc-363-pu015-judge-pm-audit-packet", "pnpm vitest run src/lib/delivery-truth/*.test.ts src/lib/pr-closeout/*.test.ts -> pass", "bash scripts/validate-codestyle.sh --fast -> pass", "pnpm run quality:docstrings && pnpm run quality:size && pnpm run quality:self-affirming && pnpm run test:related -> pass with non-blocking drift-gate README command-index warnings", "Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 -> repo-truth context only"],
+        next: "Commit this local implementation, open a single PR, triage review/CI, merge, pull main, then generate the live Judge/PM packet with Linear disposition explicit.",
+        risk: "Local guardrail tests do not prove live packet generation, reviewer artifacts, Linear field-text currency, PR merge, final documentation accuracy, or parent-goal completion."
       },
       {
         id: "current-main-pr369",

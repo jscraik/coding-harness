@@ -24,6 +24,7 @@ import {
 	isPassingCheck,
 	normalizeStatus,
 } from "./evidence.js";
+import { validateEvidenceReceipt } from "../evidence/evidence-receipt.js";
 
 function pushBlocker(
 	blockers: PrCloseoutBlocker[],
@@ -304,16 +305,16 @@ export function collectReviewArtifactBlockers(
 					candidate.path === artifact.path &&
 					candidate.producer === artifact.producer,
 			);
-			if (proof?.evidenceVerified === true) continue;
+			if (proof && isUsableReviewerArtifactProof(proof, artifact)) continue;
 			pushBlocker(blockers, {
 				surface: "review_artifact",
 				classification: "unknown",
 				kind: "state",
 				reason: proof
-					? `Review artifact ${artifact.path} is present but its verifier proof is not evidence-verified.`
+					? `Review artifact ${artifact.path} is present but its verifier proof is not backed by a current claim-support receipt.`
 					: `Review artifact ${artifact.path} is present but lacks matching verifier proof.`,
 				fixableByCodex: true,
-				ref: proof?.receipt ?? artifact.evidenceRef ?? artifact.path,
+				ref: proof?.receipt.ref ?? artifact.evidenceRef ?? artifact.path,
 			});
 			continue;
 		}
@@ -326,6 +327,26 @@ export function collectReviewArtifactBlockers(
 			ref: artifact.evidenceRef ?? artifact.path,
 		});
 	}
+}
+
+function isUsableReviewerArtifactProof(
+	proof: PrCloseoutReviewerArtifactProof,
+	artifact: PrCloseoutReviewArtifactInput,
+): boolean {
+	const validation = validateEvidenceReceipt(proof.receipt);
+	return (
+		proof.evidenceVerified === true &&
+		validation.valid &&
+		proof.receipt.kind === "review_artifact" &&
+		proof.receipt.ref === `review-state:${artifact.path}` &&
+		proof.receipt.producer === artifact.producer &&
+		proof.receipt.status === "pass" &&
+		proof.receipt.freshness === "current" &&
+		proof.receipt.evidenceUse === "claim_support" &&
+		proof.receipt.blockerClass === null &&
+		typeof proof.receipt.sizeBytes === "number" &&
+		proof.receipt.sizeBytes > 0
+	);
 }
 
 /** Add a blocker when PR handoff lacks session or traceability evidence. */

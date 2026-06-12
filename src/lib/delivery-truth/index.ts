@@ -22,6 +22,7 @@ export {
 	JUDGE_PM_AUDIT_PACKET_SCHEMA_VERSION,
 	buildJudgePmAuditPacket,
 	buildJudgePmAuditVerdict,
+	type JudgePmAuditClaimedAuthority,
 	type JudgePmAuditEvidenceSurface,
 	type JudgePmAuditIssueAuthorityMap,
 	type JudgePmAuditNotApplicableDecision,

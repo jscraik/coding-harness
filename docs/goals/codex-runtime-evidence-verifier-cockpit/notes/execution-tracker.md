@@ -76,22 +76,23 @@ Current evidence:
   title/description text, and repo-truth comment
   `81cfdd41-ff0e-4df1-b884-c01789e30a50`. This tracker refresh does not claim a
   fresh Linear fetch, Linear field-text currency, or parent-goal completion.
-- Next safe action: accept or explicitly waive this local post-PR412 tracker
-  refresh, then run `PU-015 Judge/PM audit packet` with Linear field-text
-  disposition kept explicit.
+- Next safe action: commit the local PU-015 guardrail implementation, open a
+  single PR for it, and keep Judge/PM readiness blocked until the PR merges,
+  main is pulled back, the live audit packet exists, and Linear field-text
+  disposition is refreshed or explicitly blocked.
 - Historical PR details remain in `receipts.jsonl`; they are not active restart
   instructions.
 
 ## Active Slice
 
-Selected next slice after PR #412 landed and local `main` was pulled:
+Selected active slice after PR #412 landed and local `main` was pulled:
 `PU-015 Judge/PM audit packet`.
 
-PU-056 closed the active-route/runtime-card mismatch. PU-015 must produce the
-live Judge/PM audit packet from current-main evidence after PR #412 landed,
-without treating the packet as merge authority or parent-goal completion by
-itself. Linear field-text currency remains an explicit input: refresh it, obtain
-owner disposition, or record it as a blocker before any final closeout claim.
+PU-056 closed the active-route/runtime-card mismatch. The current local PU-015
+patch adds guardrails for receipt-backed reviewer proofs and claimed authority
+matching. It does not yet prove Judge/PM readiness: the live packet, reviewer
+artifacts, PR review/merge, Linear field-text disposition, and final closeout
+audit remain separate lanes.
 
 Current post-PU-056 proof:
 

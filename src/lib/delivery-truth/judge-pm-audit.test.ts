@@ -6,6 +6,7 @@ import {
 	buildJudgePmAuditVerdict,
 } from "./judge-pm-audit.js";
 import type {
+	JudgePmAuditClaimedAuthority,
 	JudgePmAuditIssueAuthorityMap,
 	JudgePmAuditReviewerArtifact,
 	JudgePmAuditVerdictInput,
@@ -266,6 +267,44 @@ describe("buildJudgePmAuditVerdict", () => {
 		});
 	});
 
+	it.each([
+		{
+			name: "closeout issue",
+			claimedAuthority: { closeoutIssueId: "JSC-999" },
+		},
+		{
+			name: "parent issue",
+			claimedAuthority: { parentIssueId: "JSC-999" },
+		},
+		{
+			name: "pull request",
+			claimedAuthority: { prNumber: 999 },
+		},
+		{
+			name: "external goal",
+			claimedAuthority: { externalGoalId: "wrong-goal" },
+		},
+	] as const)("fails closed when claimed $name does not match authorized lifecycle mapping", ({
+		claimedAuthority,
+	}) => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				claimedAuthority: {
+					...claimedAuthorityMap(),
+					...claimedAuthority,
+				},
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "unknown",
+			blockerClass: "needs_jamie_decision",
+			blockerCode: "invalid_issue_authority",
+			blockerRefs: ["linear:JSC-363"],
+		});
+	});
+
 	it("requires owner-backed not-applicable authority for omitted tracker surfaces", () => {
 		const missingLinearDecision = buildJudgePmAuditVerdict(
 			baseInput({
@@ -490,6 +529,7 @@ function baseInput(
 		validationReceiptRefs: [auditSurface("validation", "validation")],
 		rootHygieneRef: auditSurface("root-hygiene", "artifact"),
 		issueAuthorityMap: issueAuthorityMap(),
+		claimedAuthority: claimedAuthorityMap(),
 		unresolvedRiskClassifications: [],
 		supportingVerdicts: supportingVerdicts(),
 		...overrides,
@@ -509,6 +549,15 @@ function issueAuthorityMap(): JudgePmAuditIssueAuthorityMap {
 		decisionSourceRef: "linear:JSC-363",
 		decidedAt: VERIFIED_AT,
 		rationale: "Judge/PM audit is required before goal closeout.",
+	};
+}
+
+function claimedAuthorityMap(): JudgePmAuditClaimedAuthority {
+	return {
+		closeoutIssueId: "JSC-363",
+		parentIssueId: "JSC-300",
+		prNumber: 305,
+		externalGoalId: "codex-runtime-evidence-verifier-cockpit",
 	};
 }
 
