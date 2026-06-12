@@ -267,6 +267,48 @@ describe("buildJudgePmAuditVerdict", () => {
 		});
 	});
 
+	it("fails closed when the issue authority map uses a fractional PR number", () => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				issueAuthorityMap: {
+					...issueAuthorityMap(),
+					prNumber: 305.5,
+				},
+				claimedAuthority: {
+					...claimedAuthorityMap(),
+					prNumber: 305.5,
+				},
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "missing",
+			blockerClass: "needs_jamie_decision",
+			blockerCode: "missing_issue_authority",
+			blockerRefs: ["linear:JSC-363"],
+		});
+	});
+
+	it("fails closed when claimed authority uses a fractional PR number", () => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				claimedAuthority: {
+					...claimedAuthorityMap(),
+					prNumber: 305.5,
+				},
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "unknown",
+			blockerClass: "needs_jamie_decision",
+			blockerCode: "invalid_issue_authority",
+			blockerRefs: ["linear:JSC-363"],
+		});
+	});
+
 	it.each([
 		{
 			name: "closeout issue",

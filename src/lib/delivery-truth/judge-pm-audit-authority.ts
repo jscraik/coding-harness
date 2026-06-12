@@ -57,7 +57,9 @@ export function issueAuthorityBlocker(
 		!safeRef(claimed.closeoutIssueId) ||
 		(claimed.parentIssueId !== null && !safeRef(claimed.parentIssueId)) ||
 		(claimed.prNumber !== null &&
-			(typeof claimed.prNumber !== "number" || claimed.prNumber <= 0)) ||
+			(typeof claimed.prNumber !== "number" ||
+				!Number.isInteger(claimed.prNumber) ||
+				claimed.prNumber <= 0)) ||
 		(claimed.externalGoalId !== null && !safeRef(claimed.externalGoalId))
 	) {
 		return blocker(
@@ -175,7 +177,9 @@ function issueAuthorityShapeBlocker(
 	}
 	if (
 		!map.prNotApplicable &&
-		(typeof map.prNumber !== "number" || map.prNumber <= 0)
+		(typeof map.prNumber !== "number" ||
+			!Number.isInteger(map.prNumber) ||
+			map.prNumber <= 0)
 	) {
 		return blocker(
 			"missing_issue_authority",
