@@ -295,6 +295,7 @@ export function collectReviewBlockers(
 export function collectReviewArtifactBlockers(
 	reviewArtifacts: readonly PrCloseoutReviewArtifactInput[],
 	reviewerArtifactProofs: readonly PrCloseoutReviewerArtifactProof[],
+	prHeadSha: string | null | undefined,
 	blockers: PrCloseoutBlocker[],
 ): void {
 	for (const artifact of reviewArtifacts) {
@@ -304,7 +305,9 @@ export function collectReviewArtifactBlockers(
 					candidate.path === artifact.path &&
 					candidate.producer === artifact.producer,
 			);
-			if (proof && isUsableReviewerArtifactProof(proof, artifact)) continue;
+			if (proof && isUsableReviewerArtifactProof(proof, artifact, prHeadSha)) {
+				continue;
+			}
 			pushBlocker(blockers, {
 				surface: "review_artifact",
 				classification: "unknown",
@@ -332,6 +335,7 @@ export function collectReviewArtifactBlockers(
 function isUsableReviewerArtifactProof(
 	proof: PrCloseoutReviewerArtifactProof,
 	artifact: PrCloseoutReviewArtifactInput,
+	prHeadSha: string | null | undefined,
 ): boolean {
 	return (
 		proof.evidenceVerified === true &&
@@ -343,9 +347,28 @@ function isUsableReviewerArtifactProof(
 		proof.receipt.freshness === "current" &&
 		proof.receipt.evidenceUse === "claim_support" &&
 		proof.receipt.blockerClass === null &&
+		hasReceiptTimestamp(proof.receipt) &&
+		matchesPrHeadSha(proof.receipt.headSha, prHeadSha) &&
 		typeof proof.receipt.sizeBytes === "number" &&
 		proof.receipt.sizeBytes > 0
 	);
+}
+
+function hasReceiptTimestamp(
+	receipt: PrCloseoutReviewerArtifactProof["receipt"],
+): boolean {
+	return (
+		(typeof receipt.producedAt === "string" && receipt.producedAt.length > 0) ||
+		(typeof receipt.verifiedAt === "string" && receipt.verifiedAt.length > 0)
+	);
+}
+
+function matchesPrHeadSha(
+	receiptHeadSha: string | null | undefined,
+	prHeadSha: string | null | undefined,
+): boolean {
+	if (typeof prHeadSha !== "string" || prHeadSha.length === 0) return true;
+	return receiptHeadSha === prHeadSha;
 }
 
 function receiptRef(receipt: unknown): string | null {

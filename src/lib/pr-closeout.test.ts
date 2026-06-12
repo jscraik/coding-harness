@@ -589,6 +589,87 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
+	it("blocks review artifact proofs generated for a different PR head", () => {
+		const path = ".harness/review/pr-258-reviewer.md";
+		const producer = "harness-product-code-reviewer";
+		const report = buildPrCloseoutReport(
+			baseInput({
+				reviewArtifacts: [
+					{
+						path,
+						producer,
+						status: "present",
+						evidenceRef: `artifact:${path}`,
+					},
+				],
+				reviewerArtifactProofs: [
+					{
+						path,
+						producer,
+						evidenceVerified: true,
+						receipt: reviewArtifactReceipt(path, producer, {
+							headSha: "previous-head",
+						}),
+					},
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).toBe("fixable");
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "review_artifact",
+					reason: `Review artifact ${path} is present but its verifier proof is not backed by a current claim-support receipt.`,
+					ref: `review-state:${path}`,
+				}),
+			]),
+		);
+	});
+
+	it("blocks review artifact proofs without receipt timestamps", () => {
+		const path = ".harness/review/pr-258-reviewer.md";
+		const producer = "harness-product-code-reviewer";
+		const {
+			producedAt: _producedAt,
+			verifiedAt: _verifiedAt,
+			...receipt
+		} = reviewArtifactReceipt(path, producer);
+		const report = buildPrCloseoutReport(
+			baseInput({
+				reviewArtifacts: [
+					{
+						path,
+						producer,
+						status: "present",
+						evidenceRef: `artifact:${path}`,
+					},
+				],
+				reviewerArtifactProofs: [
+					{
+						path,
+						producer,
+						evidenceVerified: true,
+						receipt,
+					},
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).toBe("fixable");
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "review_artifact",
+					reason: `Review artifact ${path} is present but its verifier proof is not backed by a current claim-support receipt.`,
+					ref: `review-state:${path}`,
+				}),
+			]),
+		);
+	});
+
 	it("projects supplied delivery-truth verdicts without replacing closeout claims", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({
