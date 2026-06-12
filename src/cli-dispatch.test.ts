@@ -694,6 +694,28 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(61);
 	});
 
+	it("accepts an optional harness binary prefix when run through the source entrypoint", async () => {
+		const { run } = await import("./cli.js");
+		const { runPolicyGateCLI } = await import("./commands/policy-gate.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() => run(["harness", "policy-gate", "--json"])).toThrowError(
+			"EXIT_42",
+		);
+
+		expect(vi.mocked(runPolicyGateCLI)).toHaveBeenCalledWith({
+			contractPath: "harness.contract.json",
+			files: [],
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(42);
+	});
+
 	it("dispatches learnings import through the command registry", async () => {
 		const { run } = await import("./cli.js");
 		const { runLearningsCLI } = await import("./commands/learnings.js");

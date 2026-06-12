@@ -72,6 +72,14 @@ The cockpit command is read-only and recommends an existing safe command instead
 harness next --json
 ```
 
+When working from a source checkout, the TypeScript entrypoint also accepts a
+leading `harness` token so displayed recommendations can be replayed without
+manual rewriting:
+
+```bash
+node --import tsx src/cli.ts harness check --json
+```
+
 ## What It Does
 
 Coding Harness is the control plane around AI coding agents. It is not the agent runtime and it does not replace human review.
