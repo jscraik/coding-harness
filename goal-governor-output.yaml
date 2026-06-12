@@ -5,8 +5,8 @@ native_reconciliation:
   native_goal_id: null
   native_status: unknown
   source: "state.yaml native_goal_id and native_status are null"
-board_status: pu015_local_guardrails_validated_pending_pr
-next_action: commit_open_pr_and_triage_pu015
+board_status: pu015_local_guardrails_committed_pending_pr
+next_action: push_open_pr_and_triage_pu015
 decision_markers:
   - read goal.md and state.yaml first
   - receipts.jsonl
@@ -41,7 +41,7 @@ truth_lanes:
       - "All four PR #410 review threads identified during merge triage were resolved before auto-merge completed"
       - "PR #412 merged after review-fix triage; thread state is PR-lane provenance, not parent-goal completion evidence"
   tracker_state:
-    status: pu015_local_guardrails_validated_pending_pr
+    status: pu015_local_guardrails_committed_pending_pr
     evidence:
       - "state.yaml records PR #412 as merged baseline and PU-015 as the selected next slice"
       - "PR #411 and PR #412 are tracker-refresh PRs only; neither is PU-015 implementation evidence"
@@ -52,8 +52,8 @@ truth_lanes:
     evidence:
       - "PU-056 PR, CI, review-thread, merge, and post-merge pullback lanes are proven; Linear field-text, PU-015 packet, and final audit remain unproven"
 continuation_gate:
-  status: commit_open_pr_and_triage_pu015
-  reason: "PU-015 guardrails are locally validated. The slice is not complete until committed, reviewed, merged, pulled back to main, and refreshed in the tracker."
+  status: push_open_pr_and_triage_pu015
+  reason: "PU-015 guardrails are committed locally. The slice is not complete until reviewed, merged, pulled back to main, and refreshed in the tracker."
 native_blocker_audit:
   status: not_blocked
   blocker_history: []

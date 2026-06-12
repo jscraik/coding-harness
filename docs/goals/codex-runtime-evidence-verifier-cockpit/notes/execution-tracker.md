@@ -76,10 +76,10 @@ Current evidence:
   title/description text, and repo-truth comment
   `81cfdd41-ff0e-4df1-b884-c01789e30a50`. This tracker refresh does not claim a
   fresh Linear fetch, Linear field-text currency, or parent-goal completion.
-- Next safe action: commit the local PU-015 guardrail implementation, open a
-  single PR for it, and keep Judge/PM readiness blocked until the PR merges,
-  main is pulled back, the live audit packet exists, and Linear field-text
-  disposition is refreshed or explicitly blocked.
+- Next safe action: push the committed local PU-015 guardrail implementation,
+  open a single PR for it, and keep Judge/PM readiness blocked until the PR
+  merges, main is pulled back, the live audit packet exists, and Linear
+  field-text disposition is refreshed or explicitly blocked.
 - Historical PR details remain in `receipts.jsonl`; they are not active restart
   instructions.
 

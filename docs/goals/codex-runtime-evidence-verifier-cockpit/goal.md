@@ -130,7 +130,8 @@ Stop conditions:
 Current route truth:
 
 - Current route: PU-015 Judge/PM audit packet guardrail implementation is
-  locally validated and pending one-PR review/merge.
+  committed locally at `89c73c64d48a9b09c6d8e6eadb77bd0f4267fdce` and pending
+  one-PR review/merge.
 - Provenance: See `receipts.jsonl` for merged route history through PR #412.
 
 Corrected backlog after current-main reconciliation:
@@ -138,11 +139,11 @@ Corrected backlog after current-main reconciliation:
 - Done on current main: PR #412 merged at
   `7e0dde9c0408388fc228e8c2afe049593f1b0b71`. See `receipts.jsonl` for
   complete merged route history.
-- Current route PR: none yet for the PU-015 implementation branch.
+- Current route PR: none yet for the committed PU-015 implementation branch.
 - Completed slice: PU-056 active-route runtime-card selection guard; runtime-card
   on current main derives `issueKey: "JSC-363"` with the active JSC-363 spec
   and plan.
-- Remaining backlog after this local PU-015 guardrail branch: open and merge
+- Remaining backlog after this committed local PU-015 guardrail branch: open and merge
   the one-PR slice, generate the live Judge/PM audit packet, refresh or block
   Linear field-text currency, prove final documentation accuracy, and run the
   final requirement-by-requirement completion audit.
