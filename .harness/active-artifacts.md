@@ -10,7 +10,7 @@
 
 ## Scope
 
-Current working reconciliation: 2026-06-12 post-PR #419 pullback and PU-015
+Current working reconciliation: 2026-06-12 post-PR #421 pullback and PU-015
 blocked packet generation for JSC-363.
 PR #410 merged the PU-056 active-route runtime-card selection guard into
 `main` at `41ac068ae7c9e9425681a5d42358eaf120f24c04` from submitted head
@@ -95,6 +95,9 @@ squash merge `57f94562de64c03fd80c244276b31d95edd2b3ca`, and local `main`
 plus `origin/main` were pulled to that head. PR #419 merged the post-PR418
 tracker and review-thread repair at `2026-06-12T11:32:21Z` as squash merge
 `125b31b45170fb3f07e77b365c01eff41262c2d4`, and local `main` plus
+`origin/main` were pulled to that head. PR #421 then merged the narrow
+source-checkout command replay guardrail at `2026-06-12T12:56:26Z` as squash
+merge `fd0c25682f1d9cac4e2fd16c4db4ff5cd03be931`, and local `main` plus
 `origin/main` are pulled to that head. The live PU-015 Judge/PM packet now
 exists at
 `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json`
@@ -128,9 +131,9 @@ unless a live refresh is recorded in the referenced artifact.
 
 | Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |
 | --- | --- | --- | --- | --- |
-| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor route with a thin execution tracker. PR #396 through PR #419 are merged provenance. Local main and origin/main are synced at `125b31b45170fb3f07e77b365c01eff41262c2d4`. PR #410 merged PU-056 from submitted head `2067365c6149ebdf96aa181377ca5c151536c216`, and runtime-card on current main now derives `issueKey: "JSC-363"` with the active JSC-363 spec and plan. PR #413 merged PU-015 Judge/PM guardrails from submitted head `92ade70b083c14a9a7596f3b1904b6bec6c57e3d`; PR #414 and PR #415 merged tracker refreshes; PR #416 merged packet validation-staleness, validation-reference, route-freshness, receipt-freshness, and receipt-ledger-change repair; PR #417 through PR #419 merged tracker/review-thread repair provenance. The live packet at `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json` is blocked with `missing_reviewer_artifact`, and its validation surface is explicitly stale/blocked because the PR #416 repair receipts do not validate the packet/verdict head. R506 is anchored to current main `125b31b45170fb3f07e77b365c01eff41262c2d4` for the post-PR419 pullback. Linear JSC-363 has repo-truth comment 81cfdd41-ff0e-4df1-b884-c01789e30a50, but field-text currency beyond that comment remains unclaimed. | Next Safe Action: collect or explicitly block independent reviewer artifacts, refresh or owner-classify Linear field text, and rerun the packet plus final requirement-by-requirement audit from pulled main. Latest route anchor: R506 / current main 125b31b45170fb3f07e77b365c01eff41262c2d4; current implementation PR: none; current tracker PR: none. |
+| Codex runtime evidence verifier cockpit | JSC-363 | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` plus `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` plus `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md` plus `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md` plus `.harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md` plus `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Active Goal Governor route with a thin execution tracker. PR #396 through PR #421 are merged provenance. Local main and origin/main are synced at `fd0c25682f1d9cac4e2fd16c4db4ff5cd03be931`. PR #410 merged PU-056 from submitted head `2067365c6149ebdf96aa181377ca5c151536c216`, and runtime-card on current main now derives `issueKey: "JSC-363"` with the active JSC-363 spec and plan. PR #413 merged PU-015 Judge/PM guardrails from submitted head `92ade70b083c14a9a7596f3b1904b6bec6c57e3d`; PR #414 and PR #415 merged tracker refreshes; PR #416 merged packet validation-staleness, validation-reference, route-freshness, receipt-freshness, and receipt-ledger-change repair; PR #417 through PR #419 merged tracker/review-thread repair provenance; PR #421 merged the source-checkout `harness check --json` replay guardrail. The live packet at `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json` is blocked with `missing_reviewer_artifact`, and its validation surface is explicitly stale/blocked because the PR #416 repair receipts do not validate the packet/verdict head. R507 is anchored to current main `fd0c25682f1d9cac4e2fd16c4db4ff5cd03be931` for the post-PR421 pullback. Linear JSC-363 has repo-truth comment 81cfdd41-ff0e-4df1-b884-c01789e30a50, but field-text currency beyond that comment remains unclaimed. | Next Safe Action: collect or explicitly block independent reviewer artifacts, refresh or owner-classify Linear field text, and rerun the packet plus final requirement-by-requirement audit from pulled main. Latest route anchor: R507 / current main fd0c25682f1d9cac4e2fd16c4db4ff5cd03be931; current implementation PR: none; current tracker PR: none. |
 
-Current Active Route latest receipt head: `125b31b45170fb3f07e77b365c01eff41262c2d4`.
+Current Active Route latest receipt head: `fd0c25682f1d9cac4e2fd16c4db4ff5cd03be931`.
 
 JSC-395 is delivered provenance in the artifact index, not the current active
 route. It must not appear in the Current Active Route table unless a later
