@@ -22,6 +22,7 @@ from typing import Any, cast
 
 
 GOVERNED_AUDIT_PATH = ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md"
+GOVERNED_GOAL_DIR = "docs/goals/codex-runtime-evidence-verifier-cockpit"
 REQUIRED_RECEIPT_FIELDS = (
     "id",
     "head_sha",
@@ -173,6 +174,10 @@ SELF_REFERENTIAL_DECLARABLE_PATHS = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS | {
     "src/dev/check-goal-audit-freshness-script.test.ts",
     "src/dev/check-goal-board-script.test.ts",
 }
+SELF_REFERENTIAL_DECLARABLE_NOTE_SUFFIXES = (
+    "-audit-packet.json",
+    "-audit-packet.md",
+)
 
 
 class ValidationError(Exception):
@@ -285,6 +290,47 @@ def changed_paths_between(repo_root: Path, base_head: str, current_head: str) ->
     return {line.strip() for line in completed.stdout.splitlines() if line.strip()}
 
 
+def changed_paths_in_current_commit(repo_root: Path, current_head: str) -> set[str]:
+    try:
+        parent = subprocess.run(
+            ["git", "rev-parse", f"{current_head}^"],
+            cwd=repo_root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if parent.returncode != 0:
+            return set()
+        return changed_paths_between(repo_root, parent.stdout.strip(), current_head)
+    except OSError as exc:
+        raise ValidationError(
+            f"could not inspect files changed in current repository HEAD: {exc}",
+        ) from exc
+
+
+def is_self_referential_declarable_path(path: str) -> bool:
+    if path in SELF_REFERENTIAL_DECLARABLE_PATHS:
+        return True
+    notes_prefix = f"{GOVERNED_GOAL_DIR}/notes/"
+    return path.startswith(notes_prefix) and path.endswith(
+        SELF_REFERENTIAL_DECLARABLE_NOTE_SUFFIXES,
+    )
+
+
+def self_referential_declared_paths(receipt: dict[str, Any]) -> set[str] | None:
+    changed_files = receipt.get("changed_files", [])
+    if not isinstance(changed_files, list):
+        return None
+    declared_paths: set[str] = set()
+    for value in cast(list[Any], changed_files):
+        if not isinstance(value, str):
+            return None
+        declared_paths.add(normalize_repo_relative_path(value, "receipt.changed_files[]"))
+    if not all(is_self_referential_declarable_path(path) for path in declared_paths):
+        return None
+    return declared_paths
+
+
 def permits_self_referential_goal_receipt_commit(
     repo_root: Path,
     receipt: dict[str, Any],
@@ -294,19 +340,36 @@ def permits_self_referential_goal_receipt_commit(
 ) -> bool:
     if receipt_head_sha != source_head_sha:
         return False
-    changed_files = receipt.get("changed_files", [])
-    if not isinstance(changed_files, list):
-        return False
-    declared_paths: set[str] = set()
-    for value in cast(list[Any], changed_files):
-        if not isinstance(value, str):
-            return False
-        declared_paths.add(normalize_repo_relative_path(value, "receipt.changed_files[]"))
-    if not declared_paths <= SELF_REFERENTIAL_DECLARABLE_PATHS:
+    declared_paths = self_referential_declared_paths(receipt)
+    if declared_paths is None:
         return False
     changed_paths = changed_paths_between(repo_root, receipt_head_sha, current_head)
     allowed_paths = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS | declared_paths
     return bool(changed_paths) and changed_paths <= allowed_paths
+
+
+def permits_current_commit_self_referential_goal_receipt(
+    repo_root: Path,
+    receipt: dict[str, Any],
+    receipt_head_sha: str,
+    source_head_sha: str,
+    current_head: str,
+) -> bool:
+    if not is_commit_sha(receipt_head_sha) or not is_commit_sha(source_head_sha):
+        return False
+    if receipt_head_sha != source_head_sha or receipt_head_sha == current_head:
+        return False
+    declared_paths = self_referential_declared_paths(receipt)
+    if declared_paths is None:
+        return False
+    changed_paths = changed_paths_in_current_commit(repo_root, current_head)
+    allowed_paths = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS | declared_paths
+    receipts_path = f"{GOVERNED_GOAL_DIR}/receipts.jsonl"
+    return receipts_path in changed_paths and changed_paths <= allowed_paths
+
+
+def is_commit_sha(value: str) -> bool:
+    return len(value) == 40 and all(character in "0123456789abcdef" for character in value.lower())
 
 
 def latest_audit_source(
@@ -399,42 +462,59 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
 
     receipt_id = require_string(receipt.get("id"), "receipt.id")
     receipt_head_sha = require_string(receipt.get("head_sha"), "receipt.head_sha")
-    receipt_head_relation = classify_head_relation(
-        repo_root,
-        receipt_head_sha,
-        current_head,
-        "receipt.head_sha",
-    )
     receipt_head_sha_normalized = receipt_head_sha.lower()
     source_head_sha = require_string(source.get("head_sha"), "audit_sources_checked[].head_sha")
-    source_head_relation = classify_head_relation(
-        repo_root,
-        source_head_sha,
-        current_head,
-        "audit_sources_checked[].head_sha",
-    )
     source_head_sha_normalized = source_head_sha.lower()
     if source_head_sha_normalized != receipt_head_sha_normalized:
         raise ValidationError("audit_sources_checked[].head_sha must match receipt.head_sha")
+    current_commit_receipt_permitted = permits_current_commit_self_referential_goal_receipt(
+        repo_root,
+        receipt,
+        receipt_head_sha_normalized,
+        source_head_sha_normalized,
+        current_head_normalized,
+    )
+    receipt_head_relation = classify_goal_receipt_head_relation(
+        repo_root,
+        receipt_head_sha,
+        source_head_sha_normalized,
+        current_head,
+        "receipt.head_sha",
+        current_commit_receipt_permitted,
+    )
+    source_head_relation = classify_goal_receipt_head_relation(
+        repo_root,
+        source_head_sha,
+        receipt_head_sha_normalized,
+        current_head,
+        "audit_sources_checked[].head_sha",
+        current_commit_receipt_permitted,
+    )
     if receipt_head_sha_normalized != current_head_normalized:
-        full_history_receipt_permitted = permits_self_referential_goal_receipt_commit(
-            repo_root,
-            receipt,
-            receipt_head_sha_normalized,
-            source_head_sha_normalized,
-            current_head_normalized,
+        full_history_receipt_permitted = (
+            receipt_head_relation in {"tree_equivalent", "current_commit_self_referential"}
+            or permits_self_referential_goal_receipt_commit(
+                repo_root,
+                receipt,
+                receipt_head_sha_normalized,
+                source_head_sha_normalized,
+                current_head_normalized,
+            )
         )
-        if receipt_head_relation != "tree_equivalent" and not full_history_receipt_permitted:
+        if not full_history_receipt_permitted:
             raise ValidationError(f"receipt.head_sha must match current repository HEAD: receipt={receipt_head_sha} current={current_head}")
     if source_head_sha_normalized != current_head_normalized:
-        full_history_source_permitted = permits_self_referential_goal_receipt_commit(
-            repo_root,
-            receipt,
-            receipt_head_sha_normalized,
-            source_head_sha_normalized,
-            current_head_normalized,
+        full_history_source_permitted = (
+            source_head_relation in {"tree_equivalent", "current_commit_self_referential"}
+            or permits_self_referential_goal_receipt_commit(
+                repo_root,
+                receipt,
+                receipt_head_sha_normalized,
+                source_head_sha_normalized,
+                current_head_normalized,
+            )
         )
-        if source_head_relation != "tree_equivalent" and not full_history_source_permitted:
+        if not full_history_source_permitted:
             raise ValidationError(f"audit_sources_checked[].head_sha must match current repository HEAD: source={source_head_sha} current={current_head}")
 
     source_sha256 = require_string(source.get("sha256"), "audit_sources_checked[].sha256").lower()
@@ -499,6 +579,22 @@ def classify_head_relation(repo_root: Path, head_sha: str, current_head: str, fi
     detail = completed.stderr.strip()
     suffix = f": {detail}" if detail else ""
     raise ValidationError(f"{field} must be reachable from current repository HEAD{suffix}")
+
+
+def classify_goal_receipt_head_relation(
+    repo_root: Path,
+    head_sha: str,
+    paired_head_sha: str,
+    current_head: str,
+    field: str,
+    current_commit_receipt_permitted: bool,
+) -> str:
+    try:
+        return classify_head_relation(repo_root, head_sha, current_head, field)
+    except ValidationError:
+        if current_commit_receipt_permitted and head_sha.lower() == paired_head_sha:
+            return "current_commit_self_referential"
+        raise
 
 
 def is_shallow_repository(repo_root: Path) -> bool:

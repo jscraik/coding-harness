@@ -22,31 +22,34 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 
 ## Current Control Surface
 
-| Field               | Current Truth                                                |
-| ------------------- | ------------------------------------------------------------ |
-| Parent issue        | JSC-363                                                      |
-| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` |
-| Current branch      | none                                                         |
-| Local main head     | `c7408134c442683415bfddba3ddfd7ebd1d3c28a`                   |
-| Origin main head    | `c7408134c442683415bfddba3ddfd7ebd1d3c28a`                   |
-| Main baseline       | `c7408134c442683415bfddba3ddfd7ebd1d3c28a`                   |
-| Active route count  | 1                                                            |
-| Active route        | PU-015 live Judge/PM audit packet                            |
-| Last closed route   | PR #414 merged                                               |
-| Current route       | PU-015 live Judge/PM audit packet from pulled current main   |
-| Current slice       | PU-015 audit packet generation and closeout proof            |
-| Feature work status | Guardrails merged; live audit packet still outstanding       |
+| Field               | Current Truth                                                                                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Parent issue        | JSC-363                                                                                                                                                                  |
+| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`                                                                                                             |
+| Current branch      | `codex/jsc-363-pu015-live-judge-pm-packet`                                                                                                                               |
+| Local main head     | `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`                                                                                                                               |
+| Origin main head    | `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`                                                                                                                               |
+| Main baseline       | `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`                                                                                                                               |
+| Active route count  | 1                                                                                                                                                                        |
+| Active route        | PU-015 live Judge/PM audit packet                                                                                                                                        |
+| Last closed route   | PR #415 merged                                                                                                                                                           |
+| Current route       | PU-015 PR #416 packet validation-reference, route-freshness, receipt-freshness, and receipt-ledger-change repair                                                         |
+| Current slice       | PU-015 blocked packet evidence and closeout proof                                                                                                                        |
+| Feature work status | PR #416 repair active at local receipt anchor `b2c7b345ecbd67826e12267388e66f7a233194f8`; reviewers still missing; packet validation surface is explicitly stale/blocked |
 
 ## Active Route
 
-PR #414 is merged and local `main` plus `origin/main` are synced at
-`c7408134c442683415bfddba3ddfd7ebd1d3c28a`. PR #413 carried the PU-015
-Judge/PM guardrails, and PR #414 carried the post-PR413 tracker refresh. Neither
-is the final live Judge/PM audit packet. PU-056 remains
+PR #415 is merged and local `main` plus `origin/main` are synced at
+`29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`. PR #413 carried the PU-015
+Judge/PM guardrails, PR #414 carried the post-PR413 tracker refresh, and PR #415
+carried the post-PR414 tracker refresh. The first live PU-015 packet now exists
+and is blocked on missing independent reviewer artifacts. PU-056 remains
 closed on current main: runtime-card projects `issueKey: "JSC-363"` with the
 JSC-363 active spec and plan from the wide Current Active Route row. This
-tracker does not claim Linear field-text currency, final documentation accuracy
-beyond current validators, Judge/PM readiness, release readiness, or parent-goal
+tracker records PR #416 as the active packet validation-reference,
+route-freshness, receipt-freshness, and receipt-ledger-change repair and does
+not claim Linear field-text currency, final documentation accuracy beyond
+current validators, Judge/PM readiness, release readiness, or parent-goal
 completion.
 
 Current evidence:
@@ -72,6 +75,17 @@ Current evidence:
   aggregate `pr-pipeline`, aggregate `security-scan`, Socket, and CodeRabbit
   passed. The external `security/snyk (jscraik)` GitHub App quota lane remains
   owner-waived only for that quota failure.
+- Live GitHub reported PR #415 merged at `2026-06-12T05:41:54Z` from submitted
+  head `96b1ebc07093667dcf59f29001250390ce275819` as merge commit
+  `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`; repo-owned CircleCI contexts,
+  aggregate `pr-pipeline`, aggregate `security-scan`, Socket, CodeRabbit,
+  and review-thread lanes passed or resolved before merge. The external
+  `security/snyk (jscraik)` GitHub App quota lane remains owner-waived only
+  for that quota failure.
+- Live PU-015 packet:
+  `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json`
+  reports `status: blocked`, `blockerCode: missing_reviewer_artifact`, and
+  blocker ref `review-state:adversarial-reviewer`.
 - Runtime-card on pulled current main returned `issueKey: "JSC-363"` with the
   active JSC-363 spec and plan.
 - `harness next --json` on the clean pulled checkout returned a pass status and
@@ -85,19 +99,21 @@ Current evidence:
   verdicts, review-state, external-state, Linear state or blocker, validation
   receipts, root hygiene, unresolved-risk classification, and issueAuthorityMap
   proof.
-- Historical PR details remain in `receipts.jsonl`; they are not active restart
-  instructions.
+- PR #416 is the active PR lane for the R492/R493/R494/R495/R496/R497/R498
+  packet validation-reference, route-freshness, receipt-freshness, and
+  receipt-ledger-change repair. Historical PR details remain in
+  `receipts.jsonl`; they are not active restart instructions.
 
 ## Active Slice
 
-Selected active slice after PR #414 landed and local `main` was pulled:
-`PU-015 live Judge/PM audit packet generation and closeout proof`.
+Selected active slice after PR #415 landed and local `main` was pulled:
+`PU-015 live Judge/PM audit packet blocked-readiness proof`.
 
-PU-056 closed the active-route/runtime-card mismatch. The current PU-015 PR
-413 patch adds guardrails for receipt-backed reviewer proofs and claimed
-authority matching. It does not yet prove Judge/PM readiness: the live packet,
-reviewer artifacts, PR merge/pullback, Linear field-text disposition, and final
-closeout audit remain separate lanes.
+PU-056 closed the active-route/runtime-card mismatch. PR #413 added guardrails
+for receipt-backed reviewer proofs and claimed authority matching. The current
+packet proves the gate fails closed, but it does not prove Judge/PM readiness:
+reviewer artifacts, Linear field-text disposition, final documentation accuracy,
+and final closeout audit remain separate lanes.
 
 Current post-PU-056 proof:
 
@@ -129,17 +145,16 @@ PU-055 current-main closeout evidence matrix:
 | Documentation accuracy checks                                    | partial; current validators pass                                        | board validator, audit-freshness validator, board script parser, docs-gate, and docs-lint for this tracker branch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Keep docs accuracy unclaimed beyond current validators until final Judge/PM audit.                  |
 | Linear field-text currency for JSC-363                           | blocked owner/external lane                                             | repo-truth comment `81cfdd41-ff0e-4df1-b884-c01789e30a50`; no fresh Linear field-text fetch/edit proof in current checkout                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Owner must accept stale field text or provide/update live Linear field proof before final closeout. |
 | Historical review-coverage backfill                              | complete for board contract                                             | `PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit` returned `goal-review-coverage-backfill/v1` pass                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Keep validator in final completion audit.                                                           |
-| PU-015 Judge/PM audit packet                                     | selected next slice                                                     | `src/lib/delivery-truth/judge-pm-audit.test.ts` passes, but no live final audit packet is produced for this goal                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Produce the live packet from current-main evidence and keep Linear field-text disposition explicit. |
+| PU-015 Judge/PM audit packet                                     | generated and blocked                                                   | `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json` -> `status: blocked`, `blockerCode: missing_reviewer_artifact`, blocker ref `review-state:adversarial-reviewer`                                                                                                                                                                                                                                                                                                                                                                                                                                               | Collect or explicitly block independent reviewer artifacts, then rerun the packet and final audit.  |
 | Final requirement-by-requirement completion audit                | blocked by Linear disposition, Judge/PM packet, and final docs accuracy | goal.md completion contract still requires PU/GAP/SPG reconciliation and Judge/PM packet                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Do not claim parent completion.                                                                     |
 
-Selected next slice: `PU-015 Judge/PM audit packet`.
+Selected next slice: `PU-015 reviewer artifact and final audit disposition`.
 
-Reason: PU-056, PR #413, and PR #414 are merged and pulled back, and this
-refresh has removed the active tracker-PR gate from the restart surface.
-Runtime-card current-main proof now shows
+Reason: PU-056, PR #413, PR #414, and PR #415 are merged and pulled back, and
+the live packet exists. Runtime-card current-main proof shows
 `issueKey: "JSC-363"` with the active JSC-363 spec and plan, so the next
-remaining bounded closeout slice is the live Judge/PM packet with Linear
-field-text disposition kept explicit.
+remaining bounded closeout slice is reviewer artifact and final audit
+disposition with Linear field-text disposition kept explicit.
 
 ## History Boundary
 
@@ -156,14 +171,14 @@ Judge/PM packet work may start only after local main is pulled back and the
 route tracker is current. The packet must stop if any of these are false:
 
 - Local `main` and `origin/main` are synced to
-  `c7408134c442683415bfddba3ddfd7ebd1d3c28a` or a later pulled main commit.
+  `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2` or a later pulled main commit.
 - Runtime-card on pulled current main returns `issueKey: "JSC-363"` with the
   JSC-363 active spec and plan.
 - Linear JSC-363 field-text currency is refreshed, owner-classified as not
   required, or recorded as an explicit blocker.
 - `goal.md`, `state.yaml`, `notes/execution-tracker.md`,
   `.harness/active-artifacts.md`, the tracker board, and `receipts.jsonl`
-  validate together after the post-PR414 refresh.
+  validate together after the post-PR415 refresh and PU-015 packet generation.
 - The Judge/PM packet records claim support, unsupported claims, stale evidence,
   and remaining risks without claiming parent-goal completion by itself.
 
@@ -173,23 +188,23 @@ Use this payload only after Linear access is available or an owner explicitly
 approves posting the blocker classification for JSC-363:
 
 ```md
-Refreshed JSC-363 current-main route truth after PR #414 merge.
+Refreshed JSC-363 current-main route truth after PR #415 merge and PU-015 packet generation.
 
 Current truth:
 
-- Active route lane: PU-015 Judge/PM audit packet preparation after PR #414 pullback.
-- Latest merged route: PR #414.
-- Local main head: `c7408134c442683415bfddba3ddfd7ebd1d3c28a`.
-- Origin main head: `c7408134c442683415bfddba3ddfd7ebd1d3c28a`.
-- Current GitHub check rollup showed repo-owned required checks for PR #414 pass before merge.
+- Active route lane: PU-015 Judge/PM audit packet blocked-readiness proof after PR #415 pullback.
+- Latest merged route: PR #415.
+- Local main head: `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`.
+- Origin main head: `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`.
+- Current GitHub check rollup showed repo-owned required checks for PR #415 pass before merge.
 - Runtime-card current-main output returns issueKey JSC-363 with the JSC-363 active spec and plan.
 - PU-013 runtime cockpit integration proof is merged and pulled back to local `main`.
-- PR #413 is merged PU-015 guardrail evidence and PR #414 is merged tracker evidence; both remain separate from Linear field-text currency, Judge/PM readiness, and parent goal completion claims.
+- PR #413 is merged PU-015 guardrail evidence and PR #414/PR #415 are merged tracker evidence. The live packet exists and is blocked on missing independent reviewer artifacts; all remain separate from Linear field-text currency, Judge/PM readiness, and parent goal completion claims.
 - PU-056 deterministic guard coverage is merged and pulled back.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
 - Linear JSC-363 has repo-truth comment `81cfdd41-ff0e-4df1-b884-c01789e30a50`; field-text currency remains unclaimed until a fresh Linear fetch or owner classification is recorded.
 
 Restart rule:
-The next selected slice is `PU-015 Judge/PM audit packet`. It starts only
-from pulled current-main route truth.
+The next selected slice is `PU-015 reviewer artifact and final audit disposition`. It starts only
+from pulled current-main route truth and the blocked packet artifact.
 ```

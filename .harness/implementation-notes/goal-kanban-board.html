@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated after PR #412 merged and local <code>main</code> plus <code>origin/main</code> were pulled to <code>7e0dde9c0408388fc228e8c2afe049593f1b0b71</code>. PR #411 and PR #412 were tracker-refresh PRs; they are not PU-015 implementation evidence. PU-056 is closed on current main; <code>runtime-card --json --repo .</code> returns <code>issueKey: "JSC-363"</code> with the JSC-363 active spec and plan. PU-015 guardrails are in PR #413 review and validate receipt-backed reviewer proofs and claimed authority matching, but PR merge, main pullback, live Judge/PM packet generation, Linear field-text currency, final documentation accuracy, release readiness, and parent goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated after PR #415 merged and local <code>main</code> plus <code>origin/main</code> were pulled to <code>29dd0f0465cadcbedbaeb16f06ac0f4607177fa2</code>. PR #413 merged PU-015 guardrails; PR #414 and PR #415 were tracker-refresh PRs, not parent-completion evidence. PU-056 is closed on current main; <code>runtime-card --json --repo .</code> returns <code>issueKey: "JSC-363"</code> with the JSC-363 active spec and plan. The live PU-015 packet exists at <code>docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json</code>, is blocked on <code>missing_reviewer_artifact</code>, and now marks its validation surface stale/blocked instead of current. PR #416 is the active packet validation-staleness, validation-reference, route-freshness, receipt-freshness, and receipt-ledger-change repair. Latest local repair receipt anchor: <code>R498 / b2c7b345ecbd67826e12267388e66f7a233194f8</code>. Linear field-text currency, final documentation accuracy, release readiness, Judge/PM readiness, and parent goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -698,13 +698,13 @@
       {
         id: "pu015-judge-pm-audit-packet",
         lane: "remaining",
-        title: "PU-015: Judge/PM audit packet guardrails",
-        status: "local-validated",
-        tags: ["PU-015", "R482", "local validation", "Judge/PM"],
-        summary: "Committed PU-015 guardrails now require receipt-backed reviewer proof and claimed issue/PR/goal authority matching before Judge/PM readiness can pass.",
-        evidence: ["Current main after PR #412 -> 7e0dde9c0408388fc228e8c2afe049593f1b0b71", "Branch -> codex/jsc-363-pu015-judge-pm-audit-packet", "pnpm vitest run src/lib/delivery-truth/*.test.ts src/lib/pr-closeout/*.test.ts -> pass", "bash scripts/validate-codestyle.sh --fast -> pass", "pnpm run quality:docstrings && pnpm run quality:size && pnpm run quality:self-affirming && pnpm run test:related -> pass with non-blocking drift-gate README command-index warnings", "Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 -> repo-truth context only"],
-        next: "Keep PR #413 under review/CI triage, merge it only when required lanes are satisfied or explicitly waived, pull main after merge, then generate the live Judge/PM packet with Linear disposition explicit.",
-        risk: "Local guardrail tests do not prove live packet generation, reviewer artifacts, Linear field-text currency, PR merge, final documentation accuracy, or parent-goal completion."
+        title: "PU-015: live Judge/PM packet",
+        status: "blocked",
+        tags: ["PU-015", "R492", "R494", "R495", "R496", "R497", "R498", "Judge/PM", "blocked"],
+        summary: "The live PU-015 packet was generated from pulled current-main evidence and fails closed before Judge/PM readiness because independent reviewer artifacts are missing.",
+        evidence: ["Current main after PR #415 -> 29dd0f0465cadcbedbaeb16f06ac0f4607177fa2", "Packet -> docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json", "Packet status -> blocked", "Validation surface -> stale/blocked head mismatch", "Active PR -> #416 packet validation-staleness, validation-reference, route-freshness, receipt-freshness, and receipt-ledger-change repair", "Latest repair receipt anchor -> R498 / b2c7b345ecbd67826e12267388e66f7a233194f8", "Packet blockerCode -> missing_reviewer_artifact", "Packet blockerRefs -> review-state:adversarial-reviewer", "Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 -> repo-truth context only"],
+        next: "Collect or explicitly block adversarial-reviewer, agent-native-reviewer, and best-practices-researcher artifacts; refresh or owner-classify Linear field text; then rerun the packet and final audit.",
+        risk: "A blocked packet proves the guardrail is working, not that Judge/PM readiness, Linear field-text currency, release readiness, or parent-goal completion are satisfied."
       },
       {
         id: "current-main-pr369",

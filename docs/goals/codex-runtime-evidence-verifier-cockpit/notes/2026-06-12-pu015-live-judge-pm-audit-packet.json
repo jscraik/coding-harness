@@ -1,0 +1,147 @@
+{
+	"packet": {
+		"schemaVersion": "judge-pm-audit/v1",
+		"generatedAt": "2026-06-12T05:52:00Z",
+		"headSha": "29dd0f0465cadcbedbaeb16f06ac0f4607177fa2",
+		"status": "blocked",
+		"freshness": "missing",
+		"blockerCode": "missing_reviewer_artifact",
+		"blockerClass": "unknown",
+		"blockerRefs": ["review-state:adversarial-reviewer"],
+		"reviewerRoles": {
+			"required": [
+				"adversarial-reviewer",
+				"agent-native-reviewer",
+				"best-practices-researcher"
+			],
+			"present": [],
+			"missing": [
+				"adversarial-reviewer",
+				"agent-native-reviewer",
+				"best-practices-researcher"
+			]
+		},
+		"issueAuthority": {
+			"status": "pass",
+			"evidenceRef": "linear:JSC-363",
+			"lifecycleIssueId": "JSC-363",
+			"parentIssueId": null,
+			"prNumber": 415,
+			"externalGoalId": "codex-runtime-evidence-verifier-cockpit",
+			"claimed": {
+				"closeoutIssueId": "JSC-363",
+				"parentIssueId": null,
+				"prNumber": 415,
+				"externalGoalId": "codex-runtime-evidence-verifier-cockpit"
+			}
+		},
+		"auditSurfaces": [
+			{
+				"name": "runtime-card",
+				"status": "pass",
+				"freshness": "current",
+				"evidenceRef": "runtime-card:current-main-jsc-363"
+			},
+			{
+				"name": "review-state",
+				"status": "pass",
+				"freshness": "current",
+				"evidenceRef": "review-state:review-state"
+			},
+			{
+				"name": "external-state",
+				"status": "pass",
+				"freshness": "current",
+				"evidenceRef": "external-state:external-state"
+			},
+			{
+				"name": "validation",
+				"status": "blocked",
+				"freshness": "stale",
+				"evidenceRef": "validation:R493-route-freshness-repair",
+				"blockerClass": "stale_state",
+				"blockerCode": "validation_receipt_head_mismatch",
+				"blockerRefs": ["validation:R493-route-freshness-repair"]
+			},
+			{
+				"name": "root-hygiene",
+				"status": "pass",
+				"freshness": "current",
+				"evidenceRef": "root-hygiene:root-hygiene"
+			}
+		],
+		"supportingVerdicts": [
+			{
+				"claim": "last_merged_pr_route_ready",
+				"status": "pass",
+				"freshness": "current",
+				"evidenceRef": "external-state:pr-415-merged"
+			},
+			{
+				"claim": "root_surface_tidy",
+				"status": "pass",
+				"freshness": "current",
+				"evidenceRef": "root-hygiene:root-hygiene"
+			},
+			{
+				"claim": "remote_checks_current",
+				"status": "pass",
+				"freshness": "current",
+				"evidenceRef": "external-state:pr-415-checks"
+			},
+			{
+				"claim": "review_threads_resolved",
+				"status": "pass",
+				"freshness": "current",
+				"evidenceRef": "review-state:pr-415-review-threads"
+			},
+			{
+				"claim": "linear_state_aligned",
+				"status": "blocked",
+				"freshness": "unknown",
+				"evidenceRef": "external-state:linear-comment-route-alignment",
+				"blockerClass": "external_state",
+				"blockerCode": "linear_field_text_unverified",
+				"blockerRefs": ["external-state:linear-field-text-unverified"]
+			}
+		]
+	},
+	"verdict": {
+		"schemaVersion": "delivery-truth/v1",
+		"claim": "goal_ready_for_judge_pm",
+		"status": "blocked",
+		"statusLabel": "goal_ready_for_judge_pm blocked: missing_reviewer_artifact",
+		"source": "pr_closeout",
+		"evidenceRef": "pr-closeout:docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json",
+		"evidenceRefs": [
+			"pr-closeout:docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json"
+		],
+		"blockerRefs": ["review-state:adversarial-reviewer"],
+		"headSha": "29dd0f0465cadcbedbaeb16f06ac0f4607177fa2",
+		"verdictHeadSha": "29dd0f0465cadcbedbaeb16f06ac0f4607177fa2",
+		"freshness": "missing",
+		"blockerClass": "unknown",
+		"blockerCode": "missing_reviewer_artifact",
+		"verifiedAt": "2026-06-12T05:52:00Z",
+		"evidenceUse": "claim_support"
+	},
+	"evidenceInputs": {
+		"headSha": "29dd0f0465cadcbedbaeb16f06ac0f4607177fa2",
+		"generatedAt": "2026-06-12T05:52:00Z",
+		"sourceMainHead": "29dd0f0465cadcbedbaeb16f06ac0f4607177fa2",
+		"runtimeCardRef": "runtime-card:current-main-jsc-363",
+		"reviewStateRef": "review-state:review-state",
+		"externalStateRef": "external-state:external-state",
+		"validationRefs": ["validation:R493-route-freshness-repair"],
+		"rootHygieneRef": "root-hygiene:root-hygiene",
+		"linearDisposition": "explicit blocker: field-text currency unverified"
+	},
+	"nonClaims": [
+		"judge_pm_ready",
+		"parent_goal_complete",
+		"linear_fields_current",
+		"current_packet_branch_merge_ready",
+		"external_snyk_app_passed"
+	],
+	"nextSafeAction": "Collect or explicitly block independent reviewer artifacts, refresh or owner-classify Linear field text, then rerun final documentation and requirement-by-requirement audit before any Judge/PM-ready claim."
+}
