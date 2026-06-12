@@ -553,6 +553,49 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
+	it("accepts present review artifacts when a later matching proof is usable", () => {
+		const path = ".harness/review/pr-258-reviewer.md";
+		const producer = "harness-product-code-reviewer";
+		const report = buildPrCloseoutReport(
+			baseInput({
+				reviewArtifacts: [
+					{
+						path,
+						producer,
+						status: "present",
+						evidenceRef: `artifact:${path}`,
+					},
+				],
+				reviewerArtifactProofs: [
+					{
+						path,
+						producer,
+						evidenceVerified: true,
+						receipt: reviewArtifactReceipt(path, producer, {
+							freshness: "stale",
+						}),
+					},
+					{
+						path,
+						producer,
+						evidenceVerified: true,
+						receipt: reviewArtifactReceipt(path, producer),
+					},
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).toBe("ready");
+		expect(report.blockers).not.toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "review_artifact",
+				}),
+			]),
+		);
+	});
+
 	it("blocks boolean-only review artifact proofs without receipt-backed evidence", () => {
 		const path = ".harness/review/pr-258-reviewer.md";
 		const producer = "harness-product-code-reviewer";
@@ -878,15 +921,18 @@ describe("buildPrCloseoutReport", () => {
 			receiptOverride: {
 				ref: "review-state:.harness/review/pr-258-reviewer.md\nraw prompt",
 			},
+			expectedRef: "artifact:.harness/review/pr-258-reviewer.md",
 		},
 		{
 			name: "receipt producer",
 			receiptOverride: {
 				producer: "harness-product-code-reviewer\ntoken=unsafe",
 			},
+			expectedRef: "review-state:.harness/review/pr-258-reviewer.md",
 		},
 	] as const)("blocks review artifact proofs with unsafe $name pointers", ({
 		receiptOverride,
+		expectedRef,
 	}) => {
 		const path = ".harness/review/pr-258-reviewer.md";
 		const producer = "harness-product-code-reviewer";
@@ -918,6 +964,7 @@ describe("buildPrCloseoutReport", () => {
 				expect.objectContaining({
 					surface: "review_artifact",
 					reason: `Review artifact ${path} is present but its verifier proof is not backed by a current claim-support receipt.`,
+					ref: expectedRef,
 				}),
 			]),
 		);

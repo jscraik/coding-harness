@@ -377,6 +377,44 @@ describe("buildJudgePmAuditVerdict", () => {
 		});
 	});
 
+	it("fails closed when authority map timestamps are impossible calendar dates", () => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				issueAuthorityMap: {
+					...issueAuthorityMap(),
+					decidedAt: "2026-02-31T00:00:00Z",
+				},
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "missing",
+			blockerClass: "needs_jamie_decision",
+			blockerCode: "missing_issue_authority",
+			blockerRefs: ["linear:JSC-363"],
+		});
+	});
+
+	it("fails closed when not-applicable authority timestamps are impossible dates", () => {
+		const verdict = buildJudgePmAuditVerdict(
+			baseInput({
+				linearStateRef: null,
+				linearStateNotApplicable: {
+					...notApplicableDecision("linear:JSC-363"),
+					decidedAt: "2026-02-31T00:00:00Z",
+				},
+			}),
+		);
+
+		expect(verdict).toMatchObject({
+			status: "blocked",
+			freshness: "missing",
+			blockerClass: "needs_jamie_decision",
+			blockerCode: "missing_audit_surface",
+		});
+	});
+
 	it("fails closed when unresolved risks are not classified for ownership", () => {
 		const verdict = buildJudgePmAuditVerdict(
 			baseInput({

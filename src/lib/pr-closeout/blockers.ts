@@ -301,14 +301,19 @@ export function collectReviewArtifactBlockers(
 ): void {
 	for (const artifact of reviewArtifacts) {
 		if (artifact.status === "present") {
-			const proof = reviewerArtifactProofs.find(
+			const matchingProofs = reviewerArtifactProofs.filter(
 				(candidate) =>
 					candidate.path === artifact.path &&
 					candidate.producer === artifact.producer,
 			);
-			if (proof && isUsableReviewerArtifactProof(proof, artifact, prHeadSha)) {
+			if (
+				matchingProofs.some((proof) =>
+					isUsableReviewerArtifactProof(proof, artifact, prHeadSha),
+				)
+			) {
 				continue;
 			}
+			const proof = matchingProofs[0];
 			pushBlocker(blockers, {
 				surface: "review_artifact",
 				classification: "unknown",
@@ -415,7 +420,9 @@ function isStrictIsoTimestamp(value: string): boolean {
 }
 
 function receiptRef(receipt: unknown): string | null {
-	return isRecord(receipt) && typeof receipt.ref === "string"
+	return isRecord(receipt) &&
+		typeof receipt.ref === "string" &&
+		isSafeEvidenceReceiptPointer(receipt.ref)
 		? receipt.ref
 		: null;
 }

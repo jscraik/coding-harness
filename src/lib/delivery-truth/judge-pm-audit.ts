@@ -674,8 +674,31 @@ function statusLabel(
 }
 
 function isIsoTimestamp(value: string): boolean {
+	const match =
+		/^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.\d{3})?Z$/u.exec(
+			value,
+		);
+	if (!match) return false;
+
+	const [, yearText, monthText, dayText, hourText, minuteText, secondText] =
+		match;
+	const year = Number(yearText);
+	const month = Number(monthText);
+	const day = Number(dayText);
+	const hour = Number(hourText);
+	const minute = Number(minuteText);
+	const second = Number(secondText);
+	const utcDate = new Date(
+		Date.UTC(year, month - 1, day, hour, minute, second),
+	);
+
 	return (
-		/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value) &&
+		utcDate.getUTCFullYear() === year &&
+		utcDate.getUTCMonth() === month - 1 &&
+		utcDate.getUTCDate() === day &&
+		utcDate.getUTCHours() === hour &&
+		utcDate.getUTCMinutes() === minute &&
+		utcDate.getUTCSeconds() === second &&
 		!Number.isNaN(Date.parse(value))
 	);
 }
