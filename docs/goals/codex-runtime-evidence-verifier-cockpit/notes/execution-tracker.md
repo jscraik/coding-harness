@@ -79,8 +79,9 @@ Current evidence:
   title/description text, and repo-truth comment
   `81cfdd41-ff0e-4df1-b884-c01789e30a50`. This tracker refresh does not claim a
   fresh Linear fetch, Linear field-text currency, or parent-goal completion.
-- Next safe action: generate the live Judge/PM audit packet from pulled current
-  main, with current runtime-card refs, delivery-truth verdicts, review-state,
+- Next safe action: merge and pull back the post-PR413 tracker refresh, then
+  generate the live Judge/PM audit packet from the refreshed current-main route
+  truth with current runtime-card refs, delivery-truth verdicts, review-state,
   external-state, Linear state or blocker, validation receipts, root hygiene,
   unresolved-risk classification, and issueAuthorityMap proof.
 - Historical PR details remain in `receipts.jsonl`; they are not active restart
