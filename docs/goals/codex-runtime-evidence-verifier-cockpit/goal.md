@@ -43,7 +43,7 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-12 post-PR413 pullback tracker refresh. Merged
+Last updated during the 2026-06-12 post-PR414 pullback tracker refresh. Merged
 PR history is receipt provenance, not the active route. Use `receipts.jsonl` for
 the complete PR ledger and keep this section limited to the current restart
 truth.
@@ -72,20 +72,24 @@ Current live route truth:
   `d3b6dd661ac86395f7b45d2c8a39526b14583d35` at
   `2026-06-12T04:22:45Z`; it is PU-015 guardrail evidence, not the live
   Judge/PM packet or parent completion evidence.
+- PR #414 merged the post-PR413 tracker refresh from submitted head
+  `58737eaacd337ab4c1c5b1e737367ff665a8465c` as merge commit
+  `c7408134c442683415bfddba3ddfd7ebd1d3c28a` at
+  `2026-06-12T05:12:22Z`; it is tracker evidence only, not the live
+  Judge/PM packet or parent completion evidence.
 - Local `main` and `origin/main` are synced at
-  `d3b6dd661ac86395f7b45d2c8a39526b14583d35` after PR #413 was merged and
+  `c7408134c442683415bfddba3ddfd7ebd1d3c28a` after PR #414 was merged and
   pulled back.
-- Live GitHub reported zero open pull requests before this post-PR413
-  tracker-refresh branch was created.
+- Live GitHub reported PR #414 merged before this post-PR414 tracker-refresh
+  branch was created.
 - Runtime-card on pulled current main returns `issueKey: "JSC-363"` with the
   JSC-363 active spec and plan, closing the PU-056 route-key guard.
 - Branch and worktree cleanup removed obsolete auxiliary worktrees and stale
   local/remote `codex/*` branches; only `main` and `origin/main` remain.
-- The next safe action is to merge and pull back the post-PR413 tracker
-  refresh, then start `PU-015 Judge/PM audit packet` from the PR #413
-  merge commit. PU-015 must produce the live packet only from current-main
-  evidence and keep Linear field-text currency as an explicit owner/external
-  lane until accepted, refreshed, or classified.
+- The next safe action is to start `PU-015 Judge/PM audit packet` from the
+  PR #414 merge commit. PU-015 must produce the live packet only from
+  current-main evidence and keep Linear field-text currency as an explicit
+  owner/external lane until accepted, refreshed, or classified.
 - Earlier Linear JSC-363 evidence includes comment
   `81cfdd41-ff0e-4df1-b884-c01789e30a50` with the repo-truth
   classification. This refresh does not claim a fresh Linear MCP fetch. The
@@ -135,25 +139,22 @@ Stop conditions:
 Current route truth:
 
 - Current route: PU-015 Judge/PM audit packet guardrails are merged through
-  PR #413 and pulled back to local `main`; the live Judge/PM packet remains the
-  selected next slice after the post-PR413 tracker refresh lands.
-- Provenance: See `receipts.jsonl` for merged route history through PR #413.
+  PR #413 and the post-PR413 tracker refresh is merged through PR #414; the
+  live Judge/PM packet is the selected next slice.
+- Provenance: See `receipts.jsonl` for merged route history through PR #414.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #413 merged at
-  `d3b6dd661ac86395f7b45d2c8a39526b14583d35`. See `receipts.jsonl` for
+- Done on current main: PR #414 merged at
+  `c7408134c442683415bfddba3ddfd7ebd1d3c28a`. See `receipts.jsonl` for
   complete merged route history.
-- Current route PR: PR #414 is the in-flight post-PR413 tracker refresh; it is
-  not merge or completion evidence until GitHub records it merged and local
-  main is pulled back.
+- Current route PR: none.
 - Completed slice: PU-056 active-route runtime-card selection guard; runtime-card
   on current main derives `issueKey: "JSC-363"` with the active JSC-363 spec
   and plan.
-- Remaining backlog after PR #413: merge and pull back the post-PR413 tracker
-  refresh, generate the live Judge/PM audit packet, refresh or block Linear
-  field-text currency, prove final documentation accuracy, and run the final
-  requirement-by-requirement completion audit.
+- Remaining backlog after PR #414: generate the live Judge/PM audit packet,
+  refresh or block Linear field-text currency, prove final documentation
+  accuracy, and run the final requirement-by-requirement completion audit.
 
 ## Why This Exists
 
