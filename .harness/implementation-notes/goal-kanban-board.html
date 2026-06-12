@@ -411,13 +411,13 @@
         <h1 id="page-title">Codex Runtime Evidence Verifier Cockpit Goal Board</h1>
         <p class="subtitle">A browser-native Kanban view of the JSC-363 goal surface, keeping implementation slices, evidence receipts, PR truth, review state, tracker alignment, and closeout blockers visibly separate.</p>
       </div>
-      <div class="source-chip" aria-label="Source freshness status">Current main: PR #412 merged</div>
+      <div class="source-chip" aria-label="Source freshness status">Current PR lane: #413 open</div>
     </section>
 
     <section class="metrics" aria-label="Goal status summary">
-      <div class="metric"><span>Goal status</span><strong>PU-015 committed locally</strong></div>
+      <div class="metric"><span>Goal status</span><strong>PU-015 in PR review</strong></div>
       <div class="metric"><span>Main-delivered PR lanes</span><strong>Through PR #412</strong></div>
-      <div class="metric"><span>Current PR</span><strong>None open</strong></div>
+      <div class="metric"><span>Current PR</span><strong>PR #413 open</strong></div>
       <div class="metric"><span>Delivery truth</span><strong>Projection merged</strong></div>
       <div class="metric"><span>Documentation</span><strong>Validators passing</strong></div>
       <div class="metric"><span>Linear tracker</span><strong>Comment aligned</strong></div>
@@ -501,7 +501,7 @@
       </article>
     </section>
 
-    <p class="footer">Snapshot updated after PR #412 merged and local <code>main</code> plus <code>origin/main</code> were pulled to <code>7e0dde9c0408388fc228e8c2afe049593f1b0b71</code>. PR #411 and PR #412 were tracker-refresh PRs; they are not PU-015 implementation evidence. PU-056 is closed on current main; <code>runtime-card --json --repo .</code> returns <code>issueKey: "JSC-363"</code> with the JSC-363 active spec and plan. PU-015 guardrails are committed locally and validate receipt-backed reviewer proofs and claimed authority matching, but PR review/merge, live Judge/PM packet generation, Linear field-text currency, final documentation accuracy, release readiness, and parent goal completion remain unclaimed.</p>
+    <p class="footer">Snapshot updated after PR #412 merged and local <code>main</code> plus <code>origin/main</code> were pulled to <code>7e0dde9c0408388fc228e8c2afe049593f1b0b71</code>. PR #411 and PR #412 were tracker-refresh PRs; they are not PU-015 implementation evidence. PU-056 is closed on current main; <code>runtime-card --json --repo .</code> returns <code>issueKey: "JSC-363"</code> with the JSC-363 active spec and plan. PU-015 guardrails are in PR #413 review and validate receipt-backed reviewer proofs and claimed authority matching, but PR merge, main pullback, live Judge/PM packet generation, Linear field-text currency, final documentation accuracy, release readiness, and parent goal completion remain unclaimed.</p>
   </main>
 
   <script>
@@ -703,7 +703,7 @@
         tags: ["PU-015", "R482", "local validation", "Judge/PM"],
         summary: "Committed PU-015 guardrails now require receipt-backed reviewer proof and claimed issue/PR/goal authority matching before Judge/PM readiness can pass.",
         evidence: ["Current main after PR #412 -> 7e0dde9c0408388fc228e8c2afe049593f1b0b71", "Branch -> codex/jsc-363-pu015-judge-pm-audit-packet", "pnpm vitest run src/lib/delivery-truth/*.test.ts src/lib/pr-closeout/*.test.ts -> pass", "bash scripts/validate-codestyle.sh --fast -> pass", "pnpm run quality:docstrings && pnpm run quality:size && pnpm run quality:self-affirming && pnpm run test:related -> pass with non-blocking drift-gate README command-index warnings", "Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 -> repo-truth context only"],
-        next: "Commit this local implementation, open a single PR, triage review/CI, merge, pull main, then generate the live Judge/PM packet with Linear disposition explicit.",
+        next: "Keep PR #413 under review/CI triage, merge it only when required lanes are satisfied or explicitly waived, pull main after merge, then generate the live Judge/PM packet with Linear disposition explicit.",
         risk: "Local guardrail tests do not prove live packet generation, reviewer artifacts, Linear field-text currency, PR merge, final documentation accuracy, or parent-goal completion."
       },
       {
@@ -1503,7 +1503,15 @@
     const statusColor = {
       active: "var(--blue)",
       blocked: "var(--red)",
-      done: "var(--green)"
+      done: "var(--green)",
+      "local-validated": "var(--amber)"
+    };
+
+    const statusFilterMap = {
+      all: () => true,
+      active: status => status === "active" || status === "local-validated",
+      blocked: status => status === "blocked",
+      done: status => status === "done"
     };
 
     const board = document.querySelector("#board");
@@ -1517,7 +1525,7 @@
       for (const lane of lanes) {
         const laneCards = cards.filter(card => {
           const inLane = card.lane === lane.id;
-          const inFilter = currentFilter === "all" || card.status === currentFilter;
+          const inFilter = (statusFilterMap[currentFilter] ?? (() => true))(card.status);
           const haystack = [card.title, card.summary, card.status, ...card.tags, ...card.evidence].join(" ").toLowerCase();
           return inLane && inFilter && (!query || haystack.includes(query));
         });
@@ -1537,7 +1545,7 @@
           const button = document.createElement("button");
           button.type = "button";
           button.className = "card";
-          button.style.setProperty("--status-color", statusColor[card.status]);
+          button.style.setProperty("--status-color", statusColor[card.status] ?? "var(--blue)");
           button.dataset.card = card.id;
           button.innerHTML = `
             <span class="card-title">${card.title}</span>

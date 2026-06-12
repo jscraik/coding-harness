@@ -131,6 +131,13 @@ export function issueAuthorityBlocker(
 	return null;
 }
 
+/** Return a canonical PR number only when it is a positive integer. */
+export function normalizeJudgePmAuditPrNumber(value: unknown): number | null {
+	return typeof value === "number" && Number.isInteger(value) && value > 0
+		? value
+		: null;
+}
+
 function issueAuthorityShapeBlocker(
 	map: JudgePmAuditIssueAuthorityMap,
 ): JudgePmAuditAuthorityBlocker | null {

@@ -279,6 +279,7 @@ function reviewArtifactReceipt(
 		freshness: "current",
 		evidenceUse: "claim_support",
 		blockerClass: null,
+		producedAt: "2026-05-16T11:00:00.000Z",
 		verifiedAt: "2026-05-16T12:00:00.000Z",
 		headSha: "abc123",
 		sizeBytes: 2048,
@@ -665,7 +666,7 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
-	it("compares review artifact proof receipts against the branch head when PR head is missing", () => {
+	it("blocks review artifact proof receipts when PR head is missing", () => {
 		const path = ".harness/review/pr-258-reviewer.md";
 		const producer = "harness-product-code-reviewer";
 		const report = buildPrCloseoutReport(
@@ -774,6 +775,45 @@ describe("buildPrCloseoutReport", () => {
 						evidenceVerified: true,
 						receipt: reviewArtifactReceipt(path, producer, {
 							verifiedAt: "not-a-date",
+						}),
+					},
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).toBe("fixable");
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "review_artifact",
+					reason: `Review artifact ${path} is present but its verifier proof is not backed by a current claim-support receipt.`,
+					ref: `review-state:${path}`,
+				}),
+			]),
+		);
+	});
+
+	it("blocks review artifact proofs produced after verification", () => {
+		const path = ".harness/review/pr-258-reviewer.md";
+		const producer = "harness-product-code-reviewer";
+		const report = buildPrCloseoutReport(
+			baseInput({
+				reviewArtifacts: [
+					{
+						path,
+						producer,
+						status: "present",
+						evidenceRef: `artifact:${path}`,
+					},
+				],
+				reviewerArtifactProofs: [
+					{
+						path,
+						producer,
+						evidenceVerified: true,
+						receipt: reviewArtifactReceipt(path, producer, {
+							producedAt: "2026-05-16T13:00:00.000Z",
 						}),
 					},
 				],

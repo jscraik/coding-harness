@@ -380,7 +380,7 @@ function matchesPrHeadSha(
 	receiptHeadSha: string | null | undefined,
 	prHeadSha: string | null | undefined,
 ): boolean {
-	if (typeof prHeadSha !== "string" || prHeadSha.length === 0) return true;
+	if (typeof prHeadSha !== "string" || prHeadSha.length === 0) return false;
 	return receiptHeadSha === prHeadSha;
 }
 

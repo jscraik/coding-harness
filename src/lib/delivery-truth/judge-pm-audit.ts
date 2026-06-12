@@ -17,7 +17,10 @@ import {
 	type DeliveryTruthClaim,
 	type DeliveryTruthVerdict,
 } from "./types.js";
-import { issueAuthorityBlocker } from "./judge-pm-audit-authority.js";
+import {
+	issueAuthorityBlocker,
+	normalizeJudgePmAuditPrNumber,
+} from "./judge-pm-audit-authority.js";
 import type {
 	JudgePmAuditClaimedAuthority,
 	JudgePmAuditIssueAuthorityMap,
@@ -236,12 +239,14 @@ export function buildJudgePmAuditPacket(
 			evidenceRef: safeRef(input.issueAuthorityMap.decisionSourceRef),
 			lifecycleIssueId: safeRef(input.issueAuthorityMap.lifecycleIssueId),
 			parentIssueId: safeRef(input.issueAuthorityMap.parentIssueId),
-			prNumber: input.issueAuthorityMap.prNumber,
+			prNumber: normalizeJudgePmAuditPrNumber(input.issueAuthorityMap.prNumber),
 			externalGoalId: safeRef(input.issueAuthorityMap.externalGoalId),
 			claimed: {
 				closeoutIssueId: safeRef(input.claimedAuthority.closeoutIssueId),
 				parentIssueId: safeRef(input.claimedAuthority.parentIssueId),
-				prNumber: input.claimedAuthority.prNumber,
+				prNumber: normalizeJudgePmAuditPrNumber(
+					input.claimedAuthority.prNumber,
+				),
 				externalGoalId: safeRef(input.claimedAuthority.externalGoalId),
 			},
 		},

@@ -268,18 +268,18 @@ describe("buildJudgePmAuditVerdict", () => {
 	});
 
 	it("fails closed when the issue authority map uses a fractional PR number", () => {
-		const verdict = buildJudgePmAuditVerdict(
-			baseInput({
-				issueAuthorityMap: {
-					...issueAuthorityMap(),
-					prNumber: 305.5,
-				},
-				claimedAuthority: {
-					...claimedAuthorityMap(),
-					prNumber: 305.5,
-				},
-			}),
-		);
+		const input = baseInput({
+			issueAuthorityMap: {
+				...issueAuthorityMap(),
+				prNumber: 305.5,
+			},
+			claimedAuthority: {
+				...claimedAuthorityMap(),
+				prNumber: 305.5,
+			},
+		});
+		const verdict = buildJudgePmAuditVerdict(input);
+		const packet = buildJudgePmAuditPacket(input);
 
 		expect(verdict).toMatchObject({
 			status: "blocked",
@@ -288,17 +288,19 @@ describe("buildJudgePmAuditVerdict", () => {
 			blockerCode: "missing_issue_authority",
 			blockerRefs: ["linear:JSC-363"],
 		});
+		expect(packet.issueAuthority.prNumber).toBeNull();
+		expect(packet.issueAuthority.claimed.prNumber).toBeNull();
 	});
 
 	it("fails closed when claimed authority uses a fractional PR number", () => {
-		const verdict = buildJudgePmAuditVerdict(
-			baseInput({
-				claimedAuthority: {
-					...claimedAuthorityMap(),
-					prNumber: 305.5,
-				},
-			}),
-		);
+		const input = baseInput({
+			claimedAuthority: {
+				...claimedAuthorityMap(),
+				prNumber: 305.5,
+			},
+		});
+		const verdict = buildJudgePmAuditVerdict(input);
+		const packet = buildJudgePmAuditPacket(input);
 
 		expect(verdict).toMatchObject({
 			status: "blocked",
@@ -307,6 +309,8 @@ describe("buildJudgePmAuditVerdict", () => {
 			blockerCode: "invalid_issue_authority",
 			blockerRefs: ["linear:JSC-363"],
 		});
+		expect(packet.issueAuthority.prNumber).toBe(305);
+		expect(packet.issueAuthority.claimed.prNumber).toBeNull();
 	});
 
 	it.each([

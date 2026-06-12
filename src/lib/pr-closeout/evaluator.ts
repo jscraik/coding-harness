@@ -24,7 +24,6 @@ import {
 	collectDeliveryTruthBlockers,
 	type PrCloseoutDeliveryTruthDerivationOptions,
 } from "./delivery-truth.js";
-import { currentHeadSha } from "./claim-helpers.js";
 import { buildLifecycleSnapshot } from "./lifecycle-snapshot.js";
 import {
 	buildTraceabilitySummary,
@@ -79,7 +78,7 @@ function buildPrCloseoutReportValue(
 	collectReviewArtifactBlockers(
 		input.reviewArtifacts ?? [],
 		input.reviewerArtifactProofs ?? [],
-		currentHeadSha(input),
+		input.pullRequest.headSha ?? null,
 		blockers,
 	);
 	collectTraceabilityBlocker(traceability.complete, blockers);

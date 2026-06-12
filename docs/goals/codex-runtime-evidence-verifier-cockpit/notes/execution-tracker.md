@@ -26,7 +26,7 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | ------------------- | ------------------------------------------------------------ |
 | Parent issue        | JSC-363                                                      |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md` |
-| Current branch      | `codex/jsc-363-post-pr412-tracker-refresh`                   |
+| Current branch      | `codex/jsc-363-pu015-judge-pm-audit-packet`                  |
 | Local main head     | `7e0dde9c0408388fc228e8c2afe049593f1b0b71`                   |
 | Origin main head    | `7e0dde9c0408388fc228e8c2afe049593f1b0b71`                   |
 | Main baseline       | `7e0dde9c0408388fc228e8c2afe049593f1b0b71`                   |
@@ -34,8 +34,8 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Active route        | Post-PR412 current-main tracker refresh                      |
 | Last closed route   | PR #412 merged                                               |
 | Current route       | PU-015 selected from pulled current main                     |
-| Current slice       | PU-015 selected, not started                                 |
-| Feature work status | Ready after this tracker refresh is accepted or waived       |
+| Current slice       | PU-015 in PR #413 review                                     |
+| Feature work status | Guardrails implemented; PR review/CI/merge lane active       |
 
 ## Active Route
 
@@ -76,10 +76,10 @@ Current evidence:
   title/description text, and repo-truth comment
   `81cfdd41-ff0e-4df1-b884-c01789e30a50`. This tracker refresh does not claim a
   fresh Linear fetch, Linear field-text currency, or parent-goal completion.
-- Next safe action: push the committed local PU-015 guardrail implementation,
-  open a single PR for it, and keep Judge/PM readiness blocked until the PR
-  merges, main is pulled back, the live audit packet exists, and Linear
-  field-text disposition is refreshed or explicitly blocked.
+- Next safe action: keep PR #413 under review/CI triage, and keep Judge/PM
+  readiness blocked until the PR merges, main is pulled back, the live audit
+  packet exists, and Linear field-text disposition is refreshed or explicitly
+  blocked.
 - Historical PR details remain in `receipts.jsonl`; they are not active restart
   instructions.
 
@@ -88,11 +88,11 @@ Current evidence:
 Selected active slice after PR #412 landed and local `main` was pulled:
 `PU-015 Judge/PM audit packet`.
 
-PU-056 closed the active-route/runtime-card mismatch. The current local PU-015
-patch adds guardrails for receipt-backed reviewer proofs and claimed authority
-matching. It does not yet prove Judge/PM readiness: the live packet, reviewer
-artifacts, PR review/merge, Linear field-text disposition, and final closeout
-audit remain separate lanes.
+PU-056 closed the active-route/runtime-card mismatch. The current PU-015 PR
+#413 patch adds guardrails for receipt-backed reviewer proofs and claimed
+authority matching. It does not yet prove Judge/PM readiness: the live packet,
+reviewer artifacts, PR merge/pullback, Linear field-text disposition, and final
+closeout audit remain separate lanes.
 
 Current post-PU-056 proof:
 

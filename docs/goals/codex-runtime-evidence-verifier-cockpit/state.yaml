@@ -33,7 +33,7 @@ thin_execution_tracker:
     kind: "pu015_judge_pm_audit_packet_guardrail"
     status: "local_guardrails_committed_pending_pr"
     blocker: "Parent completion remains blocked by PU-015 PR/review/merge pullback, live Judge/PM audit packet generation, reviewer artifacts, Linear field-text disposition, final documentation accuracy, and final requirement-by-requirement completion audit."
-    current_pr_state: "PR #412 merged at 2026-06-12T00:24:41Z as squash merge 7e0dde9c0408388fc228e8c2afe049593f1b0b71 from submitted head a81d783aeef3f05d6e3668a4e33ed4e216e6a756. PU-015 PR #413 is open on branch codex/jsc-363-pu015-judge-pm-audit-packet. Local repair head a93a9d5d79b04fb148e50b20e38b86007b38e026 fixes the CircleCI module-boundary test failure and the PR body has been edited to pass pr-template-gate locally; push and remote check refresh remain pending."
+    current_pr_state: "PR #412 merged at 2026-06-12T00:24:41Z as squash merge 7e0dde9c0408388fc228e8c2afe049593f1b0b71 from submitted head a81d783aeef3f05d6e3668a4e33ed4e216e6a756. PU-015 PR #413 is open on branch codex/jsc-363-pu015-judge-pm-audit-packet. Latest pushed PR head observed during this tracker repair was 19bd13d40a22664b5df22a82a2bb8abe6ccf2579; review/CI/merge freshness must be rechecked after each subsequent repair push."
     test_and_audit_status: "PU-015 local code validation passed for receipt-backed reviewer proof and claimed-authority mismatch fixtures. Commands passed: pnpm vitest run src/lib/delivery-truth/*.test.ts src/lib/pr-closeout/*.test.ts; bash scripts/validate-codestyle.sh --fast; pnpm run quality:docstrings; pnpm run quality:size; pnpm run quality:self-affirming; pnpm run test:related. test:related reported non-blocking drift-gate README command-index warnings unrelated to this slice."
     active_route_drift_finding: "PU-055 found active-route selection drift and PU-056 fixed it on current main; runtime-card no longer drops the JSC-363 route key for wide Current Active Route rows."
     unclaimed_surfaces:
@@ -44,8 +44,8 @@ thin_execution_tracker:
     active_branch: "codex/jsc-363-pu015-judge-pm-audit-packet"
     active_pr: 413
     active_pr_url: "https://github.com/jscraik/coding-harness/pull/413"
-    active_pr_last_checked_head_sha: "a5e29215512886861b32224ebb19058fd7f968ab"
-    active_pr_head_sha_contract: "PR #413 was opened at a5e29215512886861b32224ebb19058fd7f968ab and local repair head a93a9d5d79b04fb148e50b20e38b86007b38e026 is pending push. Do not claim PR #413 CI/review/merge freshness until the remote head matches the pushed repair head and checks are refreshed."
+    active_pr_last_checked_head_sha: "19bd13d40a22664b5df22a82a2bb8abe6ccf2579"
+    active_pr_head_sha_contract: "PR #413 is the active PU-015 review lane. Do not claim PR #413 CI/review/merge freshness unless live GitHub reports the latest pushed PR head and all required lanes have been rechecked in the same closeout window."
     last_merged_pr: 412
     last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/412"
     last_merged_sha: "7e0dde9c0408388fc228e8c2afe049593f1b0b71"
@@ -53,8 +53,13 @@ thin_execution_tracker:
     last_merge_verified_at: "2026-06-12T00:24:41Z"
     local_main_sha: "7e0dde9c0408388fc228e8c2afe049593f1b0b71"
     origin_main_sha: "7e0dde9c0408388fc228e8c2afe049593f1b0b71"
-    open_pr_count: 0
-    open_prs: []
+    open_pr_count: 1
+    open_prs:
+      - number: 413
+        url: "https://github.com/jscraik/coding-harness/pull/413"
+        branch: "codex/jsc-363-pu015-judge-pm-audit-packet"
+        last_checked_head_sha: "19bd13d40a22664b5df22a82a2bb8abe6ccf2579"
+        state: "open"
   queued_slice:
     lifecycle_unit: "PU-015"
     name: "Judge/PM audit packet"
