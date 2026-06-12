@@ -33,7 +33,7 @@ thin_execution_tracker:
     kind: "pu015_judge_pm_audit_packet_guardrail"
     status: "post_pr416_pulled_current_main_pending_reviewer_artifacts"
     blocker: "Parent completion remains blocked by missing independent reviewer artifacts, Linear field-text disposition, final documentation accuracy, and final requirement-by-requirement completion audit. The live PU-015 packet now exists and blocks Judge/PM readiness instead of leaving packet generation implicit."
-    current_pr_state: "PR #416 is MERGED at 2026-06-12T08:34:40Z from submitted head 650969a4217b335a1dfb9184e18cae6f83e7dd3b as squash merge f262c6c4c6646ada3821cdc3a0e9a7300b871746. Local main and origin/main are pulled to f262c6c4c6646ada3821cdc3a0e9a7300b871746. Repo-owned CI, CodeRabbit, Socket, and review threads passed or resolved before merge; external security/snyk GitHub App quota lane remains owner-waived only for that quota failure."
+    current_pr_state: "PR #416 is MERGED at 2026-06-12T08:34:40Z from submitted head 650969a4217b335a1dfb9184e18cae6f83e7dd3b as squash merge f262c6c4c6646ada3821cdc3a0e9a7300b871746. Local main and origin/main are pulled to f262c6c4c6646ada3821cdc3a0e9a7300b871746. PR #417 is an open tracker-refresh/review-thread repair PR for this route state, not an active implementation lane. Repo-owned CI, CodeRabbit, Socket, and review threads passed or resolved before PR #416 merge; external security/snyk GitHub App quota lane remains owner-waived only for that quota failure."
     test_and_audit_status: "PU-015 implementation, PR review repair, PR #413 hosted checks, PR #414 tracker-refresh hosted checks, and PR #415 tracker-refresh hosted checks passed for repo-owned lanes. The live PU-015 Judge/PM audit packet was generated at docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json, is blocked on missing independent reviewer artifacts, and now marks the PR #416 validation receipt surface stale/blocked rather than current because it does not validate the packet/verdict head."
     active_route_drift_finding: "PU-055 found active-route selection drift and PU-056 fixed it on current main; runtime-card no longer drops the JSC-363 route key for wide Current Active Route rows."
     unclaimed_surfaces:
@@ -41,11 +41,11 @@ thin_execution_tracker:
       - "Independent reviewer artifacts for the live Judge/PM packet"
       - "Final documentation accuracy beyond current validators"
       - "Parent-goal completion"
-    active_branch: "codex/jsc-363-pu015-live-judge-pm-packet"
-    active_pr: 416
-    active_pr_url: "https://github.com/jscraik/coding-harness/pull/416"
+    active_branch: null
+    active_pr: null
+    active_pr_url: null
     active_pr_last_checked_head_sha: null
-    active_pr_head_sha_contract: "No active PR lane after PR #416 merge pullback. Do not start the next PR until the next slice intent is selected from pulled current-main evidence."
+    active_pr_head_sha_contract: "No active implementation PR lane after PR #416 merge pullback. PR #417 is tracker-refresh/review-thread repair only and must not be treated as the next implementation slice."
     last_merged_pr: 416
     last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/416"
     last_merged_sha: "f262c6c4c6646ada3821cdc3a0e9a7300b871746"
@@ -53,8 +53,13 @@ thin_execution_tracker:
     last_merge_verified_at: "2026-06-12T08:34:40Z"
     local_main_sha: "f262c6c4c6646ada3821cdc3a0e9a7300b871746"
     origin_main_sha: "f262c6c4c6646ada3821cdc3a0e9a7300b871746"
-    open_pr_count: 0
-    open_prs: []
+    open_pr_count: 1
+    open_prs:
+      - number: 417
+        url: "https://github.com/jscraik/coding-harness/pull/417"
+        branch: "codex/jsc-363-post-pr416-tracker-refresh"
+        classification: "tracker_refresh_review_thread_repair"
+        head_sha: "fbf8a25bbeed97808029ed698515b8310dddb8eb"
   queued_slice:
     lifecycle_unit: "PU-015"
     name: "Judge/PM audit packet"
