@@ -1,8 +1,8 @@
 {
 	"packet": {
 		"schemaVersion": "judge-pm-audit/v1",
-		"generatedAt": "2026-06-12T05:52:00Z",
-		"headSha": "29dd0f0465cadcbedbaeb16f06ac0f4607177fa2",
+		"generatedAt": "2026-06-12T14:59:50Z",
+		"headSha": "0c37312f78afea195cc8bbacb77218cdb9a1537b",
 		"status": "blocked",
 		"freshness": "missing",
 		"blockerCode": "missing_reviewer_artifact",
@@ -26,12 +26,12 @@
 			"evidenceRef": "linear:JSC-363",
 			"lifecycleIssueId": "JSC-363",
 			"parentIssueId": null,
-			"prNumber": 415,
+			"prNumber": 423,
 			"externalGoalId": "codex-runtime-evidence-verifier-cockpit",
 			"claimed": {
 				"closeoutIssueId": "JSC-363",
 				"parentIssueId": null,
-				"prNumber": 415,
+				"prNumber": 423,
 				"externalGoalId": "codex-runtime-evidence-verifier-cockpit"
 			}
 		},
@@ -75,7 +75,7 @@
 				"claim": "last_merged_pr_route_ready",
 				"status": "pass",
 				"freshness": "current",
-				"evidenceRef": "external-state:pr-415-merged"
+				"evidenceRef": "external-state:pr-423-merged"
 			},
 			{
 				"claim": "root_surface_tidy",
@@ -87,13 +87,13 @@
 				"claim": "remote_checks_current",
 				"status": "pass",
 				"freshness": "current",
-				"evidenceRef": "external-state:pr-415-checks"
+				"evidenceRef": "external-state:pr-423-checks"
 			},
 			{
 				"claim": "review_threads_resolved",
 				"status": "pass",
 				"freshness": "current",
-				"evidenceRef": "review-state:pr-415-review-threads"
+				"evidenceRef": "review-state:pr-423-review-threads"
 			},
 			{
 				"claim": "linear_state_aligned",
@@ -117,18 +117,18 @@
 			"pr-closeout:docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json"
 		],
 		"blockerRefs": ["review-state:adversarial-reviewer"],
-		"headSha": "29dd0f0465cadcbedbaeb16f06ac0f4607177fa2",
-		"verdictHeadSha": "29dd0f0465cadcbedbaeb16f06ac0f4607177fa2",
+		"headSha": "0c37312f78afea195cc8bbacb77218cdb9a1537b",
+		"verdictHeadSha": "0c37312f78afea195cc8bbacb77218cdb9a1537b",
 		"freshness": "missing",
 		"blockerClass": "unknown",
 		"blockerCode": "missing_reviewer_artifact",
-		"verifiedAt": "2026-06-12T05:52:00Z",
+		"verifiedAt": "2026-06-12T14:59:50Z",
 		"evidenceUse": "claim_support"
 	},
 	"evidenceInputs": {
-		"headSha": "29dd0f0465cadcbedbaeb16f06ac0f4607177fa2",
-		"generatedAt": "2026-06-12T05:52:00Z",
-		"sourceMainHead": "29dd0f0465cadcbedbaeb16f06ac0f4607177fa2",
+		"headSha": "0c37312f78afea195cc8bbacb77218cdb9a1537b",
+		"generatedAt": "2026-06-12T14:59:50Z",
+		"sourceMainHead": "0c37312f78afea195cc8bbacb77218cdb9a1537b",
 		"runtimeCardRef": "runtime-card:current-main-jsc-363",
 		"reviewStateRef": "review-state:review-state",
 		"externalStateRef": "external-state:external-state",
