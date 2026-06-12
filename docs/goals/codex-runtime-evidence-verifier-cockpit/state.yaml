@@ -31,9 +31,9 @@ thin_execution_tracker:
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
     kind: "pu015_judge_pm_audit_packet_guardrail"
-    status: "pu015_live_audit_packet_generated_blocked_on_reviewers"
+    status: "pr416_open_route_freshness_repair_pending_push"
     blocker: "Parent completion remains blocked by missing independent reviewer artifacts, Linear field-text disposition, final documentation accuracy, and final requirement-by-requirement completion audit. The live PU-015 packet now exists and blocks Judge/PM readiness instead of leaving packet generation implicit."
-    current_pr_state: "PR #415 merged at 2026-06-12T05:41:54Z as squash merge 29dd0f0465cadcbedbaeb16f06ac0f4607177fa2 from submitted head 96b1ebc07093667dcf59f29001250390ce275819. Local main and origin/main are pulled to 29dd0f0465cadcbedbaeb16f06ac0f4607177fa2. Repo-owned CircleCI contexts, aggregate pr-pipeline, aggregate security-scan, Socket, and CodeRabbit passed; external security/snyk GitHub App quota lane remains owner-waived only for that quota failure."
+    current_pr_state: "PR #416 is open for the PU-015 live packet route-freshness repair; pre-repair checked head 1d4476330b66bab9487de340b45376e56ffd47d9. Local main and origin/main remain pulled to 29dd0f0465cadcbedbaeb16f06ac0f4607177fa2 after PR #415. Repo-owned CircleCI contexts passed after the stale pr-template rerun; external security/snyk GitHub App quota lane remains owner-waived only for that quota failure."
     test_and_audit_status: "PU-015 implementation, PR review repair, PR #413 hosted checks, PR #414 tracker-refresh hosted checks, and PR #415 tracker-refresh hosted checks passed for repo-owned lanes. The live PU-015 Judge/PM audit packet was generated at docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json and is blocked on missing independent reviewer artifacts."
     active_route_drift_finding: "PU-055 found active-route selection drift and PU-056 fixed it on current main; runtime-card no longer drops the JSC-363 route key for wide Current Active Route rows."
     unclaimed_surfaces:
@@ -41,11 +41,11 @@ thin_execution_tracker:
       - "Independent reviewer artifacts for the live Judge/PM packet"
       - "Final documentation accuracy beyond current validators"
       - "Parent-goal completion"
-    active_branch: null
-    active_pr: null
-    active_pr_url: null
-    active_pr_last_checked_head_sha: null
-    active_pr_head_sha_contract: "No active PR is selected after PR #415 merge pullback. Do not claim the next PR lane until a fresh slice branch and PR exist."
+    active_branch: "codex/jsc-363-pu015-live-judge-pm-packet"
+    active_pr: 416
+    active_pr_url: "https://github.com/jscraik/coding-harness/pull/416"
+    active_pr_last_checked_head_sha: "1d4476330b66bab9487de340b45376e56ffd47d9"
+    active_pr_head_sha_contract: "PR #416 is the current active PR lane. Do not claim merge or pullback until PR #416 is merged and local main is pulled to the merge commit."
     last_merged_pr: 415
     last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/415"
     last_merged_sha: "29dd0f0465cadcbedbaeb16f06ac0f4607177fa2"
@@ -53,13 +53,14 @@ thin_execution_tracker:
     last_merge_verified_at: "2026-06-12T05:41:54Z"
     local_main_sha: "29dd0f0465cadcbedbaeb16f06ac0f4607177fa2"
     origin_main_sha: "29dd0f0465cadcbedbaeb16f06ac0f4607177fa2"
-    open_pr_count: 0
-    open_prs: []
+    open_pr_count: 1
+    open_prs:
+      - 416
   queued_slice:
     lifecycle_unit: "PU-015"
     name: "Judge/PM audit packet"
     status: "blocked_live_packet_missing_independent_reviewers"
-    evidence_receipt: "R492"
+    evidence_receipt: "R493"
     artifact: "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json"
   resume_gate:
     - "Do not claim PU-015 complete until the live Judge/PM audit packet exists, independent reviewer artifacts are present or explicitly blocked, Linear field-text disposition is refreshed or explicitly blocked, and final documentation and requirement-by-requirement audits pass."
@@ -205,7 +206,7 @@ current_slice_gate:
   next_required_handoff_steps:
     - "Use docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md as the thin restart tracker; keep old PR history as provenance, not active route work."
     - "Validate this current-main tracker refresh with receipts JSON parsing, audit freshness, goal-board validation, Kanban script validation, and git diff whitespace validation."
-    - "Use the pulled main checkout at 29dd0f0465cadcbedbaeb16f06ac0f4607177fa2 as the current baseline after PR #415 merged; the PU-015 Judge/PM packet exists and is blocked on missing independent reviewer artifacts."
+    - "Use the pulled main checkout at 29dd0f0465cadcbedbaeb16f06ac0f4607177fa2 as the main baseline after PR #415 merged; PR #416 is the active route-freshness repair and must merge before the next packet/final-audit attempt."
     - "Linear JSC-363 has compact repo-truth route alignment via comment 81cfdd41-ff0e-4df1-b884-c01789e30a50; do not claim field-text currency until the older Phase 1 title/description wording is owner-accepted or updated."
     - "Treat PU-056 active-route runtime-card selection guard as merged through PR #410, the post-PR410 tracker refresh as merged through PR #411, the post-PR411 tracker refresh as merged through PR #412, PU-015 guardrails as merged through PR #413, and tracker refreshes as merged through PR #415; continue PU-015 from the blocked packet and pulled current-main route truth."
     - "Treat receipt-backed merged JSC-363 route/foundation lanes through PR #371 as completed current-main evidence at 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856; do not reopen those PR lanes unless fresh GitHub or current-main validation shows a regression."
