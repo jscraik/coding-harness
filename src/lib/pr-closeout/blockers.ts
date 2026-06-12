@@ -337,6 +337,7 @@ function isUsableReviewerArtifactProof(
 	artifact: PrCloseoutReviewArtifactInput,
 	prHeadSha: string | null | undefined,
 ): boolean {
+	const sizeBytes = proof.receipt.sizeBytes;
 	return (
 		proof.evidenceVerified === true &&
 		isReviewArtifactReceipt(proof.receipt) &&
@@ -349,8 +350,9 @@ function isUsableReviewerArtifactProof(
 		proof.receipt.blockerClass === null &&
 		hasValidReceiptTimestamp(proof.receipt) &&
 		matchesPrHeadSha(proof.receipt.headSha, prHeadSha) &&
-		typeof proof.receipt.sizeBytes === "number" &&
-		proof.receipt.sizeBytes > 0
+		typeof sizeBytes === "number" &&
+		Number.isInteger(sizeBytes) &&
+		sizeBytes > 0
 	);
 }
 
