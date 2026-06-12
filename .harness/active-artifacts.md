@@ -97,7 +97,9 @@ tracker and review-thread repair at `2026-06-12T11:32:21Z` as squash merge
 `125b31b45170fb3f07e77b365c01eff41262c2d4`, and local `main` plus
 `origin/main` were pulled to that head. PR #421 then merged the narrow
 source-checkout command replay guardrail at `2026-06-12T12:56:26Z` as squash
-merge `fc9cb98b413f925fe1df6be7c768d3adb2ffeafe`, and local `main` plus
+merge `fd0c25682f1d9cac4e2fd16c4db4ff5cd03be931`. PR #422 then merged the
+canonical route-surface repair at `2026-06-12T13:59:11Z` as squash merge
+`fc9cb98b413f925fe1df6be7c768d3adb2ffeafe`, and local `main` plus
 `origin/main` are pulled to that head. The live PU-015 Judge/PM packet now
 exists at
 `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json`
