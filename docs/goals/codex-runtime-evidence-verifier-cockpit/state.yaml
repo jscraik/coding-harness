@@ -31,9 +31,9 @@ thin_execution_tracker:
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
     kind: "pu015_judge_pm_audit_packet_guardrail"
-    status: "post_pr416_pulled_current_main_pending_reviewer_artifacts"
+    status: "post_pr417_pulled_current_main_pending_reviewer_artifacts"
     blocker: "Parent completion remains blocked by missing independent reviewer artifacts, Linear field-text disposition, final documentation accuracy, and final requirement-by-requirement completion audit. The live PU-015 packet now exists and blocks Judge/PM readiness instead of leaving packet generation implicit."
-    current_pr_state: "PR #416 is MERGED at 2026-06-12T08:34:40Z from submitted head 650969a4217b335a1dfb9184e18cae6f83e7dd3b as squash merge f262c6c4c6646ada3821cdc3a0e9a7300b871746. Local main and origin/main are pulled to f262c6c4c6646ada3821cdc3a0e9a7300b871746. PR #417 is an open tracker-refresh/review-thread repair PR for this route state, not an active implementation lane. Repo-owned CI, CodeRabbit, Socket, and review threads passed or resolved before PR #416 merge; external security/snyk GitHub App quota lane remains owner-waived only for that quota failure."
+    current_pr_state: "PR #416 is MERGED at 2026-06-12T08:34:40Z from submitted head 650969a4217b335a1dfb9184e18cae6f83e7dd3b as squash merge f262c6c4c6646ada3821cdc3a0e9a7300b871746. Local main and origin/main are pulled to c44235a1cc564b435db7d73caaaf781dfd03acf3. PR #417 is MERGED at 2026-06-12T09:32:37Z from submitted head b073a2583299e5a84ce8ed8f88562a9a32577466 as squash merge c44235a1cc564b435db7d73caaaf781dfd03acf3; it was tracker-refresh/review-thread repair provenance, not an active implementation lane. PR #418 is OPEN as the post-PR417 tracker/review-thread repair lane at submitted head d4cf7b697fafa197a8d116312235607db46e2567; it is not a new implementation slice and must merge and be pulled back before the next slice starts. Repo-owned CI, CodeRabbit, Socket, and review threads passed or resolved before PR #417 merge; external security/snyk GitHub App quota lane remains owner-waived only for that quota failure."
     test_and_audit_status: "PU-015 implementation, PR review repair, PR #413 hosted checks, PR #414 tracker-refresh hosted checks, and PR #415 tracker-refresh hosted checks passed for repo-owned lanes. The live PU-015 Judge/PM audit packet was generated at docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json, is blocked on missing independent reviewer artifacts, and now marks the PR #416 validation receipt surface stale/blocked rather than current because it does not validate the packet/verdict head."
     active_route_drift_finding: "PU-055 found active-route selection drift and PU-056 fixed it on current main; runtime-card no longer drops the JSC-363 route key for wide Current Active Route rows."
     unclaimed_surfaces:
@@ -41,25 +41,21 @@ thin_execution_tracker:
       - "Independent reviewer artifacts for the live Judge/PM packet"
       - "Final documentation accuracy beyond current validators"
       - "Parent-goal completion"
-    active_branch: null
-    active_pr: null
-    active_pr_url: null
-    active_pr_last_checked_head_sha: null
-    active_pr_head_sha_contract: "No active implementation PR lane after PR #416 merge pullback. PR #417 is tracker-refresh/review-thread repair only and must not be treated as the next implementation slice."
-    last_merged_pr: 416
-    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/416"
-    last_merged_sha: "f262c6c4c6646ada3821cdc3a0e9a7300b871746"
-    last_merged_submitted_head_sha: "650969a4217b335a1dfb9184e18cae6f83e7dd3b"
-    last_merge_verified_at: "2026-06-12T08:34:40Z"
-    local_main_sha: "f262c6c4c6646ada3821cdc3a0e9a7300b871746"
-    origin_main_sha: "f262c6c4c6646ada3821cdc3a0e9a7300b871746"
+    active_branch: "codex/jsc-363-post-pr417-tracker-refresh"
+    active_pr: 418
+    active_pr_url: "https://github.com/jscraik/coding-harness/pull/418"
+    active_pr_last_checked_head_sha: "d4cf7b697fafa197a8d116312235607db46e2567"
+    active_pr_head_sha_contract: "PR #418 is the active post-PR417 tracker/review-thread repair lane at d4cf7b697fafa197a8d116312235607db46e2567; it is not a new implementation slice and must merge and be pulled back before the next slice starts."
+    last_merged_pr: 417
+    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/417"
+    last_merged_sha: "c44235a1cc564b435db7d73caaaf781dfd03acf3"
+    last_merged_submitted_head_sha: "b073a2583299e5a84ce8ed8f88562a9a32577466"
+    last_merge_verified_at: "2026-06-12T09:32:37Z"
+    local_main_sha: "c44235a1cc564b435db7d73caaaf781dfd03acf3"
+    origin_main_sha: "c44235a1cc564b435db7d73caaaf781dfd03acf3"
     open_pr_count: 1
     open_prs:
-      - number: 417
-        url: "https://github.com/jscraik/coding-harness/pull/417"
-        branch: "codex/jsc-363-post-pr416-tracker-refresh"
-        classification: "tracker_refresh_review_thread_repair"
-        head_sha: "fbf8a25bbeed97808029ed698515b8310dddb8eb"
+      - 418
   queued_slice:
     lifecycle_unit: "PU-015"
     name: "Judge/PM audit packet"
@@ -70,7 +66,7 @@ thin_execution_tracker:
     - "Do not claim PU-015 complete until the live Judge/PM audit packet exists, independent reviewer artifacts are present or explicitly blocked, Linear field-text disposition is refreshed or explicitly blocked, and final documentation and requirement-by-requirement audits pass."
     - "A live Judge/PM audit packet still needs current runtime-card refs, delivery-truth verdicts, review-state, external-state, Linear state or blocker, validation receipts, root hygiene, unresolved-risk classification, and issueAuthorityMap proof."
     - "Treat Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 as tracker-alignment evidence only, not field-text-current or completion evidence."
-    - "PR #396 through PR #416 are merged provenance; do not reopen their repair lanes unless a fresh current-main regression proves a new blocker."
+    - "PR #396 through PR #417 are merged provenance; do not reopen their repair lanes unless a fresh current-main regression proves a new blocker."
     - "The next selected slice must preserve the one-PR-at-a-time route contract and must not claim Judge/PM readiness or parent-goal completion before the final audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
   review_artifacts:
@@ -210,7 +206,7 @@ current_slice_gate:
   next_required_handoff_steps:
     - "Use docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md as the thin restart tracker; keep old PR history as provenance, not active route work."
     - "Validate this current-main tracker refresh with receipts JSON parsing, audit freshness, goal-board validation, Kanban script validation, and git diff whitespace validation."
-    - "Use the pulled main checkout at f262c6c4c6646ada3821cdc3a0e9a7300b871746 as the main baseline after PR #416 merged; no active PR lane remains before the next packet/final-audit attempt."
+    - "Use the pulled main checkout at c44235a1cc564b435db7d73caaaf781dfd03acf3 as the main baseline after PR #417 merged; no active PR lane remains before the next packet/final-audit attempt."
     - "Linear JSC-363 has compact repo-truth route alignment via comment 81cfdd41-ff0e-4df1-b884-c01789e30a50; do not claim field-text currency until the older Phase 1 title/description wording is owner-accepted or updated."
     - "Treat PU-056 active-route runtime-card selection guard as merged through PR #410, the post-PR410 tracker refresh as merged through PR #411, the post-PR411 tracker refresh as merged through PR #412, PU-015 guardrails as merged through PR #413, and tracker refreshes as merged through PR #415; continue PU-015 from the blocked packet and pulled current-main route truth."
     - "Treat receipt-backed merged JSC-363 route/foundation lanes through PR #371 as completed current-main evidence at 528b9e1d04b7d7a555e05b505ac2ca45c2cc4856; do not reopen those PR lanes unless fresh GitHub or current-main validation shows a regression."
