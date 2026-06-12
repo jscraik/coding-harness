@@ -22,20 +22,20 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 
 ## Current Control Surface
 
-| Field               | Current Truth                                                                                                                                                            |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Parent issue        | JSC-363                                                                                                                                                                  |
-| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`                                                                                                             |
-| Current branch      | `codex/jsc-363-pu015-live-judge-pm-packet`                                                                                                                               |
-| Local main head     | `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`                                                                                                                               |
-| Origin main head    | `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`                                                                                                                               |
-| Main baseline       | `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`                                                                                                                               |
-| Active route count  | 1                                                                                                                                                                        |
-| Active route        | PU-015 live Judge/PM audit packet                                                                                                                                        |
-| Last closed route   | PR #415 merged                                                                                                                                                           |
-| Current route       | PU-015 PR #416 packet validation-reference, route-freshness, receipt-freshness, and receipt-ledger-change repair                                                         |
-| Current slice       | PU-015 blocked packet evidence and closeout proof                                                                                                                        |
-| Feature work status | PR #416 repair active at local receipt anchor `b2c7b345ecbd67826e12267388e66f7a233194f8`; reviewers still missing; packet validation surface is explicitly stale/blocked |
+| Field               | Current Truth                                                                                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Parent issue        | JSC-363                                                                                                                                                                 |
+| Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`                                                                                                            |
+| Current branch      | `codex/jsc-363-pu015-live-judge-pm-packet`                                                                                                                              |
+| Local main head     | `f262c6c4c6646ada3821cdc3a0e9a7300b871746`                                                                                                                              |
+| Origin main head    | `f262c6c4c6646ada3821cdc3a0e9a7300b871746`                                                                                                                              |
+| Main baseline       | `f262c6c4c6646ada3821cdc3a0e9a7300b871746`                                                                                                                              |
+| Active route count  | 1                                                                                                                                                                       |
+| Active route        | PU-015 live Judge/PM audit packet                                                                                                                                       |
+| Last closed route   | PR #416 merged                                                                                                                                                          |
+| Current route       | PU-015 live Judge/PM packet reviewer and final-audit disposition                                                                                                        |
+| Current slice       | PU-015 blocked packet evidence and closeout proof                                                                                                                       |
+| Feature work status | PR #416 merged and local main pulled to `f262c6c4c6646ada3821cdc3a0e9a7300b871746`; reviewers still missing; packet validation surface remains explicitly stale/blocked |
 
 ## Active Route
 
@@ -46,8 +46,8 @@ carried the post-PR414 tracker refresh. The first live PU-015 packet now exists
 and is blocked on missing independent reviewer artifacts. PU-056 remains
 closed on current main: runtime-card projects `issueKey: "JSC-363"` with the
 JSC-363 active spec and plan from the wide Current Active Route row. This
-tracker records PR #416 as the active packet validation-reference,
-route-freshness, receipt-freshness, and receipt-ledger-change repair and does
+tracker records PR #416 as merged packet validation-reference, route-freshness,
+receipt-freshness, and receipt-ledger-change repair provenance and does
 not claim Linear field-text currency, final documentation accuracy beyond
 current validators, Judge/PM readiness, release readiness, or parent-goal
 completion.
@@ -99,10 +99,10 @@ Current evidence:
   verdicts, review-state, external-state, Linear state or blocker, validation
   receipts, root hygiene, unresolved-risk classification, and issueAuthorityMap
   proof.
-- PR #416 is the active PR lane for the R492/R493/R494/R495/R496/R497/R498
-  packet validation-reference, route-freshness, receipt-freshness, and
-  receipt-ledger-change repair. Historical PR details remain in
-  `receipts.jsonl`; they are not active restart instructions.
+- PR #416 merged at `2026-06-12T08:34:40Z` from submitted head
+  `650969a4217b335a1dfb9184e18cae6f83e7dd3b` as squash merge
+  `f262c6c4c6646ada3821cdc3a0e9a7300b871746`. Historical PR details
+  remain in `receipts.jsonl`; they are not active restart instructions.
 
 ## Active Slice
 

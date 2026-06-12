@@ -159,15 +159,14 @@ Corrected backlog after current-main reconciliation:
 - Done on current main: PR #415 merged at
   `29dd0f0465cadcbedbaeb16f06ac0f4607177fa2`. See `receipts.jsonl` for
   complete merged route history.
-- Current route PR: #416, still open as the PU-015 packet validation-reference,
-  route-freshness, receipt-freshness, and receipt-ledger-change guardrail
-  repair. Latest local repair receipt: R498 /
-  `b2c7b345ecbd67826e12267388e66f7a233194f8`.
+- Current route PR: none. PR #416 merged at `2026-06-12T08:34:40Z` as
+  squash merge `f262c6c4c6646ada3821cdc3a0e9a7300b871746` from
+  submitted head `650969a4217b335a1dfb9184e18cae6f83e7dd3b`; R499
+  records local main pullback.
 - Completed slice: PU-056 active-route runtime-card selection guard; runtime-card
   on current main derives `issueKey: "JSC-363"` with the active JSC-363 spec
   and plan.
-- Remaining backlog after PR #415 and the first live packet: merge and pull
-  PR #416 only after live GitHub records it merged, collect or
+- Remaining backlog after PR #416 and the first live packet: collect or
   explicitly block independent reviewer artifacts, refresh or owner-classify
   Linear field-text currency, prove final documentation accuracy, and run the
   final requirement-by-requirement completion audit.
