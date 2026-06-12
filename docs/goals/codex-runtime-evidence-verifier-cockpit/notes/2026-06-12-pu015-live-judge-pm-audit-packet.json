@@ -56,9 +56,12 @@
 			},
 			{
 				"name": "validation",
-				"status": "pass",
-				"freshness": "current",
-				"evidenceRef": "validation:R493-route-freshness-repair"
+				"status": "blocked",
+				"freshness": "stale",
+				"evidenceRef": "validation:R493-route-freshness-repair",
+				"blockerClass": "stale_state",
+				"blockerCode": "validation_receipt_head_mismatch",
+				"blockerRefs": ["validation:R493-route-freshness-repair"]
 			},
 			{
 				"name": "root-hygiene",

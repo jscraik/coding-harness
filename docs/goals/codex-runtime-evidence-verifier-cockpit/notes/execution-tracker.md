@@ -35,7 +35,7 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Last closed route   | PR #415 merged                                               |
 | Current route       | PU-015 PR #416 packet validation-reference and route-freshness repair |
 | Current slice       | PU-015 blocked packet evidence and closeout proof            |
-| Feature work status | PR #416 repair active at `ce1ddfa2110a4d4520fec45832c314ee1ecd7b95`; reviewers still missing |
+| Feature work status | PR #416 repair active at `fa7b401f22ee4489e1b90695862baea9e9e6b06a`; reviewers still missing; packet validation surface is explicitly stale/blocked |
 
 ## Active Route
 

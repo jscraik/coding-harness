@@ -94,11 +94,13 @@ Current live route truth:
 - The live `PU-015 Judge/PM audit packet` now exists at
   `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json`.
   It is blocked on missing independent reviewer artifacts and does not claim
-  Judge/PM readiness, Linear field-text currency, or parent completion. PR #416
-  repair head `ce1ddfa2110a4d4520fec45832c314ee1ecd7b95` is the active
-  packet validation-reference and route-freshness repair for this packet
-  receipt; merge/pullback remains unclaimed until GitHub records PR #416 merged
-  and local main is pulled.
+  Judge/PM readiness, Linear field-text currency, or parent completion. Its
+  validation surface is explicitly stale/blocked because PR #416 repair
+  receipts do not validate the packet/verdict head. PR #416 repair head
+  `fa7b401f22ee4489e1b90695862baea9e9e6b06a` is the active packet
+  validation-staleness, validation-reference, and route-freshness repair for
+  this packet receipt; merge/pullback remains unclaimed until GitHub records
+  PR #416 merged and local main is pulled.
 - Earlier Linear JSC-363 evidence includes comment
   `81cfdd41-ff0e-4df1-b884-c01789e30a50` with the repo-truth
   classification. This refresh does not claim a fresh Linear MCP fetch. The

@@ -31,10 +31,10 @@ thin_execution_tracker:
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
     kind: "pu015_judge_pm_audit_packet_guardrail"
-    status: "pr416_open_route_freshness_repair_pending_push"
+    status: "pr416_open_packet_validation_staleness_repair_pending_push"
     blocker: "Parent completion remains blocked by missing independent reviewer artifacts, Linear field-text disposition, final documentation accuracy, and final requirement-by-requirement completion audit. The live PU-015 packet now exists and blocks Judge/PM readiness instead of leaving packet generation implicit."
-    current_pr_state: "PR #416 is open for the PU-015 live packet validation-reference and route-freshness repair; latest submitted repair head ce1ddfa2110a4d4520fec45832c314ee1ecd7b95 supersedes pre-repair checked head 1d4476330b66bab9487de340b45376e56ffd47d9. Local main and origin/main remain pulled to 29dd0f0465cadcbedbaeb16f06ac0f4607177fa2 after PR #415. Repo-owned CircleCI contexts passed on ce1ddfa2110a4d4520fec45832c314ee1ecd7b95; external security/snyk GitHub App quota lane remains owner-waived only for that quota failure."
-    test_and_audit_status: "PU-015 implementation, PR review repair, PR #413 hosted checks, PR #414 tracker-refresh hosted checks, and PR #415 tracker-refresh hosted checks passed for repo-owned lanes. The live PU-015 Judge/PM audit packet was generated at docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json and is blocked on missing independent reviewer artifacts."
+    current_pr_state: "PR #416 is open for the PU-015 live packet validation-staleness, validation-reference, and route-freshness repair; latest submitted repair head fa7b401f22ee4489e1b90695862baea9e9e6b06a supersedes earlier repair heads. Local main and origin/main remain pulled to 29dd0f0465cadcbedbaeb16f06ac0f4607177fa2 after PR #415. Repo-owned CircleCI contexts passed except ci/circleci: orb-pinning and aggregate pr-pipeline were still pending at the last refresh; external security/snyk GitHub App quota lane remains owner-waived only for that quota failure."
+    test_and_audit_status: "PU-015 implementation, PR review repair, PR #413 hosted checks, PR #414 tracker-refresh hosted checks, and PR #415 tracker-refresh hosted checks passed for repo-owned lanes. The live PU-015 Judge/PM audit packet was generated at docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json, is blocked on missing independent reviewer artifacts, and now marks the PR #416 validation receipt surface stale/blocked rather than current because it does not validate the packet/verdict head."
     active_route_drift_finding: "PU-055 found active-route selection drift and PU-056 fixed it on current main; runtime-card no longer drops the JSC-363 route key for wide Current Active Route rows."
     unclaimed_surfaces:
       - "Linear field-text currency beyond repo-truth comment 81cfdd41-ff0e-4df1-b884-c01789e30a50"
@@ -44,7 +44,7 @@ thin_execution_tracker:
     active_branch: "codex/jsc-363-pu015-live-judge-pm-packet"
     active_pr: 416
     active_pr_url: "https://github.com/jscraik/coding-harness/pull/416"
-    active_pr_last_checked_head_sha: "5b994bc9b816dc158a5ef18545d0ebb81780417c"
+    active_pr_last_checked_head_sha: "fa7b401f22ee4489e1b90695862baea9e9e6b06a"
     active_pr_head_sha_contract: "PR #416 is the current active PR lane. Do not claim merge or pullback until PR #416 is merged and local main is pulled to the merge commit."
     last_merged_pr: 415
     last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/415"
@@ -60,7 +60,7 @@ thin_execution_tracker:
     lifecycle_unit: "PU-015"
     name: "Judge/PM audit packet"
     status: "blocked_live_packet_missing_independent_reviewers"
-    evidence_receipt: "R495"
+    evidence_receipt: "R496"
     artifact: "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json"
   resume_gate:
     - "Do not claim PU-015 complete until the live Judge/PM audit packet exists, independent reviewer artifacts are present or explicitly blocked, Linear field-text disposition is refreshed or explicitly blocked, and final documentation and requirement-by-requirement audits pass."
