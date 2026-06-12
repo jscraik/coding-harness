@@ -22,6 +22,7 @@ from typing import Any, cast
 
 
 GOVERNED_AUDIT_PATH = ".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md"
+GOVERNED_GOAL_DIR = "docs/goals/codex-runtime-evidence-verifier-cockpit"
 REQUIRED_RECEIPT_FIELDS = (
     "id",
     "head_sha",
@@ -173,6 +174,10 @@ SELF_REFERENTIAL_DECLARABLE_PATHS = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS | {
     "src/dev/check-goal-audit-freshness-script.test.ts",
     "src/dev/check-goal-board-script.test.ts",
 }
+SELF_REFERENTIAL_DECLARABLE_NOTE_SUFFIXES = (
+    "-audit-packet.json",
+    "-audit-packet.md",
+)
 
 
 class ValidationError(Exception):
@@ -285,6 +290,15 @@ def changed_paths_between(repo_root: Path, base_head: str, current_head: str) ->
     return {line.strip() for line in completed.stdout.splitlines() if line.strip()}
 
 
+def is_self_referential_declarable_path(path: str) -> bool:
+    if path in SELF_REFERENTIAL_DECLARABLE_PATHS:
+        return True
+    notes_prefix = f"{GOVERNED_GOAL_DIR}/notes/"
+    return path.startswith(notes_prefix) and path.endswith(
+        SELF_REFERENTIAL_DECLARABLE_NOTE_SUFFIXES,
+    )
+
+
 def permits_self_referential_goal_receipt_commit(
     repo_root: Path,
     receipt: dict[str, Any],
@@ -302,7 +316,7 @@ def permits_self_referential_goal_receipt_commit(
         if not isinstance(value, str):
             return False
         declared_paths.add(normalize_repo_relative_path(value, "receipt.changed_files[]"))
-    if not declared_paths <= SELF_REFERENTIAL_DECLARABLE_PATHS:
+    if not all(is_self_referential_declarable_path(path) for path in declared_paths):
         return False
     changed_paths = changed_paths_between(repo_root, receipt_head_sha, current_head)
     allowed_paths = SELF_REFERENTIAL_GOAL_RECEIPT_PATHS | declared_paths

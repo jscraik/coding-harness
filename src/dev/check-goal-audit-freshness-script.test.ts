@@ -257,6 +257,44 @@ describe("check-goal-audit-freshness.py", () => {
 		});
 	});
 
+	it("accepts self-referential receipts for governed audit packet notes", () => {
+		const root = createTempRoot("audit-freshness-packet-notes-self-ref-");
+		const parentHead = tempRootHeads.get(root);
+		if (!parentHead) throw new Error("missing test repository head");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		const packetJson = join(
+			GOAL_DIR,
+			"notes/2026-06-12-pu015-live-judge-pm-audit-packet.json",
+		);
+		const packetMd = join(
+			GOAL_DIR,
+			"notes/2026-06-12-pu015-live-judge-pm-audit-packet.md",
+		);
+		const storedReceipt = {
+			...receipt(root),
+			changed_files: [join(GOAL_DIR, "receipts.jsonl"), packetJson, packetMd],
+		};
+		writeReceipts(root, [storedReceipt]);
+		mkdirSync(join(root, GOAL_DIR, "notes"), { recursive: true });
+		writeFileSync(join(root, packetJson), '{"status":"blocked"}\n');
+		writeFileSync(join(root, packetMd), "# Blocked packet\n");
+		runGit(root, [
+			"add",
+			join(GOAL_DIR, "receipts.jsonl"),
+			packetJson,
+			packetMd,
+		]);
+		runGit(root, ["commit", "-m", "record blocked packet"]);
+
+		const result = runValidator(root);
+
+		expect(result.status, result.stderr).toBe(0);
+		expect(JSON.parse(result.stdout)).toMatchObject({
+			head_sha: parentHead,
+			receipt_id: "R072",
+		});
+	});
+
 	it("accepts a shallow self-referential receipt checkout when declared files are goal-route evidence only", () => {
 		const root = createTempRoot("audit-freshness-shallow-source-");
 		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));

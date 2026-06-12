@@ -44,7 +44,7 @@ thin_execution_tracker:
     active_branch: "codex/jsc-363-pu015-live-judge-pm-packet"
     active_pr: 416
     active_pr_url: "https://github.com/jscraik/coding-harness/pull/416"
-    active_pr_last_checked_head_sha: "ce1ddfa2110a4d4520fec45832c314ee1ecd7b95"
+    active_pr_last_checked_head_sha: "5b994bc9b816dc158a5ef18545d0ebb81780417c"
     active_pr_head_sha_contract: "PR #416 is the current active PR lane. Do not claim merge or pullback until PR #416 is merged and local main is pulled to the merge commit."
     last_merged_pr: 415
     last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/415"
@@ -60,7 +60,7 @@ thin_execution_tracker:
     lifecycle_unit: "PU-015"
     name: "Judge/PM audit packet"
     status: "blocked_live_packet_missing_independent_reviewers"
-    evidence_receipt: "R494"
+    evidence_receipt: "R495"
     artifact: "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json"
   resume_gate:
     - "Do not claim PU-015 complete until the live Judge/PM audit packet exists, independent reviewer artifacts are present or explicitly blocked, Linear field-text disposition is refreshed or explicitly blocked, and final documentation and requirement-by-requirement audits pass."
