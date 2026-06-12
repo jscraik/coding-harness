@@ -43,7 +43,7 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-12 post-PR412 pullback tracker refresh. Merged
+Last updated during the 2026-06-12 post-PR413 pullback tracker refresh. Merged
 PR history is receipt provenance, not the active route. Use `receipts.jsonl` for
 the complete PR ledger and keep this section limited to the current restart
 truth.
@@ -67,17 +67,22 @@ Current live route truth:
   `7e0dde9c0408388fc228e8c2afe049593f1b0b71` at
   `2026-06-12T00:24:41Z`; it was tracker evidence only, not PU-015
   implementation evidence.
+- PR #413 merged the PU-015 Judge/PM guardrail implementation from submitted
+  head `92ade70b083c14a9a7596f3b1904b6bec6c57e3d` as merge commit
+  `d3b6dd661ac86395f7b45d2c8a39526b14583d35` at
+  `2026-06-12T04:22:45Z`; it is PU-015 guardrail evidence, not the live
+  Judge/PM packet or parent completion evidence.
 - Local `main` and `origin/main` are synced at
-  `7e0dde9c0408388fc228e8c2afe049593f1b0b71` after PR #412 was merged and
+  `d3b6dd661ac86395f7b45d2c8a39526b14583d35` after PR #413 was merged and
   pulled back.
-- Live GitHub reported zero open pull requests before this local tracker-refresh
-  branch was created.
+- Live GitHub reported zero open pull requests before this post-PR413
+  tracker-refresh branch was created.
 - Runtime-card on pulled current main returns `issueKey: "JSC-363"` with the
   JSC-363 active spec and plan, closing the PU-056 route-key guard.
 - Branch and worktree cleanup removed obsolete auxiliary worktrees and stale
   local/remote `codex/*` branches; only `main` and `origin/main` remain.
-- The next safe action is to accept or explicitly waive this local post-PR412
-  tracker refresh, then start `PU-015 Judge/PM audit packet` from the PR #412
+- The next safe action is to merge and pull back the post-PR413 tracker
+  refresh, then start `PU-015 Judge/PM audit packet` from the PR #413
   merge commit. PU-015 must produce the live packet only from current-main
   evidence and keep Linear field-text currency as an explicit owner/external
   lane until accepted, refreshed, or classified.
@@ -129,24 +134,26 @@ Stop conditions:
 
 Current route truth:
 
-- Current route: PU-015 Judge/PM audit packet guardrail implementation is
-  committed locally at `89c73c64d48a9b09c6d8e6eadb77bd0f4267fdce` and pending
-  one-PR review/merge.
-- Provenance: See `receipts.jsonl` for merged route history through PR #412.
+- Current route: PU-015 Judge/PM audit packet guardrails are merged through
+  PR #413 and pulled back to local `main`; the live Judge/PM packet remains the
+  selected next slice after the post-PR413 tracker refresh lands.
+- Provenance: See `receipts.jsonl` for merged route history through PR #413.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #412 merged at
-  `7e0dde9c0408388fc228e8c2afe049593f1b0b71`. See `receipts.jsonl` for
+- Done on current main: PR #413 merged at
+  `d3b6dd661ac86395f7b45d2c8a39526b14583d35`. See `receipts.jsonl` for
   complete merged route history.
-- Current route PR: none yet for the committed PU-015 implementation branch.
+- Current route PR: PR #414 is the in-flight post-PR413 tracker refresh; it is
+  not merge or completion evidence until GitHub records it merged and local
+  main is pulled back.
 - Completed slice: PU-056 active-route runtime-card selection guard; runtime-card
   on current main derives `issueKey: "JSC-363"` with the active JSC-363 spec
   and plan.
-- Remaining backlog after this committed local PU-015 guardrail branch: open and merge
-  the one-PR slice, generate the live Judge/PM audit packet, refresh or block
-  Linear field-text currency, prove final documentation accuracy, and run the
-  final requirement-by-requirement completion audit.
+- Remaining backlog after PR #413: merge and pull back the post-PR413 tracker
+  refresh, generate the live Judge/PM audit packet, refresh or block Linear
+  field-text currency, prove final documentation accuracy, and run the final
+  requirement-by-requirement completion audit.
 
 ## Why This Exists
 

@@ -10,7 +10,7 @@
 
 ## Scope
 
-Current working reconciliation: 2026-06-12 post-PR #412 pullback for JSC-363.
+Current working reconciliation: 2026-06-12 post-PR #413 pullback for JSC-363.
 PR #410 merged the PU-056 active-route runtime-card selection guard into
 `main` at `41ac068ae7c9e9425681a5d42358eaf120f24c04` from submitted head
 `2067365c6149ebdf96aa181377ca5c151536c216`. PR #411 then merged the
@@ -31,7 +31,8 @@ implementation. PU-015 local tests now prove receipt-backed reviewer proof and
 claimed authority matching, with Linear field-text currency still unclaimed as
 an input to final closeout.
 PR #411 and PR #412 are not PU-015 implementation evidence and do not claim
-parent completion. Obsolete auxiliary worktrees and stale local/remote
+parent completion. PR #413 is PU-015 guardrail evidence, not live Judge/PM
+packet or parent-completion evidence. Obsolete auxiliary worktrees and stale local/remote
 `codex/*` branches remained absent during this refresh.
 PR #389 merged into `main` at 2026-06-09T08:54:35Z as squash merge commit
 `2b1b20cbaab259041b53e53fcabfa24a248528a2` from submitted head
@@ -79,11 +80,14 @@ CodeRabbit completion, review-thread state, mergeability, and merge execution
 remain separate evidence lanes. Historical selector provenance: the
 current-main closeout/backlog audit selected PU-056, and PR #410 merged that
 guard. That selector note is historical provenance only. Active gate: this
-post-PR412 tracker refresh must be accepted or explicitly waived before PU-015
-Judge/PM audit packet preparation starts from the PR #412 merge commit. Linear
+post-PR413 tracker refresh must be merged and pulled back before PU-015
+Judge/PM audit packet preparation starts from the PR #413 merge commit. Linear
 field-text currency beyond the new
 comment, final documentation accuracy, Judge/PM readiness, and parent-goal
 completion remain unclaimed until the packet and final audit prove them.
+PR #414 is the current in-flight post-PR413 tracker-refresh lane; it is not
+merge, Judge/PM readiness, or parent-goal completion evidence until GitHub
+records it merged and local main is pulled back.
 
 Historical snapshot: Last reconciled: 2026-06-07 after PR #365 merged into `main` at
 2026-06-07T09:18:13Z as squash merge commit
@@ -182,7 +186,7 @@ runtime producer emission, delivery-truth consumption, or final goal completion.
 | JSC-301 | route-decision-contract | `.harness/specs/2026-05-11-jsc-301-route-decision-contract-spec.md` | `.harness/plan/2026-05-11-JSC-301-route-decision-contract-plan.md` | Archived PR closeout context | Not the next active implementation slice. Keep as dependency context for JSC-311 control-plane work. |
 | JSC-311 | he-phase-exit-evidence-gates | `.harness/specs/2026-05-13-jsc-311-he-phase-exit-evidence-gates-spec.md` | `.harness/plan/2026-05-13-JSC-311-he-phase-exit-evidence-gates-plan.md` | Implemented in current checkout; validation/PR closeout pending | PR #247 merged the internal `HeGateResult/v1` / `HePhaseExit/v1` contract and worktree baseline. The current checkout adds the operator-visible `harness next --phase-exit <artifact>` path. |
 | JSC-331 | harness-assurance-artifact-handling | n.a. | `.harness/plan/2026-05-18-agent-testing-gates-harness-assurance-plan.md`; `.harness/research/audits/2026-05-20-evidence-led-codebase-gap-audit.md`; `docs/goals/jsc-331-goal-governed-evidence-led-implementation/goal.md` | Active assurance route with ready-not-started Goal Governor board | Selected instead of creating a duplicate issue because live Linear already has a coding-harness apparatus/assurance lane. The audit now adds the Codex runtime-evidence contract and `.agents` observed-state bridge as the next durable hardening targets. The Goal Governor board is prepared for owner kickoff and begins with read-only governor bootstrap, not Worker implementation. JSC-308 remains related HE artifact-policy context. |
-| JSC-363 | codex-runtime-evidence-verifier-cockpit | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` | `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md`; `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`; `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md`; `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md`; `.harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md`; `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Current active Goal Governor route for this thread | The board governs the full lifecycle, not just Phase 1. The thin execution tracker is the restart surface. Current main includes PR #412 at `7e0dde9c0408388fc228e8c2afe049593f1b0b71`; PR #410 merged PU-056 and PR #412 merged the post-PR411 tracker refresh. Earlier route-repair PRs are merged provenance only. Active gate: PU-015 local guardrails are validated on branch `codex/jsc-363-pu015-judge-pm-audit-packet`, pending commit, PR review/CI, merge, pullback, and live Judge/PM packet generation. Linear tracker-alignment comment `81cfdd41-ff0e-4df1-b884-c01789e30a50` is historical repo-truth evidence only; field-text currency beyond that comment, final documentation accuracy, Judge/PM readiness, and parent completion remain unclaimed. |
+| JSC-363 | codex-runtime-evidence-verifier-cockpit | `.harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md` | `.harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md`; `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`; `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md`; `.harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md`; `.harness/research/deep/2026-05-26-codex-ecosystem-operational-review.md`; `.harness/research/deep/2026-05-27-codex-system-prompt-operational-analysis.md` | Current active Goal Governor route for this thread | The board governs the full lifecycle, not just Phase 1. The thin execution tracker is the restart surface. Current main includes PR #413 at `d3b6dd661ac86395f7b45d2c8a39526b14583d35`; PR #410 merged PU-056, PR #412 merged the post-PR411 tracker refresh, and PR #413 merged PU-015 guardrails. Earlier route-repair PRs are merged provenance only. Active gate: PR #414 is the in-flight post-PR413 tracker refresh; after it is merged and local main is pulled back, start live Judge/PM packet generation from current-main evidence. Linear tracker-alignment comment `81cfdd41-ff0e-4df1-b884-c01789e30a50` is historical repo-truth evidence only; field-text currency beyond that comment, final documentation accuracy, Judge/PM readiness, and parent completion remain unclaimed. |
 | JSC-395 | advisory-stale-document-archive-candidate-reporting | `.harness/specs/2026-06-05-advisory-stale-document-archive-candidate-reporting-spec.md` | `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-trace-plan.md`; `.harness/plan/2026-06-05-advisory-stale-document-archive-candidate-reporting-execution-plan.md` | Delivered historical route | Implements an advisory, read-only archive-candidate report and docs-gate projection. It must preserve the boundary that candidate findings are not archive, delete, demotion, or movement authority. It is not the current active route. |
 
 ## Duplicate Resolution
