@@ -109,6 +109,10 @@ function printUsage(options: { includeExpertCommands?: boolean } = {}): void {
 }
 export { parseIntegerArg, parseCsvList };
 
+function stripOptionalBinaryPrefix(args: string[]): string[] {
+	return args[0] === "harness" ? args.slice(1) : args;
+}
+
 /**
  * Attempt fuzzy command resolution and dispatch if a match is found.
  *
@@ -174,7 +178,7 @@ export function run(args: string[]): void {
 	const disableFuzzyFlag = args.includes("--no-fuzzy");
 	const allowFuzzyFromEnv = process.env.HARNESS_ALLOW_FUZZY_COMMANDS === "1";
 	const allowFuzzy = !disableFuzzyFlag && (allowFuzzyFlag || allowFuzzyFromEnv);
-	const dispatchArgs = args.filter(
+	const dispatchArgs = stripOptionalBinaryPrefix(args).filter(
 		(arg) => arg !== "--allow-fuzzy" && arg !== "--no-fuzzy",
 	);
 	const version = getVersion();
