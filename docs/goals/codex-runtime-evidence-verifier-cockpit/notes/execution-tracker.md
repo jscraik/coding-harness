@@ -26,21 +26,21 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Parent issue        | JSC-363                                                                                                                                                                 |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`                                                                                                            |
-| Current branch      | `codex/jsc-363-post-pr418-tracker-refresh`                                                                                                                             |
-| Local main head     | `57f94562de64c03fd80c244276b31d95edd2b3ca`                                                                                                                              |
-| Origin main head    | `57f94562de64c03fd80c244276b31d95edd2b3ca`                                                                                                                              |
-| Main baseline       | `57f94562de64c03fd80c244276b31d95edd2b3ca`                                                                                                                              |
+| Current branch      | `codex/jsc-363-post-pr419-tracker-refresh`                                                                                                                             |
+| Local main head     | `125b31b45170fb3f07e77b365c01eff41262c2d4`                                                                                                                              |
+| Origin main head    | `125b31b45170fb3f07e77b365c01eff41262c2d4`                                                                                                                              |
+| Main baseline       | `125b31b45170fb3f07e77b365c01eff41262c2d4`                                                                                                                              |
 | Active route count  | 1                                                                                                                                                                       |
 | Active route        | PU-015 live Judge/PM audit packet                                                                                                                                       |
-| Last closed route   | PR #418 merged                                                                                                                                                          |
+| Last closed route   | PR #419 merged                                                                                                                                                          |
 | Current route       | PU-015 live Judge/PM packet reviewer and final-audit disposition                                                                                                        |
 | Current slice       | PU-015 blocked packet evidence and closeout proof                                                                                                                       |
-| Feature work status | No active PR lane after PR #418 merge/pullback; reviewers still missing; packet validation surface remains explicitly stale/blocked |
+| Feature work status | No active PR lane after PR #419 merge/pullback; reviewers still missing; packet validation surface remains explicitly stale/blocked |
 
 ## Active Route
 
-PR #418 is merged and local `main` plus `origin/main` are synced at
-`57f94562de64c03fd80c244276b31d95edd2b3ca`. PR #413 carried the PU-015
+PR #419 is merged and local `main` plus `origin/main` are synced at
+`125b31b45170fb3f07e77b365c01eff41262c2d4`. PR #413 carried the PU-015
 Judge/PM guardrails, PR #414 and PR #415 carried tracker refreshes, and PR #416
 carried the packet validation-staleness, validation-reference, route-freshness,
 receipt-freshness, and receipt-ledger-change repair. The first live PU-015 packet now exists
@@ -48,7 +48,8 @@ and is blocked on missing independent reviewer artifacts. PU-056 remains
 closed on current main: runtime-card projects `issueKey: "JSC-363"` with the
 JSC-363 active spec and plan from the wide Current Active Route row. This
 tracker records PR #416 as merged packet validation-reference, route-freshness,
-receipt-freshness, and receipt-ledger-change repair provenance and PR #417 as merged tracker/review-thread repair provenance; it does
+receipt-freshness, and receipt-ledger-change repair provenance and PR #417
+through PR #419 as merged tracker/review-thread repair provenance; it does
 not claim Linear field-text currency, final documentation accuracy beyond
 current validators, Judge/PM readiness, release readiness, or parent-goal
 completion.
@@ -111,6 +112,10 @@ Current evidence:
 - PR #418 merged at `2026-06-12T10:52:22Z` from submitted head
   `491cbcc30b645357994943195e143cc0da53631f` as squash merge
   `57f94562de64c03fd80c244276b31d95edd2b3ca`. Historical PR details
+  remain in `receipts.jsonl`; they are not active restart instructions.
+- PR #419 merged at `2026-06-12T11:32:21Z` from submitted head
+  `9c7e780783e809345f1f57c679772852aa093b77` as squash merge
+  `125b31b45170fb3f07e77b365c01eff41262c2d4`. Historical PR details
   remain in `receipts.jsonl`; they are not active restart instructions.
 
 ## Active Slice
@@ -180,7 +185,7 @@ Judge/PM packet work may start only after local main is pulled back and the
 route tracker is current. The packet must stop if any of these are false:
 
 - Local `main` and `origin/main` are synced to
-  `57f94562de64c03fd80c244276b31d95edd2b3ca` or a later pulled main commit.
+  `125b31b45170fb3f07e77b365c01eff41262c2d4` or a later pulled main commit.
 - Runtime-card on pulled current main returns `issueKey: "JSC-363"` with the
   JSC-363 active spec and plan.
 - Linear JSC-363 field-text currency is refreshed, owner-classified as not
@@ -197,18 +202,18 @@ Use this payload only after Linear access is available or an owner explicitly
 approves posting the blocker classification for JSC-363:
 
 ```md
-Refreshed JSC-363 current-main route truth after PR #417 merge and PU-015 packet blocker repair.
+Refreshed JSC-363 current-main route truth after PR #419 merge and PU-015 packet blocker repair.
 
 Current truth:
 
-- Active route lane: PU-015 Judge/PM audit packet blocked-readiness proof after PR #418 pullback.
-- Latest merged route: PR #418.
-- Local main head: `57f94562de64c03fd80c244276b31d95edd2b3ca`.
-- Origin main head: `57f94562de64c03fd80c244276b31d95edd2b3ca`.
-- Current GitHub check rollup showed repo-owned required checks for PR #418 pass before merge.
+- Active route lane: PU-015 Judge/PM audit packet blocked-readiness proof after PR #419 pullback.
+- Latest merged route: PR #419.
+- Local main head: `125b31b45170fb3f07e77b365c01eff41262c2d4`.
+- Origin main head: `125b31b45170fb3f07e77b365c01eff41262c2d4`.
+- Current GitHub check rollup showed repo-owned required checks for PR #419 pass before merge.
 - Runtime-card current-main output returns issueKey JSC-363 with the JSC-363 active spec and plan.
 - PU-013 runtime cockpit integration proof is merged and pulled back to local `main`.
-- PR #413 is merged PU-015 guardrail evidence, PR #414/PR #415 are merged tracker evidence, PR #416 is merged packet-route repair evidence, and PR #417/PR #418 are merged tracker/review-thread repair evidence. The live packet exists and is blocked on missing independent reviewer artifacts; all remain separate from Linear field-text currency, Judge/PM readiness, and parent goal completion claims.
+- PR #413 is merged PU-015 guardrail evidence, PR #414/PR #415 are merged tracker evidence, PR #416 is merged packet-route repair evidence, and PR #417/PR #418/PR #419 are merged tracker/review-thread repair evidence. The live packet exists and is blocked on missing independent reviewer artifacts; all remain separate from Linear field-text currency, Judge/PM readiness, and parent goal completion claims.
 - PU-056 deterministic guard coverage is merged and pulled back.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
 - Linear JSC-363 has repo-truth comment `81cfdd41-ff0e-4df1-b884-c01789e30a50`; field-text currency remains unclaimed until a fresh Linear fetch or owner classification is recorded.
