@@ -59,7 +59,7 @@ thin_execution_tracker:
     lifecycle_unit: "PU-015"
     name: "Judge/PM audit packet"
     status: "local_guardrails_committed_pending_pr"
-    evidence_receipt: "R483"
+    evidence_receipt: "R484"
   resume_gate:
     - "Do not claim PU-015 complete until this local implementation is opened as one PR, reviewed, merged, pulled back to main, and reconciled with a fresh tracker receipt."
     - "A live Judge/PM audit packet still needs current runtime-card refs, delivery-truth verdicts, review-state, external-state, Linear state or blocker, validation receipts, root hygiene, unresolved-risk classification, and issueAuthorityMap proof."
