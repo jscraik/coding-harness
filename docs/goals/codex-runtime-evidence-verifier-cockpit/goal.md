@@ -96,9 +96,9 @@ Current live route truth:
   It is blocked on missing independent reviewer artifacts and does not claim
   Judge/PM readiness, Linear field-text currency, or parent completion. Its
   validation surface is explicitly stale/blocked because PR #416 repair
-  receipts do not validate the packet/verdict head. PR #416 repair head
-  `fa7b401f22ee4489e1b90695862baea9e9e6b06a` is the active packet
-  validation-staleness, validation-reference, and route-freshness repair for
+  receipts do not validate the packet/verdict head. PR #416 repair receipt anchor
+  `1e6b822937008ecc7dd3ec57bda650fe3d578065` is the active packet
+  validation-staleness, validation-reference, route-freshness, and receipt-freshness repair for
   this packet receipt; merge/pullback remains unclaimed until GitHub records
   PR #416 merged and local main is pulled.
 - Earlier Linear JSC-363 evidence includes comment

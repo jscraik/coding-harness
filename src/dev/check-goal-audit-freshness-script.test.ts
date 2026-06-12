@@ -295,6 +295,78 @@ describe("check-goal-audit-freshness.py", () => {
 		});
 	});
 
+	it("accepts unreachable reviewed heads when the current commit only changes declared packet notes", () => {
+		const root = createTempRoot("audit-freshness-unreachable-packet-head-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		const packetJson = join(
+			GOAL_DIR,
+			"notes/2026-06-12-pu015-live-judge-pm-audit-packet.json",
+		);
+		const packetMd = join(
+			GOAL_DIR,
+			"notes/2026-06-12-pu015-live-judge-pm-audit-packet.md",
+		);
+		const unreachableHead = "1".repeat(40);
+		const storedReceipt = {
+			...receipt(root),
+			head_sha: unreachableHead,
+			changed_files: [join(GOAL_DIR, "receipts.jsonl"), packetJson, packetMd],
+		};
+		const storedSource = storedReceipt.audit_sources_checked[0];
+		if (!storedSource) throw new Error("missing audit source");
+		storedSource.head_sha = unreachableHead;
+		writeReceipts(root, [storedReceipt]);
+		mkdirSync(join(root, GOAL_DIR, "notes"), { recursive: true });
+		writeFileSync(join(root, packetJson), '{"status":"blocked"}\n');
+		writeFileSync(join(root, packetMd), "# Blocked packet\n");
+		runGit(root, [
+			"add",
+			join(GOAL_DIR, "receipts.jsonl"),
+			packetJson,
+			packetMd,
+		]);
+		runGit(root, ["commit", "-m", "record reviewed packet"]);
+
+		const result = runValidator(root);
+
+		expect(result.status, result.stderr).toBe(0);
+		expect(JSON.parse(result.stdout)).toMatchObject({
+			head_relation: "current_commit_self_referential",
+			head_sha: unreachableHead,
+			receipt_id: "R072",
+		});
+	});
+
+	it("rejects unreachable reviewed heads when notes are outside the packet allowlist", () => {
+		const root = createTempRoot("audit-freshness-unreachable-notes-boundary-");
+		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
+		const disallowedNote = join(
+			GOAL_DIR,
+			"notes/2026-06-12-pu015-live-judge-pm-audit-notes.md",
+		);
+		const unreachableHead = "1".repeat(40);
+		const storedReceipt = {
+			...receipt(root),
+			head_sha: unreachableHead,
+			changed_files: [join(GOAL_DIR, "receipts.jsonl"), disallowedNote],
+		};
+		const storedSource = storedReceipt.audit_sources_checked[0];
+		if (!storedSource) throw new Error("missing audit source");
+		storedSource.head_sha = unreachableHead;
+		writeReceipts(root, [storedReceipt]);
+		mkdirSync(join(root, GOAL_DIR, "notes"), { recursive: true });
+		writeFileSync(join(root, disallowedNote), "# Unsupported note\n");
+		runGit(root, ["add", join(GOAL_DIR, "receipts.jsonl"), disallowedNote]);
+		runGit(root, ["commit", "-m", "record unsupported note"]);
+
+		const result = runValidator(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"receipt.head_sha must be reachable from current repository HEAD",
+		);
+	});
+
 	it("accepts a shallow self-referential receipt checkout when declared files are goal-route evidence only", () => {
 		const root = createTempRoot("audit-freshness-shallow-source-");
 		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));

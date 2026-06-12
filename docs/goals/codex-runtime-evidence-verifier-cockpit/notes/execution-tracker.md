@@ -33,9 +33,9 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Active route count  | 1                                                            |
 | Active route        | PU-015 live Judge/PM audit packet                            |
 | Last closed route   | PR #415 merged                                               |
-| Current route       | PU-015 PR #416 packet validation-reference and route-freshness repair |
+| Current route       | PU-015 PR #416 packet validation-reference, route-freshness, and receipt-freshness repair |
 | Current slice       | PU-015 blocked packet evidence and closeout proof            |
-| Feature work status | PR #416 repair active at `fa7b401f22ee4489e1b90695862baea9e9e6b06a`; reviewers still missing; packet validation surface is explicitly stale/blocked |
+| Feature work status | PR #416 repair active at receipt anchor `1e6b822937008ecc7dd3ec57bda650fe3d578065`; reviewers still missing; packet validation surface is explicitly stale/blocked |
 
 ## Active Route
 

@@ -17,6 +17,7 @@ maintenance_trigger:
 semver_impact: patch
 validated_by:
   - bash scripts/validate-codestyle.sh --fast
+  - python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit
   - python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit
 depends_on:
   - docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md
