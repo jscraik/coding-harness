@@ -3,6 +3,7 @@ import {
 	HARNESS_CLOSEOUT_GATE_IDS,
 	type HePhaseExit,
 } from "../decision/he-phase-exit.js";
+import { isSafeEvidenceReceiptPointer } from "../evidence/evidence-receipt.js";
 import type {
 	PrCloseoutBlocker,
 	PrCloseoutCheckInput,
@@ -425,8 +426,10 @@ function isReviewArtifactReceipt(receipt: unknown): boolean {
 		receipt.schemaVersion === "evidence-receipt/v1" &&
 		typeof receipt.ref === "string" &&
 		receipt.ref.length > 0 &&
+		isSafeEvidenceReceiptPointer(receipt.ref) &&
 		typeof receipt.producer === "string" &&
 		receipt.producer.length > 0 &&
+		isSafeEvidenceReceiptPointer(receipt.producer) &&
 		(receipt.producedAt === undefined ||
 			typeof receipt.producedAt === "string") &&
 		(receipt.verifiedAt === undefined || typeof receipt.verifiedAt === "string")

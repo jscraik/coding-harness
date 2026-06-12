@@ -832,6 +832,57 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
+	it.each([
+		{
+			name: "receipt ref",
+			receiptOverride: {
+				ref: "review-state:.harness/review/pr-258-reviewer.md\nraw prompt",
+			},
+		},
+		{
+			name: "receipt producer",
+			receiptOverride: {
+				producer: "harness-product-code-reviewer\ntoken=unsafe",
+			},
+		},
+	] as const)("blocks review artifact proofs with unsafe $name pointers", ({
+		receiptOverride,
+	}) => {
+		const path = ".harness/review/pr-258-reviewer.md";
+		const producer = "harness-product-code-reviewer";
+		const report = buildPrCloseoutReport(
+			baseInput({
+				reviewArtifacts: [
+					{
+						path,
+						producer,
+						status: "present",
+						evidenceRef: `artifact:${path}`,
+					},
+				],
+				reviewerArtifactProofs: [
+					{
+						path,
+						producer,
+						evidenceVerified: true,
+						receipt: reviewArtifactReceipt(path, producer, receiptOverride),
+					},
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).toBe("fixable");
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "review_artifact",
+					reason: `Review artifact ${path} is present but its verifier proof is not backed by a current claim-support receipt.`,
+				}),
+			]),
+		);
+	});
+
 	it("projects supplied delivery-truth verdicts without replacing closeout claims", () => {
 		const report = buildPrCloseoutReport(
 			baseInput({
