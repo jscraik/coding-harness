@@ -24,7 +24,6 @@ import {
 	isPassingCheck,
 	normalizeStatus,
 } from "./evidence.js";
-import { validateEvidenceReceipt } from "../evidence/evidence-receipt.js";
 
 function pushBlocker(
 	blockers: PrCloseoutBlocker[],
@@ -314,7 +313,8 @@ export function collectReviewArtifactBlockers(
 					? `Review artifact ${artifact.path} is present but its verifier proof is not backed by a current claim-support receipt.`
 					: `Review artifact ${artifact.path} is present but lacks matching verifier proof.`,
 				fixableByCodex: true,
-				ref: proof?.receipt.ref ?? artifact.evidenceRef ?? artifact.path,
+				ref:
+					receiptRef(proof?.receipt) ?? artifact.evidenceRef ?? artifact.path,
 			});
 			continue;
 		}
@@ -333,10 +333,9 @@ function isUsableReviewerArtifactProof(
 	proof: PrCloseoutReviewerArtifactProof,
 	artifact: PrCloseoutReviewArtifactInput,
 ): boolean {
-	const validation = validateEvidenceReceipt(proof.receipt);
 	return (
 		proof.evidenceVerified === true &&
-		validation.valid &&
+		isReviewArtifactReceipt(proof.receipt) &&
 		proof.receipt.kind === "review_artifact" &&
 		proof.receipt.ref === `review-state:${artifact.path}` &&
 		proof.receipt.producer === artifact.producer &&
@@ -347,6 +346,30 @@ function isUsableReviewerArtifactProof(
 		typeof proof.receipt.sizeBytes === "number" &&
 		proof.receipt.sizeBytes > 0
 	);
+}
+
+function receiptRef(receipt: unknown): string | null {
+	return isRecord(receipt) && typeof receipt.ref === "string"
+		? receipt.ref
+		: null;
+}
+
+function isReviewArtifactReceipt(receipt: unknown): boolean {
+	return (
+		isRecord(receipt) &&
+		receipt.schemaVersion === "evidence-receipt/v1" &&
+		typeof receipt.ref === "string" &&
+		receipt.ref.length > 0 &&
+		typeof receipt.producer === "string" &&
+		receipt.producer.length > 0 &&
+		(receipt.producedAt === undefined ||
+			typeof receipt.producedAt === "string") &&
+		(receipt.verifiedAt === undefined || typeof receipt.verifiedAt === "string")
+	);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** Add a blocker when PR handoff lacks session or traceability evidence. */
