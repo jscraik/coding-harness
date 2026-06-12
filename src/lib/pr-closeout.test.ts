@@ -589,6 +589,43 @@ describe("buildPrCloseoutReport", () => {
 		);
 	});
 
+	it("blocks malformed review artifact proofs with null receipts without throwing", () => {
+		const path = ".harness/review/pr-258-reviewer.md";
+		const producer = "harness-product-code-reviewer";
+		const report = buildPrCloseoutReport(
+			baseInput({
+				reviewArtifacts: [
+					{
+						path,
+						producer,
+						status: "present",
+						evidenceRef: `artifact:${path}`,
+					},
+				],
+				reviewerArtifactProofs: [
+					{
+						path,
+						producer,
+						evidenceVerified: true,
+						receipt: null as unknown as EvidenceReceipt,
+					},
+				],
+			}),
+			{ now: new Date("2026-05-16T12:00:00.000Z") },
+		);
+
+		expect(report.status).toBe("fixable");
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "review_artifact",
+					reason: `Review artifact ${path} is present but its verifier proof is not backed by a current claim-support receipt.`,
+					ref: `artifact:${path}`,
+				}),
+			]),
+		);
+	});
+
 	it("blocks review artifact proofs generated for a different PR head", () => {
 		const path = ".harness/review/pr-258-reviewer.md";
 		const producer = "harness-product-code-reviewer";

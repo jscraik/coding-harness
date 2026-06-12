@@ -337,19 +337,22 @@ function isUsableReviewerArtifactProof(
 	artifact: PrCloseoutReviewArtifactInput,
 	prHeadSha: string | null | undefined,
 ): boolean {
-	const sizeBytes = proof.receipt.sizeBytes;
+	if (!isReviewArtifactReceipt(proof.receipt)) {
+		return false;
+	}
+	const receipt = proof.receipt;
+	const sizeBytes = receipt.sizeBytes;
 	return (
 		proof.evidenceVerified === true &&
-		isReviewArtifactReceipt(proof.receipt) &&
-		proof.receipt.kind === "review_artifact" &&
-		proof.receipt.ref === `review-state:${artifact.path}` &&
-		proof.receipt.producer === artifact.producer &&
-		proof.receipt.status === "pass" &&
-		proof.receipt.freshness === "current" &&
-		proof.receipt.evidenceUse === "claim_support" &&
-		proof.receipt.blockerClass === null &&
-		hasValidReceiptTimestamp(proof.receipt) &&
-		matchesPrHeadSha(proof.receipt.headSha, prHeadSha) &&
+		receipt.kind === "review_artifact" &&
+		receipt.ref === `review-state:${artifact.path}` &&
+		receipt.producer === artifact.producer &&
+		receipt.status === "pass" &&
+		receipt.freshness === "current" &&
+		receipt.evidenceUse === "claim_support" &&
+		receipt.blockerClass === null &&
+		hasValidReceiptTimestamp(receipt) &&
+		matchesPrHeadSha(receipt.headSha, prHeadSha) &&
 		typeof sizeBytes === "number" &&
 		Number.isInteger(sizeBytes) &&
 		sizeBytes > 0
