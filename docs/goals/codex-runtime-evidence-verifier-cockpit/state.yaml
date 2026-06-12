@@ -31,45 +31,40 @@ thin_execution_tracker:
     history_policy: "merged PR history is provenance unless a fresh current-main regression reopens it"
   active_route:
     kind: "pu015_judge_pm_audit_packet_guardrail"
-    status: "pr413_open_reviewer_thread_repair_committed_pending_push"
-    blocker: "Parent completion remains blocked by PU-015 PR/review/merge pullback, live Judge/PM audit packet generation, reviewer artifacts, Linear field-text disposition, final documentation accuracy, and final requirement-by-requirement completion audit."
-    current_pr_state: "PR #412 merged at 2026-06-12T00:24:41Z as squash merge 7e0dde9c0408388fc228e8c2afe049593f1b0b71 from submitted head a81d783aeef3f05d6e3668a4e33ed4e216e6a756. PU-015 PR #413 is open on branch codex/jsc-363-pu015-judge-pm-audit-packet. Latest local reviewer-thread repair head is 20a807dae3d0c257ebbbc3353685ef330ee86d99; review/CI/merge freshness must be rechecked after this repair is pushed."
-    test_and_audit_status: "PU-015 local code validation passed for receipt-backed reviewer proof and claimed-authority mismatch fixtures. Commands passed: pnpm vitest run src/lib/delivery-truth/*.test.ts src/lib/pr-closeout/*.test.ts; bash scripts/validate-codestyle.sh --fast; pnpm run quality:docstrings; pnpm run quality:size; pnpm run quality:self-affirming; pnpm run test:related. test:related reported non-blocking drift-gate README command-index warnings unrelated to this slice."
+    status: "pu015_merged_pulled_current_main_pending_live_audit_packet"
+    blocker: "Parent completion remains blocked by live Judge/PM audit packet generation, independent reviewer artifacts, Linear field-text disposition, final documentation accuracy, and final requirement-by-requirement completion audit."
+    current_pr_state: "PR #413 merged at 2026-06-12T04:22:45Z as squash merge d3b6dd661ac86395f7b45d2c8a39526b14583d35 from submitted head 92ade70b083c14a9a7596f3b1904b6bec6c57e3d. Local main and origin/main are pulled to d3b6dd661ac86395f7b45d2c8a39526b14583d35. Repo-owned CircleCI contexts, aggregate pr-pipeline, aggregate security-scan, Socket, and CodeRabbit passed; external security/snyk GitHub App quota lane remains owner-waived only for that quota failure."
+    test_and_audit_status: "PU-015 implementation, PR review repair, and PR #413 hosted checks passed for repo-owned lanes. Post-merge tracker refresh validation is required before selecting the next active slice."
     active_route_drift_finding: "PU-055 found active-route selection drift and PU-056 fixed it on current main; runtime-card no longer drops the JSC-363 route key for wide Current Active Route rows."
     unclaimed_surfaces:
       - "Linear field-text currency beyond repo-truth comment 81cfdd41-ff0e-4df1-b884-c01789e30a50"
       - "Judge/PM live audit packet"
       - "Final documentation accuracy beyond current validators"
       - "Parent-goal completion"
-    active_branch: "codex/jsc-363-pu015-judge-pm-audit-packet"
-    active_pr: 413
-    active_pr_url: "https://github.com/jscraik/coding-harness/pull/413"
-    active_pr_last_checked_head_sha: "20a807dae3d0c257ebbbc3353685ef330ee86d99"
-    active_pr_head_sha_contract: "PR #413 is the active PU-015 review lane. Do not claim PR #413 CI/review/merge freshness unless live GitHub reports the latest pushed PR head and all required lanes have been rechecked in the same closeout window."
-    last_merged_pr: 412
-    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/412"
-    last_merged_sha: "7e0dde9c0408388fc228e8c2afe049593f1b0b71"
-    last_merged_submitted_head_sha: "a81d783aeef3f05d6e3668a4e33ed4e216e6a756"
-    last_merge_verified_at: "2026-06-12T00:24:41Z"
-    local_main_sha: "7e0dde9c0408388fc228e8c2afe049593f1b0b71"
-    origin_main_sha: "7e0dde9c0408388fc228e8c2afe049593f1b0b71"
-    open_pr_count: 1
-    open_prs:
-      - number: 413
-        url: "https://github.com/jscraik/coding-harness/pull/413"
-        branch: "codex/jsc-363-pu015-judge-pm-audit-packet"
-        last_checked_head_sha: "20a807dae3d0c257ebbbc3353685ef330ee86d99"
-        state: "open"
+    active_branch: "codex/jsc-363-post-pr413-tracker-refresh"
+    active_pr: null
+    active_pr_url: null
+    active_pr_last_checked_head_sha: null
+    active_pr_head_sha_contract: "No active implementation PR is selected after PR #413 merge pullback. Do not claim the next PR lane until a fresh slice branch and PR exist."
+    last_merged_pr: 413
+    last_merged_pr_url: "https://github.com/jscraik/coding-harness/pull/413"
+    last_merged_sha: "d3b6dd661ac86395f7b45d2c8a39526b14583d35"
+    last_merged_submitted_head_sha: "92ade70b083c14a9a7596f3b1904b6bec6c57e3d"
+    last_merge_verified_at: "2026-06-12T04:22:45Z"
+    local_main_sha: "d3b6dd661ac86395f7b45d2c8a39526b14583d35"
+    origin_main_sha: "d3b6dd661ac86395f7b45d2c8a39526b14583d35"
+    open_pr_count: 0
+    open_prs: []
   queued_slice:
     lifecycle_unit: "PU-015"
     name: "Judge/PM audit packet"
-    status: "pr413_open_reviewer_thread_repair_committed_pending_push"
-    evidence_receipt: "R489"
+    status: "pending_live_judge_pm_audit_packet"
+    evidence_receipt: "R490"
   resume_gate:
-    - "Do not claim PU-015 complete until this local implementation is opened as one PR, reviewed, merged, pulled back to main, and reconciled with a fresh tracker receipt."
+    - "Do not claim PU-015 complete until the live Judge/PM audit packet exists, independent reviewer artifacts are present or explicitly blocked, Linear field-text disposition is refreshed or explicitly blocked, and final documentation and requirement-by-requirement audits pass."
     - "A live Judge/PM audit packet still needs current runtime-card refs, delivery-truth verdicts, review-state, external-state, Linear state or blocker, validation receipts, root hygiene, unresolved-risk classification, and issueAuthorityMap proof."
     - "Treat Linear comment 81cfdd41-ff0e-4df1-b884-c01789e30a50 as tracker-alignment evidence only, not field-text-current or completion evidence."
-    - "PR #396 through PR #412 are merged provenance; do not reopen their repair lanes unless a fresh current-main regression proves a new blocker."
+    - "PR #396 through PR #413 are merged provenance; do not reopen their repair lanes unless a fresh current-main regression proves a new blocker."
     - "The next selected slice must preserve the one-PR-at-a-time route contract and must not claim Judge/PM readiness or parent-goal completion before the final audit."
     - "Preserve the one-PR-at-a-time route contract unless Jamie records a named exception."
   review_artifacts:
