@@ -5,7 +5,7 @@
 	"status": "blocked",
 	"activeRoute": "PU-015 live Judge/PM audit packet",
 	"currentSlice": "PU-015 reviewer artifact and final audit disposition",
-	"currentHeadSha": "01e3928fe2d94665bd257eb054a06dc6b5d8c8e2",
+	"currentHeadSha": "fdd0a14324d939d9a3a76c3fca44c8f59289affe",
 	"lastMergedPullRequest": 424,
 	"lastReceipt": "R515",
 	"blockers": [
@@ -41,5 +41,5 @@
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl"
 	],
 	"nextSafeAction": "Collect or explicitly block independent reviewer artifacts, refresh or owner-classify Linear field text, and rerun the packet plus final requirement-by-requirement audit from pulled main.",
-	"updatedAt": "2026-06-13T19:05:00Z"
+	"updatedAt": "2026-06-13T19:15:00Z"
 }
