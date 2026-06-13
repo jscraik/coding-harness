@@ -31,7 +31,7 @@ validation_evidence:
     note: receipts parsed after R512 receipt update.
   - command: python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .
     outcome: pass
-    note: audit freshness selected R512 at current main f93229d434b801047df943accc390d98327aedd9.
+    note: audit freshness selected R516 at current main fe30a9bab5906475bf79f39403c36ef1c9bc9262.
   - command: python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit
     outcome: pass
     note: goal board passed after removing the stray current-route.json root artifact and repairing active-artifacts refs.
