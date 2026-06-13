@@ -92,6 +92,11 @@ import {
 	type BranchProtectionSatisfiabilityReport,
 	scanOpenPullRequestSatisfiability,
 } from "../lib/ci/satisfiability.js";
+import {
+	isCommitSha,
+	isHexDigest,
+	isHexToken,
+} from "../lib/ci-migrate/integrity-identifiers.js";
 import { runInitCLI } from "../lib/init/cli.js";
 import {
 	type CIProvider,
@@ -184,9 +189,6 @@ const PARITY_PROOF_SOURCE_ARTIFACTS_PREFIX =
 	".harness/ci-parity-proof-source-artifacts/";
 const DEFAULT_TRANSITION_STATUS_ARTIFACT_PATH =
 	".harness/ci-provider-transition-status.json";
-const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/;
-const COMMIT_SHA_PATTERN = /^[a-f0-9]{40}$/;
-const HEX_TOKEN_PATTERN = /^[a-f0-9]+$/;
 
 type MigrationClassification =
 	| "translatable"
@@ -1085,7 +1087,7 @@ function isValidBreakGlassGovernancePolicy(
 		typeof parsed.requireDualApprovalForRollbackWeakening !== "boolean" ||
 		parsed.integrity?.signatureAlgorithm !== SNAPSHOT_SIGNATURE_ALGORITHM ||
 		typeof parsed.integrity?.signingKeyId !== "string" ||
-		!HEX_TOKEN_PATTERN.test(parsed.integrity.signingKeyId) ||
+		!isHexToken(parsed.integrity.signingKeyId) ||
 		typeof parsed.integrity?.payloadSha256 !== "string" ||
 		!isHexDigest(parsed.integrity.payloadSha256)
 	) {
@@ -1356,7 +1358,7 @@ function isValidMergeQueueCutoverEvidence(
 		queueCountValid(parsed.revalidatedCandidateCount) &&
 		parsed.integrity?.signatureAlgorithm === SNAPSHOT_SIGNATURE_ALGORITHM &&
 		typeof parsed.integrity?.signingKeyId === "string" &&
-		HEX_TOKEN_PATTERN.test(parsed.integrity.signingKeyId) &&
+		isHexToken(parsed.integrity.signingKeyId) &&
 		typeof parsed.integrity?.payloadSha256 === "string" &&
 		isHexDigest(parsed.integrity.payloadSha256)
 	);
@@ -3127,18 +3129,6 @@ function isRequiredParityScenario(
 	return REQUIRED_PARITY_SCENARIOS.includes(value as RequiredParityScenario);
 }
 
-function isHexDigest(value: string): boolean {
-	return SHA256_HEX_PATTERN.test(value);
-}
-
-function isCommitSha(value: string): boolean {
-	return COMMIT_SHA_PATTERN.test(value);
-}
-
-function isHexToken(value: string, minLength = 1): boolean {
-	return value.length >= minLength && HEX_TOKEN_PATTERN.test(value);
-}
-
 function resolveGitConfigPath(targetDir: string): string | null {
 	const gitPath = resolve(targetDir, ".git");
 	if (!existsSync(gitPath)) {
@@ -4626,7 +4616,7 @@ function parseParityProvenanceArtifactIndex(content: string):
 			!integrity ||
 			integrity.signatureAlgorithm !== PARITY_PROOF_PACK_SIGNATURE_ALGORITHM ||
 			typeof integrity.signingKeyId !== "string" ||
-			!HEX_TOKEN_PATTERN.test(integrity.signingKeyId) ||
+			!isHexToken(integrity.signingKeyId) ||
 			typeof integrity.payloadSha256 !== "string" ||
 			!isHexDigest(integrity.payloadSha256)
 		) {
@@ -5990,7 +5980,7 @@ function parseParityProvenanceManifest(
 			integrityRecord.signatureAlgorithm !==
 				PARITY_PROOF_PACK_SIGNATURE_ALGORITHM ||
 			typeof integrityRecord.signingKeyId !== "string" ||
-			!HEX_TOKEN_PATTERN.test(integrityRecord.signingKeyId) ||
+			!isHexToken(integrityRecord.signingKeyId) ||
 			typeof integrityRecord.payloadSha256 !== "string" ||
 			!isHexDigest(integrityRecord.payloadSha256)
 		) {

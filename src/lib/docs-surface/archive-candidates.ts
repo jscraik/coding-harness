@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { isAbsolute, relative, resolve } from "node:path";
+import { extname, isAbsolute, relative, resolve } from "node:path";
 import {
 	DOCS_ARCHIVE_CANDIDATES_REPORT_SCHEMA,
 	type ArchiveCandidate,
@@ -76,17 +76,6 @@ export function runDocsArchiveCandidates(
 				reason: "generated_output_do_not_edit",
 				evidenceRefs: [file.path],
 			});
-			repairFindings.push({
-				path: file.path,
-				findingKind: "repair_finding",
-				code: "repair_generated_source_link",
-				message:
-					"Generated documentation projections are ignored by archive-candidate reporting.",
-				suggestedAction: "repair_generated_source_link",
-				actionAuthority: "advisory_only",
-				requiresReviewedDecision: true,
-				evidenceRefs: [file.path],
-			});
 			continue;
 		}
 
@@ -159,19 +148,8 @@ export function runDocsArchiveCandidates(
 function generatedProjectionRepairFindings(
 	ignoredFiles: readonly ArchiveIgnoredFile[],
 ): ArchiveRepairFinding[] {
-	return ignoredFiles
-		.filter((file) => file.reason === "generated_output_do_not_edit")
-		.map((file) => ({
-			path: file.path,
-			findingKind: "repair_finding" as const,
-			code: "repair_generated_source_link" as const,
-			message:
-				"Generated documentation projections are ignored by archive-candidate reporting.",
-			suggestedAction: "repair_generated_source_link" as const,
-			actionAuthority: "advisory_only" as const,
-			requiresReviewedDecision: true as const,
-			evidenceRefs: [file.path],
-		}));
+	ignoredFiles;
+	return [];
 }
 
 /** Render a compact human-readable archive-candidate report. */
@@ -329,6 +307,10 @@ function isVerifiedActiveArtifact(
 	try {
 		const content = readFileSync(resolved, "utf8");
 		if (content.trim().length === 0) return false;
+		if (path.endsWith(".json")) {
+			const parsed = JSON.parse(content) as unknown;
+			return parsed !== null && typeof parsed === "object";
+		}
 		const metadata = parseMetadata(content);
 		if (Object.keys(metadata).length === 0) return false;
 		return true;
@@ -341,15 +323,19 @@ function extractActiveArtifactPaths(content: string): string[] {
 	const paths = new Set<string>();
 	for (const match of content.matchAll(/\(([^)#?]+)(?:[#?][^)]*)?\)/g)) {
 		const path = normaliseActiveArtifactPath(match[1] ?? "");
-		if (path) paths.add(path);
+		if (path && looksLikeActiveArtifactFilePath(path)) paths.add(path);
 	}
 	for (const match of content.matchAll(
 		/(?:^|[\s|`])((?:\.\/)?\.harness\/[A-Za-z0-9._/-]+)(?=$|[\s|`.,;:)])/gm,
 	)) {
 		const path = normaliseActiveArtifactPath(match[1] ?? "");
-		if (path) paths.add(path);
+		if (path && looksLikeActiveArtifactFilePath(path)) paths.add(path);
 	}
 	return [...paths].sort();
+}
+
+function looksLikeActiveArtifactFilePath(path: string): boolean {
+	return extname(path).length > 0;
 }
 
 function normaliseActiveArtifactPath(rawPath: string): string | null {

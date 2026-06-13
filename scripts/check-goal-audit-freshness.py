@@ -16,7 +16,7 @@ import json
 import posixpath
 import subprocess
 import sys
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, cast
 
@@ -162,6 +162,7 @@ CHECKED_AT_FUTURE_SKEW = timedelta(minutes=5)
 SELF_REFERENTIAL_GOAL_RECEIPT_PATHS = {
     ".harness/active-artifacts.md",
     ".harness/implementation-notes/goal-kanban-board.html",
+    "docs/goals/codex-runtime-evidence-verifier-cockpit/current-route.json",
     "docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
     "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md",
     "docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
@@ -263,7 +264,7 @@ def parse_utc_timestamp(value: Any, field: str) -> datetime:
         raise ValidationError(f"{field} must be an ISO-8601 timestamp") from exc
     if parsed.tzinfo is None:
         raise ValidationError(f"{field} must include a timezone")
-    return parsed.astimezone(UTC)
+    return parsed.astimezone(timezone.utc)
 
 
 def sha256_file(path: Path) -> str:
@@ -531,7 +532,7 @@ def validate(goal_dir: Path, repo: Path, audit_arg: str) -> dict[str, Any]:
         raise ValidationError(
             "audit_sources_checked[].checked_at must be at or after receipt.created_at",
         )
-    now = datetime.now(UTC)
+    now = datetime.now(timezone.utc)
     if checked_at > now + CHECKED_AT_FUTURE_SKEW:
         raise ValidationError(
             "audit_sources_checked[].checked_at must not be in the future",

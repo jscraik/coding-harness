@@ -76,7 +76,7 @@ receipt, matching repository identity, and complete live inventory proof.
 
 | Classification | Entries |
 | --- | --- |
-| canonical root | `.architecture.yml`, `.coderabbit.yaml`, `.diagramrc`, `.editorconfig`, `.gitattributes`, `.gitignore`, `.gitleaks.toml`, `.lychee.toml`, `.markdownlint-cli2.yaml`, `.mise.toml`, `.npmrc`, `.nvmrc`, `.trufflehog-exclude.txt`, `.vale.ini`, `.versionrc`, `AGENTS.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `CITATION.cff`, `CODESTYLE.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, `CONTRIBUTORS.md`, `LICENSE`, `Makefile`, `README.md`, `SECURITY.md`, `SUPPORT.md`, `UBIQUITOUS_LANGUAGE.md`, `WORKFLOW.md`, `biome.json`, `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `prek.toml`, `renovate.json`, `tsconfig.json`, `vitest.config.ts`. |
+| canonical root | `.architecture.yml`, `.coderabbit.yaml`, `.diagramrc`, `.editorconfig`, `.gitattributes`, `.gitignore`, `.gitleaks.toml`, `.lychee.toml`, `.markdownlint-cli2.yaml`, `.mise.toml`, `.npmrc`, `.nvmrc`, `.rgignore`, `.trufflehog-exclude.txt`, `.vale.ini`, `.versionrc`, `AGENTS.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `CITATION.cff`, `CODESTYLE.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, `CONTRIBUTORS.md`, `LICENSE`, `Makefile`, `README.md`, `SECURITY.md`, `SUPPORT.md`, `UBIQUITOUS-MAP.md`, `UBIQUITOUS_LANGUAGE.md`, `WORKFLOW.md`, `biome.json`, `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `prek.toml`, `renovate.json`, `tsconfig.json`, `vitest.config.ts`. |
 | generated but tracked intentionally | `.architecture-baseline.txt`, `.memory-metrics.json`, `harness.contract.json`, `memory.json`. |
 | should move | `FORJAMIE.md`. |
 | legacy/drift | none remaining at root after this slice. |

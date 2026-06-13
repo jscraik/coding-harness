@@ -1,0 +1,14 @@
+# Runtime and generated evidence surfaces are intentionally excluded from
+# ordinary source scans. Use targeted validators when these artifacts are the
+# subject of the task.
+.harness/evidence/**
+.harness/runs/**
+.harness/cache/**
+.harness/backups/**
+.harness/tmp/**
+artifacts/**
+coverage/**
+dist/**
+.cache/**
+.uv-cache/**
+tmp-agent-first-*/**

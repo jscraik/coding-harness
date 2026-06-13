@@ -1,12 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { tsImport } from "tsx/esm/api";
-
-const { sanitizeGitEnvironment } = await tsImport(
-	"../src/lib/git/safe-env.ts",
-	import.meta.url,
-);
+import { sanitizeGitEnvironment } from "./lib/safe-git-env.mjs";
 
 const repoRoot = process.cwd();
 const gitEnv = sanitizeGitEnvironment(process.env, { policy: "minimal" });

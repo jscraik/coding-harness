@@ -29,6 +29,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const { spawnSync } = require("node:child_process");
 
 // ── CLI args ────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
@@ -45,6 +46,11 @@ const GITHUB_LIB_DIR = path.join(SRC_DIR, "lib", "github");
 const DIAGRAM_DIR = path.join(ROOT, ".diagram");
 const MANIFEST_PATH = path.join(DIAGRAM_DIR, "manifest.json");
 const BASELINE_PATH = path.join(ROOT, ".architecture-baseline.txt");
+const ARCHITECTURE_REGISTRY_VALIDATOR = path.join(
+	ROOT,
+	"scripts",
+	"validate-architecture-registries.cjs",
+);
 const COMMAND_SPECS_CORE_PATH = path.join(
 	ROOT,
 	"src",
@@ -463,6 +469,56 @@ function checkDiagramFreshness() {
 	}
 }
 
+// ── Rule: architecture-registries ───────────────────────────────────────────
+
+function checkArchitectureRegistries() {
+	if (!fs.existsSync(ARCHITECTURE_REGISTRY_VALIDATOR)) {
+		fail(
+			"architecture-registries",
+			"error",
+			ARCHITECTURE_REGISTRY_VALIDATOR,
+			"Architecture registry validator is missing.",
+		);
+		return;
+	}
+
+	const result = spawnSync(
+		process.execPath,
+		[ARCHITECTURE_REGISTRY_VALIDATOR],
+		{
+			cwd: ROOT,
+			encoding: "utf-8",
+		},
+	);
+	if (result.status === 0) return;
+
+	let parsed = null;
+	try {
+		parsed = JSON.parse(result.stdout);
+	} catch {
+		fail(
+			"architecture-registries",
+			"error",
+			ARCHITECTURE_REGISTRY_VALIDATOR,
+			(
+				result.stderr ||
+				result.stdout ||
+				"architecture registry validation failed"
+			).trim(),
+		);
+		return;
+	}
+
+	for (const violation of parsed.violations ?? []) {
+		fail(
+			"architecture-registries",
+			"error",
+			path.join(ROOT, violation.file ?? "docs/architecture"),
+			violation.message ?? "architecture registry validation failed",
+		);
+	}
+}
+
 // ── Run all rules ────────────────────────────────────────────────────────────
 
 checkNoCyclicDeps();
@@ -470,6 +526,7 @@ checkCommandsNoCrossImport();
 checkAuthCommandsUseCrypto();
 checkGithubLibNoFs();
 checkDiagramFreshness();
+checkArchitectureRegistries();
 
 // ── Report ───────────────────────────────────────────────────────────────────
 

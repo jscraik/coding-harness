@@ -105,6 +105,45 @@ describe("drift-gate command", () => {
 		).toBe(true);
 	});
 
+	it("keeps not-applicable info findings from escalating report status", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-test-info-only");
+		roots.push(root);
+		createRepoFixture(root);
+		rmSync(join(root, "todos"), { recursive: true, force: true });
+		write(
+			join(root, "docs/QUALITY_SCORE.md"),
+			[
+				"---",
+				"last_updated: 2099-01-01",
+				"calculated_by: harness-gardener",
+				"---",
+				"",
+				"# Documentation Quality Score",
+				"",
+				"**Score:** 90/100",
+			].join("\n"),
+		);
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "advisory",
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.report.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					rule_id: "todo.lifecycle.not_applicable",
+					severity: "info",
+				}),
+			]),
+		);
+		expect(
+			result.report.findings.some((finding) => finding.severity === "warning"),
+		).toBe(false);
+		expect(result.report.status).toBe("success");
+	});
+
 	it("flags todo lifecycle mismatches", () => {
 		const root = join(process.cwd(), "artifacts", "drift-gate-test-2");
 		roots.push(root);

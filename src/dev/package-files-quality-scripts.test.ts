@@ -30,7 +30,7 @@ const requiredPackagedQualityScripts = {
 
 const requiredRuntimeInputs = [
 	"scripts/with-validation-lock.sh",
-	"src/lib/git/safe-env.ts",
+	"scripts/lib/safe-git-env.mjs",
 	"src/lib/testing/behavior-test-suites.json",
 	"src/lib/testing/expect-behavior.ts",
 ] as const;

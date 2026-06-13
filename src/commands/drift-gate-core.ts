@@ -188,7 +188,7 @@ function buildDriftReport(
 	let status: DriftStatus = "success";
 	if (outcome === "error") {
 		status = "blocked";
-	} else if (findings.length > 0) {
+	} else if (findings.some((finding) => finding.severity !== "info")) {
 		status = "partial";
 	}
 

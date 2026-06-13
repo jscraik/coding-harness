@@ -4,6 +4,13 @@ set -euo pipefail
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
+if [[ "${BASH_VERSINFO[0]:-0}" -lt 4 && -z "${CHECK_RELATED_TESTS_REEXECED:-}" ]]; then
+	if [[ -x "/opt/homebrew/bin/bash" ]]; then
+		export CHECK_RELATED_TESTS_REEXECED=1
+		exec "/opt/homebrew/bin/bash" "$0" "$@"
+	fi
+fi
+
 mode_staged=0
 while (( $# > 0 )); do
 	case "$1" in

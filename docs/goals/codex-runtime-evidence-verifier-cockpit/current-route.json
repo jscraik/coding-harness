@@ -1,0 +1,45 @@
+{
+	"schemaVersion": "goal-current-route/v1",
+	"goalSlug": "codex-runtime-evidence-verifier-cockpit",
+	"issueKey": "JSC-363",
+	"status": "blocked",
+	"activeRoute": "PU-015 live Judge/PM audit packet",
+	"currentSlice": "PU-015 reviewer artifact and final audit disposition",
+	"currentHeadSha": "01e3928fe2d94665bd257eb054a06dc6b5d8c8e2",
+	"lastMergedPullRequest": 424,
+	"lastReceipt": "R515",
+	"blockers": [
+		{
+			"code": "missing_reviewer_artifact",
+			"lane": "review-state",
+			"summary": "The live Judge/PM packet is blocked until independent reviewer artifacts are present or explicitly classified as blocked."
+		},
+		{
+			"code": "linear_field_text_currency_unclaimed",
+			"lane": "tracker-state",
+			"summary": "Linear JSC-363 has a repo-truth comment, but current title and description field text are not claimed current by this route packet."
+		},
+		{
+			"code": "final_judge_pm_acceptance_missing",
+			"lane": "completion-authority",
+			"summary": "The current-main closeout matrix has not been accepted by Judge/PM authority as parent-goal completion evidence."
+		}
+	],
+	"claimBoundaries": [
+		"Local route and packet state do not prove PR state, CI state, review-thread state, tracker field currency, merge readiness, or parent-goal completion.",
+		"Merged pull request history is provenance; active restart instructions live in this root guard, the thin execution tracker, state.yaml, and receipts.jsonl."
+	],
+	"canonicalRefs": [
+		".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+		".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+		".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/state.yaml",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-13-current-main-closeout-requirement-matrix.md",
+		"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl"
+	],
+	"nextSafeAction": "Collect or explicitly block independent reviewer artifacts, refresh or owner-classify Linear field text, and rerun the packet plus final requirement-by-requirement audit from pulled main.",
+	"updatedAt": "2026-06-13T19:05:00Z"
+}

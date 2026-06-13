@@ -1,0 +1,62 @@
+{
+	"schemaVersion": "architecture-adjacent-boundary-registry/v1",
+	"summary": "Command families that sit near architecture policy but must keep behavior behind owned module boundaries instead of accumulating rules in docs or command facades.",
+	"entries": [
+		{
+			"id": "prompt-gate",
+			"commandFacade": "src/commands/prompt-gate.ts",
+			"registryAdapter": "src/lib/cli/registry/prompt-gate-command-spec.ts",
+			"ownerModule": "src/lib/prompt-gate/",
+			"rule": "Keep the command facade as a compatibility export; keep CLI argument parsing and prompt-template section validation in the owner module.",
+			"validation": "src/lib/architecture/module-boundaries.test.ts"
+		},
+		{
+			"id": "gap-case",
+			"commandFacade": "src/commands/gap-case.ts",
+			"registryAdapter": "src/lib/cli/registry/gap-case-command-spec.ts",
+			"ownerModule": "src/lib/gap-case/",
+			"rule": "Keep lifecycle validation, persistence, option parsing, and presentation behind the gap-case module boundary.",
+			"validation": "src/lib/architecture/module-boundaries.test.ts"
+		},
+		{
+			"id": "simulate",
+			"commandFacade": "src/commands/simulate.ts",
+			"registryAdapter": "src/lib/cli/registry/simulate-command-spec.ts",
+			"ownerModule": "src/lib/simulate/",
+			"rule": "Keep simulation orchestration, analysis, recommendations, option parsing, and presentation behind the simulate module boundary.",
+			"validation": "src/lib/architecture/module-boundaries.test.ts"
+		},
+		{
+			"id": "ci-migrate",
+			"commandFacade": "src/commands/ci-migrate.ts",
+			"registryAdapter": "src/lib/cli/registry/ci-migrate-command-spec.ts",
+			"ownerModule": "src/lib/ci-migrate/",
+			"rule": "Keep the command facade as migration orchestration only; raw CLI projection, delegated helper routing, and integrity identifier policy stay in the ci-migrate module.",
+			"validation": "src/lib/architecture/module-boundaries.test.ts"
+		},
+		{
+			"id": "init",
+			"commandFacade": "src/commands/init.ts",
+			"registryAdapter": "src/lib/cli/registry/init-command-spec.ts",
+			"ownerModule": "src/lib/init/",
+			"rule": "Keep init orchestration in the command facade and move issue-tracker, minimal-mode, hook-template, and package-manager decisions into the init module.",
+			"validation": "src/lib/architecture/module-boundaries.test.ts"
+		},
+		{
+			"id": "upgrade",
+			"commandFacade": "src/commands/upgrade.ts",
+			"registryAdapter": "src/lib/cli/registry/upgrade-command-spec.ts",
+			"ownerModule": "src/lib/upgrade/",
+			"rule": "Keep upgrade command compatibility stable while contract/default migration helpers and CLI projection stay in the upgrade module.",
+			"validation": "src/lib/architecture/module-boundaries.test.ts"
+		},
+		{
+			"id": "brain",
+			"commandFacade": "src/commands/brain.ts",
+			"registryAdapter": "src/lib/cli/registry/brain-command-spec.ts",
+			"ownerModule": "src/lib/project-brain/",
+			"rule": "Keep the Project Brain command as a dispatcher; status, query, add, preflight, and stale behavior live in focused project-brain modules.",
+			"validation": "src/lib/architecture/module-boundaries.test.ts"
+		}
+	]
+}

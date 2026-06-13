@@ -108,6 +108,38 @@ function writeRuntimeEvidenceReceiptsFromObjects(
 		join(receiptsDir, "receipts.jsonl"),
 		[...receipts.map((receipt) => JSON.stringify(receipt)), ""].join("\n"),
 	);
+	const latestReceipt = receipts.at(-1) ?? {};
+	const latestReceiptId =
+		typeof latestReceipt.id === "string" ? latestReceipt.id : "R999";
+	const latestHead =
+		typeof latestReceipt.head_sha === "string"
+			? latestReceipt.head_sha
+			: "current-pr-head";
+	writeFileSync(
+		join(receiptsDir, "current-route.json"),
+		JSON.stringify(
+			{
+				schemaVersion: "goal-current-route/v1",
+				goalSlug: "codex-runtime-evidence-verifier-cockpit",
+				issueKey: "JSC-363",
+				status: "blocked",
+				activeRoute: "fixture route",
+				currentSlice: "fixture slice",
+				currentHeadSha: latestHead,
+				lastReceipt: latestReceiptId,
+				blockers: [{ code: "fixture_blocker" }],
+				claimBoundaries: ["fixture claim boundary"],
+				canonicalRefs: [
+					".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
+					".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
+					"docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md",
+					".harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md",
+				],
+			},
+			null,
+			2,
+		),
+	);
 }
 
 function writeRuntimeEvidenceReceipts(repo: string, headSha: string) {

@@ -43,7 +43,7 @@ This is not a Phase 1-only prompt. Phase 1 is only the first implementation stag
 
 ## Current Reconciliation Status
 
-Last updated during the 2026-06-12 post-PR423 pullback and PU-015 packet blocker refresh. Merged
+Last updated during the 2026-06-13 post-PR424 pullback and PU-015 packet blocker refresh. Merged
 PR history is receipt provenance, not the active route. Use `receipts.jsonl` for
 the complete PR ledger and keep this section limited to the current restart
 truth.
@@ -109,26 +109,31 @@ Current live route truth:
   `2026-06-12T14:53:39Z`; it is route evidence only, not PU-015
   reviewer-artifact, Linear field-text, Judge/PM readiness, or parent
   completion evidence.
+- PR #424 merged the post-PR423 PU-015 packet tracker refresh from
+  submitted head `3fe5933c7fb646a4919cbfe27e419a8558144026` as squash merge
+  `f93229d434b801047df943accc390d98327aedd9` at
+  `2026-06-13T10:15:18Z`; it is tracker evidence only, not independent
+  reviewer-artifact, Linear field-text, Judge/PM readiness, or parent
+  completion evidence.
 - Local `main` and `origin/main` are synced at
-  `0c37312f78afea195cc8bbacb77218cdb9a1537b` after PR #423 was merged and
-  pulled back; R510 records the PR #423 pullback route truth. PR #421 is a
+  `f93229d434b801047df943accc390d98327aedd9` after PR #424 was merged and
+  pulled back; R511 records the PR #424 pullback route truth. PR #421 is a
   source-checkout command replay guardrail and PR #422/PR #423 are route-surface repair provenance, not active lanes or parent
   completion evidence.
 - Runtime-card on pulled current main returns `issueKey: "JSC-363"` with the
   JSC-363 active spec and plan, closing the PU-056 route-key guard.
 - Branch and worktree cleanup removed obsolete auxiliary worktrees and stale
   local/remote `codex/*` branches; no active tracker or implementation PR is
-  recorded after the PR #423 pullback.
+  recorded after the PR #424 pullback.
 - The live `PU-015 Judge/PM audit packet` now exists at
   `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json`.
   It is blocked on missing independent reviewer artifacts and does not claim
   Judge/PM readiness, Linear field-text currency, or parent completion. Its
-  validation surface is explicitly stale/blocked because PR #416 repair
-  receipts do not validate the packet/verdict head. R504 records PR #418
+  validation surface is current at R511, while packet readiness remains blocked by missing independent reviewer artifacts. R504 records PR #418
   review-thread repair provenance, R505 records the PR #418 historical
   pullback, R506 records the PR #419 historical pullback, R507 records the
-  post-PR421 pullback, R509 records the post-PR422 pullback, and R510 records
-  the post-PR423 pullback to
+  post-PR421 pullback, R509 records the post-PR422 pullback, and R511 records
+  the post-PR424 pullback to
   current main while keeping packet readiness, Linear field-text currency, and
   parent completion unclaimed.
 - Earlier Linear JSC-363 evidence includes comment
@@ -180,24 +185,24 @@ Stop conditions:
 Current route truth:
 
 - Current route: PU-015 Judge/PM audit packet guardrails are merged through
-  PR #413, repair/tracker provenance is merged through PR #423, and the live
+  PR #413, repair/tracker provenance is merged through PR #424, and the live
   packet is generated but blocked on independent reviewer artifacts.
-- Provenance: See `receipts.jsonl` for merged route history through PR #423.
+- Provenance: See `receipts.jsonl` for merged route history through PR #424.
 
 Corrected backlog after current-main reconciliation:
 
-- Done on current main: PR #423 merged at
-  `0c37312f78afea195cc8bbacb77218cdb9a1537b`. See `receipts.jsonl` for
+- Done on current main: PR #424 merged at
+  `f93229d434b801047df943accc390d98327aedd9`. See `receipts.jsonl` for
   complete merged route history.
-- Current route PR: none. PR #423 merged at `2026-06-12T14:53:39Z` as squash
-  merge `0c37312f78afea195cc8bbacb77218cdb9a1537b` from submitted head
-  `82c3781c3093fc9c0f33a1b2a659bc43749655a7`; R510 records local main
+- Current route PR: none. PR #424 merged at `2026-06-13T10:15:18Z` as squash
+  merge `f93229d434b801047df943accc390d98327aedd9` from submitted head
+  `3fe5933c7fb646a4919cbfe27e419a8558144026`; R511 records local main
   pullback. PR #421 remains merged source-checkout guardrail provenance and
   PR #422 remains merged route-surface repair provenance.
 - Completed slice: PU-056 active-route runtime-card selection guard; runtime-card
   on current main derives `issueKey: "JSC-363"` with the active JSC-363 spec
   and plan.
-- Remaining backlog after PR #417 and the first live packet: collect or
+- Remaining backlog after PR #424 and the current live packet: collect or
   explicitly block independent reviewer artifacts, refresh or owner-classify
   Linear field-text currency, prove final documentation accuracy, and run the
   final requirement-by-requirement completion audit.

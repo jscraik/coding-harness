@@ -19,6 +19,7 @@ import {
 	extractVersionFromRalphVersionOutput,
 	getRalphPackageSpec,
 } from "../lib/deps/ralph-runtime.js";
+import { probeCommandVersion } from "../lib/runtime/command-version-probe.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 import {
@@ -116,12 +117,6 @@ export interface CheckEnvironmentOutput {
 	};
 }
 
-interface CommandProbe {
-	available: boolean;
-	version?: string;
-	rawOutput?: string;
-}
-
 /** Public API export. */
 export type CheckEnvironmentResult =
 	| { ok: true; output: CheckEnvironmentOutput }
@@ -204,29 +199,6 @@ function hasApprovalPostureConfigured(): boolean {
 
 function parseSemverLoose(version: string): string | null {
 	return semver.coerce(version)?.version ?? null;
-}
-
-function probeCommandVersion(
-	command: string,
-	args: string[],
-	extractVersion: (output: string) => string | undefined,
-): CommandProbe {
-	const result = spawnSync(command, args, {
-		encoding: "utf-8",
-		stdio: ["ignore", "pipe", "pipe"],
-	});
-
-	if (result.error || result.status !== 0) {
-		return { available: false };
-	}
-
-	const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`.trim();
-	const version = extractVersion(output);
-	return {
-		available: true,
-		rawOutput: output,
-		...(version ? { version } : {}),
-	};
 }
 
 /**

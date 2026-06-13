@@ -43,7 +43,17 @@ describe("Semgrep scaffold templates", () => {
 		);
 		expect(bootstrap).toContain("set -euo pipefail");
 		expect(bootstrap).toContain("semgrep_version_usable()");
+		expect(bootstrap).toContain("resolve_semgrep_python()");
+		expect(bootstrap).toContain(
+			'SEMGREP_BOOTSTRAP_PYTHON="${SEMGREP_BOOTSTRAP_PYTHON:-}"',
+		);
 		expect(bootstrap).toContain("resolve_semgrep_python_cache_tag()");
+		expect(bootstrap).toContain(
+			'if ! SEMGREP_BOOTSTRAP_PYTHON="$(resolve_semgrep_python)"; then',
+		);
+		expect(bootstrap).toContain(
+			'if [[ ! -x "$SEMGREP_BOOTSTRAP_PYTHON" ]]; then',
+		);
 		expect(bootstrap).toContain(
 			'SEMGREP_PYTHON_CACHE_TAG="${SEMGREP_PYTHON_CACHE_TAG:-}"',
 		);

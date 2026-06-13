@@ -36,28 +36,28 @@ depends_on:
 
 ## Purpose
 
-This artifact records the live PU-015 Judge/PM audit packet refreshed from pulled current-main evidence after PR #423 merged. It is a readiness blocker artifact, not a Judge/PM-ready or parent-goal completion claim.
+This artifact records the live PU-015 Judge/PM audit packet refreshed from pulled current-main evidence after PR #424 merged. It is a readiness blocker artifact, not a Judge/PM-ready or parent-goal completion claim.
 
 ## Packet Result
 
 - Packet JSON: `docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json`
 - Packet schema: `judge-pm-audit/v1`
-- Generated at: `2026-06-12T14:59:50Z`
-- Current main head: `0c37312f78afea195cc8bbacb77218cdb9a1537b`
+- Generated at: `2026-06-13T10:30:00Z`
+- Current main head: `f93229d434b801047df943accc390d98327aedd9`
 - Packet status: `blocked`
 - Freshness: `missing`
 - Blocker code: `missing_reviewer_artifact`
 - Blocker class: `unknown`
 - Blocker refs: `review-state:adversarial-reviewer`
-- JSON size: `4625` bytes
-- JSON SHA-256: `284e32c03c1392d4f206336f6846486b1d45b8125bfa40250a404ac3592f42d5`
+- JSON size: `4511` bytes
+- JSON SHA-256: `976ab5d38012a90139097d08e3976cf6c102144016ca384891586a8b58b9425c`
 
 ## Evidence Inputs
 
 - Runtime-card surface: `runtime-card:current-main-jsc-363`
 - Review-state surface: `review-state:review-state`
 - External-state surface: `external-state:external-state`
-- Validation surface: `validation:R493-route-freshness-repair` is intentionally stale/blocked for this packet because R493 validates the PR #416 repair lane, not the packet/verdict head `0c37312f78afea195cc8bbacb77218cdb9a1537b`.
+- Validation surface: `validation:R511-post-pr424-tracker-refresh` is current for the pulled-main tracker refresh; Judge/PM readiness remains blocked by missing independent reviewer artifacts.
 - Root-hygiene surface: `root-hygiene:root-hygiene`
 - Linear disposition: field-text currency remains explicit owner/external blocker; comment `81cfdd41-ff0e-4df1-b884-c01789e30a50` is route-alignment evidence only, and the supporting verdict is blocked until field text is verified or owner-classified.
 

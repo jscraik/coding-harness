@@ -158,20 +158,33 @@ describe("check-goal-audit-freshness.py", () => {
 		expect(JSON.parse(result.stdout)).toMatchObject({ head_sha: headSha });
 	});
 
-	it("accepts a receipt-only goal evidence commit that records its parent head", () => {
+	it("accepts a receipt and current-route guard commit that records its parent head", () => {
 		const root = createTempRoot("audit-freshness-self-referential-");
 		const parentHead = tempRootHeads.get(root);
 		if (!parentHead) throw new Error("missing test repository head");
 		writeAudit(root, "audit content", new Date("2026-05-27T01:00:00Z"));
-		writeReceipts(root, [receipt(root)]);
+		writeReceipts(root, [
+			{
+				...receipt(root),
+				changed_files: [
+					join(GOAL_DIR, "current-route.json"),
+					join(GOAL_DIR, "receipts.jsonl"),
+				],
+			},
+		]);
 		mkdirSync(join(root, ".harness"), { recursive: true });
 		writeFileSync(
 			join(root, ".harness/active-artifacts.md"),
 			"route evidence\n",
 		);
+		writeFileSync(
+			join(root, GOAL_DIR, "current-route.json"),
+			JSON.stringify({ currentHeadSha: parentHead, lastReceipt: "R072" }),
+		);
 		runGit(root, [
 			"add",
 			join(GOAL_DIR, "receipts.jsonl"),
+			join(GOAL_DIR, "current-route.json"),
 			".harness/active-artifacts.md",
 		]);
 		runGit(root, ["commit", "-m", "record receipt"]);

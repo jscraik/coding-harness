@@ -36,9 +36,14 @@ function writeDiagramFixture(root: string) {
 
 function writeArchitectureFixture(root: string, baseline = "") {
 	mkdirSync(join(root, "src", "commands"), { recursive: true });
+	mkdirSync(join(root, "scripts"), { recursive: true });
 	writeFileSync(
 		join(root, "src", "commands", "ci-migrate.ts"),
 		"export const runCiMigrate = () => true;\n",
+	);
+	writeFileSync(
+		join(root, "scripts", "validate-architecture-registries.cjs"),
+		"process.exit(0);\n",
 	);
 	writeFileSync(join(root, ".architecture-baseline.txt"), baseline);
 	writeDiagramFixture(root);

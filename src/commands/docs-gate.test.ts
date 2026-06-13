@@ -1499,7 +1499,7 @@ applies_to:
 		).toBe(true);
 	});
 
-	it("does not raise docs-gate warnings for generated archive repair hints", () => {
+	it("does not raise docs-gate warnings or repair debt for generated projections", () => {
 		const root = createTestRoot("docs-gate-generated-archive-hints");
 		roots.push(root);
 		createContractWithDocsGate(root, {
@@ -1534,7 +1534,7 @@ applies_to:
 
 		expect(result.exitCode).toBe(0);
 		expect(result.report.outcome).toBe("ok");
-		expect(result.report.summary.archive_repair_finding_count).toBe(1);
+		expect(result.report.summary.archive_repair_finding_count).toBe(0);
 		expect(
 			result.report.findings.some(
 				(finding) =>

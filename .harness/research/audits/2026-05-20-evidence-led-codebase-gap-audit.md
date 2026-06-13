@@ -1,3 +1,27 @@
+---
+schema_version: 1
+lifecycle_schema: harness-document-lifecycle/v1
+artifact_id: evidence-led-codebase-gap-audit-2026-05-20
+artifact_type: research-audit
+canonical_slug: evidence-led-codebase-gap-audit
+title: Evidence-Led Codebase Gap Audit
+status: active
+date: 2026-05-20
+source_type: research
+authority: secondary-context
+lifecycle_status: reviewed
+canonical_destination: .harness/active-artifacts.md
+owner: coding-harness-maintainers
+created: 2026-05-20
+last_reviewed: 2026-06-13
+review_cadence: on-change
+validated_by:
+  - pnpm docs:archive-candidates
+  - bash scripts/run-harness-gate.sh docs-gate --mode required --json
+depends_on:
+  - .harness/research/audits/2026-05-19-evidence-led-codebase-gap-audit.md
+---
+
 # 2026-05-20 Evidence-Led Codebase Gap Audit
 
 ## Table of Contents

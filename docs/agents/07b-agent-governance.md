@@ -48,6 +48,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   `docs/roadmap/agent-first-status.md` with `harness.contract.json` and keep
   `README.md`, `AGENTS.md`, and this guide synchronized when drift-gate reports
   an agent-first-status-matrix cadence breach
+- language-context routing changes should keep `UBIQUITOUS-MAP.md` as the
+  fast navigation surface and `UBIQUITOUS_LANGUAGE.md` as the authoritative
+  terminology source. Agents may use the map to find relevant concepts quickly,
+  but claims and definitions should cite the authoritative language file or the
+  domain document the map points to.
 - tooling/runtime changes should update `docs/agents/02-tooling-policy.md` and `docs/agents/06-security-and-governance.md`
 - preflight or Local Memory enforcement changes should keep `AGENTS.md`, `README.md`, `docs/agents/02-tooling-policy.md`, `docs/agents/03-local-memory.md`, `docs/agents/06-security-and-governance.md`, and this guide synchronized; legacy positional `scripts/codex-preflight.sh` invocations must default to required Local Memory mode unless `off` or `optional` is explicitly supplied
 - architecture-context refresh changes should update `docs/agents/00-architecture-bootstrap.md`; Flow Ops closure-evidence, E2E runner, or eval artifact changes that trigger that refresh should keep `AGENTS.md` and this guide synchronized when docs-gate reports the agent-governance category
@@ -65,45 +70,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - command-registry deep-module splits should preserve one small public command
   facade while moving action-specific option builders and delegation behind
   named internal adapter seams. Treat those seams as agent-governance surfaces:
+  keep this guide at the invariant level, keep concrete command-family
+  ownership in `docs/architecture/architecture-adjacent-boundary-registry.json`,
   update boundary tests, refresh architecture context, and keep docs-gate
   required surfaces synchronized when the command family boundary changes.
-  Prompt-gate follows this pattern with `src/commands/prompt-gate.ts` as the
-  compatibility facade, `prompt-gate-command-spec.ts` as the registry adapter,
-  and prompt-template parsing/validation inside `src/lib/prompt-gate/`.
-  Gap-case follows the same pattern with `src/commands/gap-case.ts` as the
-  compatibility facade, `gap-case-command-spec.ts` as the registry adapter,
-  and lifecycle parsing, validation, persistence, and presentation inside
-  `src/lib/gap-case/`.
-  Simulate follows the same pattern with `src/commands/simulate.ts`,
-  `src/commands/simulate-analysis.ts`, and
-  `src/commands/simulate-analysis-recommendations.ts` as compatibility
-  facades, `simulate-command-spec.ts` as the registry adapter, and CLI
-  parsing, simulation orchestration, analysis, recommendations, and
-  presentation inside `src/lib/simulate/`.
-  Ci-migrate follows the same pattern with `src/commands/ci-migrate.ts` as
-  the migration orchestration facade, `ci-migrate-command-spec.ts` as the
-  registry adapter, and raw CLI argument projection plus delegated helper
-  routing inside `src/lib/ci-migrate/`.
-  Init follows the same pattern with `src/commands/init.ts` as the bootstrap
-  orchestration facade, `init-command-spec.ts` as the registry adapter, and
-  raw CLI argument projection plus issue-tracker/minimal-mode validation inside
-  `src/lib/init/cli-args.ts`, with module-boundary ratchets preserving the
-  adapter seam.
-  Upgrade follows the same pattern with `src/commands/upgrade.ts` as the
-  compatibility facade, `upgrade-command-spec.ts` as the registry adapter,
-  raw CLI argument projection inside `src/lib/upgrade/cli-args.ts`,
-  contract/default migration helpers inside `src/lib/upgrade/contract.ts`,
-  shared option contracts inside `src/lib/upgrade/types.ts`, template and
-  manifest updates inside `src/lib/upgrade/templates.ts`, and upgrade
-  orchestration inside `src/lib/upgrade/runner.ts`, with
-  module-boundary ratchets preserving the adapter seam.
-  Brain follows the same pattern with `src/commands/brain.ts` and
-  `src/commands/brain-core.ts` as compatibility facades,
-  `brain-command-spec.ts` as the registry adapter, raw Project Brain flag
-  projection inside `src/lib/project-brain/cli-args.ts`, the dispatcher and
-  public export surface inside `src/lib/project-brain/cli.ts`, and subcommand
-  behavior inside `src/lib/project-brain/*-cli.ts`, with module-boundary
-  ratchets preserving the adapter seam.
 - runtime-card evidence adapter changes that add `--evidence` ingestion,
   normalized session evidence, or runtime-card source/blocker projection should
   keep `runtime-card/v1` advisory, artifact-backed, and constrained to

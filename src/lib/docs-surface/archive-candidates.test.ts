@@ -184,6 +184,56 @@ describe("runDocsArchiveCandidates", () => {
 		);
 	});
 
+	it("accepts parseable JSON active artifact routes", () => {
+		const repoRoot = createFixture({
+			".harness/feedback-loops/index.json": JSON.stringify({
+				schemaVersion: "feedback-loop-index/v1",
+				status: "implemented",
+			}),
+		});
+
+		const report = runDocsArchiveCandidates({
+			repoRoot,
+			trackedFiles: [".harness/feedback-loops/index.json"],
+			now: new Date("2026-06-05T00:00:00.000Z"),
+			activeArtifactsContent:
+				"[Feedback loop index](.harness/feedback-loops/index.json)",
+		});
+
+		expect(report.repairFindings).toEqual([]);
+		expect(report.protectedFiles).toContainEqual(
+			expect.objectContaining({
+				path: ".harness/feedback-loops/index.json",
+				reasons: expect.arrayContaining(["active_artifact_reference"]),
+			}),
+		);
+	});
+
+	it("ignores bare active artifact directory mentions", () => {
+		const repoRoot = createFixture({
+			".harness/specs/current.md": frontmatter({
+				authority: "supporting",
+				canon_class: "supporting",
+			}),
+		});
+
+		const report = runDocsArchiveCandidates({
+			repoRoot,
+			trackedFiles: [".harness/specs/current.md"],
+			now: new Date("2026-06-05T00:00:00.000Z"),
+			activeArtifactsContent:
+				"This index reconciles .harness/specs and .harness/plan directories plus [Current](.harness/specs/current.md).",
+		});
+
+		expect(report.repairFindings).toEqual([]);
+		expect(report.protectedFiles).toContainEqual(
+			expect.objectContaining({
+				path: ".harness/specs/current.md",
+				reasons: expect.arrayContaining(["active_artifact_reference"]),
+			}),
+		);
+	});
+
 	it("rejects active artifact routes whose target metadata is unparseable", () => {
 		const repoRoot = createFixture({
 			".harness/specs/current.md": "# Missing metadata\n",
@@ -553,7 +603,7 @@ describe("runDocsArchiveCandidates", () => {
 		);
 	});
 
-	it("ignores generated projections and points reviewers at the source", () => {
+	it("ignores generated projections without creating repair-warning debt", () => {
 		const repoRoot = createFixture({
 			"AI/context/diagram-context.md": "# Generated\n",
 		});
@@ -572,11 +622,9 @@ describe("runDocsArchiveCandidates", () => {
 				reason: "generated_output_do_not_edit",
 			}),
 		);
-		expect(report.repairFindings).toContainEqual(
+		expect(report.repairFindings).not.toContainEqual(
 			expect.objectContaining({
 				path: "AI/context/diagram-context.md",
-				code: "repair_generated_source_link",
-				suggestedAction: "repair_generated_source_link",
 			}),
 		);
 	});

@@ -10,6 +10,8 @@
 import { REQUIRED_PREK_HOOKS } from "../policy/tooling-baseline.js";
 import { renderScriptCommand } from "./scaffold-root-command-templates.js";
 
+export { renderRunPackageCommandScript } from "./scaffold-package-command-template.js";
+
 const PRE_COMMIT_MAKE_TARGET = REQUIRED_PREK_HOOKS["pre-commit"].entry;
 const PRE_PUSH_MAKE_TARGET = REQUIRED_PREK_HOOKS["pre-push"].entry;
 
@@ -17,7 +19,17 @@ function renderOptionalPackageScriptCommand(
 	packageManager: string,
 	scriptName: string,
 ): string {
-	return `run_optional_package_script "${scriptName}" ${renderScriptCommand(
+	return `run_optional_package_script "${scriptName}" ${renderHookPackageCommand(
+		packageManager,
+		scriptName,
+	)}`;
+}
+
+function renderHookPackageCommand(
+	packageManager: string,
+	scriptName: string,
+): string {
+	return `bash ./scripts/run-package-command.sh ${renderScriptCommand(
 		packageManager,
 		scriptName,
 	)}`;
@@ -29,14 +41,17 @@ function renderOptionalPackageScriptCommand(
  * @returns Shell contents for `scripts/hook-pre-commit.sh`.
  */
 export function renderPreCommitHookScript(packageManager = "pnpm"): string {
-	const lintCommand = renderScriptCommand(packageManager, "lint");
-	const docsLintCommand = renderScriptCommand(packageManager, "docs:lint");
-	const typecheckCommand = renderScriptCommand(packageManager, "typecheck");
-	const qualityDocstringsCommand = renderScriptCommand(
+	const lintCommand = renderHookPackageCommand(packageManager, "lint");
+	const docsLintCommand = renderHookPackageCommand(packageManager, "docs:lint");
+	const typecheckCommand = renderHookPackageCommand(
+		packageManager,
+		"typecheck",
+	);
+	const qualityDocstringsCommand = renderHookPackageCommand(
 		packageManager,
 		"quality:docstrings",
 	);
-	const qualitySizeCommand = renderScriptCommand(
+	const qualitySizeCommand = renderHookPackageCommand(
 		packageManager,
 		"quality:size",
 	);
@@ -68,7 +83,7 @@ unset_git_context_env() {
 
 package_script_exists() {
 	local script_name="$1"
-	node -e 'const fs = require("node:fs"); const script = process.argv[1]; const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")); process.exit(pkg.scripts && Object.prototype.hasOwnProperty.call(pkg.scripts, script) ? 0 : 1);' "$script_name"
+	bash ./scripts/run-package-command.sh node -e 'const fs = require("node:fs"); const script = process.argv[1]; const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")); process.exit(pkg.scripts && Object.prototype.hasOwnProperty.call(pkg.scripts, script) ? 0 : 1);' "$script_name"
 }
 
 run_optional_package_script() {
@@ -105,7 +120,7 @@ make related-tests-staged
  * @returns Shell contents for `scripts/hook-pre-push.sh`.
  */
 export function renderPrePushHookScript(packageManager = "pnpm"): string {
-	const buildCommand = renderScriptCommand(packageManager, "build");
+	const buildCommand = renderHookPackageCommand(packageManager, "build");
 
 	return `#!/usr/bin/env bash
 set -euo pipefail

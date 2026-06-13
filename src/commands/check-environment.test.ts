@@ -117,6 +117,57 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 		).toBe(true);
 	});
 
+	it("fails closed when mise cannot resolve pinned runtime probes", async () => {
+		writeFileSync(
+			join(tempDir, ".mise.toml"),
+			'[tools]\npython = "3.12"\nuv = "0.11.3"\n',
+		);
+		const { spawnSync } = await import("node:child_process");
+		const { runCheckEnvironment } = await import("./check-environment.js");
+		vi.mocked(spawnSync).mockImplementation((command) => {
+			if (command === "mise") {
+				return {
+					status: 127,
+					stdout: "",
+					stderr: "mise: command not found",
+					error: new Error("ENOENT"),
+				} as never;
+			}
+			if (command === "ralph") {
+				return {
+					status: 0,
+					stdout: "ralph-gold 1.0.0\n",
+					stderr: "",
+				} as never;
+			}
+			return {
+				status: 0,
+				stdout: "unexpected system runtime\n",
+				stderr: "",
+			} as never;
+		});
+
+		const result = await runCheckEnvironment({ contractPath });
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.output.passed).toBe(false);
+		expect(
+			result.output.violations.filter(
+				(v) => v.type === "runtime_dependency_missing",
+			),
+		).toHaveLength(2);
+		expect(vi.mocked(spawnSync)).not.toHaveBeenCalledWith(
+			"python3",
+			expect.anything(),
+			expect.anything(),
+		);
+		expect(vi.mocked(spawnSync)).not.toHaveBeenCalledWith(
+			"uv",
+			expect.anything(),
+			expect.anything(),
+		);
+	});
+
 	it("rejects attestation paths that traverse symlinked segments", async () => {
 		const { spawnSync } = await import("node:child_process");
 		const { runCheckEnvironment } = await import("./check-environment.js");

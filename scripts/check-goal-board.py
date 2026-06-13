@@ -39,6 +39,9 @@ ACTIVE_ARTIFACTS_PATH = REPO_ROOT / ".harness/active-artifacts.md"
 RUNTIME_EVIDENCE_RECEIPTS_PATH = (
     REPO_ROOT / RUNTIME_EVIDENCE_COCKPIT_GOAL / "receipts.jsonl"
 )
+RUNTIME_EVIDENCE_CURRENT_ROUTE_PATH = (
+    REPO_ROOT / RUNTIME_EVIDENCE_COCKPIT_GOAL / "current-route.json"
+)
 REQUIRED_RUNTIME_EVIDENCE_ROUTE_REFS = (
     ".harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md",
     ".harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md",
@@ -57,7 +60,7 @@ WSL_HOME_PATH = re.compile(
     re.IGNORECASE,
 )
 TILDE_HOME_PATH = re.compile(r"(^|[\s:=,])~/[^\s]+")
-type JsonObject = dict[str, Any]
+JsonObject = dict[str, Any]
 
 
 def strip_yaml_comment(value: str) -> str:
@@ -305,6 +308,27 @@ def latest_route_receipt_head(receipts_path: Path) -> str:
     raise SystemExit(1)
 
 
+def latest_route_receipt_identity(receipts_path: Path) -> tuple[str, str]:
+    receipts = load_runtime_evidence_receipts(receipts_path)
+    for _line_number, receipt in reversed(receipts):
+        receipt_id = receipt.get("id")
+        head = receipt.get("head_sha")
+        if (
+            isinstance(receipt_id, str)
+            and receipt_id.strip()
+            and isinstance(head, str)
+            and head.strip()
+        ):
+            return receipt_id.strip(), head.strip()
+
+    print(
+        "No receipt with both id and head_sha found in runtime evidence "
+        f"cockpit receipts: {receipts_path}",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
+
+
 def receipt_number(receipt: Mapping[str, object]) -> int | None:
     value = receipt.get("id")
     if not isinstance(value, str):
@@ -522,6 +546,87 @@ def check_stale_runtime_pr_route(
     return 0
 
 
+def load_json_object(path: Path, label: str) -> JsonObject:
+    if not path.is_file():
+        print(f"Required {label} is missing: {path}", file=sys.stderr)
+        raise SystemExit(1)
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        print(f"{label} is not valid JSON: {path}: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+    if not isinstance(value, dict):
+        print(f"{label} must be a JSON object: {path}", file=sys.stderr)
+        raise SystemExit(1)
+    return cast(JsonObject, value)
+
+
+def check_current_route_guard(jsc_363_rows: list[str]) -> int:
+    guard = load_json_object(
+        RUNTIME_EVIDENCE_CURRENT_ROUTE_PATH,
+        "runtime evidence cockpit current-route guard",
+    )
+    latest_receipt_id, latest_head = latest_route_receipt_identity(
+        RUNTIME_EVIDENCE_RECEIPTS_PATH,
+    )
+    violations: list[str] = []
+
+    expected_scalars = {
+        "schemaVersion": "goal-current-route/v1",
+        "goalSlug": "codex-runtime-evidence-verifier-cockpit",
+        "issueKey": "JSC-363",
+        "currentHeadSha": latest_head,
+        "lastReceipt": latest_receipt_id,
+    }
+    for key, expected in expected_scalars.items():
+        actual = guard.get(key)
+        if actual != expected:
+            violations.append(
+                "Runtime evidence cockpit current-route guard has stale "
+                f"{key}: expected {expected!r}, got {actual!r}."
+            )
+
+    if guard.get("status") not in {"blocked", "active"}:
+        violations.append(
+            "Runtime evidence cockpit current-route guard status must be "
+            "'blocked' or 'active' while parent completion remains unclaimed."
+        )
+
+    blockers = guard.get("blockers")
+    if not isinstance(blockers, list) or not blockers:
+        violations.append(
+            "Runtime evidence cockpit current-route guard must list at least "
+            "one blocker while Judge/PM readiness and parent completion are "
+            "unclaimed."
+        )
+
+    canonical_refs_value = guard.get("canonicalRefs")
+    if not isinstance(canonical_refs_value, list) or not all(
+        isinstance(item, str) for item in cast(list[object], canonical_refs_value)
+    ):
+        violations.append(
+            "Runtime evidence cockpit current-route guard canonicalRefs must "
+            "be a list of strings."
+        )
+    else:
+        canonical_refs = cast(list[str], canonical_refs_value)
+        missing_guard_refs = [
+            ref
+            for ref in REQUIRED_RUNTIME_EVIDENCE_ROUTE_REFS
+            if ref not in canonical_refs
+        ]
+        if missing_guard_refs:
+            violations.append(
+                "Runtime evidence cockpit current-route guard is missing "
+                "canonical refs: " + ", ".join(missing_guard_refs)
+            )
+
+    if violations:
+        print("\n".join(violations), file=sys.stderr)
+        return 1
+    return 0
+
+
 def run_goal_extensions(argv: list[str]) -> int:
     goal_path = resolve_runtime_evidence_goal_path(argv)
     if goal_path is None:
@@ -619,6 +724,10 @@ def run_goal_extensions(argv: list[str]) -> int:
             file=sys.stderr,
         )
         return 1
+
+    current_route_guard_status = check_current_route_guard(jsc_363_rows)
+    if current_route_guard_status != 0:
+        return current_route_guard_status
 
     stale_route_status = check_stale_runtime_pr_route(goal_path, jsc_363_rows)
     if stale_route_status != 0:
