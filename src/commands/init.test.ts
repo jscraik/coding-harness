@@ -67,6 +67,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".github/PULL_REQUEST_TEMPLATE.md",
 	"scripts/validate-commit-msg.js",
 	"scripts/check-hook-critical-config-sync.sh",
+	"scripts/run-package-command.sh",
 	"scripts/hook-pre-commit.sh",
 	"scripts/hook-pre-push.sh",
 	"scripts/setup-git-hooks.js",
@@ -1637,7 +1638,7 @@ describe("runInit", () => {
 				hookPreCommit.indexOf("bash ./scripts/validate-codestyle.sh --fast"),
 			).toBeLessThan(hookPreCommit.indexOf("npm run typecheck"));
 			expect(hookPreCommit).toContain(
-				'run_optional_package_script "quality:behavior-tests" npm run quality:behavior-tests',
+				'run_optional_package_script "quality:behavior-tests" bash ./scripts/run-package-command.sh npm run quality:behavior-tests',
 			);
 			expect(hookPreCommit).not.toContain("pnpm lint");
 			expect(hookPrePush).toContain("npm run build");
@@ -1684,7 +1685,7 @@ describe("runInit", () => {
 			expect(hookPreCommit).toContain("yarn docs:lint");
 			expect(hookPreCommit).toContain("yarn typecheck");
 			expect(hookPreCommit).toContain(
-				'run_optional_package_script "quality:behavior-tests" yarn quality:behavior-tests',
+				'run_optional_package_script "quality:behavior-tests" bash ./scripts/run-package-command.sh yarn quality:behavior-tests',
 			);
 			expect(hookPreCommit).not.toContain("pnpm lint");
 			expect(hookPrePush).toContain("yarn build");
@@ -2045,17 +2046,19 @@ describe("runInit", () => {
 			expect(runHarnessGate).toContain(
 				'MISE_RESOLVED="$(mise which harness 2>/dev/null || true)"',
 			);
-			expect(semgrepBootstrap).toContain(
-				'echo "Error: python3 is required to install Semgrep." >&2',
-			);
-			expect(semgrepBootstrap).toContain("resolve_semgrep_python_cache_tag()");
-			expect(semgrepBootstrap).toContain(
+			for (const semgrepBootstrapSnippet of [
+				'echo "Error: python3 or uv-managed Python 3.12 is required to install Semgrep." >&2',
+				"resolve_semgrep_python()",
+				'SEMGREP_BOOTSTRAP_PYTHON="${SEMGREP_BOOTSTRAP_PYTHON:-}"',
+				'if ! SEMGREP_BOOTSTRAP_PYTHON="$(resolve_semgrep_python)"; then',
+				'if [[ ! -x "$SEMGREP_BOOTSTRAP_PYTHON" ]]; then',
+				"resolve_semgrep_python_cache_tag()",
 				'SEMGREP_PYTHON_CACHE_TAG="${SEMGREP_PYTHON_CACHE_TAG:-}"',
-			);
-			expect(semgrepBootstrap).toContain("ensure_semgrep_cache_paths()");
-			expect(semgrepBootstrap).toContain(
+				"ensure_semgrep_cache_paths()",
 				"ensure_semgrep_cache_paths || return 1",
-			);
+			]) {
+				expect(semgrepBootstrap).toContain(semgrepBootstrapSnippet);
+			}
 			expect(semgrepBootstrap).toContain(
 				"if ! ensure_semgrep_cache_paths; then",
 			);
@@ -2069,7 +2072,7 @@ describe("runInit", () => {
 				'PYTHONPATH="$SEMGREP_SITE_PACKAGES_DIR${PYTHONPATH:+:$PYTHONPATH}" \\',
 			);
 			expect(semgrepBootstrap).toContain(
-				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "$SEMGREP_PIP_SPEC"',
+				'"$SEMGREP_BOOTSTRAP_PYTHON" -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "$SEMGREP_PIP_SPEC"',
 			);
 			expect(semgrepBootstrap).toContain("has_semgrep_installation()");
 			expect(semgrepBootstrap).toContain(
@@ -2082,20 +2085,7 @@ describe("runInit", () => {
 				"sudo apt-get install -y python3-pip python3-venv",
 			);
 			expect(semgrepBootstrap).toContain(
-				'python3 -m venv "$SEMGREP_VENV_DIR" >/dev/null 2>&1',
-			);
-			expect(semgrepBootstrap).toContain(
-				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "$SEMGREP_PIP_SPEC"',
-			);
-			expect(semgrepBootstrap).toContain("has_semgrep_installation()");
-			expect(semgrepBootstrap).toContain(
-				"if semgrep_site_packages_usable && semgrep_version_usable; then",
-			);
-			expect(semgrepBootstrap).toContain(
-				'if [[ -z "${CI:-}" && -z "${CIRCLECI:-}" ]]; then',
-			);
-			expect(semgrepBootstrap).toContain(
-				"sudo apt-get install -y python3-pip python3-venv",
+				'"$SEMGREP_BOOTSTRAP_PYTHON" -m venv "$SEMGREP_VENV_DIR" >/dev/null 2>&1',
 			);
 			expect(semgrepBootstrap).toContain(
 				"Error: unable to install Semgrep ${SEMGREP_VERSION} or newer.",
@@ -2280,6 +2270,7 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"/opt/homebrew/bin"');
 			expect(environmentCheck).toContain('"/usr/sbin"');
 			expect(environmentCheck).toContain('"scripts/verify-work.sh"');
+			expect(environmentCheck).toContain('"scripts/run-package-command.sh"');
 			expect(environmentCheck).toContain(
 				'"scripts/codex-preflight-local-memory-legacy.sh"',
 			);
@@ -2358,12 +2349,14 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain("Codex environment action");
 			expect(environmentCheck).toContain("run_check_environment_with_runner()");
 			expect(environmentCheck).toContain(
-				"repo source CLI (cd repo && node --import tsx src/cli.ts)",
+				"repo source CLI (mise exec -- node --import tsx src/cli.ts)",
 			);
 			expect(environmentCheck).toContain(
-				'bash -lc \'cd "$1" && shift && exec "$@"\' _ "$REPO_ROOT" node --import tsx src/cli.ts',
+				'mise --cd "$REPO_ROOT" exec -- node --import tsx "$REPO_ROOT/src/cli.ts"',
 			);
-			expect(environmentCheck).toContain("repo dist CLI (node dist/cli.js)");
+			expect(environmentCheck).toContain(
+				"repo dist CLI (mise exec -- node dist/cli.js)",
+			);
 			expect(environmentCheck).toContain(
 				"repo wrapper (bash scripts/harness-cli.sh)",
 			);

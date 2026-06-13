@@ -1,0 +1,132 @@
+{
+	"schemaVersion": "validation-gate-graph/v1",
+	"summary": "Machine-readable map of the aggregate check graph. Each node names the claim lane it can support; no node proves unrelated PR, CI, review-thread, tracker, or merge state.",
+	"aggregateCommand": "pnpm check",
+	"nodes": [
+		{
+			"command": "pnpm lint",
+			"lane": "source-style",
+			"owner": "biome",
+			"proves": "configured lint rules pass for source and scripts"
+		},
+		{
+			"command": "pnpm docs:lint",
+			"lane": "docs-style",
+			"owner": "docs",
+			"proves": "markdown and documentation lint rules pass"
+		},
+		{
+			"command": "pnpm docs:lifecycle",
+			"lane": "docs-lifecycle",
+			"owner": "docs-surface",
+			"proves": "lifecycle metadata and manifest contracts pass"
+		},
+		{
+			"command": "pnpm docs:root-archive:links",
+			"lane": "root-hygiene",
+			"owner": "docs-surface",
+			"proves": "root archive link references remain intact"
+		},
+		{
+			"command": "pnpm docs:ubiquitous:guard",
+			"lane": "ubiquitous-language",
+			"owner": "glossary",
+			"proves": "operator instructions link to the canonical glossary surface"
+		},
+		{
+			"command": "pnpm docs:steering:guard",
+			"lane": "steering-feedback",
+			"owner": "governance",
+			"proves": "repeated-steering contract remains wired into docs and validators"
+		},
+		{
+			"command": "pnpm skill:validate",
+			"lane": "skills",
+			"owner": "skills",
+			"proves": "repo skill contracts validate"
+		},
+		{
+			"command": "pnpm workflow:validate",
+			"lane": "workflow",
+			"owner": "workflow",
+			"proves": "workflow metadata and contracts validate"
+		},
+		{
+			"command": "pnpm research:evidence:validate",
+			"lane": "research-evidence",
+			"owner": "research",
+			"proves": "evidence references in research surfaces validate"
+		},
+		{
+			"command": "pnpm architecture:check",
+			"lane": "architecture",
+			"owner": "architecture",
+			"proves": "architecture dependency, diagram, and registry rules pass"
+		},
+		{
+			"command": "pnpm types:check",
+			"lane": "types",
+			"owner": "type-contracts",
+			"proves": "TypeScript source, artifact TypeScript, and Python static type contracts pass through the aggregate type lane",
+			"subcommands": [
+				"pnpm typescript:types",
+				"pnpm artifact:types",
+				"pnpm python:types"
+			]
+		},
+		{
+			"command": "pnpm quality:docstrings",
+			"lane": "source-quality",
+			"owner": "quality",
+			"proves": "docstring quality gate passes for changed production source"
+		},
+		{
+			"command": "pnpm quality:size",
+			"lane": "source-quality",
+			"owner": "quality",
+			"proves": "changed production source respects size limits or owned ratchets"
+		},
+		{
+			"command": "pnpm quality:self-affirming",
+			"lane": "test-quality",
+			"owner": "quality",
+			"proves": "changed tests avoid self-affirming patterns"
+		},
+		{
+			"command": "pnpm quality:behavior-tests",
+			"lane": "test-quality",
+			"owner": "quality",
+			"proves": "behavior-test quality gate passes"
+		},
+		{
+			"command": "pnpm quality:git-env-sanitizer",
+			"lane": "source-quality",
+			"owner": "quality",
+			"proves": "git environment sanitizer quality gate passes"
+		},
+		{
+			"command": "pnpm harness:audit-tracking",
+			"lane": "harness-audit",
+			"owner": "harness",
+			"proves": "harness audit tracking contracts pass"
+		},
+		{
+			"command": "pnpm test:related",
+			"lane": "tests",
+			"owner": "vitest",
+			"proves": "tests related to changed files pass"
+		},
+		{
+			"command": "pnpm test:ci",
+			"lane": "tests",
+			"owner": "vitest",
+			"proves": "CI-equivalent local test lane passes"
+		},
+		{
+			"command": "pnpm audit",
+			"lane": "dependencies",
+			"owner": "package-manager",
+			"proves": "package-manager dependency audit command completes"
+		}
+	]
+}

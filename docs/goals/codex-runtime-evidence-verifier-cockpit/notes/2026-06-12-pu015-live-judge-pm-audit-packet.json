@@ -1,8 +1,8 @@
 {
 	"packet": {
 		"schemaVersion": "judge-pm-audit/v1",
-		"generatedAt": "2026-06-12T14:59:50Z",
-		"headSha": "0c37312f78afea195cc8bbacb77218cdb9a1537b",
+		"generatedAt": "2026-06-13T10:30:00Z",
+		"headSha": "f93229d434b801047df943accc390d98327aedd9",
 		"status": "blocked",
 		"freshness": "missing",
 		"blockerCode": "missing_reviewer_artifact",
@@ -26,12 +26,12 @@
 			"evidenceRef": "linear:JSC-363",
 			"lifecycleIssueId": "JSC-363",
 			"parentIssueId": null,
-			"prNumber": 423,
+			"prNumber": 424,
 			"externalGoalId": "codex-runtime-evidence-verifier-cockpit",
 			"claimed": {
 				"closeoutIssueId": "JSC-363",
 				"parentIssueId": null,
-				"prNumber": 423,
+				"prNumber": 424,
 				"externalGoalId": "codex-runtime-evidence-verifier-cockpit"
 			}
 		},
@@ -56,12 +56,9 @@
 			},
 			{
 				"name": "validation",
-				"status": "blocked",
-				"freshness": "stale",
-				"evidenceRef": "validation:R493-route-freshness-repair",
-				"blockerClass": "stale_state",
-				"blockerCode": "validation_receipt_head_mismatch",
-				"blockerRefs": ["validation:R493-route-freshness-repair"]
+				"status": "pass",
+				"freshness": "current",
+				"evidenceRef": "validation:R511-post-pr424-tracker-refresh"
 			},
 			{
 				"name": "root-hygiene",
@@ -75,7 +72,7 @@
 				"claim": "last_merged_pr_route_ready",
 				"status": "pass",
 				"freshness": "current",
-				"evidenceRef": "external-state:pr-423-merged"
+				"evidenceRef": "external-state:pr-424-merged"
 			},
 			{
 				"claim": "root_surface_tidy",
@@ -87,13 +84,13 @@
 				"claim": "remote_checks_current",
 				"status": "pass",
 				"freshness": "current",
-				"evidenceRef": "external-state:pr-423-checks"
+				"evidenceRef": "external-state:pr-424-checks"
 			},
 			{
 				"claim": "review_threads_resolved",
 				"status": "pass",
 				"freshness": "current",
-				"evidenceRef": "review-state:pr-423-review-threads"
+				"evidenceRef": "review-state:pr-424-review-threads"
 			},
 			{
 				"claim": "linear_state_aligned",
@@ -117,22 +114,22 @@
 			"pr-closeout:docs/goals/codex-runtime-evidence-verifier-cockpit/notes/2026-06-12-pu015-live-judge-pm-audit-packet.json"
 		],
 		"blockerRefs": ["review-state:adversarial-reviewer"],
-		"headSha": "0c37312f78afea195cc8bbacb77218cdb9a1537b",
-		"verdictHeadSha": "0c37312f78afea195cc8bbacb77218cdb9a1537b",
+		"headSha": "f93229d434b801047df943accc390d98327aedd9",
+		"verdictHeadSha": "f93229d434b801047df943accc390d98327aedd9",
 		"freshness": "missing",
 		"blockerClass": "unknown",
 		"blockerCode": "missing_reviewer_artifact",
-		"verifiedAt": "2026-06-12T14:59:50Z",
+		"verifiedAt": "2026-06-13T10:30:00Z",
 		"evidenceUse": "claim_support"
 	},
 	"evidenceInputs": {
-		"headSha": "0c37312f78afea195cc8bbacb77218cdb9a1537b",
-		"generatedAt": "2026-06-12T14:59:50Z",
-		"sourceMainHead": "0c37312f78afea195cc8bbacb77218cdb9a1537b",
+		"headSha": "f93229d434b801047df943accc390d98327aedd9",
+		"generatedAt": "2026-06-13T10:30:00Z",
+		"sourceMainHead": "f93229d434b801047df943accc390d98327aedd9",
 		"runtimeCardRef": "runtime-card:current-main-jsc-363",
 		"reviewStateRef": "review-state:review-state",
 		"externalStateRef": "external-state:external-state",
-		"validationRefs": ["validation:R493-route-freshness-repair"],
+		"validationRefs": ["validation:R511-post-pr424-tracker-refresh"],
 		"rootHygieneRef": "root-hygiene:root-hygiene",
 		"linearDisposition": "explicit blocker: field-text currency unverified"
 	},

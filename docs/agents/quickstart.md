@@ -16,7 +16,7 @@ last_validated: 2026-04-26
 ## Prerequisites
 
 ```bash
-node -v   # >= 24.0.0
+node -v   # >= 26.3.0; .mise.toml pins 26.3.0 for this repo
 pnpm -v   # 10.33.0
 ```
 
@@ -77,7 +77,7 @@ bash scripts/verify-work.sh
 
 | Command                                                    | Purpose                                                                                  |
 | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `pnpm check`                                               | lint + typecheck + test + audit                                                          |
+| `pnpm check`                                               | Aggregate governance gate for docs, skills, workflows, architecture, types, quality, tests, local CI-equivalent checks, and audit |
 | `pnpm lint`                                                | Biome check                                                                              |
 | `pnpm typecheck`                                           | TypeScript compiler no-emit check                                                        |
 | `pnpm test`                                                | Vitest run                                                                               |

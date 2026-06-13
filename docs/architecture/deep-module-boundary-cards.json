@@ -1,0 +1,128 @@
+{
+	"schemaVersion": "deep-module-boundary-cards/v1",
+	"summary": "Compact boundary cards for promoted deep modules. ARCHITECTURE.md points here instead of expanding every implementation detail inline.",
+	"modules": [
+		{
+			"path": "src/lib/evidence/",
+			"publicSurface": "shared receipt and proof-classification contracts",
+			"owns": [
+				"validation proof",
+				"artifact proof",
+				"runtime-card proof",
+				"review proof",
+				"external-state proof",
+				"run-record proof"
+			],
+			"mustNotOwn": ["delivery completion authority", "merge authority"]
+		},
+		{
+			"path": "src/lib/browser-evidence/",
+			"publicSurface": "browser-evidence/v1 manifest validation",
+			"owns": [
+				"screenshot containment",
+				"viewport coverage",
+				"console telemetry policy",
+				"nonblank PNG checks"
+			],
+			"mustNotOwn": [
+				"delivery-truth",
+				"review-state",
+				"external-state",
+				"Judge/PM readiness"
+			]
+		},
+		{
+			"path": "src/lib/docs-surface/",
+			"publicSurface": "docs lifecycle and stale-document advisory reports",
+			"owns": [
+				"frontmatter metadata",
+				"reader-task eval",
+				"docs-gate advisory projection"
+			],
+			"mustNotOwn": [
+				"archive execution",
+				"file movement",
+				"lifecycle metadata rewrites"
+			]
+		},
+		{
+			"path": "src/lib/runtime/",
+			"publicSurface": "Codex runtime evidence and runtime-card contracts",
+			"owns": [
+				"runtime evidence bundles",
+				"runtime cards",
+				"runtime-card handoff",
+				"environment refs",
+				"continuity refs"
+			],
+			"mustNotOwn": [
+				"raw prompts",
+				"transcripts",
+				"secrets",
+				"command authority"
+			]
+		},
+		{
+			"path": "src/lib/runtime-trace/",
+			"publicSurface": "agent-run-event/v1 trace emission",
+			"owns": [
+				"trace-out path parsing",
+				"run-id derivation",
+				"event manifests",
+				"hash-chain continuity"
+			],
+			"mustNotOwn": ["runtime-card claim authority", "delivery-truth"]
+		},
+		{
+			"path": "src/lib/replay/",
+			"publicSurface": "ReplayPacket/v1 validation contracts",
+			"owns": [
+				"pointer-only replay seeds",
+				"hook provenance",
+				"freshness semantics",
+				"redaction guarantees"
+			],
+			"mustNotOwn": ["delivery-truth claim support", "raw command output"]
+		},
+		{
+			"path": "src/lib/prompt-context/",
+			"publicSurface": "prompt-context packet assembly and validation",
+			"owns": ["compact context refs", "source-bound prompt inputs"],
+			"mustNotOwn": ["runtime telemetry storage", "completion authority"]
+		},
+		{
+			"path": "src/lib/intermediary-receipts/",
+			"publicSurface": "intermediary receipt contracts",
+			"owns": [
+				"claim/evidence/blocker receipt shape",
+				"receipt freshness inputs"
+			],
+			"mustNotOwn": ["PR merge state", "CI state"]
+		},
+		{
+			"path": "src/lib/delivery-truth/",
+			"publicSurface": "private delivery-truth and Judge/PM audit composition",
+			"owns": [
+				"claim authority matching",
+				"goal completion audit",
+				"Judge/PM readiness packet inputs"
+			],
+			"mustNotOwn": ["public merge authority", "review-thread state mutation"]
+		},
+		{
+			"path": "src/lib/root-hygiene/",
+			"publicSurface": "root-surface and generated-output hygiene checks",
+			"owns": ["root file classification", "generated runtime boundary checks"],
+			"mustNotOwn": ["route selection", "artifact promotion"]
+		},
+		{
+			"path": "src/lib/pr-closeout/",
+			"publicSurface": "PR closeout state packets",
+			"owns": ["PR readiness inputs", "closeout claim boundaries"],
+			"mustNotOwn": [
+				"CI pass claims without current CI evidence",
+				"tracker closure"
+			]
+		}
+	]
+}

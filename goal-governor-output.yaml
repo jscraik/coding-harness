@@ -1,82 +1,54 @@
-schema_version: goal-governor-output/v1
+schema_version: 1
 mode: continue
 goal_path: docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md
-native_reconciliation:
-  native_goal_id: null
-  native_status: unknown
-  source: "state.yaml native_goal_id and native_status are null"
-board_status: pu015_local_guardrails_committed_pending_pr
-next_action: push_open_pr_and_triage_pu015
-decision_markers:
-  - read goal.md and state.yaml first
-  - receipts.jsonl
-  - claim_ledger
-  - evidence_surface
-  - remaining_uncertainty
+native_goal_status: unknown
+board_status: active
+next_action: continue
 truth_lanes:
-  local_validation:
-    status: pass
-    evidence:
-      - "Command: node --import tsx src/cli.ts runtime-card --json --repo . | jq '{issueKey, activeSpec:.artifacts.activeSpec, activePlan:.artifacts.activePlan}' -> pass, issueKey JSC-363 with active spec and plan"
-      - "Command: node --import tsx src/cli.ts next --json | jq '{status, summary, nextAction, nextCommand}' -> pass, clean-worktree handoff recommendation"
-  generated_artifacts:
-    status: post_pr412_refresh_pu015_selected
-    evidence:
-      - "R479 records the post-PR411 pullback refresh"
-      - "R481 records the post-PR412 pullback refresh"
-      - "PU-056 is merged on current main and runtime-card derives issueKey JSC-363 from the wide active-route row"
-  remote_pr_checks:
-    status: pr411_merged
-    evidence:
-      - "PR #409 state=MERGED, mergedAt=2026-06-11T16:36:45Z, mergeCommit=c3d476541351ccd08fb832d08ba9749a9f203e4c"
-      - "PR #409 head c5f4095bcd2484668acfa0195fdddf9e6cb2517e had repo-owned CircleCI lanes, pr-pipeline, security-scan, Socket, and CodeRabbit passing before merge; external security/snyk GitHub App quota/error lane remains owner-waived only"
-      - "PR #410 state=MERGED, mergedAt=2026-06-11T18:24:41Z, mergeCommit=41ac068ae7c9e9425681a5d42358eaf120f24c04, submitted head=2067365c6149ebdf96aa181377ca5c151536c216"
-      - "PR #410 repo-owned CircleCI lanes, pr-pipeline, security-scan, Socket, CodeRabbit, and review-thread lanes passed or resolved before merge; external security/snyk GitHub App quota/error lane remains owner-waived only"
-      - "PR #411 state=MERGED, mergedAt=2026-06-11T20:41:25Z, mergeCommit=aa020ee7deaef4974ee8c78761192e818416e906, submitted head=dc2d19bfc14d32621eed5b082565168ab177a631"
-      - "PR #412 state=MERGED, mergedAt=2026-06-12T00:24:41Z, mergeCommit=7e0dde9c0408388fc228e8c2afe049593f1b0b71, submitted head=a81d783aeef3f05d6e3668a4e33ed4e216e6a756"
-      - "Live GitHub reported zero open PRs before this local tracker-refresh branch was created"
-  review_threads:
-    status: no_open_pr_threads_checked_before_local_tracker_branch
-    evidence:
-      - "All four PR #410 review threads identified during merge triage were resolved before auto-merge completed"
-      - "PR #412 merged after review-fix triage; thread state is PR-lane provenance, not parent-goal completion evidence"
-  tracker_state:
-    status: pu015_local_guardrails_committed_pending_pr
-    evidence:
-      - "state.yaml records PR #412 as merged baseline and PU-015 as the selected next slice"
-      - "PR #411 and PR #412 are tracker-refresh PRs only; neither is PU-015 implementation evidence"
-      - "runtime-card on pulled current main derives issueKey JSC-363 from the active route row"
-      - "PU-015 local tests now prove claimed authority mismatches block Judge/PM readiness and review artifacts require current receipt-backed proof"
-  merge_readiness:
-    status: not_ready_until_pu015_packet_and_final_audit
-    evidence:
-      - "PU-056 PR, CI, review-thread, merge, and post-merge pullback lanes are proven; Linear field-text, PU-015 packet, and final audit remain unproven"
+  local_validation: blocked
+  generated_artifacts: current
+  remote_pr_checks: not_rechecked
+  review_threads: not_rechecked
+  tracker_state: current
+  merge_readiness: not_rechecked
 continuation_gate:
-  status: push_open_pr_and_triage_pu015
-  reason: "PU-015 guardrails are committed locally. The slice is not complete until reviewed, merged, pulled back to main, and refreshed in the tracker."
+  queued_user_input: absent
+  pending_work: present
+  decision: open
+  reason: >-
+    read goal.md and state.yaml first; receipts.jsonl selected R512 on current
+    main, and the remaining work is proof/authority closeout rather than a new
+    feature slice.
 native_blocker_audit:
-  status: not_blocked
-  blocker_history: []
-  reason: "No repeated impasse exists; the current branch has a focused runtime-card guard fix and local proof."
+  observed_repeated_turns: 1
+  required_repeated_turns: 3
+  gate_met: false
+worker_must_pause: false
+work_should_pause: false
 validation_evidence:
-  outcome: pass
-  commands:
-    - "node --import tsx src/cli.ts runtime-card --json --repo . | jq '{issueKey, activeSpec:.artifacts.activeSpec, activePlan:.artifacts.activePlan}'"
-    - "node --import tsx src/cli.ts next --json | jq '{status, summary, nextAction, nextCommand}'"
-    - "jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null"
-    - "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo ."
-    - "PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit"
-    - "node scripts/validate-goal-kanban-script.cjs .harness/implementation-notes/goal-kanban-board.html"
-    - "bash scripts/run-harness-gate.sh docs-gate --mode required --json"
-    - "pnpm docs:lint"
-    - "pnpm run quality:docstrings"
-    - "pnpm run quality:size"
-    - "pnpm run test:related"
-    - "pnpm test:deep"
-    - "pnpm typecheck"
-    - "pnpm check"
-    - "git diff --check"
+  - command: jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null
+    outcome: pass
+    note: receipts parsed after R512 receipt update.
+  - command: python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .
+    outcome: pass
+    note: audit freshness selected R512 at current main f93229d434b801047df943accc390d98327aedd9.
+  - command: python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit
+    outcome: pass
+    note: goal board passed after removing the stray current-route.json root artifact and repairing active-artifacts refs.
+  - command: node scripts/validate-goal-kanban-script.cjs .harness/implementation-notes/goal-kanban-board.html
+    outcome: pass
+    note: Kanban inline script parsed.
+  - command: bash scripts/run-harness-gate.sh docs-gate --mode required --json
+    outcome: pass
+    note: >-
+      docs-gate exited 0 with status pass after
+      docs/agents/07b-agent-governance.md was synchronized with AGENTS.md and
+      docs/agents/00-architecture-bootstrap.md. Advisory archive-candidate
+      warnings remain non-blocking.
+  - command: git diff --check
+    outcome: pass
+    note: whitespace check passed.
 risks:
-  - "PU-015 still needs a live Judge/PM packet and Linear field-text disposition before parent completion can be claimed."
-  - "External Snyk GitHub App quota remains owner-waived only, not a green security lane."
-  - "Judge/PM readiness and parent-goal completion remain unclaimed until Linear field-text disposition is resolved, the PU-015 packet exists, and the final audit passes."
+  - cannot mark complete without final Judge/PM audit receipt
+  - missing completion evidence: independent reviewer artifacts are absent or not yet explicitly blocked
+  - Linear field-text currency remains unclaimed beyond repo-truth comment evidence

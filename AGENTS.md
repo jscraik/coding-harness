@@ -135,7 +135,9 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 
 - At session start, read `~/.codex/instructions/Learnings.md` and
   [.harness/memory/LEARNINGS.md](./.harness/memory/LEARNINGS.md) when present.
-- Use [UBIQUITOUS_LANGUAGE.md](./UBIQUITOUS_LANGUAGE.md) for project terms.
+- Use [UBIQUITOUS-MAP.md](./UBIQUITOUS-MAP.md) for fast language-context
+  routing and [UBIQUITOUS_LANGUAGE.md](./UBIQUITOUS_LANGUAGE.md) for
+  authoritative project terms.
 - Project Brain files under `.harness/` are operational surfaces. Verify live paths
   before relying on them, and keep durable memory separate from local
   databases, caches, backups, generated run output, and secrets.

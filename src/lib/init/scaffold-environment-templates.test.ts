@@ -1,6 +1,22 @@
 // biome-ignore-all lint/suspicious/noTemplateCurlyInString: tests assert literal shell placeholders emitted into generated scripts.
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { renderCheckEnvironmentScript } from "./scaffold-environment-templates.js";
+
+function expectBashSyntax(name: string, script: string): void {
+	const tempDir = mkdtempSync(join(tmpdir(), "scaffold-environment-template-"));
+	const scriptPath = join(tempDir, name);
+	writeFileSync(scriptPath, script);
+	try {
+		const result = spawnSync("bash", ["-n", scriptPath], { encoding: "utf8" });
+		expect(result.status, result.stderr || result.stdout).toBe(0);
+	} finally {
+		rmSync(tempDir, { force: true, recursive: true });
+	}
+}
 
 describe("scaffold environment templates", () => {
 	it("renders the strict local environment preflight script", () => {
@@ -28,10 +44,10 @@ describe("scaffold environment templates", () => {
 		expect(script).toContain("Fix: run harness init --update");
 		expect(script).toContain("Fix: pnpm add -D $pkg");
 		expect(script).toContain(
-			"repo source CLI (cd repo && node --import tsx src/cli.ts)",
+			"repo source CLI (mise exec -- node --import tsx src/cli.ts)",
 		);
 		expect(script).toContain(
-			'bash -lc \'cd "$1" && shift && exec "$@"\' _ "$REPO_ROOT" node --import tsx src/cli.ts',
+			'mise --cd "$REPO_ROOT" exec -- node --import tsx "$REPO_ROOT/src/cli.ts"',
 		);
 		expect(script).toContain(
 			'installed_hooks_dir="$(git -C "$REPO_ROOT" rev-parse --git-path hooks 2>/dev/null || true)"',
@@ -61,7 +77,7 @@ describe("scaffold environment templates", () => {
 		const script = renderCheckEnvironmentScript();
 
 		const sourceIndex = script.indexOf(
-			"repo source CLI (cd repo && node --import tsx src/cli.ts)",
+			"repo source CLI (mise exec -- node --import tsx src/cli.ts)",
 		);
 		const distIndex = script.indexOf("repo dist CLI");
 		const wrapperIndex = script.indexOf("repo wrapper");
@@ -73,5 +89,9 @@ describe("scaffold environment templates", () => {
 		expect(distIndex).toBeGreaterThan(wrapperIndex);
 		expect(miseIndex).toBeGreaterThan(distIndex);
 		expect(globalIndex).toBeGreaterThan(miseIndex);
+	});
+
+	it("renders a check-environment script with valid Bash syntax", () => {
+		expectBashSyntax("check-environment.sh", renderCheckEnvironmentScript());
 	});
 });

@@ -1,13 +1,42 @@
 // biome-ignore-all lint/suspicious/noTemplateCurlyInString: tests assert literal shell placeholders emitted into generated hooks.
+import { spawnSync } from "node:child_process";
+import {
+	chmodSync,
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
 	renderCheckHookCriticalConfigSyncScript,
 	renderCheckStagedSecretsScript,
 	renderPreCommitHookScript,
 	renderPrePushHookScript,
+	renderRunPackageCommandScript,
 	renderSetupGitHooksScript,
 	renderValidateCommitMsgScript,
 } from "./scaffold-hook-templates.js";
+
+function expectScriptSyntax(
+	name: string,
+	script: string,
+	checker: "bash" | "node",
+): void {
+	const tempDir = mkdtempSync(join(tmpdir(), "scaffold-hook-template-"));
+	const scriptPath = join(tempDir, name);
+	writeFileSync(scriptPath, script);
+	try {
+		const args =
+			checker === "bash" ? ["-n", scriptPath] : ["--check", scriptPath];
+		const result = spawnSync(checker, args, { encoding: "utf8" });
+		expect(result.status, result.stderr || result.stdout).toBe(0);
+	} finally {
+		rmSync(tempDir, { force: true, recursive: true });
+	}
+}
 
 describe("git-hook scaffold templates", () => {
 	it("renders commit-message validation policy", () => {
@@ -59,31 +88,37 @@ describe("git-hook scaffold templates", () => {
 	it("renders leaf hook adapters without nested hook orchestration", () => {
 		const preCommit = renderPreCommitHookScript();
 		const prePush = renderPrePushHookScript();
+		const pnpmLintCommand = "bash ./scripts/run-package-command.sh pnpm lint";
+		const pnpmTypecheckCommand =
+			"bash ./scripts/run-package-command.sh pnpm typecheck";
 
 		expect(preCommit).toContain("check-hook-critical-config-sync.sh");
 		expect(preCommit).toContain("bash ./scripts/validate-codestyle.sh --fast");
+		expect(preCommit).toContain(
+			"bash ./scripts/run-package-command.sh node -e",
+		);
 		expect(preCommit).toContain("make related-tests-staged");
 		expect(preCommit.indexOf("make codestyle-parity")).toBeLessThan(
 			preCommit.indexOf("bash ./scripts/validate-codestyle.sh --fast"),
 		);
 		expect(
 			preCommit.indexOf("bash ./scripts/validate-codestyle.sh --fast"),
-		).toBeLessThan(preCommit.indexOf("pnpm lint"));
+		).toBeLessThan(preCommit.indexOf(pnpmLintCommand));
 		expect(
 			preCommit.indexOf("bash ./scripts/validate-codestyle.sh --fast"),
-		).toBeLessThan(preCommit.indexOf("pnpm typecheck"));
+		).toBeLessThan(preCommit.indexOf(pnpmTypecheckCommand));
 		expect(preCommit).toContain("package_script_exists()");
 		expect(preCommit).toContain(
 			"Skipping optional package script ${script_name}; package.json does not define it.",
 		);
 		expect(preCommit).toContain(
-			'run_optional_package_script "quality:behavior-tests" pnpm quality:behavior-tests',
+			'run_optional_package_script "quality:behavior-tests" bash ./scripts/run-package-command.sh pnpm quality:behavior-tests',
 		);
 		expect(preCommit).toContain(
-			'run_optional_package_script "quality:git-env-sanitizer" pnpm quality:git-env-sanitizer',
+			'run_optional_package_script "quality:git-env-sanitizer" bash ./scripts/run-package-command.sh pnpm quality:git-env-sanitizer',
 		);
 		expect(preCommit).toContain(
-			'run_optional_package_script "harness:audit-tracking" pnpm harness:audit-tracking',
+			'run_optional_package_script "harness:audit-tracking" bash ./scripts/run-package-command.sh pnpm harness:audit-tracking',
 		);
 		expect(preCommit).not.toContain("make hooks-pre-commit");
 		expect(preCommit).not.toContain("pre-commit run");
@@ -103,7 +138,7 @@ describe("git-hook scaffold templates", () => {
 		expect(preCommit).toContain("npm run docs:lint");
 		expect(preCommit).toContain("npm run quality:docstrings");
 		expect(preCommit).toContain(
-			'run_optional_package_script "quality:behavior-tests" npm run quality:behavior-tests',
+			'run_optional_package_script "quality:behavior-tests" bash ./scripts/run-package-command.sh npm run quality:behavior-tests',
 		);
 		expect(preCommit).not.toContain("pnpm lint");
 		expect(prePush).toContain("npm run build");
@@ -119,7 +154,7 @@ describe("git-hook scaffold templates", () => {
 		expect(preCommit).toContain("yarn docs:lint");
 		expect(preCommit).toContain("yarn quality:docstrings");
 		expect(preCommit).toContain(
-			'run_optional_package_script "quality:behavior-tests" yarn quality:behavior-tests',
+			'run_optional_package_script "quality:behavior-tests" bash ./scripts/run-package-command.sh yarn quality:behavior-tests',
 		);
 		expect(preCommit).not.toContain("pnpm lint");
 		expect(preCommit).not.toContain("npm run lint");
@@ -146,5 +181,98 @@ describe("git-hook scaffold templates", () => {
 			'git hash-object --path="$config_path" "$config_path"',
 		);
 		expect(script).toContain("pre-commit style runners stash unstaged changes");
+	});
+
+	it("renders the mise-aware package-command wrapper", () => {
+		const script = renderRunPackageCommandScript();
+
+		expect(script).toContain(
+			"Usage: bash scripts/run-package-command.sh <command> [args...]",
+		);
+		expect(script).toContain(
+			'mise_tool_is_managed "$command_name" || return 0',
+		);
+		expect(script).toContain('mise --cd "$repo_root" which node');
+		expect(script).toContain('mise --cd "$repo_root" which "$command_name"');
+		expect(script).toContain(
+			"Error: .mise.toml is present but mise is not installed or not on PATH",
+		);
+		expect(script).toContain(
+			"Error: mise could not resolve pinned tool '$command_name' from .mise.toml",
+		);
+		expect(script).not.toContain("which node 2>/dev/null || true");
+		expect(script).not.toContain('which "$command_name" 2>/dev/null || true');
+		expect(script).toContain('exec "$command_name" "$@"');
+	});
+
+	it("lets unpinned yarn commands use PATH in generated package wrapper", () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "scaffold-yarn-wrapper-"));
+		const scriptsDir = join(tempDir, "scripts");
+		const fakeBin = join(tempDir, "bin");
+		mkdirSync(scriptsDir);
+		mkdirSync(fakeBin);
+		writeFileSync(join(tempDir, ".mise.toml"), '[tools]\nnode = "26.3.0"\n');
+		writeFileSync(
+			join(scriptsDir, "run-package-command.sh"),
+			renderRunPackageCommandScript(),
+			{ mode: 0o755 },
+		);
+		writeFileSync(
+			join(fakeBin, "mise"),
+			"#!/usr/bin/env bash\necho mise should not run >&2\nexit 99\n",
+			{ mode: 0o755 },
+		);
+		writeFileSync(
+			join(fakeBin, "yarn"),
+			"#!/usr/bin/env bash\nprintf 'yarn:%s\\n' \"$*\"\n",
+			{ mode: 0o755 },
+		);
+		chmodSync(join(fakeBin, "mise"), 0o755);
+		chmodSync(join(fakeBin, "yarn"), 0o755);
+
+		try {
+			const result = spawnSync(
+				"bash",
+				["scripts/run-package-command.sh", "yarn", "lint"],
+				{
+					cwd: tempDir,
+					encoding: "utf8",
+					env: { ...process.env, PATH: `${fakeBin}:${process.env.PATH ?? ""}` },
+				},
+			);
+			expect(result.status, result.stderr || result.stdout).toBe(0);
+			expect(result.stdout.trim()).toBe("yarn:lint");
+			expect(result.stderr).not.toContain("mise should not run");
+		} finally {
+			rmSync(tempDir, { force: true, recursive: true });
+		}
+	});
+
+	it("renders shell hook templates with valid Bash syntax", () => {
+		const shellTemplates = [
+			["hook-pre-commit.sh", renderPreCommitHookScript()],
+			["hook-pre-push.sh", renderPrePushHookScript()],
+			["run-package-command.sh", renderRunPackageCommandScript()],
+			["check-staged-secrets.sh", renderCheckStagedSecretsScript()],
+			[
+				"check-hook-critical-config-sync.sh",
+				renderCheckHookCriticalConfigSyncScript(),
+			],
+		] as const;
+
+		for (const [name, script] of shellTemplates) {
+			expectScriptSyntax(name, script, "bash");
+		}
+	});
+
+	it("renders JavaScript hook templates with valid Node syntax", () => {
+		const nodeTemplates = [
+			["setup-git-hooks.js", renderSetupGitHooksScript()],
+			["validate-commit-msg.js", renderValidateCommitMsgScript()],
+		] as const;
+
+		for (const [name, script] of nodeTemplates) {
+			expectScriptSyntax(name, script, "node");
+		}
 	});
 });

@@ -284,7 +284,7 @@ describe("pilot-evaluate", () => {
 		if (!existsSync(baseDir)) {
 			mkdirSync(baseDir, { recursive: true });
 		}
-		testDir = mkdtempSync(join(baseDir, "pilot-evaluate-test-XXXXXX"));
+		testDir = mkdtempSync(join(baseDir, "pilot-evaluate-test-"));
 		artifactsDir = testDir;
 		runRecordsDir = join(testDir, "agent-runs");
 	});

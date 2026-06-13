@@ -5,8 +5,14 @@ import { describe, expect, it } from "vitest";
 const COMMAND_SURFACE_DECOMPOSITION_RATCHETS = [
 	{
 		path: "src/commands/ci-migrate-core.ts",
-		maxLines: 10_400,
+		maxLines: 9_510,
 		reason: "CI migration must move toward a control-plane service seam.",
+	},
+	{
+		path: "src/lib/ci-migrate/integrity-identifiers.ts",
+		maxLines: 60,
+		reason:
+			"CI migration integrity identifier policy must stay a small owner-module helper.",
 	},
 	{
 		path: "src/lib/ci/ci-migrate-merge-queue-window.ts",

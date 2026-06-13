@@ -57,4 +57,4 @@ else
 	echo "Skipping broad make codestyle in pre-push; run HARNESS_PRE_PUSH_FULL_CODESTYLE=1 git push to enable it."
 fi
 unset_git_context_env
-pnpm build
+bash ./scripts/run-package-command.sh pnpm build

@@ -63,45 +63,13 @@ synchronized. The architecture context must show the current validation
 dependencies, while `docs/agents/02-tooling-policy.md` and
 `docs/agents/06-security-and-governance.md` describe operator execution and
 pre-push governance.
-The prompt-gate split follows this rule: keep `src/commands/prompt-gate.ts`
-as a compatibility facade, keep `prompt-gate-command-spec.ts` as the registry
-adapter, and keep CLI argument parsing plus prompt-template section validation
-inside `src/lib/prompt-gate/`.
-Gap-case follows the same command-registry split pattern: keep
-`src/commands/gap-case.ts` as a compatibility facade, keep
-`gap-case-command-spec.ts` as the registry adapter, and keep CLI argument
-parsing, lifecycle validation, persistence, and presentation inside
-`src/lib/gap-case/`.
-Simulate follows the same command-registry split pattern: keep
-`src/commands/simulate.ts`, `src/commands/simulate-analysis.ts`, and
-`src/commands/simulate-analysis-recommendations.ts` as compatibility facades,
-keep `simulate-command-spec.ts` as the registry adapter, and keep CLI argument
-parsing, simulation orchestration, analysis, recommendations, and presentation
-inside `src/lib/simulate/`.
-Ci-migrate follows the same registry-boundary pattern: keep
-`src/commands/ci-migrate.ts` as the migration orchestration facade, keep
-`ci-migrate-command-spec.ts` as the registry adapter, and keep raw CLI
-argument projection plus delegated helper routing inside
-`src/lib/ci-migrate/`.
-Init follows the same registry-boundary pattern: keep
-`src/commands/init.ts` as the init orchestration facade, keep
-`init-command-spec.ts` as the registry adapter, and keep raw CLI argument
-projection plus issue-tracker/minimal-mode validation inside
-`src/lib/init/cli-args.ts`.
-Upgrade follows the same registry-boundary pattern: keep
-`src/commands/upgrade.ts` as the compatibility facade, keep
-`upgrade-command-spec.ts` as the registry adapter, keep raw CLI argument
-projection inside `src/lib/upgrade/cli-args.ts`, keep contract/default
-migration helpers inside `src/lib/upgrade/contract.ts`, keep the shared
-upgrade option contract inside `src/lib/upgrade/types.ts`, keep template
-and manifest updates inside `src/lib/upgrade/templates.ts`, and keep
-upgrade orchestration inside `src/lib/upgrade/runner.ts`.
-Brain follows the same registry-boundary pattern: keep `src/commands/brain.ts`
-and `src/commands/brain-core.ts` as compatibility facades, keep
-`brain-command-spec.ts` as the registry adapter, keep raw Project Brain flag
-projection inside `src/lib/project-brain/cli-args.ts`, keep the dispatcher and
-public export surface inside `src/lib/project-brain/cli.ts`, and keep
-subcommand behavior inside `src/lib/project-brain/*-cli.ts`.
+Command-family boundary details live in
+`docs/architecture/architecture-adjacent-boundary-registry.json`. Keep this
+guide at the invariant level: command facades stay compatibility surfaces,
+registry adapters describe catalog shape, and option parsing, policy, behavior,
+and presentation live in the named owner module. Update the registry and
+`src/lib/architecture/module-boundaries.test.ts` when a new family adopts this
+split, then refresh generated architecture context when docs-gate requires it.
 For north-star contract/scaffold updates that affect workflow authority, update this guide and `docs/agents/07b-agent-governance.md` together in the same PR.
 For root-surface cleanup, use `docs/architecture/root-surface-classification.md` as the tracked classification contract. Move historical root evidence into `docs/archive/root-cleanup/` or a domain docs surface before considering deletion; when a tracked root entry is deleted under explicit destructive-cleanup authority, record that decision in the classification table. Keep `AGENTS.md`, this guide, `docs/README.md`, and `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports architecture-context or agent-governance surfaces.
 Rule lifecycle governance updates are architecture-adjacent when they alter the manifest schema, `rule-lifecycle-gate`, or rule metadata validation. Keep this guide synchronized with `AGENTS.md` and `README.md` when docs-gate reports architecture-context or contract-policy surfaces, and ensure schema validation resolves from the target repo root rather than the caller's shell cwd.

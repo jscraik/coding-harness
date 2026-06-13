@@ -120,6 +120,7 @@ fi
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${"${"}BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
 CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
 	ATTESTATION_PATH="$REPO_ROOT/artifacts/policy/environment-attestation.json"
 	MISE_PATH="$REPO_ROOT/.mise.toml"
@@ -131,7 +132,6 @@ CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
 	CODESTYLE_DIR_PATH="$REPO_ROOT/codestyle"
 	CODESTYLE_CHECKSUM_PATH="$REPO_ROOT/codestyle/CHECKSUMS.sha256"
 	TOOLING_DOC_PATH="\${TOOLING_DOC_PATH:-$HOME/dev/configs/codex/instructions/tooling.md}"
-
 if [[ ! -f "$CONTRACT_PATH" ]]; then
 	echo "Error: missing contract file at $CONTRACT_PATH"
 	exit 1
@@ -268,7 +268,22 @@ fi
 			echo "Error: required binary '$bin' is not installed or not on PATH"
 			exit 1
 		fi
-	done`;
+	done
+
+	requires_pnpm_runtime_check() {
+		[[ -f "$REPO_ROOT/pnpm-lock.yaml" ]] && return 0
+		[[ -f "$PACKAGE_JSON_PATH" ]] || return 1
+		jq -e '(.packageManager // "") | startswith("pnpm@")' "$PACKAGE_JSON_PATH" >/dev/null
+	}
+
+	if requires_pnpm_runtime_check; then
+		pnpm_node_version="$(bash "$REPO_ROOT/scripts/run-package-command.sh" pnpm exec node -v 2>/dev/null || true)"
+		if [[ "$pnpm_node_version" != "v26.3.0" ]]; then
+			echo "Error: pnpm must execute with Node v26.3.0 from the repo toolchain; got '\${pnpm_node_version:-unavailable}'"
+			echo "Fix: run package-manager gates through 'bash scripts/run-package-command.sh pnpm ...' or repair mise PATH ordering."
+			exit 1
+		fi
+	fi`;
 }
 
 /**
@@ -540,7 +555,7 @@ function renderEnvironmentRunnerFunction(): string {
  */
 function renderEnvironmentRunnerSelection(): string {
 	return `if [[ -f "$REPO_ROOT/src/cli.ts" ]] && command -v node >/dev/null 2>&1; then
-	if ! run_check_environment_with_runner "repo source CLI (cd repo && node --import tsx src/cli.ts)" bash -lc 'cd "$1" && shift && exec "$@"' _ "$REPO_ROOT" node --import tsx src/cli.ts; then
+	if ! run_check_environment_with_runner "repo source CLI (mise exec -- node --import tsx src/cli.ts)" mise --cd "$REPO_ROOT" exec -- node --import tsx "$REPO_ROOT/src/cli.ts"; then
 		echo "Error: repo source CLI failed to run check-environment successfully."
 		exit 1
 	fi
@@ -550,7 +565,7 @@ elif [[ -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
 		exit 1
 	fi
 elif [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
-	if ! run_check_environment_with_runner "repo dist CLI (node dist/cli.js)" node "$REPO_ROOT/dist/cli.js"; then
+	if ! run_check_environment_with_runner "repo dist CLI (mise exec -- node dist/cli.js)" mise --cd "$REPO_ROOT" exec -- node "$REPO_ROOT/dist/cli.js"; then
 		echo "Error: repo dist CLI failed to run check-environment successfully."
 		exit 1
 	fi

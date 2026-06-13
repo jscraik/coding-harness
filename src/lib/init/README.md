@@ -69,6 +69,9 @@ thin and delegate into this deep module.
 - Generated hook adapters must render package-script commands from the detected
   package manager. Downstream npm or yarn repositories must not receive pnpm-only
   hook commands unless pnpm is the selected package manager.
+- The scaffold hook template registry must pass the selected package manager
+  into hook renderers so generated adapters, Make targets, and workflow
+  fixtures share the same command contract.
 - Generated Semgrep bootstrap scripts must not execute `python3` at source time.
   Cache-tag and cache-path discovery must be deferred behind runtime helpers so
   missing `python3` reaches the explicit Semgrep install error path instead of

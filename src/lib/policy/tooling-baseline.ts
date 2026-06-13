@@ -365,6 +365,7 @@ export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/new-task.sh",
 	"scripts/setup-git-hooks.js",
 	"scripts/run-prek.sh",
+	"scripts/run-package-command.sh",
 	"scripts/hook-pre-commit.sh",
 	"scripts/hook-pre-push.sh",
 	"scripts/validate-commit-msg.js",

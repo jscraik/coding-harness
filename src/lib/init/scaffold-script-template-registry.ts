@@ -13,6 +13,7 @@ import {
 	renderCheckStagedSecretsScript,
 	renderPreCommitHookScript,
 	renderPrePushHookScript,
+	renderRunPackageCommandScript,
 	renderSetupGitHooksScript,
 	renderValidateCommitMsgScript,
 } from "./scaffold-hook-templates.js";
@@ -59,6 +60,10 @@ export const QUALITY_AND_HOOK_SCRIPT_TEMPLATES: readonly Template[] = [
 	{
 		path: "scripts/run-prek.sh",
 		render: () => renderPackagedRootFile("scripts/run-prek.sh"),
+	},
+	{
+		path: "scripts/run-package-command.sh",
+		render: () => renderRunPackageCommandScript(),
 	},
 	{
 		path: "scripts/with-validation-lock.sh",

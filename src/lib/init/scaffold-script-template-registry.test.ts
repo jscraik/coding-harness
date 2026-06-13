@@ -23,6 +23,7 @@ describe("scaffold script template registry", () => {
 			"scripts/validate-commit-msg.js",
 			"scripts/setup-git-hooks.js",
 			"scripts/run-prek.sh",
+			"scripts/run-package-command.sh",
 			"scripts/with-validation-lock.sh",
 			"scripts/check-validation-locks.sh",
 			"scripts/hook-pre-commit.sh",
@@ -80,6 +81,9 @@ describe("scaffold script template registry", () => {
 		const validationLocks = QUALITY_AND_HOOK_SCRIPT_TEMPLATES.find(
 			(template) => template.path === "scripts/check-validation-locks.sh",
 		);
+		const packageCommand = QUALITY_AND_HOOK_SCRIPT_TEMPLATES.find(
+			(template) => template.path === "scripts/run-package-command.sh",
+		);
 
 		expect(codeSize?.render("pnpm", renderContext)).toContain(
 			"check-code-size",
@@ -87,6 +91,9 @@ describe("scaffold script template registry", () => {
 		expect(semgrepChanged?.render("pnpm", renderContext)).toContain("semgrep");
 		expect(validationLocks?.render("pnpm", renderContext)).toContain(
 			"validation-lock",
+		);
+		expect(packageCommand?.render("pnpm", renderContext)).toContain(
+			"mise --cd",
 		);
 	});
 

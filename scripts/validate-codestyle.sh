@@ -31,6 +31,15 @@ has_package_script() {
 	jq -e --arg script_name "$script_name" '(.scripts // {}) | has($script_name)' "$repo_root/package.json" >/dev/null 2>&1
 }
 
+run_package_manager() {
+	if [[ -f "$repo_root/scripts/run-package-command.sh" ]]; then
+		bash "$repo_root/scripts/run-package-command.sh" pnpm "$@"
+		return
+	fi
+
+	pnpm "$@"
+}
+
 run_script() {
 	local script_name="$1"
 
@@ -63,7 +72,7 @@ run_script() {
 	done
 	unset GIT_PUSH_OPTION_COUNT
 
-	pnpm run "$script_name"
+	run_package_manager run "$script_name"
 }
 
 run_required_script() {

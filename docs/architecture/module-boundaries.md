@@ -268,6 +268,9 @@ absorbs more safety policy.
 - `src/lib/ci-migrate/cli-args.ts`
   - Raw ci-migrate flag projection, target-directory parsing, snapshot option
     mapping, commit-mode parsing, and delegated helper action routing.
+- `src/lib/ci-migrate/integrity-identifiers.ts`
+  - Digest, commit SHA, and signing-key token shape checks used by CI migration
+    evidence validation and signed control-plane policy.
 - `src/lib/ci/ci-migrate-merge-queue-window.ts`
   - Signed merge-queue cutover window state, replay-binding shape validation,
     signature verification, terminal-window admission, and lifecycle-state

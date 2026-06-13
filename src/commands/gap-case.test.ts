@@ -42,7 +42,7 @@ describe("gap-case", () => {
 		if (!existsSync(baseDir)) {
 			mkdirSync(baseDir, { recursive: true });
 		}
-		testDir = mkdtempSync(join(baseDir, "gap-case-test-XXXXXX"));
+		testDir = mkdtempSync(join(baseDir, "gap-case-test-"));
 		storePath = join(testDir, "gap-cases.v1.json");
 		contractPath = join(testDir, "harness.contract.json");
 		// Write enabled contract

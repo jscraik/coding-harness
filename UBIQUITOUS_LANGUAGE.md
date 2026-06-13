@@ -2,6 +2,7 @@
 
 ## Table of Contents
 - [Scope](#scope)
+- [Fast Map](#fast-map)
 - [Canonical Terms](#canonical-terms)
 - [Aliases and Terms to Avoid](#aliases-and-terms-to-avoid)
 - [Relationships and Lifecycle](#relationships-and-lifecycle)
@@ -13,6 +14,13 @@
 
 ## Scope
 This glossary defines shared language for work in `/Users/jamiecraik/dev/coding-harness` so user prompts, agent actions, and repo governance terms stay aligned.
+
+## Fast Map
+
+`UBIQUITOUS-MAP.md` is the compact navigation surface for this glossary. Use
+the map to choose the relevant language context, then use this file for
+authoritative definitions, aliases to avoid, prompt translations, and
+decision-log updates.
 
 ## Canonical Terms
 | Term | Definition |

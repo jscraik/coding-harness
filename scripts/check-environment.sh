@@ -45,6 +45,7 @@ fi
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
 CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
 	ATTESTATION_PATH="$REPO_ROOT/artifacts/policy/environment-attestation.json"
 	MISE_PATH="$REPO_ROOT/.mise.toml"
@@ -97,7 +98,7 @@ fi
 		exit 1
 	fi
 
-	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/with-validation-lock.sh" "scripts/check-validation-locks.sh" "scripts/run-prek.sh" "scripts/hook-pre-commit.sh" "scripts/hook-pre-push.sh" "scripts/check-public-api-docs.mjs" "scripts/check-code-size.mjs" "scripts/lib/changed-files.mjs" "scripts/check-codestyle-parity.sh" "scripts/check-git-common-config.sh" "scripts/prepare-worktree.sh" "scripts/new-task.sh" "scripts/setup-git-hooks.js" "scripts/validate-commit-msg.js" "scripts/check-hook-critical-config-sync.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/check-semgrep-full.sh" "scripts/semgrep-bootstrap.sh" "scripts/semgrep-pre-push.yml")
+	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/with-validation-lock.sh" "scripts/check-validation-locks.sh" "scripts/run-prek.sh" "scripts/run-package-command.sh" "scripts/hook-pre-commit.sh" "scripts/hook-pre-push.sh" "scripts/check-public-api-docs.mjs" "scripts/check-code-size.mjs" "scripts/lib/changed-files.mjs" "scripts/check-codestyle-parity.sh" "scripts/check-git-common-config.sh" "scripts/prepare-worktree.sh" "scripts/new-task.sh" "scripts/setup-git-hooks.js" "scripts/validate-commit-msg.js" "scripts/check-hook-critical-config-sync.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/check-semgrep-full.sh" "scripts/semgrep-bootstrap.sh" "scripts/semgrep-pre-push.yml")
 	for support_file in "${required_support_files[@]}"; do
 		if [[ ! -f "$REPO_ROOT/${support_file}" ]]; then
 			echo "Error: missing required hook support file at $REPO_ROOT/${support_file}"
@@ -177,15 +178,30 @@ else
 fi
 
 	required_bins=("pnpm" "node" "jq" "make" "rg" "fd" "prek" "diagram" "mise" "realpath" "vale" "argos" "cosign" "cloudflared" "vitest" "ruff" "eslint" "agent-browser" "agentation-mcp" "ctx7" "mmdc" "markdownlint-cli2" "wrangler" "semgrep" "semver" "trivy" "rsearch" "wsearch")
-		if [[ "$(uname -s)" == "Darwin" ]]; then
-			required_bins+=("beautiful-mermaid")
-		fi
-		for bin in "${required_bins[@]}"; do
-			if ! command -v "$bin" >/dev/null 2>&1; then
-				echo "Error: required binary '$bin' is not installed or not on PATH"
+	if [[ "$(uname -s)" == "Darwin" ]]; then
+		required_bins+=("beautiful-mermaid")
+	fi
+	for bin in "${required_bins[@]}"; do
+		if ! command -v "$bin" >/dev/null 2>&1; then
+			echo "Error: required binary '$bin' is not installed or not on PATH"
 			exit 1
 		fi
 	done
+
+	requires_pnpm_runtime_check() {
+		[[ -f "$REPO_ROOT/pnpm-lock.yaml" ]] && return 0
+		[[ -f "$PACKAGE_JSON_PATH" ]] || return 1
+		jq -e '(.packageManager // "") | startswith("pnpm@")' "$PACKAGE_JSON_PATH" >/dev/null
+	}
+
+	if requires_pnpm_runtime_check; then
+		pnpm_node_version="$(bash "$REPO_ROOT/scripts/run-package-command.sh" pnpm exec node -v 2>/dev/null || true)"
+		if [[ "$pnpm_node_version" != "v26.3.0" ]]; then
+			echo "Error: pnpm must execute with Node v26.3.0 from the repo toolchain; got '${pnpm_node_version:-unavailable}'"
+			echo "Fix: run package-manager gates through 'bash scripts/run-package-command.sh pnpm ...' or repair mise PATH ordering."
+			exit 1
+		fi
+	fi
 
 	required_codex_actions=("Tools|tool" "Run|run" "Debug|debug" "Test|test" "Prek|test" "Release Finalize|tool" "Diagram|tool" "Ralph|debug" "Mise|tool" "Vale|debug" "Argos|test" "Cosign|debug" "Cloudflared|run" "Vitest|test" "Ruff|debug" "ESLint|debug" "Agent Browser|tool" "Agentation|tool" "Context7|tool" "Mermaid CLI|tool" "MarkdownLint|debug" "Wrangler|run" "1Password|tool" "Beautiful Mermaid|tool" "Auth0|tool" "Semgrep|debug" "Semver|tool" "Trivy|debug" "Gitleaks|debug" "Research|tool" "WSearch|tool")
 	for action in "${required_codex_actions[@]}"; do
@@ -403,12 +419,12 @@ run_check_environment_with_runner() {
 }
 
 if [[ -f "$REPO_ROOT/src/cli.ts" ]] && command -v node >/dev/null 2>&1; then
-	if ! run_check_environment_with_runner "repo source CLI (cd repo && node --import tsx src/cli.ts)" bash -lc 'cd "$1" && shift && exec "$@"' _ "$REPO_ROOT" node --import tsx src/cli.ts; then
+	if ! run_check_environment_with_runner "repo source CLI (mise exec -- node --import tsx src/cli.ts)" mise --cd "$REPO_ROOT" exec -- node --import tsx "$REPO_ROOT/src/cli.ts"; then
 		echo "Error: repo source CLI failed to run check-environment successfully."
 		exit 1
 	fi
 elif [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
-	if ! run_check_environment_with_runner "repo dist CLI (node dist/cli.js)" node "$REPO_ROOT/dist/cli.js"; then
+	if ! run_check_environment_with_runner "repo dist CLI (mise exec -- node dist/cli.js)" mise --cd "$REPO_ROOT" exec -- node "$REPO_ROOT/dist/cli.js"; then
 		echo "Error: repo dist CLI failed to run check-environment successfully."
 		exit 1
 	fi

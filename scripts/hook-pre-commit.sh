@@ -15,14 +15,14 @@ bash ./scripts/check-hook-critical-config-sync.sh
 make codestyle-parity
 unset_git_context_env
 bash ./scripts/validate-codestyle.sh --fast
-pnpm lint
-pnpm docs:lint
-pnpm typecheck
-pnpm run quality:docstrings
-pnpm run quality:size
-pnpm run quality:behavior-tests
-pnpm run quality:git-env-sanitizer
-pnpm run harness:audit-tracking
+bash ./scripts/run-package-command.sh pnpm lint
+bash ./scripts/run-package-command.sh pnpm docs:lint
+bash ./scripts/run-package-command.sh pnpm typecheck
+bash ./scripts/run-package-command.sh pnpm run quality:docstrings
+bash ./scripts/run-package-command.sh pnpm run quality:size
+bash ./scripts/run-package-command.sh pnpm run quality:behavior-tests
+bash ./scripts/run-package-command.sh pnpm run quality:git-env-sanitizer
+bash ./scripts/run-package-command.sh pnpm run harness:audit-tracking
 make secrets-staged
 make docs-style-changed
 make related-tests-staged
