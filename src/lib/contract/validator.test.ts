@@ -63,6 +63,39 @@ function withCanonicalNorthStarSurfaces(
 	};
 }
 
+function validToolingPolicy(
+	overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+	return {
+		requiredDocumentationTerms: ["node"],
+		requiredBinaries: ["node"],
+		requiredMiseTools: [{ tool: "node", version: "26.3.0" }],
+		miseFilePath: ".mise.toml",
+		readinessScriptPath: "scripts/check-environment.sh",
+		codexEnvironment: {
+			path: ".codex/environments/environment.toml",
+			requiredActions: [{ name: "Tools", icon: "tool" }],
+		},
+		makefile: {
+			path: "Makefile",
+			requiredTargets: ["check"],
+		},
+		packagePolicy: {
+			packageJsonPath: "package.json",
+			explicitCapabilities: ["ui"],
+			capabilityDetectors: [{ capability: "ui", dependencyMarkers: ["react"] }],
+			requiredPackages: [
+				{
+					package: "@brainwav/design-system-guidance",
+					dependencyType: "either",
+					requiredWhenCapabilities: ["ui"],
+				},
+			],
+		},
+		...overrides,
+	};
+}
+
 describe("validateContract", () => {
 	it("accepts minimal valid contract with version only", () => {
 		const result = validateContract({ version: "1.0" });
@@ -1099,6 +1132,40 @@ describe("validateContract", () => {
 			expect(result.success).toBe(true);
 			expect(result.data?.toolingPolicy?.requiredMiseTools).toHaveLength(2);
 			expect(result.data?.toolingPolicy?.sharedStateActions).toHaveLength(2);
+		});
+
+		it.each([
+			{
+				name: "non-array shared state actions",
+				sharedStateActions: "commit",
+			},
+			{
+				name: "missing authority",
+				sharedStateActions: [{ name: "commit" }],
+			},
+			{
+				name: "unknown authority",
+				sharedStateActions: [{ name: "commit", authority: "autonomous" }],
+			},
+			{
+				name: "invalid optional mutation flag",
+				sharedStateActions: [
+					{
+						name: "commit",
+						authority: "user_or_explicit_request",
+						writesGitState: "yes",
+					},
+				],
+			},
+		])("rejects toolingPolicy with $name", ({ sharedStateActions }) => {
+			const result = validateContract({
+				version: "1.0",
+				toolingPolicy: validToolingPolicy({ sharedStateActions }),
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("toolingPolicy");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
 		});
 
 		it("rejects invalid tooling action icons", () => {
