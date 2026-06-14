@@ -104,16 +104,32 @@ function resolveActiveRouteRef(
 		const candidate = `${base}/${path}`;
 		if (fileExists(repoRoot, candidate)) return candidate;
 	}
-	if (baseDirs.length > 0 && isShorthandRouteRef(path)) {
+	if (baseDirs.length > 0 && isRouteLocalRelativeRef(path)) {
 		return `${baseDirs[0]}/${path}`;
 	}
 	if (fileExists(repoRoot, path)) return path;
 	return path;
 }
 
-function isShorthandRouteRef(path: string): boolean {
-	return !path.includes("/");
+function isRouteLocalRelativeRef(path: string): boolean {
+	return !REPO_ROOT_PREFIXES.some((prefix) => path.startsWith(prefix));
 }
+
+const REPO_ROOT_PREFIXES = [
+	".",
+	"AGENTS.md",
+	"AI/",
+	"CODESTYLE.md",
+	"README.md",
+	"artifacts/",
+	"codestyle/",
+	"docs/",
+	"goal-governor-output.yaml",
+	"harness.contract.json",
+	"package.json",
+	"scripts/",
+	"src/",
+] as const;
 
 function activeRouteBaseDirs(
 	repoRoot: string,

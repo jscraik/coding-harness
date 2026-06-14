@@ -168,6 +168,48 @@ describe("assessActiveRouteRefs", () => {
 		]);
 	});
 
+	it("reports missing route-local subpath refs before same-name root files", () => {
+		const repoRoot = makeRepo(tempDirs);
+		const tick = String.fromCharCode(96);
+		writeRepoFile(repoRoot, "docs/goals/demo/current-route.json", "{}\n");
+		writeRepoFile(repoRoot, "notes/execution-tracker.md", "# Root Tracker\n");
+
+		const assessment = assessActiveRouteRefs({
+			repoRoot,
+			activeArtifactsPath: ".harness/active-artifacts.md",
+			activeArtifactsText: [
+				"# Active",
+				"",
+				"## Current Active Route",
+				"",
+				[
+					tick,
+					"docs/goals/demo/current-route.json",
+					tick,
+					" and ",
+					tick,
+					"notes/execution-tracker.md",
+					tick,
+					".",
+				].join(""),
+				"",
+				"## Artifact Index",
+			].join("\n"),
+		});
+
+		expect(assessment.evidenceRefs).toEqual([
+			"docs/goals/demo/current-route.json",
+		]);
+		expect(assessment.missingRefs).toEqual([
+			{
+				ref: "notes/execution-tracker.md",
+				declaredBy: ".harness/active-artifacts.md#Current Active Route",
+				normalizedPath: "docs/goals/demo/notes/execution-tracker.md",
+				reason: "missing_ref",
+			},
+		]);
+	});
+
 	it("attributes unresolved route refs to the active-artifacts route section", () => {
 		const repoRoot = makeRepo(tempDirs);
 		const tick = String.fromCharCode(96);
