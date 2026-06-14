@@ -310,25 +310,19 @@ describe("runInit", () => {
 			expect(
 				existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md")),
 			).toBe(true);
-			expect(existsSync(join(tempDir, "memory.json"))).toBe(true);
-			expect(existsSync(join(tempDir, "scripts/codex-learn"))).toBe(true);
-			expect(existsSync(join(tempDir, "scripts/codex-enforced"))).toBe(true);
-			expect(
-				existsSync(
-					join(tempDir, "scripts/codex-preflight-local-memory-legacy.sh"),
-				),
-			).toBe(true);
-			expect(existsSync(join(tempDir, "scripts/verify-work.sh"))).toBe(true);
-			expect(existsSync(join(tempDir, "CODESTYLE.md"))).toBe(true);
-			expect(existsSync(join(tempDir, "scripts/validate-codestyle.sh"))).toBe(
-				true,
-			);
-			expect(existsSync(join(tempDir, "scripts/check-node-engine.mjs"))).toBe(
-				true,
-			);
-			expect(existsSync(join(tempDir, "scripts/prepare-worktree.sh"))).toBe(
-				true,
-			);
+			for (const scaffoldPath of [
+				"memory.json",
+				"scripts/codex-learn",
+				"scripts/codex-enforced",
+				"scripts/codex-preflight-local-memory-legacy.sh",
+				"scripts/verify-work.sh",
+				"CODESTYLE.md",
+				"scripts/validate-codestyle.sh",
+				"scripts/check-node-engine.mjs",
+				"scripts/prepare-worktree.sh",
+			]) {
+				expect(existsSync(join(tempDir, scaffoldPath))).toBe(true);
+			}
 			expect(
 				statSync(join(tempDir, "scripts/codex-preflight.sh")).mode & 0o111,
 			).toBeTruthy();
@@ -4476,36 +4470,29 @@ describe("--update flag", () => {
 		});
 
 		expect(result.ok).toBe(true);
-		expect(existsSync(join(tempDir, "scripts/codex-learn"))).toBe(true);
-		expect(existsSync(join(tempDir, "scripts/codex-enforced"))).toBe(true);
-		expect(existsSync(join(tempDir, "scripts/check-node-engine.mjs"))).toBe(
-			true,
-		);
-		expect(
-			statSync(join(tempDir, "scripts/codex-learn")).mode & 0o111,
-		).toBeTruthy();
-		expect(
-			statSync(join(tempDir, "scripts/codex-enforced")).mode & 0o111,
-		).toBeTruthy();
+		for (const scriptPath of [
+			"scripts/codex-learn",
+			"scripts/codex-enforced",
+			"scripts/check-node-engine.mjs",
+		]) {
+			expect(existsSync(join(tempDir, scriptPath))).toBe(true);
+		}
+		for (const executablePath of [
+			"scripts/codex-learn",
+			"scripts/codex-enforced",
+		]) {
+			expect(statSync(join(tempDir, executablePath)).mode & 0o111).toBeTruthy();
+		}
 
 		const updatedManifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
 			files: Array<{ path: string }>;
 		};
-		expect(
-			updatedManifest.files.some(
-				(entry) => entry.path === "scripts/codex-learn",
-			),
-		).toBe(true);
-		expect(
-			updatedManifest.files.some(
-				(entry) => entry.path === "scripts/codex-enforced",
-			),
-		).toBe(true);
-		expect(
-			updatedManifest.files.some(
-				(entry) => entry.path === "scripts/check-node-engine.mjs",
-			),
-		).toBe(true);
+		const updatedManifestPaths = updatedManifest.files.map(
+			(entry) => entry.path,
+		);
+		expect(updatedManifestPaths).toContain("scripts/codex-learn");
+		expect(updatedManifestPaths).toContain("scripts/codex-enforced");
+		expect(updatedManifestPaths).toContain("scripts/check-node-engine.mjs");
 	});
 
 	it("auto-repairs manifest when ciProvider is missing via the requested/default provider", () => {
