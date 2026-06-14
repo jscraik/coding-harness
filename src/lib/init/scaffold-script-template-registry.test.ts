@@ -45,6 +45,7 @@ describe("scaffold script template registry", () => {
 			"scripts/codex-enforced",
 			"scripts/verify-work.sh",
 			"scripts/validate-codestyle.sh",
+			"scripts/check-node-engine.mjs",
 			"scripts/check-codestyle-parity.sh",
 			"scripts/check-git-common-config.sh",
 			"scripts/prepare-worktree.sh",
