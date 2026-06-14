@@ -87,7 +87,7 @@ Coding Harness is the control plane around AI coding agents. It is not the agent
 It helps a repository answer five practical questions:
 
 - **What should the agent do next?** `harness next --json` turns local state into a safe next-command recommendation.
-- **Is this repo ready for agent work?** `init`, `check`, `doctor`, `health`, and `contract validate` expose setup gaps.
+- **Is this repo ready for agent work?** `agent-readiness`, `init`, `check`, `doctor`, `health`, and `contract validate` expose setup gaps, stale orientation context, and missing machine-readable policy.
 - **What must pass before handoff?** `verify-work`, `docs-gate`, `review-gate`, `plan-gate`, and related gates make proof explicit.
 - **Can we change CI or policy without guessing?** `ci-migrate`, branch-protection sync, rollback metadata, and parity checks keep migration reversible.
 - **Did we learn anything durable?** Project Brain, Local Memory, learning gates, and review-context tooling turn repeated steering into guardrails instead of repeated reminders.
@@ -160,6 +160,10 @@ harness contract validate
 This index names every callable top-level command. Use
 [docs/cli-reference.md](./docs/cli-reference.md) for flags, examples, and
 machine-readable command metadata.
+
+Agents should start with `harness next --json` for the next actionable step and
+use `harness commands --json --for-agent` for command discovery. The full index
+below is an expert reference, not the first surface an agent needs to understand.
 
 | Command | Reference |
 | --- | --- |

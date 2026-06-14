@@ -140,6 +140,7 @@ const VALID_TOOLING_POLICY_KEYS = [
 	"codexEnvironment",
 	"makefile",
 	"packagePolicy",
+	"sharedStateActions",
 	"projectBrainMemoryExtension",
 ] as const;
 const VALID_TOOLING_CODEX_ENVIRONMENT_KEYS = [
@@ -1089,7 +1090,6 @@ function isValidToolingProjectBrainMemoryExtension(
 		})
 	);
 }
-
 /** Public API export. */
 export function isValidToolingPolicy(value: unknown): value is ToolingPolicy {
 	if (!isPlainObject(value)) return false;

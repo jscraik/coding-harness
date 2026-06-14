@@ -52,6 +52,8 @@ Each finding reports `pass`, `warn`, or `fail` with concrete file evidence.
 - JSON output includes `contextHealth.schemaVersion:
   agent-readiness-context-health/v1`. This projection is orientation-only and
   must not be used as claim-supporting closeout evidence.
+- Context surfaces may include source-attributed `missingRefs` so agents can
+  tell which route file declared a stale path before refreshing the route.
 - The canonical deep context-integrity report remains `context-health-report/v1`
   from `harness context-health --json`; `agent-readiness` only points to it and
   does not duplicate its artifact refs, contradiction history, metrics, or
@@ -63,6 +65,10 @@ Each finding reports `pass`, `warn`, or `fail` with concrete file evidence.
   review-thread freshness proof.
 - JSON usage errors use `schemaVersion: agent-readiness-error/v1` so parsers
   do not confuse invalid arguments with normal readiness reports.
+- Shared-state authority is read from
+  `harness.contract.json` `toolingPolicy.sharedStateActions`, not inferred
+  from prose. Required action names are `stage`, `commit`, `push`, `merge`,
+  `deploy`, and `external_mutation`.
 
 Warnings are intentionally non-blocking because downstream repositories may
 adopt the harness progressively. Required failures are reserved for missing

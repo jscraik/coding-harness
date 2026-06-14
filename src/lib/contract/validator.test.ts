@@ -1074,6 +1074,18 @@ describe("validateContract", () => {
 							},
 						],
 					},
+					sharedStateActions: [
+						{
+							name: "commit",
+							authority: "user_or_explicit_request",
+							writesGitState: true,
+						},
+						{
+							name: "deploy",
+							authority: "release_policy",
+							writesExternalState: true,
+						},
+					],
 					projectBrainMemoryExtension: {
 						enabled: true,
 						requiredPaths: [
@@ -1086,6 +1098,7 @@ describe("validateContract", () => {
 
 			expect(result.success).toBe(true);
 			expect(result.data?.toolingPolicy?.requiredMiseTools).toHaveLength(2);
+			expect(result.data?.toolingPolicy?.sharedStateActions).toHaveLength(2);
 		});
 
 		it("rejects invalid tooling action icons", () => {

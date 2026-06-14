@@ -60,18 +60,24 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   artifacts, and merge readiness as separate lanes unless a contract joins them.
 - Do not claim CI, reviews, tracker state, or merge readiness without current
   evidence from the same closeout window.
-- Agent engineering proof: repeated steering, review comments, workflow skill misses, line-level correction, and benchmark-style code production feedback are stop-the-line environment evidence; create a current-session steering admission record when Jamie says not permitted to proceed, planning-only, planning conversation, not making changes yet, do not implement, or no file edits.
-- Repeated-error research: when the same error happens twice, list 3-5 Candidate/Fix/Option entries, choose the repo-fit fix, implement it, and record the proof before continuing.
-- Convert feedback into principle, sibling patterns, OODA horizons, and durable destination; specific feedback and named-function feedback are a Principle Signal and systemic until proven isolated across horizontal horizon, vertical horizon, reflected context, compaction, session-collector, and environment boundaries.
-- Line-level feedback requires pattern-generalization and a pattern scope inventory: sibling implementations searched, siblings changed, siblings left unchanged, deferred follow-ups, and the validator, lint rule, schema constraint, shared utility, repository convention, CI check, documented invariant, tracked exception, or other durable destination.
-- Observed fixable blockers require fixing it in the same pass and rerun the narrowest proving command unless blocked by authority, credentials, safety, or ownership; otherwise record a tracked exception with the exact reason.
+- Agent governance details live in [docs/agents/07b-agent-governance.md](./docs/agents/07b-agent-governance.md). Keep this root file as the compact operating contract and route situational policy there.
+- Agent engineering proof: repeated steering, review comments, workflow skill misses, line-level correction, and benchmark-style code production feedback are stop-the-line environment defect evidence, not ordinary feature work.
+- Create a current-session steering admission record when Jamie says not permitted to proceed, planning-only, planning conversation, not making changes yet, do not implement, or no file edits; record feedback class, inferred principle, searched surfaces, durable destination, and forbidden recurrence behavior.
+- Repeated-error research: when the same error happens twice, list 3-5 Candidate/Fix/Option entries, choose the repo-fit fix, implement it, and record proof before continuing.
+- Convert feedback into principle, sibling patterns, OODA horizons, and durable destination. Treat a Principle Signal, example-based feedback, named-function feedback, specific feedback, single-line corrections, and line-level correction as systemic until proven isolated.
+- Line-level feedback requires pattern-generalization across sibling implementations and a pattern scope inventory naming sibling implementations searched, siblings changed, siblings left unchanged, deferred follow-ups, and the durable validator, lint rule, schema constraint, shared utility, repository convention, CI check, documented invariant, or tracked exception.
+- Observed fixable blockers require fixing it in the same pass and rerunning the narrowest proving command unless authority, credentials, safety, or ownership blocks it; otherwise record a tracked exception with the exact reason.
 - If the same judgment is needed twice or a failure mode can recur across slices, build the smallest durable validator, guard script, CLI helper, workflow hook, fixture, or scoped skill; one-off implementation knowledge belongs in implementation notes, plan evidence, or PR closeout evidence, and a skill needs reusable routed workflow inputs, artifacts, validation, and ownership.
+- Use OODA horizon checks across horizontal horizon, vertical horizon, single-turn context, stacked trajectories, adjacent PR, and adjacent organizational activity; include reflected context, resumed target context, session-collector, agent reflection, unobserved horizon, compaction, and environment boundaries when feedback may cross boundaries.
 - Workflow skill changes need capture-the-flag proof: define the win condition, show the flag is captured, run a skill workout, and include self-reflection on failures.
+- Env-Backed Validation Recovery: before reporting missing credentials, inspect required variable names in `~/.codex/.env` without printing values, then rerun with `set -a; source ~/.codex/.env; set +a` when present.
 - Closeout completion is not equivalent to green checks; prove PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and any waiting reason.
-- Judge/PM readiness is private delivery-truth composition. Keep issue, PR, and goal authority matching in `src/lib/delivery-truth/judge-pm-audit-authority.ts`, keep PR closeout as a claim/evidence consumer, and do not turn those checks into public merge authority.
-- Harness Reviewer Roles First: project-local harness reviewer roles are first-choice subagents before generic reviewers; use `spawn_agent(agent_type="harness-product-code-reviewer")`, and if a role returns `unknown agent_type`, treat runtime freshness as blocked and use a fresh thread rooted in this checkout.
-- Harness Tool Builder: use `spawn_agent(agent_type="harness-toolsmith")` when recurring friction needs a tool; do not simulate that enforced role with a generic agent.
-- Env-backed validation recovery: before reporting missing credentials, inspect required variable names in `~/.codex/.env` without printing values, then rerun with `set -a; source ~/.codex/.env; set +a` when present.
+- Harness Reviewer Roles First and Harness Tool Builder are root guard anchors:
+  project-local harness reviewer roles are first-choice subagents, use
+  `spawn_agent(agent_type="harness-product-code-reviewer")` for covered review
+  work, use `spawn_agent(agent_type="harness-toolsmith")` for recurring tooling
+  friction, and treat `unknown agent_type` as runtime-freshness blocked.
+- If the same judgment is needed twice or a failure mode can recur across slices, build the smallest durable validator, guard script, CLI helper, workflow hook, fixture, or scoped skill.
 - Types and schemas are contract surfaces. TypeScript, Python, JSON, YAML,
   Markdown metadata, shell, and generated artifacts should use configured type,
   schema, lint, and validation gates rather than ad hoc string assumptions.
@@ -128,8 +134,8 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 - Branch from `main`; never push directly to `main`.
 - Use `codex/<linear-key>-<short-description>` when work is tracked in Linear.
 - Open a PR for every merge to `main`; CodeRabbit review remains independent.
-- AI-assisted PRs need concrete traceability evidence without raw transcripts,
-  prompts, secrets, or bulky telemetry.
+- PR bodies for AI-assisted work need a concrete session or traceability
+  reference without raw transcripts, prompts, secrets, or bulky telemetry.
 
 ## Memory
 

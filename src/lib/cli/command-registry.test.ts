@@ -22,7 +22,19 @@ import {
 	extractReadmeCommandNames,
 } from "./doc-parity.js";
 
-const AGENT_COMMAND_RAIL_NAMES = ["next"] as const;
+const AGENT_COMMAND_RAIL_NAMES = [
+	"next",
+	"agent-readiness",
+	"commands",
+	"runtime-card",
+	"session-context",
+	"validation-plan",
+	"review-context",
+	"decision-request",
+	"pr-closeout",
+	"evidence-verify",
+	"review-gate",
+] as const;
 const AGENT_ORIENT_COMMAND_RAIL_NAMES = [
 	"next",
 	"agent-readiness",
@@ -1242,7 +1254,7 @@ describe("'commands' command execution", () => {
 		}
 	});
 
-	it("JSON --for-agent emits only the public agent rail set", () => {
+	it("JSON --for-agent emits the public cross-phase agent rail set", () => {
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 		try {
 			const dispatch = dispatchRegistryCommand("commands", [
@@ -1261,10 +1273,12 @@ describe("'commands' command execution", () => {
 			expect(commandNames).toEqual(AGENT_COMMAND_RAIL_NAMES);
 			expect(parsed.commandCount).toBe(AGENT_COMMAND_RAIL_NAMES.length);
 			for (const command of parsed.commands as CommandCapability[]) {
-				expect(["default", "agent"]).toContain(command.visibility);
+				expect(["default", "agent", "advanced", "plumbing"]).toContain(
+					command.visibility,
+				);
 			}
 			expect(commandNames).not.toEqual(
-				expect.arrayContaining(["policy-gate", "review-gate"]),
+				expect.arrayContaining(["policy-gate", "docs-gate"]),
 			);
 		} finally {
 			infoSpy.mockRestore();
@@ -1399,7 +1413,9 @@ describe("getRegistryAgentCommandCatalogDocument", () => {
 		expect(agentCatalog.commandCount).toBeLessThan(fullCatalog.commandCount);
 		expect(
 			agentCatalog.commands.every((command) =>
-				["default", "agent"].includes(command.visibility),
+				["default", "agent", "advanced", "plumbing"].includes(
+					command.visibility,
+				),
 			),
 		).toBe(true);
 		expect(agentCatalog.commands.map((command) => command.name)).toEqual(

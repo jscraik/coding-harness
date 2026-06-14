@@ -363,6 +363,10 @@ describe("runHarnessNext", () => {
 		expect(decision.meta).toMatchObject({
 			frictionClass: "none",
 			delayClass: "normal",
+			agentReadinessContext: {
+				schemaVersion: "agent-readiness-context-health/v1",
+				evidenceUse: "orientation",
+			},
 			execution: {
 				profile: "read_only",
 				startupCost: "low",
@@ -409,6 +413,10 @@ describe("runHarnessNext", () => {
 		expect(decision.meta).toMatchObject({
 			frictionClass: "none",
 			delayClass: "normal",
+			agentReadinessContext: {
+				schemaVersion: "agent-readiness-context-health/v1",
+				evidenceUse: "orientation",
+			},
 			execution: {
 				profile: "read_only",
 				startupCost: "low",

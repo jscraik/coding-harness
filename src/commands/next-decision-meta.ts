@@ -10,6 +10,7 @@ import {
 	normaliseRuntimeCard,
 	type RuntimeCard,
 } from "../lib/runtime/runtime-card.js";
+import type { AgentReadinessContextHealth } from "../lib/agent-readiness/types.js";
 import { decisionMeta, sourceMetaExtra } from "./next-support.js";
 import type { HarnessNextMode } from "./next-decision-types.js";
 
@@ -43,6 +44,32 @@ function runtimeCardMeta(
 	};
 }
 
+function agentReadinessContextMeta(
+	contextHealth: AgentReadinessContextHealth | undefined,
+): Record<string, unknown> | undefined {
+	if (!contextHealth) return undefined;
+	const degradedSurfaces = contextHealth.surfaces
+		.filter((surface) => surface.status !== "pass")
+		.map((surface) => ({
+			id: surface.id,
+			status: surface.status,
+			evidenceUse: surface.evidenceUse,
+			staleReasons: surface.staleReasons,
+			...(surface.missingRefs ? { missingRefs: surface.missingRefs } : {}),
+			suggestedRefreshCommands: surface.suggestedRefreshCommands,
+		}));
+	return {
+		agentReadinessContext: {
+			schemaVersion: contextHealth.schemaVersion,
+			status: contextHealth.status,
+			evidenceUse: contextHealth.evidenceUse,
+			degradedSurfaceCount: degradedSurfaces.length,
+			degradedSurfaces,
+			suggestedRefreshCommands: contextHealth.suggestedRefreshCommands,
+		},
+	};
+}
+
 /**
  * Builds standardized operational metadata for a `harness next` decision.
  *
@@ -62,6 +89,7 @@ export function nextDecisionOperationalMeta(args: {
 	sourceErrors?: readonly DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
+	agentReadinessContext?: AgentReadinessContextHealth | undefined;
 }): ReturnType<typeof decisionMeta> {
 	return decisionMeta({
 		mode: args.mode,
@@ -81,6 +109,7 @@ export function nextDecisionOperationalMeta(args: {
 			...sourceMetaExtra(args.sourceErrors ?? []),
 			...phaseExitMeta(args.phaseExit),
 			...runtimeCardMeta(args.runtimeCard),
+			...agentReadinessContextMeta(args.agentReadinessContext),
 		},
 	});
 }

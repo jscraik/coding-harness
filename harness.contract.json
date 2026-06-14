@@ -815,6 +815,38 @@
 		],
 		"miseFilePath": ".mise.toml",
 		"readinessScriptPath": "scripts/check-environment.sh",
+		"sharedStateActions": [
+			{
+				"name": "stage",
+				"authority": "user_or_explicit_request",
+				"writesGitState": true
+			},
+			{
+				"name": "commit",
+				"authority": "user_or_explicit_request",
+				"writesGitState": true
+			},
+			{
+				"name": "push",
+				"authority": "user_or_explicit_request",
+				"writesGitState": true
+			},
+			{
+				"name": "merge",
+				"authority": "pull_request_policy",
+				"writesGitState": true
+			},
+			{
+				"name": "deploy",
+				"authority": "release_policy",
+				"writesExternalState": true
+			},
+			{
+				"name": "external_mutation",
+				"authority": "explicit_credentialed_request",
+				"writesExternalState": true
+			}
+		],
 		"codexEnvironment": {
 			"path": ".codex/environments/environment.toml",
 			"requiredActions": [

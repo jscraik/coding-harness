@@ -193,6 +193,7 @@ const VALID_TOOLING_POLICY_KEYS = [
 	"codexEnvironment",
 	"makefile",
 	"packagePolicy",
+	"sharedStateActions",
 	"projectBrainMemoryExtension",
 ] as const;
 const VALID_TOOLING_CODEX_ENVIRONMENT_KEYS = [
@@ -329,7 +330,6 @@ export interface ValidationError {
 	received?: string;
 	fix?: string;
 }
-
 /** Public API export. */
 export interface ValidationResult<T> {
 	success: boolean;

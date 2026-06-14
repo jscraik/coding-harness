@@ -4,8 +4,10 @@ import {
 	fileExists,
 	readText,
 } from "./repo-evidence.js";
+import { assessActiveRouteRefs } from "./active-route-refs.js";
 import type {
 	AgentReadinessContextHealth,
+	AgentReadinessMissingContextRef,
 	AgentReadinessContextSurface,
 	AgentReadinessContextSurfaceId,
 	AgentReadinessFinding,
@@ -92,23 +94,15 @@ function buildContextSurfaces(
 	repoRoot: string,
 ): AgentReadinessContextSurface[] {
 	const activeArtifactsText = readText(repoRoot, ACTIVE_ARTIFACTS_PATH);
-	const activeRouteText = sectionText(
+	const activeRouteRefs = assessActiveRouteRefs({
+		repoRoot,
 		activeArtifactsText,
-		"Current Active Route",
-	);
-	const activeRouteRefs = extractRepoRelativeBacktickPaths(activeRouteText);
-	const missingActiveRouteRefs = activeRouteRefs.filter(
-		(path) => !fileExists(repoRoot, path),
-	);
-	const activeRouteStaleReasons = activeRouteSectionStaleReasons(
-		activeRouteText,
-		activeRouteRefs,
-		missingActiveRouteRefs,
-	);
+		activeArtifactsPath: ACTIVE_ARTIFACTS_PATH,
+	});
 
 	return [
 		activeArtifactsSurface(repoRoot),
-		activeRouteRefsSurface(repoRoot, activeRouteRefs, activeRouteStaleReasons),
+		activeRouteRefsSurface(repoRoot, activeRouteRefs),
 		projectBrainMemorySurface(repoRoot),
 		projectBrainKnowledgeSurface(repoRoot),
 		runtimeCardSurface(repoRoot),
@@ -148,36 +142,27 @@ function activeArtifactsStaleReasons(repoRoot: string): string[] {
 
 function activeRouteRefsSurface(
 	repoRoot: string,
-	activeRouteRefs: string[],
-	staleReasons: string[],
+	activeRouteState: {
+		evidenceRefs: string[];
+		staleReasons: string[];
+		missingRefs: AgentReadinessMissingContextRef[];
+	},
 ): AgentReadinessContextSurface {
 	return contextSurface({
 		id: "active_route_refs",
 		status:
-			activeRouteRefs.length > 0 && staleReasons.length === 0 ? "pass" : "warn",
-		evidence: evidence(repoRoot, [ACTIVE_ARTIFACTS_PATH, ...activeRouteRefs]),
-		staleReasons,
+			activeRouteState.evidenceRefs.length > 0 &&
+			activeRouteState.staleReasons.length === 0
+				? "pass"
+				: "warn",
+		evidence: evidence(repoRoot, [
+			ACTIVE_ARTIFACTS_PATH,
+			...activeRouteState.evidenceRefs,
+		]),
+		staleReasons: activeRouteState.staleReasons,
+		missingRefs: activeRouteState.missingRefs,
 		suggestedRefreshCommands: [ACTIVE_ARTIFACT_REFRESH_COMMAND],
 	});
-}
-
-function activeRouteSectionStaleReasons(
-	activeRouteText: string,
-	activeRouteRefs: string[],
-	missingActiveRouteRefs: string[],
-): string[] {
-	const staleReasons =
-		activeRouteRefs.length === 0
-			? ["Current Active Route does not contain repo-relative artifact refs."]
-			: missingActiveRouteRefs.map((path) => `${path} is missing.`);
-	if (
-		activeRouteText.toLowerCase().includes("not the current execution route")
-	) {
-		staleReasons.push(
-			"Current Active Route contains a row marked not the current execution route.",
-		);
-	}
-	return staleReasons;
 }
 
 function projectBrainMemorySurface(
@@ -337,6 +322,7 @@ function contextSurface(input: {
 	status: AgentReadinessStatus;
 	evidence: string[];
 	staleReasons: string[];
+	missingRefs?: AgentReadinessMissingContextRef[] | undefined;
 	suggestedRefreshCommands: string[];
 }): AgentReadinessContextSurface {
 	return {
@@ -356,48 +342,6 @@ function hasContextIntegrityPolicy(repoRoot: string): boolean {
 	} catch {
 		return false;
 	}
-}
-
-function sectionText(markdown: string, heading: string): string {
-	const lines = markdown.split(/\r?\n/);
-	const start = lines.findIndex(
-		(line) => line.trim().toLowerCase() === `## ${heading.toLowerCase()}`,
-	);
-	if (start === -1) return "";
-	const nextHeading = lines.findIndex(
-		(line, index) => index > start && /^##\s+/.test(line.trim()),
-	);
-	return lines
-		.slice(start + 1, nextHeading === -1 ? undefined : nextHeading)
-		.join("\n");
-}
-
-function extractRepoRelativeBacktickPaths(markdown: string): string[] {
-	const paths: string[] = [];
-	const pathPattern = /\x60([^\x60]+)\x60/g;
-	let match = pathPattern.exec(markdown);
-	while (match !== null) {
-		const token = match[1]?.trim() ?? "";
-		const repoPath = normalizeRepoRelativePathToken(token);
-		if (repoPath !== undefined) {
-			paths.push(repoPath);
-		}
-		match = pathPattern.exec(markdown);
-	}
-	return uniqueStrings(paths);
-}
-
-function normalizeRepoRelativePathToken(token: string): string | undefined {
-	const value = token.trim();
-	if (value.length === 0) return undefined;
-	if (value.startsWith("/") || value.startsWith("~")) return undefined;
-	if (value.includes("://") || value.includes("\\")) return undefined;
-	if (/[;&|$<>]/.test(value)) return undefined;
-
-	const normalized = value.startsWith("./") ? value.slice(2) : value;
-	if (normalized.length === 0 || normalized === ".") return undefined;
-	if (normalized.split("/").includes("..")) return undefined;
-	return normalized;
 }
 
 function summarizeSurfaces(surfaces: AgentReadinessContextSurface[]) {
