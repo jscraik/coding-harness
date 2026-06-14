@@ -75,6 +75,48 @@ describe("assessActiveRouteRefs", () => {
 		});
 	});
 
+	it("prefers route-local shorthand refs over same-name root files", () => {
+		const repoRoot = makeRepo(tempDirs);
+		const tick = String.fromCharCode(96);
+		writeRepoFile(repoRoot, "docs/goals/demo/current-route.json", "{}\n");
+		writeRepoFile(
+			repoRoot,
+			"docs/goals/demo/state.yaml",
+			"status: route-local\n",
+		);
+		writeRepoFile(repoRoot, "state.yaml", "status: root\n");
+
+		const assessment = assessActiveRouteRefs({
+			repoRoot,
+			activeArtifactsPath: ".harness/active-artifacts.md",
+			activeArtifactsText: [
+				"# Active",
+				"",
+				"## Current Active Route",
+				"",
+				[
+					tick,
+					"docs/goals/demo/current-route.json",
+					tick,
+					" and ",
+					tick,
+					"state.yaml",
+					tick,
+					".",
+				].join(""),
+				"",
+				"## Artifact Index",
+			].join("\n"),
+		});
+
+		expect(assessment.evidenceRefs).toEqual([
+			"docs/goals/demo/current-route.json",
+			"docs/goals/demo/state.yaml",
+		]);
+		expect(assessment.missingRefs).toEqual([]);
+		expect(assessment.staleReasons).toEqual([]);
+	});
+
 	it("attributes unresolved route refs to the active-artifacts route section", () => {
 		const repoRoot = makeRepo(tempDirs);
 		const tick = String.fromCharCode(96);

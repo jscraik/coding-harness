@@ -23,7 +23,10 @@ describe("readSharedStateActionPolicy", () => {
 					{ name: "push", authority: "user_or_explicit_request" },
 					{ name: "merge", authority: "pull_request_policy" },
 					{ name: "deploy", authority: "release_policy" },
-					{ name: "external_mutation", authority: "explicit_request" },
+					{
+						name: "external_mutation",
+						authority: "explicit_credentialed_request",
+					},
 				],
 			},
 		});
@@ -44,7 +47,38 @@ describe("readSharedStateActionPolicy", () => {
 
 		expect(readSharedStateActionPolicy(repoRoot)).toEqual({
 			complete: false,
-			missing: ["push", "merge", "deploy", "external_mutation"],
+			missing: [
+				"stage",
+				"commit",
+				"push",
+				"merge",
+				"deploy",
+				"external_mutation",
+			],
+		});
+	});
+
+	it("reports actions with unknown authority values", () => {
+		const repoRoot = makeRepo(tempDirs);
+		writeContract(repoRoot, {
+			toolingPolicy: {
+				sharedStateActions: [
+					{ name: "stage", authority: "user_or_explicit_request" },
+					{ name: "commit", authority: "typo_or_guess" },
+					{ name: "push", authority: "user_or_explicit_request" },
+					{ name: "merge", authority: "pull_request_policy" },
+					{ name: "deploy", authority: "release_policy" },
+					{
+						name: "external_mutation",
+						authority: "explicit_credentialed_request",
+					},
+				],
+			},
+		});
+
+		expect(readSharedStateActionPolicy(repoRoot)).toEqual({
+			complete: false,
+			missing: ["commit"],
 		});
 	});
 

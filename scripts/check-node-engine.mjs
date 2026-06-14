@@ -1,14 +1,12 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = join(fileURLToPath(new URL("..", import.meta.url)));
 const packageJsonPath = join(repoRoot, "package.json");
 const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
 const requirement = packageJson.engines?.node;
-const reexecEnvName = "HARNESS_NODE_ENGINE_REEXEC";
 
 function parseVersion(value) {
 	const match = /^(?:v)?(\d+)\.(\d+)\.(\d+)$/.exec(value.trim());
@@ -43,33 +41,11 @@ const current = parseVersion(process.versions.node);
 const floor = parseVersion(floorMatch[1]);
 
 if (!isAtLeast(current, floor)) {
-	if (process.env[reexecEnvName] !== "1") {
-		const resolved = spawnSync("mise", ["--cd", repoRoot, "which", "node"], {
-			encoding: "utf8",
-			stdio: ["ignore", "pipe", "pipe"],
-		});
-		const pinnedNode = resolved.stdout.trim();
-		if (
-			resolved.status === 0 &&
-			pinnedNode &&
-			pinnedNode !== process.execPath
-		) {
-			const rerun = spawnSync(pinnedNode, [fileURLToPath(import.meta.url)], {
-				env: {
-					...process.env,
-					[reexecEnvName]: "1",
-				},
-				stdio: "inherit",
-			});
-			process.exit(rerun.status ?? 1);
-		}
-	}
-
 	console.error(
 		`[toolchain] Node v${process.versions.node} does not satisfy package.json engines.node ${requirement}`,
 	);
 	console.error(
-		"[toolchain] Fix: run through the repo-pinned runtime, for example `mise exec -- node scripts/check-node-engine.mjs`, or install/trust the .mise.toml toolchain.",
+		"[toolchain] Fix: run the whole gate through the repo-pinned runtime, for example `bash scripts/run-package-command.sh pnpm check`, or enter the trusted mise environment before running package scripts.",
 	);
 	process.exit(1);
 }

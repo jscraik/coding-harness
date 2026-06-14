@@ -97,11 +97,12 @@ function resolveActiveRouteRef(
 	activeRouteRefs: string[],
 	path: string,
 ): string {
-	if (fileExists(repoRoot, path)) return path;
 	for (const base of activeRouteBaseDirs(repoRoot, activeRouteRefs)) {
+		if (path.startsWith(`${base}/`)) continue;
 		const candidate = `${base}/${path}`;
 		if (fileExists(repoRoot, candidate)) return candidate;
 	}
+	if (fileExists(repoRoot, path)) return path;
 	return path;
 }
 

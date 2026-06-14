@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-14T00:15:43Z
+Generated: 2026-06-14T00:32:00Z
 
 ## Table of Contents
 
@@ -611,7 +611,6 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_environment_core_2c16213f_a8a456d9
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_harness_audit_tracking_33e6a72e_eeff5b52
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_check_node_engine_217689bf_3e5964b2
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_types_policy_cfbecf01_fb84cd04
   ext_node_child_process_f62b7d19["node:child_process"] --> node_ci_migrate_core_7005b5af_7e295ae3
   ext_node_child_process_f62b7d19["node:child_process"] --> node_cli_5_9c446a0f_12d0ff9c

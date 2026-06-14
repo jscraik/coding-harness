@@ -40,6 +40,15 @@ run_package_manager() {
 	pnpm "$@"
 }
 
+run_repo_node() {
+	if [[ -f "$repo_root/scripts/run-package-command.sh" ]]; then
+		bash "$repo_root/scripts/run-package-command.sh" node "$@"
+		return
+	fi
+
+	node "$@"
+}
+
 run_script() {
 	local script_name="$1"
 
@@ -175,7 +184,7 @@ if [[ ! -f "$repo_root/package.json" ]]; then
 fi
 
 if [[ -f "$repo_root/scripts/check-node-engine.mjs" ]]; then
-	node "$repo_root/scripts/check-node-engine.mjs"
+	run_repo_node "$repo_root/scripts/check-node-engine.mjs"
 fi
 
 if [[ ! -f "$repo_root/CODESTYLE.md" ]]; then

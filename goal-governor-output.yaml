@@ -16,7 +16,7 @@ continuation_gate:
   pending_work: present
   decision: open
   reason: >-
-    read goal.md and state.yaml first; receipts.jsonl selected R512 on current
+    read goal.md and state.yaml first; receipts.jsonl selected R516 on current
     main, and the remaining work is proof/authority closeout rather than a new
     feature slice.
 native_blocker_audit:
@@ -28,7 +28,7 @@ work_should_pause: false
 validation_evidence:
   - command: jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null
     outcome: pass
-    note: receipts parsed after R512 receipt update.
+    note: receipts parsed after R516 receipt update.
   - command: python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .
     outcome: pass
     note: audit freshness selected R516 at current main fe30a9bab5906475bf79f39403c36ef1c9bc9262.
