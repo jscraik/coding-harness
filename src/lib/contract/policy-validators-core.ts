@@ -811,7 +811,7 @@ function isValidControlPlaneOverridePolicy(
 
 	return true;
 }
-
+/** Public API export. */
 export function isValidControlPlanePolicy(
 	value: unknown,
 ): value is ControlPlanePolicy {
@@ -830,7 +830,7 @@ export function isValidControlPlanePolicy(
 
 	return isValidControlPlaneOverridePolicy(policy.overridePolicy);
 }
-
+/** Public API export. */
 export function isValidCIProviderPolicy(
 	value: unknown,
 ): value is CIProviderPolicy {
@@ -1089,7 +1089,7 @@ function isValidToolingProjectBrainMemoryExtension(
 		})
 	);
 }
-
+/** Public API export. */
 export function isValidToolingPolicy(value: unknown): value is ToolingPolicy {
 	if (!isPlainObject(value)) return false;
 	const policy = value as Record<string, unknown>;
