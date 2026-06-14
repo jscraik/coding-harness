@@ -98,6 +98,15 @@ For agent planning and command safety routing, prefer the machine-readable capab
 harness commands --json
 ```
 
+Agents that need a bounded rail set should start with the curated agent catalog:
+
+```bash
+harness commands --json --for-agent
+```
+
+Use `--mode orient`, `--mode verify`, `--mode review`, or `--mode handoff` to
+request a compact phase-specific rail.
+
 ## Gate JSON Envelope
 
 For gate commands in JSON mode, consume the canonical decision envelope fields:

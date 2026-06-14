@@ -599,7 +599,6 @@ export interface ToolingProjectBrainMemoryExtensionPolicy {
 	enabled: boolean;
 	requiredPaths: string[];
 }
-
 /** Tooling Policy. */
 export interface ToolingPolicy {
 	requiredDocumentationTerms: string[];
@@ -610,6 +609,7 @@ export interface ToolingPolicy {
 	codexEnvironment: ToolingCodexEnvironmentPolicy;
 	makefile: ToolingMakefilePolicy;
 	packagePolicy: ToolingPackagePolicy;
+	sharedStateActions?: Record<string, unknown>[] | undefined;
 	projectBrainMemoryExtension?:
 		| ToolingProjectBrainMemoryExtensionPolicy
 		| undefined;

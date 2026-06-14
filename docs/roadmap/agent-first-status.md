@@ -61,34 +61,36 @@ This matrix should be read through that lens:
 ## Outcome And Alignment Metrics
 
 These rows are the canonical weekly metric surface for north-star alignment.
+Each row links to the evidence index that names the contract, gate, receipt, or
+curated weekly-review source behind the value.
 
 ### Primary Outcome Metrics
 
-| Metric                                  | Current | Trend     | Notes                                                        |
-| --------------------------------------- | ------- | --------- | ------------------------------------------------------------ |
-| `pr_lead_time_p50`                      | 18h     | improving | Median PR lead time is down from prior week baseline.        |
-| `pr_lead_time_p90`                      | 41h     | improving | Tail latency is improving but still the main pressure point. |
-| `review_rework_retry_rate`              | 0.92    | improving | Fewer retries per PR indicates lower review-loop churn.      |
-| `manual_interventions_per_agent_change` | 0.47    | improving | Manual glue work is trending down.                           |
-| `merge_readiness_block_time`            | 6.2h    | improving | Time blocked before merge is reducing.                       |
+| Metric                                  | Current | Trend     | Evidence                                                                                       | Notes                                                        |
+| --------------------------------------- | ------- | --------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `pr_lead_time_p50`                      | 18h     | improving | `agent-first-status-evidence.json:metrics.pr_lead_time_p50`                                    | Median PR lead time is down from prior week baseline.        |
+| `pr_lead_time_p90`                      | 41h     | improving | `agent-first-status-evidence.json:metrics.pr_lead_time_p90`                                    | Tail latency is improving but still the main pressure point. |
+| `review_rework_retry_rate`              | 0.92    | improving | `agent-first-status-evidence.json:metrics.review_rework_retry_rate`                            | Fewer retries per PR indicates lower review-loop churn.      |
+| `manual_interventions_per_agent_change` | 0.47    | improving | `agent-first-status-evidence.json:metrics.manual_interventions_per_agent_change`               | Manual glue work is trending down.                           |
+| `merge_readiness_block_time`            | 6.2h    | improving | `agent-first-status-evidence.json:metrics.merge_readiness_block_time`                          | Time blocked before merge is reducing.                       |
 
 ### Alignment Health Metrics
 
-| Metric                                             | Current | Trend     | Notes                                              |
-| -------------------------------------------------- | ------- | --------- | -------------------------------------------------- |
-| `north_star_alignment_pass_rate`                   | 0.97    | improving | Most runs pass north-star contract checks.         |
-| `blocking_drift_findings_count`                    | 1       | improving | Blocking drift findings are lower than prior week. |
-| `surface_class_counts{core,adjacent,experimental}` | 2/3/0   | flat      | Product-surface classes remain stable.             |
-| `policy_surface_additions_without_glue_reduction`  | 0       | flat      | No new policy-only surfaces landed this period.    |
-| `cadence_breach_count`                             | 0       | flat      | No stale cadence breaches this cycle.              |
+| Metric                                             | Current | Trend     | Evidence                                                                                      | Notes                                              |
+| -------------------------------------------------- | ------- | --------- | --------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `north_star_alignment_pass_rate`                   | 0.97    | improving | `agent-first-status-evidence.json:metrics.north_star_alignment_pass_rate`                     | Most runs pass north-star contract checks.         |
+| `blocking_drift_findings_count`                    | 1       | improving | `agent-first-status-evidence.json:metrics.blocking_drift_findings_count`                      | Blocking drift findings are lower than prior week. |
+| `surface_class_counts{core,adjacent,experimental}` | 2/3/0   | flat      | `agent-first-status-evidence.json:metrics.surface_class_counts`                               | Product-surface classes remain stable.             |
+| `policy_surface_additions_without_glue_reduction`  | 0       | flat      | `agent-first-status-evidence.json:metrics.policy_surface_additions_without_glue_reduction`    | No new policy-only surfaces landed this period.    |
+| `cadence_breach_count`                             | 0       | flat      | `agent-first-status-evidence.json:metrics.cadence_breach_count`                               | No stale cadence breaches this cycle.              |
 
 ### Guardrail Effectiveness Metrics
 
-| Metric                           | Current | Trend     | Notes                                      |
-| -------------------------------- | ------- | --------- | ------------------------------------------ |
-| `repeated_failure_class_count`   | 1       | improving | Repeated failure classes are decreasing.   |
-| `durable_guardrail_added_count`  | 1       | flat      | One durable guardrail promoted this cycle. |
-| `post_guardrail_recurrence_rate` | 0.00    | improving | No post-guardrail recurrence observed.     |
+| Metric                           | Current | Trend     | Evidence                                                                         | Notes                                      |
+| -------------------------------- | ------- | --------- | -------------------------------------------------------------------------------- | ------------------------------------------ |
+| `repeated_failure_class_count`   | 1       | improving | `agent-first-status-evidence.json:metrics.repeated_failure_class_count`          | Repeated failure classes are decreasing.   |
+| `durable_guardrail_added_count`  | 1       | flat      | `agent-first-status-evidence.json:metrics.durable_guardrail_added_count`         | One durable guardrail promoted this cycle. |
+| `post_guardrail_recurrence_rate` | 0.00    | improving | `agent-first-status-evidence.json:metrics.post_guardrail_recurrence_rate`        | No post-guardrail recurrence observed.     |
 
 Tie-back to north-star contract:
 

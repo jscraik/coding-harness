@@ -19,6 +19,7 @@ import {
 	buildContextHealthProjection,
 	contextHealthFindings,
 } from "./context-health.js";
+import { readSharedStateActionPolicy } from "./shared-state-policy.js";
 import { overallStatus, summarize } from "./status.js";
 
 const MISSING_SURFACE_RECOMMENDATION =
@@ -251,20 +252,14 @@ function checkCapabilitySurfaces(repoRoot: string): AgentReadinessFinding[] {
 
 function checkApprovalGateSurfaces(repoRoot: string): AgentReadinessFinding[] {
 	const securityPolicy = "docs/agents/06-security-and-governance.md";
-	const toolingPolicy = "docs/agents/02-tooling-policy.md";
+	const contractPolicy = "harness.contract.json";
 	const skillPolicy = ".agents/skills/coding-harness/SKILL.md";
 	const hasDestructiveBoundary = fileContainsAll(repoRoot, securityPolicy, [
 		"destructive",
 		"global",
 		"unsafe side effects",
 	]);
-	const hasSharedStateBoundary = fileContainsAll(repoRoot, toolingPolicy, [
-		"not permission to stage",
-		"commit",
-		"push",
-		"merge",
-		"deploy",
-	]);
+	const sharedStatePolicy = readSharedStateActionPolicy(repoRoot);
 	const hasDryRunOrApprovalRouting = fileContainsAny(repoRoot, skillPolicy, [
 		"dry-run",
 		"approval",
@@ -287,14 +282,14 @@ function checkApprovalGateSurfaces(repoRoot: string): AgentReadinessFinding[] {
 		finding({
 			id: "approval_gates.shared_state",
 			category: "approval_gates",
-			status: hasSharedStateBoundary ? "pass" : "warn",
-			message: hasSharedStateBoundary
-				? "Shared-state actions are separated from advisory artifact routing."
-				: "Shared-state action boundaries are not visible in tooling policy.",
-			evidence: evidence(repoRoot, [toolingPolicy]),
-			recommendation: hasSharedStateBoundary
+			status: sharedStatePolicy.complete ? "pass" : "warn",
+			message: sharedStatePolicy.complete
+				? "Shared-state action authority is machine-readable in the harness contract."
+				: "Shared-state action authority is incomplete in the harness contract.",
+			evidence: evidence(repoRoot, [contractPolicy]),
+			recommendation: sharedStatePolicy.complete
 				? undefined
-				: "Make stage, commit, push, merge, deploy, and external mutation authority machine-readable.",
+				: `Add shared-state authority entries for: ${sharedStatePolicy.missing.join(", ")}.`,
 		}),
 		finding({
 			id: "approval_gates.skill_boundary",
@@ -329,8 +324,9 @@ function checkTraceabilitySurfaces(repoRoot: string): AgentReadinessFinding[] {
 		"artifact",
 	]);
 	const hasPrTraceability = fileContainsAll(repoRoot, rootAgents, [
-		"session or traceability reference",
 		"PR bodies",
+		"session",
+		"traceability",
 	]);
 
 	return [

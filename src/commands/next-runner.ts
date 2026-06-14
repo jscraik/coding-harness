@@ -1,47 +1,18 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
-import { cwd } from "node:process";
+import type { AgentReadinessContextHealth } from "../lib/agent-readiness/types.js";
 import type { HarnessDecision } from "../lib/decision/harness-decision.js";
 import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
-import {
-	type DecisionSource,
-	collectSourceErrors,
-	findBlockingSource,
-} from "../lib/decision/sources.js";
-import {
-	runtimeCardBlocksContinuation,
-	type RuntimeCard,
-} from "../lib/runtime/runtime-card.js";
-import {
-	type HarnessNextWorktreeRole,
-	type HarnessNextEvidenceMode,
-	isHarnessNextMode,
+import type { DecisionSource } from "../lib/decision/sources.js";
+import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
+import type {
+	HarnessNextWorktreeRole,
+	HarnessNextEvidenceMode,
 } from "./next-args.js";
 import {
-	humanRequiredDecisionMeta,
-	optionalNetworkSources,
-	sourceMetaExtra,
-} from "./next-support.js";
-import {
-	blocksDirtyWorktree,
-	inspectWorktreeState,
-	resolveChangedFiles,
-	type ChangedFilesResult,
-} from "./next-runner-inputs.js";
-import {
-	blockedDecision,
 	changedFilesDecision,
-	fleetMatrixArtifactDecision,
-	gitInspectionBlockedDecision,
-	invalidModeDecision,
 	noChangedFilesDecision,
-	worktreeStateBlockedDecision,
-	phaseExitBlockedDecision,
-	runtimeCardBlockedDecision,
-	sourceBlockedDecision,
 	type HarnessNextMode,
 } from "./next-decisions.js";
-import { requiredEvidenceMissingDecision } from "./next-usage-errors.js";
+import { resolveHarnessNextState } from "./next-runner-state.js";
 
 /** Options for the read-only harness next decision producer. */
 export interface HarnessNextOptions {
@@ -59,85 +30,12 @@ export interface HarnessNextOptions {
 	phaseExit?: HePhaseExit;
 	/** Optional runtime-card evidence already collected by the caller. */
 	runtimeCard?: RuntimeCard;
+	/** Optional orientation-only readiness context already collected by the caller. */
+	agentReadinessContext?: AgentReadinessContextHealth;
 	/** Evidence strictness for phase-exit and runtime-card inputs. */
 	evidenceMode?: HarnessNextEvidenceMode;
-	/** Worktree posture requested for local next recommendations. */
+	/** Worktree posture requested for next recommendations. */
 	worktreeRole?: HarnessNextWorktreeRole;
-}
-const DEFAULT_FLEET_MATRIX_ARTIFACT =
-	"artifacts/harness-upgrade-matrix-dev.json";
-
-function requiredEvidenceMissing(
-	mode: HarnessNextMode,
-	evidenceMode: HarnessNextEvidenceMode | undefined,
-	options: Pick<HarnessNextOptions, "phaseExit" | "runtimeCard">,
-): string[] {
-	const resolvedEvidenceMode =
-		evidenceMode ?? (mode === "local" ? "optional" : "required");
-	if (resolvedEvidenceMode !== "required") return [];
-	return [
-		...(options.phaseExit ? [] : ["phase-exit"]),
-		...(options.runtimeCard ? [] : ["runtime-card"]),
-	];
-}
-
-function evidenceBlockedDecision(args: {
-	mode: HarnessNextMode;
-	options: HarnessNextOptions;
-	sourceErrors: readonly DecisionSource[];
-}): HarnessDecision | null {
-	if (
-		args.options.phaseExit &&
-		(!args.options.phaseExit.commitAllowed ||
-			!args.options.phaseExit.exitAllowed)
-	) {
-		return phaseExitBlockedDecision({
-			mode: args.mode,
-			phaseExit: args.options.phaseExit,
-			sourceErrors: args.sourceErrors,
-		});
-	}
-	if (
-		args.options.runtimeCard &&
-		runtimeCardBlocksContinuation(args.options.runtimeCard)
-	) {
-		return runtimeCardBlockedDecision({
-			mode: args.mode,
-			runtimeCard: args.options.runtimeCard,
-			sourceErrors: args.sourceErrors,
-		});
-	}
-	const missing = requiredEvidenceMissing(
-		args.mode,
-		args.options.evidenceMode,
-		args.options,
-	);
-	return missing.length > 0
-		? requiredEvidenceMissingDecision({
-				mode: args.mode,
-				missing,
-				sourceErrors: args.sourceErrors,
-			})
-		: null;
-}
-
-function filesOverrideEmptyDecision(
-	mode: HarnessNextMode,
-	sourceErrors: readonly DecisionSource[],
-): HarnessDecision {
-	return blockedDecision({
-		summary: "--files did not include any paths.",
-		nextAction:
-			"Pass one or more changed files, or omit --files so harness next can inspect git state.",
-		failureClass: "files_override_empty",
-		evidenceRef: ["input:files"],
-		meta: humanRequiredDecisionMeta({
-			mode,
-			filesSource: "override",
-			frictionClass: "unclear_instruction",
-			extra: sourceMetaExtra(sourceErrors),
-		}),
-	});
 }
 
 /**
@@ -149,89 +47,28 @@ function filesOverrideEmptyDecision(
 export function runHarnessNext(
 	options: HarnessNextOptions = {},
 ): HarnessDecision {
-	const repoRoot = options.repoRoot ?? cwd();
-	const mode = options.mode ?? "local";
-	if (!isHarnessNextMode(mode)) return invalidModeDecision(String(mode));
-
-	const allSources = [
-		...(options.decisionSources ?? []),
-		...optionalNetworkSources(mode),
-	];
-	const sourceErrors = collectSourceErrors(allSources);
-	const blockingSource = findBlockingSource(sourceErrors);
-	if (blockingSource) {
-		return sourceBlockedDecision({
-			mode,
-			source: blockingSource,
-			sourceErrors,
-		});
-	}
-
-	const evidenceBlock = evidenceBlockedDecision({
-		mode,
-		options,
-		sourceErrors,
-	});
-	if (evidenceBlock) return evidenceBlock;
-	if (options.files !== undefined && options.files.length === 0) {
-		return filesOverrideEmptyDecision(mode, sourceErrors);
-	}
-
-	let worktreeState: ReturnType<typeof inspectWorktreeState> | undefined;
-	if (options.inspectChangedFiles === undefined) {
-		try {
-			worktreeState = inspectWorktreeState(repoRoot);
-		} catch {
-			return gitInspectionBlockedDecision(mode);
-		}
-		if (blocksDirtyWorktree(options.worktreeRole, worktreeState)) {
-			return worktreeStateBlockedDecision({
-				mode,
-				worktreeState,
-				role: options.worktreeRole ?? "clean",
-				sourceErrors,
-			});
-		}
-	}
-
-	if (
-		options.files === undefined &&
-		mode === "ci" &&
-		existsSync(join(repoRoot, DEFAULT_FLEET_MATRIX_ARTIFACT))
-	) {
-		return fleetMatrixArtifactDecision({
-			mode,
-			matrixArtifact: DEFAULT_FLEET_MATRIX_ARTIFACT,
-			...(options.phaseExit ? { phaseExit: options.phaseExit } : {}),
-			...(options.runtimeCard ? { runtimeCard: options.runtimeCard } : {}),
-		});
-	}
-
-	let changedFiles: ChangedFilesResult;
-	try {
-		const changedFileOptions = {
-			...(options.files !== undefined ? { files: options.files } : {}),
-			...(options.inspectChangedFiles !== undefined
-				? { inspectChangedFiles: options.inspectChangedFiles }
-				: {}),
-		};
-		changedFiles = resolveChangedFiles(repoRoot, changedFileOptions);
-	} catch {
-		return gitInspectionBlockedDecision(mode);
-	}
+	const resolution = resolveHarnessNextState(options);
+	if (resolution.kind === "decision") return resolution.decision;
+	const { changedFiles } = resolution;
 	return changedFiles.files.length === 0
 		? noChangedFilesDecision({
-				mode,
-				sourceErrors,
+				mode: resolution.mode,
+				sourceErrors: resolution.sourceErrors,
 				...changedFiles,
-				...(options.phaseExit ? { phaseExit: options.phaseExit } : {}),
-				...(options.runtimeCard ? { runtimeCard: options.runtimeCard } : {}),
+				...(resolution.phaseExit ? { phaseExit: resolution.phaseExit } : {}),
+				...(resolution.runtimeCard
+					? { runtimeCard: resolution.runtimeCard }
+					: {}),
+				agentReadinessContext: resolution.agentReadinessContext,
 			})
 		: changedFilesDecision({
-				mode,
-				sourceErrors,
+				mode: resolution.mode,
+				sourceErrors: resolution.sourceErrors,
 				...changedFiles,
-				...(options.phaseExit ? { phaseExit: options.phaseExit } : {}),
-				...(options.runtimeCard ? { runtimeCard: options.runtimeCard } : {}),
+				...(resolution.phaseExit ? { phaseExit: resolution.phaseExit } : {}),
+				...(resolution.runtimeCard
+					? { runtimeCard: resolution.runtimeCard }
+					: {}),
+				agentReadinessContext: resolution.agentReadinessContext,
 			});
 }

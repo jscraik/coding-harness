@@ -40,6 +40,21 @@ detect_runner() {
 
 RUNNER="$(detect_runner)"
 
+run_package_command() {
+  local command_name="$1"
+  shift
+
+  if [[ -f scripts/run-package-command.sh ]]; then
+    printf 'bash scripts/run-package-command.sh %q' "$command_name"
+    printf ' %q' "$@"
+    printf '\n'
+  else
+    printf '%q' "$command_name"
+    printf ' %q' "$@"
+    printf '\n'
+  fi
+}
+
 run_logged() {
   local name="$1"
   local cmd="$2"
@@ -84,7 +99,7 @@ run_pkg_script() {
 
   case "$RUNNER" in
     pnpm)
-      run_logged "$name" "pnpm run $script_name"
+      run_logged "$name" "$(run_package_command pnpm run "$script_name")"
       ;;
     bun)
       run_logged "$name" "bun run $script_name"
@@ -102,7 +117,7 @@ run_vitest_with_reporters() {
 
   case "$RUNNER" in
     pnpm)
-      run_logged "$name" "pnpm vitest run --reporter=default --reporter=junit --reporter=json --outputFile.junit=$out_junit --outputFile.json=$out_json"
+      run_logged "$name" "$(run_package_command pnpm vitest run --reporter=default --reporter=junit --reporter=json --outputFile.junit="$out_junit" --outputFile.json="$out_json")"
       ;;
     npm)
       run_logged "$name" "npx vitest run --reporter=default --reporter=junit --reporter=json --outputFile.junit=$out_junit --outputFile.json=$out_json"
@@ -152,7 +167,9 @@ run_integration() {
 }
 
 run_e2e() {
-  if [[ "$has_pkg" == true ]] && has_pkg_script test:e2e; then
+  if [[ -f e2e/run-e2e.ts ]]; then
+    run_logged "e2e" "$(run_package_command node --import tsx e2e/run-e2e.ts)"
+  elif [[ "$has_pkg" == true ]] && has_pkg_script test:e2e; then
     run_pkg_script test:e2e "e2e"
   elif [[ "$has_pkg" == true ]] && has_pkg_script test:e2e:web; then
     run_pkg_script test:e2e:web "e2e"
@@ -166,7 +183,7 @@ run_evals() {
     local eval_artifact_dir="$ARTIFACT_DIR/evals"
     case "$RUNNER" in
       pnpm)
-        run_logged "evals" "ARTIFACT_DIR='$eval_artifact_dir' pnpm run test:evals"
+        run_logged "evals" "ARTIFACT_DIR='$eval_artifact_dir' $(run_package_command pnpm run test:evals)"
         ;;
       bun)
         run_logged "evals" "ARTIFACT_DIR='$eval_artifact_dir' bun run test:evals"

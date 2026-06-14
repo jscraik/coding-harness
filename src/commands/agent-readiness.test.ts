@@ -145,7 +145,17 @@ describe("agent-readiness command", () => {
 		expect(activeRouteSurface).toMatchObject({
 			status: "warn",
 			evidenceUse: "orientation",
-			staleReasons: [".harness/specs/missing.md is missing."],
+			staleReasons: [
+				"Active route ref `.harness/specs/missing.md` declared by .harness/active-artifacts.md#Current Active Route is missing.",
+			],
+			missingRefs: [
+				{
+					ref: ".harness/specs/missing.md",
+					declaredBy: ".harness/active-artifacts.md#Current Active Route",
+					normalizedPath: ".harness/specs/missing.md",
+					reason: "missing_ref",
+				},
+			],
 		});
 		expect(report.findings).toContainEqual(
 			expect.objectContaining({
@@ -154,6 +164,54 @@ describe("agent-readiness command", () => {
 				status: "warn",
 			}),
 		);
+	});
+
+	it("resolves current active route shorthand relative to the route file", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		writeRepoFile(
+			repoRoot,
+			".harness/active-artifacts.md",
+			[
+				"# Active",
+				"",
+				"## Current Active Route",
+				"",
+				"| Work | Refs |",
+				"|---|---|",
+				"| Ready | `docs/goals/demo/current-route.json` plus `state.yaml`, `notes/execution-tracker.md`, and `receipts.jsonl`. Latest receipt is `abc123`. |",
+				"",
+				"## Artifact Index",
+			].join("\n"),
+		);
+		writeRepoFile(repoRoot, "docs/goals/demo/current-route.json", "{}\n");
+		writeRepoFile(repoRoot, "docs/goals/demo/state.yaml", "status: active\n");
+		writeRepoFile(
+			repoRoot,
+			"docs/goals/demo/notes/execution-tracker.md",
+			"# Tracker\n",
+		);
+		writeRepoFile(repoRoot, "docs/goals/demo/receipts.jsonl", "{}\n");
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const activeRouteSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "active_route_refs",
+		);
+
+		expect(activeRouteSurface).toMatchObject({
+			status: "pass",
+			staleReasons: [],
+			missingRefs: [],
+			evidence: [
+				".harness/active-artifacts.md",
+				"docs/goals/demo/current-route.json",
+				"docs/goals/demo/state.yaml",
+				"docs/goals/demo/notes/execution-tracker.md",
+				"docs/goals/demo/receipts.jsonl",
+			],
+		});
 	});
 
 	it("warns when prompt-context drift report spoofs pass without validating", () => {
@@ -719,7 +777,22 @@ function makeAgentReadyRepo(tempDirs: string[]): string {
 	writeRepoFile(
 		repoRoot,
 		"harness.contract.json",
-		JSON.stringify({ contextIntegrityPolicy: { mode: "advisory" } }),
+		JSON.stringify({
+			contextIntegrityPolicy: { mode: "advisory" },
+			toolingPolicy: {
+				sharedStateActions: [
+					{ name: "stage", authority: "user_or_explicit_request" },
+					{ name: "commit", authority: "user_or_explicit_request" },
+					{ name: "push", authority: "user_or_explicit_request" },
+					{ name: "merge", authority: "pull_request_policy" },
+					{ name: "deploy", authority: "release_policy" },
+					{
+						name: "external_mutation",
+						authority: "explicit_credentialed_request",
+					},
+				],
+			},
+		}),
 	);
 	writeRepoFile(
 		repoRoot,

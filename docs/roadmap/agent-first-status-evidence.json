@@ -1,0 +1,99 @@
+{
+	"schemaVersion": "agent-first-status-evidence/v1",
+	"statusDocument": "docs/roadmap/agent-first-status.md",
+	"curatedAt": "2026-06-13",
+	"metrics": {
+		"pr_lead_time_p50": {
+			"provenanceStatus": "weekly_review_curated",
+			"evidenceRefs": [
+				"docs/roadmap/agent-first-status.md#primary-outcome-metrics",
+				"harness.contract.json#northStar.primaryMetric"
+			]
+		},
+		"pr_lead_time_p90": {
+			"provenanceStatus": "weekly_review_curated",
+			"evidenceRefs": [
+				"docs/roadmap/agent-first-status.md#primary-outcome-metrics",
+				"harness.contract.json#northStar.primaryMetric"
+			]
+		},
+		"review_rework_retry_rate": {
+			"provenanceStatus": "weekly_review_curated",
+			"evidenceRefs": [
+				"docs/roadmap/agent-first-status.md#primary-outcome-metrics",
+				"harness.contract.json#northStar.primaryBottleneck"
+			]
+		},
+		"manual_interventions_per_agent_change": {
+			"provenanceStatus": "weekly_review_curated",
+			"evidenceRefs": [
+				"docs/roadmap/agent-first-status.md#primary-outcome-metrics",
+				"harness.contract.json#productSurface"
+			]
+		},
+		"merge_readiness_block_time": {
+			"provenanceStatus": "weekly_review_curated",
+			"evidenceRefs": [
+				"docs/roadmap/agent-first-status.md#primary-outcome-metrics",
+				"docs/agents/07b-agent-governance.md#closeout-and-readiness-boundaries"
+			]
+		},
+		"north_star_alignment_pass_rate": {
+			"provenanceStatus": "gate_output",
+			"evidenceRefs": [
+				"src/commands/drift-gate.ts",
+				"src/lib/contract/north-star-alignment.ts",
+				"harness.contract.json#northStar"
+			],
+			"reproduceCommand": "bash scripts/run-harness-gate.sh drift-gate --mode health --json"
+		},
+		"blocking_drift_findings_count": {
+			"provenanceStatus": "gate_output",
+			"evidenceRefs": [
+				"src/commands/drift-gate.ts",
+				"harness.contract.json#productSurface"
+			],
+			"reproduceCommand": "bash scripts/run-harness-gate.sh drift-gate --mode health --json"
+		},
+		"surface_class_counts": {
+			"provenanceStatus": "contract_snapshot",
+			"evidenceRefs": ["harness.contract.json#productSurface"]
+		},
+		"policy_surface_additions_without_glue_reduction": {
+			"provenanceStatus": "contract_snapshot",
+			"evidenceRefs": [
+				"harness.contract.json#productSurface",
+				".harness/decisions/ADR-003-executable-governance-or-delete.md"
+			]
+		},
+		"cadence_breach_count": {
+			"provenanceStatus": "gate_output",
+			"evidenceRefs": [
+				"src/commands/drift-gate.ts",
+				"docs/roadmap/agent-first-status.md"
+			],
+			"reproduceCommand": "bash scripts/run-harness-gate.sh drift-gate --mode health --json"
+		},
+		"repeated_failure_class_count": {
+			"provenanceStatus": "learning_ledger",
+			"evidenceRefs": [
+				".harness/memory/LEARNINGS.md",
+				".harness/feedback-loops/index.json"
+			]
+		},
+		"durable_guardrail_added_count": {
+			"provenanceStatus": "learning_ledger",
+			"evidenceRefs": [
+				".harness/memory/LEARNINGS.md",
+				"docs/agents/07b-agent-governance.md"
+			]
+		},
+		"post_guardrail_recurrence_rate": {
+			"provenanceStatus": "learning_ledger",
+			"evidenceRefs": [
+				".harness/memory/LEARNINGS.md",
+				".harness/feedback-loops/index.json"
+			]
+		}
+	}
+}

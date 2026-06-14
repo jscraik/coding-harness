@@ -345,7 +345,6 @@ export const REQUIRED_PROJECT_BRAIN_MEMORY_EXTENSION_PATHS = [
 	".harness/quality/criteria.md",
 	".harness/review-log.md",
 ] as const;
-
 export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/codex-preflight.sh",
 	"scripts/codex-preflight-local-memory-legacy.sh",
@@ -353,6 +352,7 @@ export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/codex-enforced",
 	"scripts/verify-work.sh",
 	"scripts/validate-codestyle.sh",
+	"scripts/check-node-engine.mjs",
 	"scripts/run-harness-gate.sh",
 	"scripts/with-validation-lock.sh",
 	"scripts/check-validation-locks.sh",

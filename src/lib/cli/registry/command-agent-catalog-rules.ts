@@ -1,27 +1,47 @@
 import type { CommandAgentCatalogMode } from "./command-capabilities.js";
 
+const AGENT_ORIENT_COMMAND_NAMES = [
+	"next",
+	"agent-readiness",
+	"runtime-card",
+	"session-context",
+	"commands",
+] as const;
+const AGENT_VERIFY_COMMAND_NAMES = [
+	"next",
+	"runtime-card",
+	"validation-plan",
+	"evidence-verify",
+] as const;
+const AGENT_REVIEW_COMMAND_NAMES = [
+	"next",
+	"runtime-card",
+	"review-gate",
+	"review-context",
+] as const;
+const AGENT_HANDOFF_COMMAND_NAMES = [
+	"next",
+	"runtime-card",
+	"decision-request",
+	"pr-closeout",
+	"evidence-verify",
+] as const;
+
 export const AGENT_CATALOG_COMMAND_NAMES: Readonly<
 	Record<"default" | CommandAgentCatalogMode, readonly string[]>
 > = {
-	default: ["next"],
-	orient: [
-		"next",
-		"agent-readiness",
-		"runtime-card",
-		"session-context",
-		"commands",
+	default: [
+		...new Set([
+			...AGENT_ORIENT_COMMAND_NAMES,
+			...AGENT_VERIFY_COMMAND_NAMES,
+			...AGENT_REVIEW_COMMAND_NAMES,
+			...AGENT_HANDOFF_COMMAND_NAMES,
+		]),
 	],
-	verify: ["next", "runtime-card", "validation-plan", "evidence-verify"],
-	review: ["next", "runtime-card", "review-gate", "review-context"],
-	handoff: [
-		"next",
-		"runtime-card",
-		"decision-request",
-		"pr-closeout",
-		"evidence-verify",
-	],
+	orient: AGENT_ORIENT_COMMAND_NAMES,
+	verify: AGENT_VERIFY_COMMAND_NAMES,
+	review: AGENT_REVIEW_COMMAND_NAMES,
+	handoff: AGENT_HANDOFF_COMMAND_NAMES,
 };
 
-export const FIRST_CONTACT_COMMAND_NAMES = new Set<string>(
-	AGENT_CATALOG_COMMAND_NAMES.default,
-);
+export const FIRST_CONTACT_COMMAND_NAMES = new Set<string>(["next"]);

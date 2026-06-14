@@ -1,6 +1,7 @@
 import { COMMAND_CATALOG_SCHEMA_VERSION } from "../lib/cli/registry/command-capabilities.js";
 import type { HarnessDecision } from "../lib/decision/harness-decision.js";
 import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
+import type { AgentReadinessContextHealth } from "../lib/agent-readiness/types.js";
 import type {
 	DecisionSource,
 	RecommendationCandidate,
@@ -68,6 +69,7 @@ export function fleetMatrixArtifactDecision(args: {
 	matrixArtifact: string;
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
+	agentReadinessContext?: AgentReadinessContextHealth | undefined;
 }): HarnessDecision {
 	const command = `harness fleet-plan --from ${shellQuote(args.matrixArtifact)} --json`;
 	return createNextDecision({
@@ -106,6 +108,7 @@ export function fleetMatrixArtifactDecision(args: {
 			commands: [command],
 			phaseExit: args.phaseExit,
 			runtimeCard: args.runtimeCard,
+			agentReadinessContext: args.agentReadinessContext,
 		}),
 	});
 }
@@ -122,6 +125,7 @@ export function noChangedFilesDecision(args: {
 	sourceErrors: readonly DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
+	agentReadinessContext?: AgentReadinessContextHealth | undefined;
 }): HarnessDecision {
 	return createNextDecision({
 		status: "pass",
@@ -155,6 +159,7 @@ export function noChangedFilesDecision(args: {
 			sourceErrors: args.sourceErrors,
 			phaseExit: args.phaseExit,
 			runtimeCard: args.runtimeCard,
+			agentReadinessContext: args.agentReadinessContext,
 		}),
 	});
 }
@@ -172,6 +177,7 @@ export function changedFilesDecision(args: {
 	sourceErrors: readonly DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
+	agentReadinessContext?: AgentReadinessContextHealth | undefined;
 }): HarnessDecision {
 	const candidate = createRecommendationCandidate(args);
 	const reviewContextFollowUp = chooseNextCommandParts(
@@ -221,6 +227,7 @@ export function changedFilesDecision(args: {
 			sourceErrors: args.sourceErrors,
 			phaseExit: args.phaseExit,
 			runtimeCard: args.runtimeCard,
+			agentReadinessContext: args.agentReadinessContext,
 		}),
 	});
 }

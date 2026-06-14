@@ -11,6 +11,7 @@
 		"scripts/run-harness-gate.sh",
 		"scripts/with-validation-lock.sh",
 		"scripts/check-validation-locks.sh",
+		"scripts/check-node-engine.mjs",
 		"scripts/run-prek.sh",
 		"scripts/check-doc-style.sh",
 		"scripts/check-related-tests.sh",
@@ -67,7 +68,8 @@
 		"harness": "dist/cli.js"
 	},
 	"scripts": {
-		"check": "pnpm lint && pnpm docs:lint && pnpm docs:lifecycle && pnpm docs:root-archive:links && pnpm docs:ubiquitous:guard && pnpm docs:steering:guard && pnpm skill:validate && pnpm workflow:validate && pnpm research:evidence:validate && pnpm architecture:check && pnpm types:check && pnpm quality:docstrings && pnpm quality:size && pnpm quality:self-affirming && pnpm quality:behavior-tests && pnpm quality:git-env-sanitizer && pnpm harness:audit-tracking && pnpm test:related && pnpm test:ci && pnpm audit",
+		"check": "pnpm toolchain:check && pnpm lint && pnpm docs:lint && pnpm docs:lifecycle && pnpm docs:root-archive:links && pnpm docs:ubiquitous:guard && pnpm docs:steering:guard && pnpm skill:validate && pnpm workflow:validate && pnpm research:evidence:validate && pnpm architecture:check && pnpm types:check && pnpm quality:docstrings && pnpm quality:size && pnpm quality:self-affirming && pnpm quality:behavior-tests && pnpm quality:git-env-sanitizer && pnpm harness:audit-tracking && pnpm test:related && pnpm test:ci && pnpm audit",
+		"toolchain:check": "node scripts/check-node-engine.mjs",
 		"publish:release": "pnpm check && pnpm build && npm publish --access restricted --ignore-scripts=false",
 		"lint": "pnpm codestyle:parity && pnpm codex-preflight:check && pnpm codex:agents:guard && biome check .",
 		"lint:fix": "biome check . --write",
@@ -96,7 +98,7 @@
 		"docs:root-archive:links": "node scripts/check-root-archive-links.mjs",
 		"docs:ubiquitous:guard": "bash scripts/check-ubiquitous-language-link.sh",
 		"docs:steering:guard": "node scripts/check-steering-feedback-contract.cjs",
-		"docs:lifecycle": "tsx scripts/check-doc-lifecycle.ts",
+		"docs:lifecycle": "node --import tsx scripts/check-doc-lifecycle.ts",
 		"docs:archive-candidates": "node --disable-warning=DEP0205 --import tsx scripts/check-docs-archive-candidates.ts",
 		"docs:task-eval": "tsx scripts/check-docs-task-eval.ts",
 		"docs:style:changed": "bash scripts/check-doc-style.sh",

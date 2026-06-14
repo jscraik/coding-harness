@@ -40,6 +40,15 @@ run_package_manager() {
 	pnpm "$@"
 }
 
+run_repo_node() {
+	if [[ -f "$repo_root/scripts/run-package-command.sh" ]]; then
+		bash "$repo_root/scripts/run-package-command.sh" node "$@"
+		return
+	fi
+
+	node "$@"
+}
+
 run_script() {
 	local script_name="$1"
 
@@ -169,6 +178,15 @@ if ! command -v pnpm >/dev/null 2>&1; then
 	exit 1
 fi
 
+if [[ ! -f "$repo_root/package.json" ]]; then
+	echo "[validate-codestyle] missing package.json; this validator expects a pnpm-managed harness repo" >&2
+	exit 1
+fi
+
+if [[ -f "$repo_root/scripts/check-node-engine.mjs" ]]; then
+	run_repo_node "$repo_root/scripts/check-node-engine.mjs"
+fi
+
 if [[ ! -f "$repo_root/CODESTYLE.md" ]]; then
 	echo "[validate-codestyle] missing CODESTYLE.md" >&2
 	exit 1
@@ -182,11 +200,6 @@ fi
 echo
 echo "==> codestyle:parity"
 bash "$repo_root/scripts/check-codestyle-parity.sh" --repo-root "$repo_root"
-
-if [[ ! -f "$repo_root/package.json" ]]; then
-	echo "[validate-codestyle] missing package.json; this validator expects a pnpm-managed harness repo" >&2
-	exit 1
-fi
 
 if [[ "$fast_mode" -eq 0 ]]; then
 	run_required_script "check"

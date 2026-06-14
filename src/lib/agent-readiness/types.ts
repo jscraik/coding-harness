@@ -64,8 +64,22 @@ export interface AgentReadinessContextSurface {
 	evidence: string[];
 	/** Why the surface is stale, missing, or degraded. */
 	staleReasons: string[];
+	/** Source-attributed refs that are missing or degraded, when applicable. */
+	missingRefs?: AgentReadinessMissingContextRef[] | undefined;
 	/** Read-only commands an agent can run to refresh or inspect the surface. */
 	suggestedRefreshCommands: string[];
+}
+
+/** Source-attributed context ref that could not be used for orientation. */
+export interface AgentReadinessMissingContextRef {
+	/** Original normalized repo-relative ref. */
+	ref: string;
+	/** Stable source that declared the ref. */
+	declaredBy: string;
+	/** Normalized repo-relative path tested against the checkout. */
+	normalizedPath: string;
+	/** Stable failure reason for the missing ref. */
+	reason: "missing_ref";
 }
 
 /** Canonical deep context-health command availability from the readiness view. */

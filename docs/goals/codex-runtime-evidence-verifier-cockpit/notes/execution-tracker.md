@@ -27,22 +27,22 @@ Mantra: thin surface, strong guardrails, durable memory, professional output.
 | Parent issue        | JSC-363                                                                                                                                                                 |
 | Canonical goal      | `docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md`                                                                                                            |
 | Current branch      | `main`                                                                                                                                                                  |
-| Local main head     | `f93229d434b801047df943accc390d98327aedd9`                                                                                                                              |
-| Origin main head    | `f93229d434b801047df943accc390d98327aedd9`                                                                                                                              |
-| Main baseline       | `f93229d434b801047df943accc390d98327aedd9`                                                                                                                              |
+| Local main head     | `fe30a9bab5906475bf79f39403c36ef1c9bc9262`                                                                                                                              |
+| Origin main head    | `fe30a9bab5906475bf79f39403c36ef1c9bc9262`                                                                                                                              |
+| Main baseline       | `fe30a9bab5906475bf79f39403c36ef1c9bc9262`                                                                                                                              |
 | Active route count  | 1                                                                                                                                                                       |
 | Active route        | PU-015 live Judge/PM audit packet                                                                                                                                       |
-| Last closed route   | PR #424 merged                                                                                                                                                          |
+| Last closed route   | PR #425 merged                                                                                                                                                          |
 | Current route       | PU-015 live Judge/PM packet reviewer and final-audit disposition                                                                                                        |
 | Current slice       | PU-015 blocked packet evidence and closeout proof                                                                                                                       |
-| Feature work status | No active implementation lane after PR #424 merge/pullback; reviewers still missing; packet validation surface is current at R511 while reviewers are still missing |
+| Feature work status | No active implementation lane after PR #425 merge/pullback; reviewers still missing; packet validation surface is current at R516 while reviewers are still missing |
 
 ## Active Route
 
 The compact current route packet is
 `docs/goals/codex-runtime-evidence-verifier-cockpit/current-route.json`.
-It records PR #424 as the latest merged provenance at
-`f93229d434b801047df943accc390d98327aedd9`, keeps PU-015 as the active
+It records PR #425 as the latest merged provenance at
+`fe30a9bab5906475bf79f39403c36ef1c9bc9262`, keeps PU-015 as the active
 Judge/PM packet lane, and blocks readiness on missing independent reviewer
 artifacts plus unclaimed Linear field-text currency.
 
@@ -71,7 +71,7 @@ artifacts, refresh or owner-classify Linear field text, and rerun the Judge/PM
 packet plus final requirement-by-requirement audit from pulled main.
 ## Active Slice
 
-Selected active slice after PR #424 landed and local `main` was pulled:
+Selected active slice after PR #425 landed and local `main` was pulled:
 `PU-015 live Judge/PM audit packet blocked-readiness proof`.
 
 PU-056 closed the active-route/runtime-card mismatch. PR #413 added guardrails
@@ -138,7 +138,7 @@ Judge/PM packet work may start only after local main is pulled back and the
 route tracker is current. The packet must stop if any of these are false:
 
 - Local `main` and `origin/main` are synced to
-  `f93229d434b801047df943accc390d98327aedd9` or a later pulled main commit.
+  `fe30a9bab5906475bf79f39403c36ef1c9bc9262` or a later pulled main commit.
 - Runtime-card on pulled current main returns `issueKey: "JSC-363"` with the
   JSC-363 active spec and plan.
 - Linear JSC-363 field-text currency is refreshed, owner-classified as not
@@ -155,18 +155,18 @@ Use this payload only after Linear access is available or an owner explicitly
 approves posting the blocker classification for JSC-363:
 
 ```md
-Refreshed JSC-363 current-main route truth after PR #424 merge and PU-015 packet blocker repair.
+Refreshed JSC-363 current-main route truth after PR #425 merge and PU-015 packet blocker repair.
 
 Current truth:
 
-- Active route lane: PU-015 Judge/PM audit packet blocked-readiness proof after PR #424 pullback.
-- Latest merged route: PR #424.
-- Local main head: `f93229d434b801047df943accc390d98327aedd9`.
-- Origin main head: `f93229d434b801047df943accc390d98327aedd9`.
-- Current GitHub check rollup showed repo-owned required checks for PR #424 pass before merge; external security/snyk GitHub App quota was owner-waived and admin merge authority was used only for that quota lane.
+- Active route lane: PU-015 Judge/PM audit packet blocked-readiness proof after PR #425 pullback.
+- Latest merged route: PR #425.
+- Local main head: `fe30a9bab5906475bf79f39403c36ef1c9bc9262`.
+- Origin main head: `fe30a9bab5906475bf79f39403c36ef1c9bc9262`.
+- Current GitHub check rollup showed PR #425 required contexts pass before merge: CodeRabbit, Socket Security: Pull Request Alerts, pr-pipeline, and security-scan. The external security/snyk GitHub App quota failure remains an owner-waived non-required lane only.
 - Runtime-card current-main output returns issueKey JSC-363 with the JSC-363 active spec and plan.
 - PU-013 runtime cockpit integration proof is merged and pulled back to local `main`.
-- PR #413 is merged PU-015 guardrail evidence, PR #414/PR #415 are merged tracker evidence, PR #416 is merged packet-route repair evidence, PR #417/PR #418/PR #419 are merged tracker/review-thread repair evidence, PR #421 is merged source-checkout command replay guardrail evidence, PR #422 is merged canonical route-surface repair evidence, PR #423 is merged post-PR422 route-truth provenance, and PR #424 is merged post-PR423 packet tracker evidence. The live packet exists and is blocked on missing independent reviewer artifacts; all remain separate from Linear field-text currency, Judge/PM readiness, and parent goal completion claims.
+- PR #413 is merged PU-015 guardrail evidence, PR #414/PR #415 are merged tracker evidence, PR #416 is merged packet-route repair evidence, PR #417/PR #418/PR #419 are merged tracker/review-thread repair evidence, PR #421 is merged source-checkout command replay guardrail evidence, PR #422 is merged canonical route-surface repair evidence, PR #423 is merged post-PR422 route-truth provenance, PR #424 is merged post-PR423 packet tracker evidence, and PR #425 is merged advisory-loop guardrail and route-anchor cleanup provenance. The live packet exists and is blocked on missing independent reviewer artifacts; all remain separate from Linear field-text currency, Judge/PM readiness, and parent goal completion claims.
 - PU-056 deterministic guard coverage is merged and pulled back.
 - External Snyk GitHub App quota/status remains an owner waiver for that external lane only.
 - Linear JSC-363 has repo-truth comment `81cfdd41-ff0e-4df1-b884-c01789e30a50`; field-text currency remains unclaimed until a fresh Linear fetch or owner classification is recorded.

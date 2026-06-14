@@ -14,6 +14,7 @@ import {
 	isValidPilotRollbackPolicy,
 	isValidRemediationPolicy,
 } from "./policy-validators.js";
+import { isValidSharedStateActions } from "./shared-state-action-validator.js";
 import type {
 	BlastRadiusRule,
 	BlastRadiusRulesMode,
@@ -193,6 +194,7 @@ const VALID_TOOLING_POLICY_KEYS = [
 	"codexEnvironment",
 	"makefile",
 	"packagePolicy",
+	"sharedStateActions",
 	"projectBrainMemoryExtension",
 ] as const;
 const VALID_TOOLING_CODEX_ENVIRONMENT_KEYS = [
@@ -329,7 +331,6 @@ export interface ValidationError {
 	received?: string;
 	fix?: string;
 }
-
 /** Public API export. */
 export interface ValidationResult<T> {
 	success: boolean;
@@ -670,6 +671,7 @@ function isValidToolingPolicy(value: unknown): value is ToolingPolicy {
 		isValidToolingCodexEnvironment(policy.codexEnvironment) &&
 		isValidToolingMakefile(policy.makefile) &&
 		isValidToolingPackagePolicy(policy.packagePolicy) &&
+		isValidSharedStateActions(policy.sharedStateActions) &&
 		(policy.projectBrainMemoryExtension === undefined ||
 			isValidToolingProjectBrainMemoryExtension(
 				policy.projectBrainMemoryExtension,
@@ -689,7 +691,6 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 	if (!isPlainObject(value)) return false;
 	const policy = value as Record<string, unknown>;
 
-	// Reject unknown top-level keys
 	const unknownKeys = Object.keys(policy).filter(
 		(key) =>
 			![
@@ -706,7 +707,6 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 		return false;
 	}
 
-	// Validate timeoutSeconds
 	if (
 		typeof policy.timeoutSeconds !== "number" ||
 		policy.timeoutSeconds <= 0 ||

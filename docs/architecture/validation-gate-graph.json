@@ -4,6 +4,12 @@
 	"aggregateCommand": "pnpm check",
 	"nodes": [
 		{
+			"command": "pnpm toolchain:check",
+			"lane": "toolchain",
+			"owner": "package-manager",
+			"proves": "local Node runtime satisfies the package engine contract before broader gates run"
+		},
+		{
 			"command": "pnpm lint",
 			"lane": "source-style",
 			"owner": "biome",

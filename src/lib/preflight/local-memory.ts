@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import { readTextTail } from "./file-tail.js";
 import { runSmokeCycle } from "./local-memory-smoke.js";
 
 /**
@@ -31,6 +32,7 @@ interface ParsedLocalMemoryConfig {
 
 const DEFAULT_CONFIG_PATH = `${process.env.HOME}/.local-memory/config.yaml`;
 const DEFAULT_DAEMON_LOG_PATH = `${process.env.HOME}/.local-memory/daemon.log`;
+const DAEMON_LOG_TAIL_BYTES = 256 * 1024;
 
 /**
  * Pause execution for a specified duration.
@@ -708,7 +710,7 @@ function scanDaemonLog(daemonLogPath: string, messages: string[]): void {
 		return;
 	}
 
-	const daemonLogTail = readFileSync(daemonLogPath, "utf-8")
+	const daemonLogTail = readTextTail(daemonLogPath, DAEMON_LOG_TAIL_BYTES)
 		.split(/\r?\n/)
 		.slice(-300)
 		.join("\n");

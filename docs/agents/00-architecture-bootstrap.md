@@ -144,6 +144,11 @@ synchronized and commit this guide with the validation changes so future agents
 can find the current typed contract entrypoint from the architecture bootstrap
 surface. Rollback: remove the typed package scripts, CLI JSON manifest entries,
 Python project dependency wiring, and generated context refresh together.
+Toolchain and artifact-test wrapper changes are also validation-graph changes
+when they decide whether broader gates can start. Keep Node engine preflight
+ahead of aggregate checks, route nested package-manager execution through the
+repo wrapper, and call TypeScript entrypoints with `node --import tsx` when the
+`tsx` CLI listener is sandbox-sensitive.
 For runtime-card evidence adapter changes, treat the adapter as an
 agent-native cockpit surface: keep `runtime-card/v1` and
 `runtime-evidence-bundle/v1` advisory and artifact-backed, keep local evidence

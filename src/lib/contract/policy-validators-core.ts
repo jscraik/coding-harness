@@ -1,4 +1,5 @@
 import { PREFLIGHT_POST_HOOK_IDS, PREFLIGHT_PRE_HOOK_IDS } from "./types.js";
+import { isValidSharedStateActions } from "./shared-state-action-validator.js";
 import type {
 	CIProviderMigrationStage,
 	CIProviderPolicy,
@@ -140,6 +141,7 @@ const VALID_TOOLING_POLICY_KEYS = [
 	"codexEnvironment",
 	"makefile",
 	"packagePolicy",
+	"sharedStateActions",
 	"projectBrainMemoryExtension",
 ] as const;
 const VALID_TOOLING_CODEX_ENVIRONMENT_KEYS = [
@@ -809,7 +811,6 @@ function isValidControlPlaneOverridePolicy(
 
 	return true;
 }
-
 /** Public API export. */
 export function isValidControlPlanePolicy(
 	value: unknown,
@@ -829,7 +830,6 @@ export function isValidControlPlanePolicy(
 
 	return isValidControlPlaneOverridePolicy(policy.overridePolicy);
 }
-
 /** Public API export. */
 export function isValidCIProviderPolicy(
 	value: unknown,
@@ -1089,7 +1089,6 @@ function isValidToolingProjectBrainMemoryExtension(
 		})
 	);
 }
-
 /** Public API export. */
 export function isValidToolingPolicy(value: unknown): value is ToolingPolicy {
 	if (!isPlainObject(value)) return false;
@@ -1116,6 +1115,7 @@ export function isValidToolingPolicy(value: unknown): value is ToolingPolicy {
 		isValidToolingCodexEnvironment(policy.codexEnvironment) &&
 		isValidToolingMakefile(policy.makefile) &&
 		isValidToolingPackagePolicy(policy.packagePolicy) &&
+		isValidSharedStateActions(policy.sharedStateActions) &&
 		(policy.projectBrainMemoryExtension === undefined ||
 			isValidToolingProjectBrainMemoryExtension(
 				policy.projectBrainMemoryExtension,
