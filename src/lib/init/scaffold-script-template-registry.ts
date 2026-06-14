@@ -156,6 +156,10 @@ export const CODEX_AND_WORKFLOW_SCRIPT_TEMPLATES: readonly Template[] = [
 		render: () => renderValidateCodestyleScript(),
 	},
 	{
+		path: "scripts/check-node-engine.mjs",
+		render: () => renderPackagedRootFile("scripts/check-node-engine.mjs"),
+	},
+	{
 		path: "scripts/check-codestyle-parity.sh",
 		render: () => renderCheckCodestyleParityScript(),
 	},

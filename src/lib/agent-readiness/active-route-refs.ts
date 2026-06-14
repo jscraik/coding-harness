@@ -69,14 +69,15 @@ function activeRouteMissingRefs(
 	activeRouteRefs: string[],
 ): AgentReadinessMissingContextRef[] {
 	return activeRouteRefs
-		.filter(
-			(path) => resolveActiveRouteRef(repoRoot, activeRouteRefs, path) === path,
-		)
-		.filter((path) => !fileExists(repoRoot, path))
 		.map((path) => ({
 			ref: path,
+			normalizedPath: resolveActiveRouteRef(repoRoot, activeRouteRefs, path),
+		}))
+		.filter((ref) => !fileExists(repoRoot, ref.normalizedPath))
+		.map((ref) => ({
+			ref: ref.ref,
 			declaredBy: `${activeArtifactsPath}#Current Active Route`,
-			normalizedPath: path,
+			normalizedPath: ref.normalizedPath,
 			reason: "missing_ref" as const,
 		}));
 }
@@ -97,13 +98,21 @@ function resolveActiveRouteRef(
 	activeRouteRefs: string[],
 	path: string,
 ): string {
-	for (const base of activeRouteBaseDirs(repoRoot, activeRouteRefs)) {
+	const baseDirs = activeRouteBaseDirs(repoRoot, activeRouteRefs);
+	for (const base of baseDirs) {
 		if (path.startsWith(`${base}/`)) continue;
 		const candidate = `${base}/${path}`;
 		if (fileExists(repoRoot, candidate)) return candidate;
 	}
+	if (baseDirs.length > 0 && isShorthandRouteRef(path)) {
+		return `${baseDirs[0]}/${path}`;
+	}
 	if (fileExists(repoRoot, path)) return path;
 	return path;
+}
+
+function isShorthandRouteRef(path: string): boolean {
+	return !path.includes("/");
 }
 
 function activeRouteBaseDirs(

@@ -119,6 +119,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/codex-enforced",
 	"scripts/verify-work.sh",
 	"scripts/validate-codestyle.sh",
+	"scripts/check-node-engine.mjs",
 	"scripts/with-validation-lock.sh",
 	"scripts/check-validation-locks.sh",
 	"scripts/check-codestyle-parity.sh",
@@ -320,6 +321,9 @@ describe("runInit", () => {
 			expect(existsSync(join(tempDir, "scripts/verify-work.sh"))).toBe(true);
 			expect(existsSync(join(tempDir, "CODESTYLE.md"))).toBe(true);
 			expect(existsSync(join(tempDir, "scripts/validate-codestyle.sh"))).toBe(
+				true,
+			);
+			expect(existsSync(join(tempDir, "scripts/check-node-engine.mjs"))).toBe(
 				true,
 			);
 			expect(existsSync(join(tempDir, "scripts/prepare-worktree.sh"))).toBe(
@@ -1736,6 +1740,10 @@ describe("runInit", () => {
 				join(tempDir, "scripts/check-code-size.mjs"),
 				"utf-8",
 			);
+			const nodeEngine = require("node:fs").readFileSync(
+				join(tempDir, "scripts/check-node-engine.mjs"),
+				"utf-8",
+			);
 			const changedFiles = require("node:fs").readFileSync(
 				join(tempDir, "scripts/lib/changed-files.mjs"),
 				"utf-8",
@@ -1896,6 +1904,7 @@ describe("runInit", () => {
 			);
 			expect(codeSize).toContain("[check-code-size]");
 			expect(codeSize).toContain("MAX_FUNCTION_LINES");
+			expect(nodeEngine).toContain("[toolchain]");
 			expect(changedFiles).toContain("collectChangedPaths");
 			expect(semgrepChanged).toContain(
 				'RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"',
@@ -2288,6 +2297,7 @@ describe("runInit", () => {
 			);
 			expect(environmentCheck).toContain('"scripts/check-public-api-docs.mjs"');
 			expect(environmentCheck).toContain('"scripts/check-code-size.mjs"');
+			expect(environmentCheck).toContain('"scripts/check-node-engine.mjs"');
 			expect(environmentCheck).toContain('"scripts/lib/changed-files.mjs"');
 			expect(environmentCheck).toContain('"scripts/check-semgrep-changed.sh"');
 			expect(environmentCheck).toContain('"scripts/check-semgrep-full.sh"');
@@ -4450,12 +4460,14 @@ describe("--update flag", () => {
 		manifest.files = manifest.files.filter(
 			(entry) =>
 				entry.path !== "scripts/codex-learn" &&
-				entry.path !== "scripts/codex-enforced",
+				entry.path !== "scripts/codex-enforced" &&
+				entry.path !== "scripts/check-node-engine.mjs",
 		);
 		writeFileSync(manifestPath, JSON.stringify(manifest));
 
 		rmSync(join(tempDir, "scripts/codex-learn"), { force: true });
 		rmSync(join(tempDir, "scripts/codex-enforced"), { force: true });
+		rmSync(join(tempDir, "scripts/check-node-engine.mjs"), { force: true });
 
 		const result = runInit(tempDir, {
 			dryRun: false,
@@ -4466,6 +4478,9 @@ describe("--update flag", () => {
 		expect(result.ok).toBe(true);
 		expect(existsSync(join(tempDir, "scripts/codex-learn"))).toBe(true);
 		expect(existsSync(join(tempDir, "scripts/codex-enforced"))).toBe(true);
+		expect(existsSync(join(tempDir, "scripts/check-node-engine.mjs"))).toBe(
+			true,
+		);
 		expect(
 			statSync(join(tempDir, "scripts/codex-learn")).mode & 0o111,
 		).toBeTruthy();
@@ -4484,6 +4499,11 @@ describe("--update flag", () => {
 		expect(
 			updatedManifest.files.some(
 				(entry) => entry.path === "scripts/codex-enforced",
+			),
+		).toBe(true);
+		expect(
+			updatedManifest.files.some(
+				(entry) => entry.path === "scripts/check-node-engine.mjs",
 			),
 		).toBe(true);
 	});

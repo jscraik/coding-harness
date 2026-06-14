@@ -786,7 +786,10 @@ function makeAgentReadyRepo(tempDirs: string[]): string {
 					{ name: "push", authority: "user_or_explicit_request" },
 					{ name: "merge", authority: "pull_request_policy" },
 					{ name: "deploy", authority: "release_policy" },
-					{ name: "external_mutation", authority: "explicit_request" },
+					{
+						name: "external_mutation",
+						authority: "explicit_credentialed_request",
+					},
 				],
 			},
 		}),

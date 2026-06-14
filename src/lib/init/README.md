@@ -66,6 +66,10 @@ thin and delegate into this deep module.
   `bash ./scripts/validate-codestyle.sh --fast` after codestyle parity and
   before lint/typecheck so fast local commits cannot skip the codestyle
   enforcement point.
+- Generated validation scaffolds must include `scripts/check-node-engine.mjs`
+  whenever `scripts/validate-codestyle.sh` is emitted. The checker is part of
+  the downstream support-file baseline, so freshly initialized and updated repos
+  fail closed on package-engine drift before broader validation runs.
 - Generated hook adapters must render package-script commands from the detected
   package manager. Downstream npm or yarn repositories must not receive pnpm-only
   hook commands unless pnpm is the selected package manager.
