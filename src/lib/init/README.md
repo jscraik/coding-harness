@@ -22,10 +22,16 @@ thin and delegate into this deep module.
   validation.
 - Scaffold template changes must keep generated downstream docs, PR templates,
   workflow files, and regression fixtures synchronized.
+- Generated memory baselines must always emit a non-empty `repo` value. When a
+  target repository has no package name, the scaffold falls back to the target
+  directory name so `memory-gate` can validate non-package repositories.
 - Source-only governance docs must not be referenced from downstream
   scaffolds. When docs lifecycle, guardrail, or domain-language docs are added
   to the source repository, scaffold tests should prove generated templates use
   downstream-facing contracts instead of linking back to source-only docs.
+- Generated environment checks must stay aligned with the repo runtime contract:
+  Python and uv remain preflight dependencies, while Ralph is not required for
+  `coding-harness` or downstream scaffold execution.
 - Generated shell-script quality guards must prove optional tooling is
   availability-checked before execution. Repo-owned package CLIs may use a
   package-manager probe such as `pnpm exec diagram --version` instead of a

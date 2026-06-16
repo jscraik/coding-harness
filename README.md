@@ -129,6 +129,11 @@ harness health --json
 **Expected:** `harness init --track` creates harness.contract.json and .harness/ directory; `contract validate` reports zero validation errors; `health --json` shows all readiness checks passing.
 **On failure:** For init issues, check file permissions and inspect validation output (developer); for health failures, check service logs or retry health checks (infra).
 
+`harness init` writes a valid `memory.json` even for repositories without a
+`package.json` name by using the target directory name as the repo fallback.
+Generated environment checks require the harness-supported Python and uv
+toolchain, but they do not require Ralph.
+
 ### Lite Adoption
 
 Use lite mode when you want the smallest useful contract first.
