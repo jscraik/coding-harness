@@ -33,6 +33,8 @@ export const REQUIRED_PACKAGE_SCRIPTS = {
 	"codestyle:validate": "bash scripts/validate-codestyle.sh",
 	"quality:docstrings": "node scripts/check-public-api-docs.mjs",
 	"quality:size": "node scripts/check-code-size.mjs",
+	"quality:scripts": "bash scripts/check-shell-scripts.sh",
+	"tooling:parity": "node scripts/check-tooling-baseline-parity.mjs",
 	"secrets:staged": "bash scripts/check-staged-secrets.sh",
 	"docs:style:changed": "bash scripts/check-doc-style.sh",
 	"test:related": "bash scripts/check-related-tests.sh",

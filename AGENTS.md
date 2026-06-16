@@ -85,8 +85,12 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 ## Validation
 
 - Baseline gates: `pnpm codestyle:parity`, `pnpm codex:agents:guard`,
-  `pnpm check`, `bash scripts/validate-codestyle.sh`, and
+  `pnpm check:static`, `pnpm check`, `bash scripts/validate-codestyle.sh`, and
   `bash scripts/verify-work.sh`.
+- Fast-failure lanes run before broad gates: `pnpm run quality:scripts`
+  catches shell syntax regressions, and `pnpm run tooling:parity` catches
+  required-tool drift across `.mise.toml`, CircleCI, Codex environment actions,
+  package scripts, and environment scaffolds.
 - Local CI-equivalent lanes must not stack silently. `pnpm test:ci` and
   `pnpm run quality:behavior-tests` run through repo-scoped validation locks,
   and `scripts/hook-pre-push.sh` starts with `validation-locks` so active
@@ -96,6 +100,9 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   removes the dead lock.
 - Iterate with the narrowest proving check first, then
   `bash scripts/validate-codestyle.sh --fast`.
+- Before patching an already-open PR with multiple review or CI signals, run
+  `pnpm run pr:triage -- <pr-number>` and batch the open review comments,
+  failing checks, pending checks, and mergeability state into one fault queue.
 - Pre-commit leaf adapters must keep
   `bash ./scripts/validate-codestyle.sh --fast` between codestyle parity and
   lint/typecheck, and generated hook commands must follow the detected package

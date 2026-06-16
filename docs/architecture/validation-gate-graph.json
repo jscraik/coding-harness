@@ -4,6 +4,34 @@
 	"aggregateCommand": "pnpm check",
 	"nodes": [
 		{
+			"command": "pnpm check:static",
+			"lane": "static-aggregate",
+			"owner": "package-manager",
+			"proves": "non-Vitest, non-audit static, docs, tooling, architecture, type, and quality gates pass without duplicating the CI full-test lane",
+			"subcommands": [
+				"pnpm toolchain:check",
+				"pnpm lint",
+				"pnpm quality:scripts",
+				"pnpm tooling:parity",
+				"pnpm docs:lint",
+				"pnpm docs:lifecycle",
+				"pnpm docs:root-archive:links",
+				"pnpm docs:ubiquitous:guard",
+				"pnpm docs:steering:guard",
+				"pnpm skill:validate",
+				"pnpm workflow:validate",
+				"pnpm research:evidence:validate",
+				"pnpm architecture:check",
+				"pnpm types:check",
+				"pnpm quality:docstrings",
+				"pnpm quality:size",
+				"pnpm quality:self-affirming",
+				"pnpm quality:behavior-tests",
+				"pnpm quality:git-env-sanitizer",
+				"pnpm harness:audit-tracking"
+			]
+		},
+		{
 			"command": "pnpm toolchain:check",
 			"lane": "toolchain",
 			"owner": "package-manager",
@@ -14,6 +42,18 @@
 			"lane": "source-style",
 			"owner": "biome",
 			"proves": "configured lint rules pass for source and scripts"
+		},
+		{
+			"command": "pnpm quality:scripts",
+			"lane": "script-syntax",
+			"owner": "quality",
+			"proves": "tracked shell scripts parse before broader validation runs"
+		},
+		{
+			"command": "pnpm tooling:parity",
+			"lane": "tooling",
+			"owner": "tooling-baseline",
+			"proves": "required tooling baseline and checked-in Codex environment actions stay aligned"
 		},
 		{
 			"command": "pnpm docs:lint",

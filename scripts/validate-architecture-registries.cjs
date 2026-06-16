@@ -50,12 +50,29 @@ function hasText(value) {
 }
 
 function aggregatePnpmCommands(commandText) {
-	return new Set(
-		String(commandText)
-			.split(/\s+&&\s+/)
-			.map((command) => command.trim())
-			.filter((command) => /^pnpm\s+[^\s]+$/.test(command)),
-	);
+	const commands = new Set();
+	for (const command of String(commandText)
+		.split(/\s+&&\s+/)
+		.map((item) => item.trim())
+		.filter((item) => /^pnpm\s+[^\s]+$/.test(item))) {
+		commands.add(command);
+	}
+	return commands;
+}
+
+function aggregatePnpmCommandsWithOneLevel(commandText, packageScripts = {}) {
+	const commands = aggregatePnpmCommands(commandText);
+	for (const command of [...commands]) {
+		const scriptName = scriptNameForPnpmCommand(command);
+		const nestedScript = scriptName ? packageScripts[scriptName] : "";
+		if (!hasText(nestedScript)) {
+			continue;
+		}
+		for (const nestedCommand of aggregatePnpmCommands(nestedScript)) {
+			commands.add(nestedCommand);
+		}
+	}
+	return commands;
 }
 
 function scriptNameForPnpmCommand(command) {
@@ -124,7 +141,10 @@ const gateGraph = parseJson(
 );
 if (packageJson && gateGraph) {
 	const aggregate = packageJson.scripts?.check ?? "";
-	const aggregateCommands = aggregatePnpmCommands(aggregate);
+	const aggregateCommands = aggregatePnpmCommandsWithOneLevel(
+		aggregate,
+		packageJson.scripts ?? {},
+	);
 	const graphAggregate = gateGraph.aggregateCommand;
 	if (graphAggregate !== "pnpm check") {
 		violations.push({

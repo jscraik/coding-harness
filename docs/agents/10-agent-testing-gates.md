@@ -57,8 +57,10 @@ path actually ran.
 
 - `pnpm run quality:docstrings` requires JSDoc for changed exported public API declarations in production `src/**` files.
 - `pnpm run quality:size` enforces changed-file size limits for production `src/**` files and reports explicit legacy allowlist skips.
+- `pnpm run quality:scripts` catches shell syntax regressions before broad gates spend time on docs, types, or Vitest.
+- `pnpm run tooling:parity` catches stale required-tool drift across policy, environment, CI, and scaffolding surfaces.
 - `pnpm run test:related` runs Vitest related mode for changed production `src/**` files without `--passWithNoTests`; missing related tests are a blocker, not a green signal.
-- `bash scripts/validate-codestyle.sh --fast`, `pnpm check`, and the `scripts/hook-pre-commit.sh` leaf adapter include these gates so the contract is enforced locally and in downstream harness-managed repos. The `make hooks-pre-commit` target remains a manual wrapper around that adapter.
+- `bash scripts/validate-codestyle.sh --fast`, `pnpm check:static`, `pnpm check`, and the `scripts/hook-pre-commit.sh` leaf adapter include these gates so the contract is enforced locally and in downstream harness-managed repos. The `make hooks-pre-commit` target remains a manual wrapper around that adapter.
 
 ## Harness assurance layers
 
@@ -73,7 +75,7 @@ right proof at the right layer.
 | Mock integration   | GitHub, Linear, CircleCI, CodeRabbit, Snyk, filesystem, and automation boundaries can be exercised without mutating real systems. | Strong for many command and adapter paths; new adapters must prove this explicitly.                                      | Fixture-backed adapter or command tests with mocked outbound calls and machine-readable output assertions.                                                                                                                                                       |
 | End-to-end         | Full harness scenarios cross command, artifact, and external-system boundaries.                                                   | Strong but credential-gated: `e2e/**` and artifact runners classify blockers.                                            | `pnpm run test:e2e` for the runner-owned `artifacts/e2e/result.json`; `pnpm run test:artifacts:e2e` for wrapper-owned `artifacts/test/summary-e2e.json` and `artifacts/test/test-output-e2e.log`; or a recorded blocked reason when credentials are unavailable. |
 | Security           | Unsafe commands, path traversal, secret exposure, branch protection, and policy refusal fail closed.                              | Strong baseline through audit, secrets, Semgrep/Snyk/CircleCI, and security tests; misuse taxonomy should stay explicit. | Targeted security tests or security gate evidence proving the unsafe sample is refused with a named policy reason.                                                                                                                                               |
-| Load and stress    | High-volume command discovery, artifact writes, preflight overload, and agent-first throughput degrade predictably.               | Partial: performance, overload, and throughput tests exist, but this is the weakest harness layer.                       | A bounded-duration, bounded-output, throughput-floor, or controlled-degradation test with an explicit numeric threshold; use `pnpm test:deep` when runtime or artifact behavior changes.                                                                         |
+| Load and stress    | High-volume command discovery, artifact writes, preflight overload, and agent-first throughput degrade predictably.               | Partial: performance, overload, and throughput tests exist, but this is the weakest harness layer.                       | A bounded-duration, bounded-output, throughput-floor, or controlled-degradation test with an explicit numeric threshold; use `pnpm test:smarter:compare` for CircleCI smarter-testing evidence and `pnpm test:deep` when runtime or artifact behavior changes.  |
 | Lifecycle closeout | Green checks are not completion; PR, branch, Linear, review-thread, automation, and next-lane state are observed or classified.   | Partial but now governed by the repeated-steering and heartbeat closeout contract.                                       | Targeted closeout proof plus `pnpm run docs:steering:guard` when meta-behavior or automation rules change.                                                                                                                                                       |
 
 Use `validateHarnessAssuranceEntries` in `src/lib/harness-assurance.ts` when a
@@ -144,9 +146,16 @@ Validates behavioral invariants and regression coverage.
 
 Detects dependency risk before merge.
 
+### `pnpm check:static`
+
+Aggregates the non-Vitest baseline for CI and fast local confidence without
+rerunning the dedicated `pnpm test:ci` lane.
+
 ### `pnpm check`
 
-Aggregates the repo baseline contract for release-quality confidence.
+Aggregates the repo baseline contract for release-quality confidence:
+`pnpm check:static`, `pnpm run test:related`, `pnpm test:ci`, and
+`pnpm audit`.
 
 ## Failure policy
 

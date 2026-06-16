@@ -270,7 +270,7 @@ fi
 	fi
 
 	if [[ -f "$PACKAGE_JSON_PATH" ]]; then
-		required_package_scripts=("codestyle:parity|bash scripts/check-codestyle-parity.sh" "codestyle:validate|bash scripts/validate-codestyle.sh" "quality:docstrings|node scripts/check-public-api-docs.mjs" "quality:size|node scripts/check-code-size.mjs" "secrets:staged|bash scripts/check-staged-secrets.sh" "docs:style:changed|bash scripts/check-doc-style.sh" "test:related|bash scripts/check-related-tests.sh" "semgrep:changed|bash scripts/check-semgrep-changed.sh")
+		required_package_scripts=("codestyle:parity|bash scripts/check-codestyle-parity.sh" "codestyle:validate|bash scripts/validate-codestyle.sh" "quality:docstrings|node scripts/check-public-api-docs.mjs" "quality:size|node scripts/check-code-size.mjs" "quality:scripts|bash scripts/check-shell-scripts.sh" "tooling:parity|node scripts/check-tooling-baseline-parity.mjs" "secrets:staged|bash scripts/check-staged-secrets.sh" "docs:style:changed|bash scripts/check-doc-style.sh" "test:related|bash scripts/check-related-tests.sh" "semgrep:changed|bash scripts/check-semgrep-changed.sh")
 		for script_spec in "${required_package_scripts[@]}"; do
 			script_name="${script_spec%%|*}"
 			script_command="${script_spec#*|}"

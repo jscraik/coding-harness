@@ -74,11 +74,14 @@
 - Repository-defined baseline gates are mandatory:
   - `pnpm lint`
   - `pnpm typecheck`
+  - `pnpm run quality:scripts`
+  - `pnpm run tooling:parity`
   - `pnpm run quality:self-affirming`
   - `pnpm run quality:behavior-tests`
   - `pnpm run test:related`
   - `pnpm test`
   - `pnpm audit`
+  - `pnpm check:static`
   - `pnpm check`
   - `bash scripts/validate-codestyle.sh`
   - `bash scripts/verify-work.sh --fast`
