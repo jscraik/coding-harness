@@ -99,18 +99,26 @@ collect_candidate_tests() {
 
 	collect_test_path "$dirname_source/$stem.test.ts"
 	collect_test_path "$dirname_source/$stem.test.tsx"
+	collect_test_path "$dirname_source/$stem.test.js"
+	collect_test_path "$dirname_source/$stem.test.jsx"
+	collect_test_path "$dirname_source/$stem.test.mts"
+	collect_test_path "$dirname_source/$stem.test.cts"
 
 	case "$stem" in
 		*-core)
 			collect_test_path "$dirname_source/${stem%-core}.test.ts"
 			collect_test_path "$dirname_source/${stem%-core}.test.tsx"
+			collect_test_path "$dirname_source/${stem%-core}.test.js"
+			collect_test_path "$dirname_source/${stem%-core}.test.jsx"
+			collect_test_path "$dirname_source/${stem%-core}.test.mts"
+			collect_test_path "$dirname_source/${stem%-core}.test.cts"
 			;;
 	esac
 
 	import_name="${basename_source%.*}.js"
 	while IFS= read -r candidate; do
 		collect_test_path "$candidate"
-	done < <(rg -l --fixed-strings "$import_name" src --glob "*.test.ts" --glob "*.test.tsx" 2>/dev/null || true)
+	done < <(rg -l --fixed-strings "$import_name" src --glob "*.test.ts" --glob "*.test.tsx" --glob "*.test.js" --glob "*.test.jsx" --glob "*.test.mts" --glob "*.test.cts" || [[ $? -eq 1 ]])
 }
 
 while IFS= read -r path; do
