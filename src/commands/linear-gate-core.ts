@@ -381,9 +381,6 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 		addCheck(
 			checks,
 			"pr-linkage",
-		addCheck(
-			checks,
-			"pr-linkage",
 			true,
 			"PR issue-key check skipped because PR metadata declares standalone/untracked work with a Linear n/a reason.",
 		);
