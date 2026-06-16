@@ -370,12 +370,17 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 	}
 
 	if (standaloneUntrackedPr) {
-		addStandaloneBranchPrefixCheck({
+		if (policy.requireBranchIssueKey ?? true) {
+			addStandaloneBranchPrefixCheck({
+				checks,
+				branch,
+				allowMissingBranch: options.allowMissingBranch,
+				policy,
+			});
+		}
+		addCheck(
 			checks,
-			branch,
-			allowMissingBranch: options.allowMissingBranch,
-			policy,
-		});
+			"pr-linkage",
 		addCheck(
 			checks,
 			"pr-linkage",
