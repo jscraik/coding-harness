@@ -258,6 +258,58 @@ contact_links:
 		).toBe(false);
 	});
 
+	it("accepts explicitly standalone untracked PRs without a Linear issue key", () => {
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify(
+				{
+					name: "fixture",
+					bugs: "https://linear.app/acme/project/platform-123",
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+		writeFileSync(
+			join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"),
+			`blank_issues_enabled: false
+contact_links:
+  - name: Linear work intake
+    url: https://linear.app/acme/project/platform-123
+    about: Track all work in Linear.
+`,
+			"utf-8",
+		);
+
+		const result = runLinearGate({
+			repoRoot: tempDir,
+			branch: "codex/fix-agent-native-gaps",
+			prTitle: "fix: remove Ralph dependency from readiness",
+			prBody: [
+				"## Work performed",
+				"",
+				"- Linear reference: n/a because no Linear issue was provided for this standalone PR review remediation.",
+				"- Linked issue relationship: standalone/untracked work; this PR remediates review comments without claiming issue closure.",
+			].join("\n"),
+		});
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			return;
+		}
+
+		expect(result.output.passed).toBe(true);
+		expect(
+			result.output.checks.find((check) => check.code === "branch-linkage")
+				?.message,
+		).toContain("standalone/untracked");
+		expect(
+			result.output.checks.find((check) => check.code === "pr-reference-mode")
+				?.message,
+		).toContain("standalone/untracked");
+	});
+
 	it("classifies branch/PR key mismatch as non-retryable contract_policy", () => {
 		writeFileSync(
 			join(tempDir, "package.json"),

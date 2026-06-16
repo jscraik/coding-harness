@@ -888,7 +888,7 @@ describe("runInit", () => {
 			const memory = JSON.parse(readFileSync(memoryPath, "utf-8"));
 			expect(memory.meta.version).toBe("1.0");
 			expect(memory.repo).toBe(basename(tempDir));
-			expect(memory.preamble.bootstrap).toBe(false);
+			expect(memory.preamble.bootstrap).toBe(true);
 			expect(memory.preamble.search).toBe(true);
 			expect(memory.preamble.claim_boundary).toBe("orientation-only");
 			expect(Array.isArray(memory.entries)).toBe(true);
@@ -1203,7 +1203,7 @@ describe("runInit", () => {
 			const memory = JSON.parse(readFileSync(memoryPath, "utf-8"));
 			expect(memory.meta.version).toBe("1.0");
 			expect(memory.repo).toBe(basename(tempDir));
-			expect(memory.preamble.bootstrap).toBe(false);
+			expect(memory.preamble.bootstrap).toBe(true);
 			expect(memory.preamble.search).toBe(true);
 			expect(memory.preamble.claim_boundary).toBe("orientation-only");
 			expect(Array.isArray(memory.entries)).toBe(true);

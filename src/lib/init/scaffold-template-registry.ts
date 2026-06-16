@@ -123,7 +123,7 @@ export const TEMPLATES: Template[] = [
 					repo: repoName,
 					session_id: "repo-memory/current",
 					preamble: {
-						bootstrap: false,
+						bootstrap: true,
 						search: true,
 						claim_boundary: "orientation-only",
 					},

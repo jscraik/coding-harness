@@ -93,8 +93,9 @@ collect_test_path() {
 
 collect_candidate_tests() {
 	local source="$1"
-	local dirname_source basename_source stem candidate import_name kind ext matches rg_status
+	local dirname_source basename_source stem candidate import_path import_term kind ext matches rg_status
 	local rg_globs=()
+	local import_terms=()
 
 	dirname_source="$(dirname -- "$source")"
 	basename_source="$(basename -- "$source")"
@@ -122,19 +123,27 @@ collect_candidate_tests() {
 		done
 	done
 
-	import_name="${basename_source%.*}.js"
-	set +e
-	matches="$(rg -l --fixed-strings "$import_name" src "${rg_globs[@]}" 2>&1)"
-	rg_status=$?
-	set -e
-	if [[ "$rg_status" -ne 0 && "$rg_status" -ne 1 ]]; then
-		echo "[check-related-tests] rg failed while discovering tests for $source:" >&2
-		printf '%s\n' "$matches" >&2
-		exit "$rg_status"
-	fi
-	while IFS= read -r candidate; do
-		collect_test_path "$candidate"
-	done <<< "$matches"
+	import_path="${source#src/}"
+	import_path="${import_path%.*}.js"
+	while [[ "$import_path" == */* ]]; do
+		import_terms+=("$import_path")
+		import_path="${import_path#*/}"
+	done
+
+	for import_term in "${import_terms[@]}"; do
+		set +e
+		matches="$(rg -l --fixed-strings "$import_term" src "${rg_globs[@]}" 2>&1)"
+		rg_status=$?
+		set -e
+		if [[ "$rg_status" -ne 0 && "$rg_status" -ne 1 ]]; then
+			echo "[check-related-tests] rg failed while discovering tests for $source:" >&2
+			printf '%s\n' "$matches" >&2
+			exit "$rg_status"
+		fi
+		while IFS= read -r candidate; do
+			collect_test_path "$candidate"
+		done <<< "$matches"
+	done
 }
 
 while IFS= read -r path; do

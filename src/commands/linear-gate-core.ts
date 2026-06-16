@@ -13,6 +13,7 @@ import {
 	classifyLinearGateFailure,
 	normaliseLinearGateResult,
 } from "../lib/output/normalise.js";
+import { isStandaloneUntrackedPr } from "./linear-gate-pr-template.js";
 
 /** Public API export. */
 export const EXIT_CODES = {
@@ -195,20 +196,6 @@ function resolveReferenceKeys(
 	};
 }
 
-/**
- * Appends a policy check record to the provided checks array.
- *
- * The function mutates `checks` by pushing a new LinearGateCheck containing
- * `code`, `passed`, `message`, and any optional `expected`/`actual` fields.
- *
- * @param checks - The array to which the new check will be appended (mutated).
- * @param code - Short machine-readable identifier for the check.
- * @param passed - `true` when the check succeeded, `false` when it failed.
- * @param message - Human-readable summary of the check result.
- * @param options - Optional additional fields:
- *   - `expected`: description of the expected value or condition
- *   - `actual`: observed value when the check failed
- */
 function addCheck(
 	checks: LinearGateCheck[],
 	code: string,
@@ -224,20 +211,7 @@ function addCheck(
 	});
 }
 
-/**
- * Validate repository and PR metadata against the contract's issueTrackingPolicy and return a structured verification report.
- *
- * Temporarily changes the process working directory to the resolved repoRoot while loading the contract; reads files under
- * repoRoot, inspects environment variables, and may invoke git to detect the current branch.
- *
- * @param options - Overrides and flags controlling repo root and contract location, optional branch/PR metadata overrides,
- *                  tolerance for missing metadata (`allowMissingBranch`, `allowMissingPrMetadata`), and JSON output mode.
- * @returns On success (`ok: true`): `output` includes whether the policy passed, the applied policy, `repoRoot`,
- *          optional `branch`/`prTitle`/`bugsUrl`, the `checks` array with individual `LinearGateCheck` records, and
- *          extracted `issueKeys` grouped by `branch`, `pr`, `refs`, and `fixes`.
- *          On failure (`ok: false`): `error` contains a `code` (`CONTRACT_ERROR` or `VALIDATION_ERROR`) and a human-readable
- *          `message` describing the load or validation failure.
- */
+/** Validate repository and PR metadata against the contract's Linear policy. */
 export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
 	const contractPath = options.contractPath
@@ -291,6 +265,7 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 			: undefined;
 	const branchIssueKeys = extractIssueKeys(branch);
 	const prIssueKeys = extractIssueKeys(prText);
+	const standaloneUntrackedPr = isStandaloneUntrackedPr(prBody);
 	const referenceMode = policy.prReferenceMode ?? "either";
 	const { refs: refsIssueKeys, fixes: fixesIssueKeys } = resolveReferenceKeys(
 		referenceMode,
@@ -393,7 +368,28 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 		}
 	}
 
-	if (policy.requireBranchIssueKey ?? true) {
+	if (standaloneUntrackedPr) {
+		addCheck(
+			checks,
+			"branch-linkage",
+			true,
+			"Branch linkage check skipped because PR metadata declares standalone/untracked work with a Linear n/a reason.",
+		);
+		addCheck(
+			checks,
+			"pr-linkage",
+			true,
+			"PR issue-key check skipped because PR metadata declares standalone/untracked work with a Linear n/a reason.",
+		);
+		if (prText) {
+			addCheck(
+				checks,
+				"pr-reference-mode",
+				true,
+				"PR reference-mode check skipped because PR metadata declares standalone/untracked work with a Linear n/a reason.",
+			);
+		}
+	} else if (policy.requireBranchIssueKey ?? true) {
 		if (!branch && !options.allowMissingBranch) {
 			addCheck(
 				checks,
@@ -446,7 +442,7 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 		}
 	}
 
-	if (policy.requirePrIssueKey ?? true) {
+	if (!standaloneUntrackedPr && (policy.requirePrIssueKey ?? true)) {
 		if (!prText && !options.allowMissingPrMetadata) {
 			addCheck(
 				checks,
@@ -475,7 +471,7 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 		}
 	}
 
-	if ((policy.requirePrIssueKey ?? true) && prText) {
+	if (!standaloneUntrackedPr && (policy.requirePrIssueKey ?? true) && prText) {
 		const requiredReferenceKeys =
 			referenceMode === "refs"
 				? refsIssueKeys
@@ -561,14 +557,7 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 	};
 }
 
-/**
- * Execute the Linear gate, write a normalized JSON result or a concise human-readable report to stdout/stderr, and return the corresponding process exit code.
- *
- * When `options.json` is true the command writes a normalized JSON payload to stdout. Otherwise it writes a one-line PASS/FAIL header and per-check lines to stdout, and writes error messages to stderr on failures. If a failure classification is available it is printed (to stderr for error results, to stdout for successful runs).
- *
- * @param options - Configuration for locating the contract, overriding repository/PR metadata, controlling tolerance flags (e.g. `allowMissingBranch`, `allowMissingPrMetadata`), and selecting JSON output via `json`.
- * @returns One of the EXIT_CODES: `EXIT_CODES.SUCCESS` when the gate passed; `EXIT_CODES.POLICY_VIOLATION` when policy checks failed; `EXIT_CODES.VALIDATION_ERROR` for validation/input errors; or `EXIT_CODES.CONTRACT_ERROR` when the contract could not be loaded or parsed.
- */
+/** Execute the Linear gate CLI and return the matching process exit code. */
 export async function runLinearGateCLI(
 	options: LinearGateOptions,
 ): Promise<number> {
