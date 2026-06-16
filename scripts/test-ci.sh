@@ -12,11 +12,11 @@ run_with_heartbeat() {
 	"$@" &
 	local command_pid="$!"
 	while kill -0 "$command_pid" 2>/dev/null; do
-		sleep "$heartbeat_interval" &
-		local sleep_pid="$!"
-		wait "$sleep_pid" || true
 		if kill -0 "$command_pid" 2>/dev/null; then
 			echo "[test-ci] still running: $label"
+			sleep "$heartbeat_interval" &
+			local sleep_pid="$!"
+			wait "$sleep_pid" || true
 		fi
 	done
 	wait "$command_pid"
