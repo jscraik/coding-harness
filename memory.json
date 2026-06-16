@@ -2,7 +2,7 @@
 	"repo": "coding-harness",
 	"session_id": "repo-memory/current",
 	"preamble": {
-		"bootstrap": false,
+		"bootstrap": true,
 		"search": true,
 		"claim_boundary": "orientation-only"
 	},
@@ -16,7 +16,7 @@
 			"observed_at": "2026-06-16T00:00:00.000Z"
 		},
 		{
-			"level": "rule",
+			"level": "learning",
 			"content": "Do not treat memory.json as delivery-truth, CI, review, Linear, or merge-readiness evidence; use current lane-specific artifacts for those claims.",
 			"tags": ["repo:coding-harness", "area:memory", "type:claim-boundary"],
 			"session_id": "repo-memory/current",
@@ -25,13 +25,13 @@
 		}
 	],
 	"closeout": {
-		"forjamie_updated": false,
+		"forjamie_updated": true,
 		"date": "2026-06-16T00:00:00.000Z",
 		"claim_boundary": "orientation-only"
 	},
 	"meta": {
 		"created_at": "2026-01-01T00:00:00.000Z",
 		"updated_at": "2026-06-16T00:00:00.000Z",
-		"version": "1.1"
+		"version": "1.0"
 	}
 }

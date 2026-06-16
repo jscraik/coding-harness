@@ -38,6 +38,8 @@ done
 
 related_sources=()
 related_tests=()
+TEST_KINDS=(test spec)
+TEST_EXTENSIONS=(ts tsx js jsx mts cts)
 
 has_related_source() {
 	local candidate="$1"
@@ -82,7 +84,7 @@ collect_path() {
 collect_test_path() {
 	local path="$1"
 	[[ -n "$path" ]] || return 0
-	if [[ "$path" =~ ^src/.*\.test\.(ts|tsx|js|jsx|mts|cts)$ ]] && \
+	if [[ "$path" =~ ^src/.*\.(test|spec)\.(ts|tsx|js|jsx|mts|cts)$ ]] && \
 		[[ -f "$path" ]] && \
 		! has_related_test "$path"; then
 		related_tests+=("$path")
@@ -91,34 +93,48 @@ collect_test_path() {
 
 collect_candidate_tests() {
 	local source="$1"
-	local dirname_source basename_source stem candidate import_name
+	local dirname_source basename_source stem candidate import_name kind ext matches rg_status
+	local rg_globs=()
 
 	dirname_source="$(dirname -- "$source")"
 	basename_source="$(basename -- "$source")"
 	stem="${basename_source%.*}"
 
-	collect_test_path "$dirname_source/$stem.test.ts"
-	collect_test_path "$dirname_source/$stem.test.tsx"
-	collect_test_path "$dirname_source/$stem.test.js"
-	collect_test_path "$dirname_source/$stem.test.jsx"
-	collect_test_path "$dirname_source/$stem.test.mts"
-	collect_test_path "$dirname_source/$stem.test.cts"
+	for kind in "${TEST_KINDS[@]}"; do
+		for ext in "${TEST_EXTENSIONS[@]}"; do
+			collect_test_path "$dirname_source/$stem.$kind.$ext"
+		done
+	done
 
 	case "$stem" in
 		*-core)
-			collect_test_path "$dirname_source/${stem%-core}.test.ts"
-			collect_test_path "$dirname_source/${stem%-core}.test.tsx"
-			collect_test_path "$dirname_source/${stem%-core}.test.js"
-			collect_test_path "$dirname_source/${stem%-core}.test.jsx"
-			collect_test_path "$dirname_source/${stem%-core}.test.mts"
-			collect_test_path "$dirname_source/${stem%-core}.test.cts"
+			for kind in "${TEST_KINDS[@]}"; do
+				for ext in "${TEST_EXTENSIONS[@]}"; do
+					collect_test_path "$dirname_source/${stem%-core}.$kind.$ext"
+				done
+			done
 			;;
 	esac
 
+	for kind in "${TEST_KINDS[@]}"; do
+		for ext in "${TEST_EXTENSIONS[@]}"; do
+			rg_globs+=(--glob "*.$kind.$ext")
+		done
+	done
+
 	import_name="${basename_source%.*}.js"
+	set +e
+	matches="$(rg -l --fixed-strings "$import_name" src "${rg_globs[@]}" 2>&1)"
+	rg_status=$?
+	set -e
+	if [[ "$rg_status" -ne 0 && "$rg_status" -ne 1 ]]; then
+		echo "[check-related-tests] rg failed while discovering tests for $source:" >&2
+		printf '%s\n' "$matches" >&2
+		exit "$rg_status"
+	fi
 	while IFS= read -r candidate; do
 		collect_test_path "$candidate"
-	done < <(rg -l --fixed-strings "$import_name" src --glob "*.test.ts" --glob "*.test.tsx" --glob "*.test.js" --glob "*.test.jsx" --glob "*.test.mts" --glob "*.test.cts" || [[ $? -eq 1 ]])
+	done <<< "$matches"
 }
 
 while IFS= read -r path; do

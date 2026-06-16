@@ -70,3 +70,5 @@ Repo-specific agent knowledge base. Append-only.
 **2026-06-07 [Codex]:** Plain \`prek\` can try to write \`/Users/jamiecraik/.cache/prek/prek.log\` in sandboxed Codex runs and silently break hook or push triage -> route direct prek validation, setup-hook installation, generated hook docs, scaffolded environment actions, and downstream required support files through \`bash scripts/run-prek.sh\`, which sets \`PREK_HOME\` to the worktree cache before invoking \`prek\`.
 
 **2026-06-09 [Codex]:** Bash command 'zsh' failed with exit code 1 -> summarize the failure and change approach before rerunning the same command (auto-key:3752216027)
+
+**2026-06-16 [Codex]:** Bash command 'zsh' failed with exit code 2 -> summarize the failure and change approach before rerunning the same command (auto-key:3455637920)

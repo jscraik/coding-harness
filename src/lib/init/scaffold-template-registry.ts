@@ -7,6 +7,7 @@
  * @module lib/init/scaffold-template-registry
  */
 
+import { basename } from "node:path";
 import { deriveRequiredCheckMetadata } from "../ci/required-check-metadata.js";
 import { formatRequiredChecksBulleted } from "../policy/required-checks.js";
 import { PROJECT_BRAIN_TEMPLATES } from "./project-brain-templates.js";
@@ -112,10 +113,14 @@ export const TEMPLATES: Template[] = [
 	},
 	{
 		path: "memory.json",
-		render: (_pm, context) =>
-			JSON.stringify(
+		render: (_pm, context) => {
+			const repoName =
+				context.projectName?.trim() ||
+				basename(context.targetDir) ||
+				"repository";
+			return JSON.stringify(
 				{
-					repo: context.projectName,
+					repo: repoName,
 					session_id: "repo-memory/current",
 					preamble: {
 						bootstrap: false,
@@ -125,12 +130,8 @@ export const TEMPLATES: Template[] = [
 					entries: [
 						{
 							level: "observation",
-							content: `${context.projectName} uses Coding Harness repo memory for compact orientation only. Durable operational learnings belong in .harness/memory/LEARNINGS.md and Project Brain surfaces under .harness/.`,
-							tags: [
-								`repo:${context.projectName}`,
-								"area:memory",
-								"type:orientation",
-							],
+							content: `${repoName} uses Coding Harness repo memory for compact orientation only. Durable operational learnings belong in .harness/memory/LEARNINGS.md and Project Brain surfaces under .harness/.`,
+							tags: [`repo:${repoName}`, "area:memory", "type:orientation"],
 							session_id: "repo-memory/current",
 							source: "harness init",
 							observed_at: "2026-01-01T00:00:00.000Z",
@@ -148,7 +149,8 @@ export const TEMPLATES: Template[] = [
 				},
 				null,
 				2,
-			),
+			);
+		},
 	},
 	{
 		path: ".harness/ci-required-checks.json",

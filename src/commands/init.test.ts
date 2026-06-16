@@ -13,7 +13,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CURRENT_SCHEMA_VERSION } from "../lib/init/types.js";
 import { normalizeRequiredChecksManifest } from "../lib/policy/required-checks.js";
@@ -887,7 +887,7 @@ describe("runInit", () => {
 
 			const memory = JSON.parse(readFileSync(memoryPath, "utf-8"));
 			expect(memory.meta.version).toBe("1.0");
-			expect(memory.repo).not.toBe("replace-with-repo-name");
+			expect(memory.repo).toBe(basename(tempDir));
 			expect(memory.preamble.bootstrap).toBe(false);
 			expect(memory.preamble.search).toBe(true);
 			expect(memory.preamble.claim_boundary).toBe("orientation-only");
@@ -1202,7 +1202,7 @@ describe("runInit", () => {
 
 			const memory = JSON.parse(readFileSync(memoryPath, "utf-8"));
 			expect(memory.meta.version).toBe("1.0");
-			expect(memory.repo).not.toBe("replace-with-repo-name");
+			expect(memory.repo).toBe(basename(tempDir));
 			expect(memory.preamble.bootstrap).toBe(false);
 			expect(memory.preamble.search).toBe(true);
 			expect(memory.preamble.claim_boundary).toBe("orientation-only");
