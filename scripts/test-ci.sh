@@ -9,17 +9,35 @@ run_with_heartbeat() {
 	local label="$1"
 	shift
 	local heartbeat_interval="${TEST_CI_HEARTBEAT_INTERVAL_SECONDS:-60}"
-	"$@" &
+	local status_file
+	status_file="${TMPDIR:-/tmp}/test-ci-status-$$-$RANDOM"
+	(
+		set +e
+		"$@"
+		printf '%s\n' "$?" > "$status_file"
+	) &
 	local command_pid="$!"
-	while kill -0 "$command_pid" 2>/dev/null; do
-		if kill -0 "$command_pid" 2>/dev/null; then
+	local elapsed=0
+	while [[ ! -s "$status_file" ]]; do
+		sleep 1
+		[[ -s "$status_file" ]] && break
+		kill -0 "$command_pid" 2>/dev/null || break
+		elapsed=$((elapsed + 1))
+		if [[ "$elapsed" -ge "$heartbeat_interval" ]]; then
 			echo "[test-ci] still running: $label"
-			sleep "$heartbeat_interval" &
-			local sleep_pid="$!"
-			wait "$sleep_pid" || true
+			elapsed=0
 		fi
 	done
+	set +e
 	wait "$command_pid"
+	local wait_status="$?"
+	set -e
+	local command_status="$wait_status"
+	if [[ -s "$status_file" ]]; then
+		command_status="$(cat "$status_file")"
+	fi
+	rm -f "$status_file"
+	return "$command_status"
 }
 
 # Vitest can intermittently report worker RPC timeout false positives on long suites.

@@ -155,16 +155,6 @@ diagram --help
 '''
 
 [[actions]]
-name = "Ralph"
-icon = "debug"
-command = '''
-set -euo pipefail
-
-command -v ralph >/dev/null 2>&1
-ralph --help
-'''
-
-[[actions]]
 name = "Mise"
 icon = "tool"
 command = '''
