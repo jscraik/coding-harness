@@ -181,6 +181,7 @@ jobs:
             mkdir -p artifacts/test-results
       - run:
           name: << parameters.check_name >>
+          no_output_timeout: 30m
           command: << parameters.command >>
       - store_test_results:
           path: artifacts/test-results
@@ -473,25 +474,6 @@ workflows:
               npm:beautiful-mermaid npm:markdownlint-cli2 npm:semver npm:wrangler \
               trivy vale
             semgrep --version
-            RALPH_VERSION="1.0.0"
-            current_ralph_version=""
-            if command -v ralph >/dev/null 2>&1; then
-              current_ralph_version="$(ralph --version | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?' | head -n1 || true)"
-            fi
-            if [[ "$current_ralph_version" != "$RALPH_VERSION" ]]; then
-              RALPH_PACKAGE_SPEC="ralph-gold==${RALPH_VERSION}"
-              RALPH_GIT_FALLBACK_SPEC="git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed"
-              RALPH_VENV="$HOME/.local/share/ralph-venv-${RALPH_VERSION}"
-              if [[ ! -x "$RALPH_VENV/bin/ralph" ]]; then
-                python3 -m venv "$RALPH_VENV"
-                retry_cmd 3 "$RALPH_VENV/bin/python" -m pip install --quiet --upgrade pip
-                if ! retry_cmd 3 "$RALPH_VENV/bin/python" -m pip install --quiet "$RALPH_PACKAGE_SPEC"; then
-                  retry_cmd 3 "$RALPH_VENV/bin/python" -m pip install --quiet "$RALPH_GIT_FALLBACK_SPEC"
-                fi
-              fi
-              ln -sf "$RALPH_VENV/bin/ralph" "$HOME/.local/bin/ralph"
-            fi
-            ralph --version
             bash scripts/check-environment.sh
           filters:
             tags:

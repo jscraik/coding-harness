@@ -113,6 +113,9 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   caches and an executable `pysemgrep` or `semgrep --version` probe before
   reusing scanner state; stale metadata or ABI-mismatched site-packages are
   blocked scanner state, not proof.
+- `harness init` memory scaffolds must keep `memory.json` schema-compatible for
+  non-package repositories by emitting a non-empty repo fallback. Environment
+  readiness for this project is Python/uv-based and must not require Ralph.
 - Report exact commands with explicit `pass`, `fail`, or `blocked` outcomes.
 
 ## Routing

@@ -68,6 +68,10 @@ const SOURCE_SIZE_ADVISORY_RATCHETS = new Map([
 
 const TEST_SIZE_ADVISORY_RATCHETS = new Map([
 	[
+		"src/commands/ci-migrate.test.ts",
+		{ maxLines: 6_438, ticket: "JSC-363", expires: "2026-07-13" },
+	],
+	[
 		"src/commands/docs-gate.test.ts",
 		{ maxLines: 1_546, ticket: "JSC-363", expires: "2026-07-13" },
 	],
@@ -100,7 +104,7 @@ const LEGACY_SPLIT_CORE_LIMITS = new Map([
 	],
 	[
 		"src/commands/ci-migrate-core.ts",
-		{ maxLines: 9_510, ticket: "JSC-363", expires: "2026-07-13" },
+		{ maxLines: 9_509, ticket: "JSC-363", expires: "2026-07-13" },
 	],
 	[
 		"src/commands/docs-gate-core.ts",

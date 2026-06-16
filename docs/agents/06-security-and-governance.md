@@ -54,7 +54,6 @@ This repository follows conservative defaults:
   values, or skipped required checks should be reviewed as governance changes:
   update the operator-facing docs surfaces that docs-gate reports before push so
   required-check evidence and rollback expectations stay auditable.
-- CircleCI orb-pinning enforcement should verify `ralph` availability (`ralph --version`) and may install pinned `ralph-gold` in ephemeral CI jobs when the CLI is missing.
 - Project Brain memory-extension checks must stay project-local: keep required `.harness/**` knowledge paths in `toolingPolicy.projectBrainMemoryExtension.requiredPaths` and do not gate on workspace-level `~/.codex` state.
 - `.harness/README.md` is the governance map for selective `.harness` tracking. Curated Markdown and JSON contract files are reviewable repo inputs; runtime databases, backups, caches, run output, and bulk snapshots must stay local unless a validator or fixture contract admits them.
 - `.harness/active-artifacts.md` is an `execution-input` index for active slices. Treat it as routing authority only after validating referenced artifacts and current branch/PR state; it is not validation evidence, tracker closure evidence, or release authority by itself.

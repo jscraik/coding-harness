@@ -52,6 +52,9 @@ describe("scaffold root command templates", () => {
 		expect(makefile).toContain("@bash ./scripts/hook-pre-commit.sh");
 		expect(makefile).toContain("\tnpm run test:related");
 		expect(makefile).toContain(
+			"related-tests: ## Run related tests for changed src implementation files",
+		);
+		expect(makefile).toContain(
 			"related-tests-staged: ## Run related tests for staged src implementation files",
 		);
 		expect(makefile).not.toContain("pnpm run quality:size");

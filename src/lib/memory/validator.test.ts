@@ -17,7 +17,7 @@ describe("runMemoryGateCLI", () => {
 		tempDirs.length = 0;
 	});
 
-	it.skip("calculates trends from persisted history including current run", () => {
+	it("calculates trends from persisted history including current run", () => {
 		const root = mkdtempSync(join(process.cwd(), ".harness-memory-validator-"));
 		tempDirs.push(root);
 

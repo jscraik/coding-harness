@@ -108,24 +108,24 @@ describe("probeCommandVersion", () => {
 		writeFileSync(join(tempDir, ".mise.toml"), '[tools]\npython = "3.12"\n');
 		vi.mocked(spawnSync).mockReturnValue({
 			status: 0,
-			stdout: "ralph-gold 1.0.0\n",
+			stdout: "sample-tool 1.0.0\n",
 			stderr: "",
 		} as never);
 
 		const { probeCommandVersion } = await import("./command-version-probe.js");
 		const result = probeCommandVersion(
-			"ralph",
+			"sample-tool",
 			["--version"],
 			(output) => output.match(/(\d+\.\d+\.\d+)/)?.[1],
 		);
 
 		expect(result).toEqual({
 			available: true,
-			rawOutput: "ralph-gold 1.0.0",
+			rawOutput: "sample-tool 1.0.0",
 			version: "1.0.0",
 		});
 		expect(spawnSync).toHaveBeenCalledWith(
-			"ralph",
+			"sample-tool",
 			["--version"],
 			expect.any(Object),
 		);

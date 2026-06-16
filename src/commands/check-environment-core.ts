@@ -13,12 +13,9 @@ import {
 	type HarnessContract,
 } from "../lib/contract/types.js";
 import {
-	RALPH_PYTHON_VERSION_PIN,
-	RALPH_UV_VERSION_PIN,
-	RALPH_VERSION_PIN,
-	extractVersionFromRalphVersionOutput,
-	getRalphPackageSpec,
-} from "../lib/deps/ralph-runtime.js";
+	PREFLIGHT_PYTHON_VERSION_PIN,
+	PREFLIGHT_UV_VERSION_PIN,
+} from "../lib/deps/environment-runtime.js";
 import { probeCommandVersion } from "../lib/runtime/command-version-probe.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
@@ -86,7 +83,6 @@ export interface EnvironmentPosture {
 	runtime?: {
 		pythonVersion?: string;
 		uvVersion?: string;
-		ralphVersion?: string;
 	};
 }
 
@@ -309,7 +305,7 @@ export async function runCheckEnvironment(
 		});
 	}
 
-	// Runtime dependency checks (mandatory for loop-stage execution)
+	// Runtime dependency checks for local preflight execution.
 	const pythonProbe = probeCommandVersion(
 		"python3",
 		["--version"],
@@ -319,7 +315,7 @@ export async function runCheckEnvironment(
 		violations.push({
 			type: "runtime_dependency_missing",
 			message: "python3 is required but was not found",
-			expected: `Install Python ${RALPH_PYTHON_VERSION_PIN}.x`,
+			expected: `Install Python ${PREFLIGHT_PYTHON_VERSION_PIN}.x`,
 		});
 	} else {
 		posture.runtime = {
@@ -327,13 +323,13 @@ export async function runCheckEnvironment(
 			pythonVersion: pythonProbe.version,
 		};
 		const current = parseSemverLoose(pythonProbe.version);
-		const required = parseSemverLoose(RALPH_PYTHON_VERSION_PIN);
+		const required = parseSemverLoose(PREFLIGHT_PYTHON_VERSION_PIN);
 		if (current && required && !semver.gte(current, required)) {
 			violations.push({
 				type: "runtime_dependency_version_mismatch",
 				message: `python3 version ${pythonProbe.version} is lower than required`,
 				value: pythonProbe.version,
-				expected: `>= ${RALPH_PYTHON_VERSION_PIN}`,
+				expected: `>= ${PREFLIGHT_PYTHON_VERSION_PIN}`,
 			});
 		}
 	}
@@ -347,7 +343,7 @@ export async function runCheckEnvironment(
 		violations.push({
 			type: "runtime_dependency_missing",
 			message: "uv is required but was not found",
-			expected: `Install uv ${RALPH_UV_VERSION_PIN}`,
+			expected: `Install uv ${PREFLIGHT_UV_VERSION_PIN}`,
 		});
 	} else {
 		posture.runtime = {
@@ -355,41 +351,13 @@ export async function runCheckEnvironment(
 			uvVersion: uvProbe.version,
 		};
 		const current = parseSemverLoose(uvProbe.version);
-		const required = parseSemverLoose(RALPH_UV_VERSION_PIN);
+		const required = parseSemverLoose(PREFLIGHT_UV_VERSION_PIN);
 		if (current && required && !semver.eq(current, required)) {
 			violations.push({
 				type: "runtime_dependency_version_mismatch",
 				message: `uv version ${uvProbe.version} does not match the pinned runtime`,
 				value: uvProbe.version,
-				expected: RALPH_UV_VERSION_PIN,
-			});
-		}
-	}
-
-	const ralphProbe = probeCommandVersion(
-		"ralph",
-		["--version"],
-		extractVersionFromRalphVersionOutput,
-	);
-	if (!ralphProbe.available || !ralphProbe.version) {
-		violations.push({
-			type: "runtime_dependency_missing",
-			message: "ralph CLI is required but was not found",
-			expected: `Install ${getRalphPackageSpec()}`,
-		});
-	} else {
-		posture.runtime = {
-			...(posture.runtime ?? {}),
-			ralphVersion: ralphProbe.version,
-		};
-		const current = parseSemverLoose(ralphProbe.version);
-		const required = parseSemverLoose(RALPH_VERSION_PIN);
-		if (current && required && !semver.eq(current, required)) {
-			violations.push({
-				type: "runtime_dependency_version_mismatch",
-				message: `ralph version ${ralphProbe.version} does not match pinned runtime`,
-				value: ralphProbe.version,
-				expected: RALPH_VERSION_PIN,
+				expected: PREFLIGHT_UV_VERSION_PIN,
 			});
 		}
 	}
@@ -574,9 +542,6 @@ export async function runCheckEnvironmentCLI(
 				}
 				if (output.posture.runtime.uvVersion) {
 					console.info(`  uv: ${output.posture.runtime.uvVersion}`);
-				}
-				if (output.posture.runtime.ralphVersion) {
-					console.info(`  Ralph: ${output.posture.runtime.ralphVersion}`);
 				}
 			}
 			if (output.attestationPath) {

@@ -1,26 +1,37 @@
 {
-	"repo": "replace-with-repo-name",
-	"session_id": "bootstrap/init",
+	"repo": "coding-harness",
+	"session_id": "repo-memory/current",
 	"preamble": {
 		"bootstrap": true,
-		"search": true
+		"search": true,
+		"claim_boundary": "orientation-only"
 	},
 	"entries": [
 		{
 			"level": "observation",
-			"content": "Harness memory baseline initialized. Replace with task-specific observations.",
-			"tags": ["repo:unknown", "area:bootstrap", "type:setup"],
-			"session_id": "bootstrap/init",
-			"source": "harness init",
-			"observed_at": "2026-01-01T00:00:00.000Z"
+			"content": "Coding Harness is a TypeScript control plane for agentic development. Durable operational learnings live in .harness/memory/LEARNINGS.md, with Project Brain surfaces under .harness/.",
+			"tags": ["repo:coding-harness", "area:memory", "type:orientation"],
+			"session_id": "repo-memory/current",
+			"source": "AGENTS.md;.harness/memory/LEARNINGS.md",
+			"observed_at": "2026-06-16T00:00:00.000Z"
+		},
+		{
+			"level": "learning",
+			"content": "Do not treat memory.json as delivery-truth, CI, review, Linear, or merge-readiness evidence; use current lane-specific artifacts for those claims.",
+			"tags": ["repo:coding-harness", "area:memory", "type:claim-boundary"],
+			"session_id": "repo-memory/current",
+			"source": "AGENTS.md",
+			"observed_at": "2026-06-16T00:00:00.000Z"
 		}
 	],
 	"closeout": {
 		"forjamie_updated": true,
-		"date": "2026-01-01T00:00:00.000Z"
+		"date": "2026-06-16T00:00:00.000Z",
+		"claim_boundary": "orientation-only"
 	},
 	"meta": {
 		"created_at": "2026-01-01T00:00:00.000Z",
+		"updated_at": "2026-06-16T00:00:00.000Z",
 		"version": "1.0"
 	}
 }

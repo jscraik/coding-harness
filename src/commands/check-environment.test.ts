@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_CONTRACT } from "../lib/contract/types.js";
-import { RALPH_UV_VERSION_PIN } from "../lib/deps/ralph-runtime.js";
+import { PREFLIGHT_UV_VERSION_PIN } from "../lib/deps/environment-runtime.js";
 
 vi.mock("node:child_process", () => ({
 	spawnSync: vi.fn(),
@@ -44,7 +44,7 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 		vi.clearAllMocks();
 	});
 
-	it("passes when python, uv, and ralph are present with expected versions", async () => {
+	it("passes when python and uv are present with expected versions", async () => {
 		const { spawnSync } = await import("node:child_process");
 		const { runCheckEnvironment } = await import("./check-environment.js");
 		vi.mocked(spawnSync).mockImplementation((command) => {
@@ -58,15 +58,11 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 			if (command === "uv") {
 				return {
 					status: 0,
-					stdout: `uv ${RALPH_UV_VERSION_PIN}\n`,
+					stdout: `uv ${PREFLIGHT_UV_VERSION_PIN}\n`,
 					stderr: "",
 				} as never;
 			}
-			return {
-				status: 0,
-				stdout: "ralph-gold 1.0.0\n",
-				stderr: "",
-			} as never;
+			return { status: 127, stdout: "", stderr: "unexpected command" } as never;
 		});
 
 		const result = await runCheckEnvironment({ contractPath });
@@ -75,46 +71,9 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 		expect(result.output.passed).toBe(true);
 		expect(result.output.violations).toHaveLength(0);
 		expect(result.output.posture.runtime?.pythonVersion).toBe("3.12.10");
-		expect(result.output.posture.runtime?.uvVersion).toBe(RALPH_UV_VERSION_PIN);
-		expect(result.output.posture.runtime?.ralphVersion).toBe("1.0.0");
-	});
-
-	it("fails when ralph is missing", async () => {
-		const { spawnSync } = await import("node:child_process");
-		const { runCheckEnvironment } = await import("./check-environment.js");
-		vi.mocked(spawnSync).mockImplementation((command) => {
-			if (command === "python3") {
-				return {
-					status: 0,
-					stdout: "Python 3.12.10\n",
-					stderr: "",
-				} as never;
-			}
-			if (command === "uv") {
-				return {
-					status: 0,
-					stdout: `uv ${RALPH_UV_VERSION_PIN}\n`,
-					stderr: "",
-				} as never;
-			}
-			return {
-				status: 1,
-				stdout: "",
-				stderr: "command not found",
-				error: new Error("ENOENT"),
-			} as never;
-		});
-
-		const result = await runCheckEnvironment({ contractPath });
-		expect(result.ok).toBe(true);
-		if (!result.ok) return;
-		expect(result.output.passed).toBe(false);
-		expect(
-			result.output.violations.some(
-				(v) =>
-					v.type === "runtime_dependency_missing" && /ralph/i.test(v.message),
-			),
-		).toBe(true);
+		expect(result.output.posture.runtime?.uvVersion).toBe(
+			PREFLIGHT_UV_VERSION_PIN,
+		);
 	});
 
 	it("fails closed when mise cannot resolve pinned runtime probes", async () => {
@@ -131,13 +90,6 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 					stdout: "",
 					stderr: "mise: command not found",
 					error: new Error("ENOENT"),
-				} as never;
-			}
-			if (command === "ralph") {
-				return {
-					status: 0,
-					stdout: "ralph-gold 1.0.0\n",
-					stderr: "",
 				} as never;
 			}
 			return {
@@ -178,11 +130,11 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 			if (command === "uv") {
 				return {
 					status: 0,
-					stdout: `uv ${RALPH_UV_VERSION_PIN}\n`,
+					stdout: `uv ${PREFLIGHT_UV_VERSION_PIN}\n`,
 					stderr: "",
 				} as never;
 			}
-			return { status: 0, stdout: "ralph-gold 1.0.0\n", stderr: "" } as never;
+			return { status: 127, stdout: "", stderr: "unexpected command" } as never;
 		});
 
 		// Create a real directory outside tempDir, then symlink artifacts/ → it
@@ -230,15 +182,11 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 			if (command === "uv") {
 				return {
 					status: 0,
-					stdout: `uv ${RALPH_UV_VERSION_PIN}\n`,
+					stdout: `uv ${PREFLIGHT_UV_VERSION_PIN}\n`,
 					stderr: "",
 				} as never;
 			}
-			return {
-				status: 0,
-				stdout: "ralph-gold 1.0.0\n",
-				stderr: "",
-			} as never;
+			return { status: 127, stdout: "", stderr: "unexpected command" } as never;
 		});
 
 		const result = await runCheckEnvironment({ contractPath });
@@ -257,11 +205,11 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 			if (command === "uv") {
 				return {
 					status: 0,
-					stdout: `uv ${RALPH_UV_VERSION_PIN}\n`,
+					stdout: `uv ${PREFLIGHT_UV_VERSION_PIN}\n`,
 					stderr: "",
 				} as never;
 			}
-			return { status: 0, stdout: "ralph-gold 1.0.0\n", stderr: "" } as never;
+			return { status: 127, stdout: "", stderr: "unexpected command" } as never;
 		});
 		const attestationDir = join(process.cwd(), "attestation-dir");
 		mkdirSync(attestationDir, { recursive: true });
@@ -295,7 +243,7 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 			if (command === "uv") {
 				return {
 					status: 0,
-					stdout: `uv ${RALPH_UV_VERSION_PIN}\n`,
+					stdout: `uv ${PREFLIGHT_UV_VERSION_PIN}\n`,
 					stderr: "",
 				} as never;
 			}
@@ -306,7 +254,7 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 					stderr: "",
 				} as never;
 			}
-			return { status: 0, stdout: "ralph-gold 1.0.0\n", stderr: "" } as never;
+			return { status: 127, stdout: "", stderr: "unexpected command" } as never;
 		});
 
 		const attestationPath = join(

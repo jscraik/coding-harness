@@ -25,7 +25,7 @@ Repo-specific agent knowledge base. Append-only.
 
 **2026-05-16 [Codex]:** Runtime evidence contracts and PR ledger projections can appear wired while only validating headings or array shape -> reject blank evidence values, use explicit sentinels such as `unknown` for missing runtime facts, and make downstream generated validators check every required field before claiming projection parity.
 
-**2026-05-16 [Codex]:** Bash command 'zsh' failed with exit code 3 -> summarize the failure and change approach before rerunning the same command (auto-key:1476607300)
+**2026-06-16 [Codex]:** Repeated shell command failures (\`zsh\` exit 1/2/3 and sourced CLI/env failures) were accumulating as raw auto-records instead of a reusable operating rule -> repeated-error research candidates were: retry unchanged, switch shells globally, bypass repo wrappers with ad hoc commands, inspect quoting/shell contract and rerun the narrowest command, or classify env/FIFO credential loading separately; chosen repo-fit fix is to keep automation commands under \`zsh -lc\`, invoke Bash scripts explicitly with \`bash\`, refuse to source CLI scripts, prove \`~/.codex/.env\` is a regular file before sourcing, and change approach after the second same failure; proof: consolidated duplicate raw entries into this durable rule, preserved \`bash scripts/run-prek.sh\` for prek cache safety, and validated current shell edits with \`bash -n scripts/check-related-tests.sh\` plus focused Vitest gates.
 
 **2026-05-17 [Codex]:** PR closeout acknowledged steering in chat instead of synchronizing PR template/validator/steering guard -> require Meta-behavior proof and Learning when PR admits repeated steering, keep validators synchronized, run pnpm run docs:steering:guard before resuming.
 
@@ -63,10 +63,6 @@ Repo-specific agent knowledge base. Append-only.
 
 **2026-05-28 [Codex]:** Repeated slice-level judgment can stay trapped in conversation unless it has a promotion threshold -> when the same judgment is needed twice, or the failure mode can recur across slices, promote it into the smallest durable primitive that changes future behavior; use implementation notes or plan evidence for one-off knowledge, validators or guards for deterministic rules, CLI helpers for repeatable operator commands, and skills only for reusable routed workflows with explicit inputs, artifacts, validation, ownership, and review expectations.
 
-**2026-05-30 [Codex]:** Bash command 'source' failed with exit code 1 -> summarize the failure and change approach before rerunning the same command (auto-key:2774403046)
-
 **2026-06-04 [Codex]:** Specific implementation-detail feedback was still at risk of being handled as a local fix despite pattern-generalization guidance -> treat specific feedback, review comments, line-level corrections, and function examples as systemic until proven isolated; classify local or systemic scope, search sibling patterns, identify the engineering preference, and choose a validator, lint rule, schema constraint, shared utility, repository convention, CI check, documented invariant, or tracked exception before finalizing.
 
 **2026-06-07 [Codex]:** Plain \`prek\` can try to write \`/Users/jamiecraik/.cache/prek/prek.log\` in sandboxed Codex runs and silently break hook or push triage -> route direct prek validation, setup-hook installation, generated hook docs, scaffolded environment actions, and downstream required support files through \`bash scripts/run-prek.sh\`, which sets \`PREK_HOME\` to the worktree cache before invoking \`prek\`.
-
-**2026-06-09 [Codex]:** Bash command 'zsh' failed with exit code 1 -> summarize the failure and change approach before rerunning the same command (auto-key:3752216027)

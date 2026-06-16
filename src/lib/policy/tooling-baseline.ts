@@ -151,11 +151,6 @@ export const REQUIRED_CODEX_TOOL_ACTIONS = [
 		command: "command -v diagram >/dev/null 2>&1\ndiagram --help",
 	},
 	{
-		name: "Ralph",
-		icon: "debug",
-		command: "command -v ralph >/dev/null 2>&1\nralph --help",
-	},
-	{
 		name: "Mise",
 		icon: "tool",
 		command:

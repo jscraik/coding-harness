@@ -13,7 +13,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CURRENT_SCHEMA_VERSION } from "../lib/init/types.js";
 import { normalizeRequiredChecksManifest } from "../lib/policy/required-checks.js";
@@ -885,13 +885,16 @@ describe("runInit", () => {
 			const memoryPath = join(tempDir, "memory.json");
 			expect(existsSync(memoryPath)).toBe(true);
 
-			const memory = JSON.parse(
-				require("node:fs").readFileSync(memoryPath, "utf-8"),
-			);
+			const memory = JSON.parse(readFileSync(memoryPath, "utf-8"));
 			expect(memory.meta.version).toBe("1.0");
+			expect(memory.repo).toBe(basename(tempDir));
 			expect(memory.preamble.bootstrap).toBe(true);
 			expect(memory.preamble.search).toBe(true);
+			expect(memory.preamble.claim_boundary).toBe("orientation-only");
 			expect(Array.isArray(memory.entries)).toBe(true);
+			expect(memory.entries[0]?.content).not.toMatch(
+				/task-specific observations/,
+			);
 		});
 
 		it("creates codex local environment actions with mapped icons", () => {
@@ -928,7 +931,6 @@ describe("runInit", () => {
 			expect(content).toContain('name = "Prek"\nicon = "test"');
 			expect(content).toContain('name = "Release Finalize"\nicon = "tool"');
 			expect(content).toContain('name = "Diagram"\nicon = "tool"');
-			expect(content).toContain('name = "Ralph"\nicon = "debug"');
 			expect(content).toContain('name = "Mise"\nicon = "tool"');
 			expect(content).toContain('name = "Vale"\nicon = "debug"');
 			expect(content).toContain('name = "Argos"\nicon = "test"');
@@ -983,7 +985,6 @@ describe("runInit", () => {
 			);
 			expect(content).toContain('git merge --ff-only "origin/$release_branch"');
 			expect(content).toContain("diagram --help");
-			expect(content).toContain("ralph --help");
 			expect(content).toContain("cosign version");
 			expect(content).toContain("cloudflared --version");
 			expect(content).toContain("vitest --version");
@@ -1199,13 +1200,16 @@ describe("runInit", () => {
 			const memoryPath = join(tempDir, "memory.json");
 			expect(existsSync(memoryPath)).toBe(true);
 
-			const memory = JSON.parse(
-				require("node:fs").readFileSync(memoryPath, "utf-8"),
-			);
+			const memory = JSON.parse(readFileSync(memoryPath, "utf-8"));
 			expect(memory.meta.version).toBe("1.0");
+			expect(memory.repo).toBe(basename(tempDir));
 			expect(memory.preamble.bootstrap).toBe(true);
 			expect(memory.preamble.search).toBe(true);
+			expect(memory.preamble.claim_boundary).toBe("orientation-only");
 			expect(Array.isArray(memory.entries)).toBe(true);
+			expect(memory.entries[0]?.content).not.toMatch(
+				/task-specific observations/,
+			);
 		});
 
 		it("includes package manager in release workflow (github-actions)", () => {
@@ -1890,7 +1894,7 @@ describe("runInit", () => {
 			expect(docStyle).toContain("vale --config .vale.ini");
 			expect(docStyle).toContain('":(glob)docs/**/*.md"');
 			expect(relatedTests).toContain("Usage: scripts/check-related-tests.sh");
-			expect(relatedTests).toContain("pnpm exec vitest related --run");
+			expect(relatedTests).toContain("pnpm exec vitest run");
 			expect(relatedTests).not.toContain("--passWithNoTests");
 			expect(publicApiDocs).toContain("[check-public-api-docs]");
 			expect(publicApiDocs).toContain(

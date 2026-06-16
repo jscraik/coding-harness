@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import ts from "typescript";
@@ -29,6 +29,7 @@ const trackedFiles = execFileSync("git", ["ls-files", "src/**/*.ts"], {
 })
 	.split("\n")
 	.filter(Boolean)
+	.filter((filePath) => existsSync(path.join(repoRoot, filePath)))
 	.filter((filePath) => !filePath.endsWith(".test.ts"))
 	.filter((filePath) => !filePath.endsWith(".spec.ts"))
 	.filter((filePath) => !filePath.includes("/__tests__/"));

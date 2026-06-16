@@ -259,37 +259,6 @@ describe("run", () => {
 		}
 	});
 
-	it.skip("routes remediate run command - async, covered by cli-dispatch.test.ts", () => {
-		const exitSpy = vi
-			.spyOn(process, "exit")
-			.mockImplementation((code?: string | number | null | undefined) => {
-				throw new Error(`EXIT_${String(code)}`);
-			}) as never;
-		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {
-			// silence output
-		});
-
-		expect(() =>
-			run([
-				"remediate",
-				"run",
-				"--owner",
-				"acme",
-				"--repo",
-				"demo",
-				"--pr",
-				"123",
-				"--sha",
-				"abcdeff",
-				"--provider",
-				"codeql",
-			]),
-		).toThrowError("EXIT_0");
-		expect(exitSpy).toHaveBeenCalledWith(0);
-		// console.info is called by the mocked remediate module
-		expect(infoSpy).toHaveBeenCalled();
-	});
-
 	it("routes gap-case open/resolve commands", () => {
 		const exitSpy = vi
 			.spyOn(process, "exit")

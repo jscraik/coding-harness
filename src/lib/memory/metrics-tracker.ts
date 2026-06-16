@@ -38,6 +38,13 @@ export interface MetricsHistory {
 
 const DEFAULT_METRICS_PATH = ".memory-metrics.json";
 
+function metricsEqual(
+	left: ReliabilityMetrics,
+	right: ReliabilityMetrics,
+): boolean {
+	return JSON.stringify(left) === JSON.stringify(right);
+}
+
 function resolveMetricsPath(metricsPath?: string): string {
 	const resolvedPath = resolve(metricsPath ?? DEFAULT_METRICS_PATH);
 
@@ -161,16 +168,22 @@ export function saveMetrics(
 ): void {
 	const path = resolveMetricsPath(metricsPath);
 	const now = new Date().toISOString();
+	const retainedHistory = history.slice(-99);
+	const lastEntry = retainedHistory[retainedHistory.length - 1];
+	const historyWithCurrent =
+		lastEntry && metricsEqual(lastEntry.metrics, metrics)
+			? retainedHistory
+			: [
+					...retainedHistory,
+					{
+						date: now,
+						metrics: { ...metrics },
+					},
+				];
 
 	const data: MetricsHistory = {
 		current: metrics,
-		history: [
-			...history.slice(-99),
-			{
-				date: now,
-				metrics: { ...metrics },
-			},
-		],
+		history: historyWithCurrent,
 		started_at: history[0]?.date ?? now,
 		last_updated: now,
 	};

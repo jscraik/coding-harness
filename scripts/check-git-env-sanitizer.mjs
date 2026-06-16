@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { relative } from "node:path";
 import { execFileSync } from "node:child_process";
 import { sanitizeGitEnvironment } from "./lib/safe-git-env.mjs";
@@ -18,6 +18,7 @@ const sourceFiles = [
 		)
 			.split("\n")
 			.filter(Boolean)
+			.filter((path) => existsSync(path))
 			.filter((path) => path.endsWith(".ts"))
 			.filter((path) => !path.endsWith(".test.ts"))
 			.filter((path) => path !== "src/lib/git/safe-env.ts"),

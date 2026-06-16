@@ -101,7 +101,6 @@ Required action and icon mappings in
 - `Prek` -> `test`
 - `Release Finalize` -> `tool`
 - `Diagram` -> `tool`
-- `Ralph` -> `debug`
 - `Mise` -> `tool`
 - `Vale` -> `debug`
 - `Argos` -> `test`

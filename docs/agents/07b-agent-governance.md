@@ -241,6 +241,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   canonical tooling baseline synchronized across source scripts, scaffold
   templates, environment actions, AGENTS, README, tooling policy, and
   security/governance guidance
+- generated init memory or environment-readiness changes must keep downstream
+  `memory.json` schema compatibility and the live runtime dependency contract
+  synchronized across scaffold templates, tests, AGENTS, README, and this
+  guide. Non-package repositories need a non-empty repo fallback, and Ralph is
+  not part of the required `coding-harness` runtime.
 - worktree readiness may tolerate a local `mise trust` cache-write warning only
   when the remaining Git safety checks still run; ambiguous local or
   reachable-`origin` branch state must remain a hard stop before attachment
