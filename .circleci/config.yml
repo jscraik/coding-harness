@@ -181,6 +181,7 @@ jobs:
             mkdir -p artifacts/test-results
       - run:
           name: << parameters.check_name >>
+          no_output_timeout: 30m
           command: << parameters.command >>
       - store_test_results:
           path: artifacts/test-results
