@@ -125,6 +125,20 @@ collect_candidate_tests() {
 
 	import_path="${source#src/}"
 	import_path="${import_path%.*}.js"
+	for import_term in "./${stem}.js"; do
+		set +e
+		matches="$(rg -l --fixed-strings "$import_term" "$dirname_source" "${rg_globs[@]}" 2>&1)"
+		rg_status=$?
+		set -e
+		if [[ "$rg_status" -ne 0 && "$rg_status" -ne 1 ]]; then
+			echo "[check-related-tests] rg failed while discovering tests for $source:" >&2
+			printf '%s\n' "$matches" >&2
+			exit "$rg_status"
+		fi
+		while IFS= read -r candidate; do
+			collect_test_path "$candidate"
+		done <<< "$matches"
+	done
 	while [[ "$import_path" == */* ]]; do
 		import_terms+=("$import_path")
 		import_path="${import_path#*/}"
@@ -143,6 +157,7 @@ collect_candidate_tests() {
 		while IFS= read -r candidate; do
 			collect_test_path "$candidate"
 		done <<< "$matches"
+	done
 	done
 }
 
