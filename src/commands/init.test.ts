@@ -1894,7 +1894,9 @@ describe("runInit", () => {
 			expect(docStyle).toContain("vale --config .vale.ini");
 			expect(docStyle).toContain('":(glob)docs/**/*.md"');
 			expect(relatedTests).toContain("Usage: scripts/check-related-tests.sh");
-			expect(relatedTests).toContain("pnpm exec vitest related --run");
+			expect(relatedTests).toContain(
+				'pnpm exec vitest run "${related_tests[@]}"',
+			);
 			expect(relatedTests).not.toContain("--passWithNoTests");
 			expect(publicApiDocs).toContain("[check-public-api-docs]");
 			expect(publicApiDocs).toContain(
