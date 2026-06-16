@@ -549,19 +549,19 @@ function renderEnvironmentRunnerFunction(): string {
 /**
  * Produces a Bash script that selects and invokes an appropriate harness runner to execute the repository's check-environment, validates the resulting attestation, and reports success or failure.
  *
- * The generated script prefers, in order: the repo source CLI (src/cli.ts) when Node is available, a repo wrapper (scripts/harness-cli.sh), the repo dist CLI (dist/cli.js) when Node is available, a mise-resolved harness, and finally a globally installed npm harness (@brainwav/coding-harness). It emits actionable error messages and exits on runner failures or missing tooling, and verifies the attestation at ATTESTATION_PATH before printing a success line.
+ * The generated script prefers, in order: a repo wrapper (scripts/harness-cli.sh), the repo source CLI (src/cli.ts) when Node is available, the repo dist CLI (dist/cli.js) when Node is available, a mise-resolved harness, and finally a globally installed npm harness (@brainwav/coding-harness). It emits actionable error messages and exits on runner failures or missing tooling, and verifies the attestation at ATTESTATION_PATH before printing a success line.
  *
  * @returns The complete Bash script text that performs runner selection, executes check-environment via the chosen runner, enforces failures with informative messages, and validates the attestation.
  */
 function renderEnvironmentRunnerSelection(): string {
-	return `if [[ -f "$REPO_ROOT/src/cli.ts" ]] && command -v node >/dev/null 2>&1; then
-	if ! run_check_environment_with_runner "repo source CLI (mise exec -- node --import tsx src/cli.ts)" mise --cd "$REPO_ROOT" exec -- node --import tsx "$REPO_ROOT/src/cli.ts"; then
-		echo "Error: repo source CLI failed to run check-environment successfully."
-		exit 1
-	fi
-elif [[ -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+	return `if [[ -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
 	if ! run_check_environment_with_runner "repo wrapper (bash scripts/harness-cli.sh)" bash "$REPO_ROOT/scripts/harness-cli.sh"; then
 		echo "Error: repo wrapper failed to run check-environment successfully."
+		exit 1
+	fi
+elif [[ -f "$REPO_ROOT/src/cli.ts" ]] && command -v node >/dev/null 2>&1; then
+	if ! run_check_environment_with_runner "repo source CLI (mise exec -- node --import tsx src/cli.ts)" mise --cd "$REPO_ROOT" exec -- node --import tsx "$REPO_ROOT/src/cli.ts"; then
+		echo "Error: repo source CLI failed to run check-environment successfully."
 		exit 1
 	fi
 elif [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then

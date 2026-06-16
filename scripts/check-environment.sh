@@ -203,7 +203,7 @@ fi
 		fi
 	fi
 
-	required_codex_actions=("Tools|tool" "Run|run" "Debug|debug" "Test|test" "Prek|test" "Release Finalize|tool" "Diagram|tool" "Ralph|debug" "Mise|tool" "Vale|debug" "Argos|test" "Cosign|debug" "Cloudflared|run" "Vitest|test" "Ruff|debug" "ESLint|debug" "Agent Browser|tool" "Agentation|tool" "Context7|tool" "Mermaid CLI|tool" "MarkdownLint|debug" "Wrangler|run" "1Password|tool" "Beautiful Mermaid|tool" "Auth0|tool" "Semgrep|debug" "Semver|tool" "Trivy|debug" "Gitleaks|debug" "Research|tool" "WSearch|tool")
+	required_codex_actions=("Tools|tool" "Run|run" "Debug|debug" "Test|test" "Prek|test" "Release Finalize|tool" "Diagram|tool" "Mise|tool" "Vale|debug" "Argos|test" "Cosign|debug" "Cloudflared|run" "Vitest|test" "Ruff|debug" "ESLint|debug" "Agent Browser|tool" "Agentation|tool" "Context7|tool" "Mermaid CLI|tool" "MarkdownLint|debug" "Wrangler|run" "1Password|tool" "Beautiful Mermaid|tool" "Auth0|tool" "Semgrep|debug" "Semver|tool" "Trivy|debug" "Gitleaks|debug" "Research|tool" "WSearch|tool")
 	for action in "${required_codex_actions[@]}"; do
 		name="${action%%|*}"
 		icon="${action##*|}"
@@ -418,7 +418,12 @@ run_check_environment_with_runner() {
 	return 0
 }
 
-if [[ -f "$REPO_ROOT/src/cli.ts" ]] && command -v node >/dev/null 2>&1; then
+if [[ -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+	if ! run_check_environment_with_runner "repo wrapper (bash scripts/harness-cli.sh)" bash "$REPO_ROOT/scripts/harness-cli.sh"; then
+		echo "Error: repo wrapper failed to run check-environment successfully."
+		exit 1
+	fi
+elif [[ -f "$REPO_ROOT/src/cli.ts" ]] && command -v node >/dev/null 2>&1; then
 	if ! run_check_environment_with_runner "repo source CLI (mise exec -- node --import tsx src/cli.ts)" mise --cd "$REPO_ROOT" exec -- node --import tsx "$REPO_ROOT/src/cli.ts"; then
 		echo "Error: repo source CLI failed to run check-environment successfully."
 		exit 1
@@ -426,11 +431,6 @@ if [[ -f "$REPO_ROOT/src/cli.ts" ]] && command -v node >/dev/null 2>&1; then
 elif [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
 	if ! run_check_environment_with_runner "repo dist CLI (mise exec -- node dist/cli.js)" mise --cd "$REPO_ROOT" exec -- node "$REPO_ROOT/dist/cli.js"; then
 		echo "Error: repo dist CLI failed to run check-environment successfully."
-		exit 1
-	fi
-elif [[ -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
-	if ! run_check_environment_with_runner "repo wrapper (bash scripts/harness-cli.sh)" bash "$REPO_ROOT/scripts/harness-cli.sh"; then
-		echo "Error: repo wrapper failed to run check-environment successfully."
 		exit 1
 	fi
 else

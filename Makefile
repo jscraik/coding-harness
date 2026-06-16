@@ -65,10 +65,10 @@ secrets-staged: ## Scan staged content for secrets before committing
 docs-style-changed: ## Run Vale on staged authoritative docs only
 	pnpm run docs:style:changed
 
-related-tests: ## Run Vitest related mode for changed src implementation files
+related-tests: ## Run related tests for changed src implementation files
 	pnpm run test:related
 
-related-tests-staged: ## Run Vitest related mode for staged src implementation files
+related-tests-staged: ## Run related tests for staged src implementation files
 	bash scripts/check-related-tests.sh --staged
 
 semgrep-changed: ## Run narrow Semgrep rules against changed src implementation files

@@ -112,22 +112,26 @@ export const TEMPLATES: Template[] = [
 	},
 	{
 		path: "memory.json",
-		render: () =>
+		render: (_pm, context) =>
 			JSON.stringify(
 				{
-					repo: "replace-with-repo-name",
-					session_id: "bootstrap/init",
+					repo: context.projectName,
+					session_id: "repo-memory/current",
 					preamble: {
-						bootstrap: true,
+						bootstrap: false,
 						search: true,
+						claim_boundary: "orientation-only",
 					},
 					entries: [
 						{
 							level: "observation",
-							content:
-								"Harness memory baseline initialized. Replace with task-specific observations.",
-							tags: ["repo:unknown", "area:bootstrap", "type:setup"],
-							session_id: "bootstrap/init",
+							content: `${context.projectName} uses Coding Harness repo memory for compact orientation only. Durable operational learnings belong in .harness/memory/LEARNINGS.md and Project Brain surfaces under .harness/.`,
+							tags: [
+								`repo:${context.projectName}`,
+								"area:memory",
+								"type:orientation",
+							],
+							session_id: "repo-memory/current",
 							source: "harness init",
 							observed_at: "2026-01-01T00:00:00.000Z",
 						},
@@ -135,6 +139,7 @@ export const TEMPLATES: Template[] = [
 					closeout: {
 						forjamie_updated: false,
 						date: "2026-01-01T00:00:00.000Z",
+						claim_boundary: "orientation-only",
 					},
 					meta: {
 						created_at: "2026-01-01T00:00:00.000Z",

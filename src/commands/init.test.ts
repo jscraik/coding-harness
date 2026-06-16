@@ -885,13 +885,16 @@ describe("runInit", () => {
 			const memoryPath = join(tempDir, "memory.json");
 			expect(existsSync(memoryPath)).toBe(true);
 
-			const memory = JSON.parse(
-				require("node:fs").readFileSync(memoryPath, "utf-8"),
-			);
+			const memory = JSON.parse(readFileSync(memoryPath, "utf-8"));
 			expect(memory.meta.version).toBe("1.0");
-			expect(memory.preamble.bootstrap).toBe(true);
+			expect(memory.repo).not.toBe("replace-with-repo-name");
+			expect(memory.preamble.bootstrap).toBe(false);
 			expect(memory.preamble.search).toBe(true);
+			expect(memory.preamble.claim_boundary).toBe("orientation-only");
 			expect(Array.isArray(memory.entries)).toBe(true);
+			expect(memory.entries[0]?.content).not.toMatch(
+				/task-specific observations/,
+			);
 		});
 
 		it("creates codex local environment actions with mapped icons", () => {
@@ -928,7 +931,6 @@ describe("runInit", () => {
 			expect(content).toContain('name = "Prek"\nicon = "test"');
 			expect(content).toContain('name = "Release Finalize"\nicon = "tool"');
 			expect(content).toContain('name = "Diagram"\nicon = "tool"');
-			expect(content).toContain('name = "Ralph"\nicon = "debug"');
 			expect(content).toContain('name = "Mise"\nicon = "tool"');
 			expect(content).toContain('name = "Vale"\nicon = "debug"');
 			expect(content).toContain('name = "Argos"\nicon = "test"');
@@ -983,7 +985,6 @@ describe("runInit", () => {
 			);
 			expect(content).toContain('git merge --ff-only "origin/$release_branch"');
 			expect(content).toContain("diagram --help");
-			expect(content).toContain("ralph --help");
 			expect(content).toContain("cosign version");
 			expect(content).toContain("cloudflared --version");
 			expect(content).toContain("vitest --version");
@@ -1199,13 +1200,16 @@ describe("runInit", () => {
 			const memoryPath = join(tempDir, "memory.json");
 			expect(existsSync(memoryPath)).toBe(true);
 
-			const memory = JSON.parse(
-				require("node:fs").readFileSync(memoryPath, "utf-8"),
-			);
+			const memory = JSON.parse(readFileSync(memoryPath, "utf-8"));
 			expect(memory.meta.version).toBe("1.0");
-			expect(memory.preamble.bootstrap).toBe(true);
+			expect(memory.repo).not.toBe("replace-with-repo-name");
+			expect(memory.preamble.bootstrap).toBe(false);
 			expect(memory.preamble.search).toBe(true);
+			expect(memory.preamble.claim_boundary).toBe("orientation-only");
 			expect(Array.isArray(memory.entries)).toBe(true);
+			expect(memory.entries[0]?.content).not.toMatch(
+				/task-specific observations/,
+			);
 		});
 
 		it("includes package manager in release workflow (github-actions)", () => {

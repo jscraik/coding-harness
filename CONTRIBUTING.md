@@ -108,7 +108,6 @@ Harness-managed repositories should keep this baseline available locally before 
 
 - `prek`
 - `diagram`
-- `ralph`
 - `mise`
 - `vale`
 - `argos`

@@ -202,7 +202,7 @@ secrets-staged: ## Scan staged content for secrets before committing
 docs-style-changed: ## Run Vale on staged authoritative docs only
 	${commands.docsStyleChanged}
 
-related-tests: ## Run Vitest related mode for staged src implementation files
+related-tests: ## Run related tests for changed src implementation files
 	${commands.relatedTests}
 
 related-tests-staged: ## Run related tests for staged src implementation files

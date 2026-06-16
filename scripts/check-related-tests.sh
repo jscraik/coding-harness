@@ -22,7 +22,7 @@ while (( $# > 0 )); do
 			cat <<'USAGE'
 Usage: scripts/check-related-tests.sh [--staged]
 
-Runs Vitest related mode for changed production src/** files.
+Runs tests related to changed production src/** files.
 By default this includes staged changes, unstaged changes, and the branch diff
 against origin/main or main. Use --staged from commit hooks to restrict the
 gate to staged implementation files.
@@ -37,7 +37,35 @@ USAGE
 done
 
 related_sources=()
-declare -A seen=()
+related_tests=()
+
+has_related_source() {
+	local candidate="$1"
+	local existing
+	if [[ ${#related_sources[@]} -eq 0 ]]; then
+		return 1
+	fi
+	for existing in "${related_sources[@]}"; do
+		if [[ "$existing" == "$candidate" ]]; then
+			return 0
+		fi
+	done
+	return 1
+}
+
+has_related_test() {
+	local candidate="$1"
+	local existing
+	if [[ ${#related_tests[@]} -eq 0 ]]; then
+		return 1
+	fi
+	for existing in "${related_tests[@]}"; do
+		if [[ "$existing" == "$candidate" ]]; then
+			return 0
+		fi
+	done
+	return 1
+}
 
 collect_path() {
 	local path="$1"
@@ -46,10 +74,43 @@ collect_path() {
 		[[ ! "$path" =~ \.d\.ts$ ]] && \
 		[[ ! "$path" =~ \.(test|spec)\.(ts|tsx|js|jsx|mts|cts)$ ]] && \
 		[[ -f "$path" ]] && \
-		[[ -z "${seen[$path]:-}" ]]; then
-		seen["$path"]=1
+		! has_related_source "$path"; then
 		related_sources+=("$path")
 	fi
+}
+
+collect_test_path() {
+	local path="$1"
+	[[ -n "$path" ]] || return 0
+	if [[ "$path" =~ ^src/.*\.test\.(ts|tsx|js|jsx|mts|cts)$ ]] && \
+		[[ -f "$path" ]] && \
+		! has_related_test "$path"; then
+		related_tests+=("$path")
+	fi
+}
+
+collect_candidate_tests() {
+	local source="$1"
+	local dirname_source basename_source stem candidate import_name
+
+	dirname_source="$(dirname -- "$source")"
+	basename_source="$(basename -- "$source")"
+	stem="${basename_source%.*}"
+
+	collect_test_path "$dirname_source/$stem.test.ts"
+	collect_test_path "$dirname_source/$stem.test.tsx"
+
+	case "$stem" in
+		*-core)
+			collect_test_path "$dirname_source/${stem%-core}.test.ts"
+			collect_test_path "$dirname_source/${stem%-core}.test.tsx"
+			;;
+	esac
+
+	import_name="${basename_source%.*}.js"
+	while IFS= read -r candidate; do
+		collect_test_path "$candidate"
+	done < <(rg -l --fixed-strings "$import_name" src --glob "*.test.ts" --glob "*.test.tsx" 2>/dev/null || true)
 }
 
 while IFS= read -r path; do
@@ -74,4 +135,19 @@ if [[ ${#related_sources[@]} -eq 0 ]]; then
 	exit 0
 fi
 
-pnpm exec vitest related --run "${related_sources[@]}"
+for source in "${related_sources[@]}"; do
+	collect_candidate_tests "$source"
+done
+
+echo "[check-related-tests] changed implementation files:"
+printf '  %s\n' "${related_sources[@]}"
+
+if [[ ${#related_tests[@]} -eq 0 ]]; then
+	echo "[check-related-tests] no related test files found for changed implementation files" >&2
+	exit 1
+fi
+
+echo "[check-related-tests] running related test files:"
+printf '  %s\n' "${related_tests[@]}"
+
+pnpm exec vitest run "${related_tests[@]}"

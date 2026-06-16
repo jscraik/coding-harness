@@ -73,20 +73,21 @@ describe("scaffold environment templates", () => {
 		);
 	});
 
-	it("preserves runner fallback order from source checkout to global harness", () => {
+	it("preserves runner fallback order from repo wrapper to global harness", () => {
 		const script = renderCheckEnvironmentScript();
 
+		const wrapperIndex = script.indexOf("repo wrapper");
 		const sourceIndex = script.indexOf(
 			"repo source CLI (mise exec -- node --import tsx src/cli.ts)",
 		);
 		const distIndex = script.indexOf("repo dist CLI");
-		const wrapperIndex = script.indexOf("repo wrapper");
 		const miseIndex = script.indexOf("mise harness");
 		const globalIndex = script.indexOf("global npm harness");
 
+		expect(wrapperIndex).toBeGreaterThan(-1);
 		expect(sourceIndex).toBeGreaterThan(-1);
-		expect(wrapperIndex).toBeGreaterThan(sourceIndex);
-		expect(distIndex).toBeGreaterThan(wrapperIndex);
+		expect(sourceIndex).toBeGreaterThan(wrapperIndex);
+		expect(distIndex).toBeGreaterThan(sourceIndex);
 		expect(miseIndex).toBeGreaterThan(distIndex);
 		expect(globalIndex).toBeGreaterThan(miseIndex);
 	});
