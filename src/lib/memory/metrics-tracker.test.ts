@@ -192,6 +192,34 @@ describe("saveMetrics", () => {
 		expect(secondSave.history).toHaveLength(1);
 		expect(secondSave.history[0]?.metrics).toEqual(metrics);
 	});
+
+	it("appends a snapshot when metrics change", () => {
+		const root = mkdtempSync(join(process.cwd(), ".harness-metrics-"));
+		tempDirs.push(root);
+		const metricsPath = join(root, "metrics.json");
+
+		const firstMetrics = updateMetrics(createEmptyMetrics(), {
+			success: true,
+			entryCount: 1,
+		});
+		saveMetrics(firstMetrics, [], metricsPath);
+
+		const firstSave = JSON.parse(readFileSync(metricsPath, "utf-8")) as {
+			history: MetricsHistory["history"];
+		};
+
+		const secondMetrics = updateMetrics(firstMetrics, {
+			success: true,
+			entryCount: 1,
+		});
+		saveMetrics(secondMetrics, firstSave.history, metricsPath);
+
+		const secondSave = JSON.parse(readFileSync(metricsPath, "utf-8")) as {
+			history: MetricsHistory["history"];
+		};
+		expect(secondSave.history).toHaveLength(2);
+		expect(secondSave.history[1]?.metrics).toEqual(secondMetrics);
+	});
 });
 
 describe("checkQuestionSLA", () => {
