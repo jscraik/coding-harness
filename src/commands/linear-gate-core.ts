@@ -13,6 +13,7 @@ import {
 	classifyLinearGateFailure,
 	normaliseLinearGateResult,
 } from "../lib/output/normalise.js";
+import { addStandaloneBranchPrefixCheck } from "./linear-gate-branch-policy.js";
 import { isStandaloneUntrackedPr } from "./linear-gate-pr-template.js";
 
 /** Public API export. */
@@ -369,12 +370,12 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 	}
 
 	if (standaloneUntrackedPr) {
-		addCheck(
+		addStandaloneBranchPrefixCheck({
 			checks,
-			"branch-linkage",
-			true,
-			"Branch linkage check skipped because PR metadata declares standalone/untracked work with a Linear n/a reason.",
-		);
+			branch,
+			allowMissingBranch: options.allowMissingBranch,
+			policy,
+		});
 		addCheck(
 			checks,
 			"pr-linkage",

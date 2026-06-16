@@ -158,7 +158,6 @@ collect_candidate_tests() {
 			collect_test_path "$candidate"
 		done <<< "$matches"
 	done
-	done
 }
 
 while IFS= read -r path; do

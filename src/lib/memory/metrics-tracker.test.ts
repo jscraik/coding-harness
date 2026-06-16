@@ -1,4 +1,10 @@
-import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
@@ -163,6 +169,28 @@ describe("saveMetrics", () => {
 		expect(() => saveMetrics(createEmptyMetrics(), [], symlinkPath)).toThrow(
 			/symlinked metrics file path/,
 		);
+	});
+
+	it("does not append consecutive duplicate metric snapshots", () => {
+		const root = mkdtempSync(join(process.cwd(), ".harness-metrics-"));
+		tempDirs.push(root);
+		const metricsPath = join(root, "metrics.json");
+		const metrics = updateMetrics(createEmptyMetrics(), {
+			success: true,
+			entryCount: 2,
+		});
+
+		saveMetrics(metrics, [], metricsPath);
+		const firstSave = JSON.parse(readFileSync(metricsPath, "utf-8")) as {
+			history: MetricsHistory["history"];
+		};
+		saveMetrics(metrics, firstSave.history, metricsPath);
+
+		const secondSave = JSON.parse(readFileSync(metricsPath, "utf-8")) as {
+			history: MetricsHistory["history"];
+		};
+		expect(secondSave.history).toHaveLength(1);
+		expect(secondSave.history[0]?.metrics).toEqual(metrics);
 	});
 });
 

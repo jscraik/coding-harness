@@ -5,17 +5,22 @@ function extractPrTemplateField(
 	if (!body) {
 		return "";
 	}
-	const prefix = `- ${label}:`;
+	const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	const fieldPattern = new RegExp(
+		`^\\s*[-*]\\s*${escapedLabel}\\s*:\\s*(.*)$`,
+		"i",
+	);
 	for (const line of body.split(/\r?\n/)) {
-		if (line.toLowerCase().startsWith(prefix.toLowerCase())) {
-			return line.slice(prefix.length).trim();
+		const match = line.match(fieldPattern);
+		if (match?.[1] !== undefined) {
+			return match[1].trim();
 		}
 	}
 	return "";
 }
 
 function hasNaWithReason(value: string): boolean {
-	return /\b(?:n\.a\.|n\/a|not applicable)\b.{6,}/i.test(value);
+	return /(?:\bn\.a\.|\bn\/a\b|\bnot applicable\b).{6,}/i.test(value);
 }
 
 /** Return true when PR-template metadata explicitly marks untracked work. */

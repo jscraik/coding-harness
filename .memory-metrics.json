@@ -350,29 +350,7 @@
 			}
 		},
 		{
-			"date": "2026-06-16T15:21:05.910Z",
-			"metrics": {
-				"pass_k": 0,
-				"total_ops": 32,
-				"successful_ops": 20,
-				"tool_errors": {},
-				"duplicate_memory_count": 0,
-				"unresolved_questions": []
-			}
-		},
-		{
 			"date": "2026-06-16T15:21:53.738Z",
-			"metrics": {
-				"pass_k": 1,
-				"total_ops": 34,
-				"successful_ops": 22,
-				"tool_errors": {},
-				"duplicate_memory_count": 0,
-				"unresolved_questions": []
-			}
-		},
-		{
-			"date": "2026-06-16T15:21:53.739Z",
 			"metrics": {
 				"pass_k": 1,
 				"total_ops": 34,
@@ -384,5 +362,5 @@
 		}
 	],
 	"started_at": "2026-02-26T20:23:05.094Z",
-	"last_updated": "2026-06-16T15:21:53.739Z"
+	"last_updated": "2026-06-16T15:21:53.738Z"
 }

@@ -5,8 +5,26 @@ describe("isStandaloneUntrackedPr", () => {
 	it("accepts PR-template metadata for standalone untracked work", () => {
 		expect(
 			isStandaloneUntrackedPr(`
-- Linear reference: n/a because this PR is standalone review remediation.
-- Linked issue relationship: standalone/untracked work; no Linear issue was provided.
+	- Linear reference: n/a because this PR is standalone review remediation.
+	- Linked issue relationship: standalone/untracked work; no Linear issue was provided.
+			`),
+		).toBe(true);
+	});
+
+	it("accepts indented asterisk bullets from valid Markdown", () => {
+		expect(
+			isStandaloneUntrackedPr(`
+	  * Linear reference: n/a because this PR is standalone review remediation.
+	  * Linked issue relationship: standalone/untracked work; no Linear issue was provided.
+			`),
+		).toBe(true);
+	});
+
+	it("accepts repo-template n.a. spelling with a concrete reason", () => {
+		expect(
+			isStandaloneUntrackedPr(`
+	- Linear reference: n.a. because this PR is standalone review remediation.
+	- Linked issue relationship: standalone/untracked work; no Linear issue was provided.
 			`),
 		).toBe(true);
 	});

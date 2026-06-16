@@ -105,6 +105,8 @@ Use the narrowest relevant checks first, then widen when scaffold behavior or
 operator guidance changes:
 
 ```bash
+pnpm vitest run src/commands/init.test.ts src/lib/memory/validator.test.ts
+bash scripts/check-environment.sh
 pnpm vitest run src/lib/init/scaffold-shell-quality.test.ts
 pnpm vitest run src/lib/init/scaffold-doc-templates.test.ts
 pnpm vitest run src/commands/docs-gate.test.ts src/lib/pr-template-validator.test.ts
