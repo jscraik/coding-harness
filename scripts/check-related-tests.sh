@@ -138,7 +138,6 @@ collect_candidate_tests() {
 	while IFS= read -r candidate; do
 		collect_test_path "$candidate"
 	done <<< "$matches"
-	done
 	while [[ "$import_path" == */* ]]; do
 		import_terms+=("$import_path")
 		import_path="${import_path#*/}"
