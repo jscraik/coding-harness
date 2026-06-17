@@ -96,25 +96,30 @@ function vitestExecutablePath() {
 	return candidates.find((candidate) => existsSync(candidate)) ?? null;
 }
 
-function verifyBehaviorAssertionExecuted(entry, prefix) {
+function validateProvingCommand(entry, prefix) {
 	const expectedCommand = `pnpm vitest run ${entry.path}`;
 	if (entry.provingCommand !== expectedCommand) {
 		fail(`${prefix} provingCommand must be exactly: ${expectedCommand}`);
-		return;
+		return false;
 	}
+	return true;
+}
+
+function verifyBehaviorAssertionsExecuted(entries) {
+	if (entries.length === 0) return;
 	const vitestPath = vitestExecutablePath();
 	if (!vitestPath) {
 		fail(
-			prefix +
-				" cannot find repo-local Vitest executable: node_modules/.bin/vitest or node_modules/.bin/vitest.cmd",
+			"cannot find repo-local Vitest executable: node_modules/.bin/vitest or node_modules/.bin/vitest.cmd",
 		);
 		return;
 	}
 	const traceRoot = mkdtempSync(join(tmpdir(), "harness-behavior-trace-"));
 	const traceFile = join(traceRoot, "trace.jsonl");
 	const traceToken = randomUUID();
+	const suitePaths = entries.map((entry) => entry.path);
 	try {
-		const result = spawnSync(vitestPath, ["run", entry.path], {
+		const result = spawnSync(vitestPath, ["run", ...suitePaths], {
 			cwd: repoRoot,
 			encoding: "utf8",
 			shell: process.platform === "win32",
@@ -126,7 +131,7 @@ function verifyBehaviorAssertionExecuted(entry, prefix) {
 		});
 		if (result.status !== 0) {
 			fail(
-				`${entry.path} provingCommand failed with exit ${result.status}: ${entry.provingCommand}`,
+				`behavior proving command failed with exit ${result.status}: pnpm vitest run ${suitePaths.join(" ")}`,
 			);
 			if (result.stdout.trim()) console.error(result.stdout.trim());
 			if (result.stderr.trim()) console.error(result.stderr.trim());
@@ -135,12 +140,14 @@ function verifyBehaviorAssertionExecuted(entry, prefix) {
 		const trace = existsSync(traceFile)
 			? readFileSync(traceFile, "utf8").split("\n").filter(Boolean)
 			: [];
-		if (
-			!trace.some((line) => traceBelongsToSuite(line, entry.path, traceToken))
-		) {
-			fail(
-				`${entry.path} provingCommand must execute an expectBehavior assertion from that suite`,
-			);
+		for (const entry of entries) {
+			if (
+				!trace.some((line) => traceBelongsToSuite(line, entry.path, traceToken))
+			) {
+				fail(
+					`${entry.path} provingCommand must execute an expectBehavior assertion from that suite`,
+				);
+			}
 		}
 	} finally {
 		rmSync(traceRoot, { force: true, recursive: true });
@@ -226,6 +233,7 @@ if (!existsSync(manifestPath)) {
 	if (!Array.isArray(manifest) || manifest.length === 0) {
 		fail("manifest must be a non-empty array");
 	} else {
+		const executableEntries = [];
 		for (const [index, entry] of manifest.entries()) {
 			const prefix = `entry ${index + 1}`;
 			for (const field of ["path", "owner", "rationale", "provingCommand"]) {
@@ -259,8 +267,11 @@ if (!existsSync(manifestPath)) {
 				);
 				continue;
 			}
-			verifyBehaviorAssertionExecuted(entry, prefix);
+			if (validateProvingCommand(entry, prefix)) {
+				executableEntries.push(entry);
+			}
 		}
+		if (!process.exitCode) verifyBehaviorAssertionsExecuted(executableEntries);
 	}
 }
 
