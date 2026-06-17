@@ -84,7 +84,7 @@ describe("validate-codestyle.sh source-repo gates", () => {
 
 		expect(result.status).toBe(1);
 		expect(result.stderr).toContain(
-			"missing source repo package script: quality:behavior-tests",
+			"missing source repo package script: quality:scripts",
 		);
 	});
 
@@ -94,6 +94,9 @@ describe("validate-codestyle.sh source-repo gates", () => {
 		const result = runValidateCodestyle(root);
 
 		expect(result.status).toBe(0);
+		expect(result.stdout).toContain(
+			"skip quality:scripts: source-repo script not defined",
+		);
 		expect(result.stdout).toContain(
 			"skip quality:behavior-tests: source-repo script not defined",
 		);
@@ -134,7 +137,7 @@ describe("validate-codestyle.sh source-repo gates", () => {
 
 		expect(result.status).toBe(1);
 		expect(result.stderr).toContain(
-			"missing source repo package script: quality:behavior-tests",
+			"missing source repo package script: quality:scripts",
 		);
 	});
 });
