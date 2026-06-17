@@ -151,6 +151,41 @@ describe("check-architecture-rules.cjs warning ownership", () => {
 		);
 	});
 
+	it("detects cycles through directory index imports", () => {
+		const root = createTempRoot("architecture-directory-cycle-");
+		writeArchitectureFixture(
+			root,
+			[
+				"auth-commands-use-crypto|src/commands/ci-migrate.ts|owner=runtime-evidence-cockpit|reason=delegated auth facade tracked for follow-up|date=2026-05-27|ticket=JSC-363|expires=2099-12-31",
+				"",
+			].join("\n"),
+		);
+		mkdirSync(join(root, "src", "feature"), { recursive: true });
+		writeFileSync(
+			join(root, "src", "entry.ts"),
+			"import { feature } from './feature';\nexport const entry = feature;\n",
+		);
+		writeFileSync(
+			join(root, "src", "feature", "index.ts"),
+			"import { entry } from '../entry';\nexport const feature = entry;\n",
+		);
+
+		const result = runArchitectureCheck(root);
+		const report = parseJsonReport(result);
+
+		expect(result.status).toBe(1);
+		expect(report.violations).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					file: "src/entry.ts",
+					rule: "no-circular-deps",
+					severity: "error",
+					message: expect.stringContaining("src/feature/index.ts"),
+				}),
+			]),
+		);
+	});
+
 	it("rejects expired architecture baselines", () => {
 		const root = createTempRoot("architecture-warning-expired-");
 		writeArchitectureFixture(
