@@ -63,8 +63,8 @@ else
 	jq -n --arg status "$checks_status" --rawfile stderr "$checks_stderr" '{status: ($status | tonumber), reason: ($stderr | gsub("\\s+$"; ""))}' >"$checks_error_json"
 fi
 
-gh api "repos/$repo/pulls/$pr_number/comments" --paginate >"$review_comments_json"
-gh api "repos/$repo/pulls/$pr_number/reviews" --paginate >"$reviews_json"
+gh api --paginate --slurp "repos/$repo/pulls/$pr_number/comments" >"$review_comments_json"
+gh api --paginate --slurp "repos/$repo/pulls/$pr_number/reviews" >"$reviews_json"
 
 jq -n \
 	--slurpfile pr "$pr_json" \
@@ -84,7 +84,7 @@ jq -n \
 			pending: [ $checks[0][] | select(.state == "PENDING" or .bucket == "pending") ]
 		},
 		openReviewThreads: [
-			($reviewComments | add // [])[]
+			($reviewComments[0] | add // [])[]
 			| select(.position != null)
 			| {
 				id,
@@ -98,7 +98,7 @@ jq -n \
 			}
 		],
 		reviews: [
-			($reviews | add // [])[]
+			($reviews[0] | add // [])[]
 			| {
 				id,
 				state,
