@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-18
+last_validated: 2026-06-17
 ---
 
 # North Star
@@ -62,6 +62,8 @@ Coding Harness should therefore optimize for:
 - reducing manual glue work between review, remediation, verification, and merge
 - keeping PRs open for less time so merge conflicts and stale context are less
   likely
+- making validation-lane ownership explicit so PR speed improvements reduce
+  duplicate work without weakening review, evidence, or rollback safety
 
 ## Autonomy Boundary
 

@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-13
+last_validated: 2026-06-17
 ---
 
 # Security and governance
@@ -59,6 +59,11 @@ This repository follows conservative defaults:
 - `.harness/active-artifacts.md` is an `execution-input` index for active slices. Treat it as routing authority only after validating referenced artifacts and current branch/PR state; it is not validation evidence, tracker closure evidence, or release authority by itself.
 - Tracked secondary context under `.harness/review`, `.harness/strategy`, `.harness/triage`, `.harness/features`, `.harness/ideate`, and `.harness/brainstorm` is evidence only. It becomes implementation authority only through an admitted `.harness/linear`, `.harness/refactors`, `.harness/specs`, `.harness/plan`, or `.harness/active-artifacts.md` slice reference.
 - CI pnpm bootstrap must avoid privileged shim rewrites. Prefer a user-writable prefix such as `$HOME/.local` plus `$BASH_ENV`/`$GITHUB_PATH` path propagation over `corepack enable`, which can fail on hosted runners when `/usr/local/bin/pnpm` is not writable.
+- CI validation splits are governance-sensitive: keep the full `pnpm test:ci`
+  lane owned by the CircleCI `test` job, keep `pnpm test:related` in a
+  required PR lane for changed-source coverage, and reserve
+  `pnpm check:static` for non-Vitest static validation so speed work does not
+  silently remove evidence.
 - OpenSSF baseline tracking for this repository is grounded by `docs/security/2026-04-09-openssf-osps-baseline-status.md`; keep its control matrix synchronized with `security/openssf-scorecard-policy.json` and `scripts/check-scorecard-regressions.mjs`.
 - Greptile is a legacy cleanup concern only. Keep active review governance, scaffold defaults, and runtime verification aligned to CodeRabbit, and treat any live Greptile scaffold path as contract drift unless it exists solely to remove or quarantine old artifacts.
 - Security/policy hook configuration files must fail closed because of findings, not because the config is syntactically broken; keep Semgrep rule YAML quoted where patterns include mapping-like text such as `shell: true`.

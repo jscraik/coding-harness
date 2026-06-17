@@ -7,10 +7,14 @@ mkdir -p "$TEST_RESULTS_DIR"
 PROFILE_PATH="${TEST_CI_PROFILE_PATH:-$TEST_RESULTS_DIR/test-ci-profile.jsonl}"
 : >"$PROFILE_PATH"
 active_command_pid=""
+active_heartbeat_pid=""
 
 cleanup_active_command() {
 	if [[ -n "$active_command_pid" ]]; then
 		kill "$active_command_pid" 2>/dev/null || true
+	fi
+	if [[ -n "$active_heartbeat_pid" ]]; then
+		kill "$active_heartbeat_pid" 2>/dev/null || true
 	fi
 }
 trap cleanup_active_command EXIT INT TERM
@@ -37,41 +41,29 @@ run_with_heartbeat() {
 	local label="$1"
 	shift
 	local heartbeat_interval="${TEST_CI_HEARTBEAT_INTERVAL_SECONDS:-60}"
-	local status_file
-	status_file="${TMPDIR:-/tmp}/test-ci-status-$$-$RANDOM"
 	local started_at
 	started_at="$(date +%s)"
-	(
-		set +e
-		"$@" &
-		local child_pid="$!"
-		trap 'kill "$child_pid" 2>/dev/null || true; wait "$child_pid" 2>/dev/null || true; exit 143' INT TERM
-		wait "$child_pid"
-		printf '%s\n' "$?" >"$status_file"
-	) &
+	"$@" &
 	local command_pid="$!"
 	active_command_pid="$command_pid"
-	local elapsed=0
-	while [[ ! -s "$status_file" ]]; do
-		sleep 1
-		[[ -s "$status_file" ]] && break
-		kill -0 "$command_pid" 2>/dev/null || break
-		elapsed=$((elapsed + 1))
-		if [[ "$elapsed" -ge "$heartbeat_interval" ]]; then
-			echo "[test-ci] still running: $label"
-			elapsed=0
-		fi
-	done
+	(
+		while kill -0 "$command_pid" 2>/dev/null; do
+			sleep "$heartbeat_interval" || exit 0
+			if kill -0 "$command_pid" 2>/dev/null; then
+				echo "[test-ci] still running: $label"
+			fi
+		done
+	) &
+	local heartbeat_pid="$!"
+	active_heartbeat_pid="$heartbeat_pid"
 	set +e
 	wait "$command_pid"
-	local wait_status="$?"
+	local command_status="$?"
 	set -e
+	kill "$heartbeat_pid" 2>/dev/null || true
+	wait "$heartbeat_pid" 2>/dev/null || true
 	active_command_pid=""
-	local command_status="$wait_status"
-	if [[ -s "$status_file" ]]; then
-		command_status="$(cat "$status_file")"
-	fi
-	rm -f "$status_file"
+	active_heartbeat_pid=""
 	local ended_at
 	ended_at="$(date +%s)"
 	local duration_seconds
