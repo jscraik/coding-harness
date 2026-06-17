@@ -17,7 +17,14 @@ cleanup_active_command() {
 		kill "$active_heartbeat_pid" 2>/dev/null || true
 	fi
 }
-trap cleanup_active_command EXIT INT TERM
+cleanup_on_signal() {
+	local status="$1"
+	cleanup_active_command
+	exit "$status"
+}
+trap cleanup_active_command EXIT
+trap 'cleanup_on_signal 130' INT
+trap 'cleanup_on_signal 143' TERM
 
 json_escape() {
 	local value="$1"
