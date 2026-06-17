@@ -286,7 +286,16 @@ cleanup_verify_work_temp_files_on_exit() {
 	return "$exit_code"
 }
 
-trap cleanup_verify_work_temp_files_on_exit EXIT INT TERM
+cleanup_verify_work_temp_files_on_signal() {
+	local exit_code="$1"
+	trap - EXIT INT TERM
+	cleanup_verify_work_temp_files
+	exit "$exit_code"
+}
+
+trap cleanup_verify_work_temp_files_on_exit EXIT
+trap 'cleanup_verify_work_temp_files_on_signal 130' INT
+trap 'cleanup_verify_work_temp_files_on_signal 143' TERM
 
 iso_now() {
 	date -u +"%Y-%m-%dT%H:%M:%SZ"
