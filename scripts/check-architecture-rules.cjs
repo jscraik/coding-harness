@@ -224,18 +224,20 @@ const importCache = new Map();
 function resolveImport(fromFile, importPath) {
 	if (!importPath.startsWith(".")) return null; // external
 	const base = path.resolve(path.dirname(fromFile), importPath);
-	// Try with .ts extension, then /index.ts
-	for (const candidate of [base, `${base}.ts`, path.join(base, "index.ts")]) {
-		if (fs.existsSync(candidate)) return candidate;
+	const existingFile = (candidate) =>
+		fs.existsSync(candidate) && fs.statSync(candidate).isFile();
+	// Prefer concrete files; a directory import resolves through its index.ts.
+	for (const candidate of [`${base}.ts`, path.join(base, "index.ts"), base]) {
+		if (existingFile(candidate)) return candidate;
 	}
 	// Strip .js extension (ESM compat imports)
 	const jsStripped = base.replace(/\.js$/, "");
 	for (const candidate of [
-		jsStripped,
 		`${jsStripped}.ts`,
 		path.join(jsStripped, "index.ts"),
+		jsStripped,
 	]) {
-		if (fs.existsSync(candidate)) return candidate;
+		if (existingFile(candidate)) return candidate;
 	}
 	return null;
 }

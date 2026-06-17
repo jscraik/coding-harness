@@ -69,11 +69,18 @@ function traceBelongsToSuite(traceLine, suitePath, token) {
 			typeof parsed.stack === "string"
 				? parsed.stack.replaceAll("\\", "/")
 				: "";
+		const escapedSuitePath = normalizedSuitePath.replace(
+			/[.*+?^${}()|[\]\\]/g,
+			"\\$&",
+		);
+		const stackFramePathPattern = new RegExp(
+			`(?:^|[\\s(])(?:file://)?(?:[^\\s()]+/)?${escapedSuitePath}:\\d+:\\d+(?=$|[\\s)])`,
+		);
 		return (
 			typeof parsed.given === "string" &&
 			typeof parsed.should === "string" &&
 			parsed.token === token &&
-			normalizedStack.includes(normalizedSuitePath)
+			stackFramePathPattern.test(normalizedStack)
 		);
 	} catch {
 		return false;
@@ -114,33 +121,32 @@ function verifyBehaviorAssertionsExecuted(entries) {
 		);
 		return;
 	}
-	const traceRoot = mkdtempSync(join(tmpdir(), "harness-behavior-trace-"));
-	const traceFile = join(traceRoot, "trace.jsonl");
-	const traceToken = randomUUID();
-	const suitePaths = entries.map((entry) => entry.path);
-	try {
-		const result = spawnSync(vitestPath, ["run", ...suitePaths], {
-			cwd: repoRoot,
-			encoding: "utf8",
-			shell: process.platform === "win32",
-			env: {
-				...process.env,
-				HARNESS_EXPECT_BEHAVIOR_TRACE_FILE: traceFile,
-				HARNESS_EXPECT_BEHAVIOR_TRACE_TOKEN: traceToken,
-			},
-		});
-		if (result.status !== 0) {
-			fail(
-				`behavior proving command failed with exit ${result.status}: pnpm vitest run ${suitePaths.join(" ")}`,
-			);
-			if (result.stdout.trim()) console.error(result.stdout.trim());
-			if (result.stderr.trim()) console.error(result.stderr.trim());
-			return;
-		}
-		const trace = existsSync(traceFile)
-			? readFileSync(traceFile, "utf8").split("\n").filter(Boolean)
-			: [];
-		for (const entry of entries) {
+	for (const entry of entries) {
+		const traceRoot = mkdtempSync(join(tmpdir(), "harness-behavior-trace-"));
+		const traceFile = join(traceRoot, "trace.jsonl");
+		const traceToken = randomUUID();
+		try {
+			const result = spawnSync(vitestPath, ["run", entry.path], {
+				cwd: repoRoot,
+				encoding: "utf8",
+				shell: process.platform === "win32",
+				env: {
+					...process.env,
+					HARNESS_EXPECT_BEHAVIOR_TRACE_FILE: traceFile,
+					HARNESS_EXPECT_BEHAVIOR_TRACE_TOKEN: traceToken,
+				},
+			});
+			if (result.status !== 0) {
+				fail(
+					`behavior proving command failed with exit ${result.status}: pnpm vitest run ${entry.path}`,
+				);
+				if (result.stdout.trim()) console.error(result.stdout.trim());
+				if (result.stderr.trim()) console.error(result.stderr.trim());
+				continue;
+			}
+			const trace = existsSync(traceFile)
+				? readFileSync(traceFile, "utf8").split("\n").filter(Boolean)
+				: [];
 			if (
 				!trace.some((line) => traceBelongsToSuite(line, entry.path, traceToken))
 			) {
@@ -148,9 +154,9 @@ function verifyBehaviorAssertionsExecuted(entries) {
 					`${entry.path} provingCommand must execute an expectBehavior assertion from that suite`,
 				);
 			}
+		} finally {
+			rmSync(traceRoot, { force: true, recursive: true });
 		}
-	} finally {
-		rmSync(traceRoot, { force: true, recursive: true });
 	}
 }
 
