@@ -80,10 +80,10 @@ jq -n \
 		checkSummary: {
 			total: ($checks[0] | length),
 			unavailable: $checksError[0],
-			failing: [ $checks[0][] | select(.state == "FAILURE" or .state == "ERROR" or .bucket == "fail") ],
+			failing: [ $checks[0][] | select(.state == "FAILURE" or .state == "ERROR" or .state == "CANCELLED" or .state == "CANCELED" or .bucket == "fail" or .bucket == "cancel") ],
 			pending: [ $checks[0][] | select(.state == "PENDING" or .bucket == "pending") ]
 		},
-		openReviewThreads: [
+		reviewComments: [
 			($reviewComments[0] | add // [])[]
 			| select(.position != null)
 			| {
@@ -95,6 +95,21 @@ jq -n \
 				body: (.body | gsub("\\r?\\n"; " ") | .[0:500]),
 				createdAt: .created_at,
 				updatedAt: .updated_at
+			}
+		],
+		openReviewThreads: [
+			($reviewComments[0] | add // [])[]
+			| select(.position != null)
+			| {
+				id,
+				path,
+				line,
+				originalLine: .original_line,
+				user: .user.login,
+				body: (.body | gsub("\\r?\\n"; " ") | .[0:500]),
+				createdAt: .created_at,
+				updatedAt: .updated_at,
+				deprecated: "Use reviewComments; REST pull comments do not include review-thread resolution state."
 			}
 		],
 		reviews: [
@@ -112,7 +127,7 @@ jq -n \
 				"classify_checks_unavailable"
 			elif ($checks[0] | length) == 0 then
 				"classify_checks_unavailable"
-			elif ([ $checks[0][] | select(.state == "FAILURE" or .state == "ERROR" or .bucket == "fail") ] | length) > 0 then
+			elif ([ $checks[0][] | select(.state == "FAILURE" or .state == "ERROR" or .state == "CANCELLED" or .state == "CANCELED" or .bucket == "fail" or .bucket == "cancel") ] | length) > 0 then
 				"fix_failing_checks_first"
 			elif ([ $checks[0][] | select(.state == "PENDING" or .bucket == "pending") ] | length) > 0 then
 				"wait_or_triage_pending_checks"

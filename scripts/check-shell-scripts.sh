@@ -18,7 +18,7 @@ if command -v git >/dev/null 2>&1; then
 				[[ -f "$path" ]] || continue
 				first_line=""
 				IFS= read -r first_line <"$path" || true
-				if [[ "$path" == *.sh ]] || [[ "$first_line" =~ ^#!.*(bash|sh|zsh) ]]; then
+				if [[ "$path" == *.sh ]] || [[ "$first_line" =~ ^#!.*(bash|sh) ]]; then
 					printf '%s\n' "$path"
 				fi
 			done |

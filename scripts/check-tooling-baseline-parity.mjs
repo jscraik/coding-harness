@@ -27,9 +27,38 @@ const removedToolTerms = [
 const envPath = ".codex/environments/environment.toml";
 const baselinePath = "src/lib/policy/tooling-baseline.ts";
 
-const readText = (path) => readFileSync(path, "utf8");
-
 const violations = [];
+
+const writeFailureAndExit = (
+	requiredActionNames = [],
+	environmentActionNames = [],
+) => {
+	const result = {
+		schemaVersion: "tooling-baseline-parity/v1",
+		status: "fail",
+		checkedSurfaces: activeSurfacePaths,
+		removedToolTerms: removedToolTerms.map(({ term }) => term),
+		requiredActionCount: requiredActionNames.length,
+		environmentActionCount: environmentActionNames.length,
+		violations,
+	};
+
+	process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+	process.exit(1);
+};
+
+const readText = (path) => {
+	try {
+		return readFileSync(path, "utf8");
+	} catch (error) {
+		violations.push({
+			path,
+			term: "read_error",
+			reason: error instanceof Error ? error.message : String(error),
+		});
+		writeFailureAndExit();
+	}
+};
 
 for (const path of activeSurfacePaths) {
 	const content = readText(path);
@@ -50,10 +79,20 @@ for (const path of activeSurfacePaths) {
 
 const baseline = readText(baselinePath);
 const environment = readText(envPath);
-const codexActionsBlock =
+const codexActionsMatch =
 	/export const REQUIRED_CODEX_TOOL_ACTIONS = \[([\s\S]*?)\] as const;/m.exec(
 		baseline,
-	)?.[1] ?? "";
+	);
+if (!codexActionsMatch) {
+	violations.push({
+		path: baselinePath,
+		term: "REQUIRED_CODEX_TOOL_ACTIONS",
+		reason:
+			"Failed to parse REQUIRED_CODEX_TOOL_ACTIONS from canonical tooling baseline.",
+	});
+	writeFailureAndExit();
+}
+const codexActionsBlock = codexActionsMatch[1];
 const requiredActionNames = [
 	...codexActionsBlock.matchAll(/name:\s*"([^"]+)"/g),
 ].map((match) => match[1]);

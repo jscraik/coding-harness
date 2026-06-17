@@ -279,7 +279,14 @@ cleanup_verify_work_temp_files() {
 	done
 }
 
-trap cleanup_verify_work_temp_files INT TERM
+cleanup_verify_work_temp_files_on_exit() {
+	local exit_code=$?
+	trap - EXIT INT TERM
+	cleanup_verify_work_temp_files
+	return "$exit_code"
+}
+
+trap cleanup_verify_work_temp_files_on_exit EXIT INT TERM
 
 iso_now() {
 	date -u +"%Y-%m-%dT%H:%M:%SZ"
@@ -1409,8 +1416,6 @@ if [[ "$json_mode" -eq 1 ]]; then
 			echo "[verify-work] to resume: bash scripts/verify-work.sh --resume-from $failed_gate_id$resume_hint"
 		fi
 	fi
-
-cleanup_verify_work_temp_files
 
 if [[ "$overall_status" != "passed" ]]; then
 	exit 1

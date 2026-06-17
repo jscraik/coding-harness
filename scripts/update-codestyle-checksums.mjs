@@ -1,15 +1,38 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const sourceManifestPath = "codestyle/CHECKSUMS.sha256";
-const templateManifestPath = "src/templates/codestyle/CHECKSUMS.sha256";
+const repoRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
+const sourceManifestPath = resolve(repoRoot, "codestyle/CHECKSUMS.sha256");
+const templateManifestPath = resolve(
+	repoRoot,
+	"src/templates/codestyle/CHECKSUMS.sha256",
+);
 
 const manifestHeader = [
 	"# sha256 manifest for codestyle parity enforcement",
 	"# format: <sha256>  <relative-path-from-repo-root>",
 ];
+
+const repoRelativePath = (path) => {
+	if (isAbsolute(path)) {
+		throw new Error(
+			`Absolute paths are not allowed in checksum manifest: ${path}`,
+		);
+	}
+	const absolutePath = resolve(repoRoot, path);
+	const relativePath = relative(repoRoot, absolutePath);
+	if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
+		throw new Error(
+			`Out-of-repo path is not allowed in checksum manifest: ${path}`,
+		);
+	}
+	return relativePath;
+};
+
+const resolveRepoPath = (path) => resolve(repoRoot, repoRelativePath(path));
 
 const hashFile = (path) =>
 	createHash("sha256").update(readFileSync(path)).digest("hex");
@@ -23,7 +46,7 @@ const manifestPaths = readFileSync(sourceManifestPath, "utf8")
 		if (!match?.groups?.path) {
 			throw new Error(`Malformed codestyle checksum manifest line: ${line}`);
 		}
-		return match.groups.path;
+		return repoRelativePath(match.groups.path);
 	});
 
 if (manifestPaths.length === 0) {
@@ -34,7 +57,7 @@ const renderManifest = (basePath = "") => [
 	...manifestHeader,
 	...manifestPaths.map((relativePath) => {
 		const hash = hashFile(
-			basePath ? join(basePath, relativePath) : relativePath,
+			resolveRepoPath(basePath ? join(basePath, relativePath) : relativePath),
 		);
 		return `${hash}  ${relativePath}`;
 	}),

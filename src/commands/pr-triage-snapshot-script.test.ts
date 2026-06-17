@@ -33,12 +33,21 @@ JSON
 fi
 
 if [[ "$1 $2" == "pr checks" ]]; then
-  printf '%s\\n' "[]"
+  cat <<'JSON'
+[{"name":"ci/circleci: test","state":"SUCCESS","bucket":"pass","link":"https://circleci.example/test"}]
+JSON
   exit 0
 fi
 
 if [[ "$1" == "api" ]]; then
-  endpoint="\${@: -1}"
+  shift
+  endpoint=""
+  for arg in "$@"; do
+    if [[ "$arg" != -* ]]; then
+      endpoint="$arg"
+      break
+    fi
+  done
   if [[ " $* " != *" --paginate "* || " $* " != *" --slurp "* ]]; then
     echo "expected gh api pagination reads to pass --paginate --slurp" >&2
     exit 42
@@ -86,10 +95,15 @@ describe("pr-triage-snapshot.sh", () => {
 			expect(result.stderr).toBe("");
 			expect(result.status).toBe(0);
 			const snapshot = JSON.parse(result.stdout) as {
+				reviewComments: Array<{ id: number; body: string }>;
 				openReviewThreads: Array<{ id: number; body: string }>;
 				reviews: Array<{ id: number; state: string }>;
 				nextAction: string;
 			};
+			expect(snapshot.reviewComments).toEqual([
+				expect.objectContaining({ id: 1, body: "first page" }),
+				expect.objectContaining({ id: 2, body: "second page" }),
+			]);
 			expect(snapshot.openReviewThreads).toEqual([
 				expect.objectContaining({ id: 1, body: "first page" }),
 				expect.objectContaining({ id: 2, body: "second page" }),

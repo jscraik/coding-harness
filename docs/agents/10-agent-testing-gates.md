@@ -60,7 +60,7 @@ path actually ran.
 - `pnpm run quality:scripts` catches shell syntax regressions before broad gates spend time on docs, types, or Vitest.
 - `pnpm run tooling:parity` catches stale required-tool drift across policy, environment, CI, and scaffolding surfaces.
 - `pnpm run test:related` runs Vitest related mode for changed production `src/**` files without `--passWithNoTests`; missing related tests are a blocker, not a green signal.
-- `bash scripts/validate-codestyle.sh --fast`, `pnpm check:static`, `pnpm check`, and the `scripts/hook-pre-commit.sh` leaf adapter include these gates so the contract is enforced locally and in downstream harness-managed repos. The `make hooks-pre-commit` target remains a manual wrapper around that adapter.
+- `bash scripts/validate-codestyle.sh --fast` and the `scripts/hook-pre-commit.sh` leaf adapter enforce the changed-code ratchets locally and in downstream harness-managed repos; `pnpm check:static` and `pnpm check` remain aggregate lanes that build on those checks. The `make hooks-pre-commit` target remains a manual wrapper around that adapter.
 
 ## Harness assurance layers
 
