@@ -207,6 +207,8 @@ if [[ "$fast_mode" -eq 0 ]]; then
 fi
 
 run_required_script "lint"
+run_source_repo_script "quality:scripts"
+run_source_repo_script "tooling:parity"
 run_optional_script "docs:lint"
 run_optional_script "skill:validate"
 run_optional_script "workflow:validate"

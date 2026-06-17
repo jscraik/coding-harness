@@ -525,7 +525,9 @@ workflows:
       - run-governance-check:
           name: check
           check_name: check
-          command: pnpm check
+          command: pnpm test:related && pnpm check:static
+          requires:
+            - test
           filters:
             tags:
               ignore: /.*/

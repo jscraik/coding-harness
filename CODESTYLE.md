@@ -79,4 +79,4 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 2. Open only the module that matches the task surface.
 3. If user/review feedback corrects one line but implies a codebase rule, run the pattern-generalization pass before editing or claiming done.
 4. Keep project-specific override content in `06-appendices-and-project-overrides.md`.
-5. When changing standards, update the module first, then confirm this index still matches.
+5. When changing standards, update the module first, run `pnpm run codestyle:checksums`, then confirm this index still matches.

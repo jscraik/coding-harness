@@ -109,7 +109,7 @@
 				"evidenceReference": "docs/roadmap/north-star.md",
 				"reviewCadence": "per_release",
 				"ownedPaths": ["docs/roadmap/north-star.md"],
-				"lastReviewedAt": "2026-05-18"
+				"lastReviewedAt": "2026-06-17"
 			},
 			{
 				"surfaceId": "agent-first-status-matrix",

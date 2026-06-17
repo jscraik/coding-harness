@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-04
+last_validated: 2026-06-17
 ---
 
 # Agent governance
@@ -66,6 +66,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   synchronized with the implementation and required documentation surfaces so
   docs-gate does not pass with stale operator guidance.
 - validation gate graph changes that add typed gate specs, phase-exit evidence gates, `harness next --phase-exit` visibility, parity tests, resume-checkpoint guards, TypeScript escape-hatch policy, Python/Pydantic validation, JSON Schema contract validation, or live CLI JSON contract validation should refresh `AI/context/diagram-context.md` and keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized when docs-gate reports architecture-context or agent-governance surfaces
+- validation-throughput changes that split `pnpm check`, `pnpm test:ci`,
+  `pnpm test:related`, or `pnpm check:static` must keep CI commands,
+  package scripts, PR-template evidence, and docs-gate-required surfaces
+  synchronized so faster handoff does not become weaker handoff
 - root scaffold or modularity changes that add or materially refresh `ARCHITECTURE.md` should treat that file as the human-authored source map, refresh generated architecture context as evidence, and keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized when docs-gate reports architecture-context or agent-governance surfaces
 - root-surface cleanup that moves tracked top-level files or directories should use `docs/architecture/root-surface-classification.md` as the classification contract, preserve historical evidence under `docs/archive/root-cleanup/` or a domain docs surface, delete tracked root evidence only under explicit destructive-cleanup authority recorded in that contract, and keep `AGENTS.md`, `docs/README.md`, `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized when docs-gate reports governance surfaces
 - command-registry deep-module splits should preserve one small public command

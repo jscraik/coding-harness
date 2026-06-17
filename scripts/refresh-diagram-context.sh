@@ -346,6 +346,7 @@ const buildDependency = (content, nodeMap) => {
   }
 
   const externalNodeMap = new Map();
+  const targetNodeEntries = new Map();
   const dependencyEdges = new Map();
   const styleEntries = new Map();
 
@@ -357,6 +358,10 @@ const buildDependency = (content, nodeMap) => {
         canonicalId: stableId("node", rawTargetId),
         label: rawTargetId,
       };
+      targetNodeEntries.set(target.canonicalId, {
+        line: "  " + target.canonicalId + "[\"" + target.label + "\"]",
+        sortKey: target.label,
+      });
       const sourceCanonicalId =
         externalNodeMap.get(rawSourceId) ?? stableId("ext", sourceLabel);
       externalNodeMap.set(rawSourceId, sourceCanonicalId);
@@ -385,6 +390,9 @@ const buildDependency = (content, nodeMap) => {
   return ensureTrailingNewline(
     [
       "graph LR",
+      ...[...targetNodeEntries.values()]
+        .sort((left, right) => left.sortKey.localeCompare(right.sortKey) || left.line.localeCompare(right.line))
+        .map((entry) => entry.line),
       ...[...dependencyEdges.values()]
         .sort((left, right) => left.sortKey.localeCompare(right.sortKey) || left.line.localeCompare(right.line))
         .map((entry) => entry.line),

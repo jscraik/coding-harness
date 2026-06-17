@@ -132,37 +132,67 @@ printf '%s\\n' "$@" > "${argsLogPath}"
 	it("maps SIGTERM termination to the conventional signal exit code", () => {
 		const scriptsDir = join(repoRoot, "scripts");
 		mkdirSync(scriptsDir, { recursive: true });
-		const wrapperPath = join(scriptsDir, "verify-work.sh");
-
-		writeFileSync(
-			wrapperPath,
-			`#!/usr/bin/env bash
-kill -TERM $$
-`,
-			"utf-8",
+		writeExecutable(
+			join(scriptsDir, "verify-work.sh"),
+			"#!/usr/bin/env bash\n",
 		);
-		chmodSync(wrapperPath, 0o755);
 
-		const exitCode = runVerifyWorkCLI({ repoRoot });
-		expect(exitCode).toBe(EXIT_CODES.SIGNAL_TERMINATED + 15);
+		const errorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		const spawnSpy = vi
+			.spyOn(verifyWorkCommand.verifyWorkRuntime, "executeVerifyWorkWrapper")
+			.mockReturnValueOnce({
+				pid: 1,
+				output: [null, Buffer.from(""), Buffer.from("")],
+				stdout: Buffer.from(""),
+				stderr: Buffer.from(""),
+				status: null,
+				signal: "SIGTERM",
+			});
+		try {
+			const exitCode = runVerifyWorkCLI({ repoRoot });
+			expect(exitCode).toBe(EXIT_CODES.SIGNAL_TERMINATED + 15);
+			expect(errorSpy).toHaveBeenCalledWith(
+				"verify-work terminated by signal: SIGTERM",
+			);
+		} finally {
+			spawnSpy.mockRestore();
+			errorSpy.mockRestore();
+		}
 	});
 
 	it("maps SIGKILL termination to the conventional signal exit code", () => {
 		const scriptsDir = join(repoRoot, "scripts");
 		mkdirSync(scriptsDir, { recursive: true });
-		const wrapperPath = join(scriptsDir, "verify-work.sh");
-
-		writeFileSync(
-			wrapperPath,
-			`#!/usr/bin/env bash
-kill -KILL $$
-`,
-			"utf-8",
+		writeExecutable(
+			join(scriptsDir, "verify-work.sh"),
+			"#!/usr/bin/env bash\n",
 		);
-		chmodSync(wrapperPath, 0o755);
 
-		const exitCode = runVerifyWorkCLI({ repoRoot });
-		expect(exitCode).toBe(EXIT_CODES.SIGNAL_TERMINATED + 9);
+		const errorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		const spawnSpy = vi
+			.spyOn(verifyWorkCommand.verifyWorkRuntime, "executeVerifyWorkWrapper")
+			.mockReturnValueOnce({
+				pid: 1,
+				output: [null, Buffer.from(""), Buffer.from("")],
+				stdout: Buffer.from(""),
+				stderr: Buffer.from(""),
+				status: null,
+				signal: "SIGKILL",
+			});
+		try {
+			const exitCode = runVerifyWorkCLI({ repoRoot });
+			expect(exitCode).toBe(EXIT_CODES.SIGNAL_TERMINATED + 9);
+			expect(errorSpy).toHaveBeenCalledWith(
+				"verify-work terminated by signal: SIGKILL",
+			);
+		} finally {
+			spawnSpy.mockRestore();
+			errorSpy.mockRestore();
+		}
 	});
 
 	it("returns USAGE_ERROR and does not execute wrapper when both --all and --changed-only are set", () => {

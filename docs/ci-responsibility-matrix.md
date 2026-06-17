@@ -1,7 +1,5 @@
 ---
-
 last_validated: 2026-04-26
-
 ---
 
 # CI Responsibility Matrix
@@ -37,11 +35,11 @@ This document is the operational source of truth for CI ownership intent. `harne
 
 ### CircleCI Owns
 
-| Responsibility                                                                                                                                            | Workflow        | Job                                 | Trigger                                                |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ----------------------------------- | ------------------------------------------------------ |
-| PR governance and quality checks (`pr-template`, `linear-gate`, `risk-policy-gate`, `docs-gate`, `lint`, `typecheck`, `test`, `audit`, `check`, `memory`) | `pr-pipeline`   | `run-governance-check` fan-out jobs | Pull request and merge queue events via GitHub webhook |
+| Responsibility                                                                                                                                            | Workflow        | Job                                     | Trigger                                                |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | --------------------------------------- | ------------------------------------------------------ |
+| PR governance and quality checks (`pr-template`, `linear-gate`, `risk-policy-gate`, `docs-gate`, `lint`, `typecheck`, `test`, `audit`, `check`, `memory`) | `pr-pipeline`   | `pr-template`, `linear-gate`, `risk-policy-gate`, `docs-gate`, `lint`, `typecheck`, `test`, `audit`, `check`, `memory` | Pull request and merge queue events via GitHub webhook |
 | Security scanning (`security-scan`)                                                                                                                       | `security-scan` | `security-scan`, `snyk-dependency-scan` | Pull request and merge queue events via GitHub webhook |
-| Environment and dependency policy checks (`dependency-scan`, `orb-pinning`)                                                                               | `pr-pipeline`   | `dependency-scan`, `orb-pinning`    | Pull request and merge queue events via GitHub webhook |
+| Environment and dependency policy checks (`dependency-scan`, `orb-pinning`)                                                                               | `pr-pipeline`   | `dependency-scan`, `orb-pinning`        | Pull request and merge queue events via GitHub webhook |
 
 ### GitHub Actions Owns
 
@@ -67,7 +65,7 @@ These are the check names that GitHub branch protection must reference:
 | `CodeRabbit`                  | CodeRabbit App    | (external)             |
 | `semgrep-cloud-platform/scan` | Semgrep Cloud App | (external)             |
 
-All harness governance checks (`pr-template`, `linear-gate`, `risk-policy-gate`, `docs-gate`, `lint`, `typecheck`, `test`, `audit`, `check`, `memory`) are tracked as CircleCI fan-out jobs under the `pr-pipeline` workflow.
+All harness governance checks (`pr-template`, `linear-gate`, `risk-policy-gate`, `docs-gate`, `lint`, `typecheck`, `test`, `audit`, `check`, `memory`) are tracked as CircleCI fan-out jobs under the `pr-pipeline` workflow. The `test` job owns the full `pnpm test:ci` Vitest lane; the `check` job runs `pnpm test:related` and `pnpm check:static` after `test` so CI keeps the changed-source related-test ratchet without duplicating the full suite.
 
 ## Release Path
 
@@ -137,12 +135,12 @@ For ownership overlap detection, manually verify:
 
 ## Secrets and Runtime Parity
 
-| Dimension           | CircleCI                                          | GitHub Actions                                 |
-| ------------------- | ------------------------------------------------- | ---------------------------------------------- |
-| Node.js version     | `cimg/node:26.3.0`                                | `actions/setup-node@v6` (node-version: 26.3.0) |
-| pnpm version        | npm install --global `pnpm@10.33.0`               | `pnpm/action-setup@v5` (version: `10.33.0`)    |
-| Install command     | `pnpm install --frozen-lockfile --prefer-offline` | `pnpm install --frozen-lockfile`               |
+| Dimension           | CircleCI                                                                                  | GitHub Actions                                 |
+| ------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Node.js version     | `cimg/node:26.3.0`                                                                        | `actions/setup-node@v6` (node-version: 26.3.0) |
+| pnpm version        | npm install --global `pnpm@10.33.0`                                                       | `pnpm/action-setup@v5` (version: `10.33.0`)    |
+| Install command     | `pnpm install --frozen-lockfile --prefer-offline`                                         | `pnpm install --frozen-lockfile`               |
 | Security scan lane  | `security-scan` workflow in `.circleci/config.yml` with Semgrep and report-only Snyk jobs | N/A (release-only)                             |
-| Snyk token          | `SNYK_TOKEN` project environment variable for the report-only Snyk CLI step | N/A                                      |
-| npm publish token   | N/A (does not publish)                            | `NPM_TOKEN` secret or OIDC (`id-token: write`) |
-| Attestation signing | N/A                                               | OIDC (`actions/attest-build-provenance`)       |
+| Snyk token          | `SNYK_TOKEN` project environment variable for the report-only Snyk CLI step               | N/A                                            |
+| npm publish token   | N/A (does not publish)                                                                    | `NPM_TOKEN` secret or OIDC (`id-token: write`) |
+| Attestation signing | N/A                                                                                       | OIDC (`actions/attest-build-provenance`)       |
