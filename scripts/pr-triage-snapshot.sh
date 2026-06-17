@@ -110,6 +110,8 @@ jq -n \
 		nextAction: (
 			if $checksError[0] != null then
 				"classify_checks_unavailable"
+			elif ($checks[0] | length) == 0 then
+				"classify_checks_unavailable"
 			elif ([ $checks[0][] | select(.state == "FAILURE" or .state == "ERROR" or .bucket == "fail") ] | length) > 0 then
 				"fix_failing_checks_first"
 			elif ([ $checks[0][] | select(.state == "PENDING" or .bucket == "pending") ] | length) > 0 then
