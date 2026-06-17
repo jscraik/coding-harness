@@ -117,4 +117,33 @@ describe("pr-triage-snapshot.sh", () => {
 			rmSync(tempDir, { recursive: true, force: true });
 		}
 	});
+
+	it("accepts the documented package-manager argument separator form", () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "pr-triage-snapshot-"));
+		try {
+			const binDir = join(tempDir, "bin");
+			mkdirSync(binDir);
+			makeFakeGh(binDir);
+
+			const result = spawnSync("bash", [scriptPath, "--", "428"], {
+				cwd: repoRoot,
+				encoding: "utf-8",
+				env: {
+					...process.env,
+					PATH: `${binDir}:${process.env.PATH ?? ""}`,
+				},
+			});
+
+			expect(result.stderr).toBe("");
+			expect(result.status).toBe(0);
+			const snapshot = JSON.parse(result.stdout) as {
+				pr: { number: number };
+				nextAction: string;
+			};
+			expect(snapshot.pr.number).toBe(428);
+			expect(snapshot.nextAction).toBe("ready_for_owner_merge_review");
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
 });

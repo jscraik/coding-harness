@@ -10,6 +10,10 @@ failures, and mergeability blockers before patching.
 USAGE
 }
 
+if [[ "${1:-}" == "--" ]]; then
+	shift
+fi
+
 if [[ $# -ne 1 ]]; then
 	usage
 	exit 2
