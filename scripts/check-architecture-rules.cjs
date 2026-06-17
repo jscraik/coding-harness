@@ -199,25 +199,45 @@ function extractImportsFromContent(content, options = {}) {
 
 /** Parse static import/require paths from a TypeScript source file. */
 function extractImports(filePath, options = {}) {
-	return extractImportsFromContent(fs.readFileSync(filePath, "utf-8"), options);
+	const cacheKey = options.runtimeOnly ? "runtime" : "all";
+	const cached = importCache.get(filePath);
+	if (cached?.has(cacheKey)) {
+		return cached.get(cacheKey);
+	}
+	const imports = extractImportsFromContent(
+		fs.readFileSync(filePath, "utf-8"),
+		options,
+	);
+	if (cached) {
+		cached.set(cacheKey, imports);
+	} else {
+		importCache.set(filePath, new Map([[cacheKey, imports]]));
+	}
+	return imports;
 }
+
+const sourceFiles = collectTsFiles(SRC_DIR);
+const sourceFileSet = new Set(sourceFiles);
+const importCache = new Map();
 
 /** Resolve a relative import path to an absolute file path */
 function resolveImport(fromFile, importPath) {
 	if (!importPath.startsWith(".")) return null; // external
 	const base = path.resolve(path.dirname(fromFile), importPath);
-	// Try with .ts extension, then /index.ts
-	for (const candidate of [base, `${base}.ts`, path.join(base, "index.ts")]) {
-		if (fs.existsSync(candidate)) return candidate;
+	const existingFile = (candidate) =>
+		fs.existsSync(candidate) && fs.statSync(candidate).isFile();
+	// Prefer concrete files; a directory import resolves through its index.ts.
+	for (const candidate of [`${base}.ts`, path.join(base, "index.ts"), base]) {
+		if (existingFile(candidate)) return candidate;
 	}
 	// Strip .js extension (ESM compat imports)
 	const jsStripped = base.replace(/\.js$/, "");
 	for (const candidate of [
-		jsStripped,
 		`${jsStripped}.ts`,
 		path.join(jsStripped, "index.ts"),
+		jsStripped,
 	]) {
-		if (fs.existsSync(candidate)) return candidate;
+		if (existingFile(candidate)) return candidate;
 	}
 	return null;
 }
@@ -267,14 +287,13 @@ for (const violation of baselineMetadataViolations) {
 // ── Rule: no-circular-deps ───────────────────────────────────────────────────
 
 function checkNoCyclicDeps() {
-	const files = collectTsFiles(SRC_DIR);
 	// Build adjacency list: file -> [resolved import files]
 	const graph = new Map();
-	for (const file of files) {
+	for (const file of sourceFiles) {
 		const deps = [];
 		for (const imp of extractImports(file, { runtimeOnly: true })) {
 			const resolved = resolveImport(file, imp);
-			if (resolved && files.includes(resolved)) {
+			if (resolved && sourceFileSet.has(resolved)) {
 				deps.push(resolved);
 			}
 		}
@@ -308,7 +327,7 @@ function checkNoCyclicDeps() {
 		inStack.delete(node);
 	}
 
-	for (const file of files) {
+	for (const file of sourceFiles) {
 		dfs(file, []);
 	}
 }

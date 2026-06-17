@@ -3,6 +3,7 @@ import {
 	chmodSync,
 	mkdirSync,
 	mkdtempSync,
+	readFileSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs";
@@ -28,18 +29,28 @@ function writeFile(root: string, path: string, content: string) {
 
 function writeManifest(root: string, path: string, provingCommand?: string) {
 	const command = provingCommand ?? `pnpm vitest run ${path}`;
+	writeManifestEntries(root, [
+		{
+			path,
+			provingCommand: command,
+		},
+	]);
+}
+
+function writeManifestEntries(
+	root: string,
+	entries: readonly { path: string; provingCommand?: string }[],
+) {
 	writeFile(
 		root,
 		"src/lib/testing/behavior-test-suites.json",
 		JSON.stringify(
-			[
-				{
-					path,
-					owner: "test-owner",
-					rationale: "prove executable behavior assertion detection",
-					provingCommand: command,
-				},
-			],
+			entries.map((entry) => ({
+				path: entry.path,
+				owner: "test-owner",
+				rationale: "prove executable behavior assertion detection",
+				provingCommand: entry.provingCommand ?? `pnpm vitest run ${entry.path}`,
+			})),
 			null,
 			2,
 		),
@@ -76,6 +87,36 @@ function writeFakeVitest(
 	}
 	chmodSync(join(root, path), 0o755);
 	if (executablePath !== path) chmodSync(join(root, executablePath), 0o755);
+}
+
+function writeMultiSuiteFakeVitest(
+	root: string,
+	suitePaths: readonly string[],
+	noTraceSuitePaths: readonly string[] = [],
+) {
+	writeFile(
+		root,
+		"node_modules/.bin/vitest",
+		[
+			"#!/usr/bin/env node",
+			"import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';",
+			"const args = process.argv.slice(2);",
+			`const suitePaths = ${JSON.stringify(suitePaths)};`,
+			`const noTraceSuitePaths = ${JSON.stringify(noTraceSuitePaths)};`,
+			"const calls = existsSync('vitest-args.json') ? JSON.parse(readFileSync('vitest-args.json', 'utf8')) : [];",
+			"calls.push(args);",
+			"writeFileSync('vitest-args.json', JSON.stringify(calls));",
+			"const suitePath = args[1];",
+			"if (args.length !== 2 || args[0] !== 'run' || !suitePaths.includes(suitePath)) process.exit(2);",
+			"if (!noTraceSuitePaths.includes(suitePath)) {",
+			"  appendFileSync(",
+			"    process.env.HARNESS_EXPECT_BEHAVIOR_TRACE_FILE ?? '',",
+			"    JSON.stringify({ given: 'input', should: 'match', token: process.env.HARNESS_EXPECT_BEHAVIOR_TRACE_TOKEN, stack: 'at test (' + suitePath + ':1:1)' }) + '\\n',",
+			"  );",
+			"}",
+		].join("\n"),
+	);
+	chmodSync(join(root, "node_modules/.bin/vitest"), 0o755);
 }
 
 function runScript(
@@ -340,6 +381,116 @@ describe("check-behavior-tests.mjs", () => {
 		expect(result.status, result.stderr || result.stdout).toBe(0);
 		expect(result.stdout).toContain(
 			"verified registered evidence-bearing suites",
+		);
+	});
+
+	it("proves multiple registered suites with isolated Vitest invocations", () => {
+		const root = createTempRoot();
+		const suitePaths = [
+			"src/lib/example-one.test.ts",
+			"src/lib/example-two.test.ts",
+		];
+		writeManifestEntries(
+			root,
+			suitePaths.map((path) => ({ path })),
+		);
+		writeMultiSuiteFakeVitest(root, suitePaths);
+		for (const suitePath of suitePaths) {
+			writeFile(
+				root,
+				suitePath,
+				[
+					"import { describe, it } from 'vitest';",
+					"import { expectBehavior } from './testing/expect-behavior.js';",
+					"describe('example', () => {",
+					"\tit('proves behavior', () => {",
+					"\t\texpectBehavior({ given: 'input', should: 'match', actual: 1, expected: 1 });",
+					"\t});",
+					"});",
+				].join("\n"),
+			);
+		}
+
+		const result = runScript(root);
+
+		expect(result.status, result.stderr || result.stdout).toBe(0);
+		expect(
+			JSON.parse(readFileSync(join(root, "vitest-args.json"), "utf8")),
+		).toEqual(suitePaths.map((suitePath) => ["run", suitePath]));
+		expect(result.stdout).toContain(
+			"verified registered evidence-bearing suites",
+		);
+	});
+
+	it("rejects partial trace emission across registered suites", () => {
+		const root = createTempRoot();
+		const suitePaths = [
+			"src/lib/example-one.test.ts",
+			"src/lib/example-two.test.ts",
+		];
+		writeManifestEntries(
+			root,
+			suitePaths.map((path) => ({ path })),
+		);
+		writeMultiSuiteFakeVitest(root, suitePaths, [
+			"src/lib/example-two.test.ts",
+		]);
+		for (const suitePath of suitePaths) {
+			writeFile(
+				root,
+				suitePath,
+				[
+					"import { describe, it } from 'vitest';",
+					"import { expectBehavior } from './testing/expect-behavior.js';",
+					"describe('example', () => {",
+					"\tit('proves behavior', () => {",
+					"\t\texpectBehavior({ given: 'input', should: 'match', actual: 1, expected: 1 });",
+					"\t});",
+					"});",
+				].join("\n"),
+			);
+		}
+
+		const result = runScript(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"src/lib/example-two.test.ts provingCommand must execute an expectBehavior assertion from that suite",
+		);
+		expect(
+			JSON.parse(readFileSync(join(root, "vitest-args.json"), "utf8")),
+		).toEqual(suitePaths.map((suitePath) => ["run", suitePath]));
+	});
+
+	it("rejects behavior traces from overlapping stack path substrings", () => {
+		const root = createTempRoot();
+		writeManifest(root, "src/lib/example.test.ts");
+		writeFakeVitest(
+			root,
+			"src/lib/example.test.ts",
+			"trace",
+			"node_modules/.bin/vitest",
+			"src/lib/example.test.tsx",
+		);
+		writeFile(
+			root,
+			"src/lib/example.test.ts",
+			[
+				"import { describe, it } from 'vitest';",
+				"import { expectBehavior } from './testing/expect-behavior.js';",
+				"describe('example', () => {",
+				"\tit('proves behavior', () => {",
+				"\t\texpectBehavior({ given: 'input', should: 'match', actual: 1, expected: 1 });",
+				"\t});",
+				"});",
+			].join("\n"),
+		);
+
+		const result = runScript(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"src/lib/example.test.ts provingCommand must execute an expectBehavior assertion from that suite",
 		);
 	});
 
