@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-17T17:05:23Z
+Generated: 2026-06-18T00:52:18Z
 
 ## Table of Contents
 
@@ -30,27 +30,11 @@ Generated: 2026-06-17T17:05:23Z
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
 - `package.json`
-- `src/commands/check-environment-core.ts`
-- `src/commands/linear-gate-branch-policy.ts`
-- `src/commands/linear-gate-core.ts`
-- `src/commands/linear-gate-pr-template.ts`
-- `src/lib/deps/environment-runtime.ts`
 - `src/lib/init/README.md`
-- `src/lib/init/scaffold-environment-templates.ts`
-- `src/lib/init/scaffold-root-command-templates.ts`
-- `src/lib/init/scaffold-template-registry.ts`
-- `src/lib/memory/metrics-tracker.ts`
+- `src/lib/init/scaffold-script-template-registry.ts`
 - `src/lib/policy/tooling-baseline.ts`
-- `src/presets/go-base.json`
-- `src/presets/minimal.json`
-- `src/presets/python-base.json`
-- `src/presets/rust-base.json`
-- `src/presets/strict.json`
-- `src/presets/swift-base.json`
-- `src/presets/typescript-base.json`
-- `src/templates/CODESTYLE.md`
-- `src/templates/codestyle/17-testing.md`
-- `src/templates/codestyle/CHECKSUMS.sha256`
+- `src/templates/circleci-config.yml`
+- `src/templates/circleci-linear-gate.yml`
 
 ## agent
 
@@ -904,6 +888,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_environment_core_2c16213f_a8a456d9
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_harness_audit_tracking_33e6a72e_eeff5b52
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_check_node_engine_217689bf_3e5964b2
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_types_policy_cfbecf01_fb84cd04
   ext_node_child_process_f62b7d19["node:child_process"] --> node_ci_migrate_core_7005b5af_7e295ae3
   ext_node_child_process_f62b7d19["node:child_process"] --> node_cli_5_9c446a0f_12d0ff9c

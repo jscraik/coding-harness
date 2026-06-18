@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-06-17T17:05:23.316Z",
+	"generatedAt": "2026-06-18T00:52:18.268Z",
 	"schemaVersion": "1.0",
 	"rootPath": ".",
 	"diagramDir": ".diagram",
@@ -70,8 +70,8 @@
 			"type": "dependency",
 			"file": "dependency.mmd",
 			"outputPath": ".diagram/dependency.mmd",
-			"lines": 946,
-			"bytes": 74452,
+			"lines": 947,
+			"bytes": 74553,
 			"isPlaceholder": false
 		},
 		{

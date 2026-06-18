@@ -120,6 +120,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/verify-work.sh",
 	"scripts/validate-codestyle.sh",
 	"scripts/check-node-engine.mjs",
+	"scripts/resolve-circleci-pr-ref.sh",
 	"scripts/with-validation-lock.sh",
 	"scripts/check-validation-locks.sh",
 	"scripts/check-codestyle-parity.sh",
@@ -482,14 +483,10 @@ describe("runInit", () => {
 			expect(circleConfig).toContain("command: pnpm check");
 			expect(circleConfig).toContain("name: pr-template");
 			expect(circleConfig).toContain("check_name: pr-template");
-			expect(circleConfig).toContain("resolve_pr_ref() {");
-			expect(circleConfig).toContain('resolved="${CIRCLE_PULL_REQUESTS%%,*}"');
 			expect(circleConfig).toContain(
-				"PR context not available yet for pr-template; retrying ($attempt/6).",
+				"HARNESS_CIRCLECI_PR_REF_CHECK_NAME=pr-template",
 			);
-			expect(circleConfig).toContain(
-				'--head "${CIRCLE_PROJECT_USERNAME}:${CIRCLE_BRANCH}"',
-			);
+			expect(circleConfig).toContain("bash scripts/resolve-circleci-pr-ref.sh");
 			expect(circleConfig).toContain(
 				"bash scripts/run-harness-gate.sh pr-template-gate --json",
 			);
@@ -2296,6 +2293,9 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"scripts/check-public-api-docs.mjs"');
 			expect(environmentCheck).toContain('"scripts/check-code-size.mjs"');
 			expect(environmentCheck).toContain('"scripts/check-node-engine.mjs"');
+			expect(environmentCheck).toContain(
+				'"scripts/resolve-circleci-pr-ref.sh"',
+			);
 			expect(environmentCheck).toContain('"scripts/lib/changed-files.mjs"');
 			expect(environmentCheck).toContain('"scripts/check-semgrep-changed.sh"');
 			expect(environmentCheck).toContain('"scripts/check-semgrep-full.sh"');

@@ -74,11 +74,11 @@ const REPEATED_ERROR_RESEARCH_PATTERN =
 const CLOSEOUT_COMPLETION_PATTERN =
 	/(closeout completion|green checks.*not.*complete|green checks.*validation evidence|not equivalent to green checks|PR state.*merge.*Linear.*next-lane|heartbeat.*lane.*complete)/i;
 const ENV_BACKED_VALIDATION_PATTERN =
-	/(Env-Backed Validation Recovery|env-backed validation recovery|~\/\.codex\/\.env|set -a; source ~\/\.codex\/\.env; set \+a|inspect.*required.*variable names.*without printing values|missing credential.*env-loaded rerun)/i;
+	/(Env-Backed Validation Recovery|env-backed validation recovery|~\/\.codex\/\.env|op run --env-file ~\/\.codex\/\.env|set -a; source ~\/\.codex\/\.env; set \+a|FIFO-aware loader|regular readable file|inspect.*required.*variable names.*without printing values|missing credential.*env-loaded rerun)/i;
 const ENV_FIFO_TIMEOUT_PATTERN =
 	/blocked_env_fifo_timeout[\s\S]{0,260}(FIFO\/no-writer|FIFO without a writer|do not source it|regular env surface|regular readable file)|(FIFO\/no-writer|FIFO without a writer|do not source it)[\s\S]{0,260}blocked_env_fifo_timeout/i;
 const CIRCLECI_ENV_API_TRIAGE_PATTERN =
-	/(CircleCI API|CircleCI log|CircleCI job)[\s\S]{0,260}(~\/\.codex\/\.env|set -a; source ~\/\.codex\/\.env; set \+a|CIRCLECI_TOKEN|CIRCLE_TOKEN|CIRCLE_API_TOKEN|Circle-Token|bounded network call|--max-time)/i;
+	/(CircleCI API|CircleCI log|CircleCI job)[\s\S]{0,260}(~\/\.codex\/\.env|op run --env-file ~\/\.codex\/\.env|set -a; source ~\/\.codex\/\.env; set \+a|FIFO|regular readable file|CIRCLECI_TOKEN|CIRCLE_TOKEN|CIRCLE_API_TOKEN|Circle-Token|bounded network call|--max-time)/i;
 const SAFE_PR_BODY_FILE_HANDOFF_PATTERN =
 	/(PR body|pull request body)[\s\S]{0,260}(--body-file|body file|non-interpreting file|shell interpolation|command substitution|backticks|pr-template-gate --pr-body-file)/i;
 const STALE_ENV_BACKED_BLOCKER_PATTERN =

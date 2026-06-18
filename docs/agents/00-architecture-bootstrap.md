@@ -63,6 +63,11 @@ synchronized. The architecture context must show the current validation
 dependencies, while `docs/agents/02-tooling-policy.md` and
 `docs/agents/06-security-and-governance.md` describe operator execution and
 pre-push governance.
+CircleCI PR-context resolver and Node engine recovery changes are part of this
+validation graph when they alter generated workflow support files or dependency
+edges. Refresh the generated architecture context and keep this guide with the
+tooling and governance docs whenever docs-gate reports the architecture-context
+surface for that branch.
 Command-family boundary details live in
 `docs/architecture/architecture-adjacent-boundary-registry.json`. Keep this
 guide at the invariant level: command facades stay compatibility surfaces,

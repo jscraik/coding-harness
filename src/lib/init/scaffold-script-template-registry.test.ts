@@ -46,6 +46,7 @@ describe("scaffold script template registry", () => {
 			"scripts/verify-work.sh",
 			"scripts/validate-codestyle.sh",
 			"scripts/check-node-engine.mjs",
+			"scripts/resolve-circleci-pr-ref.sh",
 			"scripts/check-codestyle-parity.sh",
 			"scripts/check-git-common-config.sh",
 			"scripts/prepare-worktree.sh",
