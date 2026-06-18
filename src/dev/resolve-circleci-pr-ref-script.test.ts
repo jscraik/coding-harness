@@ -10,7 +10,11 @@ import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-const SCRIPT_PATH = join(process.cwd(), "scripts/resolve-circleci-pr-ref.sh");
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
+...
+const HERE = dirname(fileURLToPath(import.meta.url));
+const SCRIPT_PATH = resolve(HERE, "../../scripts/resolve-circleci-pr-ref.sh");
 
 const tempRoots: string[] = [];
 const scrubbedCircleCiPrEnv: NodeJS.ProcessEnv = {
