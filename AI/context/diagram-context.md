@@ -30,9 +30,10 @@ Generated: 2026-06-18T00:52:18Z
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
 - `package.json`
-- `scripts/resolve-circleci-pr-ref.sh`
 - `src/lib/init/README.md`
 - `src/lib/init/scaffold-script-template-registry.ts`
+- `scripts/check-environment.sh`
+- `scripts/resolve-circleci-pr-ref.sh`
 - `src/lib/policy/tooling-baseline.ts`
 - `src/templates/circleci-config.yml`
 - `src/templates/circleci-linear-gate.yml`
@@ -2038,4 +2039,3 @@ flowchart LR
   class github_e2e_2891a341,linear_e2e_decf3708,run_e2e_39efe696,env_b77349bf,check_public_api_docs_a9604f1b,check_steering_feedback_contract_80134459,run_harness_evals_77704768,validate_active_route_surface_905456c2,validate_decision_request_2e5c325e,validate_steering_application_receipt_c922e84a,validate_steering_queue_4bc0cc94,branch_protect_core_a8feb0fd,check_environment_core_2c16213f,ci_migrate_core_7005b5af,decision_request_118a770d,evidence_verify_3b73c290,linear_prepare_0c613ba6,linear_sync_a2fa2bf7,linear_triage_core_7cbca73e,linear_workflow_core_0e19cff4,pattern_scope_61ff946d,pr_closeout_env_9bfcd9ef,live_247610f4,review_gate_core_4c8001f9,symphony_check_e97f2ea0,ui_loop_internal_f2eb8892,ui_loop_shared_8c83b841,ui_loop_tooling_12b2d2c7,ui_loop_11660889,verify_coderabbit_490b4e71 userNode
 
 ```
-

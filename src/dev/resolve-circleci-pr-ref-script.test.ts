@@ -7,14 +7,15 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { delimiter, join } from "node:path";
+import { delimiter, dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
-
-const HERE = dirname(fileURLToPath(import.meta.url));
-const SCRIPT_PATH = resolve(HERE, "../../scripts/resolve-circleci-pr-ref.sh");
+const TEST_FILE_DIR = dirname(fileURLToPath(import.meta.url));
+const SCRIPT_PATH = resolve(
+	TEST_FILE_DIR,
+	"../../scripts/resolve-circleci-pr-ref.sh",
+);
 
 const tempRoots: string[] = [];
 const scrubbedCircleCiPrEnv: NodeJS.ProcessEnv = {
@@ -41,13 +42,13 @@ function runScript(root: string, extraEnv: NodeJS.ProcessEnv = {}) {
 	return spawnSync("bash", [SCRIPT_PATH], {
 		cwd: root,
 		encoding: "utf8",
+		timeout: 10_000,
 		env: {
 			...process.env,
 			...scrubbedCircleCiPrEnv,
 			...extraEnv,
 			PATH: `${join(root, "bin")}${delimiter}${process.env.PATH ?? ""}`,
 		},
-		timeout: 10000,
 	});
 }
 
@@ -107,6 +108,38 @@ describe("resolve-circleci-pr-ref.sh", () => {
 		expect(result.stderr).toContain(
 			"PR context not available yet for pr-template; retrying (1/2).",
 		);
+	});
+
+	it("does not accept closed pull requests from commit lookup fallback", () => {
+		const root = createTempRoot();
+		writeExecutable(
+			root,
+			"bin/gh",
+			[
+				"#!/usr/bin/env bash",
+				"set -euo pipefail",
+				'if [[ "$1" == "api" ]]; then',
+				'  for arg in "$@"; do',
+				'    if [[ "$arg" == *"// .[0].html_url"* ]]; then',
+				'      printf "%s" "https://github.com/acme/demo/pull/13"',
+				"    fi",
+				"  done",
+				"fi",
+			].join("\n"),
+		);
+
+		const result = runScript(root, {
+			CIRCLE_BRANCH: "codex/stale-commit",
+			CIRCLE_PROJECT_REPONAME: "demo",
+			CIRCLE_PROJECT_USERNAME: "acme",
+			CIRCLE_SHA1: "abc123",
+			HARNESS_CIRCLECI_PR_REF_MAX_ATTEMPTS: "1",
+			HARNESS_CIRCLECI_PR_REF_SLEEP_SECONDS: "0",
+		});
+
+		expect(result.status).toBe(1);
+		expect(result.stdout).toBe("");
+		expect(result.stderr).toContain("unable to resolve pull request context");
 	});
 
 	it("fails closed with a branch-only diagnostic when no PR can be resolved", () => {
