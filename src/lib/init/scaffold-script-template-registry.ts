@@ -160,6 +160,10 @@ export const CODEX_AND_WORKFLOW_SCRIPT_TEMPLATES: readonly Template[] = [
 		render: () => renderPackagedRootFile("scripts/check-node-engine.mjs"),
 	},
 	{
+		path: "scripts/resolve-circleci-pr-ref.sh",
+		render: () => renderPackagedRootFile("scripts/resolve-circleci-pr-ref.sh"),
+	},
+	{
 		path: "scripts/check-codestyle-parity.sh",
 		render: () => renderCheckCodestyleParityScript(),
 	},

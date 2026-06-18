@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-17
+last_validated: 2026-06-18
 ---
 
 # Security and governance
@@ -91,6 +91,11 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - Keep repo-specific Gitleaks allow lists in the repo-root `.gitleaks.toml` so staged scans and manual secret scans share the same reviewed exceptions.
 - CircleCI now owns repo-run non-release security scanning in this repository. Keep `security-scan` in `.circleci/config.yml` and avoid reintroducing non-release GitHub Actions security workflows. The workflow includes the repo-run Semgrep lane and an explicit report-only Snyk dependency lane; Snyk CLI install, auth, and findings must not fail CircleCI PRs that the external GitHub Snyk delta check has cleared. Semgrep Cloud is enforced separately through the external GitHub App check `semgrep-cloud-platform/scan`; do not fold that required check into CircleCI workflow metadata.
 - CircleCI PR governance checks must fail closed only after bounded PR-context resolution attempts. The `pr-template` and `linear-gate` jobs may retry `CIRCLE_PULL_REQUEST`, `CIRCLE_PULL_REQUESTS`, branch lookups, and commit-to-PR lookup briefly, but must not bypass PR-template, Linear, or security policy gates when PR context remains unavailable.
+- The CircleCI PR-context resolver is a shared packaged helper
+  (`scripts/resolve-circleci-pr-ref.sh`), not inline duplicated shell. Keep the
+  live CircleCI config, scaffold templates, package files, generated
+  environment support-file inventory, and script-level regression tests aligned
+  when changing that lookup sequence or retry budget.
 - `harness.contract.json` `ciOwnership` is the machine-readable contract for that split: `primaryPrGate` must remain `circleci`, `reviewProvider` must remain `coderabbit`, `securityChecks` must include `semgrep-cloud-platform/scan`, and any GitHub Actions fallback PR workflow must stay manual/emergency-only unless the contract is intentionally migrated.
 
 ## Policy-gate risk chain

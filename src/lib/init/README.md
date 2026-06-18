@@ -75,7 +75,15 @@ thin and delegate into this deep module.
 - Generated validation scaffolds must include `scripts/check-node-engine.mjs`
   whenever `scripts/validate-codestyle.sh` is emitted. The checker is part of
   the downstream support-file baseline, so freshly initialized and updated repos
-  fail closed on package-engine drift before broader validation runs.
+  fail closed on package-engine drift before broader validation runs. If the
+  ambient shell is below the required Node floor but mise can resolve the pinned
+  repository Node, the checker should retry through that pinned runtime before
+  producing the fail-closed diagnostic.
+- Generated CircleCI scaffolds must include
+  `scripts/resolve-circleci-pr-ref.sh` whenever `pr-template` or
+  `linear-gate` jobs are emitted. Those jobs should call the shared helper
+  instead of carrying separate inline PR-context resolution logic, and the helper
+  must remain part of the downstream support-file baseline.
 - Generated hook adapters must render package-script commands from the detected
   package manager. Downstream npm or yarn repositories must not receive pnpm-only
   hook commands unless pnpm is the selected package manager.

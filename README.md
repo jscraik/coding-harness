@@ -261,6 +261,12 @@ harness health --json
 **On failure:** For init or validation failures, inspect output and check file permissions (developer); for health failures, verify service availability or retry checks (infra/developer).
 
 Use this when a repository needs harness-managed contracts, workflow scaffolding, review policy surfaces, repo-local verification scripts, and rollback metadata.
+Generated CircleCI scaffolds include `scripts/resolve-circleci-pr-ref.sh` so
+`pr-template` and `linear-gate` share one bounded PR-context lookup before
+running governance gates. Generated validation scaffolds include
+`scripts/check-node-engine.mjs`; when an ambient shell uses an older Node than
+the repository requires, the checker retries through the repo-pinned mise Node
+before failing closed.
 
 ### Start Work On An Issue
 

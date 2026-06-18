@@ -12,6 +12,7 @@
 		"scripts/with-validation-lock.sh",
 		"scripts/check-validation-locks.sh",
 		"scripts/check-node-engine.mjs",
+		"scripts/resolve-circleci-pr-ref.sh",
 		"scripts/run-prek.sh",
 		"scripts/check-doc-style.sh",
 		"scripts/check-related-tests.sh",

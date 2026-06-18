@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-17T17:05:23Z
+Generated: 2026-06-18T00:52:18Z
 
 ## Table of Contents
 
@@ -30,27 +30,13 @@ Generated: 2026-06-17T17:05:23Z
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
 - `package.json`
-- `src/commands/check-environment-core.ts`
-- `src/commands/linear-gate-branch-policy.ts`
-- `src/commands/linear-gate-core.ts`
-- `src/commands/linear-gate-pr-template.ts`
-- `src/lib/deps/environment-runtime.ts`
 - `src/lib/init/README.md`
-- `src/lib/init/scaffold-environment-templates.ts`
-- `src/lib/init/scaffold-root-command-templates.ts`
-- `src/lib/init/scaffold-template-registry.ts`
-- `src/lib/memory/metrics-tracker.ts`
+- `src/lib/init/scaffold-script-template-registry.ts`
+- `scripts/check-environment.sh`
+- `scripts/resolve-circleci-pr-ref.sh`
 - `src/lib/policy/tooling-baseline.ts`
-- `src/presets/go-base.json`
-- `src/presets/minimal.json`
-- `src/presets/python-base.json`
-- `src/presets/rust-base.json`
-- `src/presets/strict.json`
-- `src/presets/swift-base.json`
-- `src/presets/typescript-base.json`
-- `src/templates/CODESTYLE.md`
-- `src/templates/codestyle/17-testing.md`
-- `src/templates/codestyle/CHECKSUMS.sha256`
+- `src/templates/circleci-config.yml`
+- `src/templates/circleci-linear-gate.yml`
 
 ## agent
 
@@ -904,6 +890,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_environment_core_2c16213f_a8a456d9
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_harness_audit_tracking_33e6a72e_eeff5b52
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_check_node_engine_217689bf_3e5964b2
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_types_policy_cfbecf01_fb84cd04
   ext_node_child_process_f62b7d19["node:child_process"] --> node_ci_migrate_core_7005b5af_7e295ae3
   ext_node_child_process_f62b7d19["node:child_process"] --> node_cli_5_9c446a0f_12d0ff9c
@@ -2052,4 +2039,3 @@ flowchart LR
   class github_e2e_2891a341,linear_e2e_decf3708,run_e2e_39efe696,env_b77349bf,check_public_api_docs_a9604f1b,check_steering_feedback_contract_80134459,run_harness_evals_77704768,validate_active_route_surface_905456c2,validate_decision_request_2e5c325e,validate_steering_application_receipt_c922e84a,validate_steering_queue_4bc0cc94,branch_protect_core_a8feb0fd,check_environment_core_2c16213f,ci_migrate_core_7005b5af,decision_request_118a770d,evidence_verify_3b73c290,linear_prepare_0c613ba6,linear_sync_a2fa2bf7,linear_triage_core_7cbca73e,linear_workflow_core_0e19cff4,pattern_scope_61ff946d,pr_closeout_env_9bfcd9ef,live_247610f4,review_gate_core_4c8001f9,symphony_check_e97f2ea0,ui_loop_internal_f2eb8892,ui_loop_shared_8c83b841,ui_loop_tooling_12b2d2c7,ui_loop_11660889,verify_coderabbit_490b4e71 userNode
 
 ```
-
