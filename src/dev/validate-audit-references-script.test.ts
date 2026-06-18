@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import {
 	mkdirSync,
 	mkdtempSync,
@@ -10,6 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
+import { runNodeScript, runScriptProcess } from "./script-test-utils.js";
 
 const SCRIPT_PATH = fileURLToPath(
 	new URL("../../scripts/validate-audit-references.cjs", import.meta.url),
@@ -25,7 +25,7 @@ function makeRoot() {
 	mkdirSync(join(root, "docs"), { recursive: true });
 	mkdirSync(join(root, "scripts"), { recursive: true });
 	mkdirSync(join(root, "src", "lib", "runtime"), { recursive: true });
-	spawnSync("git", ["init"], { cwd: root, encoding: "utf8" });
+	runScriptProcess("git", ["init"], { cwd: root });
 	return root;
 }
 
@@ -41,21 +41,14 @@ function write(root: string, repoPath: string, content = "fixture\n") {
 }
 
 function gitAdd(root: string, ...paths: string[]) {
-	const result = spawnSync("git", ["add", "--", ...paths], {
+	const result = runScriptProcess("git", ["add", "--", ...paths], {
 		cwd: root,
-		encoding: "utf8",
 	});
 	expect(result.status).toBe(0);
 }
 
 function runValidator(root: string, ...args: string[]) {
-	return spawnSync(
-		process.execPath,
-		[SCRIPT_PATH, ...args, "--root", root, "--json"],
-		{
-			encoding: "utf8",
-		},
-	);
+	return runNodeScript(SCRIPT_PATH, [...args, "--root", root, "--json"]);
 }
 
 function parseSingleJsonReport(result: ReturnType<typeof runValidator>) {

@@ -118,6 +118,45 @@ function writePatternScopeOutput(
 	return null;
 }
 
+function renderPatternScopeResult(
+	result: PatternScopeArtifact | PatternScopeError,
+	json: boolean,
+): number {
+	if ("error" in result) {
+		renderPatternScopeFailure(result, json);
+		return EXIT_CODES.FAILURE;
+	}
+
+	renderPatternScopeSuccess(result, json);
+	return EXIT_CODES.SUCCESS;
+}
+
+function renderPatternScopeFailure(
+	result: PatternScopeError,
+	json: boolean,
+): void {
+	if (json) {
+		console.info(JSON.stringify(result, null, 2));
+		return;
+	}
+	console.error(`Error: ${result.error.message}`);
+}
+
+function renderPatternScopeSuccess(
+	result: PatternScopeArtifact,
+	json: boolean,
+): void {
+	if (json) {
+		console.info(JSON.stringify(result, null, 2));
+		return;
+	}
+	console.info(`Pattern scope triggered: ${result.triggered ? "yes" : "no"}`);
+	console.info(`Candidate siblings: ${result.candidateSiblings.length}`);
+	if (result.outputPath) {
+		console.info(`Artifact: ${result.outputPath}`);
+	}
+}
+
 /**
  * Execute the pattern-scope command.
  *
@@ -169,26 +208,7 @@ export function runPatternScopeCLI(args: string[]): number {
 	}
 
 	const result = buildPatternScopeArtifact(artifactOptions);
-
-	if ("error" in result) {
-		if (json) {
-			console.info(JSON.stringify(result, null, 2));
-		} else {
-			console.error(`Error: ${result.error.message}`);
-		}
-		return EXIT_CODES.FAILURE;
-	}
-
-	if (json) {
-		console.info(JSON.stringify(result, null, 2));
-	} else {
-		console.info(`Pattern scope triggered: ${result.triggered ? "yes" : "no"}`);
-		console.info(`Candidate siblings: ${result.candidateSiblings.length}`);
-		if (result.outputPath) {
-			console.info(`Artifact: ${result.outputPath}`);
-		}
-	}
-	return EXIT_CODES.SUCCESS;
+	return renderPatternScopeResult(result, json);
 }
 
 /**

@@ -108,8 +108,9 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   lint/typecheck, and generated hook commands must follow the detected package
   manager rather than hard-coding pnpm.
 - Changed production source requires `pnpm run quality:docstrings`,
-  `pnpm run quality:size`, and `pnpm run test:related`; changed tests require
-  `pnpm run quality:self-affirming`.
+  `pnpm run quality:size`, and `pnpm run test:related`; `quality:size`
+  enforces changed production file size, function size, and function complexity.
+  Changed tests require `pnpm run quality:self-affirming`.
 - Runtime or artifact behavior changes require `pnpm test:deep`.
 - Docs-gate categories require
   `bash scripts/run-harness-gate.sh docs-gate --mode required --json`.

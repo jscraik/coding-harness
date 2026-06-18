@@ -7,6 +7,105 @@ const EXIT_CODES = {
 	USAGE: 2,
 } as const;
 
+type FlagInspection = ReturnType<typeof inspectFlagValue>;
+
+type ReviewContextCliOptions =
+	| {
+			ok: true;
+			json: boolean;
+			source?: string;
+			output?: string;
+			repoRoot?: string;
+			enforcementStatusPath?: string;
+			files: string[];
+	  }
+	| {
+			ok: false;
+			json: boolean;
+			errorCode: string;
+			message: string;
+	  };
+
+function flagInspections(args: string[]): Array<{
+	flag: string;
+	inspection: FlagInspection;
+}> {
+	return [
+		{ flag: "--source", inspection: inspectFlagValue(args, "--source") },
+		{ flag: "--output", inspection: inspectFlagValue(args, "--output") },
+		{ flag: "--repo-root", inspection: inspectFlagValue(args, "--repo-root") },
+		{
+			flag: "--enforcement-status",
+			inspection: inspectFlagValue(args, "--enforcement-status"),
+		},
+	];
+}
+
+function parseReviewContextArgs(args: string[]): ReviewContextCliOptions {
+	const json = args.includes("--json");
+	const inspections = flagInspections(args);
+	const missingValueFlag = inspections.find(
+		({ inspection }) => inspection.missingValue,
+	);
+	if (missingValueFlag) {
+		return {
+			ok: false,
+			json,
+			errorCode: "review-context.flag_value_required",
+			message: `harness review-context requires a value after ${missingValueFlag.flag}.`,
+		};
+	}
+	const files = inspectFlagList(args, "--files");
+	if (!files.present || files.missingValue) {
+		return {
+			ok: false,
+			json,
+			errorCode: "review-context.files_required",
+			message: "harness review-context requires --files.",
+		};
+	}
+	return {
+		ok: true,
+		json,
+		...(inspections[0]?.inspection.value
+			? { source: inspections[0].inspection.value }
+			: {}),
+		...(inspections[1]?.inspection.value
+			? { output: inspections[1].inspection.value }
+			: {}),
+		...(inspections[2]?.inspection.value
+			? { repoRoot: inspections[2].inspection.value }
+			: {}),
+		...(inspections[3]?.inspection.value
+			? { enforcementStatusPath: inspections[3].inspection.value }
+			: {}),
+		files: files.values,
+	};
+}
+
+function renderReviewContextResult(
+	result: ReturnType<typeof buildReviewContext>,
+	json: boolean,
+): void {
+	if (json) {
+		console.info(JSON.stringify(result, null, 2));
+		return;
+	}
+	if (result.status === "error") {
+		console.error(
+			`Error: ${result.error?.message ?? "Review context failed."}`,
+		);
+		return;
+	}
+	console.info(
+		[
+			`Applicable learnings: ${result.summary.applicableLearnings}`,
+			`Validation commands: ${result.summary.validationCommands}`,
+			...(result.outputPath ? [`Artifact: ${result.outputPath}`] : []),
+		].join("\n"),
+	);
+}
+
 /**
  * Execute the `harness review-context` CLI workflow.
  *
@@ -18,60 +117,25 @@ const EXIT_CODES = {
  * @returns The process exit code: `EXIT_CODES.SUCCESS` (0) for success, `EXIT_CODES.FAILURE` (1) for runtime errors, or `EXIT_CODES.USAGE` (2) for usage/flag errors
  */
 export function runReviewContextCLI(args: string[]): number {
-	const json = args.includes("--json");
-	const sourceFlag = inspectFlagValue(args, "--source");
-	const outputFlag = inspectFlagValue(args, "--output");
-	const repoRootFlag = inspectFlagValue(args, "--repo-root");
-	const enforcementStatusFlag = inspectFlagValue(args, "--enforcement-status");
-	const missingValueFlag = [
-		{ flag: "--source", inspection: sourceFlag },
-		{ flag: "--output", inspection: outputFlag },
-		{ flag: "--repo-root", inspection: repoRootFlag },
-		{ flag: "--enforcement-status", inspection: enforcementStatusFlag },
-	].find(({ inspection }) => inspection.missingValue);
-	if (missingValueFlag) {
+	const parsed = parseReviewContextArgs(args);
+	if (!parsed.ok) {
 		return emitError({
-			json,
-			errorCode: "review-context.flag_value_required",
-			message: `harness review-context requires a value after ${missingValueFlag.flag}.`,
-			exitCode: EXIT_CODES.USAGE,
-		});
-	}
-	const source = sourceFlag.value;
-	const output = outputFlag.value;
-	const repoRoot = repoRootFlag.value;
-	const enforcementStatusPath = enforcementStatusFlag.value;
-	const files = inspectFlagList(args, "--files");
-	if (!files.present || files.missingValue) {
-		return emitError({
-			json,
-			errorCode: "review-context.files_required",
-			message: "harness review-context requires --files.",
+			json: parsed.json,
+			errorCode: parsed.errorCode,
+			message: parsed.message,
 			exitCode: EXIT_CODES.USAGE,
 		});
 	}
 	const result = buildReviewContext({
-		...(source ? { source } : {}),
-		...(output ? { output } : {}),
-		...(repoRoot ? { repoRoot } : {}),
-		...(enforcementStatusPath ? { enforcementStatusPath } : {}),
-		files: files.values,
+		...(parsed.source ? { source: parsed.source } : {}),
+		...(parsed.output ? { output: parsed.output } : {}),
+		...(parsed.repoRoot ? { repoRoot: parsed.repoRoot } : {}),
+		...(parsed.enforcementStatusPath
+			? { enforcementStatusPath: parsed.enforcementStatusPath }
+			: {}),
+		files: parsed.files,
 	});
-	if (json) {
-		console.info(JSON.stringify(result, null, 2));
-	} else if (result.status === "error") {
-		console.error(
-			`Error: ${result.error?.message ?? "Review context failed."}`,
-		);
-	} else {
-		console.info(
-			[
-				`Applicable learnings: ${result.summary.applicableLearnings}`,
-				`Validation commands: ${result.summary.validationCommands}`,
-				...(result.outputPath ? [`Artifact: ${result.outputPath}`] : []),
-			].join("\n"),
-		);
-	}
+	renderReviewContextResult(result, parsed.json);
 	return result.status === "error" ? EXIT_CODES.FAILURE : EXIT_CODES.SUCCESS;
 }
 

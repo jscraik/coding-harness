@@ -412,7 +412,8 @@ on their own. Run the smallest real executable path that exercises the exact
 
 production code touched whenever feasible, and run the changed-source ratchets:
 `pnpm run quality:docstrings`, `pnpm run quality:size`, and
-`pnpm run test:related`.
+`pnpm run test:related`. Treat `quality:size` failures for changed
+production file size, function size, or function complexity as blockers.
 
 Prefer invoking the production function, class, CLI command, shell script,
 validator, or route directly. If no existing test covers the path, create a

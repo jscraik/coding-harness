@@ -1,43 +1,69 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+type PackageManager = {
+	name: string;
+	command: string;
+};
+
+const PACKAGE_MANAGER_PREFIXES: PackageManager[] = [
+	{ name: "pnpm", command: "pnpm" },
+	{ name: "bun", command: "bun" },
+	{ name: "yarn", command: "yarn" },
+	{ name: "npm", command: "npm" },
+];
+
+const LOCKFILE_PACKAGE_MANAGERS: Array<{
+	paths: string[];
+	packageManager: PackageManager;
+}> = [
+	{
+		paths: ["pnpm-lock.yaml"],
+		packageManager: { name: "pnpm", command: "pnpm" },
+	},
+	{
+		paths: ["bun.lockb", "bun.lock"],
+		packageManager: { name: "bun", command: "bun" },
+	},
+	{ paths: ["yarn.lock"], packageManager: { name: "yarn", command: "yarn" } },
+];
+
+function packageManagerFromPackageJson(
+	cwd: string,
+): PackageManager | undefined {
+	const packageJsonPath = join(cwd, "package.json");
+	if (!existsSync(packageJsonPath)) {
+		return undefined;
+	}
+	try {
+		const pkg = JSON.parse(readFileSync(packageJsonPath, "utf-8")) as {
+			packageManager?: string;
+		};
+		return PACKAGE_MANAGER_PREFIXES.find((pm) =>
+			pkg.packageManager?.startsWith(`${pm.name}@`),
+		);
+	} catch {
+		return undefined;
+	}
+}
+
+function packageManagerFromLockfile(cwd: string): PackageManager | undefined {
+	return LOCKFILE_PACKAGE_MANAGERS.find((entry) =>
+		entry.paths.some((path) => existsSync(join(cwd, path))),
+	)?.packageManager;
+}
+
 /**
  * Detect package manager and return run command.
  */
-export function detectPackageManager(cwd = process.cwd()): {
-	name: string;
-	command: string;
-} {
-	const packageJsonPath = join(cwd, "package.json");
-	if (existsSync(packageJsonPath)) {
-		try {
-			const pkg = JSON.parse(readFileSync(packageJsonPath, "utf-8")) as {
-				packageManager?: string;
-			};
-			if (pkg.packageManager?.startsWith("pnpm@")) {
-				return { name: "pnpm", command: "pnpm" };
-			}
-			if (pkg.packageManager?.startsWith("bun@")) {
-				return { name: "bun", command: "bun" };
-			}
-			if (pkg.packageManager?.startsWith("yarn@")) {
-				return { name: "yarn", command: "yarn" };
-			}
-			if (pkg.packageManager?.startsWith("npm@")) {
-				return { name: "npm", command: "npm" };
-			}
-		} catch {
-			// Fall through to lockfile detection.
-		}
+export function detectPackageManager(cwd = process.cwd()): PackageManager {
+	const configured = packageManagerFromPackageJson(cwd);
+	if (configured) {
+		return configured;
 	}
-	if (existsSync(join(cwd, "pnpm-lock.yaml"))) {
-		return { name: "pnpm", command: "pnpm" };
-	}
-	if (existsSync(join(cwd, "bun.lockb")) || existsSync(join(cwd, "bun.lock"))) {
-		return { name: "bun", command: "bun" };
-	}
-	if (existsSync(join(cwd, "yarn.lock"))) {
-		return { name: "yarn", command: "yarn" };
+	const detected = packageManagerFromLockfile(cwd);
+	if (detected) {
+		return detected;
 	}
 	return { name: "npm", command: "npm" };
 }

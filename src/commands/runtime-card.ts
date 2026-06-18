@@ -25,18 +25,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isCodexRuntimeEvidence(value: unknown): value is CodexRuntimeEvidence {
+	return (
+		isRecord(value) &&
+		value.schemaVersion === CODEX_RUNTIME_EVIDENCE_SCHEMA_VERSION
+	);
+}
+
 function normalizeEvidenceInput(
 	evidence: unknown,
 	artifactPath: string,
 ): unknown {
-	if (
-		isRecord(evidence) &&
-		evidence.schemaVersion === CODEX_RUNTIME_EVIDENCE_SCHEMA_VERSION
-	) {
-		return adaptCodexRuntimeEvidenceToRuntimeEvidenceBundle(
-			evidence as unknown as CodexRuntimeEvidence,
-			{ provenanceRef: `artifact:${artifactPath}` },
-		);
+	if (isCodexRuntimeEvidence(evidence)) {
+		return adaptCodexRuntimeEvidenceToRuntimeEvidenceBundle(evidence, {
+			provenanceRef: `artifact:${artifactPath}`,
+		});
 	}
 	return evidence;
 }

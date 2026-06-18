@@ -84,15 +84,95 @@ type FlagParseResult =
 	| "unknown"
 	| { exitCode: number };
 
+type StringFlagConfig = {
+	errorMessage: string;
+	assign: (options: PrCloseoutCLIOptions, value: string) => void;
+};
+
+const STRING_FLAGS: Readonly<Record<string, StringFlagConfig>> = {
+	"--repo": {
+		errorMessage: "pr-closeout: --repo requires a path",
+		assign: (options, value) => {
+			options.repoRoot = resolve(value);
+		},
+	},
+	"--input": {
+		errorMessage: "pr-closeout: --input requires a path",
+		assign: (options, value) => {
+			options.inputPath = value;
+		},
+	},
+	"--env-file": {
+		errorMessage: "pr-closeout: --env-file requires a path",
+		assign: (options, value) => {
+			options.envFilePath = resolve(value);
+		},
+	},
+	"--phase-exit": {
+		errorMessage: "pr-closeout: --phase-exit requires a path",
+		assign: (options, value) => {
+			options.phaseExitPath = value;
+		},
+	},
+	"--gates": {
+		errorMessage: "pr-closeout: --gates requires a path",
+		assign: (options, value) => {
+			options.closeoutGatesPath = value;
+		},
+	},
+	"--assurance": {
+		errorMessage: "pr-closeout: --assurance requires a path",
+		assign: (options, value) => {
+			options.assurancePath = value;
+		},
+	},
+	"--runtime-evidence": {
+		errorMessage: "pr-closeout: --runtime-evidence requires a path",
+		assign: (options, value) => {
+			options.runtimeEvidencePath = value;
+		},
+	},
+};
+
 function applyStringFlag(
+	options: PrCloseoutCLIOptions,
 	args: readonly string[],
 	index: number,
-	assign: (value: string) => void,
-	errorMessage: string,
+	config: StringFlagConfig,
 ): FlagParseResult {
-	const value = requireFlagValue(args, index, errorMessage);
+	const value = requireFlagValue(args, index, config.errorMessage);
 	if (!value) return { exitCode: 2 };
-	assign(value);
+	config.assign(options, value);
+	return "handled";
+}
+
+function applyPrNumberFlag(
+	options: PrCloseoutCLIOptions,
+	args: readonly string[],
+	index: number,
+): FlagParseResult {
+	const value = parsePositiveInteger(readFlagValue(args, index));
+	if (!value) {
+		console.error("pr-closeout: --pr requires a positive integer");
+		return { exitCode: 2 };
+	}
+	options.prNumber = value;
+	return "handled";
+}
+
+function applyReleaseReadinessImpactFlag(
+	options: PrCloseoutCLIOptions,
+	args: readonly string[],
+	index: number,
+): FlagParseResult {
+	const value = parseReleaseReadinessImpact(readFlagValue(args, index));
+	if (!value) {
+		console.error(
+			"pr-closeout: --release-readiness-impact requires one of none, governed_change, release_blocker, unknown",
+		);
+		return { exitCode: 2 };
+	}
+	options.releaseReadinessImpact = value;
 	return "handled";
 }
 
@@ -102,101 +182,18 @@ function applyPrCloseoutFlag(
 	index: number,
 ): FlagParseResult {
 	const arg = args[index];
-	if (arg === "--repo") {
-		return applyStringFlag(
-			args,
-			index,
-			(value) => {
-				options.repoRoot = resolve(value);
-			},
-			"pr-closeout: --repo requires a path",
-		);
-	}
-	if (arg === "--input") {
-		return applyStringFlag(
-			args,
-			index,
-			(value) => {
-				options.inputPath = value;
-			},
-			"pr-closeout: --input requires a path",
-		);
-	}
 	if (arg === "--pr") {
-		const value = parsePositiveInteger(readFlagValue(args, index));
-		if (!value) {
-			console.error("pr-closeout: --pr requires a positive integer");
-			return { exitCode: 2 };
-		}
-		options.prNumber = value;
-		return "handled";
+		return applyPrNumberFlag(options, args, index);
 	}
 	if (arg === "--snapshot") {
 		options.snapshot = true;
 		return "handledWithoutArg";
 	}
-	if (arg === "--env-file") {
-		return applyStringFlag(
-			args,
-			index,
-			(value) => {
-				options.envFilePath = resolve(value);
-			},
-			"pr-closeout: --env-file requires a path",
-		);
-	}
-	if (arg === "--phase-exit") {
-		return applyStringFlag(
-			args,
-			index,
-			(value) => {
-				options.phaseExitPath = value;
-			},
-			"pr-closeout: --phase-exit requires a path",
-		);
-	}
-	if (arg === "--gates") {
-		return applyStringFlag(
-			args,
-			index,
-			(value) => {
-				options.closeoutGatesPath = value;
-			},
-			"pr-closeout: --gates requires a path",
-		);
-	}
-	if (arg === "--assurance") {
-		return applyStringFlag(
-			args,
-			index,
-			(value) => {
-				options.assurancePath = value;
-			},
-			"pr-closeout: --assurance requires a path",
-		);
-	}
-	if (arg === "--runtime-evidence") {
-		return applyStringFlag(
-			args,
-			index,
-			(value) => {
-				options.runtimeEvidencePath = value;
-			},
-			"pr-closeout: --runtime-evidence requires a path",
-		);
-	}
 	if (arg === "--release-readiness-impact") {
-		const value = parseReleaseReadinessImpact(readFlagValue(args, index));
-		if (!value) {
-			console.error(
-				"pr-closeout: --release-readiness-impact requires one of none, governed_change, release_blocker, unknown",
-			);
-			return { exitCode: 2 };
-		}
-		options.releaseReadinessImpact = value;
-		return "handled";
+		return applyReleaseReadinessImpactFlag(options, args, index);
 	}
-	return "unknown";
+	const config = typeof arg === "string" ? STRING_FLAGS[arg] : undefined;
+	return config ? applyStringFlag(options, args, index, config) : "unknown";
 }
 
 function validatePrCloseoutOptions(

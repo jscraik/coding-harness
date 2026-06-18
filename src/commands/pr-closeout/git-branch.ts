@@ -50,6 +50,88 @@ function remoteBaseRefs(
 	return Array.from(refs);
 }
 
+function attachHeadEvidence(
+	branch: PrCloseoutBranchInput,
+	repoRoot: string,
+	env: NodeJS.ProcessEnv,
+	runner: CommandRunner,
+	expectedHeadSha?: string | null,
+): boolean {
+	const headBindingExpected = expectedHeadSha !== undefined;
+	const expectedHead = expectedHeadSha?.trim();
+	if (headBindingExpected) {
+		branch.matchesPullRequestHead = null;
+	}
+	try {
+		const headSha = runner("git", ["rev-parse", "HEAD"], {
+			cwd: repoRoot,
+			env,
+		}).trim();
+		if (headSha.length > 0) {
+			branch.headSha = headSha;
+			if (expectedHead) {
+				branch.matchesPullRequestHead = headSha === expectedHead;
+			}
+		}
+	} catch {
+		// Head SHA is optional evidence; keep the rest of the branch snapshot.
+	}
+	return headBindingExpected;
+}
+
+function clearDriftEvidence(branch: PrCloseoutBranchInput): void {
+	branch.behindBy = null;
+	branch.aheadBy = null;
+	branch.behindBase = null;
+}
+
+function attachDriftEvidence(
+	branch: PrCloseoutBranchInput,
+	repoRoot: string,
+	env: NodeJS.ProcessEnv,
+	runner: CommandRunner,
+	baseRefs: string[],
+): boolean {
+	return baseRefs.some((baseRef) => {
+		try {
+			const drift = runner(
+				"git",
+				["rev-list", "--left-right", "--count", `${baseRef}...HEAD`],
+				{ cwd: repoRoot, env },
+			)
+				.trim()
+				.split(/\s+/u)
+				.map((value) => Number.parseInt(value, 10));
+			branch.behindBy = Number.isInteger(drift[0]) ? (drift[0] ?? null) : null;
+			branch.aheadBy = Number.isInteger(drift[1]) ? (drift[1] ?? null) : null;
+			branch.behindBase = branch.behindBy === null ? null : branch.behindBy > 0;
+			return branch.behindBy !== null && branch.aheadBy !== null;
+		} catch {
+			return false;
+		}
+	});
+}
+
+function headMatchesExpected(
+	branch: PrCloseoutBranchInput,
+	headBindingExpected: boolean,
+): boolean {
+	return headBindingExpected
+		? branch.matchesPullRequestHead === true
+		: branch.matchesPullRequestHead !== false;
+}
+
+function classifyWorktreeRole(
+	branch: PrCloseoutBranchInput,
+	headBindingExpected: boolean,
+): "implementation" | "orientation" {
+	return branch.clean === true &&
+		branch.behindBase === false &&
+		headMatchesExpected(branch, headBindingExpected)
+		? "implementation"
+		: "orientation";
+}
+
 /** Builds the live git branch evidence used by PR closeout. */
 export function inspectGitBranch(
 	repoRoot: string,
@@ -63,63 +145,29 @@ export function inspectGitBranch(
 		clean: inspectGitClean(repoRoot, gitEnv, runner),
 		worktreeRole: "unknown",
 	};
-	const headBindingExpected = expectedHeadSha !== undefined;
-	const expectedHead = expectedHeadSha?.trim();
-	if (headBindingExpected) {
-		branch.matchesPullRequestHead = null;
-	}
-	try {
-		const headSha = runner("git", ["rev-parse", "HEAD"], {
-			cwd: repoRoot,
-			env: gitEnv,
-		}).trim();
-		if (headSha.length > 0) {
-			branch.headSha = headSha;
-			if (expectedHead) {
-				branch.matchesPullRequestHead = headSha === expectedHead;
-			}
-		}
-	} catch {
-		// Head SHA is optional evidence; keep the rest of the branch snapshot.
-	}
+	const headBindingExpected = attachHeadEvidence(
+		branch,
+		repoRoot,
+		gitEnv,
+		runner,
+		expectedHeadSha,
+	);
 	const baseRefs = remoteBaseRefs(repoRoot, gitEnv, runner, baseRefName);
 	if (baseRefs.length === 0) {
-		branch.behindBy = null;
-		branch.aheadBy = null;
-		branch.behindBase = null;
+		clearDriftEvidence(branch);
 		branch.worktreeRole = "orientation";
 		return branch;
 	}
-	const observedDrift = baseRefs.some((baseRef) => {
-		try {
-			const drift = runner(
-				"git",
-				["rev-list", "--left-right", "--count", `${baseRef}...HEAD`],
-				{ cwd: repoRoot, env: gitEnv },
-			)
-				.trim()
-				.split(/\s+/u)
-				.map((value) => Number.parseInt(value, 10));
-			branch.behindBy = Number.isInteger(drift[0]) ? (drift[0] ?? null) : null;
-			branch.aheadBy = Number.isInteger(drift[1]) ? (drift[1] ?? null) : null;
-			branch.behindBase = branch.behindBy === null ? null : branch.behindBy > 0;
-			return branch.behindBy !== null && branch.aheadBy !== null;
-		} catch {
-			return false;
-		}
-	});
+	const observedDrift = attachDriftEvidence(
+		branch,
+		repoRoot,
+		gitEnv,
+		runner,
+		baseRefs,
+	);
 	if (!observedDrift) {
-		branch.behindBy = null;
-		branch.aheadBy = null;
-		branch.behindBase = null;
+		clearDriftEvidence(branch);
 	}
-	branch.worktreeRole =
-		branch.clean === true &&
-		branch.behindBase === false &&
-		(headBindingExpected
-			? branch.matchesPullRequestHead === true
-			: branch.matchesPullRequestHead !== false)
-			? "implementation"
-			: "orientation";
+	branch.worktreeRole = classifyWorktreeRole(branch, headBindingExpected);
 	return branch;
 }

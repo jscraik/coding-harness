@@ -13,6 +13,82 @@ import {
 export { runSilentErrorDetector, EXIT_CODES };
 export type { SilentErrorDetectorOptions };
 
+type SilentErrorResult = ReturnType<typeof runSilentErrorDetector>;
+type SilentErrorDetection = SilentErrorResult["detections"][number];
+
+function detectionsByFile(
+	detections: SilentErrorDetection[],
+): Map<string, SilentErrorDetection[]> {
+	const byFile = new Map<string, SilentErrorDetection[]>();
+	for (const detection of detections) {
+		const existing = byFile.get(detection.file) ?? [];
+		existing.push(detection);
+		byFile.set(detection.file, existing);
+	}
+	return byFile;
+}
+
+function printHeader(passed: boolean): void {
+	const statusIcon = passed ? "✓" : "✗";
+	const statusText = passed ? "PASSED" : "FAILED";
+	console.log(`${statusIcon} Silent error detection ${statusText}`);
+	console.log();
+}
+
+function printDetection(
+	detection: SilentErrorDetection,
+	showSuggestions: boolean | undefined,
+): void {
+	const icon = detection.severity === "error" ? "✗" : "⚠";
+	console.log(
+		`  ${icon} Line ${detection.line}:${detection.column} - ${detection.description}`,
+	);
+	console.log(`     ${detection.snippet.slice(0, 60)}...`);
+	if (showSuggestions && detection.suggestion) {
+		console.log(`     💡 ${detection.suggestion}`);
+	}
+}
+
+function printDetections(
+	result: SilentErrorResult,
+	showSuggestions?: boolean,
+): void {
+	for (const [file, detections] of detectionsByFile(result.detections)) {
+		console.log(`📁 ${file}`);
+		for (const detection of detections) {
+			printDetection(detection, showSuggestions);
+		}
+		console.log();
+	}
+}
+
+function printSummary(result: SilentErrorResult): void {
+	console.log(`Summary: ${result.filesAnalyzed} files analyzed`);
+	console.log(
+		`  ${result.summary.errors} errors, ${result.summary.warnings} warnings`,
+	);
+	if (result.summary.total === 0) {
+		return;
+	}
+	console.log("  By type:");
+	for (const [type, count] of Object.entries(result.summary.byType)) {
+		if (count > 0) {
+			console.log(`    - ${type}: ${count}`);
+		}
+	}
+}
+
+function printHumanResult(
+	result: SilentErrorResult,
+	options: SilentErrorDetectorOptions,
+): void {
+	printHeader(result.passed);
+	if (result.detections.length > 0) {
+		printDetections(result, options.suggestions);
+	}
+	printSummary(result);
+}
+
 /**
  * Run the silent error detector and print the results to stdout.
  *
@@ -34,51 +110,7 @@ export function runSilentErrorDetectorCLI(
 	if (options.json) {
 		console.log(JSON.stringify(result, null, 2));
 	} else {
-		// Print summary header
-		const statusIcon = result.passed ? "✓" : "✗";
-		const statusText = result.passed ? "PASSED" : "FAILED";
-		console.log(`${statusIcon} Silent error detection ${statusText}`);
-		console.log();
-
-		if (result.detections.length > 0) {
-			// Group by file
-			const byFile = new Map<string, typeof result.detections>();
-			for (const d of result.detections) {
-				const existing = byFile.get(d.file) ?? [];
-				existing.push(d);
-				byFile.set(d.file, existing);
-			}
-
-			for (const [file, detections] of byFile) {
-				console.log(`📁 ${file}`);
-				for (const d of detections) {
-					const icon = d.severity === "error" ? "✗" : "⚠";
-					console.log(
-						`  ${icon} Line ${d.line}:${d.column} - ${d.description}`,
-					);
-					console.log(`     ${d.snippet.slice(0, 60)}...`);
-					if (options.suggestions && d.suggestion) {
-						console.log(`     💡 ${d.suggestion}`);
-					}
-				}
-				console.log();
-			}
-		}
-
-		console.log(`Summary: ${result.filesAnalyzed} files analyzed`);
-		console.log(
-			`  ${result.summary.errors} errors, ${result.summary.warnings} warnings`,
-		);
-
-		// Show breakdown by type if any found
-		if (result.summary.total > 0) {
-			console.log("  By type:");
-			for (const [type, count] of Object.entries(result.summary.byType)) {
-				if (count > 0) {
-					console.log(`    - ${type}: ${count}`);
-				}
-			}
-		}
+		printHumanResult(result, options);
 	}
 
 	return result.passed ? EXIT_CODES.SUCCESS : EXIT_CODES.SILENT_ERRORS_FOUND;

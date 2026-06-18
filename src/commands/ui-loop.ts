@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 import {
+	type CommandExecutionResult,
 	type UIEvidence,
 	type UIExploreOptions,
 	type UIFastOptions,
+	type UILoopMode,
 	type UIVerifyOptions,
 	buildExecutionDisabledResult,
 	buildPrepareResult,
@@ -21,6 +23,7 @@ import {
 	resolveHeadSha,
 	resolveVerifyCommandSpec,
 	withExecutionDisabledError,
+	type CommandSpec,
 	type UIExecutionContext,
 } from "./ui-loop-internal.js";
 export type {
@@ -31,6 +34,112 @@ export type {
 	UIVerifyOptions,
 } from "./ui-loop-shared.js";
 export { EXIT_CODES } from "./ui-loop-internal.js";
+
+type UICommandResult = {
+	exitCode: number;
+	message: string;
+	artifact?: UIEvidence;
+	evidence?: UIEvidence;
+};
+
+function uiExecutionContext(contractPath: string): {
+	policy: ReturnType<typeof getContractUILoopContext>["policy"];
+	executionContext: UIExecutionContext;
+} {
+	const contractContext = getContractUILoopContext(contractPath);
+	return {
+		policy: contractContext.policy,
+		executionContext: {
+			headSha: resolveHeadSha(),
+			contractVersion: contractContext.contractVersion,
+		},
+	};
+}
+
+function executeOrPrepare(
+	mode: UILoopMode,
+	commandSpec: CommandSpec,
+	timeoutMs: number,
+	inheritStdio = false,
+): CommandExecutionResult {
+	if (mode !== "execute") return buildPrepareResult(EXIT_CODES.SUCCESS);
+	if (isExecutionDisabled(EXECUTION_DISABLE_ENV)) {
+		return buildExecutionDisabledResult(
+			EXIT_CODES.EXECUTION_DISABLED,
+			EXECUTION_DISABLED_MESSAGE,
+		);
+	}
+	return executeCommand(commandSpec, timeoutMs, inheritStdio);
+}
+
+function exitCodeForEvidence(evidence: UIEvidence): number {
+	if (evidence.exitCode === EXIT_CODES.EXECUTION_DISABLED) {
+		return EXIT_CODES.EXECUTION_DISABLED;
+	}
+	return evidence.passed ? EXIT_CODES.SUCCESS : EXIT_CODES.COMMAND_FAILED;
+}
+
+function jsonPayload(
+	evidence: UIEvidence,
+	exitCode: number,
+	extra: Record<string, unknown> = {},
+): string {
+	return JSON.stringify(
+		withExecutionDisabledError(
+			{
+				timestamp: evidence.timestamp,
+				command: evidence.command,
+				durationMs: evidence.durationMs,
+				mode: evidence.mode,
+				executed: evidence.executed,
+				passed: evidence.passed,
+				exitCode: evidence.exitCode,
+				head_sha: evidence.headSha,
+				contract_version: evidence.contractVersion,
+				artifact_uri: evidence.artifactUri,
+				artifact_checksum: evidence.artifactChecksum,
+				...extra,
+				...(evidence.timedOut ? { timedOut: true } : {}),
+				...(evidence.stdout ? { stdout: evidence.stdout } : {}),
+				...(evidence.stderr ? { stderr: evidence.stderr } : {}),
+			},
+			exitCode,
+		),
+	);
+}
+
+function humanMessage(
+	label: string,
+	mode: UILoopMode,
+	evidence: UIEvidence,
+	details: readonly string[],
+): string {
+	const statusLabel = evidence.passed ? "✓" : "✗";
+	return [
+		`${statusLabel} ${label} ${mode} ${evidence.executed ? "executed" : "prepared"}`,
+		...details,
+		`Artifact: ${evidence.artifactUri}`,
+		`Checksum: ${evidence.artifactChecksum}`,
+	]
+		.map((line, index) => (index === 0 ? line : `  ${line}`))
+		.join("\n");
+}
+
+function resultWithArtifact(
+	evidence: UIEvidence,
+	exitCode: number,
+	message: string,
+): UICommandResult {
+	return { exitCode, message, artifact: evidence };
+}
+
+function resultWithEvidence(
+	evidence: UIEvidence,
+	exitCode: number,
+	message: string,
+): UICommandResult {
+	return { exitCode, message, evidence };
+}
 
 /**
  * Run UI fast loop - Storybook-first local development
@@ -43,28 +152,14 @@ export function runUIFast(options: UIFastOptions = {}): {
 	const { json = false } = options;
 	const mode = resolveMode(options.mode, options.dryRun);
 	const contractPath = options.contractPath ?? "harness.contract.json";
-	const contractContext = getContractUILoopContext(contractPath);
-	const policy = contractContext.policy;
-	const executionContext: UIExecutionContext = {
-		headSha: resolveHeadSha(),
-		contractVersion: contractContext.contractVersion,
-	};
+	const { policy, executionContext } = uiExecutionContext(contractPath);
 
 	const resolved = resolveFastCommandSpec(options, policy, json);
 	if (!resolved.ok) {
 		return { exitCode: resolved.exitCode, message: resolved.message };
 	}
 	const { commandSpec, fullCmd, packageManager } = resolved;
-
-	const execution =
-		mode === "execute"
-			? isExecutionDisabled(EXECUTION_DISABLE_ENV)
-				? buildExecutionDisabledResult(
-						EXIT_CODES.EXECUTION_DISABLED,
-						EXECUTION_DISABLED_MESSAGE,
-					)
-				: executeCommand(commandSpec, 8000, true)
-			: buildPrepareResult(EXIT_CODES.SUCCESS);
+	const execution = executeOrPrepare(mode, commandSpec, 8000, true);
 	const artifact = createEvidence(
 		"ui:fast",
 		mode,
@@ -77,47 +172,21 @@ export function runUIFast(options: UIFastOptions = {}): {
 		},
 		executionContext,
 	);
-	const exitCode =
-		artifact.exitCode === EXIT_CODES.EXECUTION_DISABLED
-			? EXIT_CODES.EXECUTION_DISABLED
-			: artifact.passed
-				? EXIT_CODES.SUCCESS
-				: EXIT_CODES.COMMAND_FAILED;
+	const exitCode = exitCodeForEvidence(artifact);
 
 	if (json) {
-		const payload = withExecutionDisabledError(
-			{
-				timestamp: artifact.timestamp,
-				command: artifact.command,
-				durationMs: artifact.durationMs,
-				mode: artifact.mode,
-				executed: artifact.executed,
-				passed: artifact.passed,
-				exitCode: artifact.exitCode,
-				head_sha: artifact.headSha,
-				contract_version: artifact.contractVersion,
-				artifact_uri: artifact.artifactUri,
-				artifact_checksum: artifact.artifactChecksum,
-				...(artifact.timedOut ? { timedOut: true } : {}),
-				...(artifact.stdout ? { stdout: artifact.stdout } : {}),
-				...(artifact.stderr ? { stderr: artifact.stderr } : {}),
-			},
-			exitCode,
-		);
-		return {
-			exitCode,
-			message: JSON.stringify(payload),
+		return resultWithArtifact(
 			artifact,
-		};
+			exitCode,
+			jsonPayload(artifact, exitCode),
+		);
 	}
-
-	const statusLabel = artifact.passed ? "✓" : "✗";
-	const message = `${statusLabel} UI fast ${mode} ${artifact.executed ? "executed" : "prepared"}\n  Command: ${fullCmd}\n  Duration: ${artifact.durationMs}ms\n  Package manager: ${packageManager}\n  Artifact: ${artifact.artifactUri}\n  Checksum: ${artifact.artifactChecksum}`;
-	return {
-		exitCode,
-		message,
-		artifact,
-	};
+	const message = humanMessage("UI fast", mode, artifact, [
+		`Command: ${fullCmd}`,
+		`Duration: ${artifact.durationMs}ms`,
+		`Package manager: ${packageManager}`,
+	]);
+	return resultWithArtifact(artifact, exitCode, message);
 }
 
 /**
@@ -131,28 +200,14 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 	const { json = false } = options;
 	const mode = resolveMode(options.mode, options.dryRun);
 	const contractPath = options.contractPath ?? "harness.contract.json";
-	const contractContext = getContractUILoopContext(contractPath);
-	const policy = contractContext.policy;
-	const executionContext: UIExecutionContext = {
-		headSha: resolveHeadSha(),
-		contractVersion: contractContext.contractVersion,
-	};
+	const { policy, executionContext } = uiExecutionContext(contractPath);
 
 	const resolved = resolveVerifyCommandSpec(options, policy, json);
 	if (!resolved.ok) {
 		return { exitCode: resolved.exitCode, message: resolved.message };
 	}
 	const { commandSpec, fullCmd, packageManager } = resolved;
-
-	const execution =
-		mode === "execute"
-			? isExecutionDisabled(EXECUTION_DISABLE_ENV)
-				? buildExecutionDisabledResult(
-						EXIT_CODES.EXECUTION_DISABLED,
-						EXECUTION_DISABLED_MESSAGE,
-					)
-				: executeCommand(commandSpec, 10 * 60 * 1000)
-			: buildPrepareResult(EXIT_CODES.SUCCESS);
+	const execution = executeOrPrepare(mode, commandSpec, 10 * 60 * 1000);
 	const evidence = createEvidence(
 		"ui:verify",
 		mode,
@@ -166,47 +221,21 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 		},
 		executionContext,
 	);
-	const exitCode =
-		evidence.exitCode === EXIT_CODES.EXECUTION_DISABLED
-			? EXIT_CODES.EXECUTION_DISABLED
-			: evidence.passed
-				? EXIT_CODES.SUCCESS
-				: EXIT_CODES.COMMAND_FAILED;
+	const exitCode = exitCodeForEvidence(evidence);
 
 	if (json) {
-		const payload = withExecutionDisabledError(
-			{
-				timestamp: evidence.timestamp,
-				command: evidence.command,
-				durationMs: evidence.durationMs,
-				mode: evidence.mode,
-				executed: evidence.executed,
-				passed: evidence.passed,
-				exitCode: evidence.exitCode,
-				head_sha: evidence.headSha,
-				contract_version: evidence.contractVersion,
-				artifact_uri: evidence.artifactUri,
-				artifact_checksum: evidence.artifactChecksum,
-				...(evidence.timedOut ? { timedOut: true } : {}),
-				...(evidence.stdout ? { stdout: evidence.stdout } : {}),
-				...(evidence.stderr ? { stderr: evidence.stderr } : {}),
-			},
-			exitCode,
-		);
-		return {
-			exitCode,
-			message: JSON.stringify(payload),
+		return resultWithEvidence(
 			evidence,
-		};
+			exitCode,
+			jsonPayload(evidence, exitCode),
+		);
 	}
-
-	const statusLabel = evidence.passed ? "✓" : "✗";
-	const message = `${statusLabel} UI verify ${mode} ${evidence.executed ? "executed" : "prepared"}\n  Command: ${fullCmd}\n  Duration: ${evidence.durationMs}ms\n  Package manager: ${packageManager}\n  Artifact: ${evidence.artifactUri}\n  Checksum: ${evidence.artifactChecksum}`;
-	return {
-		exitCode,
-		message,
-		evidence,
-	};
+	const message = humanMessage("UI verify", mode, evidence, [
+		`Command: ${fullCmd}`,
+		`Duration: ${evidence.durationMs}ms`,
+		`Package manager: ${packageManager}`,
+	]);
+	return resultWithEvidence(evidence, exitCode, message);
 }
 
 /**
@@ -220,12 +249,7 @@ export function runUIExplore(options: UIExploreOptions = {}): {
 	const { json = false } = options;
 	const mode = resolveMode(options.mode, options.dryRun);
 	const contractPath = options.contractPath ?? "harness.contract.json";
-	const contractContext = getContractUILoopContext(contractPath);
-	const policy = contractContext.policy;
-	const executionContext: UIExecutionContext = {
-		headSha: resolveHeadSha(),
-		contractVersion: contractContext.contractVersion,
-	};
+	const { policy, executionContext } = uiExecutionContext(contractPath);
 
 	const url = options.url ?? "http://localhost:3000";
 	const outputDir = options.outputDir ?? "./ui-explore-output";
@@ -242,16 +266,7 @@ export function runUIExplore(options: UIExploreOptions = {}): {
 		return { exitCode: resolved.exitCode, message: resolved.message };
 	}
 	const { commandSpec, fullCmd } = resolved;
-
-	const execution =
-		mode === "execute"
-			? isExecutionDisabled(EXECUTION_DISABLE_ENV)
-				? buildExecutionDisabledResult(
-						EXIT_CODES.EXECUTION_DISABLED,
-						EXECUTION_DISABLED_MESSAGE,
-					)
-				: executeCommand(commandSpec, 5 * 60 * 1000, true)
-			: buildPrepareResult(EXIT_CODES.SUCCESS);
+	const execution = executeOrPrepare(mode, commandSpec, 5 * 60 * 1000, true);
 	const evidence = createEvidence(
 		"ui:explore",
 		mode,
@@ -264,50 +279,26 @@ export function runUIExplore(options: UIExploreOptions = {}): {
 		},
 		executionContext,
 	);
-	const exitCode =
-		evidence.exitCode === EXIT_CODES.EXECUTION_DISABLED
-			? EXIT_CODES.EXECUTION_DISABLED
-			: evidence.passed
-				? EXIT_CODES.SUCCESS
-				: EXIT_CODES.COMMAND_FAILED;
+	const exitCode = exitCodeForEvidence(evidence);
 
 	if (json) {
-		const payload = withExecutionDisabledError(
-			{
-				timestamp: evidence.timestamp,
-				command: evidence.command,
-				durationMs: evidence.durationMs,
-				mode: evidence.mode,
-				executed: evidence.executed,
-				passed: evidence.passed,
-				exitCode: evidence.exitCode,
-				head_sha: evidence.headSha,
-				contract_version: evidence.contractVersion,
-				artifact_uri: evidence.artifactUri,
-				artifact_checksum: evidence.artifactChecksum,
+		return resultWithEvidence(
+			evidence,
+			exitCode,
+			jsonPayload(evidence, exitCode, {
 				url,
 				outputDir,
 				interactions: options.interactions ?? false,
-				...(evidence.timedOut ? { timedOut: true } : {}),
-				...(evidence.stdout ? { stdout: evidence.stdout } : {}),
-				...(evidence.stderr ? { stderr: evidence.stderr } : {}),
-			},
-			exitCode,
+			}),
 		);
-		return {
-			exitCode,
-			message: JSON.stringify(payload),
-			evidence,
-		};
 	}
-
-	const statusLabel = evidence.passed ? "✓" : "✗";
-	const message = `${statusLabel} UI explore ${mode} ${evidence.executed ? "executed" : "prepared"}\n  Target: ${url}\n  Output: ${outputDir}\n  Command: ${fullCmd}\n  Interactions: ${options.interactions ? "enabled" : "disabled"}\n  Artifact: ${evidence.artifactUri}\n  Checksum: ${evidence.artifactChecksum}`;
-	return {
-		exitCode,
-		message,
-		evidence,
-	};
+	const message = humanMessage("UI explore", mode, evidence, [
+		`Target: ${url}`,
+		`Output: ${outputDir}`,
+		`Command: ${fullCmd}`,
+		`Interactions: ${options.interactions ? "enabled" : "disabled"}`,
+	]);
+	return resultWithEvidence(evidence, exitCode, message);
 }
 
 /**

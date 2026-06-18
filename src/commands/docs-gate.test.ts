@@ -529,6 +529,30 @@ describe("docs-gate command", () => {
 		expect(result.report.summary.unknown_category_count).toBeGreaterThan(0);
 	});
 
+	it("classifies docs-gate rollout metrics as doc-only changes", () => {
+		const root = createTestRoot("docs-gate-test-8b");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: [
+				"ops/metrics/docs-gate/README.md",
+				"ops/metrics/docs-gate/rollout-metrics.jsonl",
+			],
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.report.categories).toContain("doc_only");
+		expect(result.report.categories).not.toContain("unknown_governance_change");
+		expect(result.report.summary.unknown_category_count).toBe(0);
+	});
+
 	it("classifies CI workflow changes correctly", () => {
 		const root = createTestRoot("docs-gate-test-9");
 		roots.push(root);

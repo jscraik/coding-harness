@@ -5,34 +5,26 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { loadContract } from "../lib/contract/loader.js";
 import type { UILoopPolicy } from "../lib/contract/types.js";
-import {
-	type UILoopCommandSpec,
-	parseUILoopCommandSpec,
-} from "../lib/contract/ui-loop-command.js";
-import {
-	type CommandExecutionResult,
-	type UIEvidence,
-	type UILoopMode,
-	hasUnsafeShellChars,
+import type { CommandSpec } from "./ui-loop-command-spec.js";
+import { EXIT_CODES } from "./ui-loop-exit-codes.js";
+import type {
+	CommandExecutionResult,
+	UIEvidence,
+	UILoopMode,
 } from "./ui-loop-shared.js";
-import {
-	buildScriptCommand,
-	detectPackageManager,
-	hasPlaywright,
-	hasStorybook,
-} from "./ui-loop-tooling.js";
-
-export const EXIT_CODES = {
-	SUCCESS: 0,
-	NOT_FOUND: 1,
-	COMMAND_FAILED: 2,
-	VALIDATION_ERROR: 3,
-	TIMEOUT: 4,
-	EXECUTION_DISABLED: 5,
-} as const;
-
-/** Normalized UI loop command specification. */
-export type CommandSpec = UILoopCommandSpec;
+export {
+	appendForwardedArgsToPolicyCommand,
+	formatCommandArg,
+	formatCommandDisplay,
+	parseCommandSpec,
+} from "./ui-loop-command-spec.js";
+export type { CommandSpec } from "./ui-loop-command-spec.js";
+export {
+	resolveExploreCommandSpec,
+	resolveFastCommandSpec,
+	resolveVerifyCommandSpec,
+} from "./ui-loop-resolution.js";
+export { EXIT_CODES } from "./ui-loop-exit-codes.js";
 
 /** Contract-derived context for a UI loop execution. */
 export interface UILoopContractContext {
@@ -51,70 +43,45 @@ const EXECUTION_DISABLED_CODE = "execution_disabled";
 export const EXECUTION_DISABLED_MESSAGE =
 	"UI execution backend disabled by kill switch";
 
-/**
- * Parse a UI loop command string into a structured command spec.
- *
- * @param command - The command string to parse
- * @returns A result containing the parsed `CommandSpec` or an error message
- */
-export function parseCommandSpec(
-	command: string,
-): { ok: true; value: CommandSpec } | { ok: false; error: string } {
-	return parseUILoopCommandSpec(command);
+function trimmedOutput(output: unknown): string {
+	return typeof output === "string" ? output.trim() : "";
 }
 
-/**
- * Append forwarded arguments to a policy command spec, inserting `--` separator
- * for npm run commands when needed.
- *
- * @param spec - The base command spec from policy
- * @param forwardedArgs - Arguments to append
- * @returns A new command spec with forwarded args merged
- */
-export function appendForwardedArgsToPolicyCommand(
-	spec: CommandSpec,
-	forwardedArgs: string[],
-): CommandSpec {
-	if (forwardedArgs.length === 0) {
-		return {
-			command: spec.command,
-			args: [...spec.args],
-		};
+function didCommandTimeOut(error: unknown): boolean {
+	return (
+		error instanceof Error &&
+		(error as NodeJS.ErrnoException).code === "ETIMEDOUT"
+	);
+}
+
+function exitCodeForResult(status: number | null, timedOut: boolean): number {
+	if (typeof status === "number") {
+		return status;
 	}
-	const isNpmRunCommand = spec.command === "npm" && spec.args[0] === "run";
-	if (!isNpmRunCommand) {
-		return {
-			command: spec.command,
-			args: [...spec.args, ...forwardedArgs],
-		};
+	return timedOut ? EXIT_CODES.TIMEOUT : EXIT_CODES.COMMAND_FAILED;
+}
+
+function commandPassed(
+	exitCode: number,
+	timedOut: boolean,
+	treatTimeoutAsSuccess: boolean,
+	error: unknown,
+): boolean {
+	if (timedOut && treatTimeoutAsSuccess) {
+		return true;
 	}
-	const hasSeparator = spec.args.includes("--");
-	return {
-		command: spec.command,
-		args: hasSeparator
-			? [...spec.args, ...forwardedArgs]
-			: [...spec.args, "--", ...forwardedArgs],
-	};
+	if (error && !timedOut) {
+		return false;
+	}
+	return exitCode === 0;
 }
 
-/**
- * Format a single command argument for display, JSON-stringifying when necessary.
- *
- * @param arg - The argument to format
- * @returns The formatted argument string
- */
-export function formatCommandArg(arg: string): string {
-	return /^[A-Za-z0-9_./:@%+=,-]+$/.test(arg) ? arg : JSON.stringify(arg);
-}
-
-/**
- * Format a command spec into a human-readable display string.
- *
- * @param spec - The command spec to format
- * @returns A shell-like command string
- */
-export function formatCommandDisplay(spec: CommandSpec): string {
-	return [spec.command, ...spec.args.map(formatCommandArg)].join(" ");
+function normalizeExitCode(
+	exitCode: number,
+	timedOut: boolean,
+	treatTimeoutAsSuccess: boolean,
+): number {
+	return timedOut && treatTimeoutAsSuccess ? EXIT_CODES.SUCCESS : exitCode;
 }
 
 /**
@@ -139,27 +106,21 @@ export function executeCommand(
 	});
 	const durationMs = Date.now() - startedAt;
 
-	const stdout = typeof result.stdout === "string" ? result.stdout.trim() : "";
-	const stderr = typeof result.stderr === "string" ? result.stderr.trim() : "";
-	const timedOut =
-		result.error instanceof Error &&
-		(result.error as NodeJS.ErrnoException).code === "ETIMEDOUT";
-	let exitCode =
-		typeof result.status === "number"
-			? result.status
-			: timedOut
-				? EXIT_CODES.TIMEOUT
-				: EXIT_CODES.COMMAND_FAILED;
-	let passed = exitCode === 0;
-
-	if (timedOut && treatTimeoutAsSuccess) {
-		passed = true;
-		exitCode = EXIT_CODES.SUCCESS;
-	}
-
-	if (result.error && !timedOut) {
-		passed = false;
-	}
+	const stdout = trimmedOutput(result.stdout);
+	const stderr = trimmedOutput(result.stderr);
+	const timedOut = didCommandTimeOut(result.error);
+	const rawExitCode = exitCodeForResult(result.status, timedOut);
+	const exitCode = normalizeExitCode(
+		rawExitCode,
+		timedOut,
+		treatTimeoutAsSuccess,
+	);
+	const passed = commandPassed(
+		exitCode,
+		timedOut,
+		treatTimeoutAsSuccess,
+		result.error,
+	);
 
 	return {
 		executed: true,
@@ -319,235 +280,4 @@ export function withExecutionDisabledError<T extends Record<string, unknown>>(
 			message: EXECUTION_DISABLED_MESSAGE,
 		},
 	};
-}
-
-/**
- * Resolve the command spec for ui:fast.
- */
-export function resolveFastCommandSpec(
-	options: import("./ui-loop-shared.js").UIFastOptions,
-	policy: UILoopPolicy | undefined,
-	json: boolean,
-):
-	| {
-			ok: true;
-			commandSpec: CommandSpec;
-			fullCmd: string;
-			packageManager: string;
-	  }
-	| { ok: false; exitCode: number; message: string } {
-	if (policy?.fastCommand) {
-		if (hasUnsafeShellChars(policy.fastCommand)) {
-			const message =
-				"Invalid uiLoopPolicy.fastCommand: unsafe shell characters";
-			if (json) {
-				return {
-					ok: false,
-					exitCode: EXIT_CODES.VALIDATION_ERROR,
-					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
-				};
-			}
-			return { ok: false, exitCode: EXIT_CODES.VALIDATION_ERROR, message };
-		}
-		const parsedPolicyCommand = parseCommandSpec(policy.fastCommand);
-		if (!parsedPolicyCommand.ok) {
-			const message = `Invalid uiLoopPolicy.fastCommand: ${parsedPolicyCommand.error}`;
-			if (json) {
-				return {
-					ok: false,
-					exitCode: EXIT_CODES.VALIDATION_ERROR,
-					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
-				};
-			}
-			return { ok: false, exitCode: EXIT_CODES.VALIDATION_ERROR, message };
-		}
-		const commandSpec = appendForwardedArgsToPolicyCommand(
-			parsedPolicyCommand.value,
-			[
-				...(options.ci ? ["--ci"] : []),
-				...(typeof options.port === "number"
-					? ["--port", String(options.port)]
-					: []),
-			],
-		);
-		return {
-			ok: true,
-			commandSpec,
-			fullCmd: formatCommandDisplay(commandSpec),
-			packageManager: "contract",
-		};
-	}
-
-	if (!hasStorybook()) {
-		const message = "Storybook not found. Ensure .storybook/ directory exists.";
-		if (json) {
-			return {
-				ok: false,
-				exitCode: EXIT_CODES.NOT_FOUND,
-				message: JSON.stringify({ error: message, code: "NOT_FOUND" }),
-			};
-		}
-		return { ok: false, exitCode: EXIT_CODES.NOT_FOUND, message };
-	}
-	const pm = detectPackageManager();
-	const storybookArgs = [
-		...(options.ci ? ["--ci"] : []),
-		...(typeof options.port === "number"
-			? ["--port", String(options.port)]
-			: []),
-	];
-	const commandSpec = buildScriptCommand(pm, "storybook", storybookArgs);
-	return {
-		ok: true,
-		commandSpec,
-		fullCmd: formatCommandDisplay(commandSpec),
-		packageManager: pm.name,
-	};
-}
-
-/**
- * Resolve the command spec for ui:verify.
- */
-export function resolveVerifyCommandSpec(
-	options: import("./ui-loop-shared.js").UIVerifyOptions,
-	policy: UILoopPolicy | undefined,
-	json: boolean,
-):
-	| {
-			ok: true;
-			commandSpec: CommandSpec;
-			fullCmd: string;
-			packageManager: string;
-	  }
-	| { ok: false; exitCode: number; message: string } {
-	const args: string[] = ["test"];
-	if (options.shard) {
-		args.push(`--shard=${options.shard}`);
-	}
-	if (typeof options.timeout === "number" && Number.isFinite(options.timeout)) {
-		args.push(`--timeout=${options.timeout}`);
-	}
-	if (options.outputDir) {
-		args.push(`--output=${options.outputDir}`);
-	}
-
-	if (policy?.verifyCommand) {
-		if (hasUnsafeShellChars(policy.verifyCommand)) {
-			const message =
-				"Invalid uiLoopPolicy.verifyCommand: unsafe shell characters";
-			if (json) {
-				return {
-					ok: false,
-					exitCode: EXIT_CODES.VALIDATION_ERROR,
-					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
-				};
-			}
-			return { ok: false, exitCode: EXIT_CODES.VALIDATION_ERROR, message };
-		}
-		const parsedPolicyCommand = parseCommandSpec(policy.verifyCommand);
-		if (!parsedPolicyCommand.ok) {
-			const message = `Invalid uiLoopPolicy.verifyCommand: ${parsedPolicyCommand.error}`;
-			if (json) {
-				return {
-					ok: false,
-					exitCode: EXIT_CODES.VALIDATION_ERROR,
-					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
-				};
-			}
-			return { ok: false, exitCode: EXIT_CODES.VALIDATION_ERROR, message };
-		}
-		const commandSpec = appendForwardedArgsToPolicyCommand(
-			parsedPolicyCommand.value,
-			args,
-		);
-		return {
-			ok: true,
-			commandSpec,
-			fullCmd: formatCommandDisplay(commandSpec),
-			packageManager: "contract",
-		};
-	}
-
-	if (!hasPlaywright()) {
-		const message =
-			"Playwright not found. Ensure playwright.config.{js,ts,mjs} exists.";
-		if (json) {
-			return {
-				ok: false,
-				exitCode: EXIT_CODES.NOT_FOUND,
-				message: JSON.stringify({ error: message, code: "NOT_FOUND" }),
-			};
-		}
-		return { ok: false, exitCode: EXIT_CODES.NOT_FOUND, message };
-	}
-	const pm = detectPackageManager();
-	const commandSpec = buildScriptCommand(pm, "playwright", args);
-	return {
-		ok: true,
-		commandSpec,
-		fullCmd: formatCommandDisplay(commandSpec),
-		packageManager: pm.name,
-	};
-}
-
-/**
- * Resolve the command spec for ui:explore.
- */
-export function resolveExploreCommandSpec(
-	policy: UILoopPolicy | undefined,
-	url: string,
-	outputDir: string,
-	interactionArgs: string[],
-	json: boolean,
-):
-	| { ok: true; commandSpec: CommandSpec; fullCmd: string }
-	| { ok: false; exitCode: number; message: string } {
-	if (policy?.exploreCommand) {
-		if (hasUnsafeShellChars(policy.exploreCommand)) {
-			const message =
-				"Invalid uiLoopPolicy.exploreCommand: unsafe shell characters";
-			if (json) {
-				return {
-					ok: false,
-					exitCode: EXIT_CODES.VALIDATION_ERROR,
-					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
-				};
-			}
-			return { ok: false, exitCode: EXIT_CODES.VALIDATION_ERROR, message };
-		}
-		const parsedPolicyCommand = parseCommandSpec(policy.exploreCommand);
-		if (!parsedPolicyCommand.ok) {
-			const message = `Invalid uiLoopPolicy.exploreCommand: ${parsedPolicyCommand.error}`;
-			if (json) {
-				return {
-					ok: false,
-					exitCode: EXIT_CODES.VALIDATION_ERROR,
-					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
-				};
-			}
-			return { ok: false, exitCode: EXIT_CODES.VALIDATION_ERROR, message };
-		}
-		const commandSpec = appendForwardedArgsToPolicyCommand(
-			parsedPolicyCommand.value,
-			[url, outputDir, ...interactionArgs],
-		);
-		return {
-			ok: true,
-			commandSpec,
-			fullCmd: formatCommandDisplay(commandSpec),
-		};
-	}
-
-	const commandSpec: CommandSpec = {
-		command: "npx",
-		args: [
-			"@agent-browser/cli",
-			"explore",
-			url,
-			"--output",
-			outputDir,
-			...interactionArgs,
-		],
-	};
-	return { ok: true, commandSpec, fullCmd: formatCommandDisplay(commandSpec) };
 }

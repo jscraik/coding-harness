@@ -887,10 +887,11 @@ function classifyChanges(
 
 		// Doc-only changes (governance docs)
 		if (
-			file.endsWith(".md") &&
-			(file === "README.md" ||
-				file === "CONTRIBUTING.md" ||
-				file.startsWith("docs/"))
+			(file.endsWith(".md") &&
+				(file === "README.md" ||
+					file === "CONTRIBUTING.md" ||
+					file.startsWith("docs/"))) ||
+			file.startsWith("ops/metrics/docs-gate/")
 		) {
 			categories.add("doc_only");
 			matched = true;

@@ -91,12 +91,17 @@ interface RepoFileScan {
 	totalFilesScanned: number;
 }
 
+interface RepoFileVisitState {
+	files: string[];
+	stack: string[];
+}
+
 /**
- * Produce a normalized repository-relative path with forward slashes.
+ * Normalize a file path to a repository-relative path with forward slashes.
  *
- * @param repoRoot - Absolute or relative filesystem path to the repository root
- * @param file - File path to normalize (absolute or relative to `repoRoot`)
- * @returns The repo-relative path to `file` using `/` as the path separator
+ * @param repoRoot - Repository root used as the relative base.
+ * @param file - File path to normalize, absolute or relative to the current process.
+ * @returns Repository-relative path using forward slash separators.
  */
 export function normalizeRepoPath(repoRoot: string, file: string): string {
 	const absolute = resolve(repoRoot, file);
@@ -105,19 +110,7 @@ export function normalizeRepoPath(repoRoot: string, file: string): string {
 		.join("/");
 }
 
-/**
- * Collects repo-relative file paths under the given repository root.
- *
- * Performs a depth-first traversal starting at `repoRoot`, skipping directories named in
- * `IGNORED_DIRS` and paths that match `IGNORED_PATH_PATTERNS`. Collection stops once
- * `MAX_SCANNED_FILES` entries have been gathered.
- *
- * @param repoRoot - Root directory of the repository to scan
- * @returns An object containing:
- *  - `files`: a sorted array of repo-relative file paths,
- *  - `scanningTruncated`: `true` if the scan stopped because the max file limit was reached,
- *  - `totalFilesScanned`: the number of files returned
- */
+/** Collect repo-relative file paths, skipping ignored directories and stopping at the scan limit. */
 export function listRepoFiles(repoRoot: string): RepoFileScan {
 	const files: string[] = [];
 	const stack = [repoRoot];
@@ -132,24 +125,9 @@ export function listRepoFiles(repoRoot: string): RepoFileScan {
 			continue;
 		}
 		for (const entry of entries) {
-			const absolute = join(current, entry.name);
-			const repoPath = relative(repoRoot, absolute)
-				.split(/[/\\]+/)
-				.join("/");
-			if (
-				entry.isDirectory() &&
-				(IGNORED_DIRS.has(entry.name) || shouldIgnorePath(repoPath))
-			) {
-				continue;
-			}
-			if (entry.isDirectory()) {
-				stack.push(absolute);
-			} else if (entry.isFile()) {
-				files.push(repoPath);
-				if (files.length >= MAX_SCANNED_FILES) {
-					scanningTruncated = true;
-					break;
-				}
+			if (visitRepoEntry(repoRoot, current, entry, { files, stack })) {
+				scanningTruncated = true;
+				break;
 			}
 		}
 	}
@@ -158,6 +136,39 @@ export function listRepoFiles(repoRoot: string): RepoFileScan {
 		scanningTruncated,
 		totalFilesScanned: files.length,
 	};
+}
+
+function visitRepoEntry(
+	repoRoot: string,
+	current: string,
+	entry: Dirent,
+	state: RepoFileVisitState,
+): boolean {
+	const absolute = join(current, entry.name);
+	const repoPath = relative(repoRoot, absolute)
+		.split(/[/\\]+/)
+		.join("/");
+
+	if (shouldSkipDirectory(entry, repoPath)) {
+		return false;
+	}
+	if (entry.isDirectory()) {
+		state.stack.push(absolute);
+		return false;
+	}
+	if (!entry.isFile()) {
+		return false;
+	}
+
+	state.files.push(repoPath);
+	return state.files.length >= MAX_SCANNED_FILES;
+}
+
+function shouldSkipDirectory(entry: Dirent, repoPath: string): boolean {
+	return (
+		entry.isDirectory() &&
+		(IGNORED_DIRS.has(entry.name) || shouldIgnorePath(repoPath))
+	);
 }
 
 /**

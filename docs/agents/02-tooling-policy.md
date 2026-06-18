@@ -337,8 +337,8 @@ ran.
 Changed production source and tests also carry local ratchet gates:
 `pnpm run quality:docstrings` requires JSDoc on changed exported public API
 declarations, `pnpm run quality:size` enforces changed-file function/file size
-limits with explicit legacy allowlists, `pnpm run quality:self-affirming`
-scans test/spec files for self-affirming assertions,
+and complexity limits, `pnpm run quality:self-affirming` scans test/spec files
+for self-affirming assertions,
 `pnpm run quality:behavior-tests` verifies registered behavior-test suites
 behind the `behavior-tests` validation lock,
 `pnpm run quality:git-env-sanitizer` prevents duplicate git environment

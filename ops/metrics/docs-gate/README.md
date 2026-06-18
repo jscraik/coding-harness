@@ -4,8 +4,8 @@ This directory stores metrics and evidence for the docs-gate rollout.
 
 ## Files
 
-- `rollout-metrics.jsonl`: Append-only log of per-evaluation metrics
-- `promotion-evidence/`: Directory containing evidence bundles for promotion decisions
+- `rollout-metrics.jsonl`: Append-only log of per-evaluation metrics. It may be empty before the first captured evaluation.
+- `promotion-evidence/`: Operator-created directory for promotion evidence bundles.
 
 ## Metrics Schema
 
@@ -27,15 +27,18 @@ Each line in `rollout-metrics.jsonl` is a JSON object with:
 }
 ```
 
+Keep `rollout-metrics.jsonl` as pure JSONL. Do not add comments or prose lines
+because the aggregation commands read it directly with `jq -s`.
+
 ## Aggregation Queries
 
 ### False-Positive Rate (last 7 days)
 
 ```bash
 jq -s '
-  map(select(.date >= "2026-03-03")) |
-  { total: length, fp: map(select(.false_positive == true)) | length } |
-  { fp_rate: (.fp / .total * 100) }
+  map(select(.date >= "2026-03-03")) as $rows |
+  { total: ($rows | length), fp: ($rows | map(select(.false_positive == true)) | length) } |
+  . + { fp_rate: (if .total == 0 then 0 else (.fp / .total * 100) end) }
 ' rollout-metrics.jsonl
 ```
 
@@ -43,9 +46,9 @@ jq -s '
 
 ```bash
 jq -s '
-  .[-20:] |
-  { total: length, blocked: map(select(.blocking == true)) | length } |
-  { blocking_rate: (.blocked / .total * 100) }
+  .[-20:] as $rows |
+  { total: ($rows | length), blocked: ($rows | map(select(.blocking == true)) | length) } |
+  . + { blocking_rate: (if .total == 0 then 0 else (.blocked / .total * 100) end) }
 ' rollout-metrics.jsonl
 ```
 
@@ -66,6 +69,7 @@ When capturing evidence for a promotion decision, create a dated file in `promot
 
 ```bash
 # Create evidence bundle
+mkdir -p promotion-evidence
 cp rollout-metrics.jsonl promotion-evidence/phase-2-2026-03-17.jsonl
 cp ../../../harness.contract.json promotion-evidence/phase-2-contract-2026-03-17.json
 

@@ -16,6 +16,250 @@ import {
 	type RepoSignals,
 } from "./fleet-plan-types.js";
 
+type BlockingReasonArgs = {
+	statusChangedByDryRun: boolean;
+	exitCode?: number;
+	errors: string[];
+	trackedManifest: boolean | null;
+	hasCircleCiGap: boolean;
+	hasCodeRabbitGap: boolean;
+	hasCodestyleGap: boolean;
+	hasCodestyleMissingFailure: boolean;
+	codestyleParityFailurePaths: string[];
+	hasGreptileGap: boolean;
+};
+
+type BlockingReasonCheck = {
+	reason: string;
+	matches: (args: BlockingReasonArgs) => boolean;
+};
+
+type RepoActionRule = {
+	matches: (signals: RepoSignals) => boolean;
+	build: (repo: string) => RepoRecommendation;
+};
+
+const BLOCKING_REASON_CHECKS: BlockingReasonCheck[] = [
+	{
+		reason: "dry-run-mutated-repository",
+		matches: (args) => args.statusChangedByDryRun,
+	},
+	{
+		reason: "matrix-command-failed",
+		matches: (args) => args.exitCode !== undefined && args.exitCode !== 0,
+	},
+	{
+		reason: "invalid-matrix-json-output",
+		matches: (args) => args.errors.some(isMatrixOutputValidationError),
+	},
+	{
+		reason: "repo-not-harness-tracked",
+		matches: (args) => args.trackedManifest === false,
+	},
+	{
+		reason: "tracked-repo-missing-circleci",
+		matches: (args) => args.trackedManifest === true && args.hasCircleCiGap,
+	},
+	{
+		reason: "missing-coderabbit",
+		matches: (args) => args.hasCodeRabbitGap,
+	},
+	{
+		reason: "missing-codestyle",
+		matches: hasUnsafeCodestyleGap,
+	},
+	{
+		reason: "stale-codestyle",
+		matches: (args) => args.codestyleParityFailurePaths.length > 0,
+	},
+	{
+		reason: "legacy-greptile-present",
+		matches: (args) => args.hasGreptileGap,
+	},
+];
+
+const REPO_ACTION_RULES: RepoActionRule[] = [
+	{
+		matches: hasUnsafeMatrixSignals,
+		build: blockedMatrixRecommendation,
+	},
+	{
+		matches: (signals) => signals.trackedManifest === false,
+		build: (repo) =>
+			initDryRunRecommendation({
+				repo,
+				status: "needs-adoption",
+				nextAction: "Run first-adoption dry-run before tracking the repo.",
+				update: false,
+			}),
+	},
+	{
+		matches: (signals) => signals.hasCircleCiGap,
+		build: circleCiMigrationRecommendation,
+	},
+	{
+		matches: (signals) => signals.hasCodeRabbitGap,
+		build: (repo) =>
+			initDryRunRecommendation({
+				repo,
+				status: "needs-coderabbit-setup",
+				nextAction: "Refresh the CodeRabbit review baseline in dry-run mode.",
+				update: true,
+			}),
+	},
+	{
+		matches: hasUnsafeCodestyleGap,
+		build: (repo) =>
+			initDryRunRecommendation({
+				repo,
+				status: "needs-codestyle-install",
+				nextAction: "Install the canonical CODESTYLE pack in dry-run mode.",
+				update: true,
+			}),
+	},
+	{
+		matches: (signals) => signals.codestyleParityFailurePaths.length > 0,
+		build: (repo) =>
+			initDryRunRecommendation({
+				repo,
+				status: "needs-codestyle-refresh",
+				nextAction: "Refresh the canonical CODESTYLE pack in dry-run mode.",
+				update: true,
+			}),
+	},
+	{
+		matches: (signals) => signals.hasGreptileGap,
+		build: (repo) =>
+			recommendation({
+				status: "needs-greptile-cleanup",
+				risk: "medium",
+				nextAction:
+					"Preview harness-managed cleanup for legacy Greptile artifacts.",
+				nextCommandArgv: ["harness", "eject", repo, "--dry-run", "--json"],
+				safeToRun: true,
+			}),
+	},
+	{
+		matches: (signals) => signals.errors.length > 0,
+		build: remainingErrorsRecommendation,
+	},
+];
+
+function hasUnsafeCodestyleGap(
+	input: Pick<RepoSignals, "hasCodestyleGap" | "hasCodestyleMissingFailure">,
+): boolean {
+	return input.hasCodestyleGap || input.hasCodestyleMissingFailure;
+}
+
+function hasUnsafeMatrixSignals(signals: RepoSignals): boolean {
+	return (
+		signals.statusChangedByDryRun ||
+		(signals.exitCode !== undefined && signals.exitCode !== 0) ||
+		signals.errors.some(isMatrixOutputValidationError)
+	);
+}
+
+function blockedMatrixRecommendation(): RepoRecommendation {
+	return recommendation({
+		status: "blocked",
+		risk: "high",
+		nextAction:
+			"Inspect the matrix failure before running remediation; dry-run safety is not established.",
+		nextCommandArgv: null,
+		safeToRun: false,
+	});
+}
+
+function circleCiMigrationRecommendation(repo: string): RepoRecommendation {
+	return recommendation({
+		status: "needs-circleci-migration",
+		risk: "medium",
+		nextAction: "Prepare CircleCI migration snapshot in dry-run mode.",
+		nextCommandArgv: [
+			"harness",
+			"ci-migrate",
+			"prepare",
+			repo,
+			"--provider",
+			"circleci",
+			"--dry-run",
+			"--json",
+		],
+		safeToRun: true,
+	});
+}
+
+function remainingErrorsRecommendation(): RepoRecommendation {
+	return recommendation({
+		status: "blocked",
+		risk: "unknown",
+		nextAction: "Inspect remaining matrix errors before remediation.",
+		nextCommandArgv: null,
+		safeToRun: false,
+	});
+}
+
+function readyRecommendation(repo: string): RepoRecommendation {
+	return recommendation({
+		status: "ready",
+		risk: "low",
+		nextAction: "Run live upgrade dry-run before applying update.",
+		nextCommandArgv: ["harness", "upgrade", repo, "--dry-run", "--json"],
+		safeToRun: true,
+	});
+}
+
+function schemaErrorsFor(
+	result: MatrixRepoResult,
+	repoCandidate: string | null,
+	trackedManifest: boolean | null,
+): string[] {
+	const schemaErrors: string[] = [];
+	if (!repoCandidate || repoCandidate.length === 0) {
+		schemaErrors.push("JSON output missing repo");
+	}
+	if (!Array.isArray(result.errors)) {
+		schemaErrors.push("JSON output missing errors array");
+	}
+	if (!Array.isArray(result.missingFleetContractSurfaces)) {
+		schemaErrors.push("JSON output missing missingFleetContractSurfaces array");
+	}
+	if (trackedManifest === null) {
+		schemaErrors.push("JSON output missing trackedManifest");
+	}
+	return schemaErrors;
+}
+
+function repoSignalsFor(result: MatrixRepoResult): RepoSignals {
+	const trackedManifest = asBoolean(result.trackedManifest);
+	const repoCandidate = asString(result.repo);
+	const schemaErrors = schemaErrorsFor(result, repoCandidate, trackedManifest);
+	const missingSurfaces = asMissingSurfaces(
+		result.missingFleetContractSurfaces,
+	);
+	const legacyGreptilePaths = asStringArray(result.legacyGreptilePaths);
+	const codestyleParityFailures = asMissingSurfaces(
+		result.codestyleParityFailures,
+	);
+	const exitCode =
+		typeof result.exitCode === "number" ? result.exitCode : undefined;
+	return {
+		statusChangedByDryRun: result.statusChangedByDryRun === true,
+		...(exitCode === undefined ? {} : { exitCode }),
+		errors: [...schemaErrors, ...asStringArray(result.errors)],
+		trackedManifest,
+		hasCircleCiGap: hasMissingSurface(missingSurfaces, "circleci"),
+		hasCodeRabbitGap: hasMissingSurface(missingSurfaces, "coderabbit"),
+		hasCodestyleGap: hasMissingSurface(missingSurfaces, "codestyle"),
+		codestyleParityFailurePaths: surfacePaths(codestyleParityFailures),
+		hasCodestyleMissingFailure: hasCodestyleFailureReason(
+			codestyleParityFailures,
+			"missing",
+		),
+		hasGreptileGap: legacyGreptilePaths.length > 0,
+	};
+}
+
 /**
  * Assembles an ordered list of stable blocking reason codes for a repository based on dry-run results, exit status, detected gaps, and reported errors.
  *
@@ -39,34 +283,9 @@ export function buildBlockingReasons(args: {
 	codestyleParityFailurePaths: string[];
 	hasGreptileGap: boolean;
 }): string[] {
-	const blockingReasons: string[] = [];
-	if (args.statusChangedByDryRun) {
-		blockingReasons.push("dry-run-mutated-repository");
-	}
-	if (args.exitCode !== undefined && args.exitCode !== 0) {
-		blockingReasons.push("matrix-command-failed");
-	}
-	if (args.errors.some(isMatrixOutputValidationError)) {
-		blockingReasons.push("invalid-matrix-json-output");
-	}
-	if (args.trackedManifest === false) {
-		blockingReasons.push("repo-not-harness-tracked");
-	}
-	if (args.trackedManifest === true && args.hasCircleCiGap) {
-		blockingReasons.push("tracked-repo-missing-circleci");
-	}
-	if (args.hasCodeRabbitGap) {
-		blockingReasons.push("missing-coderabbit");
-	}
-	if (args.hasCodestyleGap || args.hasCodestyleMissingFailure) {
-		blockingReasons.push("missing-codestyle");
-	}
-	if (args.codestyleParityFailurePaths.length > 0) {
-		blockingReasons.push("stale-codestyle");
-	}
-	if (args.hasGreptileGap) {
-		blockingReasons.push("legacy-greptile-present");
-	}
+	const blockingReasons = BLOCKING_REASON_CHECKS.filter((check) =>
+		check.matches(args),
+	).map((check) => check.reason);
 	if (
 		args.errors.some((error) => !isMatrixOutputValidationError(error)) &&
 		blockingReasons.length === 0
@@ -94,97 +313,12 @@ export function recommendRepoAction(
 	repo: string,
 	signals: RepoSignals,
 ): RepoRecommendation {
-	const invalidJson = signals.errors.some(isMatrixOutputValidationError);
-	if (
-		signals.statusChangedByDryRun ||
-		(signals.exitCode !== undefined && signals.exitCode !== 0) ||
-		invalidJson
-	) {
-		return recommendation({
-			status: "blocked",
-			risk: "high",
-			nextAction:
-				"Inspect the matrix failure before running remediation; dry-run safety is not established.",
-			nextCommandArgv: null,
-			safeToRun: false,
-		});
+	for (const rule of REPO_ACTION_RULES) {
+		if (rule.matches(signals)) {
+			return rule.build(repo);
+		}
 	}
-	if (signals.trackedManifest === false) {
-		return initDryRunRecommendation({
-			repo,
-			status: "needs-adoption",
-			nextAction: "Run first-adoption dry-run before tracking the repo.",
-			update: false,
-		});
-	}
-	if (signals.hasCircleCiGap) {
-		return recommendation({
-			status: "needs-circleci-migration",
-			risk: "medium",
-			nextAction: "Prepare CircleCI migration snapshot in dry-run mode.",
-			nextCommandArgv: [
-				"harness",
-				"ci-migrate",
-				"prepare",
-				repo,
-				"--provider",
-				"circleci",
-				"--dry-run",
-				"--json",
-			],
-			safeToRun: true,
-		});
-	}
-	if (signals.hasCodeRabbitGap) {
-		return initDryRunRecommendation({
-			repo,
-			status: "needs-coderabbit-setup",
-			nextAction: "Refresh the CodeRabbit review baseline in dry-run mode.",
-			update: true,
-		});
-	}
-	if (signals.hasCodestyleGap || signals.hasCodestyleMissingFailure) {
-		return initDryRunRecommendation({
-			repo,
-			status: "needs-codestyle-install",
-			nextAction: "Install the canonical CODESTYLE pack in dry-run mode.",
-			update: true,
-		});
-	}
-	if (signals.codestyleParityFailurePaths.length > 0) {
-		return initDryRunRecommendation({
-			repo,
-			status: "needs-codestyle-refresh",
-			nextAction: "Refresh the canonical CODESTYLE pack in dry-run mode.",
-			update: true,
-		});
-	}
-	if (signals.hasGreptileGap) {
-		return recommendation({
-			status: "needs-greptile-cleanup",
-			risk: "medium",
-			nextAction:
-				"Preview harness-managed cleanup for legacy Greptile artifacts.",
-			nextCommandArgv: ["harness", "eject", repo, "--dry-run", "--json"],
-			safeToRun: true,
-		});
-	}
-	if (signals.errors.length > 0) {
-		return recommendation({
-			status: "blocked",
-			risk: "unknown",
-			nextAction: "Inspect remaining matrix errors before remediation.",
-			nextCommandArgv: null,
-			safeToRun: false,
-		});
-	}
-	return recommendation({
-		status: "ready",
-		risk: "low",
-		nextAction: "Run live upgrade dry-run before applying update.",
-		nextCommandArgv: ["harness", "upgrade", repo, "--dry-run", "--json"],
-		safeToRun: true,
-	});
+	return readyRecommendation(repo);
 }
 
 /**
@@ -204,66 +338,14 @@ export function classifyRepo(
 			? repoCandidate
 			: "<unknown-repo>";
 	const updateMode = asString(result.updateMode);
-	const trackedManifest = asBoolean(result.trackedManifest);
-	const schemaErrors: string[] = [];
-	if (!repoCandidate || repoCandidate.length === 0) {
-		schemaErrors.push("JSON output missing repo");
-	}
-	if (!Array.isArray(result.errors)) {
-		schemaErrors.push("JSON output missing errors array");
-	}
-	if (!Array.isArray(result.missingFleetContractSurfaces)) {
-		schemaErrors.push("JSON output missing missingFleetContractSurfaces array");
-	}
-	if (trackedManifest === null) {
-		schemaErrors.push("JSON output missing trackedManifest");
-	}
-	const errors = [...schemaErrors, ...asStringArray(result.errors)];
+	const signals = repoSignalsFor(result);
 	const missingSurfaces = asMissingSurfaces(
 		result.missingFleetContractSurfaces,
 	);
 	const missingSurfacePaths = surfacePaths(missingSurfaces);
 	const legacyGreptilePaths = asStringArray(result.legacyGreptilePaths);
-	const codestyleParityFailures = asMissingSurfaces(
-		result.codestyleParityFailures,
-	);
-	const codestyleParityFailurePaths = surfacePaths(codestyleParityFailures);
-	const hasCodestyleMissingFailure = hasCodestyleFailureReason(
-		codestyleParityFailures,
-		"missing",
-	);
-	const statusChangedByDryRun = result.statusChangedByDryRun === true;
-	const exitCode =
-		typeof result.exitCode === "number" ? result.exitCode : undefined;
-
-	const hasCircleCiGap = hasMissingSurface(missingSurfaces, "circleci");
-	const hasCodeRabbitGap = hasMissingSurface(missingSurfaces, "coderabbit");
-	const hasCodestyleGap = hasMissingSurface(missingSurfaces, "codestyle");
-	const hasGreptileGap = legacyGreptilePaths.length > 0;
-	const recommendation = recommendRepoAction(repo, {
-		statusChangedByDryRun,
-		...(exitCode === undefined ? {} : { exitCode }),
-		errors,
-		trackedManifest,
-		hasCircleCiGap,
-		hasCodeRabbitGap,
-		hasCodestyleGap,
-		codestyleParityFailurePaths,
-		hasCodestyleMissingFailure,
-		hasGreptileGap,
-	});
-	const blockingReasons = buildBlockingReasons({
-		statusChangedByDryRun,
-		...(exitCode === undefined ? {} : { exitCode }),
-		errors,
-		trackedManifest,
-		hasCircleCiGap,
-		hasCodeRabbitGap,
-		hasCodestyleGap,
-		hasCodestyleMissingFailure,
-		codestyleParityFailurePaths,
-		hasGreptileGap,
-	});
+	const recommendation = recommendRepoAction(repo, signals);
+	const blockingReasons = buildBlockingReasons(signals);
 
 	return {
 		repo,
@@ -282,11 +364,11 @@ export function classifyRepo(
 		evidence: {
 			matrixArtifact,
 			updateMode,
-			trackedManifest,
+			trackedManifest: signals.trackedManifest,
 			missingSurfaces: missingSurfacePaths,
 			legacyGreptilePaths,
-			codestyleParityFailures: codestyleParityFailurePaths,
-			errors,
+			codestyleParityFailures: signals.codestyleParityFailurePaths,
+			errors: signals.errors,
 		},
 	};
 }

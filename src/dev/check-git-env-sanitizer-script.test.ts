@@ -1,8 +1,8 @@
-import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { runNodeScript, runScriptProcess } from "./script-test-utils.js";
 
 const SCRIPT_PATH = join(process.cwd(), "scripts/check-git-env-sanitizer.mjs");
 
@@ -11,7 +11,7 @@ const tempRoots: string[] = [];
 function createTempRepo() {
 	const root = mkdtempSync(join(tmpdir(), "git-env-sanitizer-"));
 	tempRoots.push(root);
-	spawnSync("git", ["init"], { cwd: root, encoding: "utf8" });
+	runScriptProcess("git", ["init"], { cwd: root });
 	return root;
 }
 
@@ -22,9 +22,8 @@ function writeSource(root: string, path: string, content: string) {
 }
 
 function runScript(root: string, env: NodeJS.ProcessEnv = process.env) {
-	return spawnSync(process.execPath, [SCRIPT_PATH], {
+	return runNodeScript(SCRIPT_PATH, [], {
 		cwd: root,
-		encoding: "utf8",
 		env,
 	});
 }

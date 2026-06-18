@@ -43,6 +43,72 @@ function printDecision(decision: HarnessDecision, json: boolean): void {
 		console.info(`Next command: ${decision.nextCommand}`);
 }
 
+function buildNextCliDecision(
+	parsed: ReturnType<typeof parseNextArgs>,
+	options: Omit<HarnessNextOptions, "mode" | "files">,
+): { decision: HarnessDecision | undefined; usageError: boolean } {
+	if (parsed.error !== undefined) {
+		return {
+			usageError: true,
+			decision: usageErrorDecision(parsed, options, runHarnessNext),
+		};
+	}
+
+	let phaseExit: HePhaseExit | undefined;
+	let runtimeCard: RuntimeCard | undefined;
+	let decision = loadNextCliEvidence(parsed, options, {
+		setPhaseExit: (value) => {
+			phaseExit = value;
+		},
+		setRuntimeCard: (value) => {
+			runtimeCard = value;
+		},
+	});
+	decision ??= runHarnessNext({
+		...options,
+		mode: parsed.mode,
+		...(parsed.worktreeRole !== undefined
+			? { worktreeRole: parsed.worktreeRole }
+			: {}),
+		...(parsed.evidenceMode !== undefined
+			? { evidenceMode: parsed.evidenceMode }
+			: {}),
+		...(parsed.files !== undefined ? { files: parsed.files } : {}),
+		...(phaseExit !== undefined ? { phaseExit } : {}),
+		...(runtimeCard !== undefined ? { runtimeCard } : {}),
+	});
+	return { decision, usageError: false };
+}
+
+function loadNextCliEvidence(
+	parsed: ReturnType<typeof parseNextArgs>,
+	options: Omit<HarnessNextOptions, "mode" | "files">,
+	setters: {
+		setPhaseExit: (phaseExit: HePhaseExit) => void;
+		setRuntimeCard: (runtimeCard: RuntimeCard) => void;
+	},
+): HarnessDecision | undefined {
+	if (parsed.phaseExitPath !== undefined) {
+		const loadedPhaseExit = loadPhaseExitArtifact(
+			options.repoRoot ?? cwd(),
+			parsed.phaseExitPath,
+			parsed.mode,
+		);
+		if ("decision" in loadedPhaseExit) return loadedPhaseExit.decision;
+		setters.setPhaseExit(loadedPhaseExit.phaseExit);
+	}
+	if (parsed.runtimeCardPath !== undefined) {
+		const loadedRuntimeCard = loadRuntimeCardArtifact(
+			options.repoRoot ?? cwd(),
+			parsed.runtimeCardPath,
+			parsed.mode,
+		);
+		if ("decision" in loadedRuntimeCard) return loadedRuntimeCard.decision;
+		setters.setRuntimeCard(loadedRuntimeCard.runtimeCard);
+	}
+	return undefined;
+}
+
 /**
  * Parse CLI arguments for `harness next`, produce and print a HarnessDecision, and return an appropriate process exit code.
  *
@@ -55,53 +121,7 @@ export function runNextCLI(
 	options: Omit<HarnessNextOptions, "mode" | "files"> = {},
 ): number {
 	const parsed = parseNextArgs(args);
-	let decision: HarnessDecision | undefined;
-	let usageError = false;
-
-	if (parsed.error !== undefined) {
-		usageError = true;
-		decision = usageErrorDecision(parsed, options, runHarnessNext);
-	} else {
-		let phaseExit: HePhaseExit | undefined;
-		let runtimeCard: RuntimeCard | undefined;
-		if (parsed.phaseExitPath !== undefined) {
-			const loadedPhaseExit = loadPhaseExitArtifact(
-				options.repoRoot ?? cwd(),
-				parsed.phaseExitPath,
-				parsed.mode,
-			);
-			if ("decision" in loadedPhaseExit) {
-				decision = loadedPhaseExit.decision;
-			} else {
-				phaseExit = loadedPhaseExit.phaseExit;
-			}
-		}
-		if (decision === undefined && parsed.runtimeCardPath !== undefined) {
-			const loadedRuntimeCard = loadRuntimeCardArtifact(
-				options.repoRoot ?? cwd(),
-				parsed.runtimeCardPath,
-				parsed.mode,
-			);
-			if ("decision" in loadedRuntimeCard) {
-				decision = loadedRuntimeCard.decision;
-			} else {
-				runtimeCard = loadedRuntimeCard.runtimeCard;
-			}
-		}
-		decision ??= runHarnessNext({
-			...options,
-			mode: parsed.mode,
-			...(parsed.worktreeRole !== undefined
-				? { worktreeRole: parsed.worktreeRole }
-				: {}),
-			...(parsed.evidenceMode !== undefined
-				? { evidenceMode: parsed.evidenceMode }
-				: {}),
-			...(parsed.files !== undefined ? { files: parsed.files } : {}),
-			...(phaseExit !== undefined ? { phaseExit } : {}),
-			...(runtimeCard !== undefined ? { runtimeCard } : {}),
-		});
-	}
+	const { decision, usageError } = buildNextCliDecision(parsed, options);
 
 	if (decision === undefined) {
 		console.error("Invalid harness next state: no decision was produced.");

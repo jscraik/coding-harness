@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
 	TEMPLATES,
@@ -43,5 +45,9 @@ describe("scaffold template registry", () => {
 			".github/ISSUE_TEMPLATE/config.yml",
 		);
 		expect(noIssueTrackerPaths).toContain("harness.contract.json");
+	});
+
+	it("keeps manual Linear UI templates out of packaged scaffold templates", () => {
+		expect(existsSync(join("src", "templates", "linear"))).toBe(false);
 	});
 });

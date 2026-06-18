@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-18
+last_validated: 2026-06-19
 ---
 
 # Linear Templates and Saved Views
@@ -20,8 +20,8 @@ last_validated: 2026-04-18
 Define the baseline Linear templates and saved views for the `coding-harness`
 project and `Jscraik` team.
 
-Template source files in `src/templates/linear/` are the authoritative copy:
-edit those files first, then paste into Linear UI.
+Template source files in `docs/agents/linear-templates/` are the
+authoritative copy: edit those files first, then paste into Linear UI.
 
 ## Workflow boundary
 
@@ -46,16 +46,16 @@ Remove the `Blocked` label as soon as the blocker resolves.
 
 ## Issue templates
 
-Template files are in `src/templates/linear/`. Each is copy-paste-ready for
-Linear -> Settings -> Team -> Templates.
+Template files are in `docs/agents/linear-templates/`. Each is
+copy-paste-ready for Linear -> Settings -> Team -> Templates.
 
 | Template | File |
 | --- | --- |
-| Bug | `src/templates/linear/bug.md` |
-| Feature | `src/templates/linear/feature.md` |
-| Research | `src/templates/linear/research.md` |
-| Automation | `src/templates/linear/automation.md` |
-| Release | `src/templates/linear/release.md` |
+| Bug | `docs/agents/linear-templates/bug.md` |
+| Feature | `docs/agents/linear-templates/feature.md` |
+| Research | `docs/agents/linear-templates/research.md` |
+| Automation | `docs/agents/linear-templates/automation.md` |
+| Release | `docs/agents/linear-templates/release.md` |
 
 Primary type-label baseline:
 
@@ -84,7 +84,7 @@ These cannot be configured via API.
 
 1. Go to Linear -> Settings -> Team -> Templates.
 2. Create Bug, Feature, Research, Automation, and Release templates.
-3. Paste content from the matching file in `src/templates/linear/`.
+3. Paste content from the matching file in `docs/agents/linear-templates/`.
 
 ### Saved views
 
@@ -94,7 +94,7 @@ These cannot be configured via API.
 ## Validation checklist
 
 - [ ] Templates exist in Linear for Bug, Feature, Research, Automation, Release
-- [ ] Template content matches `src/templates/linear/*.md`
+- [ ] Template content matches `docs/agents/linear-templates/*.md`
 - [ ] Six saved views exist and names match this document
 - [ ] `Blocked` label exists in the team label set
 - [ ] Primary type labels exist: `Bug`, `Feature`, `Improvement`, `Policy`, `Security`

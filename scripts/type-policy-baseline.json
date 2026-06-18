@@ -4,42 +4,6 @@
 	"entries": [
 		{
 			"pattern": "double-assertion",
-			"file": "src/commands/pr-closeout-input.ts",
-			"line": 89,
-			"snippet": "return parsed as unknown as PrCloseoutInput;"
-		},
-		{
-			"pattern": "double-assertion",
-			"file": "src/commands/pr-closeout.ts",
-			"line": 106,
-			"snippet": "return parsed as unknown as PrCloseoutInput;"
-		},
-		{
-			"pattern": "double-assertion",
-			"file": "src/commands/preset.ts",
-			"line": 222,
-			"snippet": "preset: preset as unknown as Record<string, unknown>,"
-		},
-		{
-			"pattern": "double-assertion",
-			"file": "src/commands/preset.ts",
-			"line": 229,
-			"snippet": "preset: preset as unknown as Record<string, unknown>,"
-		},
-		{
-			"pattern": "double-assertion",
-			"file": "src/commands/preset.ts",
-			"line": 248,
-			"snippet": "preset: preset as unknown as Record<string, unknown>,"
-		},
-		{
-			"pattern": "double-assertion",
-			"file": "src/commands/runtime-card.ts",
-			"line": 37,
-			"snippet": "evidence as unknown as CodexRuntimeEvidence,"
-		},
-		{
-			"pattern": "double-assertion",
 			"file": "src/lib/contract/run-records-core.ts",
 			"line": 455,
 			"snippet": "repo as unknown as Record<string, unknown>,"
@@ -101,6 +65,12 @@
 		{
 			"pattern": "double-assertion",
 			"file": "src/lib/init/update-core.ts",
+			"line": 445,
+			"snippet": ") as unknown as Record<string, unknown>;"
+		},
+		{
+			"pattern": "double-assertion",
+			"file": "src/lib/init/update-core.ts",
 			"line": 443,
 			"snippet": "renderedContract.value as unknown as HarnessContract,"
 		},
@@ -109,12 +79,6 @@
 			"file": "src/lib/init/update-core.ts",
 			"line": 444,
 			"snippet": "existingContract.value as unknown as Partial<HarnessContract>,"
-		},
-		{
-			"pattern": "double-assertion",
-			"file": "src/lib/init/update-core.ts",
-			"line": 445,
-			"snippet": ") as unknown as Record<string, unknown>;"
 		},
 		{
 			"pattern": "double-assertion",
@@ -139,18 +103,6 @@
 			"file": "src/lib/pilot-evaluation/metrics-capture-core.ts",
 			"line": 829,
 			"snippet": "(incident as unknown as Record<string, unknown>)[field] !== undefined"
-		},
-		{
-			"pattern": "double-assertion",
-			"file": "src/lib/runtime/codex-runtime-evidence-validation.ts",
-			"line": 56,
-			"snippet": "const candidate = packet as unknown as Record<string, unknown>;"
-		},
-		{
-			"pattern": "double-assertion",
-			"file": "src/lib/runtime/runtime-evidence-contract.ts",
-			"line": 162,
-			"snippet": "const candidate = contract as unknown as Record<string, unknown>;"
 		},
 		{
 			"pattern": "double-assertion",

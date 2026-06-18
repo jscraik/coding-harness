@@ -10,6 +10,7 @@ import {
 	getBundledPreset,
 	listBundledPresets,
 } from "../lib/contract/preset-resolver.js";
+import type { HarnessContract } from "../lib/contract/types.js";
 import { validateIdentifier } from "../lib/input/validation.js";
 
 // Re-export ecosystem detection for auto-preset consumers
@@ -31,32 +32,46 @@ export const EXIT_CODES = {
 	INVALID_ARGUMENT: 2,
 } as const;
 
-// Output formatting options
+/** Supported output encodings for preset command results. */
 export type OutputFormat = "json" | "yaml" | "table";
 
+/** Options for listing bundled presets. */
 export interface PresetListOptions {
+	/** Preferred output encoding. Defaults to table output. */
 	format?: OutputFormat;
 }
 
+/** Options for showing one bundled preset. */
 export interface PresetShowOptions {
+	/** Preferred output encoding. Defaults to pretty JSON output. */
 	format?: OutputFormat;
 }
 
+/** Machine-readable result returned by preset list operations. */
 export interface PresetListOutput {
+	/** Bundled preset names available in the harness package. */
 	presets: string[];
+	/** Number of bundled presets returned. */
 	count: number;
 }
 
+/** Machine-readable result returned by preset show operations. */
 export interface PresetShowOutput {
+	/** Requested bundled preset name. */
 	name: string;
-	preset: Record<string, unknown> | undefined;
+	/** Bundled preset contract, when found. */
+	preset: HarnessContract | undefined;
 }
 
+/** Structured preset command error result. */
 export interface PresetErrorOutput {
+	/** Process exit code associated with the error. */
 	code: number;
+	/** Human-readable error message. */
 	message: string;
 }
 
+/** Result envelope returned by preset command helpers. */
 export type PresetResult =
 	| { ok: true; value: PresetListOutput | PresetShowOutput }
 	| { ok: false; error: PresetErrorOutput };
@@ -219,14 +234,14 @@ export function showPreset(
 				ok: true,
 				value: {
 					name,
-					preset: preset as unknown as Record<string, unknown>,
+					preset,
 				},
 			};
 		}
 		if (options.format === "yaml") {
 			const output = {
 				name,
-				preset: preset as unknown as Record<string, unknown>,
+				preset,
 			};
 			console.info(toYaml(output));
 			return {
@@ -245,7 +260,7 @@ export function showPreset(
 			ok: true,
 			value: {
 				name,
-				preset: preset as unknown as Record<string, unknown>,
+				preset,
 			},
 		};
 	} catch (error) {
@@ -260,6 +275,73 @@ export function showPreset(
 	}
 }
 
+function outputFormat(args: readonly string[]): OutputFormat {
+	if (args.includes("--json")) return "json";
+	if (args.includes("--yaml")) return "yaml";
+	return "table";
+}
+
+function exitCodeFor(result: PresetResult): number {
+	return result.ok ? EXIT_CODES.SUCCESS : result.error.code;
+}
+
+function printJsonResult(result: PresetResult): void {
+	if (result.ok) {
+		console.info(JSON.stringify(result.value, null, 2));
+	}
+}
+
+function runPresetListCLI(args: readonly string[]): { exitCode: number } {
+	const format = outputFormat(args);
+	const result = listPresets({ format });
+	if (format === "json") {
+		printJsonResult(result);
+	}
+	return { exitCode: exitCodeFor(result) };
+}
+
+function validatePresetCliName(
+	rawName: string | undefined,
+): string | undefined {
+	if (!rawName) {
+		console.error(
+			"Error: Preset name required. Usage: harness preset show <name>",
+		);
+		return undefined;
+	}
+	const nameValidation = validateIdentifier(rawName, undefined, "preset name");
+	if (!nameValidation.ok) {
+		console.error(`Error: ${nameValidation.error.message}`);
+		return undefined;
+	}
+	return nameValidation.value;
+}
+
+function runPresetShowCLI(args: readonly string[]): { exitCode: number } {
+	const name = validatePresetCliName(args[0]);
+	if (!name) return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+	const format = outputFormat(args);
+	const result = showPreset(name, { format });
+	if (!result.ok) {
+		console.error(`Error: ${result.error.message}`);
+	} else if (format === "json") {
+		printJsonResult(result);
+	}
+	return { exitCode: exitCodeFor(result) };
+}
+
+function printPresetUsage(): void {
+	console.info("Usage: harness preset <command>");
+	console.info("");
+	console.info("Commands:");
+	console.info("  list          List all available bundled presets");
+	console.info("  show <name>   Display a specific preset's configuration");
+	console.info("");
+	console.info("Options:");
+	console.info("  --json        Output in JSON format");
+	console.info("  --yaml        Output in YAML format");
+}
+
 /**
  * Run the preset command CLI
  */
@@ -270,67 +352,15 @@ export async function runPresetCLI(
 
 	switch (subcommand) {
 		case "list": {
-			const format = rest.includes("--json")
-				? "json"
-				: rest.includes("--yaml")
-					? "yaml"
-					: "table";
-			const result = listPresets({ format });
-			if (result.ok && format === "json") {
-				console.info(JSON.stringify(result.value, null, 2));
-			}
-			return {
-				exitCode: result.ok ? EXIT_CODES.SUCCESS : result.error.code,
-			};
+			return runPresetListCLI(rest);
 		}
 
 		case "show": {
-			const rawName = rest[0];
-			if (!rawName) {
-				console.error(
-					"Error: Preset name required. Usage: harness preset show <name>",
-				);
-				return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
-			}
-
-			// Validate preset name (identifier only - no path traversal)
-			const nameValidation = validateIdentifier(
-				rawName,
-				undefined,
-				"preset name",
-			);
-			if (!nameValidation.ok) {
-				console.error(`Error: ${nameValidation.error.message}`);
-				return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
-			}
-			const name = nameValidation.value;
-
-			const format = rest.includes("--json")
-				? "json"
-				: rest.includes("--yaml")
-					? "yaml"
-					: "table";
-			const result = showPreset(name, { format });
-			if (!result.ok) {
-				console.error(`Error: ${result.error.message}`);
-			} else if (format === "json") {
-				console.info(JSON.stringify(result.value, null, 2));
-			}
-			return {
-				exitCode: result.ok ? EXIT_CODES.SUCCESS : result.error.code,
-			};
+			return runPresetShowCLI(rest);
 		}
 
 		default: {
-			console.info("Usage: harness preset <command>");
-			console.info("");
-			console.info("Commands:");
-			console.info("  list          List all available bundled presets");
-			console.info("  show <name>   Display a specific preset's configuration");
-			console.info("");
-			console.info("Options:");
-			console.info("  --json        Output in JSON format");
-			console.info("  --yaml        Output in YAML format");
+			printPresetUsage();
 			return { exitCode: EXIT_CODES.SUCCESS };
 		}
 	}

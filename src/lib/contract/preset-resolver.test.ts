@@ -1,7 +1,11 @@
 import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as urlValidator from "../governance/url-validator.js";
-import { CircularInheritanceError, MaxDepthExceededError } from "./errors.js";
+import {
+	CircularInheritanceError,
+	MaxDepthExceededError,
+	PresetFetchError,
+} from "./errors.js";
 import {
 	PresetResolver,
 	clearPresetCache,
@@ -161,7 +165,10 @@ describe("preset-resolver", () => {
 		it("throws for non-existent local file", async () => {
 			await expect(
 				resolvePreset("non-existent-file.json", process.cwd()),
-			).rejects.toThrow();
+			).rejects.toThrow(PresetFetchError);
+			await expect(
+				resolvePreset("non-existent-file.json", process.cwd()),
+			).rejects.toThrow(/File not found/);
 		});
 
 		it("fails closed when remote preset reference omits integrity hash", async () => {

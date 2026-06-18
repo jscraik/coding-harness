@@ -145,6 +145,12 @@ Validation-throughput changes belong to the same graph lane when they split or
 rename aggregate gates. The architecture contract must identify which command
 owns full tests, which command owns related-test coverage, and which command
 owns static-only proof so faster CI does not blur claim authority.
+Code-size guardrail and command-module split changes also belong to this graph
+lane when they move command implementations behind smaller adapter modules or
+change which files `quality:size`, `quality:docstrings`, or `test:related`
+enforce. Keep generated architecture context synchronized so reviewers can
+trace the new module owners and the validation command that proves changed-file
+size and complexity compliance.
 Type and artifact contract gate changes are part of this validation graph when
 they alter `pnpm types:check`, `pnpm artifact:types`, Python/Pydantic
 validation, TypeScript escape-hatch policy, JSON Schema contract validation, or

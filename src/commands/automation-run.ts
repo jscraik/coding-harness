@@ -6,9 +6,9 @@ import {
 	runAutomationWithIdempotency,
 } from "../lib/contract/idempotency.js";
 import {
-	emitTerminalRunRecord,
-	hashRunRecordValue,
-} from "../lib/contract/run-record-emitter.js";
+	createRunRecordWriter,
+	type RunRecordParams,
+} from "./automation-run-records.js";
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -88,86 +88,6 @@ function buildPayload(
 		contractVersion: keyParts.contractVersion,
 		inputFingerprint: keyParts.inputFingerprint,
 		mode: options.force ? "force" : "default",
-	};
-}
-
-interface RunRecordParams {
-	outcome: "success" | "failed" | "blocked";
-	classification:
-		| "ok"
-		| "validation_failed"
-		| "runtime_failed"
-		| "precondition_failed";
-	exitCode: number;
-	artifacts?: Array<{ type: string; path: string; checksum?: string }>;
-	payload: Record<string, unknown>;
-}
-
-/**
- * Creates a run-record writer bound to the given options and start time.
- *
- * @param options - The automation run options.
- * @param startedAt - ISO timestamp when the run started.
- * @returns A function that emits a run record and returns an error string, or null on success.
- */
-function createRunRecordWriter(
-	options: AutomationRunOptions,
-	startedAt: string,
-): (params: RunRecordParams) => string | null {
-	return (params) => {
-		try {
-			emitTerminalRunRecord({
-				command: "automation-run",
-				startedAt,
-				outcome: params.outcome,
-				classification: params.classification,
-				exitCode: params.exitCode,
-				...(options.runRecordsDir ? { baseDir: options.runRecordsDir } : {}),
-				repo: {
-					repository: options.repo,
-					headSha: options.headSha,
-				},
-				contract: {
-					path: "harness.contract.json",
-					version: options.contractVersion,
-				},
-				policyContext: {
-					mode: options.force ? "force" : "default",
-					safetyPosture: "strict",
-					effectivePolicySource: "automation-idempotency",
-					hash: hashRunRecordValue({
-						policy: "automation-idempotency",
-						mode: options.force ? "force" : "default",
-						safetyPosture: "strict",
-						contractVersion: options.contractVersion,
-						inputFingerprint: options.inputFingerprint,
-					}),
-				},
-				preconditions: {
-					inputValid: params.classification !== "validation_failed",
-				},
-				...(params.artifacts ? { artifacts: params.artifacts } : {}),
-				event: {
-					eventType: "decision",
-					status:
-						params.classification === "ok"
-							? "completed"
-							: params.classification === "precondition_failed"
-								? "blocked"
-								: "failed",
-					severity:
-						params.classification === "ok"
-							? "info"
-							: params.classification === "precondition_failed"
-								? "warn"
-								: "error",
-					payload: params.payload,
-				},
-			});
-			return null;
-		} catch (error) {
-			return String(error);
-		}
 	};
 }
 

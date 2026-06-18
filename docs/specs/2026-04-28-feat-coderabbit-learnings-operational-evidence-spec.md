@@ -911,7 +911,7 @@ Out of scope:
 Required fixture:
 
 ```text
-tests/fixtures/learnings/coderabbit-frontmatter-policy.csv
+src/lib/learnings/__fixtures__/coderabbit-frontmatter-policy.csv
 ```
 
 Phase 1A/1B must not mark this learning as `enforced`. Phase 1A must import it deterministically and Phase 1B must be able to emit the exact-file gate finding. The durable promotion to validator, regression test, and `promotionStatus: enforced` belongs to the first promotion slice.
