@@ -12,7 +12,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-...
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SCRIPT_PATH = resolve(HERE, "../../scripts/resolve-circleci-pr-ref.sh");
 
@@ -47,6 +47,7 @@ function runScript(root: string, extraEnv: NodeJS.ProcessEnv = {}) {
 			...extraEnv,
 			PATH: `${join(root, "bin")}${delimiter}${process.env.PATH ?? ""}`,
 		},
+		timeout: 10000,
 	});
 }
 

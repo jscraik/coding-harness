@@ -30,6 +30,7 @@ Generated: 2026-06-18T00:52:18Z
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
 - `package.json`
+- `scripts/resolve-circleci-pr-ref.sh`
 - `src/lib/init/README.md`
 - `src/lib/init/scaffold-script-template-registry.ts`
 - `src/lib/policy/tooling-baseline.ts`
