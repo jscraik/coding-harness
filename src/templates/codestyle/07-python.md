@@ -17,11 +17,24 @@
 - Use the Python version pinned by repo toolchain configuration.
 - Keep Python invocations deterministic and scriptable (`python3 ...` from repo root when possible).
 - Avoid user-specific paths and implicit global state in scripts.
+- Python validation and utility scripts SHOULD run through repo-owned `uv`
+  wrappers when a project has uv configured. Do not duplicate `UV_CACHE_DIR`,
+  `UV_PROJECT_ENVIRONMENT`, Python version flags, or dependency-group flags in
+  many package scripts.
+- `UV_PROJECT_ENVIRONMENT` and `UV_CACHE_DIR` values used by repository
+  scripts SHOULD resolve inside the repository or CI workspace unless an
+  explicit platform contract requires another location.
 
 ## Typing and API boundaries
 - Public functions and module entrypoints MUST have explicit type hints.
 - Prefer concrete types and `typing` primitives over untyped dictionaries at boundaries.
 - Validate external input payloads before use and narrow types early.
+- For JSON/YAML/TOML or subprocess boundaries, prefer `dataclass`,
+  `TypedDict`, Pydantic models, or schema validators over open-ended
+  `dict[str, object]` plumbing after the boundary has been parsed.
+- `subprocess.run` calls SHOULD use argument lists, `check=False` or
+  well-scoped exception handling, explicit text/encoding expectations, and
+  typed result objects when callers inspect exit status or output.
 
 ## Linting and formatting
 - Ruff is the primary Python linter and MUST pass for changed Python paths.
@@ -45,6 +58,9 @@
   - `pnpm typecheck`
   - `pnpm test`
   - `bash scripts/verify-work.sh --fast`
+- In this repository, Python artifact/type checks are routed through
+  `bash scripts/check-python-types.sh`; keep package scripts on that wrapper
+  instead of recreating `uv run --python ... --group ...` command lines.
 - Python-focused checks SHOULD be run when relevant tooling is present in the touched project:
   - `ruff check <changed-python-paths>`
   - `pyright <changed-python-paths>`

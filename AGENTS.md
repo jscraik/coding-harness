@@ -11,7 +11,7 @@ audience:
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-06-04
+last_reviewed: 2026-06-18
 review_cadence: on-change
 maintenance_trigger:
   - agent-operating-policy-change
@@ -116,6 +116,10 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 - Direct `prek` operations must use `bash scripts/run-prek.sh <args>` so hook
   validation uses the worktree cache instead of a home-directory cache that may
   be non-writable in sandboxed Codex runs.
+- Repo-owned uv/Python validation paths must use
+  `bash scripts/run-uv-python.sh <command> [args...]` so worktree-scoped uv
+  cache and environment defaults stay centralized across hooks, package scripts,
+  and generated scaffolds.
 - Repo-owned Semgrep security lanes must use Python-runtime-scoped worktree
   caches and an executable `pysemgrep` or `semgrep --version` probe before
   reusing scanner state; stale metadata or ABI-mismatched site-packages are

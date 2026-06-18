@@ -84,6 +84,11 @@ thin and delegate into this deep module.
   `linear-gate` jobs are emitted. Those jobs should call the shared helper
   instead of carrying separate inline PR-context resolution logic, and the helper
   must remain part of the downstream support-file baseline.
+- Generated Python validation scaffolds must include `scripts/run-uv-python.sh`
+  whenever uv-backed type, artifact, or governance helpers are emitted. The
+  wrapper owns repo-scoped `UV_CACHE_DIR` and `UV_PROJECT_ENVIRONMENT` defaults
+  so downstream validation paths do not copy uv setup across package scripts or
+  hook helpers.
 - Generated hook adapters must render package-script commands from the detected
   package manager. Downstream npm or yarn repositories must not receive pnpm-only
   hook commands unless pnpm is the selected package manager.

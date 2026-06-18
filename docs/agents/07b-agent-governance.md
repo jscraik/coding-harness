@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-17
+last_validated: 2026-06-18
 ---
 
 # Agent governance
@@ -55,6 +55,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   domain document the map points to.
 - agent-readiness or `harness next` context-health changes should keep `harness.contract.json`, `AGENTS.md`, `README.md`, `.harness/core/agent-readiness-contract.md`, and this guide synchronized. Shared-state action authority belongs in `toolingPolicy.sharedStateActions`; context-health warnings are orientation evidence only unless a separate validated consumer promotes them.
 - tooling/runtime changes should update `docs/agents/02-tooling-policy.md` and `docs/agents/06-security-and-governance.md`
+- uv-backed Python helper changes should keep `scripts/run-uv-python.sh`,
+  scaffold inventories, tooling baseline parity, `AGENTS.md`, tooling policy,
+  and security governance synchronized so generated hooks and package scripts
+  share one repo-scoped uv runtime boundary.
 - preflight or Local Memory enforcement changes should keep `AGENTS.md`, `README.md`, `docs/agents/02-tooling-policy.md`, `docs/agents/03-local-memory.md`, `docs/agents/06-security-and-governance.md`, and this guide synchronized; legacy positional `scripts/codex-preflight.sh` invocations must default to required Local Memory mode unless `off` or `optional` is explicitly supplied
 - architecture-context refresh changes should update `docs/agents/00-architecture-bootstrap.md`; Flow Ops closure-evidence, E2E runner, or eval artifact changes that trigger that refresh should keep `AGENTS.md` and this guide synchronized when docs-gate reports the agent-governance category
 - reader-task documentation eval changes that add or alter `pnpm docs:task-eval`, fixture categories, fixture evidence validation, or docs-surface automation should keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, this guide, generated architecture context, and docs-gate-required surfaces synchronized so agents can trace reader journeys, canon boundaries, review-state truth, and downstream distribution assumptions from the governance layer

@@ -19,8 +19,13 @@ const SCRIPT_PATH = resolve(
 
 const tempRoots: string[] = [];
 const scrubbedCircleCiPrEnv: NodeJS.ProcessEnv = {
+	CIRCLE_BRANCH: undefined,
+	CIRCLE_PROJECT_REPONAME: undefined,
+	CIRCLE_PROJECT_USERNAME: undefined,
 	CIRCLE_PULL_REQUEST: undefined,
 	CIRCLE_PULL_REQUESTS: undefined,
+	CIRCLE_REPOSITORY_URL: undefined,
+	CIRCLE_SHA1: undefined,
 	GH_BIN: undefined,
 };
 
@@ -108,6 +113,32 @@ describe("resolve-circleci-pr-ref.sh", () => {
 		expect(result.stderr).toContain(
 			"PR context not available yet for pr-template; retrying (1/2).",
 		);
+	});
+
+	it("normalizes GitHub repository URLs before querying PRs", () => {
+		const root = createTempRoot();
+		writeExecutable(
+			root,
+			"bin/gh",
+			[
+				"#!/usr/bin/env bash",
+				"set -euo pipefail",
+				'if [[ "$*" == *"--repo acme/demo"* ]]; then',
+				'  printf "%s" "https://github.com/acme/demo/pull/56"',
+				"fi",
+			].join("\n"),
+		);
+
+		const result = runScript(root, {
+			CIRCLE_BRANCH: "codex/url-normalizer",
+			CIRCLE_REPOSITORY_URL: "git@github.com:acme/demo.git",
+			HARNESS_CIRCLECI_PR_REF_MAX_ATTEMPTS: "1",
+			HARNESS_CIRCLECI_PR_REF_SLEEP_SECONDS: "0",
+		});
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toBe("https://github.com/acme/demo/pull/56");
+		expect(result.stderr).toBe("");
 	});
 
 	it("does not accept closed pull requests from commit lookup fallback", () => {

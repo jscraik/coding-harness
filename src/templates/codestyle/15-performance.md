@@ -24,6 +24,13 @@
 - Repeated expensive I/O in loops MUST be prevented.
 - Unbounded queries/scans MUST NOT run without pagination, filtering, or limits.
 - Repeated recomputation SHOULD be avoided when caching or memoization is appropriate.
+- Shell scripts SHOULD avoid spawning external tools inside tight loops when a
+  built-in shell operation, `jq` batch query, or typed helper can do the work
+  once.
+- Validation wrappers SHOULD centralize runtime setup so aggregate gates do not
+  repeat dependency resolution or environment discovery unnecessarily.
+- When optimizing validation gates, preserve per-suite or per-command proof
+  boundaries unless the new batching mode proves equivalent failure isolation.
 
 ## Enforcement
 - If a change is marked as a performance improvement, include measurable evidence in PR/testing notes.

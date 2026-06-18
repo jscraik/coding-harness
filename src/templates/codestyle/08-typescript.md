@@ -17,6 +17,9 @@
 - Explicit types at public API boundaries (functions, modules, component props) are REQUIRED.
 - Exported public API declarations in changed production `src/**` files MUST have JSDoc; `pnpm run quality:docstrings` enforces this changed-file ratchet.
 - Use strict TypeScript configuration and keep boundary validation explicit.
+- Repository TypeScript projects SHOULD keep `strict`,
+  `noUncheckedIndexedAccess`, and `exactOptionalPropertyTypes` enabled unless
+  a documented migration or waiver explains why a target cannot support them.
 - `any` SHOULD be avoided in production paths; use concrete types or `unknown` plus narrowing. If a temporary `any` is unavoidable, keep it local, justified, and covered by tests or a follow-up waiver.
 
 ## Banned patterns
@@ -33,9 +36,20 @@
 - Prefer ESM and explicit module syntax for Node/TS packages.
 - Local ESM imports MUST include `.js` extensions for emitted JavaScript compatibility.
 - NodeNext TypeScript projects MUST keep `module` and `moduleResolution` aligned to `NodeNext` unless a documented runtime migration changes both together.
+- Node-targeted TypeScript projects SHOULD keep the compiler target and lib
+  aligned with the repository Node runtime baseline. When Node or TypeScript
+  major versions move, update `tsconfig.json`, `.mise.toml`, package
+  metadata, and generated scaffolds together.
 - With `verbatimModuleSyntax` enabled, imports MUST reflect runtime semantics; use `import type` for type-only imports.
 - JSON imports in NodeNext-style modules MUST use import attributes when the runtime/compiler requires them, for example `with { type: "json" }`.
 - Keep imports acyclic; avoid barrels that create circular dependency chains.
+- Node scripts that consume JSON, command output, environment variables, or
+  filesystem state MUST validate and narrow those values at the boundary before
+  domain logic uses them. Prefer small typed helpers over repeated ad hoc
+  `JSON.parse`, `process.env`, or `RegExp` checks.
+- Dynamic regular expressions MUST escape user- or file-derived fragments.
+  Prefer exact path comparison, URL/path parsers, schema validation, or
+  structured data checks before introducing regex.
 
 ## Async and cancellation
 - Prefer `async/await` over nested Promise chains.
