@@ -73,7 +73,7 @@ resolve_github_pr_ref() {
 		resolved="$("$GH_BIN" pr list "${gh_repo_args[@]}" --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
 	fi
 	if [[ -z "$resolved" && -n "${CIRCLE_SHA1:-}" && -n "$repo_slug" ]]; then
-		resolved="$("$GH_BIN" api -H "Accept: application/vnd.github+json" "/repos/${repo_slug}/commits/${CIRCLE_SHA1}/pulls" --jq '([.[] | select(.state == "open")][0].html_url // .[0].html_url // "")' 2>/dev/null || true)"
+		resolved="$("$GH_BIN" api -H "Accept: application/vnd.github+json" "/repos/${repo_slug}/commits/${CIRCLE_SHA1}/pulls" --jq '[.[] | select(.state == "open")] | .[0].html_url // ""' 2>/dev/null || true)"
 	fi
 	printf '%s' "$resolved"
 }
