@@ -16,6 +16,7 @@ const tempRoots: string[] = [];
 const scrubbedCircleCiPrEnv: NodeJS.ProcessEnv = {
 	CIRCLE_PULL_REQUEST: undefined,
 	CIRCLE_PULL_REQUESTS: undefined,
+	GH_BIN: undefined,
 };
 
 function createTempRoot() {
