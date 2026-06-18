@@ -53,8 +53,9 @@ Coverage and mutation thresholds MAY be enforced only when wired to executable r
   `--argjson` and use `-e` when the filter result is the command success
   condition.
 * Prefer repo-owned wrappers for toolchain setup. If several scripts need the
-  same `uv`, Node, Semgrep, or package-manager environment, put that setup in
-  one helper script and route package scripts through it.
+  same `uv`, Node, Semgrep, or package-manager environment, centralize that
+  setup in the approved helper (for example `scripts/run-uv-python.sh`) and
+  route package scripts through it.
 
 * For TypeScript-family source, agents MUST run
   `bash scripts/harness-cli.sh source-outline <path> --json` before reading full
