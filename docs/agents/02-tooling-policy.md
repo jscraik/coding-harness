@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-13
+last_validated: 2026-06-18
 ---
 
 # Tooling policy
@@ -101,6 +101,7 @@ Repo-managed pins should live in `.mise.toml` where the tool can be managed ther
 The source checkout pins Node `26.3.0` through `.mise.toml` and requires package consumers to satisfy `engines.node >=26.3.0`.
 `scripts/check-node-engine.mjs` is the fail-closed Node-floor check. Keep it in packaged files and run it before broad gates such as `pnpm check:static`, `pnpm check`, or `bash scripts/validate-codestyle.sh --fast`. When the ambient shell has an older Node but `.mise.toml` can resolve the pinned runtime, the check re-executes itself with the repo-pinned Node; if that recovery is unavailable, it blocks before lint, docs, typecheck, or test lanes.
 Documentation lifecycle checks should use `node --import tsx scripts/check-doc-lifecycle.ts` instead of the `tsx` CLI wrapper so sandboxed runs do not depend on temporary runner IPC pipes.
+uv-backed Python helper commands should run through `bash scripts/run-uv-python.sh <command> [args...]`. The wrapper owns the repository-scoped `UV_CACHE_DIR` and `UV_PROJECT_ENVIRONMENT` defaults, so package scripts, hook governance helpers, and generated scaffolds do not duplicate uv setup.
 The root `Makefile` is also part of the enforced baseline and must retain the harness contract targets required by `scripts/check-environment.sh`.
 `CODESTYLE.md` and `scripts/validate-codestyle.sh` are part of the same baseline. A harness-managed repo should fail readiness if either file is missing or if the validator no longer maps cleanly to repo-defined scripts.
 `scripts/check-codestyle-parity.sh` is part of the same governed surface and must fail closed when `codestyle/` or `codestyle/CHECKSUMS.sha256` drift.

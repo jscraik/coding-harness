@@ -36,6 +36,15 @@
 ## Exact behavior checks
 - When executable behavior changes, the smallest real code path that exercises the exact production code touched MUST run before the change is described as verified.
 - Prefer invoking the production function, class, CLI command, shell script, validator, or route directly.
+- If a change replaces regex parsing with structured parsing, or replaces
+  duplicated command setup with a helper/wrapper, tests SHOULD include the
+  boundary case that motivated the change and at least one failure or fallback
+  case when the workflow is a gate.
+- Shell script changes SHOULD have either a process-level test, a fixture-driven
+  wrapper test, or the nearest repository shell validation command that
+  exercises the exact script path.
+- Package script routing changes SHOULD prove both the package command and the
+  underlying wrapper path when practical.
 - If no existing test covers the path, agents MAY create a temporary local reproduction harness under `codex-scripts/`, but it MUST remain gitignored and MUST import or invoke production code directly instead of copying implementation into the harness.
 - If the exact path cannot run because it depends on unavailable credentials, external services, unsafe side effects, or missing generated runtime state, the blocker MUST be stated explicitly and the nearest meaningful validation SHOULD run instead.
 - Production behavior MUST NOT be described as verified unless the touched path actually ran.

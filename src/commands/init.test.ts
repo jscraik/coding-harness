@@ -19,7 +19,6 @@ import { CURRENT_SCHEMA_VERSION } from "../lib/init/types.js";
 import { normalizeRequiredChecksManifest } from "../lib/policy/required-checks.js";
 import { sanitizeGitEnv } from "../lib/workflow-contract/test-harness.js";
 import { EXIT_CODES, runInit, runInitCLI } from "./init.js";
-
 const EXPECTED_TEMPLATE_PATHS = [
 	"harness.contract.json",
 	"memory.json",
@@ -68,6 +67,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/validate-commit-msg.js",
 	"scripts/check-hook-critical-config-sync.sh",
 	"scripts/run-package-command.sh",
+	"scripts/run-uv-python.sh",
 	"scripts/hook-pre-commit.sh",
 	"scripts/hook-pre-push.sh",
 	"scripts/setup-git-hooks.js",

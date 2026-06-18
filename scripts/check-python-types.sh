@@ -3,22 +3,53 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
-
-if ! command -v uv >/dev/null 2>&1; then
-	echo "[check-python-types] missing required binary: uv" >&2
-	exit 1
-fi
-
-export UV_CACHE_DIR="${UV_CACHE_DIR:-$REPO_ROOT/.cache/uv-python-types-cache}"
-export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-$REPO_ROOT/.cache/uv-python-types}"
+RUN_UV_PYTHON="$REPO_ROOT/scripts/run-uv-python.sh"
 
 cd "$REPO_ROOT"
 
-uv run --python 3.12 --group dev ruff check \
+mode="python-types"
+while (( $# > 0 )); do
+	case "$1" in
+		--artifact-contracts-only)
+			mode="artifact-contracts"
+			shift
+			;;
+		-h|--help)
+			cat <<'USAGE'
+Usage: scripts/check-python-types.sh [--artifact-contracts-only]
+
+Run repo-scoped Python type/lint checks through uv-managed Python 3.12.
+
+Options:
+  --artifact-contracts-only  Run only scripts/check_artifact_type_contracts.py
+  -h, --help                 Show this help text
+USAGE
+			exit 0
+			;;
+		*)
+			echo "[check-python-types] unknown argument: $1" >&2
+			exit 2
+			;;
+	esac
+done
+
+run_uv() {
+	bash "$RUN_UV_PYTHON" "$@"
+}
+
+run_artifact_contracts() {
+	run_uv python scripts/check_artifact_type_contracts.py
+}
+
+if [[ "$mode" == "artifact-contracts" ]]; then
+	run_artifact_contracts
+	exit 0
+fi
+
+run_uv ruff check \
 	scripts/check_artifact_type_contracts.py \
 	scripts/hook-governance/inventory_repos.py \
 	scripts/hook-governance/tests/test_inventory_repos.py
-uv run --python 3.12 --group dev pyright
-uv run --python 3.12 --group dev python scripts/check_artifact_type_contracts.py
-uv run --python 3.12 --group dev pytest \
+run_uv pyright
+run_uv pytest \
 	scripts/hook-governance/tests/test_inventory_repos.py

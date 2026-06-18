@@ -15,7 +15,12 @@ if [[ ! "$sleep_seconds" =~ ^[0-9]+$ ]]; then
 fi
 
 normalize_github_slug() {
-	printf '%s' "$1" | sed 's#^https://github.com/##; s#^git@github.com:/##; s#^git@github.com:##; s#\.git$##'
+	local slug="$1"
+	slug="${slug#https://github.com/}"
+	slug="${slug#git@github.com:/}"
+	slug="${slug#git@github.com:}"
+	slug="${slug%.git}"
+	printf '%s' "$slug"
 }
 
 resolve_repo_slug() {
@@ -41,7 +46,7 @@ resolve_repo_slug() {
 			gh_path="$(command -v "$GH_BIN" 2>/dev/null || true)"
 		fi
 		if [[ -n "$gh_path" ]]; then
-			slug="$("$GH_BIN" repo view --json nameWithOwner --jq '.nameWithOwner // ""' 2>/dev/null || true)"
+			slug="$("$gh_path" repo view --json nameWithOwner --jq '.nameWithOwner // ""' 2>/dev/null || true)"
 		fi
 	fi
 	printf '%s' "$slug"

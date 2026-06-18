@@ -24,6 +24,7 @@ describe("scaffold script template registry", () => {
 			"scripts/setup-git-hooks.js",
 			"scripts/run-prek.sh",
 			"scripts/run-package-command.sh",
+			"scripts/run-uv-python.sh",
 			"scripts/with-validation-lock.sh",
 			"scripts/check-validation-locks.sh",
 			"scripts/hook-pre-commit.sh",
@@ -86,6 +87,9 @@ describe("scaffold script template registry", () => {
 		const packageCommand = QUALITY_AND_HOOK_SCRIPT_TEMPLATES.find(
 			(template) => template.path === "scripts/run-package-command.sh",
 		);
+		const uvPython = QUALITY_AND_HOOK_SCRIPT_TEMPLATES.find(
+			(template) => template.path === "scripts/run-uv-python.sh",
+		);
 
 		expect(codeSize?.render("pnpm", renderContext)).toContain(
 			"check-code-size",
@@ -96,6 +100,9 @@ describe("scaffold script template registry", () => {
 		);
 		expect(packageCommand?.render("pnpm", renderContext)).toContain(
 			"mise --cd",
+		);
+		expect(uvPython?.render("pnpm", renderContext)).toContain(
+			"uv run --python 3.12 --group dev",
 		);
 	});
 

@@ -66,6 +66,10 @@ export const QUALITY_AND_HOOK_SCRIPT_TEMPLATES: readonly Template[] = [
 		render: () => renderRunPackageCommandScript(),
 	},
 	{
+		path: "scripts/run-uv-python.sh",
+		render: () => renderPackagedRootFile("scripts/run-uv-python.sh"),
+	},
+	{
 		path: "scripts/with-validation-lock.sh",
 		render: () => renderPackagedRootFile("scripts/with-validation-lock.sh"),
 	},

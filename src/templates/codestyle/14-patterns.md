@@ -42,11 +42,23 @@ Examples:
 - Code SHOULD be organized by feature/domain boundaries instead of technology buckets when practical.
 - Files MUST remain cohesive; shared logic SHOULD be extracted before copy-paste drift appears.
 - Repository/service abstractions SHOULD be used when multiple storage backends or test doubles are required.
+- Repeated command prefixes, runtime setup, schema parsing, and path
+  normalization SHOULD become small repo-owned helpers when two or more scripts
+  need the same behavior.
+- Do not add helpers that only rename a single call. A helper should remove
+  real duplication, encode a domain invariant, or make unsafe states harder to
+  express.
 
 ## Boundary and response patterns
 - All external input MUST be validated at boundaries before domain logic.
 - Error structures and API envelopes MUST remain consistent within a service surface.
 - Named constants MUST be used for thresholds, limits, and policy values; magic numbers MUST be avoided.
+- Prefer structured parsers and typed boundary objects over regex for JSON,
+  YAML, TOML, URLs, paths, package metadata, command output, and schema-bearing
+  artifacts.
+- Regex is acceptable for local token validation and simple search, but brittle
+  parsing regex SHOULD be replaced with `jq`, URL/path APIs, schema validators,
+  or typed helper functions.
 
 ## Enforcement
 

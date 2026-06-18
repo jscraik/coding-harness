@@ -47,6 +47,14 @@ Coverage and mutation thresholds MAY be enforced only when wired to executable r
 * Use `rg` not `grep` for project-wide search.
 * Prefer `fd` for file finding.
 * Use `jq` for JSON parsing/transformations.
+* Shell scripts that inspect JSON MUST use `jq` or a typed language helper;
+  regex, `sed`, `awk`, or string slicing MUST NOT parse JSON.
+* When `jq` is used in shell, pass shell values with `--arg` or
+  `--argjson` and use `-e` when the filter result is the command success
+  condition.
+* Prefer repo-owned wrappers for toolchain setup. If several scripts need the
+  same `uv`, Node, Semgrep, or package-manager environment, put that setup in
+  one helper script and route package scripts through it.
 
 * For TypeScript-family source, agents MUST run
   `bash scripts/harness-cli.sh source-outline <path> --json` before reading full
