@@ -13,6 +13,10 @@ import { afterEach, describe, expect, it } from "vitest";
 const SCRIPT_PATH = join(process.cwd(), "scripts/resolve-circleci-pr-ref.sh");
 
 const tempRoots: string[] = [];
+const scrubbedCircleCiPrEnv: NodeJS.ProcessEnv = {
+	CIRCLE_PULL_REQUEST: undefined,
+	CIRCLE_PULL_REQUESTS: undefined,
+};
 
 function createTempRoot() {
 	const root = mkdtempSync(join(tmpdir(), "circleci-pr-ref-"));
@@ -34,6 +38,7 @@ function runScript(root: string, extraEnv: NodeJS.ProcessEnv = {}) {
 		encoding: "utf8",
 		env: {
 			...process.env,
+			...scrubbedCircleCiPrEnv,
 			...extraEnv,
 			PATH: `${join(root, "bin")}${delimiter}${process.env.PATH ?? ""}`,
 		},
