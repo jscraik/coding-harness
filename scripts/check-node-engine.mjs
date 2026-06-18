@@ -32,9 +32,11 @@ function resolvePinnedNode() {
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
 	});
+
 	if (result.error) {
 		return { ok: false, reason: result.error.message };
 	}
+
 	if (result.status !== 0) {
 		return {
 			ok: false,
@@ -42,28 +44,29 @@ function resolvePinnedNode() {
 				result.stderr.trim() || `mise exited with status ${result.status}`,
 		};
 	}
+
 	const nodePath = result.stdout.trim();
 	if (nodePath.length === 0) {
-		return { ok: false, reason: "mise did not return a Node executable path" };
+		return { ok: false, reason: "mise returned an empty Node path" };
 	}
+
 	return { ok: true, nodePath };
 }
 
 function reexecuteWithPinnedNode(nodePath) {
-	console.error(
-		`[toolchain] Retrying engine check with repo-pinned Node at ${nodePath}`,
-	);
 	const result = spawnSync(nodePath, [scriptPath, ...process.argv.slice(2)], {
 		env: { ...process.env, [reexecGuard]: "1" },
 		stdio: "inherit",
 	});
+
 	if (result.error) {
 		console.error(
-			`[toolchain] Failed to run repo-pinned Node at ${nodePath}: ${result.error.message}`,
+			`[toolchain] failed to re-run Node engine check with repo-pinned Node: ${result.error.message}`,
 		);
 		process.exit(1);
 	}
-	process.exit(result.status ?? 1);
+
+	process.exit(typeof result.status === "number" ? result.status : 1);
 }
 
 if (typeof requirement !== "string") {
@@ -85,16 +88,19 @@ const floor = parseVersion(floorMatch[1]);
 if (!isAtLeast(current, floor)) {
 	if (process.env[reexecGuard] !== "1") {
 		const pinnedNode = resolvePinnedNode();
-		if (pinnedNode.ok) {
-			if (pinnedNode.nodePath !== process.execPath) {
-				reexecuteWithPinnedNode(pinnedNode.nodePath);
-			}
-		} else {
+		if (pinnedNode.ok && pinnedNode.nodePath !== process.execPath) {
 			console.error(
-				`[toolchain] Could not resolve repo-pinned Node through mise: ${pinnedNode.reason}`,
+				`[toolchain] Node v${process.versions.node} does not satisfy package.json engines.node ${requirement}; retrying with repo-pinned Node from mise.`,
+			);
+			reexecuteWithPinnedNode(pinnedNode.nodePath);
+		}
+		if (!pinnedNode.ok) {
+			console.error(
+				`[toolchain] could not resolve repo-pinned Node through mise: ${pinnedNode.reason}`,
 			);
 		}
 	}
+
 	console.error(
 		`[toolchain] Node v${process.versions.node} does not satisfy package.json engines.node ${requirement}`,
 	);
