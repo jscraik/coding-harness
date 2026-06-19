@@ -46,7 +46,7 @@ export interface EvidenceVerifyOptions {
 
 type EvidencePolicyLoadResult =
 	| { ok: true; policy?: EvidencePolicy }
-	| { ok: false; error: { code: string; message: string } };
+	| { ok: false; error: Extract<EvidenceVerifyResult, { ok: false }>["error"] };
 
 /**
  * Determine the most severe exit code from multiple errors.
@@ -205,59 +205,74 @@ export function runEvidenceVerifyCLI(options: EvidenceVerifyOptions): number {
 	const result = runEvidenceVerify(options);
 
 	if (result.ok) {
-		const { output } = result;
+		renderEvidenceVerifyOutput(result.output, Boolean(options.json));
+		return evidenceVerifySuccessExitCode(result.output);
+	}
 
-		if (options.json) {
-			console.info(JSON.stringify(output, null, 2));
-		} else {
-			// Human-readable output
-			if (output.verified > 0) {
-				console.info(`Verified ${output.verified} evidence file(s):`);
-				for (const file of output.files) {
-					console.info(
-						`  ✓ ${file.path} (${file.type}, ${file.sizeBytes} bytes)`,
-					);
-				}
-			}
+	renderEvidenceVerifyError(result.error, Boolean(options.json));
+	return evidenceVerifyErrorExitCode(result.error);
+}
 
-			if (output.failed > 0) {
-				console.error(`Failed to verify ${output.failed} file(s):`);
-				for (const error of output.errors) {
-					console.error(`  ✗ ${error.path}: ${error.message}`);
-				}
-				for (const error of output.browserEvidence?.errors ?? []) {
-					console.error(
-						`  ✗ ${error.path ?? output.browserEvidence?.manifestPath}: ${error.message}`,
-					);
-				}
-			}
+function renderEvidenceVerifyOutput(
+	output: EvidenceVerifyOutput,
+	json: boolean,
+): void {
+	if (json) {
+		console.info(JSON.stringify(output, null, 2));
+		return;
+	}
+	renderVerifiedEvidenceFiles(output);
+	renderEvidenceErrors(output);
+	if (output.verified > 0 && output.failed === 0) {
+		console.info("All evidence files verified successfully.");
+	}
+}
 
-			if (output.verified > 0 && output.failed === 0) {
-				console.info("All evidence files verified successfully.");
-			}
-		}
+function renderVerifiedEvidenceFiles(output: EvidenceVerifyOutput): void {
+	if (output.verified === 0) return;
+	console.info(`Verified ${output.verified} evidence file(s):`);
+	for (const file of output.files) {
+		console.info(`  ✓ ${file.path} (${file.type}, ${file.sizeBytes} bytes)`);
+	}
+}
 
-		const fileExitCode = getWorstExitCode(output.errors);
-		if (output.browserEvidence && !output.browserEvidence.passed) {
-			return fileExitCode === EXIT_CODES.SUCCESS
-				? EXIT_CODES.VALIDATION_ERROR
-				: fileExitCode;
-		}
+function renderEvidenceErrors(output: EvidenceVerifyOutput): void {
+	if (output.failed === 0) return;
+	console.error(`Failed to verify ${output.failed} file(s):`);
+	for (const error of output.errors) {
+		console.error(`  ✗ ${error.path}: ${error.message}`);
+	}
+	for (const error of output.browserEvidence?.errors ?? []) {
+		console.error(
+			`  ✗ ${error.path ?? output.browserEvidence?.manifestPath}: ${error.message}`,
+		);
+	}
+}
+
+function evidenceVerifySuccessExitCode(output: EvidenceVerifyOutput): number {
+	const fileExitCode = getWorstExitCode(output.errors);
+	if (!output.browserEvidence || output.browserEvidence.passed)
 		return fileExitCode;
-	}
+	return fileExitCode === EXIT_CODES.SUCCESS
+		? EXIT_CODES.VALIDATION_ERROR
+		: fileExitCode;
+}
 
-	// Command-level error
-	console.error(result.error.message);
-	if (options.json) {
-		console.error(JSON.stringify({ error: result.error }, null, 2));
+function renderEvidenceVerifyError(
+	error: Extract<EvidenceVerifyResult, { ok: false }>["error"],
+	json: boolean,
+): void {
+	if (json) {
+		console.error(JSON.stringify({ error }, null, 2));
+		return;
 	}
+	console.error(error.message);
+}
 
-	// Map error code to exit code
-	if (result.error.code === "FILE_NOT_FOUND") {
-		return EXIT_CODES.FILE_NOT_FOUND;
-	}
-	if (result.error.code === "VALIDATION_ERROR") {
-		return EXIT_CODES.VALIDATION_ERROR;
-	}
+function evidenceVerifyErrorExitCode(
+	error: Extract<EvidenceVerifyResult, { ok: false }>["error"],
+): number {
+	if (error.code === "FILE_NOT_FOUND") return EXIT_CODES.FILE_NOT_FOUND;
+	if (error.code === "VALIDATION_ERROR") return EXIT_CODES.VALIDATION_ERROR;
 	return EXIT_CODES.SYSTEM_ERROR;
 }

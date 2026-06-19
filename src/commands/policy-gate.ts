@@ -80,6 +80,61 @@ function buildDecisionOutput(
 	};
 }
 
+function passForNoChangedFiles(): PolicyGateResult {
+	return {
+		ok: true,
+		output: {
+			passed: true,
+			tier: "low",
+			action: "allow",
+			verdict: "pass",
+			violatingFiles: [],
+		},
+	};
+}
+
+function violatesMaxTier(tier: RiskTier, maxTier: RiskTier): boolean {
+	return TIER_ORDER.indexOf(tier) < TIER_ORDER.indexOf(maxTier);
+}
+
+function decisionForFiles(
+	tier: RiskTier,
+	decision: ReturnType<typeof evaluatePolicyChainDecision>,
+	files: string[],
+	maxTier?: RiskTier,
+): PolicyGateResult {
+	if (maxTier && violatesMaxTier(tier, maxTier)) {
+		return {
+			ok: true,
+			output: buildDecisionOutput(tier, "block", "fail", files, maxTier),
+		};
+	}
+	return {
+		ok: true,
+		output: buildDecisionOutput(tier, decision.action, decision.verdict, files),
+	};
+}
+
+function policyGateError(error: unknown): PolicyGateResult {
+	if (error instanceof ContractLoadError) {
+		return {
+			ok: false,
+			error: {
+				code: "VALIDATION_ERROR",
+				message: sanitizeError(error),
+				details: error.errors,
+			},
+		};
+	}
+	return {
+		ok: false,
+		error: {
+			code: "SYSTEM_ERROR",
+			message: sanitizeError(error),
+		},
+	};
+}
+
 /**
  * Run policy gate check and return structured result.
  * This function is usable as a library (does not output to console).
@@ -103,82 +158,15 @@ export function runPolicyGate(options: PolicyGateOptions): PolicyGateResult {
 
 		// No changed files should always pass the gate.
 		if (options.files.length === 0) {
-			const policyChain = resolvePolicyChain(contract);
-			const decision = evaluatePolicyChainDecision("low", policyChain);
-			return {
-				ok: true,
-				output: {
-					passed: decision.verdict === "pass",
-					tier: decision.tier,
-					action: decision.action,
-					verdict: decision.verdict,
-					violatingFiles: [],
-				},
-			};
+			return passForNoChangedFiles();
 		}
 
 		const tier = resolveOverallTier(options.files, contract);
 		const policyChain = resolvePolicyChain(contract);
 		const decision = evaluatePolicyChainDecision(tier, policyChain);
-
-		// Without a max tier, policy-chain verdicts still decide pass/fail.
-		if (!options.maxTier) {
-			return {
-				ok: true,
-				output: buildDecisionOutput(
-					tier,
-					decision.action,
-					decision.verdict,
-					options.files,
-				),
-			};
-		}
-
-		const maxTierIndex = TIER_ORDER.indexOf(options.maxTier);
-		const actualTierIndex = TIER_ORDER.indexOf(tier);
-
-		// Lower index = higher severity
-		// If actual tier index is lower than max, it's more severe (violation)
-		if (actualTierIndex < maxTierIndex) {
-			return {
-				ok: true,
-				output: buildDecisionOutput(
-					tier,
-					"block",
-					"fail",
-					options.files,
-					options.maxTier,
-				),
-			};
-		}
-
-		return {
-			ok: true,
-			output: buildDecisionOutput(
-				tier,
-				decision.action,
-				decision.verdict,
-				options.files,
-			),
-		};
+		return decisionForFiles(tier, decision, options.files, options.maxTier);
 	} catch (e) {
-		if (e instanceof ContractLoadError) {
-			return {
-				ok: false,
-				error: {
-					code: "VALIDATION_ERROR",
-					message: sanitizeError(e),
-					details: e.errors,
-				},
-			};
-		}
-		return {
-			ok: false,
-			error: {
-				code: "SYSTEM_ERROR",
-				message: sanitizeError(e),
-			},
-		};
+		return policyGateError(e);
 	}
 }
 

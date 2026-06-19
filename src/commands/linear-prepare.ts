@@ -8,6 +8,7 @@ import {
 	selectIssue,
 } from "../lib/linear/utils.js";
 
+/** Options for resolving a Linear issue into branch and pull request metadata. */
 export interface LinearPrepareOptions {
 	issue?: string;
 	token?: string;
@@ -23,6 +24,7 @@ export interface LinearPrepareOptions {
 	json?: boolean;
 }
 
+/** Branch, pull request, and issue metadata produced by linear-prepare. */
 export interface LinearPrepareOutput {
 	issueIdentifier: string;
 	issueTitle: string;
@@ -34,9 +36,46 @@ export interface LinearPrepareOutput {
 	closingLine: string;
 }
 
+/** Result returned by the Linear prepare command implementation. */
 export type LinearPrepareResult =
 	| { ok: true; output: LinearPrepareOutput }
 	| { ok: false; error: { code: string; message: string } };
+
+type LinearPrepareError = Extract<LinearPrepareResult, { ok: false }>;
+
+interface LinearPrepareInputs {
+	token: string;
+	issueRef: string;
+}
+
+type LinearPrepareInputsResult =
+	| { ok: true; inputs: LinearPrepareInputs }
+	| LinearPrepareError;
+
+function linearPrepareError(code: string, message: string): LinearPrepareError {
+	return { ok: false, error: { code, message } };
+}
+
+function validateLinearPrepareInputs(
+	options: LinearPrepareOptions,
+): LinearPrepareInputsResult {
+	const token =
+		normalizeToken(options.token) ?? normalizeToken(process.env.LINEAR_API_KEY);
+	if (!token) {
+		return linearPrepareError(
+			"VALIDATION_ERROR",
+			"Missing Linear API key. Provide --token or set LINEAR_API_KEY.",
+		);
+	}
+
+	const rawIssue = options.issue?.trim();
+	return rawIssue
+		? {
+				ok: true,
+				inputs: { token, issueRef: normalizeIssueReference(rawIssue) },
+			}
+		: linearPrepareError("VALIDATION_ERROR", "Missing required --issue value.");
+}
 
 function readRequestedField(
 	output: LinearPrepareOutput,
@@ -58,34 +97,19 @@ function readRequestedField(
 	}
 }
 
+/**
+ * Resolves a Linear issue and builds automation-ready branch and pull request metadata.
+ *
+ * @param options - Linear issue lookup, authentication, formatting, and output options
+ * @returns Structured metadata on success or a machine-readable error result
+ */
 export async function runLinearPrepare(
 	options: LinearPrepareOptions,
 ): Promise<LinearPrepareResult> {
-	const token =
-		normalizeToken(options.token) ?? normalizeToken(process.env.LINEAR_API_KEY);
-	if (!token) {
-		return {
-			ok: false,
-			error: {
-				code: "VALIDATION_ERROR",
-				message:
-					"Missing Linear API key. Provide --token or set LINEAR_API_KEY.",
-			},
-		};
-	}
+	const inputs = validateLinearPrepareInputs(options);
+	if (!inputs.ok) return inputs;
 
-	const rawIssue = options.issue?.trim();
-	if (!rawIssue) {
-		return {
-			ok: false,
-			error: {
-				code: "VALIDATION_ERROR",
-				message: "Missing required --issue value.",
-			},
-		};
-	}
-
-	const issueRef = normalizeIssueReference(rawIssue);
+	const { token, issueRef } = inputs.inputs;
 	const teamMatch = normalizeTeamMatch(options.team);
 	const client = new LinearClient({ token });
 
@@ -93,19 +117,7 @@ export async function runLinearPrepare(
 		const issues = await client.searchIssues(issueRef);
 		const issue = selectIssue(issues, issueRef, teamMatch);
 		if (!issue) {
-			const matchingTeams = issues
-				.map((candidate) => `${candidate.identifier} (${candidate.team.key})`)
-				.join(", ");
-			return {
-				ok: false,
-				error: {
-					code: issues.length === 0 ? "NOT_FOUND" : "VALIDATION_ERROR",
-					message:
-						issues.length === 0
-							? `Linear issue not found for ${issueRef}.`
-							: `Could not resolve a unique Linear issue for ${issueRef}. Matches: ${matchingTeams}`,
-				},
-			};
+			return linearIssueNotFoundResult(issues, issueRef, teamMatch);
 		}
 
 		return {
@@ -123,42 +135,69 @@ export async function runLinearPrepare(
 			}),
 		};
 	} catch (error) {
-		const safeError = sanitizeError(error);
-		if (error instanceof LinearAPIError) {
-			if (
-				error.code === "AUTHENTICATION_REQUIRED" ||
-				error.code === "FORBIDDEN" ||
-				error.code === "PERMISSION_DENIED"
-			) {
-				return {
-					ok: false,
-					error: {
-						code: "PERMISSION_DENIED",
-						message: `Linear API permission denied: ${safeError}`,
-					},
-				};
-			}
-			if (error.code === "VALIDATION_ERROR" || error.code === "INVALID_INPUT") {
-				return {
-					ok: false,
-					error: {
-						code: "VALIDATION_ERROR",
-						message: safeError,
-					},
-				};
-			}
-		}
-
-		return {
-			ok: false,
-			error: {
-				code: "SYSTEM_ERROR",
-				message: `Failed to prepare Linear automation metadata: ${safeError}`,
-			},
-		};
+		return linearPrepareCaughtError(error);
 	}
 }
 
+function linearIssueNotFoundResult(
+	issues: Awaited<ReturnType<LinearClient["searchIssues"]>>,
+	issueRef: string,
+	teamMatch?: string,
+): LinearPrepareResult {
+	const teamScoped = teamMatch
+		? issues.filter(
+				(candidate) => candidate.team.key.toLowerCase() === teamMatch,
+			)
+		: issues;
+
+	if (teamScoped.length === 0) {
+		return linearPrepareError(
+			"NOT_FOUND",
+			teamMatch
+				? `Linear issue not found for ${issueRef} in team ${teamMatch}.`
+				: `Linear issue not found for ${issueRef}.`,
+		);
+	}
+	const matchingTeams = teamScoped
+		.map((candidate) => `${candidate.identifier} (${candidate.team.key})`)
+		.join(", ");
+	return linearPrepareError(
+		"VALIDATION_ERROR",
+		`Could not resolve a unique Linear issue for ${issueRef}. Matches: ${matchingTeams}`,
+	);
+}
+
+function linearPrepareCaughtError(error: unknown): LinearPrepareResult {
+	const safeError = sanitizeError(error);
+	if (error instanceof LinearAPIError) {
+		if (isLinearPermissionError(error.code)) {
+			return linearPrepareError(
+				"PERMISSION_DENIED",
+				`Linear API permission denied: ${safeError}`,
+			);
+		}
+		if (error.code === "VALIDATION_ERROR" || error.code === "INVALID_INPUT") {
+			return linearPrepareError("VALIDATION_ERROR", safeError);
+		}
+	}
+	return linearPrepareError(
+		"SYSTEM_ERROR",
+		`Failed to prepare Linear automation metadata: ${safeError}`,
+	);
+}
+
+function isLinearPermissionError(code: string): boolean {
+	return ["AUTHENTICATION_REQUIRED", "FORBIDDEN", "PERMISSION_DENIED"].includes(
+		code,
+	);
+}
+
+/**
+ * Executes the linear-prepare command and writes the requested output format.
+ *
+ * @param options - Linear issue lookup, authentication, formatting, and output options
+ * @returns Process-style exit code for success, validation, not-found, permission, or system errors
+ */
 export async function runLinearPrepareCLI(
 	options: LinearPrepareOptions,
 ): Promise<number> {

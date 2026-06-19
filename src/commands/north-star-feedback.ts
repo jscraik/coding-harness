@@ -12,6 +12,19 @@ const EXIT_CODES = {
 const MISSING_VALUE_ERROR_CODE = "north_star_feedback.missing_value";
 const INVALID_NUMBER_ERROR_CODE = "north_star_feedback.invalid_number";
 
+interface NorthStarStringFlags {
+	source: ReturnType<typeof readOptionalValue>;
+	enforcementStatusPath: ReturnType<typeof readOptionalValue>;
+	gateResultPath: ReturnType<typeof readOptionalValue>;
+	output: ReturnType<typeof readOptionalValue>;
+}
+
+interface NorthStarNumberFlags {
+	minUsage: ReturnType<typeof readOptionalNumber>;
+	reviewThreadCount: ReturnType<typeof readOptionalNumber>;
+	validationReruns: ReturnType<typeof readOptionalNumber>;
+}
+
 /**
  * Execute the `harness north-star-feedback` CLI command using the provided argument tokens.
  *
@@ -25,66 +38,84 @@ const INVALID_NUMBER_ERROR_CODE = "north_star_feedback.invalid_number";
  */
 export function runNorthStarFeedbackCLI(args: string[]): number {
 	const json = args.includes("--json");
-	const source = readOptionalValue(args, "--source");
-	const enforcementStatusPath = readOptionalValue(args, "--enforcement-status");
-	const gateResultPath = readOptionalValue(args, "--gate-result");
-	const output = readOptionalValue(args, "--output");
-	if (!source.ok) {
-		return emitUsageError(json, source.message, MISSING_VALUE_ERROR_CODE);
+	const strings = readNorthStarStringFlags(args);
+	const missingValue = firstMissingValue(strings);
+	if (missingValue) {
+		return emitUsageError(json, missingValue.message, MISSING_VALUE_ERROR_CODE);
 	}
-	if (!enforcementStatusPath.ok) {
-		return emitUsageError(
-			json,
-			enforcementStatusPath.message,
-			MISSING_VALUE_ERROR_CODE,
-		);
-	}
-	if (!gateResultPath.ok) {
-		return emitUsageError(
-			json,
-			gateResultPath.message,
-			MISSING_VALUE_ERROR_CODE,
-		);
-	}
-	if (!output.ok) {
-		return emitUsageError(json, output.message, MISSING_VALUE_ERROR_CODE);
-	}
-	const minUsage = readOptionalNumber(args, "--min-usage");
-	const reviewThreadCount = readOptionalNumber(args, "--review-thread-count");
-	const validationReruns = readOptionalNumber(args, "--validation-reruns");
 
-	const invalidNumber = [minUsage, reviewThreadCount, validationReruns].find(
-		(value) => value?.ok === false,
-	);
-	if (invalidNumber?.ok === false) {
+	const numbers = readNorthStarNumberFlags(args);
+	const invalidNumber = firstInvalidNumber(numbers);
+	if (invalidNumber) {
 		return emitUsageError(
 			json,
 			invalidNumber.message,
 			INVALID_NUMBER_ERROR_CODE,
 		);
 	}
-	const minUsageValue = readNumberValue(minUsage);
-	const reviewThreadCountValue = readNumberValue(reviewThreadCount);
-	const validationRerunsValue = readNumberValue(validationReruns);
 
-	const result = buildNorthStarFeedback({
-		...(source.value !== undefined ? { source: source.value } : {}),
-		...(enforcementStatusPath.value !== undefined
-			? { enforcementStatusPath: enforcementStatusPath.value }
-			: {}),
-		...(gateResultPath.value !== undefined
-			? { gateResultPath: gateResultPath.value }
-			: {}),
-		...(output.value !== undefined ? { output: output.value } : {}),
-		...(minUsageValue !== undefined ? { minUsage: minUsageValue } : {}),
-		...(reviewThreadCountValue !== undefined
-			? { reviewThreadCount: reviewThreadCountValue }
-			: {}),
-		...(validationRerunsValue !== undefined
-			? { validationReruns: validationRerunsValue }
-			: {}),
-	});
+	const result = buildNorthStarFeedback(
+		northStarFeedbackOptions(strings, numbers),
+	);
+	renderNorthStarFeedbackResult(result, json);
+	return result.status === "error" ? EXIT_CODES.FAILURE : EXIT_CODES.SUCCESS;
+}
 
+function readNorthStarStringFlags(args: string[]): NorthStarStringFlags {
+	return {
+		source: readOptionalValue(args, "--source"),
+		enforcementStatusPath: readOptionalValue(args, "--enforcement-status"),
+		gateResultPath: readOptionalValue(args, "--gate-result"),
+		output: readOptionalValue(args, "--output"),
+	};
+}
+
+function firstMissingValue(
+	flags: NorthStarStringFlags,
+): { ok: false; message: string } | undefined {
+	return Object.values(flags).find((value) => !value.ok);
+}
+
+function readNorthStarNumberFlags(args: string[]): NorthStarNumberFlags {
+	return {
+		minUsage: readOptionalNumber(args, "--min-usage"),
+		reviewThreadCount: readOptionalNumber(args, "--review-thread-count"),
+		validationReruns: readOptionalNumber(args, "--validation-reruns"),
+	};
+}
+
+function firstInvalidNumber(
+	flags: NorthStarNumberFlags,
+): { ok: false; message: string } | undefined {
+	return Object.values(flags).find((value) => !value.ok);
+}
+
+function northStarFeedbackOptions(
+	strings: NorthStarStringFlags,
+	numbers: NorthStarNumberFlags,
+): Parameters<typeof buildNorthStarFeedback>[0] {
+	const source = readStringValue(strings.source);
+	const enforcementStatusPath = readStringValue(strings.enforcementStatusPath);
+	const gateResultPath = readStringValue(strings.gateResultPath);
+	const output = readStringValue(strings.output);
+	const minUsage = readNumberValue(numbers.minUsage);
+	const reviewThreadCount = readNumberValue(numbers.reviewThreadCount);
+	const validationReruns = readNumberValue(numbers.validationReruns);
+	return {
+		...(source !== undefined ? { source } : {}),
+		...(enforcementStatusPath !== undefined ? { enforcementStatusPath } : {}),
+		...(gateResultPath !== undefined ? { gateResultPath } : {}),
+		...(output !== undefined ? { output } : {}),
+		...(minUsage !== undefined ? { minUsage } : {}),
+		...(reviewThreadCount !== undefined ? { reviewThreadCount } : {}),
+		...(validationReruns !== undefined ? { validationReruns } : {}),
+	};
+}
+
+function renderNorthStarFeedbackResult(
+	result: NorthStarFeedbackResult,
+	json: boolean,
+): void {
 	if (json) {
 		console.info(JSON.stringify(result, null, 2));
 	} else if (result.status === "error") {
@@ -101,7 +132,6 @@ export function runNorthStarFeedbackCLI(args: string[]): number {
 			].join("\n"),
 		);
 	}
-	return result.status === "error" ? EXIT_CODES.FAILURE : EXIT_CODES.SUCCESS;
 }
 
 type ParsedFlag =
@@ -126,6 +156,18 @@ function readOptionalValue(
 		return { ok: false, message: `${flag} requires a non-empty value.` };
 	}
 	return { ok: true, value: parsed.value };
+}
+
+/**
+ * Extracts the string value from a readOptionalValue result.
+ *
+ * @param result - The parse result returned by readOptionalValue
+ * @returns string if the input indicates a successful parse with a value, undefined otherwise
+ */
+function readStringValue(
+	result: ReturnType<typeof readOptionalValue>,
+): string | undefined {
+	return result.ok ? result.value : undefined;
 }
 
 /**

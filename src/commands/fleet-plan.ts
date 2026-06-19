@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-
 import { classifyRepo } from "./fleet-plan-repo.js";
 import {
 	countReposWithReason,
@@ -9,9 +7,69 @@ import {
 	type FleetPlanRepo,
 	type FleetRemediationPlan,
 	type MatrixReport,
-	type ParsedFleetPlanArgs,
+	type MatrixRepoResult,
 	FLEET_PLAN_SCHEMA_VERSION,
 } from "./fleet-plan-types.js";
+
+type FindingCounts = FleetRemediationPlan["findingCounts"];
+
+type LiveUpgradeBlockerRule = {
+	count: (findingCounts: FindingCounts) => number;
+	message: (count: number) => string;
+};
+
+const LIVE_UPGRADE_BLOCKER_RULES: LiveUpgradeBlockerRule[] = [
+	{
+		count: (findingCounts) => findingCounts.dryRunMutatedRepository,
+		message: (count) =>
+			`${pluralize(count, "repo", "repos")} changed git status during dry-run`,
+	},
+	{
+		count: (findingCounts) => findingCounts.matrixCommandFailed,
+		message: (count) =>
+			`${pluralize(count, "repo", "repos")} failed the matrix command`,
+	},
+	{
+		count: (findingCounts) => findingCounts.invalidMatrixJsonOutput,
+		message: (count) =>
+			`${pluralize(count, "repo", "repos")} emitted invalid matrix JSON`,
+	},
+	{
+		count: (findingCounts) => findingCounts.matrixReportedErrors,
+		message: (count) =>
+			`${pluralize(count, "repo", "repos")} reported matrix errors`,
+	},
+	{
+		count: (findingCounts) => findingCounts.notHarnessTracked,
+		message: (count) =>
+			`${pluralize(count, "repo", "repos")} ${repoVerb(count, "needs", "need")} harness adoption before live upgrade`,
+	},
+	{
+		count: (findingCounts) => findingCounts.missingCircleCi,
+		message: (count) =>
+			`${pluralize(count, "repo", "repos")} ${repoVerb(count, "is", "are")} missing CircleCI governance surfaces`,
+	},
+	{
+		count: (findingCounts) => findingCounts.missingCodeRabbit,
+		message: (count) =>
+			`${pluralize(count, "repo", "repos")} ${repoVerb(count, "is", "are")} missing CodeRabbit review surfaces`,
+	},
+	{
+		count: (findingCounts) => findingCounts.missingCodestyle,
+		message: (count) =>
+			`${pluralize(count, "repo", "repos")} ${repoVerb(count, "is", "are")} missing CODESTYLE surfaces`,
+	},
+	{
+		count: (findingCounts) => findingCounts.staleCodestyle,
+		message: (count) =>
+			`${pluralize(count, "repo", "repos")} ${repoVerb(count, "has", "have")} CODESTYLE parity failures`,
+	},
+	{
+		count: (findingCounts) => findingCounts.legacyGreptile,
+		message: (count) =>
+			`${pluralize(count, "repo", "repos")} still ${repoVerb(count, "contains", "contain")} legacy Greptile artifacts`,
+	},
+];
 
 export {
 	FLEET_PLAN_SCHEMA_VERSION,
@@ -109,58 +167,10 @@ function buildFindingCounts(
 function buildLiveUpgradeBlockers(
 	findingCounts: FleetRemediationPlan["findingCounts"],
 ): string[] {
-	const blockers: string[] = [];
-	if (findingCounts.dryRunMutatedRepository > 0) {
-		blockers.push(
-			`${pluralize(findingCounts.dryRunMutatedRepository, "repo", "repos")} changed git status during dry-run`,
-		);
-	}
-	if (findingCounts.matrixCommandFailed > 0) {
-		blockers.push(
-			`${pluralize(findingCounts.matrixCommandFailed, "repo", "repos")} failed the matrix command`,
-		);
-	}
-	if (findingCounts.invalidMatrixJsonOutput > 0) {
-		blockers.push(
-			`${pluralize(findingCounts.invalidMatrixJsonOutput, "repo", "repos")} emitted invalid matrix JSON`,
-		);
-	}
-	if (findingCounts.matrixReportedErrors > 0) {
-		blockers.push(
-			`${pluralize(findingCounts.matrixReportedErrors, "repo", "repos")} reported matrix errors`,
-		);
-	}
-	if (findingCounts.notHarnessTracked > 0) {
-		blockers.push(
-			`${pluralize(findingCounts.notHarnessTracked, "repo", "repos")} ${repoVerb(findingCounts.notHarnessTracked, "needs", "need")} harness adoption before live upgrade`,
-		);
-	}
-	if (findingCounts.missingCircleCi > 0) {
-		blockers.push(
-			`${pluralize(findingCounts.missingCircleCi, "repo", "repos")} ${repoVerb(findingCounts.missingCircleCi, "is", "are")} missing CircleCI governance surfaces`,
-		);
-	}
-	if (findingCounts.missingCodeRabbit > 0) {
-		blockers.push(
-			`${pluralize(findingCounts.missingCodeRabbit, "repo", "repos")} ${repoVerb(findingCounts.missingCodeRabbit, "is", "are")} missing CodeRabbit review surfaces`,
-		);
-	}
-	if (findingCounts.missingCodestyle > 0) {
-		blockers.push(
-			`${pluralize(findingCounts.missingCodestyle, "repo", "repos")} ${repoVerb(findingCounts.missingCodestyle, "is", "are")} missing CODESTYLE surfaces`,
-		);
-	}
-	if (findingCounts.staleCodestyle > 0) {
-		blockers.push(
-			`${pluralize(findingCounts.staleCodestyle, "repo", "repos")} ${repoVerb(findingCounts.staleCodestyle, "has", "have")} CODESTYLE parity failures`,
-		);
-	}
-	if (findingCounts.legacyGreptile > 0) {
-		blockers.push(
-			`${pluralize(findingCounts.legacyGreptile, "repo", "repos")} still ${repoVerb(findingCounts.legacyGreptile, "contains", "contain")} legacy Greptile artifacts`,
-		);
-	}
-	return blockers;
+	return LIVE_UPGRADE_BLOCKER_RULES.flatMap((rule) => {
+		const count = rule.count(findingCounts);
+		return count > 0 ? [rule.message(count)] : [];
+	});
 }
 
 /**
@@ -233,6 +243,88 @@ function buildReadyUpgradeWave(repos: FleetPlanRepo[]): FleetPlanCommand[] {
 		}));
 }
 
+function rawMatrixResults(matrix: MatrixReport): MatrixRepoResult[] {
+	if (!Array.isArray(matrix.results)) {
+		return [];
+	}
+	return matrix.results.filter(
+		(result): result is MatrixRepoResult =>
+			typeof result === "object" && result !== null && !Array.isArray(result),
+	);
+}
+
+function matrixArtifactBlockers(
+	matrix: MatrixReport,
+	droppedResultCount: number,
+): string[] {
+	return [
+		...(matrix.pass === true
+			? []
+			: ["matrix artifact did not report pass: true"]),
+		...(droppedResultCount > 0
+			? [`${droppedResultCount} matrix rows were malformed`]
+			: []),
+	];
+}
+
+function classifyMatrixRepos(
+	results: MatrixRepoResult[],
+	matrixArtifact: string,
+): FleetPlanRepo[] {
+	return results.map((result) => classifyRepo(result, matrixArtifact));
+}
+
+function liveUpgradeBlockers(
+	results: MatrixRepoResult[],
+	artifactBlockers: string[],
+	findingCounts: FindingCounts,
+): string[] {
+	if (results.length === 0) {
+		return [
+			...artifactBlockers,
+			"matrix artifact contained no repository results",
+		];
+	}
+	return [...artifactBlockers, ...buildLiveUpgradeBlockers(findingCounts)];
+}
+
+function isLiveUpgradeReady(
+	matrixArtifactValid: boolean,
+	repos: FleetPlanRepo[],
+): boolean {
+	return (
+		matrixArtifactValid &&
+		repos.length > 0 &&
+		repos.every((repo) => repo.status === "ready")
+	);
+}
+
+function firstWaveFor(
+	matrixArtifactValid: boolean,
+	liveUpgradeReady: boolean,
+	repos: FleetPlanRepo[],
+): FleetPlanCommand[] {
+	if (!matrixArtifactValid) {
+		return [];
+	}
+	return liveUpgradeReady
+		? buildReadyUpgradeWave(repos)
+		: buildFirstSafeWave(repos);
+}
+
+function planNextAction(
+	liveUpgradeReady: boolean,
+	nextRunnable: FleetPlanCommand | undefined,
+): string {
+	if (liveUpgradeReady) {
+		return "Run upgrade dry-runs for ready repos before live update.";
+	}
+	return (
+		nextRunnable?.nextAction ??
+		"Inspect blocked matrix results before running remediation."
+	);
+}
+
 /**
  * Build a read-only remediation plan from a Harness upgrade matrix report.
  *
@@ -249,50 +341,27 @@ export function buildFleetRemediationPlan(args: {
 	const matrixResults = Array.isArray(args.matrix.results)
 		? args.matrix.results
 		: [];
-	const rawResults = Array.isArray(args.matrix.results)
-		? args.matrix.results.filter(
-				(
-					result,
-				): result is MatrixReport["results"] extends (infer U)[] ? U : never =>
-					typeof result === "object" && result !== null,
-			)
-		: [];
+	const rawResults = rawMatrixResults(args.matrix);
 	const droppedResultCount = matrixResults.length - rawResults.length;
-	const matrixArtifactBlockers = [
-		...(args.matrix.pass === true
-			? []
-			: ["matrix artifact did not report pass: true"]),
-		...(droppedResultCount > 0
-			? [`${droppedResultCount} matrix rows were malformed`]
-			: []),
-	];
-	const matrixArtifactValid = matrixArtifactBlockers.length === 0;
-	const repos = rawResults.map((result) =>
-		classifyRepo(
-			result as import("./fleet-plan-types.js").MatrixRepoResult,
-			args.matrixArtifact,
-		),
+	const artifactBlockers = matrixArtifactBlockers(
+		args.matrix,
+		droppedResultCount,
 	);
+	const matrixArtifactValid = artifactBlockers.length === 0;
+	const repos = classifyMatrixRepos(rawResults, args.matrixArtifact);
 	const summary = buildSummary(repos);
 	const findingCounts = buildFindingCounts(repos);
-	const liveUpgradeBlockedBecause =
-		rawResults.length === 0
-			? [
-					...matrixArtifactBlockers,
-					"matrix artifact contained no repository results",
-				]
-			: [...matrixArtifactBlockers, ...buildLiveUpgradeBlockers(findingCounts)];
-	// Avoid empty-artifact true positives: require repos.length > 0
-	const liveUpgradeReady =
-		matrixArtifactValid &&
-		repos.length > 0 &&
-		repos.every((repo) => repo.status === "ready");
-	const firstSafeWave = matrixArtifactValid
-		? liveUpgradeReady
-			? buildReadyUpgradeWave(repos)
-			: buildFirstSafeWave(repos)
-		: [];
-	// Derive nextRunnable from firstSafeWave to reflect wave priority
+	const liveUpgradeBlockedBecause = liveUpgradeBlockers(
+		rawResults,
+		artifactBlockers,
+		findingCounts,
+	);
+	const liveUpgradeReady = isLiveUpgradeReady(matrixArtifactValid, repos);
+	const firstSafeWave = firstWaveFor(
+		matrixArtifactValid,
+		liveUpgradeReady,
+		repos,
+	);
 	const nextRunnable = firstSafeWave.length > 0 ? firstSafeWave[0] : undefined;
 	return {
 		schemaVersion: FLEET_PLAN_SCHEMA_VERSION,
@@ -300,10 +369,7 @@ export function buildFleetRemediationPlan(args: {
 		generatedFrom: args.matrixArtifact,
 		liveUpgradeReady,
 		safeToRun: liveUpgradeReady || nextRunnable !== undefined,
-		nextAction: liveUpgradeReady
-			? "Run upgrade dry-runs for ready repos before live update."
-			: (nextRunnable?.nextAction ??
-				"Inspect blocked matrix results before running remediation."),
+		nextAction: planNextAction(liveUpgradeReady, nextRunnable),
 		nextCommand: nextRunnable?.nextCommand ?? null,
 		nextCommandArgv: nextRunnable?.nextCommandArgv ?? null,
 		summary,
@@ -312,152 +378,4 @@ export function buildFleetRemediationPlan(args: {
 		firstSafeWave,
 		repos,
 	};
-}
-
-/**
- * Parse CLI arguments for the fleet-plan command.
- *
- * Recognizes `--help`/`-h`, `--json`, and `--from <path>`. Validates that `--from` is followed by a non-flag value and returns a descriptive `error` when an unknown flag is encountered or `--from` is missing its path.
- *
- * @param argv - Array of command-line arguments (typically process.argv.slice(n))
- * @returns An object with:
- *  - `from` — the matrix artifact path when provided,
- *  - `json` — `true` when `--json` was present,
- *  - `help` — `true` when `--help` or `-h` was present,
- *  - `error` — an error message when arguments are invalid
- */
-function parseArgs(argv: string[]): ParsedFleetPlanArgs {
-	let from: string | undefined;
-	let json = false;
-	let help = false;
-	for (let index = 0; index < argv.length; index += 1) {
-		const arg = argv[index];
-		if (arg === "--help" || arg === "-h") {
-			help = true;
-			continue;
-		}
-		if (arg === "--json") {
-			json = true;
-			continue;
-		}
-		if (arg === "--from") {
-			const value = argv[index + 1];
-			if (!value || value.startsWith("--")) {
-				return { json, help, error: "--from requires a matrix artifact path" };
-			}
-			from = value;
-			index += 1;
-			continue;
-		}
-		return { json, help, error: `Unknown argument: ${arg}` };
-	}
-	return {
-		...(from === undefined ? {} : { from }),
-		json,
-		help,
-	};
-}
-
-/**
- * Print usage instructions and a brief description for the `harness fleet-plan` CLI.
- *
- * Outputs the expected flags (`--from <matrix.json>`, optional `--json`) and a one-line summary
- * of what the command does.
- */
-function printUsage(): void {
-	console.info("Usage: harness fleet-plan --from <matrix.json> [--json]");
-	console.info("");
-	console.info(
-		"Build an agent-native, read-only remediation plan from a harness upgrade matrix artifact.",
-	);
-}
-
-/**
- * Prints a human-readable summary of a fleet remediation plan to stdout.
- *
- * Renders overall plan metadata (source and live-upgrade readiness), aggregated status counts,
- * any live-upgrade blocker messages, the first safe wave of agent commands, and a per-repo
- * listing that includes the repo status, next action/command, and blocking reasons.
- *
- * @param plan - The remediation plan to render
- */
-function printHuman(plan: FleetRemediationPlan): void {
-	console.info(`Fleet remediation plan: ${plan.generatedFrom}`);
-	console.info(`Live upgrade ready: ${plan.liveUpgradeReady ? "yes" : "no"}`);
-	console.info(
-		`Ready=${plan.summary.ready} adoption=${plan.summary.needsAdoption} circleci=${plan.summary.needsCircleCiMigration} coderabbit=${plan.summary.needsCodeRabbitSetup} codestyleInstall=${plan.summary.needsCodestyleInstall} codestyleRefresh=${plan.summary.needsCodestyleRefresh} greptile=${plan.summary.needsGreptileCleanup} blocked=${plan.summary.blocked}`,
-	);
-	if (plan.liveUpgradeBlockedBecause.length > 0) {
-		console.info("");
-		console.info("Live upgrade blockers:");
-		for (const blocker of plan.liveUpgradeBlockedBecause) {
-			console.info(`  - ${blocker}`);
-		}
-	}
-	if (plan.firstSafeWave.length > 0) {
-		console.info("");
-		console.info("First safe wave:");
-		for (const command of plan.firstSafeWave) {
-			console.info(`  - ${command.nextCommand}`);
-		}
-	}
-	console.info("");
-	for (const repo of plan.repos) {
-		console.info(`${repo.status}: ${repo.repo}`);
-		console.info(`  next: ${repo.nextCommand ?? repo.nextAction}`);
-		if (repo.blockingReasons.length > 0) {
-			console.info(`  reasons: ${repo.blockingReasons.join(", ")}`);
-		}
-	}
-}
-
-/**
- * Entrypoint for the `harness fleet-plan` CLI.
- *
- * Parses CLI arguments, requires `--from <path>` to a matrix JSON artifact, builds a fleet remediation
- * plan from that artifact, and writes either the plan as JSON (when `--json` is provided) or a
- * human-readable summary to stdout.
- *
- * @param argv - The CLI arguments (typically `process.argv.slice(2)`)
- * @returns `0` on success, `1` if the matrix artifact could not be read or parsed, `2` for invalid or missing CLI arguments
- */
-export function runFleetPlanCLI(argv: string[]): number {
-	const parsed = parseArgs(argv);
-	if (parsed.help) {
-		printUsage();
-		return 0;
-	}
-	if (parsed.error) {
-		console.error(parsed.error);
-		printUsage();
-		return 2;
-	}
-	if (!parsed.from) {
-		console.error("--from is required");
-		printUsage();
-		return 2;
-	}
-
-	let matrix: MatrixReport;
-	try {
-		matrix = JSON.parse(readFileSync(parsed.from, "utf8")) as MatrixReport;
-	} catch (error) {
-		console.error(
-			`Failed to read matrix artifact: ${
-				error instanceof Error ? error.message : String(error)
-			}`,
-		);
-		return 1;
-	}
-
-	const plan = buildFleetRemediationPlan({
-		matrix,
-		matrixArtifact: parsed.from,
-	});
-	if (parsed.json) {
-		console.info(JSON.stringify(plan, null, 2));
-	} else {
-		printHuman(plan);
-	}
-	return 0;
 }

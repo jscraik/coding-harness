@@ -11,8 +11,19 @@ import {
 	resolveGitHubCli,
 } from "../lib/github/cli.js";
 
+export {
+	applyCheckHeadProof,
+	fetchCheckHeadProof,
+} from "./pr-closeout-github-proof.js";
+
 function asString(value: unknown): string | null {
 	return typeof value === "string" ? value : null;
+}
+
+function asObject(value: unknown): Record<string, unknown> | null {
+	return value && typeof value === "object" && !Array.isArray(value)
+		? (value as Record<string, unknown>)
+		: null;
 }
 
 function parseJsonObject(
@@ -42,101 +53,6 @@ export function normalizeGhChecks(value: unknown): PrCloseoutCheckInput[] {
 			required: true,
 			source: "github",
 		}));
-}
-
-function checkProofKey(name: string, url: string | null): string {
-	return `${name}\0${url ?? ""}`;
-}
-
-function normalizeGhCheckRuns(value: unknown): Map<string, string> {
-	const checkRuns = Array.isArray(value)
-		? value
-		: value && typeof value === "object"
-			? (value as Record<string, unknown>).check_runs
-			: null;
-	if (!Array.isArray(checkRuns)) return new Map();
-	const proof = new Map<string, string>();
-	for (const item of checkRuns) {
-		if (!item || typeof item !== "object" || Array.isArray(item)) continue;
-		const record = item as Record<string, unknown>;
-		const name = asString(record.name);
-		const url = asString(record.details_url) ?? asString(record.html_url);
-		const headSha = asString(record.head_sha) ?? asString(record.headSha);
-		if (name && url && headSha) proof.set(checkProofKey(name, url), headSha);
-	}
-	return proof;
-}
-
-function normalizeGhStatuses(
-	value: unknown,
-	headSha: string,
-): Map<string, string> {
-	const statuses = Array.isArray(value)
-		? value
-		: value && typeof value === "object"
-			? (value as Record<string, unknown>).statuses
-			: null;
-	if (!Array.isArray(statuses)) return new Map();
-	const proof = new Map<string, string>();
-	for (const item of statuses) {
-		if (!item || typeof item !== "object" || Array.isArray(item)) continue;
-		const record = item as Record<string, unknown>;
-		const name = asString(record.context);
-		const url = asString(record.target_url) ?? asString(record.targetUrl);
-		const statusSha = asString(record.sha);
-		const isCurrentHead = !statusSha || statusSha === headSha;
-		if (name && isCurrentHead) {
-			proof.set(checkProofKey(name, null), headSha);
-			if (url) {
-				proof.set(checkProofKey(name, url), headSha);
-			}
-		}
-	}
-	return proof;
-}
-
-function checkRunCount(value: unknown): number {
-	if (Array.isArray(value)) return value.length;
-	const checkRuns =
-		value && typeof value === "object"
-			? (value as Record<string, unknown>).check_runs
-			: null;
-	return Array.isArray(checkRuns) ? checkRuns.length : 0;
-}
-
-function statusCount(value: unknown): number {
-	if (Array.isArray(value)) return value.length;
-	const statuses =
-		value && typeof value === "object"
-			? (value as Record<string, unknown>).statuses
-			: null;
-	return Array.isArray(statuses) ? statuses.length : 0;
-}
-
-function hasUnprovenCheck(
-	checks: readonly PrCloseoutCheckInput[],
-	proof: ReadonlyMap<string, string>,
-): boolean {
-	return checks.some(
-		(check) =>
-			!proof.has(checkProofKey(check.name, check.url ?? null)) &&
-			!proof.has(checkProofKey(check.name, null)),
-	);
-}
-
-/** Attach observed current-head proof from GitHub's check-runs endpoint. */
-export function applyCheckHeadProof(
-	checks: readonly PrCloseoutCheckInput[],
-	proof: ReadonlyMap<string, string>,
-): PrCloseoutCheckInput[] {
-	return checks.map((check) => ({
-		...check,
-		headSha:
-			check.headSha ??
-			(check.url ? proof.get(checkProofKey(check.name, check.url)) : null) ??
-			proof.get(checkProofKey(check.name, null)) ??
-			null,
-	}));
 }
 
 function normalizeGhRepo(value: Record<string, unknown>): {
@@ -177,105 +93,66 @@ function fetchRepoInfo(
 	);
 }
 
-/** Fetch current-head check-run proof for live pr-closeout evidence. */
-export function fetchCheckHeadProof(
-	options: PrCloseoutCLIOptions,
-	env: NodeJS.ProcessEnv,
-	runner: CommandRunner,
-	tools: PrCloseoutToolInput[],
-	checks: readonly PrCloseoutCheckInput[],
-	headSha: string | null | undefined,
-): Map<string, string> {
-	if (!headSha) return new Map();
-	const githubCli = resolveGitHubCli(env);
-	try {
-		const repo = fetchRepoInfo(options, env, runner);
-		const proof = new Map<string, string>();
-		const perPage = 100;
-		let checkRunsError: unknown = null;
-		try {
-			for (let page = 1; ; page += 1) {
-				const args = [
-					"api",
-					`repos/${repo.owner}/${repo.repo}/commits/${headSha}/check-runs?per_page=${perPage}&page=${page}`,
-					"--jq",
-					".check_runs",
-				];
-				const raw = runner(githubCli.command, args, {
-					cwd: options.repoRoot,
-					env,
-				});
-				const parsed = JSON.parse(raw) as unknown;
-				for (const [key, value] of normalizeGhCheckRuns(parsed)) {
-					proof.set(key, value);
-				}
-				if (checkRunCount(parsed) < perPage) break;
-			}
-		} catch (error) {
-			checkRunsError = error;
-		}
-		if (!hasUnprovenCheck(checks, proof)) return proof;
-		for (let page = 1; ; page += 1) {
-			let parsed: unknown;
-			const args = [
-				"api",
-				`repos/${repo.owner}/${repo.repo}/commits/${headSha}/statuses?per_page=${perPage}&page=${page}`,
-				"--jq",
-				".",
-			];
-			try {
-				const raw = runner(githubCli.command, args, {
-					cwd: options.repoRoot,
-					env,
-				});
-				parsed = JSON.parse(raw) as unknown;
-			} catch (error) {
-				tools.push({
-					name: "github_cli",
-					available: true,
-					ref:
-						"command:gh api repos/:owner/:repo/commits/:head/statuses page=" +
-						String(page),
-					status: "blocked",
-					failureClass:
-						"pr_check_status_proof_unreadable:" +
-						formatGitHubCliFailure(error, args, githubCli),
-				});
-				return proof;
-			}
-			for (const [key, value] of normalizeGhStatuses(parsed, headSha)) {
-				proof.set(key, value);
-			}
-			if (statusCount(parsed) < perPage) break;
-		}
-		if (checkRunsError && hasUnprovenCheck(checks, proof)) {
-			tools.push({
-				name: "github_cli",
-				available: true,
-				ref: "command:gh api repos/:owner/:repo/commits/:head/check-runs",
-				status: "blocked",
-				failureClass:
-					"pr_check_head_proof_unreadable:" +
-					formatGitHubCliFailure(
-						checkRunsError,
-						["api", "check-runs"],
-						githubCli,
-					),
-			});
-		}
-		return proof;
-	} catch (error) {
-		tools.push({
-			name: "github_cli",
-			available: true,
-			ref: "command:gh api repos/:owner/:repo/commits/:head/check-runs",
-			status: "blocked",
-			failureClass:
-				"pr_check_head_proof_unreadable:" +
-				formatGitHubCliFailure(error, ["api", "check-runs"], githubCli),
-		});
-		return new Map();
+function requireGraphqlObject(
+	value: unknown,
+	label: string,
+): Record<string, unknown> {
+	const record = asObject(value);
+	if (!record) {
+		throw new Error(`reviewThreads GraphQL response must include ${label}`);
 	}
+	return record;
+}
+
+function reviewThreadConnection(
+	value: Record<string, unknown>,
+): Record<string, unknown> {
+	const data = requireGraphqlObject(value.data, "data");
+	const repository = requireGraphqlObject(data.repository, "repository");
+	const pullRequest = requireGraphqlObject(
+		repository.pullRequest,
+		"pullRequest",
+	);
+	return requireGraphqlObject(pullRequest.reviewThreads, "reviewThreads");
+}
+
+function reviewThreadPageInfo(value: Record<string, unknown>): {
+	hasNextPage: boolean;
+	endCursor: string | null;
+} {
+	const pageInfo = requireGraphqlObject(
+		value.pageInfo,
+		"reviewThreads.pageInfo",
+	);
+	if (typeof pageInfo.hasNextPage !== "boolean") {
+		throw new Error(
+			"reviewThreads GraphQL response must include pageInfo.hasNextPage",
+		);
+	}
+	return {
+		hasNextPage: pageInfo.hasNextPage,
+		endCursor: asString(pageInfo.endCursor),
+	};
+}
+
+function reviewThreadNodes(value: Record<string, unknown>): unknown[] {
+	const nodes = value.nodes;
+	if (!Array.isArray(nodes)) {
+		throw new Error("reviewThreads GraphQL response must include nodes");
+	}
+	return nodes;
+}
+
+function unresolvedReviewThreadCount(nodes: readonly unknown[]): number {
+	return nodes.filter((node) => {
+		const record = requireGraphqlObject(node, "reviewThreads.nodes[]");
+		if (typeof record.isResolved !== "boolean") {
+			throw new Error(
+				"reviewThreads GraphQL response must include nodes[].isResolved",
+			);
+		}
+		return record.isResolved === false;
+	}).length;
 }
 
 function normalizeReviewThreadsGraphql(
@@ -284,51 +161,11 @@ function normalizeReviewThreadsGraphql(
 	hasNextPage: boolean;
 	endCursor: string | null;
 } {
-	const data = value.data;
-	if (!data || typeof data !== "object" || Array.isArray(data)) {
-		throw new Error("reviewThreads GraphQL response must include data");
-	}
-	const repository = (data as Record<string, unknown>).repository;
-	if (
-		!repository ||
-		typeof repository !== "object" ||
-		Array.isArray(repository)
-	) {
-		throw new Error("reviewThreads GraphQL response must include repository");
-	}
-	const pullRequest = (repository as Record<string, unknown>).pullRequest;
-	if (
-		!pullRequest ||
-		typeof pullRequest !== "object" ||
-		Array.isArray(pullRequest)
-	) {
-		throw new Error("reviewThreads GraphQL response must include pullRequest");
-	}
-	const reviewThreads = (pullRequest as Record<string, unknown>).reviewThreads;
-	if (
-		!reviewThreads ||
-		typeof reviewThreads !== "object" ||
-		Array.isArray(reviewThreads)
-	) {
-		throw new Error(
-			"reviewThreads GraphQL response must include reviewThreads",
-		);
-	}
-	const pageInfo = (reviewThreads as Record<string, unknown>).pageInfo;
-	let hasNextPage = false;
-	let endCursor: string | null = null;
-	if (pageInfo && typeof pageInfo === "object" && !Array.isArray(pageInfo)) {
-		hasNextPage = (pageInfo as Record<string, unknown>).hasNextPage === true;
-		endCursor = asString((pageInfo as Record<string, unknown>).endCursor);
-	}
-	const nodes = (reviewThreads as Record<string, unknown>).nodes;
-	if (!Array.isArray(nodes)) {
-		throw new Error("reviewThreads GraphQL response must include nodes");
-	}
-	const unresolved = nodes.filter((node) => {
-		if (!node || typeof node !== "object" || Array.isArray(node)) return false;
-		return (node as Record<string, unknown>).isResolved === false;
-	}).length;
+	const reviewThreads = reviewThreadConnection(value);
+	const { hasNextPage, endCursor } = reviewThreadPageInfo(reviewThreads);
+	const unresolved = unresolvedReviewThreadCount(
+		reviewThreadNodes(reviewThreads),
+	);
 	return {
 		unresolved,
 		needsHuman: null,

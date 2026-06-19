@@ -47,6 +47,26 @@ export function parseJsonObject(
  */
 export function parseInput(value: string, source: string): PrCloseoutInput {
 	const parsed = parseJsonObject(value, source);
+	assertPrCloseoutInputShape(parsed, source);
+	if (parsed.closeoutGates !== undefined) {
+		parsed.closeoutGates = normalizeCloseoutGatesArtifact(
+			parsed.closeoutGates,
+			`${source} closeoutGates`,
+		);
+	}
+	if (parsed.phaseExit !== undefined) {
+		parsed.phaseExit = normalizeCloseoutGatesArtifact(
+			parsed.phaseExit,
+			`${source} phaseExit`,
+		);
+	}
+	return parsed;
+}
+
+function assertPrCloseoutInputShape(
+	parsed: Record<string, unknown>,
+	source: string,
+): asserts parsed is PrCloseoutInput & Record<string, unknown> {
 	const pullRequest = parsed.pullRequest;
 	if (
 		!pullRequest ||
@@ -68,18 +88,6 @@ export function parseInput(value: string, source: string): PrCloseoutInput {
 			`${source} must include either closeoutGates or phaseExit, not both`,
 		);
 	}
-	if (parsed.closeoutGates !== undefined) {
-		parsed.closeoutGates = normalizeCloseoutGatesArtifact(
-			parsed.closeoutGates,
-			`${source} closeoutGates`,
-		);
-	}
-	if (parsed.phaseExit !== undefined) {
-		parsed.phaseExit = normalizeCloseoutGatesArtifact(
-			parsed.phaseExit,
-			`${source} phaseExit`,
-		);
-	}
 	assertOptionalObject(parsed.branch, `${source} branch`);
 	assertOptionalArray(parsed.checks, `${source} checks`);
 	assertOptionalArray(parsed.ciTelemetry, `${source} ciTelemetry`);
@@ -87,7 +95,6 @@ export function parseInput(value: string, source: string): PrCloseoutInput {
 	assertOptionalObject(parsed.traceability, `${source} traceability`);
 	assertOptionalArray(parsed.dirtyPaths, `${source} dirtyPaths`);
 	assertOptionalArray(parsed.tools, `${source} tools`);
-	return parsed as unknown as PrCloseoutInput;
 }
 
 /**

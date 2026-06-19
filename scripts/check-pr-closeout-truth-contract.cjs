@@ -103,7 +103,7 @@ const REQUIRED_FIXTURES = [
 	},
 	{
 		id: "current-head-command-fixture",
-		path: "src/commands/pr-closeout.test.ts",
+		path: "src/commands/pr-closeout-input-contract.test.ts",
 		pattern:
 			/gh pr view 258 --json number,title,state,isDraft,mergeStateStatus,url,headRefOid,headRefName,baseRefName,reviewDecision,body/,
 		message:

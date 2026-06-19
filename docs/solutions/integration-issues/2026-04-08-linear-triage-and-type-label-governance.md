@@ -80,10 +80,10 @@ This separates policy logic from command wiring and keeps behavior deterministic
 ### 3. Updated templates and operator docs to match executable policy
 
 - Updated Linear templates:
-  - `src/templates/linear/bug.md`
-  - `src/templates/linear/feature.md`
-  - `src/templates/linear/research.md`
-  - `src/templates/linear/automation.md`
+  - `docs/agents/linear-templates/bug.md`
+  - `docs/agents/linear-templates/feature.md`
+  - `docs/agents/linear-templates/research.md`
+  - `docs/agents/linear-templates/automation.md`
 - Updated governance/operator docs:
   - `docs/agents/13-linear-production-workflow.md`
   - `docs/agents/16-linear-production-compact.md`

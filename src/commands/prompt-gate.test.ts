@@ -67,13 +67,27 @@ describe("prompt-gate", () => {
 		});
 
 		it("detects missing sections in feature template", () => {
-			const result = validatePrompt({
-				type: "feature",
-				file: "test-fixtures/empty.md",
-			});
+			const baseDir = mkdtempSync(join(tmpdir(), "prompt-gate-"));
+			try {
+				writeFileSync(join(baseDir, "empty.md"), "");
 
-			expect(result.passed).toBe(false);
-			expect(result.missing.length).toBeGreaterThan(0);
+				const result = validatePrompt({
+					type: "feature",
+					file: "empty.md",
+					baseDir,
+				});
+
+				expect(result.passed).toBe(false);
+				expect(result.missing).toEqual([
+					"Required Inputs",
+					"Constraints",
+					"Acceptance Criteria",
+					"Expected Outputs",
+					"Do Not Do",
+				]);
+			} finally {
+				rmSync(baseDir, { recursive: true, force: true });
+			}
 		});
 	});
 

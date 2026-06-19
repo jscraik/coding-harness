@@ -1,8 +1,8 @@
-import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { runNodeScript, runScriptProcess } from "./script-test-utils.js";
 
 const SCRIPT_PATH = join(
 	process.cwd(),
@@ -14,7 +14,7 @@ const tempRoots: string[] = [];
 function createTempRepo(prefix: string) {
 	const root = mkdtempSync(join(tmpdir(), prefix));
 	tempRoots.push(root);
-	const result = spawnSync("git", ["init"], { cwd: root, encoding: "utf8" });
+	const result = runScriptProcess("git", ["init"], { cwd: root });
 	expect(result.status).toBe(0);
 	return root;
 }
@@ -26,9 +26,8 @@ function writeSource(root: string, path: string, content: string) {
 }
 
 function runScript(root: string, env: NodeJS.ProcessEnv = process.env) {
-	return spawnSync(process.execPath, [SCRIPT_PATH], {
+	return runNodeScript(SCRIPT_PATH, [], {
 		cwd: root,
-		encoding: "utf8",
 		env,
 	});
 }

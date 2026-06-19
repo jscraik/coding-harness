@@ -54,6 +54,38 @@ function codexEnvTool(
 	};
 }
 
+function applyEnvLine(env: NodeJS.ProcessEnv, line: string): void {
+	const trimmed = line.trim();
+	if (trimmed.length === 0 || trimmed.startsWith("#")) {
+		return;
+	}
+	const eqIndex = trimmed.indexOf("=");
+	if (eqIndex < 1) {
+		return;
+	}
+	const key = trimmed.slice(0, eqIndex).trim();
+	const value = trimmed
+		.slice(eqIndex + 1)
+		.trim()
+		.replace(/^["']|["']$/g, "");
+	if (isCloseoutEnvKey(key) && value.length > 0) {
+		env[key] = value;
+	}
+}
+
+function applyEnvFile(env: NodeJS.ProcessEnv, resolvedPath: string): void {
+	for (const line of readFileSync(resolvedPath, "utf8").split(/\r?\n/u)) {
+		applyEnvLine(env, line);
+	}
+}
+
+function blockedEnvFile(
+	resolvedPath: string,
+	failureClass: string,
+): PrCloseoutToolInput {
+	return codexEnvTool(resolvedPath, "blocked", failureClass);
+}
+
 /**
  * Execute an external command and return its trimmed standard output.
  *
@@ -111,23 +143,10 @@ export function loadEnvFile(envFilePath: string | undefined): {
 		if (!stat.isFile()) {
 			return {
 				env,
-				tool: codexEnvTool(resolvedPath, "blocked", "env_file_not_regular"),
+				tool: blockedEnvFile(resolvedPath, "env_file_not_regular"),
 			};
 		}
-		for (const line of readFileSync(resolvedPath, "utf8").split(/\r?\n/u)) {
-			const trimmed = line.trim();
-			if (trimmed.length === 0 || trimmed.startsWith("#")) continue;
-			const eqIndex = trimmed.indexOf("=");
-			if (eqIndex < 1) continue;
-			const key = trimmed.slice(0, eqIndex).trim();
-			const value = trimmed
-				.slice(eqIndex + 1)
-				.trim()
-				.replace(/^["']|["']$/g, "");
-			if (isCloseoutEnvKey(key) && value.length > 0) {
-				env[key] = value;
-			}
-		}
+		applyEnvFile(env, resolvedPath);
 		return {
 			env,
 			tool: codexEnvTool(resolvedPath, "usable", null),
@@ -135,9 +154,8 @@ export function loadEnvFile(envFilePath: string | undefined): {
 	} catch (error) {
 		return {
 			env,
-			tool: codexEnvTool(
+			tool: blockedEnvFile(
 				resolvedPath,
-				"blocked",
 				`env_file_unreadable:${sanitizeError(error)}`,
 			),
 		};

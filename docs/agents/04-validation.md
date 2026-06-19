@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-29
+last_validated: 2026-06-19
 ---
 
 # Validation and checks
@@ -141,8 +141,21 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 - For PR closeout thread truth, use the GitHub GraphQL `reviewThreads` connection or an adapter that preserves `isResolved`, `isOutdated`, path, line, author, and comment URL. Flat comments, check summaries, CodeRabbit summaries, and review decision fields are not sufficient proof that all Codex, CodeRabbit, or human review threads are resolved.
 - For this repository, keep `## Testing` in the PR body structured with `verification_commands`, `verification_outcomes`, and `blocked_steps_reason` so CodeRabbit can evaluate validation evidence deterministically.
 - For pull-requested source-checkout work with changed files that can be evaluated against imported CodeRabbit learning evidence, treat the north-star learning loop as a closeout check: run or explicitly mark `n.a.` for `bash scripts/run-harness-gate.sh learnings gate`, `bash scripts/run-harness-gate.sh review-context`, and `bash scripts/run-harness-gate.sh north-star-feedback` in the PR template evidence.
-- When running `harness linear*` commands (locally or in CI), set `LINEAR_API_KEY` in the runtime environment or pass `--token`, and load `~/.codex/.env` into the active shell/session when secrets are stored there.
-- When diagnosing CircleCI API, CircleCI log, or CircleCI job failures from local tooling, load the approved private env surface before declaring the API unavailable: `set -a; source ~/.codex/.env; set +a`, resolve `CIRCLECI_TOKEN`, `CIRCLE_TOKEN`, or `CIRCLE_API_TOKEN` without printing values, and use bounded network calls such as `curl --max-time`. Missing token classification is allowed only after that env-backed probe is unreadable, incomplete, or still fails.
+- When running `harness linear*` commands (locally or in CI), set
+  `LINEAR_API_KEY` in the runtime environment or pass `--token`.
+  If secrets are stored in `~/.codex/.env`, inspect that path without
+  printing values: use `op run --env-file ~/.codex/.env -- <command>`
+  when it is a FIFO, and use `set -a; source ~/.codex/.env; set +a`
+  only when it is a regular readable file.
+- When diagnosing CircleCI API, CircleCI log, or CircleCI job failures from
+  local tooling, load the approved private env surface before declaring the
+  API unavailable: use `op run --env-file ~/.codex/.env -- <command>`
+  when `~/.codex/.env` is a FIFO, or
+  `set -a; source ~/.codex/.env; set +a` only when it is a regular
+  readable file. Resolve `CIRCLECI_TOKEN`, `CIRCLE_TOKEN`, or
+  `CIRCLE_API_TOKEN` without printing values, and use bounded network calls
+  such as `curl --max-time`. Missing token classification is allowed only
+  after that env-backed probe is unreadable, incomplete, or still fails.
 - Run `harness symphony-check` as part of validation evidence when Linear secret discovery behavior changed, so `LINEAR_API_KEY` discovery is explicitly verified.
 
 ### North-star learning loop closeout
@@ -370,8 +383,18 @@ For check-identity diagnostics, keep terminology aligned across surfaces:
 Before classifying a local validation lane as blocked by missing GitHub, Linear,
 or other live-service credentials, inspect the approved private env surface
 `~/.codex/.env` for the required variable names without printing values. If
-the values are present, rerun the exact failing command in a shell that loads
-that env file:
+the values are present, rerun the exact failing command through the matching
+file-type path.
+
+When `~/.codex/.env` is a FIFO, use `op run --env-file` so the credential
+writer owns the secret stream:
+
+```bash
+op run --env-file ~/.codex/.env -- pnpm test:deep
+```
+
+When `~/.codex/.env` is a regular readable file, source it in the shell that
+runs the command:
 
 ```bash
 zsh -lc 'set -a; source ~/.codex/.env; set +a; pnpm test:deep'

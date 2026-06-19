@@ -11,7 +11,7 @@ audience:
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-06-18
+last_reviewed: 2026-06-19
 review_cadence: on-change
 maintenance_trigger:
   - agent-operating-policy-change
@@ -60,15 +60,13 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   artifacts, and merge readiness as separate lanes unless a contract joins them.
 - Do not claim CI, reviews, tracker state, or merge readiness without current
   evidence from the same closeout window.
-- Agent governance details live in [docs/agents/07b-agent-governance.md](./docs/agents/07b-agent-governance.md). Keep this root file as the compact operating contract and route situational policy there.
-- Agent engineering proof: repeated steering, review comments, workflow skill misses, line-level correction, and benchmark-style code production feedback are stop-the-line environment defect evidence, not ordinary feature work.
-- Create a current-session steering admission record when Jamie says not permitted to proceed, planning-only, planning conversation, not making changes yet, do not implement, or no file edits; record feedback class, inferred principle, searched surfaces, durable destination, and forbidden recurrence behavior.
+- Agent governance details live in [docs/agents/07b-agent-governance.md](./docs/agents/07b-agent-governance.md); validation and steering-feedback closeout details live in [docs/agents/04-validation.md](./docs/agents/04-validation.md). Keep this root file as the compact operating contract and route situational policy there.
+- Agent engineering proof: repeated steering, review comments, workflow skill misses, line-level correction, and benchmark-style code production feedback are stop-the-line environment defect evidence, not ordinary feature work. Convert feedback into principle, sibling patterns, OODA horizons, and durable destination.
+- Steering admission triggers: create a current-session steering admission record when Jamie says not permitted to proceed, planning-only, planning conversation, not making changes yet, do not implement, or no file edits. Record feedback class, inferred principle, searched surfaces, durable destination, and forbidden recurrence behavior before ordinary work resumes.
+- Pattern and blocker handling: treat a Principle Signal, example-based feedback, named-function feedback, specific feedback, single-line corrections, and line-level correction as systemic until proven isolated. Line-level feedback requires pattern-generalization across sibling implementations and a pattern scope inventory naming sibling implementations searched, siblings changed, siblings left unchanged, deferred follow-ups, and the durable validator, lint rule, schema constraint, shared utility, repository convention, CI check, documented invariant, or tracked exception. Observed fixable blockers require fixing it in the same pass and rerunning the narrowest proving command unless authority, credentials, safety, or ownership blocks it; otherwise record a tracked exception with the exact reason.
 - Repeated-error research: when the same error happens twice, list 3-5 Candidate/Fix/Option entries, choose the repo-fit fix, implement it, and record proof before continuing.
-- Convert feedback into principle, sibling patterns, OODA horizons, and durable destination. Treat a Principle Signal, example-based feedback, named-function feedback, specific feedback, single-line corrections, and line-level correction as systemic until proven isolated.
-- Line-level feedback requires pattern-generalization across sibling implementations and a pattern scope inventory naming sibling implementations searched, siblings changed, siblings left unchanged, deferred follow-ups, and the durable validator, lint rule, schema constraint, shared utility, repository convention, CI check, documented invariant, or tracked exception.
-- Observed fixable blockers require fixing it in the same pass and rerunning the narrowest proving command unless authority, credentials, safety, or ownership blocks it; otherwise record a tracked exception with the exact reason.
-- If the same judgment is needed twice or a failure mode can recur across slices, build the smallest durable validator, guard script, CLI helper, workflow hook, fixture, or scoped skill; one-off implementation knowledge belongs in implementation notes, plan evidence, or PR closeout evidence, and a skill needs reusable routed workflow inputs, artifacts, validation, and ownership.
-- Use OODA horizon checks across horizontal horizon, vertical horizon, single-turn context, stacked trajectories, adjacent PR, and adjacent organizational activity; include reflected context, resumed target context, session-collector, agent reflection, unobserved horizon, compaction, and environment boundaries when feedback may cross boundaries.
+- Tool Promotion Threshold: if the same judgment is needed twice or a failure mode can recur across slices, build the smallest durable validator, guard script, CLI helper, workflow hook, fixture, or scoped skill. Keep one-off implementation knowledge in implementation notes, plan evidence, or PR closeout evidence; create or update a skill only for a reusable routed workflow with explicit inputs, artifacts, validation, ownership, and review expectations.
+- OODA horizon checks must cover horizontal horizon, vertical horizon, single-turn context, stacked trajectories, adjacent PR, and adjacent organizational activity; include reflected context, resumed target context, session-collector, agent reflection, unobserved horizon, compaction, and environment boundaries when feedback may cross boundaries.
 - Workflow skill changes need capture-the-flag proof: define the win condition, show the flag is captured, run a skill workout, and include self-reflection on failures.
 - Env-Backed Validation Recovery: before reporting missing credentials, inspect required variable names in `~/.codex/.env` without printing values. If that path is a FIFO, use `op run --env-file ~/.codex/.env -- <command>` or a repo-owned FIFO-aware loader; do not source or cat it. If it is a regular readable file, rerun with `set -a; source ~/.codex/.env; set +a` when present.
 - Closeout completion is not equivalent to green checks; prove PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and any waiting reason.
@@ -77,7 +75,6 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   `spawn_agent(agent_type="harness-product-code-reviewer")` for covered review
   work, use `spawn_agent(agent_type="harness-toolsmith")` for recurring tooling
   friction, and treat `unknown agent_type` as runtime-freshness blocked.
-- If the same judgment is needed twice or a failure mode can recur across slices, build the smallest durable validator, guard script, CLI helper, workflow hook, fixture, or scoped skill.
 - Types and schemas are contract surfaces. TypeScript, Python, JSON, YAML,
   Markdown metadata, shell, and generated artifacts should use configured type,
   schema, lint, and validation gates rather than ad hoc string assumptions.
@@ -108,8 +105,9 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   lint/typecheck, and generated hook commands must follow the detected package
   manager rather than hard-coding pnpm.
 - Changed production source requires `pnpm run quality:docstrings`,
-  `pnpm run quality:size`, and `pnpm run test:related`; changed tests require
-  `pnpm run quality:self-affirming`.
+  `pnpm run quality:size`, and `pnpm run test:related`; `quality:size`
+  enforces changed production file size, function size, and function complexity.
+  Changed tests require `pnpm run quality:self-affirming`.
 - Runtime or artifact behavior changes require `pnpm test:deep`.
 - Docs-gate categories require
   `bash scripts/run-harness-gate.sh docs-gate --mode required --json`.

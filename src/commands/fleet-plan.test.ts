@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	FLEET_PLAN_SCHEMA_VERSION,
 	buildFleetRemediationPlan,
-	runFleetPlanCLI,
 } from "./fleet-plan.js";
+import { runFleetPlanCLI } from "./fleet-plan-cli.js";
 
 describe("fleet-plan", () => {
 	it("builds an agent-native plan with safe dry-run commands", () => {
@@ -589,6 +589,11 @@ describe("runFleetPlanCLI", () => {
 
 	it("returns usage error when --from is missing", () => {
 		expect(runFleetPlanCLI(["--json"])).toBe(2);
-		expect(stderr).toHaveBeenCalledWith("--from is required");
+		expect(stderr).not.toHaveBeenCalled();
+		expect(JSON.parse(stdout.mock.calls[0]?.[0] as string)).toEqual({
+			status: "fail",
+			error: "--from is required",
+			exitCode: 2,
+		});
 	});
 });

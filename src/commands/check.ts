@@ -26,22 +26,34 @@ import { getVersion } from "../lib/version.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+/** Status assigned to an individual health check item. */
 export type CheckStatus = "ok" | "warn" | "fail";
 
+/** One health check finding emitted by the check command. */
 export interface CheckItem {
+	/** Stable machine-readable check identifier. */
 	id: string;
+	/** Human-readable check label. */
 	label: string;
+	/** Check outcome. */
 	status: CheckStatus;
+	/** Human-readable detail explaining the outcome. */
 	detail: string;
 	/** Command to run to fix this finding. */
 	fix?: string;
 }
 
+/** Complete health snapshot emitted by the check command. */
 export interface CheckReport {
+	/** Harness package version used to generate the report. */
 	version: string;
+	/** Directory that was checked. */
 	dir: string;
+	/** ISO timestamp when the report was produced. */
 	timestamp: string;
+	/** Ordered check results. */
 	checks: CheckItem[];
+	/** Count of checks by status. */
 	counts: { ok: number; warn: number; fail: number };
 	/** true when any check is "fail" */
 	hasFailures: boolean;
@@ -49,7 +61,9 @@ export interface CheckReport {
 	nextSteps: string[];
 }
 
+/** Output options for the check command. */
 export interface CheckOptions {
+	/** Emit the report as JSON instead of human-readable text. */
 	json?: boolean;
 }
 
@@ -327,19 +341,7 @@ const STATUS_ICON: Record<CheckStatus, string> = {
 	fail: "✗",
 };
 
-export function runCheckCLI(
-	targetDir: string | undefined,
-	options: CheckOptions,
-): number {
-	const dir = targetDir ? resolve(targetDir) : cwd();
-	const report = runCheck(dir);
-
-	if (options.json) {
-		console.info(JSON.stringify(report, null, 2));
-		return report.hasFailures ? 1 : 0;
-	}
-
-	// Human-readable output
+function renderCheckReport(report: CheckReport): void {
 	console.info(`\nharness check — v${report.version}`);
 	console.info(`Repo: ${report.dir}\n`);
 
@@ -364,6 +366,27 @@ export function runCheckCLI(
 		}
 	}
 	console.info("");
+}
 
+/**
+ * Run the check CLI for a target directory and print either JSON or human-readable output.
+ *
+ * @param targetDir - Optional directory to inspect; defaults to the current working directory.
+ * @param options - Output options for the command.
+ * @returns Process exit code; non-zero when the health report contains failures.
+ */
+export function runCheckCLI(
+	targetDir: string | undefined,
+	options: CheckOptions,
+): number {
+	const dir = targetDir ? resolve(targetDir) : cwd();
+	const report = runCheck(dir);
+
+	if (options.json) {
+		console.info(JSON.stringify(report, null, 2));
+		return report.hasFailures ? 1 : 0;
+	}
+
+	renderCheckReport(report);
 	return report.hasFailures ? 1 : 0;
 }

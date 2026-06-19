@@ -1,7 +1,14 @@
 import { createHash } from "node:crypto";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as urlValidator from "../governance/url-validator.js";
-import { CircularInheritanceError, MaxDepthExceededError } from "./errors.js";
+import {
+	CircularInheritanceError,
+	MaxDepthExceededError,
+	PresetFetchError,
+} from "./errors.js";
 import {
 	PresetResolver,
 	clearPresetCache,
@@ -161,7 +168,26 @@ describe("preset-resolver", () => {
 		it("throws for non-existent local file", async () => {
 			await expect(
 				resolvePreset("non-existent-file.json", process.cwd()),
-			).rejects.toThrow();
+			).rejects.toThrow(PresetFetchError);
+			await expect(
+				resolvePreset("non-existent-file.json", process.cwd()),
+			).rejects.toThrow(/File not found/);
+		});
+
+		it("wraps malformed local preset JSON as PresetFetchError", async () => {
+			const contractDir = mkdtempSync(join(tmpdir(), "preset-resolver-"));
+			try {
+				writeFileSync(join(contractDir, "broken.json"), "{not json");
+
+				await expect(resolvePreset("broken.json", contractDir)).rejects.toThrow(
+					PresetFetchError,
+				);
+				await expect(resolvePreset("broken.json", contractDir)).rejects.toThrow(
+					/Failed to load local preset:/,
+				);
+			} finally {
+				rmSync(contractDir, { recursive: true, force: true });
+			}
 		});
 
 		it("fails closed when remote preset reference omits integrity hash", async () => {

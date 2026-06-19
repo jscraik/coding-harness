@@ -399,15 +399,8 @@ describe("ui-loop commands", () => {
 
 			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
 			expect(spawnSync).toHaveBeenCalledWith(
-				"npx",
-				[
-					"@agent-browser/cli",
-					"explore",
-					url,
-					"--output",
-					outputDir,
-					"--interactions",
-				],
+				"agent-browser",
+				["explore", url, "--output", outputDir, "--interactions"],
 				expect.objectContaining({ shell: false }),
 			);
 		});

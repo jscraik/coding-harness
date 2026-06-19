@@ -18,7 +18,7 @@
 ## Triage inputs
 
 - impact: <!-- 1-5 -->
-- unblock_value: <!-- 1-5 -->
+- unblock value: <!-- 1-5 -->
 - urgency: <!-- 1-5 -->
 - confidence: <!-- 1-5 -->
 - effort: <!-- 1-5 -->

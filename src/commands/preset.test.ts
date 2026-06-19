@@ -77,6 +77,41 @@ describe("preset command", () => {
 	});
 
 	describe("input validation", () => {
+		it("emits JSON errors for preset show failures", async () => {
+			const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {
+				// noop
+			});
+			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+				// noop
+			});
+
+			const result = await runPresetCLI(["show", "unknown-preset", "--json"]);
+
+			expect(result.exitCode).toBe(EXIT_CODES.PRESET_NOT_FOUND);
+			expect(errorSpy).not.toHaveBeenCalled();
+			expect(JSON.parse(infoSpy.mock.calls[0]?.[0] as string)).toEqual(
+				expect.objectContaining({
+					ok: false,
+					error: expect.objectContaining({
+						code: EXIT_CODES.PRESET_NOT_FOUND,
+					}),
+				}),
+			);
+			infoSpy.mockRestore();
+			errorSpy.mockRestore();
+		});
+
+		it("returns invalid argument for unknown subcommands", async () => {
+			const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {
+				// noop
+			});
+
+			const result = await runPresetCLI(["wat"]);
+
+			expect(result.exitCode).toBe(EXIT_CODES.INVALID_ARGUMENT);
+			infoSpy.mockRestore();
+		});
+
 		it("rejects preset name with path traversal in CLI", async () => {
 			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
 				// noop

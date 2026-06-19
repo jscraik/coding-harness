@@ -185,6 +185,50 @@ function worktreeBlockedDecision(args: {
 	}
 }
 
+function fleetMatrixDecision(args: {
+	repoRoot: string;
+	mode: HarnessNextMode;
+	options: HarnessNextOptions;
+	agentReadinessContext: AgentReadinessContextHealth;
+}): HarnessDecision | null {
+	if (args.options.files !== undefined || args.mode !== "ci") return null;
+	if (!existsSync(join(args.repoRoot, DEFAULT_FLEET_MATRIX_ARTIFACT)))
+		return null;
+	return fleetMatrixArtifactDecision({
+		mode: args.mode,
+		matrixArtifact: DEFAULT_FLEET_MATRIX_ARTIFACT,
+		...(args.options.phaseExit ? { phaseExit: args.options.phaseExit } : {}),
+		...(args.options.runtimeCard
+			? { runtimeCard: args.options.runtimeCard }
+			: {}),
+		agentReadinessContext: args.agentReadinessContext,
+	});
+}
+
+function readyState(args: {
+	repoRoot: string;
+	mode: HarnessNextMode;
+	options: HarnessNextOptions;
+	sourceErrors: readonly DecisionSource[];
+	agentReadinessContext: AgentReadinessContextHealth;
+}): HarnessNextReadyState {
+	return {
+		kind: "ready",
+		repoRoot: args.repoRoot,
+		mode: args.mode,
+		sourceErrors: args.sourceErrors,
+		changedFiles: resolveChangedFiles(
+			args.repoRoot,
+			changedFileOptions(args.options),
+		),
+		...(args.options.phaseExit ? { phaseExit: args.options.phaseExit } : {}),
+		...(args.options.runtimeCard
+			? { runtimeCard: args.options.runtimeCard }
+			: {}),
+		agentReadinessContext: args.agentReadinessContext,
+	};
+}
+
 /**
  * Resolve and validate all local state needed before harness next selects a recommendation.
  *
@@ -232,33 +276,22 @@ export function resolveHarnessNextState(
 	});
 	if (worktreeBlock) return directDecision(worktreeBlock);
 
-	if (
-		options.files === undefined &&
-		mode === "ci" &&
-		existsSync(join(repoRoot, DEFAULT_FLEET_MATRIX_ARTIFACT))
-	) {
-		return directDecision(
-			fleetMatrixArtifactDecision({
-				mode,
-				matrixArtifact: DEFAULT_FLEET_MATRIX_ARTIFACT,
-				...(options.phaseExit ? { phaseExit: options.phaseExit } : {}),
-				...(options.runtimeCard ? { runtimeCard: options.runtimeCard } : {}),
-				agentReadinessContext,
-			}),
-		);
-	}
+	const fleetMatrixBlock = fleetMatrixDecision({
+		repoRoot,
+		mode,
+		options,
+		agentReadinessContext,
+	});
+	if (fleetMatrixBlock) return directDecision(fleetMatrixBlock);
 
 	try {
-		return {
-			kind: "ready",
+		return readyState({
 			repoRoot,
 			mode,
+			options,
 			sourceErrors,
-			changedFiles: resolveChangedFiles(repoRoot, changedFileOptions(options)),
-			...(options.phaseExit ? { phaseExit: options.phaseExit } : {}),
-			...(options.runtimeCard ? { runtimeCard: options.runtimeCard } : {}),
 			agentReadinessContext,
-		};
+		});
 	} catch {
 		return directDecision(gitInspectionBlockedDecision(mode));
 	}

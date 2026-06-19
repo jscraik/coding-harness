@@ -22,6 +22,10 @@ thin and delegate into this deep module.
   validation.
 - Scaffold template changes must keep generated downstream docs, PR templates,
   workflow files, and regression fixtures synchronized.
+- Packaged files under `src/templates/` are reserved for generated scaffold
+  assets and helper fragments consumed by init renderers. Manual setup payloads,
+  such as Linear UI copy-paste templates, belong with their operator docs rather
+  than the scaffold package surface.
 - Generated memory baselines must always emit a non-empty `repo` value. When a
   target repository has no package name, the scaffold falls back to the target
   directory name so `memory-gate` can validate non-package repositories.

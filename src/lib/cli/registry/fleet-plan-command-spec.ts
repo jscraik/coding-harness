@@ -1,4 +1,4 @@
-import { runFleetPlanCLI } from "../../../commands/fleet-plan.js";
+import { runFleetPlanCLI } from "../../../commands/fleet-plan-cli.js";
 import { defineCommandSpec } from "./define-command-spec.js";
 import type { CommandSpec } from "./types.js";
 

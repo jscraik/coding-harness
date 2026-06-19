@@ -1,29 +1,13 @@
-/**
- * Preset Resolver - Orchestrates preset loading and merging
- *
- * Handles:
- * - Bundled preset resolution (built-in presets shipped with package)
- * - Remote preset loading with SSRF protection
- * - Circular inheritance detection
- * - Deep merge with security hardening
- */
-
-import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
-import { dirname, isAbsolute, join, normalize, sep } from "node:path";
+import { dirname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
 	isRemoteUrl,
 	redactUrlCredentials,
-	secureFetch,
-	validateRemoteUrl,
 } from "../governance/url-validator.js";
-import {
-	CircularInheritanceError,
-	IntegrityError,
-	PresetFetchError,
-} from "./errors.js";
+import { CircularInheritanceError, PresetFetchError } from "./errors.js";
 import { mergeContracts, validateNoDangerousKeys } from "./merger.js";
+import { loadLocalPreset, loadRemotePreset } from "./preset-source-loaders.js";
 import type {
 	BundledPreset,
 	HarnessContract,
@@ -40,86 +24,6 @@ import { validateContract } from "./validator.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const BUNDLED_PRESET_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*$/i;
-const MAX_REMOTE_PRESET_SIZE_BYTES = 1024 * 1024; // 1MB
-const SRI_SHA256_PATTERN = /^sha256-[A-Za-z0-9+/=]+$/;
-
-function verifyIntegrityHash(
-	source: string,
-	content: string,
-	expectedIntegrity: string,
-): void {
-	if (!SRI_SHA256_PATTERN.test(expectedIntegrity)) {
-		throw new PresetFetchError(
-			redactUrlCredentials(source),
-			`Invalid integrity format '${expectedIntegrity}'. Expected sha256-<base64>.`,
-		);
-	}
-
-	const actualIntegrity = `sha256-${createHash("sha256").update(content, "utf-8").digest("base64")}`;
-	if (actualIntegrity !== expectedIntegrity) {
-		throw new IntegrityError(
-			redactUrlCredentials(source),
-			expectedIntegrity,
-			actualIntegrity,
-		);
-	}
-}
-
-async function readResponseWithLimit(
-	response: Response,
-	source: string,
-	maxBytes: number,
-): Promise<string> {
-	const contentLengthHeader = response.headers.get("content-length");
-	if (contentLengthHeader) {
-		const contentLength = Number.parseInt(contentLengthHeader, 10);
-		if (Number.isFinite(contentLength) && contentLength > maxBytes) {
-			throw new PresetFetchError(
-				redactUrlCredentials(source),
-				`Remote preset exceeds size limit (${contentLength} bytes > ${maxBytes} bytes)`,
-			);
-		}
-	}
-
-	if (!response.body) {
-		const fallbackContent = await response.text();
-		const fallbackBytes = Buffer.byteLength(fallbackContent, "utf-8");
-		if (fallbackBytes > maxBytes) {
-			throw new PresetFetchError(
-				redactUrlCredentials(source),
-				`Remote preset exceeds size limit (${fallbackBytes} bytes > ${maxBytes} bytes)`,
-			);
-		}
-		return fallbackContent;
-	}
-
-	const reader = response.body.getReader();
-	const decoder = new TextDecoder();
-	let totalBytes = 0;
-	let content = "";
-
-	while (true) {
-		const { done, value } = await reader.read();
-		if (done) {
-			break;
-		}
-		if (!value) {
-			continue;
-		}
-		totalBytes += value.byteLength;
-		if (totalBytes > maxBytes) {
-			await reader.cancel();
-			throw new PresetFetchError(
-				redactUrlCredentials(source),
-				`Remote preset exceeds size limit (${totalBytes} bytes > ${maxBytes} bytes)`,
-			);
-		}
-		content += decoder.decode(value, { stream: true });
-	}
-
-	content += decoder.decode();
-	return content;
-}
 
 /**
  * Get the presets directory path.
@@ -301,12 +205,13 @@ export class PresetResolver {
 					"Remote preset references must include an integrity hash (sha256-...)",
 				);
 			}
-			presetContract = await this.loadRemotePreset(
-				source as RemotePreset,
-				reference.integrity,
-			);
+			presetContract = await loadRemotePreset({
+				url: source as RemotePreset,
+				integrity: reference.integrity,
+				cache: this.remotePresetCache,
+			});
 		} else {
-			presetContract = this.loadLocalPreset(source as LocalPreset, contractDir);
+			presetContract = loadLocalPreset(source as LocalPreset, contractDir);
 		}
 
 		// Recursively resolve if this preset also extends others
@@ -399,183 +304,6 @@ export class PresetResolver {
 	}
 
 	/**
-	 * Load a remote preset with SSRF protection.
-	 */
-	private async loadRemotePreset(
-		url: RemotePreset,
-		integrity: string,
-	): Promise<HarnessContract> {
-		const cacheKey = `${url}#${integrity}`;
-		// Check cache first
-		const cached = this.remotePresetCache.get(cacheKey);
-		if (cached !== undefined) {
-			return cached;
-		}
-
-		// Validate URL (SSRF protection with DNS rebinding protection)
-		const validatedUrl = await validateRemoteUrl(url);
-		const pinnedIp = validatedUrl.pinnedIp;
-
-		if (!pinnedIp) {
-			throw new PresetFetchError(
-				redactUrlCredentials(url),
-				"Failed to resolve IP for DNS rebinding protection",
-			);
-		}
-
-		// Fetch with timeout using pinned IP (DNS rebinding protection)
-		const controller = new AbortController();
-		const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-		try {
-			const response = await secureFetch(validatedUrl.url, pinnedIp, {
-				signal: controller.signal,
-			});
-
-			if (!response.ok) {
-				throw new PresetFetchError(
-					redactUrlCredentials(url),
-					`HTTP ${response.status}: ${response.statusText}`,
-				);
-			}
-
-			const content = await readResponseWithLimit(
-				response,
-				url,
-				MAX_REMOTE_PRESET_SIZE_BYTES,
-			);
-			verifyIntegrityHash(url, content, integrity);
-			const data = JSON.parse(content);
-
-			// Validate for prototype pollution attempts before type casting
-			try {
-				validateNoDangerousKeys(data);
-			} catch (error) {
-				throw new PresetFetchError(
-					redactUrlCredentials(url),
-					`Security violation: ${error instanceof Error ? error.message : "Dangerous keys detected"}`,
-				);
-			}
-
-			const validationResult = validateContract(data);
-
-			if (!validationResult.success) {
-				throw new PresetFetchError(
-					redactUrlCredentials(url),
-					`Validation failed: ${validationResult.errors.map((e) => e.message).join(", ")}`,
-				);
-			}
-
-			const contract = validationResult.data as HarnessContract;
-
-			// Cache for session
-			this.remotePresetCache.set(cacheKey, contract);
-
-			return contract;
-		} catch (error) {
-			if (error instanceof PresetFetchError) {
-				throw error;
-			}
-			const message = error instanceof Error ? error.message : "Unknown error";
-			throw new PresetFetchError(
-				redactUrlCredentials(url),
-				message,
-				error as Error,
-			);
-		} finally {
-			clearTimeout(timeoutId);
-		}
-	}
-
-	/**
-	 * Load a local preset file with path traversal protection.
-	 */
-	private loadLocalPreset(
-		presetPath: LocalPreset,
-		contractDir: string,
-	): HarnessContract {
-		// Path traversal protection
-		if (presetPath.includes("\0")) {
-			throw new PresetFetchError(presetPath, "Null byte in path");
-		}
-		if (presetPath.startsWith("~")) {
-			throw new PresetFetchError(
-				presetPath,
-				"Home directory expansion not allowed",
-			);
-		}
-		if (isAbsolute(presetPath)) {
-			throw new PresetFetchError(presetPath, "Absolute paths not allowed");
-		}
-		if (presetPath.includes("..")) {
-			throw new PresetFetchError(presetPath, "Parent traversal not allowed");
-		}
-
-		// Resolve relative to contract directory
-		const resolvedPath = join(contractDir, presetPath);
-
-		// Check existence before resolving symlinks
-		if (!existsSync(resolvedPath)) {
-			throw new PresetFetchError(presetPath, "File not found");
-		}
-
-		// Resolve symlinks to get the real path
-		// This prevents symlink-based path traversal attacks
-		let realResolvedPath: string;
-		try {
-			realResolvedPath = realpathSync(resolvedPath);
-		} catch {
-			throw new PresetFetchError(
-				presetPath,
-				"Failed to resolve path (broken symlink?)",
-			);
-		}
-
-		// Resolve the contract directory to its real path as well
-		const realContractDir = realpathSync(contractDir);
-
-		// Verify the real path (after symlink resolution) is within the contract directory
-		// Normalize both paths and ensure the resolved path starts with contractDir + separator
-		const normalizedContractDir = normalize(realContractDir);
-		const normalizedResolved = normalize(realResolvedPath);
-		const isWithinBase =
-			normalizedResolved === normalizedContractDir ||
-			normalizedResolved.startsWith(`${normalizedContractDir}${sep}`);
-
-		if (!isWithinBase) {
-			throw new PresetFetchError(
-				presetPath,
-				"Path escapes contract directory (symlink attack blocked)",
-			);
-		}
-
-		// Load and validate using the resolved path
-		const content = readFileSync(realResolvedPath, "utf-8");
-		const data = JSON.parse(content);
-
-		// Validate for prototype pollution attempts before type casting
-		try {
-			validateNoDangerousKeys(data);
-		} catch (error) {
-			throw new PresetFetchError(
-				presetPath,
-				`Security violation: ${error instanceof Error ? error.message : "Dangerous keys detected"}`,
-			);
-		}
-
-		const validationResult = validateContract(data);
-
-		if (!validationResult.success) {
-			throw new PresetFetchError(
-				presetPath,
-				`Validation failed: ${validationResult.errors.map((e) => e.message).join(", ")}`,
-			);
-		}
-
-		return validationResult.data as HarnessContract;
-	}
-
-	/**
 	 * Get canonical source identifier for circular detection.
 	 */
 	private getCanonicalSource(source: string, contractDir: string): string {
@@ -585,7 +313,11 @@ export class PresetResolver {
 		if (this.isBundledPresetName(source)) {
 			return `bundled:${source}`;
 		}
-		return realpathSync(join(contractDir, source));
+		const resolvedPath = join(contractDir, source);
+		if (!existsSync(resolvedPath)) {
+			return normalize(resolvedPath);
+		}
+		return realpathSync(resolvedPath);
 	}
 }
 

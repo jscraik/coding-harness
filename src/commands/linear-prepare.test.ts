@@ -108,4 +108,19 @@ describe("runLinearPrepare", () => {
 			"feature/jsc-37-enable-github-to-linear-branch-and-pr-automation-for-the",
 		);
 	});
+
+	it("classifies team-filtered misses as not found", async () => {
+		vi.stubEnv("LINEAR_API_KEY", "linear-token");
+		client.searchIssues.mockResolvedValue([baseIssue]);
+
+		const result = await runLinearPrepare({ issue: "JSC-37", team: "OPS" });
+
+		expect(result).toEqual({
+			ok: false,
+			error: {
+				code: "NOT_FOUND",
+				message: "Linear issue not found for JSC-37 in team ops.",
+			},
+		});
+	});
 });

@@ -1,20 +1,18 @@
 import { validateEvidenceReceipt } from "../evidence/evidence-receipt.js";
 import {
 	CODEX_RUNTIME_EVIDENCE_SCHEMA_VERSION,
-	CODEX_RUNTIME_APPROVAL_SCOPES,
-	CODEX_RUNTIME_ENVIRONMENT_STATES,
-	CODEX_RUNTIME_EXECUTOR_KINDS,
 	CODEX_RUNTIME_GOAL_STATES,
 	CODEX_RUNTIME_MCP_SERVER_STATUSES,
 	CODEX_RUNTIME_NETWORK_STATES,
 	CODEX_RUNTIME_OPTIONAL_STATE_STATUSES,
 	CODEX_RUNTIME_PERMISSION_PROFILES,
-	CODEX_RUNTIME_SOURCE_KINDS,
 	CODEX_RUNTIME_STALE_STATE_CLASSIFICATIONS,
-	classifyCodexRuntimeSourceKind,
-	type CodexRuntimeEvidence,
 } from "./codex-runtime-evidence-types.js";
 import { validateRuntimeEvidenceReferences } from "./codex-runtime-evidence-references.js";
+import {
+	validateEnvironment,
+	validateSourceProvenance,
+} from "./codex-runtime-evidence-validation-sections.js";
 import {
 	type AddFinding,
 	asText,
@@ -47,14 +45,13 @@ export interface CodexRuntimeEvidenceValidationResult {
 
 /** Validate a Codex runtime evidence packet before it can feed runtime-card projection. */
 export function validateCodexRuntimeEvidence(
-	packet: CodexRuntimeEvidence,
+	packet: unknown,
 ): CodexRuntimeEvidenceValidationResult {
 	const findings: CodexRuntimeEvidenceFinding[] = [];
 	const add = (path: string, code: string, message: string): void => {
 		findings.push({ path, code, message });
 	};
-	const candidate = packet as unknown as Record<string, unknown>;
-	if (!isRecord(candidate)) {
+	if (!isRecord(packet)) {
 		return {
 			valid: false,
 			findings: [
@@ -66,6 +63,7 @@ export function validateCodexRuntimeEvidence(
 			],
 		};
 	}
+	const candidate = packet;
 	if (candidate.schemaVersion !== CODEX_RUNTIME_EVIDENCE_SCHEMA_VERSION) {
 		add(
 			"schemaVersion",
@@ -86,82 +84,6 @@ export function validateCodexRuntimeEvidence(
 	validateStaleState(candidate.staleState, add);
 	validateRuntimeEvidenceReferences(candidate, add);
 	return { valid: findings.length === 0, findings };
-}
-
-function validateSourceProvenance(value: unknown, add: AddFinding): void {
-	if (!isRecord(value)) {
-		add(
-			"sourceProvenance",
-			"source_provenance_invalid",
-			"sourceProvenance must be an object.",
-		);
-		return;
-	}
-	requireEnum(
-		value.sourceKind,
-		CODEX_RUNTIME_SOURCE_KINDS,
-		"sourceProvenance.sourceKind",
-		add,
-	);
-	requireNonEmptyString(
-		value.codexRepoPath,
-		"sourceProvenance.codexRepoPath",
-		add,
-	);
-	if (
-		typeof value.codexRepoPath === "string" &&
-		typeof value.sourceKind === "string"
-	) {
-		const derivedKind = classifyCodexRuntimeSourceKind(value.codexRepoPath);
-		if (derivedKind !== "unknown" && derivedKind !== value.sourceKind) {
-			add(
-				"sourceProvenance.sourceKind",
-				"source_kind_mismatch",
-				"sourceKind must match the Codex source path classification when the source path is recognized.",
-			);
-		}
-	}
-	requireNullableNonEmptyString(
-		value.commitSha,
-		"sourceProvenance.commitSha",
-		add,
-	);
-	requireEnum(
-		value.dirtyState,
-		["clean", "dirty", "unknown"],
-		"sourceProvenance.dirtyState",
-		add,
-	);
-	if (!isRecord(value.sourceFileChecksums)) {
-		add(
-			"sourceProvenance.sourceFileChecksums",
-			"source_file_checksums_invalid",
-			"sourceFileChecksums must be an object.",
-		);
-	} else {
-		const entries = Object.entries(value.sourceFileChecksums);
-		if (entries.length === 0) {
-			add(
-				"sourceProvenance.sourceFileChecksums",
-				"source_file_checksums_missing",
-				"sourceFileChecksums must include at least one source checksum.",
-			);
-		}
-		for (const [path, checksum] of entries) {
-			if (
-				path.trim().length === 0 ||
-				typeof checksum !== "string" ||
-				checksum.trim().length === 0
-			) {
-				add(
-					"sourceProvenance.sourceFileChecksums",
-					"source_file_checksum_invalid",
-					"sourceFileChecksums entries must have non-empty paths and checksum strings.",
-				);
-			}
-		}
-	}
-	requireIsoTimestamp(value.capturedAt, "sourceProvenance.capturedAt", add);
 }
 
 function validateIdentity(value: unknown, add: AddFinding): void {
@@ -199,143 +121,6 @@ function validateIdentity(value: unknown, add: AddFinding): void {
 	if (value.model !== undefined) {
 		requireNullableNonEmptyString(value.model, "codex.model", add);
 	}
-}
-
-function validateEnvironment(
-	value: unknown,
-	permissions: unknown,
-	add: AddFinding,
-): void {
-	if (!isRecord(value)) {
-		add("environment", "environment_invalid", "environment must be an object.");
-		return;
-	}
-	requireNullableNonEmptyString(
-		value.environmentId,
-		"environment.environmentId",
-		add,
-	);
-	requireNullableNonEmptyString(value.cwd, "environment.cwd", add);
-	requireNullableNonEmptyString(
-		value.expectedCwd,
-		"environment.expectedCwd",
-		add,
-	);
-	requireEnum(
-		value.executorKind,
-		CODEX_RUNTIME_EXECUTOR_KINDS,
-		"environment.executorKind",
-		add,
-	);
-	requireEnum(
-		value.approvalScope,
-		CODEX_RUNTIME_APPROVAL_SCOPES,
-		"environment.approvalScope",
-		add,
-	);
-	if (value.expectedApprovalScope !== null) {
-		requireEnum(
-			value.expectedApprovalScope,
-			CODEX_RUNTIME_APPROVAL_SCOPES,
-			"environment.expectedApprovalScope",
-			add,
-		);
-	}
-	requireNullableNonEmptyString(
-		value.sandboxPolicyRef,
-		"environment.sandboxPolicyRef",
-		add,
-	);
-	requireEnum(
-		value.state,
-		CODEX_RUNTIME_ENVIRONMENT_STATES,
-		"environment.state",
-		add,
-	);
-	requireNullableNonEmptyString(
-		value.failureClass,
-		"environment.failureClass",
-		add,
-	);
-
-	if (value.state !== "current" && isBlank(asText(value.failureClass))) {
-		add(
-			"environment.failureClass",
-			"environment_failure_class_missing",
-			"failureClass is required when environment state is not current.",
-		);
-	}
-	const hasStaleCwd =
-		value.cwd !== null &&
-		value.expectedCwd !== null &&
-		value.cwd !== value.expectedCwd;
-	const hasApprovalScopeMismatch =
-		!hasStaleCwd &&
-		value.approvalScope !== "unknown" &&
-		value.expectedApprovalScope !== null &&
-		value.approvalScope !== value.expectedApprovalScope;
-	if (hasStaleCwd && value.state !== "stale_cwd") {
-		add(
-			"environment.state",
-			"environment_stale_cwd_missing",
-			"state must be stale_cwd when cwd differs from expectedCwd.",
-		);
-	}
-	if (hasApprovalScopeMismatch && value.state !== "approval_scope_mismatch") {
-		add(
-			"environment.state",
-			"approval_scope_mismatch_missing",
-			"state must be approval_scope_mismatch when approvalScope differs from expectedApprovalScope.",
-		);
-	}
-	if (
-		permissionFactsAreKnown(permissions) &&
-		isBlank(asText(value.sandboxPolicyRef))
-	) {
-		add(
-			"environment.sandboxPolicyRef",
-			"sandbox_policy_ref_missing",
-			"sandboxPolicyRef is required when permission and network facts are known.",
-		);
-	}
-	if (value.state === "current" && !isBlank(asText(value.failureClass))) {
-		add(
-			"environment.failureClass",
-			"environment_failure_class_unexpected",
-			"failureClass must be null when environment state is current.",
-		);
-	}
-	if (
-		value.state === "current" &&
-		isBlank(asText(value.environmentId)) &&
-		isBlank(asText(value.cwd)) &&
-		isBlank(asText(value.expectedCwd)) &&
-		isBlank(asText(value.sandboxPolicyRef))
-	) {
-		add(
-			"environment.state",
-			"environment_current_scope_missing",
-			"current environment state requires an explicit environment identity, cwd, expectedCwd, or sandboxPolicyRef.",
-		);
-	}
-}
-
-function permissionFactsAreKnown(value: unknown): boolean {
-	if (!isRecord(value)) return false;
-	const profile = typeof value.profile === "string" ? value.profile : null;
-	const network = typeof value.network === "string" ? value.network : null;
-	return (
-		profile !== null &&
-		profile !== "unknown" &&
-		network !== null &&
-		network !== "unknown" &&
-		(!isWriteCapablePermissionProfile(profile) ||
-			(Array.isArray(value.writableRoots) && value.writableRoots.length > 0))
-	);
-}
-
-function isWriteCapablePermissionProfile(value: unknown): boolean {
-	return value === "workspace_write" || value === "escalated";
 }
 
 function validatePermissions(value: unknown, add: AddFinding): void {

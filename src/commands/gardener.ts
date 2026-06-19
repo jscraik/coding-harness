@@ -115,68 +115,90 @@ export function runGardenerCLI(options: GardenerOptions): number {
 		const exitCode = output.needsPR
 			? EXIT_CODES.ISSUES_FOUND
 			: EXIT_CODES.SUCCESS;
-
-		// JSON output only
-		if (options.json) {
-			console.info(JSON.stringify(result.output, null, 2));
-			return exitCode;
-		}
-
-		// Human-readable console output
-		console.info("\n📊 Summary:");
-		console.info(`  Docs path: ${options.docsPath ?? "docs"}`);
-		console.info(`  Stale docs: ${output.staleDocs.length}`);
-		console.info(`  Broken links: ${output.brokenLinks.length}`);
-
-		// Show update warning in human-readable mode only
-		if (result.updateWarning) {
-			console.warn(
-				`Warning: Failed to update quality score file: ${result.updateWarning}`,
-			);
-		}
-
-		if (output.staleDocs.length > 0) {
-			console.info("\n📄 Stale Documents:");
-			const lines = formatTruncatedList(output.staleDocs, (doc) =>
-				doc.daysSinceValidation === Number.POSITIVE_INFINITY
-					? `  - ${doc.path} (never validated)`
-					: `  - ${doc.path} (${doc.daysSinceValidation} days)`,
-			);
-			for (const line of lines) console.info(line);
-		}
-
-		if (output.brokenLinks.length > 0) {
-			console.info("\n🔗 Broken Links:");
-			const lines = formatTruncatedList(output.brokenLinks, (link) => {
-				const status = link.statusCode ? ` [${link.statusCode}]` : "";
-				return `  - ${link.file}: ${link.link}${status}`;
-			});
-			for (const line of lines) console.info(line);
-		}
-
-		if (options.dryRun) {
-			console.info("\n[DRY-RUN] No PR would be created");
-		} else if (output.needsPR) {
-			console.info("\n✅ Quality score updated");
-		}
-
-		console.info("");
-
+		renderGardenerSuccess(result, options);
 		return exitCode;
 	}
 
-	// Error output: JSON only in JSON mode, text otherwise
+	renderGardenerError(result.error, Boolean(options.json));
+	return gardenerErrorExitCode(result.error.code);
+}
+
+function renderGardenerSuccess(
+	result: Extract<GardenerResult, { ok: true }>,
+	options: GardenerOptions,
+): void {
 	if (options.json) {
-		console.error(JSON.stringify({ error: result.error }));
-	} else {
-		console.error(result.error.message);
+		console.info(JSON.stringify(result.output, null, 2));
+		return;
 	}
 
-	// Map error codes to exit codes
-	if (result.error.code === "DOCS_PATH_NOT_FOUND") {
-		return EXIT_CODES.FILE_NOT_FOUND;
+	const output = result.output;
+	console.info("\n📊 Summary:");
+	console.info(`  Docs path: ${options.docsPath ?? "docs"}`);
+	console.info(`  Stale docs: ${output.staleDocs.length}`);
+	console.info(`  Broken links: ${output.brokenLinks.length}`);
+	renderGardenerWarning(result.updateWarning);
+	renderStaleDocs(output.staleDocs);
+	renderBrokenLinks(output.brokenLinks);
+	renderGardenerCompletion(output, Boolean(options.dryRun));
+	console.info("");
+}
+
+function renderGardenerWarning(updateWarning: string | undefined): void {
+	if (updateWarning) {
+		console.warn(
+			`Warning: Failed to update quality score file: ${updateWarning}`,
+		);
 	}
-	return EXIT_CODES.SYSTEM_ERROR;
+}
+
+function renderStaleDocs(staleDocs: StaleDoc[]): void {
+	if (staleDocs.length === 0) return;
+	console.info("\n📄 Stale Documents:");
+	const lines = formatTruncatedList(staleDocs, (doc) =>
+		doc.daysSinceValidation === Number.POSITIVE_INFINITY
+			? `  - ${doc.path} (never validated)`
+			: `  - ${doc.path} (${doc.daysSinceValidation} days)`,
+	);
+	for (const line of lines) console.info(line);
+}
+
+function renderBrokenLinks(brokenLinks: BrokenLink[]): void {
+	if (brokenLinks.length === 0) return;
+	console.info("\n🔗 Broken Links:");
+	const lines = formatTruncatedList(brokenLinks, (link) => {
+		const status = link.statusCode ? ` [${link.statusCode}]` : "";
+		return `  - ${link.file}: ${link.link}${status}`;
+	});
+	for (const line of lines) console.info(line);
+}
+
+function renderGardenerCompletion(
+	output: GardenerOutput,
+	dryRun: boolean,
+): void {
+	if (dryRun) {
+		console.info("\n[DRY-RUN] No PR would be created");
+	} else if (output.needsPR) {
+		console.info("\n✅ Quality score updated");
+	}
+}
+
+function renderGardenerError(
+	error: Extract<GardenerResult, { ok: false }>["error"],
+	json: boolean,
+): void {
+	if (json) {
+		console.error(JSON.stringify({ error }));
+		return;
+	}
+	console.error(error.message);
+}
+
+function gardenerErrorExitCode(errorCode: string): number {
+	return errorCode === "DOCS_PATH_NOT_FOUND"
+		? EXIT_CODES.FILE_NOT_FOUND
+		: EXIT_CODES.SYSTEM_ERROR;
 }
 
 // Re-export types and constants for external use

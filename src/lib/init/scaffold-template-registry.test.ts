@@ -44,4 +44,16 @@ describe("scaffold template registry", () => {
 		);
 		expect(noIssueTrackerPaths).toContain("harness.contract.json");
 	});
+
+	it("keeps manual Linear UI templates out of packaged scaffold templates", () => {
+		const packagedPaths = TEMPLATES.map((template) => template.path);
+		expect(
+			packagedPaths.some((path) =>
+				path.startsWith("docs/agents/linear-templates/"),
+			),
+		).toBe(false);
+		expect(
+			packagedPaths.some((path) => path.startsWith("src/templates/linear/")),
+		).toBe(false);
+	});
 });
