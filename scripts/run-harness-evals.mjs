@@ -5628,11 +5628,8 @@ function verifyExpectedFixtureArtifacts(result, scenario, fixturePath) {
 }
 
 function validateFixtureArtifactSchema(artifactPath, contract, fixturePath) {
-	const absolutePath = path.resolve(REPO_ROOT, artifactPath);
-	if (
-		!isPathInside(absolutePath, path.resolve(fixturePath)) ||
-		!artifactPath.endsWith(".json")
-	) {
+	const absolutePath = resolveFixtureArtifactPath(artifactPath, fixturePath);
+	if (!absolutePath || !artifactPath.endsWith(".json")) {
 		return false;
 	}
 	let artifact;
@@ -5646,6 +5643,31 @@ function validateFixtureArtifactSchema(artifactPath, contract, fixturePath) {
 		artifact.schemaVersion === contract.schemaVersion &&
 		requiredFields.every((field) => hasNestedField(artifact, field))
 	);
+}
+
+function resolveFixtureArtifactPath(artifactPath, fixturePath) {
+	const activeFixturePath = path.resolve(fixturePath);
+	const defaultFixturePath = path.resolve(
+		REPO_ROOT,
+		DEFAULT_FIXTURE_ROOT,
+		path.basename(activeFixturePath),
+	);
+	const defaultArtifactPath = path.resolve(REPO_ROOT, artifactPath);
+	if (!isPathInside(defaultArtifactPath, defaultFixturePath)) {
+		return null;
+	}
+	const relativeArtifactPath = path.relative(
+		defaultFixturePath,
+		defaultArtifactPath,
+	);
+	const activeArtifactPath = path.resolve(
+		activeFixturePath,
+		relativeArtifactPath,
+	);
+	if (!isPathInside(activeArtifactPath, activeFixturePath)) {
+		return null;
+	}
+	return activeArtifactPath;
 }
 
 function hasNestedField(value, fieldPath) {
