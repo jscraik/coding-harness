@@ -1,4 +1,3 @@
-import { cwd } from "node:process";
 import {
 	type HarnessDecision,
 	validateHarnessDecision,
@@ -6,15 +5,12 @@ import {
 import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
 import { parseNextArgs } from "./next-args.js";
-import { loadPhaseExitArtifact } from "./next-phase-exit.js";
-import {
-	loadPrCloseoutArtifact,
-	type HarnessNextPrCloseoutEvidence,
-} from "./next-pr-closeout.js";
-import { loadRuntimeCardArtifact } from "./next-runtime-card.js";
+import { loadNextCliEvidence } from "./next-cli-evidence.js";
+import type { HarnessNextPrCloseoutEvidence } from "./next-pr-closeout.js";
 import { usageErrorDecision } from "./next-usage-errors.js";
 import { type HarnessNextOptions, runHarnessNext } from "./next-runner.js";
 
+// Architecture seam: next-cli-evidence owns ./next-phase-exit.js and ./next-runtime-card.js artifact loading.
 export type { HarnessNextMode } from "./next-decisions.js";
 export type { HarnessNextOptions } from "./next-runner.js";
 export { runHarnessNext } from "./next-runner.js";
@@ -87,45 +83,6 @@ function buildNextCliDecision(
 		...(prCloseout !== undefined ? { prCloseout } : {}),
 	});
 	return { decision, usageError: false };
-}
-
-function loadNextCliEvidence(
-	parsed: ReturnType<typeof parseNextArgs>,
-	options: Omit<HarnessNextOptions, "mode" | "files">,
-	setters: {
-		setPhaseExit: (phaseExit: HePhaseExit) => void;
-		setRuntimeCard: (runtimeCard: RuntimeCard) => void;
-		setPrCloseout: (prCloseout: HarnessNextPrCloseoutEvidence) => void;
-	},
-): HarnessDecision | undefined {
-	if (parsed.phaseExitPath !== undefined) {
-		const loadedPhaseExit = loadPhaseExitArtifact(
-			options.repoRoot ?? cwd(),
-			parsed.phaseExitPath,
-			parsed.mode,
-		);
-		if ("decision" in loadedPhaseExit) return loadedPhaseExit.decision;
-		setters.setPhaseExit(loadedPhaseExit.phaseExit);
-	}
-	if (parsed.runtimeCardPath !== undefined) {
-		const loadedRuntimeCard = loadRuntimeCardArtifact(
-			options.repoRoot ?? cwd(),
-			parsed.runtimeCardPath,
-			parsed.mode,
-		);
-		if ("decision" in loadedRuntimeCard) return loadedRuntimeCard.decision;
-		setters.setRuntimeCard(loadedRuntimeCard.runtimeCard);
-	}
-	if (parsed.prCloseoutPath !== undefined) {
-		const loadedPrCloseout = loadPrCloseoutArtifact(
-			options.repoRoot ?? cwd(),
-			parsed.prCloseoutPath,
-			parsed.mode,
-		);
-		if ("decision" in loadedPrCloseout) return loadedPrCloseout.decision;
-		setters.setPrCloseout(loadedPrCloseout.prCloseout);
-	}
-	return undefined;
 }
 
 /**

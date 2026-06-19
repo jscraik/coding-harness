@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -10,6 +10,7 @@ import {
 } from "../lib/pr-closeout.js";
 import { validateHarnessDecision } from "../lib/decision/harness-decision.js";
 import { runHarnessNext, runNextCLI } from "./next.js";
+import { DEFAULT_PR_CLOSEOUT_ARTIFACT } from "./next-pr-closeout.js";
 
 function captureNextCLI(
 	args: string[],
@@ -177,6 +178,17 @@ function prCloseoutReport(
 	};
 }
 
+function writeDefaultPrCloseoutArtifact(
+	repoRoot: string,
+	report: PrCloseoutReport,
+): void {
+	mkdirSync(join(repoRoot, "artifacts", "pr-closeout"), { recursive: true });
+	writeFileSync(
+		join(repoRoot, DEFAULT_PR_CLOSEOUT_ARTIFACT),
+		JSON.stringify(report),
+	);
+}
+
 describe("harness next pr-closeout evidence", () => {
 	it("blocks handoff when supplied pr-closeout evidence is not ready", () => {
 		const blocker = reviewBlocker();
@@ -261,6 +273,110 @@ describe("harness next pr-closeout evidence", () => {
 				"artifact:pr-closeout.json",
 				"stack:lower-pr",
 			]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("auto-loads the default pr-closeout artifact before normal CLI recommendations", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
+		try {
+			writeDefaultPrCloseoutArtifact(
+				repoRoot,
+				prCloseoutReport({
+					status: "blocked",
+					mergeable: false,
+					nextAction: "resolve_conflicts",
+					blockers: [
+						{
+							surface: "branch",
+							classification: "introduced",
+							reason: "Parent PR has not landed yet.",
+							fixableByCodex: true,
+							ref: "stack:parent-pr",
+						},
+					],
+				}),
+			);
+
+			const { exitCode, output } = captureNextCLI(["--json"], {
+				repoRoot,
+				inspectChangedFiles: () => [],
+			});
+
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.failureClass).toBe("pr_closeout_blocked");
+			expect(decision.evidenceRef).toEqual([
+				`artifact:${DEFAULT_PR_CLOSEOUT_ARTIFACT}`,
+				"stack:parent-pr",
+			]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("keeps missing default pr-closeout evidence non-blocking", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
+		try {
+			const { exitCode, output } = captureNextCLI(["--json"], {
+				repoRoot,
+				inspectChangedFiles: () => [],
+			});
+
+			expect(exitCode).toBe(0);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("pass");
+			expect(decision.nextCommand).toBe("harness check --json");
+			expect(decision.meta).not.toHaveProperty("prCloseout");
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("prefers explicit pr-closeout artifacts over the default artifact", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
+		try {
+			writeDefaultPrCloseoutArtifact(
+				repoRoot,
+				prCloseoutReport({
+					status: "blocked",
+					mergeable: false,
+					nextAction: "resolve_conflicts",
+					blockers: [
+						{
+							surface: "branch",
+							classification: "introduced",
+							reason: "Default artifact is stale.",
+							fixableByCodex: true,
+							ref: "stack:stale-default",
+						},
+					],
+				}),
+			);
+			writeFileSync(
+				join(repoRoot, "explicit-pr-closeout.json"),
+				JSON.stringify(prCloseoutReport()),
+			);
+
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--pr-closeout", "explicit-pr-closeout.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			expect(exitCode).toBe(0);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("pass");
+			expect(decision.meta).toMatchObject({
+				prCloseout: {
+					artifactPath: "explicit-pr-closeout.json",
+					status: "ready",
+					mergeable: true,
+				},
+			});
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });
 		}

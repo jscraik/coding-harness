@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import type { HarnessDecision } from "../lib/decision/harness-decision.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import {
@@ -15,10 +17,22 @@ import type { HarnessNextMode } from "./next-decision-types.js";
 import { humanRequiredDecisionMeta } from "./next-support.js";
 import { blockedDecision } from "./next-blocked-decisions.js";
 
+export const DEFAULT_PR_CLOSEOUT_ARTIFACT =
+	"artifacts/pr-closeout/pr-closeout.json";
+
 /** PR closeout evidence accepted by harness next. */
 export interface HarnessNextPrCloseoutEvidence {
 	report: PrCloseoutReport;
 	artifactPath?: string;
+}
+
+/** Return the default pr-closeout artifact path when the current repo has one. */
+export function discoverPrCloseoutArtifactPath(
+	repoRoot: string,
+): string | undefined {
+	return existsSync(join(repoRoot, DEFAULT_PR_CLOSEOUT_ARTIFACT))
+		? DEFAULT_PR_CLOSEOUT_ARTIFACT
+		: undefined;
 }
 
 function prCloseoutEvidenceRef(

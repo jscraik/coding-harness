@@ -56,6 +56,10 @@ Replace `<runId>` with a fresh run identifier for each trace-out attempt.
 blocks the recommendation if the artifact reports `commitAllowed=false` or
 `exitAllowed=false`.
 
+`--pr-closeout` accepts a local `pr-closeout/v1` JSON artifact. When omitted,
+`harness next` auto-loads `artifacts/pr-closeout/pr-closeout.json` if that
+artifact exists and applies the same readiness blockers as the explicit flag.
+
 `--runtime-card` accepts a local `runtime-card/v1` JSON artifact that summarizes
 the current branch, PR, tracker, artifact, and phase-exit lifecycle state. When
 supplied, `harness next` normalizes the card into `meta.runtimeCard` and blocks
