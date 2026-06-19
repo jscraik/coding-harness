@@ -17,7 +17,7 @@ except ModuleNotFoundError:  # pragma: no cover
 
 
 FALSE_POSITIVE_THRESHOLD = 0.05
-type JsonObject = dict[str, Any]
+JsonObject = dict[str, Any]
 
 
 class DocstringRatchetError(ValueError):

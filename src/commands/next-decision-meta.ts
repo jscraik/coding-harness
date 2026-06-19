@@ -90,6 +90,7 @@ export function nextDecisionOperationalMeta(args: {
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
 	agentReadinessContext?: AgentReadinessContextHealth | undefined;
+	extra?: Record<string, unknown> | undefined;
 }): ReturnType<typeof decisionMeta> {
 	return decisionMeta({
 		mode: args.mode,
@@ -110,6 +111,7 @@ export function nextDecisionOperationalMeta(args: {
 			...phaseExitMeta(args.phaseExit),
 			...runtimeCardMeta(args.runtimeCard),
 			...agentReadinessContextMeta(args.agentReadinessContext),
+			...(args.extra ?? {}),
 		},
 	});
 }

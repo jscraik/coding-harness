@@ -28,6 +28,7 @@ const AGENT_COMMAND_RAIL_NAMES = [
 	"commands",
 	"runtime-card",
 	"session-context",
+	"check",
 	"validation-plan",
 	"review-context",
 	"decision-request",
@@ -45,6 +46,7 @@ const AGENT_ORIENT_COMMAND_RAIL_NAMES = [
 const AGENT_VERIFY_COMMAND_RAIL_NAMES = [
 	"next",
 	"runtime-card",
+	"check",
 	"validation-plan",
 	"evidence-verify",
 ] as const;
@@ -1283,6 +1285,22 @@ describe("'commands' command execution", () => {
 		} finally {
 			infoSpy.mockRestore();
 		}
+	});
+
+	it("keeps the clean-worktree next command discoverable on the verify rail", () => {
+		const verifyCatalog = getRegistryAgentCommandCatalogDocument("verify");
+		const verifyNames = new Set(
+			verifyCatalog.commands.map((command) => command.name),
+		);
+
+		expect(verifyNames.has("check")).toBe(true);
+		expect(
+			verifyCatalog.commands.find((command) => command.name === "check"),
+		).toMatchObject({
+			agentMode: "verify",
+			mutability: "read",
+			retryability: "safe",
+		});
 	});
 
 	it.each([

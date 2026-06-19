@@ -8,6 +8,10 @@ import type {
 } from "../lib/decision/sources.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
 import {
+	prCloseoutDecisionMeta,
+	type HarnessNextPrCloseoutEvidence,
+} from "./next-pr-closeout.js";
+import {
 	createNextDecision,
 	nextDecisionOperationalMeta,
 } from "./next-decision-meta.js";
@@ -30,6 +34,75 @@ function inferRiskTier(files: string[]): HarnessDecision["riskTier"] {
 
 interface NextRecommendationCandidate extends RecommendationCandidate {
 	argv: string[];
+}
+
+function promptContextDriftRefreshCommand(
+	contextHealth: AgentReadinessContextHealth | undefined,
+): { command: string; evidenceRef: string[] } | null {
+	const surface = contextHealth?.surfaces.find(
+		(candidate) =>
+			candidate.id === "prompt_context_drift" &&
+			candidate.status !== "pass" &&
+			candidate.evidence.length > 0 &&
+			candidate.suggestedRefreshCommands.length > 0,
+	);
+	if (!surface) return null;
+	return {
+		command: surface.suggestedRefreshCommands[0] as string,
+		evidenceRef: surface.evidence,
+	};
+}
+
+function promptContextDriftDecision(args: {
+	mode: HarnessNextMode;
+	filesSource: "override" | "git";
+	sourceErrors: readonly DecisionSource[];
+	phaseExit?: HePhaseExit | undefined;
+	runtimeCard?: RuntimeCard | undefined;
+	prCloseout?: HarnessNextPrCloseoutEvidence | undefined;
+	agentReadinessContext?: AgentReadinessContextHealth | undefined;
+	promptContextRefresh: { command: string; evidenceRef: string[] };
+}): HarnessDecision {
+	const sourceRef = args.filesSource === "git" ? "git:status" : "input:files";
+	return createNextDecision({
+		status: "action_required",
+		summary:
+			"No changed files detected, but prompt-context orientation is stale.",
+		nextAction:
+			"Refresh the prompt-context drift report before using clean-worktree context for handoff.",
+		nextCommand: args.promptContextRefresh.command,
+		phase: "orient",
+		objective:
+			"Refresh degraded prompt-context orientation before relying on the clean-worktree handoff path.",
+		requiredEvidence: [sourceRef, ...args.promptContextRefresh.evidenceRef],
+		stopConditions: [
+			"Stop if prompt-context drift validation still reports stale or invalid context.",
+		],
+		humanEscalation: null,
+		followUpCommands: ["harness check --json"],
+		hiddenPlumbing: ["git:status", "prompt_context_drift", "check"],
+		safeToRun: true,
+		requiresHuman: false,
+		requiresNetwork: false,
+		writesFiles: false,
+		evidenceRef: [sourceRef, ...args.promptContextRefresh.evidenceRef],
+		failureClass: null,
+		retry: "safe",
+		riskTier: "low",
+		meta: nextDecisionOperationalMeta({
+			mode: args.mode,
+			filesSource: args.filesSource,
+			changedFileCount: 0,
+			commands: [args.promptContextRefresh.command],
+			frictionClass: "repo_state",
+			delayClass: "normal",
+			phaseExit: args.phaseExit,
+			runtimeCard: args.runtimeCard,
+			extra: prCloseoutDecisionMeta(args.prCloseout),
+			agentReadinessContext: args.agentReadinessContext,
+			sourceErrors: args.sourceErrors,
+		}),
+	});
 }
 
 function createRecommendationCandidate(args: {
@@ -69,6 +142,7 @@ export function fleetMatrixArtifactDecision(args: {
 	matrixArtifact: string;
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
+	prCloseout?: HarnessNextPrCloseoutEvidence | undefined;
 	agentReadinessContext?: AgentReadinessContextHealth | undefined;
 }): HarnessDecision {
 	const command = `harness fleet-plan --from ${shellQuote(args.matrixArtifact)} --json`;
@@ -108,6 +182,7 @@ export function fleetMatrixArtifactDecision(args: {
 			commands: [command],
 			phaseExit: args.phaseExit,
 			runtimeCard: args.runtimeCard,
+			extra: prCloseoutDecisionMeta(args.prCloseout),
 			agentReadinessContext: args.agentReadinessContext,
 		}),
 	});
@@ -125,8 +200,18 @@ export function noChangedFilesDecision(args: {
 	sourceErrors: readonly DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
+	prCloseout?: HarnessNextPrCloseoutEvidence | undefined;
 	agentReadinessContext?: AgentReadinessContextHealth | undefined;
 }): HarnessDecision {
+	const promptContextRefresh = promptContextDriftRefreshCommand(
+		args.agentReadinessContext,
+	);
+	if (promptContextRefresh) {
+		return promptContextDriftDecision({
+			...args,
+			promptContextRefresh,
+		});
+	}
 	return createNextDecision({
 		status: "pass",
 		summary: "No changed files detected.",
@@ -159,6 +244,7 @@ export function noChangedFilesDecision(args: {
 			sourceErrors: args.sourceErrors,
 			phaseExit: args.phaseExit,
 			runtimeCard: args.runtimeCard,
+			extra: prCloseoutDecisionMeta(args.prCloseout),
 			agentReadinessContext: args.agentReadinessContext,
 		}),
 	});
@@ -177,6 +263,7 @@ export function changedFilesDecision(args: {
 	sourceErrors: readonly DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
+	prCloseout?: HarnessNextPrCloseoutEvidence | undefined;
 	agentReadinessContext?: AgentReadinessContextHealth | undefined;
 }): HarnessDecision {
 	const candidate = createRecommendationCandidate(args);
@@ -209,6 +296,7 @@ export function changedFilesDecision(args: {
 			"risk-tier",
 			...(args.phaseExit ? ["he-phase-exit"] : []),
 			...(args.runtimeCard ? ["runtime-card"] : []),
+			...(args.prCloseout ? ["pr-closeout"] : []),
 		],
 		safeToRun: candidate.safeToRun,
 		requiresHuman: candidate.requiresHuman,
@@ -227,6 +315,7 @@ export function changedFilesDecision(args: {
 			sourceErrors: args.sourceErrors,
 			phaseExit: args.phaseExit,
 			runtimeCard: args.runtimeCard,
+			extra: prCloseoutDecisionMeta(args.prCloseout),
 			agentReadinessContext: args.agentReadinessContext,
 		}),
 	});

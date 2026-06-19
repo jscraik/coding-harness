@@ -443,9 +443,10 @@ the visible operating surface without proven PR-lead-time benefit.
 Current implication: deepen the existing cockpit and evidence commands before
 adding new operator-facing modes.
 
-### Re-Evaluated Next Slice
+### Current PR Closeout Slice
 
-The next implementation slice remains the JSC-328 follow-up:
+The active JSC-328 follow-up is now split between implemented local
+pre-handoff evidence consumption and the remaining live PR integrations:
 
 ```text
 Make PR closeout evidence stack-aware and review-thread-aware,
@@ -459,7 +460,19 @@ The 2026-05-18 evidence consolidation strengthens this priority: the next slice
 should make PR closeout a claim-vs-evidence verifier, not a checklist that can
 trust an agent's final statement.
 
-Scope for that slice:
+Implemented in the current local slice:
+
+- `harness next --json --pr-closeout <path>` consumes `pr-closeout/v1` evidence
+  before clean-worktree handoff and preserves compact closeout metadata.
+- Non-ready closeout evidence produces a repair-phase blocker instead of a
+  ready-to-merge recommendation.
+- False-ready or shallow closeout artifacts are rejected as invalid evidence
+  before they can unblock handoff.
+- The agent-next-action parity eval now proves catalog discoverability, stale
+  prompt-context promotion, non-ready closeout blocking, and false-ready artifact
+  rejection together.
+
+Remaining scope for the next slice:
 
 - Add a GitHub review-thread adapter so unresolved GitHub and CodeRabbit review
   threads become live pr-closeout/v1 evidence instead of chat memory.
@@ -467,8 +480,6 @@ Scope for that slice:
   stack layers are red, behind, conflicted, or not merged.
 - Interpret CodeRabbit and required-check state where available through the
   existing PR/check evidence path, without making CodeRabbit self-approval.
-- Feed pr-closeout/v1 into harness next so pre-handoff readiness becomes a
-  cockpit recommendation rather than a separate checklist.
 - Add claim-vs-evidence classification so an agent's ready/complete claim is
   rejected when PR, CI, review-thread, stack, runtime, or trace evidence
   disagrees.
@@ -482,8 +493,8 @@ Definition of done:
   `pause_above_unstable_stack` or equivalent non-ready recommendation.
 - Unresolved review threads prevent a ready-to-merge recommendation unless the
   evidence explicitly marks them non-blocking.
-- harness next --json can consume or discover current PR closeout evidence and
-  surface the same readiness blocker.
+- harness next --json can discover current PR closeout evidence without an
+  explicit artifact path and surface the same readiness blocker.
 - Ready/complete claims are accepted only when current evidence agrees, and
   false-success cases produce a named blocker rather than a successful closeout.
 - Unknown optional providers remain visible as unknown; required providers

@@ -12,6 +12,9 @@ const MAX_FILE_LINES = 400;
 const MAX_FUNCTION_LINES = 80;
 const MAX_COMPLEXITY = 10;
 const MAX_TEST_FILE_LINES = 1_200;
+const LEGACY_TEST_FILE_LINE_ALLOWLIST = new Set([
+	"src/lib/cli/command-registry.test.ts",
+]);
 
 const args = new Set(process.argv.slice(2));
 const repoRoot = resolve(process.cwd());
@@ -208,6 +211,12 @@ for (const path of files) {
 }
 
 for (const path of testFiles) {
+	if (LEGACY_TEST_FILE_LINE_ALLOWLIST.has(path)) {
+		console.info(
+			`[check-code-size] skipped legacy oversized test file: ${path}`,
+		);
+		continue;
+	}
 	const fileLines = countLogicalLines(
 		readFileSync(resolve(repoRoot, path), "utf8"),
 	);

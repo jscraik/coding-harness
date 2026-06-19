@@ -24,7 +24,7 @@ DEFAULT_REQUIRED_GATE_IDS = (
     "unit",
     "formatting",
 )
-type JsonObject = dict[str, Any]
+JsonObject = dict[str, Any]
 
 PROFILE_TO_WAVE = {
     "standard-prek-wrapper": "wave-1",

@@ -3,6 +3,7 @@ import type { HarnessDecision } from "../lib/decision/harness-decision.js";
 import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
 import type { DecisionSource } from "../lib/decision/sources.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
+import type { HarnessNextPrCloseoutEvidence } from "./next-pr-closeout.js";
 import type {
 	HarnessNextWorktreeRole,
 	HarnessNextEvidenceMode,
@@ -30,6 +31,8 @@ export interface HarnessNextOptions {
 	phaseExit?: HePhaseExit;
 	/** Optional runtime-card evidence already collected by the caller. */
 	runtimeCard?: RuntimeCard;
+	/** Optional pr-closeout/v1 evidence already collected by the caller. */
+	prCloseout?: HarnessNextPrCloseoutEvidence;
 	/** Optional orientation-only readiness context already collected by the caller. */
 	agentReadinessContext?: AgentReadinessContextHealth;
 	/** Evidence strictness for phase-exit and runtime-card inputs. */
@@ -59,6 +62,7 @@ export function runHarnessNext(
 				...(resolution.runtimeCard
 					? { runtimeCard: resolution.runtimeCard }
 					: {}),
+				...(resolution.prCloseout ? { prCloseout: resolution.prCloseout } : {}),
 				agentReadinessContext: resolution.agentReadinessContext,
 			})
 		: changedFilesDecision({
@@ -69,6 +73,7 @@ export function runHarnessNext(
 				...(resolution.runtimeCard
 					? { runtimeCard: resolution.runtimeCard }
 					: {}),
+				...(resolution.prCloseout ? { prCloseout: resolution.prCloseout } : {}),
 				agentReadinessContext: resolution.agentReadinessContext,
 			});
 }

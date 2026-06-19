@@ -99,12 +99,20 @@ const USAGE_ERROR_HANDLERS: Record<MappedUsageError, UsageErrorHandler> = {
 			failureClass: "runtime_card_missing",
 			evidenceRef: ["input:runtime-card"],
 		}),
+	pr_closeout_missing: (parsed) =>
+		blockedUsageErrorDecision({
+			mode: parsed.mode,
+			summary: "--pr-closeout requires a JSON artifact path.",
+			nextAction: "Pass a pr-closeout/v1 artifact path, or omit --pr-closeout.",
+			failureClass: "pr_closeout_missing",
+			evidenceRef: ["input:pr-closeout"],
+		}),
 	unknown_argument: (parsed) =>
 		blockedUsageErrorDecision({
 			mode: parsed.mode as HarnessNextMode,
 			summary: `Unknown next argument: ${parsed.errorValue}.`,
 			nextAction:
-				"Use harness next --json with optional --files, --phase-exit, --runtime-card, and --mode flags.",
+				"Use harness next --json with optional --files, --phase-exit, --runtime-card, --pr-closeout, and --mode flags.",
 			failureClass: "unknown_argument",
 			extra: { argument: parsed.errorValue },
 		}),
