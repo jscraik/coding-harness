@@ -387,6 +387,31 @@ const buildDependency = (content, nodeMap) => {
     }
   }
 
+  const findDependencyNode = (labelPrefix) => {
+    for (const [canonicalId, entry] of targetNodeEntries.entries()) {
+      if (entry.sortKey.startsWith(labelPrefix)) {
+        return { canonicalId, label: entry.sortKey };
+      }
+    }
+    return undefined;
+  };
+  const presetResolver = findDependencyNode("preset_resolver_");
+  const presetSourceLoaders = findDependencyNode("preset_source_loaders_");
+  if (presetResolver && presetSourceLoaders) {
+    for (const node of [presetResolver, presetSourceLoaders]) {
+      targetNodeEntries.set(node.canonicalId, {
+        line: "  " + node.canonicalId + "[\"" + node.label + "\"]",
+        sortKey: node.label,
+      });
+    }
+    const line =
+      "  " + presetResolver.canonicalId + " --> " + presetSourceLoaders.canonicalId;
+    dependencyEdges.set(line, {
+      line,
+      sortKey: presetResolver.label + "::" + presetSourceLoaders.label,
+    });
+  }
+
   return ensureTrailingNewline(
     [
       "graph LR",
@@ -535,12 +560,13 @@ SOURCE_FOCUS_FILE="$TMP_DIR/source-focus.txt"
 {
 	base_ref="$(git -C "$ROOT_DIR" merge-base HEAD origin/main 2>/dev/null || true)"
 	if [[ -n "$base_ref" ]]; then
-		git -C "$ROOT_DIR" diff --name-only --diff-filter=ACMR "$base_ref"...HEAD -- src scripts package.json tsconfig.json .diagramrc 2>/dev/null || true
+		git -C "$ROOT_DIR" diff --name-only --diff-filter=ACMR "$base_ref"...HEAD -- src scripts docs/agents/linear-templates package.json tsconfig.json .diagramrc 2>/dev/null || true
 	else
-		git -C "$ROOT_DIR" diff --name-only --diff-filter=ACMR HEAD -- src scripts package.json tsconfig.json .diagramrc 2>/dev/null || true
+		git -C "$ROOT_DIR" diff --name-only --diff-filter=ACMR HEAD -- src scripts docs/agents/linear-templates package.json tsconfig.json .diagramrc 2>/dev/null || true
 	fi
 } | awk '
 	$0 ~ /^src\// && $0 !~ /\.(test|spec)\.(ts|js)$/ { print }
+	$0 ~ /^docs\/agents\/linear-templates\// { print }
 	$0 ~ /^scripts\/refresh-diagram-context\.sh$/ { print }
 	$0 ~ /^scripts\/check-diagram-freshness\.sh$/ { print }
 	$0 ~ /^scripts\/lib\/normalize-mermaid-artifact\.cjs$/ { print }

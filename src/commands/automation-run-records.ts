@@ -32,10 +32,10 @@ export function createRunRecordWriter(
 	options: AutomationRunOptions,
 	startedAt: string,
 ): (params: RunRecordParams) => string | null {
-	const contractPath = resolve(options.repo, "harness.contract.json");
-	const contractHash = hashLocalContract(contractPath);
+	const contractPath = resolve("harness.contract.json");
 	return (params) => {
 		try {
+			const contractHash = hashLocalContract(contractPath);
 			emitTerminalRunRecord({
 				command: "automation-run",
 				startedAt,
