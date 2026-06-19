@@ -1429,6 +1429,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_preset_detection_b0f00a17_4f7c5082
   ext_node_path_78811c13["node:path"] --> node_preset_resolver_dc3dd716_3f747c75
   ext_node_path_78811c13["node:path"] --> node_preset_source_loaders_a8cd7c1c_01f5a3a0
+  node_preset_resolver_dc3dd716_3f747c75 --> node_preset_source_loaders_a8cd7c1c_01f5a3a0
   ext_node_path_78811c13["node:path"] --> node_prompt_context_drift_report_3257a95c_01f8c3e1
   ext_node_path_78811c13["node:path"] --> node_provider_adapter_3bcf82b7_3ce4cf67
   ext_node_path_78811c13["node:path"] --> node_quality_scorer_362f2a90_2a086a0b
@@ -1533,6 +1534,7 @@ graph LR
   ext_node_url_d0cb3ad7["node:url"] --> node_gate_c974e17b_07549baf
   ext_node_url_d0cb3ad7["node:url"] --> node_health_core_2b2fdada_341de678
   ext_node_url_d0cb3ad7["node:url"] --> node_preset_resolver_dc3dd716_3f747c75
+  node_preset_resolver_dc3dd716_3f747c75 --> node_preset_source_loaders_a8cd7c1c_01f5a3a0
   ext_node_url_d0cb3ad7["node:url"] --> node_repo_bound_paths_e218b5b3_216d0eb0
   ext_node_url_d0cb3ad7["node:url"] --> node_run_e2e_39efe696_fb07ee74
   ext_node_url_d0cb3ad7["node:url"] --> node_run_harness_evals_77704768_ba42904d
