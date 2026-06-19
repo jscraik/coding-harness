@@ -105,6 +105,72 @@ describe("buildObservedCircleCiTelemetry", () => {
 		});
 	});
 
+	it("maps CircleCI API failure statuses and job names into eval seeds", () => {
+		const root = makeRoot();
+		writeFileSync(
+			join(root, "workflow-jobs.json"),
+			JSON.stringify({
+				items: [
+					{
+						name: "test",
+						job_number: 456,
+						status: "timedout",
+						message: "Timed out waiting for tests",
+					},
+					{
+						name: "dependency-scan",
+						job_number: 457,
+						status: "infrastructure_fail",
+						message: "CircleCI infrastructure failure",
+					},
+					{
+						name: "lint",
+						job_number: 458,
+						status: "terminated-unknown",
+						message: "Terminated before completion",
+					},
+					{
+						name: "typecheck",
+						job_number: 459,
+						status: "failing",
+						message: "TS2345",
+					},
+				],
+			}),
+		);
+
+		const artifact = buildObservedCircleCiTelemetry({
+			repoRoot: root,
+			circleciTelemetryRoot: root,
+			generatedAt: "2026-06-19T00:00:00.000Z",
+		});
+
+		expect(artifact.summary).toMatchObject({
+			jobsObserved: 4,
+			failedJobs: 4,
+			candidateEvalSeeds: 4,
+		});
+		expect(artifact.jobs.map((job) => job.jobName)).toEqual([
+			"test",
+			"dependency-scan",
+			"lint",
+			"typecheck",
+		]);
+		expect(artifact.jobs.map((job) => job.checkName)).toEqual([
+			"ci/circleci: test",
+			"ci/circleci: dependency-scan",
+			"ci/circleci: lint",
+			"ci/circleci: typecheck",
+		]);
+		expect(artifact.jobs.every((job) => job.status === "fail")).toBe(true);
+		expect(artifact.jobs.every((job) => job.candidateEvalSeed)).toBe(true);
+		expect(artifact.summary.failureClasses).toMatchObject({
+			circleci_job_failure: 2,
+			circleci_network_blocked: 1,
+			typescript_error: 1,
+		});
+	});
+
 	it("redacts persisted header-style credentials and blocked failure classes", () => {
 		const root = makeRoot();
 		writeFileSync(
