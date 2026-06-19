@@ -170,6 +170,7 @@ export async function loadRemotePreset(args: {
 		args.cache.set(cacheKey, contract);
 		return contract;
 	} catch (error) {
+	} catch (error) {
 		if (error instanceof PresetFetchError) throw error;
 		if (error instanceof IntegrityError) throw error;
 		const message = error instanceof Error ? error.message : "Unknown error";
