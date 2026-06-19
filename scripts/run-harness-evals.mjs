@@ -3159,9 +3159,13 @@ function runReviewGateCheckNameAlignmentFixture(scenario, fixturePath) {
  */
 function runRequiredCheckNameParityFixture(scenario, fixturePath) {
 	const contractChecks = [
-		{ name: "ci/circleci: test", owner: "CircleCI", lane: "primary_ci" },
+		{ name: "pr-pipeline", owner: "CircleCI", lane: "primary_ci" },
 		{ name: "CodeRabbit", owner: "CodeRabbit", lane: "independent_review" },
-		{ name: "security/snyk", owner: "Snyk", lane: "security" },
+		{
+			name: "security/semgrep-cloud-platform/scan",
+			owner: "Semgrep Cloud",
+			lane: "security",
+		},
 	];
 	const observedChecks = [
 		...contractChecks,
@@ -3190,7 +3194,7 @@ function runRequiredCheckNameParityFixture(scenario, fixturePath) {
 		),
 		assertion(
 			"Semgrep Cloud remains independent external security check",
-			parity.securityLane === "Snyk",
+			parity.securityLane === "Semgrep Cloud",
 		),
 		assertion(
 			"GitHub Actions fallback is not promoted into required gates",
@@ -4783,7 +4787,30 @@ function evaluateImplementationAgainstSource(
 		mismatches,
 		missingAssumptions,
 		specChanges,
+		evidenceRefs: specLoopEvidenceRefs({
+			sourceBehavior,
+			spec,
+			implementation,
+			mismatches,
+			missingAssumptions,
+		}),
 	};
+}
+
+function specLoopEvidenceRefs({
+	sourceBehavior,
+	spec,
+	implementation,
+	mismatches,
+	missingAssumptions,
+}) {
+	return [
+		`fixture:source-behavior#${sourceBehavior.behaviorId}`,
+		`fixture:spec#rules=${spec.rules.length}`,
+		`fixture:implementation#decisions=${implementation.decisions.length}`,
+		...mismatches.map((item) => `fixture:mismatch#${item.id}`),
+		...missingAssumptions.map((id) => `fixture:missing-assumption#${id}`),
+	];
 }
 
 /**
@@ -5449,7 +5476,7 @@ function verifyExpectedFixtureArtifacts(result, scenario, fixturePath) {
 function validateFixtureArtifactSchema(artifactPath, contract, fixturePath) {
 	const absolutePath = path.resolve(REPO_ROOT, artifactPath);
 	if (
-		!absolutePath.startsWith(path.resolve(fixturePath)) ||
+		!isPathInside(absolutePath, path.resolve(fixturePath)) ||
 		!artifactPath.endsWith(".json")
 	) {
 		return false;

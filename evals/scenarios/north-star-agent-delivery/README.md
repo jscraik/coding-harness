@@ -135,16 +135,27 @@ The local runner never requires Braintrust credentials. External sink failures m
 
 Observed telemetry feeds stay outside the deterministic runner and are
 normalized into repo-local artifacts first. The observed usage collector reads
-session evidence and optional CircleCI telemetry under `~/.agents/circleci`
-or `CIRCLECI_TELEMETRY_ROOT`, then writes:
+session evidence and optional repo-contained CircleCI telemetry under
+`artifacts/evals/circleci-telemetry` or `CIRCLECI_TELEMETRY_ROOT`, then writes:
 
 - `artifacts/evals/observed-skill-usage.json`
 - `artifacts/evals/observed-skill-usage-summary.md`
 - `artifacts/evals/observed-circleci-feed.json`
 
-CircleCI telemetry is redacted and bounded before persistence. It can seed new
-fixtures or tuning recommendations, but `pnpm test:evals` does not depend on
-live CircleCI or machine-local telemetry state.
+Run the collector manually with a local telemetry root:
+
+```bash
+pnpm run observed:eval-usage -- --plugin-eval-budget none --circleci-telemetry-root <circleci-telemetry-root> --circleci-output artifacts/evals/observed-circleci-feed.json --json
+```
+
+CircleCI telemetry is redacted, repo-contained, and bounded before persistence.
+It can seed new fixtures or tuning recommendations, but `pnpm test:evals` does
+not depend on live CircleCI or machine-local telemetry state. Missing telemetry
+writes an artifact with `source.status: unavailable`, zero observed jobs, and the
+configured output path when requested. Malformed JSON/JSONL records, unreadable
+files, and unreadable directories are skipped rather than blocking the
+deterministic eval lane. Telemetry roots or output paths that escape `repoRoot`
+fail fast instead of scanning or writing outside the checkout.
 
 ## Guardrail Effectiveness
 
@@ -157,7 +168,7 @@ Live fixture results may include staged guardrail evidence:
 - `feedback`: durable learning, skip reason, or operator handoff evidence
 
 The result summary aggregates false positives, false negatives, stage failures,
-and precision/recall for fixtures that emit classification metrics. This keeps
+and precision/recall when fixtures emit classification metrics. This keeps
 the eval focused on what kind of guardrail mistake occurred rather than only
 whether a scenario passed.
 

@@ -1,12 +1,23 @@
 import {
 	existsSync,
 	mkdirSync,
-	readdirSync,
 	readFileSync,
 	statSync,
 	writeFileSync,
 } from "node:fs";
-import { dirname, extname, join, resolve } from "node:path";
+import { basename, dirname, extname, join, resolve } from "node:path";
+import {
+	arrayStrings,
+	firstArray,
+	firstString,
+	isPathInside,
+	isRecord,
+	redactSecrets,
+	safeReadDir,
+	safeLabel,
+	shouldInspectTelemetry,
+	uniqueStrings,
+} from "./observed-circleci-telemetry-support.js";
 
 /** Schema version for sanitized CircleCI observed-eval feeds. */
 export const OBSERVED_CIRCLECI_TELEMETRY_SCHEMA_VERSION =
@@ -95,7 +106,7 @@ export function buildObservedCircleCiTelemetry(
 ): ObservedCircleCiTelemetryArtifact {
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
 	const sourceRoot = options.circleciTelemetryRoot
-		? resolve(options.circleciTelemetryRoot)
+		? resolveRepoPath(repoRoot, options.circleciTelemetryRoot)
 		: null;
 	const jobs = sourceRoot ? collectJobs(sourceRoot) : [];
 	const artifact: ObservedCircleCiTelemetryArtifact = {
@@ -151,13 +162,16 @@ function collectJobs(sourceRoot: string): ObservedCircleCiJob[] {
 function telemetryFiles(sourceRoot: string): string[] {
 	const files: string[] = [];
 	const pending = [sourceRoot];
-	while (pending.length > 0 && files.length < MAX_FILES) {
+	let inspected = 0;
+	while (shouldInspectTelemetry(pending, files, inspected)) {
 		const current = pending.shift();
 		if (!current) break;
+		inspected += 1;
 		const stat = safeStat(current);
 		if (!stat) continue;
 		if (stat.isDirectory()) {
-			for (const entry of readdirSync(current).sort()) {
+			for (const entry of safeReadDir(current)) {
+				if (pending.length + files.length >= MAX_FILES) break;
 				pending.push(join(current, entry));
 			}
 			continue;
@@ -178,7 +192,12 @@ function safeStat(path: string) {
 }
 
 function recordsFromFile(filePath: string): Record<string, unknown>[] {
-	const content = readFileSync(filePath, "utf8");
+	let content: string;
+	try {
+		content = readFileSync(filePath, "utf8");
+	} catch {
+		return [];
+	}
 	const parsed =
 		extname(filePath) === ".json"
 			? parseJson(content)
@@ -217,7 +236,8 @@ function normalizeJob(
 	value: Record<string, unknown>,
 	index: number,
 ): ObservedCircleCiJob | null {
-	const jobName = firstString(value, ["jobName", "job_name", "name"]);
+	if (!hasCircleCiJobIdentity(value)) return null;
+	const jobName = firstString(value, ["jobName", "job_name"]);
 	const workflowName = firstString(value, ["workflowName", "workflow_name"]);
 	const status = normalizeStatus(
 		firstString(value, ["status", "outcome", "conclusion"]),
@@ -244,6 +264,17 @@ function normalizeJob(
 			? `circleci-${failureClass.replaceAll("_", "-")}`
 			: null,
 	};
+}
+
+function hasCircleCiJobIdentity(value: Record<string, unknown>): boolean {
+	return (
+		firstString(value, ["jobName", "job_name"]) !== null ||
+		firstString(value, ["checkName", "check_name"]) !== null ||
+		firstString(value, ["workflowName", "workflow_name"]) !== null ||
+		firstString(value, ["jobNumber", "job_number", "build_num"]) !== null ||
+		firstString(value, ["pipelineId", "pipeline_id"]) !== null ||
+		firstString(value, ["workflowId", "workflow_id"]) !== null
+	);
 }
 
 function normalizeStatus(value: string | null): ObservedCircleCiJob["status"] {
@@ -273,7 +304,9 @@ function classifyFailure(
 }
 
 function evidenceRefs(record: Record<string, unknown>): string[] {
-	const refs = arrayStrings(record.evidenceRefs ?? record.evidence_refs);
+	const refs = arrayStrings(record.evidenceRefs ?? record.evidence_refs).map(
+		redactSecrets,
+	);
 	const jobNumber = firstString(record, [
 		"jobNumber",
 		"job_number",
@@ -284,7 +317,7 @@ function evidenceRefs(record: Record<string, unknown>): string[] {
 		...refs,
 		...(jobNumber ? [`circleci://build/${jobNumber}`] : []),
 		...(sourcePath
-			? [`local-circleci-telemetry://${sourcePath.split("/").pop()}`]
+			? [`local-circleci-telemetry://${basename(sourcePath)}`]
 			: []),
 	]);
 }
@@ -305,19 +338,6 @@ function redactedExcerpt(record: Record<string, unknown>): string | null {
 		.slice(0, EXCERPT_MAX_CHARS);
 }
 
-function redactSecrets(value: string): string {
-	return value
-		.replace(
-			/\b([A-Z0-9_]*(?:TOKEN|KEY|SECRET|PASSWORD)[A-Z0-9_]*)=\S+/gi,
-			"$1=<redacted>",
-		)
-		.replace(/Circle-Token:\s*\S+/gi, "Circle-Token: <redacted>")
-		.replace(
-			/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,
-			"<redacted-jwt>",
-		);
-}
-
 function summarizeJobs(
 	jobs: ObservedCircleCiJob[],
 ): ObservedCircleCiTelemetryArtifact["summary"] {
@@ -331,7 +351,10 @@ function summarizeJobs(
 	return {
 		jobsObserved: jobs.length,
 		failedJobs: jobs.filter((job) => job.status === "fail").length,
-		blockedJobs: jobs.filter((job) => job.status === "blocked").length,
+		blockedJobs: jobs.filter(
+			(job) =>
+				job.status === "blocked" || job.failureClass?.endsWith("_blocked"),
+		).length,
 		candidateEvalSeeds: jobs.filter((job) => job.candidateEvalSeed).length,
 		failureClasses,
 	};
@@ -342,56 +365,21 @@ function writeArtifact(
 	outputPath: string,
 	artifact: ObservedCircleCiTelemetryArtifact,
 ): void {
-	const absolute = resolve(repoRoot, outputPath);
+	const absolute = resolveRepoPath(repoRoot, outputPath);
 	mkdirSync(dirname(absolute), { recursive: true });
 	writeFileSync(absolute, `${JSON.stringify(artifact, null, 2)}\n`);
 }
 
+function resolveRepoPath(repoRoot: string, requestedPath: string): string {
+	const absolute = resolve(repoRoot, requestedPath);
+	if (!isPathInside(repoRoot, absolute)) {
+		throw new Error(
+			"Observed CircleCI telemetry paths must stay inside repoRoot.",
+		);
+	}
+	return absolute;
+}
+
 function checkName(jobName: string | null): string | null {
 	return jobName ? `ci/circleci: ${jobName}` : null;
-}
-
-function firstString(
-	record: Record<string, unknown>,
-	keys: string[],
-): string | null {
-	for (const key of keys) {
-		const value = record[key];
-		if (typeof value === "string" && value.trim() !== "") return value.trim();
-		if (typeof value === "number" || typeof value === "boolean") {
-			return String(value);
-		}
-	}
-	return null;
-}
-
-function firstArray(
-	record: Record<string, unknown>,
-	keys: string[],
-): unknown[] | null {
-	for (const key of keys) {
-		const value = record[key];
-		if (Array.isArray(value)) return value;
-	}
-	return null;
-}
-
-function arrayStrings(value: unknown): string[] {
-	if (!Array.isArray(value)) return [];
-	return value.filter((item): item is string => typeof item === "string");
-}
-
-function uniqueStrings(values: string[]): string[] {
-	return [...new Set(values.filter(Boolean))];
-}
-
-function safeLabel(value: string): string {
-	return value
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, "_")
-		.replace(/^_+|_+$/g, "");
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
 }

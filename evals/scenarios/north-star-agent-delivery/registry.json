@@ -634,7 +634,7 @@
 				"commands": [
 					"pnpm test:evals",
 					"gh pr checks",
-					"curl -fsSL -H \"Circle-Token: $CIRCLECI_CLI_TOKEN\" https://circleci.com/api/v1.1/project/gh/<org>/<repo>/<build-number>/output | jq -r '.[] | .message'",
+					"pnpm run observed:eval-usage -- --plugin-eval-budget none --circleci-telemetry-root <fixture-circleci-telemetry> --circleci-output artifacts/evals/observed-circleci-feed.json --json",
 					"harness validation-plan --json"
 				],
 				"artifacts": [
@@ -838,7 +838,7 @@
 			"expected": {
 				"commands": [
 					"pnpm test:evals",
-					"targeted regression test",
+					"pnpm vitest run src/lib/evals/observed-circleci-telemetry.test.ts",
 					"bash scripts/check-diagram-freshness.sh"
 				],
 				"artifacts": [

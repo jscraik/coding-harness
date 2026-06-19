@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-19T12:41:16Z
+Generated: 2026-06-19T14:54:33Z
 
 ## Table of Contents
 
@@ -29,6 +29,7 @@ Generated: 2026-06-19T12:41:16Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
+- `src/lib/evals/observed-circleci-telemetry-support.ts`
 - `src/lib/evals/observed-circleci-telemetry.ts`
 
 ## agent
@@ -734,6 +735,7 @@ graph LR
   node_north_star_artifact_io_9f2c34b2_6490caba["north_star_artifact_io_9f2c34b2"]
   node_north_star_feedback_1_9c32c60d_b0cd38dc["north_star_feedback_1_9c32c60d"]
   node_observed_circleci_telemetry_d3fd7f78_8b45a4f9["observed_circleci_telemetry_d3fd7f78"]
+  node_observed_circleci_telemetry_support_10d1ee3b_8e5efa66["observed_circleci_telemetry_support_10d1ee3b"]
   node_observed_skill_usage_ed7d5930_7f7edbe6["observed_skill_usage_ed7d5930"]
   node_org_audit_d739e44b_e522723c["org_audit_d739e44b"]
   node_overload_guard_2748c559_3eff560b["overload_guard_2748c559"]
@@ -1111,6 +1113,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_north_star_artifact_io_9f2c34b2_6490caba
   ext_node_fs_a15b7d96["node:fs"] --> node_north_star_feedback_1_9c32c60d_b0cd38dc
   ext_node_fs_a15b7d96["node:fs"] --> node_observed_circleci_telemetry_d3fd7f78_8b45a4f9
+  ext_node_fs_a15b7d96["node:fs"] --> node_observed_circleci_telemetry_support_10d1ee3b_8e5efa66
   ext_node_fs_a15b7d96["node:fs"] --> node_observed_skill_usage_ed7d5930_7f7edbe6
   ext_node_fs_a15b7d96["node:fs"] --> node_org_audit_d739e44b_e522723c
   ext_node_fs_a15b7d96["node:fs"] --> node_overrides_ab2dd33e_6115e15e
@@ -1360,6 +1363,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_north_star_artifact_io_9f2c34b2_6490caba
   ext_node_path_78811c13["node:path"] --> node_north_star_feedback_1_9c32c60d_b0cd38dc
   ext_node_path_78811c13["node:path"] --> node_observed_circleci_telemetry_d3fd7f78_8b45a4f9
+  ext_node_path_78811c13["node:path"] --> node_observed_circleci_telemetry_support_10d1ee3b_8e5efa66
   ext_node_path_78811c13["node:path"] --> node_observed_skill_usage_ed7d5930_7f7edbe6
   ext_node_path_78811c13["node:path"] --> node_org_audit_d739e44b_e522723c
   ext_node_path_78811c13["node:path"] --> node_overrides_ab2dd33e_6115e15e

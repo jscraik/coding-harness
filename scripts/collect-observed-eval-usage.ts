@@ -44,7 +44,7 @@ const DEFAULT_SESSION_COLLECTOR_ROOT =
 	process.env.SESSION_COLLECTOR_ROOT ??
 	join(homedir(), ".agents/session-collector");
 const DEFAULT_CIRCLECI_TELEMETRY_ROOT =
-	process.env.CIRCLECI_TELEMETRY_ROOT ?? join(homedir(), ".agents/circleci");
+	process.env.CIRCLECI_TELEMETRY_ROOT ?? "artifacts/evals/circleci-telemetry";
 
 function parseArgs(argv: string[]): CliOptions {
 	const options: CliOptions = {
@@ -69,7 +69,8 @@ function parseArgs(argv: string[]): CliOptions {
 	for (let index = 0; index < argv.length; index += 1) {
 		const arg = argv[index];
 		if (arg === "--") {
-			continue;
+			options.gitPaths.push(...argv.slice(index + 1));
+			break;
 		}
 		if (arg === "--run-session-collector") {
 			options.runSessionCollector = true;
@@ -464,7 +465,7 @@ function main(): void {
 		process.stdout.write(
 			`${JSON.stringify(
 				{
-					observedSkillUsage: artifact,
+					...artifact,
 					circleciTelemetry: circleci,
 				},
 				null,
