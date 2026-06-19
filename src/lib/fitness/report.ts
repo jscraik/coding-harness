@@ -1,4 +1,12 @@
 import { readFileSync } from "node:fs";
+import {
+	applyFitnessArtifactReports,
+	BEHAVIOR_LANE_ID,
+	conventionalArtifactPath,
+	FEEDBACK_LANE_ID,
+	type FitnessArtifactReportOptions,
+	QUALITY_LANE_ID,
+} from "./artifact-normalizers.js";
 import type {
 	FitnessEnforcement,
 	FitnessFinding,
@@ -21,7 +29,8 @@ interface ArchitectureCheckReport {
 }
 
 /** Public API export. */
-export interface BuildFitnessReportOptions {
+export interface BuildFitnessReportOptions
+	extends FitnessArtifactReportOptions {
 	architectureReportPath?: string;
 	now?: Date;
 }
@@ -41,7 +50,7 @@ function createBaseLanes(): FitnessLane[] {
 			findings: [],
 		},
 		{
-			id: "quality-budget",
+			id: QUALITY_LANE_ID,
 			label: "Quality budget",
 			command: "pnpm run quality:size",
 			principle: "reduce_cognitive_load",
@@ -51,7 +60,7 @@ function createBaseLanes(): FitnessLane[] {
 			findings: [],
 		},
 		{
-			id: "behavior-proof",
+			id: BEHAVIOR_LANE_ID,
 			label: "Behavior proof",
 			command: "pnpm run quality:behavior-tests",
 			principle: "prove_behavior_outcomes",
@@ -61,11 +70,11 @@ function createBaseLanes(): FitnessLane[] {
 			findings: [],
 		},
 		{
-			id: "feedback-learning",
+			id: FEEDBACK_LANE_ID,
 			label: "Feedback learning",
 			command: "pnpm run harness:audit-tracking",
 			principle: "compound_feedback_to_harness",
-			enforcement: "advisory",
+			enforcement: "hard_blocker",
 			status: "not_run",
 			evidenceSource: "package.json scripts.harness:audit-tracking",
 			findings: [],
@@ -169,42 +178,80 @@ function reportStatus(lanes: readonly FitnessLane[]): FitnessReport["status"] {
 	return "pass";
 }
 
+function applyArchitectureArtifact(
+	lanes: FitnessLane[],
+	options: BuildFitnessReportOptions,
+): void {
+	const path = conventionalArtifactPath(
+		options.artifactsDir,
+		options.architectureReportPath,
+		"architecture.json",
+	);
+	const architectureLane = lanes.find(
+		(lane) => lane.id === ARCHITECTURE_LANE_ID,
+	);
+	if (!path || !architectureLane) return;
+	architectureLane.findings = normalizeArchitectureReport(path);
+	architectureLane.status = architectureLaneStatus(architectureLane.findings);
+	architectureLane.evidenceSource = path;
+}
+
+function fitnessSummary(
+	lanes: readonly FitnessLane[],
+	findings: readonly FitnessFinding[],
+): FitnessReport["summary"] {
+	return {
+		lanes: lanes.length,
+		findings: findings.length,
+		failures: findings.filter(
+			(finding) =>
+				finding.severity === "critical" || finding.severity === "error",
+		).length,
+		warnings: findings.filter((finding) => finding.severity === "warning")
+			.length,
+		lanesNeedingEvidence: lanes.filter((lane) => lane.status === "not_run")
+			.length,
+	};
+}
+
+const FITNESS_SEVERITY_RANK: Record<FitnessFinding["severity"], number> = {
+	critical: 0,
+	error: 1,
+	warning: 2,
+	info: 3,
+};
+
+/** Select the highest-priority non-advisory fitness finding. */
+export function selectTopDeterministicFitnessFinding(
+	findings: readonly FitnessFinding[],
+): FitnessFinding | null {
+	const deterministicFindings = findings.filter(
+		(finding) => finding.enforcement !== "advisory",
+	);
+	return (
+		[...deterministicFindings].sort(
+			(left, right) =>
+				FITNESS_SEVERITY_RANK[left.severity] -
+				FITNESS_SEVERITY_RANK[right.severity],
+		)[0] ?? null
+	);
+}
+
 /** Build a normalized repository fitness report over existing harness gates. */
 export function buildFitnessReport(
 	options: BuildFitnessReportOptions = {},
 ): FitnessReport {
 	const lanes = createBaseLanes();
-	const architectureLane = lanes.find(
-		(lane) => lane.id === ARCHITECTURE_LANE_ID,
-	);
-	if (options.architectureReportPath && architectureLane) {
-		architectureLane.findings = normalizeArchitectureReport(
-			options.architectureReportPath,
-		);
-		architectureLane.status = architectureLaneStatus(architectureLane.findings);
-		architectureLane.evidenceSource = options.architectureReportPath;
-	}
+	applyArchitectureArtifact(lanes, options);
+	applyFitnessArtifactReports(lanes, options);
 	const findings = lanes.flatMap((lane) => lane.findings);
-	const failures = findings.filter(
-		(finding) =>
-			finding.severity === "critical" || finding.severity === "error",
-	).length;
-	const warnings = findings.filter(
-		(finding) => finding.severity === "warning",
-	).length;
 	return {
 		schemaVersion: "harness-fitness/v1",
 		status: reportStatus(lanes),
 		generatedAt: (options.now ?? new Date()).toISOString(),
-		summary: {
-			lanes: lanes.length,
-			findings: findings.length,
-			failures,
-			warnings,
-			lanesNeedingEvidence: lanes.filter((lane) => lane.status === "not_run")
-				.length,
-		},
+		summary: fitnessSummary(lanes, findings),
 		lanes,
+		topDeterministicFinding: selectTopDeterministicFitnessFinding(findings),
 		claimBoundaries: [
 			"Fitness reports normalize local gate evidence only.",
 			"Run the referenced commands before using a lane as proof.",

@@ -20,6 +20,7 @@ const args = new Set(process.argv.slice(2));
 const repoRoot = resolve(process.cwd());
 const modeAll = args.has("--all");
 const modeStaged = args.has("--staged");
+const json = args.has("--json");
 
 function isProductionSource(path) {
 	return (
@@ -200,7 +201,7 @@ const testFiles = changedPaths
 	.filter(isTestSource)
 	.sort((a, b) => a.localeCompare(b));
 
-if (files.length === 0) {
+if (files.length === 0 && !json) {
 	console.info("[check-code-size] no changed production source files.");
 }
 
@@ -212,9 +213,10 @@ for (const path of files) {
 
 for (const path of testFiles) {
 	if (LEGACY_TEST_FILE_LINE_ALLOWLIST.has(path)) {
-		console.info(
-			`[check-code-size] skipped legacy oversized test file: ${path}`,
-		);
+		if (!json)
+			console.info(
+				`[check-code-size] skipped legacy oversized test file: ${path}`,
+			);
 		continue;
 	}
 	const fileLines = countLogicalLines(
@@ -230,15 +232,47 @@ for (const path of testFiles) {
 }
 
 if (findings.length > 0) {
-	console.error("[check-code-size] code size limits exceeded:");
-	for (const finding of findings) {
-		console.error(
-			`  ${relative(repoRoot, resolve(repoRoot, finding.path))}:${finding.line} ${finding.message}`,
+	if (json) {
+		console.info(
+			JSON.stringify(
+				{
+					schemaVersion: "quality-size/v1",
+					status: "fail",
+					checkedProductionFiles: files.length,
+					checkedTestFiles: testFiles.length,
+					findings,
+				},
+				null,
+				2,
+			),
 		);
+	} else {
+		console.error("[check-code-size] code size limits exceeded:");
+		for (const finding of findings) {
+			console.error(
+				`  ${relative(repoRoot, resolve(repoRoot, finding.path))}:${finding.line} ${finding.message}`,
+			);
+		}
 	}
 	process.exit(1);
 }
 
-console.info(
-	`[check-code-size] checked ${files.length} production file(s), reviewed ${testFiles.length} test file(s); size and complexity limits passed.`,
-);
+if (json) {
+	console.info(
+		JSON.stringify(
+			{
+				schemaVersion: "quality-size/v1",
+				status: "pass",
+				checkedProductionFiles: files.length,
+				checkedTestFiles: testFiles.length,
+				findings: [],
+			},
+			null,
+			2,
+		),
+	);
+} else {
+	console.info(
+		`[check-code-size] checked ${files.length} production file(s), reviewed ${testFiles.length} test file(s); size and complexity limits passed.`,
+	);
+}

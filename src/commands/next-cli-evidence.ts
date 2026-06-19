@@ -4,6 +4,7 @@ import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
 import type { parseNextArgs } from "./next-args.js";
 import { loadPhaseExitArtifact } from "./next-phase-exit.js";
+import { loadFitnessReportArtifact } from "./next-fitness-report.js";
 import {
 	discoverPrCloseoutArtifactPath,
 	loadPrCloseoutArtifact,
@@ -51,6 +52,14 @@ export function loadNextCliEvidence(
 		);
 		if ("decision" in loadedPrCloseout) return loadedPrCloseout.decision;
 		setters.setPrCloseout(loadedPrCloseout.prCloseout);
+	}
+	if (parsed.fitnessReportPath !== undefined) {
+		const loadedFitnessReport = loadFitnessReportArtifact(
+			repoRoot,
+			parsed.fitnessReportPath,
+			parsed.mode,
+		);
+		if ("decision" in loadedFitnessReport) return loadedFitnessReport.decision;
 	}
 	return undefined;
 }

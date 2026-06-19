@@ -21,6 +21,7 @@ export interface ParsedNextArgs {
 	phaseExitPath?: string;
 	runtimeCardPath?: string;
 	prCloseoutPath?: string;
+	fitnessReportPath?: string;
 	error?:
 		| "invalid_mode"
 		| "mode_missing"
@@ -29,6 +30,7 @@ export interface ParsedNextArgs {
 		| "phase_exit_missing"
 		| "runtime_card_missing"
 		| "pr_closeout_missing"
+		| "fitness_report_missing"
 		| "evidence_missing"
 		| "evidence_invalid"
 		| "worktree_role_invalid"
@@ -47,6 +49,7 @@ interface NextArgsState {
 	phaseExitPath?: string;
 	runtimeCardPath?: string;
 	prCloseoutPath?: string;
+	fitnessReportPath?: string;
 }
 
 type NextArgParseResult = { nextIndex: number } | { parsed: ParsedNextArgs };
@@ -55,7 +58,11 @@ type NextArgHandler = (
 	args: string[],
 	index: number,
 ) => NextArgParseResult;
-type ArtifactPathKey = "phaseExitPath" | "runtimeCardPath" | "prCloseoutPath";
+type ArtifactPathKey =
+	| "phaseExitPath"
+	| "runtimeCardPath"
+	| "prCloseoutPath"
+	| "fitnessReportPath";
 type ArtifactMissingError = ParsedNextArgs["error"] & `${string}_missing`;
 /** Return whether a string is a supported `harness next` mode. */
 export function isHarnessNextMode(value: string): value is HarnessNextMode {
@@ -102,6 +109,9 @@ function stateToParsed(
 			: {}),
 		...(state.prCloseoutPath !== undefined
 			? { prCloseoutPath: state.prCloseoutPath }
+			: {}),
+		...(state.fitnessReportPath !== undefined
+			? { fitnessReportPath: state.fitnessReportPath }
 			: {}),
 		...overrides,
 	};
@@ -221,6 +231,14 @@ const NEXT_ARG_HANDLERS: Record<string, NextArgHandler> = {
 			index,
 			"prCloseoutPath",
 			"pr_closeout_missing",
+		),
+	"--fitness-report": (state, args, index) =>
+		parseArtifactArg(
+			state,
+			args,
+			index,
+			"fitnessReportPath",
+			"fitness_report_missing",
 		),
 };
 

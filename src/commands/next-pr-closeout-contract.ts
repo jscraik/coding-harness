@@ -181,6 +181,47 @@ function hasReadyPrCloseoutClaims(report: Partial<PrCloseoutReport>): boolean {
 	return READY_PR_CLOSEOUT_CLAIMS.size === claims.size;
 }
 
+function hasReadyPrCloseoutHarnessGates(
+	report: Partial<PrCloseoutReport>,
+): boolean {
+	const harnessGates = report.harnessGates;
+	if (!isObjectRecord(harnessGates)) return false;
+	if (
+		harnessGates.evidenceSource !== "closeout_gates" ||
+		harnessGates.closeoutGatesPresent !== true ||
+		harnessGates.commitAllowed !== true ||
+		harnessGates.exitAllowed !== true ||
+		!Array.isArray(harnessGates.gates) ||
+		harnessGates.gates.length === 0
+	) {
+		return false;
+	}
+	return harnessGates.gates.every((gate) => {
+		if (!isObjectRecord(gate)) return false;
+		if (gate.required !== true) return true;
+		return gate.status === "pass" || gate.status === "not_applicable";
+	});
+}
+
+function hasReadyPrCloseoutCheckCounts(
+	report: Partial<PrCloseoutReport>,
+): boolean {
+	return (
+		report.checks?.failed === 0 &&
+		report.checks.pending === 0 &&
+		report.checks.unknown === 0
+	);
+}
+
+function hasReadyPrCloseoutReviewCounts(
+	report: Partial<PrCloseoutReport>,
+): boolean {
+	return (
+		report.reviewThreads?.unresolved === 0 &&
+		report.reviewThreads.needsHuman === 0
+	);
+}
+
 function hasReadyPrCloseoutConsistency(
 	report: Partial<PrCloseoutReport>,
 ): boolean {
@@ -188,12 +229,11 @@ function hasReadyPrCloseoutConsistency(
 	if (!report.mergeable || report.nextAction !== "ready_to_merge") return false;
 	if ((report.blockers?.length ?? 0) > 0) return false;
 	if (!hasReadyPrCloseoutClaims(report)) return false;
+	if (report.traceability?.complete !== true) return false;
+	if (!hasReadyPrCloseoutHarnessGates(report)) return false;
 	return (
-		report.checks?.failed === 0 &&
-		report.checks.pending === 0 &&
-		report.checks.unknown === 0 &&
-		report.reviewThreads?.unresolved === 0 &&
-		report.reviewThreads.needsHuman === 0
+		hasReadyPrCloseoutCheckCounts(report) &&
+		hasReadyPrCloseoutReviewCounts(report)
 	);
 }
 

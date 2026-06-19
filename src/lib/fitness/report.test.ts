@@ -33,6 +33,7 @@ describe("buildFitnessReport", () => {
 			"pnpm run quality:behavior-tests",
 			"pnpm run harness:audit-tracking",
 		]);
+		expect(report.topDeterministicFinding).toBeNull();
 	});
 
 	it("normalizes architecture check violations into fitness findings", () => {
@@ -81,6 +82,11 @@ describe("buildFitnessReport", () => {
 				recommendedCommand: "pnpm architecture:check",
 			}),
 		);
+		expect(report.topDeterministicFinding).toEqual(
+			expect.objectContaining({
+				recommendedCommand: "pnpm architecture:check",
+			}),
+		);
 	});
 
 	it("keeps missing evidence explicit when supplied lanes only warn", () => {
@@ -113,5 +119,101 @@ describe("buildFitnessReport", () => {
 		expect(report.status).toBe("needs_evidence");
 		expect(report.summary.warnings).toBe(1);
 		expect(report.summary.lanesNeedingEvidence).toBe(3);
+	});
+
+	it("discovers existing deterministic gate artifacts and prioritizes hard blockers", () => {
+		const dir = mkdtempSync(join(tmpdir(), "fitness-artifacts-"));
+		cleanup.push(dir);
+		writeFileSync(
+			join(dir, "architecture.json"),
+			JSON.stringify({ violations: [] }),
+			"utf8",
+		);
+		writeFileSync(
+			join(dir, "quality-size.json"),
+			JSON.stringify({
+				schemaVersion: "quality-size/v1",
+				status: "fail",
+				findings: [
+					{
+						path: "src/lib/fitness/report.ts",
+						line: 12,
+						message: "file has 410 lines; max is 400",
+					},
+				],
+			}),
+			"utf8",
+		);
+		writeFileSync(
+			join(dir, "behavior-tests.json"),
+			JSON.stringify({ schemaVersion: "behavior-tests/v1", status: "pass" }),
+			"utf8",
+		);
+		writeFileSync(
+			join(dir, "harness-audit-tracking.json"),
+			JSON.stringify({
+				schemaVersion: "harness-audit-tracking/v1",
+				status: "fail",
+				failures: [{ name: ".harness/feedback-loops control-plane map" }],
+			}),
+			"utf8",
+		);
+
+		const report = buildFitnessReport({
+			artifactsDir: dir,
+			now: new Date("2026-06-19T12:00:00.000Z"),
+		});
+
+		expect(report.status).toBe("fail");
+		expect(report.summary.lanesNeedingEvidence).toBe(0);
+		expect(report.topDeterministicFinding).toEqual(
+			expect.objectContaining({
+				lane: "feedback-learning",
+				recommendedCommand: "pnpm run harness:audit-tracking",
+			}),
+		);
+	});
+
+	it("keeps AI-assisted review findings advisory", () => {
+		const dir = mkdtempSync(join(tmpdir(), "fitness-review-"));
+		cleanup.push(dir);
+		const reports: Array<[string, Record<string, unknown>]> = [
+			["architecture.json", { violations: [] }],
+			["quality-size.json", { status: "pass", findings: [] }],
+			["behavior-tests.json", { status: "pass", failures: [] }],
+			["harness-audit-tracking.json", { status: "pass", failures: [] }],
+		];
+		for (const [name, report] of reports) {
+			writeFileSync(join(dir, name), JSON.stringify(report), "utf8");
+		}
+		writeFileSync(
+			join(dir, "autoreview.json"),
+			JSON.stringify({
+				status: "fail",
+				findings: [
+					{
+						title: "Reviewer suggests more examples",
+						message: "Add examples when the contract stabilizes.",
+						severity: "error",
+					},
+				],
+			}),
+			"utf8",
+		);
+
+		const report = buildFitnessReport({
+			artifactsDir: dir,
+			now: new Date("2026-06-19T12:00:00.000Z"),
+		});
+
+		expect(report.status).toBe("warn");
+		expect(report.summary.failures).toBe(0);
+		expect(report.topDeterministicFinding).toBeNull();
+		expect(report.lanes.at(-1)).toEqual(
+			expect.objectContaining({
+				id: "ai-review-advisory",
+				status: "warn",
+			}),
+		);
 	});
 });

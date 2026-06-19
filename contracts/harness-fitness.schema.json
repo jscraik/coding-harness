@@ -1,0 +1,135 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/harness-fitness.schema.json",
+	"title": "Harness Fitness Report",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"status",
+		"generatedAt",
+		"summary",
+		"lanes",
+		"topDeterministicFinding",
+		"claimBoundaries"
+	],
+	"properties": {
+		"schemaVersion": { "const": "harness-fitness/v1" },
+		"status": { "enum": ["pass", "warn", "fail", "needs_evidence"] },
+		"generatedAt": { "type": "string", "format": "date-time" },
+		"summary": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"lanes",
+				"findings",
+				"failures",
+				"warnings",
+				"lanesNeedingEvidence"
+			],
+			"properties": {
+				"lanes": { "type": "integer", "minimum": 0 },
+				"findings": { "type": "integer", "minimum": 0 },
+				"failures": { "type": "integer", "minimum": 0 },
+				"warnings": { "type": "integer", "minimum": 0 },
+				"lanesNeedingEvidence": { "type": "integer", "minimum": 0 }
+			}
+		},
+		"lanes": {
+			"type": "array",
+			"items": { "$ref": "#/$defs/lane" }
+		},
+		"topDeterministicFinding": {
+			"anyOf": [{ "$ref": "#/$defs/finding" }, { "type": "null" }]
+		},
+		"claimBoundaries": {
+			"type": "array",
+			"items": { "type": "string", "minLength": 1 }
+		}
+	},
+	"$defs": {
+		"lane": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"id",
+				"label",
+				"command",
+				"principle",
+				"enforcement",
+				"status",
+				"evidenceSource",
+				"findings"
+			],
+			"properties": {
+				"id": { "type": "string", "minLength": 1 },
+				"label": { "type": "string", "minLength": 1 },
+				"command": { "type": "string", "minLength": 1 },
+				"principle": { "$ref": "#/$defs/principle" },
+				"enforcement": { "$ref": "#/$defs/enforcement" },
+				"status": { "enum": ["pass", "warn", "fail", "not_run"] },
+				"evidenceSource": { "type": "string", "minLength": 1 },
+				"findings": {
+					"type": "array",
+					"items": { "$ref": "#/$defs/finding" }
+				}
+			}
+		},
+		"finding": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"id",
+				"title",
+				"severity",
+				"lane",
+				"principle",
+				"enforcement",
+				"evidence",
+				"risk",
+				"recommendedCommand",
+				"claimBoundary"
+			],
+			"properties": {
+				"id": { "type": "string", "minLength": 1 },
+				"title": { "type": "string", "minLength": 1 },
+				"severity": {
+					"enum": ["critical", "error", "warning", "info"]
+				},
+				"lane": { "type": "string", "minLength": 1 },
+				"principle": { "$ref": "#/$defs/principle" },
+				"enforcement": { "$ref": "#/$defs/enforcement" },
+				"evidence": { "$ref": "#/$defs/evidence" },
+				"risk": { "type": "string", "minLength": 1 },
+				"recommendedCommand": { "type": "string", "minLength": 1 },
+				"claimBoundary": { "type": "string", "minLength": 1 }
+			}
+		},
+		"evidence": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["message"],
+			"properties": {
+				"file": { "type": "string", "minLength": 1 },
+				"line": { "type": "integer", "minimum": 0 },
+				"message": { "type": "string", "minLength": 1 }
+			}
+		},
+		"principle": {
+			"enum": [
+				"protect_deep_module_boundaries",
+				"reduce_cognitive_load",
+				"prove_behavior_outcomes",
+				"compound_feedback_to_harness"
+			]
+		},
+		"enforcement": {
+			"enum": [
+				"hard_blocker",
+				"architecture_fitness",
+				"quality_budget",
+				"advisory"
+			]
+		}
+	}
+}

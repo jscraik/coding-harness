@@ -10,7 +10,7 @@ export function createFitnessCommandSpec(
 		name: "fitness",
 		summary:
 			"Normalize repository fitness findings from existing harness gates",
-		example: "fitness --json",
+		example: "fitness --json --from-existing-artifacts artifacts/fitness",
 		errorLabel: "Fitness Error",
 		execute: (args) => runFitnessCLI(args),
 	};

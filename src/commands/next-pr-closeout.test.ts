@@ -107,13 +107,22 @@ function prCloseoutReport(
 			complete: true,
 		},
 		harnessGates: {
-			evidenceSource: "missing",
-			closeoutGatesPresent: false,
+			evidenceSource: "closeout_gates",
+			closeoutGatesPresent: true,
 			phaseExitPresent: false,
-			recommendation: "missing",
+			recommendation: "continue",
 			commitAllowed: true,
 			exitAllowed: true,
-			gates: [],
+			gates: [
+				{
+					gateId: "he_code_review",
+					required: true,
+					status: "pass",
+					evidenceRefs: ["artifact:closeout-gates.json"],
+					requiresHuman: false,
+					blocker: null,
+				},
+			],
 		},
 		assurance: {
 			present: false,
@@ -632,6 +641,121 @@ describe("harness next pr-closeout evidence", () => {
 								? { ...claim, status: "not_applicable" }
 								: claim,
 						),
+					}),
+				),
+			);
+
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--pr-closeout", "pr-closeout.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("pr_closeout_artifact_invalid");
+			expect(decision.evidenceRef).toEqual(["artifact:pr-closeout.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects ready pr-closeout artifacts missing closeout-gate evidence", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
+		try {
+			writeFileSync(
+				join(repoRoot, "pr-closeout.json"),
+				JSON.stringify(
+					prCloseoutReport({
+						harnessGates: {
+							evidenceSource: "missing",
+							closeoutGatesPresent: false,
+							phaseExitPresent: false,
+							recommendation: "missing",
+							commitAllowed: true,
+							exitAllowed: true,
+							gates: [],
+						},
+					}),
+				),
+			);
+
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--pr-closeout", "pr-closeout.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("pr_closeout_artifact_invalid");
+			expect(decision.evidenceRef).toEqual(["artifact:pr-closeout.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects ready pr-closeout artifacts with failing closeout gates", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
+		try {
+			writeFileSync(
+				join(repoRoot, "pr-closeout.json"),
+				JSON.stringify(
+					prCloseoutReport({
+						harnessGates: {
+							...prCloseoutReport().harnessGates,
+							gates: [
+								{
+									gateId: "he_code_review",
+									required: true,
+									status: "fail",
+									evidenceRefs: ["artifact:closeout-gates.json"],
+									requiresHuman: false,
+									blocker: "Review gate failed.",
+								},
+							],
+						},
+					}),
+				),
+			);
+
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--pr-closeout", "pr-closeout.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("pr_closeout_artifact_invalid");
+			expect(decision.evidenceRef).toEqual(["artifact:pr-closeout.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects ready pr-closeout artifacts with incomplete traceability", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
+		try {
+			writeFileSync(
+				join(repoRoot, "pr-closeout.json"),
+				JSON.stringify(
+					prCloseoutReport({
+						traceability: {
+							sessionIds: [],
+							traceIds: [],
+							aiSessionTraceability: null,
+							complete: false,
+						},
 					}),
 				),
 			);

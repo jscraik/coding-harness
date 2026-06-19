@@ -71,6 +71,60 @@ describe("runFitnessCLI", () => {
 		expect(result.error.code).toBe("fitness.architecture_report_required");
 	});
 
+	it("discovers artifact-backed gate reports from an existing directory", () => {
+		const dir = mkdtempSync(join(tmpdir(), "fitness-cli-artifacts-"));
+		cleanup.push(dir);
+		writeFileSync(
+			join(dir, "architecture.json"),
+			JSON.stringify({ violations: [] }),
+		);
+		writeFileSync(
+			join(dir, "quality-size.json"),
+			JSON.stringify({
+				schemaVersion: "quality-size/v1",
+				status: "pass",
+				findings: [],
+			}),
+		);
+		writeFileSync(
+			join(dir, "behavior-tests.json"),
+			JSON.stringify({
+				schemaVersion: "behavior-tests/v1",
+				status: "pass",
+				failures: [],
+			}),
+		);
+		writeFileSync(
+			join(dir, "harness-audit-tracking.json"),
+			JSON.stringify({
+				schemaVersion: "harness-audit-tracking/v1",
+				status: "fail",
+				failures: [{ name: "audit destination distinction" }],
+			}),
+		);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(runFitnessCLI(["--json", "--from-existing-artifacts", dir])).toBe(1);
+
+		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(result.status).toBe("fail");
+		expect(result.topDeterministicFinding).toEqual(
+			expect.objectContaining({
+				lane: "feedback-learning",
+				recommendedCommand: "pnpm run harness:audit-tracking",
+			}),
+		);
+	});
+
+	it("reports usage when artifact-backed mode is missing a directory", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(runFitnessCLI(["--json", "--from-existing-artifacts"])).toBe(2);
+
+		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(result.error.code).toBe("fitness.artifacts_dir_required");
+	});
+
 	it("is registered as a command capability", () => {
 		expect(COMMAND_SPECS.some((spec) => spec.name === "fitness")).toBe(true);
 	});

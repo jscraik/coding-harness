@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { sanitizeGitEnvironment } from "./lib/safe-git-env.mjs";
 
 const repoRoot = process.cwd();
 const gitEnv = sanitizeGitEnvironment(process.env, { policy: "minimal" });
+const json = new Set(process.argv.slice(2)).has("--json");
 
 const gitignore = readFileSync(".gitignore", "utf8");
 const readme = readFileSync(".harness/README.md", "utf8");
@@ -75,13 +76,44 @@ const requirements = [
 
 const failures = requirements.filter((requirement) => !requirement.ok);
 if (failures.length > 0) {
-	console.error("[harness-audit-tracking] missing audit tracking contract:");
-	for (const failure of failures) {
-		console.error(`  - ${failure.name}`);
+	if (json) {
+		console.info(
+			JSON.stringify(
+				{
+					schemaVersion: "harness-audit-tracking/v1",
+					status: "fail",
+					failures: failures.map((failure) => ({
+						name: failure.name,
+						message: failure.name,
+					})),
+				},
+				null,
+				2,
+			),
+		);
+	} else {
+		console.error("[harness-audit-tracking] missing audit tracking contract:");
+		for (const failure of failures) {
+			console.error(`  - ${failure.name}`);
+		}
 	}
 	process.exit(1);
 }
 
-console.log(
-	"[harness-audit-tracking] verified .harness audit tracking contract",
-);
+if (json) {
+	console.info(
+		JSON.stringify(
+			{
+				schemaVersion: "harness-audit-tracking/v1",
+				status: "pass",
+				failures: [],
+			},
+			null,
+			2,
+		),
+	);
+} else {
+	console.log(
+		"[harness-audit-tracking] verified .harness audit tracking contract",
+	);
+}

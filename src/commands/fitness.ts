@@ -8,6 +8,23 @@ const EXIT_CODES = {
 	USAGE: 2,
 } as const;
 
+type FitnessFlag = ReturnType<typeof inspectFlagValue>;
+
+interface FitnessFlags {
+	architectureReport: FitnessFlag;
+	artifactsDir: FitnessFlag;
+	qualitySizeReport: FitnessFlag;
+	behaviorTestsReport: FitnessFlag;
+	auditTrackingReport: FitnessFlag;
+	advisoryReviewReport: FitnessFlag;
+}
+
+interface MissingFitnessFlag {
+	flag: FitnessFlag;
+	code: string;
+	name: string;
+}
+
 /** Run the repository fitness command. */
 export function runFitnessCLI(args: string[]): number {
 	const json = args.includes("--json");
@@ -15,24 +32,18 @@ export function runFitnessCLI(args: string[]): number {
 		printFitnessHelp();
 		return EXIT_CODES.SUCCESS;
 	}
-	const architectureReportFlag = inspectFlagValue(
-		args,
-		"--architecture-report",
-	);
-	if (architectureReportFlag.missingValue) {
+	const flags = parseFitnessFlags(args);
+	const missingFlag = missingFitnessFlag(flags);
+	if (missingFlag) {
 		return emitFitnessError({
 			json,
-			code: "fitness.architecture_report_required",
-			message: "harness fitness requires a value after --architecture-report.",
+			code: missingFlag.code,
+			message: `harness fitness requires a value after ${missingFlag.name}.`,
 			exitCode: EXIT_CODES.USAGE,
 		});
 	}
 	try {
-		const report = buildFitnessReport({
-			...(architectureReportFlag.value
-				? { architectureReportPath: architectureReportFlag.value }
-				: {}),
-		});
+		const report = buildFitnessReport(fitnessReportOptions(flags));
 		renderFitnessReport(report, json);
 		return report.status === "pass" || report.status === "warn"
 			? EXIT_CODES.SUCCESS
@@ -50,9 +61,80 @@ export function runFitnessCLI(args: string[]): number {
 	}
 }
 
+function parseFitnessFlags(args: string[]): FitnessFlags {
+	return {
+		architectureReport: inspectFlagValue(args, "--architecture-report"),
+		artifactsDir: inspectFlagValue(args, "--from-existing-artifacts"),
+		qualitySizeReport: inspectFlagValue(args, "--quality-size-report"),
+		behaviorTestsReport: inspectFlagValue(args, "--behavior-tests-report"),
+		auditTrackingReport: inspectFlagValue(args, "--audit-tracking-report"),
+		advisoryReviewReport: inspectFlagValue(args, "--advisory-review-report"),
+	};
+}
+
+function missingFitnessFlag(
+	flags: FitnessFlags,
+): MissingFitnessFlag | undefined {
+	return [
+		{
+			flag: flags.architectureReport,
+			code: "fitness.architecture_report_required",
+			name: "--architecture-report",
+		},
+		{
+			flag: flags.artifactsDir,
+			code: "fitness.artifacts_dir_required",
+			name: "--from-existing-artifacts",
+		},
+		{
+			flag: flags.qualitySizeReport,
+			code: "fitness.quality_size_report_required",
+			name: "--quality-size-report",
+		},
+		{
+			flag: flags.behaviorTestsReport,
+			code: "fitness.behavior_tests_report_required",
+			name: "--behavior-tests-report",
+		},
+		{
+			flag: flags.auditTrackingReport,
+			code: "fitness.audit_tracking_report_required",
+			name: "--audit-tracking-report",
+		},
+		{
+			flag: flags.advisoryReviewReport,
+			code: "fitness.advisory_review_report_required",
+			name: "--advisory-review-report",
+		},
+	].find(({ flag }) => flag.missingValue);
+}
+
+function fitnessReportOptions(flags: FitnessFlags) {
+	return {
+		...(flags.artifactsDir.value
+			? { artifactsDir: flags.artifactsDir.value }
+			: {}),
+		...(flags.architectureReport.value
+			? { architectureReportPath: flags.architectureReport.value }
+			: {}),
+		...(flags.qualitySizeReport.value
+			? { qualitySizeReportPath: flags.qualitySizeReport.value }
+			: {}),
+		...(flags.behaviorTestsReport.value
+			? { behaviorTestsReportPath: flags.behaviorTestsReport.value }
+			: {}),
+		...(flags.auditTrackingReport.value
+			? { auditTrackingReportPath: flags.auditTrackingReport.value }
+			: {}),
+		...(flags.advisoryReviewReport.value
+			? { advisoryReviewReportPath: flags.advisoryReviewReport.value }
+			: {}),
+	};
+}
+
 function printFitnessHelp(): void {
 	console.info(
-		"Usage: harness fitness [--json] [--architecture-report <path>]",
+		"Usage: harness fitness [--json] [--from-existing-artifacts <dir>] [artifact flags]",
 	);
 	console.info("");
 	console.info(
@@ -62,7 +144,22 @@ function printFitnessHelp(): void {
 	console.info("Options:");
 	console.info("  --json                         Emit machine-readable JSON");
 	console.info(
+		"  --from-existing-artifacts <dir> Discover conventional gate JSON artifacts",
+	);
+	console.info(
 		"  --architecture-report <path>   Ingest pnpm architecture:check JSON output",
+	);
+	console.info(
+		"  --quality-size-report <path>   Ingest pnpm run quality:size JSON output",
+	);
+	console.info(
+		"  --behavior-tests-report <path> Ingest pnpm run quality:behavior-tests JSON output",
+	);
+	console.info(
+		"  --audit-tracking-report <path> Ingest pnpm run harness:audit-tracking JSON output",
+	);
+	console.info(
+		"  --advisory-review-report <path> Ingest structured AI review output as advisory",
 	);
 }
 

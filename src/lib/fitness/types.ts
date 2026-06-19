@@ -67,5 +67,6 @@ export interface FitnessReport {
 		lanesNeedingEvidence: number;
 	};
 	lanes: FitnessLane[];
+	topDeterministicFinding: FitnessFinding | null;
 	claimBoundaries: string[];
 }
