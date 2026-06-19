@@ -77,11 +77,7 @@ function buildDecisionOutput(
 		verdict,
 		...(maxAllowed ? { maxAllowed } : {}),
 		violatingFiles: passed ? [] : files,
-	};
-}
-
 function passForNoChangedFiles(contract: unknown): PolicyGateResult {
-	void contract;
 	return {
 		ok: true,
 		output: {
