@@ -268,6 +268,8 @@ function renderEvidenceVerifyError(
 	}
 	console.error(error.message);
 }
+	console.error(error.message);
+}
 
 function evidenceVerifyErrorExitCode(
 	error: Extract<EvidenceVerifyResult, { ok: false }>["error"],
