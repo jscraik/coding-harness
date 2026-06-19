@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-18
+last_validated: 2026-06-19
 ---
 
 # Context Integrity Control Plane — Agent-Optimized Contract
@@ -337,7 +337,7 @@ for each checkpoint transition row:
 
 ```bash
 pnpm lint && pnpm typecheck && pnpm test && pnpm audit && pnpm check
-npm test && npm run test:deep
+pnpm test:deep
 ```
 
 ---

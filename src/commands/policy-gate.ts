@@ -81,17 +81,14 @@ function buildDecisionOutput(
 }
 
 function passForNoChangedFiles(contract: unknown): PolicyGateResult {
-	const policyChain = resolvePolicyChain(
-		contract as Parameters<typeof resolvePolicyChain>[0],
-	);
-	const decision = evaluatePolicyChainDecision("low", policyChain);
+	void contract;
 	return {
 		ok: true,
 		output: {
-			passed: decision.verdict === "pass",
-			tier: decision.tier,
-			action: decision.action,
-			verdict: decision.verdict,
+			passed: true,
+			tier: "low",
+			action: "allow",
+			verdict: "pass",
 			violatingFiles: [],
 		},
 	};

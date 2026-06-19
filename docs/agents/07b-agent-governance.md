@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-18
+last_validated: 2026-06-19
 ---
 
 # Agent governance
@@ -438,7 +438,12 @@ implementation into the harness.
 - If the `CodeRabbit` check is absent, pending, or failing for the current head SHA: do not merge.
 - If `docs-gate` reports warning findings for required surfaces on the current head SHA: do not merge until those warnings are resolved in the PR.
 - If CodeRabbit reports Semgrep findings: fix all `ERROR` findings before merge. `WARNING` findings may remain only when the PR records the rationale and containment.
-- Any run of `harness linear*` commands must have `LINEAR_API_KEY` available in the runtime environment (or supplied with `--token`); if secrets are kept in `~/.codex/.env`, load it into the active shell/session first.
+- Any run of `harness linear*` commands must have `LINEAR_API_KEY` available
+  in the runtime environment or supplied with `--token`. If secrets are kept
+  in `~/.codex/.env`, inspect that path without printing values: use
+  `op run --env-file ~/.codex/.env -- <command>` when it is a FIFO, and use
+  `set -a; source ~/.codex/.env; set +a` only when it is a regular readable
+  file.
 - When Linear secret discovery behavior changes, include `harness symphony-check` evidence so the runtime secret-loading path is auditable.
 - After merge completion: clean up branch/worktree to keep an auditable branch lifecycle.
 

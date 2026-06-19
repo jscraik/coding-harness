@@ -229,6 +229,23 @@ describe("runtime-evidence-contract", () => {
 		);
 	});
 
+	it("rejects malformed runtime probe failure text", () => {
+		const contract = validContract();
+		if (contract.resolvedState.runtimeProbe !== null) {
+			contract.resolvedState.runtimeProbe.failureText = 42 as never;
+		}
+
+		const result = validateRuntimeEvidenceContract(contract);
+
+		expect(result.valid).toBe(false);
+		expect(result.findings).toContainEqual(
+			expect.objectContaining({
+				code: "runtime_probe_failure_text_invalid",
+				path: "resolvedState.runtimeProbe.failureText",
+			}),
+		);
+	});
+
 	it("rejects malformed available runtime probe blocker classes", () => {
 		const contract = validContract();
 		if (contract.resolvedState.runtimeProbe !== null) {

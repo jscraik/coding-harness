@@ -181,20 +181,13 @@ export function resolveExploreCommandSpec(
 		return resolvePolicyCommand(
 			policy.exploreCommand,
 			"exploreCommand",
-			[url, outputDir, ...interactionArgs],
+			[url, "--output", outputDir, ...interactionArgs],
 			json,
 		);
 	}
 	const commandSpec: CommandSpec = {
-		command: "npx",
-		args: [
-			"@agent-browser/cli",
-			"explore",
-			url,
-			"--output",
-			outputDir,
-			...interactionArgs,
-		],
+		command: "agent-browser",
+		args: ["explore", url, "--output", outputDir, ...interactionArgs],
 	};
 	return { ok: true, commandSpec, fullCmd: formatCommandDisplay(commandSpec) };
 }

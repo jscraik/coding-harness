@@ -11,7 +11,11 @@ import {
 	type HeGatePayload,
 } from "../lib/decision/he-phase-exit.js";
 import { runPrCloseoutCLI } from "./pr-closeout.js";
-import { fetchReviewThreads, normalizeGhChecks } from "./pr-closeout-github.js";
+import {
+	fetchCheckHeadProof,
+	fetchReviewThreads,
+	normalizeGhChecks,
+} from "./pr-closeout-github.js";
 
 type TestRunner = NonNullable<Parameters<typeof runPrCloseoutCLI>[1]>["runner"];
 
@@ -2504,7 +2508,7 @@ describe("runPrCloseoutCLI", () => {
 		);
 	});
 
-	it("does not attach current-head proof by check name alone", async () => {
+	it("attaches current-head proof by check name when URLs are unavailable", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const closeoutGatesPath = writeCloseoutGates(dir);
 		const runner = (
@@ -2575,12 +2579,12 @@ describe("runPrCloseoutCLI", () => {
 		};
 
 		expect(result.exitCode).toBe(0);
-		expect(report.status).not.toBe("ready");
+		expect(report.status).toBe("ready");
 		expect(report.claims).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
 					claim: "required_checks_match_current_head",
-					freshness: "unknown",
+					freshness: "current",
 				}),
 			]),
 		);
@@ -3383,6 +3387,56 @@ describe("runPrCloseoutCLI", () => {
 		expect(report.status).toBe("ready");
 	});
 
+	it("does not fall back when checks already carry the current head sha", () => {
+		const tools: Parameters<typeof fetchCheckHeadProof>[3] = [];
+		const commands: string[] = [];
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			commands.push(`${command} ${args.join(" ")}`);
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (
+				command === "gh" &&
+				args[0] === "api" &&
+				String(args[1]).includes("/check-runs")
+			) {
+				return JSON.stringify([]);
+			}
+			throw new Error(`unexpected command: ${command} ${args.join(" ")}`);
+		};
+
+		const proof = fetchCheckHeadProof(
+			{ json: true, repoRoot: process.cwd(), prNumber: 258 },
+			process.env,
+			runner,
+			tools,
+			[
+				{
+					name: "pr-pipeline",
+					state: "SUCCESS",
+					url: null,
+					headSha: "abc123",
+					required: true,
+					source: "github",
+				},
+			],
+			"abc123",
+		);
+
+		expect(proof.size).toBe(0);
+		expect(commands.some((command) => command.includes("/statuses"))).toBe(
+			false,
+		);
+		expect(tools).toEqual([]);
+	});
+
 	it("paginates reviewThreads before classifying unresolved conversations", () => {
 		const tools: Parameters<typeof fetchReviewThreads>[3] = [];
 		const runner = (
@@ -3417,6 +3471,53 @@ describe("runPrCloseoutCLI", () => {
 		expect(reviewThreads.unresolved).toBe(1);
 		expect(reviewThreads.autofixable).toBeNull();
 		expect(tools).toEqual([]);
+	});
+
+	it("fails closed when reviewThreads nodes are malformed", () => {
+		const tools: Parameters<typeof fetchReviewThreads>[3] = [];
+		const runner = (
+			command: string,
+			args: readonly string[],
+			_options: { cwd: string; env?: NodeJS.ProcessEnv },
+		): string => {
+			if (command === "gh" && args[0] === "repo" && args[1] === "view") {
+				return JSON.stringify({
+					owner: { login: "jscraik" },
+					name: "coding-harness",
+				});
+			}
+			if (command === "gh" && args[0] === "api" && args[1] === "graphql") {
+				return JSON.stringify({
+					data: {
+						repository: {
+							pullRequest: {
+								reviewThreads: {
+									pageInfo: { hasNextPage: false, endCursor: null },
+									nodes: [{ isResolved: "false" }],
+								},
+							},
+						},
+					},
+				});
+			}
+			return "ok";
+		};
+
+		const reviewThreads = fetchReviewThreads(
+			{ json: true, repoRoot: process.cwd(), prNumber: 258 },
+			process.env,
+			runner,
+			tools,
+		);
+
+		expect(reviewThreads.unresolved).toBeNull();
+		expect(tools).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					failureClass: expect.stringContaining("pr_review_threads_unreadable"),
+				}),
+			]),
+		);
 	});
 
 	it("does not count PR template placeholders as traceability evidence", async () => {

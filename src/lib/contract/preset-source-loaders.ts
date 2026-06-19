@@ -137,7 +137,12 @@ async function fetchRemotePresetContent(url: RemotePreset): Promise<string> {
 				`HTTP ${response.status}: ${response.statusText}`,
 			);
 		}
-		return readResponseWithLimit(response, url, MAX_REMOTE_PRESET_SIZE_BYTES);
+		const content = await readResponseWithLimit(
+			response,
+			url,
+			MAX_REMOTE_PRESET_SIZE_BYTES,
+		);
+		return content;
 	} finally {
 		clearTimeout(timeoutId);
 	}
@@ -166,6 +171,7 @@ export async function loadRemotePreset(args: {
 		return contract;
 	} catch (error) {
 		if (error instanceof PresetFetchError) throw error;
+		if (error instanceof IntegrityError) throw error;
 		const message = error instanceof Error ? error.message : "Unknown error";
 		throw new PresetFetchError(
 			redactUrlCredentials(args.url),
@@ -235,6 +241,16 @@ export function loadLocalPreset(
 	contractDir: string,
 ): HarnessContract {
 	const realResolvedPath = resolveLocalPresetPath(presetPath, contractDir);
-	const content = readFileSync(realResolvedPath, "utf-8");
-	return validatePresetData(presetPath, JSON.parse(content));
+	try {
+		const content = readFileSync(realResolvedPath, "utf-8");
+		return validatePresetData(presetPath, JSON.parse(content));
+	} catch (error) {
+		if (error instanceof PresetFetchError) throw error;
+		const message = error instanceof Error ? error.message : "Unknown error";
+		throw new PresetFetchError(
+			presetPath,
+			`Failed to load local preset: ${message}`,
+			error instanceof Error ? error : undefined,
+		);
+	}
 }

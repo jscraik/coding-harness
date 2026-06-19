@@ -58,13 +58,15 @@
 
 ## Size and decomposition
 - `pnpm run quality:size` is the executable size gate for changed production
-  source. Treat its failures as blockers.
-- Changed production modules MUST stay at or below 400 logical lines, functions
-  MUST stay at or below 80 logical lines, and function complexity MUST stay at or
-  below 10.
+  `src/**` source and changed tests. Treat its failures as blockers.
+- Changed production `src/**` modules MUST stay at or below 400 logical lines,
+  functions MUST stay at or below 80 logical lines, and function complexity MUST
+  stay at or below 10.
 - Changed test files MUST stay at or below 1,200 logical lines.
-- `scripts/check-code-size.mjs` enforces these limits directly. Prefer extracting
-  pure helpers, schema tables, or adapter-specific logic before raising a limit.
+- `scripts/check-code-size.mjs` enforces these limits directly for changed files.
+  Prefer extracting pure helpers, schema tables, or adapter-specific logic before
+  raising a limit; legacy allowlisted files remain documented exceptions until
+  burned down.
 
 ## Testing
 - Co-locate tests (`*.test.ts` / `__tests__`) and assert user-visible behavior where applicable.

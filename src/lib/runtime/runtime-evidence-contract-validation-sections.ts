@@ -72,6 +72,7 @@ export function validateRuntimeProbe(
 	validateRuntimeProbeIdentity(probe, add);
 	validateRuntimeProbeSpawnOutcome(probe.spawnOutcome, add);
 	validateRuntimeProbeBlocker(probe, add);
+	validateRuntimeProbeFailureText(probe.failureText, add);
 }
 
 function addInvalidVerifierResult(add: AddRuntimeEvidenceFinding): void {
@@ -262,6 +263,19 @@ function validateRuntimeProbeBlocker(
 			"resolvedState.runtimeProbe.blockerClass",
 			"runtime_probe_blocker_missing",
 			"non-available probes must classify the blocker.",
+		);
+	}
+}
+
+function validateRuntimeProbeFailureText(
+	value: unknown,
+	add: AddRuntimeEvidenceFinding,
+): void {
+	if (!(value === undefined || isNullableString(value))) {
+		add(
+			"resolvedState.runtimeProbe.failureText",
+			"runtime_probe_failure_text_invalid",
+			"runtime probe failureText must be a string, null, or undefined.",
 		);
 	}
 }

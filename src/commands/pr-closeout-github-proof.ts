@@ -79,7 +79,10 @@ function normalizeCheckRunProof(value: unknown): Map<string, string> {
 		const name = asString(record.name);
 		const url = asString(record.details_url) ?? asString(record.html_url);
 		const headSha = asString(record.head_sha) ?? asString(record.headSha);
-		if (name && url && headSha) proof.set(checkProofKey(name, url), headSha);
+		if (name && headSha) {
+			proof.set(checkProofKey(name, null), headSha);
+			if (url) proof.set(checkProofKey(name, url), headSha);
+		}
 	}
 	return proof;
 }
@@ -110,8 +113,10 @@ function payloadCount(value: unknown, key: string): number {
 function hasUnprovenCheck(
 	checks: readonly PrCloseoutCheckInput[],
 	proof: ReadonlyMap<string, string>,
+	headSha: string,
 ): boolean {
 	return checks.some((check) => {
+		if (check.headSha === headSha) return false;
 		const url = check.url ?? null;
 		return (
 			!proof.has(checkProofKey(check.name, url)) &&
@@ -139,15 +144,24 @@ function fetchCheckRunPage(
 	runner: CommandRunner,
 ): unknown {
 	const githubCli = resolveGitHubCli(env);
-	const args = [
+	const args = checkRunPageArgs(owner, repo, headSha, page);
+	return JSON.parse(
+		runner(githubCli.command, args, { cwd: options.repoRoot, env }),
+	) as unknown;
+}
+
+function checkRunPageArgs(
+	owner: string,
+	repo: string,
+	headSha: string,
+	page: number,
+): string[] {
+	return [
 		"api",
 		`repos/${owner}/${repo}/commits/${headSha}/check-runs?per_page=${CHECK_PROOF_PAGE_SIZE}&page=${String(page)}`,
 		"--jq",
 		".check_runs",
 	];
-	return JSON.parse(
-		runner(githubCli.command, args, { cwd: options.repoRoot, env }),
-	) as unknown;
 }
 
 function collectCheckRunProof(
@@ -156,22 +170,34 @@ function collectCheckRunProof(
 	options: PrCloseoutCLIOptions,
 	env: NodeJS.ProcessEnv,
 	runner: CommandRunner,
-): Map<string, string> {
+): {
+	proof: Map<string, string>;
+	error: unknown | null;
+	errorArgs: readonly string[] | null;
+} {
 	const proof = new Map<string, string>();
 	for (let page = 1; ; page += 1) {
-		const parsed = fetchCheckRunPage(
-			repo.owner,
-			repo.repo,
-			headSha,
-			page,
-			options,
-			env,
-			runner,
-		);
-		mergeProof(proof, normalizeCheckRunProof(parsed));
-		if (payloadCount(parsed, "check_runs") < CHECK_PROOF_PAGE_SIZE) break;
+		try {
+			const parsed = fetchCheckRunPage(
+				repo.owner,
+				repo.repo,
+				headSha,
+				page,
+				options,
+				env,
+				runner,
+			);
+			mergeProof(proof, normalizeCheckRunProof(parsed));
+			if (payloadCount(parsed, "check_runs") < CHECK_PROOF_PAGE_SIZE) break;
+		} catch (error) {
+			return {
+				proof,
+				error,
+				errorArgs: checkRunPageArgs(repo.owner, repo.repo, headSha, page),
+			};
+		}
 	}
-	return proof;
+	return { proof, error: null, errorArgs: null };
 }
 
 function pushStatusProofFailure(
@@ -231,15 +257,17 @@ function pushCheckRunProofFailure(
 	tools: PrCloseoutToolInput[],
 	error: unknown,
 	githubCli: ReturnType<typeof resolveGitHubCli>,
+	args: readonly string[],
+	ref = "command:gh api repos/:owner/:repo/commits/:head/check-runs",
 ): void {
 	tools.push({
 		name: "github_cli",
 		available: true,
-		ref: "command:gh api repos/:owner/:repo/commits/:head/check-runs",
+		ref,
 		status: "blocked",
 		failureClass:
 			"pr_check_head_proof_unreadable:" +
-			formatGitHubCliFailure(error, ["api", "check-runs"], githubCli),
+			formatGitHubCliFailure(error, args, githubCli),
 	});
 }
 
@@ -271,25 +299,40 @@ export function fetchCheckHeadProof(
 	const githubCli = resolveGitHubCli(env);
 	try {
 		const repo = fetchRepoInfo(options, env, runner);
-		let checkRunsError: unknown = null;
-		let proof = new Map<string, string>();
-		try {
-			proof = collectCheckRunProof(repo, headSha, options, env, runner);
-		} catch (error) {
-			checkRunsError = error;
-		}
-		if (hasUnprovenCheck(checks, proof)) {
+		const checkRunResult = collectCheckRunProof(
+			repo,
+			headSha,
+			options,
+			env,
+			runner,
+		);
+		const proof = checkRunResult.proof;
+		const checkRunsError = checkRunResult.error;
+		const checkRunsErrorArgs = checkRunResult.errorArgs;
+		if (hasUnprovenCheck(checks, proof, headSha)) {
 			mergeProof(
 				proof,
 				collectStatusProof(repo, headSha, options, env, runner, tools),
 			);
 		}
-		if (checkRunsError && hasUnprovenCheck(checks, proof)) {
-			pushCheckRunProofFailure(tools, checkRunsError, githubCli);
+		if (checkRunsError && hasUnprovenCheck(checks, proof, headSha)) {
+			pushCheckRunProofFailure(
+				tools,
+				checkRunsError,
+				githubCli,
+				checkRunsErrorArgs ??
+					checkRunPageArgs(repo.owner, repo.repo, headSha, 1),
+			);
 		}
 		return proof;
 	} catch (error) {
-		pushCheckRunProofFailure(tools, error, githubCli);
+		pushCheckRunProofFailure(
+			tools,
+			error,
+			githubCli,
+			["repo", "view", "--json", "owner,name"],
+			"command:gh repo view --json owner,name",
+		);
 		return new Map();
 	}
 }

@@ -286,9 +286,15 @@ function exitCodeFor(result: PresetResult): number {
 }
 
 function printJsonResult(result: PresetResult): void {
-	if (result.ok) {
-		console.info(JSON.stringify(result.value, null, 2));
-	}
+	console.info(
+		JSON.stringify(
+			result.ok
+				? { ok: true, value: result.value }
+				: { ok: false, error: result.error },
+			null,
+			2,
+		),
+	);
 }
 
 function runPresetListCLI(args: readonly string[]): { exitCode: number } {
@@ -322,10 +328,10 @@ function runPresetShowCLI(args: readonly string[]): { exitCode: number } {
 	if (!name) return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
 	const format = outputFormat(args);
 	const result = showPreset(name, { format });
-	if (!result.ok) {
-		console.error(`Error: ${result.error.message}`);
-	} else if (format === "json") {
+	if (format === "json") {
 		printJsonResult(result);
+	} else if (!result.ok) {
+		console.error(`Error: ${result.error.message}`);
 	}
 	return { exitCode: exitCodeFor(result) };
 }
@@ -361,7 +367,7 @@ export async function runPresetCLI(
 
 		default: {
 			printPresetUsage();
-			return { exitCode: EXIT_CODES.SUCCESS };
+			return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
 		}
 	}
 }

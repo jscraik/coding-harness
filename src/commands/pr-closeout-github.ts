@@ -120,10 +120,18 @@ function reviewThreadPageInfo(value: Record<string, unknown>): {
 	hasNextPage: boolean;
 	endCursor: string | null;
 } {
-	const pageInfo = asObject(value.pageInfo);
+	const pageInfo = requireGraphqlObject(
+		value.pageInfo,
+		"reviewThreads.pageInfo",
+	);
+	if (typeof pageInfo.hasNextPage !== "boolean") {
+		throw new Error(
+			"reviewThreads GraphQL response must include pageInfo.hasNextPage",
+		);
+	}
 	return {
-		hasNextPage: pageInfo?.hasNextPage === true,
-		endCursor: asString(pageInfo?.endCursor),
+		hasNextPage: pageInfo.hasNextPage,
+		endCursor: asString(pageInfo.endCursor),
 	};
 }
 
@@ -136,7 +144,15 @@ function reviewThreadNodes(value: Record<string, unknown>): unknown[] {
 }
 
 function unresolvedReviewThreadCount(nodes: readonly unknown[]): number {
-	return nodes.filter((node) => asObject(node)?.isResolved === false).length;
+	return nodes.filter((node) => {
+		const record = requireGraphqlObject(node, "reviewThreads.nodes[]");
+		if (typeof record.isResolved !== "boolean") {
+			throw new Error(
+				"reviewThreads GraphQL response must include nodes[].isResolved",
+			);
+		}
+		return record.isResolved === false;
+	}).length;
 }
 
 function normalizeReviewThreadsGraphql(

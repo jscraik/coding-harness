@@ -77,7 +77,6 @@ export {
 	type FleetPlanRepo,
 	type FleetRemediationPlan,
 } from "./fleet-plan-types.js";
-export { runFleetPlanCLI } from "./fleet-plan-cli.js";
 
 /**
  * Compute aggregated counts of repository statuses for inclusion in a fleet remediation summary.
@@ -250,7 +249,7 @@ function rawMatrixResults(matrix: MatrixReport): MatrixRepoResult[] {
 	}
 	return matrix.results.filter(
 		(result): result is MatrixRepoResult =>
-			typeof result === "object" && result !== null,
+			typeof result === "object" && result !== null && !Array.isArray(result),
 	);
 }
 

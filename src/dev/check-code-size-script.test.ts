@@ -2,9 +2,12 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
-const SCRIPT_PATH = join(process.cwd(), "scripts/check-code-size.mjs");
+const SCRIPT_PATH = fileURLToPath(
+	new URL("../../scripts/check-code-size.mjs", import.meta.url),
+);
 
 const tempRoots: string[] = [];
 

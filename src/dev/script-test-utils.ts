@@ -31,7 +31,7 @@ export function runScriptProcess(
 		spawnOptions.cwd = options.cwd;
 	}
 	if (options.env !== undefined) {
-		spawnOptions.env = options.env;
+		spawnOptions.env = { ...process.env, ...options.env };
 	}
 	return spawnSync(command, [...args], spawnOptions);
 }

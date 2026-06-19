@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-25
+last_validated: 2026-06-19
 ---
 
 # 17 — CI Required Checks vs GitHub Branch Protection
@@ -45,7 +45,12 @@ CI run (CircleCI / GHA)
 GitHub check run: "pr-pipeline"  ← only this name matters for branch protection
 ```
 
-When CI jobs or local validation steps invoke `harness linear*` commands, the runner must expose `LINEAR_API_KEY` (or pass `--token` explicitly). If secrets are stored in `~/.codex/.env`, load that file into the active shell/session first, and run `harness symphony-check` when validating secret discovery behavior.
+When CI jobs or local validation steps invoke `harness linear*` commands, the
+runner must expose `LINEAR_API_KEY` or pass `--token` explicitly. If secrets
+are stored in `~/.codex/.env`, inspect that path without printing values: use
+`op run --env-file ~/.codex/.env -- <command>` when it is a FIFO, and use
+`set -a; source ~/.codex/.env; set +a` only when it is a regular readable
+file. Run `harness symphony-check` when validating secret discovery behavior.
 
 The harness internal checks in `ci-required-checks.json` are used by:
 

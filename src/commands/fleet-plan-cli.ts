@@ -6,6 +6,10 @@ import type {
 	ParsedFleetPlanArgs,
 } from "./fleet-plan-types.js";
 
+type FleetPlanReadResult =
+	| { plan: FleetRemediationPlan; error?: undefined }
+	| { plan?: undefined; error: string };
+
 function parseArgs(argv: string[]): ParsedFleetPlanArgs {
 	let from: string | undefined;
 	let json = false;
@@ -90,17 +94,17 @@ function printHuman(plan: FleetRemediationPlan): void {
 	printRepoRows(plan);
 }
 
-function readMatrixArtifact(path: string): FleetRemediationPlan | undefined {
+function readMatrixArtifact(path: string): FleetPlanReadResult {
 	try {
-		return buildFleetRemediationPlan({
-			matrix: JSON.parse(readFileSync(path, "utf8")),
-			matrixArtifact: path,
-		});
+		return {
+			plan: buildFleetRemediationPlan({
+				matrix: JSON.parse(readFileSync(path, "utf8")),
+				matrixArtifact: path,
+			}),
+		};
 	} catch (error) {
-		console.error(
-			`Failed to read matrix artifact: ${error instanceof Error ? error.message : String(error)}`,
-		);
-		return undefined;
+		const message = error instanceof Error ? error.message : String(error);
+		return { error: `Failed to read matrix artifact: ${message}` };
 	}
 }
 
@@ -117,20 +121,52 @@ export function runFleetPlanCLI(argv: string[]): number {
 		return 0;
 	}
 	if (parsed.error) {
-		console.error(parsed.error);
-		printUsage();
+		if (parsed.json) {
+			console.info(
+				JSON.stringify(
+					{ status: "fail", error: parsed.error, exitCode: 2 },
+					null,
+					2,
+				),
+			);
+		} else {
+			console.error(parsed.error);
+			printUsage();
+		}
 		return 2;
 	}
 	if (!parsed.from) {
-		console.error("--from is required");
-		printUsage();
+		if (parsed.json) {
+			console.info(
+				JSON.stringify(
+					{ status: "fail", error: "--from is required", exitCode: 2 },
+					null,
+					2,
+				),
+			);
+		} else {
+			console.error("--from is required");
+			printUsage();
+		}
 		return 2;
 	}
 
-	const plan = readMatrixArtifact(parsed.from);
-	if (!plan) {
+	const readResult = readMatrixArtifact(parsed.from);
+	if ("error" in readResult) {
+		if (parsed.json) {
+			console.info(
+				JSON.stringify(
+					{ status: "fail", error: readResult.error, exitCode: 1 },
+					null,
+					2,
+				),
+			);
+		} else {
+			console.error(readResult.error);
+		}
 		return 1;
 	}
+	const plan = readResult.plan;
 	if (parsed.json) {
 		console.info(JSON.stringify(plan, null, 2));
 	} else {

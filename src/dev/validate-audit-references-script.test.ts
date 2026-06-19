@@ -25,7 +25,8 @@ function makeRoot() {
 	mkdirSync(join(root, "docs"), { recursive: true });
 	mkdirSync(join(root, "scripts"), { recursive: true });
 	mkdirSync(join(root, "src", "lib", "runtime"), { recursive: true });
-	runScriptProcess("git", ["init"], { cwd: root });
+	const result = runScriptProcess("git", ["init"], { cwd: root });
+	expect(result.status).toBe(0);
 	return root;
 }
 

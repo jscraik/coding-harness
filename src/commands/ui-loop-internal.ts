@@ -55,10 +55,13 @@ function didCommandTimeOut(error: unknown): boolean {
 }
 
 function exitCodeForResult(status: number | null, timedOut: boolean): number {
+	if (timedOut) {
+		return EXIT_CODES.TIMEOUT;
+	}
 	if (typeof status === "number") {
 		return status;
 	}
-	return timedOut ? EXIT_CODES.TIMEOUT : EXIT_CODES.COMMAND_FAILED;
+	return EXIT_CODES.COMMAND_FAILED;
 }
 
 function commandPassed(
@@ -67,13 +70,13 @@ function commandPassed(
 	treatTimeoutAsSuccess: boolean,
 	error: unknown,
 ): boolean {
-	if (timedOut && treatTimeoutAsSuccess) {
-		return true;
+	if (timedOut) {
+		return treatTimeoutAsSuccess;
 	}
-	if (error && !timedOut) {
+	if (error) {
 		return false;
 	}
-	return exitCode === 0;
+	return exitCode === EXIT_CODES.SUCCESS;
 }
 
 function normalizeExitCode(

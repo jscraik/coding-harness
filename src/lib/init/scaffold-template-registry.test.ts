@@ -1,5 +1,3 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
 	TEMPLATES,
@@ -48,6 +46,14 @@ describe("scaffold template registry", () => {
 	});
 
 	it("keeps manual Linear UI templates out of packaged scaffold templates", () => {
-		expect(existsSync(join("src", "templates", "linear"))).toBe(false);
+		const packagedPaths = TEMPLATES.map((template) => template.path);
+		expect(
+			packagedPaths.some((path) =>
+				path.startsWith("docs/agents/linear-templates/"),
+			),
+		).toBe(false);
+		expect(
+			packagedPaths.some((path) => path.startsWith("src/templates/linear/")),
+		).toBe(false);
 	});
 });

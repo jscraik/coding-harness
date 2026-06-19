@@ -117,7 +117,7 @@ export async function runLinearPrepare(
 		const issues = await client.searchIssues(issueRef);
 		const issue = selectIssue(issues, issueRef, teamMatch);
 		if (!issue) {
-			return linearIssueNotFoundResult(issues, issueRef);
+			return linearIssueNotFoundResult(issues, issueRef, teamMatch);
 		}
 
 		return {
@@ -142,14 +142,23 @@ export async function runLinearPrepare(
 function linearIssueNotFoundResult(
 	issues: Awaited<ReturnType<LinearClient["searchIssues"]>>,
 	issueRef: string,
+	teamMatch?: string,
 ): LinearPrepareResult {
-	if (issues.length === 0) {
+	const teamScoped = teamMatch
+		? issues.filter(
+				(candidate) => candidate.team.key.toLowerCase() === teamMatch,
+			)
+		: issues;
+
+	if (teamScoped.length === 0) {
 		return linearPrepareError(
 			"NOT_FOUND",
-			`Linear issue not found for ${issueRef}.`,
+			teamMatch
+				? `Linear issue not found for ${issueRef} in team ${teamMatch}.`
+				: `Linear issue not found for ${issueRef}.`,
 		);
 	}
-	const matchingTeams = issues
+	const matchingTeams = teamScoped
 		.map((candidate) => `${candidate.identifier} (${candidate.team.key})`)
 		.join(", ");
 	return linearPrepareError(

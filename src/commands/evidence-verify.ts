@@ -262,10 +262,11 @@ function renderEvidenceVerifyError(
 	error: Extract<EvidenceVerifyResult, { ok: false }>["error"],
 	json: boolean,
 ): void {
-	console.error(error.message);
 	if (json) {
 		console.error(JSON.stringify({ error }, null, 2));
+		return;
 	}
+	console.error(error.message);
 }
 
 function evidenceVerifyErrorExitCode(

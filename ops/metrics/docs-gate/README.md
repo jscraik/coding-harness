@@ -36,7 +36,8 @@ because the aggregation commands read it directly with `jq -s`.
 
 ```bash
 jq -s '
-  map(select(.date >= "2026-03-03")) as $rows |
+  (now - 7 * 24 * 60 * 60 | gmtime | strftime("%Y-%m-%d")) as $cutoff |
+  map(select(.date >= $cutoff)) as $rows |
   { total: ($rows | length), fp: ($rows | map(select(.false_positive == true)) | length) } |
   . + { fp_rate: (if .total == 0 then 0 else (.fp / .total * 100) end) }
 ' rollout-metrics.jsonl

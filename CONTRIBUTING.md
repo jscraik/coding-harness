@@ -11,7 +11,7 @@ audience:
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-06-04
+last_reviewed: 2026-06-19
 review_cadence: quarterly
 maintenance_trigger:
   - contributor-workflow-change
@@ -280,6 +280,11 @@ If a required review artifact is missing, block merge until it is added or expli
   - ✅ `$GITHUB_TOKEN`
   - ✅ `${GITHUB_TOKEN}`
   - ❌ expanded token values
+- When validation needs private environment variables from `~/.codex/.env`,
+  inspect the path without printing values. Use
+  `op run --env-file ~/.codex/.env -- <command>` when it is a FIFO, and use
+  `set -a; source ~/.codex/.env; set +a` only when it is a regular readable
+  file.
 - If a token value is ever exposed in commit/PR text, treat it as compromised: rotate/revoke, rewrite history where applicable, and document remediation in the issue/PR.
 
 ## Action review governance
