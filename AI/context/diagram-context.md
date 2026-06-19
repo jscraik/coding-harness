@@ -76,6 +76,11 @@ Generated: 2026-06-19T01:30:59Z
 - `src/commands/ui-loop-tooling.ts`
 - `src/commands/ui-loop.ts`
 - `src/dev/script-test-utils.ts`
+- `docs/agents/linear-templates/automation.md`
+- `docs/agents/linear-templates/bug.md`
+- `docs/agents/linear-templates/feature.md`
+- `docs/agents/linear-templates/release.md`
+- `docs/agents/linear-templates/research.md`
 - `src/lib/cli/registry/fleet-plan-command-spec.ts`
 - `src/lib/contract/preset-resolver.ts`
 - `src/lib/contract/preset-source-loaders.ts`
@@ -813,6 +818,7 @@ graph LR
   node_preflight_gate_command_spec_c45f57f0_bdeb46cb["preflight_gate_command_spec_c45f57f0"]
   node_preset_detection_b0f00a17_4f7c5082["preset_detection_b0f00a17"]
   node_preset_resolver_dc3dd716_3f747c75["preset_resolver_dc3dd716"]
+  node_preset_resolver_dc3dd716_3f747c75 --> node_preset_source_loaders_a8cd7c1c_01f5a3a0
   node_preset_source_loaders_a8cd7c1c_01f5a3a0["preset_source_loaders_a8cd7c1c"]
   node_prompt_context_drift_report_3257a95c_01f8c3e1["prompt_context_drift_report_3257a95c"]
   node_provider_adapter_3bcf82b7_3ce4cf67["provider_adapter_3bcf82b7"]
@@ -2117,4 +2123,3 @@ flowchart LR
   class github_e2e_2891a341,linear_e2e_decf3708,run_e2e_39efe696,env_b77349bf,check_public_api_docs_a9604f1b,check_steering_feedback_contract_80134459,run_harness_evals_77704768,validate_active_route_surface_905456c2,validate_decision_request_2e5c325e,validate_steering_application_receipt_c922e84a,validate_steering_queue_4bc0cc94,branch_protect_core_a8feb0fd,check_environment_core_2c16213f,ci_migrate_core_7005b5af,decision_request_118a770d,evidence_verify_3b73c290,linear_prepare_0c613ba6,linear_sync_a2fa2bf7,linear_triage_core_7cbca73e,linear_workflow_core_0e19cff4,pattern_scope_61ff946d,pr_closeout_env_9bfcd9ef,pr_closeout_github_proof_ade25b0e,live_247610f4,review_gate_core_4c8001f9,symphony_check_e97f2ea0,ui_loop_command_spec_d513a999,ui_loop_exit_codes_29da40fb,ui_loop_internal_f2eb8892,ui_loop_resolution_4b529dd9 userNode
 
 ```
-
