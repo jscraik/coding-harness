@@ -8,6 +8,7 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { basename, join, resolve } from "node:path";
+import { buildObservedCircleCiTelemetry } from "../src/lib/evals/observed-circleci-telemetry.js";
 import {
 	type ObservedChronicleStatus,
 	buildObservedSkillUsage,
@@ -20,6 +21,8 @@ interface CliOptions {
 	repoRoot: string;
 	sessionCollectorRoot: string;
 	sessionCollectorOutput: string;
+	circleciTelemetryRoot: string;
+	circleciOutput: string;
 	bundleDir: string;
 	pluginEvalBudget?: string;
 	skillPath?: string;
@@ -40,6 +43,8 @@ interface CliOptions {
 const DEFAULT_SESSION_COLLECTOR_ROOT =
 	process.env.SESSION_COLLECTOR_ROOT ??
 	join(homedir(), ".agents/session-collector");
+const DEFAULT_CIRCLECI_TELEMETRY_ROOT =
+	process.env.CIRCLECI_TELEMETRY_ROOT ?? "artifacts/evals/circleci-telemetry";
 
 function parseArgs(argv: string[]): CliOptions {
 	const options: CliOptions = {
@@ -49,6 +54,8 @@ function parseArgs(argv: string[]): CliOptions {
 		sessionCollectorRoot: DEFAULT_SESSION_COLLECTOR_ROOT,
 		sessionCollectorOutput:
 			"artifacts/session-collector/session-collector.json",
+		circleciTelemetryRoot: DEFAULT_CIRCLECI_TELEMETRY_ROOT,
+		circleciOutput: "artifacts/evals/observed-circleci-feed.json",
 		bundleDir: "artifacts/session-collector",
 		pluginEvalBudget: "auto",
 		runPluginEvalBudget: false,
@@ -61,6 +68,10 @@ function parseArgs(argv: string[]): CliOptions {
 	};
 	for (let index = 0; index < argv.length; index += 1) {
 		const arg = argv[index];
+		if (arg === "--") {
+			options.gitPaths.push(...argv.slice(index + 1));
+			break;
+		}
 		if (arg === "--run-session-collector") {
 			options.runSessionCollector = true;
 			continue;
@@ -91,6 +102,12 @@ function parseArgs(argv: string[]): CliOptions {
 				break;
 			case "--session-collector-output":
 				options.sessionCollectorOutput = value;
+				break;
+			case "--circleci-telemetry-root":
+				options.circleciTelemetryRoot = value;
+				break;
+			case "--circleci-output":
+				options.circleciOutput = value;
 				break;
 			case "--bundle-dir":
 				options.bundleDir = value;
@@ -343,6 +360,10 @@ function describeGitRange(options: CliOptions): string {
 	return parts.join(" ");
 }
 
+function resolveCircleCiTelemetryRoot(options: CliOptions): string {
+	return resolve(options.repoRoot, options.circleciTelemetryRoot);
+}
+
 function safeFileStem(value: string): string {
 	return value.replace(/[^a-zA-Z0-9._-]+/g, "-");
 }
@@ -428,6 +449,11 @@ function main(): void {
 	const pluginEvalBudgetPath = resolvePluginEvalBudget(options);
 	const gitLogText = collectGitLog(options);
 	const chronicle = collectChronicleStatus();
+	const circleci = buildObservedCircleCiTelemetry({
+		repoRoot: options.repoRoot,
+		circleciTelemetryRoot: resolveCircleCiTelemetryRoot(options),
+		outputPath: options.circleciOutput,
+	});
 	const artifact = buildObservedSkillUsage({
 		skill: options.skill,
 		repoRoot: options.repoRoot,
@@ -440,11 +466,23 @@ function main(): void {
 		summaryPath: options.summary,
 	});
 	if (options.json) {
-		process.stdout.write(`${JSON.stringify(artifact, null, 2)}\n`);
+		process.stdout.write(
+			`${JSON.stringify(
+				{
+					...artifact,
+					circleciTelemetry: circleci,
+				},
+				null,
+				2,
+			)}\n`,
+		);
 		return;
 	}
 	process.stdout.write(`${renderObservedSkillUsageSummary(artifact)}`);
 	process.stdout.write(`Wrote ${resolve(options.repoRoot, options.output)}\n`);
+	process.stdout.write(
+		`Wrote ${resolve(options.repoRoot, options.circleciOutput)}\n`,
+	);
 }
 
 main();

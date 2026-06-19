@@ -161,17 +161,20 @@ collect_candidate_tests() {
 
 while IFS= read -r path; do
 	collect_path "$path"
+	collect_test_path "$path"
 done < <(git diff --cached --name-only --diff-filter=ACMR)
 
 if [[ "$mode_staged" -eq 0 ]]; then
 	while IFS= read -r path; do
 		collect_path "$path"
+		collect_test_path "$path"
 	done < <(git diff --name-only --diff-filter=ACMR)
 
 	base_ref="$(git merge-base HEAD origin/main 2>/dev/null || git merge-base HEAD main 2>/dev/null || true)"
 	if [[ -n "$base_ref" ]]; then
 		while IFS= read -r path; do
 			collect_path "$path"
+			collect_test_path "$path"
 		done < <(git diff --name-only --diff-filter=ACMR "$base_ref"...HEAD)
 	fi
 fi
