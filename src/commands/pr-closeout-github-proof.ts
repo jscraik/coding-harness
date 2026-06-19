@@ -74,6 +74,9 @@ function fetchRepoInfo(
 function normalizeCheckRunProof(value: unknown): Map<string, string> {
 	const proof = new Map<string, string>();
 	for (const item of payloadArray(value, "check_runs")) {
+function normalizeCheckRunProof(value: unknown): Map<string, string> {
+	const proof = new Map<string, string>();
+	for (const item of payloadArray(value, "check_runs")) {
 		const record = asRecord(item);
 		if (!record) continue;
 		const name = asString(record.name);
@@ -84,6 +87,8 @@ function normalizeCheckRunProof(value: unknown): Map<string, string> {
 			if (url) proof.set(checkProofKey(name, url), headSha);
 		}
 	}
+	return proof;
+}
 	return proof;
 }
 
