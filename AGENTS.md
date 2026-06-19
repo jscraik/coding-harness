@@ -78,6 +78,10 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 - Types and schemas are contract surfaces. TypeScript, Python, JSON, YAML,
   Markdown metadata, shell, and generated artifacts should use configured type,
   schema, lint, and validation gates rather than ad hoc string assumptions.
+- Observed eval telemetry from `~/.agents/` or CI exports is input evidence, not
+  authority. Keep CircleCI, session, and OTel feeds bounded, redacted,
+  artifact-backed, and separate from CI pass, review, tracker, or merge-readiness
+  claims unless a validated consumer explicitly joins those lanes.
 
 ## Validation
 

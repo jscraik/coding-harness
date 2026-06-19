@@ -132,7 +132,9 @@ Goal-continuation, approval-plan, Flow Ops closure-evidence classifiers,
 eval-seed, observed usage collection, and E2E/eval artifact changes that add or
 reroute source modules must refresh `AI/context/diagram-context.md` in the same
 PR so agent reviewers can discover the new evidence path from the architecture
-context pack.
+context pack. Sanitized CircleCI telemetry ingestion is part of this observed
+eval feed: keep local telemetry reads bounded, redacted, and artifact-backed
+when wiring `~/.agents/circleci` or `CIRCLECI_TELEMETRY_ROOT` into eval seeds.
 When closure-evidence follow-up changes fail-closed required-check
 classification, outcome-closeout validation, generated Codex environment setup,
 or init scaffolding tests in one branch, keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and `docs/agents/07b-agent-governance.md` in the diff with the
