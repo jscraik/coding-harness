@@ -17,6 +17,17 @@ branches and branch-scoped release or governance changes.
 
 ## Recent Changes
 
+- 2026-06-19: refreshed branch closeout evidence for PR #436 CI recovery.
+  - PR #436 is carrying the code-size hardening sweep plus follow-up
+    CodeRabbit fixes for run-record contract hashes, diagram context edges,
+    JSON error contracts, policy-gate no-file behavior, and preset loading
+    error boundaries.
+  - Local reproduction after repair showed \`pnpm lint\`, docs-gate,
+    pr-template-gate, and drift-gate health passing; memory-gate required this
+    branch closeout refresh before the hosted memory check could be considered
+    current.
+  - Remaining closeout work should keep local validation, CodeRabbit thread
+    state, Snyk quota state, and PR mergeability as separate evidence lanes.
 - 2026-05-16: refreshed branch closeout evidence for PR #250 CircleCI recovery.
   - PR #250 is now carrying the JSC-311 runtime-card/phase-exit continuation
     slice, with CI triage focused on the live PR body contract and branch memory

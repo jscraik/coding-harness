@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 import {
 	emitTerminalRunRecord,
@@ -31,7 +32,8 @@ export function createRunRecordWriter(
 	options: AutomationRunOptions,
 	startedAt: string,
 ): (params: RunRecordParams) => string | null {
-	const contractHash = hashLocalContract();
+	const contractPath = resolve("harness.contract.json");
+	const contractHash = hashLocalContract(contractPath);
 	return (params) => {
 		try {
 			emitTerminalRunRecord({
@@ -46,7 +48,7 @@ export function createRunRecordWriter(
 					headSha: options.headSha,
 				},
 				contract: {
-					path: "harness.contract.json",
+					path: contractPath,
 					version: options.contractVersion,
 					hash: contractHash,
 				},
@@ -80,10 +82,8 @@ export function createRunRecordWriter(
 	};
 }
 
-function hashLocalContract(): string {
-	return createHash("sha256")
-		.update(readFileSync("harness.contract.json"))
-		.digest("hex");
+function hashLocalContract(contractPath: string): string {
+	return createHash("sha256").update(readFileSync(contractPath)).digest("hex");
 }
 
 function eventStatus(

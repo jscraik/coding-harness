@@ -249,9 +249,7 @@ function rawMatrixResults(matrix: MatrixReport): MatrixRepoResult[] {
 	}
 	return matrix.results.filter(
 		(result): result is MatrixRepoResult =>
-			typeof result === "object" &&
-			result !== null &&
-			!Array.isArray(result),
+			typeof result === "object" && result !== null && !Array.isArray(result),
 	);
 }
 

@@ -25,6 +25,7 @@ const REQUIRED_FILES = [
 	"src/lib/pr-closeout/types.ts",
 	"src/lib/pr-closeout.test.ts",
 	"src/commands/pr-closeout.test.ts",
+	"src/commands/pr-closeout-input-contract.test.ts",
 ];
 
 interface GateFinding {

@@ -77,7 +77,10 @@ function buildDecisionOutput(
 		verdict,
 		...(maxAllowed ? { maxAllowed } : {}),
 		violatingFiles: passed ? [] : files,
-function passForNoChangedFiles(contract: unknown): PolicyGateResult {
+	};
+}
+
+function passForNoChangedFiles(): PolicyGateResult {
 	return {
 		ok: true,
 		output: {
@@ -155,7 +158,7 @@ export function runPolicyGate(options: PolicyGateOptions): PolicyGateResult {
 
 		// No changed files should always pass the gate.
 		if (options.files.length === 0) {
-			return passForNoChangedFiles(contract);
+			return passForNoChangedFiles();
 		}
 
 		const tier = resolveOverallTier(options.files, contract);
