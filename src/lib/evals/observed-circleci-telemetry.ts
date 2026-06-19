@@ -94,6 +94,11 @@ const FAILURE_CLASSIFIERS = [
 		failureClass: "circleci_network_blocked",
 	},
 ] as const;
+const FAILURE_STATUSES = new Set(
+	"failed failure error fail failing infrastructure_fail infrastructure-fail timedout timed_out timed-out timeout terminated-unknown terminated_unknown".split(
+		" ",
+	),
+);
 
 /**
  * Build and optionally persist a sanitized CircleCI observed-eval feed.
@@ -240,7 +245,7 @@ function normalizeJob(
 	index: number,
 ): ObservedCircleCiJob | null {
 	if (!hasCircleCiJobIdentity(value)) return null;
-	const jobName = firstString(value, ["jobName", "job_name"]);
+	const jobName = firstString(value, ["jobName", "job_name", "name"]);
 	const workflowName = firstString(value, ["workflowName", "workflow_name"]);
 	const status = normalizeStatus(
 		firstString(value, ["status", "outcome", "conclusion"]),
@@ -271,7 +276,7 @@ function normalizeJob(
 
 function hasCircleCiJobIdentity(value: Record<string, unknown>): boolean {
 	return (
-		firstString(value, ["jobName", "job_name"]) !== null ||
+		firstString(value, ["jobName", "job_name", "name"]) !== null ||
 		firstString(value, ["checkName", "check_name"]) !== null ||
 		firstString(value, ["workflowName", "workflow_name"]) !== null ||
 		firstString(value, ["jobNumber", "job_number", "build_num"]) !== null ||
@@ -283,7 +288,7 @@ function hasCircleCiJobIdentity(value: Record<string, unknown>): boolean {
 function normalizeStatus(value: string | null): ObservedCircleCiJob["status"] {
 	const status = value?.toLowerCase() ?? "";
 	if (["success", "passed", "pass"].includes(status)) return "pass";
-	if (["failed", "failure", "error", "fail"].includes(status)) return "fail";
+	if (FAILURE_STATUSES.has(status)) return "fail";
 	if (["blocked", "canceled", "cancelled", "unauthorized"].includes(status)) {
 		return "blocked";
 	}
