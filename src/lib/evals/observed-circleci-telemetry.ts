@@ -1,8 +1,8 @@
 import {
 	existsSync,
+	lstatSync,
 	mkdirSync,
 	readFileSync,
-	statSync,
 	writeFileSync,
 } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
@@ -106,7 +106,7 @@ export function buildObservedCircleCiTelemetry(
 ): ObservedCircleCiTelemetryArtifact {
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
 	const sourceRoot = options.circleciTelemetryRoot
-		? resolveRepoPath(repoRoot, options.circleciTelemetryRoot)
+		? resolve(options.circleciTelemetryRoot)
 		: null;
 	const jobs = sourceRoot ? collectJobs(sourceRoot) : [];
 	const artifact: ObservedCircleCiTelemetryArtifact = {
@@ -169,6 +169,7 @@ function telemetryFiles(sourceRoot: string): string[] {
 		inspected += 1;
 		const stat = safeStat(current);
 		if (!stat) continue;
+		if (stat.isSymbolicLink()) continue;
 		if (stat.isDirectory()) {
 			for (const entry of safeReadDir(current)) {
 				if (pending.length + files.length >= MAX_FILES) break;
@@ -185,13 +186,15 @@ function telemetryFiles(sourceRoot: string): string[] {
 
 function safeStat(path: string) {
 	try {
-		return statSync(path);
+		return lstatSync(path);
 	} catch {
 		return null;
 	}
 }
 
 function recordsFromFile(filePath: string): Record<string, unknown>[] {
+	const stat = safeStat(filePath);
+	if (!stat || stat.isSymbolicLink() || !stat.isFile()) return [];
 	let content: string;
 	try {
 		content = readFileSync(filePath, "utf8");

@@ -954,6 +954,7 @@ function runSpecReimplementationLoopFixture(scenario, fixturePath) {
 		iteration: 1,
 		inputSpecPath: "spec-initial.json",
 		implementationPath: "implementation-attempt-1.json",
+		evaluationPath: "evaluator-report-1.json",
 		evaluation: firstEvaluation,
 		loopBudget: { maxIterations: 2 },
 		nextAction: "continue",
@@ -963,6 +964,7 @@ function runSpecReimplementationLoopFixture(scenario, fixturePath) {
 		iteration: 2,
 		inputSpecPath: "spec-improved.json",
 		implementationPath: "implementation-attempt-2.json",
+		evaluationPath: "evaluator-report-2.json",
 		evaluation: secondEvaluation,
 		loopBudget: { maxIterations: 2 },
 		nextAction: "stop",
@@ -1059,11 +1061,20 @@ function buildSpecLoopIterationRecord({
 	iteration,
 	inputSpecPath,
 	implementationPath,
+	evaluationPath,
 	evaluation,
 	loopBudget,
 	nextAction,
 	previousRemainingDelta,
 }) {
+	const evidenceRefs = [
+		...new Set([
+			`fixture:${inputSpecPath}`,
+			`fixture:${implementationPath}`,
+			`fixture:${evaluationPath}`,
+			...normalizeArray(evaluation.evidenceRefs),
+		]),
+	];
 	const remainingDelta = [
 		...evaluation.missingAssumptions,
 		...evaluation.mismatches.map((item) => item.id),
@@ -1088,7 +1099,7 @@ function buildSpecLoopIterationRecord({
 		validation: {
 			passed: remainingDelta.length === 0,
 			remainingDelta,
-			evidenceRefs: normalizeArray(evaluation.evidenceRefs),
+			evidenceRefs,
 		},
 		loopBudget,
 		nextAction,
@@ -1110,7 +1121,7 @@ function isValidSpecLoopIterationReceipt(receipt) {
 		Boolean(receipt.repair?.updatedArtifactPath) &&
 		typeof receipt.validation?.passed === "boolean" &&
 		Array.isArray(receipt.validation?.remainingDelta) &&
-		Array.isArray(receipt.validation?.evidenceRefs) &&
+		normalizeArray(receipt.validation?.evidenceRefs).length > 0 &&
 		Number.isInteger(receipt.loopBudget?.maxIterations) &&
 		["continue", "stop"].includes(receipt.nextAction) &&
 		(receipt.nextAction === "continue"
@@ -1317,7 +1328,7 @@ function runCircleCiRedJobTriageFixture(scenario, fixturePath) {
 				byId
 					.get("independent-review-and-security")
 					?.independentChecks.every((check) =>
-						["CodeRabbit", "Snyk"].includes(check),
+						["CodeRabbit", "Semgrep Cloud"].includes(check),
 					),
 		),
 		assertion(
@@ -1375,11 +1386,15 @@ function buildCircleCiRedJobTriageCases() {
 			id: "independent-review-and-security",
 			checks: [
 				{ name: "CodeRabbit", provider: "review", status: "fail" },
-				{ name: "security/snyk", provider: "security", status: "fail" },
+				{
+					name: "security/semgrep-cloud-platform/scan",
+					provider: "security",
+					status: "fail",
+				},
 				{ name: "ci/circleci: test", provider: "circleci", status: "pass" },
 			],
 			circleCiOutput: [],
-			evidenceRefs: ["coderabbit://threads/open", "snyk://pr-check"],
+			evidenceRefs: ["coderabbit://threads/open", "semgrep://pr-check"],
 			changedFiles: [],
 			validationCommands: [],
 		},
@@ -1427,7 +1442,9 @@ function resolveCircleCiTriageCase(triageCase) {
 	}
 	const independentChecks = triageCase.checks
 		.filter((check) => ["review", "security"].includes(check.provider))
-		.map((check) => (check.provider === "review" ? "CodeRabbit" : "Snyk"));
+		.map((check) =>
+			check.provider === "review" ? "CodeRabbit" : "Semgrep Cloud",
+		);
 	if (independentChecks.length > 0) {
 		return {
 			caseId: triageCase.id,
@@ -2355,7 +2372,7 @@ function buildLivePrLoopCanary() {
 				reason: "network or token unavailable in local canary",
 			},
 			{
-				name: "security/snyk",
+				name: "security/semgrep-cloud-platform/scan",
 				status: "blocked",
 				blockerClassification: "environment/tooling issue",
 				reason: "external security check must be refreshed remotely",
@@ -2368,7 +2385,7 @@ function buildLivePrLoopCanary() {
 		manualStepsBefore: [
 			"ask which check failed",
 			"ask for CircleCI job URL",
-			"ask whether Snyk is separate",
+			"ask whether Semgrep Cloud is separate",
 			"ask which validation was run",
 			"ask whether review is current",
 		],

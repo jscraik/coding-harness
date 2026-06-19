@@ -2,6 +2,8 @@ import { readdirSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 
 const MAX_FILES = 200;
+const SECRET_KEY_PATTERN =
+	"(?:[A-Z0-9_-]*(?:TOKEN|KEY|SECRET|PASSWORD)[A-Z0-9_-]*|ACCESS[_-]?TOKEN|REFRESH[_-]?TOKEN|ID[_-]?TOKEN|CLIENT[_-]?SECRET|PRIVATE[_-]?KEY|CIRCLE[_-]?TOKEN)";
 
 /** Return whether telemetry traversal should continue within the file cap. */
 export function shouldInspectTelemetry(
@@ -89,26 +91,29 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 export function redactSecrets(value: string): string {
 	return value
 		.replace(
-			/\b([A-Z0-9_]*(?:TOKEN|KEY|SECRET|PASSWORD)[A-Z0-9_]*)=\S+/gi,
+			new RegExp(`\\b(${SECRET_KEY_PATTERN})=\\S+`, "gi"),
 			"$1=<redacted>",
 		)
 		.replace(
-			/\b([A-Z0-9_-]*(?:TOKEN|KEY|SECRET|PASSWORD)[A-Z0-9_-]*\s*:\s*)\S+/gi,
+			new RegExp(`\\b(${SECRET_KEY_PATTERN}\\s*:\\s*)\\S+`, "gi"),
 			"$1<redacted>",
 		)
 		.replace(/(\bAuthorization:\s*)(?:Bearer|Basic)\s+\S+/gi, "$1<redacted>")
 		.replace(/\b(Bearer|Basic)\s+[A-Za-z0-9._~+/-]+=*/gi, "$1 <redacted>")
 		.replace(/Circle-Token:\s*\S+/gi, "Circle-Token: <redacted>")
 		.replace(
-			/([?&](?:token|api[_-]?key|key|secret|password|circle-token)=)[^&\s]+/gi,
+			new RegExp(`([?&]${SECRET_KEY_PATTERN}=)[^&\\s]+`, "gi"),
 			"$1<redacted>",
 		)
 		.replace(
-			/(["'](?:token|api[_-]?key|secret|password)["']\s*:\s*)["'][^"']*["']/gi,
+			new RegExp(
+				`(["']${SECRET_KEY_PATTERN}["']\\s*:\\s*)["'][^"']*["']`,
+				"gi",
+			),
 			'$1"<redacted>"',
 		)
 		.replace(
-			/\b((?:token|api[_-]?key|secret|password)\s*[:=]\s*)[^"',\s}]+/gi,
+			new RegExp(`\\b((?:${SECRET_KEY_PATTERN})\\s*[:=]\\s*)[^"',\\s}]+`, "gi"),
 			"$1<redacted>",
 		)
 		.replace(

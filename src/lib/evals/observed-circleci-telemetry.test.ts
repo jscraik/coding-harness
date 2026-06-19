@@ -1,4 +1,10 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -107,10 +113,11 @@ describe("buildObservedCircleCiTelemetry", () => {
 				job_name: "security/semgrep-cloud-platform/scan",
 				status: "failed",
 				message:
-					'Authorization: Bearer bearer-secret CIRCLECI_TOKEN: circle-secret x-api-key: key-secret {"token":"json-secret"} https://example.test/log?token=query-secret permission denied',
+					'Authorization: Bearer bearer-secret CIRCLECI_TOKEN: circle-secret x-api-key: key-secret client_secret=client-secret {"token":"json-secret","CIRCLE_TOKEN":"json-circle-secret"} https://example.test/log?access_token=query-secret permission denied',
 				evidenceRefs: [
-					"https://circleci.example.test/job?token=ref-secret",
+					"https://circleci.example.test/job?access_token=ref-secret",
 					"Authorization: Bearer ref-secret",
+					"CIRCLE_TOKEN: ref-circle-secret",
 				],
 			}),
 		);
@@ -130,16 +137,21 @@ describe("buildObservedCircleCiTelemetry", () => {
 		expect(artifact.jobs[0]?.excerpt).toContain("Authorization: <redacted>");
 		expect(artifact.jobs[0]?.excerpt).toContain("CIRCLECI_TOKEN: <redacted>");
 		expect(artifact.jobs[0]?.excerpt).toContain("x-api-key: <redacted>");
+		expect(artifact.jobs[0]?.excerpt).toContain("client_secret=<redacted>");
 		expect(artifact.jobs[0]?.excerpt).toContain('"token":"<redacted>"');
-		expect(artifact.jobs[0]?.excerpt).toContain("?token=<redacted>");
+		expect(artifact.jobs[0]?.excerpt).toContain('"CIRCLE_TOKEN":"<redacted>"');
+		expect(artifact.jobs[0]?.excerpt).toContain("?access_token=<redacted>");
 		expect(artifact.jobs[0]?.excerpt).not.toContain("bearer-secret");
 		expect(artifact.jobs[0]?.excerpt).not.toContain("circle-secret");
 		expect(artifact.jobs[0]?.excerpt).not.toContain("key-secret");
+		expect(artifact.jobs[0]?.excerpt).not.toContain("client-secret");
 		expect(artifact.jobs[0]?.excerpt).not.toContain("json-secret");
+		expect(artifact.jobs[0]?.excerpt).not.toContain("json-circle-secret");
 		expect(artifact.jobs[0]?.excerpt).not.toContain("query-secret");
 		expect(artifact.jobs[0]?.evidenceRefs).toEqual([
-			"https://circleci.example.test/job?token=<redacted>",
+			"https://circleci.example.test/job?access_token=<redacted>",
 			"Authorization: <redacted>",
+			"CIRCLE_TOKEN: <redacted>",
 			"local-circleci-telemetry://auth.json",
 		]);
 	});
@@ -163,24 +175,47 @@ describe("buildObservedCircleCiTelemetry", () => {
 		).toEqual(artifact);
 	});
 
-	it("rejects telemetry source and output paths outside repoRoot", () => {
+	it("allows external telemetry roots but rejects output paths outside repoRoot", () => {
 		const root = makeRoot();
+		const telemetryRoot = makeRoot();
+		writeFileSync(
+			join(telemetryRoot, "external.json"),
+			JSON.stringify({ job_name: "typecheck", status: "failed" }),
+		);
 
+		const artifact = buildObservedCircleCiTelemetry({
+			repoRoot: root,
+			circleciTelemetryRoot: telemetryRoot,
+			generatedAt: "2026-06-19T00:00:00.000Z",
+		});
+
+		expect(artifact.summary.jobsObserved).toBe(1);
 		expect(() =>
 			buildObservedCircleCiTelemetry({
 				repoRoot: root,
-				circleciTelemetryRoot: join(root, "..", "outside"),
-				generatedAt: "2026-06-19T00:00:00.000Z",
-			}),
-		).toThrow("inside repoRoot");
-		expect(() =>
-			buildObservedCircleCiTelemetry({
-				repoRoot: root,
-				circleciTelemetryRoot: root,
+				circleciTelemetryRoot: telemetryRoot,
 				generatedAt: "2026-06-19T00:00:00.000Z",
 				outputPath: join(root, "..", "artifact.json"),
 			}),
 		).toThrow("inside repoRoot");
+	});
+
+	it("skips symlinked telemetry files that escape the configured root", () => {
+		const root = makeRoot();
+		const outsideRoot = makeRoot();
+		writeFileSync(
+			join(outsideRoot, "outside.json"),
+			JSON.stringify({ job_name: "typecheck", status: "failed" }),
+		);
+		symlinkSync(join(outsideRoot, "outside.json"), join(root, "linked.json"));
+
+		const artifact = buildObservedCircleCiTelemetry({
+			repoRoot: root,
+			circleciTelemetryRoot: root,
+			generatedAt: "2026-06-19T00:00:00.000Z",
+		});
+
+		expect(artifact.summary.jobsObserved).toBe(0);
 	});
 });
 
