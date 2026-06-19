@@ -697,6 +697,37 @@
 			}
 		},
 		{
+			"id": "observed-eval-usage-repo-root-telemetry",
+			"type": "live_fixture",
+			"prompt": "Run observed eval usage from outside the checkout with --repo-root and a relative CircleCI telemetry root.",
+			"expected": {
+				"commands": [
+					"pnpm test:evals",
+					"pnpm run observed:eval-usage -- --repo-root <fixture-checkout> --plugin-eval-budget none --circleci-telemetry-root artifacts/evals/circleci-telemetry --circleci-output artifacts/evals/observed-circleci-feed.json --json"
+				],
+				"artifacts": [
+					"artifacts/evals/observed-circleci-feed.json",
+					"artifacts/evals/live-fixtures/observed-eval-usage-repo-root-telemetry/observed-eval-usage-telemetry-root.json"
+				],
+				"assertions": [
+					"repo-root telemetry fixture evidence is written",
+					"relative CircleCI telemetry root resolves under repo root",
+					"caller cwd telemetry with matching relative path is ignored",
+					"observed eval usage JSON contract includes CircleCI telemetry"
+				],
+				"stopConditions": [
+					"Do not treat caller cwd telemetry as evidence for a different --repo-root checkout."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 2,
+				"artifact_evidence": 2,
+				"validation_sufficiency": 1,
+				"blocker_honesty": 1,
+				"manual_step_reduction": 1
+			}
+		},
+		{
 			"id": "review-finding-narrow-fix",
 			"type": "live_fixture",
 			"prompt": "Fix this CodeRabbit finding if it is still valid.",

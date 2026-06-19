@@ -360,6 +360,10 @@ function describeGitRange(options: CliOptions): string {
 	return parts.join(" ");
 }
 
+function resolveCircleCiTelemetryRoot(options: CliOptions): string {
+	return resolve(options.repoRoot, options.circleciTelemetryRoot);
+}
+
 function safeFileStem(value: string): string {
 	return value.replace(/[^a-zA-Z0-9._-]+/g, "-");
 }
@@ -447,7 +451,7 @@ function main(): void {
 	const chronicle = collectChronicleStatus();
 	const circleci = buildObservedCircleCiTelemetry({
 		repoRoot: options.repoRoot,
-		circleciTelemetryRoot: options.circleciTelemetryRoot,
+		circleciTelemetryRoot: resolveCircleCiTelemetryRoot(options),
 		outputPath: options.circleciOutput,
 	});
 	const artifact = buildObservedSkillUsage({

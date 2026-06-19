@@ -626,6 +626,11 @@ async function runLiveFixture(scenario) {
 			result = await runReviewFeedbackEvalSeedFixture(scenario, fixturePath);
 		} else if (scenario.id === "circleci-red-job-triage") {
 			result = runCircleCiRedJobTriageFixture(scenario, fixturePath);
+		} else if (scenario.id === "observed-eval-usage-repo-root-telemetry") {
+			result = runObservedEvalUsageRepoRootTelemetryFixture(
+				scenario,
+				fixturePath,
+			);
 		} else if (scenario.id === "review-finding-narrow-fix") {
 			result = runReviewFindingNarrowFixFixture(scenario, fixturePath);
 		} else if (scenario.id === "known-failure-regression-replay") {
@@ -1350,6 +1355,138 @@ function runCircleCiRedJobTriageFixture(scenario, fixturePath) {
 					),
 		),
 	]);
+}
+
+/**
+ * Run observed eval usage from outside the fixture checkout and verify relative
+ * CircleCI telemetry roots are still anchored to the requested repo root.
+ *
+ * @param {{id: string}} scenario - Scenario descriptor from the eval registry.
+ * @param {string} fixturePath - Absolute fixture artifact directory.
+ * @returns {object} Fixture result containing observed eval usage assertions.
+ */
+function runObservedEvalUsageRepoRootTelemetryFixture(scenario, fixturePath) {
+	const repoRoot = path.join(fixturePath, "checkout");
+	const callerRoot = path.join(fixturePath, "caller");
+	const relativeTelemetryRoot = "artifacts/evals/circleci-telemetry";
+	const repoTelemetryRoot = path.join(repoRoot, relativeTelemetryRoot);
+	const callerTelemetryRoot = path.join(callerRoot, relativeTelemetryRoot);
+	const reportPath = path.join(
+		fixturePath,
+		"observed-eval-usage-telemetry-root.json",
+	);
+
+	initializeObservedEvalUsageFixtureRepo(repoRoot);
+	mkdirSync(repoTelemetryRoot, { recursive: true });
+	mkdirSync(callerTelemetryRoot, { recursive: true });
+	writeJson(path.join(repoTelemetryRoot, "repo-job.json"), {
+		job_name: "repo-root-telemetry-job",
+		workflow_name: "pr-pipeline",
+		status: "failed",
+		message: "TS2345 from repo-root telemetry",
+	});
+	writeJson(path.join(callerTelemetryRoot, "caller-job.json"), {
+		job_name: "caller-cwd-telemetry-job",
+		workflow_name: "wrong-cwd",
+		status: "failed",
+		message: "TS9999 from caller cwd telemetry",
+	});
+
+	const stdout = execFileSync(
+		process.execPath,
+		[
+			"--import",
+			path.join(REPO_ROOT, "node_modules/tsx/dist/loader.mjs"),
+			path.join(REPO_ROOT, "scripts/collect-observed-eval-usage.ts"),
+			"--repo-root",
+			repoRoot,
+			"--plugin-eval-budget",
+			"none",
+			"--circleci-telemetry-root",
+			relativeTelemetryRoot,
+			"--circleci-output",
+			"artifacts/evals/observed-circleci-feed.json",
+			"--output",
+			"artifacts/evals/observed-skill-usage.json",
+			"--summary",
+			"artifacts/evals/observed-skill-usage-summary.md",
+			"--git-max-count",
+			"5",
+			"--json",
+		],
+		{
+			cwd: callerRoot,
+			encoding: "utf-8",
+			env: {
+				...process.env,
+				SESSION_COLLECTOR_ROOT: path.join(
+					fixturePath,
+					"missing-session-collector",
+				),
+			},
+		},
+	);
+	const output = JSON.parse(stdout);
+	const circleciTelemetry = output.circleciTelemetry;
+	const persisted = readJson(
+		path.join(repoRoot, "artifacts/evals/observed-circleci-feed.json"),
+	);
+	const observedJobNames = normalizeArray(circleciTelemetry?.jobs).map(
+		(job) => job.jobName,
+	);
+	const report = {
+		schemaVersion: "observed-eval-usage-telemetry-root-fixture/v1",
+		sourceScenario: scenario.id,
+		callerRoot,
+		repoRoot,
+		relativeTelemetryRoot,
+		resolvedTelemetryRoot: circleciTelemetry?.source?.circleciTelemetryRoot,
+		observedJobNames,
+		persistedSourceRoot: persisted.source?.circleciTelemetryRoot,
+	};
+	writeJson(reportPath, report);
+
+	return fixtureResult(scenario.id, [
+		assertion(
+			"repo-root telemetry fixture evidence is written",
+			readJson(reportPath).schemaVersion ===
+				"observed-eval-usage-telemetry-root-fixture/v1",
+		),
+		assertion(
+			"relative CircleCI telemetry root resolves under repo root",
+			circleciTelemetry?.source?.circleciTelemetryRoot === repoTelemetryRoot &&
+				persisted.source?.circleciTelemetryRoot === repoTelemetryRoot,
+		),
+		assertion(
+			"caller cwd telemetry with matching relative path is ignored",
+			observedJobNames.includes("repo-root-telemetry-job") &&
+				!observedJobNames.includes("caller-cwd-telemetry-job"),
+		),
+		assertion(
+			"observed eval usage JSON contract includes CircleCI telemetry",
+			circleciTelemetry?.summary?.jobsObserved === 1 &&
+				persisted.summary?.jobsObserved === 1,
+		),
+	]);
+}
+
+function initializeObservedEvalUsageFixtureRepo(repoRoot) {
+	mkdirSync(repoRoot, { recursive: true });
+	writeFileSync(path.join(repoRoot, "README.md"), "# Fixture checkout\n");
+	execFileSync("git", ["init"], { cwd: repoRoot, stdio: "ignore" });
+	execFileSync("git", ["config", "user.email", "fixture@example.invalid"], {
+		cwd: repoRoot,
+		stdio: "ignore",
+	});
+	execFileSync("git", ["config", "user.name", "Fixture Runner"], {
+		cwd: repoRoot,
+		stdio: "ignore",
+	});
+	execFileSync("git", ["add", "README.md"], { cwd: repoRoot, stdio: "ignore" });
+	execFileSync("git", ["commit", "-m", "fixture checkout"], {
+		cwd: repoRoot,
+		stdio: "ignore",
+	});
 }
 
 function buildCircleCiRedJobTriageCases() {
