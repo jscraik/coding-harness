@@ -356,15 +356,6 @@ export async function runPresetCLI(
 ): Promise<{ exitCode: number; output?: string }> {
 	const [subcommand, ...rest] = args;
 
-	switch (subcommand) {
-		case "list": {
-			return runPresetListCLI(rest);
-		}
-
-		case "show": {
-			return runPresetShowCLI(rest);
-		}
-
 		default: {
 			printPresetUsage();
 			return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
