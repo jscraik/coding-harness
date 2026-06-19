@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
 	PR_CLOSEOUT_SCHEMA_VERSION,
 	type PrCloseoutBlocker,
+	type PrCloseoutClaim,
 	type PrCloseoutReport,
 } from "../lib/pr-closeout.js";
 import { validateHarnessDecision } from "../lib/decision/harness-decision.js";
@@ -43,6 +44,35 @@ function reviewBlocker(): PrCloseoutBlocker {
 	};
 }
 
+function readyClaim(claim: PrCloseoutClaim["claim"]): PrCloseoutClaim {
+	return {
+		claim,
+		status: "pass",
+		evidenceRef: `claim:${claim}`,
+		source: "harness_gates",
+		headSha: "abc123",
+		freshness: "current",
+		blockerClass: null,
+		missingContext: null,
+		verifiedAt: "2026-06-19T00:00:00.000Z",
+	};
+}
+
+function readyClaims(): PrCloseoutClaim[] {
+	const claims: PrCloseoutClaim["claim"][] = [
+		"tests_passed",
+		"ci_green",
+		"review_threads_resolved",
+		"pr_metadata_ready",
+		"branch_current_with_base",
+		"linear_tracker_state_aligned",
+		"independent_review_status_known",
+		"required_checks_match_current_head",
+		"rollback_path_named_or_not_applicable",
+	];
+	return claims.map(readyClaim);
+}
+
 function prCloseoutReport(
 	overrides: Partial<PrCloseoutReport> = {},
 ): PrCloseoutReport {
@@ -55,7 +85,7 @@ function prCloseoutReport(
 		mergeable: true,
 		nextAction: "ready_to_merge",
 		blockers: [],
-		claims: [],
+		claims: readyClaims(),
 		checks: {
 			total: 3,
 			failed: 0,
@@ -394,6 +424,100 @@ describe("harness next pr-closeout evidence", () => {
 					checks: {},
 					reviewThreads: {},
 				}),
+			);
+
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--pr-closeout", "pr-closeout.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("pr_closeout_artifact_invalid");
+			expect(decision.evidenceRef).toEqual(["artifact:pr-closeout.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects ready pr-closeout artifacts with missing claim evidence", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
+		try {
+			writeFileSync(
+				join(repoRoot, "pr-closeout.json"),
+				JSON.stringify(prCloseoutReport({ claims: [] })),
+			);
+
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--pr-closeout", "pr-closeout.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("pr_closeout_artifact_invalid");
+			expect(decision.evidenceRef).toEqual(["artifact:pr-closeout.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects ready pr-closeout artifacts with stale claim evidence", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
+		try {
+			writeFileSync(
+				join(repoRoot, "pr-closeout.json"),
+				JSON.stringify(
+					prCloseoutReport({
+						claims: readyClaims().map((claim) =>
+							claim.claim === "ci_green"
+								? { ...claim, freshness: "stale" }
+								: claim,
+						),
+					}),
+				),
+			);
+
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--pr-closeout", "pr-closeout.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("pr_closeout_artifact_invalid");
+			expect(decision.evidenceRef).toEqual(["artifact:pr-closeout.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects ready pr-closeout artifacts with not-applicable mandatory claims", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
+		try {
+			writeFileSync(
+				join(repoRoot, "pr-closeout.json"),
+				JSON.stringify(
+					prCloseoutReport({
+						claims: readyClaims().map((claim) =>
+							claim.claim === "ci_green"
+								? { ...claim, status: "not_applicable" }
+								: claim,
+						),
+					}),
+				),
 			);
 
 			const { exitCode, output } = captureNextCLI(

@@ -1,5 +1,6 @@
 import {
 	PR_CLOSEOUT_SCHEMA_VERSION,
+	type PrCloseoutClaim,
 	type PrCloseoutReport,
 } from "../lib/pr-closeout.js";
 
@@ -20,6 +21,22 @@ const PR_CLOSEOUT_NEXT_ACTIONS = new Set([
 	"needs_jamie_decision",
 	"cleanup_before_continue",
 ]);
+
+const READY_PR_CLOSEOUT_CLAIMS = new Set<PrCloseoutClaim["claim"]>([
+	"tests_passed",
+	"ci_green",
+	"review_threads_resolved",
+	"pr_metadata_ready",
+	"branch_current_with_base",
+	"linear_tracker_state_aligned",
+	"independent_review_status_known",
+	"required_checks_match_current_head",
+	"rollback_path_named_or_not_applicable",
+]);
+
+const READY_PR_CLOSEOUT_NOT_APPLICABLE_CLAIMS = new Set<
+	PrCloseoutClaim["claim"]
+>(["rollback_path_named_or_not_applicable"]);
 
 const isFiniteNumber = (value: unknown): value is number =>
 	typeof value === "number" && Number.isFinite(value);
@@ -136,12 +153,41 @@ function hasPrCloseoutCollections(report: Partial<PrCloseoutReport>): boolean {
 	);
 }
 
+function hasReadyPrCloseoutClaims(report: Partial<PrCloseoutReport>): boolean {
+	if (!Array.isArray(report.claims)) return false;
+	const claims = new Map<string, PrCloseoutClaim>();
+	for (const claim of report.claims) {
+		if (!isObjectRecord(claim)) return false;
+		if (typeof claim.claim !== "string") return false;
+		if (
+			!READY_PR_CLOSEOUT_CLAIMS.has(claim.claim as PrCloseoutClaim["claim"])
+		) {
+			return false;
+		}
+		if (
+			claim.status !== "pass" &&
+			!(
+				claim.status === "not_applicable" &&
+				READY_PR_CLOSEOUT_NOT_APPLICABLE_CLAIMS.has(
+					claim.claim as PrCloseoutClaim["claim"],
+				)
+			)
+		) {
+			return false;
+		}
+		if (claim.freshness !== "current") return false;
+		claims.set(claim.claim, claim as PrCloseoutClaim);
+	}
+	return READY_PR_CLOSEOUT_CLAIMS.size === claims.size;
+}
+
 function hasReadyPrCloseoutConsistency(
 	report: Partial<PrCloseoutReport>,
 ): boolean {
 	if (report.status !== "ready") return true;
 	if (!report.mergeable || report.nextAction !== "ready_to_merge") return false;
 	if ((report.blockers?.length ?? 0) > 0) return false;
+	if (!hasReadyPrCloseoutClaims(report)) return false;
 	return (
 		report.checks?.failed === 0 &&
 		report.checks.pending === 0 &&

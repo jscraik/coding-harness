@@ -1,20 +1,17 @@
 import type { HarnessNextMode } from "./next-decisions.js";
+import {
+	parseEvidenceMode,
+	parseFilesOption,
+	type HarnessNextEvidenceMode,
+} from "./next-option-parsers.js";
+export type { HarnessNextEvidenceMode } from "./next-option-parsers.js";
 
-/** Evidence strictness for optional phase-exit and runtime-card inputs. */
-export type HarnessNextEvidenceMode = "optional" | "required";
-
-/** Worktree handling posture for the harness next recommendation.
- *
- * - clean: enforce a clean and in-sync worktree before recommending local changes.
- * - dirty-with-justification: allow a dirty worktree when the caller explicitly acknowledges that state.
- * - fresh-worktree: recommend and enforce worktrees that are clean and in sync before running local recommendations.
- */
+/** Worktree cleanliness posture accepted by `harness next`. */
 export type HarnessNextWorktreeRole =
 	| "clean"
 	| "dirty-with-justification"
 	| "fresh-worktree";
-
-/** Parsed CLI arguments for the harness next command. */
+/** Parsed command-line options for `harness next`. */
 export interface ParsedNextArgs {
 	json: boolean;
 	mode: HarnessNextMode;
@@ -40,16 +37,6 @@ export interface ParsedNextArgs {
 }
 
 const VALID_MODES: readonly HarnessNextMode[] = ["local", "pr", "ci"];
-const VALID_EVIDENCE_MODES: readonly HarnessNextEvidenceMode[] = [
-	"optional",
-	"required",
-];
-
-interface ParsedFilesOption {
-	files?: string[];
-	error?: "files_missing" | "files_empty";
-	nextIndex: number;
-}
 
 interface NextArgsState {
 	json: boolean;
@@ -69,60 +56,10 @@ type NextArgHandler = (
 	index: number,
 ) => NextArgParseResult;
 type ArtifactPathKey = "phaseExitPath" | "runtimeCardPath" | "prCloseoutPath";
-type ArtifactMissingError =
-	| "phase_exit_missing"
-	| "runtime_card_missing"
-	| "pr_closeout_missing";
-
-function parseEvidenceMode(
-	value: string | undefined,
-):
-	| { evidenceMode: HarnessNextEvidenceMode }
-	| { error: "evidence_missing" | "evidence_invalid"; errorValue?: string } {
-	if (!value || value.startsWith("-")) return { error: "evidence_missing" };
-	if (!isHarnessNextEvidenceMode(value)) {
-		return { error: "evidence_invalid", errorValue: value };
-	}
-	return { evidenceMode: value };
-}
-
-/** Return whether a value is a supported harness next execution mode. */
+type ArtifactMissingError = ParsedNextArgs["error"] & `${string}_missing`;
+/** Return whether a string is a supported `harness next` mode. */
 export function isHarnessNextMode(value: string): value is HarnessNextMode {
 	return VALID_MODES.includes(value as HarnessNextMode);
-}
-
-function isHarnessNextEvidenceMode(
-	value: string,
-): value is HarnessNextEvidenceMode {
-	return VALID_EVIDENCE_MODES.includes(value as HarnessNextEvidenceMode);
-}
-
-/** Split comma-separated file paths into trimmed non-empty entries. */
-function splitFiles(raw: string): string[] {
-	return raw
-		.split(",")
-		.map((entry) => entry.trim())
-		.filter((entry) => entry.length > 0);
-}
-
-function parseFilesOption(args: string[], index: number): ParsedFilesOption {
-	const values: string[] = [];
-	let valueIndex = index + 1;
-	while (valueIndex < args.length) {
-		const value = args[valueIndex];
-		if (value === undefined || value.startsWith("-")) break;
-		values.push(...splitFiles(value));
-		valueIndex += 1;
-	}
-	// --files was present but no argument followed.
-	if (values.length === 0 && valueIndex === index + 1) {
-		return { error: "files_missing", nextIndex: index };
-	}
-	// Arguments were consumed but all entries were empty after trimming.
-	if (values.length === 0) {
-		return { error: "files_empty", files: [], nextIndex: valueIndex - 1 };
-	}
-	return { files: values, nextIndex: valueIndex - 1 };
 }
 
 function isHarnessNextWorktreeRole(
@@ -249,10 +186,6 @@ function parseEvidenceArg(
 	return { nextIndex: index + 1 };
 }
 
-function parseArtifactPathArg(args: string[], index: number): string | null {
-	return readOptionValue(args, index) ?? null;
-}
-
 function parseArtifactArg(
 	state: NextArgsState,
 	args: string[],
@@ -260,7 +193,7 @@ function parseArtifactArg(
 	field: ArtifactPathKey,
 	error: ArtifactMissingError,
 ): NextArgParseResult {
-	const value = parseArtifactPathArg(args, index);
+	const value = readOptionValue(args, index);
 	if (!value) return { parsed: stateToParsed(state, { error }) };
 	state[field] = value;
 	return { nextIndex: index + 1 };
@@ -312,7 +245,7 @@ function parseNextArg(
 			};
 }
 
-/** Parse CLI-style arguments for the harness next command. */
+/** Parse command-line arguments for `harness next`. */
 export function parseNextArgs(args: string[]): ParsedNextArgs {
 	const state: NextArgsState = {
 		json: args.includes("--json"),

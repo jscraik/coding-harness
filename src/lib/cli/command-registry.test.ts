@@ -29,6 +29,7 @@ const AGENT_COMMAND_RAIL_NAMES = [
 	"runtime-card",
 	"session-context",
 	"check",
+	"fitness",
 	"validation-plan",
 	"review-context",
 	"decision-request",
@@ -47,6 +48,7 @@ const AGENT_VERIFY_COMMAND_RAIL_NAMES = [
 	"next",
 	"runtime-card",
 	"check",
+	"fitness",
 	"validation-plan",
 	"evidence-verify",
 ] as const;

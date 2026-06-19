@@ -13,7 +13,7 @@ import {
 } from "./next-decision-meta.js";
 import type { HarnessNextMode } from "./next-decision-types.js";
 import { humanRequiredDecisionMeta } from "./next-support.js";
-import { blockedDecision } from "./next-decisions.js";
+import { blockedDecision } from "./next-blocked-decisions.js";
 
 /** PR closeout evidence accepted by harness next. */
 export interface HarnessNextPrCloseoutEvidence {

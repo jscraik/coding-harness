@@ -12,6 +12,7 @@ const AGENT_VERIFY_COMMAND_NAMES = [
 	"check",
 	"runtime-card",
 	"validation-plan",
+	"fitness",
 	"evidence-verify",
 ] as const;
 const AGENT_REVIEW_COMMAND_NAMES = [

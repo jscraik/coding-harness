@@ -10,12 +10,10 @@ import {
 } from "./next-decisions.js";
 
 type HarnessNextRunner = (options: HarnessNextOptions) => HarnessDecision;
-
 type UsageErrorOptions = Omit<HarnessNextOptions, "mode" | "files">;
 type NextUsageError = NonNullable<ParsedNextArgs["error"]>;
 type UsageErrorHandler = (parsed: ParsedNextArgs) => HarnessDecision;
 type MappedUsageError = Exclude<NextUsageError, "files_empty">;
-
 function blockedUsageErrorDecision(args: {
 	mode: HarnessNextMode;
 	summary: string;
@@ -38,7 +36,6 @@ function blockedUsageErrorDecision(args: {
 		}),
 	});
 }
-
 const USAGE_ERROR_HANDLERS: Record<MappedUsageError, UsageErrorHandler> = {
 	invalid_mode: (parsed) => invalidModeDecision(parsed.errorValue ?? "unknown"),
 	mode_missing: (parsed) =>
@@ -118,7 +115,7 @@ const USAGE_ERROR_HANDLERS: Record<MappedUsageError, UsageErrorHandler> = {
 		}),
 };
 
-/** Build the HarnessDecision for missing required harness next evidence. */
+/** Build a blocking decision when `harness next` lacks required evidence. */
 export function requiredEvidenceMissingDecision(args: {
 	mode: HarnessNextMode;
 	missing: readonly string[];
@@ -141,15 +138,13 @@ export function requiredEvidenceMissingDecision(args: {
 	});
 }
 
-/** Build the HarnessDecision for invalid harness next CLI usage. */
+/** Convert parsed `harness next` usage errors into structured decisions. */
 export function usageErrorDecision(
 	parsed: ParsedNextArgs,
 	options: UsageErrorOptions,
 	runNext: HarnessNextRunner,
 ): HarnessDecision | undefined {
-	if (!parsed.error) {
-		return undefined;
-	}
+	if (!parsed.error) return undefined;
 	if (parsed.error === "files_empty") {
 		return runNext({
 			...options,
