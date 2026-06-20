@@ -986,6 +986,13 @@ describe("harness next pr-closeout evidence", () => {
 		}
 	});
 
+	/**
+	 * Regression test: validates fail-closed behavior when PR closeout artifacts
+	 * advertise valid assurance through editable flags (present=true, valid=true)
+	 * but lack proper underlying validation of the complete assurance matrix.
+	 * This security-critical check ensures we don't trust the artifact's self-reported
+	 * validity without verifying all required assurance layers are present.
+	 */
 	it("rejects ready pr-closeout artifacts with incomplete assurance entries", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
 		try {
