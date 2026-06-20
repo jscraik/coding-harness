@@ -11,7 +11,7 @@ audience:
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-06-17
+last_reviewed: 2026-06-20
 review_cadence: quarterly
 maintenance_trigger:
   - product-surface-change
@@ -342,6 +342,10 @@ PR throughput changes should keep expensive and static validation lanes
 separate without weakening the proof contract: `pnpm test:ci` owns the full
 Vitest lane, `pnpm test:related` keeps changed-source coverage explicit, and
 `pnpm check:static` owns the non-Vitest static aggregate.
+
+Manual private-npm release workflow inputs cross into shell steps through named
+environment variables before validation. Do not interpolate
+`github.event.inputs.*` expressions directly inside release shell bodies.
 
 Use `bash scripts/run-prek.sh <args>` for direct `prek` operations in this
 repository. The wrapper pins `PREK_HOME` to the worktree cache so hook setup and

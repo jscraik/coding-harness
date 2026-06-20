@@ -78,6 +78,10 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 - Types and schemas are contract surfaces. TypeScript, Python, JSON, YAML,
   Markdown metadata, shell, and generated artifacts should use configured type,
   schema, lint, and validation gates rather than ad hoc string assumptions.
+- GitHub Actions release workflow inputs are untrusted shell-boundary data.
+  Pass manual `workflow_dispatch` inputs through named `env` variables before
+  validation instead of interpolating `github.event.inputs.*` directly inside
+  shell scripts.
 - Harness fitness evidence (`harness-fitness/v1` and `harness fitness`) is
   a validation graph surface. Keep schema, TypeScript types, runtime
   validators, conventional artifact names, deterministic lane commands, and
