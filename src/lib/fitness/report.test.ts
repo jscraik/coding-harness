@@ -223,6 +223,40 @@ describe("buildFitnessReport", () => {
 		);
 	});
 
+	it("fails closed when deterministic gate artifact entries are malformed", () => {
+		const dir = mkdtempSync(join(tmpdir(), "fitness-malformed-entry-"));
+		cleanup.push(dir);
+		const reports: Array<[string, Record<string, unknown>]> = [
+			["architecture.json", { violations: [] }],
+			["quality-size.json", { status: "fail", findings: ["oversized"] }],
+			["behavior-tests.json", { status: "pass", failures: [] }],
+			["harness-audit-tracking.json", { status: "pass", failures: [] }],
+		];
+		for (const [name, report] of reports) {
+			writeFileSync(join(dir, name), JSON.stringify(report), "utf8");
+		}
+
+		const report = buildFitnessReport({
+			artifactsDir: dir,
+			now: new Date("2026-06-19T12:00:00.000Z"),
+		});
+
+		expect(report.status).toBe("fail");
+		expect(report.summary.failures).toBe(1);
+		expect(report.lanes[1]).toEqual(
+			expect.objectContaining({
+				id: "quality-budget",
+				status: "fail",
+			}),
+		);
+		expect(report.lanes[1]?.findings[0]).toEqual(
+			expect.objectContaining({
+				id: "quality-budget:artifact:malformed",
+				recommendedCommand: "pnpm run quality:size",
+			}),
+		);
+	});
+
 	it("keeps AI-assisted review findings advisory", () => {
 		const dir = mkdtempSync(join(tmpdir(), "fitness-review-"));
 		cleanup.push(dir);

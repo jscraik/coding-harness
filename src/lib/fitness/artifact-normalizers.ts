@@ -24,17 +24,12 @@ function readJsonFile(path: string): unknown {
 	return JSON.parse(readFileSync(path, "utf8"));
 }
 
-function asRecords(value: unknown): Record<string, unknown>[] {
-	return Array.isArray(value)
-		? value.filter(
-				(item): item is Record<string, unknown> =>
-					!!item && typeof item === "object" && !Array.isArray(item),
-			)
-		: [];
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function asRecords(value: unknown): Record<string, unknown>[] {
+	return Array.isArray(value) ? value.filter(isRecord) : [];
 }
 
 function requiredRecordArray(
@@ -75,7 +70,21 @@ function requiredRecordArray(
 			],
 		};
 	}
-	return { records: asRecords(value) };
+	if (!value.every(isRecord)) {
+		return {
+			malformed: [
+				malformedArtifactFinding({
+					path,
+					lane,
+					command,
+					principle,
+					enforcement,
+					message: `Expected every ${field}[] entry to be an object.`,
+				}),
+			],
+		};
+	}
+	return { records: value };
 }
 
 function malformedArtifactFinding(args: {
