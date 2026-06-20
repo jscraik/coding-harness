@@ -181,10 +181,14 @@ function readPolicyJson() {
 
 function readSchemaJson() {
 	return JSON.parse(readFileSync(schemaPath, "utf8"));
-}
-
 function normalizeRepoPath(relativePath) {
-	return normalize(relativePath).replace(/\\/g, "/").replace(/^\.\//, "");
+	if (typeof relativePath !== "string" || relativePath.trim().length === 0) {
+		return "";
+	}
+	const normalized = normalize(relativePath)
+		.replace(/\\/g, "/")
+		.replace(/^\.\//, "");
+	return normalized === "." ? "" : normalized;
 }
 
 function hasParentSegment(relativePath) {
@@ -192,6 +196,7 @@ function hasParentSegment(relativePath) {
 }
 
 function isInsideRepo(relativePath) {
+	if (typeof relativePath !== "string") return false;
 	const normalized = normalizeRepoPath(relativePath);
 	return (
 		normalized.length > 0 &&
