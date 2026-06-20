@@ -179,6 +179,19 @@ describe("validate-coding-policy.cjs", () => {
 		);
 	});
 
+	it("rejects changed-file routing patterns with partial globstars", () => {
+		const root = createPolicyRoot((policy) => {
+			firstPolicyModule(policy).changedFilePatterns = ["scripts/**.sh"];
+		});
+
+		const result = runValidateCodingPolicy(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"policyModules[0].changedFilePatterns[0] must use ** only as a full path segment",
+		);
+	});
+
 	it("rejects changed-file route inputs that escape the repo", () => {
 		const root = createPolicyRoot();
 

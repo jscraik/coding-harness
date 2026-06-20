@@ -149,27 +149,56 @@ function requireRepoRelativePattern(pattern, path, errors) {
 	if (pattern.includes("//")) {
 		errors.push(`${path} must not contain empty path segments`);
 	}
-	try {
-		globToRegExp(pattern);
-	} catch (error) {
-		errors.push(`${path} is not a valid route pattern: ${error.message}`);
+	for (const segment of normalizeRepoPath(pattern).split("/")) {
+		if (segment.includes("**") && segment !== "**") {
+			errors.push(`${path} must use ** only as a full path segment`);
+		}
 	}
 }
 
-function escapeRegExp(value) {
-	return value.replace(/[|\\{}()[\]^$+?.*]/g, "\\$&");
-}
-
-function globToRegExp(pattern) {
-	const escaped = escapeRegExp(pattern)
-		.replace(/\\\*\\\*\\\//g, "(?:.*/)?")
-		.replace(/\\\*\\\*/g, ".*")
-		.replace(/\\\*/g, "[^/]*");
-	return new RegExp(`^${escaped}$`);
-}
-
 function matchesPattern(relativePath, pattern) {
-	return globToRegExp(pattern).test(normalizeRepoPath(relativePath));
+	return matchSegments(
+		normalizeRepoPath(pattern).split("/"),
+		normalizeRepoPath(relativePath).split("/"),
+	);
+}
+
+function matchSegments(patternSegments, pathSegments) {
+	if (patternSegments.length === 0) return pathSegments.length === 0;
+	const [patternHead, ...remainingPattern] = patternSegments;
+	if (patternHead === "**") {
+		for (let index = 0; index <= pathSegments.length; index += 1) {
+			if (matchSegments(remainingPattern, pathSegments.slice(index))) {
+				return true;
+			}
+		}
+		return false;
+	}
+	const [pathHead, ...remainingPath] = pathSegments;
+	if (pathHead === undefined) return false;
+	if (!matchSegment(patternHead, pathHead)) return false;
+	return matchSegments(remainingPattern, remainingPath);
+}
+
+function matchSegment(patternSegment, pathSegment) {
+	if (patternSegment === "*") return true;
+	const parts = patternSegment.split("*");
+	if (parts.length === 1) return patternSegment === pathSegment;
+	let cursor = 0;
+	const first = parts[0] ?? "";
+	if (first.length > 0) {
+		if (!pathSegment.startsWith(first)) return false;
+		cursor = first.length;
+	}
+	for (let index = 1; index < parts.length; index += 1) {
+		const part = parts[index] ?? "";
+		if (part.length === 0) continue;
+		const found = pathSegment.indexOf(part, cursor);
+		if (found === -1) return false;
+		cursor = found + part.length;
+	}
+	const last = parts.at(-1) ?? "";
+	return last.length === 0 || pathSegment.endsWith(last);
 }
 
 function uniqueStrings(values) {
