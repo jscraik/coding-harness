@@ -49,10 +49,12 @@ validation contract.
   itself. If the approved env surface exposes the required variable names, the
   blocker must be classified from the env-loaded rerun outcome, not from the
   file type.
-- In this repository, `~/.codex/.env` is expected to be a FIFO. FIFO metadata
-  is normal and is not itself a blocker. For FIFO env surfaces, use
-  `op run --env-file ~/.codex/.env -- <command>` and classify the validation
-  lane from that command's attempted rerun outcome.
+- In this repository, `~/.codex/.env` may be a FIFO or a regular readable file.
+  FIFO metadata is normal and is not itself a blocker. For FIFO env surfaces,
+  use `op run --env-file ~/.codex/.env -- <command>`. For regular file env
+  surfaces, source the env file in a shell before running the command (e.g.,
+  `set -a && source ~/.codex/.env && set +a && <command>`). Classify the
+  validation lane from the env-loaded command's attempted rerun outcome.
 
 ## Durable Rule
 

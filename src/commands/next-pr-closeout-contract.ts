@@ -71,8 +71,6 @@ const READY_PR_CLOSEOUT_ASSURANCE_LAYERS = new Set<string>(
 );
 const READY_PR_CLOSEOUT_ASSURANCE_STATUSES = new Set([
 	"pass",
-	"partial",
-	"blocked",
 	"n.a.",
 ]);
 
@@ -354,7 +352,15 @@ function hasReadyPrCloseoutAssurance(
 function hasValidReadyPrCloseoutAssuranceEntries(value: unknown): boolean {
 	if (!Array.isArray(value) || value.length === 0) return false;
 	if (!value.every(isHarnessAssuranceEntryRecord)) return false;
-	return validateHarnessAssuranceEntries(value).valid;
+	if (!validateHarnessAssuranceEntries(value).valid) return false;
+	// For ready closeout, all assurance entries must be "pass" or "n.a."
+	for (const entry of value) {
+		const typedEntry = entry as HarnessAssuranceEntry;
+		if (typedEntry.status !== "pass" && typedEntry.status !== "n.a.") {
+			return false;
+		}
+	}
+	return true;
 }
 
 function isHarnessAssuranceEntryRecord(

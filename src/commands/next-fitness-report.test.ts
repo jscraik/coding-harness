@@ -252,7 +252,7 @@ describe("harness next fitness report evidence", () => {
 				}),
 			);
 
-			const { output } = captureNextCLI(
+			const { exitCode, output } = captureNextCLI(
 				["--json", "--fitness-report", "fitness.json"],
 				{
 					repoRoot,
@@ -260,8 +260,10 @@ describe("harness next fitness report evidence", () => {
 				},
 			);
 
+			expect(exitCode).toBe(1);
 			const decision = parseDecision(output);
 			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("fitness_deterministic_finding");
 			expect(decision.nextCommand).toBe("pnpm typecheck");
 			expect(decision.safeToRun).toBe(true);
 			expect(decision.requiresHuman).toBe(false);

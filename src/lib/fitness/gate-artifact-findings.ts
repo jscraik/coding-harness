@@ -29,7 +29,15 @@ interface GateArtifactFindingOptions {
 }
 
 function readJsonFile(path: string): unknown {
-	return JSON.parse(readFileSync(path, "utf8"));
+	try {
+		const content = readFileSync(path, "utf8");
+		return JSON.parse(content);
+	} catch (error) {
+		return {
+			malformed: true,
+			error: error instanceof Error ? error.message : String(error),
+		};
+	}
 }
 
 /** Return the first non-empty string field from an artifact object. */
@@ -52,7 +60,12 @@ function firstNumber(
 ): number | undefined {
 	for (const field of fields) {
 		const candidate = value[field];
-		if (typeof candidate === "number" && Number.isFinite(candidate)) {
+		if (
+			typeof candidate === "number" &&
+			Number.isFinite(candidate) &&
+			Number.isInteger(candidate) &&
+			candidate > 0
+		) {
 			return candidate;
 		}
 	}
