@@ -5,6 +5,9 @@ const { join, normalize, sep } = require("node:path");
 const repoRoot = process.cwd();
 const policyPath = join(repoRoot, "coding-policy.json");
 const schemaPath = join(repoRoot, "contracts/coding-policy.schema.json");
+const MAX_CHANGED_FILES = 200;
+const MAX_ROUTE_PATH_LENGTH = 512;
+const MAX_ROUTE_SEGMENTS = 64;
 const expectedModules = new Map([
 	["foundations", "codestyle/01-foundations.md"],
 	["docs-config-release", "codestyle/04-docs-config-and-release.md"],
@@ -149,6 +152,7 @@ function requireRepoRelativePattern(pattern, path, errors) {
 	if (pattern.includes("//")) {
 		errors.push(`${path} must not contain empty path segments`);
 	}
+	validateRoutePathShape(pattern, path, errors);
 	for (const segment of normalizeRepoPath(pattern).split("/")) {
 		if (segment.includes("**") && segment !== "**") {
 			errors.push(`${path} must use ** only as a full path segment`);
@@ -156,28 +160,50 @@ function requireRepoRelativePattern(pattern, path, errors) {
 	}
 }
 
-function matchesPattern(relativePath, pattern) {
-	return matchSegments(
-		normalizeRepoPath(pattern).split("/"),
-		normalizeRepoPath(relativePath).split("/"),
-	);
+function validateRoutePathShape(relativePath, path, errors) {
+	const normalized = normalizeRepoPath(relativePath);
+	if (normalized.length > MAX_ROUTE_PATH_LENGTH) {
+		errors.push(`${path} must be at most ${MAX_ROUTE_PATH_LENGTH} characters`);
+	}
+	if (normalized.split("/").length > MAX_ROUTE_SEGMENTS) {
+		errors.push(`${path} must have at most ${MAX_ROUTE_SEGMENTS} segments`);
+	}
 }
 
-function matchSegments(patternSegments, pathSegments) {
-	if (patternSegments.length === 0) return pathSegments.length === 0;
-	const [patternHead, ...remainingPattern] = patternSegments;
-	if (patternHead === "**") {
-		for (let index = 0; index <= pathSegments.length; index += 1) {
-			if (matchSegments(remainingPattern, pathSegments.slice(index))) {
-				return true;
-			}
+function matchesPattern(relativePath, pattern) {
+	const patternSegments = normalizeRepoPath(pattern).split("/");
+	const pathSegments = normalizeRepoPath(relativePath).split("/");
+	let patternIndex = 0;
+	let pathIndex = 0;
+	let globstarIndex = -1;
+	let globstarPathIndex = 0;
+	while (pathIndex < pathSegments.length) {
+		const patternSegment = patternSegments[patternIndex];
+		if (patternSegment === "**") {
+			globstarIndex = patternIndex;
+			globstarPathIndex = pathIndex;
+			patternIndex += 1;
+			continue;
+		}
+		if (
+			patternSegment !== undefined &&
+			matchSegment(patternSegment, pathSegments[pathIndex])
+		) {
+			patternIndex += 1;
+			pathIndex += 1;
+			continue;
+		}
+		if (globstarIndex >= 0) {
+			patternIndex = globstarIndex + 1;
+			globstarPathIndex += 1;
+			pathIndex = globstarPathIndex;
+			continue;
 		}
 		return false;
 	}
-	const [pathHead, ...remainingPath] = pathSegments;
-	if (pathHead === undefined) return false;
-	if (!matchSegment(patternHead, pathHead)) return false;
-	return matchSegments(remainingPattern, remainingPath);
+	return patternSegments
+		.slice(patternIndex)
+		.every((segment) => segment === "**");
 }
 
 function matchSegment(patternSegment, pathSegment) {
@@ -446,10 +472,14 @@ try {
 }
 
 const errors = validatePolicy(policy, schema);
+if (parsedArgs.options.changedFiles.length > MAX_CHANGED_FILES) {
+	errors.push(`changedFiles must include at most ${MAX_CHANGED_FILES} paths`);
+}
 for (const [index, changedFile] of parsedArgs.options.changedFiles.entries()) {
 	if (!isInsideRepo(changedFile)) {
 		errors.push(`changedFiles[${index}] must be repo-relative`);
 	}
+	validateRoutePathShape(changedFile, `changedFiles[${index}]`, errors);
 }
 if (errors.length > 0) {
 	console.error("coding-policy: failed");

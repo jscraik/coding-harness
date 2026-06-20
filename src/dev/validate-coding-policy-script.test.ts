@@ -205,6 +205,21 @@ describe("validate-coding-policy.cjs", () => {
 		expect(result.stderr).toContain("changedFiles[0] must be repo-relative");
 	});
 
+	it("rejects changed-file route inputs above the bounded batch limit", () => {
+		const root = createPolicyRoot();
+
+		const result = runValidateCodingPolicy(root, [
+			"--json",
+			"--changed-files",
+			...Array.from({ length: 201 }, (_, index) => `src/file-${index}.ts`),
+		]);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"changedFiles must include at most 200 paths",
+		);
+	});
+
 	it("emits machine-readable policy routes for changed files", () => {
 		const root = createPolicyRoot();
 
