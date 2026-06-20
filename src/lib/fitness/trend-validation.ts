@@ -121,4 +121,78 @@ export function validateTrendSnapshot(
 		errors,
 	);
 	validateString(value.claimBoundary, "trendSnapshot.claimBoundary", errors);
+	validateTrendSnapshotInvariants(value, errors);
+}
+
+function validateTrendSnapshotInvariants(
+	value: Record<string, unknown>,
+	errors: HeValidationError[],
+): void {
+	const baselineStatus = value.baselineStatus;
+	const direction = value.direction;
+	const hasBaselineRef = value.baselineRef !== null;
+	const hasPrevious = value.previous !== null;
+	const hasDelta = value.delta !== null;
+
+	if (baselineStatus === "loaded") {
+		if (!hasBaselineRef) {
+			errors.push(
+				toValidationError(
+					"trendSnapshot.baselineRef must be non-null when baselineStatus is loaded",
+					"trendSnapshot.baselineRef",
+				),
+			);
+		}
+		if (!hasPrevious) {
+			errors.push(
+				toValidationError(
+					"trendSnapshot.previous must be non-null when baselineStatus is loaded",
+					"trendSnapshot.previous",
+				),
+			);
+		}
+		if (!hasDelta) {
+			errors.push(
+				toValidationError(
+					"trendSnapshot.delta must be non-null when baselineStatus is loaded",
+					"trendSnapshot.delta",
+				),
+			);
+		}
+		if (direction === "baseline_unavailable") {
+			errors.push(
+				toValidationError(
+					"trendSnapshot.direction cannot be baseline_unavailable when baselineStatus is loaded",
+					"trendSnapshot.direction",
+				),
+			);
+		}
+	}
+
+	if (baselineStatus === "unavailable") {
+		if (hasPrevious) {
+			errors.push(
+				toValidationError(
+					"trendSnapshot.previous must be null when baselineStatus is unavailable",
+					"trendSnapshot.previous",
+				),
+			);
+		}
+		if (hasDelta) {
+			errors.push(
+				toValidationError(
+					"trendSnapshot.delta must be null when baselineStatus is unavailable",
+					"trendSnapshot.delta",
+				),
+			);
+		}
+		if (direction !== "baseline_unavailable") {
+			errors.push(
+				toValidationError(
+					"trendSnapshot.direction must be baseline_unavailable when baselineStatus is unavailable",
+					"trendSnapshot.direction",
+				),
+			);
+		}
+	}
 }

@@ -133,6 +133,10 @@ const TRUSTED_FITNESS_COMMANDS = new Set([
 	"pnpm run quality:behavior-tests",
 	"pnpm run harness:audit-tracking",
 ]);
+const FITNESS_COMMANDS_THAT_WRITE_FILES = new Set([
+	"pnpm run fitness:typecheck-artifact",
+	"pnpm run fitness:lint-artifact",
+]);
 
 function trustedFitnessCommand(command: string): string | null {
 	const normalized = command.trim();
@@ -146,6 +150,8 @@ function deterministicFitnessDecision(args: {
 }): HarnessDecision {
 	const { artifactPath, mode, topFinding } = args;
 	const nextCommand = trustedFitnessCommand(topFinding.recommendedCommand);
+	const writesFiles =
+		nextCommand !== null && FITNESS_COMMANDS_THAT_WRITE_FILES.has(nextCommand);
 	return createNextDecision({
 		status: "blocked",
 		summary: `Repository fitness is blocked by ${topFinding.title}.`,
@@ -169,7 +175,7 @@ function deterministicFitnessDecision(args: {
 		safeToRun: nextCommand !== null,
 		requiresHuman: nextCommand === null,
 		requiresNetwork: false,
-		writesFiles: false,
+		writesFiles,
 		evidenceRef: [`artifact:${artifactPath}`],
 		failureClass: "fitness_deterministic_finding",
 		retry: "safe",
@@ -180,6 +186,7 @@ function deterministicFitnessDecision(args: {
 			delayClass: "normal",
 			requiresHuman: nextCommand === null,
 			commands: nextCommand ? [nextCommand] : [],
+			writesFiles,
 			extra: {
 				artifactPath,
 				fitnessFinding: topFinding,

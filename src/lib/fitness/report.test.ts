@@ -273,6 +273,40 @@ describe("buildFitnessReport", () => {
 		);
 	});
 
+	it("fails closed when deterministic gate artifacts omit status", () => {
+		const dir = mkdtempSync(join(tmpdir(), "fitness-missing-status-"));
+		cleanup.push(dir);
+		writePassingGateArtifacts(dir);
+		writeFileSync(
+			join(dir, "typecheck.json"),
+			JSON.stringify({ schemaVersion: "typecheck/v1", failures: [] }),
+			"utf8",
+		);
+
+		const report = buildFitnessReport({
+			artifactsDir: dir,
+			now: new Date("2026-06-19T12:00:00.000Z"),
+		});
+
+		expect(report.status).toBe("fail");
+		expect(report.summary.failures).toBe(1);
+		expect(report.lanes[2]).toEqual(
+			expect.objectContaining({
+				id: "type-safety",
+				status: "fail",
+			}),
+		);
+		expect(report.lanes[2]?.findings[0]).toEqual(
+			expect.objectContaining({
+				id: "type-safety:artifact:malformed",
+				recommendedCommand: "pnpm run fitness:typecheck-artifact",
+				evidence: expect.objectContaining({
+					message: "Expected artifact status to be pass, warn, or fail.",
+				}),
+			}),
+		);
+	});
+
 	it("fails closed when deterministic gate artifact entries are malformed", () => {
 		const dir = mkdtempSync(join(tmpdir(), "fitness-malformed-entry-"));
 		cleanup.push(dir);

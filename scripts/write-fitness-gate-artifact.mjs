@@ -36,7 +36,7 @@ const result = spawnSync(command, args, {
 	stdio: ["ignore", "pipe", "pipe"],
 });
 const status = result.status === 0 ? "pass" : "fail";
-const message = [result.stdout, result.stderr]
+const message = [result.stdout, result.stderr, result.error?.message]
 	.filter(Boolean)
 	.join("\n")
 	.trim();
@@ -51,11 +51,12 @@ const details =
 							: `${gate.command.join(" ")} exited without diagnostic output.`,
 				},
 			];
+const exitCode = result.status ?? (result.error ? 127 : 1);
 const artifact = {
 	schemaVersion: gate.schemaVersion,
 	status,
 	command: gate.command.join(" "),
-	exitCode: result.status ?? 1,
+	exitCode,
 	[gate.detailsField]: details,
 };
 const resolvedOutputPath =
@@ -66,4 +67,4 @@ writeFileSync(resolvedOutputPath, `${JSON.stringify(artifact, null, 2)}\n`);
 
 if (result.stdout) process.stdout.write(result.stdout);
 if (result.stderr) process.stderr.write(result.stderr);
-process.exit(result.status ?? 1);
+process.exit(exitCode);

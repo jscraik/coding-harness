@@ -369,6 +369,7 @@ describe("harness next fitness report evidence", () => {
 			expect(decision.failureClass).toBe("fitness_deterministic_finding");
 			expect(decision.nextCommand).toBe("pnpm run fitness:typecheck-artifact");
 			expect(decision.safeToRun).toBe(true);
+			expect(decision.writesFiles).toBe(true);
 			expect(decision.requiresHuman).toBe(false);
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });

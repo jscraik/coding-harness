@@ -314,11 +314,15 @@ function validateRequiredLaneIds(
 	lanes: readonly unknown[],
 	errors: HeValidationError[],
 ): void {
-	const laneIds = new Set(
-		lanes.flatMap((lane) =>
-			isRecord(lane) && typeof lane.id === "string" ? [lane.id] : [],
-		),
+	const rawLaneIds = lanes.flatMap((lane) =>
+		isRecord(lane) && typeof lane.id === "string" ? [lane.id] : [],
 	);
+	const laneIds = new Set(rawLaneIds);
+	if (laneIds.size !== rawLaneIds.length) {
+		errors.push(
+			toValidationError("lanes must not contain duplicate lane ids", "lanes"),
+		);
+	}
 	for (const laneId of REQUIRED_LANE_IDS) {
 		if (!laneIds.has(laneId)) {
 			errors.push(

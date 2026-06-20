@@ -324,6 +324,39 @@ describe("validateFitnessReport", () => {
 		);
 	});
 
+	it("rejects duplicate lane ids", () => {
+		const result = validateFitnessReport(
+			fitnessReport({
+				summary: {
+					lanes: 7,
+					findings: 0,
+					failures: 0,
+					warnings: 0,
+					lanesNeedingEvidence: 0,
+				},
+				lanes: [
+					...canonicalLanes(),
+					lane(
+						"quality-budget",
+						"Quality budget",
+						"pnpm run quality:size",
+						"reduce_cognitive_load",
+						"quality_budget",
+					),
+				],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "lanes must not contain duplicate lane ids",
+				}),
+			]),
+		);
+	});
+
 	it("accepts well-formed trend snapshots", () => {
 		const result = validateFitnessReport(
 			fitnessReport({
@@ -393,6 +426,67 @@ describe("validateFitnessReport", () => {
 				}),
 				expect.objectContaining({
 					code: "trendSnapshot.current.failures must be a non-negative integer",
+				}),
+				expect.objectContaining({
+					code: "trendSnapshot.previous must be non-null when baselineStatus is loaded",
+				}),
+				expect.objectContaining({
+					code: "trendSnapshot.delta must be non-null when baselineStatus is loaded",
+				}),
+			]),
+		);
+	});
+
+	it("rejects contradictory unavailable trend snapshots", () => {
+		const result = validateFitnessReport(
+			fitnessReport({
+				trendSnapshot: {
+					schemaVersion: "harness-fitness-trend-snapshot/v1",
+					baselineRef: null,
+					baselineStatus: "unavailable",
+					current: {
+						status: "pass",
+						findings: 0,
+						failures: 0,
+						warnings: 0,
+						lanesNeedingEvidence: 0,
+						deterministicFindings: 0,
+						advisoryFindings: 0,
+					},
+					previous: {
+						status: "pass",
+						findings: 0,
+						failures: 0,
+						warnings: 0,
+						lanesNeedingEvidence: 0,
+						deterministicFindings: 0,
+						advisoryFindings: 0,
+					},
+					delta: {
+						findings: 0,
+						failures: 0,
+						warnings: 0,
+						lanesNeedingEvidence: 0,
+						deterministicFindings: 0,
+						advisoryFindings: 0,
+					},
+					direction: "unchanged",
+					claimBoundary: "Trend snapshots are advisory.",
+				},
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "trendSnapshot.previous must be null when baselineStatus is unavailable",
+				}),
+				expect.objectContaining({
+					code: "trendSnapshot.delta must be null when baselineStatus is unavailable",
+				}),
+				expect.objectContaining({
+					code: "trendSnapshot.direction must be baseline_unavailable when baselineStatus is unavailable",
 				}),
 			]),
 		);

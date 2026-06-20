@@ -106,6 +106,18 @@ export function gateArtifactFindings(
 	if ("malformed" in result) return result.malformed;
 	const records = result.records;
 	const status = artifactStatus(report);
+	if (status === undefined) {
+		return [
+			malformedArtifactFinding({
+				path: options.path,
+				lane: options.lane,
+				command: options.command,
+				principle: options.principle,
+				enforcement: options.enforcement,
+				message: "Expected artifact status to be pass, warn, or fail.",
+			}),
+		];
+	}
 	if ((status === "fail" || status === "warn") && records.length === 0) {
 		return [
 			emptyDetailsFinding({

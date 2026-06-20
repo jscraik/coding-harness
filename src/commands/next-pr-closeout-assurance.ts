@@ -14,6 +14,16 @@ const READY_PR_CLOSEOUT_ASSURANCE_STATUSES = new Set([
 	"n.a.",
 ]);
 const READY_PR_CLOSEOUT_READY_ASSURANCE_STATUSES = new Set(["pass", "n.a."]);
+const READY_PR_CLOSEOUT_THRESHOLD_OPERATORS = new Set(["<=", ">="]);
+const READY_PR_CLOSEOUT_LIFECYCLE_FIELDS = [
+	"automationState",
+	"branchWorktreeState",
+	"linearState",
+	"mergeState",
+	"nextLaneRouting",
+	"prState",
+	"reviewThreadState",
+] as const;
 
 function isStringArray(value: unknown): value is string[] {
 	return (
@@ -36,6 +46,35 @@ function hasOptionalAssuranceStrings(value: Record<string, unknown>): boolean {
 	);
 }
 
+function isFiniteNumber(value: unknown): value is number {
+	return typeof value === "number" && Number.isFinite(value);
+}
+
+function hasOptionalThresholdShape(value: unknown): boolean {
+	if (value === undefined || value === null) return true;
+	if (!isObjectRecord(value)) return false;
+	return (
+		typeof value.metric === "string" &&
+		READY_PR_CLOSEOUT_THRESHOLD_OPERATORS.has(String(value.operator)) &&
+		typeof value.unit === "string" &&
+		isFiniteNumber(value.value) &&
+		(value.observed === undefined || isFiniteNumber(value.observed))
+	);
+}
+
+function hasOptionalLifecycleStateShape(value: unknown): boolean {
+	if (value === undefined || value === null) return true;
+	if (!isObjectRecord(value)) return false;
+	return (
+		READY_PR_CLOSEOUT_LIFECYCLE_FIELDS.every(
+			(field) => value[field] === undefined || typeof value[field] === "string",
+		) &&
+		(value.unobservedHorizon === undefined ||
+			value.unobservedHorizon === null ||
+			typeof value.unobservedHorizon === "string")
+	);
+}
+
 function isHarnessAssuranceEntryRecord(
 	value: unknown,
 ): value is HarnessAssuranceEntry {
@@ -46,7 +85,9 @@ function isHarnessAssuranceEntryRecord(
 		typeof value.status === "string" &&
 		READY_PR_CLOSEOUT_ASSURANCE_STATUSES.has(value.status) &&
 		(value.evidence === undefined || isStringArray(value.evidence)) &&
-		hasOptionalAssuranceStrings(value)
+		hasOptionalAssuranceStrings(value) &&
+		hasOptionalThresholdShape(value.threshold) &&
+		hasOptionalLifecycleStateShape(value.lifecycleState)
 	);
 }
 
@@ -65,5 +106,9 @@ export function hasValidReadyPrCloseoutAssuranceEntries(
 	if (!Array.isArray(value) || value.length === 0) return false;
 	if (!value.every(isHarnessAssuranceEntryRecord)) return false;
 	if (!hasReadyAssuranceStatuses(value)) return false;
-	return validateHarnessAssuranceEntries(value).valid;
+	try {
+		return validateHarnessAssuranceEntries(value).valid;
+	} catch {
+		return false;
+	}
 }

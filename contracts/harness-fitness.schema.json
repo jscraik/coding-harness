@@ -179,12 +179,12 @@
 					"anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
 				},
 				"baselineStatus": { "enum": ["loaded", "unavailable"] },
-				"current": { "$ref": "`#/`$defs/trendPoint" },
+				"current": { "$ref": "#/$defs/trendPoint" },
 				"previous": {
-					"anyOf": [{ "$ref": "`#/`$defs/trendPoint" }, { "type": "null" }]
+					"anyOf": [{ "$ref": "#/$defs/trendPoint" }, { "type": "null" }]
 				},
 				"delta": {
-					"anyOf": [{ "$ref": "`#/`$defs/trendDelta" }, { "type": "null" }]
+					"anyOf": [{ "$ref": "#/$defs/trendDelta" }, { "type": "null" }]
 				},
 				"direction": {
 					"enum": ["improved", "regressed", "unchanged", "baseline_unavailable"]
@@ -200,8 +200,8 @@
 					"then": {
 						"properties": {
 							"baselineRef": { "type": "string", "minLength": 1 },
-							"previous": { "$ref": "`#/`$defs/trendPoint" },
-							"delta": { "$ref": "`#/`$defs/trendDelta" },
+							"previous": { "$ref": "#/$defs/trendPoint" },
+							"delta": { "$ref": "#/$defs/trendDelta" },
 							"direction": { "enum": ["improved", "regressed", "unchanged"] }
 						}
 					},
@@ -215,7 +215,6 @@
 					}
 				}
 			]
-		},
 		},
 		"principle": {
 			"enum": [

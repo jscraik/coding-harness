@@ -11,7 +11,7 @@ audience:
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-06-19
+last_reviewed: 2026-06-20
 review_cadence: on-change
 maintenance_trigger:
   - agent-operating-policy-change
@@ -78,11 +78,12 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 - Types and schemas are contract surfaces. TypeScript, Python, JSON, YAML,
   Markdown metadata, shell, and generated artifacts should use configured type,
   schema, lint, and validation gates rather than ad hoc string assumptions.
-- Harness fitness evidence (`harness-fitness/v1`, `harness fitness`, and
-  `harness next --fitness-report`) is a validation graph surface. Keep schema,
-  TypeScript types, runtime validators, conventional artifact names,
-  deterministic lane commands, advisory trend snapshots, and trusted
-  next-command routing synchronized.
+- Harness fitness evidence (`harness-fitness/v1` and `harness fitness`) is
+  a validation graph surface. Keep schema, TypeScript types, runtime
+  validators, conventional artifact names, deterministic lane commands, and
+  advisory trend snapshots synchronized. Treat
+  `harness next --fitness-report` as a routing consumer of that evidence, and
+  keep next-command routing synchronized separately.
   Deterministic fitness lanes block on architecture, quality size, type safety,
   static lint, behavior proof, and feedback learning; AI-assisted review remains
   advisory unless an explicit contract update promotes it. Trend snapshots are

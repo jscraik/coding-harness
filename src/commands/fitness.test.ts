@@ -3,8 +3,86 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { COMMAND_SPECS } from "../lib/cli/registry/command-specs.js";
-import { buildFitnessReport } from "../lib/fitness/report.js";
 import { runFitnessCLI } from "./fitness.js";
+
+function staticPassingFitnessReport(generatedAt: string) {
+	return {
+		schemaVersion: "harness-fitness/v1",
+		status: "pass",
+		generatedAt,
+		summary: {
+			lanes: 6,
+			findings: 0,
+			failures: 0,
+			warnings: 0,
+			lanesNeedingEvidence: 0,
+		},
+		lanes: [
+			{
+				id: "architecture-fitness",
+				label: "Architecture fitness",
+				command: "pnpm architecture:check",
+				principle: "protect_deep_module_boundaries",
+				enforcement: "architecture_fitness",
+				status: "pass",
+				evidenceSource: "artifacts/architecture.json",
+				findings: [],
+			},
+			{
+				id: "quality-budget",
+				label: "Quality budget",
+				command: "pnpm run quality:size",
+				principle: "reduce_cognitive_load",
+				enforcement: "quality_budget",
+				status: "pass",
+				evidenceSource: "artifacts/quality-size.json",
+				findings: [],
+			},
+			{
+				id: "type-safety",
+				label: "Type safety",
+				command: "pnpm run fitness:typecheck-artifact",
+				principle: "prove_type_safety",
+				enforcement: "type_safety",
+				status: "pass",
+				evidenceSource: "artifacts/typecheck.json",
+				findings: [],
+			},
+			{
+				id: "static-lint",
+				label: "Static lint",
+				command: "pnpm run fitness:lint-artifact",
+				principle: "preserve_static_contracts",
+				enforcement: "static_analysis",
+				status: "pass",
+				evidenceSource: "artifacts/lint.json",
+				findings: [],
+			},
+			{
+				id: "behavior-proof",
+				label: "Behavior proof",
+				command: "pnpm run quality:behavior-tests",
+				principle: "prove_behavior_outcomes",
+				enforcement: "hard_blocker",
+				status: "pass",
+				evidenceSource: "artifacts/behavior-tests.json",
+				findings: [],
+			},
+			{
+				id: "feedback-learning",
+				label: "Feedback learning",
+				command: "pnpm run harness:audit-tracking",
+				principle: "compound_feedback_to_harness",
+				enforcement: "hard_blocker",
+				status: "pass",
+				evidenceSource: "artifacts/harness-audit-tracking.json",
+				findings: [],
+			},
+		],
+		topDeterministicFinding: null,
+		claimBoundaries: ["Fitness reports normalize local gate evidence only."],
+	};
+}
 
 describe("runFitnessCLI", () => {
 	const cleanup: string[] = [];
@@ -236,11 +314,7 @@ describe("runFitnessCLI", () => {
 		const baselinePath = join(dir, "baseline.json");
 		writeFileSync(
 			baselinePath,
-			JSON.stringify({
-				...buildFitnessReport({
-					now: new Date("2026-06-18T12:00:00.000Z"),
-				}),
-			}),
+			JSON.stringify(staticPassingFitnessReport("2026-06-18T12:00:00.000Z")),
 			"utf8",
 		);
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
@@ -252,7 +326,7 @@ describe("runFitnessCLI", () => {
 			expect.objectContaining({
 				baselineRef: baselinePath,
 				baselineStatus: "loaded",
-				direction: "unchanged",
+				direction: "regressed",
 			}),
 		);
 	});
