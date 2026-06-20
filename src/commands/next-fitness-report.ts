@@ -128,8 +128,8 @@ function topFitnessFinding(
 const TRUSTED_FITNESS_COMMANDS = new Set([
 	"pnpm architecture:check",
 	"pnpm run quality:size",
-	"pnpm typecheck",
-	"pnpm lint",
+	"pnpm run fitness:typecheck-artifact",
+	"pnpm run fitness:lint-artifact",
 	"pnpm run quality:behavior-tests",
 	"pnpm run harness:audit-tracking",
 ]);

@@ -4,11 +4,7 @@ import {
 	type PrCloseoutReport,
 } from "../lib/pr-closeout.js";
 import { HARNESS_CLOSEOUT_GATE_IDS } from "../lib/decision/he-phase-exit.js";
-import {
-	HARNESS_ASSURANCE_LAYERS,
-	type HarnessAssuranceEntry,
-	validateHarnessAssuranceEntries,
-} from "../lib/harness-assurance.js";
+import { hasValidReadyPrCloseoutAssuranceEntries } from "./next-pr-closeout-assurance.js";
 
 const PR_CLOSEOUT_STATUSES = new Set([
 	"ready",
@@ -65,14 +61,6 @@ const READY_PR_CLOSEOUT_CLAIMS = new Set<PrCloseoutClaim["claim"]>([
 const READY_PR_CLOSEOUT_NOT_APPLICABLE_CLAIMS = new Set<
 	PrCloseoutClaim["claim"]
 >(["rollback_path_named_or_not_applicable"]);
-
-const READY_PR_CLOSEOUT_ASSURANCE_LAYERS = new Set<string>(
-	HARNESS_ASSURANCE_LAYERS,
-);
-const READY_PR_CLOSEOUT_ASSURANCE_STATUSES = new Set([
-	"pass",
-	"n.a.",
-]);
 
 const isNonNegativeInteger = (value: unknown): value is number =>
 	typeof value === "number" && Number.isInteger(value) && value >= 0;
@@ -346,33 +334,6 @@ function hasReadyPrCloseoutAssurance(
 		Array.isArray(assurance.findings) &&
 		assurance.findings.length === 0 &&
 		hasValidReadyPrCloseoutAssuranceEntries(assurance.entries)
-	);
-}
-
-function hasValidReadyPrCloseoutAssuranceEntries(value: unknown): boolean {
-	if (!Array.isArray(value) || value.length === 0) return false;
-	if (!value.every(isHarnessAssuranceEntryRecord)) return false;
-	if (!validateHarnessAssuranceEntries(value).valid) return false;
-	// For ready closeout, all assurance entries must be "pass" or "n.a."
-	for (const entry of value) {
-		const typedEntry = entry as HarnessAssuranceEntry;
-		if (typedEntry.status !== "pass" && typedEntry.status !== "n.a.") {
-			return false;
-		}
-	}
-	return true;
-}
-
-function isHarnessAssuranceEntryRecord(
-	value: unknown,
-): value is HarnessAssuranceEntry {
-	if (!isObjectRecord(value)) return false;
-	return (
-		typeof value.layer === "string" &&
-		READY_PR_CLOSEOUT_ASSURANCE_LAYERS.has(value.layer) &&
-		typeof value.status === "string" &&
-		READY_PR_CLOSEOUT_ASSURANCE_STATUSES.has(value.status) &&
-		(value.evidence === undefined || isStringArray(value.evidence))
 	);
 }
 

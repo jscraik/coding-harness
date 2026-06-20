@@ -9,6 +9,7 @@ import {
 	QUALITY_LANE_ID,
 	TYPECHECK_LANE_ID,
 } from "./artifact-normalizers.js";
+import { buildFitnessTrendSnapshot } from "./trend.js";
 import type {
 	FitnessEnforcement,
 	FitnessFinding,
@@ -35,6 +36,7 @@ interface ArchitectureCheckReport {
 export interface BuildFitnessReportOptions
 	extends FitnessArtifactReportOptions {
 	architectureReportPath?: string;
+	trendBaselinePath?: string;
 	now?: Date;
 }
 
@@ -65,21 +67,21 @@ function createBaseLanes(): FitnessLane[] {
 		{
 			id: TYPECHECK_LANE_ID,
 			label: "Type safety",
-			command: "pnpm typecheck",
+			command: "pnpm run fitness:typecheck-artifact",
 			principle: "prove_type_safety",
 			enforcement: "type_safety",
 			status: "not_run",
-			evidenceSource: "package.json scripts.typecheck",
+			evidenceSource: "package.json scripts.fitness:typecheck-artifact",
 			findings: [],
 		},
 		{
 			id: LINT_LANE_ID,
 			label: "Static lint",
-			command: "pnpm lint",
+			command: "pnpm run fitness:lint-artifact",
 			principle: "preserve_static_contracts",
 			enforcement: "static_analysis",
 			status: "not_run",
-			evidenceSource: "package.json scripts.lint",
+			evidenceSource: "package.json scripts.fitness:lint-artifact",
 			findings: [],
 		},
 		{
@@ -341,7 +343,7 @@ export function buildFitnessReport(
 	applyArchitectureArtifact(lanes, options);
 	applyFitnessArtifactReports(lanes, options);
 	const findings = lanes.flatMap((lane) => lane.findings);
-	return {
+	const report: FitnessReport = {
 		schemaVersion: "harness-fitness/v1",
 		status: reportStatus(lanes),
 		generatedAt: (options.now ?? new Date()).toISOString(),
@@ -354,4 +356,11 @@ export function buildFitnessReport(
 			"Local fitness evidence does not prove PR, CI, review-thread, tracker, or merge-readiness truth.",
 		],
 	};
+	if (options.trendBaselinePath !== undefined) {
+		report.trendSnapshot = buildFitnessTrendSnapshot(
+			report,
+			options.trendBaselinePath,
+		);
+	}
+	return report;
 }

@@ -26,6 +26,16 @@ export type FitnessPrinciple =
 	| "compound_feedback_to_harness";
 
 /** Public API export. */
+export type FitnessTrendDirection =
+	| "improved"
+	| "regressed"
+	| "unchanged"
+	| "baseline_unavailable";
+
+/** Public API export. */
+export type FitnessTrendBaselineStatus = "loaded" | "unavailable";
+
+/** Public API export. */
 export interface FitnessEvidence {
 	file?: string;
 	line?: number;
@@ -59,6 +69,39 @@ export interface FitnessLane {
 }
 
 /** Public API export. */
+export interface FitnessTrendPoint {
+	status: FitnessStatus;
+	findings: number;
+	failures: number;
+	warnings: number;
+	lanesNeedingEvidence: number;
+	deterministicFindings: number;
+	advisoryFindings: number;
+}
+
+/** Public API export. */
+export interface FitnessTrendDelta {
+	findings: number;
+	failures: number;
+	warnings: number;
+	lanesNeedingEvidence: number;
+	deterministicFindings: number;
+	advisoryFindings: number;
+}
+
+/** Public API export. */
+export interface FitnessTrendSnapshot {
+	schemaVersion: "harness-fitness-trend-snapshot/v1";
+	baselineRef: string | null;
+	baselineStatus: FitnessTrendBaselineStatus;
+	current: FitnessTrendPoint;
+	previous: FitnessTrendPoint | null;
+	delta: FitnessTrendDelta | null;
+	direction: FitnessTrendDirection;
+	claimBoundary: string;
+}
+
+/** Public API export. */
 export interface FitnessReport {
 	schemaVersion: "harness-fitness/v1";
 	status: FitnessStatus;
@@ -72,5 +115,6 @@ export interface FitnessReport {
 	};
 	lanes: FitnessLane[];
 	topDeterministicFinding: FitnessFinding | null;
+	trendSnapshot?: FitnessTrendSnapshot;
 	claimBoundaries: string[];
 }

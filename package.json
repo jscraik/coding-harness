@@ -4,6 +4,7 @@
 	"files": [
 		"dist",
 		"contracts/browser-evidence.schema.json",
+		"scripts/write-fitness-gate-artifact.mjs",
 		"scripts/codex-preflight.sh",
 		"scripts/codex-preflight-local-memory-legacy.sh",
 		"scripts/verify-work.sh",
@@ -79,6 +80,8 @@
 		"toolchain:check": "node scripts/check-node-engine.mjs",
 		"publish:release": "pnpm check && pnpm build && npm publish --access restricted --ignore-scripts=false",
 		"lint": "pnpm codestyle:parity && pnpm codex-preflight:check && pnpm codex:agents:guard && biome check .",
+		"fitness:typecheck-artifact": "node scripts/write-fitness-gate-artifact.mjs typecheck",
+		"fitness:lint-artifact": "node scripts/write-fitness-gate-artifact.mjs lint",
 		"lint:fix": "biome check . --write",
 		"fmt": "biome format . --write",
 		"typecheck": "tsc --noEmit",

@@ -165,10 +165,11 @@ Harness fitness report changes are part of the same graph when they alter
 `harness-fitness/v1`, deterministic lane selection, artifact normalizers,
 `harness fitness --from-existing-artifacts`, or `harness next --fitness-report`
 routing. Keep schema, TypeScript types, runtime validation, conventional
-artifact names, and trusted next-command routing synchronized. Deterministic
-lanes currently cover architecture, quality size, type safety, static lint,
-behavior proof, and feedback learning; AI-assisted review remains advisory and
-must not become the blocking authority without an explicit contract update.
+artifact names, advisory trend snapshots, and trusted next-command routing
+synchronized. Deterministic lanes currently cover architecture, quality size,
+type safety, static lint, behavior proof, and feedback learning; AI-assisted
+review and trend snapshots remain advisory and must not become the blocking
+authority without an explicit contract update.
 Toolchain and artifact-test wrapper changes are also validation-graph changes
 when they decide whether broader gates can start. Keep Node engine preflight
 ahead of aggregate checks, route nested package-manager execution through the

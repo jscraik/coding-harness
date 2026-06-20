@@ -19,6 +19,7 @@ interface FitnessFlags {
 	behaviorTestsReport: FitnessFlag;
 	auditTrackingReport: FitnessFlag;
 	advisoryReviewReport: FitnessFlag;
+	trendBaseline: FitnessFlag;
 }
 
 interface MissingFitnessFlag {
@@ -73,6 +74,7 @@ function parseFitnessFlags(args: string[]): FitnessFlags {
 		behaviorTestsReport: inspectFlagValue(args, "--behavior-tests-report"),
 		auditTrackingReport: inspectFlagValue(args, "--audit-tracking-report"),
 		advisoryReviewReport: inspectFlagValue(args, "--advisory-review-report"),
+		trendBaseline: inspectFlagValue(args, "--trend-baseline"),
 	};
 }
 
@@ -120,6 +122,11 @@ function missingFitnessFlag(
 			code: "fitness.advisory_review_report_required",
 			name: "--advisory-review-report",
 		},
+		{
+			flag: flags.trendBaseline,
+			code: "fitness.trend_baseline_required",
+			name: "--trend-baseline",
+		},
 	].find(({ flag }) => flag.missingValue);
 }
 
@@ -149,6 +156,9 @@ function fitnessReportOptions(flags: FitnessFlags) {
 		...(flags.advisoryReviewReport.value
 			? { advisoryReviewReportPath: flags.advisoryReviewReport.value }
 			: {}),
+		...(flags.trendBaseline.value
+			? { trendBaselinePath: flags.trendBaseline.value }
+			: {}),
 	};
 }
 
@@ -173,9 +183,11 @@ function printFitnessHelp(): void {
 		"  --quality-size-report <path>   Ingest pnpm run quality:size JSON output",
 	);
 	console.info(
-		"  --typecheck-report <path>      Ingest pnpm typecheck JSON output",
+		"  --typecheck-report <path>      Ingest pnpm run fitness:typecheck-artifact output",
 	);
-	console.info("  --lint-report <path>           Ingest pnpm lint JSON output");
+	console.info(
+		"  --lint-report <path>           Ingest pnpm run fitness:lint-artifact output",
+	);
 	console.info(
 		"  --behavior-tests-report <path> Ingest pnpm run quality:behavior-tests JSON output",
 	);
@@ -184,6 +196,9 @@ function printFitnessHelp(): void {
 	);
 	console.info(
 		"  --advisory-review-report <path> Ingest structured AI review output as advisory",
+	);
+	console.info(
+		"  --trend-baseline <path>       Compare against a previous harness-fitness/v1 report",
 	);
 }
 

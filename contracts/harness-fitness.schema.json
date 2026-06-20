@@ -42,6 +42,7 @@
 		"topDeterministicFinding": {
 			"anyOf": [{ "$ref": "#/$defs/finding" }, { "type": "null" }]
 		},
+		"trendSnapshot": { "$ref": "#/$defs/trendSnapshot" },
 		"claimBoundaries": {
 			"type": "array",
 			"items": { "type": "string", "minLength": 1 }
@@ -113,6 +114,82 @@
 				"file": { "type": "string", "minLength": 1 },
 				"line": { "type": "integer", "minimum": 0 },
 				"message": { "type": "string", "minLength": 1 }
+			}
+		},
+		"trendPoint": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"status",
+				"findings",
+				"failures",
+				"warnings",
+				"lanesNeedingEvidence",
+				"deterministicFindings",
+				"advisoryFindings"
+			],
+			"properties": {
+				"status": { "enum": ["pass", "warn", "fail", "needs_evidence"] },
+				"findings": { "type": "integer", "minimum": 0 },
+				"failures": { "type": "integer", "minimum": 0 },
+				"warnings": { "type": "integer", "minimum": 0 },
+				"lanesNeedingEvidence": { "type": "integer", "minimum": 0 },
+				"deterministicFindings": { "type": "integer", "minimum": 0 },
+				"advisoryFindings": { "type": "integer", "minimum": 0 }
+			}
+		},
+		"trendDelta": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"findings",
+				"failures",
+				"warnings",
+				"lanesNeedingEvidence",
+				"deterministicFindings",
+				"advisoryFindings"
+			],
+			"properties": {
+				"findings": { "type": "integer" },
+				"failures": { "type": "integer" },
+				"warnings": { "type": "integer" },
+				"lanesNeedingEvidence": { "type": "integer" },
+				"deterministicFindings": { "type": "integer" },
+				"advisoryFindings": { "type": "integer" }
+			}
+		},
+		"trendSnapshot": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"schemaVersion",
+				"baselineRef",
+				"baselineStatus",
+				"current",
+				"previous",
+				"delta",
+				"direction",
+				"claimBoundary"
+			],
+			"properties": {
+				"schemaVersion": {
+					"const": "harness-fitness-trend-snapshot/v1"
+				},
+				"baselineRef": {
+					"anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+				},
+				"baselineStatus": { "enum": ["loaded", "unavailable"] },
+				"current": { "$ref": "#/$defs/trendPoint" },
+				"previous": {
+					"anyOf": [{ "$ref": "#/$defs/trendPoint" }, { "type": "null" }]
+				},
+				"delta": {
+					"anyOf": [{ "$ref": "#/$defs/trendDelta" }, { "type": "null" }]
+				},
+				"direction": {
+					"enum": ["improved", "regressed", "unchanged", "baseline_unavailable"]
+				},
+				"claimBoundary": { "type": "string", "minLength": 1 }
 			}
 		},
 		"principle": {

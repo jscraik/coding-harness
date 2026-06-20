@@ -1,30 +1,95 @@
 import { describe, expect, it } from "vitest";
 import { validateFitnessReport } from "./validation.js";
 
+function lane(
+	id: string,
+	label: string,
+	command: string,
+	principle: string,
+	enforcement: string,
+	overrides: Record<string, unknown> = {},
+) {
+	return {
+		id,
+		label,
+		command,
+		principle,
+		enforcement,
+		status: "pass",
+		evidenceSource: `artifacts/${id}.json`,
+		findings: [],
+		...overrides,
+	};
+}
+
+function canonicalLanes(
+	overrides: Record<string, Record<string, unknown>> = {},
+) {
+	return [
+		lane(
+			"architecture-fitness",
+			"Architecture fitness",
+			"pnpm architecture:check",
+			"protect_deep_module_boundaries",
+			"architecture_fitness",
+			overrides["architecture-fitness"],
+		),
+		lane(
+			"quality-budget",
+			"Quality budget",
+			"pnpm run quality:size",
+			"reduce_cognitive_load",
+			"quality_budget",
+			overrides["quality-budget"],
+		),
+		lane(
+			"type-safety",
+			"Type safety",
+			"pnpm run fitness:typecheck-artifact",
+			"prove_type_safety",
+			"type_safety",
+			overrides["type-safety"],
+		),
+		lane(
+			"static-lint",
+			"Static lint",
+			"pnpm run fitness:lint-artifact",
+			"preserve_static_contracts",
+			"static_analysis",
+			overrides["static-lint"],
+		),
+		lane(
+			"behavior-proof",
+			"Behavior proof",
+			"pnpm run quality:behavior-tests",
+			"prove_behavior_outcomes",
+			"hard_blocker",
+			overrides["behavior-proof"],
+		),
+		lane(
+			"feedback-learning",
+			"Feedback learning",
+			"pnpm run harness:audit-tracking",
+			"compound_feedback_to_harness",
+			"hard_blocker",
+			overrides["feedback-learning"],
+		),
+	];
+}
+
 function fitnessReport(overrides: Record<string, unknown> = {}) {
 	return {
 		schemaVersion: "harness-fitness/v1",
 		status: "pass",
 		generatedAt: "2026-06-20T00:00:00.000Z",
 		summary: {
-			lanes: 1,
+			lanes: 6,
 			findings: 0,
 			failures: 0,
 			warnings: 0,
 			lanesNeedingEvidence: 0,
 		},
-		lanes: [
-			{
-				id: "quality-budget",
-				label: "Quality budget",
-				command: "pnpm run quality:size",
-				principle: "reduce_cognitive_load",
-				enforcement: "quality_budget",
-				status: "pass",
-				evidenceSource: "artifacts/quality-size.json",
-				findings: [],
-			},
-		],
+		lanes: canonicalLanes(),
 		topDeterministicFinding: null,
 		claimBoundaries: ["Fitness reports normalize local gate evidence only."],
 		...overrides,
@@ -125,24 +190,15 @@ describe("validateFitnessReport", () => {
 			fitnessReport({
 				status: "warn",
 				summary: {
-					lanes: 1,
+					lanes: 6,
 					findings: 0,
 					failures: 0,
 					warnings: 0,
 					lanesNeedingEvidence: 1,
 				},
-				lanes: [
-					{
-						id: "quality-budget",
-						label: "Quality budget",
-						command: "pnpm run quality:size",
-						principle: "reduce_cognitive_load",
-						enforcement: "quality_budget",
-						status: "not_run",
-						evidenceSource: "missing",
-						findings: [],
-					},
-				],
+				lanes: canonicalLanes({
+					"quality-budget": { status: "not_run", evidenceSource: "missing" },
+				}),
 			}),
 		);
 
@@ -159,18 +215,7 @@ describe("validateFitnessReport", () => {
 	it("rejects pass status when a lane status still fails", () => {
 		const result = validateFitnessReport(
 			fitnessReport({
-				lanes: [
-					{
-						id: "quality-budget",
-						label: "Quality budget",
-						command: "pnpm run quality:size",
-						principle: "reduce_cognitive_load",
-						enforcement: "quality_budget",
-						status: "fail",
-						evidenceSource: "artifacts/quality-size.json",
-						findings: [],
-					},
-				],
+				lanes: canonicalLanes({ "quality-budget": { status: "fail" } }),
 			}),
 		);
 
@@ -188,18 +233,7 @@ describe("validateFitnessReport", () => {
 		const result = validateFitnessReport(
 			fitnessReport({
 				status: "fail",
-				lanes: [
-					{
-						id: "quality-budget",
-						label: "Quality budget",
-						command: "pnpm run quality:size",
-						principle: "reduce_cognitive_load",
-						enforcement: "quality_budget",
-						status: "fail",
-						evidenceSource: "artifacts/quality-size.json",
-						findings: [],
-					},
-				],
+				lanes: canonicalLanes({ "quality-budget": { status: "fail" } }),
 			}),
 		);
 
@@ -207,7 +241,7 @@ describe("validateFitnessReport", () => {
 		expect(result.errors).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
-					code: "lanes[0].status fail requires failure finding evidence",
+					code: "lanes[1].status fail requires failure finding evidence",
 				}),
 			]),
 		);
@@ -218,24 +252,15 @@ describe("validateFitnessReport", () => {
 		const report: Partial<ReturnType<typeof fitnessReport>> = fitnessReport({
 			status: "fail",
 			summary: {
-				lanes: 1,
+				lanes: 6,
 				findings: 1,
 				failures: 1,
 				warnings: 0,
 				lanesNeedingEvidence: 0,
 			},
-			lanes: [
-				{
-					id: "quality-budget",
-					label: "Quality budget",
-					command: "pnpm run quality:size",
-					principle: "reduce_cognitive_load",
-					enforcement: "quality_budget",
-					status: "fail",
-					evidenceSource: "artifacts/quality-size.json",
-					findings: [finding],
-				},
-			],
+			lanes: canonicalLanes({
+				"quality-budget": { status: "fail", findings: [finding] },
+			}),
 		});
 		delete report.topDeterministicFinding;
 
@@ -257,27 +282,119 @@ describe("validateFitnessReport", () => {
 			fitnessReport({
 				status: "warn",
 				summary: {
-					lanes: 1,
+					lanes: 6,
 					findings: 1,
 					failures: 0,
 					warnings: 1,
 					lanesNeedingEvidence: 0,
 				},
-				lanes: [
-					{
-						id: "quality-budget",
-						label: "Quality budget",
-						command: "pnpm run quality:size",
-						principle: "reduce_cognitive_load",
-						enforcement: "quality_budget",
-						status: "warn",
-						evidenceSource: "artifacts/quality-size.json",
-						findings: [finding],
-					},
-				],
+				lanes: canonicalLanes({
+					"quality-budget": { status: "warn", findings: [finding] },
+				}),
 			}),
 		);
 
 		expect(result).toEqual({ valid: true, errors: [] });
+	});
+
+	it("rejects reports missing canonical deterministic lanes", () => {
+		const result = validateFitnessReport(
+			fitnessReport({
+				summary: {
+					lanes: 1,
+					findings: 0,
+					failures: 0,
+					warnings: 0,
+					lanesNeedingEvidence: 0,
+				},
+				lanes: [canonicalLanes()[1]],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "lanes must include required lane type-safety",
+				}),
+				expect.objectContaining({
+					code: "lanes must include required lane static-lint",
+				}),
+			]),
+		);
+	});
+
+	it("accepts well-formed trend snapshots", () => {
+		const result = validateFitnessReport(
+			fitnessReport({
+				trendSnapshot: {
+					schemaVersion: "harness-fitness-trend-snapshot/v1",
+					baselineRef: "artifacts/fitness-baseline.json",
+					baselineStatus: "loaded",
+					current: {
+						status: "pass",
+						findings: 0,
+						failures: 0,
+						warnings: 0,
+						lanesNeedingEvidence: 0,
+						deterministicFindings: 0,
+						advisoryFindings: 0,
+					},
+					previous: {
+						status: "fail",
+						findings: 1,
+						failures: 1,
+						warnings: 0,
+						lanesNeedingEvidence: 0,
+						deterministicFindings: 1,
+						advisoryFindings: 0,
+					},
+					delta: {
+						findings: -1,
+						failures: -1,
+						warnings: 0,
+						lanesNeedingEvidence: 0,
+						deterministicFindings: -1,
+						advisoryFindings: 0,
+					},
+					direction: "improved",
+					claimBoundary: "Trend snapshots are advisory.",
+				},
+			}),
+		);
+
+		expect(result).toEqual({ valid: true, errors: [] });
+	});
+
+	it("rejects malformed trend snapshots", () => {
+		const result = validateFitnessReport(
+			fitnessReport({
+				trendSnapshot: {
+					schemaVersion: "harness-fitness-trend-snapshot/v1",
+					baselineRef: null,
+					baselineStatus: "loaded",
+					current: {
+						status: "pass",
+						findings: 0,
+					},
+					previous: null,
+					delta: null,
+					direction: "blocking",
+					claimBoundary: "Trend snapshots are advisory.",
+				},
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "trendSnapshot.direction must be one of improved, regressed, unchanged, baseline_unavailable",
+				}),
+				expect.objectContaining({
+					code: "trendSnapshot.current.failures must be a non-negative integer",
+				}),
+			]),
+		);
 	});
 });

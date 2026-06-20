@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -12,6 +12,20 @@ describe("buildFitnessReport", () => {
 			rmSync(path, { force: true, recursive: true });
 		}
 	});
+
+	function writePassingGateArtifacts(dir: string): void {
+		const reports: Array<[string, Record<string, unknown>]> = [
+			["architecture.json", { violations: [] }],
+			["quality-size.json", { status: "pass", findings: [] }],
+			["typecheck.json", { status: "pass", failures: [] }],
+			["lint.json", { status: "pass", findings: [] }],
+			["behavior-tests.json", { status: "pass", failures: [] }],
+			["harness-audit-tracking.json", { status: "pass", failures: [] }],
+		];
+		for (const [name, report] of reports) {
+			writeFileSync(join(dir, name), JSON.stringify(report), "utf8");
+		}
+	}
 
 	it("emits lane contracts when no gate evidence has been supplied", () => {
 		const report = buildFitnessReport({
@@ -30,8 +44,8 @@ describe("buildFitnessReport", () => {
 		expect(report.lanes.map((lane) => lane.command)).toEqual([
 			"pnpm architecture:check",
 			"pnpm run quality:size",
-			"pnpm typecheck",
-			"pnpm lint",
+			"pnpm run fitness:typecheck-artifact",
+			"pnpm run fitness:lint-artifact",
 			"pnpm run quality:behavior-tests",
 			"pnpm run harness:audit-tracking",
 		]);
@@ -369,17 +383,7 @@ describe("buildFitnessReport", () => {
 	it("keeps AI-assisted review findings advisory", () => {
 		const dir = mkdtempSync(join(tmpdir(), "fitness-review-"));
 		cleanup.push(dir);
-		const reports: Array<[string, Record<string, unknown>]> = [
-			["architecture.json", { violations: [] }],
-			["quality-size.json", { status: "pass", findings: [] }],
-			["typecheck.json", { status: "pass", failures: [] }],
-			["lint.json", { status: "pass", findings: [] }],
-			["behavior-tests.json", { status: "pass", failures: [] }],
-			["harness-audit-tracking.json", { status: "pass", failures: [] }],
-		];
-		for (const [name, report] of reports) {
-			writeFileSync(join(dir, name), JSON.stringify(report), "utf8");
-		}
+		writePassingGateArtifacts(dir);
 		writeFileSync(
 			join(dir, "autoreview.json"),
 			JSON.stringify({
@@ -407,6 +411,115 @@ describe("buildFitnessReport", () => {
 			expect.objectContaining({
 				id: "ai-review-advisory",
 				status: "warn",
+			}),
+		);
+	});
+
+	it("fails closed when gate artifacts cannot be parsed", () => {
+		const dir = mkdtempSync(join(tmpdir(), "fitness-unreadable-"));
+		cleanup.push(dir);
+		writeFileSync(join(dir, "typecheck.json"), "{not json", "utf8");
+
+		const report = buildFitnessReport({
+			typecheckReportPath: join(dir, "typecheck.json"),
+			now: new Date("2026-06-19T12:00:00.000Z"),
+		});
+
+		expect(report.status).toBe("fail");
+		expect(report.lanes[2]).toEqual(
+			expect.objectContaining({
+				id: "type-safety",
+				status: "fail",
+			}),
+		);
+		expect(report.lanes[2]?.findings[0]).toEqual(
+			expect.objectContaining({
+				id: "type-safety:artifact:malformed",
+				recommendedCommand: "pnpm run fitness:typecheck-artifact",
+			}),
+		);
+	});
+
+	it("builds advisory trend snapshots without making review findings blocking", () => {
+		const dir = mkdtempSync(join(tmpdir(), "fitness-trend-"));
+		cleanup.push(dir);
+		writePassingGateArtifacts(dir);
+		const baselineDir = join(dir, "baseline-artifacts");
+		mkdirSync(baselineDir);
+		writePassingGateArtifacts(baselineDir);
+		writeFileSync(
+			join(baselineDir, "quality-size.json"),
+			JSON.stringify({
+				status: "fail",
+				findings: [{ message: "baseline failure" }],
+			}),
+			"utf8",
+		);
+		writeFileSync(
+			join(dir, "autoreview.json"),
+			JSON.stringify({
+				status: "fail",
+				findings: [{ title: "Reviewer suggests more examples" }],
+			}),
+			"utf8",
+		);
+		const baselinePath = join(dir, "baseline.json");
+		writeFileSync(
+			baselinePath,
+			JSON.stringify({
+				...buildFitnessReport({
+					artifactsDir: baselineDir,
+					now: new Date("2026-06-18T12:00:00.000Z"),
+				}),
+			}),
+			"utf8",
+		);
+
+		const report = buildFitnessReport({
+			artifactsDir: dir,
+			trendBaselinePath: baselinePath,
+			now: new Date("2026-06-19T12:00:00.000Z"),
+		});
+
+		expect(report.status).toBe("warn");
+		expect(report.topDeterministicFinding).toBeNull();
+		expect(report.trendSnapshot).toEqual(
+			expect.objectContaining({
+				baselineRef: baselinePath,
+				baselineStatus: "loaded",
+				direction: "improved",
+				delta: expect.objectContaining({
+					failures: -1,
+					advisoryFindings: 1,
+				}),
+				current: expect.objectContaining({
+					deterministicFindings: 0,
+					advisoryFindings: 1,
+				}),
+			}),
+		);
+	});
+
+	it("keeps trend baseline failures advisory", () => {
+		const dir = mkdtempSync(join(tmpdir(), "fitness-trend-invalid-"));
+		cleanup.push(dir);
+		writePassingGateArtifacts(dir);
+		const baselinePath = join(dir, "baseline.json");
+		writeFileSync(baselinePath, "not-json", "utf8");
+
+		const report = buildFitnessReport({
+			artifactsDir: dir,
+			trendBaselinePath: baselinePath,
+			now: new Date("2026-06-19T12:00:00.000Z"),
+		});
+
+		expect(report.status).toBe("pass");
+		expect(report.trendSnapshot).toEqual(
+			expect.objectContaining({
+				baselineRef: baselinePath,
+				baselineStatus: "unavailable",
+				delta: null,
+				direction: "baseline_unavailable",
 			}),
 		);
 	});

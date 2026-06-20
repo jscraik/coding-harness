@@ -49,12 +49,12 @@ validation contract.
   itself. If the approved env surface exposes the required variable names, the
   blocker must be classified from the env-loaded rerun outcome, not from the
   file type.
-- In this repository, `~/.codex/.env` may be a FIFO or a regular readable file.
-  FIFO metadata is normal and is not itself a blocker. For FIFO env surfaces,
-  use `op run --env-file ~/.codex/.env -- <command>`. For regular file env
-  surfaces, source the env file in a shell before running the command (e.g.,
-  `set -a && source ~/.codex/.env && set +a && <command>`). Classify the
-  validation lane from the env-loaded command's attempted rerun outcome.
+- In this repository, `~/.codex/.env` may be exposed either as a FIFO or as a
+  regular readable env file. FIFO metadata is normal and is not itself a
+  blocker. For FIFO env surfaces, use
+  `op run --env-file ~/.codex/.env -- <command>`; for regular readable files,
+  load the file in a bounded shell before the exact command and classify the
+  validation lane from that attempted rerun outcome.
 
 ## Durable Rule
 
@@ -65,7 +65,7 @@ validation lane. The agent must:
 2. If `~/.codex/.env` is a FIFO or named pipe, rerun the exact validation
    command with `op run --env-file ~/.codex/.env -- <command>`.
 3. If `~/.codex/.env` is a regular readable file, rerun the exact validation
-   command in a shell that loads the env file.
+   command with `set -a; source ~/.codex/.env; set +a; <command>`.
 4. Report the final command status from the env-loaded rerun.
 5. Classify the lane as blocked only when the env file is missing, unreadable,
    incomplete, or the env-loaded rerun still fails.

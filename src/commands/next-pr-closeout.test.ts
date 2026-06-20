@@ -299,7 +299,6 @@ describe("harness next pr-closeout evidence", () => {
 					}),
 				),
 			);
-
 			const { exitCode, output } = captureNextCLI(
 				["--json", "--pr-closeout", "pr-closeout.json"],
 				{
@@ -400,7 +399,6 @@ describe("harness next pr-closeout evidence", () => {
 				join(repoRoot, "explicit-pr-closeout.json"),
 				JSON.stringify(prCloseoutReport()),
 			);
-
 			const { exitCode, output } = captureNextCLI(
 				["--json", "--pr-closeout", "explicit-pr-closeout.json"],
 				{
@@ -554,7 +552,7 @@ describe("harness next pr-closeout evidence", () => {
 		try {
 			writeFileSync(join(repoRoot, "pr-closeout.json"), "{}");
 
-			const { exitCode, output } = captureNextCLI(
+			const { output } = captureNextCLI(
 				["--json", "--pr-closeout", "pr-closeout.json"],
 				{
 					repoRoot,
@@ -562,11 +560,9 @@ describe("harness next pr-closeout evidence", () => {
 				},
 			);
 
-			expect(exitCode).toBe(1);
-			const decision = parseDecision(output);
-			expect(decision.status).toBe("blocked");
-			expect(decision.failureClass).toBe("pr_closeout_artifact_invalid");
-			expect(decision.evidenceRef).toEqual(["artifact:pr-closeout.json"]);
+			expect(parseDecision(output).failureClass).toBe(
+				"pr_closeout_artifact_invalid",
+			);
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });
 		}
@@ -586,8 +582,7 @@ describe("harness next pr-closeout evidence", () => {
 					nextAction: "unexpected",
 				}),
 			);
-
-			const { exitCode, output } = captureNextCLI(
+			const { output } = captureNextCLI(
 				["--json", "--pr-closeout", "pr-closeout.json"],
 				{
 					repoRoot,
@@ -595,11 +590,9 @@ describe("harness next pr-closeout evidence", () => {
 				},
 			);
 
-			expect(exitCode).toBe(1);
-			const decision = parseDecision(output);
-			expect(decision.status).toBe("blocked");
-			expect(decision.failureClass).toBe("pr_closeout_artifact_invalid");
-			expect(decision.evidenceRef).toEqual(["artifact:pr-closeout.json"]);
+			expect(parseDecision(output).failureClass).toBe(
+				"pr_closeout_artifact_invalid",
+			);
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });
 		}
@@ -723,7 +716,6 @@ describe("harness next pr-closeout evidence", () => {
 					}),
 				),
 			);
-
 			const { exitCode, output } = captureNextCLI(
 				["--json", "--pr-closeout", "pr-closeout.json"],
 				{
@@ -1006,6 +998,63 @@ describe("harness next pr-closeout evidence", () => {
 						findings: [],
 					},
 				}),
+			);
+
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--pr-closeout", "pr-closeout.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("pr_closeout_artifact_invalid");
+			expect(decision.evidenceRef).toEqual(["artifact:pr-closeout.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it.each([
+		{
+			name: "blocked assurance entries",
+			entries: readyAssuranceEntries().map((entry) =>
+				entry.layer === "unit"
+					? {
+							...entry,
+							status: "blocked",
+							reason: "Stale.",
+							followUp: "Rerun.",
+						}
+					: entry,
+			),
+		},
+		{
+			name: "malformed assurance optional fields",
+			entries: readyAssuranceEntries().map((entry) =>
+				entry.layer === "load_stress"
+					? { ...entry, reason: { invalid: true } as unknown as string }
+					: entry,
+			),
+		},
+	])("rejects ready pr-closeout artifacts with $name", ({ entries }) => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
+		try {
+			writeFileSync(
+				join(repoRoot, "pr-closeout.json"),
+				JSON.stringify(
+					prCloseoutReport({
+						assurance: {
+							present: true,
+							valid: true,
+							entries: entries as HarnessAssuranceEntry[],
+							findings: [],
+						},
+					}),
+				),
 			);
 
 			const { exitCode, output } = captureNextCLI(

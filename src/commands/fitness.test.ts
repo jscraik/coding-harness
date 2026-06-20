@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { COMMAND_SPECS } from "../lib/cli/registry/command-specs.js";
+import { buildFitnessReport } from "../lib/fitness/report.js";
 import { runFitnessCLI } from "./fitness.js";
 
 describe("runFitnessCLI", () => {
@@ -29,6 +30,18 @@ describe("runFitnessCLI", () => {
 				id: "architecture-fitness",
 				command: "pnpm architecture:check",
 				status: "not_run",
+			}),
+		);
+		expect(result.lanes[2]).toEqual(
+			expect.objectContaining({
+				id: "type-safety",
+				command: "pnpm run fitness:typecheck-artifact",
+			}),
+		);
+		expect(result.lanes[3]).toEqual(
+			expect.objectContaining({
+				id: "static-lint",
+				command: "pnpm run fitness:lint-artifact",
 			}),
 		);
 	});
@@ -215,6 +228,42 @@ describe("runFitnessCLI", () => {
 
 		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
 		expect(result.error.code).toBe("fitness.advisory_review_report_required");
+	});
+
+	it("emits trend snapshots when a baseline fitness report is supplied", () => {
+		const dir = mkdtempSync(join(tmpdir(), "fitness-cli-trend-"));
+		cleanup.push(dir);
+		const baselinePath = join(dir, "baseline.json");
+		writeFileSync(
+			baselinePath,
+			JSON.stringify({
+				...buildFitnessReport({
+					now: new Date("2026-06-18T12:00:00.000Z"),
+				}),
+			}),
+			"utf8",
+		);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(runFitnessCLI(["--json", "--trend-baseline", baselinePath])).toBe(1);
+
+		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(result.trendSnapshot).toEqual(
+			expect.objectContaining({
+				baselineRef: baselinePath,
+				baselineStatus: "loaded",
+				direction: "unchanged",
+			}),
+		);
+	});
+
+	it("reports usage when trend baseline flag is missing a value", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(runFitnessCLI(["--json", "--trend-baseline"])).toBe(2);
+
+		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(result.error.code).toBe("fitness.trend_baseline_required");
 	});
 
 	it("is registered as a command capability", () => {

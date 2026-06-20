@@ -15,6 +15,7 @@ import type {
 	FitnessSeverity,
 	FitnessStatus,
 } from "./types.js";
+import { validateTrendSnapshot } from "./trend-validation.js";
 import {
 	validateLaneStatusInvariant,
 	validateTopFindingInvariant,
@@ -54,6 +55,14 @@ const VALID_PRINCIPLES: readonly FitnessPrinciple[] = [
 	"prove_behavior_outcomes",
 	"compound_feedback_to_harness",
 ];
+const REQUIRED_LANE_IDS = [
+	"architecture-fitness",
+	"quality-budget",
+	"type-safety",
+	"static-lint",
+	"behavior-proof",
+	"feedback-learning",
+] as const;
 
 /** Validation result for a candidate harness-fitness/v1 report. */
 export interface FitnessReportValidationResult {
@@ -297,7 +306,29 @@ function validateFitnessInvariants(
 		errors,
 	);
 	validateLaneStatusInvariant(lanes, errors);
+	validateRequiredLaneIds(lanes, errors);
 	validateTopFindingInvariant(value, deterministicFindings, errors);
+}
+
+function validateRequiredLaneIds(
+	lanes: readonly unknown[],
+	errors: HeValidationError[],
+): void {
+	const laneIds = new Set(
+		lanes.flatMap((lane) =>
+			isRecord(lane) && typeof lane.id === "string" ? [lane.id] : [],
+		),
+	);
+	for (const laneId of REQUIRED_LANE_IDS) {
+		if (!laneIds.has(laneId)) {
+			errors.push(
+				toValidationError(
+					`lanes must include required lane ${laneId}`,
+					"lanes",
+				),
+			);
+		}
+	}
 }
 
 /** Validate the runtime shape of a harness-fitness/v1 report. */
@@ -336,6 +367,9 @@ export function validateFitnessReport(
 			"topDeterministicFinding",
 			errors,
 		);
+	}
+	if (value.trendSnapshot !== undefined) {
+		validateTrendSnapshot(value.trendSnapshot, errors);
 	}
 	validateStringArray(value.claimBoundaries, "claimBoundaries", errors);
 	validateFitnessInvariants(value, errors);

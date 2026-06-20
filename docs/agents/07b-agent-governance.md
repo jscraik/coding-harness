@@ -77,11 +77,12 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - `harness-fitness/v1` changes that add or alter deterministic lanes, artifact
   normalizers, `harness fitness --from-existing-artifacts`, or `harness next
   --fitness-report` should keep schema, TypeScript types, runtime validators,
-  conventional artifact names, trusted next-command routing, generated
-  architecture context, `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`,
-  and this guide synchronized; deterministic lanes remain the blocking authority
-  while AI-assisted review remains advisory unless a future explicit contract
-  promotes it.
+  conventional artifact names, advisory trend snapshots, trusted next-command
+  routing, generated architecture context, `AGENTS.md`,
+  `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized;
+  deterministic lanes remain the blocking authority while AI-assisted review and
+  trend snapshots remain advisory unless a future explicit contract promotes
+  them.
 - validation-throughput changes that split `pnpm check`, `pnpm test:ci`,
   `pnpm test:related`, or `pnpm check:static` must keep CI commands,
   package scripts, PR-template evidence, and docs-gate-required surfaces

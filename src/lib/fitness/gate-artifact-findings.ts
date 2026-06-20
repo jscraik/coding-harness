@@ -8,6 +8,7 @@ import type {
 import {
 	artifactStatus,
 	emptyDetailsFinding,
+	malformedArtifactFinding,
 	requiredRecordArray,
 } from "./artifact-evidence.js";
 
@@ -62,7 +63,6 @@ function firstNumber(
 		const candidate = value[field];
 		if (
 			typeof candidate === "number" &&
-			Number.isFinite(candidate) &&
 			Number.isInteger(candidate) &&
 			candidate > 0
 		) {
@@ -76,7 +76,24 @@ function firstNumber(
 export function gateArtifactFindings(
 	options: GateArtifactFindingOptions,
 ): FitnessFinding[] {
-	const report = readJsonFile(options.path);
+	let report: unknown;
+	try {
+		report = readJsonFile(options.path);
+	} catch (error) {
+		return [
+			malformedArtifactFinding({
+				path: options.path,
+				lane: options.lane,
+				command: options.command,
+				principle: options.principle,
+				enforcement: options.enforcement,
+				message:
+					error instanceof Error
+						? `Failed to read or parse JSON artifact: ${error.message}`
+						: "Failed to read or parse JSON artifact.",
+			}),
+		];
+	}
 	const result = requiredRecordArray(
 		report,
 		options.detailsField,
