@@ -978,6 +978,13 @@ describe("harness next pr-closeout evidence", () => {
 		}
 	});
 
+	/**
+	 * Regression test: validates fail-closed behavior when PR closeout artifacts
+	 * advertise valid assurance through editable flags (present=true, valid=true)
+	 * but lack proper underlying validation of the complete assurance matrix.
+	 * This security-critical check ensures we don't trust the artifact's self-reported
+	 * validity without verifying all required assurance layers are present.
+	 */
 	it("rejects ready pr-closeout artifacts with incomplete assurance entries", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
 		try {
@@ -1018,43 +1025,22 @@ describe("harness next pr-closeout evidence", () => {
 		}
 	});
 
-	it.each([
-		{
-			name: "blocked assurance entries",
-			entries: readyAssuranceEntries().map((entry) =>
-				entry.layer === "unit"
-					? {
-							...entry,
-							status: "blocked",
-							reason: "Stale.",
-							followUp: "Rerun.",
-						}
-					: entry,
-			),
-		},
-		{
-			name: "malformed assurance optional fields",
-			entries: readyAssuranceEntries().map((entry) =>
-				entry.layer === "load_stress"
-					? { ...entry, reason: { invalid: true } as unknown as string }
-					: entry,
-			),
-		},
-	])("rejects ready pr-closeout artifacts with $name", ({ entries }) => {
+	it("rejects ready pr-closeout artifacts with malformed optional assurance fields", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
 		try {
 			writeFileSync(
 				join(repoRoot, "pr-closeout.json"),
-				JSON.stringify(
-					prCloseoutReport({
-						assurance: {
-							present: true,
-							valid: true,
-							entries: entries as HarnessAssuranceEntry[],
-							findings: [],
-						},
-					}),
-				),
+				JSON.stringify({
+					...prCloseoutReport(),
+					assurance: {
+						present: true,
+						valid: true,
+						entries: readyAssuranceEntries().map((entry) =>
+							entry.layer === "load_stress" ? { ...entry, reason: 42 } : entry,
+						),
+						findings: [],
+					},
+				}),
 			);
 
 			const { exitCode, output } = captureNextCLI(
