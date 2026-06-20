@@ -5,6 +5,7 @@
 - [1. General Principles](#1-general-principles)
 - [2. Task Orchestration (Repo-Defined)](#2-task-orchestration-repo-defined)
 - [3. Node.js Standards](#3-nodejs-standards)
+- [4. File Hygiene and Fixable Findings](#4-file-hygiene-and-fixable-findings)
 
 ## 0. Gold Production Standards (Hard Prohibitions)
 
@@ -64,5 +65,17 @@
   ```ts
   import data from "./foo.json" with { type: "json" };
   ```
+
+---
+
+## 4. File Hygiene and Fixable Findings
+
+- Leave touched surfaces better than found when the cleanup is adjacent and keeps the change cohesive.
+- Larger unrelated discoveries MUST become a tracked follow-up with owner, evidence, and next action before handoff.
+- Generated files MUST NOT be committed unless they are declared generated artifacts, lockfiles, or platform-required compiled artifacts with a documented source and validation path.
+- Script-like files SHOULD be importable and executable; entrypoint side effects belong behind an explicit main guard or CLI wrapper.
+- CLI and script outputs MUST use stdout for machine-readable results, stderr for diagnostics, and non-zero exits for failures.
+- Error handling SHOULD catch specific exception types. Any outer-boundary catch-all requires an explicit comment naming the caller's silent-failure shape, emitted fallback, and why propagation would break the process contract.
+- User-facing errors MUST include a next action, not only a failure description.
 
 ---

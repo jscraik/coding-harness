@@ -171,6 +171,7 @@ e2e/recordings/
 
 # Pilot artifacts
 artifacts/*
+!artifacts/AGENTS.md
 artifacts/pilot/
 artifacts/agent-runs/
 artifacts/policy/

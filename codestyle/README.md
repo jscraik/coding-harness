@@ -5,6 +5,7 @@ Use this directory for detailed coding standards. Keep [../CODESTYLE.md](../CODE
 ## Table of Contents
 - [Scope](#scope)
 - [Modules](#modules)
+- [Machine-readable routing](#machine-readable-routing)
 - [Enforcement defaults](#enforcement-defaults)
 - [Maintenance rules](#maintenance-rules)
 
@@ -34,6 +35,11 @@ Use this directory for detailed coding standards. Keep [../CODESTYLE.md](../CODE
 - [18-code-review.md](./18-code-review.md)
 - [19-development-workflow.md](./19-development-workflow.md)
 - [20-go.md](./20-go.md)
+
+## Machine-readable routing
+- [../coding-policy.json](../coding-policy.json) indexes this codestyle pack for validators and agents.
+- Keep long-form prose in these Markdown modules; keep machine routing, source-rule lineage, required gates, and claim boundaries in the JSON index.
+- Validate the index with `pnpm run coding-policy:validate` after policy routing changes.
 
 ## Enforcement defaults
 - Treat this directory as policy, not guidance: `MUST` and `MUST NOT` are enforced defaults.

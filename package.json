@@ -3,6 +3,8 @@
 	"version": "0.15.1",
 	"files": [
 		"dist",
+		"coding-policy.json",
+		"contracts/coding-policy.schema.json",
 		"contracts/browser-evidence.schema.json",
 		"scripts/write-fitness-gate-artifact.mjs",
 		"scripts/codex-preflight.sh",
@@ -13,6 +15,7 @@
 		"scripts/with-validation-lock.sh",
 		"scripts/check-validation-locks.sh",
 		"scripts/check-node-engine.mjs",
+		"scripts/validate-coding-policy.cjs",
 		"scripts/resolve-circleci-pr-ref.sh",
 		"scripts/run-prek.sh",
 		"scripts/run-uv-python.sh",
@@ -156,6 +159,7 @@
 		"vale": "vale --config .vale.ini AGENTS.md docs",
 		"codex-preflight:check": "node scripts/sync-codex-preflight.cjs --check",
 		"codex-preflight:sync": "node scripts/sync-codex-preflight.cjs --write",
+		"coding-policy:validate": "node scripts/validate-coding-policy.cjs",
 		"prek:validate-config": "bash scripts/run-prek.sh validate-config"
 	},
 	"devDependencies": {

@@ -32,6 +32,10 @@
 - If behavior is wrong, implementations MUST be fixed; tests SHOULD be rewritten only when assertions are invalid.
 - Tests MUST NOT use the implementation under test as its own oracle, such as `expect(fn(input)).toBe(fn(input))` or comparing two variables initialized from the same implementation call. Use a requirement-derived expected value, fixture, schema, snapshot, or explicit property test instead. Legitimate determinism, idempotency, or defensive-copy assertions MUST carry a local `self-affirming-ok:` comment that explains the property being tested and SHOULD have adjacent assertions that pin externally visible behavior.
 - Changed production `src/**` files MUST have a related Vitest path via `pnpm run test:related`; the gate must not pass silently when no test covers the changed source.
+- Every changed production module SHOULD have evidence from the nearest unit,
+  integration, artifact, CLI, or behavior suite. If platform, credential, or
+  external-service limits block the exact path, record the blocker and run the
+  nearest meaningful fallback.
 
 ## Exact behavior checks
 - When executable behavior changes, the smallest real code path that exercises the exact production code touched MUST run before the change is described as verified.
@@ -48,6 +52,13 @@
 - If no existing test covers the path, agents MAY create a temporary local reproduction harness under `codex-scripts/`, but it MUST remain gitignored and MUST import or invoke production code directly instead of copying implementation into the harness.
 - If the exact path cannot run because it depends on unavailable credentials, external services, unsafe side effects, or missing generated runtime state, the blocker MUST be stated explicitly and the nearest meaningful validation SHOULD run instead.
 - Production behavior MUST NOT be described as verified unless the touched path actually ran.
+- Tests SHOULD assert observable outcomes, state changes, artifact shape, or
+  protocol contracts rather than implementation details.
+- Fixtures SHOULD be deterministic, minimal, and owned by the suite that needs
+  them. Large or binary fixtures require a short comment or README note
+  explaining source, reason, and safe update path.
+- Tests that create files, processes, ports, or environment mutations MUST clean
+  them up or isolate them under a temporary directory.
 
 ## Evidence-bearing tests
 - Tests for validators, generated scaffolds, runtime-card, pr-closeout, replay,
@@ -76,6 +87,9 @@
 - Long TDD arcs are a decomposition signal: if a behavior change needs many
   red/green/refactor steps, split the scenario into smaller proof points before
   widening validation.
+- Eval-like or benchmark-derived cases SHOULD be lifted into durable tests only
+  after removing private prompts, raw transcripts, secrets, and local-only
+  provenance. Preserve the behavioral claim, input shape, and expected outcome.
 
 ## Coverage and gates
 - Default target is >= 80% coverage unless a repository contract defines a different threshold.

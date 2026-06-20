@@ -63,6 +63,9 @@
 - Shell wrappers around typed logic SHOULD stay thin; move complex JSON,
   schema, graph, or path semantics into TypeScript or Python when it improves
   validation and testability.
+- Documentation and skills SHOULD call scripts by contract: inputs, outputs,
+  exit codes, and side effects. Do not restate script internals such as
+  thresholds, formulas, allowlists, or classification predicates in prose.
 
 ## Enforcement
 - Shell workflow changes MUST pass:

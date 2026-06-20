@@ -6,6 +6,7 @@
 - [12. Naming Conventions](#12-naming-conventions)
 - [13. Commits, Releases, ADRs](#13-commits-releases-adrs)
 - [14. Toolchain & Lockfiles](#14-toolchain--lockfiles)
+- [14A. Policy and Context Artifacts](#14a-policy-and-context-artifacts)
 
 ## 10. Documentation & Prose (Vale)
 
@@ -163,3 +164,14 @@ MDX:
 * Python dependency locks should remain deterministic and validated in CI.
 * Rust lockfiles should remain deterministic and validated in CI.
 * Frozen or locked install/build modes SHOULD be used for CI reproducibility.
+
+---
+
+## 14A. Policy and Context Artifacts
+
+* Root/front-door docs SHOULD stay compact and route detail into focused modules instead of becoming broad policy manuals.
+* Policy frontmatter is metadata, not body content; do not duplicate frontmatter keys as headings or Table of Contents entries.
+* One policy artifact should own each rule. Related docs SHOULD reference that owner instead of duplicating long bullets or command contracts.
+* Context artifacts that agents load, such as rules, skills, manifests, schemas, and command catalogs, MUST stay synchronized with their manifests, validators, README tables, and generated indexes.
+* When a policy or context artifact changes, audit sibling surfaces governed by the rule and either fix drift in the same PR or record a tracked exception.
+* Prose rules SHOULD use atomic bullets, active voice, and constraint-bearing language. Move incident narrative and long rationale to changelogs, PR bodies, ADRs, or solution docs.

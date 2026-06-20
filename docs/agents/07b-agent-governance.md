@@ -234,6 +234,9 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - rule lifecycle governance changes that alter rule metadata validation, `.harness/rule-lifecycle-manifest.json`, `docs/rule-lifecycle.schema.json`, or `rule-lifecycle-gate` should keep this guide synchronized with `AGENTS.md`, `README.md`, and `docs/agents/00-architecture-bootstrap.md` when docs-gate reports agent-governance, contract-policy, or architecture-context surfaces
 - workflow-authority routing and validation behavior changes should update `docs/agents/04-validation.md`, `docs/agents/08-release-and-change-control.md`, `docs/agents/10-agent-testing-gates.md`, and `docs/agents/14-docs-gate-rollout.md`
 - agent-governance/category updates should keep `AGENTS.md` and this guide synchronized in the same PR
+- nested `AGENTS.md` files are agent-governance surfaces; keep them scoped to
+  subtree routing, local evidence boundaries, and verified context pointers
+  instead of copying root policy into every directory.
 - project-local Codex role inventory changes should keep `.codex/agents/README.md`,
   `AGENTS.md`, this guide, and `pnpm codex:agents:guard` synchronized.
   Treat `.codex/agents/<role>/<role>.toml` files and the guard as repo

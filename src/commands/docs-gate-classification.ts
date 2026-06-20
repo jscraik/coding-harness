@@ -82,6 +82,7 @@ function classifyFile(
 	);
 	matched ||= addIf(
 		file === "AGENTS.md" ||
+			file.endsWith("/AGENTS.md") ||
 			(file.startsWith("docs/agents/") && !isWorkflowAuthorityDoc(file)) ||
 			file.includes("agent-governance"),
 		"agent_governance",

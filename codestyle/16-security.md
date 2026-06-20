@@ -28,6 +28,15 @@
 - OAuth, GitHub, Linear, browser, MCP, and CI credentials MUST stay behind
   adapters or environment injection; agents MUST NOT shuttle live tokens through
   prompts, Markdown artifacts, screenshots, traces, or replay fixtures.
+- Required environment variables may be named in docs, examples, schemas, and
+  diagnostics, but values, token prefixes, and live credential material MUST NOT
+  be included.
+- Hosted CI secret setup MUST be documented by variable name and provider
+  surface only. Never commit secret values or local-only credential paths as the
+  required runtime source.
+- Secret scanning is a gate, not a cleanup suggestion. Treat scan failures as
+  blockers until rotated, removed, or covered by a reviewed false-positive
+  waiver.
 
 ## Evidence and trace redaction
 - Runtime traces, replay fixtures, browser evidence, HAR-like artifacts, logs,

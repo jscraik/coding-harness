@@ -19,6 +19,8 @@
   2. Search trusted upstream sources (official docs, library docs, primary references).
   3. Reuse or adapt proven patterns where practical instead of creating net-new approaches.
 - Prefer retrieval-led reasoning for fast-moving ecosystems and version-sensitive APIs.
+- Verify current remote, branch, PR, or tracker state before work whose decision
+  depends on those external lanes. Local summaries are not readiness evidence.
 
 ## Plan before implementation
 - For multi-step work, a short implementation plan MUST be defined before editing.
@@ -33,7 +35,11 @@
 4. If runtime behavior or generated artifacts changed, `pnpm test:deep` MUST run before handoff.
 5. Failures MUST be fixed before expanding scope.
 6. Repeat until the intended behavior and contract checks are green (or explicitly blocked).
-
+- Small adjacent cleanups are allowed when they reduce friction on the touched
+  path and can be validated in the same slice. Larger unrelated findings need a
+  tracked follow-up instead of hitchhiking on the current change.
+- Do not blend unplanned CI, workflow, secret, release, or dependency-scope
+  changes into a feature slice unless they are required by the failing evidence.
 
 ## Temporary reproduction harnesses
 - If no existing test covers the exact touched path, agents MAY create a temporary local reproduction harness under `codex-scripts/`.
