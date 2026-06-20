@@ -40,6 +40,7 @@ Use this directory for detailed coding standards. Keep [../CODESTYLE.md](../CODE
 - [../coding-policy.json](../coding-policy.json) indexes this codestyle pack for validators and agents.
 - Keep long-form prose in these Markdown modules; keep changed-file routing, source-rule lineage, required gates, and claim boundaries in the JSON index.
 - Use `pnpm run coding-policy:route -- <path...>` when a cold agent needs the policy modules and gates for a concrete changed-file set.
+- Use `pnpm run coding-policy:route:changed` when a cold agent needs the policy modules and gates for current git changes.
 - Validate the index with `pnpm run coding-policy:validate` after policy routing changes.
 
 ## Enforcement defaults

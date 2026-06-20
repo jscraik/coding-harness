@@ -76,6 +76,17 @@ function runValidateCodingPolicy(root: string, args: string[] = []) {
 	});
 }
 
+function runGit(root: string, args: string[]) {
+	const result = spawnSync("git", args, {
+		cwd: root,
+		encoding: "utf8",
+	});
+	if (result.status !== 0) {
+		throw new Error(`git ${args.join(" ")} failed: ${result.stderr}`);
+	}
+	return result;
+}
+
 afterEach(() => {
 	for (const root of tempRoots.splice(0)) {
 		rmSync(root, { recursive: true, force: true });
@@ -281,6 +292,67 @@ describe("validate-coding-policy.cjs", () => {
 					matchedFiles: ["docs/agents/04-validation.md"],
 				}),
 			]),
+		);
+	});
+
+	it("emits machine-readable policy routes from git changed files", () => {
+		const root = createPolicyRoot();
+		runGit(root, ["init"]);
+		runGit(root, ["add", "."]);
+		runGit(root, [
+			"-c",
+			"user.name=Harness Test",
+			"-c",
+			"user.email=harness-test@example.com",
+			"commit",
+			"-m",
+			"baseline",
+		]);
+		mkdirSync(join(root, "src/dev"), { recursive: true });
+		writeFileSync(
+			join(root, "src/dev/validate-coding-policy-script.test.ts"),
+			"test('policy route', () => {});\n",
+		);
+
+		const result = runValidateCodingPolicy(root, ["--json", "--git-changed"]);
+
+		expect(result.status).toBe(0);
+		const route = JSON.parse(result.stdout) as {
+			changedFiles: string[];
+			policyModules: Array<{ id: string; matchedFiles: string[] }>;
+		};
+		expect(route.changedFiles).toEqual([
+			"src/dev/validate-coding-policy-script.test.ts",
+		]);
+		expect(route.policyModules).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "testing",
+					matchedFiles: ["src/dev/validate-coding-policy-script.test.ts"],
+				}),
+			]),
+		);
+	});
+
+	it("fails closed when git changed-file routing has no changes", () => {
+		const root = createPolicyRoot();
+		runGit(root, ["init"]);
+		runGit(root, ["add", "."]);
+		runGit(root, [
+			"-c",
+			"user.name=Harness Test",
+			"-c",
+			"user.email=harness-test@example.com",
+			"commit",
+			"-m",
+			"baseline",
+		]);
+
+		const result = runValidateCodingPolicy(root, ["--json", "--git-changed"]);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"route requests require at least one changed file",
 		);
 	});
 });

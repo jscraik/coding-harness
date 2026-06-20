@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-20T10:39:15Z
+Generated: 2026-06-20T19:38:10Z
 
 ## Table of Contents
 
@@ -30,21 +30,8 @@ Generated: 2026-06-20T10:39:15Z
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
 - `package.json`
-- `src/commands/fitness.ts`
-- `src/commands/next-fitness-report.ts`
-- `src/commands/next-pr-closeout-assurance.ts`
-- `src/commands/next-pr-closeout-contract.ts`
-- `src/lib/fitness/artifact-normalizers.ts`
-- `src/lib/fitness/gate-artifact-findings.ts`
-- `src/lib/fitness/report.ts`
-- `scripts/check-steering-feedback-contract.cjs`
-- `src/lib/fitness/trend-validation.ts`
-- `src/lib/fitness/trend.ts`
-- `scripts/write-fitness-gate-artifact.mjs`
-- `src/lib/fitness/types.ts`
-- `src/lib/fitness/validation.ts`
-- `src/AGENTS.md`
-- `src/commands/docs-gate-classification.ts`
+- `src/templates/CODESTYLE.md`
+- `src/templates/codestyle/CHECKSUMS.sha256`
 
 ## agent
 
@@ -963,6 +950,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_ui_loop_internal_f2eb8892_c4b49e6a
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_artifact_runtime_surface_3fb28d25_0a1d91a4
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_audit_references_811f872a_0ce355a8
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_coding_policy_29976175_c710e9cd
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_commit_msg_43b008fe_f9560ef9
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_evidence_patterns_cacd9fb4_240eb37f
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_intermediary_receipt_coverage_7d63b166_40dcf15d
@@ -2070,6 +2058,8 @@ flowchart LR
   User --> run_harness_evals_77704768
   validate_active_route_surface_905456c2["validate-active-route-surface"]
   User --> validate_active_route_surface_905456c2
+  validate_coding_policy_29976175["validate-coding-policy"]
+  User --> validate_coding_policy_29976175
   validate_decision_request_2e5c325e["validate-decision-request"]
   User --> validate_decision_request_2e5c325e
   validate_steering_application_receipt_c922e84a["validate-steering-application-receipt"]
@@ -2112,9 +2102,8 @@ flowchart LR
   User --> ui_loop_exit_codes_29da40fb
   ui_loop_internal_f2eb8892["ui-loop-internal"]
   User --> ui_loop_internal_f2eb8892
-  ui_loop_resolution_4b529dd9["ui-loop-resolution"]
-  User --> ui_loop_resolution_4b529dd9
   classDef userNode fill:#16a34a,color:#fff
-  class github_e2e_2891a341,linear_e2e_decf3708,run_e2e_39efe696,env_b77349bf,check_public_api_docs_a9604f1b,check_steering_feedback_contract_80134459,run_harness_evals_77704768,validate_active_route_surface_905456c2,validate_decision_request_2e5c325e,validate_steering_application_receipt_c922e84a,validate_steering_queue_4bc0cc94,branch_protect_core_a8feb0fd,check_environment_core_2c16213f,ci_migrate_core_7005b5af,decision_request_118a770d,evidence_verify_3b73c290,linear_prepare_0c613ba6,linear_sync_a2fa2bf7,linear_triage_core_7cbca73e,linear_workflow_core_0e19cff4,pattern_scope_61ff946d,pr_closeout_env_9bfcd9ef,pr_closeout_github_proof_ade25b0e,live_247610f4,review_gate_core_4c8001f9,symphony_check_e97f2ea0,ui_loop_command_spec_d513a999,ui_loop_exit_codes_29da40fb,ui_loop_internal_f2eb8892,ui_loop_resolution_4b529dd9 userNode
+  class github_e2e_2891a341,linear_e2e_decf3708,run_e2e_39efe696,env_b77349bf,check_public_api_docs_a9604f1b,check_steering_feedback_contract_80134459,run_harness_evals_77704768,validate_active_route_surface_905456c2,validate_coding_policy_29976175,validate_decision_request_2e5c325e,validate_steering_application_receipt_c922e84a,validate_steering_queue_4bc0cc94,branch_protect_core_a8feb0fd,check_environment_core_2c16213f,ci_migrate_core_7005b5af,decision_request_118a770d,evidence_verify_3b73c290,linear_prepare_0c613ba6,linear_sync_a2fa2bf7,linear_triage_core_7cbca73e,linear_workflow_core_0e19cff4,pattern_scope_61ff946d,pr_closeout_env_9bfcd9ef,pr_closeout_github_proof_ade25b0e,live_247610f4,review_gate_core_4c8001f9,symphony_check_e97f2ea0,ui_loop_command_spec_d513a999,ui_loop_exit_codes_29da40fb,ui_loop_internal_f2eb8892 userNode
 
 ```
+

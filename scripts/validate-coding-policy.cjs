@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const { execFileSync } = require("node:child_process");
 const { existsSync, readFileSync } = require("node:fs");
 const { join, normalize, sep } = require("node:path");
 
@@ -43,12 +44,22 @@ const expectedSourceRules = new Set([
 ]);
 
 function parseArgs(argv) {
-	const options = { json: false, changedFiles: [], routeRequested: false };
+	const options = {
+		json: false,
+		changedFiles: [],
+		gitChanged: false,
+		routeRequested: false,
+	};
 	const errors = [];
 	for (let index = 0; index < argv.length; index += 1) {
 		const arg = argv[index];
 		if (arg === "--json") {
 			options.json = true;
+			continue;
+		}
+		if (arg === "--git-changed") {
+			options.routeRequested = true;
+			options.gitChanged = true;
 			continue;
 		}
 		if (arg === "--changed-file") {
@@ -79,10 +90,36 @@ function parseArgs(argv) {
 		}
 		errors.push(`unknown argument ${arg}`);
 	}
-	if (options.routeRequested && options.changedFiles.length === 0) {
+	if (
+		options.routeRequested &&
+		!options.gitChanged &&
+		options.changedFiles.length === 0
+	) {
 		errors.push("--changed-files requires at least one path");
 	}
 	return { options, errors };
+}
+
+function gitChangedFiles() {
+	const files = [];
+	for (const args of [
+		["diff", "--name-only", "--diff-filter=ACMRTUXB"],
+		["diff", "--cached", "--name-only", "--diff-filter=ACMRTUXB"],
+		["ls-files", "--others", "--exclude-standard"],
+	]) {
+		const output = execFileSync("git", args, {
+			cwd: repoRoot,
+			encoding: "utf8",
+			stdio: ["ignore", "pipe", "pipe"],
+		});
+		files.push(
+			...output
+				.split(/\r?\n/)
+				.map((line) => line.trim())
+				.filter((line) => line.length > 0),
+		);
+	}
+	return uniqueStrings(files);
 }
 
 function readJson(path) {
@@ -483,6 +520,29 @@ try {
 		"coding-policy: failed to parse contracts/coding-policy.schema.json: " +
 			error.message,
 	);
+	process.exit(1);
+}
+
+if (parsedArgs.options.gitChanged) {
+	try {
+		parsedArgs.options.changedFiles.push(...gitChangedFiles());
+	} catch (error) {
+		console.error("coding-policy: failed");
+		console.error(
+			`- --git-changed failed to read git changed files: ${error.message}`,
+		);
+		process.exit(1);
+	}
+	parsedArgs.options.changedFiles = uniqueStrings(
+		parsedArgs.options.changedFiles,
+	);
+}
+if (
+	parsedArgs.options.routeRequested &&
+	parsedArgs.options.changedFiles.length === 0
+) {
+	console.error("coding-policy: failed");
+	console.error("- route requests require at least one changed file");
 	process.exit(1);
 }
 
