@@ -1,0 +1,97 @@
+export const REQUIRED_PROJECT_BRAIN_MEMORY_EXTENSION_PATHS = [
+	".harness/README.md",
+	".harness/memory/LEARNINGS.md",
+	".harness/active-artifacts.md",
+	".harness/artifacts/README.md",
+	".harness/artifacts/sync-receipts.jsonl",
+	".harness/artifacts/brownfield-memory-inventory.md",
+	".harness/artifact-provenance.json",
+	"docs/goals/README.md",
+	".harness/knowledge/INDEX.md",
+	".harness/knowledge/cli/knowledge.md",
+	".harness/knowledge/cli/hypotheses.md",
+	".harness/knowledge/cli/rules.md",
+	".harness/knowledge/ci/knowledge.md",
+	".harness/knowledge/ci/hypotheses.md",
+	".harness/knowledge/ci/rules.md",
+	".harness/knowledge/governance/knowledge.md",
+	".harness/knowledge/governance/hypotheses.md",
+	".harness/knowledge/governance/rules.md",
+	".harness/knowledge/tooling/knowledge.md",
+	".harness/knowledge/tooling/hypotheses.md",
+	".harness/knowledge/tooling/rules.md",
+	".harness/knowledge/tooling/codex-learn-summary.md",
+	".harness/decisions",
+	".harness/quality/criteria.md",
+	".harness/review-log.md",
+] as const;
+
+export const REQUIRED_HOOK_SUPPORT_FILES = [
+	"scripts/codex-preflight.sh",
+	"scripts/codex-preflight-local-memory-legacy.sh",
+	"scripts/codex-learn",
+	"scripts/codex-enforced",
+	"scripts/verify-work.sh",
+	"scripts/validate-codestyle.sh",
+	"scripts/check-node-engine.mjs",
+	"scripts/resolve-circleci-pr-ref.sh",
+	"scripts/run-harness-gate.sh",
+	"scripts/with-validation-lock.sh",
+	"scripts/check-validation-locks.sh",
+	"scripts/check-public-api-docs.mjs",
+	"scripts/check-code-size.mjs",
+	"scripts/lib/changed-files.mjs",
+	"scripts/check-codestyle-parity.sh",
+	"scripts/check-git-common-config.sh",
+	"scripts/prepare-worktree.sh",
+	"scripts/new-task.sh",
+	"scripts/setup-git-hooks.js",
+	"scripts/run-prek.sh",
+	"scripts/run-package-command.sh",
+	"scripts/run-uv-python.sh",
+	"scripts/hook-pre-commit.sh",
+	"scripts/hook-pre-push.sh",
+	"scripts/validate-commit-msg.js",
+	"scripts/check-hook-critical-config-sync.sh",
+	"scripts/check-staged-secrets.sh",
+	"scripts/check-doc-style.sh",
+	"scripts/check-related-tests.sh",
+	"scripts/check-semgrep-changed.sh",
+	"scripts/check-semgrep-full.sh",
+	"scripts/semgrep-bootstrap.sh",
+	"scripts/semgrep-pre-push.yml",
+] as const;
+
+export const TOOLING_CAPABILITY_DEPENDENCY_MARKERS = [
+	{
+		capability: "ui",
+		dependencyMarkers: [
+			"react",
+			"react-dom",
+			"next",
+			"vite",
+			"tailwindcss",
+			"@storybook/react",
+			"@storybook/react-vite",
+			"@radix-ui/react-slot",
+		],
+	},
+	{
+		capability: "chatgpt_apps_sdk",
+		dependencyMarkers: [
+			"@openai/chatkit",
+			"@openai/agents",
+			"@openai/agents-realtime",
+		],
+	},
+] as const;
+
+export const REQUIRED_CONDITIONAL_PACKAGES = [
+	{
+		package: "@brainwav/design-system-guidance",
+		dependencyType: "either",
+		requiredWhenCapabilities: ["ui", "chatgpt_apps_sdk"],
+	},
+] as const;
+
+export const DEFAULT_EXPLICIT_TOOLING_CAPABILITIES = [] as const;

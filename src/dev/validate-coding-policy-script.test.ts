@@ -4,6 +4,7 @@ import {
 	mkdirSync,
 	mkdtempSync,
 	readFileSync,
+	renameSync,
 	rmSync,
 	unlinkSync,
 	writeFileSync,
@@ -388,13 +389,17 @@ describe("validate-coding-policy.cjs", () => {
 			"--changed-files",
 			"--",
 			"coding-policy.json",
+			".markdownlint-cli2.yaml",
+			".vale.ini",
 			"src/cli.ts",
 			"scripts/check",
 			".pnpmrc",
 			"pnpm-workspace.yaml",
 			"scripts/check-staged-secrets.sh",
+			"scripts/check-semgrep-full.sh",
 			".gitleaks.toml",
 			".trufflehog-exclude.txt",
+			"security/openssf-scorecard-policy.json",
 			"tests/example.test.ts",
 		]);
 
@@ -418,7 +423,11 @@ describe("validate-coding-policy.cjs", () => {
 			expect.arrayContaining([
 				expect.objectContaining({
 					id: "docs-config-release",
-					matchedFiles: expect.arrayContaining(["coding-policy.json"]),
+					matchedFiles: expect.arrayContaining([
+						"coding-policy.json",
+						".markdownlint-cli2.yaml",
+						".vale.ini",
+					]),
 				}),
 				expect.objectContaining({
 					id: "quality-security-ops",
@@ -439,8 +448,10 @@ describe("validate-coding-policy.cjs", () => {
 					id: "security",
 					matchedFiles: expect.arrayContaining([
 						"scripts/check-staged-secrets.sh",
+						"scripts/check-semgrep-full.sh",
 						".gitleaks.toml",
 						".trufflehog-exclude.txt",
+						"security/openssf-scorecard-policy.json",
 					]),
 				}),
 				expect.objectContaining({
@@ -520,6 +531,42 @@ describe("validate-coding-policy.cjs", () => {
 				expect.objectContaining({
 					id: "docs-config-release",
 					matchedFiles: ["docs/agents/deleted.md"],
+				}),
+			]),
+		);
+	});
+
+	it("routes both old and new paths for renamed files", () => {
+		const root = createPolicyRoot();
+		runGit(root, ["init"]);
+		mkdirSync(join(root, "docs"), { recursive: true });
+		writeFileSync(join(root, "docs/renamed.md"), "# Renamed\n");
+		runGit(root, ["add", "."]);
+		runGit(root, [
+			"-c",
+			"user.name=Harness Test",
+			"-c",
+			"user.email=harness-test@example.com",
+			"commit",
+			"-m",
+			"baseline",
+		]);
+		renameSync(join(root, "docs/renamed.md"), join(root, "renamed.txt"));
+		runGit(root, ["add", "-A"]);
+
+		const result = runValidateCodingPolicy(root, ["--json", "--git-changed"]);
+
+		expect(result.status).toBe(0);
+		const route = JSON.parse(result.stdout) as {
+			changedFiles: string[];
+			policyModules: Array<{ id: string; matchedFiles: string[] }>;
+		};
+		expect(route.changedFiles).toEqual(["docs/renamed.md", "renamed.txt"]);
+		expect(route.policyModules).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "docs-config-release",
+					matchedFiles: ["docs/renamed.md"],
 				}),
 			]),
 		);

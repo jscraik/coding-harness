@@ -40,6 +40,12 @@ thin and delegate into this deep module.
   template tests should prove these files are included so downstream agents can
   validate policy routing and claim boundaries without relying on prose-only
   discovery.
+- Generated package scripts must expose the public policy-routing entrypoints
+  documented by the scaffolded codestyle pack: `coding-policy:route`,
+  `coding-policy:route:changed`, `coding-policy:route:branch`, and
+  `coding-policy:validate`. Generated docs should point cold agents at these
+  package scripts instead of raw validator internals so downstream command
+  examples remain runnable after `harness init`.
 - Generated environment checks must stay aligned with the repo runtime contract:
   Python and uv remain preflight dependencies, while Ralph is not required for
   `coding-harness` or downstream scaffold execution.

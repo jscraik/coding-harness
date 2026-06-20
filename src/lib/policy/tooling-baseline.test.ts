@@ -2,9 +2,22 @@ import { describe, expect, it } from "vitest";
 import {
 	REQUIRED_CODEX_ACTION_PAIRS,
 	REQUIRED_CODEX_TOOL_ACTIONS,
+	REQUIRED_PACKAGE_SCRIPTS,
 } from "./tooling-baseline.js";
 
 describe("tooling baseline codex actions", () => {
+	it("requires coding policy package-script entrypoints for scaffolds", () => {
+		expect(REQUIRED_PACKAGE_SCRIPTS).toMatchObject({
+			"coding-policy:route":
+				"node scripts/validate-coding-policy.cjs --json --changed-files",
+			"coding-policy:route:branch":
+				"node scripts/validate-coding-policy.cjs --json --git-base origin/main",
+			"coding-policy:route:changed":
+				"node scripts/validate-coding-policy.cjs --json --git-changed",
+			"coding-policy:validate": "node scripts/validate-coding-policy.cjs",
+		});
+	});
+
 	it("includes a hardened Release Finalize action", () => {
 		const action = REQUIRED_CODEX_TOOL_ACTIONS.find(
 			(candidate) => candidate.name === "Release Finalize",

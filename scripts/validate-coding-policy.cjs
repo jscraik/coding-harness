@@ -174,26 +174,21 @@ function gitBaseChangedFiles(baseRef) {
 	const base = requireSafeGitRef(baseRef, "--git-base");
 	const output = execFileSync(
 		"git",
-		["diff", "--name-only", "--diff-filter=ACDMRTUXB", `${base}...HEAD`],
+		["diff", "--name-status", "--diff-filter=ACDMRTUXB", `${base}...HEAD`],
 		{
 			cwd: repoRoot,
 			encoding: "utf8",
 			stdio: ["ignore", "pipe", "pipe"],
 		},
 	);
-	return uniqueStrings(
-		output
-			.split(/\r?\n/)
-			.map((line) => line.trim())
-			.filter((line) => line.length > 0),
-	);
+	return parseGitNameStatus(output);
 }
 
 function gitChangedFiles() {
 	const files = [];
 	for (const args of [
-		["diff", "--name-only", "--diff-filter=ACDMRTUXB"],
-		["diff", "--cached", "--name-only", "--diff-filter=ACDMRTUXB"],
+		["diff", "--name-status", "--diff-filter=ACDMRTUXB"],
+		["diff", "--cached", "--name-status", "--diff-filter=ACDMRTUXB"],
 		["ls-files", "--others", "--exclude-standard"],
 	]) {
 		const output = execFileSync("git", args, {
@@ -202,13 +197,34 @@ function gitChangedFiles() {
 			stdio: ["ignore", "pipe", "pipe"],
 		});
 		files.push(
-			...output
-				.split(/\r?\n/)
-				.map((line) => line.trim())
-				.filter((line) => line.length > 0),
+			...(args[0] === "ls-files"
+				? output
+						.split(/\r?\n/)
+						.map((line) => line.trim())
+						.filter((line) => line.length > 0)
+				: parseGitNameStatus(output)),
 		);
 	}
 	return uniqueStrings(files);
+}
+
+function parseGitNameStatus(output) {
+	const files = [];
+	for (const line of output.split(/\r?\n/)) {
+		const columns = line
+			.trim()
+			.split("\t")
+			.map((column) => column.trim())
+			.filter((column) => column.length > 0);
+		if (columns.length < 2) continue;
+		const status = columns[0];
+		if (/^[RC]/.test(status) && columns.length >= 3) {
+			files.push(columns[1], columns[2]);
+			continue;
+		}
+		files.push(columns[1]);
+	}
+	return files;
 }
 
 function readPolicyJson() {

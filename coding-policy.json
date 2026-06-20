@@ -19,6 +19,8 @@
 			"id": "docs-config-release",
 			"path": "codestyle/04-docs-config-and-release.md",
 			"changedFilePatterns": [
+				".markdownlint-cli2.yaml",
+				".vale.ini",
 				"**/*.md",
 				"coding-policy.json",
 				"docs/**",
@@ -103,6 +105,7 @@
 				".gitleaks.toml",
 				".semgrep/**",
 				".trufflehog-exclude.txt",
+				"security/**",
 				"semgrep*.yml",
 				"scripts/check-*secret*.sh",
 				"scripts/check-semgrep*.sh",
