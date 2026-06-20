@@ -93,16 +93,12 @@ attempt and its result. A statement such as `~/.codex/.env is a FIFO, so
 credential-backed validation is blocked` is stale and invalid without that
 attempted rerun evidence.
 
-Non-hanging timeout probe for legacy source-style recovery only:
-
-```bash
-stat -f "%N type=%HT size=%z" ~/.codex/.env
-perl -e 'alarm shift; exec @ARGV' 10 awk -F= '/^[A-Za-z_][A-Za-z0-9_]*=/ {print $1}' ~/.codex/.env
-```
-
-If either bounded command times out, the expected operator-visible outcome is
-`blocked_env_fifo_timeout`; the next owner should provide a non-blocking env
-source or rerun the same command in a shell where the FIFO has a writer.
+Do not add a secondary timeout probe with undeclared tooling. If the canonical
+`op run --env-file ~/.codex/.env -- <command>` attempt times out because the
+FIFO has no writer, the expected operator-visible outcome is
+`blocked_env_fifo_timeout`. The next owner should provide a non-blocking
+regular env surface or rerun the same command where the FIFO without a writer
+condition is resolved.
 
 ## Enforcement Surface
 
