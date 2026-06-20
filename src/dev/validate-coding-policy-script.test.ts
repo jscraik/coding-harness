@@ -457,7 +457,11 @@ describe("validate-coding-policy.cjs", () => {
 			".markdownlint-cli2.yaml",
 			".vale.ini",
 			"src/cli.ts",
+			"scripts/check-goal-board.py",
 			"scripts/check",
+			"src/templates/codex-preflight.sh",
+			"src/templates/circleci-config.yml",
+			"src/templates/pr-pipeline.yml",
 			".pnpmrc",
 			"pnpm-workspace.yaml",
 			"scripts/check-staged-secrets.sh",
@@ -478,6 +482,7 @@ describe("validate-coding-policy.cjs", () => {
 				"pnpm run coding-policy:validate",
 				"pnpm docs:lint",
 				"pnpm check",
+				"pnpm python:types",
 				"pnpm run quality:scripts",
 				"pnpm install --frozen-lockfile",
 				"pnpm audit",
@@ -496,11 +501,22 @@ describe("validate-coding-policy.cjs", () => {
 				}),
 				expect.objectContaining({
 					id: "quality-security-ops",
-					matchedFiles: expect.arrayContaining(["src/cli.ts"]),
+					matchedFiles: expect.arrayContaining([
+						"src/cli.ts",
+						"src/templates/circleci-config.yml",
+						"src/templates/pr-pipeline.yml",
+					]),
+				}),
+				expect.objectContaining({
+					id: "python",
+					matchedFiles: expect.arrayContaining(["scripts/check-goal-board.py"]),
 				}),
 				expect.objectContaining({
 					id: "shell",
-					matchedFiles: expect.arrayContaining(["scripts/check"]),
+					matchedFiles: expect.arrayContaining([
+						"scripts/check",
+						"src/templates/codex-preflight.sh",
+					]),
 				}),
 				expect.objectContaining({
 					id: "package-managers",

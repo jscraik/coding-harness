@@ -51,10 +51,19 @@
 				"scripts/**",
 				"src/*.ts",
 				"src/commands/**",
-				"src/lib/**"
+				"src/lib/**",
+				"src/templates/**/*.yml",
+				"src/templates/**/*.yaml"
 			],
 			"sourceRules": ["ci-safety", "script-delegation", "stateful-artifacts"],
 			"requiredGates": ["pnpm check", "bash scripts/validate-codestyle.sh"]
+		},
+		{
+			"id": "python",
+			"path": "codestyle/07-python.md",
+			"changedFilePatterns": ["**/*.py"],
+			"sourceRules": ["script-delegation", "testing-standards"],
+			"requiredGates": ["pnpm python:types"]
 		},
 		{
 			"id": "shell",
@@ -67,6 +76,7 @@
 				"scripts/replay",
 				"scripts/*.sh",
 				"scripts/**/*.sh",
+				"**/*.sh",
 				"*.sh"
 			],
 			"sourceRules": ["script-as-black-box", "script-delegation"],

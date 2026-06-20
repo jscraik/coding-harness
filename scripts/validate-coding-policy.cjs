@@ -14,6 +14,7 @@ const expectedModules = new Map([
 	["foundations", "codestyle/01-foundations.md"],
 	["docs-config-release", "codestyle/04-docs-config-and-release.md"],
 	["quality-security-ops", "codestyle/05-quality-security-ops.md"],
+	["python", "codestyle/07-python.md"],
 	["shell", "codestyle/10-shell-bash-zsh.md"],
 	["package-managers", "codestyle/11-package-managers-pnpm-npm.md"],
 	["git-workflow", "codestyle/13-git-workflow.md"],
