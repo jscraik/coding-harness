@@ -27,7 +27,7 @@ depends_on:
 
 ## Feedback Signal
 
-Jamie corrected a repeated closeout failure: the agent treated `~/.codex/.env`
+A repeated closeout failure showed that the agent treated `~/.codex/.env`
 being a FIFO as credential-blocker evidence even though repository steering
 already says FIFO is normal and the required recovery path is
 `op run --env-file ~/.codex/.env -- <command>`.
