@@ -9,6 +9,7 @@ const schemaPath = join(repoRoot, "contracts/coding-policy.schema.json");
 const MAX_CHANGED_FILES = 200;
 const MAX_ROUTE_PATH_LENGTH = 512;
 const MAX_ROUTE_SEGMENTS = 64;
+const MAX_CLI_DIAGNOSTIC_CHARS = 240;
 const expectedModules = new Map([
 	["foundations", "codestyle/01-foundations.md"],
 	["docs-config-release", "codestyle/04-docs-config-and-release.md"],
@@ -114,6 +115,13 @@ function parseArgs(argv) {
 }
 
 function sanitizeCliDiagnosticValue(value) {
+	return sanitizeCliDiagnosticText(value, 80);
+}
+
+function sanitizeCliDiagnosticText(
+	value,
+	maxLength = MAX_CLI_DIAGNOSTIC_CHARS,
+) {
 	const sanitized = stripCliDiagnosticControls(String(value))
 		.replace(/\s+/g, " ")
 		.trim()
@@ -123,7 +131,9 @@ function sanitizeCliDiagnosticValue(value) {
 		)
 		.replace(/\b(Bearer|Basic)\s+\S+/gi, "$1 <redacted>");
 	if (sanitized.length === 0) return "<empty>";
-	if (sanitized.length > 80) return `${sanitized.slice(0, 77)}...`;
+	if (sanitized.length > maxLength) {
+		return `${sanitized.slice(0, maxLength - 3)}...`;
+	}
 	return sanitized;
 }
 
@@ -598,7 +608,9 @@ function validatePolicy(policy, schema) {
 const parsedArgs = parseArgs(process.argv.slice(2));
 if (parsedArgs.errors.length > 0) {
 	console.error("coding-policy: failed");
-	for (const error of parsedArgs.errors) console.error(`- ${error}`);
+	for (const error of parsedArgs.errors) {
+		console.error(`- ${sanitizeCliDiagnosticText(error)}`);
+	}
 	process.exit(1);
 }
 
@@ -637,8 +649,9 @@ if (parsedArgs.options.gitChanged) {
 		parsedArgs.options.changedFiles.push(...gitChangedFiles());
 	} catch (error) {
 		console.error("coding-policy: failed");
+		const message = sanitizeCliDiagnosticText(error.message);
 		console.error(
-			`- --git-changed failed to read git changed files: ${error.message}`,
+			`- --git-changed failed to read git changed files: ${message}`,
 		);
 		process.exit(1);
 	}
@@ -653,9 +666,8 @@ if (parsedArgs.options.gitBase !== null) {
 		);
 	} catch (error) {
 		console.error("coding-policy: failed");
-		console.error(
-			`- --git-base failed to read git changed files: ${error.message}`,
-		);
+		const message = sanitizeCliDiagnosticText(error.message);
+		console.error(`- --git-base failed to read git changed files: ${message}`);
 		process.exit(1);
 	}
 	parsedArgs.options.changedFiles = uniqueStrings(
@@ -683,7 +695,9 @@ for (const [index, changedFile] of parsedArgs.options.changedFiles.entries()) {
 }
 if (errors.length > 0) {
 	console.error("coding-policy: failed");
-	for (const error of errors) console.error(`- ${error}`);
+	for (const error of errors) {
+		console.error(`- ${sanitizeCliDiagnosticText(error)}`);
+	}
 	process.exit(1);
 }
 
