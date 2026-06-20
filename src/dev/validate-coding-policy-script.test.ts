@@ -355,4 +355,68 @@ describe("validate-coding-policy.cjs", () => {
 			"route requests require at least one changed file",
 		);
 	});
+
+	it("emits machine-readable policy routes from a branch base ref", () => {
+		const root = createPolicyRoot();
+		runGit(root, ["init"]);
+		runGit(root, ["add", "."]);
+		runGit(root, [
+			"-c",
+			"user.name=Harness Test",
+			"-c",
+			"user.email=harness-test@example.com",
+			"commit",
+			"-m",
+			"baseline",
+		]);
+		runGit(root, ["branch", "main"]);
+		mkdirSync(join(root, "scripts"), { recursive: true });
+		writeFileSync(join(root, "scripts/check-doc-style.sh"), "echo ok\n");
+		runGit(root, ["add", "scripts/check-doc-style.sh"]);
+		runGit(root, [
+			"-c",
+			"user.name=Harness Test",
+			"-c",
+			"user.email=harness-test@example.com",
+			"commit",
+			"-m",
+			"script change",
+		]);
+
+		const result = runValidateCodingPolicy(root, [
+			"--json",
+			"--git-base",
+			"main",
+		]);
+
+		expect(result.status).toBe(0);
+		const route = JSON.parse(result.stdout) as {
+			changedFiles: string[];
+			policyModules: Array<{ id: string; matchedFiles: string[] }>;
+		};
+		expect(route.changedFiles).toEqual(["scripts/check-doc-style.sh"]);
+		expect(route.policyModules).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "shell",
+					matchedFiles: ["scripts/check-doc-style.sh"],
+				}),
+			]),
+		);
+	});
+
+	it("rejects unsafe branch base refs", () => {
+		const root = createPolicyRoot();
+		runGit(root, ["init"]);
+
+		const result = runValidateCodingPolicy(root, [
+			"--json",
+			"--git-base",
+			"--name-only",
+		]);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("--git-base failed");
+		expect(result.stderr).toContain("--git-base must be a plain git ref");
+	});
 });

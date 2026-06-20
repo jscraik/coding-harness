@@ -47,6 +47,7 @@ function parseArgs(argv) {
 	const options = {
 		json: false,
 		changedFiles: [],
+		gitBase: null,
 		gitChanged: false,
 		routeRequested: false,
 	};
@@ -60,6 +61,17 @@ function parseArgs(argv) {
 		if (arg === "--git-changed") {
 			options.routeRequested = true;
 			options.gitChanged = true;
+			continue;
+		}
+		if (arg === "--git-base") {
+			const next = argv[index + 1];
+			if (next === undefined) {
+				errors.push("--git-base requires a ref");
+				continue;
+			}
+			options.routeRequested = true;
+			options.gitBase = next;
+			index += 1;
 			continue;
 		}
 		if (arg === "--changed-file") {
@@ -93,11 +105,41 @@ function parseArgs(argv) {
 	if (
 		options.routeRequested &&
 		!options.gitChanged &&
+		options.gitBase === null &&
 		options.changedFiles.length === 0
 	) {
 		errors.push("--changed-files requires at least one path");
 	}
 	return { options, errors };
+}
+
+function requireSafeGitRef(ref, optionName) {
+	if (typeof ref !== "string" || ref.trim().length === 0) {
+		throw new Error(`${optionName} requires a non-empty ref`);
+	}
+	if (/\s/.test(ref) || ref.startsWith("-")) {
+		throw new Error(`${optionName} must be a plain git ref`);
+	}
+	return ref;
+}
+
+function gitBaseChangedFiles(baseRef) {
+	const base = requireSafeGitRef(baseRef, "--git-base");
+	const output = execFileSync(
+		"git",
+		["diff", "--name-only", "--diff-filter=ACMRTUXB", `${base}...HEAD`],
+		{
+			cwd: repoRoot,
+			encoding: "utf8",
+			stdio: ["ignore", "pipe", "pipe"],
+		},
+	);
+	return uniqueStrings(
+		output
+			.split(/\r?\n/)
+			.map((line) => line.trim())
+			.filter((line) => line.length > 0),
+	);
 }
 
 function gitChangedFiles() {
@@ -530,6 +572,22 @@ if (parsedArgs.options.gitChanged) {
 		console.error("coding-policy: failed");
 		console.error(
 			`- --git-changed failed to read git changed files: ${error.message}`,
+		);
+		process.exit(1);
+	}
+	parsedArgs.options.changedFiles = uniqueStrings(
+		parsedArgs.options.changedFiles,
+	);
+}
+if (parsedArgs.options.gitBase !== null) {
+	try {
+		parsedArgs.options.changedFiles.push(
+			...gitBaseChangedFiles(parsedArgs.options.gitBase),
+		);
+	} catch (error) {
+		console.error("coding-policy: failed");
+		console.error(
+			`- --git-base failed to read git changed files: ${error.message}`,
 		);
 		process.exit(1);
 	}

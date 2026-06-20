@@ -85,6 +85,8 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   `pnpm run coding-policy:route -- <path...>` to discover the policy modules
   and gates for a concrete changed-file set, or
   `pnpm run coding-policy:route:changed` to route the current git changes.
+  Use `pnpm run coding-policy:route:branch` to route the current branch diff
+  against `origin/main`.
 - GitHub Actions release workflow inputs are untrusted shell-boundary data.
   Pass manual `workflow_dispatch` inputs through named `env` variables before
   validation instead of interpolating `github.event.inputs.*` directly inside

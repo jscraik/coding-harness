@@ -63,6 +63,7 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 - Markdown modules remain the prose authority; the JSON file maps changed-file routing, module ownership, source-rule lineage, required gates, and claim boundaries for validators and agents.
 - Run `pnpm run coding-policy:route -- <path...>` to discover the policy modules and gates that apply to a changed-file set.
 - Run `pnpm run coding-policy:route:changed` to discover the policy modules and gates that apply to current git changes.
+- Run `pnpm run coding-policy:route:branch` to discover the policy modules and gates that apply to the current branch diff against `origin/main`.
 - Update [contracts/coding-policy.schema.json](./contracts/coding-policy.schema.json) and run `node scripts/validate-coding-policy.cjs` when the policy index shape changes.
 
 ## Enforcement model
