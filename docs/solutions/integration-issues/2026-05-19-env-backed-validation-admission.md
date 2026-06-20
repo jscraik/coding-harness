@@ -49,6 +49,12 @@ validation contract.
   itself. If the approved env surface exposes the required variable names, the
   blocker must be classified from the env-loaded rerun outcome, not from the
   file type.
+- In this repository, `~/.codex/.env` may be exposed either as a FIFO or as a
+  regular readable env file. FIFO metadata is normal and is not itself a
+  blocker. For FIFO env surfaces, use
+  `op run --env-file ~/.codex/.env -- <command>`; for regular readable files,
+  load the file in a bounded shell before the exact command and classify the
+  validation lane from that attempted rerun outcome.
 
 ## Durable Rule
 
@@ -56,34 +62,43 @@ Env-Backed Validation Recovery is required before blocking a local credentialed
 validation lane. The agent must:
 
 1. Inspect `~/.codex/.env` for required variable names without printing values.
-2. If required values are present, rerun the exact validation command in a
-   shell that loads the env file.
-3. Report the final command status from the env-loaded rerun.
-4. Classify the lane as blocked only when the env file is missing, unreadable,
+2. If `~/.codex/.env` is a FIFO or named pipe, rerun the exact validation
+   command with `op run --env-file ~/.codex/.env -- <command>`.
+3. If `~/.codex/.env` is a regular readable file, rerun the exact validation
+   command with `set -a; source ~/.codex/.env; set +a; <command>`.
+4. Report the final command status from the env-loaded rerun.
+5. Classify the lane as blocked only when the env file is missing, unreadable,
    incomplete, or the env-loaded rerun still fails.
-5. Do not classify FIFO metadata as proof that credentials are unavailable when
+6. Do not classify FIFO metadata as proof that credentials are unavailable when
    the variable-name probe succeeds; source the env surface through the bounded
    canonical command shape and report the command's actual failure.
-6. If sourcing the env surface hangs or times out, classify the lane as
-   `blocked_env_fifo_timeout`, not as missing credentials, and record the
-   timeout plus the non-hanging metadata probe.
+7. If `op run --env-file ~/.codex/.env -- <command>` hangs, times out, or still
+   lacks required credentials, classify the lane from that attempted rerun
+   outcome and include the exact command evidence.
 
 Canonical command shape:
 
 ```bash
-perl -e 'alarm shift; exec @ARGV' 900 zsh -lc 'set -a; source ~/.codex/.env >/dev/null; set +a; pnpm test:deep'
+op run --env-file ~/.codex/.env -- <command>
 ```
 
-Non-hanging timeout probe:
+Example:
 
 ```bash
-stat -f "%N type=%HT size=%z" ~/.codex/.env
-perl -e 'alarm shift; exec @ARGV' 10 awk -F= '/^[A-Za-z_][A-Za-z0-9_]*=/ {print $1}' ~/.codex/.env
+op run --env-file ~/.codex/.env -- pnpm test:deep
 ```
 
-If either bounded command times out, the expected operator-visible outcome is
-`blocked_env_fifo_timeout`; the next owner should provide a non-blocking env
-source or rerun the same command in a shell where the FIFO has a writer.
+Closeout blocker claims must include the `op run --env-file ~/.codex/.env --`
+attempt and its result. A statement such as `~/.codex/.env is a FIFO, so
+credential-backed validation is blocked` is stale and invalid without that
+attempted rerun evidence.
+
+Do not add a secondary timeout probe with undeclared tooling. If the canonical
+`op run --env-file ~/.codex/.env -- <command>` attempt times out because the
+FIFO has no writer, the expected operator-visible outcome is
+`blocked_env_fifo_timeout`. The next owner should provide a non-blocking
+regular env surface or rerun the same command where the FIFO without a writer
+condition is resolved.
 
 ## Enforcement Surface
 

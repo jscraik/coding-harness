@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-19T23:49:06Z
+Generated: 2026-06-20T10:39:15Z
 
 ## Table of Contents
 
@@ -29,32 +29,18 @@ Generated: 2026-06-19T23:49:06Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `contracts/harness-fitness.schema.json`
+- `package.json`
 - `src/commands/fitness.ts`
-- `src/commands/next-args.ts`
-- `src/commands/next-cli-evidence.ts`
-- `src/commands/next-decision-meta.ts`
 - `src/commands/next-fitness-report.ts`
-- `src/commands/next-option-parsers.ts`
+- `src/commands/next-pr-closeout-assurance.ts`
 - `src/commands/next-pr-closeout-contract.ts`
-- `src/commands/next-pr-closeout.ts`
-- `src/commands/next-prompt-context-drift.ts`
-- `src/commands/next-recommendation-decisions.ts`
-- `src/commands/next-runner-state.ts`
-- `src/commands/next-runner.ts`
-- `src/commands/next-usage-errors.ts`
-- `src/commands/next.ts`
-- `src/lib/cli/registry/command-agent-catalog-rules.ts`
-- `src/lib/cli/registry/command-capability-rules.ts`
-- `src/lib/cli/registry/command-specs-core.ts`
-- `src/lib/cli/registry/command-specs.ts`
-- `src/lib/cli/registry/diff-budget-command-spec.ts`
-- `src/lib/cli/registry/fitness-command-spec.ts`
-- `src/lib/cli/registry/pilot-evaluate-command-spec.ts`
-- `src/lib/cli/registry/pilot-rollback-command-spec.ts`
-- `src/lib/cli/registry/ui-loop-command-specs.ts`
 - `src/lib/fitness/artifact-normalizers.ts`
+- `src/lib/fitness/gate-artifact-findings.ts`
 - `src/lib/fitness/report.ts`
+- `scripts/check-steering-feedback-contract.cjs`
+- `src/lib/fitness/trend-validation.ts`
+- `src/lib/fitness/trend.ts`
+- `scripts/write-fitness-gate-artifact.mjs`
 - `src/lib/fitness/types.ts`
 - `src/lib/fitness/validation.ts`
 
@@ -723,6 +709,7 @@ graph LR
   node_fleet_plan_cli_1abce344_6bb97cf7["fleet_plan_cli_1abce344"]
   node_frontmatter_metadata_gate_6901bbe4_282d02fe["frontmatter_metadata_gate_6901bbe4"]
   node_gardener_9416a9df_87b06be0["gardener_9416a9df"]
+  node_gate_artifact_findings_95d1e2ef_d86a6ced["gate_artifact_findings_95d1e2ef"]
   node_gate_c974e17b_07549baf["gate_c974e17b"]
   node_generated_artifact_parent_1f7755de_7894ed12["generated_artifact_parent_1f7755de"]
   node_git_tracked_paths_0d2bb251_a46656b4["git_tracked_paths_0d2bb251"]
@@ -870,6 +857,7 @@ graph LR
   node_test_harness_upgrade_matrix_84113c4e_e0838daa["test_harness_upgrade_matrix_84113c4e"]
   node_tooling_audit_core_328d6a41_01cbc905["tooling_audit_core_328d6a41"]
   node_tracer_1e6243a2_cb3d802b["tracer_1e6243a2"]
+  node_trend_2ab022d8_6cc27a71["trend_2ab022d8"]
   node_ui_loop_internal_f2eb8892_c4b49e6a["ui_loop_internal_f2eb8892"]
   node_ui_loop_tooling_12b2d2c7_1abedab2["ui_loop_tooling_12b2d2c7"]
   node_update_codestyle_checksums_a6458a10_61ac2805["update_codestyle_checksums_a6458a10"]
@@ -912,6 +900,7 @@ graph LR
   node_vitest_e2e_config_4e2a61bc_3efa3f07["vitest_e2e_config_4e2a61bc"]
   node_workflow_generate_2fc0af62_803bbfeb["workflow_generate_2fc0af62"]
   node_workflow_generate_parser_ad69fefe_62542333["workflow_generate_parser_ad69fefe"]
+  node_write_fitness_gate_artifact_c84c6d3c_ca7bd6f7["write_fitness_gate_artifact_c84c6d3c"]
   ext_inquirer_prompts_4d547149["@inquirer/prompts"] --> node_init_interactive_28845b2f_39350b46
   ext_octokit_plugin_retry_c9aecc53["@octokit/plugin-retry"] --> node_client_948fe603_907d5144
   ext_octokit_plugin_throttling_7909ece3["@octokit/plugin-throttling"] --> node_client_948fe603_907d5144
@@ -978,6 +967,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_prompt_context_drift_8c949ef6_d32d5759
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_runtime_packet_schemas_bc3ba8ec_ee732335
   ext_node_child_process_f62b7d19["node:child_process"] --> node_version_coherence_69733bcb_00c8d5d9
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_write_fitness_gate_artifact_c84c6d3c_ca7bd6f7
   ext_node_crypto_c7dfc512["node:crypto"] --> node_analysis_f44e85c4_c68a7cb6
   ext_node_crypto_c7dfc512["node:crypto"] --> node_artifact_io_ba511748_6d1faad8
   ext_node_crypto_c7dfc512["node:crypto"] --> node_automation_run_records_e3246015_a281ec3e
@@ -1117,6 +1107,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_fleet_plan_cli_1abce344_6bb97cf7
   ext_node_fs_a15b7d96["node:fs"] --> node_frontmatter_metadata_gate_6901bbe4_282d02fe
   ext_node_fs_a15b7d96["node:fs"] --> node_gardener_9416a9df_87b06be0
+  ext_node_fs_a15b7d96["node:fs"] --> node_gate_artifact_findings_95d1e2ef_d86a6ced
   ext_node_fs_a15b7d96["node:fs"] --> node_gate_c974e17b_07549baf
   ext_node_fs_a15b7d96["node:fs"] --> node_generated_artifact_parent_1f7755de_7894ed12
   ext_node_fs_a15b7d96["node:fs"] --> node_github_e2e_2891a341_af6f1610
@@ -1231,6 +1222,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_test_harness_upgrade_matrix_84113c4e_e0838daa
   ext_node_fs_a15b7d96["node:fs"] --> node_tooling_audit_core_328d6a41_01cbc905
   ext_node_fs_a15b7d96["node:fs"] --> node_tracer_1e6243a2_cb3d802b
+  ext_node_fs_a15b7d96["node:fs"] --> node_trend_2ab022d8_6cc27a71
   ext_node_fs_a15b7d96["node:fs"] --> node_ui_loop_internal_f2eb8892_c4b49e6a
   ext_node_fs_a15b7d96["node:fs"] --> node_ui_loop_tooling_12b2d2c7_1abedab2
   ext_node_fs_a15b7d96["node:fs"] --> node_update_codestyle_checksums_a6458a10_61ac2805
@@ -1270,6 +1262,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_version_coherence_69733bcb_00c8d5d9
   ext_node_fs_a15b7d96["node:fs"] --> node_workflow_generate_2fc0af62_803bbfeb
   ext_node_fs_a15b7d96["node:fs"] --> node_workflow_generate_parser_ad69fefe_62542333
+  ext_node_fs_a15b7d96["node:fs"] --> node_write_fitness_gate_artifact_c84c6d3c_ca7bd6f7
   ext_node_module_ca1b42af["node:module"] --> node_health_core_2b2fdada_341de678
   ext_node_os_d93fe73a["node:os"] --> node_check_behavior_tests_2577f6be_58dc87b2
   ext_node_os_d93fe73a["node:os"] --> node_env_1_b6f6b232_dda31a93
@@ -1505,6 +1498,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_version_5ca4f385_fd75945b
   ext_node_path_78811c13["node:path"] --> node_version_coherence_69733bcb_00c8d5d9
   ext_node_path_78811c13["node:path"] --> node_workflow_generate_2fc0af62_803bbfeb
+  ext_node_path_78811c13["node:path"] --> node_write_fitness_gate_artifact_c84c6d3c_ca7bd6f7
   ext_node_perf_hooks_906292ff["node:perf_hooks"] --> node_performance_overload_c685bfcf_291ef65a
   ext_node_process_00cdf119["node:process"] --> node_args_090772cf_1bac9202
   ext_node_process_00cdf119["node:process"] --> node_check_20f65c28_48d25399

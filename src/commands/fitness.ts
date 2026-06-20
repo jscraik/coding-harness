@@ -14,9 +14,12 @@ interface FitnessFlags {
 	architectureReport: FitnessFlag;
 	artifactsDir: FitnessFlag;
 	qualitySizeReport: FitnessFlag;
+	typecheckReport: FitnessFlag;
+	lintReport: FitnessFlag;
 	behaviorTestsReport: FitnessFlag;
 	auditTrackingReport: FitnessFlag;
 	advisoryReviewReport: FitnessFlag;
+	trendBaseline: FitnessFlag;
 }
 
 interface MissingFitnessFlag {
@@ -66,9 +69,12 @@ function parseFitnessFlags(args: string[]): FitnessFlags {
 		architectureReport: inspectFlagValue(args, "--architecture-report"),
 		artifactsDir: inspectFlagValue(args, "--from-existing-artifacts"),
 		qualitySizeReport: inspectFlagValue(args, "--quality-size-report"),
+		typecheckReport: inspectFlagValue(args, "--typecheck-report"),
+		lintReport: inspectFlagValue(args, "--lint-report"),
 		behaviorTestsReport: inspectFlagValue(args, "--behavior-tests-report"),
 		auditTrackingReport: inspectFlagValue(args, "--audit-tracking-report"),
 		advisoryReviewReport: inspectFlagValue(args, "--advisory-review-report"),
+		trendBaseline: inspectFlagValue(args, "--trend-baseline"),
 	};
 }
 
@@ -92,6 +98,16 @@ function missingFitnessFlag(
 			name: "--quality-size-report",
 		},
 		{
+			flag: flags.typecheckReport,
+			code: "fitness.typecheck_report_required",
+			name: "--typecheck-report",
+		},
+		{
+			flag: flags.lintReport,
+			code: "fitness.lint_report_required",
+			name: "--lint-report",
+		},
+		{
 			flag: flags.behaviorTestsReport,
 			code: "fitness.behavior_tests_report_required",
 			name: "--behavior-tests-report",
@@ -105,6 +121,11 @@ function missingFitnessFlag(
 			flag: flags.advisoryReviewReport,
 			code: "fitness.advisory_review_report_required",
 			name: "--advisory-review-report",
+		},
+		{
+			flag: flags.trendBaseline,
+			code: "fitness.trend_baseline_required",
+			name: "--trend-baseline",
 		},
 	].find(({ flag }) => flag.missingValue);
 }
@@ -120,6 +141,12 @@ function fitnessReportOptions(flags: FitnessFlags) {
 		...(flags.qualitySizeReport.value
 			? { qualitySizeReportPath: flags.qualitySizeReport.value }
 			: {}),
+		...(flags.typecheckReport.value
+			? { typecheckReportPath: flags.typecheckReport.value }
+			: {}),
+		...(flags.lintReport.value
+			? { lintReportPath: flags.lintReport.value }
+			: {}),
 		...(flags.behaviorTestsReport.value
 			? { behaviorTestsReportPath: flags.behaviorTestsReport.value }
 			: {}),
@@ -128,6 +155,9 @@ function fitnessReportOptions(flags: FitnessFlags) {
 			: {}),
 		...(flags.advisoryReviewReport.value
 			? { advisoryReviewReportPath: flags.advisoryReviewReport.value }
+			: {}),
+		...(flags.trendBaseline.value
+			? { trendBaselinePath: flags.trendBaseline.value }
 			: {}),
 	};
 }
@@ -153,6 +183,12 @@ function printFitnessHelp(): void {
 		"  --quality-size-report <path>   Ingest pnpm run quality:size JSON output",
 	);
 	console.info(
+		"  --typecheck-report <path>      Ingest pnpm run fitness:typecheck-artifact output",
+	);
+	console.info(
+		"  --lint-report <path>           Ingest pnpm run fitness:lint-artifact output",
+	);
+	console.info(
 		"  --behavior-tests-report <path> Ingest pnpm run quality:behavior-tests JSON output",
 	);
 	console.info(
@@ -160,6 +196,9 @@ function printFitnessHelp(): void {
 	);
 	console.info(
 		"  --advisory-review-report <path> Ingest structured AI review output as advisory",
+	);
+	console.info(
+		"  --trend-baseline <path>       Compare against a previous harness-fitness/v1 report",
 	);
 }
 

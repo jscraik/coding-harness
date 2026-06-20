@@ -37,11 +37,20 @@
 		},
 		"lanes": {
 			"type": "array",
-			"items": { "$ref": "#/$defs/lane" }
+			"items": { "$ref": "#/$defs/lane" },
+			"allOf": [
+				{ "$ref": "#/$defs/requiresArchitectureFitnessLane" },
+				{ "$ref": "#/$defs/requiresQualityBudgetLane" },
+				{ "$ref": "#/$defs/requiresTypeSafetyLane" },
+				{ "$ref": "#/$defs/requiresStaticLintLane" },
+				{ "$ref": "#/$defs/requiresBehaviorProofLane" },
+				{ "$ref": "#/$defs/requiresFeedbackLearningLane" }
+			]
 		},
 		"topDeterministicFinding": {
 			"anyOf": [{ "$ref": "#/$defs/finding" }, { "type": "null" }]
 		},
+		"trendSnapshot": { "$ref": "#/$defs/trendSnapshot" },
 		"claimBoundaries": {
 			"type": "array",
 			"items": { "type": "string", "minLength": 1 }
@@ -74,6 +83,54 @@
 					"items": { "$ref": "#/$defs/finding" }
 				}
 			}
+		},
+		"requiresArchitectureFitnessLane": {
+			"contains": {
+				"type": "object",
+				"required": ["id"],
+				"properties": { "id": { "const": "architecture-fitness" } }
+			},
+			"minContains": 1
+		},
+		"requiresQualityBudgetLane": {
+			"contains": {
+				"type": "object",
+				"required": ["id"],
+				"properties": { "id": { "const": "quality-budget" } }
+			},
+			"minContains": 1
+		},
+		"requiresTypeSafetyLane": {
+			"contains": {
+				"type": "object",
+				"required": ["id"],
+				"properties": { "id": { "const": "type-safety" } }
+			},
+			"minContains": 1
+		},
+		"requiresStaticLintLane": {
+			"contains": {
+				"type": "object",
+				"required": ["id"],
+				"properties": { "id": { "const": "static-lint" } }
+			},
+			"minContains": 1
+		},
+		"requiresBehaviorProofLane": {
+			"contains": {
+				"type": "object",
+				"required": ["id"],
+				"properties": { "id": { "const": "behavior-proof" } }
+			},
+			"minContains": 1
+		},
+		"requiresFeedbackLearningLane": {
+			"contains": {
+				"type": "object",
+				"required": ["id"],
+				"properties": { "id": { "const": "feedback-learning" } }
+			},
+			"minContains": 1
 		},
 		"finding": {
 			"type": "object",
@@ -115,10 +172,111 @@
 				"message": { "type": "string", "minLength": 1 }
 			}
 		},
+		"trendPoint": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"status",
+				"findings",
+				"failures",
+				"warnings",
+				"lanesNeedingEvidence",
+				"deterministicFindings",
+				"advisoryFindings"
+			],
+			"properties": {
+				"status": { "enum": ["pass", "warn", "fail", "needs_evidence"] },
+				"findings": { "type": "integer", "minimum": 0 },
+				"failures": { "type": "integer", "minimum": 0 },
+				"warnings": { "type": "integer", "minimum": 0 },
+				"lanesNeedingEvidence": { "type": "integer", "minimum": 0 },
+				"deterministicFindings": { "type": "integer", "minimum": 0 },
+				"advisoryFindings": { "type": "integer", "minimum": 0 }
+			}
+		},
+		"trendDelta": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"findings",
+				"failures",
+				"warnings",
+				"lanesNeedingEvidence",
+				"deterministicFindings",
+				"advisoryFindings"
+			],
+			"properties": {
+				"findings": { "type": "integer" },
+				"failures": { "type": "integer" },
+				"warnings": { "type": "integer" },
+				"lanesNeedingEvidence": { "type": "integer" },
+				"deterministicFindings": { "type": "integer" },
+				"advisoryFindings": { "type": "integer" }
+			}
+		},
+		"trendSnapshot": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"schemaVersion",
+				"baselineRef",
+				"baselineStatus",
+				"current",
+				"previous",
+				"delta",
+				"direction",
+				"claimBoundary"
+			],
+			"properties": {
+				"schemaVersion": {
+					"const": "harness-fitness-trend-snapshot/v1"
+				},
+				"baselineRef": {
+					"anyOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+				},
+				"baselineStatus": { "enum": ["loaded", "unavailable"] },
+				"current": { "$ref": "#/$defs/trendPoint" },
+				"previous": {
+					"anyOf": [{ "$ref": "#/$defs/trendPoint" }, { "type": "null" }]
+				},
+				"delta": {
+					"anyOf": [{ "$ref": "#/$defs/trendDelta" }, { "type": "null" }]
+				},
+				"direction": {
+					"enum": ["improved", "regressed", "unchanged", "baseline_unavailable"]
+				},
+				"claimBoundary": { "type": "string", "minLength": 1 }
+			},
+			"allOf": [
+				{
+					"if": {
+						"properties": { "baselineStatus": { "const": "loaded" } },
+						"required": ["baselineStatus"]
+					},
+					"then": {
+						"properties": {
+							"baselineRef": { "type": "string", "minLength": 1 },
+							"previous": { "$ref": "#/$defs/trendPoint" },
+							"delta": { "$ref": "#/$defs/trendDelta" },
+							"direction": { "enum": ["improved", "regressed", "unchanged"] }
+						}
+					},
+					"else": {
+						"properties": {
+							"previous": { "type": "null" },
+							"delta": { "type": "null" },
+							"direction": { "const": "baseline_unavailable" }
+						}
+					}
+				}
+			]
+		},
 		"principle": {
 			"enum": [
 				"protect_deep_module_boundaries",
 				"reduce_cognitive_load",
+				"prove_type_safety",
+				"preserve_static_contracts",
 				"prove_behavior_outcomes",
 				"compound_feedback_to_harness"
 			]
@@ -128,6 +286,8 @@
 				"hard_blocker",
 				"architecture_fitness",
 				"quality_budget",
+				"type_safety",
+				"static_analysis",
 				"advisory"
 			]
 		}
