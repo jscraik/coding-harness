@@ -159,6 +159,64 @@ describe("runFitnessCLI", () => {
 		expect(result.error.code).toBe("fitness.lint_report_required");
 	});
 
+	it("returns success when only AI-assisted review findings warn", () => {
+		const dir = mkdtempSync(join(tmpdir(), "fitness-cli-review-"));
+		cleanup.push(dir);
+		const reports: Array<[string, Record<string, unknown>]> = [
+			["architecture.json", { violations: [] }],
+			["quality-size.json", { status: "pass", findings: [] }],
+			["typecheck.json", { status: "pass", failures: [] }],
+			["lint.json", { status: "pass", findings: [] }],
+			["behavior-tests.json", { status: "pass", failures: [] }],
+			["harness-audit-tracking.json", { status: "pass", failures: [] }],
+		];
+		for (const [name, report] of reports) {
+			writeFileSync(join(dir, name), JSON.stringify(report), "utf8");
+		}
+		writeFileSync(
+			join(dir, "autoreview.json"),
+			JSON.stringify({
+				status: "fail",
+				findings: [
+					{
+						title: "Reviewer suggests more examples",
+						message: "Add examples after the contract stabilizes.",
+						severity: "error",
+					},
+				],
+			}),
+			"utf8",
+		);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(runFitnessCLI(["--json", "--from-existing-artifacts", dir])).toBe(0);
+
+		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(result.status).toBe("warn");
+		expect(result.summary).toMatchObject({
+			failures: 0,
+			warnings: 1,
+			lanesNeedingEvidence: 0,
+		});
+		expect(result.topDeterministicFinding).toBeNull();
+		expect(result.lanes.at(-1)).toEqual(
+			expect.objectContaining({
+				id: "ai-review-advisory",
+				enforcement: "advisory",
+				status: "warn",
+			}),
+		);
+	});
+
+	it("reports usage when advisory review report flag is missing a value", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(runFitnessCLI(["--json", "--advisory-review-report"])).toBe(2);
+
+		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(result.error.code).toBe("fitness.advisory_review_report_required");
+	});
+
 	it("is registered as a command capability", () => {
 		expect(COMMAND_SPECS.some((spec) => spec.name === "fitness")).toBe(true);
 	});

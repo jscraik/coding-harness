@@ -85,6 +85,24 @@ function typeSafetyFitnessFinding() {
 	};
 }
 
+function advisoryReviewFinding() {
+	return {
+		id: "ai-review-advisory:Reviewer suggests more examples",
+		title: "Reviewer suggests more examples",
+		severity: "warning",
+		lane: "ai-review-advisory",
+		principle: "compound_feedback_to_harness",
+		enforcement: "advisory",
+		evidence: {
+			message: "Add examples after the contract stabilizes.",
+		},
+		risk: "Advisory review feedback may improve the patch but does not independently block deterministic local gates.",
+		recommendedCommand: "pnpm run autoreview",
+		claimBoundary:
+			"AI review is advisory evidence only; deterministic gates remain the blocking authority.",
+	};
+}
+
 describe("harness next fitness report evidence", () => {
 	it("blocks handoff when supplied fitness report still needs evidence", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-fitness-"));
@@ -247,6 +265,62 @@ describe("harness next fitness report evidence", () => {
 			expect(decision.nextCommand).toBe("pnpm typecheck");
 			expect(decision.safeToRun).toBe(true);
 			expect(decision.requiresHuman).toBe(false);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("does not block harness next for advisory-only review findings", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-fitness-"));
+		try {
+			const finding = advisoryReviewFinding();
+			writeFileSync(
+				join(repoRoot, "fitness.json"),
+				JSON.stringify({
+					schemaVersion: "harness-fitness/v1",
+					status: "warn",
+					generatedAt: "2026-06-19T12:00:00.000Z",
+					summary: {
+						lanes: 1,
+						findings: 1,
+						failures: 0,
+						warnings: 1,
+						lanesNeedingEvidence: 0,
+					},
+					lanes: [
+						{
+							id: "ai-review-advisory",
+							label: "AI review advisory",
+							command: "pnpm run autoreview",
+							principle: "compound_feedback_to_harness",
+							enforcement: "advisory",
+							status: "warn",
+							evidenceSource: "artifacts/autoreview.json",
+							findings: [finding],
+						},
+					],
+					topDeterministicFinding: null,
+					claimBoundaries: [
+						"Fitness reports normalize local gate evidence only.",
+					],
+				}),
+			);
+
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--fitness-report", "fitness.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			expect(exitCode).toBe(0);
+			const decision = parseDecision(output);
+			expect(decision.failureClass).not.toBe("fitness_deterministic_finding");
+			expect(decision.nextCommand).not.toBe("pnpm run autoreview");
+			expect(decision.meta).not.toMatchObject({
+				fitnessFinding: expect.anything(),
+			});
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });
 		}
