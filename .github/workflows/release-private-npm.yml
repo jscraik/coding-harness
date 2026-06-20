@@ -54,10 +54,12 @@ jobs:
       - name: Resolve and validate release tag
         id: release-tag
         shell: bash
+        env:
+          RELEASE_TAG_INPUT: ${{ github.event.inputs.release_tag }}
         run: |
           set -euo pipefail
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
-            TAG="${{ github.event.inputs.release_tag }}"
+            TAG="${RELEASE_TAG_INPUT}"
           else
             TAG="${GITHUB_REF_NAME}"
           fi
