@@ -75,6 +75,10 @@ const CLOSEOUT_COMPLETION_PATTERN =
 	/(closeout completion|green checks.*not.*complete|green checks.*validation evidence|not equivalent to green checks|PR state.*merge.*Linear.*next-lane|heartbeat.*lane.*complete)/i;
 const ENV_BACKED_VALIDATION_PATTERN =
 	/(Env-Backed Validation Recovery|env-backed validation recovery|~\/\.codex\/\.env|op run --env-file ~\/\.codex\/\.env|set -a; source ~\/\.codex\/\.env; set \+a|FIFO-aware loader|regular readable file|inspect.*required.*variable names.*without printing values|missing credential.*env-loaded rerun)/i;
+const ENV_FIFO_OP_RUN_PATTERN =
+	/(FIFO|named pipe)[\s\S]{0,320}(normal|expected|not missing-credential evidence|not a blocker by itself|not itself a blocker)[\s\S]{0,520}op run --env-file ~\/\.codex\/\.env -- <command>|op run --env-file ~\/\.codex\/\.env -- <command>[\s\S]{0,520}(FIFO|named pipe)[\s\S]{0,320}(normal|expected|not missing-credential evidence|not a blocker by itself|not itself a blocker)/i;
+const ENV_FIFO_CLOSEOUT_ATTEMPT_PATTERN =
+	/(FIFO|named pipe)[\s\S]{0,500}(blocked|missing|unavailable|credential|closeout|validation lane)[\s\S]{0,700}(op run --env-file ~\/\.codex\/\.env -- <command>|op run --env-file ~\/\.codex\/\.env -- pnpm test:deep|op run --env-file ~\/\.codex\/\.env -- pnpm test:artifacts)[\s\S]{0,500}(attempt|rerun|outcome|result|status)|(?:op run --env-file ~\/\.codex\/\.env -- <command>|op run --env-file ~\/\.codex\/\.env -- pnpm test:deep|op run --env-file ~\/\.codex\/\.env -- pnpm test:artifacts)[\s\S]{0,700}(attempt|rerun|outcome|result|status)[\s\S]{0,500}(FIFO|named pipe)[\s\S]{0,500}(blocked|missing|unavailable|credential|closeout|validation lane)/i;
 const ENV_FIFO_TIMEOUT_PATTERN =
 	/blocked_env_fifo_timeout[\s\S]{0,260}(FIFO\/no-writer|FIFO without a writer|do not source it|regular env surface|regular readable file)|(FIFO\/no-writer|FIFO without a writer|do not source it)[\s\S]{0,260}blocked_env_fifo_timeout/i;
 const CIRCLECI_ENV_API_TRIAGE_PATTERN =
@@ -1411,6 +1415,20 @@ function validateEnvSolution(content) {
 		content,
 		ENV_BACKED_VALIDATION_PATTERN,
 		"env-backed validation recovery evidence",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.envSolution,
+		content,
+		ENV_FIFO_OP_RUN_PATTERN,
+		"FIFO-as-normal op-run recovery rule",
+	);
+	requirePattern(
+		errors,
+		REQUIRED_FILES.envSolution,
+		content,
+		ENV_FIFO_CLOSEOUT_ATTEMPT_PATTERN,
+		"FIFO closeout blocker requires op-run attempt evidence",
 	);
 	requirePattern(
 		errors,
