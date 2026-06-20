@@ -11,7 +11,7 @@ audience:
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-06-19
+last_reviewed: 2026-06-20
 review_cadence: quarterly
 maintenance_trigger:
   - contributor-workflow-change
@@ -67,6 +67,9 @@ depends_on:
   checks, Semgrep Cloud remains an independent security check, and GitHub
   Actions workflows must not become automatic PR gates without an explicit
   `ciOwnership` migration.
+- Manual GitHub Actions release inputs must be assigned to named environment
+  variables before shell validation; release shell bodies must not directly
+  interpolate `github.event.inputs.*` expressions.
 
 ## Why this workflow exists
 
