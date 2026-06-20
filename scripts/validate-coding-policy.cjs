@@ -345,7 +345,13 @@ function matchesPattern(relativePath, pattern) {
 	let pathIndex = 0;
 	let globstarIndex = -1;
 	let globstarPathIndex = 0;
+	const maxSteps = (patternSegments.length + 1) * (pathSegments.length + 1);
+	let steps = 0;
 	while (pathIndex < pathSegments.length) {
+		steps += 1;
+		if (steps > maxSteps) {
+			return false;
+		}
 		const patternSegment = patternSegments[patternIndex];
 		if (patternSegment === "**") {
 			globstarIndex = patternIndex;

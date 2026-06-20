@@ -381,6 +381,35 @@ describe("validate-coding-policy.cjs", () => {
 		);
 	});
 
+	it("routes deep globstar paths with bounded matching", () => {
+		const root = createPolicyRoot();
+		const deepPath = [
+			"src",
+			"lib",
+			...Array.from({ length: 36 }, (_, index) => `segment-${index}`),
+			"policy.ts",
+		].join("/");
+
+		const result = runValidateCodingPolicy(root, [
+			"--json",
+			"--changed-files",
+			deepPath,
+		]);
+
+		expect(result.status).toBe(0);
+		const route = JSON.parse(result.stdout) as {
+			policyModules: Array<{ id: string; matchedFiles: string[] }>;
+		};
+		expect(route.policyModules).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "quality-security-ops",
+					matchedFiles: [deepPath],
+				}),
+			]),
+		);
+	});
+
 	it("routes policy index, root source, shell, package, and security gate edits", () => {
 		const root = createPolicyRoot();
 
