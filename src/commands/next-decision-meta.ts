@@ -107,11 +107,11 @@ export function nextDecisionOperationalMeta(args: {
 			? { requiresHuman: args.requiresHuman }
 			: {}),
 		extra: {
+			...(args.extra ?? {}),
 			...sourceMetaExtra(args.sourceErrors ?? []),
 			...phaseExitMeta(args.phaseExit),
 			...runtimeCardMeta(args.runtimeCard),
 			...agentReadinessContextMeta(args.agentReadinessContext),
-			...(args.extra ?? {}),
 		},
 	});
 }

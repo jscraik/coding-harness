@@ -25,8 +25,12 @@ function writeSource(root: string, path: string, content: string) {
 	writeFileSync(filePath, content);
 }
 
-function runScript(root: string, env: NodeJS.ProcessEnv = process.env) {
-	return runNodeScript(SCRIPT_PATH, [], {
+function runScript(
+	root: string,
+	env: NodeJS.ProcessEnv = process.env,
+	args: readonly string[] = [],
+) {
+	return runNodeScript(SCRIPT_PATH, args, {
 		cwd: root,
 		env,
 	});
@@ -84,5 +88,28 @@ describe("check-harness-audit-tracking.mjs", () => {
 			"verified .harness audit tracking contract",
 		);
 		expect(result.stderr).not.toContain("missing audit tracking contract");
+	});
+
+	it("emits parseable JSON when required inputs cannot be read", () => {
+		const root = createTempRepo("harness-audit-tracking-missing-");
+
+		const result = runScript(root, process.env, ["--json"]);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toBe("");
+		const payload = JSON.parse(result.stdout) as {
+			schemaVersion: string;
+			status: string;
+			failures: Array<{ name: string; message: string }>;
+		};
+		expect(payload.schemaVersion).toBe("harness-audit-tracking/v1");
+		expect(payload.status).toBe("fail");
+		expect(payload.failures).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					name: "audit-tracking input read failure",
+				}),
+			]),
+		);
 	});
 });
