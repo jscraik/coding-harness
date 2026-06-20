@@ -5,6 +5,7 @@ Use this directory for detailed coding standards. Keep [../CODESTYLE.md](../CODE
 ## Table of Contents
 - [Scope](#scope)
 - [Modules](#modules)
+- [Machine-readable routing](#machine-readable-routing)
 - [Enforcement defaults](#enforcement-defaults)
 - [Maintenance rules](#maintenance-rules)
 
@@ -34,6 +35,14 @@ Use this directory for detailed coding standards. Keep [../CODESTYLE.md](../CODE
 - [18-code-review.md](./18-code-review.md)
 - [19-development-workflow.md](./19-development-workflow.md)
 - [20-go.md](./20-go.md)
+
+## Machine-readable routing
+- [../coding-policy.json](../coding-policy.json) indexes this codestyle pack for validators and agents.
+- Keep long-form prose in these Markdown modules; keep changed-file routing, source-rule lineage, required gates, and claim boundaries in the JSON index.
+- Use `node scripts/validate-coding-policy.cjs --json --changed-files -- <path...>` when a cold agent needs the policy modules and gates for a concrete changed-file set.
+- Use `node scripts/validate-coding-policy.cjs --json --git-changed` when a cold agent needs the policy modules and gates for current git changes.
+- Use `node scripts/validate-coding-policy.cjs --json --git-base <ref>` when a cold agent needs the policy modules and gates for a branch diff. The default scaffold base is `origin/main`.
+- Validate the index with `pnpm run coding-policy:validate` after policy routing changes.
 
 ## Enforcement defaults
 - Treat this directory as policy, not guidance: `MUST` and `MUST NOT` are enforced defaults.

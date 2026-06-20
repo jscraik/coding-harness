@@ -20,6 +20,7 @@
 			"path": "codestyle/04-docs-config-and-release.md",
 			"changedFilePatterns": [
 				"**/*.md",
+				"coding-policy.json",
 				"docs/**",
 				"codestyle/**",
 				"contracts/**",
@@ -32,6 +33,7 @@
 				"rule-frontmatter"
 			],
 			"requiredGates": [
+				"pnpm run coding-policy:validate",
 				"pnpm docs:lifecycle",
 				"bash scripts/run-harness-gate.sh docs-gate --mode required --json"
 			]
@@ -44,6 +46,7 @@
 				".github/**",
 				"contracts/**",
 				"scripts/**",
+				"src/*.ts",
 				"src/commands/**",
 				"src/lib/**"
 			],
@@ -56,6 +59,9 @@
 			"changedFilePatterns": [
 				".circleci/config.yml",
 				"Makefile",
+				"scripts/check",
+				"scripts/codex-enforced",
+				"scripts/replay",
 				"scripts/*.sh",
 				"scripts/**/*.sh",
 				"*.sh"
@@ -69,6 +75,7 @@
 			"changedFilePatterns": [
 				".mise.toml",
 				".npmrc",
+				".pnpmrc",
 				"package.json",
 				"pnpm-lock.yaml"
 			],
@@ -93,6 +100,8 @@
 			"changedFilePatterns": [
 				".semgrep/**",
 				"semgrep*.yml",
+				"scripts/check-*secret*.sh",
+				"scripts/check-semgrep*.sh",
 				"scripts/*security*",
 				"scripts/semgrep*",
 				"src/**/auth*",

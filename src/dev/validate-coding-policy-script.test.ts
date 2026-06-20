@@ -5,6 +5,7 @@ import {
 	mkdtempSync,
 	readFileSync,
 	rmSync,
+	unlinkSync,
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -120,6 +121,46 @@ describe("validate-coding-policy.cjs", () => {
 		);
 	});
 
+	it("rejects schema drift for changed-file pattern contracts", () => {
+		const root = createPolicyRoot();
+		const schemaFixturePath = join(root, "contracts/coding-policy.schema.json");
+		const schema = JSON.parse(readFileSync(schemaFixturePath, "utf8")) as {
+			$defs: {
+				policyModule: {
+					required: string[];
+					properties: {
+						changedFilePatterns: {
+							minItems?: number;
+							items?: { type?: string };
+						};
+					};
+				};
+			};
+		};
+		schema.$defs.policyModule.required =
+			schema.$defs.policyModule.required.filter(
+				(value) => value !== "changedFilePatterns",
+			);
+		delete schema.$defs.policyModule.properties.changedFilePatterns.minItems;
+		schema.$defs.policyModule.properties.changedFilePatterns.items = {
+			type: "number",
+		};
+		writeFileSync(schemaFixturePath, JSON.stringify(schema, null, 2));
+
+		const result = runValidateCodingPolicy(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"schema policyModule.changedFilePatterns must be required",
+		);
+		expect(result.stderr).toContain(
+			"schema policyModule.changedFilePatterns must be non-empty",
+		);
+		expect(result.stderr).toContain(
+			"schema policyModule.changedFilePatterns items must be strings",
+		);
+	});
+
 	it("rejects schema-unique source rules and required gates", () => {
 		const baselineModule = firstPolicyModule(readPolicy());
 		const changedFilePattern = firstString(
@@ -177,6 +218,22 @@ describe("validate-coding-policy.cjs", () => {
 		);
 	});
 
+	it("rejects non-string module paths without throwing", () => {
+		const root = createPolicyRoot((policy) => {
+			firstPolicyModule(policy).path = 42 as unknown as string;
+		});
+
+		const result = runValidateCodingPolicy(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"policyModules[0].path must be a non-empty string",
+		);
+		expect(result.stderr).toContain(
+			"policyModules[0].path must be repo-relative",
+		);
+	});
+
 	it("rejects changed-file routing patterns that escape the repo", () => {
 		const root = createPolicyRoot((policy) => {
 			firstPolicyModule(policy).changedFilePatterns = ["../outside/**"];
@@ -225,6 +282,34 @@ describe("validate-coding-policy.cjs", () => {
 		expect(result.stderr).toContain(
 			"--changed-files requires at least one path",
 		);
+	});
+
+	it("sanitizes unknown CLI argument values before writing stderr", () => {
+		const root = createPolicyRoot();
+
+		const result = runValidateCodingPolicy(root, [
+			"API_TOKEN=secret-value\nforged-log-line",
+		]);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"- unknown argument API_TOKEN=<redacted> forged-log-line",
+		);
+		expect(result.stderr).not.toContain("secret-value");
+		expect(result.stderr).not.toContain("\n- forged-log-line");
+	});
+
+	it("rejects empty changed-file route inputs", () => {
+		const root = createPolicyRoot();
+
+		const result = runValidateCodingPolicy(root, [
+			"--json",
+			"--changed-file",
+			"",
+		]);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("changedFiles[0] must be repo-relative");
 	});
 
 	it("rejects changed-file route inputs above the bounded batch limit", () => {
@@ -295,6 +380,62 @@ describe("validate-coding-policy.cjs", () => {
 		);
 	});
 
+	it("routes policy index, root source, shell, package, and security gate edits", () => {
+		const root = createPolicyRoot();
+
+		const result = runValidateCodingPolicy(root, [
+			"--json",
+			"--changed-files",
+			"--",
+			"coding-policy.json",
+			"src/cli.ts",
+			"scripts/check",
+			".pnpmrc",
+			"scripts/check-staged-secrets.sh",
+		]);
+
+		expect(result.status).toBe(0);
+		const route = JSON.parse(result.stdout) as {
+			policyModules: Array<{ id: string; matchedFiles: string[] }>;
+			requiredGates: string[];
+		};
+		expect(route.requiredGates).toEqual(
+			expect.arrayContaining([
+				"pnpm run coding-policy:validate",
+				"pnpm check",
+				"pnpm run quality:scripts",
+				"pnpm install --frozen-lockfile",
+				"pnpm audit",
+			]),
+		);
+		expect(route.policyModules).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "docs-config-release",
+					matchedFiles: expect.arrayContaining(["coding-policy.json"]),
+				}),
+				expect.objectContaining({
+					id: "quality-security-ops",
+					matchedFiles: expect.arrayContaining(["src/cli.ts"]),
+				}),
+				expect.objectContaining({
+					id: "shell",
+					matchedFiles: expect.arrayContaining(["scripts/check"]),
+				}),
+				expect.objectContaining({
+					id: "package-managers",
+					matchedFiles: expect.arrayContaining([".pnpmrc"]),
+				}),
+				expect.objectContaining({
+					id: "security",
+					matchedFiles: expect.arrayContaining([
+						"scripts/check-staged-secrets.sh",
+					]),
+				}),
+			]),
+		);
+	});
+
 	it("emits machine-readable policy routes from git changed files", () => {
 		const root = createPolicyRoot();
 		runGit(root, ["init"]);
@@ -329,6 +470,41 @@ describe("validate-coding-policy.cjs", () => {
 				expect.objectContaining({
 					id: "testing",
 					matchedFiles: ["src/dev/validate-coding-policy-script.test.ts"],
+				}),
+			]),
+		);
+	});
+
+	it("routes deleted files from git changed-file discovery", () => {
+		const root = createPolicyRoot();
+		runGit(root, ["init"]);
+		mkdirSync(join(root, "docs/agents"), { recursive: true });
+		writeFileSync(join(root, "docs/agents/deleted.md"), "# Deleted\n");
+		runGit(root, ["add", "."]);
+		runGit(root, [
+			"-c",
+			"user.name=Harness Test",
+			"-c",
+			"user.email=harness-test@example.com",
+			"commit",
+			"-m",
+			"baseline",
+		]);
+		unlinkSync(join(root, "docs/agents/deleted.md"));
+
+		const result = runValidateCodingPolicy(root, ["--json", "--git-changed"]);
+
+		expect(result.status).toBe(0);
+		const route = JSON.parse(result.stdout) as {
+			changedFiles: string[];
+			policyModules: Array<{ id: string; matchedFiles: string[] }>;
+		};
+		expect(route.changedFiles).toEqual(["docs/agents/deleted.md"]);
+		expect(route.policyModules).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "docs-config-release",
+					matchedFiles: ["docs/agents/deleted.md"],
 				}),
 			]),
 		);
@@ -401,6 +577,57 @@ describe("validate-coding-policy.cjs", () => {
 				expect.objectContaining({
 					id: "shell",
 					matchedFiles: ["scripts/check-doc-style.sh"],
+				}),
+			]),
+		);
+	});
+
+	it("routes deleted files from a branch base ref", () => {
+		const root = createPolicyRoot();
+		runGit(root, ["init"]);
+		mkdirSync(join(root, "scripts"), { recursive: true });
+		writeFileSync(join(root, "scripts/deleted.sh"), "#!/usr/bin/env bash\n");
+		runGit(root, ["add", "."]);
+		runGit(root, [
+			"-c",
+			"user.name=Harness Test",
+			"-c",
+			"user.email=harness-test@example.com",
+			"commit",
+			"-m",
+			"baseline",
+		]);
+		runGit(root, ["branch", "-M", "main"]);
+		runGit(root, ["checkout", "-b", "feature"]);
+		unlinkSync(join(root, "scripts/deleted.sh"));
+		runGit(root, ["add", "scripts/deleted.sh"]);
+		runGit(root, [
+			"-c",
+			"user.name=Harness Test",
+			"-c",
+			"user.email=harness-test@example.com",
+			"commit",
+			"-m",
+			"delete script",
+		]);
+
+		const result = runValidateCodingPolicy(root, [
+			"--json",
+			"--git-base",
+			"main",
+		]);
+
+		expect(result.status).toBe(0);
+		const route = JSON.parse(result.stdout) as {
+			changedFiles: string[];
+			policyModules: Array<{ id: string; matchedFiles: string[] }>;
+		};
+		expect(route.changedFiles).toEqual(["scripts/deleted.sh"]);
+		expect(route.policyModules).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "shell",
+					matchedFiles: ["scripts/deleted.sh"],
 				}),
 			]),
 		);

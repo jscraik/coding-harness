@@ -100,7 +100,7 @@ function parseArgs(argv) {
 			options.changedFiles.push(...argv.slice(index + 1));
 			break;
 		}
-		errors.push(`unknown argument ${arg}`);
+		errors.push(`unknown argument ${sanitizeCliDiagnosticValue(arg)}`);
 	}
 	if (
 		options.routeRequested &&
@@ -111,6 +111,32 @@ function parseArgs(argv) {
 		errors.push("--changed-files requires at least one path");
 	}
 	return { options, errors };
+}
+
+function sanitizeCliDiagnosticValue(value) {
+	const sanitized = stripCliDiagnosticControls(String(value))
+		.replace(/\s+/g, " ")
+		.trim()
+		.replace(
+			/\b([A-Z0-9_]*(?:TOKEN|KEY|SECRET|PASSWORD)[A-Z0-9_]*=)\S+/gi,
+			"$1<redacted>",
+		)
+		.replace(/\b(Bearer|Basic)\s+\S+/gi, "$1 <redacted>");
+	if (sanitized.length === 0) return "<empty>";
+	if (sanitized.length > 80) return `${sanitized.slice(0, 77)}...`;
+	return sanitized;
+}
+
+function stripCliDiagnosticControls(value) {
+	let stripped = "";
+	for (const character of value) {
+		const codePoint = character.codePointAt(0);
+		stripped +=
+			codePoint !== undefined && (codePoint <= 31 || codePoint === 127)
+				? " "
+				: character;
+	}
+	return stripped;
 }
 
 function requireSafeGitRef(ref, optionName) {
@@ -138,7 +164,7 @@ function gitBaseChangedFiles(baseRef) {
 	const base = requireSafeGitRef(baseRef, "--git-base");
 	const output = execFileSync(
 		"git",
-		["diff", "--name-only", "--diff-filter=ACMRTUXB", `${base}...HEAD`],
+		["diff", "--name-only", "--diff-filter=ACDMRTUXB", `${base}...HEAD`],
 		{
 			cwd: repoRoot,
 			encoding: "utf8",
@@ -156,8 +182,8 @@ function gitBaseChangedFiles(baseRef) {
 function gitChangedFiles() {
 	const files = [];
 	for (const args of [
-		["diff", "--name-only", "--diff-filter=ACMRTUXB"],
-		["diff", "--cached", "--name-only", "--diff-filter=ACMRTUXB"],
+		["diff", "--name-only", "--diff-filter=ACDMRTUXB"],
+		["diff", "--cached", "--name-only", "--diff-filter=ACDMRTUXB"],
 		["ls-files", "--others", "--exclude-standard"],
 	]) {
 		const output = execFileSync("git", args, {
@@ -181,6 +207,8 @@ function readPolicyJson() {
 
 function readSchemaJson() {
 	return JSON.parse(readFileSync(schemaPath, "utf8"));
+}
+
 function normalizeRepoPath(relativePath) {
 	if (typeof relativePath !== "string" || relativePath.trim().length === 0) {
 		return "";
@@ -420,6 +448,25 @@ function validatePolicy(policy, schema) {
 			?.uniqueItems !== true
 	) {
 		errors.push("schema policyModule.changedFilePatterns must be unique");
+	}
+	if (
+		!Array.isArray(schema?.$defs?.policyModule?.required) ||
+		!schema.$defs.policyModule.required.includes("changedFilePatterns")
+	) {
+		errors.push("schema policyModule.changedFilePatterns must be required");
+	}
+	if (
+		schema?.$defs?.policyModule?.properties?.changedFilePatterns?.minItems !== 1
+	) {
+		errors.push("schema policyModule.changedFilePatterns must be non-empty");
+	}
+	if (
+		schema?.$defs?.policyModule?.properties?.changedFilePatterns?.items
+			?.type !== "string"
+	) {
+		errors.push(
+			"schema policyModule.changedFilePatterns items must be strings",
+		);
 	}
 	if (policy?.schemaVersion !== "harness-coding-policy/v1") {
 		errors.push("schemaVersion must be harness-coding-policy/v1");
