@@ -302,21 +302,68 @@ describe("validate-coding-policy.cjs", () => {
 
 		expect(result.status).toBe(1);
 		expect(result.stderr).toContain("- invalid command line arguments");
+		const failure = JSON.parse(result.stdout) as CodingPolicyValidationFailure;
+		expect(failure.schemaVersion).toBe("coding-policy-validation/v1");
+		expect(failure.status).toBe("fail");
+		expect(failure.errors).toContain(
+			"--changed-files requires at least one path",
+		);
 	});
 
 	it("sanitizes unknown CLI argument values before writing stderr", () => {
 		const root = createPolicyRoot();
 
 		const result = runValidateCodingPolicy(root, [
+			"--json",
 			"API_TOKEN=secret-value\nforged-log-line",
 		]);
 
 		expect(result.status).toBe(1);
 		expect(result.stderr).toContain("- invalid command line arguments");
+		const failure = JSON.parse(result.stdout) as CodingPolicyValidationFailure;
+		expect(failure.schemaVersion).toBe("coding-policy-validation/v1");
+		expect(failure.errors).toContain("unknown argument <redacted>");
 		expect(result.stderr).not.toContain("secret-value");
+		expect(result.stdout).not.toContain("secret-value");
 		expect(result.stderr).not.toContain("API_TOKEN");
+		expect(result.stdout).not.toContain("API_TOKEN");
 		expect(result.stderr).not.toContain("forged-log-line");
+		expect(result.stdout).not.toContain("forged-log-line");
 		expect(result.stderr).not.toContain("\n- forged-log-line");
+	});
+
+	it("emits JSON for static parse failures in JSON mode", () => {
+		const root = createPolicyRoot();
+		writeFileSync(join(root, "coding-policy.json"), "{not valid json");
+
+		const result = runValidateCodingPolicy(root, ["--json"]);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"coding-policy: failed to parse coding-policy.json",
+		);
+		const failure = JSON.parse(result.stdout) as CodingPolicyValidationFailure;
+		expect(failure).toEqual({
+			schemaVersion: "coding-policy-validation/v1",
+			status: "fail",
+			errors: ["coding-policy.json could not be parsed as JSON"],
+		});
+	});
+
+	it("emits JSON for static missing-file failures in JSON mode", () => {
+		const root = createPolicyRoot();
+		unlinkSync(join(root, "contracts/coding-policy.schema.json"));
+
+		const result = runValidateCodingPolicy(root, ["--json"]);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"coding-policy: missing contracts/coding-policy.schema.json",
+		);
+		const failure = JSON.parse(result.stdout) as CodingPolicyValidationFailure;
+		expect(failure.errors).toContain(
+			"contracts/coding-policy.schema.json is missing",
+		);
 	});
 
 	it("sanitizes parse errors before writing stderr", () => {
@@ -442,6 +489,10 @@ describe("validate-coding-policy.cjs", () => {
 					id: "quality-security-ops",
 					matchedFiles: [deepPath],
 				}),
+				expect.objectContaining({
+					id: "typescript",
+					matchedFiles: [deepPath],
+				}),
 			]),
 		);
 	});
@@ -457,6 +508,8 @@ describe("validate-coding-policy.cjs", () => {
 			".markdownlint-cli2.yaml",
 			".vale.ini",
 			"src/cli.ts",
+			"src/commands/next.ts",
+			"src/lib/policy/tooling-paths.ts",
 			"scripts/check-goal-board.py",
 			"scripts/check",
 			"src/templates/codex-preflight.sh",
@@ -483,6 +536,7 @@ describe("validate-coding-policy.cjs", () => {
 				"pnpm docs:lint",
 				"pnpm check",
 				"pnpm python:types",
+				"pnpm typecheck",
 				"pnpm run quality:scripts",
 				"pnpm install --frozen-lockfile",
 				"pnpm audit",
@@ -503,6 +557,8 @@ describe("validate-coding-policy.cjs", () => {
 					id: "quality-security-ops",
 					matchedFiles: expect.arrayContaining([
 						"src/cli.ts",
+						"src/commands/next.ts",
+						"src/lib/policy/tooling-paths.ts",
 						"src/templates/circleci-config.yml",
 						"src/templates/pr-pipeline.yml",
 					]),
@@ -510,6 +566,14 @@ describe("validate-coding-policy.cjs", () => {
 				expect.objectContaining({
 					id: "python",
 					matchedFiles: expect.arrayContaining(["scripts/check-goal-board.py"]),
+				}),
+				expect.objectContaining({
+					id: "typescript",
+					matchedFiles: expect.arrayContaining([
+						"src/cli.ts",
+						"src/commands/next.ts",
+						"src/lib/policy/tooling-paths.ts",
+					]),
 				}),
 				expect.objectContaining({
 					id: "shell",
@@ -673,6 +737,10 @@ describe("validate-coding-policy.cjs", () => {
 		expect(result.stderr).toContain(
 			"route requests require at least one changed file",
 		);
+		const failure = JSON.parse(result.stdout) as CodingPolicyValidationFailure;
+		expect(failure.errors).toContain(
+			"route requests require at least one changed file",
+		);
 	});
 
 	it("emits machine-readable policy routes from a branch base ref", () => {
@@ -793,6 +861,10 @@ describe("validate-coding-policy.cjs", () => {
 
 		expect(result.status).toBe(1);
 		expect(result.stderr).toContain("--git-base failed");
+		const failure = JSON.parse(result.stdout) as CodingPolicyValidationFailure;
+		expect(failure.errors).toContain(
+			"--git-base failed to read git changed files",
+		);
 		expect(result.stderr).not.toContain(baseRef);
 	});
 });

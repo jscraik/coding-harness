@@ -8,6 +8,7 @@ const activeSurfacePaths = [
 	"package.json",
 	"scripts/check-environment.sh",
 	"src/lib/policy/tooling-baseline.ts",
+	"src/lib/policy/tooling-paths.ts",
 	"src/lib/init/scaffold-environment-templates.ts",
 ];
 

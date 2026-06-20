@@ -15,6 +15,7 @@ const expectedModules = new Map([
 	["docs-config-release", "codestyle/04-docs-config-and-release.md"],
 	["quality-security-ops", "codestyle/05-quality-security-ops.md"],
 	["python", "codestyle/07-python.md"],
+	["typescript", "codestyle/08-typescript.md"],
 	["shell", "codestyle/10-shell-bash-zsh.md"],
 	["package-managers", "codestyle/11-package-managers-pnpm-npm.md"],
 	["git-workflow", "codestyle/13-git-workflow.md"],
@@ -166,6 +167,15 @@ function writeStaticValidationFailure(options, errors) {
 		"- policy validation failed; use --json for diagnostics",
 	]);
 	if (options.json) {
+		process.stdout.write(
+			`${JSON.stringify(validationFailurePayload(errors), null, 2)}\n`,
+		);
+	}
+}
+
+function writeStaticFailure(options, stderrLines, errors) {
+	writeStaticStderr(stderrLines);
+	if (options?.json) {
 		process.stdout.write(
 			`${JSON.stringify(validationFailurePayload(errors), null, 2)}\n`,
 		);
@@ -652,21 +662,28 @@ function validatePolicy(policy, schema) {
 
 const parsedArgs = parseArgs(process.argv.slice(2));
 if (parsedArgs.errors.length > 0) {
-	writeStaticStderr([
-		"coding-policy: failed",
-		"- invalid command line arguments",
-	]);
+	writeStaticFailure(
+		parsedArgs.options,
+		["coding-policy: failed", "- invalid command line arguments"],
+		parsedArgs.errors,
+	);
 	process.exit(1);
 }
 
 if (!existsSync(policyPath)) {
-	writeStaticStderr(["coding-policy: missing coding-policy.json"]);
+	writeStaticFailure(
+		parsedArgs.options,
+		["coding-policy: missing coding-policy.json"],
+		["coding-policy.json is missing"],
+	);
 	process.exit(1);
 }
 if (!existsSync(schemaPath)) {
-	writeStaticStderr([
-		"coding-policy: missing contracts/coding-policy.schema.json",
-	]);
+	writeStaticFailure(
+		parsedArgs.options,
+		["coding-policy: missing contracts/coding-policy.schema.json"],
+		["contracts/coding-policy.schema.json is missing"],
+	);
 	process.exit(1);
 }
 
@@ -675,16 +692,22 @@ let schema;
 try {
 	policy = readPolicyJson();
 } catch {
-	writeStaticStderr(["coding-policy: failed to parse coding-policy.json"]);
+	writeStaticFailure(
+		parsedArgs.options,
+		["coding-policy: failed to parse coding-policy.json"],
+		["coding-policy.json could not be parsed as JSON"],
+	);
 	process.exit(1);
 }
 
 try {
 	schema = readSchemaJson();
 } catch {
-	writeStaticStderr([
-		"coding-policy: failed to parse contracts/coding-policy.schema.json",
-	]);
+	writeStaticFailure(
+		parsedArgs.options,
+		["coding-policy: failed to parse contracts/coding-policy.schema.json"],
+		["contracts/coding-policy.schema.json could not be parsed as JSON"],
+	);
 	process.exit(1);
 }
 
@@ -692,10 +715,14 @@ if (parsedArgs.options.gitChanged) {
 	try {
 		parsedArgs.options.changedFiles.push(...gitChangedFiles());
 	} catch {
-		writeStaticStderr([
-			"coding-policy: failed",
-			"- --git-changed failed to read git changed files",
-		]);
+		writeStaticFailure(
+			parsedArgs.options,
+			[
+				"coding-policy: failed",
+				"- --git-changed failed to read git changed files",
+			],
+			["--git-changed failed to read git changed files"],
+		);
 		process.exit(1);
 	}
 	parsedArgs.options.changedFiles = uniqueStrings(
@@ -708,10 +735,14 @@ if (parsedArgs.options.gitBase !== null) {
 			...gitBaseChangedFiles(parsedArgs.options.gitBase),
 		);
 	} catch {
-		writeStaticStderr([
-			"coding-policy: failed",
-			"- --git-base failed to read git changed files",
-		]);
+		writeStaticFailure(
+			parsedArgs.options,
+			[
+				"coding-policy: failed",
+				"- --git-base failed to read git changed files",
+			],
+			["--git-base failed to read git changed files"],
+		);
 		process.exit(1);
 	}
 	parsedArgs.options.changedFiles = uniqueStrings(
@@ -722,10 +753,14 @@ if (
 	parsedArgs.options.routeRequested &&
 	parsedArgs.options.changedFiles.length === 0
 ) {
-	writeStaticStderr([
-		"coding-policy: failed",
-		"- route requests require at least one changed file",
-	]);
+	writeStaticFailure(
+		parsedArgs.options,
+		[
+			"coding-policy: failed",
+			"- route requests require at least one changed file",
+		],
+		["route requests require at least one changed file"],
+	);
 	process.exit(1);
 }
 

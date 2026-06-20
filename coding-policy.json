@@ -66,6 +66,17 @@
 			"requiredGates": ["pnpm python:types"]
 		},
 		{
+			"id": "typescript",
+			"path": "codestyle/08-typescript.md",
+			"changedFilePatterns": [
+				"src/*.ts",
+				"src/commands/**/*.ts",
+				"src/lib/**/*.ts"
+			],
+			"sourceRules": ["code-formatting", "testing-standards"],
+			"requiredGates": ["pnpm lint", "pnpm typecheck", "pnpm run test:related"]
+		},
+		{
 			"id": "shell",
 			"path": "codestyle/10-shell-bash-zsh.md",
 			"changedFilePatterns": [

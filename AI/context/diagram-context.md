@@ -36,6 +36,9 @@ Generated: 2026-06-20T21:43:13Z
 - `src/templates/CODESTYLE.md`
 - `src/templates/codestyle/CHECKSUMS.sha256`
 - `src/templates/codestyle/README.md`
+- `codestyle/README.md`
+- `codestyle/CHECKSUMS.sha256`
+- `scripts/validate-coding-policy.cjs`
 
 ## agent
 
@@ -2112,4 +2115,3 @@ flowchart LR
   class github_e2e_2891a341,linear_e2e_decf3708,run_e2e_39efe696,env_b77349bf,check_public_api_docs_a9604f1b,check_steering_feedback_contract_80134459,run_harness_evals_77704768,validate_active_route_surface_905456c2,validate_coding_policy_29976175,validate_decision_request_2e5c325e,validate_steering_application_receipt_c922e84a,validate_steering_queue_4bc0cc94,branch_protect_core_a8feb0fd,check_environment_core_2c16213f,ci_migrate_core_7005b5af,decision_request_118a770d,evidence_verify_3b73c290,linear_prepare_0c613ba6,linear_sync_a2fa2bf7,linear_triage_core_7cbca73e,linear_workflow_core_0e19cff4,pattern_scope_61ff946d,pr_closeout_env_9bfcd9ef,pr_closeout_github_proof_ade25b0e,live_247610f4,review_gate_core_4c8001f9,symphony_check_e97f2ea0,ui_loop_command_spec_d513a999,ui_loop_exit_codes_29da40fb,ui_loop_internal_f2eb8892 userNode
 
 ```
-
