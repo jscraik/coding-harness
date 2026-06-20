@@ -63,7 +63,11 @@ function gitCheckIgnorePattern(path) {
 			env: gitEnv,
 		},
 	);
-	if (result.error || result.status === null) {
+	if (
+		result.error ||
+		result.status === null ||
+		(result.status !== 0 && result.status !== 1)
+	) {
 		operationalFailures.push({
 			name: "git check-ignore execution failure",
 			message:

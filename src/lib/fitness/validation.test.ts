@@ -213,6 +213,44 @@ describe("validateFitnessReport", () => {
 		);
 	});
 
+	it("rejects missing top finding metadata when deterministic findings exist", () => {
+		const finding = errorFinding();
+		const report: Partial<ReturnType<typeof fitnessReport>> = fitnessReport({
+			status: "fail",
+			summary: {
+				lanes: 1,
+				findings: 1,
+				failures: 1,
+				warnings: 0,
+				lanesNeedingEvidence: 0,
+			},
+			lanes: [
+				{
+					id: "quality-budget",
+					label: "Quality budget",
+					command: "pnpm run quality:size",
+					principle: "reduce_cognitive_load",
+					enforcement: "quality_budget",
+					status: "fail",
+					evidenceSource: "artifacts/quality-size.json",
+					findings: [finding],
+				},
+			],
+		});
+		delete report.topDeterministicFinding;
+
+		const result = validateFitnessReport(report);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "topDeterministicFinding must be present when deterministic findings exist",
+				}),
+			]),
+		);
+	});
+
 	it("accepts warn status when derived warnings exist without failures", () => {
 		const finding = warningFinding();
 		const result = validateFitnessReport(

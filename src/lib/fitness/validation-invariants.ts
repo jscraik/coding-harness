@@ -49,7 +49,7 @@ export function validateTopFindingInvariant(
 ): void {
 	if (
 		deterministicFindings.length > 0 &&
-		value.topDeterministicFinding === null
+		value.topDeterministicFinding == null
 	) {
 		errors.push(
 			toValidationError(

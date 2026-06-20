@@ -252,7 +252,7 @@ function hasReadyPrCloseoutClaims(report: Partial<PrCloseoutReport>): boolean {
 
 function hasReadyPrCloseoutGateShape(
 	gate: unknown,
-): gate is Record<string, unknown> {
+): gate is Record<string, unknown> & { gateId: string } {
 	if (!isObjectRecord(gate)) return false;
 	if (typeof gate.gateId !== "string") return false;
 	if (typeof gate.required !== "boolean") return false;
@@ -268,6 +268,16 @@ function hasExpectedReadyCloseoutGateIds(
 ): boolean {
 	if (gates.size !== HARNESS_CLOSEOUT_GATE_IDS.length) return false;
 	return HARNESS_CLOSEOUT_GATE_IDS.every((gateId) => gates.has(gateId));
+}
+
+function addReadyCloseoutGate(
+	gates: Map<string, Record<string, unknown>>,
+	gate: unknown,
+): boolean {
+	if (!hasReadyPrCloseoutGateShape(gate)) return false;
+	if (gates.has(gate.gateId)) return false;
+	gates.set(gate.gateId, gate);
+	return true;
 }
 
 function hasReadyPrCloseoutHarnessGates(
@@ -287,8 +297,7 @@ function hasReadyPrCloseoutHarnessGates(
 	}
 	const gates = new Map<string, Record<string, unknown>>();
 	for (const gate of harnessGates.gates) {
-		if (!hasReadyPrCloseoutGateShape(gate)) return false;
-		gates.set(gate.gateId, gate);
+		if (!addReadyCloseoutGate(gates, gate)) return false;
 	}
 	return hasExpectedReadyCloseoutGateIds(gates);
 }
