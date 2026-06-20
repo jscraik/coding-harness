@@ -405,6 +405,9 @@ steering guard, Project Brain/memory destination, and architecture context pack
 aligned so the proof survives beyond the current chat turn.
 For PR closeout evidence changes, treat `pr-closeout/v1` and
 `harness pr-closeout` as read-only architecture-adjacent handoff surfaces.
+`harness next --pr-closeout <path>` may consume only validated
+`pr-closeout/v1` artifacts, must reject shallow or false-ready closeout
+claims, and must fail closed into repair guidance before clean-worktree handoff.
 Refresh `AI/context/diagram-context.md` and keep this guide synchronized with
 `AGENTS.md` and `docs/agents/07b-agent-governance.md` when docs-gate reports
 the architecture-context surface.

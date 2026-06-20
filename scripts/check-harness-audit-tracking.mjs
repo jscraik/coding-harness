@@ -1,13 +1,57 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { sanitizeGitEnvironment } from "./lib/safe-git-env.mjs";
 
 const repoRoot = process.cwd();
 const gitEnv = sanitizeGitEnvironment(process.env, { policy: "minimal" });
+const json = new Set(process.argv.slice(2)).has("--json");
+const operationalFailures = [];
 
-const gitignore = readFileSync(".gitignore", "utf8");
-const readme = readFileSync(".harness/README.md", "utf8");
+function emitResult(status, failures) {
+	if (json) {
+		console.info(
+			JSON.stringify(
+				{
+					schemaVersion: "harness-audit-tracking/v1",
+					status,
+					failures,
+				},
+				null,
+				2,
+			),
+		);
+		return;
+	}
+	if (status === "pass") {
+		console.log(
+			"[harness-audit-tracking] verified .harness audit tracking contract",
+		);
+		return;
+	}
+	console.error("[harness-audit-tracking] missing audit tracking contract:");
+	for (const failure of failures) {
+		console.error(`  - ${failure.message}`);
+	}
+}
+
+function readRequiredFile(path) {
+	try {
+		return readFileSync(path, "utf8");
+	} catch (error) {
+		operationalFailures.push({
+			name: "audit-tracking input read failure",
+			message:
+				error instanceof Error
+					? `Unable to read ${path}: ${error.message}`
+					: `Unable to read ${path}: ${String(error)}`,
+		});
+		return "";
+	}
+}
+
+const gitignore = readRequiredFile(".gitignore");
+const readme = readRequiredFile(".harness/README.md");
 
 function gitCheckIgnorePattern(path) {
 	const result = spawnSync(
@@ -19,6 +63,19 @@ function gitCheckIgnorePattern(path) {
 			env: gitEnv,
 		},
 	);
+	if (
+		result.error ||
+		result.status === null ||
+		(result.status !== 0 && result.status !== 1)
+	) {
+		operationalFailures.push({
+			name: "git check-ignore execution failure",
+			message:
+				result.error?.message ??
+				`git check-ignore did not exit cleanly for ${path}`,
+		});
+		return "";
+	}
 	return result.stdout.trim();
 }
 
@@ -73,15 +130,18 @@ const requirements = [
 	},
 ];
 
-const failures = requirements.filter((requirement) => !requirement.ok);
+const failures = [
+	...operationalFailures,
+	...requirements
+		.filter((requirement) => !requirement.ok)
+		.map((failure) => ({
+			name: failure.name,
+			message: failure.name,
+		})),
+];
 if (failures.length > 0) {
-	console.error("[harness-audit-tracking] missing audit tracking contract:");
-	for (const failure of failures) {
-		console.error(`  - ${failure.name}`);
-	}
-	process.exit(1);
+	emitResult("fail", failures);
+	process.exitCode = 1;
+} else {
+	emitResult("pass", []);
 }
-
-console.log(
-	"[harness-audit-tracking] verified .harness audit tracking contract",
-);

@@ -45,6 +45,7 @@ harness runtime-card --json --trace-out artifacts/agent-runs/<runId>/events.json
 harness next --json --files src/cli.ts docs/cli-reference.md
 harness next --json --phase-exit .harness/runs/phase-exit.json
 harness next --json --runtime-card .harness/runtime/JSC-311.json
+harness next --json --pr-closeout artifacts/pr-closeout/pr-closeout.json
 harness next --json --mode pr
 ```
 
@@ -54,6 +55,13 @@ Replace `<runId>` with a fresh run identifier for each trace-out attempt.
 `harness next` normalizes the phase-exit result into `meta.hePhaseExit` and
 blocks the recommendation if the artifact reports `commitAllowed=false` or
 `exitAllowed=false`.
+
+`--pr-closeout` accepts a local `pr-closeout/v1` JSON artifact. When omitted,
+`harness next` auto-loads `artifacts/pr-closeout/pr-closeout.json` if that
+artifact exists. When supplied, `harness next` normalizes the report into
+`meta.prCloseout` and blocks handoff recommendations until the report passes
+the `pr-closeout/v1` validation contract, including rejection of shallow,
+stale, incomplete, or false-ready closeout artifacts.
 
 `--runtime-card` accepts a local `runtime-card/v1` JSON artifact that summarizes
 the current branch, PR, tracker, artifact, and phase-exit lifecycle state. When
@@ -139,7 +147,7 @@ Taxonomy note: section headings in this document represent command families. The
 | `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`)                                                                                                                                                                                                                    |
 | `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)                                                                                                                                                                                                                           |
 | `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                                                                                                                                                                                                                                   |
-| `next`              | Read-only agent cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--mode local\|pr\|ci`)                                                                                                                                                                                        |
+| `next`              | Read-only agent cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--pr-closeout`, optional `--fitness-report`, optional `--mode local\|pr\|ci`)                                                                                                                                          |
 | `runtime-card`      | Build a `runtime-card/v1` artifact from git, harness evidence, normalized evidence bundles, and optional live provider state (`--json`, optional `--live`, optional `--repo`, optional `--issue`, optional `--phase-exit`, optional `--evidence`, optional `--out`, optional `--evidence-out`, optional `--trace-out artifacts/agent-runs/<runId>/events.jsonl`)                             |
 | `session-context`   | Emit a read-only `session-context/v1` orientation packet for repo, issue, branch, artifact, runtime-card, review-evidence, stale-state, and traversal hints (`--json`, optional `--repo-root`)                                                                                                                                                                                               |
 | `decision-request`  | Emit a read-only `decision-request/v1` governance packet for a bounded HILT authority boundary, including intent, authority, options, evidence refs, boundary class, expiry/freshness, escalation metadata, and stale-state classification (`--json`, `--intent`, `--default-option`, `--boundary`, repeated `--option id=label`, optional repeated `--tradeoff id=text`)                    |
@@ -195,6 +203,7 @@ In CI mode, `harness next --mode ci --json` recommends `harness fleet-plan --fro
 | `risk-tier`              | Classify changed files by risk tier                                                                                                                                                                 |
 | `pattern-scope`          | Build a pattern-scope artifact from steering feedback and changed files                                                                                                                             |
 | `diff-budget`            | Enforce diff budget constraints                                                                                                                                                                     |
+| `fitness`                | Normalize repository fitness findings from existing harness gates                                                                                                                                   |
 | `observability-gate`     | Check metrics cardinality limits                                                                                                                                                                    |
 | `silent-error`           | Detect silent error-handling anti-patterns                                                                                                                                                          |
 | `memory-gate`            | Validate local-memory workflow compliance                                                                                                                                                           |

@@ -25,7 +25,9 @@ const EVIDENCE_SUBSTITUTION_PATTERNS: [RegExp, string][] = [
 
 const EVIDENCE_QUERY_PARAM_PATTERN =
 	/((?:access_token|token|api[_-]?key|secret|password)=)[^&\s)\]]+/gi;
+const EVIDENCE_AUTH_HEADER_PATTERN = /(\bAuthorization:\s*)[^\r\n]+/gi;
 
+/** Return a display-safe error string with local paths and known secret shapes redacted. */
 export function sanitizeError(error: unknown): string {
 	if (error instanceof Error) {
 		let message = error.message;
@@ -54,6 +56,7 @@ export function sanitizeEvidenceText(text: string): string {
 	for (const [pattern, replacement] of SENSITIVE_PATTERNS) {
 		sanitized = sanitized.replace(pattern, replacement);
 	}
+	sanitized = sanitized.replace(EVIDENCE_AUTH_HEADER_PATTERN, "$1[REDACTED]");
 	sanitized = sanitized.replace(EVIDENCE_QUERY_PARAM_PATTERN, "$1[REDACTED]");
 	return sanitized;
 }

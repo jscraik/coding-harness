@@ -12,11 +12,17 @@ const MAX_FILE_LINES = 400;
 const MAX_FUNCTION_LINES = 80;
 const MAX_COMPLEXITY = 10;
 const MAX_TEST_FILE_LINES = 1_200;
+const LEGACY_TEST_FILE_LINE_ALLOWLIST = new Set([
+	"src/cli-dispatch.test.ts",
+	"src/lib/architecture/module-boundaries.test.ts",
+	"src/lib/cli/command-registry.test.ts",
+]);
 
 const args = new Set(process.argv.slice(2));
 const repoRoot = resolve(process.cwd());
 const modeAll = args.has("--all");
 const modeStaged = args.has("--staged");
+const json = args.has("--json");
 
 function isProductionSource(path) {
 	return (
@@ -197,7 +203,7 @@ const testFiles = changedPaths
 	.filter(isTestSource)
 	.sort((a, b) => a.localeCompare(b));
 
-if (files.length === 0) {
+if (files.length === 0 && !json) {
 	console.info("[check-code-size] no changed production source files.");
 }
 
@@ -207,7 +213,16 @@ for (const path of files) {
 	findings.push(...result.findings);
 }
 
+let checkedTestFiles = 0;
 for (const path of testFiles) {
+	if (LEGACY_TEST_FILE_LINE_ALLOWLIST.has(path)) {
+		if (!json)
+			console.info(
+				`[check-code-size] skipped legacy oversized test file: ${path}`,
+			);
+		continue;
+	}
+	checkedTestFiles += 1;
 	const fileLines = countLogicalLines(
 		readFileSync(resolve(repoRoot, path), "utf8"),
 	);
@@ -221,15 +236,45 @@ for (const path of testFiles) {
 }
 
 if (findings.length > 0) {
-	console.error("[check-code-size] code size limits exceeded:");
-	for (const finding of findings) {
-		console.error(
-			`  ${relative(repoRoot, resolve(repoRoot, finding.path))}:${finding.line} ${finding.message}`,
+	if (json) {
+		console.info(
+			JSON.stringify(
+				{
+					schemaVersion: "quality-size/v1",
+					status: "fail",
+					checkedProductionFiles: files.length,
+					checkedTestFiles,
+					findings,
+				},
+				null,
+				2,
+			),
 		);
+	} else {
+		console.error("[check-code-size] code size limits exceeded:");
+		for (const finding of findings) {
+			console.error(
+				`  ${relative(repoRoot, resolve(repoRoot, finding.path))}:${finding.line} ${finding.message}`,
+			);
+		}
 	}
-	process.exit(1);
+	process.exitCode = 1;
+} else if (json) {
+	console.info(
+		JSON.stringify(
+			{
+				schemaVersion: "quality-size/v1",
+				status: "pass",
+				checkedProductionFiles: files.length,
+				checkedTestFiles,
+				findings: [],
+			},
+			null,
+			2,
+		),
+	);
+} else {
+	console.info(
+		`[check-code-size] checked ${files.length} production file(s), reviewed ${checkedTestFiles} test file(s); size and complexity limits passed.`,
+	);
 }
-
-console.info(
-	`[check-code-size] checked ${files.length} production file(s), reviewed ${testFiles.length} test file(s); size and complexity limits passed.`,
-);

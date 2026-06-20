@@ -1,4 +1,10 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	chmodSync,
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -25,8 +31,12 @@ function writeSource(root: string, path: string, content: string) {
 	writeFileSync(filePath, content);
 }
 
-function runScript(root: string, env: NodeJS.ProcessEnv = process.env) {
-	return runNodeScript(SCRIPT_PATH, [], {
+function runScript(
+	root: string,
+	env: NodeJS.ProcessEnv = process.env,
+	args: readonly string[] = [],
+) {
+	return runNodeScript(SCRIPT_PATH, args, {
 		cwd: root,
 		env,
 	});
@@ -84,5 +94,70 @@ describe("check-harness-audit-tracking.mjs", () => {
 			"verified .harness audit tracking contract",
 		);
 		expect(result.stderr).not.toContain("missing audit tracking contract");
+	});
+
+	it("emits parseable JSON when required inputs cannot be read", () => {
+		const root = createTempRepo("harness-audit-tracking-missing-");
+
+		const result = runScript(root, process.env, ["--json"]);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toBe("");
+		const payload = JSON.parse(result.stdout) as {
+			schemaVersion: string;
+			status: string;
+			failures: Array<{ name: string; message: string }>;
+		};
+		expect(payload.schemaVersion).toBe("harness-audit-tracking/v1");
+		expect(payload.status).toBe("fail");
+		expect(payload.failures).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					name: "audit-tracking input read failure",
+				}),
+			]),
+		);
+	});
+
+	it("classifies fatal git check-ignore exits as operational failures", () => {
+		const root = createTempRepo("harness-audit-tracking-git-fatal-");
+		writeCompliantHarnessTrackingFiles(root);
+		const binDir = join(root, "bin");
+		mkdirSync(binDir, { recursive: true });
+		const gitPath = join(binDir, "git");
+		writeFileSync(
+			gitPath,
+			[
+				"#!/bin/sh",
+				'if [ "$1" = "check-ignore" ]; then',
+				"  echo fatal check-ignore >&2",
+				"  exit 128",
+				"fi",
+				'exec /usr/bin/git "$@"',
+				"",
+			].join("\n"),
+		);
+		chmodSync(gitPath, 0o755);
+
+		const result = runScript(
+			root,
+			{
+				...process.env,
+				PATH: `${binDir}:${process.env.PATH ?? ""}`,
+			},
+			["--json"],
+		);
+
+		expect(result.status).toBe(1);
+		const payload = JSON.parse(result.stdout) as {
+			failures: Array<{ name: string; message: string }>;
+		};
+		expect(payload.failures).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					name: "git check-ignore execution failure",
+				}),
+			]),
+		);
 	});
 });

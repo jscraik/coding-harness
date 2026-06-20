@@ -594,6 +594,38 @@
 			}
 		},
 		{
+			"id": "agent-next-action-parity",
+			"type": "live_fixture",
+			"prompt": "Prove harness next recommendations stay aligned with the agent-facing command catalog, stale prompt-context evidence, and pr-closeout/v1 handoff blockers.",
+			"expected": {
+				"commands": ["pnpm test:evals"],
+				"artifacts": [
+					"artifacts/evals/result.json",
+					"artifacts/evals/braintrust-log-data.json",
+					"artifacts/evals/live-fixtures/agent-next-action-parity/agent-next-action-parity.json"
+				],
+				"assertions": [
+					"agent next-action parity evidence is written",
+					"verify rail exposes clean-worktree check command",
+					"clean worktree keeps check as fallback handoff command",
+					"stale prompt-context drift is promoted before handoff",
+					"stale prompt-context refresh keeps check as follow-up",
+					"non-ready pr-closeout evidence blocks clean handoff",
+					"false-ready pr-closeout artifact is rejected as invalid evidence"
+				],
+				"stopConditions": [
+					"Do not emit a nextCommand that agents cannot discover, skips known stale prompt-context evidence, ignores non-ready pr-closeout/v1 evidence, or accepts false-ready pr-closeout artifacts."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 3,
+				"artifact_evidence": 2,
+				"validation_sufficiency": 3,
+				"blocker_honesty": 2,
+				"manual_step_reduction": 3
+			}
+		},
+		{
 			"id": "terse-review-request-routing",
 			"type": "live_fixture",
 			"prompt": "Review my uncommitted changes and only fix verified findings.",

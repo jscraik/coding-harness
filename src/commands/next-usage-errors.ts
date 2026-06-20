@@ -1,21 +1,21 @@
 import type { HarnessDecision } from "../lib/decision/harness-decision.js";
 import type { DecisionSource } from "../lib/decision/sources.js";
-import { humanRequiredDecisionMeta, sourceMetaExtra } from "./next-support.js";
+import { NEXT_ARTIFACT_ARG_SPECS } from "./next-artifact-args.js";
 import type { ParsedNextArgs } from "./next-args.js";
-import type { HarnessNextOptions } from "./next-runner.js";
 import {
 	blockedDecision,
 	invalidModeDecision,
 	type HarnessNextMode,
 } from "./next-decisions.js";
+import type { HarnessNextOptions } from "./next-runner.js";
+import { humanRequiredDecisionMeta, sourceMetaExtra } from "./next-support.js";
 
 type HarnessNextRunner = (options: HarnessNextOptions) => HarnessDecision;
-
 type UsageErrorOptions = Omit<HarnessNextOptions, "mode" | "files">;
 type NextUsageError = NonNullable<ParsedNextArgs["error"]>;
 type UsageErrorHandler = (parsed: ParsedNextArgs) => HarnessDecision;
 type MappedUsageError = Exclude<NextUsageError, "files_empty">;
-
+type ArtifactUsageError = (typeof NEXT_ARTIFACT_ARG_SPECS)[number]["error"];
 function blockedUsageErrorDecision(args: {
 	mode: HarnessNextMode;
 	summary: string;
@@ -37,6 +37,24 @@ function blockedUsageErrorDecision(args: {
 			...(args.extra ? { extra: args.extra } : {}),
 		}),
 	});
+}
+function artifactUsageErrorHandlers(): Record<
+	ArtifactUsageError,
+	UsageErrorHandler
+> {
+	return Object.fromEntries(
+		NEXT_ARTIFACT_ARG_SPECS.map((spec) => [
+			spec.error,
+			(parsed: ParsedNextArgs) =>
+				blockedUsageErrorDecision({
+					mode: parsed.mode,
+					summary: `${spec.flag} requires a JSON artifact path.`,
+					nextAction: spec.nextAction,
+					failureClass: spec.error,
+					evidenceRef: [`input:${spec.flag.slice(2)}`],
+				}),
+		]),
+	) as Record<ArtifactUsageError, UsageErrorHandler>;
 }
 
 const USAGE_ERROR_HANDLERS: Record<MappedUsageError, UsageErrorHandler> = {
@@ -82,35 +100,19 @@ const USAGE_ERROR_HANDLERS: Record<MappedUsageError, UsageErrorHandler> = {
 				validRoles: ["clean", "dirty-with-justification", "fresh-worktree"],
 			},
 		}),
-	phase_exit_missing: (parsed) =>
-		blockedUsageErrorDecision({
-			mode: parsed.mode,
-			summary: "--phase-exit requires a JSON artifact path.",
-			nextAction: "Pass a HePhaseExit/v1 artifact path, or omit --phase-exit.",
-			failureClass: "phase_exit_missing",
-			evidenceRef: ["input:phase-exit"],
-		}),
-	runtime_card_missing: (parsed) =>
-		blockedUsageErrorDecision({
-			mode: parsed.mode,
-			summary: "--runtime-card requires a JSON artifact path.",
-			nextAction:
-				"Pass a runtime-card/v1 artifact path, or omit --runtime-card.",
-			failureClass: "runtime_card_missing",
-			evidenceRef: ["input:runtime-card"],
-		}),
+	...artifactUsageErrorHandlers(),
 	unknown_argument: (parsed) =>
 		blockedUsageErrorDecision({
 			mode: parsed.mode as HarnessNextMode,
 			summary: `Unknown next argument: ${parsed.errorValue}.`,
 			nextAction:
-				"Use harness next --json with optional --files, --phase-exit, --runtime-card, and --mode flags.",
+				"Use harness next --json with optional --files, --phase-exit, --runtime-card, --pr-closeout, --fitness-report, and --mode flags.",
 			failureClass: "unknown_argument",
 			extra: { argument: parsed.errorValue },
 		}),
 };
 
-/** Build the HarnessDecision for missing required harness next evidence. */
+/** Build a blocking decision when `harness next` lacks required evidence. */
 export function requiredEvidenceMissingDecision(args: {
 	mode: HarnessNextMode;
 	missing: readonly string[];
@@ -133,15 +135,13 @@ export function requiredEvidenceMissingDecision(args: {
 	});
 }
 
-/** Build the HarnessDecision for invalid harness next CLI usage. */
+/** Convert parsed `harness next` usage errors into structured decisions. */
 export function usageErrorDecision(
 	parsed: ParsedNextArgs,
 	options: UsageErrorOptions,
 	runNext: HarnessNextRunner,
 ): HarnessDecision | undefined {
-	if (!parsed.error) {
-		return undefined;
-	}
+	if (!parsed.error) return undefined;
 	if (parsed.error === "files_empty") {
 		return runNext({
 			...options,

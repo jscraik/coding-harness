@@ -7,6 +7,7 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import ts from "typescript";
 
 const repoRoot = process.cwd();
+const json = new Set(process.argv.slice(2)).has("--json");
 const manifestPath = join(
 	repoRoot,
 	"src/lib/testing/behavior-test-suites.json",
@@ -16,8 +17,14 @@ const canonicalExpectBehaviorPath = resolve(
 	"src/lib/testing/expect-behavior.ts",
 );
 
-function fail(message) {
-	console.error(`[behavior-tests] ${message}`);
+const failures = [];
+
+function fail(message, path = null) {
+	failures.push({
+		...(path ? { path } : {}),
+		message,
+	});
+	if (!json) console.error(`[behavior-tests] ${message}`);
 	process.exitCode = 1;
 }
 
@@ -139,9 +146,10 @@ function verifyBehaviorAssertionsExecuted(entries) {
 			if (result.status !== 0) {
 				fail(
 					`behavior proving command failed with exit ${result.status}: pnpm vitest run ${entry.path}`,
+					entry.path,
 				);
-				if (result.stdout.trim()) console.error(result.stdout.trim());
-				if (result.stderr.trim()) console.error(result.stderr.trim());
+				if (!json && result.stdout.trim()) console.error(result.stdout.trim());
+				if (!json && result.stderr.trim()) console.error(result.stderr.trim());
 				continue;
 			}
 			const trace = existsSync(traceFile)
@@ -152,6 +160,7 @@ function verifyBehaviorAssertionsExecuted(entries) {
 			) {
 				fail(
 					`${entry.path} provingCommand must execute an expectBehavior assertion from that suite`,
+					entry.path,
 				);
 			}
 		} finally {
@@ -233,11 +242,20 @@ function hasBehaviorAssertionShape(node) {
 }
 
 if (!existsSync(manifestPath)) {
-	fail("missing manifest: src/lib/testing/behavior-test-suites.json");
+	fail(
+		"missing manifest: src/lib/testing/behavior-test-suites.json",
+		manifestPath,
+	);
 } else {
-	const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+	let manifest;
+	try {
+		manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+	} catch (error) {
+		const detail = error instanceof Error ? error.message : String(error);
+		fail(`failed to parse manifest JSON: ${detail}`, manifestPath);
+	}
 	if (!Array.isArray(manifest) || manifest.length === 0) {
-		fail("manifest must be a non-empty array");
+		fail("manifest must be a non-empty array", manifestPath);
 	} else {
 		const executableEntries = [];
 		for (const [index, entry] of manifest.entries()) {
@@ -257,7 +275,7 @@ if (!existsSync(manifestPath)) {
 				continue;
 			}
 			if (!existsSync(suitePath)) {
-				fail(`${prefix} suite does not exist: ${entry.path}`);
+				fail(`${prefix} suite does not exist: ${entry.path}`, entry.path);
 				continue;
 			}
 			const suite = readFileSync(suitePath, "utf8");
@@ -282,7 +300,31 @@ if (!existsSync(manifestPath)) {
 }
 
 if (process.exitCode) {
-	process.exit();
+	if (json) {
+		console.info(
+			JSON.stringify(
+				{
+					schemaVersion: "behavior-tests/v1",
+					status: "fail",
+					failures,
+				},
+				null,
+				2,
+			),
+		);
+	}
+} else if (json) {
+	console.info(
+		JSON.stringify(
+			{
+				schemaVersion: "behavior-tests/v1",
+				status: "pass",
+				failures: [],
+			},
+			null,
+			2,
+		),
+	);
+} else {
+	console.log("[behavior-tests] verified registered evidence-bearing suites");
 }
-
-console.log("[behavior-tests] verified registered evidence-bearing suites");

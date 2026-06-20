@@ -674,6 +674,8 @@ async function runLiveFixture(scenario) {
 			);
 		} else if (scenario.id === "agentic-eval-contract-coverage") {
 			result = runAgenticEvalContractCoverageFixture(scenario, fixturePath);
+		} else if (scenario.id === "agent-next-action-parity") {
+			result = await runAgentNextActionParityFixture(scenario, fixturePath);
 		} else {
 			result = {
 				id: scenario.id,
@@ -5045,6 +5047,199 @@ function runAgenticEvalContractCoverageFixture(scenario, fixturePath) {
 		assertion(
 			"scorecard weights cover every north-star delivery dimension",
 			coverage.scorecardCoverage.missingDimensions.length === 0,
+		),
+	]);
+}
+
+async function runAgentNextActionParityFixture(scenario, fixturePath) {
+	const [
+		{ runHarnessNext },
+		{ loadPrCloseoutArtifact },
+		{ getRegistryAgentCommandCatalogDocument },
+	] = await Promise.all([
+		import(pathToFileURL(path.join(REPO_ROOT, "src/commands/next.ts")).href),
+		import(
+			pathToFileURL(path.join(REPO_ROOT, "src/commands/next-pr-closeout.ts"))
+				.href
+		),
+		import(
+			pathToFileURL(path.join(REPO_ROOT, "src/lib/cli/command-registry.ts"))
+				.href
+		),
+	]);
+	const verifyCatalog = getRegistryAgentCommandCatalogDocument("verify");
+	const verifyCommands = verifyCatalog.commands.map((command) => command.name);
+	const stalePromptCommand =
+		"node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .";
+	const staleContext = {
+		schemaVersion: "agent-readiness-context-health/v1",
+		status: "warn",
+		evidenceUse: "orientation",
+		canonicalReport: {
+			schemaVersion: "context-health-report/v1",
+			command: "node --import tsx src/cli.ts context-health --json",
+			available: true,
+			prerequisiteStatus: "pass",
+			prerequisiteEvidence: ["harness.contract.json"],
+		},
+		surfaces: [
+			{
+				id: "prompt_context_drift",
+				status: "warn",
+				evidenceUse: "orientation",
+				evidence: [
+					"artifacts/context-integrity/prompt-context-drift-report.json",
+				],
+				staleReasons: [
+					"Prompt-context-drift report failed validation: digest mismatch.",
+				],
+				suggestedRefreshCommands: [stalePromptCommand],
+			},
+		],
+		suggestedRefreshCommands: [stalePromptCommand],
+	};
+	const cleanDecision = runHarnessNext({
+		inspectChangedFiles: () => [],
+		repoRoot: fixturePath,
+	});
+	const staleDecision = runHarnessNext({
+		inspectChangedFiles: () => [],
+		repoRoot: fixturePath,
+		agentReadinessContext: staleContext,
+	});
+	const prCloseoutDecision = runHarnessNext({
+		inspectChangedFiles: () => [],
+		repoRoot: fixturePath,
+		prCloseout: {
+			artifactPath: "artifacts/pr-closeout/pr-closeout.json",
+			report: {
+				schemaVersion: "pr-closeout/v1",
+				generatedAt: "2026-06-20T00:00:00.000Z",
+				pr: 437,
+				url: "https://github.com/jscraik/coding-harness/pull/437",
+				status: "waiting",
+				mergeable: false,
+				nextAction: "wait_for_external_check",
+				blockers: [
+					{
+						surface: "review",
+						classification: "external_service",
+						reason: "PR #437 has one unresolved review thread.",
+						fixableByCodex: false,
+						ref: "review-thread:CR-1",
+					},
+				],
+				claims: [],
+				checks: {
+					total: 3,
+					failed: 0,
+					pending: 1,
+					passed: 2,
+					unknown: 0,
+				},
+				reviewThreads: {
+					unresolved: 1,
+					needsHuman: 1,
+					autofixable: 0,
+				},
+			},
+		},
+	});
+	const falseReadyArtifactPath = "false-ready-pr-closeout.json";
+	writeJson(path.join(fixturePath, falseReadyArtifactPath), {
+		schemaVersion: "pr-closeout/v1",
+		generatedAt: "2026-06-20T00:00:00.000Z",
+		pr: 437,
+		status: "ready",
+		mergeable: true,
+		nextAction: "ready_to_merge",
+		blockers: [
+			{
+				surface: "review",
+				classification: "external_service",
+				reason: "PR #437 still has an unresolved review thread.",
+				fixableByCodex: false,
+				ref: "review-thread:CR-1",
+			},
+		],
+		claims: [],
+		checks: {},
+		reviewThreads: {},
+	});
+	const falseReadyArtifactDecision = loadPrCloseoutArtifact(
+		fixturePath,
+		falseReadyArtifactPath,
+		"local",
+	);
+	const report = {
+		schemaVersion: "agent-next-action-parity-fixture/v1",
+		sourceScenario: scenario.id,
+		verifyCommands,
+		cleanDecision: {
+			status: cleanDecision.status,
+			nextCommand: cleanDecision.nextCommand,
+			phase: cleanDecision.phase,
+		},
+		staleDecision: {
+			status: staleDecision.status,
+			nextCommand: staleDecision.nextCommand,
+			phase: staleDecision.phase,
+			followUpCommands: staleDecision.followUpCommands,
+		},
+		prCloseoutDecision: {
+			status: prCloseoutDecision.status,
+			failureClass: prCloseoutDecision.failureClass,
+			phase: prCloseoutDecision.phase,
+			evidenceRef: prCloseoutDecision.evidenceRef,
+		},
+		falseReadyArtifactDecision:
+			"decision" in falseReadyArtifactDecision
+				? {
+						status: falseReadyArtifactDecision.decision.status,
+						failureClass: falseReadyArtifactDecision.decision.failureClass,
+						evidenceRef: falseReadyArtifactDecision.decision.evidenceRef,
+					}
+				: { status: "accepted" },
+	};
+	writeJson(path.join(fixturePath, "agent-next-action-parity.json"), report);
+
+	return fixtureResult(scenario.id, [
+		assertion(
+			"agent next-action parity evidence is written",
+			readJson(path.join(fixturePath, "agent-next-action-parity.json"))
+				.schemaVersion === "agent-next-action-parity-fixture/v1",
+		),
+		assertion(
+			"verify rail exposes clean-worktree check command",
+			verifyCommands.includes("check"),
+		),
+		assertion(
+			"clean worktree keeps check as fallback handoff command",
+			cleanDecision.status === "pass" &&
+				cleanDecision.nextCommand === "harness check --json",
+		),
+		assertion(
+			"stale prompt-context drift is promoted before handoff",
+			staleDecision.status === "action_required" &&
+				staleDecision.nextCommand === stalePromptCommand,
+		),
+		assertion(
+			"stale prompt-context refresh keeps check as follow-up",
+			staleDecision.followUpCommands.includes("harness check --json"),
+		),
+		assertion(
+			"non-ready pr-closeout evidence blocks clean handoff",
+			prCloseoutDecision.status === "blocked" &&
+				prCloseoutDecision.failureClass === "pr_closeout_blocked" &&
+				prCloseoutDecision.phase === "repair" &&
+				prCloseoutDecision.evidenceRef.includes("review-thread:CR-1"),
+		),
+		assertion(
+			"false-ready pr-closeout artifact is rejected as invalid evidence",
+			"decision" in falseReadyArtifactDecision &&
+				falseReadyArtifactDecision.decision.status === "blocked" &&
+				falseReadyArtifactDecision.decision.failureClass ===
+					"pr_closeout_artifact_invalid",
 		),
 	]);
 }

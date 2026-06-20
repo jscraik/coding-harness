@@ -79,9 +79,13 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   Markdown metadata, shell, and generated artifacts should use configured type,
   schema, lint, and validation gates rather than ad hoc string assumptions.
 - Observed eval telemetry from `~/.agents/` or CI exports is input evidence, not
-  authority. Keep CircleCI, session, and OTel feeds bounded, redacted,
+  authority. Keep CircleCI, session, and OpenTelemetry feeds bounded, redacted,
   artifact-backed, and separate from CI pass, review, tracker, or merge-readiness
   claims unless a validated consumer explicitly joins those lanes.
+- PR closeout handoff evidence must stay claim/evidence driven. `harness next
+  --pr-closeout <path>` may consume only validated `pr-closeout/v1` artifacts
+  and must fail closed into repair guidance when required evidence is missing,
+  stale, shallow, false-ready, or non-mergeable.
 
 ## Validation
 

@@ -8,10 +8,15 @@ import type {
 } from "../lib/decision/sources.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
 import {
+	prCloseoutDecisionMeta,
+	type HarnessNextPrCloseoutEvidence,
+} from "./next-pr-closeout.js";
+import {
 	createNextDecision,
 	nextDecisionOperationalMeta,
 } from "./next-decision-meta.js";
 import type { HarnessNextMode } from "./next-decision-types.js";
+import { promptContextDriftDecision } from "./next-prompt-context-drift.js";
 import { chooseNextCommandParts, shellQuote } from "./next-support.js";
 
 function inferRiskTier(files: string[]): HarnessDecision["riskTier"] {
@@ -69,6 +74,7 @@ export function fleetMatrixArtifactDecision(args: {
 	matrixArtifact: string;
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
+	prCloseout?: HarnessNextPrCloseoutEvidence | undefined;
 	agentReadinessContext?: AgentReadinessContextHealth | undefined;
 }): HarnessDecision {
 	const command = `harness fleet-plan --from ${shellQuote(args.matrixArtifact)} --json`;
@@ -108,6 +114,7 @@ export function fleetMatrixArtifactDecision(args: {
 			commands: [command],
 			phaseExit: args.phaseExit,
 			runtimeCard: args.runtimeCard,
+			extra: prCloseoutDecisionMeta(args.prCloseout),
 			agentReadinessContext: args.agentReadinessContext,
 		}),
 	});
@@ -125,8 +132,11 @@ export function noChangedFilesDecision(args: {
 	sourceErrors: readonly DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
+	prCloseout?: HarnessNextPrCloseoutEvidence | undefined;
 	agentReadinessContext?: AgentReadinessContextHealth | undefined;
 }): HarnessDecision {
+	const driftDecision = promptContextDriftDecision(args);
+	if (driftDecision) return driftDecision;
 	return createNextDecision({
 		status: "pass",
 		summary: "No changed files detected.",
@@ -159,6 +169,7 @@ export function noChangedFilesDecision(args: {
 			sourceErrors: args.sourceErrors,
 			phaseExit: args.phaseExit,
 			runtimeCard: args.runtimeCard,
+			extra: prCloseoutDecisionMeta(args.prCloseout),
 			agentReadinessContext: args.agentReadinessContext,
 		}),
 	});
@@ -177,6 +188,7 @@ export function changedFilesDecision(args: {
 	sourceErrors: readonly DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
+	prCloseout?: HarnessNextPrCloseoutEvidence | undefined;
 	agentReadinessContext?: AgentReadinessContextHealth | undefined;
 }): HarnessDecision {
 	const candidate = createRecommendationCandidate(args);
@@ -209,6 +221,7 @@ export function changedFilesDecision(args: {
 			"risk-tier",
 			...(args.phaseExit ? ["he-phase-exit"] : []),
 			...(args.runtimeCard ? ["runtime-card"] : []),
+			...(args.prCloseout ? ["pr-closeout"] : []),
 		],
 		safeToRun: candidate.safeToRun,
 		requiresHuman: candidate.requiresHuman,
@@ -227,6 +240,7 @@ export function changedFilesDecision(args: {
 			sourceErrors: args.sourceErrors,
 			phaseExit: args.phaseExit,
 			runtimeCard: args.runtimeCard,
+			extra: prCloseoutDecisionMeta(args.prCloseout),
 			agentReadinessContext: args.agentReadinessContext,
 		}),
 	});

@@ -14,6 +14,11 @@ import {
 	runtimeCardBlocksContinuation,
 	type RuntimeCard,
 } from "../lib/runtime/runtime-card.js";
+import {
+	prCloseoutBlockedDecision,
+	prCloseoutBlocksHandoff,
+	type HarnessNextPrCloseoutEvidence,
+} from "./next-pr-closeout.js";
 import type { HarnessNextEvidenceMode } from "./next-args.js";
 import { isHarnessNextMode } from "./next-args.js";
 import {
@@ -60,6 +65,8 @@ export interface HarnessNextReadyState {
 	phaseExit?: HePhaseExit;
 	/** Optional runtime-card evidence already accepted by the state resolver. */
 	runtimeCard?: RuntimeCard;
+	/** Optional pr-closeout/v1 evidence already accepted by the state resolver. */
+	prCloseout?: HarnessNextPrCloseoutEvidence;
 	/** Orientation-only agent readiness context to attach to final metadata. */
 	agentReadinessContext: AgentReadinessContextHealth;
 }
@@ -77,7 +84,7 @@ export type HarnessNextStateResolution =
 function requiredEvidenceMissing(
 	mode: HarnessNextMode,
 	evidenceMode: HarnessNextEvidenceMode | undefined,
-	options: Pick<HarnessNextOptions, "phaseExit" | "runtimeCard">,
+	options: Pick<HarnessNextOptions, "phaseExit" | "runtimeCard" | "prCloseout">,
 ): string[] {
 	const resolvedEvidenceMode =
 		evidenceMode ?? (mode === "local" ? "optional" : "required");
@@ -112,6 +119,13 @@ function evidenceBlockedDecision(args: {
 			mode: args.mode,
 			runtimeCard: args.options.runtimeCard,
 			sourceErrors: args.sourceErrors,
+		});
+	}
+	const prCloseout = args.options.prCloseout;
+	if (prCloseout && prCloseoutBlocksHandoff(prCloseout)) {
+		return prCloseoutBlockedDecision({
+			mode: args.mode,
+			prCloseout,
 		});
 	}
 	const missing = requiredEvidenceMissing(
@@ -201,6 +215,7 @@ function fleetMatrixDecision(args: {
 		...(args.options.runtimeCard
 			? { runtimeCard: args.options.runtimeCard }
 			: {}),
+		...(args.options.prCloseout ? { prCloseout: args.options.prCloseout } : {}),
 		agentReadinessContext: args.agentReadinessContext,
 	});
 }
@@ -225,6 +240,7 @@ function readyState(args: {
 		...(args.options.runtimeCard
 			? { runtimeCard: args.options.runtimeCard }
 			: {}),
+		...(args.options.prCloseout ? { prCloseout: args.options.prCloseout } : {}),
 		agentReadinessContext: args.agentReadinessContext,
 	};
 }

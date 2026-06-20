@@ -61,7 +61,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   share one repo-scoped uv runtime boundary.
 - preflight or Local Memory enforcement changes should keep `AGENTS.md`, `README.md`, `docs/agents/02-tooling-policy.md`, `docs/agents/03-local-memory.md`, `docs/agents/06-security-and-governance.md`, and this guide synchronized; legacy positional `scripts/codex-preflight.sh` invocations must default to required Local Memory mode unless `off` or `optional` is explicitly supplied
 - architecture-context refresh changes should update `docs/agents/00-architecture-bootstrap.md`; Flow Ops closure-evidence, E2E runner, or eval artifact changes that trigger that refresh should keep `AGENTS.md` and this guide synchronized when docs-gate reports the agent-governance category
-- observed eval telemetry from CircleCI, session, or OTel exports remains
+- observed eval telemetry from CircleCI, session, or OpenTelemetry exports remains
   bounded and redacted input evidence until a validated consumer promotes it;
   keep `AGENTS.md`, the architecture bootstrap guide, this guide, and generated
   context synchronized when that telemetry changes eval seed behavior
@@ -304,6 +304,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   `harness pr-closeout`, required PR metadata, or AI session/traceability
   evidence should stay read-only, tool-evidence-backed, secret-redacting, and
   synchronized with the PR template, validation docs, CLI docs, and AGENTS
+- `harness next --pr-closeout <path>` is a handoff consumer, not a closeout
+  author. It may project validated `pr-closeout/v1` metadata into the next
+  decision, but shallow ready claims, stale required evidence, non-ready status,
+  or non-mergeable state must become repair guidance rather than clean handoff.
 - artifact runtime surface changes should keep visible artifact truth in
   `src/lib/artifact-runtime-surface/`, with pointer-only payloads, typed claim
   refs, preview applicability, current-head and lineage matching,
