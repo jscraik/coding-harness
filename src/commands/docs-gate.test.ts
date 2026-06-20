@@ -562,7 +562,7 @@ describe("docs-gate command", () => {
 		const result = runDocsGate({
 			repoRoot: root,
 			mode: "required",
-			changedFiles: ["ops/AGENTS.md"],
+			changedFiles: ["templates/AGENTS.md"],
 		});
 
 		expect(result.exitCode).toBe(0);

@@ -16,6 +16,17 @@ const expectedModuleIds = new Set([
 	"testing",
 	"development-workflow",
 ]);
+const expectedModulePaths = new Set([
+	"codestyle/01-foundations.md",
+	"codestyle/04-docs-config-and-release.md",
+	"codestyle/05-quality-security-ops.md",
+	"codestyle/10-shell-bash-zsh.md",
+	"codestyle/11-package-managers-pnpm-npm.md",
+	"codestyle/13-git-workflow.md",
+	"codestyle/16-security.md",
+	"codestyle/17-testing.md",
+	"codestyle/19-development-workflow.md",
+]);
 const expectedSourceRules = new Set([
 	"boy-scout",
 	"ci-safety",
@@ -56,14 +67,93 @@ function requireString(value, path, errors) {
 	}
 }
 
-function validatePolicy(policy) {
+function isObject(value) {
+	return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function requireObject(value, path, errors) {
+	if (!isObject(value)) {
+		errors.push(`${path} must be an object`);
+		return false;
+	}
+	return true;
+}
+
+function requireOnlyKeys(value, allowedKeys, path, errors) {
+	if (!requireObject(value, path, errors)) return;
+	const allowed = new Set(allowedKeys);
+	for (const key of Object.keys(value)) {
+		if (!allowed.has(key)) {
+			errors.push(`${path} additional property ${key} is not allowed`);
+		}
+	}
+	for (const key of allowedKeys) {
+		if (!(key in value)) {
+			errors.push(`${path}.${key} is required`);
+		}
+	}
+}
+
+function requireUniqueStrings(values, path, errors) {
+	const seen = new Set();
+	for (const [index, value] of values.entries()) {
+		requireString(value, `${path}[${index}]`, errors);
+		if (typeof value !== "string") continue;
+		if (seen.has(value)) {
+			errors.push(`${path} duplicates ${value}`);
+			continue;
+		}
+		seen.add(value);
+	}
+}
+
+function validatePolicy(policy, schema) {
 	const errors = [];
+	requireOnlyKeys(
+		policy,
+		[
+			"$schema",
+			"schemaVersion",
+			"authority",
+			"entrypoints",
+			"policyModules",
+			"claimBoundaries",
+		],
+		"coding-policy",
+		errors,
+	);
+	if (!isObject(policy)) return errors;
+	if (policy.$schema !== "./contracts/coding-policy.schema.json") {
+		errors.push("$schema must be ./contracts/coding-policy.schema.json");
+	}
+	if (schema?.additionalProperties !== false) {
+		errors.push("schema root must disallow additional properties");
+	}
+	if (schema?.$defs?.policyModule?.additionalProperties !== false) {
+		errors.push("schema policyModule must disallow additional properties");
+	}
+	if (
+		schema?.$defs?.policyModule?.properties?.sourceRules?.uniqueItems !== true
+	) {
+		errors.push("schema policyModule.sourceRules must be unique");
+	}
+	if (
+		schema?.$defs?.policyModule?.properties?.requiredGates?.uniqueItems !== true
+	) {
+		errors.push("schema policyModule.requiredGates must be unique");
+	}
 	if (policy?.schemaVersion !== "harness-coding-policy/v1") {
 		errors.push("schemaVersion must be harness-coding-policy/v1");
 	}
 	if (policy?.authority !== "canonical") {
 		errors.push("authority must be canonical");
 	}
+	requireOnlyKeys(
+		policy.entrypoints,
+		["human", "machine", "modules"],
+		"entrypoints",
+		errors,
+	);
 	if (policy?.entrypoints?.human !== "CODESTYLE.md") {
 		errors.push("entrypoints.human must be CODESTYLE.md");
 	}
@@ -84,10 +174,19 @@ function validatePolicy(policy) {
 	const seenIds = new Set();
 	for (const [index, module] of policy.policyModules.entries()) {
 		const prefix = `policyModules[${index}]`;
+		requireOnlyKeys(
+			module,
+			["id", "path", "sourceRules", "requiredGates"],
+			prefix,
+			errors,
+		);
 		requireString(module?.id, `${prefix}.id`, errors);
 		requireString(module?.path, `${prefix}.path`, errors);
 		if (!expectedModuleIds.has(module?.id)) {
 			errors.push(`${prefix}.id is not a known policy module`);
+		}
+		if (!expectedModulePaths.has(module?.path)) {
+			errors.push(`${prefix}.path is not a known policy module path`);
 		}
 		if (seenIds.has(module?.id)) {
 			errors.push(`${prefix}.id duplicates ${module.id}`);
@@ -104,6 +203,7 @@ function validatePolicy(policy) {
 		) {
 			errors.push(`${prefix}.sourceRules must be a non-empty array`);
 		} else {
+			requireUniqueStrings(module.sourceRules, `${prefix}.sourceRules`, errors);
 			for (const rule of module.sourceRules) {
 				if (!expectedSourceRules.has(rule)) {
 					errors.push(`${prefix}.sourceRules contains unknown rule ${rule}`);
@@ -116,9 +216,11 @@ function validatePolicy(policy) {
 		) {
 			errors.push(`${prefix}.requiredGates must be a non-empty array`);
 		} else {
-			for (const [gateIndex, gate] of module.requiredGates.entries()) {
-				requireString(gate, `${prefix}.requiredGates[${gateIndex}]`, errors);
-			}
+			requireUniqueStrings(
+				module.requiredGates,
+				`${prefix}.requiredGates`,
+				errors,
+			);
 		}
 	}
 	for (const id of expectedModuleIds) {
@@ -149,6 +251,7 @@ if (!existsSync(schemaPath)) {
 }
 
 let policy;
+let schema;
 try {
 	policy = readJson(policyPath);
 } catch (error) {
@@ -159,7 +262,7 @@ try {
 }
 
 try {
-	readJson(schemaPath);
+	schema = readJson(schemaPath);
 } catch (error) {
 	console.error(
 		"coding-policy: failed to parse contracts/coding-policy.schema.json: " +
@@ -168,7 +271,7 @@ try {
 	process.exit(1);
 }
 
-const errors = validatePolicy(policy);
+const errors = validatePolicy(policy, schema);
 if (errors.length > 0) {
 	console.error("coding-policy: failed");
 	for (const error of errors) console.error(`- ${error}`);
