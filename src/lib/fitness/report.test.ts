@@ -21,15 +21,17 @@ describe("buildFitnessReport", () => {
 		expect(report.schemaVersion).toBe("harness-fitness/v1");
 		expect(report.status).toBe("needs_evidence");
 		expect(report.summary).toEqual({
-			lanes: 4,
+			lanes: 6,
 			findings: 0,
 			failures: 0,
 			warnings: 0,
-			lanesNeedingEvidence: 4,
+			lanesNeedingEvidence: 6,
 		});
 		expect(report.lanes.map((lane) => lane.command)).toEqual([
 			"pnpm architecture:check",
 			"pnpm run quality:size",
+			"pnpm typecheck",
+			"pnpm lint",
 			"pnpm run quality:behavior-tests",
 			"pnpm run harness:audit-tracking",
 		]);
@@ -118,7 +120,7 @@ describe("buildFitnessReport", () => {
 
 		expect(report.status).toBe("needs_evidence");
 		expect(report.summary.warnings).toBe(1);
-		expect(report.summary.lanesNeedingEvidence).toBe(3);
+		expect(report.summary.lanesNeedingEvidence).toBe(5);
 	});
 
 	it("discovers existing deterministic gate artifacts and prioritizes hard blockers", () => {
@@ -145,8 +147,30 @@ describe("buildFitnessReport", () => {
 			"utf8",
 		);
 		writeFileSync(
+			join(dir, "typecheck.json"),
+			JSON.stringify({
+				schemaVersion: "typecheck/v1",
+				status: "pass",
+				failures: [],
+			}),
+			"utf8",
+		);
+		writeFileSync(
+			join(dir, "lint.json"),
+			JSON.stringify({
+				schemaVersion: "lint/v1",
+				status: "pass",
+				findings: [],
+			}),
+			"utf8",
+		);
+		writeFileSync(
 			join(dir, "behavior-tests.json"),
-			JSON.stringify({ schemaVersion: "behavior-tests/v1", status: "pass" }),
+			JSON.stringify({
+				schemaVersion: "behavior-tests/v1",
+				status: "pass",
+				failures: [],
+			}),
 			"utf8",
 		);
 		writeFileSync(
@@ -188,6 +212,16 @@ describe("buildFitnessReport", () => {
 			"utf8",
 		);
 		writeFileSync(
+			join(dir, "typecheck.json"),
+			JSON.stringify({ schemaVersion: "typecheck/v1", status: "pass" }),
+			"utf8",
+		);
+		writeFileSync(
+			join(dir, "lint.json"),
+			JSON.stringify({ schemaVersion: "lint/v1", status: "pass" }),
+			"utf8",
+		);
+		writeFileSync(
 			join(dir, "behavior-tests.json"),
 			JSON.stringify({ schemaVersion: "behavior-tests/v1", status: "pass" }),
 			"utf8",
@@ -207,9 +241,11 @@ describe("buildFitnessReport", () => {
 		});
 
 		expect(report.status).toBe("fail");
-		expect(report.summary.failures).toBe(4);
+		expect(report.summary.failures).toBe(6);
 		expect(report.summary.lanesNeedingEvidence).toBe(0);
 		expect(report.lanes.map((lane) => lane.status)).toEqual([
+			"fail",
+			"fail",
 			"fail",
 			"fail",
 			"fail",
@@ -229,6 +265,8 @@ describe("buildFitnessReport", () => {
 		const reports: Array<[string, Record<string, unknown>]> = [
 			["architecture.json", { violations: [] }],
 			["quality-size.json", { status: "fail", findings: ["oversized"] }],
+			["typecheck.json", { status: "pass", failures: [] }],
+			["lint.json", { status: "pass", findings: [] }],
 			["behavior-tests.json", { status: "pass", failures: [] }],
 			["harness-audit-tracking.json", { status: "pass", failures: [] }],
 		];
@@ -292,6 +330,8 @@ describe("buildFitnessReport", () => {
 		const reports: Array<[string, Record<string, unknown>]> = [
 			["architecture.json", { status: "fail", violations: [] }],
 			["quality-size.json", { status: "fail", findings: [] }],
+			["typecheck.json", { status: "pass", failures: [] }],
+			["lint.json", { status: "pass", findings: [] }],
 			["behavior-tests.json", { status: "pass", failures: [] }],
 			["harness-audit-tracking.json", { status: "pass", failures: [] }],
 		];
@@ -332,6 +372,8 @@ describe("buildFitnessReport", () => {
 		const reports: Array<[string, Record<string, unknown>]> = [
 			["architecture.json", { violations: [] }],
 			["quality-size.json", { status: "pass", findings: [] }],
+			["typecheck.json", { status: "pass", failures: [] }],
+			["lint.json", { status: "pass", findings: [] }],
 			["behavior-tests.json", { status: "pass", failures: [] }],
 			["harness-audit-tracking.json", { status: "pass", failures: [] }],
 		];

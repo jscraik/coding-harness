@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-19
+last_validated: 2026-06-20
 ---
 
 # Architecture bootstrap
@@ -161,6 +161,14 @@ synchronized and commit this guide with the validation changes so future agents
 can find the current typed contract entrypoint from the architecture bootstrap
 surface. Rollback: remove the typed package scripts, CLI JSON manifest entries,
 Python project dependency wiring, and generated context refresh together.
+Harness fitness report changes are part of the same graph when they alter
+`harness-fitness/v1`, deterministic lane selection, artifact normalizers,
+`harness fitness --from-existing-artifacts`, or `harness next --fitness-report`
+routing. Keep schema, TypeScript types, runtime validation, conventional
+artifact names, and trusted next-command routing synchronized. Deterministic
+lanes currently cover architecture, quality size, type safety, static lint,
+behavior proof, and feedback learning; AI-assisted review remains advisory and
+must not become the blocking authority without an explicit contract update.
 Toolchain and artifact-test wrapper changes are also validation-graph changes
 when they decide whether broader gates can start. Keep Node engine preflight
 ahead of aggregate checks, route nested package-manager execution through the

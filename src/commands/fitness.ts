@@ -14,6 +14,8 @@ interface FitnessFlags {
 	architectureReport: FitnessFlag;
 	artifactsDir: FitnessFlag;
 	qualitySizeReport: FitnessFlag;
+	typecheckReport: FitnessFlag;
+	lintReport: FitnessFlag;
 	behaviorTestsReport: FitnessFlag;
 	auditTrackingReport: FitnessFlag;
 	advisoryReviewReport: FitnessFlag;
@@ -66,6 +68,8 @@ function parseFitnessFlags(args: string[]): FitnessFlags {
 		architectureReport: inspectFlagValue(args, "--architecture-report"),
 		artifactsDir: inspectFlagValue(args, "--from-existing-artifacts"),
 		qualitySizeReport: inspectFlagValue(args, "--quality-size-report"),
+		typecheckReport: inspectFlagValue(args, "--typecheck-report"),
+		lintReport: inspectFlagValue(args, "--lint-report"),
 		behaviorTestsReport: inspectFlagValue(args, "--behavior-tests-report"),
 		auditTrackingReport: inspectFlagValue(args, "--audit-tracking-report"),
 		advisoryReviewReport: inspectFlagValue(args, "--advisory-review-report"),
@@ -90,6 +94,16 @@ function missingFitnessFlag(
 			flag: flags.qualitySizeReport,
 			code: "fitness.quality_size_report_required",
 			name: "--quality-size-report",
+		},
+		{
+			flag: flags.typecheckReport,
+			code: "fitness.typecheck_report_required",
+			name: "--typecheck-report",
+		},
+		{
+			flag: flags.lintReport,
+			code: "fitness.lint_report_required",
+			name: "--lint-report",
 		},
 		{
 			flag: flags.behaviorTestsReport,
@@ -119,6 +133,12 @@ function fitnessReportOptions(flags: FitnessFlags) {
 			: {}),
 		...(flags.qualitySizeReport.value
 			? { qualitySizeReportPath: flags.qualitySizeReport.value }
+			: {}),
+		...(flags.typecheckReport.value
+			? { typecheckReportPath: flags.typecheckReport.value }
+			: {}),
+		...(flags.lintReport.value
+			? { lintReportPath: flags.lintReport.value }
 			: {}),
 		...(flags.behaviorTestsReport.value
 			? { behaviorTestsReportPath: flags.behaviorTestsReport.value }
@@ -152,6 +172,10 @@ function printFitnessHelp(): void {
 	console.info(
 		"  --quality-size-report <path>   Ingest pnpm run quality:size JSON output",
 	);
+	console.info(
+		"  --typecheck-report <path>      Ingest pnpm typecheck JSON output",
+	);
+	console.info("  --lint-report <path>           Ingest pnpm lint JSON output");
 	console.info(
 		"  --behavior-tests-report <path> Ingest pnpm run quality:behavior-tests JSON output",
 	);

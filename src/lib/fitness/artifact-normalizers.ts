@@ -11,17 +11,22 @@ import {
 	isArtifactRecord,
 	requiredRecordArray,
 } from "./artifact-evidence.js";
+import { firstString, gateArtifactFindings } from "./gate-artifact-findings.js";
 
 /** Public API export. */
 export interface FitnessArtifactReportOptions {
 	artifactsDir?: string;
 	qualitySizeReportPath?: string;
+	typecheckReportPath?: string;
+	lintReportPath?: string;
 	behaviorTestsReportPath?: string;
 	auditTrackingReportPath?: string;
 	advisoryReviewReportPath?: string;
 }
 
 export const QUALITY_LANE_ID = "quality-budget";
+export const TYPECHECK_LANE_ID = "type-safety";
+export const LINT_LANE_ID = "static-lint";
 export const BEHAVIOR_LANE_ID = "behavior-proof";
 export const FEEDBACK_LANE_ID = "feedback-learning";
 
@@ -31,32 +36,6 @@ function readJsonFile(path: string): unknown {
 
 function asRecords(value: unknown): Record<string, unknown>[] {
 	return Array.isArray(value) ? value.filter(isArtifactRecord) : [];
-}
-
-function firstString(
-	value: Record<string, unknown>,
-	fields: readonly string[],
-): string | undefined {
-	for (const field of fields) {
-		const candidate = value[field];
-		if (typeof candidate === "string" && candidate.trim().length > 0) {
-			return candidate;
-		}
-	}
-	return undefined;
-}
-
-function firstNumber(
-	value: Record<string, unknown>,
-	fields: readonly string[],
-): number | undefined {
-	for (const field of fields) {
-		const candidate = value[field];
-		if (typeof candidate === "number" && Number.isFinite(candidate)) {
-			return candidate;
-		}
-	}
-	return undefined;
 }
 
 /** Resolve an explicit or conventional fitness artifact path. */
@@ -72,53 +51,62 @@ export function conventionalArtifactPath(
 }
 
 function qualitySizeFindings(path: string): FitnessFinding[] {
-	const report = readJsonFile(path);
-	const result = requiredRecordArray(
-		report,
-		"findings",
+	return gateArtifactFindings({
 		path,
-		QUALITY_LANE_ID,
-		"pnpm run quality:size",
-		"reduce_cognitive_load",
-		"quality_budget",
-	);
-	if ("malformed" in result) return result.malformed;
-	const records = result.records;
-	const status = artifactStatus(report);
-	if ((status === "fail" || status === "warn") && records.length === 0) {
-		return [
-			emptyDetailsFinding({
-				path,
-				lane: QUALITY_LANE_ID,
-				command: "pnpm run quality:size",
-				principle: "reduce_cognitive_load",
-				enforcement: "quality_budget",
-				status,
-			}),
-		];
-	}
-	return records.map((finding, index) => {
-		const file = firstString(finding, ["path", "file"]);
-		const line = firstNumber(finding, ["line"]);
-		return {
-			id: `quality-size:${file ?? index}`,
-			title: "Quality budget finding",
-			severity: "error",
-			lane: QUALITY_LANE_ID,
-			principle: "reduce_cognitive_load",
-			enforcement: "quality_budget",
-			evidence: {
-				...(file ? { file } : {}),
-				...(line !== undefined ? { line } : {}),
-				message:
-					firstString(finding, ["message", "reason"]) ??
-					"Quality budget check reported a finding.",
-			},
-			risk: "Quality budget drift increases review load and makes generated changes harder to safely reason about.",
-			recommendedCommand: "pnpm run quality:size",
-			claimBoundary:
-				"Quality budget evidence only; this does not prove tests, PR checks, review state, or merge readiness.",
-		};
+		detailsField: "findings",
+		lane: QUALITY_LANE_ID,
+		command: "pnpm run quality:size",
+		principle: "reduce_cognitive_load",
+		enforcement: "quality_budget",
+		idPrefix: "quality-size",
+		title: "Quality budget finding",
+		severity: "error",
+		risk: "Quality budget drift increases review load and makes generated changes harder to safely reason about.",
+		claimBoundary:
+			"Quality budget evidence only; this does not prove tests, PR checks, review state, or merge readiness.",
+		messageFields: ["message", "reason"],
+		fileFields: ["path", "file"],
+		lineFields: ["line"],
+	});
+}
+
+function typecheckFindings(path: string): FitnessFinding[] {
+	return gateArtifactFindings({
+		path,
+		detailsField: "failures",
+		lane: TYPECHECK_LANE_ID,
+		command: "pnpm typecheck",
+		principle: "prove_type_safety",
+		enforcement: "type_safety",
+		idPrefix: "typecheck",
+		title: "Type safety failure",
+		severity: "error",
+		risk: "Type errors break the repository contract before runtime behavior can be trusted.",
+		claimBoundary:
+			"Typecheck evidence only; this does not prove tests, PR checks, review state, or merge readiness.",
+		messageFields: ["message", "diagnostic", "code"],
+		fileFields: ["path", "file"],
+		lineFields: ["line"],
+	});
+}
+
+function lintFindings(path: string): FitnessFinding[] {
+	return gateArtifactFindings({
+		path,
+		detailsField: "findings",
+		lane: LINT_LANE_ID,
+		command: "pnpm lint",
+		principle: "preserve_static_contracts",
+		enforcement: "static_analysis",
+		idPrefix: "lint",
+		title: "Static lint finding",
+		severity: "error",
+		risk: "Static-analysis drift weakens shared code contracts and can hide mechanical defects.",
+		claimBoundary:
+			"Lint evidence only; this does not prove tests, PR checks, review state, or merge readiness.",
+		messageFields: ["message", "reason", "rule"],
+		fileFields: ["path", "file"],
+		lineFields: ["line"],
 	});
 }
 
@@ -300,6 +288,24 @@ export function applyFitnessArtifactReports(
 			"quality-size.json",
 		),
 		qualitySizeFindings,
+	);
+	applyLaneArtifact(
+		lanes.find((lane) => lane.id === TYPECHECK_LANE_ID),
+		conventionalArtifactPath(
+			options.artifactsDir,
+			options.typecheckReportPath,
+			"typecheck.json",
+		),
+		typecheckFindings,
+	);
+	applyLaneArtifact(
+		lanes.find((lane) => lane.id === LINT_LANE_ID),
+		conventionalArtifactPath(
+			options.artifactsDir,
+			options.lintReportPath,
+			"lint.json",
+		),
+		lintFindings,
 	);
 	applyLaneArtifact(
 		lanes.find((lane) => lane.id === BEHAVIOR_LANE_ID),

@@ -4,8 +4,10 @@ import {
 	BEHAVIOR_LANE_ID,
 	conventionalArtifactPath,
 	FEEDBACK_LANE_ID,
+	LINT_LANE_ID,
 	type FitnessArtifactReportOptions,
 	QUALITY_LANE_ID,
+	TYPECHECK_LANE_ID,
 } from "./artifact-normalizers.js";
 import type {
 	FitnessEnforcement,
@@ -58,6 +60,26 @@ function createBaseLanes(): FitnessLane[] {
 			enforcement: "quality_budget",
 			status: "not_run",
 			evidenceSource: "package.json scripts.quality:size",
+			findings: [],
+		},
+		{
+			id: TYPECHECK_LANE_ID,
+			label: "Type safety",
+			command: "pnpm typecheck",
+			principle: "prove_type_safety",
+			enforcement: "type_safety",
+			status: "not_run",
+			evidenceSource: "package.json scripts.typecheck",
+			findings: [],
+		},
+		{
+			id: LINT_LANE_ID,
+			label: "Static lint",
+			command: "pnpm lint",
+			principle: "preserve_static_contracts",
+			enforcement: "static_analysis",
+			status: "not_run",
+			evidenceSource: "package.json scripts.lint",
 			findings: [],
 		},
 		{

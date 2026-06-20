@@ -23,7 +23,7 @@ describe("runFitnessCLI", () => {
 		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
 		expect(result.schemaVersion).toBe("harness-fitness/v1");
 		expect(result.status).toBe("needs_evidence");
-		expect(result.lanes).toHaveLength(4);
+		expect(result.lanes).toHaveLength(6);
 		expect(result.lanes[0]).toEqual(
 			expect.objectContaining({
 				id: "architecture-fitness",
@@ -87,6 +87,22 @@ describe("runFitnessCLI", () => {
 			}),
 		);
 		writeFileSync(
+			join(dir, "typecheck.json"),
+			JSON.stringify({
+				schemaVersion: "typecheck/v1",
+				status: "pass",
+				failures: [],
+			}),
+		);
+		writeFileSync(
+			join(dir, "lint.json"),
+			JSON.stringify({
+				schemaVersion: "lint/v1",
+				status: "pass",
+				findings: [],
+			}),
+		);
+		writeFileSync(
 			join(dir, "behavior-tests.json"),
 			JSON.stringify({
 				schemaVersion: "behavior-tests/v1",
@@ -123,6 +139,24 @@ describe("runFitnessCLI", () => {
 
 		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
 		expect(result.error.code).toBe("fitness.artifacts_dir_required");
+	});
+
+	it("reports usage when typecheck report flag is missing a value", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(runFitnessCLI(["--json", "--typecheck-report"])).toBe(2);
+
+		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(result.error.code).toBe("fitness.typecheck_report_required");
+	});
+
+	it("reports usage when lint report flag is missing a value", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(runFitnessCLI(["--json", "--lint-report"])).toBe(2);
+
+		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(result.error.code).toBe("fitness.lint_report_required");
 	});
 
 	it("is registered as a command capability", () => {

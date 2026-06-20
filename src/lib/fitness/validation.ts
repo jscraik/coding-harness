@@ -42,11 +42,15 @@ const VALID_ENFORCEMENTS: readonly FitnessEnforcement[] = [
 	"hard_blocker",
 	"architecture_fitness",
 	"quality_budget",
+	"type_safety",
+	"static_analysis",
 	"advisory",
 ];
 const VALID_PRINCIPLES: readonly FitnessPrinciple[] = [
 	"protect_deep_module_boundaries",
 	"reduce_cognitive_load",
+	"prove_type_safety",
+	"preserve_static_contracts",
 	"prove_behavior_outcomes",
 	"compound_feedback_to_harness",
 ];

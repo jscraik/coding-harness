@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-19
+last_validated: 2026-06-20
 ---
 
 # Agent governance
@@ -74,6 +74,14 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   synchronized with the implementation and required documentation surfaces so
   docs-gate does not pass with stale operator guidance.
 - validation gate graph changes that add typed gate specs, phase-exit evidence gates, `harness next --phase-exit` visibility, parity tests, resume-checkpoint guards, TypeScript escape-hatch policy, Python/Pydantic validation, JSON Schema contract validation, or live CLI JSON contract validation should refresh `AI/context/diagram-context.md` and keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized when docs-gate reports architecture-context or agent-governance surfaces
+- `harness-fitness/v1` changes that add or alter deterministic lanes, artifact
+  normalizers, `harness fitness --from-existing-artifacts`, or `harness next
+  --fitness-report` should keep schema, TypeScript types, runtime validators,
+  conventional artifact names, trusted next-command routing, generated
+  architecture context, `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`,
+  and this guide synchronized; deterministic lanes remain the blocking authority
+  while AI-assisted review remains advisory unless a future explicit contract
+  promotes it.
 - validation-throughput changes that split `pnpm check`, `pnpm test:ci`,
   `pnpm test:related`, or `pnpm check:static` must keep CI commands,
   package scripts, PR-template evidence, and docs-gate-required surfaces

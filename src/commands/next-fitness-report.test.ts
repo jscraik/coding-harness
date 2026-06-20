@@ -66,6 +66,25 @@ function criticalArchitectureFitnessFinding() {
 	};
 }
 
+function typeSafetyFitnessFinding() {
+	return {
+		id: "typecheck:src/lib/fitness/report.ts",
+		title: "Type safety failure",
+		severity: "error",
+		lane: "type-safety",
+		principle: "prove_type_safety",
+		enforcement: "type_safety",
+		evidence: {
+			file: "src/lib/fitness/report.ts",
+			line: 1,
+			message: "Type 'unknown' is not assignable to type 'string'.",
+		},
+		risk: "Type errors break the repository contract before runtime behavior can be trusted.",
+		recommendedCommand: "pnpm typecheck",
+		claimBoundary: "Typecheck evidence only.",
+	};
+}
+
 describe("harness next fitness report evidence", () => {
 	it("blocks handoff when supplied fitness report still needs evidence", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-fitness-"));
@@ -174,6 +193,60 @@ describe("harness next fitness report evidence", () => {
 			expect(decision.safeToRun).toBe(true);
 			expect(decision.requiresHuman).toBe(false);
 			expect(decision.evidenceRef).toEqual(["artifact:fitness.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("routes type-safety findings through the trusted command allowlist", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-fitness-"));
+		try {
+			const finding = typeSafetyFitnessFinding();
+			writeFileSync(
+				join(repoRoot, "fitness.json"),
+				JSON.stringify({
+					schemaVersion: "harness-fitness/v1",
+					status: "fail",
+					generatedAt: "2026-06-19T12:00:00.000Z",
+					summary: {
+						lanes: 1,
+						findings: 1,
+						failures: 1,
+						warnings: 0,
+						lanesNeedingEvidence: 0,
+					},
+					lanes: [
+						{
+							id: "type-safety",
+							label: "Type safety",
+							command: "pnpm typecheck",
+							principle: "prove_type_safety",
+							enforcement: "type_safety",
+							status: "fail",
+							evidenceSource: "artifacts/typecheck.json",
+							findings: [finding],
+						},
+					],
+					topDeterministicFinding: finding,
+					claimBoundaries: [
+						"Fitness reports normalize local gate evidence only.",
+					],
+				}),
+			);
+
+			const { output } = captureNextCLI(
+				["--json", "--fitness-report", "fitness.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.nextCommand).toBe("pnpm typecheck");
+			expect(decision.safeToRun).toBe(true);
+			expect(decision.requiresHuman).toBe(false);
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });
 		}

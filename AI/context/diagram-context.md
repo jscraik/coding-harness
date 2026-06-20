@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-19T23:49:06Z
+Generated: 2026-06-20T09:08:55Z
 
 ## Table of Contents
 
@@ -29,31 +29,11 @@ Generated: 2026-06-19T23:49:06Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `contracts/harness-fitness.schema.json`
 - `src/commands/fitness.ts`
-- `src/commands/next-args.ts`
-- `src/commands/next-cli-evidence.ts`
-- `src/commands/next-decision-meta.ts`
 - `src/commands/next-fitness-report.ts`
-- `src/commands/next-option-parsers.ts`
 - `src/commands/next-pr-closeout-contract.ts`
-- `src/commands/next-pr-closeout.ts`
-- `src/commands/next-prompt-context-drift.ts`
-- `src/commands/next-recommendation-decisions.ts`
-- `src/commands/next-runner-state.ts`
-- `src/commands/next-runner.ts`
-- `src/commands/next-usage-errors.ts`
-- `src/commands/next.ts`
-- `src/lib/cli/registry/command-agent-catalog-rules.ts`
-- `src/lib/cli/registry/command-capability-rules.ts`
-- `src/lib/cli/registry/command-specs-core.ts`
-- `src/lib/cli/registry/command-specs.ts`
-- `src/lib/cli/registry/diff-budget-command-spec.ts`
-- `src/lib/cli/registry/fitness-command-spec.ts`
-- `src/lib/cli/registry/pilot-evaluate-command-spec.ts`
-- `src/lib/cli/registry/pilot-rollback-command-spec.ts`
-- `src/lib/cli/registry/ui-loop-command-specs.ts`
 - `src/lib/fitness/artifact-normalizers.ts`
+- `src/lib/fitness/gate-artifact-findings.ts`
 - `src/lib/fitness/report.ts`
 - `src/lib/fitness/types.ts`
 - `src/lib/fitness/validation.ts`
@@ -723,6 +703,7 @@ graph LR
   node_fleet_plan_cli_1abce344_6bb97cf7["fleet_plan_cli_1abce344"]
   node_frontmatter_metadata_gate_6901bbe4_282d02fe["frontmatter_metadata_gate_6901bbe4"]
   node_gardener_9416a9df_87b06be0["gardener_9416a9df"]
+  node_gate_artifact_findings_95d1e2ef_d86a6ced["gate_artifact_findings_95d1e2ef"]
   node_gate_c974e17b_07549baf["gate_c974e17b"]
   node_generated_artifact_parent_1f7755de_7894ed12["generated_artifact_parent_1f7755de"]
   node_git_tracked_paths_0d2bb251_a46656b4["git_tracked_paths_0d2bb251"]
@@ -1117,6 +1098,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_fleet_plan_cli_1abce344_6bb97cf7
   ext_node_fs_a15b7d96["node:fs"] --> node_frontmatter_metadata_gate_6901bbe4_282d02fe
   ext_node_fs_a15b7d96["node:fs"] --> node_gardener_9416a9df_87b06be0
+  ext_node_fs_a15b7d96["node:fs"] --> node_gate_artifact_findings_95d1e2ef_d86a6ced
   ext_node_fs_a15b7d96["node:fs"] --> node_gate_c974e17b_07549baf
   ext_node_fs_a15b7d96["node:fs"] --> node_generated_artifact_parent_1f7755de_7894ed12
   ext_node_fs_a15b7d96["node:fs"] --> node_github_e2e_2891a341_af6f1610
@@ -2119,3 +2101,4 @@ flowchart LR
   class github_e2e_2891a341,linear_e2e_decf3708,run_e2e_39efe696,env_b77349bf,check_public_api_docs_a9604f1b,check_steering_feedback_contract_80134459,run_harness_evals_77704768,validate_active_route_surface_905456c2,validate_decision_request_2e5c325e,validate_steering_application_receipt_c922e84a,validate_steering_queue_4bc0cc94,branch_protect_core_a8feb0fd,check_environment_core_2c16213f,ci_migrate_core_7005b5af,decision_request_118a770d,evidence_verify_3b73c290,linear_prepare_0c613ba6,linear_sync_a2fa2bf7,linear_triage_core_7cbca73e,linear_workflow_core_0e19cff4,pattern_scope_61ff946d,pr_closeout_env_9bfcd9ef,pr_closeout_github_proof_ade25b0e,live_247610f4,review_gate_core_4c8001f9,symphony_check_e97f2ea0,ui_loop_command_spec_d513a999,ui_loop_exit_codes_29da40fb,ui_loop_internal_f2eb8892,ui_loop_resolution_4b529dd9 userNode
 
 ```
+

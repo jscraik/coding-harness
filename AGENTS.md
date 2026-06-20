@@ -78,6 +78,13 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 - Types and schemas are contract surfaces. TypeScript, Python, JSON, YAML,
   Markdown metadata, shell, and generated artifacts should use configured type,
   schema, lint, and validation gates rather than ad hoc string assumptions.
+- Harness fitness evidence (`harness-fitness/v1`, `harness fitness`, and
+  `harness next --fitness-report`) is a validation graph surface. Keep schema,
+  TypeScript types, runtime validators, conventional artifact names,
+  deterministic lane commands, and trusted next-command routing synchronized.
+  Deterministic fitness lanes block on architecture, quality size, type safety,
+  static lint, behavior proof, and feedback learning; AI-assisted review remains
+  advisory unless an explicit contract update promotes it.
 - Observed eval telemetry from `~/.agents/` or CI exports is input evidence, not
   authority. Keep CircleCI, session, and OpenTelemetry feeds bounded, redacted,
   artifact-backed, and separate from CI pass, review, tracker, or merge-readiness
