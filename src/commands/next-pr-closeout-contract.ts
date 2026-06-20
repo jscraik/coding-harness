@@ -312,6 +312,21 @@ function hasReadyPrCloseoutReviewCounts(
 	);
 }
 
+function hasReadyPrCloseoutAssurance(
+	report: Partial<PrCloseoutReport>,
+): boolean {
+	const assurance = report.assurance;
+	return (
+		isObjectRecord(assurance) &&
+		assurance.present === true &&
+		assurance.valid === true &&
+		Array.isArray(assurance.entries) &&
+		assurance.entries.length > 0 &&
+		Array.isArray(assurance.findings) &&
+		assurance.findings.length === 0
+	);
+}
+
 function hasReadyPrCloseoutConsistency(
 	report: Partial<PrCloseoutReport>,
 ): boolean {
@@ -321,6 +336,7 @@ function hasReadyPrCloseoutConsistency(
 	if (!hasReadyPrCloseoutClaims(report)) return false;
 	if (report.traceability?.complete !== true) return false;
 	if (!hasReadyPrCloseoutHarnessGates(report)) return false;
+	if (!hasReadyPrCloseoutAssurance(report)) return false;
 	return (
 		hasReadyPrCloseoutCheckCounts(report) &&
 		hasReadyPrCloseoutReviewCounts(report)

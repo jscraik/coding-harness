@@ -134,9 +134,15 @@ function prCloseoutReport(
 			gates: readyHarnessGates(),
 		},
 		assurance: {
-			present: false,
-			valid: false,
-			entries: [],
+			present: true,
+			valid: true,
+			entries: [
+				{
+					layer: "lifecycle_closeout",
+					status: "pass",
+					evidence: ["artifact:assurance.json"],
+				},
+			],
 			findings: [],
 		},
 		runtimeEvidence: {
@@ -836,6 +842,41 @@ describe("harness next pr-closeout evidence", () => {
 							gates: readyHarnessGates().filter(
 								(gate) => gate.gateId !== "testing_reviewer",
 							),
+						},
+					}),
+				),
+			);
+
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--pr-closeout", "pr-closeout.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("pr_closeout_artifact_invalid");
+			expect(decision.evidenceRef).toEqual(["artifact:pr-closeout.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects ready pr-closeout artifacts missing assurance evidence", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
+		try {
+			writeFileSync(
+				join(repoRoot, "pr-closeout.json"),
+				JSON.stringify(
+					prCloseoutReport({
+						assurance: {
+							present: false,
+							valid: false,
+							entries: [],
+							findings: [],
 						},
 					}),
 				),
