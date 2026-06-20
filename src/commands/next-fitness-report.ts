@@ -120,11 +120,8 @@ function readFitnessReportArtifact(
 function topFitnessFinding(
 	fitnessReport: FitnessReport,
 ): FitnessFinding | null {
-	return (
-		fitnessReport.topDeterministicFinding ??
-		selectTopDeterministicFitnessFinding(
-			fitnessReport.lanes.flatMap((lane) => lane.findings),
-		)
+	return selectTopDeterministicFitnessFinding(
+		fitnessReport.lanes.flatMap((lane) => lane.findings),
 	);
 }
 

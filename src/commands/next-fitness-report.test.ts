@@ -48,6 +48,24 @@ function qualitySizeFitnessFinding() {
 	};
 }
 
+function criticalArchitectureFitnessFinding() {
+	return {
+		id: "architecture:no-circular-deps",
+		title: "Circular dependency violates module boundary",
+		severity: "critical",
+		lane: "architecture-fitness",
+		principle: "protect_deep_module_boundaries",
+		enforcement: "architecture_fitness",
+		evidence: {
+			file: "src/lib/a.ts",
+			message: "a.ts imports b.ts imports a.ts",
+		},
+		risk: "Circular dependencies break agent-local reasoning.",
+		recommendedCommand: "pnpm architecture:check",
+		claimBoundary: "Architecture evidence only.",
+	};
+}
+
 describe("harness next fitness report evidence", () => {
 	it("blocks handoff when supplied fitness report still needs evidence", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-fitness-"));
@@ -156,6 +174,74 @@ describe("harness next fitness report evidence", () => {
 			expect(decision.safeToRun).toBe(true);
 			expect(decision.requiresHuman).toBe(false);
 			expect(decision.evidenceRef).toEqual(["artifact:fitness.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("recomputes stale top deterministic fitness findings from lane evidence", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-fitness-"));
+		try {
+			const staleFinding = qualitySizeFitnessFinding();
+			const criticalFinding = criticalArchitectureFitnessFinding();
+			writeFileSync(
+				join(repoRoot, "fitness.json"),
+				JSON.stringify({
+					schemaVersion: "harness-fitness/v1",
+					status: "fail",
+					generatedAt: "2026-06-19T12:00:00.000Z",
+					summary: {
+						lanes: 2,
+						findings: 2,
+						failures: 2,
+						warnings: 0,
+						lanesNeedingEvidence: 0,
+					},
+					lanes: [
+						{
+							id: "quality-budget",
+							label: "Quality budget",
+							command: "pnpm run quality:size",
+							principle: "reduce_cognitive_load",
+							enforcement: "quality_budget",
+							status: "fail",
+							evidenceSource: "artifacts/quality-size.json",
+							findings: [staleFinding],
+						},
+						{
+							id: "architecture-fitness",
+							label: "Architecture fitness",
+							command: "pnpm architecture:check",
+							principle: "protect_deep_module_boundaries",
+							enforcement: "architecture_fitness",
+							status: "fail",
+							evidenceSource: "artifacts/architecture.json",
+							findings: [criticalFinding],
+						},
+					],
+					topDeterministicFinding: staleFinding,
+					claimBoundaries: [
+						"Fitness reports normalize local gate evidence only.",
+					],
+				}),
+			);
+
+			const { output } = captureNextCLI(
+				["--json", "--fitness-report", "fitness.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			const decision = parseDecision(output);
+			expect(decision.summary).toContain(criticalFinding.title);
+			expect(decision.nextCommand).toBe("pnpm architecture:check");
+			expect(decision.meta).toMatchObject({
+				fitnessFinding: {
+					id: criticalFinding.id,
+				},
+			});
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });
 		}

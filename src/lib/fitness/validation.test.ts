@@ -120,6 +120,42 @@ describe("validateFitnessReport", () => {
 		);
 	});
 
+	it("rejects warn status when missing lanes require evidence", () => {
+		const result = validateFitnessReport(
+			fitnessReport({
+				status: "warn",
+				summary: {
+					lanes: 1,
+					findings: 0,
+					failures: 0,
+					warnings: 0,
+					lanesNeedingEvidence: 1,
+				},
+				lanes: [
+					{
+						id: "quality-budget",
+						label: "Quality budget",
+						command: "pnpm run quality:size",
+						principle: "reduce_cognitive_load",
+						enforcement: "quality_budget",
+						status: "not_run",
+						evidenceSource: "missing",
+						findings: [],
+					},
+				],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "status must be needs_evidence for derived lane/finding counts",
+				}),
+			]),
+		);
+	});
+
 	it("accepts warn status when derived warnings exist without failures", () => {
 		const finding = warningFinding();
 		const result = validateFitnessReport(
