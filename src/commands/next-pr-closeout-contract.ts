@@ -257,10 +257,17 @@ function hasReadyPrCloseoutGateShape(
 	if (typeof gate.gateId !== "string") return false;
 	if (typeof gate.required !== "boolean") return false;
 	if (gate.status !== "pass" && gate.status !== "not_applicable") return false;
-	if (!Array.isArray(gate.evidenceRefs)) return false;
-	if (!gate.evidenceRefs.every((ref) => typeof ref === "string")) return false;
+	if (!hasReadyPrCloseoutGateEvidenceRefs(gate.evidenceRefs)) return false;
 	if (typeof gate.requiresHuman !== "boolean") return false;
 	return gate.blocker === null || typeof gate.blocker === "string";
+}
+
+function hasReadyPrCloseoutGateEvidenceRefs(value: unknown): boolean {
+	return (
+		Array.isArray(value) &&
+		value.length > 0 &&
+		value.every((ref) => typeof ref === "string" && ref.trim().length > 0)
+	);
 }
 
 function hasExpectedReadyCloseoutGateIds(

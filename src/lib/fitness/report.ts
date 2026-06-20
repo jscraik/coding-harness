@@ -162,54 +162,84 @@ function normalizeArchitectureViolation(
 	};
 }
 
+function malformedArchitectureArtifactFinding(
+	path: string,
+	message: string,
+	severity: FitnessSeverity = "error",
+): FitnessFinding {
+	return {
+		id: "architecture:artifact:malformed",
+		title: "Architecture artifact is malformed",
+		severity,
+		lane: ARCHITECTURE_LANE_ID,
+		principle: "protect_deep_module_boundaries",
+		enforcement: "architecture_fitness",
+		evidence: {
+			file: path,
+			message,
+		},
+		risk: "Malformed architecture evidence can mask real boundary regressions.",
+		recommendedCommand: "pnpm architecture:check",
+		claimBoundary:
+			"Architecture artifact evidence only; regenerate the source gate before using this lane as proof.",
+	};
+}
+
+function normalizeArchitectureViolations(
+	path: string,
+	violations: unknown[],
+): FitnessFinding[] {
+	const findings: FitnessFinding[] = [];
+	for (const violation of violations) {
+		if (
+			!violation ||
+			typeof violation !== "object" ||
+			Array.isArray(violation)
+		) {
+			return [
+				malformedArchitectureArtifactFinding(
+					path,
+					"Expected each violations[] entry to be an object.",
+				),
+			];
+		}
+		const finding = normalizeArchitectureViolation(
+			violation as ArchitectureCheckViolation,
+		);
+		if (!finding) {
+			return [
+				malformedArchitectureArtifactFinding(
+					path,
+					"Expected each violations[] entry to include rule or file evidence.",
+				),
+			];
+		}
+		findings.push(finding);
+	}
+	return findings;
+}
+
 function normalizeArchitectureReport(path: string): FitnessFinding[] {
 	const report = asArchitectureCheckReport(readJsonFile(path));
 	if (!Array.isArray(report.violations)) {
 		return [
-			{
-				id: "architecture:artifact:malformed",
-				title: "Architecture artifact is malformed",
-				severity: "error",
-				lane: ARCHITECTURE_LANE_ID,
-				principle: "protect_deep_module_boundaries",
-				enforcement: "architecture_fitness",
-				evidence: {
-					file: path,
-					message: "Expected violations[] in architecture artifact JSON.",
-				},
-				risk: "Malformed architecture evidence can mask real boundary regressions.",
-				recommendedCommand: "pnpm architecture:check",
-				claimBoundary:
-					"Architecture artifact evidence only; regenerate the source gate before using this lane as proof.",
-			},
+			malformedArchitectureArtifactFinding(
+				path,
+				"Expected violations[] in architecture artifact JSON.",
+			),
 		];
 	}
-	const findings = report.violations
-		.map((violation) =>
-			normalizeArchitectureViolation(violation as ArchitectureCheckViolation),
-		)
-		.filter((finding): finding is FitnessFinding => finding !== undefined);
+	const findings = normalizeArchitectureViolations(path, report.violations);
 	if (
 		(report.status === "fail" || report.status === "warn") &&
 		findings.length === 0
 	) {
 		return [
-			{
-				id: "architecture:artifact:malformed",
-				title: "Architecture artifact is malformed",
-				severity: report.status === "warn" ? "warning" : "error",
-				lane: ARCHITECTURE_LANE_ID,
-				principle: "protect_deep_module_boundaries",
-				enforcement: "architecture_fitness",
-				evidence: {
-					file: path,
-					message: `Artifact status is ${report.status} but violations[] is empty.`,
-				},
-				risk: "Malformed architecture evidence can mask real boundary regressions.",
-				recommendedCommand: "pnpm architecture:check",
-				claimBoundary:
-					"Architecture artifact evidence only; regenerate the source gate before using this lane as proof.",
-			},
+			malformedArchitectureArtifactFinding(
+				path,
+				`Artifact status is ${report.status} but violations[] is empty.`,
+				report.status === "warn" ? "warning" : "error",
+			),
 		];
 	}
 	return findings;

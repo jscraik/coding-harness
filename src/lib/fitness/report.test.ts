@@ -257,6 +257,35 @@ describe("buildFitnessReport", () => {
 		);
 	});
 
+	it("fails closed when architecture violation entries are malformed", () => {
+		const dir = mkdtempSync(join(tmpdir(), "fitness-architecture-entry-"));
+		cleanup.push(dir);
+		writeFileSync(
+			join(dir, "architecture.json"),
+			JSON.stringify({ status: "pass", violations: ["bad"] }),
+			"utf8",
+		);
+
+		const report = buildFitnessReport({
+			architectureReportPath: join(dir, "architecture.json"),
+			now: new Date("2026-06-19T12:00:00.000Z"),
+		});
+
+		expect(report.status).toBe("fail");
+		expect(report.lanes[0]).toEqual(
+			expect.objectContaining({
+				id: "architecture-fitness",
+				status: "fail",
+			}),
+		);
+		expect(report.lanes[0]?.findings[0]).toEqual(
+			expect.objectContaining({
+				id: "architecture:artifact:malformed",
+				recommendedCommand: "pnpm architecture:check",
+			}),
+		);
+	});
+
 	it("fails closed when source artifacts report failure without details", () => {
 		const dir = mkdtempSync(join(tmpdir(), "fitness-empty-failure-"));
 		cleanup.push(dir);
