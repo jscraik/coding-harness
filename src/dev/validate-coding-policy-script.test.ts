@@ -280,9 +280,7 @@ describe("validate-coding-policy.cjs", () => {
 		const result = runValidateCodingPolicy(root, ["--json", "--changed-files"]);
 
 		expect(result.status).toBe(1);
-		expect(result.stderr).toContain(
-			"--changed-files requires at least one path",
-		);
+		expect(result.stderr).toContain("- invalid command line arguments");
 	});
 
 	it("sanitizes unknown CLI argument values before writing stderr", () => {
@@ -293,11 +291,28 @@ describe("validate-coding-policy.cjs", () => {
 		]);
 
 		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("- invalid command line arguments");
+		expect(result.stderr).not.toContain("secret-value");
+		expect(result.stderr).not.toContain("API_TOKEN");
+		expect(result.stderr).not.toContain("forged-log-line");
+		expect(result.stderr).not.toContain("\n- forged-log-line");
+	});
+
+	it("sanitizes parse errors before writing stderr", () => {
+		const root = createPolicyRoot();
+		writeFileSync(
+			join(root, "coding-policy.json"),
+			"API_TOKEN=secret-value\\nforged-log-line\\n",
+		);
+
+		const result = runValidateCodingPolicy(root);
+
+		expect(result.status).toBe(1);
 		expect(result.stderr).toContain(
-			"- unknown argument API_TOKEN=<redacted> forged-log-line",
+			"coding-policy: failed to parse coding-policy.json",
 		);
 		expect(result.stderr).not.toContain("secret-value");
-		expect(result.stderr).not.toContain("\n- forged-log-line");
+		expect(result.stderr).not.toContain("forged-log-line");
 	});
 
 	it("rejects empty changed-file route inputs", () => {
@@ -725,11 +740,11 @@ describe("validate-coding-policy.cjs", () => {
 	});
 
 	it.each([
-		["--name-only", "--git-base must contain only"],
-		["main..feature", "--git-base must be a plain git ref"],
-		["main;echo", "--git-base must contain only"],
-		["main@{1}", "--git-base must contain only"],
-	])("rejects unsafe branch base ref %s", (baseRef, message) => {
+		"--name-only",
+		"main..feature",
+		"main;echo",
+		"main@{1}",
+	])("rejects unsafe branch base ref %s", (baseRef) => {
 		const root = createPolicyRoot();
 		runGit(root, ["init"]);
 
@@ -741,6 +756,6 @@ describe("validate-coding-policy.cjs", () => {
 
 		expect(result.status).toBe(1);
 		expect(result.stderr).toContain("--git-base failed");
-		expect(result.stderr).toContain(message);
+		expect(result.stderr).not.toContain(baseRef);
 	});
 });

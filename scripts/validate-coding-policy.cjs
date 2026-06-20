@@ -101,7 +101,7 @@ function parseArgs(argv) {
 			options.changedFiles.push(...argv.slice(index + 1));
 			break;
 		}
-		errors.push(`unknown argument ${sanitizeCliDiagnosticValue(arg)}`);
+		errors.push("unknown argument <redacted>");
 	}
 	if (
 		options.routeRequested &&
@@ -112,10 +112,6 @@ function parseArgs(argv) {
 		errors.push("--changed-files requires at least one path");
 	}
 	return { options, errors };
-}
-
-function sanitizeCliDiagnosticValue(value) {
-	return sanitizeCliDiagnosticText(value, 80);
 }
 
 function sanitizeCliDiagnosticText(
@@ -630,9 +626,7 @@ function validatePolicy(policy, schema) {
 const parsedArgs = parseArgs(process.argv.slice(2));
 if (parsedArgs.errors.length > 0) {
 	console.error("coding-policy: failed");
-	for (const error of parsedArgs.errors) {
-		console.error(`- ${sanitizeCliDiagnosticText(error)}`);
-	}
+	console.error("- invalid command line arguments");
 	process.exit(1);
 }
 
@@ -649,19 +643,16 @@ let policy;
 let schema;
 try {
 	policy = readPolicyJson();
-} catch (error) {
-	console.error(
-		`coding-policy: failed to parse coding-policy.json: ${error.message}`,
-	);
+} catch {
+	console.error("coding-policy: failed to parse coding-policy.json");
 	process.exit(1);
 }
 
 try {
 	schema = readSchemaJson();
-} catch (error) {
+} catch {
 	console.error(
-		"coding-policy: failed to parse contracts/coding-policy.schema.json: " +
-			error.message,
+		"coding-policy: failed to parse contracts/coding-policy.schema.json",
 	);
 	process.exit(1);
 }
@@ -669,12 +660,9 @@ try {
 if (parsedArgs.options.gitChanged) {
 	try {
 		parsedArgs.options.changedFiles.push(...gitChangedFiles());
-	} catch (error) {
+	} catch {
 		console.error("coding-policy: failed");
-		const message = sanitizeCliDiagnosticText(error.message);
-		console.error(
-			`- --git-changed failed to read git changed files: ${message}`,
-		);
+		console.error("- --git-changed failed to read git changed files");
 		process.exit(1);
 	}
 	parsedArgs.options.changedFiles = uniqueStrings(
@@ -686,10 +674,9 @@ if (parsedArgs.options.gitBase !== null) {
 		parsedArgs.options.changedFiles.push(
 			...gitBaseChangedFiles(parsedArgs.options.gitBase),
 		);
-	} catch (error) {
+	} catch {
 		console.error("coding-policy: failed");
-		const message = sanitizeCliDiagnosticText(error.message);
-		console.error(`- --git-base failed to read git changed files: ${message}`);
+		console.error("- --git-base failed to read git changed files");
 		process.exit(1);
 	}
 	parsedArgs.options.changedFiles = uniqueStrings(
