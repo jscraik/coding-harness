@@ -10,6 +10,7 @@ import {
 } from "../lib/pr-closeout.js";
 import { HARNESS_CLOSEOUT_GATE_IDS } from "../lib/decision/he-phase-exit.js";
 import { validateHarnessDecision } from "../lib/decision/harness-decision.js";
+import type { HarnessAssuranceEntry } from "../lib/harness-assurance.js";
 import { runHarnessNext, runNextCLI } from "./next.js";
 import { DEFAULT_PR_CLOSEOUT_ARTIFACT } from "./next-pr-closeout.js";
 
@@ -92,6 +93,29 @@ function readyHarnessGates(): PrCloseoutReport["harnessGates"]["gates"] {
 	}));
 }
 
+function readyAssuranceEntries(): HarnessAssuranceEntry[] {
+	const evidence = ["artifact:assurance.json"];
+	return [
+		{ layer: "unit", status: "pass", evidence },
+		{ layer: "boundary", status: "pass", evidence },
+		{ layer: "mock_integration", status: "pass", evidence },
+		{ layer: "e2e", status: "pass", evidence },
+		{ layer: "security", status: "pass", evidence },
+		{
+			layer: "load_stress",
+			status: "n.a.",
+			evidence,
+			reason: "Fixture does not exercise a load-sensitive production path.",
+		},
+		{
+			layer: "lifecycle_closeout",
+			status: "n.a.",
+			evidence,
+			reason: "Fixture covers consumer validation, not hosted closeout state.",
+		},
+	];
+}
+
 function prCloseoutReport(
 	overrides: Partial<PrCloseoutReport> = {},
 ): PrCloseoutReport {
@@ -136,13 +160,7 @@ function prCloseoutReport(
 		assurance: {
 			present: true,
 			valid: true,
-			entries: [
-				{
-					layer: "lifecycle_closeout",
-					status: "pass",
-					evidence: ["artifact:assurance.json"],
-				},
-			],
+			entries: readyAssuranceEntries(),
 			findings: [],
 		},
 		runtimeEvidence: {
@@ -948,6 +966,46 @@ describe("harness next pr-closeout evidence", () => {
 						},
 					}),
 				),
+			);
+
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--pr-closeout", "pr-closeout.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("pr_closeout_artifact_invalid");
+			expect(decision.evidenceRef).toEqual(["artifact:pr-closeout.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects ready pr-closeout artifacts with incomplete assurance entries", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
+		try {
+			writeFileSync(
+				join(repoRoot, "pr-closeout.json"),
+				JSON.stringify({
+					...prCloseoutReport(),
+					assurance: {
+						present: true,
+						valid: true,
+						entries: [
+							{
+								layer: "unit",
+								status: "pass",
+								evidence: ["artifact:assurance.json"],
+							},
+						],
+						findings: [],
+					},
+				}),
 			);
 
 			const { exitCode, output } = captureNextCLI(

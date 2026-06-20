@@ -4,6 +4,11 @@ import {
 	type PrCloseoutReport,
 } from "../lib/pr-closeout.js";
 import { HARNESS_CLOSEOUT_GATE_IDS } from "../lib/decision/he-phase-exit.js";
+import {
+	HARNESS_ASSURANCE_LAYERS,
+	type HarnessAssuranceEntry,
+	validateHarnessAssuranceEntries,
+} from "../lib/harness-assurance.js";
 
 const PR_CLOSEOUT_STATUSES = new Set([
 	"ready",
@@ -13,7 +18,6 @@ const PR_CLOSEOUT_STATUSES = new Set([
 	"needs_jamie",
 	"cleanup_required",
 ]);
-
 const PR_CLOSEOUT_NEXT_ACTIONS = new Set([
 	"ready_to_merge",
 	"codex_can_fix_now",
@@ -22,7 +26,6 @@ const PR_CLOSEOUT_NEXT_ACTIONS = new Set([
 	"needs_jamie_decision",
 	"cleanup_before_continue",
 ]);
-
 const PR_CLOSEOUT_BLOCKER_SURFACES = new Set([
 	"pr",
 	"branch",
@@ -39,7 +42,6 @@ const PR_CLOSEOUT_BLOCKER_SURFACES = new Set([
 	"review_artifact",
 	"tool",
 ]);
-
 const PR_CLOSEOUT_BLOCKER_CLASSIFICATIONS = new Set([
 	"introduced",
 	"pre_existing",
@@ -48,7 +50,6 @@ const PR_CLOSEOUT_BLOCKER_CLASSIFICATIONS = new Set([
 	"needs_jamie_decision",
 	"unknown",
 ]);
-
 const READY_PR_CLOSEOUT_CLAIMS = new Set<PrCloseoutClaim["claim"]>([
 	"tests_passed",
 	"ci_green",
@@ -65,12 +66,20 @@ const READY_PR_CLOSEOUT_NOT_APPLICABLE_CLAIMS = new Set<
 	PrCloseoutClaim["claim"]
 >(["rollback_path_named_or_not_applicable"]);
 
+const READY_PR_CLOSEOUT_ASSURANCE_LAYERS = new Set<string>(
+	HARNESS_ASSURANCE_LAYERS,
+);
+const READY_PR_CLOSEOUT_ASSURANCE_STATUSES = new Set([
+	"pass",
+	"partial",
+	"blocked",
+	"n.a.",
+]);
+
 const isNonNegativeInteger = (value: unknown): value is number =>
 	typeof value === "number" && Number.isInteger(value) && value >= 0;
-
 const isNullableNonNegativeInteger = (value: unknown): value is number | null =>
 	value === null || isNonNegativeInteger(value);
-
 const isStringArray = (value: unknown): value is string[] =>
 	Array.isArray(value) && value.every((item) => typeof item === "string");
 
@@ -336,10 +345,28 @@ function hasReadyPrCloseoutAssurance(
 		isObjectRecord(assurance) &&
 		assurance.present === true &&
 		assurance.valid === true &&
-		Array.isArray(assurance.entries) &&
-		assurance.entries.length > 0 &&
 		Array.isArray(assurance.findings) &&
-		assurance.findings.length === 0
+		assurance.findings.length === 0 &&
+		hasValidReadyPrCloseoutAssuranceEntries(assurance.entries)
+	);
+}
+
+function hasValidReadyPrCloseoutAssuranceEntries(value: unknown): boolean {
+	if (!Array.isArray(value) || value.length === 0) return false;
+	if (!value.every(isHarnessAssuranceEntryRecord)) return false;
+	return validateHarnessAssuranceEntries(value).valid;
+}
+
+function isHarnessAssuranceEntryRecord(
+	value: unknown,
+): value is HarnessAssuranceEntry {
+	if (!isObjectRecord(value)) return false;
+	return (
+		typeof value.layer === "string" &&
+		READY_PR_CLOSEOUT_ASSURANCE_LAYERS.has(value.layer) &&
+		typeof value.status === "string" &&
+		READY_PR_CLOSEOUT_ASSURANCE_STATUSES.has(value.status) &&
+		(value.evidence === undefined || isStringArray(value.evidence))
 	);
 }
 
