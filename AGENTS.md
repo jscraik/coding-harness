@@ -82,8 +82,8 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   `coding-policy.json` maps changed-file patterns to codestyle modules and
   required gates, while Markdown codestyle modules remain the prose authority.
   Cold agents should use
-  `node scripts/validate-coding-policy.cjs --json --changed-files <path...>`
-  to discover the policy modules and gates for a concrete changed-file set.
+  `pnpm run coding-policy:route -- <path...>` to discover the policy modules
+  and gates for a concrete changed-file set.
 - GitHub Actions release workflow inputs are untrusted shell-boundary data.
   Pass manual `workflow_dispatch` inputs through named `env` variables before
   validation instead of interpolating `github.event.inputs.*` directly inside

@@ -159,6 +159,7 @@
 		"vale": "vale --config .vale.ini AGENTS.md docs",
 		"codex-preflight:check": "node scripts/sync-codex-preflight.cjs --check",
 		"codex-preflight:sync": "node scripts/sync-codex-preflight.cjs --write",
+		"coding-policy:route": "node scripts/validate-coding-policy.cjs --json --changed-files",
 		"coding-policy:validate": "node scripts/validate-coding-policy.cjs",
 		"prek:validate-config": "bash scripts/run-prek.sh validate-config"
 	},

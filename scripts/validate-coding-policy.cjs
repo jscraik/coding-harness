@@ -43,7 +43,7 @@ const expectedSourceRules = new Set([
 ]);
 
 function parseArgs(argv) {
-	const options = { json: false, changedFiles: [] };
+	const options = { json: false, changedFiles: [], routeRequested: false };
 	const errors = [];
 	for (let index = 0; index < argv.length; index += 1) {
 		const arg = argv[index];
@@ -57,15 +57,30 @@ function parseArgs(argv) {
 				errors.push("--changed-file requires a path");
 				continue;
 			}
+			options.routeRequested = true;
 			options.changedFiles.push(next);
 			index += 1;
 			continue;
 		}
-		if (arg === "--changed-files" || arg === "--") {
+		if (arg === "--changed-files") {
+			options.routeRequested = true;
+			const remaining = argv.slice(index + 1);
+			if (remaining[0] === "--") {
+				options.changedFiles.push(...remaining.slice(1));
+			} else {
+				options.changedFiles.push(...remaining);
+			}
+			break;
+		}
+		if (arg === "--") {
+			options.routeRequested = true;
 			options.changedFiles.push(...argv.slice(index + 1));
 			break;
 		}
 		errors.push(`unknown argument ${arg}`);
+	}
+	if (options.routeRequested && options.changedFiles.length === 0) {
+		errors.push("--changed-files requires at least one path");
 	}
 	return { options, errors };
 }

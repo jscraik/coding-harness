@@ -1,6 +1,6 @@
 # sha256 manifest for codestyle parity enforcement
 # format: <sha256>  <relative-path-from-repo-root>
-73b06a6f8d98a0ffdf701ca02da4373a1a02dd018625689dc2d4c4a8a9cd17f8  CODESTYLE.md
+5c62f376e7172fe6251d2e790c828c92412da169fadda92cd938f404861d3dae  CODESTYLE.md
 5046765e436a0c24e52b71756a66d14740c9d8b39038054e23d8c661c68b2a51  codestyle/01-foundations.md
 e22f8aba02af91c075bf91f03897790ac14f596d13c1bd1ab4ae89ff1ae6ebe4  codestyle/02-javascript-ui.md
 14350d1f761c0900135d411f1d4cfa3403cdb250f3441ab021ad26acad92718c  codestyle/03-rust-tauri.md
@@ -21,4 +21,4 @@ b2a48b685ec49d468fef68bf631da2b7e91cf87bb6b92b415467264092d4704e  codestyle/17-t
 25da61700af9b3562700e3084862a222274e4878185710d55cf83470a670f3c5  codestyle/18-code-review.md
 844d3ad4995044ac65f148903d15cd284875209dff5eb37fa2a3f2663069025c  codestyle/19-development-workflow.md
 e377fcb1d416f6756835488dd9965165be923076ab1a5d0b3bd2395baa25ee37  codestyle/20-go.md
-93a0593356baba4aec8c3ce404b184aec1c2f917dbc5ce9f807158ebc029ffc2  codestyle/README.md
+caebc6189e0fd48382b87264fca82b4cf6fad928c40bfdb2ec6b87dc5a0eea04  codestyle/README.md

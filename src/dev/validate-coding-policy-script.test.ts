@@ -205,6 +205,17 @@ describe("validate-coding-policy.cjs", () => {
 		expect(result.stderr).toContain("changedFiles[0] must be repo-relative");
 	});
 
+	it("rejects changed-file route requests without changed files", () => {
+		const root = createPolicyRoot();
+
+		const result = runValidateCodingPolicy(root, ["--json", "--changed-files"]);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"--changed-files requires at least one path",
+		);
+	});
+
 	it("rejects changed-file route inputs above the bounded batch limit", () => {
 		const root = createPolicyRoot();
 
@@ -226,6 +237,7 @@ describe("validate-coding-policy.cjs", () => {
 		const result = runValidateCodingPolicy(root, [
 			"--json",
 			"--changed-files",
+			"--",
 			"src/dev/validate-coding-policy-script.test.ts",
 			"scripts/check-doc-style.sh",
 			"docs/agents/04-validation.md",
@@ -234,6 +246,7 @@ describe("validate-coding-policy.cjs", () => {
 		expect(result.status).toBe(0);
 		const route = JSON.parse(result.stdout) as {
 			schemaVersion: string;
+			changedFiles: string[];
 			policyModules: Array<{
 				id: string;
 				path: string;
@@ -243,6 +256,7 @@ describe("validate-coding-policy.cjs", () => {
 			claimBoundaries: string[];
 		};
 		expect(route.schemaVersion).toBe("coding-policy-route/v1");
+		expect(route.changedFiles).not.toContain("--");
 		expect(route.claimBoundaries.length).toBeGreaterThan(0);
 		expect(route.requiredGates).toContain("pnpm run test:related");
 		expect(route.requiredGates).toContain("pnpm run quality:scripts");
