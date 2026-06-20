@@ -44,4 +44,11 @@ describe("sanitizeEvidenceText", () => {
 		expect(output).toContain("[REDACTED]");
 		expect(output).not.toContain("ghp_abcdefghijklmnopqrstuvwxyz0123456789");
 	});
+
+	it("redacts authorization header values for any auth scheme", () => {
+		const input = "Authorization: Digest username=test, response=secret";
+		const output = sanitizeEvidenceText(input);
+		expect(output).toBe("Authorization: [REDACTED]");
+		expect(output).not.toContain("secret");
+	});
 });

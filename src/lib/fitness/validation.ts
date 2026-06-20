@@ -218,21 +218,22 @@ function validateSummaryCounts(
 function validateStatusInvariant(
 	status: unknown,
 	failures: number,
+	warnings: number,
 	lanesNeedingEvidence: number,
 	errors: HeValidationError[],
 ): void {
-	if (status === "pass" && (failures > 0 || lanesNeedingEvidence > 0)) {
+	const expectedStatus =
+		failures > 0
+			? "fail"
+			: lanesNeedingEvidence > 0
+				? "needs_evidence"
+				: warnings > 0
+					? "warn"
+					: "pass";
+	if (status !== expectedStatus) {
 		errors.push(
 			toValidationError(
-				"status pass is invalid when failures or missing evidence exist",
-				"status",
-			),
-		);
-	}
-	if (status === "needs_evidence" && lanesNeedingEvidence === 0) {
-		errors.push(
-			toValidationError(
-				"status needs_evidence requires at least one lane needing evidence",
+				`status must be ${expectedStatus} for derived lane/finding counts`,
 				"status",
 			),
 		);
@@ -288,7 +289,13 @@ function validateFitnessInvariants(
 		lanesNeedingEvidence,
 		errors,
 	);
-	validateStatusInvariant(value.status, failures, lanesNeedingEvidence, errors);
+	validateStatusInvariant(
+		value.status,
+		failures,
+		warnings,
+		lanesNeedingEvidence,
+		errors,
+	);
 	validateTopFindingInvariant(value, deterministicFindings, errors);
 }
 

@@ -64,7 +64,14 @@ function parseUIVerifyOptions(
 	const parsedBase = parseBaseUIOptions(args);
 	if (!parsedBase.ok) return parsedBase;
 	const options: UIVerifyOptions = parsedBase.options;
-	const timeoutArg = getFlagValue(args, args.indexOf("--timeout"));
+	const timeoutIndex = args.indexOf("--timeout");
+	const timeoutArg = getFlagValue(args, timeoutIndex);
+	if (timeoutIndex !== -1 && timeoutArg === undefined) {
+		return {
+			ok: false,
+			error: "Invalid --timeout value. Expected integer >= 1.",
+		};
+	}
 	const parsedTimeout = timeoutArg ? parseIntegerArg(timeoutArg, 1) : undefined;
 	if (timeoutArg !== undefined && parsedTimeout === undefined) {
 		return {
@@ -110,8 +117,15 @@ function parseUIModeOption(
 	args: string[],
 	currentMode: UICommandMode | undefined,
 ): ParsedUIOptions<{ mode?: UICommandMode }> {
-	const modeArg = getFlagValue(args, args.indexOf("--mode"));
-	if (currentMode || modeArg === undefined) return { ok: true, options: {} };
+	const modeIndex = args.indexOf("--mode");
+	const modeArg = getFlagValue(args, modeIndex);
+	if (currentMode || modeIndex === -1) return { ok: true, options: {} };
+	if (modeArg === undefined) {
+		return {
+			ok: false,
+			error: 'Invalid --mode value. Expected "execute" or "prepare".',
+		};
+	}
 	if (modeArg !== "execute" && modeArg !== "prepare") {
 		return {
 			ok: false,

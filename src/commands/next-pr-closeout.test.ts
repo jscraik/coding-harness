@@ -442,9 +442,9 @@ describe("harness next pr-closeout evidence", () => {
 							surface: "checks",
 							classification: "external_service",
 							reason:
-								"CircleCI export failed with Authorization: Bearer ghp_123456789012345678901234567890123456",
+								"CircleCI export failed with Authorization: Bearer test-token-value",
 							fixableByCodex: false,
-							ref: "https://ci.example.invalid/job?token=secret-value",
+							ref: "https://ci.example.invalid/job?token=test-token-value",
 						},
 					],
 				}),

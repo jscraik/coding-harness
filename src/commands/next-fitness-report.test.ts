@@ -98,6 +98,7 @@ describe("harness next fitness report evidence", () => {
 			expect(decision.failureClass).toBe("fitness_report_needs_evidence");
 			expect(decision.nextCommand).toBe("pnpm run quality:size");
 			expect(decision.safeToRun).toBe(true);
+			expect(decision.requiresHuman).toBe(false);
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });
 		}
@@ -153,6 +154,7 @@ describe("harness next fitness report evidence", () => {
 			expect(decision.failureClass).toBe("fitness_deterministic_finding");
 			expect(decision.nextCommand).toBe("pnpm run quality:size");
 			expect(decision.safeToRun).toBe(true);
+			expect(decision.requiresHuman).toBe(false);
 			expect(decision.evidenceRef).toEqual(["artifact:fitness.json"]);
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });
@@ -213,6 +215,59 @@ describe("harness next fitness report evidence", () => {
 			expect(decision.safeToRun).toBe(false);
 			expect(decision.requiresHuman).toBe(true);
 			expect(decision.requiredEvidence).toEqual(["artifact:fitness.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("sanitizes artifact-derived missing evidence commands in next actions", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-fitness-"));
+		try {
+			writeFileSync(
+				join(repoRoot, "fitness.json"),
+				JSON.stringify({
+					schemaVersion: "harness-fitness/v1",
+					status: "needs_evidence",
+					generatedAt: "2026-06-19T12:00:00.000Z",
+					summary: {
+						lanes: 1,
+						findings: 0,
+						failures: 0,
+						warnings: 0,
+						lanesNeedingEvidence: 1,
+					},
+					lanes: [
+						{
+							id: "quality-budget",
+							label: "Quality budget",
+							command: "pnpm run quality:size --token=should-not-persist",
+							principle: "reduce_cognitive_load",
+							enforcement: "quality_budget",
+							status: "not_run",
+							evidenceSource: "missing",
+							findings: [],
+						},
+					],
+					topDeterministicFinding: null,
+					claimBoundaries: [
+						"Fitness reports normalize local gate evidence only.",
+					],
+				}),
+			);
+
+			const { output } = captureNextCLI(
+				["--json", "--fitness-report", "fitness.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			const decision = parseDecision(output);
+			expect(decision.nextAction).toContain("token=[REDACTED]");
+			expect(decision.nextAction).not.toContain("should-not-persist");
+			expect(decision.nextCommand).toBeNull();
+			expect(decision.requiresHuman).toBe(true);
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });
 		}

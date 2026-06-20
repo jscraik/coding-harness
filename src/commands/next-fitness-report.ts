@@ -3,6 +3,7 @@ import { readRepoRuntimeArtifactText } from "../lib/runtime/repo-runtime-artifac
 import { selectTopDeterministicFitnessFinding } from "../lib/fitness/report.js";
 import type { FitnessFinding, FitnessReport } from "../lib/fitness/types.js";
 import { validateFitnessReport } from "../lib/fitness/validation.js";
+import { sanitizeEvidenceText } from "../lib/input/sanitize.js";
 import { createNextDecision } from "./next-decision-meta.js";
 import { blockedDecision, type HarnessNextMode } from "./next-decisions.js";
 import { decisionMeta } from "./next-support.js";
@@ -17,7 +18,10 @@ function fitnessReportDecision(args: {
 	fitnessFinding?: FitnessFinding;
 	frictionClass: "repo_state" | "validation_failure";
 	safeToRun?: boolean;
+	requiresHuman?: boolean;
 }): HarnessDecision {
+	const safeToRun = args.safeToRun ?? false;
+	const requiresHuman = args.requiresHuman ?? !safeToRun;
 	return {
 		...blockedDecision({
 			summary: args.summary,
@@ -28,7 +32,7 @@ function fitnessReportDecision(args: {
 				mode: args.mode,
 				frictionClass: args.frictionClass,
 				delayClass: "normal",
-				requiresHuman: true,
+				requiresHuman,
 				commands: args.nextCommand ? [args.nextCommand] : [],
 				extra: {
 					artifactPath: args.artifactPath,
@@ -39,7 +43,8 @@ function fitnessReportDecision(args: {
 			}),
 		}),
 		nextCommand: args.nextCommand,
-		safeToRun: args.safeToRun ?? false,
+		safeToRun,
+		requiresHuman,
 	};
 }
 
@@ -215,6 +220,10 @@ function missingFitnessEvidenceDecision(args: {
 		firstMissingLane === undefined
 			? null
 			: trustedFitnessCommand(firstMissingLane.command);
+	const displayCommand =
+		firstMissingLane === undefined
+			? null
+			: sanitizeEvidenceText(firstMissingLane.command);
 	return fitnessReportDecision({
 		artifactPath: args.artifactPath,
 		mode: args.mode,
@@ -223,11 +232,12 @@ function missingFitnessEvidenceDecision(args: {
 		nextAction:
 			firstMissingLane === undefined
 				? "Regenerate the harness-fitness/v1 report with complete deterministic gate artifacts."
-				: `Run ${firstMissingLane.command}, regenerate the fitness report, then rerun harness next --json.`,
+				: `Run ${displayCommand}, regenerate the fitness report, then rerun harness next --json.`,
 		nextCommand,
 		failureClass: "fitness_report_needs_evidence",
 		frictionClass: "validation_failure",
 		safeToRun: nextCommand !== null,
+		requiresHuman: nextCommand === null,
 	});
 }
 

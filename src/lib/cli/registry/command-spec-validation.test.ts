@@ -33,9 +33,12 @@ describe("command spec argument validation", () => {
 	});
 
 	it("rejects malformed UI loop mode and timeout values", () => {
+		expect(findSpec("ui:verify").execute(["--timeout"])).toBe(2);
 		expect(findSpec("ui:verify").execute(["--timeout", "0"])).toBe(2);
 		expect(findSpec("ui:verify").execute(["--timeout", "abc"])).toBe(2);
+		expect(findSpec("ui:verify").execute(["--mode"])).toBe(2);
 		expect(findSpec("ui:verify").execute(["--mode", "invalid"])).toBe(2);
+		expect(findSpec("ui:explore").execute(["--mode"])).toBe(2);
 		expect(findSpec("ui:explore").execute(["--mode", "invalid"])).toBe(2);
 	});
 

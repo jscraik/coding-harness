@@ -25,8 +25,7 @@ const EVIDENCE_SUBSTITUTION_PATTERNS: [RegExp, string][] = [
 
 const EVIDENCE_QUERY_PARAM_PATTERN =
 	/((?:access_token|token|api[_-]?key|secret|password)=)[^&\s)\]]+/gi;
-const EVIDENCE_AUTH_HEADER_PATTERN =
-	/(\bAuthorization:\s*)(?:Bearer|Basic)\s+\S+/gi;
+const EVIDENCE_AUTH_HEADER_PATTERN = /(\bAuthorization:\s*)[^\r\n]+/gi;
 
 /** Return a display-safe error string with local paths and known secret shapes redacted. */
 export function sanitizeError(error: unknown): string {
