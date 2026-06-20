@@ -3,6 +3,7 @@ import {
 	type PrCloseoutClaim,
 	type PrCloseoutReport,
 } from "../lib/pr-closeout.js";
+import { HARNESS_CLOSEOUT_GATE_IDS } from "../lib/decision/he-phase-exit.js";
 
 const PR_CLOSEOUT_STATUSES = new Set([
 	"ready",
@@ -249,6 +250,26 @@ function hasReadyPrCloseoutClaims(report: Partial<PrCloseoutReport>): boolean {
 	return READY_PR_CLOSEOUT_CLAIMS.size === claims.size;
 }
 
+function hasReadyPrCloseoutGateShape(
+	gate: unknown,
+): gate is Record<string, unknown> {
+	if (!isObjectRecord(gate)) return false;
+	if (typeof gate.gateId !== "string") return false;
+	if (typeof gate.required !== "boolean") return false;
+	if (gate.status !== "pass" && gate.status !== "not_applicable") return false;
+	if (!Array.isArray(gate.evidenceRefs)) return false;
+	if (!gate.evidenceRefs.every((ref) => typeof ref === "string")) return false;
+	if (typeof gate.requiresHuman !== "boolean") return false;
+	return gate.blocker === null || typeof gate.blocker === "string";
+}
+
+function hasExpectedReadyCloseoutGateIds(
+	gates: Map<string, Record<string, unknown>>,
+): boolean {
+	if (gates.size !== HARNESS_CLOSEOUT_GATE_IDS.length) return false;
+	return HARNESS_CLOSEOUT_GATE_IDS.every((gateId) => gates.has(gateId));
+}
+
 function hasReadyPrCloseoutHarnessGates(
 	report: Partial<PrCloseoutReport>,
 ): boolean {
@@ -264,12 +285,12 @@ function hasReadyPrCloseoutHarnessGates(
 	) {
 		return false;
 	}
-	return harnessGates.gates.every((gate) => {
-		if (!isObjectRecord(gate)) return false;
-		if (typeof gate.required !== "boolean") return false;
-		if (typeof gate.status !== "string") return false;
-		return gate.status === "pass" || gate.status === "not_applicable";
-	});
+	const gates = new Map<string, Record<string, unknown>>();
+	for (const gate of harnessGates.gates) {
+		if (!hasReadyPrCloseoutGateShape(gate)) return false;
+		gates.set(gate.gateId, gate);
+	}
+	return hasExpectedReadyCloseoutGateIds(gates);
 }
 
 function hasReadyPrCloseoutCheckCounts(

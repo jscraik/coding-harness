@@ -8,6 +8,7 @@ import {
 	type PrCloseoutClaim,
 	type PrCloseoutReport,
 } from "../lib/pr-closeout.js";
+import { HARNESS_CLOSEOUT_GATE_IDS } from "../lib/decision/he-phase-exit.js";
 import { validateHarnessDecision } from "../lib/decision/harness-decision.js";
 import { runHarnessNext, runNextCLI } from "./next.js";
 import { DEFAULT_PR_CLOSEOUT_ARTIFACT } from "./next-pr-closeout.js";
@@ -74,6 +75,23 @@ function readyClaims(): PrCloseoutClaim[] {
 	return claims.map(readyClaim);
 }
 
+function readyHarnessGates(): PrCloseoutReport["harnessGates"]["gates"] {
+	return HARNESS_CLOSEOUT_GATE_IDS.map((gateId) => ({
+		gateId,
+		required:
+			gateId !== "he_fix_bugs" &&
+			gateId !== "autofix" &&
+			gateId !== "ubiquitous_language",
+		status:
+			gateId === "he_fix_bugs" || gateId === "autofix"
+				? "not_applicable"
+				: "pass",
+		evidenceRefs: ["artifact:closeout-gates.json"],
+		requiresHuman: false,
+		blocker: null,
+	}));
+}
+
 function prCloseoutReport(
 	overrides: Partial<PrCloseoutReport> = {},
 ): PrCloseoutReport {
@@ -113,16 +131,7 @@ function prCloseoutReport(
 			recommendation: "continue",
 			commitAllowed: true,
 			exitAllowed: true,
-			gates: [
-				{
-					gateId: "he_code_review",
-					required: true,
-					status: "pass",
-					evidenceRefs: ["artifact:closeout-gates.json"],
-					requiresHuman: false,
-					blocker: null,
-				},
-			],
+			gates: readyHarnessGates(),
 		},
 		assurance: {
 			present: false,
@@ -792,6 +801,41 @@ describe("harness next pr-closeout evidence", () => {
 							commitAllowed: true,
 							exitAllowed: true,
 							gates: [],
+						},
+					}),
+				),
+			);
+
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--pr-closeout", "pr-closeout.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("pr_closeout_artifact_invalid");
+			expect(decision.evidenceRef).toEqual(["artifact:pr-closeout.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects ready pr-closeout artifacts missing expected closeout gates", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
+		try {
+			writeFileSync(
+				join(repoRoot, "pr-closeout.json"),
+				JSON.stringify(
+					prCloseoutReport({
+						harnessGates: {
+							...prCloseoutReport().harnessGates,
+							gates: readyHarnessGates().filter(
+								(gate) => gate.gateId !== "testing_reviewer",
+							),
 						},
 					}),
 				),

@@ -25,6 +25,7 @@ interface ArchitectureCheckViolation {
 }
 
 interface ArchitectureCheckReport {
+	status?: unknown;
 	violations?: unknown;
 }
 
@@ -183,11 +184,35 @@ function normalizeArchitectureReport(path: string): FitnessFinding[] {
 			},
 		];
 	}
-	return report.violations
+	const findings = report.violations
 		.map((violation) =>
 			normalizeArchitectureViolation(violation as ArchitectureCheckViolation),
 		)
 		.filter((finding): finding is FitnessFinding => finding !== undefined);
+	if (
+		(report.status === "fail" || report.status === "warn") &&
+		findings.length === 0
+	) {
+		return [
+			{
+				id: "architecture:artifact:malformed",
+				title: "Architecture artifact is malformed",
+				severity: report.status === "warn" ? "warning" : "error",
+				lane: ARCHITECTURE_LANE_ID,
+				principle: "protect_deep_module_boundaries",
+				enforcement: "architecture_fitness",
+				evidence: {
+					file: path,
+					message: `Artifact status is ${report.status} but violations[] is empty.`,
+				},
+				risk: "Malformed architecture evidence can mask real boundary regressions.",
+				recommendedCommand: "pnpm architecture:check",
+				claimBoundary:
+					"Architecture artifact evidence only; regenerate the source gate before using this lane as proof.",
+			},
+		];
+	}
+	return findings;
 }
 
 function reportStatus(lanes: readonly FitnessLane[]): FitnessReport["status"] {

@@ -1,11 +1,16 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type {
-	FitnessEnforcement,
 	FitnessFinding,
 	FitnessLane,
-	FitnessPrinciple,
+	FitnessLaneStatus,
 } from "./types.js";
+import {
+	artifactStatus,
+	emptyDetailsFinding,
+	isArtifactRecord,
+	requiredRecordArray,
+} from "./artifact-evidence.js";
 
 /** Public API export. */
 export interface FitnessArtifactReportOptions {
@@ -24,93 +29,8 @@ function readJsonFile(path: string): unknown {
 	return JSON.parse(readFileSync(path, "utf8"));
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
 function asRecords(value: unknown): Record<string, unknown>[] {
-	return Array.isArray(value) ? value.filter(isRecord) : [];
-}
-
-function requiredRecordArray(
-	report: unknown,
-	field: string,
-	path: string,
-	lane: string,
-	command: string,
-	principle: FitnessPrinciple,
-	enforcement: FitnessEnforcement,
-): { records: Record<string, unknown>[] } | { malformed: FitnessFinding[] } {
-	if (!isRecord(report)) {
-		return {
-			malformed: [
-				malformedArtifactFinding({
-					path,
-					lane,
-					command,
-					principle,
-					enforcement,
-					message: "Expected artifact JSON to be an object.",
-				}),
-			],
-		};
-	}
-	const value = report[field];
-	if (!Array.isArray(value)) {
-		return {
-			malformed: [
-				malformedArtifactFinding({
-					path,
-					lane,
-					command,
-					principle,
-					enforcement,
-					message: `Expected ${field}[] in artifact JSON.`,
-				}),
-			],
-		};
-	}
-	if (!value.every(isRecord)) {
-		return {
-			malformed: [
-				malformedArtifactFinding({
-					path,
-					lane,
-					command,
-					principle,
-					enforcement,
-					message: `Expected every ${field}[] entry to be an object.`,
-				}),
-			],
-		};
-	}
-	return { records: value };
-}
-
-function malformedArtifactFinding(args: {
-	path: string;
-	lane: string;
-	command: string;
-	principle: FitnessPrinciple;
-	enforcement: FitnessEnforcement;
-	message: string;
-}): FitnessFinding {
-	return {
-		id: `${args.lane}:artifact:malformed`,
-		title: "Fitness artifact is malformed",
-		severity: "error",
-		lane: args.lane,
-		principle: args.principle,
-		enforcement: args.enforcement,
-		evidence: {
-			file: args.path,
-			message: args.message,
-		},
-		risk: "Malformed gate evidence can hide real blockers and produce false-ready fitness reports.",
-		recommendedCommand: args.command,
-		claimBoundary:
-			"Malformed artifact evidence only; regenerate the source gate before using this lane as proof.",
-	};
+	return Array.isArray(value) ? value.filter(isArtifactRecord) : [];
 }
 
 function firstString(
@@ -164,6 +84,19 @@ function qualitySizeFindings(path: string): FitnessFinding[] {
 	);
 	if ("malformed" in result) return result.malformed;
 	const records = result.records;
+	const status = artifactStatus(report);
+	if ((status === "fail" || status === "warn") && records.length === 0) {
+		return [
+			emptyDetailsFinding({
+				path,
+				lane: QUALITY_LANE_ID,
+				command: "pnpm run quality:size",
+				principle: "reduce_cognitive_load",
+				enforcement: "quality_budget",
+				status,
+			}),
+		];
+	}
 	return records.map((finding, index) => {
 		const file = firstString(finding, ["path", "file"]);
 		const line = firstNumber(finding, ["line"]);
@@ -202,6 +135,19 @@ function behaviorTestFindings(path: string): FitnessFinding[] {
 	);
 	if ("malformed" in result) return result.malformed;
 	const records = result.records;
+	const status = artifactStatus(report);
+	if ((status === "fail" || status === "warn") && records.length === 0) {
+		return [
+			emptyDetailsFinding({
+				path,
+				lane: BEHAVIOR_LANE_ID,
+				command: "pnpm run quality:behavior-tests",
+				principle: "prove_behavior_outcomes",
+				enforcement: "hard_blocker",
+				status,
+			}),
+		];
+	}
 	return records.map((failure, index) => ({
 		id: `behavior-tests:${firstString(failure, ["name", "test"]) ?? index}`,
 		title: "Behavior proof failure",
@@ -234,6 +180,19 @@ function auditTrackingFindings(path: string): FitnessFinding[] {
 	);
 	if ("malformed" in result) return result.malformed;
 	const records = result.records;
+	const status = artifactStatus(report);
+	if ((status === "fail" || status === "warn") && records.length === 0) {
+		return [
+			emptyDetailsFinding({
+				path,
+				lane: FEEDBACK_LANE_ID,
+				command: "pnpm run harness:audit-tracking",
+				principle: "compound_feedback_to_harness",
+				enforcement: "hard_blocker",
+				status,
+			}),
+		];
+	}
 	return records.map((failure, index) => ({
 		id: `harness-audit-tracking:${firstString(failure, ["name"]) ?? index}`,
 		title: "Harness audit tracking contract failure",
@@ -285,8 +244,21 @@ function applyLaneArtifact(
 ): void {
 	if (!lane || !path) return;
 	lane.findings = findingsForPath(path);
-	lane.status = lane.findings.length > 0 ? "fail" : "pass";
+	lane.status = laneStatus(lane.findings);
 	lane.evidenceSource = path;
+}
+
+function laneStatus(findings: readonly FitnessFinding[]): FitnessLaneStatus {
+	if (
+		findings.some(
+			(finding) =>
+				finding.severity === "critical" || finding.severity === "error",
+		)
+	) {
+		return "fail";
+	}
+	if (findings.some((finding) => finding.severity === "warning")) return "warn";
+	return "pass";
 }
 
 function maybeAddAdvisoryLane(

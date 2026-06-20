@@ -15,6 +15,10 @@ import type {
 	FitnessSeverity,
 	FitnessStatus,
 } from "./types.js";
+import {
+	validateLaneStatusInvariant,
+	validateTopFindingInvariant,
+} from "./validation-invariants.js";
 
 const VALID_REPORT_STATUSES: readonly FitnessStatus[] = [
 	"pass",
@@ -242,24 +246,6 @@ function validateStatusInvariant(
 	}
 }
 
-function validateTopFindingInvariant(
-	value: Record<string, unknown>,
-	deterministicFindings: readonly Record<string, unknown>[],
-	errors: HeValidationError[],
-): void {
-	if (
-		deterministicFindings.length > 0 &&
-		value.topDeterministicFinding === null
-	) {
-		errors.push(
-			toValidationError(
-				"topDeterministicFinding must be present when deterministic findings exist",
-				"topDeterministicFinding",
-			),
-		);
-	}
-}
-
 function validateFitnessInvariants(
 	value: Record<string, unknown>,
 	errors: HeValidationError[],
@@ -306,6 +292,7 @@ function validateFitnessInvariants(
 		warningLanes,
 		errors,
 	);
+	validateLaneStatusInvariant(lanes, errors);
 	validateTopFindingInvariant(value, deterministicFindings, errors);
 }
 

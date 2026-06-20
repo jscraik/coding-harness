@@ -184,6 +184,35 @@ describe("validateFitnessReport", () => {
 		);
 	});
 
+	it("rejects fail lane status without failure finding evidence", () => {
+		const result = validateFitnessReport(
+			fitnessReport({
+				status: "fail",
+				lanes: [
+					{
+						id: "quality-budget",
+						label: "Quality budget",
+						command: "pnpm run quality:size",
+						principle: "reduce_cognitive_load",
+						enforcement: "quality_budget",
+						status: "fail",
+						evidenceSource: "artifacts/quality-size.json",
+						findings: [],
+					},
+				],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "lanes[0].status fail requires failure finding evidence",
+				}),
+			]),
+		);
+	});
+
 	it("accepts warn status when derived warnings exist without failures", () => {
 		const finding = warningFinding();
 		const result = validateFitnessReport(
