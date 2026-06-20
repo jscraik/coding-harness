@@ -153,6 +153,145 @@ function validateSummary(value: unknown, errors: HeValidationError[]): void {
 	}
 }
 
+function recordFindingsFromLanes(
+	lanes: readonly unknown[],
+): Record<string, unknown>[] {
+	return lanes.filter(isRecord).flatMap((lane) => {
+		const findings = lane.findings;
+		return Array.isArray(findings) ? findings.filter(isRecord) : [];
+	});
+}
+
+function severityOf(finding: Record<string, unknown>): unknown {
+	return finding.severity;
+}
+
+function enforcementOf(finding: Record<string, unknown>): unknown {
+	return finding.enforcement;
+}
+
+function validateGeneratedAt(
+	value: Record<string, unknown>,
+	errors: HeValidationError[],
+): void {
+	if (
+		typeof value.generatedAt === "string" &&
+		Number.isNaN(Date.parse(value.generatedAt))
+	) {
+		errors.push(
+			toValidationError(
+				"generatedAt must be an ISO-8601 datetime string",
+				"generatedAt",
+			),
+		);
+	}
+}
+
+function validateSummaryCounts(
+	summary: Record<string, unknown>,
+	lanes: readonly unknown[],
+	findings: readonly Record<string, unknown>[],
+	failures: number,
+	warnings: number,
+	lanesNeedingEvidence: number,
+	errors: HeValidationError[],
+): void {
+	const expectedSummary: Array<[string, number]> = [
+		["lanes", lanes.length],
+		["findings", findings.length],
+		["failures", failures],
+		["warnings", warnings],
+		["lanesNeedingEvidence", lanesNeedingEvidence],
+	];
+	for (const [field, expected] of expectedSummary) {
+		if (summary[field] !== expected) {
+			errors.push(
+				toValidationError(
+					`summary.${field} must match lane evidence`,
+					`summary.${field}`,
+				),
+			);
+		}
+	}
+}
+
+function validateStatusInvariant(
+	status: unknown,
+	failures: number,
+	lanesNeedingEvidence: number,
+	errors: HeValidationError[],
+): void {
+	if (status === "pass" && (failures > 0 || lanesNeedingEvidence > 0)) {
+		errors.push(
+			toValidationError(
+				"status pass is invalid when failures or missing evidence exist",
+				"status",
+			),
+		);
+	}
+	if (status === "needs_evidence" && lanesNeedingEvidence === 0) {
+		errors.push(
+			toValidationError(
+				"status needs_evidence requires at least one lane needing evidence",
+				"status",
+			),
+		);
+	}
+}
+
+function validateTopFindingInvariant(
+	value: Record<string, unknown>,
+	deterministicFindings: readonly Record<string, unknown>[],
+	errors: HeValidationError[],
+): void {
+	if (
+		deterministicFindings.length > 0 &&
+		value.topDeterministicFinding === null
+	) {
+		errors.push(
+			toValidationError(
+				"topDeterministicFinding must be present when deterministic findings exist",
+				"topDeterministicFinding",
+			),
+		);
+	}
+}
+
+function validateFitnessInvariants(
+	value: Record<string, unknown>,
+	errors: HeValidationError[],
+): void {
+	if (!isRecord(value.summary) || !Array.isArray(value.lanes)) return;
+	const summary = value.summary;
+	const lanes = value.lanes;
+	const findings = recordFindingsFromLanes(lanes);
+	const failures = findings.filter((finding) => {
+		const severity = severityOf(finding);
+		return severity === "critical" || severity === "error";
+	}).length;
+	const warnings = findings.filter(
+		(finding) => severityOf(finding) === "warning",
+	).length;
+	const lanesNeedingEvidence = lanes.filter(
+		(lane) => isRecord(lane) && lane.status === "not_run",
+	).length;
+	const deterministicFindings = findings.filter(
+		(finding) => enforcementOf(finding) !== "advisory",
+	);
+
+	validateSummaryCounts(
+		summary,
+		lanes,
+		findings,
+		failures,
+		warnings,
+		lanesNeedingEvidence,
+		errors,
+	);
+	validateStatusInvariant(value.status, failures, lanesNeedingEvidence, errors);
+	validateTopFindingInvariant(value, deterministicFindings, errors);
+}
+
 /** Validate the runtime shape of a harness-fitness/v1 report. */
 export function validateFitnessReport(
 	value: unknown,
@@ -174,6 +313,7 @@ export function validateFitnessReport(
 	}
 	validateEnum(value.status, "status", VALID_REPORT_STATUSES, errors);
 	validateString(value.generatedAt, "generatedAt", errors);
+	validateGeneratedAt(value, errors);
 	validateSummary(value.summary, errors);
 	if (!Array.isArray(value.lanes)) {
 		errors.push(toValidationError("lanes must be an array", "lanes"));
@@ -190,6 +330,7 @@ export function validateFitnessReport(
 		);
 	}
 	validateStringArray(value.claimBoundaries, "claimBoundaries", errors);
+	validateFitnessInvariants(value, errors);
 	return { valid: errors.length === 0, errors };
 }
 

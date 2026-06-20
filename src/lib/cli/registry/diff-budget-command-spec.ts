@@ -9,6 +9,19 @@ type DiffBudgetRunner = (options: {
 	json?: boolean;
 }) => number;
 
+function requiredFlagValue(
+	args: string[],
+	flag: string,
+	index: number,
+): string | undefined {
+	if (index === -1) return undefined;
+	const value = getFlagValue(args, index);
+	if (value === undefined) {
+		throw new Error(`Missing value for ${flag}`);
+	}
+	return value;
+}
+
 /** Build the diff-budget command adapter. */
 export function createDiffBudgetCommandSpec(
 	runDiffBudgetCLI: DiffBudgetRunner,
@@ -33,14 +46,29 @@ export function createDiffBudgetCommandSpec(
 			} = {};
 
 			if (jsonFlag) options.json = true;
-			const baseArg = getFlagValue(args, baseIndex);
-			if (baseArg) options.base = baseArg;
-			const headArg = getFlagValue(args, headIndex);
-			if (headArg) options.head = headArg;
-			const contractArg = getFlagValue(args, contractIndex);
-			if (contractArg) options.contractPath = contractArg;
-			const overrideArg = getFlagValue(args, overrideIndex);
-			if (overrideArg) options.overridePath = overrideArg;
+			try {
+				const baseArg = requiredFlagValue(args, "--base", baseIndex);
+				if (baseArg) options.base = baseArg;
+				const headArg = requiredFlagValue(args, "--head", headIndex);
+				if (headArg) options.head = headArg;
+				const contractArg = requiredFlagValue(
+					args,
+					"--contract",
+					contractIndex,
+				);
+				if (contractArg) options.contractPath = contractArg;
+				const overrideArg = requiredFlagValue(
+					args,
+					"--override",
+					overrideIndex,
+				);
+				if (overrideArg) options.overridePath = overrideArg;
+			} catch (error) {
+				console.error(
+					error instanceof Error ? `Error: ${error.message}` : error,
+				);
+				return 2;
+			}
 			return runDiffBudgetCLI(options);
 		},
 	};

@@ -38,11 +38,11 @@ const READY_PR_CLOSEOUT_NOT_APPLICABLE_CLAIMS = new Set<
 	PrCloseoutClaim["claim"]
 >(["rollback_path_named_or_not_applicable"]);
 
-const isFiniteNumber = (value: unknown): value is number =>
-	typeof value === "number" && Number.isFinite(value);
+const isNonNegativeInteger = (value: unknown): value is number =>
+	typeof value === "number" && Number.isInteger(value) && value >= 0;
 
-const isNullableFiniteNumber = (value: unknown): value is number | null =>
-	value === null || isFiniteNumber(value);
+const isNullableNonNegativeInteger = (value: unknown): value is number | null =>
+	value === null || isNonNegativeInteger(value);
 
 const isStringArray = (value: unknown): value is string[] =>
 	Array.isArray(value) && value.every((item) => typeof item === "string");
@@ -58,7 +58,9 @@ function hasPrCloseoutIdentity(report: Partial<PrCloseoutReport>): boolean {
 		typeof report.pr === "number" &&
 		Number.isInteger(report.pr) &&
 		report.pr > 0 &&
-		typeof report.generatedAt === "string"
+		typeof report.generatedAt === "string" &&
+		(report.url === null || typeof report.url === "string") &&
+		"recoveryEvent" in report
 	);
 }
 
@@ -76,11 +78,11 @@ function hasPrCloseoutCheckSummary(report: Partial<PrCloseoutReport>): boolean {
 	const checks = report.checks;
 	if (!isObjectRecord(checks)) return false;
 	return (
-		isFiniteNumber(checks.total) &&
-		isFiniteNumber(checks.failed) &&
-		isFiniteNumber(checks.pending) &&
-		isFiniteNumber(checks.passed) &&
-		isFiniteNumber(checks.unknown)
+		isNonNegativeInteger(checks.total) &&
+		isNonNegativeInteger(checks.failed) &&
+		isNonNegativeInteger(checks.pending) &&
+		isNonNegativeInteger(checks.passed) &&
+		isNonNegativeInteger(checks.unknown)
 	);
 }
 
@@ -90,9 +92,9 @@ function hasPrCloseoutReviewThreads(
 	const reviewThreads = report.reviewThreads;
 	if (!isObjectRecord(reviewThreads)) return false;
 	return (
-		isNullableFiniteNumber(reviewThreads.unresolved) &&
-		isNullableFiniteNumber(reviewThreads.needsHuman) &&
-		isNullableFiniteNumber(reviewThreads.autofixable)
+		isNullableNonNegativeInteger(reviewThreads.unresolved) &&
+		isNullableNonNegativeInteger(reviewThreads.needsHuman) &&
+		isNullableNonNegativeInteger(reviewThreads.autofixable)
 	);
 }
 
@@ -138,7 +140,8 @@ function hasPrCloseoutObjectFields(report: Partial<PrCloseoutReport>): boolean {
 		isObjectRecord(report.runtimeEvidence) &&
 		isObjectRecord(report.deliveryTruth) &&
 		isObjectRecord(report.lifecycleSnapshot) &&
-		isObjectRecord(report.attemptLedger)
+		isObjectRecord(report.attemptLedger) &&
+		(report.recoveryEvent === null || isObjectRecord(report.recoveryEvent))
 	);
 }
 
@@ -198,7 +201,8 @@ function hasReadyPrCloseoutHarnessGates(
 	}
 	return harnessGates.gates.every((gate) => {
 		if (!isObjectRecord(gate)) return false;
-		if (gate.required !== true) return true;
+		if (typeof gate.required !== "boolean") return false;
+		if (typeof gate.status !== "string") return false;
 		return gate.status === "pass" || gate.status === "not_applicable";
 	});
 }

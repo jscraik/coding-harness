@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { HarnessDecision } from "../lib/decision/harness-decision.js";
-import { sanitizeError } from "../lib/input/sanitize.js";
+import { sanitizeError, sanitizeEvidenceText } from "../lib/input/sanitize.js";
 import {
 	PR_CLOSEOUT_SCHEMA_VERSION,
 	type PrCloseoutBlocker,
@@ -49,7 +49,8 @@ function blockerEvidenceRefs(
 ): string[] {
 	const refs = report.blockers
 		.map((blocker) => blocker.ref)
-		.filter((ref): ref is string => typeof ref === "string" && ref.length > 0);
+		.filter((ref): ref is string => typeof ref === "string" && ref.length > 0)
+		.map(sanitizeEvidenceText);
 	return refs.length > 0 ? refs : [fallbackRef];
 }
 
@@ -63,9 +64,9 @@ function summarizeBlockers(blockers: PrCloseoutBlocker[]): Array<{
 	return blockers.slice(0, 5).map((blocker) => ({
 		surface: blocker.surface,
 		classification: blocker.classification,
-		reason: blocker.reason,
+		reason: sanitizeEvidenceText(blocker.reason),
 		fixableByCodex: blocker.fixableByCodex,
-		...(blocker.ref ? { ref: blocker.ref } : {}),
+		...(blocker.ref ? { ref: sanitizeEvidenceText(blocker.ref) } : {}),
 	}));
 }
 
@@ -222,9 +223,13 @@ export function prCloseoutBlockedDecision(args: {
 	const { report } = args.prCloseout;
 	const evidenceRef = prCloseoutEvidenceRef(args.prCloseout);
 	const blockerRefs = blockerEvidenceRefs(report, evidenceRef);
+	const escalationBlocker =
+		report.blockers.find((blocker) => !blocker.fixableByCodex) ??
+		report.blockers[0];
 	const blockerSummary =
-		report.blockers[0]?.reason ??
+		escalationBlocker?.reason ??
 		`PR closeout status is ${report.status}; mergeable=${String(report.mergeable)}.`;
+	const sanitizedBlockerSummary = sanitizeEvidenceText(blockerSummary);
 	const codexFixable = isCodexFixablePrCloseout(report);
 	return createNextDecision({
 		status: "blocked",
@@ -238,7 +243,7 @@ export function prCloseoutBlockedDecision(args: {
 		stopConditions: [
 			"Stop until pr-closeout/v1 reports status=ready and mergeable=true for the current PR evidence.",
 		],
-		humanEscalation: codexFixable ? null : blockerSummary,
+		humanEscalation: codexFixable ? null : sanitizedBlockerSummary,
 		followUpCommands: ["harness next --json"],
 		hiddenPlumbing: ["pr-closeout", "claim-vs-evidence"],
 		safeToRun: false,

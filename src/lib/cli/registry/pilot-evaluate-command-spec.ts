@@ -16,8 +16,20 @@ function applyEnumOption<const Value extends string>(
 	flag: string,
 	valid: readonly Value[],
 	assign: (value: Value) => void,
+	errors: string[],
 ): void {
-	const value = validEnum(getFlagValue(args, args.indexOf(flag)), valid);
+	const index = args.indexOf(flag);
+	const raw = getFlagValue(args, index);
+	if (index === -1) return;
+	if (raw === undefined) {
+		errors.push(`${flag} requires a value`);
+		return;
+	}
+	const value = validEnum(raw, valid);
+	if (!value) {
+		errors.push(`${flag} must be one of: ${valid.join(", ")}`);
+		return;
+	}
 	if (value) assign(value);
 }
 
@@ -31,6 +43,7 @@ export function createPilotEvaluateCommandSpec(
 		example: "pilot-evaluate --artifacts artifacts/ --json",
 		errorLabel: "Pilot Evaluate Error",
 		execute: (args) => {
+			const errors: string[] = [];
 			const artifactsIndex = args.indexOf("--artifacts");
 			const artifactsArg = getFlagValue(args, artifactsIndex);
 			if (!artifactsArg) {
@@ -40,7 +53,11 @@ export function createPilotEvaluateCommandSpec(
 
 			const options: PilotEvaluateOptions = { artifactsDir: artifactsArg };
 			applySimplePilotEvaluateOptions(options, args);
-			applyModePilotEvaluateOptions(options, args);
+			applyModePilotEvaluateOptions(options, args, errors);
+			if (errors.length > 0) {
+				for (const error of errors) console.error(`Error: ${error}`);
+				return 2;
+			}
 			applyOverridePilotEvaluateOptions(options, args);
 			return runPilotEvaluateCLI(options);
 		},
@@ -72,10 +89,17 @@ function applySimplePilotEvaluateOptions(
 function applyModePilotEvaluateOptions(
 	options: PilotEvaluateOptions,
 	args: string[],
+	errors: string[],
 ): void {
-	applyEnumOption(args, "--lane", ["advisory", "health"], (value) => {
-		options.lane = value;
-	});
+	applyEnumOption(
+		args,
+		"--lane",
+		["advisory", "health"],
+		(value) => {
+			options.lane = value;
+		},
+		errors,
+	);
 	applyEnumOption(
 		args,
 		"--evaluation-mode",
@@ -83,6 +107,7 @@ function applyModePilotEvaluateOptions(
 		(value) => {
 			options.evaluationMode = value;
 		},
+		errors,
 	);
 	applyEnumOption(
 		args,
@@ -91,6 +116,7 @@ function applyModePilotEvaluateOptions(
 		(value) => {
 			options.rolloutStage = value;
 		},
+		errors,
 	);
 	applyEnumOption(
 		args,
@@ -99,6 +125,7 @@ function applyModePilotEvaluateOptions(
 		(value) => {
 			options.prTemplateStatus = value;
 		},
+		errors,
 	);
 	applyEnumOption(
 		args,
@@ -107,6 +134,7 @@ function applyModePilotEvaluateOptions(
 		(value) => {
 			options.clientFamily = value;
 		},
+		errors,
 	);
 	applyEnumOption(
 		args,
@@ -115,6 +143,7 @@ function applyModePilotEvaluateOptions(
 		(value) => {
 			options.executionMode = value;
 		},
+		errors,
 	);
 	applyEnumOption(
 		args,
@@ -123,6 +152,7 @@ function applyModePilotEvaluateOptions(
 		(value) => {
 			options.operatorType = value;
 		},
+		errors,
 	);
 }
 

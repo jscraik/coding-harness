@@ -10,7 +10,7 @@ import type { HarnessNextPrCloseoutEvidence } from "./next-pr-closeout.js";
 import { usageErrorDecision } from "./next-usage-errors.js";
 import { type HarnessNextOptions, runHarnessNext } from "./next-runner.js";
 
-// Architecture seam: next-cli-evidence owns ./next-phase-exit.js and ./next-runtime-card.js artifact loading.
+// Architecture seam: next-cli-evidence owns harness-next artifact loading.
 export type { HarnessNextMode } from "./next-decisions.js";
 export type { HarnessNextOptions } from "./next-runner.js";
 export { runHarnessNext } from "./next-runner.js";

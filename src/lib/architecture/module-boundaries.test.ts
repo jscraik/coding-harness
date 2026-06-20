@@ -1568,11 +1568,16 @@ const LINEAR_COMMAND_RUNNER_SUBMODULES = [
 ] as const;
 const NEXT_COMMAND_SUBMODULES = [
 	"./next-args.js",
+	"./next-cli-evidence.js",
 	"./next-decisions.js",
-	"./next-phase-exit.js",
 	"./next-runner.js",
-	"./next-runtime-card.js",
 	"./next-usage-errors.js",
+] as const;
+const NEXT_CLI_EVIDENCE_SUBMODULES = [
+	"./next-fitness-report.js",
+	"./next-phase-exit.js",
+	"./next-pr-closeout.js",
+	"./next-runtime-card.js",
 ] as const;
 const NEXT_DECISION_SUBMODULES = [
 	"./next-blocked-decisions.js",
@@ -1890,6 +1895,14 @@ describe("module boundaries", () => {
 
 		for (const submodule of NEXT_COMMAND_SUBMODULES) {
 			expect(facadeContent).toContain(submodule);
+		}
+
+		const evidenceContent = readFileSync(
+			join(process.cwd(), "src/commands/next-cli-evidence.ts"),
+			"utf-8",
+		);
+		for (const submodule of NEXT_CLI_EVIDENCE_SUBMODULES) {
+			expect(evidenceContent).toContain(submodule);
 		}
 	});
 

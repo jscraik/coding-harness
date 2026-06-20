@@ -174,6 +174,55 @@ describe("buildFitnessReport", () => {
 		);
 	});
 
+	it("fails closed when deterministic gate artifacts are malformed", () => {
+		const dir = mkdtempSync(join(tmpdir(), "fitness-malformed-"));
+		cleanup.push(dir);
+		writeFileSync(
+			join(dir, "architecture.json"),
+			JSON.stringify({ status: "pass" }),
+			"utf8",
+		);
+		writeFileSync(
+			join(dir, "quality-size.json"),
+			JSON.stringify({ schemaVersion: "quality-size/v1", status: "pass" }),
+			"utf8",
+		);
+		writeFileSync(
+			join(dir, "behavior-tests.json"),
+			JSON.stringify({ schemaVersion: "behavior-tests/v1", status: "pass" }),
+			"utf8",
+		);
+		writeFileSync(
+			join(dir, "harness-audit-tracking.json"),
+			JSON.stringify({
+				schemaVersion: "harness-audit-tracking/v1",
+				status: "pass",
+			}),
+			"utf8",
+		);
+
+		const report = buildFitnessReport({
+			artifactsDir: dir,
+			now: new Date("2026-06-19T12:00:00.000Z"),
+		});
+
+		expect(report.status).toBe("fail");
+		expect(report.summary.failures).toBe(4);
+		expect(report.summary.lanesNeedingEvidence).toBe(0);
+		expect(report.lanes.map((lane) => lane.status)).toEqual([
+			"fail",
+			"fail",
+			"fail",
+			"fail",
+		]);
+		expect(report.topDeterministicFinding).toEqual(
+			expect.objectContaining({
+				id: "architecture:artifact:malformed",
+				recommendedCommand: "pnpm architecture:check",
+			}),
+		);
+	});
+
 	it("keeps AI-assisted review findings advisory", () => {
 		const dir = mkdtempSync(join(tmpdir(), "fitness-review-"));
 		cleanup.push(dir);

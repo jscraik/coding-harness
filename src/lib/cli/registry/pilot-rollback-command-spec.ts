@@ -45,6 +45,10 @@ export function createPilotRollbackCommandSpec(
 				mode: modeArg,
 				json: jsonFlag,
 			};
+			if (!options.incidentId) {
+				console.error("Error: --incident-id is required");
+				return 2;
+			}
 			const contractArg = getFlagValue(args, contractIndex);
 			if (contractArg) options.contractPath = contractArg;
 			const artifactsArg = getFlagValue(args, artifactsIndex);

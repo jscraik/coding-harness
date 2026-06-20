@@ -1571,7 +1571,7 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
-	it("dispatches diff-budget command and ignores missing flag values", async () => {
+	it("rejects diff-budget missing flag values before command dispatch", async () => {
 		const { run } = await import("./cli.js");
 		const { runDiffBudgetCLI } = await import("./commands/diff-budget.js");
 
@@ -1592,14 +1592,10 @@ describe("cli command dispatch", () => {
 				"--override",
 				"diff-override.json",
 			]),
-		).toThrowError("EXIT_44");
+		).toThrowError("EXIT_2");
 
-		expect(vi.mocked(runDiffBudgetCLI)).toHaveBeenCalledWith({
-			head: "feature-branch",
-			overridePath: "diff-override.json",
-			json: true,
-		});
-		expect(exitSpy).toHaveBeenCalledWith(44);
+		expect(vi.mocked(runDiffBudgetCLI)).not.toHaveBeenCalled();
+		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
 	it("fails review-gate dispatch when required flag values are missing", async () => {

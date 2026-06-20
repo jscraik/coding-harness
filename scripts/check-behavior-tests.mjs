@@ -247,7 +247,13 @@ if (!existsSync(manifestPath)) {
 		manifestPath,
 	);
 } else {
-	const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+	let manifest;
+	try {
+		manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+	} catch (error) {
+		const detail = error instanceof Error ? error.message : String(error);
+		fail(`failed to parse manifest JSON: ${detail}`, manifestPath);
+	}
 	if (!Array.isArray(manifest) || manifest.length === 0) {
 		fail("manifest must be a non-empty array", manifestPath);
 	} else {
@@ -307,10 +313,7 @@ if (process.exitCode) {
 			),
 		);
 	}
-	process.exit();
-}
-
-if (json) {
+} else if (json) {
 	console.info(
 		JSON.stringify(
 			{

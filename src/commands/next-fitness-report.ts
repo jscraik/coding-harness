@@ -16,6 +16,7 @@ function fitnessReportDecision(args: {
 	failureClass: string;
 	fitnessFinding?: FitnessFinding;
 	frictionClass: "repo_state" | "validation_failure";
+	safeToRun?: boolean;
 }): HarnessDecision {
 	return {
 		...blockedDecision({
@@ -38,7 +39,7 @@ function fitnessReportDecision(args: {
 			}),
 		}),
 		nextCommand: args.nextCommand,
-		safeToRun: args.nextCommand !== null,
+		safeToRun: args.safeToRun ?? false,
 	};
 }
 
@@ -122,23 +123,36 @@ function topFitnessFinding(
 	);
 }
 
+const TRUSTED_FITNESS_COMMANDS = new Set([
+	"pnpm architecture:check",
+	"pnpm run quality:size",
+	"pnpm run quality:behavior-tests",
+	"pnpm run harness:audit-tracking",
+]);
+
+function trustedFitnessCommand(command: string): string | null {
+	const normalized = command.trim();
+	return TRUSTED_FITNESS_COMMANDS.has(normalized) ? normalized : null;
+}
+
 function deterministicFitnessDecision(args: {
 	artifactPath: string;
 	mode: HarnessNextMode;
 	topFinding: FitnessFinding;
 }): HarnessDecision {
 	const { artifactPath, mode, topFinding } = args;
+	const nextCommand = trustedFitnessCommand(topFinding.recommendedCommand);
 	return createNextDecision({
 		status: "blocked",
 		summary: `Repository fitness is blocked by ${topFinding.title}.`,
 		nextAction: topFinding.risk,
-		nextCommand: topFinding.recommendedCommand,
+		nextCommand,
 		phase: "repair",
 		objective:
 			"Resolve the highest-priority deterministic repository fitness finding.",
 		requiredEvidence: [
 			`artifact:${artifactPath}`,
-			`${topFinding.recommendedCommand} output`,
+			...(nextCommand ? [`${nextCommand} output`] : []),
 		],
 		stopConditions: [
 			"Stop if the deterministic fitness finding remains after rerunning the recommended command.",
@@ -148,8 +162,8 @@ function deterministicFitnessDecision(args: {
 			`harness next --json --fitness-report ${artifactPath}`,
 		],
 		hiddenPlumbing: ["harness-fitness/v1"],
-		safeToRun: true,
-		requiresHuman: false,
+		safeToRun: nextCommand !== null,
+		requiresHuman: nextCommand === null,
 		requiresNetwork: false,
 		writesFiles: false,
 		evidenceRef: [`artifact:${artifactPath}`],
@@ -160,12 +174,60 @@ function deterministicFitnessDecision(args: {
 			mode,
 			frictionClass: "validation_failure",
 			delayClass: "normal",
-			commands: [topFinding.recommendedCommand],
+			requiresHuman: nextCommand === null,
+			commands: nextCommand ? [nextCommand] : [],
 			extra: {
 				artifactPath,
 				fitnessFinding: topFinding,
 			},
 		}),
+	});
+}
+
+function nonPassingFitnessDecision(args: {
+	artifactPath: string;
+	mode: HarnessNextMode;
+	fitnessReport: FitnessReport;
+}): HarnessDecision {
+	const { artifactPath, mode, fitnessReport } = args;
+	return fitnessReportDecision({
+		artifactPath,
+		mode,
+		summary: `Fitness report status is ${fitnessReport.status}; handoff evidence is incomplete.`,
+		nextAction:
+			"Regenerate the fitness report with all required gate artifacts before continuing handoff.",
+		nextCommand: "harness fitness --json",
+		failureClass: "fitness_report_blocks_handoff",
+		frictionClass: "validation_failure",
+	});
+}
+
+function missingFitnessEvidenceDecision(args: {
+	artifactPath: string;
+	mode: HarnessNextMode;
+	fitnessReport: FitnessReport;
+}): HarnessDecision {
+	const missingLanes = args.fitnessReport.lanes.filter(
+		(lane) => lane.status === "not_run",
+	);
+	const firstMissingLane = missingLanes[0];
+	const nextCommand =
+		firstMissingLane === undefined
+			? null
+			: trustedFitnessCommand(firstMissingLane.command);
+	return fitnessReportDecision({
+		artifactPath: args.artifactPath,
+		mode: args.mode,
+		summary:
+			"Repository fitness report still needs deterministic gate evidence.",
+		nextAction:
+			firstMissingLane === undefined
+				? "Regenerate the harness-fitness/v1 report with complete deterministic gate artifacts."
+				: `Run ${firstMissingLane.command}, regenerate the fitness report, then rerun harness next --json.`,
+		nextCommand,
+		failureClass: "fitness_report_needs_evidence",
+		frictionClass: "validation_failure",
+		safeToRun: nextCommand !== null,
 	});
 }
 
@@ -178,6 +240,15 @@ export function loadFitnessReportArtifact(
 	const loaded = readFitnessReportArtifact(repoRoot, artifactPath, mode);
 	if ("decision" in loaded) return loaded;
 	const fitnessReport = loaded.fitnessReport;
+	if (fitnessReport.status === "needs_evidence") {
+		return {
+			decision: missingFitnessEvidenceDecision({
+				artifactPath,
+				mode,
+				fitnessReport,
+			}),
+		};
+	}
 	const topFinding = topFitnessFinding(fitnessReport);
 	if (topFinding) {
 		return {
@@ -185,6 +256,15 @@ export function loadFitnessReportArtifact(
 				artifactPath,
 				mode,
 				topFinding,
+			}),
+		};
+	}
+	if (fitnessReport.status !== "pass" && fitnessReport.status !== "warn") {
+		return {
+			decision: nonPassingFitnessDecision({
+				artifactPath,
+				mode,
+				fitnessReport,
 			}),
 		};
 	}

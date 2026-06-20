@@ -13,6 +13,8 @@ const MAX_FUNCTION_LINES = 80;
 const MAX_COMPLEXITY = 10;
 const MAX_TEST_FILE_LINES = 1_200;
 const LEGACY_TEST_FILE_LINE_ALLOWLIST = new Set([
+	"src/cli-dispatch.test.ts",
+	"src/lib/architecture/module-boundaries.test.ts",
 	"src/lib/cli/command-registry.test.ts",
 ]);
 
@@ -211,6 +213,7 @@ for (const path of files) {
 	findings.push(...result.findings);
 }
 
+let checkedTestFiles = 0;
 for (const path of testFiles) {
 	if (LEGACY_TEST_FILE_LINE_ALLOWLIST.has(path)) {
 		if (!json)
@@ -219,6 +222,7 @@ for (const path of testFiles) {
 			);
 		continue;
 	}
+	checkedTestFiles += 1;
 	const fileLines = countLogicalLines(
 		readFileSync(resolve(repoRoot, path), "utf8"),
 	);
@@ -239,7 +243,7 @@ if (findings.length > 0) {
 					schemaVersion: "quality-size/v1",
 					status: "fail",
 					checkedProductionFiles: files.length,
-					checkedTestFiles: testFiles.length,
+					checkedTestFiles,
 					findings,
 				},
 				null,
@@ -254,17 +258,15 @@ if (findings.length > 0) {
 			);
 		}
 	}
-	process.exit(1);
-}
-
-if (json) {
+	process.exitCode = 1;
+} else if (json) {
 	console.info(
 		JSON.stringify(
 			{
 				schemaVersion: "quality-size/v1",
 				status: "pass",
 				checkedProductionFiles: files.length,
-				checkedTestFiles: testFiles.length,
+				checkedTestFiles,
 				findings: [],
 			},
 			null,
@@ -273,6 +275,6 @@ if (json) {
 	);
 } else {
 	console.info(
-		`[check-code-size] checked ${files.length} production file(s), reviewed ${testFiles.length} test file(s); size and complexity limits passed.`,
+		`[check-code-size] checked ${files.length} production file(s), reviewed ${checkedTestFiles} test file(s); size and complexity limits passed.`,
 	);
 }

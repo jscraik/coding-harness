@@ -23,6 +23,10 @@ interface PromptContextDriftDecisionArgs {
 	agentReadinessContext?: AgentReadinessContextHealth | undefined;
 }
 
+const TRUSTED_PROMPT_CONTEXT_REFRESH_COMMANDS = new Set([
+	"node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .",
+]);
+
 function promptContextDriftRefreshCommand(
 	contextHealth: AgentReadinessContextHealth | undefined,
 ): { command: string; evidenceRef: string[] } | null {
@@ -34,10 +38,16 @@ function promptContextDriftRefreshCommand(
 			candidate.suggestedRefreshCommands.length > 0,
 	);
 	if (!surface) return null;
+	const command = surface.suggestedRefreshCommands[0]?.trim();
+	if (!command) return null;
 	return {
-		command: surface.suggestedRefreshCommands[0] as string,
+		command,
 		evidenceRef: surface.evidence,
 	};
+}
+
+function isTrustedRefreshCommand(command: string): boolean {
+	return TRUSTED_PROMPT_CONTEXT_REFRESH_COMMANDS.has(command.trim());
 }
 
 /** Build a next-step decision when prompt-context drift should block clean-worktree handoff. */
@@ -50,6 +60,7 @@ export function promptContextDriftDecision(
 	if (!promptContextRefresh) return undefined;
 
 	const sourceRef = args.filesSource === "git" ? "git:status" : "input:files";
+	const trustedCommand = isTrustedRefreshCommand(promptContextRefresh.command);
 	return createNextDecision({
 		status: "action_required",
 		summary:
@@ -67,8 +78,8 @@ export function promptContextDriftDecision(
 		humanEscalation: null,
 		followUpCommands: ["harness check --json"],
 		hiddenPlumbing: ["git:status", "prompt_context_drift", "check"],
-		safeToRun: true,
-		requiresHuman: false,
+		safeToRun: trustedCommand,
+		requiresHuman: !trustedCommand,
 		requiresNetwork: false,
 		writesFiles: false,
 		evidenceRef: [sourceRef, ...promptContextRefresh.evidenceRef],
@@ -79,7 +90,7 @@ export function promptContextDriftDecision(
 			mode: args.mode,
 			filesSource: args.filesSource,
 			changedFileCount: 0,
-			commands: [promptContextRefresh.command],
+			commands: trustedCommand ? [promptContextRefresh.command] : [],
 			frictionClass: "repo_state",
 			delayClass: "normal",
 			phaseExit: args.phaseExit,

@@ -193,7 +193,7 @@ function emitFitnessError(options: {
 		console.info(
 			JSON.stringify(
 				{
-					schemaVersion: "harness-fitness/v1",
+					schemaVersion: "harness-cli-error/v1",
 					status: "error",
 					error: { code: options.code, message: options.message },
 				},

@@ -430,6 +430,46 @@ describe("harness next pr-closeout evidence", () => {
 		});
 	});
 
+	it("sanitizes non-fixable closeout blocker reasons and refs", () => {
+		const decision = runHarnessNext({
+			prCloseout: {
+				report: prCloseoutReport({
+					status: "waiting",
+					mergeable: false,
+					nextAction: "wait_for_external_check",
+					blockers: [
+						{
+							surface: "checks",
+							classification: "external_service",
+							reason:
+								"CircleCI export failed with Authorization: Bearer ghp_123456789012345678901234567890123456",
+							fixableByCodex: false,
+							ref: "https://ci.example.invalid/job?token=secret-value",
+						},
+					],
+				}),
+				artifactPath: "artifacts/pr-closeout/pr-closeout.json",
+			},
+		});
+
+		expect(decision.humanEscalation).toBe(
+			"CircleCI export failed with Authorization: [REDACTED]",
+		);
+		expect(decision.evidenceRef).toContain(
+			"https://ci.example.invalid/job?token=[REDACTED]",
+		);
+		expect(decision.meta).toMatchObject({
+			prCloseout: {
+				blockers: [
+					{
+						reason: "CircleCI export failed with Authorization: [REDACTED]",
+						ref: "https://ci.example.invalid/job?token=[REDACTED]",
+					},
+				],
+			},
+		});
+	});
+
 	it("keeps ready pr-closeout evidence in normal clean-worktree metadata", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
 		try {
@@ -595,6 +635,47 @@ describe("harness next pr-closeout evidence", () => {
 		}
 	});
 
+	it("rejects pr-closeout artifacts with malformed count summaries", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
+		try {
+			writeFileSync(
+				join(repoRoot, "pr-closeout.json"),
+				JSON.stringify(
+					prCloseoutReport({
+						checks: {
+							total: 3,
+							failed: -1,
+							pending: 0.5,
+							passed: 3,
+							unknown: 0,
+						},
+						reviewThreads: {
+							unresolved: -1,
+							needsHuman: 0,
+							autofixable: 0,
+						},
+					}),
+				),
+			);
+
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--pr-closeout", "pr-closeout.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("pr_closeout_artifact_invalid");
+			expect(decision.evidenceRef).toEqual(["artifact:pr-closeout.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
 	it("rejects ready pr-closeout artifacts with stale claim evidence", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
 		try {
@@ -718,6 +799,48 @@ describe("harness next pr-closeout evidence", () => {
 									evidenceRefs: ["artifact:closeout-gates.json"],
 									requiresHuman: false,
 									blocker: "Review gate failed.",
+								},
+							],
+						},
+					}),
+				),
+			);
+
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--pr-closeout", "pr-closeout.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("pr_closeout_artifact_invalid");
+			expect(decision.evidenceRef).toEqual(["artifact:pr-closeout.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects ready pr-closeout artifacts with non-required failing gates", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
+		try {
+			writeFileSync(
+				join(repoRoot, "pr-closeout.json"),
+				JSON.stringify(
+					prCloseoutReport({
+						harnessGates: {
+							...prCloseoutReport().harnessGates,
+							gates: [
+								{
+									gateId: "he_code_review",
+									required: false,
+									status: "fail",
+									evidenceRefs: ["artifact:closeout-gates.json"],
+									requiresHuman: false,
+									blocker: "Optional evidence is still failing.",
 								},
 							],
 						},

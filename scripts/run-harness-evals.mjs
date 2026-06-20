@@ -5114,7 +5114,7 @@ async function runAgentNextActionParityFixture(scenario, fixturePath) {
 			artifactPath: "artifacts/pr-closeout/pr-closeout.json",
 			report: {
 				schemaVersion: "pr-closeout/v1",
-				generatedAt: "2026-06-19T00:00:00.000Z",
+				generatedAt: "2026-06-20T00:00:00.000Z",
 				pr: 437,
 				url: "https://github.com/jscraik/coding-harness/pull/437",
 				status: "waiting",
@@ -5148,7 +5148,7 @@ async function runAgentNextActionParityFixture(scenario, fixturePath) {
 	const falseReadyArtifactPath = "false-ready-pr-closeout.json";
 	writeJson(path.join(fixturePath, falseReadyArtifactPath), {
 		schemaVersion: "pr-closeout/v1",
-		generatedAt: "2026-06-19T00:00:00.000Z",
+		generatedAt: "2026-06-20T00:00:00.000Z",
 		pr: 437,
 		status: "ready",
 		mergeable: true,

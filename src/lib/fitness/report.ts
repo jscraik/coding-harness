@@ -163,7 +163,26 @@ function normalizeArchitectureViolation(
 
 function normalizeArchitectureReport(path: string): FitnessFinding[] {
 	const report = asArchitectureCheckReport(readJsonFile(path));
-	if (!Array.isArray(report.violations)) return [];
+	if (!Array.isArray(report.violations)) {
+		return [
+			{
+				id: "architecture:artifact:malformed",
+				title: "Architecture artifact is malformed",
+				severity: "error",
+				lane: ARCHITECTURE_LANE_ID,
+				principle: "protect_deep_module_boundaries",
+				enforcement: "architecture_fitness",
+				evidence: {
+					file: path,
+					message: "Expected violations[] in architecture artifact JSON.",
+				},
+				risk: "Malformed architecture evidence can mask real boundary regressions.",
+				recommendedCommand: "pnpm architecture:check",
+				claimBoundary:
+					"Architecture artifact evidence only; regenerate the source gate before using this lane as proof.",
+			},
+		];
+	}
 	return report.violations
 		.map((violation) =>
 			normalizeArchitectureViolation(violation as ArchitectureCheckViolation),
