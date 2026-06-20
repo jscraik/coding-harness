@@ -25,6 +25,18 @@ depends_on:
 
 # Current-Session Steering Admission
 
+## Table of Contents
+
+- [Feedback Signal](#feedback-signal)
+- [Root Operational Failure](#root-operational-failure)
+- [Failure Category](#failure-category)
+- [Searched Surfaces](#searched-surfaces)
+- [Durable System Improvement](#durable-system-improvement)
+- [Executable Guard](#executable-guard)
+- [Forbidden Recurrence Behavior](#forbidden-recurrence-behavior)
+- [Validation](#validation)
+- [Review Condition](#review-condition)
+
 ## Feedback Signal
 
 A repeated closeout failure showed that the agent treated `~/.codex/.env`
