@@ -304,7 +304,7 @@ describe("validate-coding-policy.cjs", () => {
 
 		const result = runValidateCodingPolicy(root, [
 			"--json",
-			"--changed-file",
+			"--changed-files",
 			"",
 		]);
 
