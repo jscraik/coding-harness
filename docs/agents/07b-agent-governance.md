@@ -77,9 +77,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - coding policy routing changes that alter `coding-policy.json`, the
   `coding-policy-route/v1` output, changed-file patterns, source-rule
   lineage, required gates, or claim boundaries should keep `AGENTS.md`,
-  `CODESTYLE.md`, `codestyle/README.md`, scaffold templates, the JSON schema,
-  runtime validator tests, and this guide synchronized. The JSON route is
-  machine-readable policy navigation for cold agents; Markdown codestyle modules
+  `CODESTYLE.md`, `codestyle/README.md`, `docs/agents/00-architecture-bootstrap.md`,
+  `docs/agents/02-tooling-policy.md`, `AI/context/diagram-context.md`,
+  scaffold templates, the JSON schema, runtime validator tests, and this guide synchronized.
+  The JSON route is machine-readable policy navigation for cold agents; Markdown codestyle modules
   remain the prose authority.
 - `harness-fitness/v1` changes that add or alter deterministic lanes, artifact
   normalizers, `harness fitness --from-existing-artifacts`, or `harness next
