@@ -369,7 +369,8 @@ describe("validate-coding-policy.cjs", () => {
 			"-m",
 			"baseline",
 		]);
-		runGit(root, ["branch", "main"]);
+		runGit(root, ["branch", "-M", "main"]);
+		runGit(root, ["checkout", "-b", "feature"]);
 		mkdirSync(join(root, "scripts"), { recursive: true });
 		writeFileSync(join(root, "scripts/check-doc-style.sh"), "echo ok\n");
 		runGit(root, ["add", "scripts/check-doc-style.sh"]);

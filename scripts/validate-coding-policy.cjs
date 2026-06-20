@@ -175,8 +175,12 @@ function gitChangedFiles() {
 	return uniqueStrings(files);
 }
 
-function readJson(path) {
-	return JSON.parse(readFileSync(path, "utf8"));
+function readPolicyJson() {
+	return JSON.parse(readFileSync(policyPath, "utf8"));
+}
+
+function readSchemaJson() {
+	return JSON.parse(readFileSync(schemaPath, "utf8"));
 }
 
 function normalizeRepoPath(relativePath) {
@@ -558,7 +562,7 @@ if (!existsSync(schemaPath)) {
 let policy;
 let schema;
 try {
-	policy = readJson(policyPath);
+	policy = readPolicyJson();
 } catch (error) {
 	console.error(
 		`coding-policy: failed to parse coding-policy.json: ${error.message}`,
@@ -567,7 +571,7 @@ try {
 }
 
 try {
-	schema = readJson(schemaPath);
+	schema = readSchemaJson();
 } catch (error) {
 	console.error(
 		"coding-policy: failed to parse contracts/coding-policy.schema.json: " +
