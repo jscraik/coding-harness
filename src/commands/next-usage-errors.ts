@@ -1,19 +1,21 @@
 import type { HarnessDecision } from "../lib/decision/harness-decision.js";
 import type { DecisionSource } from "../lib/decision/sources.js";
-import { humanRequiredDecisionMeta, sourceMetaExtra } from "./next-support.js";
+import { NEXT_ARTIFACT_ARG_SPECS } from "./next-artifact-args.js";
 import type { ParsedNextArgs } from "./next-args.js";
-import type { HarnessNextOptions } from "./next-runner.js";
 import {
 	blockedDecision,
 	invalidModeDecision,
 	type HarnessNextMode,
 } from "./next-decisions.js";
+import type { HarnessNextOptions } from "./next-runner.js";
+import { humanRequiredDecisionMeta, sourceMetaExtra } from "./next-support.js";
 
 type HarnessNextRunner = (options: HarnessNextOptions) => HarnessDecision;
 type UsageErrorOptions = Omit<HarnessNextOptions, "mode" | "files">;
 type NextUsageError = NonNullable<ParsedNextArgs["error"]>;
 type UsageErrorHandler = (parsed: ParsedNextArgs) => HarnessDecision;
 type MappedUsageError = Exclude<NextUsageError, "files_empty">;
+type ArtifactUsageError = (typeof NEXT_ARTIFACT_ARG_SPECS)[number]["error"];
 function blockedUsageErrorDecision(args: {
 	mode: HarnessNextMode;
 	summary: string;
@@ -36,6 +38,25 @@ function blockedUsageErrorDecision(args: {
 		}),
 	});
 }
+function artifactUsageErrorHandlers(): Record<
+	ArtifactUsageError,
+	UsageErrorHandler
+> {
+	return Object.fromEntries(
+		NEXT_ARTIFACT_ARG_SPECS.map((spec) => [
+			spec.error,
+			(parsed: ParsedNextArgs) =>
+				blockedUsageErrorDecision({
+					mode: parsed.mode,
+					summary: `${spec.flag} requires a JSON artifact path.`,
+					nextAction: spec.nextAction,
+					failureClass: spec.error,
+					evidenceRef: [`input:${spec.flag.slice(2)}`],
+				}),
+		]),
+	) as Record<ArtifactUsageError, UsageErrorHandler>;
+}
+
 const USAGE_ERROR_HANDLERS: Record<MappedUsageError, UsageErrorHandler> = {
 	invalid_mode: (parsed) => invalidModeDecision(parsed.errorValue ?? "unknown"),
 	mode_missing: (parsed) =>
@@ -79,40 +100,7 @@ const USAGE_ERROR_HANDLERS: Record<MappedUsageError, UsageErrorHandler> = {
 				validRoles: ["clean", "dirty-with-justification", "fresh-worktree"],
 			},
 		}),
-	phase_exit_missing: (parsed) =>
-		blockedUsageErrorDecision({
-			mode: parsed.mode,
-			summary: "--phase-exit requires a JSON artifact path.",
-			nextAction: "Pass a HePhaseExit/v1 artifact path, or omit --phase-exit.",
-			failureClass: "phase_exit_missing",
-			evidenceRef: ["input:phase-exit"],
-		}),
-	runtime_card_missing: (parsed) =>
-		blockedUsageErrorDecision({
-			mode: parsed.mode,
-			summary: "--runtime-card requires a JSON artifact path.",
-			nextAction:
-				"Pass a runtime-card/v1 artifact path, or omit --runtime-card.",
-			failureClass: "runtime_card_missing",
-			evidenceRef: ["input:runtime-card"],
-		}),
-	pr_closeout_missing: (parsed) =>
-		blockedUsageErrorDecision({
-			mode: parsed.mode,
-			summary: "--pr-closeout requires a JSON artifact path.",
-			nextAction: "Pass a pr-closeout/v1 artifact path, or omit --pr-closeout.",
-			failureClass: "pr_closeout_missing",
-			evidenceRef: ["input:pr-closeout"],
-		}),
-	fitness_report_missing: (parsed) =>
-		blockedUsageErrorDecision({
-			mode: parsed.mode,
-			summary: "--fitness-report requires a JSON artifact path.",
-			nextAction:
-				"Pass a harness-fitness/v1 artifact path, or omit --fitness-report.",
-			failureClass: "fitness_report_missing",
-			evidenceRef: ["input:fitness-report"],
-		}),
+	...artifactUsageErrorHandlers(),
 	unknown_argument: (parsed) =>
 		blockedUsageErrorDecision({
 			mode: parsed.mode as HarnessNextMode,

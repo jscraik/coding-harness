@@ -4,6 +4,7 @@ import {
 	parseFilesOption,
 	type HarnessNextEvidenceMode,
 } from "./next-option-parsers.js";
+import { NEXT_ARTIFACT_ARG_SPECS } from "./next-artifact-args.js";
 export type { HarnessNextEvidenceMode } from "./next-option-parsers.js";
 
 /** Worktree cleanliness posture accepted by `harness next`. */
@@ -58,11 +59,7 @@ type NextArgHandler = (
 	args: string[],
 	index: number,
 ) => NextArgParseResult;
-type ArtifactPathKey =
-	| "phaseExitPath"
-	| "runtimeCardPath"
-	| "prCloseoutPath"
-	| "fitnessReportPath";
+type ArtifactPathKey = (typeof NEXT_ARTIFACT_ARG_SPECS)[number]["field"];
 type ArtifactMissingError = ParsedNextArgs["error"] & `${string}_missing`;
 /** Return whether a string is a supported `harness next` mode. */
 export function isHarnessNextMode(value: string): value is HarnessNextMode {
@@ -214,33 +211,18 @@ const NEXT_ARG_HANDLERS: Record<string, NextArgHandler> = {
 	"--worktree-role": parseWorktreeRoleArg,
 	"--files": parseFilesArg,
 	"--evidence": parseEvidenceArg,
-	"--phase-exit": (state, args, index) =>
-		parseArtifactArg(state, args, index, "phaseExitPath", "phase_exit_missing"),
-	"--runtime-card": (state, args, index) =>
-		parseArtifactArg(
-			state,
-			args,
-			index,
-			"runtimeCardPath",
-			"runtime_card_missing",
-		),
-	"--pr-closeout": (state, args, index) =>
-		parseArtifactArg(
-			state,
-			args,
-			index,
-			"prCloseoutPath",
-			"pr_closeout_missing",
-		),
-	"--fitness-report": (state, args, index) =>
-		parseArtifactArg(
-			state,
-			args,
-			index,
-			"fitnessReportPath",
-			"fitness_report_missing",
-		),
+	...artifactArgHandlers(),
 };
+
+function artifactArgHandlers(): Record<string, NextArgHandler> {
+	return Object.fromEntries(
+		NEXT_ARTIFACT_ARG_SPECS.map((spec) => [
+			spec.flag,
+			(state: NextArgsState, args: string[], index: number) =>
+				parseArtifactArg(state, args, index, spec.field, spec.error),
+		]),
+	);
+}
 
 function parseNextArg(
 	state: NextArgsState,
