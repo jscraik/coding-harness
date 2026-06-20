@@ -12,6 +12,7 @@
 - [21. Repository Scripts & Reports](#21-repository-scripts--reports)
 - [22. MCP & External Tools](#22-mcp--external-tools)
 - [23. Config References (Authoritative)](#23-config-references-authoritative)
+- [24. CI and Stateful Artifact Safety](#24-ci-and-stateful-artifact-safety)
 
 ## Scope
 - This module is a cross-cutting quality/security/operations umbrella.
@@ -137,3 +138,13 @@ Coverage and mutation thresholds MAY be enforced only when wired to executable r
 * ESLint/Rustfmt: downstream-only unless the repository includes `eslint.config.*` or `rustfmt.toml`
 
 ---
+
+## 24. CI and Stateful Artifact Safety
+
+* CI configuration changes MUST be explicit in the branch/PR scope; do not smuggle workflow, pipeline, or required-check changes into unrelated work.
+* Do not add `[skip ci]`, disable failing tests, or weaken checks to unblock a merge. Fix the code, fix the test, or record a concrete blocker.
+* External tools required by tests or validation SHOULD be installed through the repo toolchain contract. "Hard to install" is not a skip reason.
+* After pushing work where CI truth is part of closeout, inspect the current run/check state before claiming CI, merge readiness, or release readiness.
+* Stateful artifacts MUST have an owner, schema or documented shape, `schema_version` or equivalent version field, and reader/writer contract.
+* Stateful artifacts are last-seen evidence, not authority. Verify against the live source before acting on recalled state.
+* Shape changes to stateful artifacts MUST define migration behavior. Non-owner readers must tolerate missing or newer records without escalating work.

@@ -13,6 +13,7 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 - [Baselines](#baselines)
 - [Toolchain config](#toolchain-config)
 - [Codestyle modules](#codestyle-modules)
+- [Machine-readable policy index](#machine-readable-policy-index)
 - [Enforcement model](#enforcement-model)
 - [How to use this pack](#how-to-use-this-pack)
 
@@ -57,6 +58,11 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 - [codestyle/19-development-workflow.md](./codestyle/19-development-workflow.md)
 - [codestyle/20-go.md](./codestyle/20-go.md)
 
+## Machine-readable policy index
+- [coding-policy.json](./coding-policy.json) is the machine-readable index for this codestyle pack.
+- Markdown modules remain the prose authority; the JSON file maps module ownership, source-rule lineage, required gates, and claim boundaries for validators and agents.
+- Update [contracts/coding-policy.schema.json](./contracts/coding-policy.schema.json) and run `node scripts/validate-coding-policy.cjs` when the policy index shape changes.
+
 ## Enforcement model
 - Rules in this pack use RFC2119 language (`MUST`, `MUST NOT`, `SHOULD`) and are normative unless an explicit waiver exists.
 - Waivers MUST include: rule ID or section, reason, tracking ticket, and expiry or ADR reference.
@@ -71,6 +77,7 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
   - `pnpm test`
   - `pnpm audit`
   - `pnpm check`
+  - `pnpm run coding-policy:validate`
   - `bash scripts/validate-codestyle.sh`
   - `bash scripts/verify-work.sh --fast`
 
@@ -79,4 +86,4 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 2. Open only the module that matches the task surface.
 3. If user/review feedback corrects one line but implies a codebase rule, run the pattern-generalization pass before editing or claiming done.
 4. Keep project-specific override content in `06-appendices-and-project-overrides.md`.
-5. When changing standards, update the module first, run `pnpm run codestyle:checksums`, then confirm this index still matches.
+5. When changing standards, update the module first, update `coding-policy.json` when routing or required gates change, run `pnpm run codestyle:checksums`, then confirm this index still matches.

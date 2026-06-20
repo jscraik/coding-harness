@@ -30,6 +30,15 @@ export const CODESTYLE_PACK_TEMPLATE_FILES = [
 ] as const;
 
 /**
+ * Machine-readable coding policy files emitted by `harness init`.
+ */
+export const CODING_POLICY_TEMPLATE_FILES = [
+	"coding-policy.json",
+	"contracts/coding-policy.schema.json",
+	"scripts/validate-coding-policy.cjs",
+] as const;
+
+/**
  * Load a repository-root scaffold file that is packaged verbatim into downstream projects.
  *
  * @param path - Repository-root-relative file path to load.

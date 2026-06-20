@@ -23,6 +23,16 @@
 - Use deterministic install flags in CI (for example frozen lockfile behavior).
 - Do not mix ad hoc install strategies that rewrite dependency trees without intent.
 - Lockfile-only or manifest-only rewrites MUST be treated as dependency mutations and called out in validation evidence.
+- Prefer standard library or configured runtime capability before adding a
+  dependency. Add a dependency only when it provides clear value over local or
+  standard code.
+- Every imported runtime or build dependency MUST be declared in the appropriate
+  manifest. Do not rely on transitive dependencies.
+- Do not vendor package, plugin, or generated dependency source into consumer
+  repositories unless the repository has an explicit vendoring contract with
+  provenance, update, and security ownership.
+- Keep production, development, and test dependencies in the correct manifest
+  section so runtime packages do not inherit build-only tooling.
 
 ## Script conventions
 - Prefer repository-defined scripts over ad hoc command variants.

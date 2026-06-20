@@ -550,6 +550,27 @@ describe("docs-gate command", () => {
 		expect(result.report.summary.unknown_category_count).toBe(0);
 	});
 
+	it("classifies nested AGENTS files as agent governance", () => {
+		const root = createTestRoot("docs-gate-test-8c");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["templates/AGENTS.md"],
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.report.categories).toContain("agent_governance");
+		expect(result.report.categories).not.toContain("unknown_governance_change");
+		expect(result.report.summary.unknown_category_count).toBe(0);
+	});
+
 	it("classifies CI workflow changes correctly", () => {
 		const root = createTestRoot("docs-gate-test-9");
 		roots.push(root);

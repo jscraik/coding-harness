@@ -40,11 +40,24 @@ function isDocOnly(file: string): boolean {
 	);
 }
 
+function isAgentGovernanceFile(file: string): boolean {
+	return (
+		file === "AGENTS.md" ||
+		file.endsWith("/AGENTS.md") ||
+		(file.startsWith("docs/agents/") && !isWorkflowAuthorityDoc(file)) ||
+		file.includes("agent-governance")
+	);
+}
+
 function classifyFile(
 	file: string,
 	categories: Set<DocsImpactCategory>,
 ): boolean {
-	let matched = false;
+	let matched = addIf(
+		isAgentGovernanceFile(file),
+		"agent_governance",
+		categories,
+	);
 	matched ||= addIf(
 		file.startsWith("src/cli.") ||
 			file.startsWith("src/lib/cli/") ||
@@ -78,13 +91,6 @@ function classifyFile(
 	matched ||= addIf(
 		isWorkflowAuthorityDoc(file),
 		"workflow_authority",
-		categories,
-	);
-	matched ||= addIf(
-		file === "AGENTS.md" ||
-			(file.startsWith("docs/agents/") && !isWorkflowAuthorityDoc(file)) ||
-			file.includes("agent-governance"),
-		"agent_governance",
 		categories,
 	);
 	matched ||= addIf(isDocOnly(file), "doc_only", categories);

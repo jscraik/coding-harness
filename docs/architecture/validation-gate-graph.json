@@ -11,6 +11,7 @@
 			"subcommands": [
 				"pnpm toolchain:check",
 				"pnpm lint",
+				"pnpm coding-policy:validate",
 				"pnpm quality:scripts",
 				"pnpm tooling:parity",
 				"pnpm docs:lint",
@@ -42,6 +43,12 @@
 			"lane": "source-style",
 			"owner": "biome",
 			"proves": "configured lint rules pass for source and scripts"
+		},
+		{
+			"command": "pnpm coding-policy:validate",
+			"lane": "policy-contract",
+			"owner": "codestyle",
+			"proves": "machine-readable coding policy index validates before broader static gates continue"
 		},
 		{
 			"command": "pnpm quality:scripts",

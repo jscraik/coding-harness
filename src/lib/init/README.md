@@ -33,6 +33,13 @@ thin and delegate into this deep module.
   scaffolds. When docs lifecycle, guardrail, or domain-language docs are added
   to the source repository, scaffold tests should prove generated templates use
   downstream-facing contracts instead of linking back to source-only docs.
+- Generated codestyle scaffolds must emit the machine-readable policy index
+  alongside the prose modules: `coding-policy.json`,
+  `contracts/coding-policy.schema.json`, and
+  `scripts/validate-coding-policy.cjs`. The scaffold registry and root
+  template tests should prove these files are included so downstream agents can
+  validate policy routing and claim boundaries without relying on prose-only
+  discovery.
 - Generated environment checks must stay aligned with the repo runtime contract:
   Python and uv remain preflight dependencies, while Ralph is not required for
   `coding-harness` or downstream scaffold execution.
