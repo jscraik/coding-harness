@@ -22,6 +22,32 @@ const PR_CLOSEOUT_NEXT_ACTIONS = new Set([
 	"cleanup_before_continue",
 ]);
 
+const PR_CLOSEOUT_BLOCKER_SURFACES = new Set([
+	"pr",
+	"branch",
+	"checks",
+	"review",
+	"linear",
+	"traceability",
+	"worktree",
+	"harness_gates",
+	"assurance",
+	"runtime_evidence",
+	"delivery_truth",
+	"release_readiness",
+	"review_artifact",
+	"tool",
+]);
+
+const PR_CLOSEOUT_BLOCKER_CLASSIFICATIONS = new Set([
+	"introduced",
+	"pre_existing",
+	"unrelated_dirty_worktree",
+	"external_service",
+	"needs_jamie_decision",
+	"unknown",
+]);
+
 const READY_PR_CLOSEOUT_CLAIMS = new Set<PrCloseoutClaim["claim"]>([
 	"tests_passed",
 	"ci_green",
@@ -124,9 +150,48 @@ function hasPrCloseoutHarnessGates(report: Partial<PrCloseoutReport>): boolean {
 	);
 }
 
+function hasPrCloseoutBlockerRequiredFields(
+	blocker: Record<string, unknown>,
+): boolean {
+	return (
+		typeof blocker.surface === "string" &&
+		PR_CLOSEOUT_BLOCKER_SURFACES.has(blocker.surface) &&
+		typeof blocker.classification === "string" &&
+		PR_CLOSEOUT_BLOCKER_CLASSIFICATIONS.has(blocker.classification) &&
+		typeof blocker.reason === "string" &&
+		typeof blocker.fixableByCodex === "boolean"
+	);
+}
+
+function hasPrCloseoutBlockerOptionalFields(
+	blocker: Record<string, unknown>,
+): boolean {
+	const kindValid =
+		blocker.kind === undefined ||
+		blocker.kind === "state" ||
+		blocker.kind === "closeout_claim";
+	return (
+		kindValid &&
+		(blocker.conflict === undefined || typeof blocker.conflict === "boolean") &&
+		(blocker.ref === undefined || typeof blocker.ref === "string") &&
+		(blocker.missingContext === undefined ||
+			blocker.missingContext === null ||
+			typeof blocker.missingContext === "string")
+	);
+}
+
+function hasPrCloseoutBlockerShape(blocker: unknown): boolean {
+	if (!isObjectRecord(blocker)) return false;
+	return (
+		hasPrCloseoutBlockerRequiredFields(blocker) &&
+		hasPrCloseoutBlockerOptionalFields(blocker)
+	);
+}
+
 function hasPrCloseoutArrayFields(report: Partial<PrCloseoutReport>): boolean {
 	return (
 		Array.isArray(report.blockers) &&
+		report.blockers.every(hasPrCloseoutBlockerShape) &&
 		Array.isArray(report.claims) &&
 		Array.isArray(report.ciTelemetry) &&
 		Array.isArray(report.tools) &&

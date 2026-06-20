@@ -572,6 +572,39 @@ describe("harness next pr-closeout evidence", () => {
 		}
 	});
 
+	it("rejects non-ready pr-closeout artifacts with malformed blockers", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
+		try {
+			writeFileSync(
+				join(repoRoot, "pr-closeout.json"),
+				JSON.stringify({
+					...prCloseoutReport({
+						status: "waiting",
+						mergeable: false,
+						nextAction: "wait_for_external_check",
+					}),
+					blockers: [{}],
+				}),
+			);
+
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--pr-closeout", "pr-closeout.json"],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			expect(exitCode).toBe(1);
+			const decision = parseDecision(output);
+			expect(decision.status).toBe("blocked");
+			expect(decision.failureClass).toBe("pr_closeout_artifact_invalid");
+			expect(decision.evidenceRef).toEqual(["artifact:pr-closeout.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
 	it("rejects shallow ready pr-closeout artifacts", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
 		try {

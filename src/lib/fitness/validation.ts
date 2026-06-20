@@ -220,14 +220,16 @@ function validateStatusInvariant(
 	failures: number,
 	warnings: number,
 	lanesNeedingEvidence: number,
+	failedLanes: number,
+	warningLanes: number,
 	errors: HeValidationError[],
 ): void {
 	const expectedStatus =
-		failures > 0
+		failures > 0 || failedLanes > 0
 			? "fail"
 			: lanesNeedingEvidence > 0
 				? "needs_evidence"
-				: warnings > 0
+				: warnings > 0 || warningLanes > 0
 					? "warn"
 					: "pass";
 	if (status !== expectedStatus) {
@@ -276,6 +278,12 @@ function validateFitnessInvariants(
 	const lanesNeedingEvidence = lanes.filter(
 		(lane) => isRecord(lane) && lane.status === "not_run",
 	).length;
+	const failedLanes = lanes.filter(
+		(lane) => isRecord(lane) && lane.status === "fail",
+	).length;
+	const warningLanes = lanes.filter(
+		(lane) => isRecord(lane) && lane.status === "warn",
+	).length;
 	const deterministicFindings = findings.filter(
 		(finding) => enforcementOf(finding) !== "advisory",
 	);
@@ -294,6 +302,8 @@ function validateFitnessInvariants(
 		failures,
 		warnings,
 		lanesNeedingEvidence,
+		failedLanes,
+		warningLanes,
 		errors,
 	);
 	validateTopFindingInvariant(value, deterministicFindings, errors);
