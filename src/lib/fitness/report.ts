@@ -56,10 +56,10 @@ function createBaseLanes(): FitnessLane[] {
 		},
 		{
 			id: QUALITY_LANE_ID,
-			label: "Quality budget",
+			label: "Quality structure",
 			command: "pnpm run quality:size",
 			principle: "reduce_cognitive_load",
-			enforcement: "quality_budget",
+			enforcement: "quality_structure",
 			status: "not_run",
 			evidenceSource: "package.json scripts.quality:size",
 			findings: [],

@@ -24,11 +24,18 @@ export interface FitnessArtifactReportOptions {
 	advisoryReviewReportPath?: string;
 }
 
-export const QUALITY_LANE_ID = "quality-budget";
+export const QUALITY_LANE_ID = "quality-structure";
 export const TYPECHECK_LANE_ID = "type-safety";
 export const LINT_LANE_ID = "static-lint";
 export const BEHAVIOR_LANE_ID = "behavior-proof";
 export const FEEDBACK_LANE_ID = "feedback-learning";
+
+const QUALITY_SIZE_METRIC_KEYS: Record<string, readonly [string, string]> = {
+	file_lines: ["moduleLogicalLines", "maxModuleLogicalLines"],
+	function_lines: ["functionLogicalLines", "maxFunctionLogicalLines"],
+	function_complexity: ["cyclomaticComplexity", "maxCyclomaticComplexity"],
+	test_file_lines: ["testLogicalLines", "maxTestLogicalLines"],
+};
 
 function readJsonFile(path: string): unknown {
 	return JSON.parse(readFileSync(path, "utf8"));
@@ -57,17 +64,57 @@ function qualitySizeFindings(path: string): FitnessFinding[] {
 		lane: QUALITY_LANE_ID,
 		command: "pnpm run quality:size",
 		principle: "reduce_cognitive_load",
-		enforcement: "quality_budget",
+		enforcement: "quality_structure",
 		idPrefix: "quality-size",
-		title: "Quality budget finding",
+		title: "Code size or complexity budget exceeded",
 		severity: "error",
-		risk: "Quality budget drift increases review load and makes generated changes harder to safely reason about.",
+		risk: "Structural complexity increases review load and makes generated changes harder to safely reason about.",
 		claimBoundary:
-			"Quality budget evidence only; this does not prove tests, PR checks, review state, or merge readiness.",
+			"Quality structure evidence only; this does not prove tests, PR checks, review state, or merge readiness.",
 		messageFields: ["message", "reason"],
 		fileFields: ["path", "file"],
 		lineFields: ["line"],
+		decorateFinding: enrichQualitySizeFinding,
 	});
+}
+
+function enrichQualitySizeFinding(
+	finding: FitnessFinding,
+	record: Record<string, unknown>,
+): FitnessFinding {
+	const metrics = qualitySizeMetrics(record);
+	return {
+		...finding,
+		...(metrics ? { metrics } : {}),
+		requiredFix: {
+			objective:
+				"Reduce structural complexity while preserving public behavior.",
+			constraints: [
+				"Preserve exported function signatures unless the finding explicitly permits an API change.",
+				"Keep response shapes, logging behavior, and side effects equivalent unless a test-backed change is intentional.",
+				"Prefer extracting validation, pure helper logic, and side-effect orchestration behind named seams.",
+				"Add or update related tests when extraction changes behavior boundaries.",
+			],
+		},
+		acceptanceCriteria: [
+			"pnpm run quality:size reports no finding for this location.",
+			"pnpm run test:related passes for the changed files.",
+		],
+	};
+}
+
+function qualitySizeMetrics(
+	record: Record<string, unknown>,
+): Record<string, number> | undefined {
+	const kind = typeof record.kind === "string" ? record.kind : undefined;
+	const actual = typeof record.actual === "number" ? record.actual : undefined;
+	const max = typeof record.max === "number" ? record.max : undefined;
+	if (actual === undefined || max === undefined) return undefined;
+	const [actualKey, maxKey] = QUALITY_SIZE_METRIC_KEYS[kind ?? ""] ?? [
+		"actual",
+		"max",
+	];
+	return { [actualKey]: actual, [maxKey]: max };
 }
 
 function typecheckFindings(path: string): FitnessFinding[] {

@@ -67,6 +67,13 @@
   Prefer extracting pure helpers, schema tables, or adapter-specific logic before
   raising a limit; legacy allowlisted files remain documented exceptions until
   burned down.
+- `harness fitness` normalizes `pnpm run quality:size -- --json` artifacts into
+  the deterministic `quality-structure` lane. Treat those findings as repair
+  contracts with concrete metrics, required-fix constraints, and acceptance
+  criteria; do not infer structure by parsing human-readable messages.
+- Advisory AI review can suggest cohesion improvements, but it MUST NOT promote
+  itself into blocking authority without a deterministic gate or explicit
+  contract change.
 
 ## Testing
 - Co-locate tests (`*.test.ts` / `__tests__`) and assert user-visible behavior where applicable.

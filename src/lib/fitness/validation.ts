@@ -8,13 +8,16 @@ import {
 	validateStringArray,
 } from "../decision/validators.js";
 import type {
-	FitnessEnforcement,
 	FitnessLaneStatus,
-	FitnessPrinciple,
 	FitnessReport,
-	FitnessSeverity,
 	FitnessStatus,
 } from "./types.js";
+import {
+	VALID_ENFORCEMENTS,
+	VALID_PRINCIPLES,
+	validateFinding,
+	validateFindings,
+} from "./finding-validation.js";
 import { validateTrendSnapshot } from "./trend-validation.js";
 import {
 	validateLaneStatusInvariant,
@@ -33,31 +36,9 @@ const VALID_LANE_STATUSES: readonly FitnessLaneStatus[] = [
 	"fail",
 	"not_run",
 ];
-const VALID_SEVERITIES: readonly FitnessSeverity[] = [
-	"critical",
-	"error",
-	"warning",
-	"info",
-];
-const VALID_ENFORCEMENTS: readonly FitnessEnforcement[] = [
-	"hard_blocker",
-	"architecture_fitness",
-	"quality_budget",
-	"type_safety",
-	"static_analysis",
-	"advisory",
-];
-const VALID_PRINCIPLES: readonly FitnessPrinciple[] = [
-	"protect_deep_module_boundaries",
-	"reduce_cognitive_load",
-	"prove_type_safety",
-	"preserve_static_contracts",
-	"prove_behavior_outcomes",
-	"compound_feedback_to_harness",
-];
 const REQUIRED_LANE_IDS = [
 	"architecture-fitness",
-	"quality-budget",
+	"quality-structure",
 	"type-safety",
 	"static-lint",
 	"behavior-proof",
@@ -68,66 +49,6 @@ const REQUIRED_LANE_IDS = [
 export interface FitnessReportValidationResult {
 	valid: boolean;
 	errors: HeValidationError[];
-}
-
-function validateEvidence(
-	value: unknown,
-	field: string,
-	errors: HeValidationError[],
-): void {
-	if (!isRecord(value)) {
-		errors.push(toValidationError(`${field} must be an object`, field));
-		return;
-	}
-	if (value.file !== undefined)
-		validateString(value.file, `${field}.file`, errors);
-	if (value.line !== undefined)
-		validateNumber(value.line, `${field}.line`, errors);
-	validateString(value.message, `${field}.message`, errors);
-}
-
-function validateFinding(
-	value: unknown,
-	field: string,
-	errors: HeValidationError[],
-): void {
-	if (!isRecord(value)) {
-		errors.push(toValidationError(`${field} must be an object`, field));
-		return;
-	}
-	validateString(value.id, `${field}.id`, errors);
-	validateString(value.title, `${field}.title`, errors);
-	validateEnum(value.severity, `${field}.severity`, VALID_SEVERITIES, errors);
-	validateString(value.lane, `${field}.lane`, errors);
-	validateEnum(value.principle, `${field}.principle`, VALID_PRINCIPLES, errors);
-	validateEnum(
-		value.enforcement,
-		`${field}.enforcement`,
-		VALID_ENFORCEMENTS,
-		errors,
-	);
-	validateEvidence(value.evidence, `${field}.evidence`, errors);
-	validateString(value.risk, `${field}.risk`, errors);
-	validateString(
-		value.recommendedCommand,
-		`${field}.recommendedCommand`,
-		errors,
-	);
-	validateString(value.claimBoundary, `${field}.claimBoundary`, errors);
-}
-
-function validateFindings(
-	value: unknown,
-	field: string,
-	errors: HeValidationError[],
-): void {
-	if (!Array.isArray(value)) {
-		errors.push(toValidationError(`${field} must be an array`, field));
-		return;
-	}
-	value.forEach((finding, index) => {
-		validateFinding(finding, `${field}[${String(index)}]`, errors);
-	});
 }
 
 function validateLane(

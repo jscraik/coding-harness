@@ -24,8 +24,8 @@ function writeSource(root: string, path: string, content: string): void {
 	writeFileSync(join(root, path), content);
 }
 
-function runScript(root: string) {
-	return spawnSync(process.execPath, [SCRIPT_PATH], {
+function runScript(root: string, args: string[] = []) {
+	return spawnSync(process.execPath, [SCRIPT_PATH, ...args], {
 		cwd: root,
 		encoding: "utf8",
 	});
@@ -99,6 +99,30 @@ describe("check-code-size.mjs", () => {
 			"src/tangled.ts:1 tangled has complexity 12",
 		);
 		expect(result.stderr).toContain("max is 10");
+	});
+
+	it("emits structured JSON findings for AST-derived size failures", () => {
+		const root = createTempRepo();
+		writeSource(root, "src/tangled.ts", complexFunctionSource(11));
+
+		const result = runScript(root, ["--json"]);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			findings: Array<Record<string, unknown>>;
+		};
+
+		expect(result.status).toBe(1);
+		expect(report.status).toBe("fail");
+		expect(report.findings[0]).toEqual(
+			expect.objectContaining({
+				kind: "function_complexity",
+				path: "src/tangled.ts",
+				line: 1,
+				symbol: "tangled",
+				actual: 12,
+				max: 10,
+			}),
+		);
 	});
 
 	it("blocks changed test files over 1200 logical lines", () => {

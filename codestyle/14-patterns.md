@@ -43,6 +43,10 @@ Examples:
 - Code SHOULD be organized by feature/domain boundaries instead of technology buckets when practical.
 - Files MUST remain cohesive; shared logic SHOULD be extracted before copy-paste drift appears.
 - Repository/service abstractions SHOULD be used when multiple storage backends or test doubles are required.
+- A deterministic `quality-structure` fitness finding SHOULD be handled as a
+  bounded structural repair: preserve public behavior, keep side effects at the
+  same boundary, extract named helpers around validation or pure logic first,
+  and prove the result with the finding's acceptance criteria.
 - Repeated command prefixes, runtime setup, schema parsing, and path
   normalization SHOULD become small repo-owned helpers when two or more scripts
   need the same behavior.
@@ -64,6 +68,9 @@ Examples:
 ## Enforcement
 
 - Changed production code MUST run `pnpm run quality:size` before handoff.
+- When `harness fitness` reports a `quality-structure` finding, handoff MUST
+  include the rerun command and whether the finding was cleared, still present,
+  or intentionally deferred with a tracked reason.
 
 - Pattern changes SHOULD be reviewed with targeted examples in PR notes.
 - Any deliberate deviation from these defaults MUST include rationale and a tracker reference.
