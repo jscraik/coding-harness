@@ -27,6 +27,10 @@ interface GateArtifactFindingOptions {
 	messageFields: readonly string[];
 	fileFields?: readonly string[];
 	lineFields?: readonly string[];
+	decorateFinding?: (
+		finding: FitnessFinding,
+		record: Record<string, unknown>,
+	) => FitnessFinding;
 }
 
 function readJsonFile(path: string): unknown {
@@ -130,26 +134,35 @@ export function gateArtifactFindings(
 			}),
 		];
 	}
-	return records.map((record, index) => {
-		const file = firstString(record, options.fileFields ?? []);
-		const line = firstNumber(record, options.lineFields ?? []);
-		return {
-			id: `${options.idPrefix}:${file ?? firstString(record, ["name", "test"]) ?? index}`,
-			title: options.title,
-			severity: options.severity,
-			lane: options.lane,
-			principle: options.principle,
-			enforcement: options.enforcement,
-			evidence: {
-				...(file ? { file } : {}),
-				...(line !== undefined ? { line } : {}),
-				message:
-					firstString(record, options.messageFields) ??
-					"Gate artifact reported a finding.",
-			},
-			risk: options.risk,
-			recommendedCommand: options.command,
-			claimBoundary: options.claimBoundary,
-		};
-	});
+	return records.map((record, index) =>
+		normalizeGateRecord(options, record, index),
+	);
+}
+
+function normalizeGateRecord(
+	options: GateArtifactFindingOptions,
+	record: Record<string, unknown>,
+	index: number,
+): FitnessFinding {
+	const file = firstString(record, options.fileFields ?? []);
+	const line = firstNumber(record, options.lineFields ?? []);
+	const finding: FitnessFinding = {
+		id: `${options.idPrefix}:${file ?? firstString(record, ["name", "test"]) ?? index}`,
+		title: options.title,
+		severity: options.severity,
+		lane: options.lane,
+		principle: options.principle,
+		enforcement: options.enforcement,
+		evidence: {
+			...(file ? { file } : {}),
+			...(line !== undefined ? { line } : {}),
+			message:
+				firstString(record, options.messageFields) ??
+				"Gate artifact reported a finding.",
+		},
+		risk: options.risk,
+		recommendedCommand: options.command,
+		claimBoundary: options.claimBoundary,
+	};
+	return options.decorateFinding?.(finding, record) ?? finding;
 }

@@ -74,6 +74,14 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   synchronized with the implementation and required documentation surfaces so
   docs-gate does not pass with stale operator guidance.
 - validation gate graph changes that add typed gate specs, phase-exit evidence gates, `harness next --phase-exit` visibility, parity tests, resume-checkpoint guards, TypeScript escape-hatch policy, Python/Pydantic validation, JSON Schema contract validation, or live CLI JSON contract validation should refresh `AI/context/diagram-context.md` and keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized when docs-gate reports architecture-context or agent-governance surfaces
+- coding policy routing changes that alter `coding-policy.json`, the
+  `coding-policy-route/v1` output, changed-file patterns, source-rule
+  lineage, required gates, or claim boundaries should keep `AGENTS.md`,
+  `CODESTYLE.md`, `codestyle/README.md`, `docs/agents/00-architecture-bootstrap.md`,
+  `docs/agents/02-tooling-policy.md`, `AI/context/diagram-context.md`,
+  scaffold templates, the JSON schema, runtime validator tests, and this guide synchronized.
+  The JSON route is machine-readable policy navigation for cold agents; Markdown codestyle modules
+  remain the prose authority.
 - `harness-fitness/v1` changes that add or alter deterministic lanes, artifact
   normalizers, `harness fitness --from-existing-artifacts`, or `harness next
   --fitness-report` should keep schema, TypeScript types, runtime validators,

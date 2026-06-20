@@ -160,8 +160,11 @@ function checkFile(path) {
 	const fileLines = countLogicalLines(sourceText);
 	if (fileLines > MAX_FILE_LINES) {
 		findings.push({
+			kind: "file_lines",
 			path,
 			line: 1,
+			actual: fileLines,
+			max: MAX_FILE_LINES,
 			message: `file has ${fileLines} lines; max is ${MAX_FILE_LINES}`,
 		});
 	}
@@ -173,16 +176,24 @@ function checkFile(path) {
 			const span = endLine - startLine + 1;
 			if (span > MAX_FUNCTION_LINES) {
 				findings.push({
+					kind: "function_lines",
 					path,
 					line: startLine,
+					symbol: functionName(node),
+					actual: span,
+					max: MAX_FUNCTION_LINES,
 					message: `${functionName(node)} has ${span} lines; max is ${MAX_FUNCTION_LINES}`,
 				});
 			}
 			const complexity = functionComplexity(node);
 			if (complexity > MAX_COMPLEXITY) {
 				findings.push({
+					kind: "function_complexity",
 					path,
 					line: startLine,
+					symbol: functionName(node),
+					actual: complexity,
+					max: MAX_COMPLEXITY,
 					message: `${functionName(node)} has complexity ${complexity}; max is ${MAX_COMPLEXITY}`,
 				});
 			}
@@ -229,8 +240,11 @@ for (const path of testFiles) {
 	);
 	if (fileLines > MAX_TEST_FILE_LINES) {
 		findings.push({
+			kind: "test_file_lines",
 			path,
 			line: 1,
+			actual: fileLines,
+			max: MAX_TEST_FILE_LINES,
 			message: `test file has ${fileLines} lines; max is ${MAX_TEST_FILE_LINES}`,
 		});
 	}

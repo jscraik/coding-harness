@@ -32,11 +32,19 @@ describe("scaffold root templates", () => {
 	it("loads the root CODESTYLE scaffold", () => {
 		const content = renderCodestyleTemplate();
 		expect(content).toContain("# CODESTYLE.md");
+		expect(content).toContain("pnpm run coding-policy:route -- <path...>");
+		expect(content).toContain("pnpm run coding-policy:route:changed");
+		expect(content).toContain("pnpm run coding-policy:route:branch");
+		expect(content).toContain("pnpm run coding-policy:validate");
 	});
 
 	it("loads codestyle pack files", () => {
 		const content = renderCodestylePackTemplate("codestyle/README.md");
 		expect(content).toContain("# Codestyle Instruction Set");
+		expect(content).toContain("pnpm run coding-policy:route -- <path...>");
+		expect(content).toContain("pnpm run coding-policy:route:changed");
+		expect(content).toContain("pnpm run coding-policy:route:branch");
+		expect(content).toContain("pnpm run coding-policy:validate");
 	});
 
 	it("loads coding policy files", () => {

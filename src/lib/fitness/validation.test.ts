@@ -4,7 +4,7 @@ import { validateFitnessReport } from "./validation.js";
 
 const REQUIRED_SCHEMA_LANE_DEFS = [
 	"requiresArchitectureFitnessLane",
-	"requiresQualityBudgetLane",
+	"requiresQualityStructureLane",
 	"requiresTypeSafetyLane",
 	"requiresStaticLintLane",
 	"requiresBehaviorProofLane",
@@ -13,7 +13,7 @@ const REQUIRED_SCHEMA_LANE_DEFS = [
 
 const REQUIRED_SCHEMA_LANE_IDS = [
 	"architecture-fitness",
-	"quality-budget",
+	"quality-structure",
 	"type-safety",
 	"static-lint",
 	"behavior-proof",
@@ -66,12 +66,12 @@ function canonicalLanes(
 			overrides["architecture-fitness"],
 		),
 		lane(
-			"quality-budget",
-			"Quality budget",
+			"quality-structure",
+			"Quality structure",
 			"pnpm run quality:size",
 			"reduce_cognitive_load",
-			"quality_budget",
-			overrides["quality-budget"],
+			"quality_structure",
+			overrides["quality-structure"],
 		),
 		lane(
 			"type-safety",
@@ -129,10 +129,10 @@ function fitnessReport(overrides: Record<string, unknown> = {}) {
 
 function warningFinding() {
 	return {
-		id: "quality-budget:warning",
+		id: "quality-structure:warning",
 		title: "Advisory warning",
 		severity: "warning",
-		lane: "quality-budget",
+		lane: "quality-structure",
 		principle: "reduce_cognitive_load",
 		enforcement: "advisory",
 		evidence: { message: "warning" },
@@ -145,9 +145,9 @@ function warningFinding() {
 function errorFinding() {
 	return {
 		...warningFinding(),
-		id: "quality-budget:error",
+		id: "quality-structure:error",
 		severity: "error",
-		enforcement: "quality_budget",
+		enforcement: "quality_structure",
 	};
 }
 
@@ -192,11 +192,11 @@ describe("validateFitnessReport", () => {
 				},
 				lanes: [
 					{
-						id: "quality-budget",
-						label: "Quality budget",
+						id: "quality-structure",
+						label: "Quality structure",
 						command: "pnpm run quality:size",
 						principle: "reduce_cognitive_load",
-						enforcement: "quality_budget",
+						enforcement: "quality_structure",
 						status: "fail",
 						evidenceSource: "artifacts/quality-size.json",
 						findings: [finding],
@@ -228,7 +228,7 @@ describe("validateFitnessReport", () => {
 					lanesNeedingEvidence: 1,
 				},
 				lanes: canonicalLanes({
-					"quality-budget": { status: "not_run", evidenceSource: "missing" },
+					"quality-structure": { status: "not_run", evidenceSource: "missing" },
 				}),
 			}),
 		);
@@ -246,7 +246,7 @@ describe("validateFitnessReport", () => {
 	it("rejects pass status when a lane status still fails", () => {
 		const result = validateFitnessReport(
 			fitnessReport({
-				lanes: canonicalLanes({ "quality-budget": { status: "fail" } }),
+				lanes: canonicalLanes({ "quality-structure": { status: "fail" } }),
 			}),
 		);
 
@@ -264,7 +264,7 @@ describe("validateFitnessReport", () => {
 		const result = validateFitnessReport(
 			fitnessReport({
 				status: "fail",
-				lanes: canonicalLanes({ "quality-budget": { status: "fail" } }),
+				lanes: canonicalLanes({ "quality-structure": { status: "fail" } }),
 			}),
 		);
 
@@ -290,7 +290,7 @@ describe("validateFitnessReport", () => {
 				lanesNeedingEvidence: 0,
 			},
 			lanes: canonicalLanes({
-				"quality-budget": { status: "fail", findings: [finding] },
+				"quality-structure": { status: "fail", findings: [finding] },
 			}),
 		});
 		delete report.topDeterministicFinding;
@@ -320,7 +320,7 @@ describe("validateFitnessReport", () => {
 					lanesNeedingEvidence: 0,
 				},
 				lanes: canonicalLanes({
-					"quality-budget": { status: "warn", findings: [finding] },
+					"quality-structure": { status: "warn", findings: [finding] },
 				}),
 			}),
 		);
@@ -368,11 +368,11 @@ describe("validateFitnessReport", () => {
 				lanes: [
 					...canonicalLanes(),
 					lane(
-						"quality-budget",
-						"Quality budget",
+						"quality-structure",
+						"Quality structure",
 						"pnpm run quality:size",
 						"reduce_cognitive_load",
-						"quality_budget",
+						"quality_structure",
 					),
 				],
 			}),

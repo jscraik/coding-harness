@@ -34,9 +34,9 @@ function qualitySizeFitnessFinding() {
 		id: "quality-size:src/commands/fitness.ts",
 		title: "Code size or complexity budget exceeded",
 		severity: "error",
-		lane: "quality-budget",
+		lane: "quality-structure",
 		principle: "reduce_cognitive_load",
-		enforcement: "quality_budget",
+		enforcement: "quality_structure",
 		evidence: {
 			file: "src/commands/fitness.ts",
 			line: 1,
@@ -124,11 +124,11 @@ function canonicalDeterministicLanes() {
 			enforcement: "architecture_fitness",
 		}),
 		canonicalFitnessLane({
-			id: "quality-budget",
-			label: "Quality budget",
+			id: "quality-structure",
+			label: "Quality structure",
 			command: "pnpm run quality:size",
 			principle: "reduce_cognitive_load",
-			enforcement: "quality_budget",
+			enforcement: "quality_structure",
 		}),
 		canonicalFitnessLane({
 			id: "type-safety",
@@ -220,11 +220,11 @@ describe("harness next fitness report evidence", () => {
 						},
 						lanes: [
 							{
-								id: "quality-budget",
-								label: "Quality budget",
+								id: "quality-structure",
+								label: "Quality structure",
 								command: "pnpm run quality:size",
 								principle: "reduce_cognitive_load",
-								enforcement: "quality_budget",
+								enforcement: "quality_structure",
 								status: "not_run",
 								evidenceSource: "missing",
 								findings: [],
@@ -278,11 +278,11 @@ describe("harness next fitness report evidence", () => {
 						},
 						lanes: [
 							{
-								id: "quality-budget",
-								label: "Quality budget",
+								id: "quality-structure",
+								label: "Quality structure",
 								command: "pnpm run quality:size",
 								principle: "reduce_cognitive_load",
-								enforcement: "quality_budget",
+								enforcement: "quality_structure",
 								status: "fail",
 								evidenceSource: "artifacts/quality-size.json",
 								findings: [finding],
@@ -455,11 +455,11 @@ describe("harness next fitness report evidence", () => {
 						},
 						lanes: [
 							{
-								id: "quality-budget",
-								label: "Quality budget",
+								id: "quality-structure",
+								label: "Quality structure",
 								command: "pnpm run quality:size",
 								principle: "reduce_cognitive_load",
-								enforcement: "quality_budget",
+								enforcement: "quality_structure",
 								status: "fail",
 								evidenceSource: "artifacts/quality-size.json",
 								findings: [staleFinding],
@@ -527,11 +527,11 @@ describe("harness next fitness report evidence", () => {
 						},
 						lanes: [
 							{
-								id: "quality-budget",
-								label: "Quality budget",
+								id: "quality-structure",
+								label: "Quality structure",
 								command: "pnpm run quality:size",
 								principle: "reduce_cognitive_load",
-								enforcement: "quality_budget",
+								enforcement: "quality_structure",
 								status: "fail",
 								evidenceSource: "artifacts/quality-size.json",
 								findings: [finding],
@@ -584,11 +584,11 @@ describe("harness next fitness report evidence", () => {
 						},
 						lanes: [
 							{
-								id: "quality-budget",
-								label: "Quality budget",
+								id: "quality-structure",
+								label: "Quality structure",
 								command: "pnpm run quality:size --token=should-not-persist",
 								principle: "reduce_cognitive_load",
-								enforcement: "quality_budget",
+								enforcement: "quality_structure",
 								status: "not_run",
 								evidenceSource: "missing",
 								findings: [],

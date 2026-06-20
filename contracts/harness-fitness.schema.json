@@ -40,7 +40,7 @@
 			"items": { "$ref": "#/$defs/lane" },
 			"allOf": [
 				{ "$ref": "#/$defs/requiresArchitectureFitnessLane" },
-				{ "$ref": "#/$defs/requiresQualityBudgetLane" },
+				{ "$ref": "#/$defs/requiresQualityStructureLane" },
 				{ "$ref": "#/$defs/requiresTypeSafetyLane" },
 				{ "$ref": "#/$defs/requiresStaticLintLane" },
 				{ "$ref": "#/$defs/requiresBehaviorProofLane" },
@@ -92,11 +92,11 @@
 			},
 			"minContains": 1
 		},
-		"requiresQualityBudgetLane": {
+		"requiresQualityStructureLane": {
 			"contains": {
 				"type": "object",
 				"required": ["id"],
-				"properties": { "id": { "const": "quality-budget" } }
+				"properties": { "id": { "const": "quality-structure" } }
 			},
 			"minContains": 1
 		},
@@ -157,9 +157,30 @@
 				"principle": { "$ref": "#/$defs/principle" },
 				"enforcement": { "$ref": "#/$defs/enforcement" },
 				"evidence": { "$ref": "#/$defs/evidence" },
+				"metrics": {
+					"type": "object",
+					"additionalProperties": { "type": "number" }
+				},
 				"risk": { "type": "string", "minLength": 1 },
+				"requiredFix": { "$ref": "#/$defs/requiredFix" },
+				"acceptanceCriteria": {
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 }
+				},
 				"recommendedCommand": { "type": "string", "minLength": 1 },
 				"claimBoundary": { "type": "string", "minLength": 1 }
+			}
+		},
+		"requiredFix": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["objective", "constraints"],
+			"properties": {
+				"objective": { "type": "string", "minLength": 1 },
+				"constraints": {
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 }
+				}
 			}
 		},
 		"evidence": {
@@ -286,6 +307,7 @@
 				"hard_blocker",
 				"architecture_fitness",
 				"quality_budget",
+				"quality_structure",
 				"type_safety",
 				"static_analysis",
 				"advisory"

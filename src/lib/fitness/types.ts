@@ -12,6 +12,7 @@ export type FitnessEnforcement =
 	| "hard_blocker"
 	| "architecture_fitness"
 	| "quality_budget"
+	| "quality_structure"
 	| "type_safety"
 	| "static_analysis"
 	| "advisory";
@@ -51,7 +52,13 @@ export interface FitnessFinding {
 	principle: FitnessPrinciple;
 	enforcement: FitnessEnforcement;
 	evidence: FitnessEvidence;
+	metrics?: Record<string, number>;
 	risk: string;
+	requiredFix?: {
+		objective: string;
+		constraints: string[];
+	};
+	acceptanceCriteria?: string[];
 	recommendedCommand: string;
 	claimBoundary: string;
 }

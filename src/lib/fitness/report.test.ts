@@ -152,8 +152,11 @@ describe("buildFitnessReport", () => {
 				status: "fail",
 				findings: [
 					{
+						kind: "file_lines",
 						path: "src/lib/fitness/report.ts",
 						line: 12,
+						actual: 410,
+						max: 400,
 						message: "file has 410 lines; max is 400",
 					},
 				],
@@ -204,6 +207,23 @@ describe("buildFitnessReport", () => {
 
 		expect(report.status).toBe("fail");
 		expect(report.summary.lanesNeedingEvidence).toBe(0);
+		expect(report.lanes[1]?.findings[0]).toEqual(
+			expect.objectContaining({
+				lane: "quality-structure",
+				enforcement: "quality_structure",
+				metrics: {
+					moduleLogicalLines: 410,
+					maxModuleLogicalLines: 400,
+				},
+				requiredFix: expect.objectContaining({
+					objective:
+						"Reduce structural complexity while preserving public behavior.",
+				}),
+				acceptanceCriteria: expect.arrayContaining([
+					"pnpm run quality:size reports no finding for this location.",
+				]),
+			}),
+		);
 		expect(report.topDeterministicFinding).toEqual(
 			expect.objectContaining({
 				lane: "feedback-learning",
@@ -331,13 +351,13 @@ describe("buildFitnessReport", () => {
 		expect(report.summary.failures).toBe(1);
 		expect(report.lanes[1]).toEqual(
 			expect.objectContaining({
-				id: "quality-budget",
+				id: "quality-structure",
 				status: "fail",
 			}),
 		);
 		expect(report.lanes[1]?.findings[0]).toEqual(
 			expect.objectContaining({
-				id: "quality-budget:artifact:malformed",
+				id: "quality-structure:artifact:malformed",
 				recommendedCommand: "pnpm run quality:size",
 			}),
 		);
@@ -402,7 +422,7 @@ describe("buildFitnessReport", () => {
 		);
 		expect(report.lanes[1]).toEqual(
 			expect.objectContaining({
-				id: "quality-budget",
+				id: "quality-structure",
 				status: "fail",
 			}),
 		);

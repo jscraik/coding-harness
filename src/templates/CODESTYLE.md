@@ -60,8 +60,11 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 
 ## Machine-readable policy index
 - [coding-policy.json](./coding-policy.json) is the machine-readable index for this codestyle pack.
-- Markdown modules remain the prose authority; the JSON file maps module ownership, source-rule lineage, required gates, and claim boundaries for validators and agents.
-- Update [contracts/coding-policy.schema.json](./contracts/coding-policy.schema.json) and run `node scripts/validate-coding-policy.cjs` when the policy index shape changes.
+- Markdown modules remain the prose authority; the JSON file maps changed-file routing, module ownership, source-rule lineage, required gates, and claim boundaries for validators and agents.
+- Run `pnpm run coding-policy:route -- <path...>` to discover the policy modules and gates that apply to a changed-file set.
+- Run `pnpm run coding-policy:route:changed` to discover the policy modules and gates that apply to current git changes.
+- Run `pnpm run coding-policy:route:branch` to discover the policy modules and gates that apply to a branch diff. The default scaffold comparator is `origin/main`.
+- Update [contracts/coding-policy.schema.json](./contracts/coding-policy.schema.json) and run `pnpm run coding-policy:validate` when the policy index shape changes.
 
 ## Enforcement model
 - Rules in this pack use RFC2119 language (`MUST`, `MUST NOT`, `SHOULD`) and are normative unless an explicit waiver exists.

@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-18
+last_validated: 2026-06-20
 ---
 
 # Tooling policy
@@ -104,6 +104,13 @@ Documentation lifecycle checks should use `node --import tsx scripts/check-doc-l
 uv-backed Python helper commands should run through `bash scripts/run-uv-python.sh <command> [args...]`. The wrapper owns the repository-scoped `UV_CACHE_DIR` and `UV_PROJECT_ENVIRONMENT` defaults, so package scripts, hook governance helpers, and generated scaffolds do not duplicate uv setup.
 The root `Makefile` is also part of the enforced baseline and must retain the harness contract targets required by `scripts/check-environment.sh`.
 `CODESTYLE.md` and `scripts/validate-codestyle.sh` are part of the same baseline. A harness-managed repo should fail readiness if either file is missing or if the validator no longer maps cleanly to repo-defined scripts.
+`coding-policy.json`, `contracts/coding-policy.schema.json`, and
+`scripts/validate-coding-policy.cjs` are the machine-readable codestyle
+routing surface. Harness-managed scaffold package scripts must expose
+`coding-policy:route`, `coding-policy:route:changed`,
+`coding-policy:route:branch`, and `coding-policy:validate` so downstream
+agents can run documented routing commands without reaching into validator
+internals.
 `scripts/check-codestyle-parity.sh` is part of the same governed surface and must fail closed when `codestyle/` or `codestyle/CHECKSUMS.sha256` drift.
 For this repository only, the repo-root `CODESTYLE.md` path may be a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md` so the authoring source stays global while repo-local enforcement still targets the root path.
 For this repository only, `biome check` should ignore the repo-root `CODESTYLE.md` path so CI linting stays deterministic even when that developer-home symlink target is absent on hosted runners.

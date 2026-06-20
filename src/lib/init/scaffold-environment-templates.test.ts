@@ -39,6 +39,12 @@ describe("scaffold environment templates", () => {
 		expect(script).toContain("required_mise_tools=(");
 		expect(script).toContain("required_prek_hooks=(");
 		expect(script).toContain("required_package_scripts=(");
+		expect(script).toContain(
+			"coding-policy:route|node scripts/validate-coding-policy.cjs --json --changed-files",
+		);
+		expect(script).toContain(
+			"coding-policy:validate|node scripts/validate-coding-policy.cjs",
+		);
 		expect(script).toContain("run_check_environment_with_runner()");
 		expect(script).toContain('if [[ -f "$PACKAGE_JSON_PATH" ]]; then');
 		expect(script).toContain("Fix: run harness init --update");

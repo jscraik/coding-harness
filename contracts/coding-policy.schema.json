@@ -43,6 +43,8 @@
 				"foundations",
 				"docs-config-release",
 				"quality-security-ops",
+				"python",
+				"typescript",
 				"shell",
 				"package-managers",
 				"git-workflow",
@@ -56,6 +58,8 @@
 				"codestyle/01-foundations.md",
 				"codestyle/04-docs-config-and-release.md",
 				"codestyle/05-quality-security-ops.md",
+				"codestyle/07-python.md",
+				"codestyle/08-typescript.md",
 				"codestyle/10-shell-bash-zsh.md",
 				"codestyle/11-package-managers-pnpm-npm.md",
 				"codestyle/13-git-workflow.md",
@@ -89,10 +93,22 @@
 		"policyModule": {
 			"type": "object",
 			"additionalProperties": false,
-			"required": ["id", "path", "sourceRules", "requiredGates"],
+			"required": [
+				"id",
+				"path",
+				"changedFilePatterns",
+				"sourceRules",
+				"requiredGates"
+			],
 			"properties": {
 				"id": { "$ref": "#/$defs/moduleId" },
 				"path": { "$ref": "#/$defs/modulePath" },
+				"changedFilePatterns": {
+					"type": "array",
+					"minItems": 1,
+					"items": { "type": "string", "minLength": 1 },
+					"uniqueItems": true
+				},
 				"sourceRules": {
 					"type": "array",
 					"minItems": 1,
