@@ -86,6 +86,4 @@ Command: pnpm run docs:steering:guard -> pass (steering-feedback-contract: pass)
 
 ## Review Condition
 
-This admission can be retired only when credentialed validation automatically
-routes FIFO env surfaces through `op run --env-file` or an equivalent repo-owned
-loader before any closeout blocker can be emitted.
+This admission can be retired only when credentialed validation routes FIFO env surfaces through `op run --env-file ~/.codex/.env -- <command>` before any closeout blocker can be emitted.
