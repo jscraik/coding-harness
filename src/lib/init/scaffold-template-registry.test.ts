@@ -10,6 +10,9 @@ describe("scaffold template registry", () => {
 
 		expect(paths).toContain("harness.contract.json");
 		expect(paths).toContain("CODESTYLE.md");
+		expect(paths).toContain("coding-policy.json");
+		expect(paths).toContain("contracts/coding-policy.schema.json");
+		expect(paths).toContain("scripts/validate-coding-policy.cjs");
 		expect(paths).toContain("codestyle/README.md");
 		expect(paths).toContain("scripts/codex-preflight.sh");
 		expect(paths).toContain("WORKFLOW.md");

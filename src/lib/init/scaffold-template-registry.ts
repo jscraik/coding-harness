@@ -55,6 +55,7 @@ import {
 	renderWorkflowBootstrapInstallCommand,
 } from "./scaffold-root-command-templates.js";
 import {
+	CODING_POLICY_TEMPLATE_FILES,
 	CODESTYLE_PACK_TEMPLATE_FILES,
 	renderCodestylePackTemplate,
 	renderCodestyleTemplate,
@@ -309,6 +310,10 @@ export const TEMPLATES: Template[] = [
 		path: "CODESTYLE.md",
 		render: () => renderCodestyleTemplate(),
 	},
+	...CODING_POLICY_TEMPLATE_FILES.map((path) => ({
+		path,
+		render: () => renderCodestylePackTemplate(path),
+	})),
 	...CODESTYLE_PACK_TEMPLATE_FILES.map((path) => ({
 		path,
 		render: () => renderCodestylePackTemplate(path),

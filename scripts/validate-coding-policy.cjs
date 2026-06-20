@@ -5,28 +5,19 @@ const { join, normalize, sep } = require("node:path");
 const repoRoot = process.cwd();
 const policyPath = join(repoRoot, "coding-policy.json");
 const schemaPath = join(repoRoot, "contracts/coding-policy.schema.json");
-const expectedModuleIds = new Set([
-	"foundations",
-	"docs-config-release",
-	"quality-security-ops",
-	"shell",
-	"package-managers",
-	"git-workflow",
-	"security",
-	"testing",
-	"development-workflow",
+const expectedModules = new Map([
+	["foundations", "codestyle/01-foundations.md"],
+	["docs-config-release", "codestyle/04-docs-config-and-release.md"],
+	["quality-security-ops", "codestyle/05-quality-security-ops.md"],
+	["shell", "codestyle/10-shell-bash-zsh.md"],
+	["package-managers", "codestyle/11-package-managers-pnpm-npm.md"],
+	["git-workflow", "codestyle/13-git-workflow.md"],
+	["security", "codestyle/16-security.md"],
+	["testing", "codestyle/17-testing.md"],
+	["development-workflow", "codestyle/19-development-workflow.md"],
 ]);
-const expectedModulePaths = new Set([
-	"codestyle/01-foundations.md",
-	"codestyle/04-docs-config-and-release.md",
-	"codestyle/05-quality-security-ops.md",
-	"codestyle/10-shell-bash-zsh.md",
-	"codestyle/11-package-managers-pnpm-npm.md",
-	"codestyle/13-git-workflow.md",
-	"codestyle/16-security.md",
-	"codestyle/17-testing.md",
-	"codestyle/19-development-workflow.md",
-]);
+const expectedModuleIds = new Set(expectedModules.keys());
+const expectedModulePaths = new Set(expectedModules.values());
 const expectedSourceRules = new Set([
 	"boy-scout",
 	"ci-safety",
@@ -187,6 +178,12 @@ function validatePolicy(policy, schema) {
 		}
 		if (!expectedModulePaths.has(module?.path)) {
 			errors.push(`${prefix}.path is not a known policy module path`);
+		}
+		const expectedPath = expectedModules.get(module?.id);
+		if (expectedPath !== undefined && module?.path !== expectedPath) {
+			errors.push(
+				`${prefix}.path must be ${expectedPath} for module ${module.id}`,
+			);
 		}
 		if (seenIds.has(module?.id)) {
 			errors.push(`${prefix}.id duplicates ${module.id}`);

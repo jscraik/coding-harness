@@ -134,4 +134,26 @@ describe("validate-coding-policy.cjs", () => {
 			`policyModules[0].requiredGates duplicates ${requiredGate}`,
 		);
 	});
+
+	it("rejects known module paths assigned to the wrong module id", () => {
+		const root = createPolicyRoot((policy) => {
+			const foundationModule = policy.policyModules.find(
+				(module) => module.id === "foundations",
+			);
+			const testingModule = policy.policyModules.find(
+				(module) => module.id === "testing",
+			);
+			if (!foundationModule || !testingModule) {
+				throw new Error("test fixture policy is missing expected modules");
+			}
+			foundationModule.path = testingModule.path;
+		});
+
+		const result = runValidateCodingPolicy(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"path must be codestyle/01-foundations.md for module foundations",
+		);
+	});
 });
