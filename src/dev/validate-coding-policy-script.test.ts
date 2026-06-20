@@ -33,6 +33,12 @@ type CodingPolicy = {
 	[key: string]: unknown;
 };
 
+type CodingPolicyValidationFailure = {
+	schemaVersion: "coding-policy-validation/v1";
+	status: "fail";
+	errors: string[];
+};
+
 const tempRoots: string[] = [];
 
 function readPolicy(): CodingPolicy {
@@ -78,6 +84,21 @@ function runValidateCodingPolicy(root: string, args: string[] = []) {
 	});
 }
 
+function expectJsonValidationFailure(
+	result: ReturnType<typeof runValidateCodingPolicy>,
+): CodingPolicyValidationFailure {
+	expect(result.status).toBe(1);
+	expect(result.stderr).toContain("coding-policy: failed");
+	expect(result.stderr).toContain(
+		"- policy validation failed; use --json for diagnostics",
+	);
+	const payload = JSON.parse(result.stdout) as CodingPolicyValidationFailure;
+	expect(payload.schemaVersion).toBe("coding-policy-validation/v1");
+	expect(payload.status).toBe("fail");
+	expect(Array.isArray(payload.errors)).toBe(true);
+	return payload;
+}
+
 function runGit(root: string, args: string[]) {
 	const result = spawnSync("git", args, {
 		cwd: root,
@@ -111,13 +132,13 @@ describe("validate-coding-policy.cjs", () => {
 			firstPolicyModule(policy).extra = true;
 		});
 
-		const result = runValidateCodingPolicy(root);
+		const result = runValidateCodingPolicy(root, ["--json"]);
 
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain(
+		const failure = expectJsonValidationFailure(result);
+		expect(failure.errors).toContain(
 			"coding-policy additional property extra is not allowed",
 		);
-		expect(result.stderr).toContain(
+		expect(failure.errors).toContain(
 			"policyModules[0] additional property extra is not allowed",
 		);
 	});
@@ -148,16 +169,16 @@ describe("validate-coding-policy.cjs", () => {
 		};
 		writeFileSync(schemaFixturePath, JSON.stringify(schema, null, 2));
 
-		const result = runValidateCodingPolicy(root);
+		const result = runValidateCodingPolicy(root, ["--json"]);
 
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain(
+		const failure = expectJsonValidationFailure(result);
+		expect(failure.errors).toContain(
 			"schema policyModule.changedFilePatterns must be required",
 		);
-		expect(result.stderr).toContain(
+		expect(failure.errors).toContain(
 			"schema policyModule.changedFilePatterns must be non-empty",
 		);
-		expect(result.stderr).toContain(
+		expect(failure.errors).toContain(
 			"schema policyModule.changedFilePatterns items must be strings",
 		);
 	});
@@ -183,16 +204,16 @@ describe("validate-coding-policy.cjs", () => {
 			module.requiredGates = [requiredGate, requiredGate];
 		});
 
-		const result = runValidateCodingPolicy(root);
+		const result = runValidateCodingPolicy(root, ["--json"]);
 
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain(
+		const failure = expectJsonValidationFailure(result);
+		expect(failure.errors).toContain(
 			`policyModules[0].changedFilePatterns duplicates ${changedFilePattern}`,
 		);
-		expect(result.stderr).toContain(
+		expect(failure.errors).toContain(
 			`policyModules[0].sourceRules duplicates ${sourceRule}`,
 		);
-		expect(result.stderr).toContain(
+		expect(failure.errors).toContain(
 			`policyModules[0].requiredGates duplicates ${requiredGate}`,
 		);
 	});
@@ -211,10 +232,10 @@ describe("validate-coding-policy.cjs", () => {
 			foundationModule.path = testingModule.path;
 		});
 
-		const result = runValidateCodingPolicy(root);
+		const result = runValidateCodingPolicy(root, ["--json"]);
 
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain(
+		const failure = expectJsonValidationFailure(result);
+		expect(failure.errors.join("\n")).toContain(
 			"path must be codestyle/01-foundations.md for module foundations",
 		);
 	});
@@ -224,13 +245,13 @@ describe("validate-coding-policy.cjs", () => {
 			firstPolicyModule(policy).path = 42 as unknown as string;
 		});
 
-		const result = runValidateCodingPolicy(root);
+		const result = runValidateCodingPolicy(root, ["--json"]);
 
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain(
+		const failure = expectJsonValidationFailure(result);
+		expect(failure.errors).toContain(
 			"policyModules[0].path must be a non-empty string",
 		);
-		expect(result.stderr).toContain(
+		expect(failure.errors).toContain(
 			"policyModules[0].path must be repo-relative",
 		);
 	});
@@ -240,10 +261,10 @@ describe("validate-coding-policy.cjs", () => {
 			firstPolicyModule(policy).changedFilePatterns = ["../outside/**"];
 		});
 
-		const result = runValidateCodingPolicy(root);
+		const result = runValidateCodingPolicy(root, ["--json"]);
 
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain(
+		const failure = expectJsonValidationFailure(result);
+		expect(failure.errors).toContain(
 			"policyModules[0].changedFilePatterns[0] must be repo-relative",
 		);
 	});
@@ -253,10 +274,10 @@ describe("validate-coding-policy.cjs", () => {
 			firstPolicyModule(policy).changedFilePatterns = ["scripts/**.sh"];
 		});
 
-		const result = runValidateCodingPolicy(root);
+		const result = runValidateCodingPolicy(root, ["--json"]);
 
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain(
+		const failure = expectJsonValidationFailure(result);
+		expect(failure.errors).toContain(
 			"policyModules[0].changedFilePatterns[0] must use ** only as a full path segment",
 		);
 	});
@@ -270,8 +291,8 @@ describe("validate-coding-policy.cjs", () => {
 			"src/../package.json",
 		]);
 
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain("changedFiles[0] must be repo-relative");
+		const failure = expectJsonValidationFailure(result);
+		expect(failure.errors).toContain("changedFiles[0] must be repo-relative");
 	});
 
 	it("rejects changed-file route requests without changed files", () => {
@@ -324,8 +345,8 @@ describe("validate-coding-policy.cjs", () => {
 			"",
 		]);
 
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain("changedFiles[0] must be repo-relative");
+		const failure = expectJsonValidationFailure(result);
+		expect(failure.errors).toContain("changedFiles[0] must be repo-relative");
 	});
 
 	it("rejects changed-file route inputs above the bounded batch limit", () => {
@@ -337,8 +358,8 @@ describe("validate-coding-policy.cjs", () => {
 			...Array.from({ length: 201 }, (_, index) => `src/file-${index}.ts`),
 		]);
 
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain(
+		const failure = expectJsonValidationFailure(result);
+		expect(failure.errors).toContain(
 			"changedFiles must include at most 200 paths",
 		);
 	});

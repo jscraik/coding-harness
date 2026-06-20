@@ -145,6 +145,32 @@ function stripCliDiagnosticControls(value) {
 	return stripped;
 }
 
+function writeStaticStderr(lines) {
+	for (const line of lines) {
+		process.stderr.write(`${line}\n`);
+	}
+}
+
+function validationFailurePayload(errors) {
+	return {
+		schemaVersion: "coding-policy-validation/v1",
+		status: "fail",
+		errors: errors.map((error) => sanitizeCliDiagnosticText(error)),
+	};
+}
+
+function writeStaticValidationFailure(options, errors) {
+	writeStaticStderr([
+		"coding-policy: failed",
+		"- policy validation failed; use --json for diagnostics",
+	]);
+	if (options.json) {
+		process.stdout.write(
+			`${JSON.stringify(validationFailurePayload(errors), null, 2)}\n`,
+		);
+	}
+}
+
 function requireSafeGitRef(ref, optionName) {
 	if (typeof ref !== "string" || ref.trim().length === 0) {
 		throw new Error(`${optionName} requires a non-empty ref`);
@@ -625,17 +651,21 @@ function validatePolicy(policy, schema) {
 
 const parsedArgs = parseArgs(process.argv.slice(2));
 if (parsedArgs.errors.length > 0) {
-	console.error("coding-policy: failed");
-	console.error("- invalid command line arguments");
+	writeStaticStderr([
+		"coding-policy: failed",
+		"- invalid command line arguments",
+	]);
 	process.exit(1);
 }
 
 if (!existsSync(policyPath)) {
-	console.error("coding-policy: missing coding-policy.json");
+	writeStaticStderr(["coding-policy: missing coding-policy.json"]);
 	process.exit(1);
 }
 if (!existsSync(schemaPath)) {
-	console.error("coding-policy: missing contracts/coding-policy.schema.json");
+	writeStaticStderr([
+		"coding-policy: missing contracts/coding-policy.schema.json",
+	]);
 	process.exit(1);
 }
 
@@ -644,16 +674,16 @@ let schema;
 try {
 	policy = readPolicyJson();
 } catch {
-	console.error("coding-policy: failed to parse coding-policy.json");
+	writeStaticStderr(["coding-policy: failed to parse coding-policy.json"]);
 	process.exit(1);
 }
 
 try {
 	schema = readSchemaJson();
 } catch {
-	console.error(
+	writeStaticStderr([
 		"coding-policy: failed to parse contracts/coding-policy.schema.json",
-	);
+	]);
 	process.exit(1);
 }
 
@@ -661,8 +691,10 @@ if (parsedArgs.options.gitChanged) {
 	try {
 		parsedArgs.options.changedFiles.push(...gitChangedFiles());
 	} catch {
-		console.error("coding-policy: failed");
-		console.error("- --git-changed failed to read git changed files");
+		writeStaticStderr([
+			"coding-policy: failed",
+			"- --git-changed failed to read git changed files",
+		]);
 		process.exit(1);
 	}
 	parsedArgs.options.changedFiles = uniqueStrings(
@@ -675,8 +707,10 @@ if (parsedArgs.options.gitBase !== null) {
 			...gitBaseChangedFiles(parsedArgs.options.gitBase),
 		);
 	} catch {
-		console.error("coding-policy: failed");
-		console.error("- --git-base failed to read git changed files");
+		writeStaticStderr([
+			"coding-policy: failed",
+			"- --git-base failed to read git changed files",
+		]);
 		process.exit(1);
 	}
 	parsedArgs.options.changedFiles = uniqueStrings(
@@ -687,8 +721,10 @@ if (
 	parsedArgs.options.routeRequested &&
 	parsedArgs.options.changedFiles.length === 0
 ) {
-	console.error("coding-policy: failed");
-	console.error("- route requests require at least one changed file");
+	writeStaticStderr([
+		"coding-policy: failed",
+		"- route requests require at least one changed file",
+	]);
 	process.exit(1);
 }
 
@@ -703,10 +739,7 @@ for (const [index, changedFile] of parsedArgs.options.changedFiles.entries()) {
 	validateRoutePathShape(changedFile, `changedFiles[${index}]`, errors);
 }
 if (errors.length > 0) {
-	console.error("coding-policy: failed");
-	for (const error of errors) {
-		console.error(`- ${sanitizeCliDiagnosticText(error)}`);
-	}
+	writeStaticValidationFailure(parsedArgs.options, errors);
 	process.exit(1);
 }
 
