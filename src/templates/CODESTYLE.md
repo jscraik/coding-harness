@@ -60,7 +60,8 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 
 ## Machine-readable policy index
 - [coding-policy.json](./coding-policy.json) is the machine-readable index for this codestyle pack.
-- Markdown modules remain the prose authority; the JSON file maps module ownership, source-rule lineage, required gates, and claim boundaries for validators and agents.
+- Markdown modules remain the prose authority; the JSON file maps changed-file routing, module ownership, source-rule lineage, required gates, and claim boundaries for validators and agents.
+- Run `node scripts/validate-coding-policy.cjs --json --changed-files <path...>` to discover the policy modules and gates that apply to a changed-file set.
 - Update [contracts/coding-policy.schema.json](./contracts/coding-policy.schema.json) and run `node scripts/validate-coding-policy.cjs` when the policy index shape changes.
 
 ## Enforcement model

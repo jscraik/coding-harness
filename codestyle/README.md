@@ -38,7 +38,8 @@ Use this directory for detailed coding standards. Keep [../CODESTYLE.md](../CODE
 
 ## Machine-readable routing
 - [../coding-policy.json](../coding-policy.json) indexes this codestyle pack for validators and agents.
-- Keep long-form prose in these Markdown modules; keep machine routing, source-rule lineage, required gates, and claim boundaries in the JSON index.
+- Keep long-form prose in these Markdown modules; keep changed-file routing, source-rule lineage, required gates, and claim boundaries in the JSON index.
+- Use `node scripts/validate-coding-policy.cjs --json --changed-files <path...>` when a cold agent needs the policy modules and gates for a concrete changed-file set.
 - Validate the index with `pnpm run coding-policy:validate` after policy routing changes.
 
 ## Enforcement defaults

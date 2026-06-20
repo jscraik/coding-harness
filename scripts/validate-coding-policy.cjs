@@ -39,16 +39,55 @@ const expectedSourceRules = new Set([
 	"testing-standards",
 ]);
 
+function parseArgs(argv) {
+	const options = { json: false, changedFiles: [] };
+	const errors = [];
+	for (let index = 0; index < argv.length; index += 1) {
+		const arg = argv[index];
+		if (arg === "--json") {
+			options.json = true;
+			continue;
+		}
+		if (arg === "--changed-file") {
+			const next = argv[index + 1];
+			if (next === undefined) {
+				errors.push("--changed-file requires a path");
+				continue;
+			}
+			options.changedFiles.push(next);
+			index += 1;
+			continue;
+		}
+		if (arg === "--changed-files" || arg === "--") {
+			options.changedFiles.push(...argv.slice(index + 1));
+			break;
+		}
+		errors.push(`unknown argument ${arg}`);
+	}
+	return { options, errors };
+}
+
 function readJson(path) {
 	return JSON.parse(readFileSync(path, "utf8"));
 }
 
+function normalizeRepoPath(relativePath) {
+	return normalize(relativePath).replace(/\\/g, "/").replace(/^\.\//, "");
+}
+
+function hasParentSegment(relativePath) {
+	return relativePath.split(/[\\/]+/).includes("..");
+}
+
 function isInsideRepo(relativePath) {
-	const normalized = normalize(relativePath);
+	const normalized = normalizeRepoPath(relativePath);
 	return (
 		normalized.length > 0 &&
+		!hasParentSegment(relativePath) &&
+		!/^[A-Za-z]:\//.test(normalized) &&
 		!normalized.startsWith("..") &&
-		!normalized.startsWith(sep)
+		!normalized.startsWith(sep) &&
+		!normalized.startsWith("/")
 	);
 }
 
@@ -98,6 +137,80 @@ function requireUniqueStrings(values, path, errors) {
 	}
 }
 
+function requireRepoRelativePattern(pattern, path, errors) {
+	requireString(pattern, path, errors);
+	if (typeof pattern !== "string") return;
+	if (!isInsideRepo(pattern)) {
+		errors.push(`${path} must be repo-relative`);
+	}
+	if (pattern.includes("\\")) {
+		errors.push(`${path} must use forward slashes`);
+	}
+	if (pattern.includes("//")) {
+		errors.push(`${path} must not contain empty path segments`);
+	}
+	try {
+		globToRegExp(pattern);
+	} catch (error) {
+		errors.push(`${path} is not a valid route pattern: ${error.message}`);
+	}
+}
+
+function escapeRegExp(value) {
+	return value.replace(/[|\\{}()[\]^$+?.*]/g, "\\$&");
+}
+
+function globToRegExp(pattern) {
+	const escaped = escapeRegExp(pattern)
+		.replace(/\\\*\\\*\\\//g, "(?:.*/)?")
+		.replace(/\\\*\\\*/g, ".*")
+		.replace(/\\\*/g, "[^/]*");
+	return new RegExp(`^${escaped}$`);
+}
+
+function matchesPattern(relativePath, pattern) {
+	return globToRegExp(pattern).test(normalizeRepoPath(relativePath));
+}
+
+function uniqueStrings(values) {
+	return Array.from(new Set(values));
+}
+
+function buildPolicyRoute(policy, changedFiles) {
+	const normalizedChangedFiles = uniqueStrings(
+		changedFiles.map(normalizeRepoPath).filter((file) => file.length > 0),
+	);
+	const routedModules = [];
+	for (const module of policy.policyModules) {
+		const matchedFiles = normalizedChangedFiles.filter((file) =>
+			module.changedFilePatterns.some((pattern) =>
+				matchesPattern(file, pattern),
+			),
+		);
+		if (matchedFiles.length === 0) continue;
+		routedModules.push({
+			id: module.id,
+			path: module.path,
+			changedFilePatterns: module.changedFilePatterns,
+			sourceRules: module.sourceRules,
+			requiredGates: module.requiredGates,
+			matchedFiles,
+		});
+	}
+	return {
+		schemaVersion: "coding-policy-route/v1",
+		policySchemaVersion: policy.schemaVersion,
+		authority: policy.authority,
+		entrypoints: policy.entrypoints,
+		changedFiles: normalizedChangedFiles,
+		policyModules: routedModules,
+		requiredGates: uniqueStrings(
+			routedModules.flatMap((module) => module.requiredGates),
+		),
+		claimBoundaries: policy.claimBoundaries,
+	};
+}
+
 function validatePolicy(policy, schema) {
 	const errors = [];
 	requireOnlyKeys(
@@ -133,6 +246,12 @@ function validatePolicy(policy, schema) {
 	) {
 		errors.push("schema policyModule.requiredGates must be unique");
 	}
+	if (
+		schema?.$defs?.policyModule?.properties?.changedFilePatterns
+			?.uniqueItems !== true
+	) {
+		errors.push("schema policyModule.changedFilePatterns must be unique");
+	}
 	if (policy?.schemaVersion !== "harness-coding-policy/v1") {
 		errors.push("schemaVersion must be harness-coding-policy/v1");
 	}
@@ -167,7 +286,7 @@ function validatePolicy(policy, schema) {
 		const prefix = `policyModules[${index}]`;
 		requireOnlyKeys(
 			module,
-			["id", "path", "sourceRules", "requiredGates"],
+			["id", "path", "changedFilePatterns", "sourceRules", "requiredGates"],
 			prefix,
 			errors,
 		);
@@ -193,6 +312,28 @@ function validatePolicy(policy, schema) {
 			errors.push(`${prefix}.path must be repo-relative`);
 		} else if (!existsSync(join(repoRoot, module.path))) {
 			errors.push(`${prefix}.path does not exist: ${module.path}`);
+		}
+		if (
+			!Array.isArray(module?.changedFilePatterns) ||
+			module.changedFilePatterns.length === 0
+		) {
+			errors.push(`${prefix}.changedFilePatterns must be a non-empty array`);
+		} else {
+			requireUniqueStrings(
+				module.changedFilePatterns,
+				`${prefix}.changedFilePatterns`,
+				errors,
+			);
+			for (const [
+				patternIndex,
+				pattern,
+			] of module.changedFilePatterns.entries()) {
+				requireRepoRelativePattern(
+					pattern,
+					`${prefix}.changedFilePatterns[${patternIndex}]`,
+					errors,
+				);
+			}
 		}
 		if (
 			!Array.isArray(module?.sourceRules) ||
@@ -238,6 +379,13 @@ function validatePolicy(policy, schema) {
 	return errors;
 }
 
+const parsedArgs = parseArgs(process.argv.slice(2));
+if (parsedArgs.errors.length > 0) {
+	console.error("coding-policy: failed");
+	for (const error of parsedArgs.errors) console.error(`- ${error}`);
+	process.exit(1);
+}
+
 if (!existsSync(policyPath)) {
 	console.error("coding-policy: missing coding-policy.json");
 	process.exit(1);
@@ -269,16 +417,46 @@ try {
 }
 
 const errors = validatePolicy(policy, schema);
+for (const [index, changedFile] of parsedArgs.options.changedFiles.entries()) {
+	if (!isInsideRepo(changedFile)) {
+		errors.push(`changedFiles[${index}] must be repo-relative`);
+	}
+}
 if (errors.length > 0) {
 	console.error("coding-policy: failed");
 	for (const error of errors) console.error(`- ${error}`);
 	process.exit(1);
 }
 
-console.log(
-	"coding-policy: pass (" +
-		policy.policyModules.length +
-		" modules, " +
-		policy.claimBoundaries.length +
-		" claim boundaries)",
-);
+if (parsedArgs.options.json) {
+	const payload =
+		parsedArgs.options.changedFiles.length > 0
+			? buildPolicyRoute(policy, parsedArgs.options.changedFiles)
+			: {
+					schemaVersion: "coding-policy-validation/v1",
+					status: "pass",
+					policySchemaVersion: policy.schemaVersion,
+					authority: policy.authority,
+					policyModules: policy.policyModules.length,
+					claimBoundaries: policy.claimBoundaries.length,
+				};
+	process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
+} else {
+	console.log(
+		"coding-policy: pass (" +
+			policy.policyModules.length +
+			" modules, " +
+			policy.claimBoundaries.length +
+			" claim boundaries)",
+	);
+	if (parsedArgs.options.changedFiles.length > 0) {
+		const route = buildPolicyRoute(policy, parsedArgs.options.changedFiles);
+		console.log(
+			"coding-policy: route (" +
+				route.policyModules.length +
+				" modules, " +
+				route.requiredGates.length +
+				" required gates)",
+		);
+	}
+}

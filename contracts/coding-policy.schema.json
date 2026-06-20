@@ -89,10 +89,22 @@
 		"policyModule": {
 			"type": "object",
 			"additionalProperties": false,
-			"required": ["id", "path", "sourceRules", "requiredGates"],
+			"required": [
+				"id",
+				"path",
+				"changedFilePatterns",
+				"sourceRules",
+				"requiredGates"
+			],
 			"properties": {
 				"id": { "$ref": "#/$defs/moduleId" },
 				"path": { "$ref": "#/$defs/modulePath" },
+				"changedFilePatterns": {
+					"type": "array",
+					"minItems": 1,
+					"items": { "type": "string", "minLength": 1 },
+					"uniqueItems": true
+				},
 				"sourceRules": {
 					"type": "array",
 					"minItems": 1,

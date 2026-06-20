@@ -173,11 +173,14 @@ authority without an explicit contract update.
 Codestyle policy-index and nested instruction-surface changes are part of this
 same validation graph when they add or alter `coding-policy.json`, policy
 schemas, policy validators, scoped `AGENTS.md` routing cards, docs-gate
-classification, or generated architecture context. Keep this guide,
+classification, `coding-policy-route/v1`, changed-file pattern routing, or
+generated architecture context. Keep this guide,
 `docs/agents/07b-agent-governance.md`, and the generated context pack in the
-same PR so agents can trace policy authority, local routing, and generated
-evidence without treating the JSON index as a replacement for Markdown
-codestyle authority.
+same PR so agents can trace policy authority, local routing, required gates, and
+generated evidence without treating the JSON index as a replacement for Markdown
+codestyle authority. Cold agents should use
+`node scripts/validate-coding-policy.cjs --json --changed-files <path...>` as
+the executable route into that policy surface.
 Toolchain and artifact-test wrapper changes are also validation-graph changes
 when they decide whether broader gates can start. Keep Node engine preflight
 ahead of aggregate checks, route nested package-manager execution through the

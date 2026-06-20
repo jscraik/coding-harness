@@ -11,12 +11,20 @@
 		{
 			"id": "foundations",
 			"path": "codestyle/01-foundations.md",
+			"changedFilePatterns": ["**/*"],
 			"sourceRules": ["boy-scout", "error-handling", "file-hygiene"],
 			"requiredGates": ["pnpm lint", "pnpm typecheck"]
 		},
 		{
 			"id": "docs-config-release",
 			"path": "codestyle/04-docs-config-and-release.md",
+			"changedFilePatterns": [
+				"**/*.md",
+				"docs/**",
+				"codestyle/**",
+				"contracts/**",
+				"src/templates/**"
+			],
 			"sourceRules": [
 				"commit-conventions",
 				"context-artifacts",
@@ -31,42 +39,92 @@
 		{
 			"id": "quality-security-ops",
 			"path": "codestyle/05-quality-security-ops.md",
+			"changedFilePatterns": [
+				".circleci/**",
+				".github/**",
+				"contracts/**",
+				"scripts/**",
+				"src/commands/**",
+				"src/lib/**"
+			],
 			"sourceRules": ["ci-safety", "script-delegation", "stateful-artifacts"],
 			"requiredGates": ["pnpm check", "bash scripts/validate-codestyle.sh"]
 		},
 		{
 			"id": "shell",
 			"path": "codestyle/10-shell-bash-zsh.md",
+			"changedFilePatterns": [
+				".circleci/config.yml",
+				"Makefile",
+				"scripts/*.sh",
+				"scripts/**/*.sh",
+				"*.sh"
+			],
 			"sourceRules": ["script-as-black-box", "script-delegation"],
 			"requiredGates": ["pnpm run quality:scripts"]
 		},
 		{
 			"id": "package-managers",
 			"path": "codestyle/11-package-managers-pnpm-npm.md",
+			"changedFilePatterns": [
+				".mise.toml",
+				".npmrc",
+				"package.json",
+				"pnpm-lock.yaml"
+			],
 			"sourceRules": ["dependency-management"],
 			"requiredGates": ["pnpm install --frozen-lockfile", "pnpm audit"]
 		},
 		{
 			"id": "git-workflow",
 			"path": "codestyle/13-git-workflow.md",
+			"changedFilePatterns": [
+				".github/**",
+				".gitignore",
+				"scripts/hook-*.sh",
+				"scripts/verify-work.sh"
+			],
 			"sourceRules": ["ci-safety", "commit-conventions", "sync-before-work"],
 			"requiredGates": ["git status --short --branch"]
 		},
 		{
 			"id": "security",
 			"path": "codestyle/16-security.md",
+			"changedFilePatterns": [
+				".semgrep/**",
+				"semgrep*.yml",
+				"scripts/*security*",
+				"scripts/semgrep*",
+				"src/**/auth*",
+				"src/**/secret*"
+			],
 			"sourceRules": ["no-secrets"],
 			"requiredGates": ["pnpm audit"]
 		},
 		{
 			"id": "testing",
 			"path": "codestyle/17-testing.md",
+			"changedFilePatterns": [
+				"**/*.test.ts",
+				"**/*.spec.ts",
+				"e2e/**",
+				"test-fixtures/**",
+				"tests/**",
+				"vitest.config.ts"
+			],
 			"sourceRules": ["plugin-evals", "testing-standards"],
 			"requiredGates": ["pnpm run test:related", "pnpm test"]
 		},
 		{
 			"id": "development-workflow",
 			"path": "codestyle/19-development-workflow.md",
+			"changedFilePatterns": [
+				"AGENTS.md",
+				"**/AGENTS.md",
+				"docs/agents/**",
+				"scripts/**",
+				"src/dev/**"
+			],
 			"sourceRules": ["boy-scout", "ci-safety", "sync-before-work"],
 			"requiredGates": ["bash scripts/validate-codestyle.sh --fast"]
 		}

@@ -78,6 +78,12 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 - Types and schemas are contract surfaces. TypeScript, Python, JSON, YAML,
   Markdown metadata, shell, and generated artifacts should use configured type,
   schema, lint, and validation gates rather than ad hoc string assumptions.
+- Coding policy routing is a machine-readable control-plane surface:
+  `coding-policy.json` maps changed-file patterns to codestyle modules and
+  required gates, while Markdown codestyle modules remain the prose authority.
+  Cold agents should use
+  `node scripts/validate-coding-policy.cjs --json --changed-files <path...>`
+  to discover the policy modules and gates for a concrete changed-file set.
 - GitHub Actions release workflow inputs are untrusted shell-boundary data.
   Pass manual `workflow_dispatch` inputs through named `env` variables before
   validation instead of interpolating `github.event.inputs.*` directly inside
