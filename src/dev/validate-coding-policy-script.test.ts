@@ -405,18 +405,23 @@ describe("validate-coding-policy.cjs", () => {
 		);
 	});
 
-	it("rejects unsafe branch base refs", () => {
+	it.each([
+		["--name-only", "--git-base must contain only"],
+		["main..feature", "--git-base must be a plain git ref"],
+		["main;echo", "--git-base must contain only"],
+		["main@{1}", "--git-base must contain only"],
+	])("rejects unsafe branch base ref %s", (baseRef, message) => {
 		const root = createPolicyRoot();
 		runGit(root, ["init"]);
 
 		const result = runValidateCodingPolicy(root, [
 			"--json",
 			"--git-base",
-			"--name-only",
+			baseRef,
 		]);
 
 		expect(result.status).toBe(1);
 		expect(result.stderr).toContain("--git-base failed");
-		expect(result.stderr).toContain("--git-base must be a plain git ref");
+		expect(result.stderr).toContain(message);
 	});
 });

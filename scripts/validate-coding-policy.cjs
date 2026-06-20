@@ -117,7 +117,18 @@ function requireSafeGitRef(ref, optionName) {
 	if (typeof ref !== "string" || ref.trim().length === 0) {
 		throw new Error(`${optionName} requires a non-empty ref`);
 	}
-	if (/\s/.test(ref) || ref.startsWith("-")) {
+	if (!/^[A-Za-z0-9._/@-]+$/.test(ref) || ref.startsWith("-")) {
+		throw new Error(
+			`${optionName} must contain only letters, numbers, dot, slash, underscore, at-sign, or dash`,
+		);
+	}
+	if (
+		ref.includes("..") ||
+		ref.includes("@{") ||
+		ref.endsWith(".") ||
+		ref.includes("//") ||
+		ref.includes("/.")
+	) {
 		throw new Error(`${optionName} must be a plain git ref`);
 	}
 	return ref;
