@@ -37,7 +37,15 @@
 		},
 		"lanes": {
 			"type": "array",
-			"items": { "$ref": "#/$defs/lane" }
+			"items": { "$ref": "#/$defs/lane" },
+			"allOf": [
+				{ "$ref": "#/$defs/requiresArchitectureFitnessLane" },
+				{ "$ref": "#/$defs/requiresQualityBudgetLane" },
+				{ "$ref": "#/$defs/requiresTypeSafetyLane" },
+				{ "$ref": "#/$defs/requiresStaticLintLane" },
+				{ "$ref": "#/$defs/requiresBehaviorProofLane" },
+				{ "$ref": "#/$defs/requiresFeedbackLearningLane" }
+			]
 		},
 		"topDeterministicFinding": {
 			"anyOf": [{ "$ref": "#/$defs/finding" }, { "type": "null" }]
@@ -75,6 +83,54 @@
 					"items": { "$ref": "#/$defs/finding" }
 				}
 			}
+		},
+		"requiresArchitectureFitnessLane": {
+			"contains": {
+				"type": "object",
+				"required": ["id"],
+				"properties": { "id": { "const": "architecture-fitness" } }
+			},
+			"minContains": 1
+		},
+		"requiresQualityBudgetLane": {
+			"contains": {
+				"type": "object",
+				"required": ["id"],
+				"properties": { "id": { "const": "quality-budget" } }
+			},
+			"minContains": 1
+		},
+		"requiresTypeSafetyLane": {
+			"contains": {
+				"type": "object",
+				"required": ["id"],
+				"properties": { "id": { "const": "type-safety" } }
+			},
+			"minContains": 1
+		},
+		"requiresStaticLintLane": {
+			"contains": {
+				"type": "object",
+				"required": ["id"],
+				"properties": { "id": { "const": "static-lint" } }
+			},
+			"minContains": 1
+		},
+		"requiresBehaviorProofLane": {
+			"contains": {
+				"type": "object",
+				"required": ["id"],
+				"properties": { "id": { "const": "behavior-proof" } }
+			},
+			"minContains": 1
+		},
+		"requiresFeedbackLearningLane": {
+			"contains": {
+				"type": "object",
+				"required": ["id"],
+				"properties": { "id": { "const": "feedback-learning" } }
+			},
+			"minContains": 1
 		},
 		"finding": {
 			"type": "object",
@@ -207,7 +263,6 @@
 					},
 					"else": {
 						"properties": {
-							"baselineRef": { "type": "null" },
 							"previous": { "type": "null" },
 							"delta": { "type": "null" },
 							"direction": { "const": "baseline_unavailable" }

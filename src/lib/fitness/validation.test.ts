@@ -1,5 +1,36 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { validateFitnessReport } from "./validation.js";
+
+const REQUIRED_SCHEMA_LANE_DEFS = [
+	"requiresArchitectureFitnessLane",
+	"requiresQualityBudgetLane",
+	"requiresTypeSafetyLane",
+	"requiresStaticLintLane",
+	"requiresBehaviorProofLane",
+	"requiresFeedbackLearningLane",
+] as const;
+
+const REQUIRED_SCHEMA_LANE_IDS = [
+	"architecture-fitness",
+	"quality-budget",
+	"type-safety",
+	"static-lint",
+	"behavior-proof",
+	"feedback-learning",
+] as const;
+
+function harnessFitnessSchema(): Record<string, unknown> {
+	return JSON.parse(
+		readFileSync("contracts/harness-fitness.schema.json", "utf8"),
+	) as Record<string, unknown>;
+}
+
+function record(value: unknown): Record<string, unknown> {
+	expect(value).toEqual(expect.any(Object));
+	expect(Array.isArray(value)).toBe(false);
+	return value as Record<string, unknown>;
+}
 
 function lane(
 	id: string,
@@ -489,6 +520,46 @@ describe("validateFitnessReport", () => {
 					code: "trendSnapshot.direction must be baseline_unavailable when baselineStatus is unavailable",
 				}),
 			]),
+		);
+	});
+
+	it("mirrors canonical lane requirements in the JSON schema", () => {
+		const schema = harnessFitnessSchema();
+		const defs = record(schema.$defs);
+		const lanes = record(record(schema.properties).lanes);
+
+		expect(lanes.allOf).toEqual(
+			REQUIRED_SCHEMA_LANE_DEFS.map((definition) => ({
+				$ref: `#/$defs/${definition}`,
+			})),
+		);
+
+		for (const [index, definition] of REQUIRED_SCHEMA_LANE_DEFS.entries()) {
+			const requirement = record(defs[definition]);
+			const contains = record(requirement.contains);
+			const properties = record(contains.properties);
+			const id = record(properties.id);
+			expect(requirement.minContains).toBe(1);
+			expect(id.const).toBe(REQUIRED_SCHEMA_LANE_IDS[index]);
+		}
+	});
+
+	it("keeps unavailable trend snapshots schema-compatible with attempted baseline refs", () => {
+		const schema = harnessFitnessSchema();
+		const trendSnapshot = record(record(schema.$defs).trendSnapshot);
+		const allOf = trendSnapshot.allOf;
+		expect(allOf).toEqual(expect.any(Array));
+		const trendStatusBranch = record((allOf as unknown[])[0]);
+		const elseBranch = record(trendStatusBranch.else);
+		const elseProperties = record(elseBranch.properties);
+
+		expect(elseProperties).not.toHaveProperty("baselineRef");
+		expect(elseProperties).toEqual(
+			expect.objectContaining({
+				previous: { type: "null" },
+				delta: { type: "null" },
+				direction: { const: "baseline_unavailable" },
+			}),
 		);
 	});
 });
