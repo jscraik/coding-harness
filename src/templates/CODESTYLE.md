@@ -61,7 +61,7 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 ## Machine-readable policy index
 - [coding-policy.json](./coding-policy.json) is the machine-readable index for this codestyle pack.
 - Markdown modules remain the prose authority; the JSON file maps module ownership, source-rule lineage, required gates, and claim boundaries for validators and agents.
-- Update [contracts/coding-policy.schema.json](./contracts/coding-policy.schema.json) and run `pnpm run coding-policy:validate` when the policy index shape changes.
+- Update [contracts/coding-policy.schema.json](./contracts/coding-policy.schema.json) and run `node scripts/validate-coding-policy.cjs` when the policy index shape changes.
 
 ## Enforcement model
 - Rules in this pack use RFC2119 language (`MUST`, `MUST NOT`, `SHOULD`) and are normative unless an explicit waiver exists.
