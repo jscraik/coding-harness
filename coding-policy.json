@@ -34,6 +34,7 @@
 			],
 			"requiredGates": [
 				"pnpm run coding-policy:validate",
+				"pnpm docs:lint",
 				"pnpm docs:lifecycle",
 				"bash scripts/run-harness-gate.sh docs-gate --mode required --json"
 			]
@@ -77,6 +78,7 @@
 				".npmrc",
 				".pnpmrc",
 				"package.json",
+				"pnpm-workspace.yaml",
 				"pnpm-lock.yaml"
 			],
 			"sourceRules": ["dependency-management"],
@@ -98,7 +100,9 @@
 			"id": "security",
 			"path": "codestyle/16-security.md",
 			"changedFilePatterns": [
+				".gitleaks.toml",
 				".semgrep/**",
+				".trufflehog-exclude.txt",
 				"semgrep*.yml",
 				"scripts/check-*secret*.sh",
 				"scripts/check-semgrep*.sh",
@@ -122,7 +126,11 @@
 				"vitest.config.ts"
 			],
 			"sourceRules": ["plugin-evals", "testing-standards"],
-			"requiredGates": ["pnpm run test:related", "pnpm test"]
+			"requiredGates": [
+				"pnpm run quality:self-affirming",
+				"pnpm run test:related",
+				"pnpm test"
+			]
 		},
 		{
 			"id": "development-workflow",

@@ -391,7 +391,11 @@ describe("validate-coding-policy.cjs", () => {
 			"src/cli.ts",
 			"scripts/check",
 			".pnpmrc",
+			"pnpm-workspace.yaml",
 			"scripts/check-staged-secrets.sh",
+			".gitleaks.toml",
+			".trufflehog-exclude.txt",
+			"tests/example.test.ts",
 		]);
 
 		expect(result.status).toBe(0);
@@ -402,10 +406,12 @@ describe("validate-coding-policy.cjs", () => {
 		expect(route.requiredGates).toEqual(
 			expect.arrayContaining([
 				"pnpm run coding-policy:validate",
+				"pnpm docs:lint",
 				"pnpm check",
 				"pnpm run quality:scripts",
 				"pnpm install --frozen-lockfile",
 				"pnpm audit",
+				"pnpm run quality:self-affirming",
 			]),
 		);
 		expect(route.policyModules).toEqual(
@@ -424,13 +430,22 @@ describe("validate-coding-policy.cjs", () => {
 				}),
 				expect.objectContaining({
 					id: "package-managers",
-					matchedFiles: expect.arrayContaining([".pnpmrc"]),
+					matchedFiles: expect.arrayContaining([
+						".pnpmrc",
+						"pnpm-workspace.yaml",
+					]),
 				}),
 				expect.objectContaining({
 					id: "security",
 					matchedFiles: expect.arrayContaining([
 						"scripts/check-staged-secrets.sh",
+						".gitleaks.toml",
+						".trufflehog-exclude.txt",
 					]),
+				}),
+				expect.objectContaining({
+					id: "testing",
+					matchedFiles: expect.arrayContaining(["tests/example.test.ts"]),
 				}),
 			]),
 		);
