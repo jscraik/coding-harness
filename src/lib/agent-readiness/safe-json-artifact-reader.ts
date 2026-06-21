@@ -20,14 +20,14 @@ type ContainedJsonArtifact = {
 	realPath: string;
 };
 
-/** Return discovered JSON artifact paths that pass repo containment checks. */
+/** Return discovered JSON artifact paths within the repo boundary. */
 export function jsonArtifactEvidence(
 	repoRoot: string,
 	allowedPaths: readonly string[],
 ): string[] {
 	return allowedPaths.filter(
 		(artifactPath) =>
-			safeArtifactPath(repoRoot, artifactPath, allowedPaths) !== null,
+			existingArtifactPath(repoRoot, artifactPath, allowedPaths) !== null,
 	);
 }
 
@@ -87,7 +87,7 @@ function readValidatedArtifactFile(file: ContainedJsonArtifact): string {
 	}
 }
 
-function safeArtifactPath(
+function existingArtifactPath(
 	repoRoot: string,
 	artifactPath: string,
 	allowedPaths: readonly string[],
@@ -104,11 +104,8 @@ function safeArtifactPath(
 		);
 		if (absolutePath === null) return null;
 		if (escapesRepoRoot(realRepoRoot, absolutePath)) return null;
-		const stat = lstatSync(absolutePath);
-		if (!isReadableArtifactFile(stat)) return null;
-		const realPath = realpathSync(absolutePath);
-		if (escapesRepoRoot(realRepoRoot, realPath)) return null;
-		return realPath;
+		lstatSync(absolutePath);
+		return artifactPath;
 	} catch {
 		return null;
 	}

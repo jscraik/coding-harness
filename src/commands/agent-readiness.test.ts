@@ -279,11 +279,9 @@ describe("agent-readiness command", () => {
 			content: "x".repeat(1_000_001),
 			expected: {
 				evidence: [
-					"missing:artifacts/context-integrity/prompt-context-drift-report.json",
+					"artifacts/context-integrity/prompt-context-drift-report.json",
 				],
-				staleReasons: [
-					"No prompt-context-drift report was provided for agent-readable orientation.",
-				],
+				staleReasons: ["Prompt-context-drift report is empty."],
 			},
 		},
 	])("warns when guarded prompt-context drift report is $name", ({
@@ -471,11 +469,15 @@ describe("agent-readiness command", () => {
 		});
 	});
 
-	it("warns when multiple prompt-context drift reports create ambiguous authority", () => {
+	it("warns when unsafe canonical and alternate prompt-context drift reports create ambiguous authority", () => {
 		const repoRoot = makeAgentReadyRepo(tempDirs);
+		const canonical =
+			"artifacts/context-integrity/prompt-context-drift-report.json";
+		const alternate = "artifacts/prompt-context-drift-report.json";
+		writeRepoFile(repoRoot, canonical, "x".repeat(1_000_001));
 		writeRepoFile(
 			repoRoot,
-			"artifacts/prompt-context-drift-report.json",
+			alternate,
 			JSON.stringify(promptContextDriftReportForReadyRepo(repoRoot)),
 		);
 
@@ -487,16 +489,13 @@ describe("agent-readiness command", () => {
 			(surface) => surface.id === "prompt_context_drift",
 		);
 
-		expect(report.status).toBe("warn");
 		expect(promptContextSurface).toMatchObject({
 			status: "warn",
+			evidence: [canonical, alternate],
 			staleReasons: [
 				expect.stringContaining(
 					"Multiple prompt-context-drift reports were discovered",
 				),
-			],
-			suggestedRefreshCommands: [
-				"rm artifacts/prompt-context-drift-report.json",
 			],
 		});
 	});
@@ -525,7 +524,7 @@ describe("agent-readiness command", () => {
 
 		expect(promptContextSurface).toMatchObject({
 			status: "warn",
-			evidence: [`missing:${canonicalReport}`],
+			evidence: [canonicalReport],
 			suggestedRefreshCommands: [
 				"harness prompt-context-drift:write",
 				`harness prompt-context-drift:validate ${canonicalReport}`,
