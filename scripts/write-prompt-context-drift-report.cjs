@@ -275,17 +275,7 @@ function ensureSafeParentDirectory(realRepoRoot, relativeOutputPath) {
 function resolveRepoRoot(requestedRoot) {
 	const base = path.resolve(realpathSync(process.cwd()));
 	const rootRequest = requestedRoot || ".";
-	const requestedAbsolute = path.isAbsolute(rootRequest)
-		? rootRequest
-		: path.resolve(base, rootRequest);
-	const requestedRelativePath = path.relative(base, requestedAbsolute);
-	if (
-		requestedRelativePath === ".." ||
-		requestedRelativePath.startsWith(`..${path.sep}`) ||
-		path.isAbsolute(requestedRelativePath)
-	) {
-		throw new Error("--repo-root must resolve inside the current directory");
-	}
+	const requestedAbsolute = repoRootCandidate(base, rootRequest);
 	const realRoot = realpathSync(requestedAbsolute);
 	const relativePath = path.relative(base, realRoot);
 	if (
@@ -296,6 +286,19 @@ function resolveRepoRoot(requestedRoot) {
 		throw new Error("--repo-root must resolve inside the current directory");
 	}
 	return realRoot;
+}
+
+function repoRootCandidate(base, rootRequest) {
+	if (typeof rootRequest !== "string" || rootRequest.trim().length === 0) {
+		throw new Error("--repo-root must resolve inside the current directory");
+	}
+	if (rootRequest.includes("\0")) {
+		throw new Error("--repo-root must resolve inside the current directory");
+	}
+	if (rootRequest === "." || rootRequest === base) {
+		return base;
+	}
+	throw new Error("--repo-root must resolve inside the current directory");
 }
 
 main();

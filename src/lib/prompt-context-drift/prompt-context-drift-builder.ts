@@ -133,12 +133,26 @@ export function buildPromptContextDriftReport(
 function resolveRepoRoot(requestedRepoRoot: string | undefined): string {
 	const base = realpathSync(resolve(process.cwd()));
 	const requested = requestedRepoRoot ?? ".";
-	const absolutePath = realpathSync(resolve(base, requested));
+	const absolutePath = realpathSync(repoRootCandidate(base, requested));
 	const relativePath = relative(base, absolutePath);
-	if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
+	if (
+		relativePath === ".." ||
+		relativePath.startsWith(`..${sep}`) ||
+		isAbsolute(relativePath)
+	) {
 		throw new Error("repoRoot must stay inside the current working directory");
 	}
 	return absolutePath;
+}
+
+function repoRootCandidate(base: string, requested: string): string {
+	if (requested.trim().length === 0 || requested.includes("\0")) {
+		throw new Error("repoRoot must stay inside the current working directory");
+	}
+	if (requested === "." || requested === base) {
+		return base;
+	}
+	throw new Error("repoRoot must stay inside the current working directory");
 }
 
 function buildPromptContextDriftSurface(input: {
