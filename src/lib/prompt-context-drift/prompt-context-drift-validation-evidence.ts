@@ -59,6 +59,12 @@ function containedRepoFile(
 	}
 	const resolvedRoot = resolve(root);
 	const candidate = resolve(resolvedRoot, refPath);
+	if (relativePath.startsWith('..') || isAbsolute(relativePath)) {
+		return failNull(
+			errors,
+			`${path}.ref: resolved path escapes repository root`,
+		);
+	}
 	const relativePath = relative(resolvedRoot, candidate);
 	if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
 		return failNull(
