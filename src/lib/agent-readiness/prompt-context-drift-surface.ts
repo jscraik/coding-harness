@@ -1,0 +1,189 @@
+import { readCurrentHeadSha } from "../prompt-context-drift/git-head.js";
+import {
+	PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
+	PROMPT_CONTEXT_DRIFT_SURFACES,
+	validatePromptContextDriftReport,
+} from "../prompt-context-drift/index.js";
+import { evidence, readText } from "./repo-evidence.js";
+import type {
+	AgentReadinessContextSurface,
+	AgentReadinessStatus,
+} from "./types.js";
+
+const WRITE_COMMAND =
+	"node scripts/write-prompt-context-drift-report.cjs --repo-root .";
+const VALIDATE_COMMAND =
+	"node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .";
+const writeCommandFor = (reportPath: string) =>
+	`node scripts/write-prompt-context-drift-report.cjs --repo-root . --output ${reportPath}`;
+const validateCommandFor = (reportPath: string) =>
+	`node scripts/validate-prompt-context-drift.cjs ${reportPath} --repo-root .`;
+const CANONICAL_REPORT = PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0];
+
+/** Project prompt-context drift evidence into the agent-readiness context surface. */
+export function promptContextDriftSurface(
+	repoRoot: string,
+): AgentReadinessContextSurface {
+	const reportEvidence = evidence(
+		repoRoot,
+		Array.from(PROMPT_CONTEXT_DRIFT_REPORT_PATHS),
+	);
+	if (reportEvidence.length === 0) {
+		return contextSurface({
+			status: "warn",
+			evidence: [`missing:${CANONICAL_REPORT}`],
+			staleReasons: [
+				"No prompt-context-drift report was provided for agent-readable orientation.",
+			],
+		});
+	}
+	if (reportEvidence.length > 1) {
+		return contextSurface({
+			status: "warn",
+			evidence: reportEvidence,
+			staleReasons: [
+				"Multiple prompt-context-drift reports were discovered; keep a single canonical artifacts/context-integrity/prompt-context-drift-report.json report before using this surface.",
+			],
+		});
+	}
+	const reportStatus = promptContextDriftReportStatus(
+		readText(repoRoot, reportEvidence[0] ?? ""),
+		repoRoot,
+	);
+	return contextSurface({
+		status: reportStatus.status,
+		evidence: reportEvidence,
+		staleReasons: reportStatus.staleReasons,
+		suggestedRefreshCommands: refreshCommandsFor(reportEvidence[0] ?? ""),
+	});
+}
+
+function refreshCommandsFor(reportPath: string): string[] {
+	return reportPath === CANONICAL_REPORT
+		? [WRITE_COMMAND, VALIDATE_COMMAND]
+		: [writeCommandFor(reportPath), validateCommandFor(reportPath)];
+}
+
+function promptContextDriftReportStatus(
+	text: string,
+	repoRoot: string,
+): { status: AgentReadinessStatus; staleReasons: string[] } {
+	if (text.length === 0) {
+		return {
+			status: "warn",
+			staleReasons: ["Prompt-context-drift report is empty."],
+		};
+	}
+	try {
+		const parsed = JSON.parse(text) as {
+			blockers?: unknown;
+			currentHeadSha?: unknown;
+			overallStatus?: unknown;
+			surfaces?: unknown;
+		};
+		const validation = validatePromptContextDriftReport(parsed, { repoRoot });
+		if (validation.status !== "pass") {
+			return {
+				status: "warn",
+				staleReasons: [
+					`Prompt-context-drift report failed validation: ${validation.errors[0] ?? "unknown validation error"}.`,
+				],
+			};
+		}
+		const liveHeadError = liveHeadBindingError(parsed, repoRoot);
+		if (liveHeadError !== null) {
+			return { status: "warn", staleReasons: [liveHeadError] };
+		}
+		const consistencyError = reportPassConsistencyError(parsed);
+		if (consistencyError !== null) {
+			return { status: "warn", staleReasons: [consistencyError] };
+		}
+		return parsed.overallStatus === "pass"
+			? { status: "pass", staleReasons: [] }
+			: {
+					status: "warn",
+					staleReasons: [
+						"Prompt-context-drift report is not pass for orientation.",
+					],
+				};
+	} catch (error) {
+		return {
+			status: "warn",
+			staleReasons: [
+				`Prompt-context-drift report is not valid JSON: ${error instanceof Error ? error.message : String(error)}.`,
+			],
+		};
+	}
+}
+
+function reportPassConsistencyError(report: {
+	blockers?: unknown;
+	overallStatus?: unknown;
+	surfaces?: unknown;
+}): string | null {
+	if (report.overallStatus !== "pass") return null;
+	if (Array.isArray(report.blockers) && report.blockers.length > 0) {
+		return "Prompt-context-drift report claims pass while report blockers are present.";
+	}
+	if (!Array.isArray(report.surfaces)) return null;
+	const seenSurfaces = new Set<string>();
+	for (const surface of report.surfaces) {
+		if (!isSurfaceRecord(surface)) continue;
+		seenSurfaces.add(surface.surfaceId);
+		if (
+			surface.status !== "pass" ||
+			(Array.isArray(surface.blockers) && surface.blockers.length > 0)
+		) {
+			return `Prompt-context-drift report claims pass while surface ${surface.surfaceId} is degraded.`;
+		}
+	}
+	const missingSurface = PROMPT_CONTEXT_DRIFT_SURFACES.find(
+		(surfaceId) => !seenSurfaces.has(surfaceId),
+	);
+	return missingSurface
+		? `Prompt-context-drift report claims pass while required surface ${missingSurface} is missing.`
+		: null;
+}
+
+function isSurfaceRecord(value: unknown): value is {
+	blockers?: unknown;
+	status?: unknown;
+	surfaceId: string;
+} {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		!Array.isArray(value) &&
+		typeof (value as { surfaceId?: unknown }).surfaceId === "string"
+	);
+}
+
+function liveHeadBindingError(
+	report: { currentHeadSha?: unknown },
+	repoRoot: string,
+): string | null {
+	const liveHead = readCurrentHeadSha(repoRoot);
+	if (liveHead === null) {
+		return "Prompt-context-drift report live HEAD could not be verified.";
+	}
+	return report.currentHeadSha === liveHead
+		? null
+		: "Prompt-context-drift report currentHeadSha does not match live repository HEAD.";
+}
+
+function contextSurface(input: {
+	status: AgentReadinessStatus;
+	evidence: string[];
+	staleReasons: string[];
+	suggestedRefreshCommands?: string[] | undefined;
+}): AgentReadinessContextSurface {
+	return {
+		id: "prompt_context_drift",
+		...input,
+		suggestedRefreshCommands: input.suggestedRefreshCommands ?? [
+			WRITE_COMMAND,
+			VALIDATE_COMMAND,
+		],
+		evidenceUse: "orientation",
+	};
+}

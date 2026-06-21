@@ -55,7 +55,6 @@ graph LR
   node_command_version_probe_8bb29bab_eb9a49d1["command_version_probe_8bb29bab"]
   node_config_validator_669ebc2e_d7ca485d["config_validator_669ebc2e"]
   node_context_ea7792a2_08541ab6["context_ea7792a2"]
-  node_context_health_1_ceb11829_81ec3744["context_health_1_ceb11829"]
   node_context_health_80bb7da9_169768cb["context_health_80bb7da9"]
   node_contract_2_79042026_5e38c659["contract_2_79042026"]
   node_contract_cc8321d6_c0e3de0f["contract_cc8321d6"]
@@ -112,6 +111,7 @@ graph LR
   node_gate_artifact_findings_95d1e2ef_d86a6ced["gate_artifact_findings_95d1e2ef"]
   node_gate_c974e17b_07549baf["gate_c974e17b"]
   node_generated_artifact_parent_1f7755de_7894ed12["generated_artifact_parent_1f7755de"]
+  node_git_head_7346fd6a_bca07e9a["git_head_7346fd6a"]
   node_git_tracked_paths_0d2bb251_a46656b4["git_tracked_paths_0d2bb251"]
   node_github_e2e_2891a341_af6f1610["github_e2e_2891a341"]
   node_goal_completion_audit_receipt_5e4939c3_4fb29d00["goal_completion_audit_receipt_5e4939c3"]
@@ -187,8 +187,9 @@ graph LR
   node_preset_resolver_dc3dd716_3f747c75["preset_resolver_dc3dd716"]
   node_preset_source_loaders_a8cd7c1c_01f5a3a0["preset_source_loaders_a8cd7c1c"]
   node_prompt_context_drift_builder_a451c7dd_702c1ffe["prompt_context_drift_builder_a451c7dd"]
-  node_prompt_context_drift_report_3257a95c_01f8c3e1["prompt_context_drift_report_3257a95c"]
   node_prompt_context_drift_validate_runner_c8ecc6f5_48948688["prompt_context_drift_validate_runner_c8ecc6f5"]
+  node_prompt_context_drift_validation_8fc01719_589d710a["prompt_context_drift_validation_8fc01719"]
+  node_prompt_context_drift_validation_evidence_21f0336_17de7748["prompt_context_drift_validation_evidence_21f0336f"]
   node_prompt_context_drift_write_runner_69e6a4fd_5b8d8b6e["prompt_context_drift_write_runner_69e6a4fd"]
   node_provider_adapter_3bcf82b7_3ce4cf67["provider_adapter_3bcf82b7"]
   node_quality_scorer_362f2a90_2a086a0b["quality_scorer_362f2a90"]
@@ -335,12 +336,12 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_cli_5_9c446a0f_12d0ff9c
   ext_node_child_process_f62b7d19["node:child_process"] --> node_collector_0736fd5b_10bc1882
   ext_node_child_process_f62b7d19["node:child_process"] --> node_command_version_probe_8bb29bab_eb9a49d1
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_context_health_1_ceb11829_81ec3744
   ext_node_child_process_f62b7d19["node:child_process"] --> node_control_plane_core_db3b4cb2_27437a14
   ext_node_child_process_f62b7d19["node:child_process"] --> node_diff_budget_9da0268d_71167227
   ext_node_child_process_f62b7d19["node:child_process"] --> node_docs_gate_files_affa1b0b_bbdd6f27
   ext_node_child_process_f62b7d19["node:child_process"] --> node_doctor_check_utils_d0fc22ea_d74f86eb
   ext_node_child_process_f62b7d19["node:child_process"] --> node_doctor_github_tool_check_e0a938df_28b6e31e
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_git_head_7346fd6a_bca07e9a
   ext_node_child_process_f62b7d19["node:child_process"] --> node_git_tracked_paths_0d2bb251_a46656b4
   ext_node_child_process_f62b7d19["node:child_process"] --> node_github_e2e_2891a341_af6f1610
   ext_node_child_process_f62b7d19["node:child_process"] --> node_health_core_2b2fdada_341de678
@@ -407,7 +408,7 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_policy_digest_ca7acf0a_bae99d76
   ext_node_crypto_c7dfc512["node:crypto"] --> node_preset_source_loaders_a8cd7c1c_01f5a3a0
   ext_node_crypto_c7dfc512["node:crypto"] --> node_prompt_context_drift_builder_a451c7dd_702c1ffe
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_prompt_context_drift_report_3257a95c_01f8c3e1
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_prompt_context_drift_validation_evidence_21f0336_17de7748
   ext_node_crypto_c7dfc512["node:crypto"] --> node_remediate_apply_transactions_0738b122_7ebd0795
   ext_node_crypto_c7dfc512["node:crypto"] --> node_replay_packet_a1293f88_f3b4800a
   ext_node_crypto_c7dfc512["node:crypto"] --> node_repository_identity_9dc13d37_eaffcd1e
@@ -576,8 +577,8 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_preset_resolver_dc3dd716_3f747c75
   ext_node_fs_a15b7d96["node:fs"] --> node_preset_source_loaders_a8cd7c1c_01f5a3a0
   ext_node_fs_a15b7d96["node:fs"] --> node_prompt_context_drift_builder_a451c7dd_702c1ffe
-  ext_node_fs_a15b7d96["node:fs"] --> node_prompt_context_drift_report_3257a95c_01f8c3e1
   ext_node_fs_a15b7d96["node:fs"] --> node_prompt_context_drift_validate_runner_c8ecc6f5_48948688
+  ext_node_fs_a15b7d96["node:fs"] --> node_prompt_context_drift_validation_evidence_21f0336_17de7748
   ext_node_fs_a15b7d96["node:fs"] --> node_prompt_context_drift_write_runner_69e6a4fd_5b8d8b6e
   ext_node_fs_a15b7d96["node:fs"] --> node_provider_adapter_3bcf82b7_3ce4cf67
   ext_node_fs_a15b7d96["node:fs"] --> node_quality_scorer_362f2a90_2a086a0b
@@ -834,7 +835,8 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_preset_resolver_dc3dd716_3f747c75
   ext_node_path_78811c13["node:path"] --> node_preset_source_loaders_a8cd7c1c_01f5a3a0
   ext_node_path_78811c13["node:path"] --> node_prompt_context_drift_builder_a451c7dd_702c1ffe
-  ext_node_path_78811c13["node:path"] --> node_prompt_context_drift_report_3257a95c_01f8c3e1
+  ext_node_path_78811c13["node:path"] --> node_prompt_context_drift_validation_8fc01719_589d710a
+  ext_node_path_78811c13["node:path"] --> node_prompt_context_drift_validation_evidence_21f0336_17de7748
   ext_node_path_78811c13["node:path"] --> node_provider_adapter_3bcf82b7_3ce4cf67
   ext_node_path_78811c13["node:path"] --> node_quality_scorer_362f2a90_2a086a0b
   ext_node_path_78811c13["node:path"] --> node_query_cli_b95be64d_1ebc13aa

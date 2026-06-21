@@ -3,7 +3,11 @@ import { spawnSync } from "node:child_process";
 import { lstatSync, realpathSync } from "node:fs";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { assessActiveRouteRefs } from "../agent-readiness/active-route-refs.js";
+import {
+	assessActiveRouteRefs,
+	uniqueStrings,
+} from "../agent-readiness/active-route-refs.js";
+import { readCurrentHeadSha } from "./git-head.js";
 import {
 	PROMPT_CONTEXT_DRIFT_REPORT_SCHEMA_VERSION,
 	type PromptContextDriftBlocker,
@@ -22,8 +26,6 @@ export interface PromptContextDriftReportBuildOptions {
 	producer?: string | undefined;
 	evidenceUse?: PromptContextDriftEvidenceUse | undefined;
 }
-
-const HEAD_SHA = /^[0-9a-f]{40}$/u;
 
 const ACTIVE_ARTIFACTS_PATH = ".harness/active-artifacts.md";
 const RUNTIME_CARD_REFS = [
@@ -154,7 +156,7 @@ function buildPromptContextDriftSurface(input: {
 		const readablePath = safeRepoFilePath(input.repoRoot, ref);
 		const digest = readablePath === null ? null : repoFileSha256(readablePath);
 		return {
-			refId: `${input.entry.refId}:${ref}`,
+			refId: `${input.entry.refId}:${repoRefPointerSegment(ref)}`,
 			surfaceId: input.entry.surfaceId,
 			refKind: "repo_file" as const,
 			ref,
@@ -225,6 +227,12 @@ function sourceRouteForEntry(
 			}
 		);
 	}
+	if (entry.surfaceId === "active_artifacts") {
+		return {
+			refs: [entry.ref],
+			staleReasons: activeArtifactsStaleReasons(repoRoot),
+		};
+	}
 	if (entry.surfaceId === "runtime_card_or_handoff") {
 		return {
 			refs: [firstExistingRepoRef(repoRoot, RUNTIME_CARD_REFS) ?? entry.ref],
@@ -232,6 +240,19 @@ function sourceRouteForEntry(
 		};
 	}
 	return { refs: [entry.ref], staleReasons: [] };
+}
+
+function activeArtifactsStaleReasons(repoRoot: string): string[] {
+	const activeArtifactsText = repoFileText(repoRoot, ACTIVE_ARTIFACTS_PATH);
+	if (activeArtifactsText.length === 0) {
+		return [`${ACTIVE_ARTIFACTS_PATH} is missing.`];
+	}
+	return ["Current Active Route", "Artifact Index"]
+		.filter((section) => !activeArtifactsText.includes(section))
+		.map(
+			(section) =>
+				`${ACTIVE_ARTIFACTS_PATH} is missing the ${section} section.`,
+		);
 }
 
 function activeRouteSourceRoute(repoRoot: string): SourceRoute | undefined {
@@ -353,16 +374,6 @@ function repoAbsolutePath(
 	return absolute;
 }
 
-function uniqueStrings(values: string[]): string[] {
-	return [...new Set(values)];
-}
-
-function readCurrentHeadSha(repoRoot: string): string | null {
-	const result = spawnSync("git", ["rev-parse", "HEAD"], {
-		cwd: repoRoot,
-		encoding: "utf8",
-		stdio: ["ignore", "pipe", "ignore"],
-	});
-	const value = result.status === 0 ? result.stdout.trim() : "";
-	return HEAD_SHA.test(value) ? value : null;
+function repoRefPointerSegment(ref: string): string {
+	return `ref_${Buffer.from(ref, "utf8").toString("base64url")}`;
 }

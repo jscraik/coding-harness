@@ -351,6 +351,11 @@ function makePromptContextRepo(tempDirs: string[]): string {
 			"| --- | --- | --- |",
 			"| Current | `docs/goals/codex-runtime-evidence-verifier-cockpit/current-route.json` | Current active route |",
 			"",
+			"## Artifact Index",
+			"| Artifact | Notes |",
+			"| --- | --- |",
+			"| `artifacts/runtime-card.json` | Runtime card |",
+			"",
 		].join("\n"),
 	);
 	writeRepoFile(

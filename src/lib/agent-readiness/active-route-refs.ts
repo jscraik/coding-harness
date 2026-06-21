@@ -186,6 +186,6 @@ function normalizeRepoRelativePathToken(token: string): string | undefined {
 	return normalized;
 }
 
-function uniqueStrings(values: string[]): string[] {
+export function uniqueStrings(values: string[]): string[] {
 	return [...new Set(values)];
 }

@@ -3,6 +3,7 @@ import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
 import type { AgentReadinessContextHealth } from "../lib/agent-readiness/types.js";
 import type { DecisionSource } from "../lib/decision/sources.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
+import { PROMPT_CONTEXT_DRIFT_REPORT_PATHS } from "../lib/prompt-context-drift/index.js";
 import {
 	prCloseoutDecisionMeta,
 	type HarnessNextPrCloseoutEvidence,
@@ -26,6 +27,9 @@ interface PromptContextDriftDecisionArgs {
 const TRUSTED_PROMPT_CONTEXT_REFRESH_COMMANDS = new Set([
 	"node scripts/write-prompt-context-drift-report.cjs --repo-root .",
 ]);
+const TRUSTED_PROMPT_CONTEXT_REPORT_PATHS: ReadonlySet<string> = new Set(
+	PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
+);
 
 function promptContextDriftRefreshCommand(
 	contextHealth: AgentReadinessContextHealth | undefined,
@@ -47,7 +51,22 @@ function promptContextDriftRefreshCommand(
 }
 
 function isTrustedRefreshCommand(command: string): boolean {
-	return TRUSTED_PROMPT_CONTEXT_REFRESH_COMMANDS.has(command.trim());
+	const normalized = command.trim();
+	if (TRUSTED_PROMPT_CONTEXT_REFRESH_COMMANDS.has(normalized)) return true;
+	const alternate = normalized.match(
+		/^node scripts\/write-prompt-context-drift-report\.cjs --repo-root \. --output (\S+)$/u,
+	);
+	return (
+		alternate?.[1] !== undefined &&
+		TRUSTED_PROMPT_CONTEXT_REPORT_PATHS.has(alternate[1])
+	);
+}
+
+function validateCommandForEvidence(evidenceRefs: readonly string[]): string {
+	const reportPath = evidenceRefs.find((ref) =>
+		TRUSTED_PROMPT_CONTEXT_REPORT_PATHS.has(ref),
+	);
+	return `node scripts/validate-prompt-context-drift.cjs ${reportPath ?? PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0]} --repo-root .`;
 }
 
 /** Build a next-step decision when prompt-context drift should block clean-worktree handoff. */
@@ -77,7 +96,7 @@ export function promptContextDriftDecision(
 		],
 		humanEscalation: null,
 		followUpCommands: [
-			"node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .",
+			validateCommandForEvidence(promptContextRefresh.evidenceRef),
 			"harness check --json",
 		],
 		hiddenPlumbing: ["git:status", "prompt_context_drift", "check"],

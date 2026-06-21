@@ -4,6 +4,8 @@ import { runHarnessNext } from "./next.js";
 
 const PROMPT_CONTEXT_DRIFT_COMMAND =
 	"node scripts/write-prompt-context-drift-report.cjs --repo-root .";
+const ALTERNATE_PROMPT_CONTEXT_DRIFT_COMMAND =
+	"node scripts/write-prompt-context-drift-report.cjs --repo-root . --output .harness/runtime/prompt-context-drift-report.json";
 
 function promptContextDriftWarnContext(): AgentReadinessContextHealth {
 	return {
@@ -55,6 +57,25 @@ function promptContextDriftMissingContext(): AgentReadinessContextHealth {
 	};
 }
 
+function promptContextDriftAlternateContext(): AgentReadinessContextHealth {
+	return {
+		...promptContextDriftWarnContext(),
+		surfaces: [
+			{
+				id: "prompt_context_drift",
+				status: "warn",
+				evidenceUse: "orientation",
+				evidence: [".harness/runtime/prompt-context-drift-report.json"],
+				staleReasons: [
+					"Prompt-context-drift report failed validation: digest mismatch.",
+				],
+				suggestedRefreshCommands: [ALTERNATE_PROMPT_CONTEXT_DRIFT_COMMAND],
+			},
+		],
+		suggestedRefreshCommands: [ALTERNATE_PROMPT_CONTEXT_DRIFT_COMMAND],
+	};
+}
+
 describe("harness next agent-facing parity", () => {
 	it("promotes stale prompt-context drift before clean-worktree handoff", () => {
 		const decision = runHarnessNext({
@@ -96,6 +117,7 @@ describe("harness next agent-facing parity", () => {
 
 		expect(decision.status).toBe("action_required");
 		expect(decision.nextCommand).toBe(PROMPT_CONTEXT_DRIFT_COMMAND);
+		expect(decision.phase).toBe("orient");
 		expect(decision.followUpCommands).toEqual([
 			"node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .",
 			"harness check --json",
@@ -105,5 +127,27 @@ describe("harness next agent-facing parity", () => {
 			"missing:artifacts/context-integrity/prompt-context-drift-report.json",
 		]);
 		expect(decision.writesFiles).toBe(true);
+	});
+
+	it("keeps alternate prompt-context drift refresh decisions trusted", () => {
+		const decision = runHarnessNext({
+			inspectChangedFiles: () => [],
+			repoRoot: "/tmp/repo",
+			agentReadinessContext: promptContextDriftAlternateContext(),
+		});
+
+		expect(decision.status).toBe("action_required");
+		expect(decision.nextCommand).toBe(ALTERNATE_PROMPT_CONTEXT_DRIFT_COMMAND);
+		expect(decision.safeToRun).toBe(true);
+		expect(decision.requiresHuman).toBe(false);
+		expect(decision.followUpCommands).toEqual([
+			"node scripts/validate-prompt-context-drift.cjs .harness/runtime/prompt-context-drift-report.json --repo-root .",
+			"harness check --json",
+		]);
+		expect(decision.meta).toMatchObject({
+			execution: {
+				permissionPlan: { commands: [ALTERNATE_PROMPT_CONTEXT_DRIFT_COMMAND] },
+			},
+		});
 	});
 });

@@ -212,10 +212,10 @@ describe("validatePromptContextDriftReport", () => {
 					"## Current Active Route",
 					"| Status | Artifact | Notes |",
 					"| --- | --- | --- |",
-					"| Current | `.harness/specs/current-route.json`; `ready.md` | Current active route |",
+					"| Current | `.harness/specs/current route.json`; `.harness/specs/ready.md` | Current active route |",
 				].join("\n"),
 			);
-			writeRepoFile(repoRoot, ".harness/specs/current-route.json", "{}\n");
+			writeRepoFile(repoRoot, ".harness/specs/current route.json", "{}\n");
 			writeRepoFile(repoRoot, ".harness/specs/ready.md", "# Ready\n");
 			process.chdir(repoRoot);
 
@@ -227,10 +227,59 @@ describe("validatePromptContextDriftReport", () => {
 			expect(
 				activeRouteSurface?.sourceRefs.map((sourceRef) => sourceRef.ref),
 			).toEqual([
-				".harness/specs/current-route.json",
+				".harness/specs/current route.json",
 				".harness/specs/ready.md",
 			]);
 			expect(activeRouteSurface?.status).toBe("pass");
+			expect(activeRouteSurface?.sourceRefs[0]?.refId).toMatch(
+				/^orientation:active_route:ref_[A-Za-z0-9_-]+$/u,
+			);
+			expect(
+				validatePromptContextDriftReport(report, { repoRoot: "." }).errors,
+			).not.toEqual(
+				expect.arrayContaining([
+					expect.stringContaining("sourceRefs[0].ref"),
+					expect.stringContaining("sourceRefs[0].refId"),
+				]),
+			);
+		} finally {
+			process.chdir(previousCwd);
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("blocks malformed active-artifacts section coverage", () => {
+		const repoRoot = tempRoot();
+		const previousCwd = process.cwd();
+		try {
+			writeFileSync(join(repoRoot, "AGENTS.md"), "# Agents\n");
+			writeRepoFile(
+				repoRoot,
+				".harness/active-artifacts.md",
+				[
+					"# Active Artifacts",
+					"",
+					"## Current Active Route",
+					"| Status | Artifact | Notes |",
+					"| --- | --- | --- |",
+					"| Current | `.harness/specs/current-route.json` | Current active route |",
+				].join("\n"),
+			);
+			writeRepoFile(repoRoot, ".harness/specs/current-route.json", "{}\n");
+			process.chdir(repoRoot);
+
+			const report = buildPromptContextDriftReport({ repoRoot: "." });
+			const activeArtifactsSurface = report.surfaces.find(
+				(surface) => surface.surfaceId === "active_artifacts",
+			);
+
+			expect(activeArtifactsSurface).toMatchObject({
+				status: "warn",
+				freshness: "missing",
+			});
+			expect(activeArtifactsSurface?.blockers[0]?.reason).toBe(
+				".harness/active-artifacts.md is missing the Artifact Index section.",
+			);
 		} finally {
 			process.chdir(previousCwd);
 			rmSync(repoRoot, { recursive: true, force: true });
@@ -748,6 +797,26 @@ describe("validatePromptContextDriftReport", () => {
 				"report.nextAction: contains raw or secret-like content",
 				"report.rawTranscript: unknown field",
 				"overallStatus: invalid enum value",
+			]),
+		);
+	});
+
+	it("rejects deeply nested report values before recursive raw-content scanning can overflow", () => {
+		let nested: Record<string, unknown> = { value: "bounded" };
+		for (let index = 0; index < 40; index += 1) {
+			nested = { child: nested };
+		}
+		const report = {
+			...exampleReport(),
+			nested,
+		};
+
+		const result = validatePromptContextDriftReport(report, { repoRoot: "." });
+
+		expect(result.status).toBe("fail");
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringMatching(/exceeds maximum validation depth/u),
 			]),
 		);
 	});

@@ -8,7 +8,7 @@ import {
 import { join, relative } from "node:path";
 
 /** Return existing repo-relative evidence paths from a candidate list. */
-export function evidence(repoRoot: string, paths: string[]): string[] {
+export function evidence(repoRoot: string, paths: readonly string[]): string[] {
 	return paths.filter((path) => fileExists(repoRoot, path));
 }
 
