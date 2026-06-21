@@ -286,7 +286,7 @@ describe("agent-readiness command", () => {
 				],
 			},
 		},
-	])("warns when prompt-context drift report is $name", ({
+	])("warns when guarded prompt-context drift report is $name", ({
 		content,
 		expected,
 	}) => {

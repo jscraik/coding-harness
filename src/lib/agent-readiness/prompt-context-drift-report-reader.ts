@@ -15,7 +15,6 @@ const REPORT_OPEN_FLAGS = constants.O_RDONLY | constants.O_NOFOLLOW;
 
 type KnownPromptContextDriftReport = {
 	segments: readonly string[];
-	openRelative(): number;
 };
 
 const KNOWN_REPORT_PATHS = new Map<string, KnownPromptContextDriftReport>([
@@ -27,40 +26,24 @@ const KNOWN_REPORT_PATHS = new Map<string, KnownPromptContextDriftReport>([
 				"context-integrity",
 				"prompt-context-drift-report.json",
 			],
-			openRelative: () =>
-				openReportNoFollow(
-					"artifacts/context-integrity/prompt-context-drift-report.json",
-					REPORT_OPEN_FLAGS,
-				),
 		},
 	],
 	[
 		"artifacts/prompt-context-drift-report.json",
 		{
 			segments: ["artifacts", "prompt-context-drift-report.json"],
-			openRelative: () =>
-				openReportNoFollow(
-					"artifacts/prompt-context-drift-report.json",
-					REPORT_OPEN_FLAGS,
-				),
 		},
 	],
 	[
 		".harness/runtime/prompt-context-drift-report.json",
 		{
 			segments: [".harness", "runtime", "prompt-context-drift-report.json"],
-			openRelative: () =>
-				openReportNoFollow(
-					".harness/runtime/prompt-context-drift-report.json",
-					REPORT_OPEN_FLAGS,
-				),
 		},
 	],
 ]);
 
 type ContainedPromptContextDriftReport = {
-	realRepoRoot: string;
-	report: KnownPromptContextDriftReport;
+	realPath: string;
 };
 
 /** Return discovered prompt-context drift report paths that pass repo containment checks. */
@@ -96,8 +79,7 @@ function containedReportFile(
 		const report = knownReport(reportPath);
 		if (report === null) return null;
 		return {
-			realRepoRoot,
-			report,
+			realPath,
 		};
 	} catch {
 		return null;
@@ -109,7 +91,7 @@ function readValidatedReportFile(
 ): string {
 	let fileDescriptor: number | null = null;
 	try {
-		fileDescriptor = openKnownReportFromRepoRoot(file);
+		fileDescriptor = openValidatedReportPath(file);
 		const stat = fstatSync(fileDescriptor);
 		if (!isReadableReportFile(stat)) return "";
 		const buffer = Buffer.alloc(stat.size);
@@ -124,16 +106,10 @@ function readValidatedReportFile(
 	}
 }
 
-function openKnownReportFromRepoRoot(
+function openValidatedReportPath(
 	file: ContainedPromptContextDriftReport,
 ): number {
-	const previousCwd = process.cwd();
-	try {
-		process.chdir(file.realRepoRoot);
-		return file.report.openRelative();
-	} finally {
-		process.chdir(previousCwd);
-	}
+	return openReportNoFollow(file.realPath, REPORT_OPEN_FLAGS);
 }
 
 function safeReportPath(repoRoot: string, reportPath: string): string | null {
