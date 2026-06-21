@@ -911,6 +911,7 @@ describe("agent-readiness command", () => {
 });
 
 // Shared by ready fixture writes and prompt-context drift digest expectations.
+// Add new ready fixture digest refs here before writing them in makeAgentReadyRepo.
 const READY_REPO_SOURCE_TEXT = {
 	"AGENTS.md": [
 		"# Agent Instructions",

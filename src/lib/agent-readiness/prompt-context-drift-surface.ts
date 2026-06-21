@@ -28,6 +28,9 @@ const validateCommandFor = (reportPath: string) =>
 	`harness prompt-context-drift:validate ${reportPath}`;
 const CANONICAL_REPORT = PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0];
 const MAX_REPORT_BYTES = 1_000_000;
+const KNOWN_REPORT_TEXT_PATHS = new Map<string, string>(
+	PROMPT_CONTEXT_DRIFT_REPORT_PATHS.map((path) => [path, path]),
+);
 
 /** Project prompt-context drift evidence into the agent-readiness context surface. */
 export function promptContextDriftSurface(
@@ -98,25 +101,33 @@ function readPromptContextDriftReport(
 	const resolved = safeReportPath(repoRoot, reportPath);
 	if (resolved === null) return "";
 	const text = readKnownReportText(repoRoot, reportPath);
-	return safeReportPath(repoRoot, reportPath) === resolved ? text : "";
+	return reportPathStillMatches(repoRoot, reportPath, resolved) ? text : "";
 }
 
 function readKnownReportText(repoRoot: string, reportPath: string): string {
-	switch (reportPath) {
-		case "artifacts/context-integrity/prompt-context-drift-report.json":
-			return readText(
-				repoRoot,
-				"artifacts/context-integrity/prompt-context-drift-report.json",
-			);
-		case "artifacts/prompt-context-drift-report.json":
-			return readText(repoRoot, "artifacts/prompt-context-drift-report.json");
-		case ".harness/runtime/prompt-context-drift-report.json":
-			return readText(
-				repoRoot,
-				".harness/runtime/prompt-context-drift-report.json",
-			);
-		default:
-			return "";
+	const knownPath = KNOWN_REPORT_TEXT_PATHS.get(reportPath);
+	return knownPath === undefined ? "" : readText(repoRoot, knownPath);
+}
+
+function reportPathStillMatches(
+	repoRoot: string,
+	reportPath: string,
+	expectedRealPath: string,
+): boolean {
+	try {
+		const realRepoRoot = realpathSync(repoRoot);
+		const absolutePath = knownReportAbsolutePath(realRepoRoot, reportPath);
+		if (absolutePath === null || escapesRepoRoot(realRepoRoot, absolutePath)) {
+			return false;
+		}
+		const stat = lstatSync(absolutePath);
+		if (!isReadableReportFile(stat)) return false;
+		const realPath = realpathSync(absolutePath);
+		return (
+			realPath === expectedRealPath && !escapesRepoRoot(realRepoRoot, realPath)
+		);
+	} catch {
+		return false;
 	}
 }
 
