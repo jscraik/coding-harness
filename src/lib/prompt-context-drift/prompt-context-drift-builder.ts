@@ -161,8 +161,8 @@ function buildPromptContextDriftSurface(input: {
 }
 
 function repoFileSha256(repoRoot: string, ref: string): string | null {
-	const resolved = resolve(repoRoot, ref);
-	const containment = relative(repoRoot, resolved);
+	const resolved = resolve(resolve(repoRoot), ref);
+	const containment = relative(resolve(repoRoot), resolved);
 	if (containment.startsWith("..") || isAbsolute(containment)) return null;
 	try {
 		if (!statSync(resolved).isFile()) return null;
