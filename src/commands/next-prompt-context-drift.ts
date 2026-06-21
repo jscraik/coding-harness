@@ -57,14 +57,21 @@ function promptContextDriftRefreshCommand(
 	};
 }
 
-function isTrustedRefreshCommand(command: string): boolean {
+function isTrustedRefreshCommand(
+	command: string,
+	evidenceRefs: readonly string[],
+): boolean {
 	const normalized = command.trim();
 	if (TRUSTED_PROMPT_CONTEXT_REFRESH_COMMANDS.has(normalized)) return true;
 	const cleanup = normalized.match(/^rm (\S+)$/u);
 	if (
 		cleanup?.[1] !== undefined &&
-		cleanup[1] !== PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0] &&
-		TRUSTED_PROMPT_CONTEXT_REPORT_PATHS.has(cleanup[1])
+		TRUSTED_PROMPT_CONTEXT_REPORT_PATHS.has(cleanup[1]) &&
+		evidenceRefs.includes(cleanup[1]) &&
+		evidenceRefs.some(
+			(ref) =>
+				ref !== cleanup[1] && TRUSTED_PROMPT_CONTEXT_REPORT_PATHS.has(ref),
+		)
 	) {
 		return true;
 	}
@@ -158,7 +165,10 @@ export function promptContextDriftDecision(
 	if (!promptContextRefresh) return undefined;
 
 	const sourceRef = args.filesSource === "git" ? "git:status" : "input:files";
-	const trustedCommand = isTrustedRefreshCommand(promptContextRefresh.command);
+	const trustedCommand = isTrustedRefreshCommand(
+		promptContextRefresh.command,
+		promptContextRefresh.evidenceRef,
+	);
 	const writesFiles = refreshCommandWritesFiles(promptContextRefresh.command);
 	return createNextDecision({
 		status: "action_required",
