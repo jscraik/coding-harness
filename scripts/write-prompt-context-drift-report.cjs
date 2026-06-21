@@ -119,8 +119,8 @@ function main() {
 
 function prepareOutputTarget(repoRoot, requestedPath) {
 	const realRepoRoot = realpathSync(repoRoot);
-	const absolute = path.resolve(repoRoot, requestedPath);
-	const relativePath = path.relative(repoRoot, absolute);
+	const absolute = path.resolve(realRepoRoot, requestedPath);
+	const relativePath = path.relative(realRepoRoot, absolute);
 	if (
 		relativePath === ".." ||
 		relativePath.startsWith(`..${path.sep}`) ||
