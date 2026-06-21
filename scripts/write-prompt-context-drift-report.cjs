@@ -140,7 +140,8 @@ function prepareOutputTarget(repoRoot, requestedPath) {
 		}
 	}
 	const tempPath = path.join(
-		path.dirname(absolute),
+		realRepoRoot,
+		path.dirname(relativePath),
 		`.${path.basename(absolute)}.${process.pid}.tmp`,
 	);
 	return { ok: true, path: absolute, tempPath };
