@@ -14,6 +14,7 @@ import type {
 	PromptContextDriftReport,
 	PromptContextDriftSurface,
 } from "./prompt-context-drift-report.js";
+import { buildPromptContextDriftReport } from "./prompt-context-drift-builder.js";
 import { validatePromptContextDriftReport } from "./prompt-context-drift-report.js";
 
 // Expected enum values (independent oracle, not derived from source constants)
@@ -161,6 +162,30 @@ describe("validatePromptContextDriftReport", () => {
 		expect(
 			validatePromptContextDriftReport(exampleReport(), { repoRoot: "." }),
 		).toEqual({ status: "pass", errors: [] });
+	});
+
+	it("builds a valid warning report when orientation files are missing", () => {
+		const repoRoot = tempRoot();
+		try {
+			writeFileSync(join(repoRoot, "AGENTS.md"), "# Agents\n");
+			const report = buildPromptContextDriftReport({
+				repoRoot,
+				generatedAt: new Date("2026-06-20T00:00:00.000Z"),
+			});
+
+			expect(report).toMatchObject({
+				schemaVersion: "prompt-context-drift-report/v1",
+				evidenceUse: "orientation",
+				overallStatus: "warn",
+			});
+			expect(report.blockers.length).toBeGreaterThan(0);
+			expect(validatePromptContextDriftReport(report, { repoRoot })).toEqual({
+				status: "pass",
+				errors: [],
+			});
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
 	});
 
 	it("blocks stale prompt context from claim support", () => {

@@ -58,8 +58,10 @@ function main() {
 	}
 
 	const repoRoot = path.resolve(args.repoRoot);
+	const moduleRoot = path.resolve(__dirname, "..");
+	const reportPath = path.resolve(repoRoot, args.reportPath);
 	const moduleUrl = pathToFileURL(
-		path.join(repoRoot, "src/lib/prompt-context-drift/index.ts"),
+		path.join(moduleRoot, "src/lib/prompt-context-drift/index.ts"),
 	).href;
 	const runner = [
 		"import { readFileSync } from 'node:fs';",
@@ -79,7 +81,7 @@ function main() {
 		"process.exit(result.status === 'pass' ? 0 : 1);",
 	].join("\n");
 
-	if (!fs.existsSync(args.reportPath)) {
+	if (!fs.existsSync(reportPath)) {
 		printResult("fail", ["reportPath: file does not exist"], 1);
 	}
 
@@ -87,11 +89,11 @@ function main() {
 		process.execPath,
 		["--import", "tsx", "--eval", runner],
 		{
-			cwd: repoRoot,
+			cwd: moduleRoot,
 			env: {
 				...process.env,
 				PROMPT_CONTEXT_DRIFT_MODULE_URL: moduleUrl,
-				PROMPT_CONTEXT_DRIFT_REPORT_PATH: path.resolve(args.reportPath),
+				PROMPT_CONTEXT_DRIFT_REPORT_PATH: reportPath,
 				PROMPT_CONTEXT_DRIFT_REPO_ROOT: repoRoot,
 			},
 			encoding: "utf8",

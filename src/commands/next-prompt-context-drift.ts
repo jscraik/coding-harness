@@ -24,7 +24,7 @@ interface PromptContextDriftDecisionArgs {
 }
 
 const TRUSTED_PROMPT_CONTEXT_REFRESH_COMMANDS = new Set([
-	"node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .",
+	"node scripts/write-prompt-context-drift-report.cjs --repo-root .",
 ]);
 
 function promptContextDriftRefreshCommand(
@@ -76,12 +76,15 @@ export function promptContextDriftDecision(
 			"Stop if prompt-context drift validation still reports stale or invalid context.",
 		],
 		humanEscalation: null,
-		followUpCommands: ["harness check --json"],
+		followUpCommands: [
+			"node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .",
+			"harness check --json",
+		],
 		hiddenPlumbing: ["git:status", "prompt_context_drift", "check"],
 		safeToRun: trustedCommand,
 		requiresHuman: !trustedCommand,
 		requiresNetwork: false,
-		writesFiles: false,
+		writesFiles: trustedCommand,
 		evidenceRef: [sourceRef, ...promptContextRefresh.evidenceRef],
 		failureClass: null,
 		retry: "safe",

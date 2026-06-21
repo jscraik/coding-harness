@@ -185,6 +185,7 @@ graph LR
   node_preset_detection_b0f00a17_4f7c5082["preset_detection_b0f00a17"]
   node_preset_resolver_dc3dd716_3f747c75["preset_resolver_dc3dd716"]
   node_preset_source_loaders_a8cd7c1c_01f5a3a0["preset_source_loaders_a8cd7c1c"]
+  node_prompt_context_drift_builder_a451c7dd_702c1ffe["prompt_context_drift_builder_a451c7dd"]
   node_prompt_context_drift_report_3257a95c_01f8c3e1["prompt_context_drift_report_3257a95c"]
   node_provider_adapter_3bcf82b7_3ce4cf67["provider_adapter_3bcf82b7"]
   node_quality_scorer_362f2a90_2a086a0b["quality_scorer_362f2a90"]
@@ -301,6 +302,7 @@ graph LR
   node_workflow_generate_2fc0af62_803bbfeb["workflow_generate_2fc0af62"]
   node_workflow_generate_parser_ad69fefe_62542333["workflow_generate_parser_ad69fefe"]
   node_write_fitness_gate_artifact_c84c6d3c_ca7bd6f7["write_fitness_gate_artifact_c84c6d3c"]
+  node_write_prompt_context_drift_report_71a4e149_cf46c973["write_prompt_context_drift_report_71a4e149"]
   ext_inquirer_prompts_4d547149["@inquirer/prompts"] --> node_init_interactive_28845b2f_39350b46
   ext_octokit_plugin_retry_c9aecc53["@octokit/plugin-retry"] --> node_client_948fe603_907d5144
   ext_octokit_plugin_throttling_7909ece3["@octokit/plugin-throttling"] --> node_client_948fe603_907d5144
@@ -346,6 +348,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_next_runner_inputs_754dba64_15639104
   ext_node_child_process_f62b7d19["node:child_process"] --> node_pr_closeout_0ac07306_e8d9c77f
   ext_node_child_process_f62b7d19["node:child_process"] --> node_pr_closeout_env_9bfcd9ef_f476024a
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_prompt_context_drift_builder_a451c7dd_702c1ffe
   ext_node_child_process_f62b7d19["node:child_process"] --> node_remediate_git_58c6f6f4_3c7e755f
   ext_node_child_process_f62b7d19["node:child_process"] --> node_repository_identity_9dc13d37_eaffcd1e
   ext_node_child_process_f62b7d19["node:child_process"] --> node_run_e2e_39efe696_fb07ee74
@@ -369,6 +372,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_validate_runtime_packet_schemas_bc3ba8ec_ee732335
   ext_node_child_process_f62b7d19["node:child_process"] --> node_version_coherence_69733bcb_00c8d5d9
   ext_node_child_process_f62b7d19["node:child_process"] --> node_write_fitness_gate_artifact_c84c6d3c_ca7bd6f7
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_write_prompt_context_drift_report_71a4e149_cf46c973
   ext_node_crypto_c7dfc512["node:crypto"] --> node_analysis_f44e85c4_c68a7cb6
   ext_node_crypto_c7dfc512["node:crypto"] --> node_artifact_io_ba511748_6d1faad8
   ext_node_crypto_c7dfc512["node:crypto"] --> node_automation_run_records_e3246015_a281ec3e
@@ -397,6 +401,7 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_pilot_rollback_00c1f82c_b744974b
   ext_node_crypto_c7dfc512["node:crypto"] --> node_policy_digest_ca7acf0a_bae99d76
   ext_node_crypto_c7dfc512["node:crypto"] --> node_preset_source_loaders_a8cd7c1c_01f5a3a0
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_prompt_context_drift_builder_a451c7dd_702c1ffe
   ext_node_crypto_c7dfc512["node:crypto"] --> node_prompt_context_drift_report_3257a95c_01f8c3e1
   ext_node_crypto_c7dfc512["node:crypto"] --> node_remediate_apply_transactions_0738b122_7ebd0795
   ext_node_crypto_c7dfc512["node:crypto"] --> node_replay_packet_a1293f88_f3b4800a
@@ -565,6 +570,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_preset_detection_b0f00a17_4f7c5082
   ext_node_fs_a15b7d96["node:fs"] --> node_preset_resolver_dc3dd716_3f747c75
   ext_node_fs_a15b7d96["node:fs"] --> node_preset_source_loaders_a8cd7c1c_01f5a3a0
+  ext_node_fs_a15b7d96["node:fs"] --> node_prompt_context_drift_builder_a451c7dd_702c1ffe
   ext_node_fs_a15b7d96["node:fs"] --> node_prompt_context_drift_report_3257a95c_01f8c3e1
   ext_node_fs_a15b7d96["node:fs"] --> node_provider_adapter_3bcf82b7_3ce4cf67
   ext_node_fs_a15b7d96["node:fs"] --> node_quality_scorer_362f2a90_2a086a0b
@@ -665,6 +671,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_workflow_generate_2fc0af62_803bbfeb
   ext_node_fs_a15b7d96["node:fs"] --> node_workflow_generate_parser_ad69fefe_62542333
   ext_node_fs_a15b7d96["node:fs"] --> node_write_fitness_gate_artifact_c84c6d3c_ca7bd6f7
+  ext_node_fs_a15b7d96["node:fs"] --> node_write_prompt_context_drift_report_71a4e149_cf46c973
   ext_node_module_ca1b42af["node:module"] --> node_health_core_2b2fdada_341de678
   ext_node_os_d93fe73a["node:os"] --> node_check_behavior_tests_2577f6be_58dc87b2
   ext_node_os_d93fe73a["node:os"] --> node_env_1_b6f6b232_dda31a93
@@ -819,6 +826,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_preset_detection_b0f00a17_4f7c5082
   ext_node_path_78811c13["node:path"] --> node_preset_resolver_dc3dd716_3f747c75
   ext_node_path_78811c13["node:path"] --> node_preset_source_loaders_a8cd7c1c_01f5a3a0
+  ext_node_path_78811c13["node:path"] --> node_prompt_context_drift_builder_a451c7dd_702c1ffe
   ext_node_path_78811c13["node:path"] --> node_prompt_context_drift_report_3257a95c_01f8c3e1
   ext_node_path_78811c13["node:path"] --> node_provider_adapter_3bcf82b7_3ce4cf67
   ext_node_path_78811c13["node:path"] --> node_quality_scorer_362f2a90_2a086a0b
@@ -902,6 +910,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_version_coherence_69733bcb_00c8d5d9
   ext_node_path_78811c13["node:path"] --> node_workflow_generate_2fc0af62_803bbfeb
   ext_node_path_78811c13["node:path"] --> node_write_fitness_gate_artifact_c84c6d3c_ca7bd6f7
+  ext_node_path_78811c13["node:path"] --> node_write_prompt_context_drift_report_71a4e149_cf46c973
   ext_node_perf_hooks_906292ff["node:perf_hooks"] --> node_performance_overload_c685bfcf_291ef65a
   ext_node_process_00cdf119["node:process"] --> node_args_090772cf_1bac9202
   ext_node_process_00cdf119["node:process"] --> node_check_20f65c28_48d25399
@@ -940,6 +949,7 @@ graph LR
   ext_node_url_d0cb3ad7["node:url"] --> node_validate_intermediary_receipt_coverage_7d63b166_40dcf15d
   ext_node_url_d0cb3ad7["node:url"] --> node_validate_prompt_context_drift_8c949ef6_d32d5759
   ext_node_url_d0cb3ad7["node:url"] --> node_version_5ca4f385_fd75945b
+  ext_node_url_d0cb3ad7["node:url"] --> node_write_prompt_context_drift_report_71a4e149_cf46c973
   ext_node_vm_e83aa31f["node:vm"] --> node_validate_goal_kanban_script_268db9bd_4cf9451a
   ext_node_zlib_bb6e132b["node:zlib"] --> node_png_inspection_3ec3d3d7_c00e0d99
   ext_node_zlib_bb6e132b["node:zlib"] --> node_png_test_fixtures_bd922ecf_25060218

@@ -28,7 +28,9 @@ const BRAIN_STATUS_COMMAND = "node --import tsx src/cli.ts brain status --json";
 const BRAIN_STALE_COMMAND = "node --import tsx src/cli.ts brain stale --json";
 const RUNTIME_CARD_COMMAND =
 	"node --import tsx src/cli.ts runtime-card --json --repo .";
-const PROMPT_CONTEXT_DRIFT_COMMAND =
+const PROMPT_CONTEXT_DRIFT_WRITE_COMMAND =
+	"node scripts/write-prompt-context-drift-report.cjs --repo-root .";
+const PROMPT_CONTEXT_DRIFT_VALIDATE_COMMAND =
 	"node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .";
 
 const ACTIVE_ARTIFACTS_PATH = ".harness/active-artifacts.md";
@@ -230,7 +232,10 @@ function promptContextDriftSurface(
 			staleReasons: [
 				"No prompt-context-drift report was provided for agent-readable orientation.",
 			],
-			suggestedRefreshCommands: [PROMPT_CONTEXT_DRIFT_COMMAND],
+			suggestedRefreshCommands: [
+				PROMPT_CONTEXT_DRIFT_WRITE_COMMAND,
+				PROMPT_CONTEXT_DRIFT_VALIDATE_COMMAND,
+			],
 		});
 	}
 	if (promptContextDriftEvidence.length > 1) {
@@ -241,7 +246,10 @@ function promptContextDriftSurface(
 			staleReasons: [
 				"Multiple prompt-context-drift reports were discovered; keep a single canonical artifacts/context-integrity/prompt-context-drift-report.json report before using this surface.",
 			],
-			suggestedRefreshCommands: [PROMPT_CONTEXT_DRIFT_COMMAND],
+			suggestedRefreshCommands: [
+				PROMPT_CONTEXT_DRIFT_WRITE_COMMAND,
+				PROMPT_CONTEXT_DRIFT_VALIDATE_COMMAND,
+			],
 		});
 	}
 	const reportText = readText(repoRoot, promptContextDriftEvidence[0] ?? "");
@@ -251,7 +259,10 @@ function promptContextDriftSurface(
 		status: reportStatus.status,
 		evidence: promptContextDriftEvidence,
 		staleReasons: reportStatus.staleReasons,
-		suggestedRefreshCommands: [PROMPT_CONTEXT_DRIFT_COMMAND],
+		suggestedRefreshCommands: [
+			PROMPT_CONTEXT_DRIFT_WRITE_COMMAND,
+			PROMPT_CONTEXT_DRIFT_VALIDATE_COMMAND,
+		],
 	});
 }
 

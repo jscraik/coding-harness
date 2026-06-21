@@ -5070,7 +5070,7 @@ async function runAgentNextActionParityFixture(scenario, fixturePath) {
 	const verifyCatalog = getRegistryAgentCommandCatalogDocument("verify");
 	const verifyCommands = verifyCatalog.commands.map((command) => command.name);
 	const stalePromptCommand =
-		"node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .";
+		"node scripts/write-prompt-context-drift-report.cjs --repo-root .";
 	const staleContext = {
 		schemaVersion: "agent-readiness-context-health/v1",
 		status: "warn",

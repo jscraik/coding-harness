@@ -3,7 +3,7 @@ import type { AgentReadinessContextHealth } from "../lib/agent-readiness/types.j
 import { runHarnessNext } from "./next.js";
 
 const PROMPT_CONTEXT_DRIFT_COMMAND =
-	"node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .";
+	"node scripts/write-prompt-context-drift-report.cjs --repo-root .";
 
 function promptContextDriftWarnContext(): AgentReadinessContextHealth {
 	return {
@@ -46,7 +46,11 @@ describe("harness next agent-facing parity", () => {
 		expect(decision.status).toBe("action_required");
 		expect(decision.nextCommand).toBe(PROMPT_CONTEXT_DRIFT_COMMAND);
 		expect(decision.phase).toBe("orient");
-		expect(decision.followUpCommands).toEqual(["harness check --json"]);
+		expect(decision.followUpCommands).toEqual([
+			"node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .",
+			"harness check --json",
+		]);
+		expect(decision.writesFiles).toBe(true);
 		expect(decision.requiredEvidence).toEqual([
 			"git:status",
 			"artifacts/context-integrity/prompt-context-drift-report.json",

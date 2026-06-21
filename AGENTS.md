@@ -106,6 +106,13 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   authority. Keep CircleCI, session, and OpenTelemetry feeds bounded, redacted,
   artifact-backed, and separate from CI pass, review, tracker, or merge-readiness
   claims unless a validated consumer explicitly joins those lanes.
+- Prompt-context drift reports are agent-readiness cockpit evidence, not
+  delivery truth. Refresh stale or missing reports with
+  `node scripts/write-prompt-context-drift-report.cjs --repo-root .`, then
+  validate the generated artifact with
+  `node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .`.
+  Keep writer output, validator proof, CI state, review state, tracker state,
+  and merge readiness as separate lanes.
 - PR closeout handoff evidence must stay claim/evidence driven. `harness next
   --pr-closeout <path>` may consume only validated `pr-closeout/v1` artifacts
   and must fail closed into repair guidance when required evidence is missing,
