@@ -96,6 +96,10 @@ describe("harness next agent-facing parity", () => {
 
 		expect(decision.status).toBe("action_required");
 		expect(decision.nextCommand).toBe(PROMPT_CONTEXT_DRIFT_COMMAND);
+		expect(decision.followUpCommands).toEqual([
+			"node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .",
+			"harness check --json",
+		]);
 		expect(decision.requiredEvidence).toEqual([
 			"git:status",
 			"missing:artifacts/context-integrity/prompt-context-drift-report.json",

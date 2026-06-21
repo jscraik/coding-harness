@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { realpathSync } from "node:fs";
+import { lstatSync, realpathSync } from "node:fs";
 import { isAbsolute, relative, resolve, sep } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { assessActiveRouteRefs } from "../agent-readiness/active-route-refs.js";
 import {
 	PROMPT_CONTEXT_DRIFT_REPORT_SCHEMA_VERSION,
@@ -150,7 +151,8 @@ function buildPromptContextDriftSurface(input: {
 	const sourceRoute = sourceRouteForEntry(input.entry, input.repoRoot);
 	const refs = sourceRoute.refs;
 	const sourceRefs = refs.map((ref) => {
-		const digest = repoFileSha256(input.repoRoot, ref);
+		const readablePath = safeRepoFilePath(input.repoRoot, ref);
+		const digest = readablePath === null ? null : repoFileSha256(readablePath);
 		return {
 			refId: `${input.entry.refId}:${ref}`,
 			surfaceId: input.entry.surfaceId,
@@ -164,21 +166,35 @@ function buildPromptContextDriftSurface(input: {
 			requiresFilesystemExistence: digest !== null,
 		};
 	});
+	const headBlockers: PromptContextDriftBlocker[] =
+		input.entry.surfaceId === "receipt_head_sha" &&
+		input.currentHeadSha === null
+			? [
+					{
+						blockerClass: "head_sha_mismatch",
+						reason: "current repository HEAD could not be verified.",
+						nextActionClass: "refresh_receipts",
+					},
+				]
+			: [];
 	const present =
 		sourceRefs.length > 0 &&
 		sourceRefs.every((ref) => ref.sha256 !== null) &&
-		sourceRoute.staleReasons.length === 0;
+		sourceRoute.staleReasons.length === 0 &&
+		headBlockers.length === 0;
 	const blockers: PromptContextDriftBlocker[] = present
 		? []
-		: [
-				{
-					blockerClass: input.entry.missingBlockerClass,
-					reason:
-						sourceRoute.staleReasons[0] ??
-						`${input.entry.ref} evidence is missing or unreadable.`,
-					nextActionClass: input.entry.nextActionClass,
-				},
-			];
+		: headBlockers.length > 0
+			? headBlockers
+			: [
+					{
+						blockerClass: input.entry.missingBlockerClass,
+						reason:
+							sourceRoute.staleReasons[0] ??
+							`${input.entry.ref} evidence is missing or unreadable.`,
+						nextActionClass: input.entry.nextActionClass,
+					},
+				];
 	return {
 		surfaceId: input.entry.surfaceId,
 		status: present ? "pass" : "warn",
@@ -230,8 +246,9 @@ function activeRouteSourceRoute(repoRoot: string): SourceRoute | undefined {
 		...assessment.evidenceRefs,
 		...assessment.missingRefs.map((ref) => ref.normalizedPath),
 	]);
-	return refs.length > 0
-		? { refs, staleReasons: assessment.staleReasons }
+	if (refs.length > 0) return { refs, staleReasons: assessment.staleReasons };
+	return assessment.staleReasons.length > 0
+		? { refs: [ACTIVE_ARTIFACTS_PATH], staleReasons: assessment.staleReasons }
 		: undefined;
 }
 
@@ -239,17 +256,15 @@ function firstExistingRepoRef(
 	repoRoot: string,
 	candidates: readonly string[],
 ): string | undefined {
-	return candidates.find(
-		(candidate) => repoFileSha256(repoRoot, candidate) !== null,
-	);
+	return candidates.find((candidate) => {
+		const readablePath = safeRepoFilePath(repoRoot, candidate);
+		return readablePath !== null && repoFileSha256(readablePath) !== null;
+	});
 }
 
-function repoFileSha256(repoRoot: string, ref: string): string | null {
-	const repoRelativePath = normalizeRepoRelativePath(ref);
-	if (repoRelativePath === null) return null;
-	const resolved = repoAbsolutePath(repoRoot, repoRelativePath);
+function repoFileSha256(resolvedRepoFilePath: string): string | null {
 	try {
-		const content = repoFileBytes(resolved);
+		const content = repoFileBytes(resolvedRepoFilePath);
 		return content === null
 			? null
 			: createHash("sha256").update(content).digest("hex");
@@ -259,9 +274,8 @@ function repoFileSha256(repoRoot: string, ref: string): string | null {
 }
 
 function repoFileText(repoRoot: string, ref: string): string {
-	const repoRelativePath = normalizeRepoRelativePath(ref);
-	if (repoRelativePath === null) return "";
-	const resolved = repoAbsolutePath(repoRoot, repoRelativePath);
+	const resolved = safeRepoFilePath(repoRoot, ref);
+	if (resolved === null) return "";
 	try {
 		return repoFileBytes(resolved)?.toString("utf8") ?? "";
 	} catch {
@@ -276,6 +290,28 @@ function repoFileBytes(resolvedRepoFilePath: string): Buffer | null {
 		stdio: ["ignore", "pipe", "ignore"],
 	});
 	return result.status === 0 ? result.stdout : null;
+}
+
+function safeRepoFilePath(repoRoot: string, ref: string): string | null {
+	const repoRelativePath = normalizeRepoRelativePath(ref);
+	if (repoRelativePath === null) return null;
+	const resolved = repoAbsolutePath(repoRoot, repoRelativePath);
+	try {
+		const stat = lstatSync(resolved);
+		if (stat.isSymbolicLink() || !stat.isFile()) return null;
+		const realFilePath = realpathSync(resolved);
+		const relativeRealPath = relative(repoRoot, realFilePath);
+		if (
+			relativeRealPath === ".." ||
+			relativeRealPath.startsWith(`..${sep}`) ||
+			isAbsolute(relativeRealPath)
+		) {
+			return null;
+		}
+		return realFilePath;
+	} catch {
+		return null;
+	}
 }
 
 function normalizeRepoRelativePath(value: string): string | null {
@@ -298,7 +334,23 @@ function repoAbsolutePath(
 	realRepoRoot: string,
 	repoRelativePath: string,
 ): string {
-	return [realRepoRoot, ...repoRelativePath.split("/")].join(sep);
+	const baseUrl = pathToFileURL(
+		realRepoRoot.endsWith(sep) ? realRepoRoot : `${realRepoRoot}${sep}`,
+	);
+	const encodedPath = repoRelativePath
+		.split("/")
+		.map(encodeURIComponent)
+		.join("/");
+	const absolute = fileURLToPath(new URL(encodedPath, baseUrl));
+	const relativePath = relative(realRepoRoot, absolute);
+	if (
+		relativePath === ".." ||
+		relativePath.startsWith(`..${sep}`) ||
+		isAbsolute(relativePath)
+	) {
+		throw new Error("repo path escaped repository root");
+	}
+	return absolute;
 }
 
 function uniqueStrings(values: string[]): string[] {

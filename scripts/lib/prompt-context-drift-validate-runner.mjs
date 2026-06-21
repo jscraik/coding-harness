@@ -1,8 +1,11 @@
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { validatePromptContextDriftReport } from "../../src/lib/prompt-context-drift/index.ts";
 
-const reportPath = process.env.PROMPT_CONTEXT_DRIFT_REPORT_PATH;
 const repoRoot = process.env.PROMPT_CONTEXT_DRIFT_REPO_ROOT;
+const bindToLiveHead =
+	process.env.PROMPT_CONTEXT_DRIFT_BIND_LIVE_HEAD === "true";
+const HEAD_SHA = /^[0-9a-f]{40}$/u;
 
 function finish(status, errors, exitCode) {
 	console.log(
@@ -19,21 +22,13 @@ function finish(status, errors, exitCode) {
 	process.exit(exitCode);
 }
 
-if (!reportPath || !repoRoot) {
+if (!repoRoot) {
 	finish("fail", ["runner: missing required environment"], 2);
 }
 
-function readReport(path) {
-	const result = spawnSync("/bin/cat", [path], {
-		encoding: "utf8",
-		maxBuffer: 1024 * 1024,
-		stdio: ["ignore", "pipe", "ignore"],
-	});
-	if (result.status !== 0) {
-		finish("fail", ["report: cannot read JSON: read failed"], 1);
-	}
+function readReport() {
 	try {
-		return JSON.parse(result.stdout);
+		return JSON.parse(readFileSync(0, "utf8"));
 	} catch (error) {
 		finish(
 			"fail",
@@ -45,7 +40,34 @@ function readReport(path) {
 	}
 }
 
-const result = validatePromptContextDriftReport(readReport(reportPath), {
+function liveHeadSha() {
+	const result = spawnSync("git", ["rev-parse", "HEAD"], {
+		cwd: repoRoot,
+		encoding: "utf8",
+		stdio: ["ignore", "pipe", "ignore"],
+	});
+	const value = result.status === 0 ? result.stdout.trim() : "";
+	return HEAD_SHA.test(value) ? value : null;
+}
+
+function validateLiveHeadBinding(report) {
+	if (!bindToLiveHead) return [];
+	const liveHead = liveHeadSha();
+	if (liveHead === null) {
+		return ["currentHeadSha: cannot verify live repository HEAD"];
+	}
+	return report?.currentHeadSha === liveHead
+		? []
+		: ["currentHeadSha: must match live repository HEAD"];
+}
+
+const report = readReport();
+const result = validatePromptContextDriftReport(report, {
 	repoRoot,
 });
-finish(result.status, result.errors, result.status === "pass" ? 0 : 1);
+const errors = [...result.errors, ...validateLiveHeadBinding(report)];
+finish(
+	errors.length > 0 ? "fail" : result.status,
+	errors,
+	errors.length > 0 ? 1 : 0,
+);

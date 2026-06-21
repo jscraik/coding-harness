@@ -104,6 +104,94 @@ describe("validate-prompt-context-drift script", () => {
 		});
 	});
 
+	it("rejects report paths outside the repository", () => {
+		const repoRoot = makePromptContextRepo(tempDirs);
+		const outsideDir = mkdtempSync(
+			join(tmpdir(), "prompt-context-drift-report-outside-"),
+		);
+		tempDirs.push(outsideDir);
+		const outsideReport = join(outsideDir, "report.json");
+		writeFileSync(outsideReport, "{}\n", "utf8");
+
+		const result = spawnSync(
+			process.execPath,
+			[VALIDATE_SCRIPT, outsideReport, "--repo-root", "."],
+			{ cwd: repoRoot, encoding: "utf8" },
+		);
+		const output = JSON.parse(result.stdout) as {
+			schemaVersion: string;
+			status: string;
+			errors: string[];
+		};
+
+		expect(result.status).toBe(1);
+		expect(output).toEqual({
+			schemaVersion: "prompt-context-drift-validation/v1",
+			status: "fail",
+			errors: ["reportPath: must stay inside the repository"],
+		});
+	});
+
+	it("accepts absolute report paths that stay inside the repository", () => {
+		const result = spawnSync(
+			process.execPath,
+			[
+				VALIDATE_SCRIPT,
+				join(
+					REPO_ROOT,
+					"contracts/examples/prompt-context-drift-report.example.json",
+				),
+				"--repo-root",
+				REPO_ROOT,
+			],
+			{ encoding: "utf8" },
+		);
+		const output = JSON.parse(result.stdout) as {
+			schemaVersion: string;
+			status: string;
+			errors: string[];
+		};
+
+		expect(result.status).toBe(0);
+		expect(output).toEqual({
+			schemaVersion: "prompt-context-drift-validation/v1",
+			status: "pass",
+			errors: [],
+		});
+	});
+
+	it("rejects report symlinks before validating the drift report", () => {
+		const repoRoot = makePromptContextRepo(tempDirs);
+		const outsideDir = mkdtempSync(
+			join(tmpdir(), "prompt-context-drift-report-symlink-"),
+		);
+		tempDirs.push(outsideDir);
+		const outsideReport = join(outsideDir, "report.json");
+		writeFileSync(outsideReport, "{}\n", "utf8");
+		const reportPath = "artifacts/context-integrity/external-report.json";
+		const symlinkPath = join(repoRoot, reportPath);
+		mkdirSync(dirname(symlinkPath), { recursive: true });
+		symlinkSync(outsideReport, symlinkPath);
+
+		const result = spawnSync(
+			process.execPath,
+			[VALIDATE_SCRIPT, reportPath, "--repo-root", "."],
+			{ cwd: repoRoot, encoding: "utf8" },
+		);
+		const output = JSON.parse(result.stdout) as {
+			schemaVersion: string;
+			status: string;
+			errors: string[];
+		};
+
+		expect(result.status).toBe(1);
+		expect(output).toEqual({
+			schemaVersion: "prompt-context-drift-validation/v1",
+			status: "fail",
+			errors: ["reportPath: must not be a symbolic link"],
+		});
+	});
+
 	it("writes a current prompt-context drift report through the public wrapper", () => {
 		const repoRoot = makePromptContextRepo(tempDirs);
 		const outputPath =
@@ -158,6 +246,28 @@ describe("validate-prompt-context-drift script", () => {
 			status: "pass",
 			errors: [],
 		});
+
+		writeRepoFile(repoRoot, "unreferenced-change.txt", "new head\n");
+		runGit(repoRoot, ["add", "unreferenced-change.txt"]);
+		runGit(repoRoot, ["commit", "-m", "advance head"]);
+
+		const staleValidateResult = spawnSync(
+			process.execPath,
+			[VALIDATE_SCRIPT, outputPath, "--repo-root", "."],
+			{ cwd: repoRoot, encoding: "utf8" },
+		);
+		const staleValidateOutput = JSON.parse(staleValidateResult.stdout) as {
+			schemaVersion: string;
+			status: string;
+			errors: string[];
+		};
+
+		expect(staleValidateResult.status).toBe(1);
+		expect(staleValidateOutput).toEqual({
+			schemaVersion: "prompt-context-drift-validation/v1",
+			status: "fail",
+			errors: ["currentHeadSha: must match live repository HEAD"],
+		});
 	});
 
 	it("rejects output symlinks before writing the drift report", () => {
@@ -195,22 +305,54 @@ describe("validate-prompt-context-drift script", () => {
 		});
 		expect(readFileSync(outsideFile, "utf8")).toBe("outside\n");
 	});
+
+	it("returns structured write JSON when setup fails", () => {
+		const repoRoot = join(tmpdir(), "prompt-context-drift-missing-repo");
+		rmSync(repoRoot, { recursive: true, force: true });
+
+		const writeResult = spawnSync(
+			process.execPath,
+			[WRITE_SCRIPT, "--repo-root", repoRoot],
+			{ encoding: "utf8" },
+		);
+		const writeOutput = JSON.parse(writeResult.stdout) as {
+			schemaVersion: string;
+			status: string;
+			outputPath: string;
+			errors: string[];
+		};
+
+		expect(writeResult.status).toBe(1);
+		expect(writeOutput).toEqual({
+			schemaVersion: "prompt-context-drift-write/v1",
+			status: "fail",
+			outputPath:
+				"artifacts/context-integrity/prompt-context-drift-report.json",
+			errors: ["writer: setup failed before report generation"],
+		});
+	});
 });
 
 function makePromptContextRepo(tempDirs: string[]): string {
 	const repoRoot = mkdtempSync(join(tmpdir(), "prompt-context-drift-write-"));
 	tempDirs.push(repoRoot);
-	spawnSync("git", ["init"], { cwd: repoRoot, encoding: "utf8" });
-	spawnSync("git", ["config", "user.name", "Codex"], {
-		cwd: repoRoot,
-		encoding: "utf8",
-	});
-	spawnSync("git", ["config", "user.email", "codex@example.invalid"], {
-		cwd: repoRoot,
-		encoding: "utf8",
-	});
+	runGit(repoRoot, ["init"]);
+	runGit(repoRoot, ["config", "user.name", "Codex"]);
+	runGit(repoRoot, ["config", "user.email", "codex@example.invalid"]);
 	writeRepoFile(repoRoot, "AGENTS.md", "# Agents\n");
-	writeRepoFile(repoRoot, ".harness/active-artifacts.md", "# Active\n");
+	writeRepoFile(
+		repoRoot,
+		".harness/active-artifacts.md",
+		[
+			"# Active Artifacts",
+			"",
+			"## Current Active Route",
+			"| Status | Artifact | Notes |",
+			"| --- | --- | --- |",
+			"| Current | `docs/goals/codex-runtime-evidence-verifier-cockpit/current-route.json` | Current active route |",
+			"",
+		].join("\n"),
+	);
 	writeRepoFile(
 		repoRoot,
 		"docs/goals/codex-runtime-evidence-verifier-cockpit/current-route.json",
@@ -220,12 +362,21 @@ function makePromptContextRepo(tempDirs: string[]): string {
 	writeRepoFile(repoRoot, ".harness/knowledge/INDEX.md", "# Knowledge\n");
 	writeRepoFile(repoRoot, "artifacts/runtime-card.json", "{}\n");
 	writeRepoFile(repoRoot, "harness.contract.json", "{}\n");
-	spawnSync("git", ["add", "."], { cwd: repoRoot, encoding: "utf8" });
-	spawnSync("git", ["commit", "-m", "seed"], {
+	runGit(repoRoot, ["add", "."]);
+	runGit(repoRoot, ["commit", "-m", "seed"]);
+	return repoRoot;
+}
+
+function runGit(repoRoot: string, args: string[]): void {
+	const result = spawnSync("git", args, {
 		cwd: repoRoot,
 		encoding: "utf8",
 	});
-	return repoRoot;
+	if (result.status !== 0) {
+		throw new Error(
+			`git ${args.join(" ")} failed: ${result.stderr || result.stdout}`,
+		);
+	}
 }
 
 function writeRepoFile(
@@ -233,6 +384,13 @@ function writeRepoFile(
 	relativePath: string,
 	content: string,
 ) {
+	if (
+		relativePath.trim().length === 0 ||
+		relativePath.startsWith("/") ||
+		relativePath.split(/[\\/]+/).includes("..")
+	) {
+		throw new Error("Fixture path must stay inside the temporary repository.");
+	}
 	const fullPath = join(repoRoot, relativePath);
 	mkdirSync(dirname(fullPath), { recursive: true });
 	writeFileSync(fullPath, content, "utf8");

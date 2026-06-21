@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import {
 	evidence,
 	fileContainsAll,
@@ -42,6 +43,7 @@ const PROMPT_CONTEXT_DRIFT_REPORT_PATHS = [
 	"artifacts/prompt-context-drift-report.json",
 	".harness/runtime/prompt-context-drift-report.json",
 ] as const;
+const HEAD_SHA = /^[0-9a-f]{40}$/u;
 const PROMPT_CONTEXT_DRIFT_CANONICAL_REPORT =
 	PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0];
 
@@ -279,7 +281,10 @@ function promptContextDriftReportStatus(
 		};
 	}
 	try {
-		const parsed = JSON.parse(text) as { overallStatus?: unknown };
+		const parsed = JSON.parse(text) as {
+			currentHeadSha?: unknown;
+			overallStatus?: unknown;
+		};
 		const validation = validatePromptContextDriftReport(parsed, { repoRoot });
 		if (validation.status !== "pass") {
 			return {
@@ -287,6 +292,13 @@ function promptContextDriftReportStatus(
 				staleReasons: [
 					`Prompt-context-drift report failed validation: ${validation.errors[0] ?? "unknown validation error"}.`,
 				],
+			};
+		}
+		const liveHeadError = liveHeadBindingError(parsed, repoRoot);
+		if (liveHeadError !== null) {
+			return {
+				status: "warn",
+				staleReasons: [liveHeadError],
 			};
 		}
 		return parsed.overallStatus === "pass"
@@ -305,6 +317,29 @@ function promptContextDriftReportStatus(
 			],
 		};
 	}
+}
+
+function liveHeadBindingError(
+	report: { currentHeadSha?: unknown },
+	repoRoot: string,
+): string | null {
+	const liveHead = readLiveHeadSha(repoRoot);
+	if (liveHead === null) {
+		return "Prompt-context-drift report live HEAD could not be verified.";
+	}
+	return report.currentHeadSha === liveHead
+		? null
+		: "Prompt-context-drift report currentHeadSha does not match live repository HEAD.";
+}
+
+function readLiveHeadSha(repoRoot: string): string | null {
+	const result = spawnSync("git", ["rev-parse", "HEAD"], {
+		cwd: repoRoot,
+		encoding: "utf8",
+		stdio: ["ignore", "pipe", "ignore"],
+	});
+	const value = result.status === 0 ? result.stdout.trim() : "";
+	return HEAD_SHA.test(value) ? value : null;
 }
 
 function externalHorizonSurface(

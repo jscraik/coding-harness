@@ -224,10 +224,6 @@ const dedupeSubgraphNodeIds = (content, diagramName) => {
       .filter(([, count]) => count > 1)
       .map(([rawId]) => rawId),
   );
-  if (duplicateIds.size === 0) {
-    return ensureTrailingNewline(lines.join("\n"));
-  }
-
   const seen = new Map();
   const rewrittenIds = new Map();
   for (const node of nodes) {
@@ -265,6 +261,34 @@ const dedupeSubgraphNodeIds = (content, diagramName) => {
       .filter((id) => id.length > 0)
       .flatMap((id) => rewrittenIds.get(id) ?? [id]);
     lines[lineIndex] = `${classMatch[1]}${[...new Set(classIds)].join(",")}${classMatch[3]}`;
+  }
+
+  const declaredNodeIds = new Set();
+  const memoryNodeIdsByLabel = new Map();
+  const normalizeLabel = (value) =>
+    stableRawIdentity(value.replace(/^[^A-Za-z0-9]+/, ""))
+      .replace(/_/g, "-");
+  for (const line of lines) {
+    const nodeMatch = line.match(/^\s{4}([A-Za-z_][A-Za-z0-9_]*)(\[.+\])$/);
+    if (!nodeMatch) {
+      continue;
+    }
+    declaredNodeIds.add(nodeMatch[1]);
+    const label = nodeMatch[2].match(/"([^"]+)"/)?.[1] ?? "";
+    if (label.startsWith("📚 ")) {
+      memoryNodeIdsByLabel.set(normalizeLabel(label), nodeMatch[1]);
+    }
+  }
+
+  for (const [lineIndex, line] of lines.entries()) {
+    const edgeMatch = line.match(/^(\s{2})([A-Za-z_][A-Za-z0-9_]*)(\s+-->\|retrieves from\|\s+.+)$/);
+    if (!edgeMatch || declaredNodeIds.has(edgeMatch[2])) {
+      continue;
+    }
+    const replacementId = memoryNodeIdsByLabel.get(normalizeLabel(edgeMatch[2]));
+    if (replacementId) {
+      lines[lineIndex] = `${edgeMatch[1]}${replacementId}${edgeMatch[3]}`;
+    }
   }
 
   return ensureTrailingNewline(lines.join("\n"));
@@ -649,7 +673,7 @@ NODE
 	normalize_status=$?
 	set -e
 	if [[ "$normalize_status" -eq 0 ]]; then
-		cp "$CONTEXT_FILE" "$TMP_CONTEXT"
+		:
 	elif [[ "$normalize_status" -ne 1 ]]; then
 		log "error: diagram context normalize comparison failed"
 		exit "$normalize_status"

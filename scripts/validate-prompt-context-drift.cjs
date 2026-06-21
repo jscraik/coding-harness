@@ -4,6 +4,7 @@
 const { spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
+const { fileURLToPath, pathToFileURL } = require("node:url");
 
 function parseArgs(argv) {
 	const parsed = { errors: [], reportPath: null, repoRoot: process.cwd() };
@@ -47,6 +48,112 @@ function printResult(status, errors, exitCode) {
 	process.exit(exitCode);
 }
 
+function normalizeRepoRelativePath(value) {
+	if (typeof value !== "string" || value.trim().length === 0) {
+		return null;
+	}
+	const normalized = path
+		.normalize(value)
+		.replace(/\\/g, "/")
+		.replace(/^\.\//, "");
+	if (
+		normalized.length === 0 ||
+		normalized === "." ||
+		normalized.includes("/../") ||
+		normalized.startsWith("..") ||
+		normalized.startsWith("../") ||
+		normalized.startsWith("/") ||
+		/[\r\n\0]/.test(normalized)
+	) {
+		return null;
+	}
+	return normalized;
+}
+
+function repoAbsolutePath(realRepoRoot, repoRelativePath) {
+	const baseUrl = pathToFileURL(
+		realRepoRoot.endsWith(path.sep)
+			? realRepoRoot
+			: `${realRepoRoot}${path.sep}`,
+	);
+	const encodedPath = repoRelativePath
+		.split("/")
+		.map(encodeURIComponent)
+		.join("/");
+	const absolute = fileURLToPath(new URL(encodedPath, baseUrl));
+	const relativePath = path.relative(realRepoRoot, absolute);
+	if (
+		relativePath === ".." ||
+		relativePath.startsWith(`..${path.sep}`) ||
+		path.isAbsolute(relativePath)
+	) {
+		throw new Error("repo path escaped repository root");
+	}
+	return absolute;
+}
+
+function prepareReportPath(repoRoot, requestedPath) {
+	const realRepoRoot = fs.realpathSync(repoRoot);
+	if (
+		typeof requestedPath !== "string" ||
+		requestedPath.trim().length === 0 ||
+		/[\r\n\0]/.test(requestedPath)
+	) {
+		return { ok: false, error: "reportPath: must stay inside the repository" };
+	}
+	let absolute;
+	if (path.isAbsolute(requestedPath)) {
+		absolute = requestedPath;
+	} else {
+		const relativePath = normalizeRepoRelativePath(requestedPath);
+		if (relativePath === null) {
+			return {
+				ok: false,
+				error: "reportPath: must stay inside the repository",
+			};
+		}
+		absolute = repoAbsolutePath(realRepoRoot, relativePath);
+	}
+	const relativeAbsolutePath = path.relative(realRepoRoot, absolute);
+	if (
+		relativeAbsolutePath === ".." ||
+		relativeAbsolutePath.startsWith(`..${path.sep}`) ||
+		path.isAbsolute(relativeAbsolutePath)
+	) {
+		return { ok: false, error: "reportPath: must stay inside the repository" };
+	}
+	if (!fs.existsSync(absolute)) {
+		return { ok: false, error: "reportPath: file does not exist" };
+	}
+	const stat = fs.lstatSync(absolute);
+	if (stat.isSymbolicLink()) {
+		return { ok: false, error: "reportPath: must not be a symbolic link" };
+	}
+	if (!stat.isFile()) {
+		return { ok: false, error: "reportPath: must be a file path" };
+	}
+	const realReportPath = fs.realpathSync(absolute);
+	const relativeRealPath = path.relative(realRepoRoot, realReportPath);
+	if (
+		relativeRealPath === ".." ||
+		relativeRealPath.startsWith(`..${path.sep}`) ||
+		path.isAbsolute(relativeRealPath)
+	) {
+		return { ok: false, error: "reportPath: must stay inside the repository" };
+	}
+	return { ok: true, path: realReportPath };
+}
+
+function shouldBindLiveHead(moduleRoot, reportPath) {
+	const examplesRoot = repoAbsolutePath(moduleRoot, "contracts/examples");
+	const relativeExamplePath = path.relative(examplesRoot, reportPath);
+	return (
+		relativeExamplePath === ".." ||
+		relativeExamplePath.startsWith(`..${path.sep}`) ||
+		path.isAbsolute(relativeExamplePath)
+	);
+}
+
 function main() {
 	const args = parseArgs(process.argv.slice(2));
 	if (args.errors.length > 0) {
@@ -58,15 +165,21 @@ function main() {
 
 	const repoRoot = path.resolve(args.repoRoot);
 	const moduleRoot = path.resolve(__dirname, "..");
-	const reportPath = path.resolve(repoRoot, args.reportPath);
+	const reportTarget = prepareReportPath(repoRoot, args.reportPath);
 	const runnerPath = path.join(
 		moduleRoot,
 		"scripts/lib/prompt-context-drift-validate-runner.mjs",
 	);
 	const tsxLoader = require.resolve("tsx", { paths: [moduleRoot] });
 
-	if (!fs.existsSync(reportPath)) {
-		printResult("fail", ["reportPath: file does not exist"], 1);
+	if (!reportTarget.ok) {
+		printResult("fail", [reportTarget.error], 1);
+	}
+	let reportContent;
+	try {
+		reportContent = fs.readFileSync(reportTarget.path, "utf8");
+	} catch {
+		printResult("fail", ["reportPath: file cannot be read"], 1);
 	}
 
 	const child = spawnSync(
@@ -76,10 +189,16 @@ function main() {
 			cwd: repoRoot,
 			env: {
 				...process.env,
-				PROMPT_CONTEXT_DRIFT_REPORT_PATH: reportPath,
+				PROMPT_CONTEXT_DRIFT_BIND_LIVE_HEAD: shouldBindLiveHead(
+					moduleRoot,
+					reportTarget.path,
+				)
+					? "true"
+					: "false",
 				PROMPT_CONTEXT_DRIFT_REPO_ROOT: repoRoot,
 			},
 			encoding: "utf8",
+			input: reportContent,
 		},
 	);
 	if (child.error) {

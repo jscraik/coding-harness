@@ -11,61 +11,44 @@ const relativeOutputPath =
 	process.env.PROMPT_CONTEXT_DRIFT_RELATIVE_OUTPUT_PATH;
 
 if (!outputPath || !tempOutputPath || !repoRoot || !relativeOutputPath) {
-	console.log(
-		JSON.stringify(
-			{
-				schemaVersion: "prompt-context-drift-write/v1",
-				status: "fail",
-				outputPath: null,
-				errors: ["runner: missing required environment"],
-			},
-			null,
-			2,
-		),
-	);
-	process.exit(2);
+	finish("fail", null, ["runner: missing required environment"], 2);
 }
 
-const report = buildPromptContextDriftReport({ repoRoot });
-const validation = validatePromptContextDriftReport(report, { repoRoot });
-if (validation.status !== "pass") {
+function finish(status, reportOutputPath, errors, exitCode) {
 	console.log(
 		JSON.stringify(
 			{
 				schemaVersion: "prompt-context-drift-write/v1",
-				status: validation.status,
-				outputPath: null,
-				errors: validation.errors,
+				status,
+				outputPath: reportOutputPath,
+				errors,
 			},
 			null,
 			2,
 		),
 	);
-	process.exit(1);
+	process.exit(exitCode);
 }
 
 try {
-	rmSync(tempOutputPath, { force: true });
+	const report = buildPromptContextDriftReport({ repoRoot });
+	const validation = validatePromptContextDriftReport(report, { repoRoot });
+	if (validation.status !== "pass") {
+		finish(validation.status, null, validation.errors, 1);
+	}
+
+	try {
+		rmSync(tempOutputPath, { force: true });
+	} catch {
+		// Best-effort cleanup before the exclusive write below.
+	}
+
+	writeFileSync(tempOutputPath, `${JSON.stringify(report, null, 2)}\n`, {
+		flag: "wx",
+	});
+	renameSync(tempOutputPath, outputPath);
+
+	finish(validation.status, relativeOutputPath, validation.errors, 0);
 } catch {
-	// Best-effort cleanup before the exclusive write below.
+	finish("fail", null, ["runner: failed to build or write report"], 1);
 }
-
-writeFileSync(tempOutputPath, `${JSON.stringify(report, null, 2)}\n`, {
-	flag: "wx",
-});
-renameSync(tempOutputPath, outputPath);
-
-console.log(
-	JSON.stringify(
-		{
-			schemaVersion: "prompt-context-drift-write/v1",
-			status: validation.status,
-			outputPath: relativeOutputPath,
-			errors: validation.errors,
-		},
-		null,
-		2,
-	),
-);
-
-process.exit(validation.status === "pass" ? 0 : 1);

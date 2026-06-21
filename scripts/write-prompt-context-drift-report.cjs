@@ -4,6 +4,7 @@
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const { existsSync, lstatSync, mkdirSync, realpathSync } = require("node:fs");
+const { fileURLToPath, pathToFileURL } = require("node:url");
 
 const DEFAULT_OUTPUT_PATH =
 	"artifacts/context-integrity/prompt-context-drift-report.json";
@@ -90,16 +91,47 @@ function normalizeRepoRelativePath(value) {
 }
 
 function repoAbsolutePath(realRepoRoot, repoRelativePath) {
-	return [realRepoRoot, ...repoRelativePath.split("/")].join(path.sep);
+	const baseUrl = pathToFileURL(
+		realRepoRoot.endsWith(path.sep)
+			? realRepoRoot
+			: `${realRepoRoot}${path.sep}`,
+	);
+	const encodedPath = repoRelativePath
+		.split("/")
+		.map(encodeURIComponent)
+		.join("/");
+	const absolute = fileURLToPath(new URL(encodedPath, baseUrl));
+	const relativePath = path.relative(realRepoRoot, absolute);
+	if (
+		relativePath === ".." ||
+		relativePath.startsWith(`..${path.sep}`) ||
+		path.isAbsolute(relativePath)
+	) {
+		throw new Error("repo path escaped repository root");
+	}
+	return absolute;
 }
 
 function main() {
 	const args = parseArgs(process.argv.slice(2));
+	try {
+		mainWithArgs(args);
+	} catch {
+		printResult(
+			"fail",
+			["writer: setup failed before report generation"],
+			safeDisplayPath(args.outputPath),
+			1,
+		);
+	}
+}
+
+function mainWithArgs(args) {
 	if (args.errors.length > 0) {
 		printResult("fail", args.errors, safeDisplayPath(args.outputPath), 2);
 	}
 
-	const repoRoot = path.resolve(args.repoRoot);
+	const repoRoot = resolveRepoRoot(args.repoRoot);
 	const moduleRoot = path.resolve(__dirname, "..");
 	const outputTarget = prepareOutputTarget(repoRoot, args.outputPath);
 	if (!outputTarget.ok) {
@@ -136,7 +168,7 @@ function main() {
 }
 
 function prepareOutputTarget(repoRoot, requestedPath) {
-	const realRepoRoot = realpathSync(repoRoot);
+	const realRepoRoot = repoRoot;
 	const relativePath = normalizeRepoRelativePath(requestedPath);
 	if (relativePath === null) {
 		return { ok: false, error: "--output: must stay inside the repository" };
@@ -222,6 +254,27 @@ function ensureSafeParentDirectory(realRepoRoot, relativeOutputPath) {
 		return { ok: false, error: "--output: must stay inside the repository" };
 	}
 	return { ok: true };
+}
+
+function resolveRepoRoot(requestedRoot) {
+	const base = realpathSync(process.cwd());
+	const rootRequest = requestedRoot || ".";
+	const targetCandidate =
+		rootRequest === "."
+			? base
+			: path.isAbsolute(rootRequest)
+				? rootRequest
+				: repoAbsolutePath(base, normalizeRepoRelativePath(rootRequest) || ".");
+	const target = realpathSync(targetCandidate);
+	const relativeTarget = path.relative(base, target);
+	if (
+		relativeTarget === ".." ||
+		relativeTarget.startsWith(`..${path.sep}`) ||
+		path.isAbsolute(relativeTarget)
+	) {
+		throw new Error("repo root escaped current working directory");
+	}
+	return target;
 }
 
 main();
