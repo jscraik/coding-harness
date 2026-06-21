@@ -28,6 +28,7 @@ const writeCommandFor = (reportPath: string) =>
 const validateCommandFor = (reportPath: string) =>
 	`harness prompt-context-drift:validate ${reportPath}`;
 const CANONICAL_REPORT = PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0];
+const VALIDATED_REPORT_EVIDENCE_PREFIX = "validated:";
 
 /** Project prompt-context drift evidence into the agent-readiness context surface. */
 export function promptContextDriftSurface(
@@ -47,16 +48,14 @@ export function promptContextDriftSurface(
 		});
 	}
 	if (reportEvidence.length > 1) {
+		const cleanupPlan = duplicateReportCleanupPlan(repoRoot, reportEvidence);
 		return contextSurface({
 			status: "warn",
-			evidence: reportEvidence,
+			evidence: [...reportEvidence, ...cleanupPlan.evidence],
 			staleReasons: [
 				"Multiple prompt-context-drift reports were discovered; keep a single canonical artifacts/context-integrity/prompt-context-drift-report.json report before using this surface.",
 			],
-			suggestedRefreshCommands: duplicateReportCleanupCommands(
-				repoRoot,
-				reportEvidence,
-			),
+			suggestedRefreshCommands: cleanupPlan.commands,
 		});
 	}
 	const reportStatus = promptContextDriftReportStatus(
@@ -84,21 +83,66 @@ function refreshCommandsFor(reportPath: string): string[] {
 		: [writeCommandFor(reportPath), validateCommandFor(reportPath)];
 }
 
-function duplicateReportCleanupCommands(
+function duplicateReportCleanupPlan(
 	repoRoot: string,
 	reportPaths: readonly string[],
-): string[] {
-	const canonicalIsReadable =
+): { commands: string[]; evidence: string[] } {
+	const survivor = validReportSurvivor(repoRoot, reportPaths);
+	if (survivor === null) {
+		return {
+			commands: refreshCommandsFor(CANONICAL_REPORT),
+			evidence: [],
+		};
+	}
+	return {
+		commands: reportPaths
+			.filter((reportPath) => reportPath !== survivor)
+			.map((reportPath) => `rm ${reportPath}`),
+		evidence: [validatedReportEvidenceFor(survivor)],
+	};
+}
+
+function validReportSurvivor(
+	repoRoot: string,
+	reportPaths: readonly string[],
+): string | null {
+	if (
 		reportPaths.includes(CANONICAL_REPORT) &&
-		readJsonArtifact(
-			repoRoot,
-			CANONICAL_REPORT,
-			PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
-		).length > 0;
-	const survivor = canonicalIsReadable ? CANONICAL_REPORT : reportPaths.at(-1);
-	return reportPaths
-		.filter((reportPath) => reportPath !== survivor)
-		.map((reportPath) => `rm ${reportPath}`);
+		isValidPromptContextDriftReport(repoRoot, CANONICAL_REPORT)
+	) {
+		return CANONICAL_REPORT;
+	}
+	return (
+		[...reportPaths]
+			.reverse()
+			.find((reportPath) =>
+				isValidPromptContextDriftReport(repoRoot, reportPath),
+			) ?? null
+	);
+}
+
+function isValidPromptContextDriftReport(
+	repoRoot: string,
+	reportPath: string,
+): boolean {
+	const text = readJsonArtifact(
+		repoRoot,
+		reportPath,
+		PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
+	);
+	if (text.trim().length === 0) return false;
+	try {
+		return (
+			validatePromptContextDriftReport(JSON.parse(text), { repoRoot })
+				.status === "pass"
+		);
+	} catch {
+		return false;
+	}
+}
+
+function validatedReportEvidenceFor(reportPath: string): string {
+	return `${VALIDATED_REPORT_EVIDENCE_PREFIX}${reportPath}`;
 }
 
 function promptContextDriftReportStatus(

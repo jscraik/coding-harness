@@ -94,21 +94,30 @@ function existingArtifactPath(
 ): string | null {
 	try {
 		const realRepoRoot = realpathSync(repoRoot);
-		if (isInvalidArtifactPath(artifactPath)) {
-			return null;
-		}
-		const absolutePath = knownArtifactAbsolutePath(
-			realRepoRoot,
-			artifactPath,
-			allowedPaths,
-		);
-		if (absolutePath === null) return null;
+		const artifact = knownArtifact(artifactPath, allowedPaths);
+		if (artifact === null) return null;
+		const absolutePath = [realRepoRoot, ...artifact.segments].join(sep);
 		if (escapesRepoRoot(realRepoRoot, absolutePath)) return null;
+		if (!hasSafeArtifactParents(realRepoRoot, artifact)) return null;
 		lstatSync(absolutePath);
 		return artifactPath;
 	} catch {
 		return null;
 	}
+}
+
+function hasSafeArtifactParents(
+	realRepoRoot: string,
+	artifact: KnownJsonArtifact,
+): boolean {
+	let currentPath = realRepoRoot;
+	for (const segment of artifact.segments.slice(0, -1)) {
+		currentPath = [currentPath, segment].join(sep);
+		if (escapesRepoRoot(realRepoRoot, currentPath)) return false;
+		const stat = lstatSync(currentPath);
+		if (stat.isSymbolicLink() || !stat.isDirectory()) return false;
+	}
+	return true;
 }
 
 function isInvalidArtifactPath(artifactPath: string): boolean {

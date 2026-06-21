@@ -469,12 +469,12 @@ describe("agent-readiness command", () => {
 		});
 	});
 
-	it("warns when unsafe canonical and alternate prompt-context drift reports create ambiguous authority", () => {
+	it("preserves a valid alternate over corrupt canonical prompt-context drift", () => {
 		const repoRoot = makeAgentReadyRepo(tempDirs);
 		const canonical =
 			"artifacts/context-integrity/prompt-context-drift-report.json";
 		const alternate = "artifacts/prompt-context-drift-report.json";
-		writeRepoFile(repoRoot, canonical, "x".repeat(1_000_001));
+		writeRepoFile(repoRoot, canonical, "{not-json");
 		writeRepoFile(
 			repoRoot,
 			alternate,
@@ -491,7 +491,7 @@ describe("agent-readiness command", () => {
 
 		expect(promptContextSurface).toMatchObject({
 			status: "warn",
-			evidence: [canonical, alternate],
+			evidence: [canonical, alternate, `validated:${alternate}`],
 			suggestedRefreshCommands: [`rm ${canonical}`],
 		});
 	});

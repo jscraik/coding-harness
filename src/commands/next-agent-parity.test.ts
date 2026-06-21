@@ -10,6 +10,7 @@ const DUPLICATE_PROMPT_CONTEXT_DRIFT_CLEANUP_COMMAND =
 	"rm artifacts/prompt-context-drift-report.json";
 const CANONICAL_PROMPT_CONTEXT_DRIFT_CLEANUP_COMMAND =
 	"rm artifacts/context-integrity/prompt-context-drift-report.json";
+const VALIDATED_PROMPT_CONTEXT_EVIDENCE_PREFIX = "validated:";
 const RUNTIME_CARD_REFRESH_COMMAND =
 	"harness runtime-card --json --repo . --out artifacts/runtime-card.json";
 
@@ -93,6 +94,7 @@ function promptContextDriftDuplicateContext(): AgentReadinessContextHealth {
 				evidence: [
 					"artifacts/context-integrity/prompt-context-drift-report.json",
 					"artifacts/prompt-context-drift-report.json",
+					`${VALIDATED_PROMPT_CONTEXT_EVIDENCE_PREFIX}artifacts/context-integrity/prompt-context-drift-report.json`,
 				],
 				staleReasons: [
 					"Multiple prompt-context-drift reports were discovered.",
@@ -117,6 +119,7 @@ function promptContextDriftDuplicateWithoutCanonicalContext(): AgentReadinessCon
 				evidence: [
 					"artifacts/prompt-context-drift-report.json",
 					".harness/runtime/prompt-context-drift-report.json",
+					`${VALIDATED_PROMPT_CONTEXT_EVIDENCE_PREFIX}.harness/runtime/prompt-context-drift-report.json`,
 				],
 				staleReasons: [
 					"Multiple prompt-context-drift reports were discovered.",
@@ -141,6 +144,7 @@ function promptContextDriftDuplicateWithUnsafeCanonicalContext(): AgentReadiness
 				evidence: [
 					"artifacts/context-integrity/prompt-context-drift-report.json",
 					"artifacts/prompt-context-drift-report.json",
+					`${VALIDATED_PROMPT_CONTEXT_EVIDENCE_PREFIX}artifacts/prompt-context-drift-report.json`,
 				],
 				staleReasons: [
 					"Multiple prompt-context-drift reports were discovered.",
@@ -312,6 +316,43 @@ describe("harness next agent-facing parity", () => {
 			"harness prompt-context-drift:validate artifacts/prompt-context-drift-report.json",
 			"harness check --json",
 		]);
+	});
+
+	it("blocks prompt-context drift cleanup without survivor evidence", () => {
+		const context: AgentReadinessContextHealth = {
+			...promptContextDriftWarnContext(),
+			surfaces: [
+				{
+					id: "prompt_context_drift",
+					status: "warn",
+					evidenceUse: "orientation",
+					evidence: [
+						"artifacts/context-integrity/prompt-context-drift-report.json",
+					],
+					staleReasons: [
+						"Multiple prompt-context-drift reports were discovered.",
+					],
+					suggestedRefreshCommands: [
+						CANONICAL_PROMPT_CONTEXT_DRIFT_CLEANUP_COMMAND,
+					],
+				},
+			],
+			suggestedRefreshCommands: [
+				CANONICAL_PROMPT_CONTEXT_DRIFT_CLEANUP_COMMAND,
+			],
+		};
+
+		const decision = runHarnessNext({
+			inspectChangedFiles: () => [],
+			repoRoot: "/tmp/repo",
+			agentReadinessContext: context,
+		});
+
+		expect(decision.nextCommand).toBe(
+			CANONICAL_PROMPT_CONTEXT_DRIFT_CLEANUP_COMMAND,
+		);
+		expect(decision.safeToRun).toBe(false);
+		expect(decision.requiresHuman).toBe(true);
 	});
 
 	it("routes prompt-context drift report blockers to their repair command", () => {

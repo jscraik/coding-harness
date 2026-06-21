@@ -37,6 +37,7 @@ const WRITING_PROMPT_CONTEXT_REFRESH_COMMANDS = new Set([
 const TRUSTED_PROMPT_CONTEXT_REPORT_PATHS: ReadonlySet<string> = new Set(
 	PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
 );
+const VALIDATED_PROMPT_CONTEXT_REPORT_EVIDENCE_PREFIX = "validated:";
 
 function promptContextDriftRefreshCommand(
 	contextHealth: AgentReadinessContextHealth | undefined,
@@ -70,7 +71,9 @@ function isTrustedRefreshCommand(
 		evidenceRefs.includes(cleanup[1]) &&
 		evidenceRefs.some(
 			(ref) =>
-				ref !== cleanup[1] && TRUSTED_PROMPT_CONTEXT_REPORT_PATHS.has(ref),
+				ref !== cleanup[1] &&
+				TRUSTED_PROMPT_CONTEXT_REPORT_PATHS.has(ref) &&
+				evidenceRefs.includes(validatedPromptContextReportEvidenceFor(ref)),
 		)
 	) {
 		return true;
@@ -132,6 +135,10 @@ function refreshCommandWritesPromptContextReport(command: string): boolean {
 
 function refreshCommandDeletesPromptContextReport(command: string): boolean {
 	return Boolean(command.trim().match(/^rm (\S+)$/u));
+}
+
+function validatedPromptContextReportEvidenceFor(reportPath: string): string {
+	return `${VALIDATED_PROMPT_CONTEXT_REPORT_EVIDENCE_PREFIX}${reportPath}`;
 }
 
 function followUpCommandsForEvidence(
