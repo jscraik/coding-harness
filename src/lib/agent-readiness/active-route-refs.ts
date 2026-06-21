@@ -123,12 +123,14 @@ const REPO_ROOT_PREFIXES = [
 	"README.md",
 	"artifacts/",
 	"codestyle/",
+	"contracts/",
 	"docs/",
 	"goal-governor-output.yaml",
 	"harness.contract.json",
 	"package.json",
 	"scripts/",
 	"src/",
+	"templates/",
 ] as const;
 
 function activeRouteBaseDirs(
