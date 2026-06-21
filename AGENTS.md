@@ -111,6 +111,8 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   `node scripts/write-prompt-context-drift-report.cjs --repo-root .`, then
   validate the generated artifact with
   `node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .`.
+  Agent-readiness consumers must read prompt-context drift reports through the
+  canonical no-follow descriptor reader, not ad hoc repo-relative file reads.
   Keep writer output, validator proof, CI state, review state, tracker state,
   and merge readiness as separate lanes.
 - PR closeout handoff evidence must stay claim/evidence driven. `harness next

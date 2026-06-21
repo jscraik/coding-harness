@@ -352,7 +352,9 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   can support any advisory context-health projection. `agent-readiness` may
   expose `prompt_context_drift` for orientation, but the report must not become
   command authority, delivery-truth claim support, JSC-363 acceptance closure,
-  or merge-readiness proof. Stale or missing reports should be regenerated with
+  or merge-readiness proof. Agent-readiness consumers must route report reads
+  through the canonical no-follow descriptor reader instead of ad hoc
+  repo-relative file reads. Stale or missing reports should be regenerated with
   `node scripts/write-prompt-context-drift-report.cjs --repo-root .` and then
   validated with
   `node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .`;

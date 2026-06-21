@@ -117,6 +117,13 @@ collect_candidate_tests() {
 			;;
 	esac
 
+	case "$source" in
+		src/lib/agent-readiness/prompt-context-drift-surface.ts|src/lib/agent-readiness/safe-json-artifact-reader.ts)
+			collect_test_path "src/commands/agent-readiness.test.ts"
+			collect_test_path "src/commands/next-agent-parity.test.ts"
+			;;
+	esac
+
 	for kind in "${TEST_KINDS[@]}"; do
 		for ext in "${TEST_EXTENSIONS[@]}"; do
 			rg_globs+=(--glob "*.$kind.$ext")

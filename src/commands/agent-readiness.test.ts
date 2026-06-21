@@ -1,7 +1,6 @@
 import {
 	mkdirSync,
 	mkdtempSync,
-	readFileSync,
 	rmSync,
 	symlinkSync,
 	writeFileSync,
@@ -269,12 +268,31 @@ describe("agent-readiness command", () => {
 		});
 	});
 
-	it("warns when prompt-context drift report is empty", () => {
+	it.each([
+		{
+			name: "empty",
+			content: "",
+			expected: { staleReasons: ["Prompt-context-drift report is empty."] },
+		},
+		{
+			name: "oversized",
+			content: "x".repeat(1_000_001),
+			expected: {
+				evidence: [
+					"artifacts/context-integrity/prompt-context-drift-report.json",
+				],
+				staleReasons: ["Prompt-context-drift report is empty."],
+			},
+		},
+	])("warns when guarded prompt-context drift report is $name", ({
+		content,
+		expected,
+	}) => {
 		const repoRoot = makeAgentReadyRepo(tempDirs);
 		writeRepoFile(
 			repoRoot,
 			"artifacts/context-integrity/prompt-context-drift-report.json",
-			"",
+			content,
 		);
 
 		const report = assessAgentReadiness({
@@ -287,7 +305,7 @@ describe("agent-readiness command", () => {
 
 		expect(promptContextSurface).toMatchObject({
 			status: "warn",
-			staleReasons: ["Prompt-context-drift report is empty."],
+			...expected,
 		});
 	});
 
@@ -451,11 +469,15 @@ describe("agent-readiness command", () => {
 		});
 	});
 
-	it("warns when multiple prompt-context drift reports create ambiguous authority", () => {
+	it("preserves a valid alternate over corrupt canonical prompt-context drift", () => {
 		const repoRoot = makeAgentReadyRepo(tempDirs);
+		const canonical =
+			"artifacts/context-integrity/prompt-context-drift-report.json";
+		const alternate = "artifacts/prompt-context-drift-report.json";
+		writeRepoFile(repoRoot, canonical, "{not-json");
 		writeRepoFile(
 			repoRoot,
-			"artifacts/prompt-context-drift-report.json",
+			alternate,
 			JSON.stringify(promptContextDriftReportForReadyRepo(repoRoot)),
 		);
 
@@ -467,17 +489,10 @@ describe("agent-readiness command", () => {
 			(surface) => surface.id === "prompt_context_drift",
 		);
 
-		expect(report.status).toBe("warn");
 		expect(promptContextSurface).toMatchObject({
 			status: "warn",
-			staleReasons: [
-				expect.stringContaining(
-					"Multiple prompt-context-drift reports were discovered",
-				),
-			],
-			suggestedRefreshCommands: [
-				"rm artifacts/prompt-context-drift-report.json",
-			],
+			evidence: [canonical, alternate, `validated:${alternate}`],
+			suggestedRefreshCommands: [`rm ${canonical}`],
 		});
 	});
 
@@ -505,7 +520,7 @@ describe("agent-readiness command", () => {
 
 		expect(promptContextSurface).toMatchObject({
 			status: "warn",
-			evidence: [`missing:${canonicalReport}`],
+			evidence: [canonicalReport],
 			suggestedRefreshCommands: [
 				"harness prompt-context-drift:write",
 				`harness prompt-context-drift:validate ${canonicalReport}`,
@@ -911,18 +926,52 @@ describe("agent-readiness command", () => {
 	});
 });
 
+// Shared by ready fixture writes and prompt-context drift digest expectations.
+const READY_REPO_SOURCE_TEXT = {
+	"AGENTS.md": [
+		"# Agent Instructions",
+		"PR bodies require a session or traceability reference.",
+		"Use task-specific docs and codestyle before edits.",
+	].join("\n"),
+	".harness/active-artifacts.md": [
+		"# Active",
+		"",
+		"## Current Active Route",
+		"",
+		"| Work | Refs |",
+		"|---|---|",
+		"| Ready | `.harness/plan/ready.md`; `.harness/specs/ready.md` |",
+		"",
+		"## Artifact Index",
+	].join("\n"),
+	".harness/plan/ready.md": "# Ready Plan\n",
+	".harness/memory/LEARNINGS.md": "# Learnings\n",
+	".harness/knowledge/INDEX.md": "# Knowledge\n",
+	".harness/runtime/runtime-card.json": "{}\n",
+	"harness.contract.json": JSON.stringify({
+		contextIntegrityPolicy: { mode: "advisory" },
+		toolingPolicy: {
+			sharedStateActions: [
+				{ name: "stage", authority: "user_or_explicit_request" },
+				{ name: "commit", authority: "user_or_explicit_request" },
+				{ name: "push", authority: "user_or_explicit_request" },
+				{ name: "merge", authority: "pull_request_policy" },
+				{ name: "deploy", authority: "release_policy" },
+				{
+					name: "external_mutation",
+					authority: "explicit_credentialed_request",
+				},
+			],
+		},
+	}),
+} as const;
+
+type ReadyRepoSourcePath = keyof typeof READY_REPO_SOURCE_TEXT;
+
 function makeAgentReadyRepo(tempDirs: string[]): string {
 	const repoRoot = mkdtempSync(join(tmpdir(), "agent-readiness-ready-"));
 	tempDirs.push(repoRoot);
-	writeRepoFile(
-		repoRoot,
-		"AGENTS.md",
-		[
-			"# Agent Instructions",
-			"PR bodies require a session or traceability reference.",
-			"Use task-specific docs and codestyle before edits.",
-		].join("\n"),
-	);
+	writeRepoFile(repoRoot, "AGENTS.md", readyRepoSourceText("AGENTS.md"));
 	writeRepoFile(repoRoot, "CODESTYLE.md", "# Codestyle\n");
 	writeRepoFile(repoRoot, "codestyle/README.md", "# Codestyle Map\n");
 	writeRepoFile(
@@ -942,45 +991,36 @@ function makeAgentReadyRepo(tempDirs: string[]): string {
 	writeRepoFile(
 		repoRoot,
 		".harness/active-artifacts.md",
-		[
-			"# Active",
-			"",
-			"## Current Active Route",
-			"",
-			"| Work | Refs |",
-			"|---|---|",
-			"| Ready | `.harness/plan/ready.md`; `.harness/specs/ready.md` |",
-			"",
-			"## Artifact Index",
-		].join("\n"),
+		readyRepoSourceText(".harness/active-artifacts.md"),
 	);
 	mkdirSync(join(repoRoot, ".harness/plan"), { recursive: true });
-	writeRepoFile(repoRoot, ".harness/plan/ready.md", "# Ready Plan\n");
+	writeRepoFile(
+		repoRoot,
+		".harness/plan/ready.md",
+		readyRepoSourceText(".harness/plan/ready.md"),
+	);
 	writeRepoFile(repoRoot, ".harness/specs/ready.md", "# Ready Spec\n");
-	writeRepoFile(repoRoot, ".harness/memory/LEARNINGS.md", "# Learnings\n");
-	writeRepoFile(repoRoot, ".harness/knowledge/INDEX.md", "# Knowledge\n");
-	writeRepoFile(repoRoot, ".harness/runtime/runtime-card.json", "{}\n");
+	writeRepoFile(
+		repoRoot,
+		".harness/memory/LEARNINGS.md",
+		readyRepoSourceText(".harness/memory/LEARNINGS.md"),
+	);
+	writeRepoFile(
+		repoRoot,
+		".harness/knowledge/INDEX.md",
+		readyRepoSourceText(".harness/knowledge/INDEX.md"),
+	);
+	writeRepoFile(
+		repoRoot,
+		".harness/runtime/runtime-card.json",
+		readyRepoSourceText(".harness/runtime/runtime-card.json"),
+	);
 	writeRepoFile(repoRoot, "artifacts/external-state-snapshot.json", "{}\n");
 	writeRepoFile(repoRoot, "src/commands/context-health.ts", "export {};\n");
 	writeRepoFile(
 		repoRoot,
 		"harness.contract.json",
-		JSON.stringify({
-			contextIntegrityPolicy: { mode: "advisory" },
-			toolingPolicy: {
-				sharedStateActions: [
-					{ name: "stage", authority: "user_or_explicit_request" },
-					{ name: "commit", authority: "user_or_explicit_request" },
-					{ name: "push", authority: "user_or_explicit_request" },
-					{ name: "merge", authority: "pull_request_policy" },
-					{ name: "deploy", authority: "release_policy" },
-					{
-						name: "external_mutation",
-						authority: "explicit_credentialed_request",
-					},
-				],
-			},
-		}),
+		readyRepoSourceText("harness.contract.json"),
 	);
 	writeRepoFile(
 		repoRoot,
@@ -1072,7 +1112,7 @@ function promptContextDriftReportForReadyRepo(
 					refKind: "repo_file",
 					ref,
 					hashAlgorithm: "sha256",
-					sha256: sha256RepoFile(repoRoot, ref),
+					sha256: sha256Text(readyRepoSourceText(ref)),
 					freshness: "current",
 					evidenceUse: "claim_support",
 					requiredForClaimSupport: true,
@@ -1107,10 +1147,17 @@ function runGit(repoRoot: string, args: string[]): void {
 	}
 }
 
-function sha256RepoFile(repoRoot: string, path: string): string {
-	return createHash("sha256")
-		.update(readFileSync(repoPath(repoRoot, path)))
-		.digest("hex");
+function sha256Text(text: string): string {
+	return createHash("sha256").update(text).digest("hex");
+}
+
+function readyRepoSourceText(path: string): string {
+	if (isReadyRepoSourcePath(path)) return READY_REPO_SOURCE_TEXT[path];
+	throw new Error(`unexpected ready repo source ref: ${path}`);
+}
+
+function isReadyRepoSourcePath(path: string): path is ReadyRepoSourcePath {
+	return Object.hasOwn(READY_REPO_SOURCE_TEXT, path);
 }
 
 function writeRepoFile(repoRoot: string, path: string, content: string): void {

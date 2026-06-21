@@ -356,6 +356,10 @@ classification, and raw/secret leakage rejection. `agent-readiness` may consume
 the report as an advisory `prompt_context_drift` context surface, but it must
 not authorize commands, satisfy delivery-truth claims, close JSC-363
 acceptance criteria, or prove merge readiness.
+Agent-readiness report reads belong behind the canonical bounded JSON artifact
+reader in `src/lib/agent-readiness/safe-json-artifact-reader.ts`, which keeps
+known report paths, repo containment, no-follow descriptor reads, and size
+limits separate from context-surface status projection.
 When the report is stale or missing, refresh it with
 `node scripts/write-prompt-context-drift-report.cjs --repo-root .`, then
 validate the generated artifact with

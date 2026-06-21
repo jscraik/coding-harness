@@ -104,14 +104,11 @@ function validateDigest(
 ): boolean {
 	if (ref.hashAlgorithm !== "sha256" || !SHA256.test(String(ref.sha256)))
 		return false;
-	const resolvedRoot = resolve(root);
-	const resolvedFile = resolve(resolvedRoot, file.relativePath);
-	const relativePath = relative(resolvedRoot, resolvedFile);
+	const relativePath = relative(root, file.realPath);
 	if (
 		relativePath.startsWith("..") ||
-		resolve(relativePath) === relativePath ||
 		escapesRepoRoot(relativePath) ||
-		resolvedFile !== file.realPath
+		relativePath !== file.relativePath
 	) {
 		return fail(errors, `${path}.ref: resolved path escapes repository root`);
 	}

@@ -1,13 +1,3 @@
-import {
-	closeSync,
-	constants,
-	fstatSync,
-	lstatSync,
-	openSync,
-	readFileSync,
-	realpathSync,
-} from "node:fs";
-import { isAbsolute, relative, resolve, sep } from "node:path";
 import { readCurrentHeadSha } from "../prompt-context-drift/git-head.js";
 import {
 	PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
@@ -16,6 +6,10 @@ import {
 	type PromptContextDriftNextActionClass,
 	validatePromptContextDriftReport,
 } from "../prompt-context-drift/index.js";
+import {
+	jsonArtifactEvidence,
+	readJsonArtifact,
+} from "./safe-json-artifact-reader.js";
 import type {
 	AgentReadinessContextSurface,
 	AgentReadinessStatus,
@@ -34,13 +28,16 @@ const writeCommandFor = (reportPath: string) =>
 const validateCommandFor = (reportPath: string) =>
 	`harness prompt-context-drift:validate ${reportPath}`;
 const CANONICAL_REPORT = PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0];
-const MAX_REPORT_BYTES = 1_000_000;
+const VALIDATED_REPORT_EVIDENCE_PREFIX = "validated:";
 
 /** Project prompt-context drift evidence into the agent-readiness context surface. */
 export function promptContextDriftSurface(
 	repoRoot: string,
 ): AgentReadinessContextSurface {
-	const reportEvidence = promptContextDriftReportEvidence(repoRoot);
+	const reportEvidence = jsonArtifactEvidence(
+		repoRoot,
+		PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
+	);
 	if (reportEvidence.length === 0) {
 		return contextSurface({
 			status: "warn",
@@ -51,17 +48,22 @@ export function promptContextDriftSurface(
 		});
 	}
 	if (reportEvidence.length > 1) {
+		const cleanupPlan = duplicateReportCleanupPlan(repoRoot, reportEvidence);
 		return contextSurface({
 			status: "warn",
-			evidence: reportEvidence,
+			evidence: [...reportEvidence, ...cleanupPlan.evidence],
 			staleReasons: [
 				"Multiple prompt-context-drift reports were discovered; keep a single canonical artifacts/context-integrity/prompt-context-drift-report.json report before using this surface.",
 			],
-			suggestedRefreshCommands: duplicateReportCleanupCommands(reportEvidence),
+			suggestedRefreshCommands: cleanupPlan.commands,
 		});
 	}
 	const reportStatus = promptContextDriftReportStatus(
-		readPromptContextDriftReport(repoRoot, reportEvidence[0] ?? ""),
+		readJsonArtifact(
+			repoRoot,
+			reportEvidence[0] ?? "",
+			PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
+		),
 		repoRoot,
 		reportEvidence[0] ?? "",
 	);
@@ -81,74 +83,66 @@ function refreshCommandsFor(reportPath: string): string[] {
 		: [writeCommandFor(reportPath), validateCommandFor(reportPath)];
 }
 
-function duplicateReportCleanupCommands(
+function duplicateReportCleanupPlan(
+	repoRoot: string,
 	reportPaths: readonly string[],
-): string[] {
-	const survivor = reportPaths.includes(CANONICAL_REPORT)
-		? CANONICAL_REPORT
-		: reportPaths.at(-1);
-	return reportPaths
-		.filter((reportPath) => reportPath !== survivor)
-		.map((reportPath) => `rm ${reportPath}`);
+): { commands: string[]; evidence: string[] } {
+	const survivor = validReportSurvivor(repoRoot, reportPaths);
+	if (survivor === null) {
+		return {
+			commands: refreshCommandsFor(CANONICAL_REPORT),
+			evidence: [],
+		};
+	}
+	return {
+		commands: reportPaths
+			.filter((reportPath) => reportPath !== survivor)
+			.map((reportPath) => `rm ${reportPath}`),
+		evidence: [validatedReportEvidenceFor(survivor)],
+	};
 }
 
-function promptContextDriftReportEvidence(repoRoot: string): string[] {
-	return PROMPT_CONTEXT_DRIFT_REPORT_PATHS.filter(
-		(reportPath) => safeReportPath(repoRoot, reportPath) !== null,
+function validReportSurvivor(
+	repoRoot: string,
+	reportPaths: readonly string[],
+): string | null {
+	if (
+		reportPaths.includes(CANONICAL_REPORT) &&
+		isValidPromptContextDriftReport(repoRoot, CANONICAL_REPORT)
+	) {
+		return CANONICAL_REPORT;
+	}
+	return (
+		[...reportPaths]
+			.reverse()
+			.find((reportPath) =>
+				isValidPromptContextDriftReport(repoRoot, reportPath),
+			) ?? null
 	);
 }
 
-function readPromptContextDriftReport(
+function isValidPromptContextDriftReport(
 	repoRoot: string,
 	reportPath: string,
-): string {
-	const resolved = safeReportPath(repoRoot, reportPath);
-	if (resolved === null) return "";
-	return readRegularFileText(resolved);
-}
-
-function safeReportPath(repoRoot: string, reportPath: string): string | null {
-	try {
-		const realRepoRoot = realpathSync(repoRoot);
-		if (typeof reportPath !== "string" || /[\r\n\0]/.test(reportPath)) {
-			return null;
-		}
-		const absolutePath = resolve(realRepoRoot, reportPath);
-		const relativePath = relative(realRepoRoot, absolutePath);
-		if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
-			return null;
-		}
-		const stat = lstatSync(absolutePath);
-		if (stat.isSymbolicLink() || !stat.isFile()) return null;
-		const realPath = realpathSync(absolutePath);
-		if (escapesRepoRoot(realRepoRoot, realPath)) return null;
-		return realPath;
-	} catch {
-		return null;
-	}
-}
-
-function readRegularFileText(resolvedPath: string): string {
-	let fd: number | null = null;
-	try {
-		fd = openSync(resolvedPath, constants.O_RDONLY | constants.O_NOFOLLOW);
-		const stat = fstatSync(fd);
-		if (!stat.isFile() || stat.size > MAX_REPORT_BYTES) return "";
-		return readFileSync(fd, "utf8");
-	} catch {
-		return "";
-	} finally {
-		if (fd !== null) closeSync(fd);
-	}
-}
-
-function escapesRepoRoot(repoRoot: string, absolutePath: string): boolean {
-	const relativePath = relative(repoRoot, absolutePath);
-	return (
-		relativePath === ".." ||
-		relativePath.startsWith(`..${sep}`) ||
-		isAbsolute(relativePath)
+): boolean {
+	const text = readJsonArtifact(
+		repoRoot,
+		reportPath,
+		PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
 	);
+	if (text.trim().length === 0) return false;
+	try {
+		return (
+			validatePromptContextDriftReport(JSON.parse(text), { repoRoot })
+				.status === "pass"
+		);
+	} catch {
+		return false;
+	}
+}
+
+function validatedReportEvidenceFor(reportPath: string): string {
+	return `${VALIDATED_REPORT_EVIDENCE_PREFIX}${reportPath}`;
 }
 
 function promptContextDriftReportStatus(
