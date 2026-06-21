@@ -166,10 +166,12 @@ describe("validatePromptContextDriftReport", () => {
 
 	it("builds a valid warning report when orientation files are missing", () => {
 		const repoRoot = tempRoot();
+		const previousCwd = process.cwd();
 		try {
 			writeFileSync(join(repoRoot, "AGENTS.md"), "# Agents\n");
+			process.chdir(repoRoot);
 			const report = buildPromptContextDriftReport({
-				repoRoot,
+				repoRoot: ".",
 				generatedAt: new Date("2026-06-20T00:00:00.000Z"),
 			});
 
@@ -184,6 +186,7 @@ describe("validatePromptContextDriftReport", () => {
 				errors: [],
 			});
 		} finally {
+			process.chdir(previousCwd);
 			rmSync(repoRoot, { recursive: true, force: true });
 		}
 	});

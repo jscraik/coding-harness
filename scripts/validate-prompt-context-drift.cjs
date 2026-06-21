@@ -4,7 +4,6 @@
 const { spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
-const { pathToFileURL } = require("node:url");
 
 function parseArgs(argv) {
 	const parsed = { errors: [], reportPath: null, repoRoot: process.cwd() };
@@ -21,14 +20,14 @@ function parseArgs(argv) {
 			continue;
 		}
 		if (arg.startsWith("--")) {
-			parsed.errors.push(`${arg}: unknown option`);
+			parsed.errors.push("unknown option");
 			continue;
 		}
 		if (!parsed.reportPath) {
 			parsed.reportPath = arg;
 			continue;
 		}
-		parsed.errors.push(`${arg}: unexpected positional argument`);
+		parsed.errors.push("unexpected positional argument");
 	}
 	return parsed;
 }
@@ -60,26 +59,11 @@ function main() {
 	const repoRoot = path.resolve(args.repoRoot);
 	const moduleRoot = path.resolve(__dirname, "..");
 	const reportPath = path.resolve(repoRoot, args.reportPath);
-	const moduleUrl = pathToFileURL(
-		path.join(moduleRoot, "src/lib/prompt-context-drift/index.ts"),
-	).href;
-	const runner = [
-		"import { readFileSync } from 'node:fs';",
-		"const moduleUrl = process.env.PROMPT_CONTEXT_DRIFT_MODULE_URL;",
-		"const reportPath = process.env.PROMPT_CONTEXT_DRIFT_REPORT_PATH;",
-		"const repoRoot = process.env.PROMPT_CONTEXT_DRIFT_REPO_ROOT;",
-		"const { validatePromptContextDriftReport } = await import(moduleUrl);",
-		"let report;",
-		"try {",
-		"  report = JSON.parse(readFileSync(reportPath, 'utf8'));",
-		"} catch (error) {",
-		"  console.log(JSON.stringify({ schemaVersion: 'prompt-context-drift-validation/v1', status: 'fail', errors: ['report: cannot read JSON: ' + error.message] }, null, 2));",
-		"  process.exit(1);",
-		"}",
-		"const result = validatePromptContextDriftReport(report, { repoRoot });",
-		"console.log(JSON.stringify({ schemaVersion: 'prompt-context-drift-validation/v1', ...result }, null, 2));",
-		"process.exit(result.status === 'pass' ? 0 : 1);",
-	].join("\n");
+	const runnerPath = path.join(
+		moduleRoot,
+		"scripts/lib/prompt-context-drift-validate-runner.mjs",
+	);
+	const tsxLoader = require.resolve("tsx", { paths: [moduleRoot] });
 
 	if (!fs.existsSync(reportPath)) {
 		printResult("fail", ["reportPath: file does not exist"], 1);
@@ -87,12 +71,11 @@ function main() {
 
 	const child = spawnSync(
 		process.execPath,
-		["--import", "tsx", "--eval", runner],
+		["--import", tsxLoader, runnerPath],
 		{
-			cwd: moduleRoot,
+			cwd: repoRoot,
 			env: {
 				...process.env,
-				PROMPT_CONTEXT_DRIFT_MODULE_URL: moduleUrl,
 				PROMPT_CONTEXT_DRIFT_REPORT_PATH: reportPath,
 				PROMPT_CONTEXT_DRIFT_REPO_ROOT: repoRoot,
 			},

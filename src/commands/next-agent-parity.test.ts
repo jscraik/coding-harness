@@ -35,6 +35,26 @@ function promptContextDriftWarnContext(): AgentReadinessContextHealth {
 	};
 }
 
+function promptContextDriftMissingContext(): AgentReadinessContextHealth {
+	return {
+		...promptContextDriftWarnContext(),
+		surfaces: [
+			{
+				id: "prompt_context_drift",
+				status: "warn",
+				evidenceUse: "orientation",
+				evidence: [
+					"missing:artifacts/context-integrity/prompt-context-drift-report.json",
+				],
+				staleReasons: [
+					"No prompt-context-drift report was provided for agent-readable orientation.",
+				],
+				suggestedRefreshCommands: [PROMPT_CONTEXT_DRIFT_COMMAND],
+			},
+		],
+	};
+}
+
 describe("harness next agent-facing parity", () => {
 	it("promotes stale prompt-context drift before clean-worktree handoff", () => {
 		const decision = runHarnessNext({
@@ -65,5 +85,21 @@ describe("harness next agent-facing parity", () => {
 				degradedSurfaceCount: 1,
 			},
 		});
+	});
+
+	it("promotes missing prompt-context drift to the writer command", () => {
+		const decision = runHarnessNext({
+			inspectChangedFiles: () => [],
+			repoRoot: "/tmp/repo",
+			agentReadinessContext: promptContextDriftMissingContext(),
+		});
+
+		expect(decision.status).toBe("action_required");
+		expect(decision.nextCommand).toBe(PROMPT_CONTEXT_DRIFT_COMMAND);
+		expect(decision.requiredEvidence).toEqual([
+			"git:status",
+			"missing:artifacts/context-integrity/prompt-context-drift-report.json",
+		]);
+		expect(decision.writesFiles).toBe(true);
 	});
 });

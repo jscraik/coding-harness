@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { readFileSync, statSync } from "node:fs";
+import { readFileSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 import {
 	PROMPT_CONTEXT_DRIFT_REPORT_SCHEMA_VERSION,
@@ -85,7 +85,7 @@ const DEFAULT_PROMPT_CONTEXT_DRIFT_REFS = [
 export function buildPromptContextDriftReport(
 	options: PromptContextDriftReportBuildOptions = {},
 ): PromptContextDriftReport {
-	const repoRoot = resolve(options.repoRoot ?? process.cwd());
+	const repoRoot = resolveRepoRoot(options.repoRoot);
 	const generatedAt = options.generatedAt ?? new Date();
 	const evidenceUse = options.evidenceUse ?? "orientation";
 	const currentHeadSha = readCurrentHeadSha(repoRoot);
@@ -115,6 +115,16 @@ export function buildPromptContextDriftReport(
 				? "none"
 				: "Refresh missing or stale prompt-context orientation surfaces.",
 	};
+}
+
+function resolveRepoRoot(requestedRepoRoot: string | undefined): string {
+	const base = realpathSync(resolve(process.cwd()));
+	const target = realpathSync(resolve(base, requestedRepoRoot ?? "."));
+	const containment = relative(base, target);
+	if (containment.startsWith("..") || isAbsolute(containment)) {
+		throw new Error("repoRoot must stay inside the current working directory");
+	}
+	return target;
 }
 
 function buildPromptContextDriftSurface(input: {
@@ -161,8 +171,9 @@ function buildPromptContextDriftSurface(input: {
 }
 
 function repoFileSha256(repoRoot: string, ref: string): string | null {
-	const resolved = resolve(resolve(repoRoot), ref);
-	const containment = relative(resolve(repoRoot), resolved);
+	const realRepoRoot = realpathSync(resolve(repoRoot));
+	const resolved = resolve(realRepoRoot, ref);
+	const containment = relative(realRepoRoot, resolved);
 	if (containment.startsWith("..") || isAbsolute(containment)) return null;
 	try {
 		if (!statSync(resolved).isFile()) return null;

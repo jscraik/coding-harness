@@ -12,6 +12,16 @@ import { dirname, join } from "node:path";
 import { afterEach } from "vitest";
 import { describe, expect, it } from "vitest";
 
+const REPO_ROOT = process.cwd();
+const VALIDATE_SCRIPT = join(
+	REPO_ROOT,
+	"scripts/validate-prompt-context-drift.cjs",
+);
+const WRITE_SCRIPT = join(
+	REPO_ROOT,
+	"scripts/write-prompt-context-drift-report.cjs",
+);
+
 describe("validate-prompt-context-drift script", () => {
 	const tempDirs: string[] = [];
 
@@ -90,7 +100,7 @@ describe("validate-prompt-context-drift script", () => {
 		expect(output).toEqual({
 			schemaVersion: "prompt-context-drift-validation/v1",
 			status: "fail",
-			errors: ["unexpected.json: unexpected positional argument"],
+			errors: ["unexpected positional argument"],
 		});
 	});
 
@@ -100,14 +110,8 @@ describe("validate-prompt-context-drift script", () => {
 			"artifacts/context-integrity/prompt-context-drift-report.json";
 		const writeResult = spawnSync(
 			process.execPath,
-			[
-				"scripts/write-prompt-context-drift-report.cjs",
-				"--repo-root",
-				repoRoot,
-				"--output",
-				outputPath,
-			],
-			{ encoding: "utf8" },
+			[WRITE_SCRIPT, "--repo-root", ".", "--output", outputPath],
+			{ cwd: repoRoot, encoding: "utf8" },
 		);
 		const writeOutput = JSON.parse(writeResult.stdout) as {
 			schemaVersion: string;
@@ -139,13 +143,8 @@ describe("validate-prompt-context-drift script", () => {
 
 		const validateResult = spawnSync(
 			process.execPath,
-			[
-				"scripts/validate-prompt-context-drift.cjs",
-				outputPath,
-				"--repo-root",
-				repoRoot,
-			],
-			{ encoding: "utf8" },
+			[VALIDATE_SCRIPT, outputPath, "--repo-root", "."],
+			{ cwd: repoRoot, encoding: "utf8" },
 		);
 		const validateOutput = JSON.parse(validateResult.stdout) as {
 			schemaVersion: string;
@@ -177,14 +176,8 @@ describe("validate-prompt-context-drift script", () => {
 
 		const writeResult = spawnSync(
 			process.execPath,
-			[
-				"scripts/write-prompt-context-drift-report.cjs",
-				"--repo-root",
-				repoRoot,
-				"--output",
-				outputPath,
-			],
-			{ encoding: "utf8" },
+			[WRITE_SCRIPT, "--repo-root", ".", "--output", outputPath],
+			{ cwd: repoRoot, encoding: "utf8" },
 		);
 		const writeOutput = JSON.parse(writeResult.stdout) as {
 			schemaVersion: string;

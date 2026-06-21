@@ -42,6 +42,8 @@ const PROMPT_CONTEXT_DRIFT_REPORT_PATHS = [
 	"artifacts/prompt-context-drift-report.json",
 	".harness/runtime/prompt-context-drift-report.json",
 ] as const;
+const PROMPT_CONTEXT_DRIFT_CANONICAL_REPORT =
+	PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0];
 
 /** Build the advisory context-health projection for agent-readiness. */
 export function buildContextHealthProjection(
@@ -228,7 +230,7 @@ function promptContextDriftSurface(
 		return contextSurface({
 			id: "prompt_context_drift",
 			status: "warn",
-			evidence: [],
+			evidence: [`missing:${PROMPT_CONTEXT_DRIFT_CANONICAL_REPORT}`],
 			staleReasons: [
 				"No prompt-context-drift report was provided for agent-readable orientation.",
 			],

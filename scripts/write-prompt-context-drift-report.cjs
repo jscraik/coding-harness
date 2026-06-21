@@ -4,7 +4,6 @@
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const { existsSync, lstatSync, mkdirSync, realpathSync } = require("node:fs");
-const { pathToFileURL } = require("node:url");
 
 const DEFAULT_OUTPUT_PATH =
 	"artifacts/context-integrity/prompt-context-drift-report.json";
@@ -74,33 +73,19 @@ function main() {
 		printResult("fail", [outputTarget.error], args.outputPath, 2);
 	}
 	const outputPath = outputTarget.path;
-	const moduleUrl = pathToFileURL(
-		path.join(moduleRoot, "src/lib/prompt-context-drift/index.ts"),
-	).href;
-	const runner = [
-		"import { renameSync, rmSync, writeFileSync } from 'node:fs';",
-		"const moduleUrl = process.env.PROMPT_CONTEXT_DRIFT_MODULE_URL;",
-		"const outputPath = process.env.PROMPT_CONTEXT_DRIFT_OUTPUT_PATH;",
-		"const tempOutputPath = process.env.PROMPT_CONTEXT_DRIFT_TEMP_OUTPUT_PATH;",
-		"const repoRoot = process.env.PROMPT_CONTEXT_DRIFT_REPO_ROOT;",
-		"const { buildPromptContextDriftReport, validatePromptContextDriftReport } = await import(moduleUrl);",
-		"const report = buildPromptContextDriftReport({ repoRoot });",
-		"const validation = validatePromptContextDriftReport(report, { repoRoot });",
-		"try { rmSync(tempOutputPath, { force: true }); } catch {}",
-		"writeFileSync(tempOutputPath, JSON.stringify(report, null, 2) + '\\n', { flag: 'wx' });",
-		"renameSync(tempOutputPath, outputPath);",
-		"console.log(JSON.stringify({ schemaVersion: 'prompt-context-drift-write/v1', status: validation.status, outputPath: process.env.PROMPT_CONTEXT_DRIFT_RELATIVE_OUTPUT_PATH, errors: validation.errors }, null, 2));",
-		"process.exit(validation.status === 'pass' ? 0 : 1);",
-	].join("\n");
+	const runnerPath = path.join(
+		moduleRoot,
+		"scripts/lib/prompt-context-drift-write-runner.mjs",
+	);
+	const tsxLoader = require.resolve("tsx", { paths: [moduleRoot] });
 
 	const child = spawnSync(
 		process.execPath,
-		["--import", "tsx", "--eval", runner],
+		["--import", tsxLoader, runnerPath],
 		{
-			cwd: moduleRoot,
+			cwd: repoRoot,
 			env: {
 				...process.env,
-				PROMPT_CONTEXT_DRIFT_MODULE_URL: moduleUrl,
 				PROMPT_CONTEXT_DRIFT_OUTPUT_PATH: outputPath,
 				PROMPT_CONTEXT_DRIFT_TEMP_OUTPUT_PATH: outputTarget.tempPath,
 				PROMPT_CONTEXT_DRIFT_RELATIVE_OUTPUT_PATH: args.outputPath,
@@ -158,7 +143,16 @@ function ensureSafeParentDirectory(realRepoRoot, relativeOutputPath) {
 		if (segment === "..") {
 			return { ok: false, error: "--output: must stay inside the repository" };
 		}
-		current = path.join(current, segment);
+		const candidatePath = path.join(current, segment);
+		const relativeCandidate = path.relative(realRepoRoot, candidatePath);
+		if (
+			relativeCandidate === ".." ||
+			relativeCandidate.startsWith(`..${path.sep}`) ||
+			path.isAbsolute(relativeCandidate)
+		) {
+			return { ok: false, error: "--output: must stay inside the repository" };
+		}
+		current = candidatePath;
 		if (existsSync(current)) {
 			const stat = lstatSync(current);
 			if (stat.isSymbolicLink()) {
@@ -177,7 +171,7 @@ function ensureSafeParentDirectory(realRepoRoot, relativeOutputPath) {
 		}
 		mkdirSync(current);
 	}
-	const realParent = realpathSync(path.join(realRepoRoot, parentRelative));
+	const realParent = realpathSync(path.resolve(realRepoRoot, parentRelative));
 	const relativeRealParent = path.relative(realRepoRoot, realParent);
 	if (
 		relativeRealParent === ".." ||
