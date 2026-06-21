@@ -243,6 +243,28 @@ describe("agent-readiness command", () => {
 		});
 	});
 
+	it("accepts regular prompt-context drift reports through guarded reads", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		writeRepoFile(
+			repoRoot,
+			"artifacts/context-integrity/prompt-context-drift-report.json",
+			JSON.stringify(promptContextDriftReportForReadyRepo(repoRoot)),
+		);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const promptContextSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "prompt_context_drift",
+		);
+
+		expect(promptContextSurface).toMatchObject({
+			status: "pass",
+			staleReasons: [],
+		});
+	});
+
 	it("warns when prompt-context drift report is empty", () => {
 		const repoRoot = makeAgentReadyRepo(tempDirs);
 		writeRepoFile(

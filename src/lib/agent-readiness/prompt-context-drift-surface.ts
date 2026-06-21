@@ -4,7 +4,7 @@ import {
 	fstatSync,
 	lstatSync,
 	openSync,
-	readSync,
+	readFileSync,
 	realpathSync,
 } from "node:fs";
 import { isAbsolute, relative, resolve, sep } from "node:path";
@@ -124,16 +124,7 @@ function readRegularFileText(resolvedPath: string): string {
 		fd = openSync(resolvedPath, constants.O_RDONLY | constants.O_NOFOLLOW);
 		const stat = fstatSync(fd);
 		if (!stat.isFile() || stat.size > MAX_REPORT_BYTES) return "";
-		const chunks: Buffer[] = [];
-		let remaining = stat.size;
-		while (remaining > 0) {
-			const chunk = Buffer.allocUnsafe(Math.min(remaining, 64 * 1024));
-			const bytesRead = readSync(fd, chunk, 0, chunk.length, null);
-			if (bytesRead === 0) break;
-			chunks.push(chunk.subarray(0, bytesRead));
-			remaining -= bytesRead;
-		}
-		return Buffer.concat(chunks).toString("utf8");
+		return readFileSync(fd, "utf8");
 	} catch {
 		return "";
 	} finally {
