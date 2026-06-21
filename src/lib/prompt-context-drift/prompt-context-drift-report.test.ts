@@ -237,6 +237,50 @@ describe("validatePromptContextDriftReport", () => {
 		}
 	});
 
+	it("blocks partially stale active-route refs from active-artifacts", () => {
+		const repoRoot = tempRoot();
+		const previousCwd = process.cwd();
+		try {
+			writeFileSync(join(repoRoot, "AGENTS.md"), "# Agents\n");
+			writeRepoFile(
+				repoRoot,
+				".harness/active-artifacts.md",
+				[
+					"# Active Artifacts",
+					"",
+					"## Current Active Route",
+					"| Status | Artifact | Notes |",
+					"| --- | --- | --- |",
+					"| Current | `.harness/specs/current-route.json`; `missing.md` | Current active route |",
+				].join("\n"),
+			);
+			writeRepoFile(repoRoot, ".harness/specs/current-route.json", "{}\n");
+			process.chdir(repoRoot);
+
+			const report = buildPromptContextDriftReport({ repoRoot: "." });
+			const activeRouteSurface = report.surfaces.find(
+				(surface) => surface.surfaceId === "active_route",
+			);
+
+			expect(activeRouteSurface?.status).toBe("warn");
+			expect(
+				activeRouteSurface?.sourceRefs.map((sourceRef) => [
+					sourceRef.ref,
+					sourceRef.freshness,
+				]),
+			).toEqual([
+				[".harness/specs/current-route.json", "current"],
+				[".harness/specs/missing.md", "missing"],
+			]);
+			expect(activeRouteSurface?.blockers[0]?.reason).toContain(
+				"Active route ref",
+			);
+		} finally {
+			process.chdir(previousCwd);
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
 	it("accepts alternate runtime-card locations", () => {
 		const repoRoot = tempRoot();
 		const previousCwd = process.cwd();

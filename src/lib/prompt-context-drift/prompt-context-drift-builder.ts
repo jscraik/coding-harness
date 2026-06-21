@@ -147,7 +147,8 @@ function buildPromptContextDriftSurface(input: {
 	currentHeadSha: string | null;
 	evidenceUse: PromptContextDriftEvidenceUse;
 }): PromptContextDriftSurface {
-	const refs = sourceRefsForEntry(input.entry, input.repoRoot);
+	const sourceRoute = sourceRouteForEntry(input.entry, input.repoRoot);
+	const refs = sourceRoute.refs;
 	const sourceRefs = refs.map((ref) => {
 		const digest = repoFileSha256(input.repoRoot, ref);
 		return {
@@ -164,13 +165,17 @@ function buildPromptContextDriftSurface(input: {
 		};
 	});
 	const present =
-		sourceRefs.length > 0 && sourceRefs.every((ref) => ref.sha256 !== null);
+		sourceRefs.length > 0 &&
+		sourceRefs.every((ref) => ref.sha256 !== null) &&
+		sourceRoute.staleReasons.length === 0;
 	const blockers: PromptContextDriftBlocker[] = present
 		? []
 		: [
 				{
 					blockerClass: input.entry.missingBlockerClass,
-					reason: `${input.entry.ref} evidence is missing or unreadable.`,
+					reason:
+						sourceRoute.staleReasons[0] ??
+						`${input.entry.ref} evidence is missing or unreadable.`,
 					nextActionClass: input.entry.nextActionClass,
 				},
 			];
@@ -187,20 +192,33 @@ function buildPromptContextDriftSurface(input: {
 	};
 }
 
-function sourceRefsForEntry(
-	entry: (typeof DEFAULT_PROMPT_CONTEXT_DRIFT_REFS)[number],
-	repoRoot: string,
-): string[] {
-	if (entry.surfaceId === "active_route") {
-		return activeRouteEvidenceRefs(repoRoot) ?? [entry.ref];
-	}
-	if (entry.surfaceId === "runtime_card_or_handoff") {
-		return [firstExistingRepoRef(repoRoot, RUNTIME_CARD_REFS) ?? entry.ref];
-	}
-	return [entry.ref];
+interface SourceRoute {
+	refs: string[];
+	staleReasons: string[];
 }
 
-function activeRouteEvidenceRefs(repoRoot: string): string[] | undefined {
+function sourceRouteForEntry(
+	entry: (typeof DEFAULT_PROMPT_CONTEXT_DRIFT_REFS)[number],
+	repoRoot: string,
+): SourceRoute {
+	if (entry.surfaceId === "active_route") {
+		return (
+			activeRouteSourceRoute(repoRoot) ?? {
+				refs: [entry.ref],
+				staleReasons: [],
+			}
+		);
+	}
+	if (entry.surfaceId === "runtime_card_or_handoff") {
+		return {
+			refs: [firstExistingRepoRef(repoRoot, RUNTIME_CARD_REFS) ?? entry.ref],
+			staleReasons: [],
+		};
+	}
+	return { refs: [entry.ref], staleReasons: [] };
+}
+
+function activeRouteSourceRoute(repoRoot: string): SourceRoute | undefined {
 	const activeArtifactsText = repoFileText(repoRoot, ACTIVE_ARTIFACTS_PATH);
 	if (activeArtifactsText.length === 0) return undefined;
 	const assessment = assessActiveRouteRefs({
@@ -208,8 +226,12 @@ function activeRouteEvidenceRefs(repoRoot: string): string[] | undefined {
 		activeArtifactsText,
 		activeArtifactsPath: ACTIVE_ARTIFACTS_PATH,
 	});
-	return assessment.evidenceRefs.length > 0
-		? assessment.evidenceRefs
+	const refs = uniqueStrings([
+		...assessment.evidenceRefs,
+		...assessment.missingRefs.map((ref) => ref.normalizedPath),
+	]);
+	return refs.length > 0
+		? { refs, staleReasons: assessment.staleReasons }
 		: undefined;
 }
 
@@ -277,6 +299,10 @@ function repoAbsolutePath(
 	repoRelativePath: string,
 ): string {
 	return [realRepoRoot, ...repoRelativePath.split("/")].join(sep);
+}
+
+function uniqueStrings(values: string[]): string[] {
+	return [...new Set(values)];
 }
 
 function readCurrentHeadSha(repoRoot: string): string | null {
