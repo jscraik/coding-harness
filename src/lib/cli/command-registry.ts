@@ -1,3 +1,5 @@
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import {
 	COMMAND_CATALOG_SCHEMA_VERSION,
 	type CommandAgentCatalogMode,
@@ -51,52 +53,118 @@ export { COMMAND_CATALOG_SCHEMA_VERSION, normalizeCommandName };
 
 const COMMAND_SPECS: CommandSpec[] = [
 	{
+		name: "prompt-context-drift:write",
+		summary: "Write the prompt-context drift report for the current repo",
+		example: "prompt-context-drift:write",
+		errorLabel: "Prompt Context Drift Write Error",
+		execute: (args) =>
+			runPackagedPromptContextScript(
+				"write-prompt-context-drift-report.cjs",
+				args.length > 0 ? args : ["--repo-root", "."],
+			),
+	},
+	{
+		name: "prompt-context-drift:validate",
+		summary: "Validate a prompt-context drift report for the current repo",
+		example: "prompt-context-drift:validate",
+		errorLabel: "Prompt Context Drift Validate Error",
+		execute: (args) =>
+			runPackagedPromptContextScript(
+				"validate-prompt-context-drift.cjs",
+				args.length > 0
+					? args
+					: [
+							"artifacts/context-integrity/prompt-context-drift-report.json",
+							"--repo-root",
+							".",
+						],
+			),
+	},
+	{
 		name: "commands",
 		summary:
 			"List machine-readable command capability metadata for humans and agents",
 		example: "commands --json",
 		errorLabel: "Commands Catalog Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const forAgentFlag = args.includes("--for-agent");
-			const fullCatalogFlag =
-				args.includes("--all") || args.includes("--plumbing");
-			const agentMode = parseAgentCatalogMode(args);
-			if (forAgentFlag && !fullCatalogFlag && agentMode === "invalid") {
-				console.error(
-					"Error: --mode must be orient, verify, review, or handoff when used with commands --for-agent",
-				);
-				return 2;
-			}
-			const catalog =
-				forAgentFlag && !fullCatalogFlag
-					? getRegistryAgentCommandCatalogDocument(
-							agentMode !== "invalid" ? agentMode : undefined,
-						)
-					: getRegistryCommandCatalogDocument();
-			if (jsonFlag) {
-				console.info(JSON.stringify(catalog));
-				return 0;
-			}
-			console.info("Command capability catalog:");
-			for (const capability of catalog.commands) {
-				const category = capability.category.padEnd(22, " ");
-				console.info(
-					`  ${capability.name.padEnd(24, " ")} ${category} ${capability.mutability}`,
-				);
-			}
-			console.info("");
-			console.info(
-				forAgentFlag && !fullCatalogFlag
-					? 'Run "harness commands --json --all" for the full capability catalog.'
-					: 'Run "harness commands --json --for-agent" for the public agent rail set.',
-			);
-			return 0;
-		},
+		execute: runCommandsCatalog,
 	},
 	SOURCE_OUTLINE_COMMAND_SPEC,
 	...EXTRACTED_COMMAND_SPECS,
 ];
+
+function runCommandsCatalog(args: readonly string[]): number {
+	const jsonFlag = args.includes("--json");
+	const forAgentFlag = args.includes("--for-agent");
+	const fullCatalogFlag = args.includes("--all") || args.includes("--plumbing");
+	const agentMode = parseAgentCatalogMode(args);
+	if (forAgentFlag && !fullCatalogFlag && agentMode === "invalid") {
+		console.error(
+			"Error: --mode must be orient, verify, review, or handoff when used with commands --for-agent",
+		);
+		return 2;
+	}
+	const catalog = commandCatalogForFlags(
+		forAgentFlag,
+		fullCatalogFlag,
+		agentMode,
+	);
+	if (jsonFlag) {
+		console.info(JSON.stringify(catalog));
+		return 0;
+	}
+	printCommandCatalog(catalog, forAgentFlag && !fullCatalogFlag);
+	return 0;
+}
+
+function commandCatalogForFlags(
+	forAgentFlag: boolean,
+	fullCatalogFlag: boolean,
+	agentMode: CommandAgentCatalogMode | undefined | "invalid",
+): CommandCapabilityCatalogDocument {
+	return forAgentFlag && !fullCatalogFlag
+		? getRegistryAgentCommandCatalogDocument(
+				agentMode !== "invalid" ? agentMode : undefined,
+			)
+		: getRegistryCommandCatalogDocument();
+}
+
+function printCommandCatalog(
+	catalog: CommandCapabilityCatalogDocument,
+	forAgent: boolean,
+): void {
+	console.info("Command capability catalog:");
+	for (const capability of catalog.commands) {
+		const category = capability.category.padEnd(22, " ");
+		console.info(
+			`  ${capability.name.padEnd(24, " ")} ${category} ${capability.mutability}`,
+		);
+	}
+	console.info("");
+	console.info(
+		forAgent
+			? 'Run "harness commands --json --all" for the full capability catalog.'
+			: 'Run "harness commands --json --for-agent" for the public agent rail set.',
+	);
+}
+
+function runPackagedPromptContextScript(
+	scriptName: string,
+	args: readonly string[],
+): number {
+	const scriptPath = fileURLToPath(
+		new URL(`../../../scripts/${scriptName}`, import.meta.url),
+	);
+	const result = spawnSync(process.execPath, [scriptPath, ...args], {
+		stdio: "inherit",
+	});
+	if (result.error) {
+		console.error(
+			"Error: packaged prompt-context drift script failed to start.",
+		);
+		return 1;
+	}
+	return result.status ?? 1;
+}
 
 const COMMAND_INDEX = new Map<string, CommandSpec>();
 for (const spec of COMMAND_SPECS) {

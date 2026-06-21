@@ -75,6 +75,8 @@ export const COMMAND_CATEGORY_BY_NAME: Partial<
 	"feedback-loop-audit": "drift-search-evidence",
 	gardener: "drift-search-evidence",
 	"context-health": "drift-search-evidence",
+	"prompt-context-drift:write": "drift-search-evidence",
+	"prompt-context-drift:validate": "drift-search-evidence",
 	learnings: "drift-search-evidence",
 	"north-star-feedback": "drift-search-evidence",
 	"review-context": "drift-search-evidence",
@@ -103,6 +105,7 @@ export const WRITE_COMMANDS = new Set<string>([
 	"remediate",
 	"pilot-rollback",
 	"learnings",
+	"prompt-context-drift:write",
 ]);
 
 export const REQUIRED_FLAGS_BY_NAME: Partial<Record<string, string[]>> = {
@@ -119,6 +122,12 @@ export const REQUIRED_FLAGS_BY_NAME: Partial<Record<string, string[]>> = {
 export const EXPECTED_ARTIFACTS_BY_NAME: Partial<Record<string, string[]>> = {
 	"check-environment": ["artifacts/policy/environment-attestation.json"],
 	"context-health": ["artifacts/context-integrity/index-source-inventory.json"],
+	"prompt-context-drift:write": [
+		"artifacts/context-integrity/prompt-context-drift-report.json",
+	],
+	"prompt-context-drift:validate": [
+		"artifacts/context-integrity/prompt-context-drift-report.json",
+	],
 	"ci-migrate": [".harness/ci-provider-transition-status.json"],
 	"fleet-plan": ["artifacts/harness-upgrade-matrix-dev.json"],
 	"artifact-gate": [".harness/artifact-provenance.json"],
@@ -141,6 +150,8 @@ export const RETRYABILITY_BY_NAME: Partial<
 	"decision-request": "safe",
 	"runtime-card": "safe",
 	"session-context": "safe",
+	"prompt-context-drift:write": "safe",
+	"prompt-context-drift:validate": "safe",
 	"runtime-budget": "safe",
 	"fleet-plan": "safe",
 	doctor: "safe",
@@ -196,6 +207,8 @@ export const COMMAND_TIER_BY_NAME: Partial<Record<string, CommandTier>> = {
 	"pattern-scope": "domain",
 	"artifact-routine": "domain",
 	"runtime-budget": "domain",
+	"prompt-context-drift:write": "domain",
+	"prompt-context-drift:validate": "domain",
 
 	"drift-gate": "plumbing",
 	"artifact-gate": "plumbing",
@@ -232,6 +245,8 @@ export const PRIMARY_AUDIENCE_BY_NAME: Partial<
 	next: "agent",
 	"runtime-card": "agent",
 	"session-context": "agent",
+	"prompt-context-drift:write": "agent",
+	"prompt-context-drift:validate": "agent",
 	"decision-request": "agent",
 	"fleet-plan": "agent",
 	doctor: "both",
@@ -259,6 +274,8 @@ export const ORCHESTRATED_BY_BY_NAME: Partial<
 	"agent-readiness": ["next"],
 	"runtime-card": ["next"],
 	"session-context": ["next"],
+	"prompt-context-drift:write": ["next"],
+	"prompt-context-drift:validate": ["next"],
 	"fleet-plan": ["next"],
 	check: ["next"],
 	doctor: ["next"],
@@ -286,6 +303,8 @@ export const AGENT_MODE_BY_NAME: Partial<Record<string, CommandAgentMode>> = {
 	next: "orient",
 	"runtime-card": "orient",
 	"session-context": "orient",
+	"prompt-context-drift:write": "repair",
+	"prompt-context-drift:validate": "verify",
 	init: "orient",
 	"fleet-plan": "plan",
 	doctor: "orient",
@@ -321,6 +340,8 @@ export const COMMAND_VISIBILITY_BY_NAME: Partial<
 	init: "advanced",
 	"runtime-card": "advanced",
 	"session-context": "advanced",
+	"prompt-context-drift:write": "advanced",
+	"prompt-context-drift:validate": "advanced",
 	"decision-request": "advanced",
 	doctor: "advanced",
 	health: "advanced",

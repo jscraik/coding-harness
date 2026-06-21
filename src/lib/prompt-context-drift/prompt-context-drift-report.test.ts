@@ -3,6 +3,7 @@ import {
 	mkdirSync,
 	mkdtempSync,
 	readFileSync,
+	realpathSync,
 	rmSync,
 	symlinkSync,
 	writeFileSync,
@@ -169,6 +170,28 @@ describe("validatePromptContextDriftReport", () => {
 		expect(
 			validatePromptContextDriftReport(exampleReport(), { repoRoot: "." }),
 		).toEqual({ status: "pass", errors: [] });
+	});
+
+	it("builds reports for absolute repo roots inside the current directory", () => {
+		const repoRoot = tempRoot();
+		const previousCwd = process.cwd();
+		try {
+			writeFileSync(join(repoRoot, "AGENTS.md"), "# Agents\n");
+			process.chdir(repoRoot);
+			const report = buildPromptContextDriftReport({
+				repoRoot: realpathSync(repoRoot),
+				generatedAt: new Date("2026-06-20T00:00:00.000Z"),
+			});
+
+			expect(report.schemaVersion).toBe("prompt-context-drift-report/v1");
+			expect(validatePromptContextDriftReport(report, { repoRoot })).toEqual({
+				status: "pass",
+				errors: [],
+			});
+		} finally {
+			process.chdir(previousCwd);
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
 	});
 
 	it("builds a valid warning report when orientation files are missing", () => {
@@ -760,6 +783,8 @@ describe("validatePromptContextDriftReport", () => {
 		expect(result.errors).toContain(
 			"surfaces[0].sourceRefs[0].ref: must be a valid repo-relative path",
 		);
+		expect(result.errors.join("\n")).toContain("valid repo-relative path");
+		expect(result.errors.join("\n")).not.toContain("does not exist");
 	});
 
 	it("returns validation errors for inaccessible evidence roots", () => {

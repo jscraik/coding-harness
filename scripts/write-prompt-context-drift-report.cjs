@@ -13,7 +13,7 @@ function parseArgs(argv) {
 	const parsed = {
 		errors: [],
 		outputPath: DEFAULT_OUTPUT_PATH,
-		repoRoot: process.cwd(),
+		repoRoot: ".",
 	};
 	for (let index = 0; index < argv.length; index += 1) {
 		const arg = argv[index];
@@ -259,28 +259,27 @@ function ensureSafeParentDirectory(realRepoRoot, relativeOutputPath) {
 function resolveRepoRoot(requestedRoot) {
 	const base = realpathSync(process.cwd());
 	const rootRequest = requestedRoot || ".";
-	let targetCandidate;
-	if (rootRequest === ".") {
-		targetCandidate = base;
-	} else if (path.isAbsolute(rootRequest)) {
-		targetCandidate = rootRequest;
-	} else {
-		const relativeRoot = normalizeRepoRelativePath(rootRequest);
-		if (relativeRoot === null) {
-			throw new Error("repo root escaped current working directory");
-		}
-		targetCandidate = repoAbsolutePath(base, relativeRoot);
-	}
-	const target = realpathSync(targetCandidate);
-	const relativeTarget = path.relative(base, target);
+	const requestedAbsolute = path.isAbsolute(rootRequest)
+		? rootRequest
+		: path.resolve(base, rootRequest);
+	const requestedRelativePath = path.relative(base, requestedAbsolute);
 	if (
-		relativeTarget === ".." ||
-		relativeTarget.startsWith(`..${path.sep}`) ||
-		path.isAbsolute(relativeTarget)
+		requestedRelativePath === ".." ||
+		requestedRelativePath.startsWith(`..${path.sep}`) ||
+		path.isAbsolute(requestedRelativePath)
 	) {
-		throw new Error("repo root escaped current working directory");
+		throw new Error("--repo-root must resolve inside the current directory");
 	}
-	return target;
+	const realRoot = realpathSync(requestedAbsolute);
+	const relativePath = path.relative(base, realRoot);
+	if (
+		relativePath === ".." ||
+		relativePath.startsWith(`..${path.sep}`) ||
+		path.isAbsolute(relativePath)
+	) {
+		throw new Error("--repo-root must resolve inside the current directory");
+	}
+	return realRoot;
 }
 
 main();

@@ -397,6 +397,38 @@ describe("agent-readiness command", () => {
 		});
 	});
 
+	it("routes symlinked prompt-context drift reports to the writer", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		const canonicalReport =
+			"artifacts/context-integrity/prompt-context-drift-report.json";
+		const outsideDir = mkdtempSync(join(tmpdir(), "prompt-context-outside-"));
+		tempDirs.push(outsideDir);
+		const outsideReport = join(outsideDir, "prompt-context-drift-report.json");
+		writeFileSync(
+			outsideReport,
+			JSON.stringify(promptContextDriftReportForReadyRepo(repoRoot)),
+		);
+		rmSync(repoPath(repoRoot, canonicalReport), { force: true });
+		symlinkSync(outsideReport, repoPath(repoRoot, canonicalReport));
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const promptContextSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "prompt_context_drift",
+		);
+
+		expect(promptContextSurface).toMatchObject({
+			status: "warn",
+			evidence: [`missing:${canonicalReport}`],
+			suggestedRefreshCommands: [
+				"harness prompt-context-drift:write",
+				`harness prompt-context-drift:validate ${canonicalReport}`,
+			],
+		});
+	});
+
 	it("refreshes an alternate prompt-context drift report in place", () => {
 		const repoRoot = makeAgentReadyRepo(tempDirs);
 		const alternateReportPath =
@@ -420,8 +452,8 @@ describe("agent-readiness command", () => {
 		expect(promptContextSurface).toMatchObject({
 			status: "warn",
 			suggestedRefreshCommands: [
-				`node scripts/write-prompt-context-drift-report.cjs --repo-root . --output ${alternateReportPath}`,
-				`node scripts/validate-prompt-context-drift.cjs ${alternateReportPath} --repo-root .`,
+				`harness prompt-context-drift:write --output ${alternateReportPath}`,
+				`harness prompt-context-drift:validate ${alternateReportPath}`,
 			],
 		});
 	});

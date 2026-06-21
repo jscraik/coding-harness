@@ -25,7 +25,7 @@ interface PromptContextDriftDecisionArgs {
 }
 
 const TRUSTED_PROMPT_CONTEXT_REFRESH_COMMANDS = new Set([
-	"node scripts/write-prompt-context-drift-report.cjs --repo-root .",
+	"harness prompt-context-drift:write",
 ]);
 const TRUSTED_PROMPT_CONTEXT_REPORT_PATHS: ReadonlySet<string> = new Set(
 	PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
@@ -62,7 +62,7 @@ function isTrustedRefreshCommand(command: string): boolean {
 		return true;
 	}
 	const alternate = normalized.match(
-		/^node scripts\/write-prompt-context-drift-report\.cjs --repo-root \. --output (\S+)$/u,
+		/^harness prompt-context-drift:write --output (\S+)$/u,
 	);
 	return (
 		alternate?.[1] !== undefined &&
@@ -70,11 +70,16 @@ function isTrustedRefreshCommand(command: string): boolean {
 	);
 }
 
-function validateCommandForEvidence(evidenceRefs: readonly string[]): string {
-	const reportPath = evidenceRefs.find((ref) =>
-		TRUSTED_PROMPT_CONTEXT_REPORT_PATHS.has(ref),
+function validateCommandForEvidence(
+	evidenceRefs: readonly string[],
+	refreshCommand: string,
+): string {
+	const cleanupPath = refreshCommand.match(/^rm (\S+)$/u)?.[1];
+	const reportPath = evidenceRefs.find(
+		(ref) =>
+			TRUSTED_PROMPT_CONTEXT_REPORT_PATHS.has(ref) && ref !== cleanupPath,
 	);
-	return `node scripts/validate-prompt-context-drift.cjs ${reportPath ?? PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0]} --repo-root .`;
+	return `harness prompt-context-drift:validate ${reportPath ?? PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0]}`;
 }
 
 /** Build a next-step decision when prompt-context drift should block clean-worktree handoff. */
@@ -104,7 +109,10 @@ export function promptContextDriftDecision(
 		],
 		humanEscalation: null,
 		followUpCommands: [
-			validateCommandForEvidence(promptContextRefresh.evidenceRef),
+			validateCommandForEvidence(
+				promptContextRefresh.evidenceRef,
+				promptContextRefresh.command,
+			),
 			"harness check --json",
 		],
 		hiddenPlumbing: ["git:status", "prompt_context_drift", "check"],

@@ -54,17 +54,15 @@ function containedRepoFile(
 	path: string,
 	errors: string[],
 ): ContainedRepoFile | null {
-	if (!isRepoRelativeRef(refPath)) {
+	if (
+		refPath.length === 0 ||
+		isAbsolute(refPath) ||
+		refPath.split(/[\\/]+/u).includes("..")
+	) {
 		return failNull(errors, `${path}.ref: must be a valid repo-relative path`);
 	}
 	const resolvedRoot = resolve(root);
 	const candidate = resolve(resolvedRoot, refPath);
-	if (relativePath.startsWith('..') || isAbsolute(relativePath)) {
-		return failNull(
-			errors,
-			`${path}.ref: resolved path escapes repository root`,
-		);
-	}
 	const relativePath = relative(resolvedRoot, candidate);
 	if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
 		return failNull(
@@ -97,14 +95,6 @@ function containedRepoFile(
 	}
 }
 
-function isRepoRelativeRef(refPath: string): boolean {
-	return (
-		refPath.length > 0 &&
-		!isAbsolute(refPath) &&
-		!refPath.split(/[\\/]+/u).includes("..")
-	);
-}
-
 function validateDigest(
 	ref: Record<string, unknown>,
 	root: string,
@@ -117,12 +107,17 @@ function validateDigest(
 	const resolvedRoot = resolve(root);
 	const resolvedFile = resolve(resolvedRoot, file.relativePath);
 	const relativePath = relative(resolvedRoot, resolvedFile);
-	if (escapesRepoRoot(relativePath) || resolvedFile !== file.realPath) {
+	if (
+		relativePath.startsWith("..") ||
+		resolve(relativePath) === relativePath ||
+		escapesRepoRoot(relativePath) ||
+		resolvedFile !== file.realPath
+	) {
 		return fail(errors, `${path}.ref: resolved path escapes repository root`);
 	}
 	let content: Buffer;
 	try {
-		content = readFileSync(resolvedFile);
+		content = readFileSync(file.realPath);
 	} catch {
 		return fail(errors, `${path}.ref: required repo file is not readable`);
 	}

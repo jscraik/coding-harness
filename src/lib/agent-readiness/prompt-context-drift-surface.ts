@@ -1,33 +1,39 @@
+import {
+	closeSync,
+	constants,
+	fstatSync,
+	lstatSync,
+	openSync,
+	readSync,
+	realpathSync,
+} from "node:fs";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 import { readCurrentHeadSha } from "../prompt-context-drift/git-head.js";
 import {
 	PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
 	PROMPT_CONTEXT_DRIFT_SURFACES,
 	validatePromptContextDriftReport,
 } from "../prompt-context-drift/index.js";
-import { evidence, readText } from "./repo-evidence.js";
 import type {
 	AgentReadinessContextSurface,
 	AgentReadinessStatus,
 } from "./types.js";
 
-const WRITE_COMMAND =
-	"node scripts/write-prompt-context-drift-report.cjs --repo-root .";
+const WRITE_COMMAND = "harness prompt-context-drift:write";
 const VALIDATE_COMMAND =
-	"node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .";
+	"harness prompt-context-drift:validate artifacts/context-integrity/prompt-context-drift-report.json";
 const writeCommandFor = (reportPath: string) =>
-	`node scripts/write-prompt-context-drift-report.cjs --repo-root . --output ${reportPath}`;
+	`harness prompt-context-drift:write --output ${reportPath}`;
 const validateCommandFor = (reportPath: string) =>
-	`node scripts/validate-prompt-context-drift.cjs ${reportPath} --repo-root .`;
+	`harness prompt-context-drift:validate ${reportPath}`;
 const CANONICAL_REPORT = PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0];
+const MAX_REPORT_BYTES = 1_000_000;
 
 /** Project prompt-context drift evidence into the agent-readiness context surface. */
 export function promptContextDriftSurface(
 	repoRoot: string,
 ): AgentReadinessContextSurface {
-	const reportEvidence = evidence(
-		repoRoot,
-		Array.from(PROMPT_CONTEXT_DRIFT_REPORT_PATHS),
-	);
+	const reportEvidence = promptContextDriftReportEvidence(repoRoot);
 	if (reportEvidence.length === 0) {
 		return contextSurface({
 			status: "warn",
@@ -48,7 +54,7 @@ export function promptContextDriftSurface(
 		});
 	}
 	const reportStatus = promptContextDriftReportStatus(
-		readText(repoRoot, reportEvidence[0] ?? ""),
+		readPromptContextDriftReport(repoRoot, reportEvidence[0] ?? ""),
 		repoRoot,
 	);
 	return contextSurface({
@@ -68,9 +74,80 @@ function refreshCommandsFor(reportPath: string): string[] {
 function duplicateReportCleanupCommands(
 	reportPaths: readonly string[],
 ): string[] {
+	const survivor = reportPaths.includes(CANONICAL_REPORT)
+		? CANONICAL_REPORT
+		: reportPaths.at(-1);
 	return reportPaths
-		.filter((reportPath) => reportPath !== CANONICAL_REPORT)
+		.filter((reportPath) => reportPath !== survivor)
 		.map((reportPath) => `rm ${reportPath}`);
+}
+
+function promptContextDriftReportEvidence(repoRoot: string): string[] {
+	return PROMPT_CONTEXT_DRIFT_REPORT_PATHS.filter(
+		(reportPath) => safeReportPath(repoRoot, reportPath) !== null,
+	);
+}
+
+function readPromptContextDriftReport(
+	repoRoot: string,
+	reportPath: string,
+): string {
+	const resolved = safeReportPath(repoRoot, reportPath);
+	if (resolved === null) return "";
+	return readRegularFileText(resolved);
+}
+
+function safeReportPath(repoRoot: string, reportPath: string): string | null {
+	try {
+		const realRepoRoot = realpathSync(repoRoot);
+		if (typeof reportPath !== "string" || /[\r\n\0]/.test(reportPath)) {
+			return null;
+		}
+		const absolutePath = resolve(realRepoRoot, reportPath);
+		const relativePath = relative(realRepoRoot, absolutePath);
+		if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
+			return null;
+		}
+		const stat = lstatSync(absolutePath);
+		if (stat.isSymbolicLink() || !stat.isFile()) return null;
+		const realPath = realpathSync(absolutePath);
+		if (escapesRepoRoot(realRepoRoot, realPath)) return null;
+		return realPath;
+	} catch {
+		return null;
+	}
+}
+
+function readRegularFileText(resolvedPath: string): string {
+	let fd: number | null = null;
+	try {
+		fd = openSync(resolvedPath, constants.O_RDONLY | constants.O_NOFOLLOW);
+		const stat = fstatSync(fd);
+		if (!stat.isFile() || stat.size > MAX_REPORT_BYTES) return "";
+		const chunks: Buffer[] = [];
+		let remaining = stat.size;
+		while (remaining > 0) {
+			const chunk = Buffer.allocUnsafe(Math.min(remaining, 64 * 1024));
+			const bytesRead = readSync(fd, chunk, 0, chunk.length, null);
+			if (bytesRead === 0) break;
+			chunks.push(chunk.subarray(0, bytesRead));
+			remaining -= bytesRead;
+		}
+		return Buffer.concat(chunks).toString("utf8");
+	} catch {
+		return "";
+	} finally {
+		if (fd !== null) closeSync(fd);
+	}
+}
+
+function escapesRepoRoot(repoRoot: string, absolutePath: string): boolean {
+	const relativePath = relative(repoRoot, absolutePath);
+	return (
+		relativePath === ".." ||
+		relativePath.startsWith(`..${sep}`) ||
+		isAbsolute(relativePath)
+	);
 }
 
 function promptContextDriftReportStatus(

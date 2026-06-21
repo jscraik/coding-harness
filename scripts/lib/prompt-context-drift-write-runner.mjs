@@ -31,7 +31,7 @@ function finish(status, reportOutputPath, errors, exitCode) {
 }
 
 try {
-	const report = buildPromptContextDriftReport({ repoRoot });
+	const report = buildPromptContextDriftReport();
 	const validation = validatePromptContextDriftReport(report, { repoRoot });
 	if (validation.status !== "pass") {
 		finish(validation.status, null, validation.errors, 1);

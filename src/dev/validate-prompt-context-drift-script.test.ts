@@ -3,6 +3,7 @@ import {
 	mkdirSync,
 	mkdtempSync,
 	readFileSync,
+	realpathSync,
 	rmSync,
 	symlinkSync,
 	writeFileSync,
@@ -295,6 +296,42 @@ describe("validate-prompt-context-drift script", () => {
 			status: "fail",
 			errors: ["currentHeadSha: must match live repository HEAD"],
 		});
+	});
+
+	it("accepts absolute writer repo roots inside the current directory", () => {
+		const repoRoot = makePromptContextRepo(tempDirs);
+		const outputPath =
+			"artifacts/context-integrity/prompt-context-drift-report.json";
+		rmSync(join(repoRoot, outputPath), { force: true });
+
+		const writeResult = spawnSync(
+			process.execPath,
+			[
+				WRITE_SCRIPT,
+				"--repo-root",
+				realpathSync(repoRoot),
+				"--output",
+				outputPath,
+			],
+			{ cwd: repoRoot, encoding: "utf8" },
+		);
+		const writeOutput = JSON.parse(writeResult.stdout) as {
+			schemaVersion: string;
+			status: string;
+			outputPath: string;
+			errors: string[];
+		};
+
+		expect(writeResult.status).toBe(0);
+		expect(writeOutput).toEqual({
+			schemaVersion: "prompt-context-drift-write/v1",
+			status: "pass",
+			outputPath,
+			errors: [],
+		});
+		expect(() =>
+			readFileSync(join(repoRoot, outputPath), "utf8"),
+		).not.toThrow();
 	});
 
 	it("rejects output symlinks before writing the drift report", () => {

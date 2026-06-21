@@ -3,10 +3,9 @@ import type { AgentReadinessContextHealth } from "../lib/agent-readiness/types.j
 import { validateHarnessDecision } from "../lib/decision/harness-decision.js";
 import { runHarnessNext } from "./next.js";
 
-const PROMPT_CONTEXT_DRIFT_COMMAND =
-	"node scripts/write-prompt-context-drift-report.cjs --repo-root .";
+const PROMPT_CONTEXT_DRIFT_COMMAND = "harness prompt-context-drift:write";
 const ALTERNATE_PROMPT_CONTEXT_DRIFT_COMMAND =
-	"node scripts/write-prompt-context-drift-report.cjs --repo-root . --output .harness/runtime/prompt-context-drift-report.json";
+	"harness prompt-context-drift:write --output .harness/runtime/prompt-context-drift-report.json";
 const DUPLICATE_PROMPT_CONTEXT_DRIFT_CLEANUP_COMMAND =
 	"rm artifacts/prompt-context-drift-report.json";
 
@@ -103,6 +102,30 @@ function promptContextDriftDuplicateContext(): AgentReadinessContextHealth {
 	};
 }
 
+function promptContextDriftDuplicateWithoutCanonicalContext(): AgentReadinessContextHealth {
+	return {
+		...promptContextDriftWarnContext(),
+		surfaces: [
+			{
+				id: "prompt_context_drift",
+				status: "warn",
+				evidenceUse: "orientation",
+				evidence: [
+					"artifacts/prompt-context-drift-report.json",
+					".harness/runtime/prompt-context-drift-report.json",
+				],
+				staleReasons: [
+					"Multiple prompt-context-drift reports were discovered.",
+				],
+				suggestedRefreshCommands: [
+					DUPLICATE_PROMPT_CONTEXT_DRIFT_CLEANUP_COMMAND,
+				],
+			},
+		],
+		suggestedRefreshCommands: [DUPLICATE_PROMPT_CONTEXT_DRIFT_CLEANUP_COMMAND],
+	};
+}
+
 describe("harness next agent-facing parity", () => {
 	it("promotes stale prompt-context drift before clean-worktree handoff", () => {
 		const decision = runHarnessNext({
@@ -115,7 +138,7 @@ describe("harness next agent-facing parity", () => {
 		expect(decision.nextCommand).toBe(PROMPT_CONTEXT_DRIFT_COMMAND);
 		expect(decision.phase).toBe("orient");
 		expect(decision.followUpCommands).toEqual([
-			"node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .",
+			"harness prompt-context-drift:validate artifacts/context-integrity/prompt-context-drift-report.json",
 			"harness check --json",
 		]);
 		expect(decision.writesFiles).toBe(true);
@@ -146,7 +169,7 @@ describe("harness next agent-facing parity", () => {
 		expect(decision.nextCommand).toBe(PROMPT_CONTEXT_DRIFT_COMMAND);
 		expect(decision.phase).toBe("orient");
 		expect(decision.followUpCommands).toEqual([
-			"node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .",
+			"harness prompt-context-drift:validate artifacts/context-integrity/prompt-context-drift-report.json",
 			"harness check --json",
 		]);
 		expect(decision.requiredEvidence).toEqual([
@@ -168,7 +191,7 @@ describe("harness next agent-facing parity", () => {
 		expect(decision.safeToRun).toBe(true);
 		expect(decision.requiresHuman).toBe(false);
 		expect(decision.followUpCommands).toEqual([
-			"node scripts/validate-prompt-context-drift.cjs .harness/runtime/prompt-context-drift-report.json --repo-root .",
+			"harness prompt-context-drift:validate .harness/runtime/prompt-context-drift-report.json",
 			"harness check --json",
 		]);
 		expect(decision.meta).toMatchObject({
@@ -204,5 +227,22 @@ describe("harness next agent-facing parity", () => {
 				},
 			},
 		});
+	});
+
+	it("validates the surviving prompt-context drift report after cleanup", () => {
+		const decision = runHarnessNext({
+			inspectChangedFiles: () => [],
+			repoRoot: "/tmp/repo",
+			agentReadinessContext:
+				promptContextDriftDuplicateWithoutCanonicalContext(),
+		});
+
+		expect(decision.nextCommand).toBe(
+			DUPLICATE_PROMPT_CONTEXT_DRIFT_CLEANUP_COMMAND,
+		);
+		expect(decision.followUpCommands).toEqual([
+			"harness prompt-context-drift:validate .harness/runtime/prompt-context-drift-report.json",
+			"harness check --json",
+		]);
 	});
 });
