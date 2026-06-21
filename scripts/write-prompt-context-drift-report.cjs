@@ -273,7 +273,7 @@ function ensureSafeParentDirectory(realRepoRoot, relativeOutputPath) {
 }
 
 function resolveRepoRoot(requestedRoot) {
-	const base = realpathSync(process.cwd());
+	const base = path.resolve(realpathSync(process.cwd()));
 	const rootRequest = requestedRoot || ".";
 	const requestedAbsolute = path.isAbsolute(rootRequest)
 		? rootRequest
