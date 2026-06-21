@@ -1,7 +1,6 @@
 import {
 	mkdirSync,
 	mkdtempSync,
-	readFileSync,
 	rmSync,
 	symlinkSync,
 	writeFileSync,
@@ -1072,7 +1071,7 @@ function promptContextDriftReportForReadyRepo(
 					refKind: "repo_file",
 					ref,
 					hashAlgorithm: "sha256",
-					sha256: sha256RepoFile(repoRoot, ref),
+					sha256: sha256Text(readyRepoSourceText(ref)),
 					freshness: "current",
 					evidenceUse: "claim_support",
 					requiredForClaimSupport: true,
@@ -1107,10 +1106,58 @@ function runGit(repoRoot: string, args: string[]): void {
 	}
 }
 
-function sha256RepoFile(repoRoot: string, path: string): string {
-	return createHash("sha256")
-		.update(readFileSync(repoPath(repoRoot, path)))
-		.digest("hex");
+function sha256Text(text: string): string {
+	return createHash("sha256").update(text).digest("hex");
+}
+
+function readyRepoSourceText(path: string): string {
+	switch (path) {
+		case "AGENTS.md":
+			return [
+				"# Agent Instructions",
+				"PR bodies require a session or traceability reference.",
+				"Use task-specific docs and codestyle before edits.",
+			].join("\n");
+		case ".harness/active-artifacts.md":
+			return [
+				"# Active",
+				"",
+				"## Current Active Route",
+				"",
+				"| Work | Refs |",
+				"|---|---|",
+				"| Ready | `.harness/plan/ready.md`; `.harness/specs/ready.md` |",
+				"",
+				"## Artifact Index",
+			].join("\n");
+		case ".harness/plan/ready.md":
+			return "# Ready Plan\n";
+		case ".harness/memory/LEARNINGS.md":
+			return "# Learnings\n";
+		case ".harness/knowledge/INDEX.md":
+			return "# Knowledge\n";
+		case ".harness/runtime/runtime-card.json":
+			return "{}\n";
+		case "harness.contract.json":
+			return JSON.stringify({
+				contextIntegrityPolicy: { mode: "advisory" },
+				toolingPolicy: {
+					sharedStateActions: [
+						{ name: "stage", authority: "user_or_explicit_request" },
+						{ name: "commit", authority: "user_or_explicit_request" },
+						{ name: "push", authority: "user_or_explicit_request" },
+						{ name: "merge", authority: "pull_request_policy" },
+						{ name: "deploy", authority: "release_policy" },
+						{
+							name: "external_mutation",
+							authority: "explicit_credentialed_request",
+						},
+					],
+				},
+			});
+		default:
+			throw new Error(`unexpected ready repo source ref: ${path}`);
+	}
 }
 
 function writeRepoFile(repoRoot: string, path: string, content: string): void {

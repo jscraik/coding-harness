@@ -1,13 +1,5 @@
-import {
-	closeSync,
-	constants,
-	fstatSync,
-	lstatSync,
-	openSync,
-	readFileSync,
-	realpathSync,
-} from "node:fs";
-import { isAbsolute, relative, resolve, sep } from "node:path";
+import { lstatSync, realpathSync } from "node:fs";
+import { isAbsolute, relative, sep } from "node:path";
 import { readCurrentHeadSha } from "../prompt-context-drift/git-head.js";
 import {
 	PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
@@ -20,6 +12,7 @@ import type {
 	AgentReadinessContextSurface,
 	AgentReadinessStatus,
 } from "./types.js";
+import { readText } from "./repo-evidence.js";
 
 const WRITE_COMMAND = "harness prompt-context-drift:write";
 const VALIDATE_COMMAND =
@@ -104,22 +97,20 @@ function readPromptContextDriftReport(
 ): string {
 	const resolved = safeReportPath(repoRoot, reportPath);
 	if (resolved === null) return "";
-	return readRegularFileText(resolved);
+	return readText(repoRoot, reportPath);
 }
 
 function safeReportPath(repoRoot: string, reportPath: string): string | null {
 	try {
 		const realRepoRoot = realpathSync(repoRoot);
-		if (typeof reportPath !== "string" || /[\r\n\0]/.test(reportPath)) {
+		if (isInvalidReportPath(reportPath)) {
 			return null;
 		}
-		const absolutePath = resolve(realRepoRoot, reportPath);
-		const relativePath = relative(realRepoRoot, absolutePath);
-		if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
-			return null;
-		}
+		const absolutePath = knownReportAbsolutePath(realRepoRoot, reportPath);
+		if (absolutePath === null) return null;
+		if (escapesRepoRoot(realRepoRoot, absolutePath)) return null;
 		const stat = lstatSync(absolutePath);
-		if (stat.isSymbolicLink() || !stat.isFile()) return null;
+		if (!isReadableReportFile(stat)) return null;
 		const realPath = realpathSync(absolutePath);
 		if (escapesRepoRoot(realRepoRoot, realPath)) return null;
 		return realPath;
@@ -128,17 +119,42 @@ function safeReportPath(repoRoot: string, reportPath: string): string | null {
 	}
 }
 
-function readRegularFileText(resolvedPath: string): string {
-	let fd: number | null = null;
-	try {
-		fd = openSync(resolvedPath, constants.O_RDONLY | constants.O_NOFOLLOW);
-		const stat = fstatSync(fd);
-		if (!stat.isFile() || stat.size > MAX_REPORT_BYTES) return "";
-		return readFileSync(fd, "utf8");
-	} catch {
-		return "";
-	} finally {
-		if (fd !== null) closeSync(fd);
+function isInvalidReportPath(reportPath: string): boolean {
+	return typeof reportPath !== "string" || /[\r\n\0]/.test(reportPath);
+}
+
+function isReadableReportFile(stat: {
+	isSymbolicLink(): boolean;
+	isFile(): boolean;
+	size: number;
+}): boolean {
+	return (
+		!stat.isSymbolicLink() && stat.isFile() && stat.size <= MAX_REPORT_BYTES
+	);
+}
+
+function knownReportAbsolutePath(
+	realRepoRoot: string,
+	reportPath: string,
+): string | null {
+	const segments = knownReportSegments(reportPath);
+	return segments === null ? null : [realRepoRoot, ...segments].join(sep);
+}
+
+function knownReportSegments(reportPath: string): string[] | null {
+	switch (reportPath) {
+		case "artifacts/context-integrity/prompt-context-drift-report.json":
+			return [
+				"artifacts",
+				"context-integrity",
+				"prompt-context-drift-report.json",
+			];
+		case "artifacts/prompt-context-drift-report.json":
+			return ["artifacts", "prompt-context-drift-report.json"];
+		case ".harness/runtime/prompt-context-drift-report.json":
+			return [".harness", "runtime", "prompt-context-drift-report.json"];
+		default:
+			return null;
 	}
 }
 
