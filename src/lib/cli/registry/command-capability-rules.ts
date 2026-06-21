@@ -8,6 +8,9 @@ import type {
 	CommandVisibility,
 } from "./command-capabilities.js";
 
+export { EXPECTED_ARTIFACTS_BY_NAME } from "./command-expected-artifacts.js";
+export { REQUIRED_FLAGS_BY_NAME } from "./command-required-flags.js";
+
 export const COMMAND_CATEGORY_BY_NAME: Partial<
 	Record<string, CommandCategory>
 > = {
@@ -107,37 +110,6 @@ export const WRITE_COMMANDS = new Set<string>([
 	"learnings",
 	"prompt-context-drift:write",
 ]);
-
-export const REQUIRED_FLAGS_BY_NAME: Partial<Record<string, string[]>> = {
-	"blast-radius": ["--files"],
-	"artifact-gate": ["--files"],
-	"review-gate": ["--owner", "--repo", "--pr", "--sha"],
-	"workflow:generate": ["--source"],
-	"linear-gate": ["--branch", "--pr-title", "--pr-body"],
-	"review-context": ["--files"],
-	"validation-plan": ["--files"],
-	"pattern-scope": ["--files"],
-};
-
-export const EXPECTED_ARTIFACTS_BY_NAME: Partial<Record<string, string[]>> = {
-	"check-environment": ["artifacts/policy/environment-attestation.json"],
-	"context-health": ["artifacts/context-integrity/index-source-inventory.json"],
-	"prompt-context-drift:write": [
-		"artifacts/context-integrity/prompt-context-drift-report.json",
-	],
-	"prompt-context-drift:validate": [
-		"artifacts/context-integrity/prompt-context-drift-report.json",
-	],
-	"ci-migrate": [".harness/ci-provider-transition-status.json"],
-	"fleet-plan": ["artifacts/harness-upgrade-matrix-dev.json"],
-	"artifact-gate": [".harness/artifact-provenance.json"],
-	"artifact-routine": [".harness/active-artifacts.md"],
-	"ci-ownership-gate": ["harness.contract.json"],
-	"review-context": ["artifacts/review-context/pr-context.json"],
-	"pattern-scope": ["artifacts/pattern-scope/pattern-scope.json"],
-	"pr-closeout": ["artifacts/pr-closeout/pr-closeout.json"],
-	"feedback-loop-audit": [".harness/feedback-loops/index.json"],
-};
 
 export const RETRYABILITY_BY_NAME: Partial<
 	Record<string, CommandRetryability>

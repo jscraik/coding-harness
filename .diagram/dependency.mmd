@@ -18,6 +18,7 @@ graph LR
   node_branch_enforcer_acb749cd_10e89517["branch_enforcer_acb749cd"]
   node_branch_protect_core_a8feb0fd_38c1f12a["branch_protect_core_a8feb0fd"]
   node_branch_protect_sync_570adb18_cc4751e4["branch_protect_sync_570adb18"]
+  node_builtin_command_specs_ac7d392e_b8fd99a0["builtin_command_specs_ac7d392e"]
   node_changed_files_4c0102f6_bfd165bc["changed_files_4c0102f6"]
   node_check_20f65c28_48d25399["check_20f65c28"]
   node_check_architecture_rules_6b7347fd_dc8f2cf3["check_architecture_rules_6b7347fd"]
@@ -52,7 +53,6 @@ graph LR
   node_client_948fe603_907d5144["client_948fe603"]
   node_coderabbit_csv_3ef61ffc_af2b743e["coderabbit_csv_3ef61ffc"]
   node_collector_0736fd5b_10bc1882["collector_0736fd5b"]
-  node_command_registry_a88eb2e3_08804b48["command_registry_a88eb2e3"]
   node_command_version_probe_8bb29bab_eb9a49d1["command_version_probe_8bb29bab"]
   node_config_validator_669ebc2e_d7ca485d["config_validator_669ebc2e"]
   node_context_ea7792a2_08541ab6["context_ea7792a2"]
@@ -326,6 +326,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_archive_candidates_dc0e40e1_5141a881
   ext_node_child_process_f62b7d19["node:child_process"] --> node_archive_candidates_scanner_d0931789_277aa1ff
   ext_node_child_process_f62b7d19["node:child_process"] --> node_branch_enforcer_acb749cd_10e89517
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_builtin_command_specs_ac7d392e_b8fd99a0
   ext_node_child_process_f62b7d19["node:child_process"] --> node_changed_files_4c0102f6_bfd165bc
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_architecture_rules_6b7347fd_dc8f2cf3
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_behavior_tests_2577f6be_58dc87b2
@@ -337,7 +338,6 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_ci_migrate_core_7005b5af_7e295ae3
   ext_node_child_process_f62b7d19["node:child_process"] --> node_cli_5_9c446a0f_12d0ff9c
   ext_node_child_process_f62b7d19["node:child_process"] --> node_collector_0736fd5b_10bc1882
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_command_registry_a88eb2e3_08804b48
   ext_node_child_process_f62b7d19["node:child_process"] --> node_command_version_probe_8bb29bab_eb9a49d1
   ext_node_child_process_f62b7d19["node:child_process"] --> node_control_plane_core_db3b4cb2_27437a14
   ext_node_child_process_f62b7d19["node:child_process"] --> node_diff_budget_9da0268d_71167227
@@ -940,10 +940,10 @@ graph LR
   ext_node_process_00cdf119["node:process"] --> node_runner_527aa9f4_40925a5b
   ext_node_process_00cdf119["node:process"] --> node_runtime_card_args_2b3d4b28_5cfe029c
   ext_node_readline_bb6096cc["node:readline"] --> node_eject_1_d0ecd4d1_ba72accc
+  ext_node_url_d0cb3ad7["node:url"] --> node_builtin_command_specs_ac7d392e_b8fd99a0
   ext_node_url_d0cb3ad7["node:url"] --> node_check_node_engine_217689bf_3e5964b2
   ext_node_url_d0cb3ad7["node:url"] --> node_cli_99bb8840_659774ba
   ext_node_url_d0cb3ad7["node:url"] --> node_coderabbit_csv_3ef61ffc_af2b743e
-  ext_node_url_d0cb3ad7["node:url"] --> node_command_registry_a88eb2e3_08804b48
   ext_node_url_d0cb3ad7["node:url"] --> node_control_plane_core_db3b4cb2_27437a14
   ext_node_url_d0cb3ad7["node:url"] --> node_decision_packet_1_dd443771_92fa570e
   ext_node_url_d0cb3ad7["node:url"] --> node_gate_c974e17b_07549baf
