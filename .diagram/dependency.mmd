@@ -187,6 +187,8 @@ graph LR
   node_preset_source_loaders_a8cd7c1c_01f5a3a0["preset_source_loaders_a8cd7c1c"]
   node_prompt_context_drift_builder_a451c7dd_702c1ffe["prompt_context_drift_builder_a451c7dd"]
   node_prompt_context_drift_report_3257a95c_01f8c3e1["prompt_context_drift_report_3257a95c"]
+  node_prompt_context_drift_validate_runner_c8ecc6f5_48948688["prompt_context_drift_validate_runner_c8ecc6f5"]
+  node_prompt_context_drift_write_runner_69e6a4fd_5b8d8b6e["prompt_context_drift_write_runner_69e6a4fd"]
   node_provider_adapter_3bcf82b7_3ce4cf67["provider_adapter_3bcf82b7"]
   node_quality_scorer_362f2a90_2a086a0b["quality_scorer_362f2a90"]
   node_query_cli_b95be64d_1ebc13aa["query_cli_b95be64d"]
@@ -572,6 +574,8 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_preset_source_loaders_a8cd7c1c_01f5a3a0
   ext_node_fs_a15b7d96["node:fs"] --> node_prompt_context_drift_builder_a451c7dd_702c1ffe
   ext_node_fs_a15b7d96["node:fs"] --> node_prompt_context_drift_report_3257a95c_01f8c3e1
+  ext_node_fs_a15b7d96["node:fs"] --> node_prompt_context_drift_validate_runner_c8ecc6f5_48948688
+  ext_node_fs_a15b7d96["node:fs"] --> node_prompt_context_drift_write_runner_69e6a4fd_5b8d8b6e
   ext_node_fs_a15b7d96["node:fs"] --> node_provider_adapter_3bcf82b7_3ce4cf67
   ext_node_fs_a15b7d96["node:fs"] --> node_quality_scorer_362f2a90_2a086a0b
   ext_node_fs_a15b7d96["node:fs"] --> node_query_cli_b95be64d_1ebc13aa
@@ -947,9 +951,7 @@ graph LR
   ext_node_url_d0cb3ad7["node:url"] --> node_ui_loop_internal_f2eb8892_c4b49e6a
   ext_node_url_d0cb3ad7["node:url"] --> node_update_codestyle_checksums_a6458a10_61ac2805
   ext_node_url_d0cb3ad7["node:url"] --> node_validate_intermediary_receipt_coverage_7d63b166_40dcf15d
-  ext_node_url_d0cb3ad7["node:url"] --> node_validate_prompt_context_drift_8c949ef6_d32d5759
   ext_node_url_d0cb3ad7["node:url"] --> node_version_5ca4f385_fd75945b
-  ext_node_url_d0cb3ad7["node:url"] --> node_write_prompt_context_drift_report_71a4e149_cf46c973
   ext_node_vm_e83aa31f["node:vm"] --> node_validate_goal_kanban_script_268db9bd_4cf9451a
   ext_node_zlib_bb6e132b["node:zlib"] --> node_png_inspection_3ec3d3d7_c00e0d99
   ext_node_zlib_bb6e132b["node:zlib"] --> node_png_test_fixtures_bd922ecf_25060218

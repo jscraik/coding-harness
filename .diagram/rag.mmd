@@ -12,6 +12,8 @@ flowchart LR
   LLMNode -->|generated answer| Output
   subgraph DetectedMemory["Detected memory stores"]
     det_detectedmemory_check_steering_feedback_contract_80134459[("check-steering-feedback-contract")]
+    det_detectedmemory_prompt_context_drift_validate_runner_c8ecc6f5[("prompt-context-drift-validate-runner")]
+    det_detectedmemory_prompt_context_drift_write_runner_69e6a4fd[("prompt-context-drift-write-runner")]
     det_detectedmemory_normalize_workflow_contracts_8701f1c8[("normalize-workflow-contracts")]
     det_detectedmemory_run_harness_evals_77704768[("run-harness-evals")]
     det_detectedmemory_sync_codex_preflight_7e7a8dc2[("sync-codex-preflight")]
@@ -120,6 +122,8 @@ flowchart LR
   subgraph DetectedLLM["Detected LLM clients"]
     det_detectedllm_check_codex_agent_roles_5bb2e89b["check-codex-agent-roles"]
     det_detectedllm_check_steering_feedback_contract_80134459["check-steering-feedback-contract"]
+    det_detectedllm_prompt_context_drift_validate_runner_c8ecc6f5["prompt-context-drift-validate-runner"]
+    det_detectedllm_prompt_context_drift_write_runner_69e6a4fd["prompt-context-drift-write-runner"]
     det_detectedllm_run_harness_evals_77704768["run-harness-evals"]
     det_detectedllm_validate_decision_request_2e5c325e["validate-decision-request"]
     det_detectedllm_validate_goal_completion_audit_receipt_100d252c["validate-goal-completion-audit-receipt"]
