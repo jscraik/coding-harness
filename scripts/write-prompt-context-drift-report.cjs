@@ -8,6 +8,11 @@ const { fileURLToPath, pathToFileURL } = require("node:url");
 
 const DEFAULT_OUTPUT_PATH =
 	"artifacts/context-integrity/prompt-context-drift-report.json";
+const ALLOWED_OUTPUT_PATHS = new Set([
+	DEFAULT_OUTPUT_PATH,
+	"artifacts/prompt-context-drift-report.json",
+	".harness/runtime/prompt-context-drift-report.json",
+]);
 
 function parseArgs(argv) {
 	const parsed = {
@@ -135,7 +140,12 @@ function mainWithArgs(args) {
 	const moduleRoot = path.resolve(__dirname, "..");
 	const outputTarget = prepareOutputTarget(repoRoot, args.outputPath);
 	if (!outputTarget.ok) {
-		printResult("fail", [outputTarget.error], DEFAULT_OUTPUT_PATH, 2);
+		printResult(
+			"fail",
+			[outputTarget.error],
+			safeDisplayPath(args.outputPath),
+			2,
+		);
 	}
 	const outputPath = outputTarget.path;
 	const runnerPath = path.join(
@@ -172,6 +182,12 @@ function prepareOutputTarget(repoRoot, requestedPath) {
 	const relativePath = normalizeRepoRelativePath(requestedPath);
 	if (relativePath === null) {
 		return { ok: false, error: "--output: must stay inside the repository" };
+	}
+	if (!ALLOWED_OUTPUT_PATHS.has(relativePath)) {
+		return {
+			ok: false,
+			error: "--output: must be a prompt-context drift report path",
+		};
 	}
 	const absolute = repoAbsolutePath(realRepoRoot, relativePath);
 	const parentResult = ensureSafeParentDirectory(realRepoRoot, relativePath);

@@ -370,6 +370,35 @@ describe("validate-prompt-context-drift script", () => {
 		expect(readFileSync(outsideFile, "utf8")).toBe("outside\n");
 	});
 
+	it("rejects output paths outside the prompt-context drift report set", () => {
+		const repoRoot = makePromptContextRepo(tempDirs);
+		const outputPath = "AGENTS.md";
+		const originalContent = readFileSync(join(repoRoot, outputPath), "utf8");
+
+		const writeResult = spawnSync(
+			process.execPath,
+			[WRITE_SCRIPT, "--repo-root", ".", "--output", outputPath],
+			{ cwd: repoRoot, encoding: "utf8" },
+		);
+		const writeOutput = JSON.parse(writeResult.stdout) as {
+			schemaVersion: string;
+			status: string;
+			outputPath: string;
+			errors: string[];
+		};
+
+		expect(writeResult.status).toBe(2);
+		expect(writeOutput).toEqual({
+			schemaVersion: "prompt-context-drift-write/v1",
+			status: "fail",
+			outputPath,
+			errors: ["--output: must be a prompt-context drift report path"],
+		});
+		expect(readFileSync(join(repoRoot, outputPath), "utf8")).toBe(
+			originalContent,
+		);
+	});
+
 	it("rejects invalid relative writer repo roots instead of falling back", () => {
 		const repoRoot = makePromptContextRepo(tempDirs);
 		const outputPath =
