@@ -619,6 +619,41 @@ describe("validatePromptContextDriftReport", () => {
 		);
 	});
 
+	it("rejects pass orientation surfaces without current verified refs", () => {
+		const report = exampleReport();
+		report.evidenceUse = "orientation";
+		report.surfaces = report.surfaces.map((surface) => ({
+			...surface,
+			evidenceUse: "orientation",
+			requiredForClaimSupport: false,
+			sourceRefs: surface.sourceRefs.map((sourceRef) => ({
+				...sourceRef,
+				evidenceUse: "orientation",
+				requiredForClaimSupport: false,
+			})),
+		}));
+		surfaceAt(report, 2).freshness = "missing";
+		surfaceAt(report, 2).sourceRefs[0] = {
+			...sourceRefAt(report, 2, 0),
+			hashAlgorithm: null,
+			sha256: null,
+			freshness: "missing",
+			requiresFilesystemExistence: false,
+		};
+
+		const result = validatePromptContextDriftReport(report, { repoRoot: "." });
+
+		expect(result.status).toBe("fail");
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("surfaces[2].freshness: pass requires current"),
+				expect.stringContaining(
+					"surfaces[2].sourceRefs: pass requires at least one repo-contained hash-verified ref",
+				),
+			]),
+		);
+	});
+
 	it("blocks missing source hash", () => {
 		const report = exampleReport();
 		surfaceAt(report, 0).sourceRefs[0] = {
@@ -694,6 +729,36 @@ describe("validatePromptContextDriftReport", () => {
 		expect(result.status).toBe("fail");
 		expect(result.errors).toContain(
 			"surfaces[0].sourceRefs[0].ref: required repo file is not a file",
+		);
+	});
+
+	it("reports invalid source refs as repo-relative path errors", () => {
+		const report = exampleReport();
+		surfaceAt(report, 0).sourceRefs[0] = {
+			...sourceRefAt(report, 0, 0),
+			ref: "/tmp/outside.md",
+		};
+
+		const result = validatePromptContextDriftReport(report, { repoRoot: "." });
+
+		expect(result.status).toBe("fail");
+		expect(result.errors).toContain(
+			"surfaces[0].sourceRefs[0].ref: must be a valid repo-relative path",
+		);
+	});
+
+	it("rejects parent-directory source refs before reading files", () => {
+		const report = exampleReport();
+		surfaceAt(report, 0).sourceRefs[0] = {
+			...sourceRefAt(report, 0, 0),
+			ref: "../AGENTS.md",
+		};
+
+		const result = validatePromptContextDriftReport(report, { repoRoot: "." });
+
+		expect(result.status).toBe("fail");
+		expect(result.errors).toContain(
+			"surfaces[0].sourceRefs[0].ref: must be a valid repo-relative path",
 		);
 	});
 

@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { AgentReadinessContextHealth } from "../lib/agent-readiness/types.js";
+import { validateHarnessDecision } from "../lib/decision/harness-decision.js";
 import { runHarnessNext } from "./next.js";
 
 const PROMPT_CONTEXT_DRIFT_COMMAND =
 	"node scripts/write-prompt-context-drift-report.cjs --repo-root .";
 const ALTERNATE_PROMPT_CONTEXT_DRIFT_COMMAND =
 	"node scripts/write-prompt-context-drift-report.cjs --repo-root . --output .harness/runtime/prompt-context-drift-report.json";
+const DUPLICATE_PROMPT_CONTEXT_DRIFT_CLEANUP_COMMAND =
+	"rm artifacts/prompt-context-drift-report.json";
 
 function promptContextDriftWarnContext(): AgentReadinessContextHealth {
 	return {
@@ -73,6 +76,30 @@ function promptContextDriftAlternateContext(): AgentReadinessContextHealth {
 			},
 		],
 		suggestedRefreshCommands: [ALTERNATE_PROMPT_CONTEXT_DRIFT_COMMAND],
+	};
+}
+
+function promptContextDriftDuplicateContext(): AgentReadinessContextHealth {
+	return {
+		...promptContextDriftWarnContext(),
+		surfaces: [
+			{
+				id: "prompt_context_drift",
+				status: "warn",
+				evidenceUse: "orientation",
+				evidence: [
+					"artifacts/context-integrity/prompt-context-drift-report.json",
+					"artifacts/prompt-context-drift-report.json",
+				],
+				staleReasons: [
+					"Multiple prompt-context-drift reports were discovered.",
+				],
+				suggestedRefreshCommands: [
+					DUPLICATE_PROMPT_CONTEXT_DRIFT_CLEANUP_COMMAND,
+				],
+			},
+		],
+		suggestedRefreshCommands: [DUPLICATE_PROMPT_CONTEXT_DRIFT_CLEANUP_COMMAND],
 	};
 }
 
@@ -147,6 +174,34 @@ describe("harness next agent-facing parity", () => {
 		expect(decision.meta).toMatchObject({
 			execution: {
 				permissionPlan: { commands: [ALTERNATE_PROMPT_CONTEXT_DRIFT_COMMAND] },
+			},
+		});
+	});
+
+	it("keeps duplicate prompt-context drift cleanup decisions valid", () => {
+		const decision = runHarnessNext({
+			inspectChangedFiles: () => [],
+			repoRoot: "/tmp/repo",
+			agentReadinessContext: promptContextDriftDuplicateContext(),
+		});
+
+		expect(decision.status).toBe("action_required");
+		expect(validateHarnessDecision(decision)).toEqual({
+			valid: true,
+			errors: [],
+		});
+		expect(decision.nextCommand).toBe(
+			DUPLICATE_PROMPT_CONTEXT_DRIFT_CLEANUP_COMMAND,
+		);
+		expect(decision.safeToRun).toBe(true);
+		expect(decision.requiresHuman).toBe(false);
+		expect(decision.writesFiles).toBe(true);
+		expect(decision.meta).toMatchObject({
+			execution: {
+				permissionPlan: {
+					commands: [DUPLICATE_PROMPT_CONTEXT_DRIFT_CLEANUP_COMMAND],
+					writesFiles: true,
+				},
 			},
 		});
 	});

@@ -53,6 +53,14 @@ function promptContextDriftRefreshCommand(
 function isTrustedRefreshCommand(command: string): boolean {
 	const normalized = command.trim();
 	if (TRUSTED_PROMPT_CONTEXT_REFRESH_COMMANDS.has(normalized)) return true;
+	const cleanup = normalized.match(/^rm (\S+)$/u);
+	if (
+		cleanup?.[1] !== undefined &&
+		cleanup[1] !== PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0] &&
+		TRUSTED_PROMPT_CONTEXT_REPORT_PATHS.has(cleanup[1])
+	) {
+		return true;
+	}
 	const alternate = normalized.match(
 		/^node scripts\/write-prompt-context-drift-report\.cjs --repo-root \. --output (\S+)$/u,
 	);
@@ -117,6 +125,7 @@ export function promptContextDriftDecision(
 			delayClass: "normal",
 			phaseExit: args.phaseExit,
 			runtimeCard: args.runtimeCard,
+			writesFiles: trustedCommand,
 			extra: prCloseoutDecisionMeta(args.prCloseout),
 			agentReadinessContext: args.agentReadinessContext,
 			sourceErrors: args.sourceErrors,

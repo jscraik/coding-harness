@@ -92,6 +92,44 @@ function repoAbsolutePath(realRepoRoot, repoRelativePath) {
 	return absolute;
 }
 
+function resolveRepoRoot(requestedRoot) {
+	const base = fs.realpathSync(process.cwd());
+	const rootRequest = requestedRoot || ".";
+	let targetCandidate;
+	if (rootRequest === ".") {
+		targetCandidate = base;
+	} else if (path.isAbsolute(rootRequest)) {
+		targetCandidate = rootRequest;
+	} else {
+		const relativeRoot = normalizeRepoRelativePath(rootRequest);
+		if (relativeRoot === null) {
+			return {
+				ok: false,
+				error: "repoRoot: must stay inside the current working directory",
+			};
+		}
+		targetCandidate = repoAbsolutePath(base, relativeRoot);
+	}
+	let target;
+	try {
+		target = fs.realpathSync(targetCandidate);
+	} catch {
+		return { ok: false, error: "repoRoot: path does not exist" };
+	}
+	const relativeTarget = path.relative(base, target);
+	if (
+		relativeTarget === ".." ||
+		relativeTarget.startsWith(`..${path.sep}`) ||
+		path.isAbsolute(relativeTarget)
+	) {
+		return {
+			ok: false,
+			error: "repoRoot: must stay inside the current working directory",
+		};
+	}
+	return { ok: true, path: target };
+}
+
 function prepareReportPath(repoRoot, requestedPath) {
 	const realRepoRoot = fs.realpathSync(repoRoot);
 	if (
@@ -163,7 +201,11 @@ function main() {
 		printResult("fail", ["reportPath: is required"], 2);
 	}
 
-	const repoRoot = path.resolve(args.repoRoot);
+	const repoRootTarget = resolveRepoRoot(args.repoRoot);
+	if (!repoRootTarget.ok) {
+		printResult("fail", [repoRootTarget.error], 2);
+	}
+	const repoRoot = repoRootTarget.path;
 	const moduleRoot = path.resolve(__dirname, "..");
 	const reportTarget = prepareReportPath(repoRoot, args.reportPath);
 	const runnerPath = path.join(

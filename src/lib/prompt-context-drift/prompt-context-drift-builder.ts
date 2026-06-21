@@ -248,11 +248,15 @@ function activeArtifactsStaleReasons(repoRoot: string): string[] {
 		return [`${ACTIVE_ARTIFACTS_PATH} is missing.`];
 	}
 	return ["Current Active Route", "Artifact Index"]
-		.filter((section) => !activeArtifactsText.includes(section))
+		.filter((section) => !hasMarkdownSection(activeArtifactsText, section))
 		.map(
 			(section) =>
 				`${ACTIVE_ARTIFACTS_PATH} is missing the ${section} section.`,
 		);
+}
+
+function hasMarkdownSection(text: string, section: string): boolean {
+	return new RegExp(`^#+\\s+${section}\\s*$`, "mu").test(text);
 }
 
 function activeRouteSourceRoute(repoRoot: string): SourceRoute | undefined {

@@ -11,6 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { sanitizeGitEnvironment } from "../lib/git/safe-env.js";
+import { passingAgentReadinessContext } from "../lib/agent-readiness/test-fixtures.js";
 import {
 	validateHarnessDecision,
 	validateHarnessDecisionOperationalMeta,
@@ -389,6 +390,7 @@ describe("runHarnessNext", () => {
 		const decision = runHarnessNext({
 			inspectChangedFiles: () => [],
 			repoRoot: "/tmp/repo",
+			agentReadinessContext: passingAgentReadinessContext(),
 		});
 
 		expect(decision.status).toBe("pass");
@@ -553,6 +555,7 @@ describe("runHarnessNext", () => {
 			inspectChangedFiles: () => [],
 			repoRoot: "/tmp/repo",
 			phaseExit: passingPhaseExit(),
+			agentReadinessContext: passingAgentReadinessContext(),
 		});
 
 		expect(validateHarnessDecision(decision)).toEqual({
@@ -623,6 +626,7 @@ describe("runHarnessNext", () => {
 			inspectChangedFiles: () => [],
 			repoRoot: "/tmp/repo",
 			runtimeCard: card,
+			agentReadinessContext: passingAgentReadinessContext(),
 		});
 
 		expect(validateHarnessDecision(decision)).toEqual({
@@ -1162,6 +1166,7 @@ describe("runNextCLI", () => {
 				{
 					repoRoot,
 					inspectChangedFiles: () => [],
+					agentReadinessContext: passingAgentReadinessContext(),
 				},
 			);
 
@@ -1195,6 +1200,7 @@ describe("runNextCLI", () => {
 				{
 					repoRoot,
 					inspectChangedFiles: () => [],
+					agentReadinessContext: passingAgentReadinessContext(),
 				},
 			);
 

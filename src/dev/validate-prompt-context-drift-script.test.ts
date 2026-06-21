@@ -160,6 +160,33 @@ describe("validate-prompt-context-drift script", () => {
 		});
 	});
 
+	it("rejects invalid relative validator repo roots instead of falling back", () => {
+		const repoRoot = makePromptContextRepo(tempDirs);
+
+		const result = spawnSync(
+			process.execPath,
+			[
+				VALIDATE_SCRIPT,
+				"artifacts/context-integrity/prompt-context-drift-report.json",
+				"--repo-root",
+				"..",
+			],
+			{ cwd: repoRoot, encoding: "utf8" },
+		);
+		const output = JSON.parse(result.stdout) as {
+			schemaVersion: string;
+			status: string;
+			errors: string[];
+		};
+
+		expect(result.status).toBe(2);
+		expect(output).toEqual({
+			schemaVersion: "prompt-context-drift-validation/v1",
+			status: "fail",
+			errors: ["repoRoot: must stay inside the current working directory"],
+		});
+	});
+
 	it("rejects report symlinks before validating the drift report", () => {
 		const repoRoot = makePromptContextRepo(tempDirs);
 		const outsideDir = mkdtempSync(
@@ -304,6 +331,34 @@ describe("validate-prompt-context-drift script", () => {
 			errors: ["--output: must not be a symbolic link"],
 		});
 		expect(readFileSync(outsideFile, "utf8")).toBe("outside\n");
+	});
+
+	it("rejects invalid relative writer repo roots instead of falling back", () => {
+		const repoRoot = makePromptContextRepo(tempDirs);
+		const outputPath =
+			"artifacts/context-integrity/prompt-context-drift-report.json";
+		rmSync(join(repoRoot, outputPath), { force: true });
+
+		const writeResult = spawnSync(
+			process.execPath,
+			[WRITE_SCRIPT, "--repo-root", "..", "--output", outputPath],
+			{ cwd: repoRoot, encoding: "utf8" },
+		);
+		const writeOutput = JSON.parse(writeResult.stdout) as {
+			schemaVersion: string;
+			status: string;
+			outputPath: string;
+			errors: string[];
+		};
+
+		expect(writeResult.status).toBe(1);
+		expect(writeOutput).toEqual({
+			schemaVersion: "prompt-context-drift-write/v1",
+			status: "fail",
+			outputPath,
+			errors: ["writer: setup failed before report generation"],
+		});
+		expect(() => readFileSync(join(repoRoot, outputPath), "utf8")).toThrow();
 	});
 
 	it("returns structured write JSON when setup fails", () => {

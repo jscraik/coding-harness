@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-06-21T04:23:56.242Z",
+	"generatedAt": "2026-06-21T05:51:06.932Z",
 	"schemaVersion": "1.0",
 	"rootPath": ".",
 	"diagramDir": ".diagram",
@@ -22,8 +22,8 @@
 			"type": "agent",
 			"file": "agent.mmd",
 			"outputPath": ".diagram/agent.mmd",
-			"lines": 374,
-			"bytes": 55559,
+			"lines": 377,
+			"bytes": 56395,
 			"isPlaceholder": false
 		},
 		{
@@ -102,8 +102,8 @@
 			"type": "rag",
 			"file": "rag.mmd",
 			"outputPath": ".diagram/rag.mmd",
-			"lines": 272,
-			"bytes": 22941,
+			"lines": 274,
+			"bytes": 23066,
 			"isPlaceholder": false
 		},
 		{

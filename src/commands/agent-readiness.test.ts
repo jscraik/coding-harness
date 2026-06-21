@@ -391,6 +391,9 @@ describe("agent-readiness command", () => {
 					"Multiple prompt-context-drift reports were discovered",
 				),
 			],
+			suggestedRefreshCommands: [
+				"rm artifacts/prompt-context-drift-report.json",
+			],
 		});
 	});
 

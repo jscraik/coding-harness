@@ -44,6 +44,7 @@ export function promptContextDriftSurface(
 			staleReasons: [
 				"Multiple prompt-context-drift reports were discovered; keep a single canonical artifacts/context-integrity/prompt-context-drift-report.json report before using this surface.",
 			],
+			suggestedRefreshCommands: duplicateReportCleanupCommands(reportEvidence),
 		});
 	}
 	const reportStatus = promptContextDriftReportStatus(
@@ -62,6 +63,14 @@ function refreshCommandsFor(reportPath: string): string[] {
 	return reportPath === CANONICAL_REPORT
 		? [WRITE_COMMAND, VALIDATE_COMMAND]
 		: [writeCommandFor(reportPath), validateCommandFor(reportPath)];
+}
+
+function duplicateReportCleanupCommands(
+	reportPaths: readonly string[],
+): string[] {
+	return reportPaths
+		.filter((reportPath) => reportPath !== CANONICAL_REPORT)
+		.map((reportPath) => `rm ${reportPath}`);
 }
 
 function promptContextDriftReportStatus(
@@ -128,21 +137,33 @@ function reportPassConsistencyError(report: {
 	if (!Array.isArray(report.surfaces)) return null;
 	const seenSurfaces = new Set<string>();
 	for (const surface of report.surfaces) {
-		if (!isSurfaceRecord(surface)) continue;
-		seenSurfaces.add(surface.surfaceId);
-		if (
-			surface.status !== "pass" ||
-			(Array.isArray(surface.blockers) && surface.blockers.length > 0)
-		) {
-			return `Prompt-context-drift report claims pass while surface ${surface.surfaceId} is degraded.`;
-		}
+		const surfaceError = surfacePassConsistencyError(surface, seenSurfaces);
+		if (surfaceError !== null) return surfaceError;
 	}
+	return missingRequiredSurfaceError(seenSurfaces);
+}
+
+function surfacePassConsistencyError(
+	surface: unknown,
+	seenSurfaces: Set<string>,
+): string | null {
+	if (!isSurfaceRecord(surface)) return null;
+	seenSurfaces.add(surface.surfaceId);
+	if (surface.status === "pass" && !hasSurfaceBlockers(surface)) return null;
+	return `Prompt-context-drift report claims pass while surface ${surface.surfaceId} is degraded.`;
+}
+
+function missingRequiredSurfaceError(seenSurfaces: Set<string>): string | null {
 	const missingSurface = PROMPT_CONTEXT_DRIFT_SURFACES.find(
 		(surfaceId) => !seenSurfaces.has(surfaceId),
 	);
 	return missingSurface
 		? `Prompt-context-drift report claims pass while required surface ${missingSurface} is missing.`
 		: null;
+}
+
+function hasSurfaceBlockers(surface: { blockers?: unknown }): boolean {
+	return Array.isArray(surface.blockers) && surface.blockers.length > 0;
 }
 
 function isSurfaceRecord(value: unknown): value is {

@@ -14,6 +14,8 @@ const MAX_COMPLEXITY = 10;
 const MAX_TEST_FILE_LINES = 1_200;
 const LEGACY_TEST_FILE_LINE_ALLOWLIST = new Set([
 	"src/commands/init.test.ts",
+	// Temporary while prompt-context recovery cases are being split out; remove when this file is below MAX_TEST_FILE_LINES.
+	"src/commands/next.test.ts",
 	"src/cli-dispatch.test.ts",
 	"src/lib/architecture/module-boundaries.test.ts",
 	"src/lib/cli/command-registry.test.ts",

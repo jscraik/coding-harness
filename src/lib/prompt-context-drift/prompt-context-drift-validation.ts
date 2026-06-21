@@ -11,6 +11,7 @@ import {
 } from "./prompt-context-drift-types.js";
 import {
 	validateClaimSupportReport,
+	validatePassSurfaceEvidence,
 	validateRepoFileRef,
 } from "./prompt-context-drift-validation-evidence.js";
 import {
@@ -164,13 +165,14 @@ function validateSurface(
 	requireFields(surface, SURFACE_KEYS, path, errors);
 	validateSurfaceShape(surface, path, errors);
 	validateSurfaceHeads(surface, path, report, errors);
-	validateRefs(
+	const verifiedRefCount = validateRefs(
 		surface.sourceRefs,
 		`${path}.sourceRefs`,
 		surface,
 		repoRoot,
 		errors,
 	);
+	validatePassSurfaceEvidence(surface, path, verifiedRefCount, errors);
 	validateBlockers(surface.blockers, `${path}.blockers`, errors);
 	validateSurfaceClaimSupport(surface, path, errors);
 }
@@ -291,10 +293,10 @@ function validateRefs(
 	surface: Record<string, unknown>,
 	repoRoot: string | undefined,
 	errors: string[],
-): void {
+): number {
 	if (!Array.isArray(refs)) {
 		errors.push(`${path}: must be an array`);
-		return;
+		return 0;
 	}
 	const verified = refs.filter((ref, index) =>
 		validateRef(ref, `${path}[${index}]`, surface, repoRoot, errors),
@@ -310,6 +312,7 @@ function validateRefs(
 				String(surface.surfaceId),
 		);
 	}
+	return verified;
 }
 
 function validateRef(

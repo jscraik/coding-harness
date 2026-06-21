@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
-import { isAbsolute, relative, resolve } from "node:path";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 import { PROMPT_CONTEXT_DRIFT_SURFACES } from "./prompt-context-drift-types.js";
 import {
 	fail,
@@ -55,15 +55,12 @@ function containedRepoFile(
 	errors: string[],
 ): ContainedRepoFile | null {
 	if (!isRepoRelativeRef(refPath)) {
-		return failNull(
-			errors,
-			`${path}.ref: resolved path escapes repository root`,
-		);
+		return failNull(errors, `${path}.ref: must be a valid repo-relative path`);
 	}
 	const resolvedRoot = resolve(root);
 	const candidate = resolve(resolvedRoot, refPath);
-	const relativePath = containedRelativePath(resolvedRoot, candidate);
-	if (relativePath === null) {
+	const relativePath = relative(resolvedRoot, candidate);
+	if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
 		return failNull(
 			errors,
 			`${path}.ref: resolved path escapes repository root`,
@@ -73,8 +70,8 @@ function containedRepoFile(
 		return failNull(errors, `${path}.ref: required repo file does not exist`);
 	try {
 		const realPath = realpathSync(candidate);
-		const realRelativePath = containedRelativePath(resolvedRoot, realPath);
-		if (realRelativePath === null) {
+		const realRelativePath = relative(resolvedRoot, realPath);
+		if (escapesRepoRoot(realRelativePath)) {
 			return failNull(
 				errors,
 				`${path}.ref: resolved path escapes repository root`,
@@ -102,14 +99,6 @@ function isRepoRelativeRef(refPath: string): boolean {
 	);
 }
 
-function containedRelativePath(root: string, target: string): string | null {
-	const targetRelativePath = relative(root, target);
-	if (targetRelativePath.startsWith("..") || isAbsolute(targetRelativePath)) {
-		return null;
-	}
-	return targetRelativePath;
-}
-
 function validateDigest(
 	ref: Record<string, unknown>,
 	root: string,
@@ -121,8 +110,8 @@ function validateDigest(
 		return false;
 	const resolvedRoot = resolve(root);
 	const resolvedFile = resolve(resolvedRoot, file.relativePath);
-	const relativePath = containedRelativePath(resolvedRoot, resolvedFile);
-	if (relativePath === null || resolvedFile !== file.realPath) {
+	const relativePath = relative(resolvedRoot, resolvedFile);
+	if (escapesRepoRoot(relativePath) || resolvedFile !== file.realPath) {
 		return fail(errors, `${path}.ref: resolved path escapes repository root`);
 	}
 	let content: Buffer;
@@ -134,7 +123,35 @@ function validateDigest(
 	const actual = createHash("sha256").update(content).digest("hex");
 	if (actual !== ref.sha256)
 		return fail(errors, `${path}.sha256: digest mismatch`);
-	return ref.requiredForClaimSupport === true;
+	return true;
+}
+
+/** Validate that a pass surface has current, hash-verified local evidence. */
+export function validatePassSurfaceEvidence(
+	surface: Record<string, unknown>,
+	path: string,
+	verifiedRefCount: number,
+	errors: string[],
+): void {
+	if (surface.status !== "pass") return;
+	if (surface.freshness !== "current")
+		errors.push(`${path}.freshness: pass requires current`);
+	if (Array.isArray(surface.blockers) && surface.blockers.length > 0) {
+		errors.push(`${path}.blockers: pass requires no blockers`);
+	}
+	if (verifiedRefCount === 0) {
+		errors.push(
+			`${path}.sourceRefs: pass requires at least one repo-contained hash-verified ref`,
+		);
+	}
+}
+
+function escapesRepoRoot(repoRelativePath: string): boolean {
+	return (
+		repoRelativePath === ".." ||
+		repoRelativePath.startsWith(`..${sep}`) ||
+		isAbsolute(repoRelativePath)
+	);
 }
 
 /** Validate claim-support report invariants across every required surface. */
