@@ -268,12 +268,33 @@ describe("agent-readiness command", () => {
 		});
 	});
 
-	it("warns when prompt-context drift report is empty", () => {
+	it.each([
+		{
+			name: "empty",
+			content: "",
+			expected: { staleReasons: ["Prompt-context-drift report is empty."] },
+		},
+		{
+			name: "oversized",
+			content: "x".repeat(1_000_001),
+			expected: {
+				evidence: [
+					"missing:artifacts/context-integrity/prompt-context-drift-report.json",
+				],
+				staleReasons: [
+					"No prompt-context-drift report was provided for agent-readable orientation.",
+				],
+			},
+		},
+	])("warns when prompt-context drift report is $name", ({
+		content,
+		expected,
+	}) => {
 		const repoRoot = makeAgentReadyRepo(tempDirs);
 		writeRepoFile(
 			repoRoot,
 			"artifacts/context-integrity/prompt-context-drift-report.json",
-			"",
+			content,
 		);
 
 		const report = assessAgentReadiness({
@@ -286,7 +307,7 @@ describe("agent-readiness command", () => {
 
 		expect(promptContextSurface).toMatchObject({
 			status: "warn",
-			staleReasons: ["Prompt-context-drift report is empty."],
+			...expected,
 		});
 	});
 
@@ -911,7 +932,6 @@ describe("agent-readiness command", () => {
 });
 
 // Shared by ready fixture writes and prompt-context drift digest expectations.
-// Add new ready fixture digest refs here before writing them in makeAgentReadyRepo.
 const READY_REPO_SOURCE_TEXT = {
 	"AGENTS.md": [
 		"# Agent Instructions",

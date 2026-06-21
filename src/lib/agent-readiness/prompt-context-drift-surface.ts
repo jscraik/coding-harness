@@ -1,5 +1,3 @@
-import { lstatSync, realpathSync } from "node:fs";
-import { isAbsolute, relative, sep } from "node:path";
 import { readCurrentHeadSha } from "../prompt-context-drift/git-head.js";
 import {
 	PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
@@ -8,11 +6,14 @@ import {
 	type PromptContextDriftNextActionClass,
 	validatePromptContextDriftReport,
 } from "../prompt-context-drift/index.js";
+import {
+	promptContextDriftReportEvidence,
+	readPromptContextDriftReport,
+} from "./prompt-context-drift-report-reader.js";
 import type {
 	AgentReadinessContextSurface,
 	AgentReadinessStatus,
 } from "./types.js";
-import { readText } from "./repo-evidence.js";
 
 const WRITE_COMMAND = "harness prompt-context-drift:write";
 const VALIDATE_COMMAND =
@@ -27,10 +28,6 @@ const writeCommandFor = (reportPath: string) =>
 const validateCommandFor = (reportPath: string) =>
 	`harness prompt-context-drift:validate ${reportPath}`;
 const CANONICAL_REPORT = PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0];
-const MAX_REPORT_BYTES = 1_000_000;
-const KNOWN_REPORT_TEXT_PATHS = new Map<string, string>(
-	PROMPT_CONTEXT_DRIFT_REPORT_PATHS.map((path) => [path, path]),
-);
 
 /** Project prompt-context drift evidence into the agent-readiness context surface. */
 export function promptContextDriftSurface(
@@ -86,116 +83,6 @@ function duplicateReportCleanupCommands(
 	return reportPaths
 		.filter((reportPath) => reportPath !== survivor)
 		.map((reportPath) => `rm ${reportPath}`);
-}
-
-function promptContextDriftReportEvidence(repoRoot: string): string[] {
-	return PROMPT_CONTEXT_DRIFT_REPORT_PATHS.filter(
-		(reportPath) => safeReportPath(repoRoot, reportPath) !== null,
-	);
-}
-
-function readPromptContextDriftReport(
-	repoRoot: string,
-	reportPath: string,
-): string {
-	const resolved = safeReportPath(repoRoot, reportPath);
-	if (resolved === null) return "";
-	const text = readKnownReportText(repoRoot, reportPath);
-	return reportPathStillMatches(repoRoot, reportPath, resolved) ? text : "";
-}
-
-function readKnownReportText(repoRoot: string, reportPath: string): string {
-	const knownPath = KNOWN_REPORT_TEXT_PATHS.get(reportPath);
-	return knownPath === undefined ? "" : readText(repoRoot, knownPath);
-}
-
-function reportPathStillMatches(
-	repoRoot: string,
-	reportPath: string,
-	expectedRealPath: string,
-): boolean {
-	try {
-		const realRepoRoot = realpathSync(repoRoot);
-		const absolutePath = knownReportAbsolutePath(realRepoRoot, reportPath);
-		if (absolutePath === null || escapesRepoRoot(realRepoRoot, absolutePath)) {
-			return false;
-		}
-		const stat = lstatSync(absolutePath);
-		if (!isReadableReportFile(stat)) return false;
-		const realPath = realpathSync(absolutePath);
-		return (
-			realPath === expectedRealPath && !escapesRepoRoot(realRepoRoot, realPath)
-		);
-	} catch {
-		return false;
-	}
-}
-
-function safeReportPath(repoRoot: string, reportPath: string): string | null {
-	try {
-		const realRepoRoot = realpathSync(repoRoot);
-		if (isInvalidReportPath(reportPath)) {
-			return null;
-		}
-		const absolutePath = knownReportAbsolutePath(realRepoRoot, reportPath);
-		if (absolutePath === null) return null;
-		if (escapesRepoRoot(realRepoRoot, absolutePath)) return null;
-		const stat = lstatSync(absolutePath);
-		if (!isReadableReportFile(stat)) return null;
-		const realPath = realpathSync(absolutePath);
-		if (escapesRepoRoot(realRepoRoot, realPath)) return null;
-		return realPath;
-	} catch {
-		return null;
-	}
-}
-
-function isInvalidReportPath(reportPath: string): boolean {
-	return typeof reportPath !== "string" || /[\r\n\0]/.test(reportPath);
-}
-
-function isReadableReportFile(stat: {
-	isSymbolicLink(): boolean;
-	isFile(): boolean;
-	size: number;
-}): boolean {
-	return (
-		!stat.isSymbolicLink() && stat.isFile() && stat.size <= MAX_REPORT_BYTES
-	);
-}
-
-function knownReportAbsolutePath(
-	realRepoRoot: string,
-	reportPath: string,
-): string | null {
-	const segments = knownReportSegments(reportPath);
-	return segments === null ? null : [realRepoRoot, ...segments].join(sep);
-}
-
-function knownReportSegments(reportPath: string): string[] | null {
-	switch (reportPath) {
-		case "artifacts/context-integrity/prompt-context-drift-report.json":
-			return [
-				"artifacts",
-				"context-integrity",
-				"prompt-context-drift-report.json",
-			];
-		case "artifacts/prompt-context-drift-report.json":
-			return ["artifacts", "prompt-context-drift-report.json"];
-		case ".harness/runtime/prompt-context-drift-report.json":
-			return [".harness", "runtime", "prompt-context-drift-report.json"];
-		default:
-			return null;
-	}
-}
-
-function escapesRepoRoot(repoRoot: string, absolutePath: string): boolean {
-	const relativePath = relative(repoRoot, absolutePath);
-	return (
-		relativePath === ".." ||
-		relativePath.startsWith(`..${sep}`) ||
-		isAbsolute(relativePath)
-	);
 }
 
 function promptContextDriftReportStatus(
