@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, sep } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { assessActiveRouteRefs } from "./active-route-refs.js";
 
@@ -112,6 +112,55 @@ describe("assessActiveRouteRefs", () => {
 		expect(assessment.evidenceRefs).toEqual([
 			"docs/goals/demo/current-route.json",
 			"docs/goals/demo/state.yaml",
+		]);
+		expect(assessment.missingRefs).toEqual([]);
+		expect(assessment.staleReasons).toEqual([]);
+	});
+
+	it("preserves known root refs beside route-local shorthand refs", () => {
+		const repoRoot = makeRepo(tempDirs);
+		const tick = String.fromCharCode(96);
+		writeRepoFile(repoRoot, "docs/goals/demo/current-route.json", "{}\n");
+		writeRepoFile(repoRoot, "docs/goals/demo/state.yaml", "status: active\n");
+		writeRepoFile(repoRoot, "contracts/runtime-card.json", "{}\n");
+		writeRepoFile(repoRoot, "templates/runtime-card.md", "# Runtime\n");
+
+		const assessment = assessActiveRouteRefs({
+			repoRoot,
+			activeArtifactsPath: ".harness/active-artifacts.md",
+			activeArtifactsText: [
+				"# Active",
+				"",
+				"## Current Active Route",
+				"",
+				[
+					tick,
+					"docs/goals/demo/current-route.json",
+					tick,
+					", ",
+					tick,
+					"state.yaml",
+					tick,
+					", ",
+					tick,
+					"contracts/runtime-card.json",
+					tick,
+					", and ",
+					tick,
+					"templates/runtime-card.md",
+					tick,
+					".",
+				].join(""),
+				"",
+				"## Artifact Index",
+			].join("\n"),
+		});
+
+		expect(assessment.evidenceRefs).toEqual([
+			"docs/goals/demo/current-route.json",
+			"docs/goals/demo/state.yaml",
+			"contracts/runtime-card.json",
+			"templates/runtime-card.md",
 		]);
 		expect(assessment.missingRefs).toEqual([]);
 		expect(assessment.staleReasons).toEqual([]);
@@ -296,7 +345,7 @@ function makeRepo(tempDirs: string[]): string {
 }
 
 function writeRepoFile(repoRoot: string, path: string, content: string): void {
-	const fullPath = join(repoRoot, path);
+	const fullPath = [repoRoot, ...path.split("/")].join(sep);
 	mkdirSync(dirname(fullPath), { recursive: true });
 	writeFileSync(fullPath, content, "utf8");
 }

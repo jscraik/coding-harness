@@ -6,11 +6,17 @@ import {
 	symlinkSync,
 	writeFileSync,
 } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join, relative, sep } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { findScopedInstructionFiles } from "../lib/agent-readiness/repo-evidence.js";
+import type {
+	PromptContextDriftBlocker,
+	PromptContextDriftReport,
+} from "../lib/prompt-context-drift/index.js";
 
 import {
 	assessAgentReadiness,
@@ -241,6 +247,28 @@ describe("agent-readiness command", () => {
 		});
 	});
 
+	it("accepts regular prompt-context drift reports through guarded reads", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		writeRepoFile(
+			repoRoot,
+			"artifacts/context-integrity/prompt-context-drift-report.json",
+			JSON.stringify(promptContextDriftReportForReadyRepo(repoRoot)),
+		);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const promptContextSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "prompt_context_drift",
+		);
+
+		expect(promptContextSurface).toMatchObject({
+			status: "pass",
+			staleReasons: [],
+		});
+	});
+
 	it("warns when prompt-context drift report is empty", () => {
 		const repoRoot = makeAgentReadyRepo(tempDirs);
 		writeRepoFile(
@@ -327,6 +355,102 @@ describe("agent-readiness command", () => {
 		});
 	});
 
+	it("routes prompt-context drift blockers to their repair lane", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		const blocker: PromptContextDriftBlocker = {
+			blockerClass: "stale_runtime_card",
+			reason: "No local runtime-card artifact was discovered.",
+			nextActionClass: "refresh_runtime_card",
+		};
+		const driftReport = promptContextDriftReportForReadyRepo(repoRoot);
+		driftReport.evidenceUse = "orientation";
+		driftReport.overallStatus = "warn";
+		driftReport.blockers = [blocker];
+		driftReport.surfaces = driftReport.surfaces.map((surface) =>
+			surface.surfaceId === "runtime_card_or_handoff"
+				? {
+						...surface,
+						status: "warn",
+						evidenceUse: "orientation",
+						requiredForClaimSupport: false,
+						blockers: [blocker],
+						sourceRefs: surface.sourceRefs.map((sourceRef) => ({
+							...sourceRef,
+							evidenceUse: "orientation",
+							requiredForClaimSupport: false,
+						})),
+					}
+				: {
+						...surface,
+						evidenceUse: "orientation",
+						requiredForClaimSupport: false,
+						sourceRefs: surface.sourceRefs.map((sourceRef) => ({
+							...sourceRef,
+							evidenceUse: "orientation",
+							requiredForClaimSupport: false,
+						})),
+					},
+		);
+		writeRepoFile(
+			repoRoot,
+			"artifacts/context-integrity/prompt-context-drift-report.json",
+			JSON.stringify(driftReport),
+		);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const promptContextSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "prompt_context_drift",
+		);
+
+		expect(promptContextSurface).toMatchObject({
+			status: "warn",
+			suggestedRefreshCommands: [
+				"harness runtime-card --json --repo . --out artifacts/runtime-card.json",
+			],
+		});
+	});
+
+	it("warns when prompt-context drift report claims pass with missing surfaces", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		const driftReport = promptContextDriftReportForReadyRepo(repoRoot);
+		driftReport.evidenceUse = "orientation";
+		driftReport.surfaces = driftReport.surfaces
+			.filter((surface) => surface.surfaceId !== "active_route")
+			.map((surface) => ({
+				...surface,
+				evidenceUse: "orientation",
+				requiredForClaimSupport: false,
+				sourceRefs: surface.sourceRefs.map((sourceRef) => ({
+					...sourceRef,
+					evidenceUse: "orientation",
+					requiredForClaimSupport: false,
+				})),
+			}));
+		writeRepoFile(
+			repoRoot,
+			"artifacts/context-integrity/prompt-context-drift-report.json",
+			JSON.stringify(driftReport),
+		);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const promptContextSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "prompt_context_drift",
+		);
+
+		expect(promptContextSurface).toMatchObject({
+			status: "warn",
+			staleReasons: [
+				"Prompt-context-drift report claims pass while required surface active_route is missing.",
+			],
+		});
+	});
+
 	it("warns when multiple prompt-context drift reports create ambiguous authority", () => {
 		const repoRoot = makeAgentReadyRepo(tempDirs);
 		writeRepoFile(
@@ -350,6 +474,70 @@ describe("agent-readiness command", () => {
 				expect.stringContaining(
 					"Multiple prompt-context-drift reports were discovered",
 				),
+			],
+			suggestedRefreshCommands: [
+				"rm artifacts/prompt-context-drift-report.json",
+			],
+		});
+	});
+
+	it("routes symlinked prompt-context drift reports to the writer", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		const canonicalReport =
+			"artifacts/context-integrity/prompt-context-drift-report.json";
+		const outsideDir = mkdtempSync(join(tmpdir(), "prompt-context-outside-"));
+		tempDirs.push(outsideDir);
+		const outsideReport = join(outsideDir, "prompt-context-drift-report.json");
+		writeFileSync(
+			outsideReport,
+			JSON.stringify(promptContextDriftReportForReadyRepo(repoRoot)),
+		);
+		rmSync(repoPath(repoRoot, canonicalReport), { force: true });
+		symlinkSync(outsideReport, repoPath(repoRoot, canonicalReport));
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const promptContextSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "prompt_context_drift",
+		);
+
+		expect(promptContextSurface).toMatchObject({
+			status: "warn",
+			evidence: [`missing:${canonicalReport}`],
+			suggestedRefreshCommands: [
+				"harness prompt-context-drift:write",
+				`harness prompt-context-drift:validate ${canonicalReport}`,
+			],
+		});
+	});
+
+	it("refreshes an alternate prompt-context drift report in place", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		const alternateReportPath =
+			".harness/runtime/prompt-context-drift-report.json";
+		rmSync(
+			repoPath(
+				repoRoot,
+				"artifacts/context-integrity/prompt-context-drift-report.json",
+			),
+		);
+		writeRepoFile(repoRoot, alternateReportPath, "{not-json");
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const promptContextSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "prompt_context_drift",
+		);
+
+		expect(promptContextSurface).toMatchObject({
+			status: "warn",
+			suggestedRefreshCommands: [
+				`harness prompt-context-drift:write --output ${alternateReportPath}`,
+				`harness prompt-context-drift:validate ${alternateReportPath}`,
 			],
 		});
 	});
@@ -796,11 +984,6 @@ function makeAgentReadyRepo(tempDirs: string[]): string {
 	);
 	writeRepoFile(
 		repoRoot,
-		"artifacts/context-integrity/prompt-context-drift-report.json",
-		JSON.stringify(promptContextDriftReportForReadyRepo(repoRoot)),
-	);
-	writeRepoFile(
-		repoRoot,
 		"package.json",
 		JSON.stringify({
 			scripts: { test: "vitest run", "test:deep": "vitest run" },
@@ -839,11 +1022,23 @@ function makeAgentReadyRepo(tempDirs: string[]): string {
 		"docs/agents/13-linear-production-workflow.md",
 		"Linear GitHub branch commit validation evidence links are required.\n",
 	);
+	runGit(repoRoot, ["init"]);
+	runGit(repoRoot, ["config", "user.name", "Codex"]);
+	runGit(repoRoot, ["config", "user.email", "codex@example.invalid"]);
+	runGit(repoRoot, ["add", "."]);
+	runGit(repoRoot, ["commit", "-m", "seed readiness fixtures"]);
+	writeRepoFile(
+		repoRoot,
+		"artifacts/context-integrity/prompt-context-drift-report.json",
+		JSON.stringify(promptContextDriftReportForReadyRepo(repoRoot)),
+	);
 	return repoRoot;
 }
 
-function promptContextDriftReportForReadyRepo(repoRoot: string) {
-	const currentHeadSha = "1".repeat(40);
+function promptContextDriftReportForReadyRepo(
+	repoRoot: string,
+): PromptContextDriftReport {
+	const currentHeadSha = readGitHead(repoRoot);
 	const surfaces = [
 		["prompt_context", "AGENTS.md"],
 		["active_artifacts", ".harness/active-artifacts.md"],
@@ -891,14 +1086,62 @@ function promptContextDriftReportForReadyRepo(repoRoot: string) {
 	};
 }
 
+function readGitHead(repoRoot: string): string {
+	const result = spawnSync("git", ["rev-parse", "HEAD"], {
+		cwd: repoRoot,
+		encoding: "utf8",
+	});
+	if (result.status !== 0) {
+		throw new Error(`git rev-parse HEAD failed: ${result.stderr}`);
+	}
+	return result.stdout.trim();
+}
+
+function runGit(repoRoot: string, args: string[]): void {
+	const result = spawnSync("git", args, {
+		cwd: repoRoot,
+		encoding: "utf8",
+	});
+	if (result.status !== 0) {
+		throw new Error(`git ${args.join(" ")} failed: ${result.stderr}`);
+	}
+}
+
 function sha256RepoFile(repoRoot: string, path: string): string {
 	return createHash("sha256")
-		.update(readFileSync(join(repoRoot, path)))
+		.update(readFileSync(repoPath(repoRoot, path)))
 		.digest("hex");
 }
 
 function writeRepoFile(repoRoot: string, path: string, content: string): void {
-	const fullPath = join(repoRoot, path);
+	const fullPath = repoPath(repoRoot, path);
 	mkdirSync(dirname(fullPath), { recursive: true });
 	writeFileSync(fullPath, content, "utf8");
+}
+
+function repoPath(repoRoot: string, path: string): string {
+	const normalized = path.replace(/\\/g, "/").replace(/^\.\//, "");
+	if (
+		normalized.length === 0 ||
+		normalized.startsWith("/") ||
+		normalized.startsWith("..") ||
+		normalized.includes("/../") ||
+		/[\r\n\0]/u.test(normalized)
+	) {
+		throw new Error(`invalid fixture path: ${path}`);
+	}
+	const baseUrl = pathToFileURL(
+		repoRoot.endsWith(sep) ? repoRoot : `${repoRoot}${sep}`,
+	);
+	const encodedPath = normalized.split("/").map(encodeURIComponent).join("/");
+	const absolute = fileURLToPath(new URL(encodedPath, baseUrl));
+	const relativePath = relative(repoRoot, absolute);
+	if (
+		relativePath === ".." ||
+		relativePath.startsWith(`..${sep}`) ||
+		isAbsolute(relativePath)
+	) {
+		throw new Error(`fixture path escaped repo: ${path}`);
+	}
+	return absolute;
 }

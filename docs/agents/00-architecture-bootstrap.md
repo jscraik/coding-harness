@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-20
+last_validated: 2026-06-21
 ---
 
 # Architecture bootstrap
@@ -356,6 +356,13 @@ classification, and raw/secret leakage rejection. `agent-readiness` may consume
 the report as an advisory `prompt_context_drift` context surface, but it must
 not authorize commands, satisfy delivery-truth claims, close JSC-363
 acceptance criteria, or prove merge readiness.
+When the report is stale or missing, refresh it with
+`node scripts/write-prompt-context-drift-report.cjs --repo-root .`, then
+validate the generated artifact with
+`node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .`.
+Treat the writer as a local artifact refresh command and the validator as the
+contract proof; neither command proves CI, review state, tracker state, or merge
+readiness.
 
 Intermediary receipt coverage changes are real-time-truth cockpit work, not a
 new closeout, delivery-truth, review-state, or external-state rail. Keep

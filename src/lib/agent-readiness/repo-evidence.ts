@@ -8,7 +8,7 @@ import {
 import { join, relative } from "node:path";
 
 /** Return existing repo-relative evidence paths from a candidate list. */
-export function evidence(repoRoot: string, paths: string[]): string[] {
+export function evidence(repoRoot: string, paths: readonly string[]): string[] {
 	return paths.filter((path) => fileExists(repoRoot, path));
 }
 
@@ -99,24 +99,15 @@ function findFiles(repoRoot: string, fileName: string): string[] {
 	while (stack.length > 0) {
 		const current = stack.pop();
 		if (current === undefined) continue;
-		let entries: string[];
-		try {
-			entries = readdirSync(current);
-		} catch {
-			continue;
-		}
+		const entries = safeReadDir(current);
 
 		for (const entry of entries) {
 			if (ignored.has(entry)) continue;
 			const fullPath = join(current, entry);
 			const repoPath = relative(repoRoot, fullPath);
 			if (ignoredRepoPaths.has(repoPath)) continue;
-			let stats: ReturnType<typeof lstatSync>;
-			try {
-				stats = lstatSync(fullPath);
-			} catch {
-				continue;
-			}
+			const stats = safeLstat(fullPath);
+			if (!stats) continue;
 			if (stats.isSymbolicLink()) continue;
 			if (stats.isDirectory()) {
 				stack.push(fullPath);
@@ -127,4 +118,20 @@ function findFiles(repoRoot: string, fileName: string): string[] {
 	}
 
 	return found;
+}
+
+function safeReadDir(path: string): string[] {
+	try {
+		return readdirSync(path);
+	} catch {
+		return [];
+	}
+}
+
+function safeLstat(path: string): ReturnType<typeof lstatSync> | null {
+	try {
+		return lstatSync(path);
+	} catch {
+		return null;
+	}
 }

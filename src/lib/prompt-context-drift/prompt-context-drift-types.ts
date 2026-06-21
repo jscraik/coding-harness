@@ -1,6 +1,12 @@
 export const PROMPT_CONTEXT_DRIFT_REPORT_SCHEMA_VERSION =
 	"prompt-context-drift-report/v1" as const;
 
+export const PROMPT_CONTEXT_DRIFT_REPORT_PATHS = [
+	"artifacts/context-integrity/prompt-context-drift-report.json",
+	"artifacts/prompt-context-drift-report.json",
+	".harness/runtime/prompt-context-drift-report.json",
+] as const;
+
 export const PROMPT_CONTEXT_DRIFT_STATUSES = [
 	"pass",
 	"warn",

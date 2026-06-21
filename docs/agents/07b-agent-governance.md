@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-20
+last_validated: 2026-06-21
 ---
 
 # Agent governance
@@ -84,7 +84,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   remain the prose authority.
 - `harness-fitness/v1` changes that add or alter deterministic lanes, artifact
   normalizers, `harness fitness --from-existing-artifacts`, or `harness next
-  --fitness-report` should keep schema, TypeScript types, runtime validators,
+--fitness-report` should keep schema, TypeScript types, runtime validators,
   conventional artifact names, advisory trend snapshots, trusted next-command
   routing, generated architecture context, `AGENTS.md`,
   `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized;
@@ -352,7 +352,12 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   can support any advisory context-health projection. `agent-readiness` may
   expose `prompt_context_drift` for orientation, but the report must not become
   command authority, delivery-truth claim support, JSC-363 acceptance closure,
-  or merge-readiness proof
+  or merge-readiness proof. Stale or missing reports should be regenerated with
+  `node scripts/write-prompt-context-drift-report.cjs --repo-root .` and then
+  validated with
+  `node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .`;
+  treat writer output and validator proof as separate evidence from CI, review,
+  tracker, and merge-readiness lanes
 - intermediary receipt coverage changes should keep real-time and intermediary
   source truth in `src/lib/intermediary-receipts/`, with pointer-only source
   refs, complete source-kind taxonomy coverage, deny-by-default

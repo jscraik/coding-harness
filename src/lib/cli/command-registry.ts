@@ -15,8 +15,11 @@ import {
 	getAgentCommandCapabilityCatalogDocument,
 	getCommandCapabilityCatalogDocument,
 	isFirstContactCommandName,
-	parseAgentCatalogMode,
 } from "./registry/command-capabilities.js";
+import {
+	BUILTIN_COMMAND_SPECS,
+	createCommandsCatalogSpec,
+} from "./registry/builtin-command-specs.js";
 import { suggestCommandCapabilities as suggestCatalogCapabilities } from "./registry/command-fuzzy.js";
 import { COMMAND_SPECS as EXTRACTED_COMMAND_SPECS } from "./registry/command-specs.js";
 import {
@@ -50,50 +53,8 @@ export type {
 export { COMMAND_CATALOG_SCHEMA_VERSION, normalizeCommandName };
 
 const COMMAND_SPECS: CommandSpec[] = [
-	{
-		name: "commands",
-		summary:
-			"List machine-readable command capability metadata for humans and agents",
-		example: "commands --json",
-		errorLabel: "Commands Catalog Error",
-		execute: (args) => {
-			const jsonFlag = args.includes("--json");
-			const forAgentFlag = args.includes("--for-agent");
-			const fullCatalogFlag =
-				args.includes("--all") || args.includes("--plumbing");
-			const agentMode = parseAgentCatalogMode(args);
-			if (forAgentFlag && !fullCatalogFlag && agentMode === "invalid") {
-				console.error(
-					"Error: --mode must be orient, verify, review, or handoff when used with commands --for-agent",
-				);
-				return 2;
-			}
-			const catalog =
-				forAgentFlag && !fullCatalogFlag
-					? getRegistryAgentCommandCatalogDocument(
-							agentMode !== "invalid" ? agentMode : undefined,
-						)
-					: getRegistryCommandCatalogDocument();
-			if (jsonFlag) {
-				console.info(JSON.stringify(catalog));
-				return 0;
-			}
-			console.info("Command capability catalog:");
-			for (const capability of catalog.commands) {
-				const category = capability.category.padEnd(22, " ");
-				console.info(
-					`  ${capability.name.padEnd(24, " ")} ${category} ${capability.mutability}`,
-				);
-			}
-			console.info("");
-			console.info(
-				forAgentFlag && !fullCatalogFlag
-					? 'Run "harness commands --json --all" for the full capability catalog.'
-					: 'Run "harness commands --json --for-agent" for the public agent rail set.',
-			);
-			return 0;
-		},
-	},
+	...BUILTIN_COMMAND_SPECS,
+	createCommandsCatalogSpec(() => COMMAND_SPECS),
 	SOURCE_OUTLINE_COMMAND_SPEC,
 	...EXTRACTED_COMMAND_SPECS,
 ];

@@ -14,12 +14,9 @@ import type { AgentReadinessContextHealth } from "../lib/agent-readiness/types.j
 import { decisionMeta, sourceMetaExtra } from "./next-support.js";
 import type { HarnessNextMode } from "./next-decision-types.js";
 
-/**
- * Build a standardized HarnessDecision scoped to the "harness next" CLI.
- *
- * @param decision - Input decision fields used to construct the final HarnessDecision
- * @returns A fully formed HarnessDecision with "harness next" as its producer context
- */
+type DecisionMetaArgs = Parameters<typeof decisionMeta>[0];
+
+/** Build a standardized decision scoped to the harness next CLI. */
 export function createNextDecision(
 	decision: HarnessDecisionInput,
 ): HarnessDecision {
@@ -70,12 +67,15 @@ function agentReadinessContextMeta(
 	};
 }
 
-/**
- * Builds standardized operational metadata for a `harness next` decision.
- *
- * @param args - Operational context and optional evidence projections to attach to the decision metadata
- * @returns A decision meta object populated with operational fields and normalized source/evidence metadata
- */
+function addDefinedMetaArg<K extends keyof DecisionMetaArgs>(
+	meta: DecisionMetaArgs,
+	key: K,
+	value: DecisionMetaArgs[K] | undefined,
+): void {
+	if (value !== undefined) meta[key] = value;
+}
+
+/** Build normalized operational metadata for harness next decisions. */
 export function nextDecisionOperationalMeta(args: {
 	mode: HarnessNextMode;
 	filesSource?: "override" | "git";
@@ -86,26 +86,16 @@ export function nextDecisionOperationalMeta(args: {
 	startupCost?: Parameters<typeof decisionMeta>[0]["startupCost"];
 	commands?: string[];
 	requiresHuman?: boolean;
+	requiresNetwork?: boolean;
+	writesFiles?: boolean;
 	sourceErrors?: readonly DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
 	agentReadinessContext?: AgentReadinessContextHealth | undefined;
 	extra?: Record<string, unknown> | undefined;
 }): ReturnType<typeof decisionMeta> {
-	return decisionMeta({
+	const metaArgs: DecisionMetaArgs = {
 		mode: args.mode,
-		...(args.filesSource ? { filesSource: args.filesSource } : {}),
-		...(args.changedFileCount !== undefined
-			? { changedFileCount: args.changedFileCount }
-			: {}),
-		...(args.nextCommandArgv ? { nextCommandArgv: args.nextCommandArgv } : {}),
-		...(args.frictionClass ? { frictionClass: args.frictionClass } : {}),
-		...(args.delayClass ? { delayClass: args.delayClass } : {}),
-		...(args.startupCost ? { startupCost: args.startupCost } : {}),
-		...(args.commands ? { commands: args.commands } : {}),
-		...(args.requiresHuman !== undefined
-			? { requiresHuman: args.requiresHuman }
-			: {}),
 		extra: {
 			...(args.extra ?? {}),
 			...sourceMetaExtra(args.sourceErrors ?? []),
@@ -113,5 +103,16 @@ export function nextDecisionOperationalMeta(args: {
 			...runtimeCardMeta(args.runtimeCard),
 			...agentReadinessContextMeta(args.agentReadinessContext),
 		},
-	});
+	};
+	addDefinedMetaArg(metaArgs, "filesSource", args.filesSource);
+	addDefinedMetaArg(metaArgs, "changedFileCount", args.changedFileCount);
+	addDefinedMetaArg(metaArgs, "nextCommandArgv", args.nextCommandArgv);
+	addDefinedMetaArg(metaArgs, "frictionClass", args.frictionClass);
+	addDefinedMetaArg(metaArgs, "delayClass", args.delayClass);
+	addDefinedMetaArg(metaArgs, "startupCost", args.startupCost);
+	addDefinedMetaArg(metaArgs, "commands", args.commands);
+	addDefinedMetaArg(metaArgs, "requiresHuman", args.requiresHuman);
+	addDefinedMetaArg(metaArgs, "requiresNetwork", args.requiresNetwork);
+	addDefinedMetaArg(metaArgs, "writesFiles", args.writesFiles);
+	return decisionMeta(metaArgs);
 }

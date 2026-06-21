@@ -178,6 +178,61 @@ const normalizeProjectReferences = (content) =>
       `  System(mainSystem, "${projectDisplayName}", "The system being documented")`,
     );
 
+const normalizeMemoryNodeLabel = (value) =>
+  stableRawIdentity(value.replace(/^[^A-Za-z0-9]+/, "")).replace(/_/g, "-");
+const parseMermaidSubgraphNode = (line) => {
+  const nodeMatch = line.match(/^(\s{4})([A-Za-z_][A-Za-z0-9_]*)(\[.+\])$/);
+  if (!nodeMatch) {
+    return null;
+  }
+  return {
+    indent: nodeMatch[1],
+    rawId: nodeMatch[2],
+    suffix: nodeMatch[3],
+    label: nodeMatch[3].match(/"([^"]+)"/)?.[1] ?? nodeMatch[2],
+  };
+};
+
+const declaredMemoryNodeIds = (lines) => {
+  const declaredNodeIds = new Set();
+  const memoryNodeIdsByLabel = new Map();
+  for (const line of lines) {
+    const node = parseMermaidSubgraphNode(line);
+    if (!node) {
+      continue;
+    }
+    declaredNodeIds.add(node.rawId);
+    const label = node.label;
+    if (label.startsWith("📚 ")) {
+      memoryNodeIdsByLabel.set(normalizeMemoryNodeLabel(label), node.rawId);
+    }
+  }
+  return { declaredNodeIds, memoryNodeIdsByLabel };
+};
+
+const rewriteMemoryRetrieveEdges = (lines) => {
+  const { declaredNodeIds, memoryNodeIdsByLabel } = declaredMemoryNodeIds(lines);
+  for (const [lineIndex, line] of lines.entries()) {
+    const edgeMatch = line.match(/^\s{2}([A-Za-z_][A-Za-z0-9_]*)(\s+-->\|retrieves from\|\s+)([A-Za-z_][A-Za-z0-9_]*)(.*)$/);
+	  if (
+	    !edgeMatch ||
+	    (declaredNodeIds.has(edgeMatch[1]) && declaredNodeIds.has(edgeMatch[3]))
+	  ) {
+	    continue;
+	  }
+	  const sourceReplacementId = declaredNodeIds.has(edgeMatch[1])
+	    ? edgeMatch[1]
+	    : memoryNodeIdsByLabel.get(normalizeMemoryNodeLabel(edgeMatch[1]));
+    const targetReplacementId =
+      declaredNodeIds.has(edgeMatch[3])
+        ? edgeMatch[3]
+        : memoryNodeIdsByLabel.get(normalizeMemoryNodeLabel(edgeMatch[3]));
+    if (sourceReplacementId && targetReplacementId) {
+      lines[lineIndex] = `  ${sourceReplacementId}${edgeMatch[2]}${targetReplacementId}${edgeMatch[4]}`;
+    }
+  }
+};
+
 const dedupeSubgraphNodeIds = (content, diagramName) => {
   const lines = content.trimEnd().split(/\r?\n/);
   const nodes = [];
@@ -201,14 +256,14 @@ const dedupeSubgraphNodeIds = (content, diagramName) => {
       continue;
     }
 
-    const nodeMatch = line.match(/^(\s{4})([A-Za-z_][A-Za-z0-9_]*)(\[.+\])$/);
-    if (nodeMatch && currentSubgraph) {
+    const node = parseMermaidSubgraphNode(line);
+    if (node && currentSubgraph) {
       nodes.push({
         lineIndex,
-        indent: nodeMatch[1],
-        rawId: nodeMatch[2],
-        suffix: nodeMatch[3],
-        label: nodeMatch[3].match(/"([^"]+)"/)?.[1] ?? nodeMatch[2],
+        indent: node.indent,
+        rawId: node.rawId,
+        suffix: node.suffix,
+        label: node.label,
         subgraph: currentSubgraph,
       });
     }
@@ -224,10 +279,6 @@ const dedupeSubgraphNodeIds = (content, diagramName) => {
       .filter(([, count]) => count > 1)
       .map(([rawId]) => rawId),
   );
-  if (duplicateIds.size === 0) {
-    return ensureTrailingNewline(lines.join("\n"));
-  }
-
   const seen = new Map();
   const rewrittenIds = new Map();
   for (const node of nodes) {
@@ -266,6 +317,8 @@ const dedupeSubgraphNodeIds = (content, diagramName) => {
       .flatMap((id) => rewrittenIds.get(id) ?? [id]);
     lines[lineIndex] = `${classMatch[1]}${[...new Set(classIds)].join(",")}${classMatch[3]}`;
   }
+
+	  rewriteMemoryRetrieveEdges(lines);
 
   return ensureTrailingNewline(lines.join("\n"));
 };
@@ -649,7 +702,7 @@ NODE
 	normalize_status=$?
 	set -e
 	if [[ "$normalize_status" -eq 0 ]]; then
-		cp "$CONTEXT_FILE" "$TMP_CONTEXT"
+		:
 	elif [[ "$normalize_status" -ne 1 ]]; then
 		log "error: diagram context normalize comparison failed"
 		exit "$normalize_status"

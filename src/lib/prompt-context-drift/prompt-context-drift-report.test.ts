@@ -1,19 +1,22 @@
 import { createHash } from "node:crypto";
 import {
+	mkdirSync,
 	mkdtempSync,
 	readFileSync,
+	realpathSync,
 	rmSync,
 	symlinkSync,
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 import type {
 	PromptContextDriftRef,
 	PromptContextDriftReport,
 	PromptContextDriftSurface,
 } from "./prompt-context-drift-report.js";
+import { buildPromptContextDriftReport } from "./prompt-context-drift-builder.js";
 import { validatePromptContextDriftReport } from "./prompt-context-drift-report.js";
 
 // Expected enum values (independent oracle, not derived from source constants)
@@ -119,6 +122,12 @@ function tempRoot(): string {
 	return mkdtempSync(join(tmpdir(), "prompt-context-drift-"));
 }
 
+function writeRepoFile(repoRoot: string, path: string, content: string): void {
+	const fullPath = [repoRoot, ...path.split("/")].join(sep);
+	mkdirSync(dirname(fullPath), { recursive: true });
+	writeFileSync(fullPath, content);
+}
+
 function schemaEnum(
 	container: Record<string, { enum?: unknown[] }>,
 	key: string,
@@ -161,6 +170,321 @@ describe("validatePromptContextDriftReport", () => {
 		expect(
 			validatePromptContextDriftReport(exampleReport(), { repoRoot: "." }),
 		).toEqual({ status: "pass", errors: [] });
+	});
+
+	it("builds reports for absolute repo roots inside the current directory", () => {
+		const repoRoot = tempRoot();
+		const previousCwd = process.cwd();
+		try {
+			writeFileSync(join(repoRoot, "AGENTS.md"), "# Agents\n");
+			process.chdir(repoRoot);
+			const report = buildPromptContextDriftReport({
+				repoRoot: realpathSync(repoRoot),
+				generatedAt: new Date("2026-06-20T00:00:00.000Z"),
+			});
+
+			expect(report.schemaVersion).toBe("prompt-context-drift-report/v1");
+			expect(validatePromptContextDriftReport(report, { repoRoot })).toEqual({
+				status: "pass",
+				errors: [],
+			});
+		} finally {
+			process.chdir(previousCwd);
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("builds a valid warning report when orientation files are missing", () => {
+		const repoRoot = tempRoot();
+		const previousCwd = process.cwd();
+		try {
+			writeFileSync(join(repoRoot, "AGENTS.md"), "# Agents\n");
+			process.chdir(repoRoot);
+			const report = buildPromptContextDriftReport({
+				repoRoot: ".",
+				generatedAt: new Date("2026-06-20T00:00:00.000Z"),
+			});
+
+			expect(report).toMatchObject({
+				schemaVersion: "prompt-context-drift-report/v1",
+				evidenceUse: "orientation",
+				overallStatus: "warn",
+			});
+			expect(report.blockers.length).toBeGreaterThan(0);
+			expect(validatePromptContextDriftReport(report, { repoRoot })).toEqual({
+				status: "pass",
+				errors: [],
+			});
+		} finally {
+			process.chdir(previousCwd);
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("resolves active-route refs from active-artifacts", () => {
+		const repoRoot = tempRoot();
+		const previousCwd = process.cwd();
+		try {
+			writeFileSync(join(repoRoot, "AGENTS.md"), "# Agents\n");
+			writeRepoFile(
+				repoRoot,
+				".harness/active-artifacts.md",
+				[
+					"# Active Artifacts",
+					"",
+					"## Current Active Route",
+					"| Status | Artifact | Notes |",
+					"| --- | --- | --- |",
+					"| Current | `.harness/specs/current route.json`; `.harness/specs/ready.md` | Current active route |",
+				].join("\n"),
+			);
+			writeRepoFile(repoRoot, ".harness/specs/current route.json", "{}\n");
+			writeRepoFile(repoRoot, ".harness/specs/ready.md", "# Ready\n");
+			process.chdir(repoRoot);
+
+			const report = buildPromptContextDriftReport({ repoRoot: "." });
+			const activeRouteSurface = report.surfaces.find(
+				(surface) => surface.surfaceId === "active_route",
+			);
+
+			expect(
+				activeRouteSurface?.sourceRefs.map((sourceRef) => sourceRef.ref),
+			).toEqual([
+				".harness/specs/current route.json",
+				".harness/specs/ready.md",
+			]);
+			expect(activeRouteSurface?.status).toBe("pass");
+			expect(activeRouteSurface?.sourceRefs[0]?.refId).toMatch(
+				/^orientation:active_route:ref_[A-Za-z0-9_-]+$/u,
+			);
+			expect(
+				validatePromptContextDriftReport(report, { repoRoot: "." }).errors,
+			).not.toEqual(
+				expect.arrayContaining([
+					expect.stringContaining("sourceRefs[0].ref"),
+					expect.stringContaining("sourceRefs[0].refId"),
+				]),
+			);
+		} finally {
+			process.chdir(previousCwd);
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("blocks malformed active-artifacts section coverage", () => {
+		const repoRoot = tempRoot();
+		const previousCwd = process.cwd();
+		try {
+			writeFileSync(join(repoRoot, "AGENTS.md"), "# Agents\n");
+			writeRepoFile(
+				repoRoot,
+				".harness/active-artifacts.md",
+				[
+					"# Active Artifacts",
+					"",
+					"## Current Active Route",
+					"| Status | Artifact | Notes |",
+					"| --- | --- | --- |",
+					"| Current | `.harness/specs/current-route.json` | Current active route |",
+				].join("\n"),
+			);
+			writeRepoFile(repoRoot, ".harness/specs/current-route.json", "{}\n");
+			process.chdir(repoRoot);
+
+			const report = buildPromptContextDriftReport({ repoRoot: "." });
+			const activeArtifactsSurface = report.surfaces.find(
+				(surface) => surface.surfaceId === "active_artifacts",
+			);
+
+			expect(activeArtifactsSurface).toMatchObject({
+				status: "warn",
+				freshness: "missing",
+			});
+			expect(activeArtifactsSurface?.blockers[0]?.reason).toBe(
+				".harness/active-artifacts.md is missing the Artifact Index section.",
+			);
+		} finally {
+			process.chdir(previousCwd);
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("blocks partially stale active-route refs from active-artifacts", () => {
+		const repoRoot = tempRoot();
+		const previousCwd = process.cwd();
+		try {
+			writeFileSync(join(repoRoot, "AGENTS.md"), "# Agents\n");
+			writeRepoFile(
+				repoRoot,
+				".harness/active-artifacts.md",
+				[
+					"# Active Artifacts",
+					"",
+					"## Current Active Route",
+					"| Status | Artifact | Notes |",
+					"| --- | --- | --- |",
+					"| Current | `.harness/specs/current-route.json`; `missing.md` | Current active route |",
+				].join("\n"),
+			);
+			writeRepoFile(repoRoot, ".harness/specs/current-route.json", "{}\n");
+			process.chdir(repoRoot);
+
+			const report = buildPromptContextDriftReport({ repoRoot: "." });
+			const activeRouteSurface = report.surfaces.find(
+				(surface) => surface.surfaceId === "active_route",
+			);
+
+			expect(activeRouteSurface?.status).toBe("warn");
+			expect(
+				activeRouteSurface?.sourceRefs.map((sourceRef) => [
+					sourceRef.ref,
+					sourceRef.freshness,
+				]),
+			).toEqual([
+				[".harness/specs/current-route.json", "current"],
+				[".harness/specs/missing.md", "missing"],
+			]);
+			expect(activeRouteSurface?.blockers[0]?.reason).toContain(
+				"Active route ref",
+			);
+		} finally {
+			process.chdir(previousCwd);
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("preserves stale active-route assessments when no route refs are present", () => {
+		const repoRoot = tempRoot();
+		const previousCwd = process.cwd();
+		try {
+			writeFileSync(join(repoRoot, "AGENTS.md"), "# Agents\n");
+			writeRepoFile(
+				repoRoot,
+				".harness/active-artifacts.md",
+				"# Active Artifacts\n\nNo current route refs yet.\n",
+			);
+			process.chdir(repoRoot);
+
+			const report = buildPromptContextDriftReport({ repoRoot: "." });
+			const activeRouteSurface = report.surfaces.find(
+				(surface) => surface.surfaceId === "active_route",
+			);
+
+			expect(activeRouteSurface).toMatchObject({
+				status: "warn",
+				freshness: "missing",
+			});
+			expect(activeRouteSurface?.sourceRefs.map((ref) => ref.ref)).toEqual([
+				".harness/active-artifacts.md",
+			]);
+			expect(activeRouteSurface?.blockers[0]?.reason).toContain(
+				"Current Active Route",
+			);
+		} finally {
+			process.chdir(previousCwd);
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("treats unsafe route ref symlinks as missing evidence", () => {
+		const repoRoot = tempRoot();
+		const outsideDir = tempRoot();
+		const previousCwd = process.cwd();
+		try {
+			writeFileSync(join(repoRoot, "AGENTS.md"), "# Agents\n");
+			writeRepoFile(
+				repoRoot,
+				".harness/active-artifacts.md",
+				[
+					"# Active Artifacts",
+					"",
+					"## Current Active Route",
+					"| Status | Artifact | Notes |",
+					"| --- | --- | --- |",
+					"| Current | `.harness/specs/current-route.json` | Current active route |",
+				].join("\n"),
+			);
+			writeFileSync(join(outsideDir, "route.json"), "{}\n");
+			mkdirSync(join(repoRoot, ".harness/specs"), { recursive: true });
+			symlinkSync(
+				join(outsideDir, "route.json"),
+				join(repoRoot, ".harness/specs/current-route.json"),
+			);
+			process.chdir(repoRoot);
+
+			const report = buildPromptContextDriftReport({ repoRoot: "." });
+			const activeRouteSurface = report.surfaces.find(
+				(surface) => surface.surfaceId === "active_route",
+			);
+
+			expect(activeRouteSurface).toMatchObject({
+				status: "warn",
+				freshness: "missing",
+			});
+			expect(activeRouteSurface?.sourceRefs[0]).toMatchObject({
+				ref: ".harness/specs/current-route.json",
+				sha256: null,
+				freshness: "missing",
+			});
+		} finally {
+			process.chdir(previousCwd);
+			rmSync(repoRoot, { recursive: true, force: true });
+			rmSync(outsideDir, { recursive: true, force: true });
+		}
+	});
+
+	it("blocks reports when current repository HEAD cannot be verified", () => {
+		const repoRoot = tempRoot();
+		const previousCwd = process.cwd();
+		try {
+			writeFileSync(join(repoRoot, "AGENTS.md"), "# Agents\n");
+			writeRepoFile(repoRoot, "harness.contract.json", "{}\n");
+			process.chdir(repoRoot);
+
+			const report = buildPromptContextDriftReport({ repoRoot: "." });
+			const receiptSurface = report.surfaces.find(
+				(surface) => surface.surfaceId === "receipt_head_sha",
+			);
+
+			expect(report.currentHeadSha).toBeNull();
+			expect(receiptSurface).toMatchObject({
+				status: "warn",
+				freshness: "missing",
+				blockers: [
+					{
+						blockerClass: "head_sha_mismatch",
+						reason: "current repository HEAD could not be verified.",
+						nextActionClass: "refresh_receipts",
+					},
+				],
+			});
+		} finally {
+			process.chdir(previousCwd);
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("accepts alternate runtime-card locations", () => {
+		const repoRoot = tempRoot();
+		const previousCwd = process.cwd();
+		try {
+			writeFileSync(join(repoRoot, "AGENTS.md"), "# Agents\n");
+			writeRepoFile(repoRoot, ".harness/runtime/runtime-card.json", "{}\n");
+			process.chdir(repoRoot);
+
+			const report = buildPromptContextDriftReport({ repoRoot: "." });
+			const runtimeSurface = report.surfaces.find(
+				(surface) => surface.surfaceId === "runtime_card_or_handoff",
+			);
+
+			expect(runtimeSurface?.sourceRefs[0]?.ref).toBe(
+				".harness/runtime/runtime-card.json",
+			);
+			expect(runtimeSurface?.status).toBe("pass");
+		} finally {
+			process.chdir(previousCwd);
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
 	});
 
 	it("blocks stale prompt context from claim support", () => {
@@ -318,6 +642,41 @@ describe("validatePromptContextDriftReport", () => {
 		);
 	});
 
+	it("rejects pass orientation surfaces without current verified refs", () => {
+		const report = exampleReport();
+		report.evidenceUse = "orientation";
+		report.surfaces = report.surfaces.map((surface) => ({
+			...surface,
+			evidenceUse: "orientation",
+			requiredForClaimSupport: false,
+			sourceRefs: surface.sourceRefs.map((sourceRef) => ({
+				...sourceRef,
+				evidenceUse: "orientation",
+				requiredForClaimSupport: false,
+			})),
+		}));
+		surfaceAt(report, 2).freshness = "missing";
+		surfaceAt(report, 2).sourceRefs[0] = {
+			...sourceRefAt(report, 2, 0),
+			hashAlgorithm: null,
+			sha256: null,
+			freshness: "missing",
+			requiresFilesystemExistence: false,
+		};
+
+		const result = validatePromptContextDriftReport(report, { repoRoot: "." });
+
+		expect(result.status).toBe("fail");
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("surfaces[2].freshness: pass requires current"),
+				expect.stringContaining(
+					"surfaces[2].sourceRefs: pass requires at least one repo-contained hash-verified ref",
+				),
+			]),
+		);
+	});
+
 	it("blocks missing source hash", () => {
 		const report = exampleReport();
 		surfaceAt(report, 0).sourceRefs[0] = {
@@ -394,6 +753,38 @@ describe("validatePromptContextDriftReport", () => {
 		expect(result.errors).toContain(
 			"surfaces[0].sourceRefs[0].ref: required repo file is not a file",
 		);
+	});
+
+	it("reports invalid source refs as repo-relative path errors", () => {
+		const report = exampleReport();
+		surfaceAt(report, 0).sourceRefs[0] = {
+			...sourceRefAt(report, 0, 0),
+			ref: "/tmp/outside.md",
+		};
+
+		const result = validatePromptContextDriftReport(report, { repoRoot: "." });
+
+		expect(result.status).toBe("fail");
+		expect(result.errors).toContain(
+			"surfaces[0].sourceRefs[0].ref: must be a valid repo-relative path",
+		);
+	});
+
+	it("rejects parent-directory source refs before reading files", () => {
+		const report = exampleReport();
+		surfaceAt(report, 0).sourceRefs[0] = {
+			...sourceRefAt(report, 0, 0),
+			ref: "../AGENTS.md",
+		};
+
+		const result = validatePromptContextDriftReport(report, { repoRoot: "." });
+
+		expect(result.status).toBe("fail");
+		expect(result.errors).toContain(
+			"surfaces[0].sourceRefs[0].ref: must be a valid repo-relative path",
+		);
+		expect(result.errors.join("\n")).toContain("valid repo-relative path");
+		expect(result.errors.join("\n")).not.toContain("does not exist");
 	});
 
 	it("returns validation errors for inaccessible evidence roots", () => {
@@ -484,7 +875,7 @@ describe("validatePromptContextDriftReport", () => {
 			...exampleReport(),
 			overallStatus: "ready",
 			rawTranscript: "raw transcript",
-			nextAction: "token=sk-1234567890abcdef1234567890abcdef",
+			nextAction: "token=redacted-secret-like-value",
 		};
 
 		const result = validatePromptContextDriftReport(report, { repoRoot: "." });
@@ -496,6 +887,26 @@ describe("validatePromptContextDriftReport", () => {
 				"report.nextAction: contains raw or secret-like content",
 				"report.rawTranscript: unknown field",
 				"overallStatus: invalid enum value",
+			]),
+		);
+	});
+
+	it("rejects deeply nested report values before recursive raw-content scanning can overflow", () => {
+		let nested: Record<string, unknown> = { value: "bounded" };
+		for (let index = 0; index < 40; index += 1) {
+			nested = { child: nested };
+		}
+		const report = {
+			...exampleReport(),
+			nested,
+		};
+
+		const result = validatePromptContextDriftReport(report, { repoRoot: "." });
+
+		expect(result.status).toBe("fail");
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringMatching(/exceeds maximum validation depth/u),
 			]),
 		);
 	});

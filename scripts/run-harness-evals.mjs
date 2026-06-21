@@ -5069,8 +5069,32 @@ async function runAgentNextActionParityFixture(scenario, fixturePath) {
 	]);
 	const verifyCatalog = getRegistryAgentCommandCatalogDocument("verify");
 	const verifyCommands = verifyCatalog.commands.map((command) => command.name);
-	const stalePromptCommand =
-		"node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .";
+	const stalePromptCommand = "harness prompt-context-drift:write";
+	const promptDriftReportRef =
+		"artifacts/context-integrity/prompt-context-drift-report.json";
+	const cleanContext = {
+		schemaVersion: "agent-readiness-context-health/v1",
+		status: "pass",
+		evidenceUse: "orientation",
+		canonicalReport: {
+			schemaVersion: "context-health-report/v1",
+			command: "node --import tsx src/cli.ts context-health --json",
+			available: true,
+			prerequisiteStatus: "pass",
+			prerequisiteEvidence: ["harness.contract.json"],
+		},
+		surfaces: [
+			{
+				id: "prompt_context_drift",
+				status: "pass",
+				evidenceUse: "orientation",
+				evidence: [promptDriftReportRef],
+				staleReasons: [],
+				suggestedRefreshCommands: [stalePromptCommand],
+			},
+		],
+		suggestedRefreshCommands: [],
+	};
 	const staleContext = {
 		schemaVersion: "agent-readiness-context-health/v1",
 		status: "warn",
@@ -5087,9 +5111,7 @@ async function runAgentNextActionParityFixture(scenario, fixturePath) {
 				id: "prompt_context_drift",
 				status: "warn",
 				evidenceUse: "orientation",
-				evidence: [
-					"artifacts/context-integrity/prompt-context-drift-report.json",
-				],
+				evidence: [promptDriftReportRef],
 				staleReasons: [
 					"Prompt-context-drift report failed validation: digest mismatch.",
 				],
@@ -5098,14 +5120,35 @@ async function runAgentNextActionParityFixture(scenario, fixturePath) {
 		],
 		suggestedRefreshCommands: [stalePromptCommand],
 	};
+	const missingContext = {
+		...staleContext,
+		surfaces: [
+			{
+				id: "prompt_context_drift",
+				status: "warn",
+				evidenceUse: "orientation",
+				evidence: [`missing:${promptDriftReportRef}`],
+				staleReasons: [
+					"No prompt-context-drift report was provided for agent-readable orientation.",
+				],
+				suggestedRefreshCommands: [stalePromptCommand],
+			},
+		],
+	};
 	const cleanDecision = runHarnessNext({
 		inspectChangedFiles: () => [],
 		repoRoot: fixturePath,
+		agentReadinessContext: cleanContext,
 	});
 	const staleDecision = runHarnessNext({
 		inspectChangedFiles: () => [],
 		repoRoot: fixturePath,
 		agentReadinessContext: staleContext,
+	});
+	const missingDecision = runHarnessNext({
+		inspectChangedFiles: () => [],
+		repoRoot: fixturePath,
+		agentReadinessContext: missingContext,
 	});
 	const prCloseoutDecision = runHarnessNext({
 		inspectChangedFiles: () => [],
@@ -5186,6 +5229,12 @@ async function runAgentNextActionParityFixture(scenario, fixturePath) {
 			phase: staleDecision.phase,
 			followUpCommands: staleDecision.followUpCommands,
 		},
+		missingDecision: {
+			status: missingDecision.status,
+			nextCommand: missingDecision.nextCommand,
+			phase: missingDecision.phase,
+			requiredEvidence: missingDecision.requiredEvidence,
+		},
 		prCloseoutDecision: {
 			status: prCloseoutDecision.status,
 			failureClass: prCloseoutDecision.failureClass,
@@ -5222,6 +5271,14 @@ async function runAgentNextActionParityFixture(scenario, fixturePath) {
 			"stale prompt-context drift is promoted before handoff",
 			staleDecision.status === "action_required" &&
 				staleDecision.nextCommand === stalePromptCommand,
+		),
+		assertion(
+			"missing prompt-context drift is promoted before handoff",
+			missingDecision.status === "action_required" &&
+				missingDecision.nextCommand === stalePromptCommand &&
+				missingDecision.requiredEvidence.includes(
+					`missing:${promptDriftReportRef}`,
+				),
 		),
 		assertion(
 			"stale prompt-context refresh keeps check as follow-up",

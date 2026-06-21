@@ -79,6 +79,9 @@ importers:
       sqlite-vec:
         specifier: 0.1.7-alpha.2
         version: 0.1.7-alpha.2
+      tsx:
+        specifier: ^4.22.4
+        version: 4.22.4
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -119,9 +122,6 @@ importers:
       standard-version:
         specifier: ^9.5.0
         version: 9.5.0
-      tsx:
-        specifier: ^4.22.4
-        version: 4.22.4
       vitest:
         specifier: ^4.1.5
         version: 4.1.5(@types/node@24.12.2)(@vitest/coverage-v8@4.1.5)(tsx@4.22.4)(yaml@2.8.3)

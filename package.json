@@ -7,6 +7,8 @@
 		"contracts/coding-policy.schema.json",
 		"contracts/browser-evidence.schema.json",
 		"scripts/write-fitness-gate-artifact.mjs",
+		"scripts/write-prompt-context-drift-report.cjs",
+		"scripts/validate-prompt-context-drift.cjs",
 		"scripts/codex-preflight.sh",
 		"scripts/codex-preflight-local-memory-legacy.sh",
 		"scripts/verify-work.sh",
@@ -85,6 +87,8 @@
 		"lint": "pnpm codestyle:parity && pnpm codex-preflight:check && pnpm codex:agents:guard && biome check .",
 		"fitness:typecheck-artifact": "node scripts/write-fitness-gate-artifact.mjs typecheck",
 		"fitness:lint-artifact": "node scripts/write-fitness-gate-artifact.mjs lint",
+		"prompt-context-drift:write": "node scripts/write-prompt-context-drift-report.cjs --repo-root .",
+		"prompt-context-drift:validate": "node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .",
 		"lint:fix": "biome check . --write",
 		"fmt": "biome format . --write",
 		"typecheck": "tsc --noEmit",
@@ -178,7 +182,6 @@
 		"@vvago/vale": "^3.12.0",
 		"markdownlint-cli2": "^0.21.0",
 		"standard-version": "^9.5.0",
-		"tsx": "^4.22.4",
 		"vitest": "^4.1.5"
 	},
 	"packageManager": "pnpm@10.33.0",
@@ -199,6 +202,7 @@
 		"picomatch": "^4.0.4",
 		"semver": "^7.7.4",
 		"sqlite-vec": "0.1.7-alpha.2",
+		"tsx": "^4.22.4",
 		"typescript": "^5.9.3"
 	},
 	"pnpm": {

@@ -3,6 +3,7 @@ import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
 import type { AgentReadinessContextHealth } from "../lib/agent-readiness/types.js";
 import type { DecisionSource } from "../lib/decision/sources.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
+import { PROMPT_CONTEXT_DRIFT_REPORT_PATHS } from "../lib/prompt-context-drift/index.js";
 import {
 	prCloseoutDecisionMeta,
 	type HarnessNextPrCloseoutEvidence,
@@ -24,8 +25,18 @@ interface PromptContextDriftDecisionArgs {
 }
 
 const TRUSTED_PROMPT_CONTEXT_REFRESH_COMMANDS = new Set([
-	"node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .",
+	"harness prompt-context-drift:write",
+	"harness artifact-routine --active-index .harness/active-artifacts.md --json",
+	"harness brain status --json",
+	"harness runtime-card --json --repo . --out artifacts/runtime-card.json",
 ]);
+const WRITING_PROMPT_CONTEXT_REFRESH_COMMANDS = new Set([
+	"harness prompt-context-drift:write",
+	"harness runtime-card --json --repo . --out artifacts/runtime-card.json",
+]);
+const TRUSTED_PROMPT_CONTEXT_REPORT_PATHS: ReadonlySet<string> = new Set(
+	PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
+);
 
 function promptContextDriftRefreshCommand(
 	contextHealth: AgentReadinessContextHealth | undefined,
@@ -47,7 +58,94 @@ function promptContextDriftRefreshCommand(
 }
 
 function isTrustedRefreshCommand(command: string): boolean {
-	return TRUSTED_PROMPT_CONTEXT_REFRESH_COMMANDS.has(command.trim());
+	const normalized = command.trim();
+	if (TRUSTED_PROMPT_CONTEXT_REFRESH_COMMANDS.has(normalized)) return true;
+	const cleanup = normalized.match(/^rm (\S+)$/u);
+	if (
+		cleanup?.[1] !== undefined &&
+		cleanup[1] !== PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0] &&
+		TRUSTED_PROMPT_CONTEXT_REPORT_PATHS.has(cleanup[1])
+	) {
+		return true;
+	}
+	const alternate = normalized.match(
+		/^harness prompt-context-drift:write --output (\S+)$/u,
+	);
+	return (
+		alternate?.[1] !== undefined &&
+		TRUSTED_PROMPT_CONTEXT_REPORT_PATHS.has(alternate[1])
+	);
+}
+
+function refreshCommandWritesFiles(command: string): boolean {
+	const normalized = command.trim();
+	if (WRITING_PROMPT_CONTEXT_REFRESH_COMMANDS.has(normalized)) return true;
+	if (normalized.match(/^rm (\S+)$/u)) return true;
+	return Boolean(
+		normalized.match(/^harness prompt-context-drift:write --output (\S+)$/u),
+	);
+}
+
+function validateCommandForEvidence(
+	evidenceRefs: readonly string[],
+	refreshCommand: string,
+): string {
+	return `harness prompt-context-drift:validate ${reportPathForEvidence(evidenceRefs, refreshCommand)}`;
+}
+
+function reportPathForEvidence(
+	evidenceRefs: readonly string[],
+	refreshCommand: string,
+): string {
+	const cleanupPath = refreshCommand.match(/^rm (\S+)$/u)?.[1];
+	const reportPath = evidenceRefs.find(
+		(ref) =>
+			TRUSTED_PROMPT_CONTEXT_REPORT_PATHS.has(ref) && ref !== cleanupPath,
+	);
+	return reportPath ?? PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0];
+}
+
+function writeCommandForEvidence(
+	evidenceRefs: readonly string[],
+	refreshCommand: string,
+): string {
+	const reportPath = reportPathForEvidence(evidenceRefs, refreshCommand);
+	return reportPath === PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0]
+		? "harness prompt-context-drift:write"
+		: `harness prompt-context-drift:write --output ${reportPath}`;
+}
+
+function refreshCommandWritesPromptContextReport(command: string): boolean {
+	const normalized = command.trim();
+	if (normalized === "harness prompt-context-drift:write") return true;
+	return Boolean(
+		normalized.match(/^harness prompt-context-drift:write --output (\S+)$/u),
+	);
+}
+
+function refreshCommandDeletesPromptContextReport(command: string): boolean {
+	return Boolean(command.trim().match(/^rm (\S+)$/u));
+}
+
+function followUpCommandsForEvidence(
+	evidenceRefs: readonly string[],
+	refreshCommand: string,
+): string[] {
+	const validationCommand = validateCommandForEvidence(
+		evidenceRefs,
+		refreshCommand,
+	);
+	if (
+		refreshCommandWritesPromptContextReport(refreshCommand) ||
+		refreshCommandDeletesPromptContextReport(refreshCommand)
+	) {
+		return [validationCommand, "harness check --json"];
+	}
+	return [
+		writeCommandForEvidence(evidenceRefs, refreshCommand),
+		validationCommand,
+		"harness check --json",
+	];
 }
 
 /** Build a next-step decision when prompt-context drift should block clean-worktree handoff. */
@@ -61,6 +159,7 @@ export function promptContextDriftDecision(
 
 	const sourceRef = args.filesSource === "git" ? "git:status" : "input:files";
 	const trustedCommand = isTrustedRefreshCommand(promptContextRefresh.command);
+	const writesFiles = refreshCommandWritesFiles(promptContextRefresh.command);
 	return createNextDecision({
 		status: "action_required",
 		summary:
@@ -76,12 +175,15 @@ export function promptContextDriftDecision(
 			"Stop if prompt-context drift validation still reports stale or invalid context.",
 		],
 		humanEscalation: null,
-		followUpCommands: ["harness check --json"],
+		followUpCommands: followUpCommandsForEvidence(
+			promptContextRefresh.evidenceRef,
+			promptContextRefresh.command,
+		),
 		hiddenPlumbing: ["git:status", "prompt_context_drift", "check"],
 		safeToRun: trustedCommand,
 		requiresHuman: !trustedCommand,
 		requiresNetwork: false,
-		writesFiles: false,
+		writesFiles,
 		evidenceRef: [sourceRef, ...promptContextRefresh.evidenceRef],
 		failureClass: null,
 		retry: "safe",
@@ -95,6 +197,7 @@ export function promptContextDriftDecision(
 			delayClass: "normal",
 			phaseExit: args.phaseExit,
 			runtimeCard: args.runtimeCard,
+			writesFiles,
 			extra: prCloseoutDecisionMeta(args.prCloseout),
 			agentReadinessContext: args.agentReadinessContext,
 			sourceErrors: args.sourceErrors,

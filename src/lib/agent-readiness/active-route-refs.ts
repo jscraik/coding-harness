@@ -123,12 +123,14 @@ const REPO_ROOT_PREFIXES = [
 	"README.md",
 	"artifacts/",
 	"codestyle/",
+	"contracts/",
 	"docs/",
 	"goal-governor-output.yaml",
 	"harness.contract.json",
 	"package.json",
 	"scripts/",
 	"src/",
+	"templates/",
 ] as const;
 
 function activeRouteBaseDirs(
@@ -172,20 +174,30 @@ function extractRepoRelativeBacktickPaths(markdown: string): string[] {
 
 function normalizeRepoRelativePathToken(token: string): string | undefined {
 	const value = token.trim();
-	if (value.length === 0) return undefined;
-	if (value.startsWith("/") || value.startsWith("~")) return undefined;
-	if (value.includes("://") || value.includes("\\")) return undefined;
-	if (/[;&|$<>]/.test(value)) return undefined;
+	if (isUnsafeRepoPathToken(value)) return undefined;
 
 	const normalized = value.startsWith("./") ? value.slice(2) : value;
-	if (normalized.length === 0 || normalized === ".") return undefined;
-	if (normalized.split("/").includes("..")) return undefined;
-	if (!normalized.includes("/") && !/\.[a-z0-9]+$/i.test(normalized)) {
-		return undefined;
-	}
-	return normalized;
+	return isRepoRelativePathLike(normalized) ? normalized : undefined;
 }
 
-function uniqueStrings(values: string[]): string[] {
+function isUnsafeRepoPathToken(value: string): boolean {
+	return (
+		value.length === 0 ||
+		value.startsWith("/") ||
+		value.startsWith("~") ||
+		value.includes("://") ||
+		value.includes("\\") ||
+		/[;&|$<>]/.test(value)
+	);
+}
+
+function isRepoRelativePathLike(value: string): boolean {
+	if (value.length === 0 || value === ".") return false;
+	if (value.split("/").includes("..")) return false;
+	return value.includes("/") || /\.[a-z0-9]+$/i.test(value);
+}
+
+/** Return unique string values while preserving first-seen order. */
+export function uniqueStrings(values: string[]): string[] {
 	return [...new Set(values)];
 }

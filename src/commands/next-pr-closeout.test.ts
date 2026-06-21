@@ -8,6 +8,7 @@ import {
 	type PrCloseoutClaim,
 	type PrCloseoutReport,
 } from "../lib/pr-closeout.js";
+import { passingAgentReadinessContext } from "../lib/agent-readiness/test-fixtures.js";
 import { HARNESS_CLOSEOUT_GATE_IDS } from "../lib/decision/he-phase-exit.js";
 import { validateHarnessDecision } from "../lib/decision/harness-decision.js";
 import type { HarnessAssuranceEntry } from "../lib/harness-assurance.js";
@@ -343,6 +344,7 @@ describe("harness next pr-closeout evidence", () => {
 			const { exitCode, output } = captureNextCLI(["--json"], {
 				repoRoot,
 				inspectChangedFiles: () => [],
+				agentReadinessContext: passingAgentReadinessContext(),
 			});
 
 			expect(exitCode).toBe(1);
@@ -363,6 +365,7 @@ describe("harness next pr-closeout evidence", () => {
 			const { exitCode, output } = captureNextCLI(["--json"], {
 				repoRoot,
 				inspectChangedFiles: () => [],
+				agentReadinessContext: passingAgentReadinessContext(),
 			});
 
 			expect(exitCode).toBe(0);
@@ -404,6 +407,7 @@ describe("harness next pr-closeout evidence", () => {
 				{
 					repoRoot,
 					inspectChangedFiles: () => [],
+					agentReadinessContext: passingAgentReadinessContext(),
 				},
 			);
 
@@ -514,6 +518,7 @@ describe("harness next pr-closeout evidence", () => {
 				{
 					repoRoot,
 					inspectChangedFiles: () => [],
+					agentReadinessContext: passingAgentReadinessContext(),
 				},
 			);
 
