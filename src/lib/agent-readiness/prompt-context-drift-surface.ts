@@ -7,9 +7,9 @@ import {
 	validatePromptContextDriftReport,
 } from "../prompt-context-drift/index.js";
 import {
-	promptContextDriftReportEvidence,
-	readPromptContextDriftReport,
-} from "./prompt-context-drift-report-reader.js";
+	jsonArtifactEvidence,
+	readJsonArtifact,
+} from "./safe-json-artifact-reader.js";
 import type {
 	AgentReadinessContextSurface,
 	AgentReadinessStatus,
@@ -33,7 +33,10 @@ const CANONICAL_REPORT = PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0];
 export function promptContextDriftSurface(
 	repoRoot: string,
 ): AgentReadinessContextSurface {
-	const reportEvidence = promptContextDriftReportEvidence(repoRoot);
+	const reportEvidence = jsonArtifactEvidence(
+		repoRoot,
+		PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
+	);
 	if (reportEvidence.length === 0) {
 		return contextSurface({
 			status: "warn",
@@ -54,7 +57,11 @@ export function promptContextDriftSurface(
 		});
 	}
 	const reportStatus = promptContextDriftReportStatus(
-		readPromptContextDriftReport(repoRoot, reportEvidence[0] ?? ""),
+		readJsonArtifact(
+			repoRoot,
+			reportEvidence[0] ?? "",
+			PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
+		),
 		repoRoot,
 		reportEvidence[0] ?? "",
 	);
