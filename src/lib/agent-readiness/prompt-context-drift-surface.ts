@@ -53,7 +53,10 @@ export function promptContextDriftSurface(
 			staleReasons: [
 				"Multiple prompt-context-drift reports were discovered; keep a single canonical artifacts/context-integrity/prompt-context-drift-report.json report before using this surface.",
 			],
-			suggestedRefreshCommands: duplicateReportCleanupCommands(reportEvidence),
+			suggestedRefreshCommands: duplicateReportCleanupCommands(
+				repoRoot,
+				reportEvidence,
+			),
 		});
 	}
 	const reportStatus = promptContextDriftReportStatus(
@@ -82,11 +85,17 @@ function refreshCommandsFor(reportPath: string): string[] {
 }
 
 function duplicateReportCleanupCommands(
+	repoRoot: string,
 	reportPaths: readonly string[],
 ): string[] {
-	const survivor = reportPaths.includes(CANONICAL_REPORT)
-		? CANONICAL_REPORT
-		: reportPaths.at(-1);
+	const canonicalIsReadable =
+		reportPaths.includes(CANONICAL_REPORT) &&
+		readJsonArtifact(
+			repoRoot,
+			CANONICAL_REPORT,
+			PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
+		).length > 0;
+	const survivor = canonicalIsReadable ? CANONICAL_REPORT : reportPaths.at(-1);
 	return reportPaths
 		.filter((reportPath) => reportPath !== survivor)
 		.map((reportPath) => `rm ${reportPath}`);

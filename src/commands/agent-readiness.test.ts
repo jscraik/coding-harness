@@ -492,11 +492,7 @@ describe("agent-readiness command", () => {
 		expect(promptContextSurface).toMatchObject({
 			status: "warn",
 			evidence: [canonical, alternate],
-			staleReasons: [
-				expect.stringContaining(
-					"Multiple prompt-context-drift reports were discovered",
-				),
-			],
+			suggestedRefreshCommands: [`rm ${canonical}`],
 		});
 	});
 
