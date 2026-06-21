@@ -97,7 +97,27 @@ function readPromptContextDriftReport(
 ): string {
 	const resolved = safeReportPath(repoRoot, reportPath);
 	if (resolved === null) return "";
-	return readText(repoRoot, reportPath);
+	const text = readKnownReportText(repoRoot, reportPath);
+	return safeReportPath(repoRoot, reportPath) === resolved ? text : "";
+}
+
+function readKnownReportText(repoRoot: string, reportPath: string): string {
+	switch (reportPath) {
+		case "artifacts/context-integrity/prompt-context-drift-report.json":
+			return readText(
+				repoRoot,
+				"artifacts/context-integrity/prompt-context-drift-report.json",
+			);
+		case "artifacts/prompt-context-drift-report.json":
+			return readText(repoRoot, "artifacts/prompt-context-drift-report.json");
+		case ".harness/runtime/prompt-context-drift-report.json":
+			return readText(
+				repoRoot,
+				".harness/runtime/prompt-context-drift-report.json",
+			);
+		default:
+			return "";
+	}
 }
 
 function safeReportPath(repoRoot: string, reportPath: string): string | null {

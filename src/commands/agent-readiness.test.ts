@@ -910,18 +910,52 @@ describe("agent-readiness command", () => {
 	});
 });
 
+// Shared by ready fixture writes and prompt-context drift digest expectations.
+const READY_REPO_SOURCE_TEXT = {
+	"AGENTS.md": [
+		"# Agent Instructions",
+		"PR bodies require a session or traceability reference.",
+		"Use task-specific docs and codestyle before edits.",
+	].join("\n"),
+	".harness/active-artifacts.md": [
+		"# Active",
+		"",
+		"## Current Active Route",
+		"",
+		"| Work | Refs |",
+		"|---|---|",
+		"| Ready | `.harness/plan/ready.md`; `.harness/specs/ready.md` |",
+		"",
+		"## Artifact Index",
+	].join("\n"),
+	".harness/plan/ready.md": "# Ready Plan\n",
+	".harness/memory/LEARNINGS.md": "# Learnings\n",
+	".harness/knowledge/INDEX.md": "# Knowledge\n",
+	".harness/runtime/runtime-card.json": "{}\n",
+	"harness.contract.json": JSON.stringify({
+		contextIntegrityPolicy: { mode: "advisory" },
+		toolingPolicy: {
+			sharedStateActions: [
+				{ name: "stage", authority: "user_or_explicit_request" },
+				{ name: "commit", authority: "user_or_explicit_request" },
+				{ name: "push", authority: "user_or_explicit_request" },
+				{ name: "merge", authority: "pull_request_policy" },
+				{ name: "deploy", authority: "release_policy" },
+				{
+					name: "external_mutation",
+					authority: "explicit_credentialed_request",
+				},
+			],
+		},
+	}),
+} as const;
+
+type ReadyRepoSourcePath = keyof typeof READY_REPO_SOURCE_TEXT;
+
 function makeAgentReadyRepo(tempDirs: string[]): string {
 	const repoRoot = mkdtempSync(join(tmpdir(), "agent-readiness-ready-"));
 	tempDirs.push(repoRoot);
-	writeRepoFile(
-		repoRoot,
-		"AGENTS.md",
-		[
-			"# Agent Instructions",
-			"PR bodies require a session or traceability reference.",
-			"Use task-specific docs and codestyle before edits.",
-		].join("\n"),
-	);
+	writeRepoFile(repoRoot, "AGENTS.md", readyRepoSourceText("AGENTS.md"));
 	writeRepoFile(repoRoot, "CODESTYLE.md", "# Codestyle\n");
 	writeRepoFile(repoRoot, "codestyle/README.md", "# Codestyle Map\n");
 	writeRepoFile(
@@ -941,45 +975,36 @@ function makeAgentReadyRepo(tempDirs: string[]): string {
 	writeRepoFile(
 		repoRoot,
 		".harness/active-artifacts.md",
-		[
-			"# Active",
-			"",
-			"## Current Active Route",
-			"",
-			"| Work | Refs |",
-			"|---|---|",
-			"| Ready | `.harness/plan/ready.md`; `.harness/specs/ready.md` |",
-			"",
-			"## Artifact Index",
-		].join("\n"),
+		readyRepoSourceText(".harness/active-artifacts.md"),
 	);
 	mkdirSync(join(repoRoot, ".harness/plan"), { recursive: true });
-	writeRepoFile(repoRoot, ".harness/plan/ready.md", "# Ready Plan\n");
+	writeRepoFile(
+		repoRoot,
+		".harness/plan/ready.md",
+		readyRepoSourceText(".harness/plan/ready.md"),
+	);
 	writeRepoFile(repoRoot, ".harness/specs/ready.md", "# Ready Spec\n");
-	writeRepoFile(repoRoot, ".harness/memory/LEARNINGS.md", "# Learnings\n");
-	writeRepoFile(repoRoot, ".harness/knowledge/INDEX.md", "# Knowledge\n");
-	writeRepoFile(repoRoot, ".harness/runtime/runtime-card.json", "{}\n");
+	writeRepoFile(
+		repoRoot,
+		".harness/memory/LEARNINGS.md",
+		readyRepoSourceText(".harness/memory/LEARNINGS.md"),
+	);
+	writeRepoFile(
+		repoRoot,
+		".harness/knowledge/INDEX.md",
+		readyRepoSourceText(".harness/knowledge/INDEX.md"),
+	);
+	writeRepoFile(
+		repoRoot,
+		".harness/runtime/runtime-card.json",
+		readyRepoSourceText(".harness/runtime/runtime-card.json"),
+	);
 	writeRepoFile(repoRoot, "artifacts/external-state-snapshot.json", "{}\n");
 	writeRepoFile(repoRoot, "src/commands/context-health.ts", "export {};\n");
 	writeRepoFile(
 		repoRoot,
 		"harness.contract.json",
-		JSON.stringify({
-			contextIntegrityPolicy: { mode: "advisory" },
-			toolingPolicy: {
-				sharedStateActions: [
-					{ name: "stage", authority: "user_or_explicit_request" },
-					{ name: "commit", authority: "user_or_explicit_request" },
-					{ name: "push", authority: "user_or_explicit_request" },
-					{ name: "merge", authority: "pull_request_policy" },
-					{ name: "deploy", authority: "release_policy" },
-					{
-						name: "external_mutation",
-						authority: "explicit_credentialed_request",
-					},
-				],
-			},
-		}),
+		readyRepoSourceText("harness.contract.json"),
 	);
 	writeRepoFile(
 		repoRoot,
@@ -1111,53 +1136,12 @@ function sha256Text(text: string): string {
 }
 
 function readyRepoSourceText(path: string): string {
-	switch (path) {
-		case "AGENTS.md":
-			return [
-				"# Agent Instructions",
-				"PR bodies require a session or traceability reference.",
-				"Use task-specific docs and codestyle before edits.",
-			].join("\n");
-		case ".harness/active-artifacts.md":
-			return [
-				"# Active",
-				"",
-				"## Current Active Route",
-				"",
-				"| Work | Refs |",
-				"|---|---|",
-				"| Ready | `.harness/plan/ready.md`; `.harness/specs/ready.md` |",
-				"",
-				"## Artifact Index",
-			].join("\n");
-		case ".harness/plan/ready.md":
-			return "# Ready Plan\n";
-		case ".harness/memory/LEARNINGS.md":
-			return "# Learnings\n";
-		case ".harness/knowledge/INDEX.md":
-			return "# Knowledge\n";
-		case ".harness/runtime/runtime-card.json":
-			return "{}\n";
-		case "harness.contract.json":
-			return JSON.stringify({
-				contextIntegrityPolicy: { mode: "advisory" },
-				toolingPolicy: {
-					sharedStateActions: [
-						{ name: "stage", authority: "user_or_explicit_request" },
-						{ name: "commit", authority: "user_or_explicit_request" },
-						{ name: "push", authority: "user_or_explicit_request" },
-						{ name: "merge", authority: "pull_request_policy" },
-						{ name: "deploy", authority: "release_policy" },
-						{
-							name: "external_mutation",
-							authority: "explicit_credentialed_request",
-						},
-					],
-				},
-			});
-		default:
-			throw new Error(`unexpected ready repo source ref: ${path}`);
-	}
+	if (isReadyRepoSourcePath(path)) return READY_REPO_SOURCE_TEXT[path];
+	throw new Error(`unexpected ready repo source ref: ${path}`);
+}
+
+function isReadyRepoSourcePath(path: string): path is ReadyRepoSourcePath {
+	return Object.hasOwn(READY_REPO_SOURCE_TEXT, path);
 }
 
 function writeRepoFile(repoRoot: string, path: string, content: string): void {
