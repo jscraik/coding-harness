@@ -28,6 +28,21 @@ if (!outputPath || !tempOutputPath || !repoRoot || !relativeOutputPath) {
 
 const report = buildPromptContextDriftReport({ repoRoot });
 const validation = validatePromptContextDriftReport(report, { repoRoot });
+if (validation.status !== "pass") {
+	console.log(
+		JSON.stringify(
+			{
+				schemaVersion: "prompt-context-drift-write/v1",
+				status: validation.status,
+				outputPath: null,
+				errors: validation.errors,
+			},
+			null,
+			2,
+		),
+	);
+	process.exit(1);
+}
 
 try {
 	rmSync(tempOutputPath, { force: true });

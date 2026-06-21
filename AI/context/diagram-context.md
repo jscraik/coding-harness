@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-21T00:52:13Z
+Generated: 2026-06-21T01:23:38Z
 
 ## Table of Contents
 
@@ -959,6 +959,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_pr_closeout_0ac07306_e8d9c77f
   ext_node_child_process_f62b7d19["node:child_process"] --> node_pr_closeout_env_9bfcd9ef_f476024a
   ext_node_child_process_f62b7d19["node:child_process"] --> node_prompt_context_drift_builder_a451c7dd_702c1ffe
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_prompt_context_drift_validate_runner_c8ecc6f5_48948688
   ext_node_child_process_f62b7d19["node:child_process"] --> node_remediate_git_58c6f6f4_3c7e755f
   ext_node_child_process_f62b7d19["node:child_process"] --> node_repository_identity_9dc13d37_eaffcd1e
   ext_node_child_process_f62b7d19["node:child_process"] --> node_run_e2e_39efe696_fb07ee74
@@ -1182,7 +1183,6 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_preset_source_loaders_a8cd7c1c_01f5a3a0
   ext_node_fs_a15b7d96["node:fs"] --> node_prompt_context_drift_builder_a451c7dd_702c1ffe
   ext_node_fs_a15b7d96["node:fs"] --> node_prompt_context_drift_report_3257a95c_01f8c3e1
-  ext_node_fs_a15b7d96["node:fs"] --> node_prompt_context_drift_validate_runner_c8ecc6f5_48948688
   ext_node_fs_a15b7d96["node:fs"] --> node_prompt_context_drift_write_runner_69e6a4fd_5b8d8b6e
   ext_node_fs_a15b7d96["node:fs"] --> node_provider_adapter_3bcf82b7_3ce4cf67
   ext_node_fs_a15b7d96["node:fs"] --> node_quality_scorer_362f2a90_2a086a0b

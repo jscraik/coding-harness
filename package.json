@@ -8,6 +8,7 @@
 		"contracts/browser-evidence.schema.json",
 		"scripts/write-fitness-gate-artifact.mjs",
 		"scripts/write-prompt-context-drift-report.cjs",
+		"scripts/validate-prompt-context-drift.cjs",
 		"scripts/codex-preflight.sh",
 		"scripts/codex-preflight-local-memory-legacy.sh",
 		"scripts/verify-work.sh",
