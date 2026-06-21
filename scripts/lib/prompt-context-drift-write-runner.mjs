@@ -16,7 +16,7 @@ if (!outputPath || !tempOutputPath || !repoRoot || !relativeOutputPath) {
 			{
 				schemaVersion: "prompt-context-drift-write/v1",
 				status: "fail",
-				outputPath: relativeOutputPath ?? null,
+				outputPath: null,
 				errors: ["runner: missing required environment"],
 			},
 			null,

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import {
+	mkdirSync,
 	mkdtempSync,
 	readFileSync,
 	rmSync,
@@ -7,7 +8,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 import type {
 	PromptContextDriftRef,
@@ -120,6 +121,12 @@ function tempRoot(): string {
 	return mkdtempSync(join(tmpdir(), "prompt-context-drift-"));
 }
 
+function writeRepoFile(repoRoot: string, path: string, content: string): void {
+	const fullPath = [repoRoot, ...path.split("/")].join(sep);
+	mkdirSync(dirname(fullPath), { recursive: true });
+	writeFileSync(fullPath, content);
+}
+
 function schemaEnum(
 	container: Record<string, { enum?: unknown[] }>,
 	key: string,
@@ -185,6 +192,68 @@ describe("validatePromptContextDriftReport", () => {
 				status: "pass",
 				errors: [],
 			});
+		} finally {
+			process.chdir(previousCwd);
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("resolves active-route refs from active-artifacts", () => {
+		const repoRoot = tempRoot();
+		const previousCwd = process.cwd();
+		try {
+			writeFileSync(join(repoRoot, "AGENTS.md"), "# Agents\n");
+			writeRepoFile(
+				repoRoot,
+				".harness/active-artifacts.md",
+				[
+					"# Active Artifacts",
+					"",
+					"## Current Active Route",
+					"| Status | Artifact | Notes |",
+					"| --- | --- | --- |",
+					"| Current | `.harness/specs/current-route.json`; `ready.md` | Current active route |",
+				].join("\n"),
+			);
+			writeRepoFile(repoRoot, ".harness/specs/current-route.json", "{}\n");
+			writeRepoFile(repoRoot, ".harness/specs/ready.md", "# Ready\n");
+			process.chdir(repoRoot);
+
+			const report = buildPromptContextDriftReport({ repoRoot: "." });
+			const activeRouteSurface = report.surfaces.find(
+				(surface) => surface.surfaceId === "active_route",
+			);
+
+			expect(
+				activeRouteSurface?.sourceRefs.map((sourceRef) => sourceRef.ref),
+			).toEqual([
+				".harness/specs/current-route.json",
+				".harness/specs/ready.md",
+			]);
+			expect(activeRouteSurface?.status).toBe("pass");
+		} finally {
+			process.chdir(previousCwd);
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("accepts alternate runtime-card locations", () => {
+		const repoRoot = tempRoot();
+		const previousCwd = process.cwd();
+		try {
+			writeFileSync(join(repoRoot, "AGENTS.md"), "# Agents\n");
+			writeRepoFile(repoRoot, ".harness/runtime/runtime-card.json", "{}\n");
+			process.chdir(repoRoot);
+
+			const report = buildPromptContextDriftReport({ repoRoot: "." });
+			const runtimeSurface = report.surfaces.find(
+				(surface) => surface.surfaceId === "runtime_card_or_handoff",
+			);
+
+			expect(runtimeSurface?.sourceRefs[0]?.ref).toBe(
+				".harness/runtime/runtime-card.json",
+			);
+			expect(runtimeSurface?.status).toBe("pass");
 		} finally {
 			process.chdir(previousCwd);
 			rmSync(repoRoot, { recursive: true, force: true });
@@ -512,7 +581,7 @@ describe("validatePromptContextDriftReport", () => {
 			...exampleReport(),
 			overallStatus: "ready",
 			rawTranscript: "raw transcript",
-			nextAction: "token=sk-1234567890abcdef1234567890abcdef",
+			nextAction: "token=redacted-secret-like-value",
 		};
 
 		const result = validatePromptContextDriftReport(report, { repoRoot: "." });

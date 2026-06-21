@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { readFileSync, realpathSync, statSync } from "node:fs";
-import { isAbsolute, relative, resolve } from "node:path";
+import { realpathSync } from "node:fs";
+import { isAbsolute, relative, resolve, sep } from "node:path";
+import { assessActiveRouteRefs } from "../agent-readiness/active-route-refs.js";
 import {
 	PROMPT_CONTEXT_DRIFT_REPORT_SCHEMA_VERSION,
 	type PromptContextDriftBlocker,
@@ -23,6 +24,15 @@ export interface PromptContextDriftReportBuildOptions {
 
 const HEAD_SHA = /^[0-9a-f]{40}$/u;
 
+const ACTIVE_ARTIFACTS_PATH = ".harness/active-artifacts.md";
+const RUNTIME_CARD_REFS = [
+	".harness/runtime/runtime-card.json",
+	".harness/runtime-card.json",
+	"artifacts/runtime-card.json",
+	"artifacts/runtime/runtime-card.json",
+	"artifacts/runtime-cards/runtime-card.json",
+] as const;
+
 const DEFAULT_PROMPT_CONTEXT_DRIFT_REFS = [
 	{
 		surfaceId: "prompt_context",
@@ -34,7 +44,7 @@ const DEFAULT_PROMPT_CONTEXT_DRIFT_REFS = [
 	{
 		surfaceId: "active_artifacts",
 		refId: "orientation:active_artifacts",
-		ref: ".harness/active-artifacts.md",
+		ref: ACTIVE_ARTIFACTS_PATH,
 		missingBlockerClass: "stale_active_route",
 		nextActionClass: "refresh_active_artifacts",
 	},
@@ -119,7 +129,11 @@ export function buildPromptContextDriftReport(
 
 function resolveRepoRoot(requestedRepoRoot: string | undefined): string {
 	const base = realpathSync(resolve(process.cwd()));
-	const target = realpathSync(resolve(base, requestedRepoRoot ?? "."));
+	const requested = requestedRepoRoot ?? ".";
+	const targetCandidate = isAbsolute(requested)
+		? requested
+		: repoAbsolutePath(base, normalizeRepoRelativePath(requested) ?? ".");
+	const target = realpathSync(targetCandidate);
 	const containment = relative(base, target);
 	if (containment.startsWith("..") || isAbsolute(containment)) {
 		throw new Error("repoRoot must stay inside the current working directory");
@@ -133,14 +147,30 @@ function buildPromptContextDriftSurface(input: {
 	currentHeadSha: string | null;
 	evidenceUse: PromptContextDriftEvidenceUse;
 }): PromptContextDriftSurface {
-	const digest = repoFileSha256(input.repoRoot, input.entry.ref);
-	const present = digest !== null;
+	const refs = sourceRefsForEntry(input.entry, input.repoRoot);
+	const sourceRefs = refs.map((ref) => {
+		const digest = repoFileSha256(input.repoRoot, ref);
+		return {
+			refId: `${input.entry.refId}:${ref}`,
+			surfaceId: input.entry.surfaceId,
+			refKind: "repo_file" as const,
+			ref,
+			hashAlgorithm: digest === null ? null : ("sha256" as const),
+			sha256: digest,
+			freshness: digest === null ? ("missing" as const) : ("current" as const),
+			evidenceUse: input.evidenceUse,
+			requiredForClaimSupport: input.evidenceUse === "claim_support",
+			requiresFilesystemExistence: digest !== null,
+		};
+	});
+	const present =
+		sourceRefs.length > 0 && sourceRefs.every((ref) => ref.sha256 !== null);
 	const blockers: PromptContextDriftBlocker[] = present
 		? []
 		: [
 				{
 					blockerClass: input.entry.missingBlockerClass,
-					reason: `${input.entry.ref} is missing or unreadable.`,
+					reason: `${input.entry.ref} evidence is missing or unreadable.`,
 					nextActionClass: input.entry.nextActionClass,
 				},
 			];
@@ -152,35 +182,101 @@ function buildPromptContextDriftSurface(input: {
 		requiredForClaimSupport: input.evidenceUse === "claim_support",
 		observedHeadSha: input.currentHeadSha,
 		currentHeadSha: input.currentHeadSha,
-		sourceRefs: [
-			{
-				refId: input.entry.refId,
-				surfaceId: input.entry.surfaceId,
-				refKind: "repo_file",
-				ref: input.entry.ref,
-				hashAlgorithm: present ? "sha256" : null,
-				sha256: digest,
-				freshness: present ? "current" : "missing",
-				evidenceUse: input.evidenceUse,
-				requiredForClaimSupport: input.evidenceUse === "claim_support",
-				requiresFilesystemExistence: present,
-			},
-		],
+		sourceRefs,
 		blockers,
 	};
 }
 
+function sourceRefsForEntry(
+	entry: (typeof DEFAULT_PROMPT_CONTEXT_DRIFT_REFS)[number],
+	repoRoot: string,
+): string[] {
+	if (entry.surfaceId === "active_route") {
+		return activeRouteEvidenceRefs(repoRoot) ?? [entry.ref];
+	}
+	if (entry.surfaceId === "runtime_card_or_handoff") {
+		return [firstExistingRepoRef(repoRoot, RUNTIME_CARD_REFS) ?? entry.ref];
+	}
+	return [entry.ref];
+}
+
+function activeRouteEvidenceRefs(repoRoot: string): string[] | undefined {
+	const activeArtifactsText = repoFileText(repoRoot, ACTIVE_ARTIFACTS_PATH);
+	if (activeArtifactsText.length === 0) return undefined;
+	const assessment = assessActiveRouteRefs({
+		repoRoot,
+		activeArtifactsText,
+		activeArtifactsPath: ACTIVE_ARTIFACTS_PATH,
+	});
+	return assessment.evidenceRefs.length > 0
+		? assessment.evidenceRefs
+		: undefined;
+}
+
+function firstExistingRepoRef(
+	repoRoot: string,
+	candidates: readonly string[],
+): string | undefined {
+	return candidates.find(
+		(candidate) => repoFileSha256(repoRoot, candidate) !== null,
+	);
+}
+
 function repoFileSha256(repoRoot: string, ref: string): string | null {
-	const realRepoRoot = realpathSync(resolve(repoRoot));
-	const resolved = resolve(realRepoRoot, ref);
-	const containment = relative(realRepoRoot, resolved);
-	if (containment.startsWith("..") || isAbsolute(containment)) return null;
+	const repoRelativePath = normalizeRepoRelativePath(ref);
+	if (repoRelativePath === null) return null;
+	const resolved = repoAbsolutePath(repoRoot, repoRelativePath);
 	try {
-		if (!statSync(resolved).isFile()) return null;
-		return createHash("sha256").update(readFileSync(resolved)).digest("hex");
+		const content = repoFileBytes(resolved);
+		return content === null
+			? null
+			: createHash("sha256").update(content).digest("hex");
 	} catch {
 		return null;
 	}
+}
+
+function repoFileText(repoRoot: string, ref: string): string {
+	const repoRelativePath = normalizeRepoRelativePath(ref);
+	if (repoRelativePath === null) return "";
+	const resolved = repoAbsolutePath(repoRoot, repoRelativePath);
+	try {
+		return repoFileBytes(resolved)?.toString("utf8") ?? "";
+	} catch {
+		return "";
+	}
+}
+
+function repoFileBytes(resolvedRepoFilePath: string): Buffer | null {
+	const result = spawnSync("/bin/cat", [resolvedRepoFilePath], {
+		encoding: "buffer",
+		maxBuffer: 1024 * 1024,
+		stdio: ["ignore", "pipe", "ignore"],
+	});
+	return result.status === 0 ? result.stdout : null;
+}
+
+function normalizeRepoRelativePath(value: string): string | null {
+	if (value.trim().length === 0) return null;
+	const normalized = value.replace(/\\/g, "/").replace(/^\.\//, "");
+	if (
+		normalized.length === 0 ||
+		normalized === "." ||
+		normalized.startsWith("/") ||
+		normalized.startsWith("..") ||
+		normalized.includes("/../") ||
+		/[\r\n\0]/u.test(normalized)
+	) {
+		return null;
+	}
+	return normalized;
+}
+
+function repoAbsolutePath(
+	realRepoRoot: string,
+	repoRelativePath: string,
+): string {
+	return [realRepoRoot, ...repoRelativePath.split("/")].join(sep);
 }
 
 function readCurrentHeadSha(repoRoot: string): string | null {
