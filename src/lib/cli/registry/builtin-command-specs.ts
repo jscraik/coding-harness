@@ -40,6 +40,7 @@ export const BUILTIN_COMMAND_SPECS: CommandSpec[] = [
 	},
 ];
 
+/** Create the registry command spec that emits the live command catalog. */
 export function createCommandsCatalogSpec(
 	getSpecs: () => CommandSpec[],
 ): CommandSpec {

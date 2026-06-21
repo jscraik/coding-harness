@@ -26,6 +26,13 @@ interface PromptContextDriftDecisionArgs {
 
 const TRUSTED_PROMPT_CONTEXT_REFRESH_COMMANDS = new Set([
 	"harness prompt-context-drift:write",
+	"harness artifact-routine --active-index .harness/active-artifacts.md --json",
+	"harness brain status --json",
+	"harness runtime-card --json --repo . --out artifacts/runtime-card.json",
+]);
+const WRITING_PROMPT_CONTEXT_REFRESH_COMMANDS = new Set([
+	"harness prompt-context-drift:write",
+	"harness runtime-card --json --repo . --out artifacts/runtime-card.json",
 ]);
 const TRUSTED_PROMPT_CONTEXT_REPORT_PATHS: ReadonlySet<string> = new Set(
 	PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
@@ -70,6 +77,15 @@ function isTrustedRefreshCommand(command: string): boolean {
 	);
 }
 
+function refreshCommandWritesFiles(command: string): boolean {
+	const normalized = command.trim();
+	if (WRITING_PROMPT_CONTEXT_REFRESH_COMMANDS.has(normalized)) return true;
+	if (normalized.match(/^rm (\S+)$/u)) return true;
+	return Boolean(
+		normalized.match(/^harness prompt-context-drift:write --output (\S+)$/u),
+	);
+}
+
 function validateCommandForEvidence(
 	evidenceRefs: readonly string[],
 	refreshCommand: string,
@@ -93,6 +109,7 @@ export function promptContextDriftDecision(
 
 	const sourceRef = args.filesSource === "git" ? "git:status" : "input:files";
 	const trustedCommand = isTrustedRefreshCommand(promptContextRefresh.command);
+	const writesFiles = refreshCommandWritesFiles(promptContextRefresh.command);
 	return createNextDecision({
 		status: "action_required",
 		summary:
@@ -119,7 +136,7 @@ export function promptContextDriftDecision(
 		safeToRun: trustedCommand,
 		requiresHuman: !trustedCommand,
 		requiresNetwork: false,
-		writesFiles: trustedCommand,
+		writesFiles,
 		evidenceRef: [sourceRef, ...promptContextRefresh.evidenceRef],
 		failureClass: null,
 		retry: "safe",
@@ -133,7 +150,7 @@ export function promptContextDriftDecision(
 			delayClass: "normal",
 			phaseExit: args.phaseExit,
 			runtimeCard: args.runtimeCard,
-			writesFiles: trustedCommand,
+			writesFiles,
 			extra: prCloseoutDecisionMeta(args.prCloseout),
 			agentReadinessContext: args.agentReadinessContext,
 			sourceErrors: args.sourceErrors,

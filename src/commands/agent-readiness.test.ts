@@ -13,6 +13,10 @@ import { dirname, isAbsolute, join, relative, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { findScopedInstructionFiles } from "../lib/agent-readiness/repo-evidence.js";
+import type {
+	PromptContextDriftBlocker,
+	PromptContextDriftReport,
+} from "../lib/prompt-context-drift/index.js";
 
 import {
 	assessAgentReadiness,
@@ -347,6 +351,64 @@ describe("agent-readiness command", () => {
 			status: "warn",
 			staleReasons: [
 				"Prompt-context-drift report is not pass for orientation.",
+			],
+		});
+	});
+
+	it("routes prompt-context drift blockers to their repair lane", () => {
+		const repoRoot = makeAgentReadyRepo(tempDirs);
+		const blocker: PromptContextDriftBlocker = {
+			blockerClass: "stale_runtime_card",
+			reason: "No local runtime-card artifact was discovered.",
+			nextActionClass: "refresh_runtime_card",
+		};
+		const driftReport = promptContextDriftReportForReadyRepo(repoRoot);
+		driftReport.evidenceUse = "orientation";
+		driftReport.overallStatus = "warn";
+		driftReport.blockers = [blocker];
+		driftReport.surfaces = driftReport.surfaces.map((surface) =>
+			surface.surfaceId === "runtime_card_or_handoff"
+				? {
+						...surface,
+						status: "warn",
+						evidenceUse: "orientation",
+						requiredForClaimSupport: false,
+						blockers: [blocker],
+						sourceRefs: surface.sourceRefs.map((sourceRef) => ({
+							...sourceRef,
+							evidenceUse: "orientation",
+							requiredForClaimSupport: false,
+						})),
+					}
+				: {
+						...surface,
+						evidenceUse: "orientation",
+						requiredForClaimSupport: false,
+						sourceRefs: surface.sourceRefs.map((sourceRef) => ({
+							...sourceRef,
+							evidenceUse: "orientation",
+							requiredForClaimSupport: false,
+						})),
+					},
+		);
+		writeRepoFile(
+			repoRoot,
+			"artifacts/context-integrity/prompt-context-drift-report.json",
+			JSON.stringify(driftReport),
+		);
+
+		const report = assessAgentReadiness({
+			repoRoot,
+			now: new Date("2026-05-26T12:00:00.000Z"),
+		});
+		const promptContextSurface = report.contextHealth.surfaces.find(
+			(surface) => surface.id === "prompt_context_drift",
+		);
+
+		expect(promptContextSurface).toMatchObject({
+			status: "warn",
+			suggestedRefreshCommands: [
+				"harness runtime-card --json --repo . --out artifacts/runtime-card.json",
 			],
 		});
 	});
@@ -973,7 +1035,9 @@ function makeAgentReadyRepo(tempDirs: string[]): string {
 	return repoRoot;
 }
 
-function promptContextDriftReportForReadyRepo(repoRoot: string) {
+function promptContextDriftReportForReadyRepo(
+	repoRoot: string,
+): PromptContextDriftReport {
 	const currentHeadSha = readGitHead(repoRoot);
 	const surfaces = [
 		["prompt_context", "AGENTS.md"],

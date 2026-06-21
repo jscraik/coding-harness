@@ -8,6 +8,8 @@ const ALTERNATE_PROMPT_CONTEXT_DRIFT_COMMAND =
 	"harness prompt-context-drift:write --output .harness/runtime/prompt-context-drift-report.json";
 const DUPLICATE_PROMPT_CONTEXT_DRIFT_CLEANUP_COMMAND =
 	"rm artifacts/prompt-context-drift-report.json";
+const RUNTIME_CARD_REFRESH_COMMAND =
+	"harness runtime-card --json --repo . --out artifacts/runtime-card.json";
 
 function promptContextDriftWarnContext(): AgentReadinessContextHealth {
 	return {
@@ -123,6 +125,27 @@ function promptContextDriftDuplicateWithoutCanonicalContext(): AgentReadinessCon
 			},
 		],
 		suggestedRefreshCommands: [DUPLICATE_PROMPT_CONTEXT_DRIFT_CLEANUP_COMMAND],
+	};
+}
+
+function promptContextDriftRuntimeCardBlockerContext(): AgentReadinessContextHealth {
+	return {
+		...promptContextDriftWarnContext(),
+		surfaces: [
+			{
+				id: "prompt_context_drift",
+				status: "warn",
+				evidenceUse: "orientation",
+				evidence: [
+					"artifacts/context-integrity/prompt-context-drift-report.json",
+				],
+				staleReasons: [
+					"Prompt-context-drift report is not pass for orientation.",
+				],
+				suggestedRefreshCommands: [RUNTIME_CARD_REFRESH_COMMAND],
+			},
+		],
+		suggestedRefreshCommands: [RUNTIME_CARD_REFRESH_COMMAND],
 	};
 }
 
@@ -244,5 +267,31 @@ describe("harness next agent-facing parity", () => {
 			"harness prompt-context-drift:validate .harness/runtime/prompt-context-drift-report.json",
 			"harness check --json",
 		]);
+	});
+
+	it("routes prompt-context drift report blockers to their repair command", () => {
+		const decision = runHarnessNext({
+			inspectChangedFiles: () => [],
+			repoRoot: "/tmp/repo",
+			agentReadinessContext: promptContextDriftRuntimeCardBlockerContext(),
+		});
+
+		expect(decision.status).toBe("action_required");
+		expect(decision.nextCommand).toBe(RUNTIME_CARD_REFRESH_COMMAND);
+		expect(decision.safeToRun).toBe(true);
+		expect(decision.requiresHuman).toBe(false);
+		expect(decision.writesFiles).toBe(true);
+		expect(decision.followUpCommands).toEqual([
+			"harness prompt-context-drift:validate artifacts/context-integrity/prompt-context-drift-report.json",
+			"harness check --json",
+		]);
+		expect(decision.meta).toMatchObject({
+			execution: {
+				permissionPlan: {
+					commands: [RUNTIME_CARD_REFRESH_COMMAND],
+					writesFiles: true,
+				},
+			},
+		});
 	});
 });

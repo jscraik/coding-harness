@@ -12,6 +12,8 @@ import { readCurrentHeadSha } from "../prompt-context-drift/git-head.js";
 import {
 	PROMPT_CONTEXT_DRIFT_REPORT_PATHS,
 	PROMPT_CONTEXT_DRIFT_SURFACES,
+	type PromptContextDriftBlocker,
+	type PromptContextDriftNextActionClass,
 	validatePromptContextDriftReport,
 } from "../prompt-context-drift/index.js";
 import type {
@@ -22,6 +24,11 @@ import type {
 const WRITE_COMMAND = "harness prompt-context-drift:write";
 const VALIDATE_COMMAND =
 	"harness prompt-context-drift:validate artifacts/context-integrity/prompt-context-drift-report.json";
+const ACTIVE_ARTIFACT_REFRESH_COMMAND =
+	"harness artifact-routine --active-index .harness/active-artifacts.md --json";
+const PROJECT_BRAIN_REFRESH_COMMAND = "harness brain status --json";
+const RUNTIME_CARD_REFRESH_COMMAND =
+	"harness runtime-card --json --repo . --out artifacts/runtime-card.json";
 const writeCommandFor = (reportPath: string) =>
 	`harness prompt-context-drift:write --output ${reportPath}`;
 const validateCommandFor = (reportPath: string) =>
@@ -56,12 +63,15 @@ export function promptContextDriftSurface(
 	const reportStatus = promptContextDriftReportStatus(
 		readPromptContextDriftReport(repoRoot, reportEvidence[0] ?? ""),
 		repoRoot,
+		reportEvidence[0] ?? "",
 	);
 	return contextSurface({
 		status: reportStatus.status,
 		evidence: reportEvidence,
 		staleReasons: reportStatus.staleReasons,
-		suggestedRefreshCommands: refreshCommandsFor(reportEvidence[0] ?? ""),
+		suggestedRefreshCommands:
+			reportStatus.suggestedRefreshCommands ??
+			refreshCommandsFor(reportEvidence[0] ?? ""),
 	});
 }
 
@@ -144,7 +154,12 @@ function escapesRepoRoot(repoRoot: string, absolutePath: string): boolean {
 function promptContextDriftReportStatus(
 	text: string,
 	repoRoot: string,
-): { status: AgentReadinessStatus; staleReasons: string[] } {
+	reportPath: string,
+): {
+	status: AgentReadinessStatus;
+	staleReasons: string[];
+	suggestedRefreshCommands?: string[] | undefined;
+} {
 	if (text.length === 0) {
 		return {
 			status: "warn",
@@ -182,6 +197,10 @@ function promptContextDriftReportStatus(
 					staleReasons: [
 						"Prompt-context-drift report is not pass for orientation.",
 					],
+					suggestedRefreshCommands: repairCommandsForReportBlockers(
+						parsed,
+						reportPath,
+					),
 				};
 	} catch (error) {
 		return {
@@ -191,6 +210,58 @@ function promptContextDriftReportStatus(
 			],
 		};
 	}
+}
+
+function repairCommandsForReportBlockers(
+	report: { blockers?: unknown },
+	reportPath: string,
+): string[] {
+	const repairCommands = blockerRepairCommands(report.blockers);
+	return repairCommands.length > 0
+		? repairCommands
+		: refreshCommandsFor(reportPath);
+}
+
+function blockerRepairCommands(blockers: unknown): string[] {
+	if (!Array.isArray(blockers)) return [];
+	return uniqueStrings(
+		blockers.flatMap((blocker) =>
+			isPromptContextDriftBlocker(blocker)
+				? repairCommandsForNextAction(blocker.nextActionClass)
+				: [],
+		),
+	);
+}
+
+function repairCommandsForNextAction(
+	nextActionClass: PromptContextDriftNextActionClass,
+): string[] {
+	switch (nextActionClass) {
+		case "refresh_active_artifacts":
+			return [ACTIVE_ARTIFACT_REFRESH_COMMAND];
+		case "refresh_project_brain":
+			return [PROJECT_BRAIN_REFRESH_COMMAND];
+		case "refresh_runtime_card":
+			return [RUNTIME_CARD_REFRESH_COMMAND];
+		case "refresh_prompt_context":
+		case "rerun_validator":
+		case "refresh_receipts":
+		case "none":
+			return [];
+		default:
+			return [];
+	}
+}
+
+function isPromptContextDriftBlocker(
+	value: unknown,
+): value is PromptContextDriftBlocker {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		!Array.isArray(value) &&
+		typeof (value as { nextActionClass?: unknown }).nextActionClass === "string"
+	);
 }
 
 function reportPassConsistencyError(report: {
@@ -275,4 +346,8 @@ function contextSurface(input: {
 		],
 		evidenceUse: "orientation",
 	};
+}
+
+function uniqueStrings(values: readonly string[]): string[] {
+	return [...new Set(values)];
 }
