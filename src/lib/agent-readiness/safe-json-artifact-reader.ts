@@ -72,7 +72,7 @@ function containedArtifactFile(
 function readValidatedArtifactFile(file: ContainedJsonArtifact): string {
 	let fileDescriptor: number | null = null;
 	try {
-		fileDescriptor = openValidatedArtifactPath(file);
+		fileDescriptor = openReportNoFollow(file.realPath, ARTIFACT_OPEN_FLAGS);
 		const stat = fstatSync(fileDescriptor);
 		if (!isReadableArtifactFile(stat)) return "";
 		const buffer = Buffer.alloc(stat.size);
@@ -85,10 +85,6 @@ function readValidatedArtifactFile(file: ContainedJsonArtifact): string {
 			closeSync(fileDescriptor);
 		}
 	}
-}
-
-function openValidatedArtifactPath(file: ContainedJsonArtifact): number {
-	return openReportNoFollow(file.realPath, ARTIFACT_OPEN_FLAGS);
 }
 
 function safeArtifactPath(
