@@ -90,12 +90,62 @@ function validateCommandForEvidence(
 	evidenceRefs: readonly string[],
 	refreshCommand: string,
 ): string {
+	return `harness prompt-context-drift:validate ${reportPathForEvidence(evidenceRefs, refreshCommand)}`;
+}
+
+function reportPathForEvidence(
+	evidenceRefs: readonly string[],
+	refreshCommand: string,
+): string {
 	const cleanupPath = refreshCommand.match(/^rm (\S+)$/u)?.[1];
 	const reportPath = evidenceRefs.find(
 		(ref) =>
 			TRUSTED_PROMPT_CONTEXT_REPORT_PATHS.has(ref) && ref !== cleanupPath,
 	);
-	return `harness prompt-context-drift:validate ${reportPath ?? PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0]}`;
+	return reportPath ?? PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0];
+}
+
+function writeCommandForEvidence(
+	evidenceRefs: readonly string[],
+	refreshCommand: string,
+): string {
+	const reportPath = reportPathForEvidence(evidenceRefs, refreshCommand);
+	return reportPath === PROMPT_CONTEXT_DRIFT_REPORT_PATHS[0]
+		? "harness prompt-context-drift:write"
+		: `harness prompt-context-drift:write --output ${reportPath}`;
+}
+
+function refreshCommandWritesPromptContextReport(command: string): boolean {
+	const normalized = command.trim();
+	if (normalized === "harness prompt-context-drift:write") return true;
+	return Boolean(
+		normalized.match(/^harness prompt-context-drift:write --output (\S+)$/u),
+	);
+}
+
+function refreshCommandDeletesPromptContextReport(command: string): boolean {
+	return Boolean(command.trim().match(/^rm (\S+)$/u));
+}
+
+function followUpCommandsForEvidence(
+	evidenceRefs: readonly string[],
+	refreshCommand: string,
+): string[] {
+	const validationCommand = validateCommandForEvidence(
+		evidenceRefs,
+		refreshCommand,
+	);
+	if (
+		refreshCommandWritesPromptContextReport(refreshCommand) ||
+		refreshCommandDeletesPromptContextReport(refreshCommand)
+	) {
+		return [validationCommand, "harness check --json"];
+	}
+	return [
+		writeCommandForEvidence(evidenceRefs, refreshCommand),
+		validationCommand,
+		"harness check --json",
+	];
 }
 
 /** Build a next-step decision when prompt-context drift should block clean-worktree handoff. */
@@ -125,13 +175,10 @@ export function promptContextDriftDecision(
 			"Stop if prompt-context drift validation still reports stale or invalid context.",
 		],
 		humanEscalation: null,
-		followUpCommands: [
-			validateCommandForEvidence(
-				promptContextRefresh.evidenceRef,
-				promptContextRefresh.command,
-			),
-			"harness check --json",
-		],
+		followUpCommands: followUpCommandsForEvidence(
+			promptContextRefresh.evidenceRef,
+			promptContextRefresh.command,
+		),
 		hiddenPlumbing: ["git:status", "prompt_context_drift", "check"],
 		safeToRun: trustedCommand,
 		requiresHuman: !trustedCommand,

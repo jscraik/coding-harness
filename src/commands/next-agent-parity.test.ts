@@ -282,6 +282,7 @@ describe("harness next agent-facing parity", () => {
 		expect(decision.requiresHuman).toBe(false);
 		expect(decision.writesFiles).toBe(true);
 		expect(decision.followUpCommands).toEqual([
+			PROMPT_CONTEXT_DRIFT_COMMAND,
 			"harness prompt-context-drift:validate artifacts/context-integrity/prompt-context-drift-report.json",
 			"harness check --json",
 		]);

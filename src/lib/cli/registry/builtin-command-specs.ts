@@ -120,7 +120,7 @@ function runPackagedPromptContextScript(
 	args: readonly string[],
 ): number {
 	const scriptPath = fileURLToPath(
-		new URL(`../../../scripts/${scriptName}`, import.meta.url),
+		new URL(`../../../../scripts/${scriptName}`, import.meta.url),
 	);
 	const result = spawnSync(process.execPath, [scriptPath, ...args], {
 		stdio: "inherit",
