@@ -60,6 +60,33 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		).toBe(true);
 	});
 
+	it("emits aggregate ratchets in downstream repos without source package scripts", () => {
+		const root = mkdtempSync(join(tmpdir(), "agent-native-downstream-"));
+		tempRoots.push(root);
+		writeFileSync(
+			join(root, "package.json"),
+			JSON.stringify({
+				scripts: {
+					"coding-policy:route": "harness coding-policy route",
+				},
+			}),
+		);
+
+		const result = runNodeScript(SCRIPT_PATH, ["--json", "--validate"], {
+			cwd: root,
+		});
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			ratchets: Array<{ status: string }>;
+		};
+
+		expect(result.status).toBe(0);
+		expect(report.status).toBe("pass");
+		expect(report.ratchets.every((ratchet) => ratchet.status === "pass")).toBe(
+			true,
+		);
+	});
+
 	it("emits a session distillation packet with separated claim boundaries", () => {
 		const result = runReport(["--session-distill", "--json"]);
 		const report = JSON.parse(result.stdout) as {
@@ -155,6 +182,69 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		expect(report.nextCommands[0]).toBe(
 			"pnpm run coding-policy:route -- 'docs my file.md' 'new-file.txt'",
 		);
+	});
+
+	it("ignores caller-scoped git environment when distilling session state", () => {
+		const root = mkdtempSync(join(tmpdir(), "agent-native-session-root-"));
+		const contaminatingRoot = mkdtempSync(
+			join(tmpdir(), "agent-native-contaminating-root-"),
+		);
+		tempRoots.push(root, contaminatingRoot);
+		for (const repo of [root, contaminatingRoot]) {
+			let result = spawnSync("git", ["init"], { cwd: repo, encoding: "utf8" });
+			if (result.status !== 0) {
+				throw new Error(`git init failed with status ${result.status}`);
+			}
+			result = spawnSync("git", ["config", "user.email", "codex@example.com"], {
+				cwd: repo,
+				encoding: "utf8",
+			});
+			if (result.status !== 0) {
+				throw new Error(
+					`git config user.email failed with status ${result.status}`,
+				);
+			}
+			result = spawnSync("git", ["config", "user.name", "Codex"], {
+				cwd: repo,
+				encoding: "utf8",
+			});
+			if (result.status !== 0) {
+				throw new Error(
+					`git config user.name failed with status ${result.status}`,
+				);
+			}
+			writeFileSync(join(repo, "tracked.txt"), "tracked\n");
+			result = spawnSync("git", ["add", "tracked.txt"], {
+				cwd: repo,
+				encoding: "utf8",
+			});
+			if (result.status !== 0) {
+				throw new Error(`git add failed with status ${result.status}`);
+			}
+			result = spawnSync("git", ["commit", "-m", "initial"], {
+				cwd: repo,
+				encoding: "utf8",
+			});
+			if (result.status !== 0) {
+				throw new Error(`git commit failed with status ${result.status}`);
+			}
+		}
+		writeFileSync(join(root, "actual-change.txt"), "actual\n");
+		writeFileSync(join(contaminatingRoot, "wrong-change.txt"), "wrong\n");
+
+		const result = runNodeScript(SCRIPT_PATH, ["--session-distill", "--json"], {
+			cwd: root,
+			env: {
+				...process.env,
+				GIT_DIR: join(contaminatingRoot, ".git"),
+				GIT_WORK_TREE: contaminatingRoot,
+			},
+		});
+		const report = JSON.parse(result.stdout) as { changedFiles: string[] };
+
+		expect(result.status).toBe(0);
+		expect(report.changedFiles).toContain("actual-change.txt");
+		expect(report.changedFiles).not.toContain("wrong-change.txt");
 	});
 
 	it("fails closed when session distillation cannot read git state", () => {

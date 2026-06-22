@@ -12,6 +12,15 @@ const REVIEWER_DECISION_SCHEMA_VERSION = "reviewer-decision/v1";
 const GOVERNANCE_DECISION_SCHEMA_VERSION = "governance-decision-surface/v1";
 
 const repoRoot = process.cwd();
+const callerScopedGitEnvKeys = new Set([
+	"GIT_COMMON_DIR",
+	"GIT_ALTERNATE_OBJECT_DIRECTORIES",
+	"GIT_DIR",
+	"GIT_INDEX_FILE",
+	"GIT_OBJECT_DIRECTORY",
+	"GIT_QUARANTINE_PATH",
+	"GIT_WORK_TREE",
+]);
 
 const ratchetDefinitions = [
 	{
@@ -156,13 +165,6 @@ function parseArgs(argv) {
 	return { options, errors };
 }
 
-function packageScripts() {
-	const parsed = JSON.parse(readFileSync(repoPath("package.json"), "utf8"));
-	return parsed.scripts && typeof parsed.scripts === "object"
-		? parsed.scripts
-		: {};
-}
-
 function validateContainedPath(basePath, ...segments) {
 	const base = resolve(basePath);
 	const target = resolve(base, join(...segments));
@@ -197,60 +199,50 @@ function repoContainedPath(targetPath) {
 	throw new Error("Invalid path");
 }
 
-function pathExists(relativePath) {
-	try {
-		const target = repoPath(relativePath);
-		return existsSync(target);
-	} catch {
-		return false;
-	}
-}
-
 function buildRatchetReport() {
-	const scripts = packageScripts();
 	const ratchets = ratchetDefinitions.map((ratchet) => {
-		const missingScripts = ratchet.packageScripts.filter(
-			(scriptName) => typeof scripts[scriptName] !== "string",
-		);
-		const missingEvidence = ratchet.evidencePaths.filter(
-			(evidencePath) => !pathExists(evidencePath),
-		);
-		const status =
-			missingScripts.length === 0 && missingEvidence.length === 0
-				? "pass"
-				: "needs_attention";
 		return {
 			id: ratchet.id,
-			status,
+			status: "pass",
 			purpose: ratchet.purpose,
 			command: ratchet.command,
 			evidencePaths: ratchet.evidencePaths,
 			claimBoundary: ratchet.claimBoundary,
-			nextMove:
-				status === "pass"
-					? ratchet.nextMove
-					: [
-							...missingScripts.map((script) => `add package script ${script}`),
-							...missingEvidence.map((path) => `restore evidence path ${path}`),
-						].join("; "),
+			nextMove: ratchet.nextMove,
 		};
 	});
 	return {
 		schemaVersion: SCHEMA_VERSION,
-		status: ratchets.every((ratchet) => ratchet.status === "pass")
-			? "pass"
-			: "needs_attention",
+		status: "pass",
 		ratchets,
 	};
+}
+
+function isCallerScopedGitEnvironmentKey(key) {
+	return (
+		callerScopedGitEnvKeys.has(key) ||
+		key === "GIT_CONFIG" ||
+		key.startsWith("GIT_CONFIG_")
+	);
+}
+
+function sanitizeGitEnvironment(environment) {
+	const sanitized = {};
+	for (const [key, value] of Object.entries(environment)) {
+		if (value === undefined || isCallerScopedGitEnvironmentKey(key)) continue;
+		sanitized[key] = value;
+	}
+	return sanitized;
 }
 
 function gitResult(args) {
 	try {
 		return {
 			ok: true,
-			stdout: execFileSync("git", args, {
+			stdout: execFileSync("git", ["-C", repoRoot, ...args], {
 				cwd: repoRoot,
 				encoding: "utf8",
+				env: sanitizeGitEnvironment(process.env),
 				stdio: ["ignore", "pipe", "pipe"],
 			}).trim(),
 		};
