@@ -617,12 +617,29 @@ function validateSchemaAndExample(entry, errors) {
 		errors,
 		entry.schemaPath,
 	);
+	validatePacketSemanticInvariants(entry, example, errors);
 	if (resolvedSemanticValidatorPath) {
 		validateExampleWithSemanticValidator(
 			entry,
 			resolvedSemanticValidatorPath,
 			resolvedPaths.examplePath,
 			errors,
+		);
+	}
+}
+
+function validatePacketSemanticInvariants(entry, example, errors) {
+	if (
+		entry.schemaVersion !== "session-distill/v1" ||
+		!isObject(example) ||
+		!Array.isArray(example.changedFiles) ||
+		!Number.isInteger(example.changedFileCount)
+	) {
+		return;
+	}
+	if (example.changedFileCount !== example.changedFiles.length) {
+		errors.push(
+			`${entry.examplePath}.changedFileCount must equal changedFiles length`,
 		);
 	}
 }

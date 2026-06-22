@@ -362,6 +362,66 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		expect(report.claimBoundary).toContain("review-lane evidence");
 	});
 
+	it("resolves reviewer coverage validation from downstream repos", () => {
+		const root = mkdtempSync(
+			join(tmpdir(), "agent-native-reviewer-downstream-"),
+		);
+		tempRoots.push(root);
+		const reviewsDir = join(root, "reviews");
+		mkdirSync(reviewsDir, { recursive: true });
+		writeFileSync(
+			join(root, "manifest.json"),
+			JSON.stringify({
+				requiredReviewers: [
+					{
+						role: "harness-product-code-reviewer",
+						artifact: "product.md",
+					},
+				],
+				synthesisStatus: "complete",
+			}),
+		);
+		writeFileSync(
+			join(reviewsDir, "product.md"),
+			[
+				"head_sha: 0123456789abcdef0123456789abcdef01234567",
+				"WROTE: reviews/product.md",
+			].join("\n"),
+		);
+
+		const result = runNodeScript(
+			SCRIPT_PATH,
+			[
+				"--reviewer-decision",
+				"--json",
+				"--validate",
+				"--manifest",
+				"manifest.json",
+				"--reviews-dir",
+				"reviews",
+			],
+			{ cwd: root },
+		);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			decision: string;
+			coverageReceipt: {
+				status: string;
+				completedRoles: number;
+			};
+		};
+
+		expect(result.status).toBe(0);
+		expect(report).toMatchObject({
+			status: "pass",
+			decision: "accept",
+		});
+		expect(report.coverageReceipt).toMatchObject({
+			status: "pass",
+			completedRoles: 1,
+		});
+	});
+
 	it("summarizes latest verify-work run artifacts for rework routing", () => {
 		const root = mkdtempSync(join(tmpdir(), "agent-native-rework-"));
 		tempRoots.push(root);

@@ -366,6 +366,40 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		);
 	});
 
+	it("fails session-distill examples with mismatched changed-file counts", () => {
+		const root = createTempRoot("session-distill-changed-file-count-");
+		const badExample = readJson(
+			"contracts/examples/session-distill.example.json",
+		) as Record<string, unknown>;
+		badExample.changedFiles = ["src/a.ts", "src/b.ts"];
+		badExample.changedFileCount = 0;
+		const badExamplePath = join(root, "session-distill-count-mismatch.json");
+		writeFileSync(badExamplePath, JSON.stringify(badExample, null, 2));
+		const manifestPath = manifestWithEntryPatch(
+			"session-distill/v1",
+			(entry) => ({
+				...entry,
+				examplePath: badExamplePath,
+			}),
+		);
+
+		const result = runValidator(["--manifest", manifestPath]);
+
+		expect(result.status).toBe(1);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			errors: string[];
+		};
+		expect(report.status).toBe("fail");
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining(
+					"changedFileCount must equal changedFiles length",
+				),
+			]),
+		);
+	});
+
 	it("fails schema-only prompt-context examples that embed prompt-like pointer values", () => {
 		const root = createTempRoot("runtime-packet-schema-prompt-context-");
 		const badExample = readJson(

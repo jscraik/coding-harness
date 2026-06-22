@@ -12,6 +12,7 @@ const REVIEWER_DECISION_SCHEMA_VERSION = "reviewer-decision/v1";
 const GOVERNANCE_DECISION_SCHEMA_VERSION = "governance-decision-surface/v1";
 
 const repoRoot = process.cwd();
+const reporterScriptRoot = __dirname;
 const callerScopedGitEnvKeys = new Set([
 	"GIT_COMMON_DIR",
 	"GIT_ALTERNATE_OBJECT_DIRECTORIES",
@@ -517,10 +518,16 @@ function buildReviewerDecisionReport(options) {
 }
 
 function reviewerCoverageReceipt(manifest, reviewsDir) {
+	const reviewerCoverageValidatorPath = resolve(
+		reporterScriptRoot,
+		"validate-reviewer-coverage.cjs",
+	);
 	const result = spawnSync(
 		process.execPath,
 		[
-			"scripts/validate-reviewer-coverage.cjs",
+			reviewerCoverageValidatorPath,
+			"--root",
+			repoRoot,
 			"--manifest",
 			manifest,
 			"--reviews-dir",
