@@ -39,7 +39,7 @@ const ratchetDefinitions = [
 		evidencePaths: [
 			"scripts/write-agent-native-ratchet-report.cjs",
 			"src/commands/runtime-card.ts",
-			"AGENTS.md",
+			"README.md",
 		],
 		claimBoundary:
 			"Distillation summarizes local orientation and does not prove CI, review, tracker, or merge readiness.",
@@ -563,6 +563,17 @@ function reviewerDecision(receipt) {
 			outcome: "accept",
 			nextMove:
 				"Compose this review-lane acceptance with PR closeout before merge claims.",
+		};
+	}
+	if (
+		receipt.blockerClass === "validator_runtime" ||
+		receipt.blockerClass === "invalid_receipt"
+	) {
+		return {
+			status: "blocked",
+			outcome: "blocked_external",
+			nextMove:
+				"Fix reviewer coverage validator runtime or receipt JSON output, then rerun coverage.",
 		};
 	}
 	if (receipt.blockerClass === "blocked_reviewers") {

@@ -4,9 +4,10 @@ set -euo pipefail
 prepend_standard_tool_paths() {
 	local candidate
 	local idx
+	local home_dir="${HOME:-}"
 	local candidates=(
-		"${HOME:-}/.local/share/mise/shims"
-		"${HOME:-}/.local/bin"
+		"${home_dir:+$home_dir/.local/share/mise/shims}"
+		"${home_dir:+$home_dir/.local/bin}"
 		"/opt/homebrew/bin"
 		"/opt/homebrew/sbin"
 		"/usr/local/bin"
@@ -15,15 +16,11 @@ prepend_standard_tool_paths() {
 	)
 	if [[ -z "${PATH:-}" ]]; then
 		PATH="/usr/bin:/bin"
-		for (( idx=${#candidates[@]} - 1; idx >= 0; idx-- )); do
-			candidate="${candidates[$idx]}"
-			[[ -n "$candidate" && -d "$candidate" && ":$PATH:" != *":$candidate:"* ]] && PATH="$candidate:$PATH"
-		done
-	else
-		for candidate in "${candidates[@]}"; do
-			[[ -n "$candidate" && -d "$candidate" && ":$PATH:" != *":$candidate:"* ]] && PATH="$PATH:$candidate"
-		done
 	fi
+	for (( idx=${#candidates[@]} - 1; idx >= 0; idx-- )); do
+		candidate="${candidates[$idx]}"
+		[[ -n "$candidate" && -d "$candidate" && ":$PATH:" != *":$candidate:"* ]] && PATH="$candidate:$PATH"
+	done
 	export PATH
 }
 

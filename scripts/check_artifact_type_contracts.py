@@ -66,6 +66,12 @@ def reject_empty_or_blank_list(value: list[str]) -> list[str]:
     return reject_blank_list_items(value)
 
 
+def reject_negative_int(value: int) -> int:
+    if value < 0:
+        raise ValueError("must be non-negative")
+    return value
+
+
 class CommandCapability(BaseModel):
     """Typed contract for one command catalog entry."""
 
@@ -538,6 +544,19 @@ class AgentReworkAvailableRun(BaseModel):
     _reject_blank_strings = field_validator(
         "runId", "overallStatus", "freshVsResumed", "failedGateId"
     )(reject_blank_optional_string)
+    _reject_negative_gate_count = field_validator("gateCount")(reject_negative_int)
+
+    @model_validator(mode="after")
+    def require_gate_counts_consistent(self) -> AgentReworkAvailableRun:
+        if len(self.failedGates) > self.gateCount:
+            raise ValueError("failedGates length must not exceed gateCount")
+        if self.failedGateId is None and self.failedGates:
+            raise ValueError("failedGateId must name a failed gate when failedGates exist")
+        if self.failedGateId is not None and not any(
+            gate.gateId == self.failedGateId for gate in self.failedGates
+        ):
+            raise ValueError("failedGateId must match a failedGates entry")
+        return self
 
 
 class AgentReworkUnavailableRun(BaseModel):
@@ -598,6 +617,20 @@ class ReviewerCoverageReceiptSummary(BaseModel):
     _reject_blank_evidence = field_validator("evidenceRefs")(
         reject_blank_list_items
     )
+    _reject_negative_counts = field_validator(
+        "requestedRoles",
+        "completedRoles",
+        "blockedRoles",
+        "missingArtifacts",
+    )(reject_negative_int)
+
+    @model_validator(mode="after")
+    def require_role_counts_consistent(self) -> ReviewerCoverageReceiptSummary:
+        if self.completedRoles + self.blockedRoles > self.requestedRoles:
+            raise ValueError("completedRoles + blockedRoles must not exceed requestedRoles")
+        if self.missingArtifacts > self.requestedRoles:
+            raise ValueError("missingArtifacts must not exceed requestedRoles")
+        return self
 
 
 class ReviewerDecisionReport(BaseModel):
@@ -636,8 +669,14 @@ class ReviewerDecisionReport(BaseModel):
 
     @model_validator(mode="after")
     def require_reviewer_decision_consistency(self) -> ReviewerDecisionReport:
-        if self.status == "pass" and self.decision != "accept":
-            raise ValueError("passing reviewer decisions must accept")
+        compatible_decisions = {
+            "pass": {"accept", "accepted_risk"},
+            "needs_evidence": {"needs_evidence"},
+            "blocked": {"blocked_external", "object"},
+            "defer": {"defer"},
+        }
+        if self.decision not in compatible_decisions[self.status]:
+            raise ValueError("decision must be compatible with status")
         if self.decision not in self.outcomes:
             raise ValueError("decision must be included in outcomes")
         return self
@@ -652,6 +691,13 @@ class GovernanceClassCounts(BaseModel):
     operator_policy: int
     historical_context: int
     archive_candidate: int
+
+    _reject_negative_counts = field_validator(
+        "feeds_runtime_decision",
+        "operator_policy",
+        "historical_context",
+        "archive_candidate",
+    )(reject_negative_int)
 
 
 class GovernanceDocument(BaseModel):
@@ -697,6 +743,9 @@ class GovernanceDecisionSurfaceReport(BaseModel):
     _reject_blank_strings = field_validator("nextMove", "claimBoundary")(
         reject_blank_string
     )
+    _reject_negative_documents_analyzed = field_validator("documentsAnalyzed")(
+        reject_negative_int
+    )
 
     @model_validator(mode="after")
     def require_governance_class_consistency(self) -> GovernanceDecisionSurfaceReport:
@@ -714,6 +763,10 @@ class GovernanceDecisionSurfaceReport(BaseModel):
         )
         if self.documentsAnalyzed < max_count:
             raise ValueError("documentsAnalyzed must cover every class count")
+        if self.classCounts.feeds_runtime_decision < len(self.decisionInputs):
+            raise ValueError("feeds_runtime_decision count must cover decisionInputs")
+        if self.classCounts.archive_candidate < len(self.archiveCandidates):
+            raise ValueError("archive_candidate count must cover archiveCandidates")
         return self
 
 

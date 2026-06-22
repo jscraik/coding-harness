@@ -62,6 +62,48 @@
 			"minLength": 1
 		}
 	},
+	"anyOf": [
+		{
+			"properties": {
+				"status": {
+					"const": "pass"
+				},
+				"decision": {
+					"enum": ["accept", "accepted_risk"]
+				}
+			}
+		},
+		{
+			"properties": {
+				"status": {
+					"const": "needs_evidence"
+				},
+				"decision": {
+					"const": "needs_evidence"
+				}
+			}
+		},
+		{
+			"properties": {
+				"status": {
+					"const": "blocked"
+				},
+				"decision": {
+					"enum": ["blocked_external", "object"]
+				}
+			}
+		},
+		{
+			"properties": {
+				"status": {
+					"const": "defer"
+				},
+				"decision": {
+					"const": "defer"
+				}
+			}
+		}
+	],
 	"$defs": {
 		"coverageReceipt": {
 			"type": "object",

@@ -7,11 +7,11 @@
 		"historical_context",
 		"archive_candidate"
 	],
-	"documentsAnalyzed": 2,
+	"documentsAnalyzed": 1,
 	"classCounts": {
 		"feeds_runtime_decision": 1,
 		"operator_policy": 1,
-		"historical_context": 1,
+		"historical_context": 0,
 		"archive_candidate": 0
 	},
 	"decisionInputs": [

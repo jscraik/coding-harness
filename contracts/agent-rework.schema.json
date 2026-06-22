@@ -76,7 +76,15 @@
 					"enum": ["passed", "pass", "failed", "blocked", "unknown"]
 				},
 				"failedGateId": {
-					"type": ["string", "null"]
+					"anyOf": [
+						{
+							"type": "string",
+							"minLength": 1
+						},
+						{
+							"type": "null"
+						}
+					]
 				},
 				"freshVsResumed": {
 					"enum": ["fresh", "resume", "unknown"]

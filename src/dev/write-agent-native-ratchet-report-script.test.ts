@@ -173,17 +173,23 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 	});
 
 	it("emits structured rework, reviewer, and governance ratchet packets", () => {
-		const rework = JSON.parse(runReport(["--rework", "--json"]).stdout) as {
+		const reworkResult = runReport(["--rework", "--json"]);
+		expect(reworkResult.status).toBe(0);
+		const rework = JSON.parse(reworkResult.stdout) as {
 			schemaVersion: string;
 			latestRun: { status: string };
 			retryDecisions: string[];
 		};
-		const reviewer = JSON.parse(
-			runReport(["--reviewer-decision", "--json"]).stdout,
-		) as { schemaVersion: string; decision: string; outcomes: string[] };
-		const governance = JSON.parse(
-			runReport(["--governance", "--json"]).stdout,
-		) as {
+		const reviewerResult = runReport(["--reviewer-decision", "--json"]);
+		expect(reviewerResult.status).toBe(0);
+		const reviewer = JSON.parse(reviewerResult.stdout) as {
+			schemaVersion: string;
+			decision: string;
+			outcomes: string[];
+		};
+		const governanceResult = runReport(["--governance", "--json"]);
+		expect(governanceResult.status).toBe(0);
+		const governance = JSON.parse(governanceResult.stdout) as {
 			schemaVersion: string;
 			classes: string[];
 			documentsAnalyzed: number;

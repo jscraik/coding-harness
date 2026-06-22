@@ -207,12 +207,17 @@ when they turn review, session, rework, or governance feedback into durable
 artifacts. Keep `agent-native-ratchets/v1`, `session-distill/v1`,
 `agent-rework/v1`, `reviewer-decision/v1`, and
 `governance-decision-surface/v1` contract-first under `contracts/`, route
-their producers through package scripts, and ratchet them with
-`node scripts/validate-runtime-packet-schemas.cjs --all` plus
-`pnpm artifact:types`. These packets may steer `harness next` and eval
-fixtures, but they must not prove CI, review-thread state, tracker state,
-external readiness, or merge readiness without a separate canonical consumer
-boundary.
+their producers through `pnpm run agent-native:ratchets`,
+`pnpm run session:distill`, `pnpm run agent-rework:report`,
+`pnpm run reviewer:decision`, and `pnpm run governance:decision-surface`, and
+ratchet them with `node scripts/validate-runtime-packet-schemas.cjs --all`
+plus `pnpm artifact:types`. Expected pass evidence is schema validation with
+`runtime_packets` and `agent_native_packets=5`; if either command fails, stop at
+the first schema, manifest, or typed-contract mismatch, fix the packet producer
+or manifest entry from the repo root, and rerun both checks before handoff.
+These packets may steer `harness next` and eval fixtures, but they must not
+prove CI, review-thread state, tracker state, external readiness, or merge
+readiness without a separate canonical consumer boundary.
 
 Runtime-card trace-out changes belong in `src/lib/runtime-trace/` and must
 reuse the canonical run-record writer under `src/lib/contract/` instead of

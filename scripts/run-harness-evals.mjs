@@ -5318,11 +5318,38 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 		repoRoot: fixturePath,
 		worktreeRole: "dirty-with-justification",
 	});
+	const reviewerManifestPath = path.join(fixturePath, "reviewer-manifest.json");
+	const reviewerReviewsDir = path.join(fixturePath, "reviews");
+	mkdirSync(reviewerReviewsDir, { recursive: true });
+	writeJson(reviewerManifestPath, {
+		requiredReviewers: [
+			{
+				role: "harness-product-code-reviewer",
+				artifact: "product.md",
+			},
+		],
+		synthesisStatus: "complete",
+	});
+	writeFileSync(
+		path.join(reviewerReviewsDir, "product.md"),
+		[
+			"head_sha: 0123456789abcdef0123456789abcdef01234567",
+			"WROTE: reviews/product.md",
+		].join("\n"),
+	);
 	const commandReports = {
 		ratchets: runRatchetPacketCommand(["run", "agent-native:ratchets"]),
 		session: runRatchetPacketCommand(["run", "session:distill"]),
 		rework: runRatchetPacketCommand(["run", "agent-rework:report"]),
-		reviewer: runRatchetPacketCommand(["run", "reviewer:decision"]),
+		reviewer: runRatchetPacketCommand([
+			"run",
+			"reviewer:decision",
+			"--",
+			"--manifest",
+			reviewerManifestPath,
+			"--reviews-dir",
+			reviewerReviewsDir,
+		]),
 		governance: runRatchetPacketCommand(["run", "governance:decision-surface"]),
 	};
 	const report = {
@@ -5352,14 +5379,16 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 		),
 		assertion(
 			"harness next exposes ratchet follow-up commands",
-			decision.followUpCommands.includes("harness session-distill --json") &&
-				decision.followUpCommands.includes(
+			normalizeArray(decision.followUpCommands).includes(
+				"harness session-distill --json",
+			) &&
+				normalizeArray(decision.followUpCommands).includes(
 					"harness agent-native-ratchets --json",
 				),
 		),
 		assertion(
 			"harness next marks ratchets as hidden plumbing",
-			decision.hiddenPlumbing.includes("agent-native-ratchets"),
+			normalizeArray(decision.hiddenPlumbing).includes("agent-native-ratchets"),
 		),
 		assertion(
 			"harness next lists all five agent-native packets",
@@ -5399,13 +5428,23 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 }
 
 function runRatchetPacketCommand(args) {
-	const stdout = execFileSync("pnpm", ["--silent", ...args], {
-		cwd: REPO_ROOT,
-		encoding: "utf8",
-		timeout: RATCHET_PACKET_COMMAND_TIMEOUT_MS,
-		maxBuffer: RATCHET_PACKET_COMMAND_MAX_BUFFER,
-	});
-	return JSON.parse(stdout);
+	try {
+		const stdout = execFileSync("pnpm", ["--silent", ...args], {
+			cwd: REPO_ROOT,
+			encoding: "utf8",
+			timeout: RATCHET_PACKET_COMMAND_TIMEOUT_MS,
+			maxBuffer: RATCHET_PACKET_COMMAND_MAX_BUFFER,
+		});
+		return JSON.parse(stdout);
+	} catch (error) {
+		const stderr =
+			error && typeof error === "object" && "stderr" in error
+				? String(error.stderr ?? "").trim()
+				: "";
+		throw new Error(
+			`ratchet packet command failed: pnpm --silent ${args.join(" ")}${stderr ? ` :: ${stderr}` : ""}`,
+		);
+	}
 }
 
 function runSideEffectAuthorizationValidatorFixture(scenario, fixturePath) {

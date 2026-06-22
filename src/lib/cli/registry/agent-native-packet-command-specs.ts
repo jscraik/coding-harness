@@ -50,7 +50,7 @@ export function createAgentNativePacketCommandSpecs(): CommandSpec[] {
 			execute: (args) =>
 				runPacketScript(
 					"session-distill",
-					[scriptPath, "--session-distill", "--json"],
+					[scriptPath, "--session-distill", "--json", "--validate"],
 					args,
 				),
 		}),
@@ -62,7 +62,7 @@ export function createAgentNativePacketCommandSpecs(): CommandSpec[] {
 			execute: (args) =>
 				runPacketScript(
 					"agent-rework",
-					[scriptPath, "--rework", "--json"],
+					[scriptPath, "--rework", "--json", "--validate"],
 					args,
 				),
 		}),
@@ -75,7 +75,7 @@ export function createAgentNativePacketCommandSpecs(): CommandSpec[] {
 			execute: (args) =>
 				runPacketScript(
 					"reviewer-decision",
-					[scriptPath, "--reviewer-decision", "--json"],
+					[scriptPath, "--reviewer-decision", "--json", "--validate"],
 					args,
 				),
 		}),
@@ -87,7 +87,7 @@ export function createAgentNativePacketCommandSpecs(): CommandSpec[] {
 			execute: (args) =>
 				runPacketScript(
 					"governance-decision-surface",
-					[scriptPath, "--governance", "--json"],
+					[scriptPath, "--governance", "--json", "--validate"],
 					args,
 				),
 		}),

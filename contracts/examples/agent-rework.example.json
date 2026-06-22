@@ -6,18 +6,11 @@
 	"latestRun": {
 		"status": "available",
 		"runId": "20260621T220000Z-123",
-		"overallStatus": "failed",
-		"failedGateId": "lint",
+		"overallStatus": "passed",
+		"failedGateId": null,
 		"freshVsResumed": "fresh",
 		"gateCount": 1,
-		"failedGates": [
-			{
-				"gateId": "lint",
-				"status": "failed",
-				"failureClass": "contract_policy",
-				"nextAction": "fix contract/policy mismatch, then rerun from this gate"
-			}
-		]
+		"failedGates": []
 	},
 	"retryDecisions": ["retry", "stop", "fix_contract", "fix_infra"],
 	"claimBoundary": "agent-rework/v1 routes local recovery and cannot prove delivery readiness by itself."
