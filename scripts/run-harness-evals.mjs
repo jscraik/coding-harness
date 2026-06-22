@@ -5318,8 +5318,26 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 		repoRoot: fixturePath,
 		worktreeRole: "dirty-with-justification",
 	});
-	const reviewerManifestPath = path.join(fixturePath, "reviewer-manifest.json");
-	const reviewerReviewsDir = path.join(fixturePath, "reviews");
+	const reviewerBase = path.resolve(fixturePath);
+	const reviewerManifestPath = path.resolve(
+		reviewerBase,
+		"reviewer-manifest.json",
+	);
+	const reviewerManifestRel = path.relative(reviewerBase, reviewerManifestPath);
+	if (
+		reviewerManifestRel.startsWith("..") ||
+		path.isAbsolute(reviewerManifestRel)
+	) {
+		throw new Error("Invalid path");
+	}
+	const reviewerReviewsDir = path.resolve(reviewerBase, "reviews");
+	const reviewerReviewsRel = path.relative(reviewerBase, reviewerReviewsDir);
+	if (
+		reviewerReviewsRel.startsWith("..") ||
+		path.isAbsolute(reviewerReviewsRel)
+	) {
+		throw new Error("Invalid path");
+	}
 	mkdirSync(reviewerReviewsDir, { recursive: true });
 	writeJson(reviewerManifestPath, {
 		requiredReviewers: [
@@ -5330,8 +5348,19 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 		],
 		synthesisStatus: "complete",
 	});
+	const reviewerArtifactPath = path.resolve(reviewerReviewsDir, "product.md");
+	const reviewerArtifactRel = path.relative(
+		reviewerReviewsDir,
+		reviewerArtifactPath,
+	);
+	if (
+		reviewerArtifactRel.startsWith("..") ||
+		path.isAbsolute(reviewerArtifactRel)
+	) {
+		throw new Error("Invalid path");
+	}
 	writeFileSync(
-		path.join(reviewerReviewsDir, "product.md"),
+		reviewerArtifactPath,
 		[
 			"head_sha: 0123456789abcdef0123456789abcdef01234567",
 			"WROTE: reviews/product.md",
