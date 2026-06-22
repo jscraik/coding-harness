@@ -669,6 +669,8 @@ class ReviewerDecisionReport(BaseModel):
 
     @model_validator(mode="after")
     def require_reviewer_decision_consistency(self) -> ReviewerDecisionReport:
+        if self.status == "pass" and self.decision not in {"accept", "accepted_risk"}:
+            raise ValueError("passing reviewer decisions must accept or accept risk")
         compatible_decisions = {
             "pass": {"accept", "accepted_risk"},
             "needs_evidence": {"needs_evidence"},
@@ -1210,11 +1212,14 @@ def agent_native_packet_entries(errors: list[str]) -> dict[str, dict[str, object
         return {}
     packets_value = manifest_data.get("packets")
     packets = cast(list[object], packets_value) if isinstance(packets_value, list) else []
-    return {
-        packet.get("schemaVersion"): packet
-        for packet in (as_object_map(packet) for packet in packets)
-        if packet is not None and packet.get("schemaVersion") in AGENT_NATIVE_PACKET_MODELS
-    }
+    entries: dict[str, dict[str, object]] = {}
+    for packet in (as_object_map(packet) for packet in packets):
+        if packet is None:
+            continue
+        schema_version = packet.get("schemaVersion")
+        if isinstance(schema_version, str) and schema_version in AGENT_NATIVE_PACKET_MODELS:
+            entries[schema_version] = packet
+    return entries
 
 
 def load_agent_native_example(

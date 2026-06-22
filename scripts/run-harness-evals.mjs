@@ -93,16 +93,12 @@ const ALLOWED_REVIEW_ISSUE_TYPES = [
 const ALLOWED_REVIEW_SEVERITIES = ["low", "medium", "high"];
 
 const args = parseArgs(process.argv.slice(2));
-const registryPath = path.resolve(REPO_ROOT, args.registry ?? DEFAULT_REGISTRY);
-const outputPath = path.resolve(REPO_ROOT, args.output ?? DEFAULT_OUTPUT);
-const observabilityOutputPath = path.resolve(
-	REPO_ROOT,
+const registryPath = resolveRepoPath(args.registry ?? DEFAULT_REGISTRY);
+const outputPath = resolveRepoPath(args.output ?? DEFAULT_OUTPUT);
+const observabilityOutputPath = resolveRepoPath(
 	args.observabilityOutput ?? DEFAULT_OBSERVABILITY_OUTPUT,
 );
-const fixtureRoot = path.resolve(
-	REPO_ROOT,
-	args.fixtureRoot ?? DEFAULT_FIXTURE_ROOT,
-);
+const fixtureRoot = resolveRepoPath(args.fixtureRoot ?? DEFAULT_FIXTURE_ROOT);
 
 const findings = [];
 const liveFixtureResults = [];
@@ -285,13 +281,37 @@ function parseArgs(rawArgs) {
 }
 
 function readJson(filePath) {
-	return JSON.parse(readFileSync(filePath, "utf-8"));
+	return JSON.parse(readFileSync(resolveRepoPath(filePath), "utf-8"));
 }
 
 function writeJson(filePath, value) {
-	writeFileSync(`${filePath}.tmp`, `${JSON.stringify(value, null, 2)}\n`);
-	rmSync(filePath, { force: true });
-	renameSync(`${filePath}.tmp`, filePath);
+	const target = resolveRepoPath(filePath);
+	const tempPath = resolveInside(
+		path.dirname(target),
+		`${path.basename(target)}.tmp`,
+	);
+	writeFileSync(tempPath, `${JSON.stringify(value, null, 2)}\n`);
+	rmSync(target, { force: true });
+	renameSync(tempPath, target);
+}
+
+function resolveRepoPath(targetPath) {
+	return resolveInside(REPO_ROOT, targetPath);
+}
+
+function resolveInside(basePath, targetPath) {
+	const base = path.resolve(basePath);
+	const target = path.isAbsolute(targetPath)
+		? path.resolve(targetPath)
+		: path.resolve(base, targetPath);
+	const relativePath = path.relative(base, target);
+	if (
+		relativePath === "" ||
+		(!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+	) {
+		return target;
+	}
+	throw new Error("Invalid file path");
 }
 
 /**
@@ -5318,26 +5338,12 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 		repoRoot: fixturePath,
 		worktreeRole: "dirty-with-justification",
 	});
-	const reviewerBase = path.resolve(fixturePath);
-	const reviewerManifestPath = path.resolve(
+	const reviewerBase = resolveRepoPath(fixturePath);
+	const reviewerManifestPath = resolveInside(
 		reviewerBase,
 		"reviewer-manifest.json",
 	);
-	const reviewerManifestRel = path.relative(reviewerBase, reviewerManifestPath);
-	if (
-		reviewerManifestRel.startsWith("..") ||
-		path.isAbsolute(reviewerManifestRel)
-	) {
-		throw new Error("Invalid path");
-	}
-	const reviewerReviewsDir = path.resolve(reviewerBase, "reviews");
-	const reviewerReviewsRel = path.relative(reviewerBase, reviewerReviewsDir);
-	if (
-		reviewerReviewsRel.startsWith("..") ||
-		path.isAbsolute(reviewerReviewsRel)
-	) {
-		throw new Error("Invalid path");
-	}
+	const reviewerReviewsDir = resolveInside(reviewerBase, "reviews");
 	mkdirSync(reviewerReviewsDir, { recursive: true });
 	writeJson(reviewerManifestPath, {
 		requiredReviewers: [
@@ -5348,17 +5354,7 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 		],
 		synthesisStatus: "complete",
 	});
-	const reviewerArtifactPath = path.resolve(reviewerReviewsDir, "product.md");
-	const reviewerArtifactRel = path.relative(
-		reviewerReviewsDir,
-		reviewerArtifactPath,
-	);
-	if (
-		reviewerArtifactRel.startsWith("..") ||
-		path.isAbsolute(reviewerArtifactRel)
-	) {
-		throw new Error("Invalid path");
-	}
+	const reviewerArtifactPath = resolveInside(reviewerReviewsDir, "product.md");
 	writeFileSync(
 		reviewerArtifactPath,
 		[
@@ -5394,8 +5390,8 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 		},
 		commandReports,
 	};
-	const reportPath = path.join(
-		fixturePath,
+	const reportPath = resolveInside(
+		reviewerBase,
 		"agent-native-ratchet-discovery.json",
 	);
 	writeJson(reportPath, report);

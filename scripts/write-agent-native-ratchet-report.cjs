@@ -185,7 +185,16 @@ function childPath(basePath, ...segments) {
 }
 
 function repoContainedPath(targetPath) {
-	return validateContainedPath(repoRoot, targetPath);
+	const base = resolve(repoRoot);
+	const target = resolve(targetPath);
+	const relativeTarget = relative(base, target);
+	if (
+		relativeTarget === "" ||
+		(!relativeTarget.startsWith("..") && !isAbsolute(relativeTarget))
+	) {
+		return target;
+	}
+	throw new Error("Invalid path");
 }
 
 function pathExists(relativePath) {
@@ -440,12 +449,7 @@ function safeRunDirectories(runsRoot) {
 
 function readJsonUnder(basePath, ...segments) {
 	try {
-		const base = resolve(basePath);
-		const target = resolve(base, join(...segments));
-		const relativeTarget = relative(base, target);
-		if (relativeTarget.startsWith("..") || isAbsolute(relativeTarget)) {
-			throw new Error("Invalid path");
-		}
+		const target = childPath(basePath, ...segments);
 		return JSON.parse(readFileSync(target, "utf8"));
 	} catch {
 		return null;
