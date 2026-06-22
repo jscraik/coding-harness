@@ -30,7 +30,7 @@
 		},
 		"headSha": {
 			"type": "string",
-			"minLength": 1
+			"pattern": "^[0-9a-f]{7,40}$"
 		},
 		"worktreeStatus": {
 			"enum": ["clean", "dirty"]
