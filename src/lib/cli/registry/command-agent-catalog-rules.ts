@@ -3,8 +3,10 @@ import type { CommandAgentCatalogMode } from "./command-capabilities.js";
 const AGENT_ORIENT_COMMAND_NAMES = [
 	"next",
 	"agent-readiness",
+	"agent-native-ratchets",
 	"runtime-card",
 	"session-context",
+	"session-distill",
 	"commands",
 ] as const;
 const AGENT_VERIFY_COMMAND_NAMES = [

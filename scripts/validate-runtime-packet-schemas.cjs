@@ -34,6 +34,7 @@ const SUPPORTED_SCHEMA_KEYWORDS = new Set([
 	"$schema",
 	"$defs",
 	"additionalProperties",
+	"allOf",
 	"anyOf",
 	"const",
 	"description",
@@ -213,6 +214,17 @@ function validateSupportedSchemaKeywords(
 			);
 		}
 	}
+	if (Array.isArray(schema.allOf)) {
+		for (const [index, candidate] of schema.allOf.entries()) {
+			validateSupportedSchemaKeywords(
+				candidate,
+				schemaPath,
+				errors,
+				`${schemaNodePath}.allOf[${index}]`,
+				visitedRefs,
+			);
+		}
+	}
 	if (isObject(schema.additionalProperties)) {
 		errors.push(
 			`${schemaPath}${schemaNodePath}.additionalProperties uses schema-valued additionalProperties, which this validator does not support`,
@@ -311,6 +323,11 @@ function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
 		});
 		if (!anyOfPassed) {
 			errors.push(`${valuePath} must match at least one anyOf schema`);
+		}
+	}
+	if (Array.isArray(schema.allOf)) {
+		for (const candidate of schema.allOf) {
+			validateExampleValue(candidate, value, valuePath, errors, schemaPath);
 		}
 	}
 	if (Object.hasOwn(schema, "const") && !valuesEqual(value, schema.const)) {

@@ -27,69 +27,60 @@ function runPacketScript(
 	return result.status ?? 1;
 }
 
+function createPacketCommandSpec(options: {
+	name: string;
+	summary: string;
+	example: string;
+	errorLabel: string;
+	baseArgs: string[];
+}): CommandSpec {
+	return defineCommandSpec({
+		name: options.name,
+		summary: options.summary,
+		example: options.example,
+		errorLabel: options.errorLabel,
+		execute: (args) => runPacketScript(options.name, options.baseArgs, args),
+	});
+}
+
 /** Build command specs for the agent-native packet producers. */
 export function createAgentNativePacketCommandSpecs(): CommandSpec[] {
 	return [
-		defineCommandSpec({
+		createPacketCommandSpec({
 			name: "agent-native-ratchets",
 			summary: "Emit an agent-native-ratchets/v1 packet for ratchet discovery",
 			example: "agent-native-ratchets --json",
 			errorLabel: "Agent Native Ratchets Error",
-			execute: (args) =>
-				runPacketScript(
-					"agent-native-ratchets",
-					[scriptPath, "--json", "--validate"],
-					args,
-				),
+			baseArgs: [scriptPath, "--json", "--validate"],
 		}),
-		defineCommandSpec({
+		createPacketCommandSpec({
 			name: "session-distill",
 			summary: "Emit a session-distill/v1 packet for resumed agents",
 			example: "session-distill --json",
 			errorLabel: "Session Distill Error",
-			execute: (args) =>
-				runPacketScript(
-					"session-distill",
-					[scriptPath, "--session-distill", "--json", "--validate"],
-					args,
-				),
+			baseArgs: [scriptPath, "--session-distill", "--json", "--validate"],
 		}),
-		defineCommandSpec({
+		createPacketCommandSpec({
 			name: "agent-rework",
 			summary: "Emit an agent-rework/v1 packet from local rework evidence",
 			example: "agent-rework --json",
 			errorLabel: "Agent Rework Error",
-			execute: (args) =>
-				runPacketScript(
-					"agent-rework",
-					[scriptPath, "--rework", "--json", "--validate"],
-					args,
-				),
+			baseArgs: [scriptPath, "--rework", "--json", "--validate"],
 		}),
-		defineCommandSpec({
+		createPacketCommandSpec({
 			name: "reviewer-decision",
 			summary:
 				"Emit a reviewer-decision/v1 packet from review coverage evidence",
 			example: "reviewer-decision --json",
 			errorLabel: "Reviewer Decision Error",
-			execute: (args) =>
-				runPacketScript(
-					"reviewer-decision",
-					[scriptPath, "--reviewer-decision", "--json", "--validate"],
-					args,
-				),
+			baseArgs: [scriptPath, "--reviewer-decision", "--json", "--validate"],
 		}),
-		defineCommandSpec({
+		createPacketCommandSpec({
 			name: "governance-decision-surface",
 			summary: "Emit a governance-decision-surface/v1 packet",
 			example: "governance-decision-surface --json",
 			errorLabel: "Governance Decision Surface Error",
-			execute: (args) =>
-				runPacketScript(
-					"governance-decision-surface",
-					[scriptPath, "--governance", "--json", "--validate"],
-					args,
-				),
+			baseArgs: [scriptPath, "--governance", "--json", "--validate"],
 		}),
 	];
 }

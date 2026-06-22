@@ -18,54 +18,86 @@
 			"maxItems": 5,
 			"prefixItems": [
 				{
-					"type": "object",
-					"required": ["id"],
-					"properties": {
-						"id": {
-							"const": "orientation_packet"
+					"allOf": [
+						{
+							"$ref": "#/$defs/ratchet"
+						},
+						{
+							"type": "object",
+							"required": ["id"],
+							"properties": {
+								"id": {
+									"const": "orientation_packet"
+								}
+							}
 						}
-					}
+					]
 				},
 				{
-					"type": "object",
-					"required": ["id"],
-					"properties": {
-						"id": {
-							"const": "session_distillation"
+					"allOf": [
+						{
+							"$ref": "#/$defs/ratchet"
+						},
+						{
+							"type": "object",
+							"required": ["id"],
+							"properties": {
+								"id": {
+									"const": "session_distillation"
+								}
+							}
 						}
-					}
+					]
 				},
 				{
-					"type": "object",
-					"required": ["id"],
-					"properties": {
-						"id": {
-							"const": "agent_rework_loop"
+					"allOf": [
+						{
+							"$ref": "#/$defs/ratchet"
+						},
+						{
+							"type": "object",
+							"required": ["id"],
+							"properties": {
+								"id": {
+									"const": "agent_rework_loop"
+								}
+							}
 						}
-					}
+					]
 				},
 				{
-					"type": "object",
-					"required": ["id"],
-					"properties": {
-						"id": {
-							"const": "reviewer_decision_contract"
+					"allOf": [
+						{
+							"$ref": "#/$defs/ratchet"
+						},
+						{
+							"type": "object",
+							"required": ["id"],
+							"properties": {
+								"id": {
+									"const": "reviewer_decision_contract"
+								}
+							}
 						}
-					}
+					]
 				},
 				{
-					"type": "object",
-					"required": ["id"],
-					"properties": {
-						"id": {
-							"const": "governance_decision_surface"
+					"allOf": [
+						{
+							"$ref": "#/$defs/ratchet"
+						},
+						{
+							"type": "object",
+							"required": ["id"],
+							"properties": {
+								"id": {
+									"const": "governance_decision_surface"
+								}
+							}
 						}
-					}
+					]
 				}
-			],
-			"items": {
-				"$ref": "#/$defs/ratchet"
-			}
+			]
 		}
 	},
 	"$defs": {

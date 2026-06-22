@@ -297,14 +297,16 @@ function worktreeStatus() {
 }
 
 function currentBranch() {
-	return (
-		requiredGitOutput(["branch", "--show-current"], "current branch") ||
-		"detached"
+	const branch = String(
+		requiredGitOutput(["branch", "--show-current"], "current branch"),
 	);
+	return branch.length > 0 ? branch : "detached";
 }
 
 function currentHeadSha() {
-	return requiredGitOutput(["rev-parse", "--short", "HEAD"], "HEAD sha");
+	return String(
+		requiredGitOutput(["rev-parse", "--short", "HEAD"], "HEAD sha"),
+	);
 }
 
 function sessionEvidenceLanes(files, status) {

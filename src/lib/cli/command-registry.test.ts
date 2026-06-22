@@ -25,9 +25,11 @@ import {
 const AGENT_COMMAND_RAIL_NAMES = [
 	"next",
 	"agent-readiness",
+	"agent-native-ratchets",
 	"commands",
 	"runtime-card",
 	"session-context",
+	"session-distill",
 	"check",
 	"fitness",
 	"validation-plan",
@@ -40,9 +42,11 @@ const AGENT_COMMAND_RAIL_NAMES = [
 const AGENT_ORIENT_COMMAND_RAIL_NAMES = [
 	"next",
 	"agent-readiness",
+	"agent-native-ratchets",
 	"commands",
 	"runtime-card",
 	"session-context",
+	"session-distill",
 ] as const;
 const AGENT_VERIFY_COMMAND_RAIL_NAMES = [
 	"next",
