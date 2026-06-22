@@ -5,8 +5,8 @@ prepend_standard_tool_paths() {
 	local candidate
 	local idx
 	local candidates=(
-		"$HOME/.local/share/mise/shims"
-		"$HOME/.local/bin"
+		"${HOME:-}/.local/share/mise/shims"
+		"${HOME:-}/.local/bin"
 		"/opt/homebrew/bin"
 		"/opt/homebrew/sbin"
 		"/usr/local/bin"
@@ -17,11 +17,11 @@ prepend_standard_tool_paths() {
 		PATH="/usr/bin:/bin"
 		for (( idx=${#candidates[@]} - 1; idx >= 0; idx-- )); do
 			candidate="${candidates[$idx]}"
-			[[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]] && PATH="$candidate:$PATH"
+			[[ -n "$candidate" && -d "$candidate" && ":$PATH:" != *":$candidate:"* ]] && PATH="$candidate:$PATH"
 		done
 	else
 		for candidate in "${candidates[@]}"; do
-			[[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]] && PATH="$PATH:$candidate"
+			[[ -n "$candidate" && -d "$candidate" && ":$PATH:" != *":$candidate:"* ]] && PATH="$PATH:$candidate"
 		done
 	fi
 	export PATH

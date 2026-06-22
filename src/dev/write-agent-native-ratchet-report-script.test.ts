@@ -99,25 +99,40 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 	it("includes untracked files in session distillation changed-file routing", () => {
 		const root = mkdtempSync(join(tmpdir(), "agent-native-session-distill-"));
 		tempRoots.push(root);
-		spawnSync("git", ["init"], { cwd: root, encoding: "utf8" });
-		spawnSync("git", ["config", "user.email", "codex@example.com"], {
+		let result = spawnSync("git", ["init"], { cwd: root, encoding: "utf8" });
+		if (result.status !== 0) {
+			throw new Error(`git init failed with status ${result.status}`);
+		}
+		result = spawnSync("git", ["config", "user.email", "codex@example.com"], {
 			cwd: root,
 			encoding: "utf8",
 		});
-		spawnSync("git", ["config", "user.name", "Codex"], {
+		if (result.status !== 0) {
+			throw new Error(`git config user.email failed with status ${result.status}`);
+		}
+		result = spawnSync("git", ["config", "user.name", "Codex"], {
 			cwd: root,
 			encoding: "utf8",
 		});
+		if (result.status !== 0) {
+			throw new Error(`git config user.name failed with status ${result.status}`);
+		}
 		writeFileSync(join(root, "tracked.txt"), "tracked\n");
-		spawnSync("git", ["add", "tracked.txt"], { cwd: root, encoding: "utf8" });
-		spawnSync("git", ["commit", "-m", "initial"], {
+		result = spawnSync("git", ["add", "tracked.txt"], { cwd: root, encoding: "utf8" });
+		if (result.status !== 0) {
+			throw new Error(`git add failed with status ${result.status}`);
+		}
+		result = spawnSync("git", ["commit", "-m", "initial"], {
 			cwd: root,
 			encoding: "utf8",
 		});
+		if (result.status !== 0) {
+			throw new Error(`git commit failed with status ${result.status}`);
+		}
 		writeFileSync(join(root, "new-file.txt"), "new\n");
 		writeFileSync(join(root, "docs my file.md"), "new\n");
 
-		const result = runNodeScript(SCRIPT_PATH, ["--session-distill", "--json"], {
+		result = runNodeScript(SCRIPT_PATH, ["--session-distill", "--json"], {
 			cwd: root,
 		});
 		const report = JSON.parse(result.stdout) as {

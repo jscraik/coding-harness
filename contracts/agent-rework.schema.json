@@ -64,6 +64,27 @@
 				"gateCount",
 				"failedGates"
 			],
+			"if": {
+				"properties": {
+					"failedGateId": {
+						"type": "null"
+					}
+				}
+			},
+			"then": {
+				"properties": {
+					"failedGates": {
+						"maxItems": 0
+					}
+				}
+			},
+			"else": {
+				"properties": {
+					"failedGates": {
+						"minItems": 1
+					}
+				}
+			},
 			"properties": {
 				"status": {
 					"const": "available"
@@ -73,15 +94,13 @@
 					"minLength": 1
 				},
 				"overallStatus": {
-					"type": "string",
-					"minLength": 1
+					"enum": ["passed", "pass", "failed", "blocked", "unknown"]
 				},
 				"failedGateId": {
 					"type": ["string", "null"]
 				},
 				"freshVsResumed": {
-					"type": "string",
-					"minLength": 1
+					"enum": ["fresh", "resume", "unknown"]
 				},
 				"gateCount": {
 					"type": "integer",
@@ -119,12 +138,10 @@
 					"minLength": 1
 				},
 				"status": {
-					"type": "string",
-					"minLength": 1
+					"enum": ["passed", "failed", "blocked"]
 				},
 				"failureClass": {
-					"type": "string",
-					"minLength": 1
+					"enum": ["transient_infra", "contract_policy", "internal_unknown"]
 				},
 				"nextAction": {
 					"type": "string",

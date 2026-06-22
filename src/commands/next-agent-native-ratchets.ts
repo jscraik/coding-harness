@@ -5,7 +5,13 @@ export const AGENT_NATIVE_RATCHET_COMMAND = "harness agent-readiness . --json";
 export const SESSION_DISTILL_COMMAND =
 	"harness session-context --json --repo-root .";
 
-/** Build metadata that lets harness-next expose agent-native ratchet packets. */
+/**
+ * Build metadata that lets harness-next expose agent-native ratchet packets.
+ *
+ * Returns loosely typed Record<string, unknown> for intentional architectural flexibility.
+ * This pattern is consistent across all metadata builders (phaseExitMeta, runtimeCardMeta,
+ * agentReadinessContextMeta) to allow metadata evolution without breaking contracts.
+ */
 export function agentNativeRatchetMeta(): Record<string, unknown> {
 	return {
 		agentNativeRatchets: {

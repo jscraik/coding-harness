@@ -62,6 +62,13 @@ class TestAgentNativeRatchetsReport:
 
 
 class TestSessionDistillReport:
+    def test_accepts_canonical_report_example(self) -> None:
+        report = SessionDistillReport.model_validate(
+            _load_example("session-distill.example.json")
+        )
+
+        assert report.status == "pass"
+
     def test_rejects_changed_file_count_mismatch(self) -> None:
         payload = deepcopy(_load_example("session-distill.example.json"))
         payload["changedFileCount"] = 99
@@ -79,6 +86,13 @@ class TestSessionDistillReport:
 
 
 class TestAgentReworkReport:
+    def test_accepts_canonical_report_example(self) -> None:
+        report = AgentReworkReport.model_validate(
+            _load_example("agent-rework.example.json")
+        )
+
+        assert report.status == "pass"
+
     def test_rejects_unavailable_run_with_pass_status(self) -> None:
         payload = deepcopy(_load_example("agent-rework.example.json"))
         payload["latestRun"] = {
@@ -91,6 +105,13 @@ class TestAgentReworkReport:
 
 
 class TestReviewerDecisionReport:
+    def test_accepts_canonical_report_example(self) -> None:
+        report = ReviewerDecisionReport.model_validate(
+            _load_example("reviewer-decision.example.json")
+        )
+
+        assert report.decision == "needs_evidence"
+
     def test_rejects_pass_status_without_accept_decision(self) -> None:
         payload = deepcopy(_load_example("reviewer-decision.example.json"))
         payload["status"] = "pass"
@@ -100,6 +121,13 @@ class TestReviewerDecisionReport:
 
 
 class TestGovernanceDecisionSurfaceReport:
+    def test_accepts_canonical_report_example(self) -> None:
+        report = GovernanceDecisionSurfaceReport.model_validate(
+            _load_example("governance-decision-surface.example.json")
+        )
+
+        assert report.status == "pass"
+
     def test_rejects_decision_inputs_without_runtime_decision_class(self) -> None:
         payload = deepcopy(_load_example("governance-decision-surface.example.json"))
         decision_inputs = cast(list[dict[str, Any]], payload["decisionInputs"])
