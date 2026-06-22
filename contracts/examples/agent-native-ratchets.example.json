@@ -1,0 +1,51 @@
+{
+	"schemaVersion": "agent-native-ratchets/v1",
+	"status": "pass",
+	"ratchets": [
+		{
+			"id": "orientation_packet",
+			"status": "pass",
+			"purpose": "Give cold agents a compact route from changed files to policy modules and gates.",
+			"command": "pnpm run coding-policy:route -- <path...>",
+			"evidencePaths": ["coding-policy.json"],
+			"claimBoundary": "Orientation only; gate execution, CI state, review state, and merge readiness remain separate lanes.",
+			"nextMove": "Use this route before loading broad codestyle or governance context."
+		},
+		{
+			"id": "session_distillation",
+			"status": "pass",
+			"purpose": "Turn a run into a compact resumed-agent handoff instead of a transcript dump.",
+			"command": "pnpm run session:distill",
+			"evidencePaths": ["scripts/write-agent-native-ratchet-report.cjs"],
+			"claimBoundary": "Distillation summarizes local orientation and does not prove CI, review, tracker, or merge readiness.",
+			"nextMove": "Attach session-distill/v1 to PR closeout and resumed-agent handoff flows."
+		},
+		{
+			"id": "agent_rework_loop",
+			"status": "pass",
+			"purpose": "Expose retry, stop, ownership, and next-action state as data.",
+			"command": "pnpm run agent-rework:report",
+			"evidencePaths": ["scripts/verify-work.sh"],
+			"claimBoundary": "Rework evidence explains local recovery state and does not make delivery or merge claims.",
+			"nextMove": "Promote repeated recovery patterns into validators, tests, or tracked exceptions."
+		},
+		{
+			"id": "reviewer_decision_contract",
+			"status": "pass",
+			"purpose": "Make reviewer outcomes explicit enough for coordinators to route accept, object, defer, and blocked states.",
+			"command": "pnpm run reviewer:decision",
+			"evidencePaths": ["scripts/validate-reviewer-coverage.cjs"],
+			"claimBoundary": "Reviewer decisions are review evidence only; PR closeout still owns merge-readiness synthesis.",
+			"nextMove": "Require typed reviewer outcomes before treating review coverage as satisfied."
+		},
+		{
+			"id": "governance_decision_surface",
+			"status": "pass",
+			"purpose": "Classify governance docs by whether they feed runtime decisions, operator policy, history, or archive candidates.",
+			"command": "pnpm run governance:decision-surface",
+			"evidencePaths": ["docs/doc-lifecycle-manifest.json"],
+			"claimBoundary": "Governance classification is routing metadata; it cannot override source docs or validation results.",
+			"nextMove": "Use this surface to prune governance that does not feed a decision or durable policy."
+		}
+	]
+}

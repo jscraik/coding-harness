@@ -1,0 +1,28 @@
+{
+	"schemaVersion": "reviewer-decision/v1",
+	"status": "needs_evidence",
+	"command": "node scripts/validate-reviewer-coverage.cjs --manifest <manifest> --reviews-dir artifacts/reviews",
+	"decision": "needs_evidence",
+	"outcomes": [
+		"accept",
+		"object",
+		"needs_evidence",
+		"defer",
+		"blocked_external",
+		"accepted_risk"
+	],
+	"coverageReceipt": {
+		"schemaVersion": "reviewer-coverage-receipt/v1",
+		"status": "blocked",
+		"blockerClass": "missing_manifest",
+		"reason": "reviewer coverage manifest does not exist",
+		"requestedRoles": 0,
+		"completedRoles": 0,
+		"blockedRoles": 0,
+		"missingArtifacts": 0,
+		"synthesisStatus": "unknown",
+		"evidenceRefs": ["artifacts/reviews/manifest.json"]
+	},
+	"nextMove": "Collect artifact-backed reviewer evidence; mailbox text alone is not proof.",
+	"claimBoundary": "reviewer-decision/v1 is review-lane evidence and must be composed by PR closeout before merge claims."
+}

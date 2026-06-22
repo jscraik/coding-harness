@@ -1000,6 +1000,56 @@
 			}
 		},
 		{
+			"id": "agent-native-ratchet-discovery",
+			"type": "live_fixture",
+			"prompt": "Prove harness next exposes agent-native ratchet packets and that each ratchet command emits a machine-readable evidence packet.",
+			"expected": {
+				"commands": [
+					"pnpm test:evals",
+					"pnpm run session:distill",
+					"pnpm run agent-native:ratchets",
+					"pnpm run agent-rework:report",
+					"pnpm run reviewer:decision",
+					"pnpm run governance:decision-surface"
+				],
+				"artifacts": [
+					"agent-native ratchet discovery evidence",
+					"artifacts/evals/live-fixtures/agent-native-ratchet-discovery/agent-native-ratchet-discovery.json"
+				],
+				"assertions": [
+					"agent-native ratchet discovery evidence is written",
+					"harness next exposes ratchet follow-up commands",
+					"harness next marks ratchets as hidden plumbing",
+					"harness next lists all five agent-native packets",
+					"agent-native ratchet commands emit expected schemas",
+					"agent-native ratchet packets preserve separate evidence lanes"
+				],
+				"artifactSchemas": {
+					"artifacts/evals/live-fixtures/agent-native-ratchet-discovery/agent-native-ratchet-discovery.json": {
+						"schemaVersion": "agent-native-ratchet-discovery-fixture/v1",
+						"requiredFields": [
+							"decision.meta.packets",
+							"commandReports.ratchets.schemaVersion",
+							"commandReports.session.schemaVersion",
+							"commandReports.rework.schemaVersion",
+							"commandReports.reviewer.schemaVersion",
+							"commandReports.governance.schemaVersion"
+						]
+					}
+				},
+				"stopConditions": [
+					"Do not rely on prose-only ratchet guidance; harness next must route agents to executable ratchet packets."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 3,
+				"artifact_evidence": 3,
+				"validation_sufficiency": 2,
+				"blocker_honesty": 2,
+				"manual_step_reduction": 2
+			}
+		},
+		{
 			"id": "adversarial-pr-loop-probes",
 			"type": "live_fixture",
 			"prompt": "Run local adversarial probes against PR-loop readiness claims and prove unsafe shortcuts are blocked.",

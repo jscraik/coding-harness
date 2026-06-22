@@ -16,6 +16,7 @@ import {
 	nextDecisionOperationalMeta,
 } from "./next-decision-meta.js";
 import type { HarnessNextMode } from "./next-decision-types.js";
+import * as agentNativeRatchets from "./next-agent-native-ratchets.js";
 import { promptContextDriftDecision } from "./next-prompt-context-drift.js";
 import { chooseNextCommandParts, shellQuote } from "./next-support.js";
 
@@ -65,7 +66,6 @@ function createRecommendationCandidate(args: {
 
 /**
  * Recommend converting a Harness upgrade matrix artifact into a fleet remediation plan.
- *
  * @param args - Matrix artifact path, mode, and optional normalized evidence metadata
  * @returns A HarnessDecision that directs the operator to run `harness fleet-plan`
  */
@@ -196,6 +196,15 @@ export function changedFilesDecision(args: {
 		"pr",
 		args.files,
 	).command;
+	const ratchetFollowUpCommands = [
+		agentNativeRatchets.SESSION_DISTILL_COMMAND,
+		agentNativeRatchets.AGENT_NATIVE_RATCHET_COMMAND,
+	];
+	ratchetFollowUpCommands.push(
+		args.mode === "pr"
+			? "bash scripts/validate-codestyle.sh --fast"
+			: reviewContextFollowUp,
+	);
 	return createNextDecision({
 		status: "action_required",
 		summary: `Detected ${args.files.length} changed file${args.files.length === 1 ? "" : "s"}.`,
@@ -211,14 +220,12 @@ export function changedFilesDecision(args: {
 			`Stop if ${args.mode === "pr" ? "review-context" : "validation-plan"} cannot produce JSON for the changed files.`,
 		],
 		humanEscalation: null,
-		followUpCommands:
-			args.mode === "pr"
-				? ["bash scripts/validate-codestyle.sh --fast"]
-				: [reviewContextFollowUp],
+		followUpCommands: ratchetFollowUpCommands,
 		hiddenPlumbing: [
 			"git:status",
 			"command-catalog",
 			"risk-tier",
+			"agent-native-ratchets",
 			...(args.phaseExit ? ["he-phase-exit"] : []),
 			...(args.runtimeCard ? ["runtime-card"] : []),
 			...(args.prCloseout ? ["pr-closeout"] : []),
@@ -240,7 +247,10 @@ export function changedFilesDecision(args: {
 			sourceErrors: args.sourceErrors,
 			phaseExit: args.phaseExit,
 			runtimeCard: args.runtimeCard,
-			extra: prCloseoutDecisionMeta(args.prCloseout),
+			extra: {
+				...prCloseoutDecisionMeta(args.prCloseout),
+				...agentNativeRatchets.agentNativeRatchetMeta(),
+			},
 			agentReadinessContext: args.agentReadinessContext,
 		}),
 	});

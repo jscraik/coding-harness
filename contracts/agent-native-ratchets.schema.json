@@ -1,0 +1,71 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/coding-harness/agent-native-ratchets.schema.json",
+	"title": "Agent Native Ratchets",
+	"type": "object",
+	"additionalProperties": false,
+	"required": ["schemaVersion", "status", "ratchets"],
+	"properties": {
+		"schemaVersion": {
+			"const": "agent-native-ratchets/v1"
+		},
+		"status": {
+			"enum": ["pass", "needs_attention"]
+		},
+		"ratchets": {
+			"type": "array",
+			"minItems": 5,
+			"items": {
+				"$ref": "#/$defs/ratchet"
+			}
+		}
+	},
+	"$defs": {
+		"ratchet": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"id",
+				"status",
+				"purpose",
+				"command",
+				"evidencePaths",
+				"claimBoundary",
+				"nextMove"
+			],
+			"properties": {
+				"id": {
+					"type": "string",
+					"minLength": 1
+				},
+				"status": {
+					"enum": ["pass", "needs_attention"]
+				},
+				"purpose": {
+					"type": "string",
+					"minLength": 1
+				},
+				"command": {
+					"type": "string",
+					"minLength": 1
+				},
+				"evidencePaths": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"type": "string",
+						"minLength": 1
+					}
+				},
+				"claimBoundary": {
+					"type": "string",
+					"minLength": 1
+				},
+				"nextMove": {
+					"type": "string",
+					"minLength": 1
+				}
+			}
+		}
+	}
+}

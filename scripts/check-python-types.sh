@@ -46,10 +46,12 @@ if [[ "$mode" == "artifact-contracts" ]]; then
 	exit 0
 fi
 
-run_uv ruff check \
+	run_uv ruff check \
 	scripts/check_artifact_type_contracts.py \
+	scripts/tests/test_agent_native_artifact_contracts.py \
 	scripts/hook-governance/inventory_repos.py \
 	scripts/hook-governance/tests/test_inventory_repos.py
 run_uv pyright
 run_uv pytest \
+	scripts/tests/test_agent_native_artifact_contracts.py \
 	scripts/hook-governance/tests/test_inventory_repos.py

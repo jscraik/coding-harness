@@ -202,6 +202,18 @@ they add durable evidence artifacts consumed by the agent cockpit. Refresh
 `runtime-card --evidence-out`, `runtime-evidence-bundle/v1`, or related
 producer and adapter wiring changes.
 
+Agent-native ratchet packet changes belong in the same advisory cockpit lane
+when they turn review, session, rework, or governance feedback into durable
+artifacts. Keep `agent-native-ratchets/v1`, `session-distill/v1`,
+`agent-rework/v1`, `reviewer-decision/v1`, and
+`governance-decision-surface/v1` contract-first under `contracts/`, route
+their producers through package scripts, and ratchet them with
+`node scripts/validate-runtime-packet-schemas.cjs --all` plus
+`pnpm artifact:types`. These packets may steer `harness next` and eval
+fixtures, but they must not prove CI, review-thread state, tracker state,
+external readiness, or merge readiness without a separate canonical consumer
+boundary.
+
 Runtime-card trace-out changes belong in `src/lib/runtime-trace/` and must
 reuse the canonical run-record writer under `src/lib/contract/` instead of
 inventing a second JSONL/hash-chain persistence path. Keep `--trace-out`

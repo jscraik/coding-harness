@@ -676,6 +676,11 @@ async function runLiveFixture(scenario) {
 			result = runAgenticEvalContractCoverageFixture(scenario, fixturePath);
 		} else if (scenario.id === "agent-next-action-parity") {
 			result = await runAgentNextActionParityFixture(scenario, fixturePath);
+		} else if (scenario.id === "agent-native-ratchet-discovery") {
+			result = await runAgentNativeRatchetDiscoveryFixture(
+				scenario,
+				fixturePath,
+			);
 		} else {
 			result = {
 				id: scenario.id,
@@ -5299,6 +5304,104 @@ async function runAgentNextActionParityFixture(scenario, fixturePath) {
 					"pr_closeout_artifact_invalid",
 		),
 	]);
+}
+
+async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
+	const [{ runHarnessNext }] = await Promise.all([
+		import(pathToFileURL(path.join(REPO_ROOT, "src/commands/next.ts")).href),
+	]);
+	const changedFiles = ["src/commands/next-recommendation-decisions.ts"];
+	const decision = runHarnessNext({
+		inspectChangedFiles: () => changedFiles,
+		repoRoot: fixturePath,
+		worktreeRole: "dirty-with-justification",
+	});
+	const commandReports = {
+		ratchets: runRatchetPacketCommand(["run", "agent-native:ratchets"]),
+		session: runRatchetPacketCommand(["run", "session:distill"]),
+		rework: runRatchetPacketCommand(["run", "agent-rework:report"]),
+		reviewer: runRatchetPacketCommand(["run", "reviewer:decision"]),
+		governance: runRatchetPacketCommand(["run", "governance:decision-surface"]),
+	};
+	const report = {
+		schemaVersion: "agent-native-ratchet-discovery-fixture/v1",
+		sourceScenario: scenario.id,
+		changedFiles,
+		decision: {
+			status: decision.status,
+			nextCommand: decision.nextCommand,
+			followUpCommands: decision.followUpCommands,
+			hiddenPlumbing: decision.hiddenPlumbing,
+			meta: decision.meta?.agentNativeRatchets,
+		},
+		commandReports,
+	};
+	const reportPath = path.join(
+		fixturePath,
+		"agent-native-ratchet-discovery.json",
+	);
+	writeJson(reportPath, report);
+
+	return fixtureResult(scenario.id, [
+		assertion(
+			"agent-native ratchet discovery evidence is written",
+			readJson(reportPath).schemaVersion ===
+				"agent-native-ratchet-discovery-fixture/v1",
+		),
+		assertion(
+			"harness next exposes ratchet follow-up commands",
+			decision.followUpCommands.includes(
+				"harness session-context --json --repo-root .",
+			) &&
+				decision.followUpCommands.includes("harness agent-readiness . --json"),
+		),
+		assertion(
+			"harness next marks ratchets as hidden plumbing",
+			decision.hiddenPlumbing.includes("agent-native-ratchets"),
+		),
+		assertion(
+			"harness next lists all five agent-native packets",
+			[
+				"session-distill/v1",
+				"agent-native-ratchets/v1",
+				"agent-rework/v1",
+				"reviewer-decision/v1",
+				"governance-decision-surface/v1",
+			].every((packet) =>
+				normalizeArray(decision.meta?.agentNativeRatchets?.packets).includes(
+					packet,
+				),
+			),
+		),
+		assertion(
+			"agent-native ratchet commands emit expected schemas",
+			commandReports.ratchets.schemaVersion === "agent-native-ratchets/v1" &&
+				commandReports.session.schemaVersion === "session-distill/v1" &&
+				commandReports.rework.schemaVersion === "agent-rework/v1" &&
+				commandReports.reviewer.schemaVersion === "reviewer-decision/v1" &&
+				commandReports.governance.schemaVersion ===
+					"governance-decision-surface/v1",
+		),
+		assertion(
+			"agent-native ratchet packets preserve separate evidence lanes",
+			normalizeArray(commandReports.session.evidenceLanes).length >= 4 &&
+				normalizeArray(commandReports.session.nonClaims).includes(
+					"merge_ready",
+				) &&
+				commandReports.session.claimBoundary ===
+					"session-distill/v1 orients resumed agents; it is not validation, CI, review, tracker, or merge readiness proof." &&
+				commandReports.reviewer.claimBoundary ===
+					"reviewer-decision/v1 is review-lane evidence and must be composed by PR closeout before merge claims.",
+		),
+	]);
+}
+
+function runRatchetPacketCommand(args) {
+	const stdout = execFileSync("pnpm", ["--silent", ...args], {
+		cwd: REPO_ROOT,
+		encoding: "utf8",
+	});
+	return JSON.parse(stdout);
 }
 
 function runSideEffectAuthorizationValidatorFixture(scenario, fixturePath) {

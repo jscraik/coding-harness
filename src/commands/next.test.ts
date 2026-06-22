@@ -345,12 +345,21 @@ describe("runHarnessNext", () => {
 			"Stop if validation-plan cannot produce JSON for the changed files.",
 		]);
 		expect(decision.followUpCommands).toEqual([
+			"harness session-context --json --repo-root .",
+			"harness agent-readiness . --json",
 			"harness review-context --files src/commands/next.ts --json",
 		]);
+		const ratchetMeta = decision.meta?.agentNativeRatchets as
+			| { commands?: string[] }
+			| undefined;
+		expect(decision.followUpCommands.slice(0, 2)).toEqual(
+			ratchetMeta?.commands,
+		);
 		expect(decision.hiddenPlumbing).toEqual([
 			"git:status",
 			"command-catalog",
 			"risk-tier",
+			"agent-native-ratchets",
 		]);
 		expect(decision.safeToRun).toBe(true);
 		expect(decision.requiresNetwork).toBe(false);
@@ -364,6 +373,17 @@ describe("runHarnessNext", () => {
 		expect(decision.meta).toMatchObject({
 			frictionClass: "none",
 			delayClass: "normal",
+			agentNativeRatchets: {
+				schemaVersion: "agent-native-ratchet-discovery/v1",
+				commands: [
+					"harness session-context --json --repo-root .",
+					"harness agent-readiness . --json",
+				],
+				packets: expect.arrayContaining([
+					"session-distill/v1",
+					"agent-native-ratchets/v1",
+				]),
+			},
 			agentReadinessContext: {
 				schemaVersion: "agent-readiness-context-health/v1",
 				evidenceUse: "orientation",
@@ -924,8 +944,16 @@ describe("runHarnessNext", () => {
 			"harness review-context --files docs/spec.md --json output",
 		]);
 		expect(decision.followUpCommands).toEqual([
+			"harness session-context --json --repo-root .",
+			"harness agent-readiness . --json",
 			"bash scripts/validate-codestyle.sh --fast",
 		]);
+		const ratchetMeta = decision.meta?.agentNativeRatchets as
+			| { commands?: string[] }
+			| undefined;
+		expect(decision.followUpCommands.slice(0, 2)).toEqual(
+			ratchetMeta?.commands,
+		);
 		expect(decision.meta).toMatchObject({
 			mode: "pr",
 			sourceErrors: [
