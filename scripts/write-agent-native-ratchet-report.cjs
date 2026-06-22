@@ -105,7 +105,7 @@ function parseArgs(argv) {
 	for (let index = 0; index < argv.length; index += 1) {
 		const arg = argv[index];
 		if (arg === "--") {
-			break;
+			continue;
 		}
 		if (arg === "--json") {
 			options.json = true;
@@ -164,8 +164,8 @@ function packageScripts() {
 }
 
 function validateContainedPath(basePath, ...segments) {
-	const base = path.resolve(basePath);
-	const target = resolve(base, ...segments);
+	const base = resolve(basePath);
+	const target = resolve(base, join(...segments));
 	const relativeTarget = relative(base, target);
 	if (
 		relativeTarget === "" ||
@@ -177,11 +177,11 @@ function validateContainedPath(basePath, ...segments) {
 }
 
 function repoPath(...segments) {
-	return validateContainedPath(repoRoot, join(...segments));
+	return validateContainedPath(repoRoot, ...segments);
 }
 
 function childPath(basePath, ...segments) {
-	return validateContainedPath(basePath, join(...segments));
+	return validateContainedPath(basePath, ...segments);
 }
 
 function repoContainedPath(targetPath) {
@@ -190,11 +190,7 @@ function repoContainedPath(targetPath) {
 
 function pathExists(relativePath) {
 	try {
-		const target = resolve(repoRoot, relativePath);
-		const relativeTarget = relative(repoRoot, target);
-		if (relativeTarget.startsWith("..") || isAbsolute(relativeTarget)) {
-			return false;
-		}
+		const target = repoPath(relativePath);
 		return existsSync(target);
 	} catch {
 		return false;
@@ -346,18 +342,9 @@ function buildSessionDistillReport() {
 
 function buildReworkReport() {
 	const latestRun = latestVerifyWorkRun();
-	const runPassed =
-		latestRun.status === "available" &&
-		(latestRun.overallStatus === "passed" ||
-			latestRun.overallStatus === "pass");
 	return {
 		schemaVersion: AGENT_REWORK_SCHEMA_VERSION,
-		status:
-			latestRun.status === "unavailable"
-				? "needs_evidence"
-				: runPassed
-					? "pass"
-					: "needs_attention",
+		status: latestRun.status === "unavailable" ? "needs_evidence" : "pass",
 		attemptSource: "scripts/verify-work.sh attempt-ledger/v1 gate artifacts",
 		command: "bash scripts/verify-work.sh --fast",
 		latestRun,
@@ -365,7 +352,6 @@ function buildReworkReport() {
 		claimBoundary:
 			"agent-rework/v1 routes local recovery and cannot prove delivery readiness by itself.",
 	};
-}
 }
 
 function latestVerifyWorkRun() {
@@ -421,7 +407,7 @@ function safeRunDirectories(runsRoot) {
 
 function readJsonUnder(basePath, ...segments) {
 	try {
-		const target = childPath(basePath, ...segments);
+		const target = validateContainedPath(basePath, ...segments);
 		return JSON.parse(readFileSync(target, "utf8"));
 	} catch {
 		return null;

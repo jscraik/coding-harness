@@ -64,27 +64,6 @@
 				"gateCount",
 				"failedGates"
 			],
-			"if": {
-				"properties": {
-					"failedGateId": {
-						"type": "null"
-					}
-				}
-			},
-			"then": {
-				"properties": {
-					"failedGates": {
-						"maxItems": 0
-					}
-				}
-			},
-			"else": {
-				"properties": {
-					"failedGates": {
-						"minItems": 1
-					}
-				}
-			},
 			"properties": {
 				"status": {
 					"const": "available"

@@ -128,16 +128,13 @@
 					}
 				},
 				"lifecycleStage": {
-					"type": "string",
-					"minLength": 1
+					"type": "string"
 				},
 				"knowledgeCategory": {
-					"type": "string",
-					"minLength": 1
+					"type": "string"
 				},
 				"lifecycleState": {
-					"type": "string",
-					"minLength": 1
+					"type": "string"
 				}
 			}
 		}

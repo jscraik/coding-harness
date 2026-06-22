@@ -413,15 +413,12 @@ class AgentNativeRatchet(BaseModel):
     claimBoundary: str
     nextMove: str
 
-    @field_validator("purpose", "command", "claimBoundary", "nextMove")
-    @classmethod
-    def reject_blank_ratchet_string(cls, value: str) -> str:
-        return reject_blank_string(value)
-
-    @field_validator("evidencePaths")
-    @classmethod
-    def reject_blank_evidence_paths(cls, value: list[str]) -> list[str]:
-        return reject_empty_or_blank_list(value)
+    _reject_blank_strings = field_validator(
+        "purpose", "command", "claimBoundary", "nextMove"
+    )(reject_blank_string)
+    _reject_blank_evidence_paths = field_validator("evidencePaths")(
+        reject_empty_or_blank_list
+    )
 
 
 class AgentNativeRatchetsReport(BaseModel):
@@ -470,15 +467,10 @@ class SessionEvidenceLane(BaseModel):
     status: str
     evidenceRefs: list[str]
 
-    @field_validator("status")
-    @classmethod
-    def reject_blank_lane_status(cls, value: str) -> str:
-        return reject_blank_string(value)
-
-    @field_validator("evidenceRefs")
-    @classmethod
-    def reject_blank_evidence_refs(cls, value: list[str]) -> list[str]:
-        return reject_blank_list_items(value)
+    _reject_blank_status = field_validator("status")(reject_blank_string)
+    _reject_blank_evidence_refs = field_validator("evidenceRefs")(
+        reject_blank_list_items
+    )
 
 
 class SessionDistillReport(BaseModel):
@@ -498,15 +490,12 @@ class SessionDistillReport(BaseModel):
     nonClaims: list[str]
     claimBoundary: str
 
-    @field_validator("branch", "headSha", "claimBoundary")
-    @classmethod
-    def reject_blank_session_string(cls, value: str) -> str:
-        return reject_blank_string(value)
-
-    @field_validator("changedFiles", "nextCommands", "nonClaims")
-    @classmethod
-    def reject_blank_session_items(cls, value: list[str]) -> list[str]:
-        return reject_blank_list_items(value)
+    _reject_blank_strings = field_validator("branch", "headSha", "claimBoundary")(
+        reject_blank_string
+    )
+    _reject_blank_items = field_validator("changedFiles", "nextCommands", "nonClaims")(
+        reject_blank_list_items
+    )
 
     @model_validator(mode="after")
     def require_session_consistency(self) -> SessionDistillReport:
@@ -528,10 +517,9 @@ class AgentReworkFailedGate(BaseModel):
     failureClass: str
     nextAction: str
 
-    @field_validator("gateId", "status", "failureClass", "nextAction")
-    @classmethod
-    def reject_blank_failed_gate_string(cls, value: str) -> str:
-        return reject_blank_string(value)
+    _reject_blank_strings = field_validator(
+        "gateId", "status", "failureClass", "nextAction"
+    )(reject_blank_string)
 
 
 class AgentReworkAvailableRun(BaseModel):
@@ -547,10 +535,9 @@ class AgentReworkAvailableRun(BaseModel):
     gateCount: int
     failedGates: list[AgentReworkFailedGate]
 
-    @field_validator("runId", "overallStatus", "freshVsResumed", "failedGateId")
-    @classmethod
-    def reject_blank_available_run_string(cls, value: str | None) -> str | None:
-        return reject_blank_optional_string(value)
+    _reject_blank_strings = field_validator(
+        "runId", "overallStatus", "freshVsResumed", "failedGateId"
+    )(reject_blank_optional_string)
 
 
 class AgentReworkUnavailableRun(BaseModel):
@@ -561,10 +548,7 @@ class AgentReworkUnavailableRun(BaseModel):
     status: Literal["unavailable"]
     reason: str
 
-    @field_validator("reason")
-    @classmethod
-    def reject_blank_unavailable_reason(cls, value: str) -> str:
-        return reject_blank_string(value)
+    _reject_blank_reason = field_validator("reason")(reject_blank_string)
 
 
 class AgentReworkReport(BaseModel):
@@ -580,10 +564,9 @@ class AgentReworkReport(BaseModel):
     retryDecisions: list[Literal["retry", "stop", "fix_contract", "fix_infra"]]
     claimBoundary: str
 
-    @field_validator("attemptSource", "command", "claimBoundary")
-    @classmethod
-    def reject_blank_rework_string(cls, value: str) -> str:
-        return reject_blank_string(value)
+    _reject_blank_strings = field_validator("attemptSource", "command", "claimBoundary")(
+        reject_blank_string
+    )
 
     @model_validator(mode="after")
     def require_rework_status_consistency(self) -> AgentReworkReport:
@@ -609,15 +592,12 @@ class ReviewerCoverageReceiptSummary(BaseModel):
     synthesisStatus: str | None
     evidenceRefs: list[str]
 
-    @field_validator("status", "reason", "blockerClass", "synthesisStatus")
-    @classmethod
-    def reject_blank_reviewer_optional_string(cls, value: str | None) -> str | None:
-        return reject_blank_optional_string(value)
-
-    @field_validator("evidenceRefs")
-    @classmethod
-    def reject_blank_reviewer_evidence(cls, value: list[str]) -> list[str]:
-        return reject_blank_list_items(value)
+    _reject_blank_optional_strings = field_validator(
+        "status", "reason", "blockerClass", "synthesisStatus"
+    )(reject_blank_optional_string)
+    _reject_blank_evidence = field_validator("evidenceRefs")(
+        reject_blank_list_items
+    )
 
 
 class ReviewerDecisionReport(BaseModel):
@@ -650,10 +630,9 @@ class ReviewerDecisionReport(BaseModel):
     nextMove: str
     claimBoundary: str
 
-    @field_validator("command", "nextMove", "claimBoundary")
-    @classmethod
-    def reject_blank_reviewer_string(cls, value: str) -> str:
-        return reject_blank_string(value)
+    _reject_blank_strings = field_validator("command", "nextMove", "claimBoundary")(
+        reject_blank_string
+    )
 
     @model_validator(mode="after")
     def require_reviewer_decision_consistency(self) -> ReviewerDecisionReport:
@@ -686,10 +665,7 @@ class GovernanceDocument(BaseModel):
     knowledgeCategory: str
     lifecycleState: str
 
-    @field_validator("path")
-    @classmethod
-    def reject_blank_governance_path(cls, value: str) -> str:
-        return reject_blank_string(value)
+    _reject_blank_path = field_validator("path")(reject_blank_string)
 
     @field_validator("classes")
     @classmethod
@@ -715,15 +691,12 @@ class GovernanceDecisionSurfaceReport(BaseModel):
     nextMove: str
     claimBoundary: str
 
-    @field_validator("evidencePaths")
-    @classmethod
-    def reject_blank_governance_evidence(cls, value: list[str]) -> list[str]:
-        return reject_empty_or_blank_list(value)
-
-    @field_validator("nextMove", "claimBoundary")
-    @classmethod
-    def reject_blank_governance_string(cls, value: str) -> str:
-        return reject_blank_string(value)
+    _reject_blank_evidence_paths = field_validator("evidencePaths")(
+        reject_empty_or_blank_list
+    )
+    _reject_blank_strings = field_validator("nextMove", "claimBoundary")(
+        reject_blank_string
+    )
 
     @model_validator(mode="after")
     def require_governance_class_consistency(self) -> GovernanceDecisionSurfaceReport:

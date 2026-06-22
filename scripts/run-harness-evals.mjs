@@ -20,6 +20,8 @@ const DEFAULT_REGISTRY =
 const DEFAULT_OUTPUT = "artifacts/evals/result.json";
 const DEFAULT_OBSERVABILITY_OUTPUT = "artifacts/evals/braintrust-log-data.json";
 const DEFAULT_FIXTURE_ROOT = "artifacts/evals/live-fixtures";
+const RATCHET_PACKET_COMMAND_TIMEOUT_MS = 60_000;
+const RATCHET_PACKET_COMMAND_MAX_BUFFER = 10 * 1024 * 1024;
 const VALIDATION_PLAN_MODULE_URL = pathToFileURL(
 	path.join(REPO_ROOT, "src/lib/learnings/validation-plan.ts"),
 ).href;
@@ -5396,9 +5398,6 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 	]);
 }
 
-const RATCHET_PACKET_COMMAND_TIMEOUT_MS = 60_000;
-const RATCHET_PACKET_COMMAND_MAX_BUFFER = 10 * 1024 * 1024;
-
 function runRatchetPacketCommand(args) {
 	const stdout = execFileSync("pnpm", ["--silent", ...args], {
 		cwd: REPO_ROOT,
@@ -5406,8 +5405,6 @@ function runRatchetPacketCommand(args) {
 		timeout: RATCHET_PACKET_COMMAND_TIMEOUT_MS,
 		maxBuffer: RATCHET_PACKET_COMMAND_MAX_BUFFER,
 	});
-	return JSON.parse(stdout);
-}
 	return JSON.parse(stdout);
 }
 

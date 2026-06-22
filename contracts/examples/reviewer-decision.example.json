@@ -19,7 +19,7 @@
 		"requestedRoles": 0,
 		"completedRoles": 0,
 		"blockedRoles": 0,
-		"missingArtifacts": 1,
+		"missingArtifacts": 0,
 		"synthesisStatus": "unknown",
 		"evidenceRefs": ["artifacts/reviews/manifest.json"]
 	},
