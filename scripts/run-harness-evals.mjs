@@ -5396,11 +5396,18 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 	]);
 }
 
+const RATCHET_PACKET_COMMAND_TIMEOUT_MS = 60_000;
+const RATCHET_PACKET_COMMAND_MAX_BUFFER = 10 * 1024 * 1024;
+
 function runRatchetPacketCommand(args) {
 	const stdout = execFileSync("pnpm", ["--silent", ...args], {
 		cwd: REPO_ROOT,
 		encoding: "utf8",
+		timeout: RATCHET_PACKET_COMMAND_TIMEOUT_MS,
+		maxBuffer: RATCHET_PACKET_COMMAND_MAX_BUFFER,
 	});
+	return JSON.parse(stdout);
+}
 	return JSON.parse(stdout);
 }
 
