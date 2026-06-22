@@ -5352,10 +5352,10 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 		),
 		assertion(
 			"harness next exposes ratchet follow-up commands",
-			decision.followUpCommands.includes(
-				"harness session-context --json --repo-root .",
-			) &&
-				decision.followUpCommands.includes("harness agent-readiness . --json"),
+			decision.followUpCommands.includes("harness session-distill --json") &&
+				decision.followUpCommands.includes(
+					"harness agent-native-ratchets --json",
+				),
 		),
 		assertion(
 			"harness next marks ratchets as hidden plumbing",

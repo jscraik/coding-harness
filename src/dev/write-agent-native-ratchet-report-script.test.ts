@@ -108,17 +108,24 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 			encoding: "utf8",
 		});
 		if (result.status !== 0) {
-			throw new Error(`git config user.email failed with status ${result.status}`);
+			throw new Error(
+				`git config user.email failed with status ${result.status}`,
+			);
 		}
 		result = spawnSync("git", ["config", "user.name", "Codex"], {
 			cwd: root,
 			encoding: "utf8",
 		});
 		if (result.status !== 0) {
-			throw new Error(`git config user.name failed with status ${result.status}`);
+			throw new Error(
+				`git config user.name failed with status ${result.status}`,
+			);
 		}
 		writeFileSync(join(root, "tracked.txt"), "tracked\n");
-		result = spawnSync("git", ["add", "tracked.txt"], { cwd: root, encoding: "utf8" });
+		result = spawnSync("git", ["add", "tracked.txt"], {
+			cwd: root,
+			encoding: "utf8",
+		});
 		if (result.status !== 0) {
 			throw new Error(`git add failed with status ${result.status}`);
 		}
@@ -147,6 +154,21 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		expect(report.changedFileCount).toBe(2);
 		expect(report.nextCommands[0]).toBe(
 			"pnpm run coding-policy:route -- 'docs my file.md' 'new-file.txt'",
+		);
+	});
+
+	it("fails closed when session distillation cannot read git state", () => {
+		const root = mkdtempSync(join(tmpdir(), "agent-native-session-no-git-"));
+		tempRoots.push(root);
+
+		const result = runNodeScript(SCRIPT_PATH, ["--session-distill", "--json"], {
+			cwd: root,
+		});
+
+		expect(result.status).toBe(1);
+		expect(result.stdout).toBe("");
+		expect(result.stderr).toContain(
+			"session-distill requires git evidence for unstaged changed files",
 		);
 	});
 

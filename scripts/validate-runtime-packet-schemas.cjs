@@ -40,11 +40,13 @@ const SUPPORTED_SCHEMA_KEYWORDS = new Set([
 	"enum",
 	"format",
 	"items",
+	"maxItems",
 	"maxLength",
 	"minItems",
 	"minLength",
 	"minimum",
 	"pattern",
+	"prefixItems",
 	"properties",
 	"required",
 	"title",
@@ -251,6 +253,17 @@ function validateSupportedSchemaKeywords(
 			visitedRefs,
 		);
 	}
+	if (Array.isArray(schema.prefixItems)) {
+		for (const [index, itemSchema] of schema.prefixItems.entries()) {
+			validateSupportedSchemaKeywords(
+				itemSchema,
+				schemaPath,
+				errors,
+				`${schemaNodePath}.prefixItems[${index}]`,
+				visitedRefs,
+			);
+		}
+	}
 	if (Array.isArray(schema.anyOf)) {
 		for (const [index, candidate] of schema.anyOf.entries()) {
 			validateSupportedSchemaKeywords(
@@ -360,6 +373,21 @@ function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
 	if (Array.isArray(value)) {
 		if (typeof schema.minItems === "number" && value.length < schema.minItems) {
 			errors.push(`${valuePath} must have at least ${schema.minItems} items`);
+		}
+		if (typeof schema.maxItems === "number" && value.length > schema.maxItems) {
+			errors.push(`${valuePath} must have at most ${schema.maxItems} items`);
+		}
+		if (Array.isArray(schema.prefixItems)) {
+			for (const [index, itemSchema] of schema.prefixItems.entries()) {
+				if (index >= value.length) break;
+				validateExampleValue(
+					itemSchema,
+					value[index],
+					`${valuePath}[${index}]`,
+					errors,
+					schemaPath,
+				);
+			}
 		}
 		if (isObject(schema.items)) {
 			for (const [index, item] of value.entries()) {

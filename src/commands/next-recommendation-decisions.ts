@@ -199,12 +199,10 @@ export function changedFilesDecision(args: {
 	const ratchetFollowUpCommands = [
 		agentNativeRatchets.SESSION_DISTILL_COMMAND,
 		agentNativeRatchets.AGENT_NATIVE_RATCHET_COMMAND,
-	];
-	ratchetFollowUpCommands.push(
 		args.mode === "pr"
 			? "bash scripts/validate-codestyle.sh --fast"
 			: reviewContextFollowUp,
-	);
+	];
 	return createNextDecision({
 		status: "action_required",
 		summary: `Detected ${args.files.length} changed file${args.files.length === 1 ? "" : "s"}.`,

@@ -1,9 +1,9 @@
 /** Command that emits the aggregate agent-native ratchet report. */
-export const AGENT_NATIVE_RATCHET_COMMAND = "harness agent-readiness . --json";
+export const AGENT_NATIVE_RATCHET_COMMAND =
+	"harness agent-native-ratchets --json";
 
 /** Command that emits a session distillation packet for resumed agents. */
-export const SESSION_DISTILL_COMMAND =
-	"harness session-context --json --repo-root .";
+export const SESSION_DISTILL_COMMAND = "harness session-distill --json";
 
 /**
  * Build metadata that lets harness-next expose agent-native ratchet packets.

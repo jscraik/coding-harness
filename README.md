@@ -173,6 +173,8 @@ below is an expert reference, not the first surface an agent needs to understand
 | Command                         | Reference                                |
 | ------------------------------- | ---------------------------------------- |
 | `agent-readiness`               | [CLI reference](./docs/cli-reference.md) |
+| `agent-native-ratchets`         | [CLI reference](./docs/cli-reference.md) |
+| `agent-rework`                  | [CLI reference](./docs/cli-reference.md) |
 | `artifact-gate`                 | [CLI reference](./docs/cli-reference.md) |
 | `artifact-routine`              | [CLI reference](./docs/cli-reference.md) |
 | `audit`                         | [CLI reference](./docs/cli-reference.md) |
@@ -202,6 +204,7 @@ below is an expert reference, not the first surface an agent needs to understand
 | `fitness`                       | [CLI reference](./docs/cli-reference.md) |
 | `gap-case`                      | [CLI reference](./docs/cli-reference.md) |
 | `gardener`                      | [CLI reference](./docs/cli-reference.md) |
+| `governance-decision-surface`   | [CLI reference](./docs/cli-reference.md) |
 | `health`                        | [CLI reference](./docs/cli-reference.md) |
 | `index-context`                 | [CLI reference](./docs/cli-reference.md) |
 | `init`                          | [CLI reference](./docs/cli-reference.md) |
@@ -231,12 +234,14 @@ below is an expert reference, not the first surface an agent needs to understand
 | `replay`                        | [CLI reference](./docs/cli-reference.md) |
 | `review-context`                | [CLI reference](./docs/cli-reference.md) |
 | `review-gate`                   | [CLI reference](./docs/cli-reference.md) |
+| `reviewer-decision`             | [CLI reference](./docs/cli-reference.md) |
 | `risk-tier`                     | [CLI reference](./docs/cli-reference.md) |
 | `rule-lifecycle-gate`           | [CLI reference](./docs/cli-reference.md) |
 | `runtime-budget`                | [CLI reference](./docs/cli-reference.md) |
 | `runtime-card`                  | [CLI reference](./docs/cli-reference.md) |
 | `search`                        | [CLI reference](./docs/cli-reference.md) |
 | `session-context`               | [CLI reference](./docs/cli-reference.md) |
+| `session-distill`               | [CLI reference](./docs/cli-reference.md) |
 | `silent-error`                  | [CLI reference](./docs/cli-reference.md) |
 | `simulate`                      | [CLI reference](./docs/cli-reference.md) |
 | `source-outline`                | [CLI reference](./docs/cli-reference.md) |

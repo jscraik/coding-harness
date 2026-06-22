@@ -235,53 +235,83 @@ function buildRatchetReport() {
 	};
 }
 
-function gitOutput(args) {
+function gitResult(args) {
 	try {
-		return execFileSync("git", args, {
-			cwd: repoRoot,
-			encoding: "utf8",
-			stdio: ["ignore", "pipe", "ignore"],
-		}).trim();
-	} catch {
-		return "";
+		return {
+			ok: true,
+			stdout: execFileSync("git", args, {
+				cwd: repoRoot,
+				encoding: "utf8",
+				stdio: ["ignore", "pipe", "pipe"],
+			}).trim(),
+		};
+	} catch (error) {
+		return {
+			ok: false,
+			message:
+				error && typeof error === "object" && "message" in error
+					? String(error.message)
+					: "git command failed",
+		};
 	}
 }
 
-function gitLines(args) {
-	const output = gitOutput(args);
+function requiredGitOutput(args, label) {
+	const result = gitResult(args);
+	if (!result.ok) {
+		throw new Error(
+			`session-distill requires git evidence for ${label}; ${result.message}`,
+		);
+	}
+	return result.stdout;
+}
+
+function requiredGitLines(args, label) {
+	const output = requiredGitOutput(args, label);
 	return output.length === 0 ? [] : output.split(/\r?\n/u).filter(Boolean);
 }
 
 function changedFiles() {
 	return [
 		...new Set([
-			...gitLines(["diff", "--name-only", "--diff-filter=ACDMRTUXB"]),
-			...gitLines([
-				"diff",
-				"--cached",
-				"--name-only",
-				"--diff-filter=ACDMRTUXB",
-			]),
-			...gitLines(["ls-files", "--others", "--exclude-standard"]),
+			...requiredGitLines(
+				["diff", "--name-only", "--diff-filter=ACDMRTUXB"],
+				"unstaged changed files",
+			),
+			...requiredGitLines(
+				["diff", "--cached", "--name-only", "--diff-filter=ACDMRTUXB"],
+				"staged changed files",
+			),
+			...requiredGitLines(
+				["ls-files", "--others", "--exclude-standard"],
+				"untracked files",
+			),
 		]),
 	].sort();
 }
 
 function worktreeStatus() {
-	const porcelain = gitLines(["status", "--short"]);
+	const porcelain = requiredGitLines(["status", "--short"], "worktree status");
 	if (porcelain.length === 0) return "clean";
 	return "dirty";
 }
 
 function currentBranch() {
-	return gitOutput(["branch", "--show-current"]) || "detached";
+	return (
+		requiredGitOutput(["branch", "--show-current"], "current branch") ||
+		"detached"
+	);
 }
 
-function sessionEvidenceLanes(files) {
+function currentHeadSha() {
+	return requiredGitOutput(["rev-parse", "--short", "HEAD"], "HEAD sha");
+}
+
+function sessionEvidenceLanes(files, status) {
 	return [
 		{
 			id: "worktree",
-			status: worktreeStatus(),
+			status,
 			evidenceRefs: ["git status --short", "git diff --name-only"],
 		},
 		{
@@ -312,15 +342,16 @@ function sessionEvidenceLanes(files) {
 
 function buildSessionDistillReport() {
 	const files = changedFiles();
+	const status = worktreeStatus();
 	return {
 		schemaVersion: SESSION_DISTILL_SCHEMA_VERSION,
 		status: "pass",
 		branch: currentBranch(),
-		headSha: gitOutput(["rev-parse", "--short", "HEAD"]) || "unknown",
-		worktreeStatus: worktreeStatus(),
+		headSha: currentHeadSha(),
+		worktreeStatus: status,
 		changedFiles: files,
 		changedFileCount: files.length,
-		evidenceLanes: sessionEvidenceLanes(files),
+		evidenceLanes: sessionEvidenceLanes(files, status),
 		nextCommands: [
 			files.length > 0
 				? `pnpm run coding-policy:route -- ${files.map(shellQuote).join(" ")}`
@@ -407,7 +438,12 @@ function safeRunDirectories(runsRoot) {
 
 function readJsonUnder(basePath, ...segments) {
 	try {
-		const target = validateContainedPath(basePath, ...segments);
+		const base = resolve(basePath);
+		const target = resolve(base, join(...segments));
+		const relativeTarget = relative(base, target);
+		if (relativeTarget.startsWith("..") || isAbsolute(relativeTarget)) {
+			throw new Error("Invalid path");
+		}
 		return JSON.parse(readFileSync(target, "utf8"));
 	} catch {
 		return null;

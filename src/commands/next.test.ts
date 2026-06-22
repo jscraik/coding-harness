@@ -345,8 +345,8 @@ describe("runHarnessNext", () => {
 			"Stop if validation-plan cannot produce JSON for the changed files.",
 		]);
 		expect(decision.followUpCommands).toEqual([
-			"harness session-context --json --repo-root .",
-			"harness agent-readiness . --json",
+			"harness session-distill --json",
+			"harness agent-native-ratchets --json",
 			"harness review-context --files src/commands/next.ts --json",
 		]);
 		const ratchetMeta = decision.meta?.agentNativeRatchets as
@@ -376,8 +376,8 @@ describe("runHarnessNext", () => {
 			agentNativeRatchets: {
 				schemaVersion: "agent-native-ratchet-discovery/v1",
 				commands: [
-					"harness session-context --json --repo-root .",
-					"harness agent-readiness . --json",
+					"harness session-distill --json",
+					"harness agent-native-ratchets --json",
 				],
 				packets: expect.arrayContaining([
 					"session-distill/v1",
@@ -944,8 +944,8 @@ describe("runHarnessNext", () => {
 			"harness review-context --files docs/spec.md --json output",
 		]);
 		expect(decision.followUpCommands).toEqual([
-			"harness session-context --json --repo-root .",
-			"harness agent-readiness . --json",
+			"harness session-distill --json",
+			"harness agent-native-ratchets --json",
 			"bash scripts/validate-codestyle.sh --fast",
 		]);
 		const ratchetMeta = decision.meta?.agentNativeRatchets as
