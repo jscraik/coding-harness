@@ -3,7 +3,7 @@
 
 const { execFileSync, spawnSync } = require("node:child_process");
 const { existsSync, readdirSync, readFileSync, statSync } = require("node:fs");
-const { isAbsolute, join, relative, resolve } = require("node:path");
+const { isAbsolute, relative, resolve } = require("node:path");
 
 const SCHEMA_VERSION = "agent-native-ratchets/v1";
 const SESSION_DISTILL_SCHEMA_VERSION = "session-distill/v1";
@@ -167,7 +167,7 @@ function parseArgs(argv) {
 
 function validateContainedPath(basePath, ...segments) {
 	const base = resolve(basePath);
-	const target = resolve(base, join(...segments));
+	const target = resolve(base, ...segments);
 	const relativeTarget = relative(base, target);
 	if (
 		relativeTarget === "" ||
@@ -448,7 +448,7 @@ function safeRunDirectories(runsRoot) {
 function readJsonUnder(basePath, ...segments) {
 	try {
 		const base = resolve(basePath);
-		const target = resolve(base, join(...segments));
+		const target = resolve(base, ...segments);
 		const relativeTarget = relative(base, target);
 		if (relativeTarget.startsWith("..") || isAbsolute(relativeTarget)) {
 			throw new Error("Invalid path");
