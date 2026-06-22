@@ -44,14 +44,7 @@
 			}
 		},
 		"coverageReceipt": {
-			"anyOf": [
-				{
-					"$ref": "#/$defs/coverageReceipt"
-				},
-				{
-					"type": "null"
-				}
-			]
+			"$ref": "`#/`$defs/coverageReceipt"
 		},
 		"nextMove": {
 			"type": "string",
@@ -114,6 +107,7 @@
 				},
 				"evidenceRefs": {
 					"type": "array",
+					"minItems": 1,
 					"items": {
 						"type": "string",
 						"minLength": 1
