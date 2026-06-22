@@ -165,7 +165,7 @@ function packageScripts() {
 
 function validateContainedPath(basePath, ...segments) {
 	const base = path.resolve(basePath);
-	const target = resolve(base, join(...segments));
+	const target = resolve(base, ...segments);
 	const relativeTarget = relative(base, target);
 	if (
 		relativeTarget === "" ||
