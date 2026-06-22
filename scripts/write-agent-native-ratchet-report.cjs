@@ -346,9 +346,18 @@ function buildSessionDistillReport() {
 
 function buildReworkReport() {
 	const latestRun = latestVerifyWorkRun();
+	const runPassed =
+		latestRun.status === "available" &&
+		(latestRun.overallStatus === "passed" ||
+			latestRun.overallStatus === "pass");
 	return {
 		schemaVersion: AGENT_REWORK_SCHEMA_VERSION,
-		status: latestRun.status === "unavailable" ? "needs_evidence" : "pass",
+		status:
+			latestRun.status === "unavailable"
+				? "needs_evidence"
+				: runPassed
+					? "pass"
+					: "needs_attention",
 		attemptSource: "scripts/verify-work.sh attempt-ledger/v1 gate artifacts",
 		command: "bash scripts/verify-work.sh --fast",
 		latestRun,
@@ -356,6 +365,7 @@ function buildReworkReport() {
 		claimBoundary:
 			"agent-rework/v1 routes local recovery and cannot prove delivery readiness by itself.",
 	};
+}
 }
 
 function latestVerifyWorkRun() {
