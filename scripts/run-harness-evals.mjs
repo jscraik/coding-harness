@@ -301,9 +301,7 @@ function resolveRepoPath(targetPath) {
 
 function resolveInside(basePath, targetPath) {
 	const base = path.resolve(basePath);
-	const target = path.isAbsolute(targetPath)
-		? path.resolve(targetPath)
-		: path.resolve(base, targetPath);
+	const target = path.resolve(base, targetPath);
 	const relativePath = path.relative(base, target);
 	if (
 		relativePath === "" ||

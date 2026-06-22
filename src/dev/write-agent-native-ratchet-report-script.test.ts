@@ -420,6 +420,29 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		]);
 	});
 
+	it("requires a readable verify-work summary before passing rework routing", () => {
+		const root = mkdtempSync(join(tmpdir(), "agent-native-rework-missing-"));
+		tempRoots.push(root);
+		mkdirSync(join(root, ".harness", "runs", "20260621T220000Z-empty"), {
+			recursive: true,
+		});
+
+		const result = runNodeScript(SCRIPT_PATH, ["--rework", "--json"], {
+			cwd: root,
+		});
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			latestRun: { status: string; reason: string };
+		};
+
+		expect(result.status).toBe(0);
+		expect(report.status).toBe("needs_evidence");
+		expect(report.latestRun).toMatchObject({
+			status: "unavailable",
+			reason: "latest verify-work run summary is missing or invalid",
+		});
+	});
+
 	it("rejects unknown arguments without echoing user input", () => {
 		const result = runReport(["--unknown-secret-token=value"]);
 

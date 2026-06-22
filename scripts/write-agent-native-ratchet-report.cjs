@@ -188,7 +188,7 @@ function childPath(basePath, ...segments) {
 
 function repoContainedPath(targetPath) {
 	const base = resolve(repoRoot);
-	const target = resolve(targetPath);
+	const target = resolve(base, targetPath);
 	const relativeTarget = relative(base, target);
 	if (
 		relativeTarget === "" ||
@@ -405,6 +405,12 @@ function latestVerifyWorkRun() {
 		};
 	}
 	const summary = readJsonUnder(latest.path, "summary.json");
+	if (!summary || typeof summary !== "object" || Array.isArray(summary)) {
+		return {
+			status: "unavailable",
+			reason: "latest verify-work run summary is missing or invalid",
+		};
+	}
 	const gates = readGateLedgers(childPath(latest.path, "gates"));
 	return {
 		status: "available",
@@ -441,7 +447,12 @@ function safeRunDirectories(runsRoot) {
 
 function readJsonUnder(basePath, ...segments) {
 	try {
-		const target = childPath(basePath, ...segments);
+		const base = resolve(basePath);
+		const target = resolve(base, join(...segments));
+		const relativeTarget = relative(base, target);
+		if (relativeTarget.startsWith("..") || isAbsolute(relativeTarget)) {
+			throw new Error("Invalid path");
+		}
 		return JSON.parse(readFileSync(target, "utf8"));
 	} catch {
 		return null;
