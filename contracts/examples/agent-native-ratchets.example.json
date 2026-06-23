@@ -6,7 +6,7 @@
 			"id": "orientation_packet",
 			"status": "pass",
 			"purpose": "Give cold agents a compact route from changed files to policy modules and gates.",
-			"command": "pnpm run coding-policy:route -- <path...>",
+			"command": "harness next --json",
 			"evidencePaths": ["coding-policy.json"],
 			"claimBoundary": "Orientation only; gate execution, CI state, review state, and merge readiness remain separate lanes.",
 			"nextMove": "Use this route before loading broad codestyle or governance context."

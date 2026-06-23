@@ -1,0 +1,322 @@
+schema_version: synaipse-tracker-plan/v1
+stage: tracker-plan
+status: pass
+repo: /Users/jamiecraik/dev/coding-harness
+branch: main
+head_sha: 8723b8a3d
+worktree: clean
+requested_stage: sy-tracker-plan
+previous_stage_artifact:
+  status: pass
+  source: .harness/plans/2026-06-23-ai-delivery-harness-cockpit-trace-plan.yaml
+  summary: Trace plan decomposed AI Delivery Harness product direction into seven traceable work units.
+evidence_refs:
+  - previous_trace_plan: .harness/plans/2026-06-23-ai-delivery-harness-cockpit-trace-plan.yaml
+  - repo_state: git status --short --branch -> main...origin/main
+  - head_sha: 8723b8a3d
+  - north_star: docs/roadmap/north-star.md
+  - runtime_packets: agent-native-ratchets/session-distill/agent-rework/reviewer-decision/governance packet surfaces
+  - eval_surface: evals/scenarios/north-star-agent-delivery/registry.json
+linear_sync:
+  project: Harness cockpit routing
+  project_id: 0fc841e4-726e-4442-a86b-72755667b852
+  synced_at: "2026-06-23T21:25:30Z"
+  issues:
+    - id: JSC-403
+      title: Add installed-package downstream portability gate
+      url: https://linear.app/jscraik/issue/JSC-403/coding-harness-add-installed-package-downstream-portability-gate
+    - id: JSC-404
+      title: Add five-lane cockpit model to harness next
+      url: https://linear.app/jscraik/issue/JSC-404/coding-harness-add-five-lane-cockpit-model-to-harness-next
+    - id: JSC-405
+      title: Normalize PR review comments into eval seed candidates
+      url: https://linear.app/jscraik/issue/JSC-405/coding-harness-normalize-pr-review-comments-into-eval-seed-candidates
+    - id: JSC-406
+      title: Add eval tiers and runner enforcement
+      url: https://linear.app/jscraik/issue/JSC-406/coding-harness-add-eval-tiers-and-runner-enforcement
+    - id: JSC-407
+      title: Add product-intent contract to delivery packets
+      url: https://linear.app/jscraik/issue/JSC-407/coding-harness-add-product-intent-contract-to-delivery-packets
+    - id: JSC-408
+      title: Add prompt-context repair receipt and next integration
+      url: https://linear.app/jscraik/issue/JSC-408/coding-harness-add-prompt-context-repair-receipt-and-next-integration
+    - id: JSC-409
+      title: Define and enforce derived-field policy for runtime packets
+      url: https://linear.app/jscraik/issue/JSC-409/coding-harness-define-and-enforce-derived-field-policy-for-runtime
+blocked_by: []
+validation:
+  - command: git status --short --branch
+    outcome: pass
+    notes: Clean main checkout when the stage artifact was prepared; tracker-plan is planning-only.
+next_stage: slice-spec
+epic:
+  title: AI Delivery Harness Cockpit Productization
+  objective: Turn Coding Harness from an expert command toolbox into a guided AI delivery cockpit that orients, proves, repairs, reviews, and hands off agent work with portable package-installed proof.
+  product_outcome: A dropped-in agent can start from harness next --json, discover the correct lane, run public installed commands, recover from stale context or failed evidence, and produce traceable handoff without user stitching.
+  north_star_metric:
+    primary: PR lead time from open to merge
+    guardrails:
+      - review/rework retries per PR
+      - manual interventions per agent-driven change
+      - merge-readiness block time
+      - post-guardrail recurrence rate
+  labels:
+    - synaipse
+    - ai-delivery-harness
+    - cockpit
+    - agent-native
+    - productization
+issues:
+  - title: Add installed-package downstream portability gate
+    linear_issue: JSC-403
+    linear_url: https://linear.app/jscraik/issue/JSC-403/coding-harness-add-installed-package-downstream-portability-gate
+    priority: P0
+    type: feature
+    labels:
+      - portability
+      - package-canary
+      - release-gate
+      - agent-native
+      - evals
+    depends_on: []
+    source_trace_id: portability-canary-gate
+    intent: Prove the public installed package works from a downstream repo before adding more agent-native ratchets or advisory packet surfaces.
+    problem: Recent review loops repeatedly found source-repo assumptions around package scripts, relative script paths, schema/type drift, and commands that worked locally but failed from installed downstream repos.
+    scope_in:
+      - Create deterministic downstream repo fixture or temp repo canary.
+      - Install or execute the built package as a consumer would.
+      - Run the canonical public command list from the downstream cwd.
+      - Emit a machine-readable canary result artifact.
+      - Fail closed when public commands regress.
+    scope_out:
+      - Publishing to npm.
+      - Changing external CI required checks unless a later slice promotes the gate.
+      - Adding new ratchet packet types.
+    canary_commands:
+      - harness next --json
+      - harness commands --json --for-agent
+      - harness session-distill --json
+      - harness agent-native-ratchets --json
+      - harness agent-rework --json
+      - harness reviewer-decision --json
+      - harness init --dry-run --json
+    acceptance_criteria:
+      - A clean downstream fixture can run every canary command from the downstream cwd.
+      - Commands use public harness entrypoints rather than source checkout-only package scripts.
+      - Missing optional evidence returns structured degraded state.
+      - No command resolves package-owned scripts relative to the downstream repo.
+      - A result artifact records command, exit code, stdout parse status, stderr summary, and failure class.
+      - The gate can run locally and in CI without external credentials.
+    validation_placeholders:
+      focused:
+        - pnpm exec vitest run src/dev/package-files-quality-scripts.test.ts
+        - pnpm exec vitest run <new downstream portability test>
+        - node --import tsx scripts/run-harness-evals.mjs --scenario package-installed-downstream-canary
+      broad:
+        - pnpm run contracts:runtime-packets
+        - pnpm artifact:types
+        - bash scripts/validate-codestyle.sh --fast
+  - title: Add five-lane cockpit model to harness next
+    linear_issue: JSC-404
+    linear_url: https://linear.app/jscraik/issue/JSC-404/coding-harness-add-five-lane-cockpit-model-to-harness-next
+    priority: P0
+    type: feature
+    labels:
+      - cockpit
+      - harness-next
+      - command-routing
+      - agent-ux
+      - runtime-packet
+    depends_on:
+      - Add installed-package downstream portability gate
+    source_trace_id: cockpit-control-plane
+    intent: Make harness next --json the guided cockpit entrypoint that branches into orient, prove, repair, review, and handoff lanes.
+    acceptance_criteria:
+      - harness next --json includes a stable cockpitLane or equivalent field.
+      - Clean worktree with stale prompt context routes to context refresh.
+      - Changed files route to prove or review depending on mode.
+      - Failed rework evidence routes to repair.
+      - Review evidence routes to review.
+      - Ready closeout evidence routes to handoff without merging CI/review/tracker lanes prematurely.
+    validation_placeholders:
+      focused:
+        - pnpm exec vitest run src/commands/next*.test.ts
+        - pnpm exec vitest run src/lib/cli/command-registry.test.ts
+        - node --import tsx scripts/run-harness-evals.mjs --scenario agent-next-action-parity
+      broad:
+        - pnpm run contracts:command-catalog
+        - pnpm run contracts:runtime-packets
+        - bash scripts/validate-codestyle.sh --fast
+  - title: Normalize PR review comments into eval seed candidates
+    linear_issue: JSC-405
+    linear_url: https://linear.app/jscraik/issue/JSC-405/coding-harness-normalize-pr-review-comments-into-eval-seed-candidates
+    priority: P1
+    type: feature
+    labels:
+      - review-feedback
+      - eval-seeds
+      - guardrails
+      - learning-loop
+      - agent-native
+    depends_on:
+      - Add installed-package downstream portability gate
+    source_trace_id: review-feedback-to-guardrail-loop
+    intent: Convert recurring review comments into structured failure classes, candidate guardrails, and eval seeds.
+    acceptance_criteria:
+      - A review comment can be represented as structured input.
+      - The classifier distinguishes current, stale, unmapped, and unsafe findings.
+      - Repeated failure classes recommend guardrail or eval seed promotion.
+      - Generated seeds remain separate from production traces.
+      - Fixture covers at least one recent class, such as installed command drift or schema/type drift.
+    validation_placeholders:
+      focused:
+        - pnpm exec vitest run <new review-feedback-seed tests>
+        - node --import tsx scripts/run-harness-evals.mjs --scenario review-feedback-eval-seed
+      broad:
+        - pnpm run quality:self-affirming
+        - pnpm run quality:behavior-tests
+        - bash scripts/validate-codestyle.sh --fast
+  - title: Add eval tiers and runner enforcement
+    linear_issue: JSC-406
+    linear_url: https://linear.app/jscraik/issue/JSC-406/coding-harness-add-eval-tiers-and-runner-enforcement
+    priority: P1
+    type: feature
+    labels:
+      - evals
+      - release-proof
+      - runner
+      - trusted-live
+      - anti-overfitting
+    depends_on:
+      - Add installed-package downstream portability gate
+    source_trace_id: eval-tiering-model
+    intent: Separate fast structural proof from package canaries, trusted-live product proof, and held-out review regressions.
+    acceptance_criteria:
+      - Every eval scenario declares one tier.
+      - Runner supports explicit tier filtering.
+      - Unknown runner args return structured usage failure.
+      - Package canary tier can run without external credentials.
+      - Trusted-live tier records credential blockers separately from product regressions.
+      - Held-out review cases are not used for tuning fixtures.
+    validation_placeholders:
+      focused:
+        - pnpm exec vitest run src/dev/run-harness-evals-script.test.ts
+        - node --import tsx scripts/run-harness-evals.mjs --tier structural
+        - node --import tsx scripts/run-harness-evals.mjs --unknown-flag
+      broad:
+        - pnpm test:evals
+        - pnpm run quality:behavior-tests
+        - bash scripts/validate-codestyle.sh --fast
+  - title: Add product-intent contract to delivery packets
+    linear_issue: JSC-407
+    linear_url: https://linear.app/jscraik/issue/JSC-407/coding-harness-add-product-intent-contract-to-delivery-packets
+    priority: P1
+    type: feature
+    labels:
+      - runtime-packets
+      - product-intent
+      - contracts
+      - agent-context
+    depends_on:
+      - Add five-lane cockpit model to harness next
+    source_trace_id: delivery-lane-product-intent-packets
+    intent: Give each major delivery lane explicit product intent, constraints, owner, acceptance criteria, and evidence.
+    pilot_recommendation: session-distill
+    acceptance_criteria:
+      - Pilot packet includes owner, intent, constraints, acceptance criteria, evidence refs, and non-claims.
+      - Runtime schema and typed artifact contract agree.
+      - Example packet is updated.
+      - Producer emits the product-intent fields.
+      - Consumer tests prove old claim boundaries are preserved.
+    validation_placeholders:
+      focused:
+        - node scripts/validate-runtime-packet-schemas.cjs --all
+        - pnpm artifact:types
+        - pnpm exec vitest run src/dev/write-agent-native-ratchet-report-script.test.ts
+      broad:
+        - pnpm run contracts:runtime-packets
+        - bash scripts/validate-codestyle.sh --fast
+  - title: Add prompt-context repair receipt and next integration
+    linear_issue: JSC-408
+    linear_url: https://linear.app/jscraik/issue/JSC-408/coding-harness-add-prompt-context-repair-receipt-and-next-integration
+    priority: P2
+    type: feature
+    labels:
+      - prompt-context
+      - repair-loop
+      - context-health
+      - harness-next
+      - runtime-packet
+    depends_on:
+      - Add five-lane cockpit model to harness next
+    source_trace_id: prompt-context-repair-receipt
+    intent: Make stale prompt-context repair complete and consumable so users do not stitch write, validate, and resume steps together.
+    acceptance_criteria:
+      - Prompt-context repair emits a receipt or stable validation artifact with equivalent fields.
+      - harness next can detect a valid recent receipt.
+      - Successful repair routes onward rather than repeating the same stale-context command.
+      - Failed repair names the stale surface and smallest recovery step.
+    validation_placeholders:
+      focused:
+        - pnpm exec vitest run src/lib/agent-readiness/*.test.ts
+        - pnpm exec vitest run src/commands/next*.test.ts
+        - harness prompt-context-drift:write
+        - harness prompt-context-drift:validate artifacts/context-integrity/prompt-context-drift-report.json
+      broad:
+        - pnpm run contracts:runtime-packets
+        - pnpm run quality:behavior-tests
+        - bash scripts/validate-codestyle.sh --fast
+  - title: Define and enforce derived-field policy for runtime packets
+    linear_issue: JSC-409
+    linear_url: https://linear.app/jscraik/issue/JSC-409/coding-harness-define-and-enforce-derived-field-policy-for-runtime
+    priority: P2
+    type: chore
+    labels:
+      - runtime-packets
+      - schema
+      - artifact-types
+      - contract-drift
+      - maintenance
+    depends_on:
+      - Add product-intent contract to delivery packets
+    source_trace_id: runtime-packet-derived-field-policy
+    intent: Prevent schema/type drift caused by redundant derived fields in runtime packet contracts.
+    acceptance_criteria:
+      - Derived-field policy exists in docs or contract guidance.
+      - Audit lists current derived fields and decisions.
+      - changedFileCount has explicit decision: keep with semantic validation, deprecate, or remove in v2.
+      - Runtime schema validation and artifact type validation cannot disagree on the pilot field.
+    validation_placeholders:
+      focused:
+        - node scripts/validate-runtime-packet-schemas.cjs --all
+        - pnpm artifact:types
+        - pnpm exec vitest run src/dev/validate-runtime-packet-schemas-script.test.ts
+        - pnpm exec vitest run src/dev/write-agent-native-ratchet-report-script.test.ts
+      broad:
+        - pnpm run contracts:runtime-packets
+        - pnpm run types:check
+        - bash scripts/validate-codestyle.sh --fast
+dependency_graph:
+  root:
+    - Add installed-package downstream portability gate
+  after_portability:
+    - Add five-lane cockpit model to harness next
+    - Normalize PR review comments into eval seed candidates
+    - Add eval tiers and runner enforcement
+  after_cockpit:
+    - Add product-intent contract to delivery packets
+    - Add prompt-context repair receipt and next integration
+  after_product_intent:
+    - Define and enforce derived-field policy for runtime packets
+handoff:
+  next_stage: slice-spec
+  recommended_first_slice: Add installed-package downstream portability gate
+  why_first: It is the most falsifiable product proof and directly targets recurring installed/downstream failures.
+  proven:
+    - Seven trace-plan work units were converted into tracker-ready issues.
+    - Each issue has priority, labels, dependencies, scope, acceptance criteria, and validation placeholders.
+    - No tracker mutation was performed by tracker-plan.
+  unproven:
+    - No Linear issues were created by tracker-plan.
+    - No portability gate was implemented or executed.
+  blocked_by: []

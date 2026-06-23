@@ -170,6 +170,14 @@ Agents should start with `harness next --json` for the next actionable step and
 use `harness commands --json --for-agent` for command discovery. The full index
 below is an expert reference, not the first surface an agent needs to understand.
 
+The installed-package portability canary for this agent surface is
+`node --import tsx scripts/run-harness-evals.mjs --scenario package-installed-downstream-canary`.
+It packs the current harness package, runs public `harness ... --json` commands
+from a downstream repository cwd, and records structured missing-evidence
+packets instead of requiring source-checkout package scripts. This is local
+installed-command portability proof, not npm publication, hosted CI, review, or
+merge-readiness proof.
+
 | Command                         | Reference                                |
 | ------------------------------- | ---------------------------------------- |
 | `agent-readiness`               | [CLI reference](./docs/cli-reference.md) |

@@ -1,0 +1,152 @@
+schema_version: synaipse-trace-plan/v1
+stage: trace-plan
+status: pass
+repo: /Users/jamiecraik/dev/coding-harness
+branch: main
+head_sha: 8723b8a3d
+worktree: clean
+requested_stage: sy-trace-plan
+previous_stage_artifact:
+  status: not_required
+  reason: User supplied the product-direction source material directly from the deep review.
+evidence_refs:
+  - deep_review_summary: Agent-native scorecard and product direction from the prior review.
+  - repo_state: git status --short --branch -> main...origin/main
+  - north_star: docs/roadmap/north-star.md
+  - runtime_packets: agent-native-ratchets/v1, session-distill/v1, agent-rework/v1, reviewer-decision/v1, governance-decision-surface/v1
+  - eval_surface: evals/scenarios/north-star-agent-delivery/registry.json
+blocked_by: []
+next_stage: tracker-plan
+validation:
+  - command: git status --short --branch
+    outcome: pass
+    notes: Clean main checkout when the stage artifact was prepared; no tracker or implementation mutation was performed.
+trace_plan:
+  - id: cockpit-control-plane
+    title: Cockpit, not toolbox
+    intent: Make AI Delivery Harness begin from one guided cockpit entrypoint instead of requiring operators or agents to choose among many expert commands.
+    user_questions:
+      orient: Where am I and what context matters?
+      prove: What validation or evidence is missing?
+      repair: What failed and what can be safely retried?
+      review: What reviewer signal needs action?
+      handoff: What is ready to pass to a human or next agent?
+    acceptance_criteria:
+      - harness next --json returns one of five cockpit lanes.
+      - Each lane includes a human-readable question and machine-readable route.
+      - Each lane exposes only the smallest next command set.
+      - Clean, stale, failed, review-blocked, and closeout-ready repo states route to distinct lanes.
+    proof_gap: Need fixtures proving lane selection across representative repo states.
+    smallest_next_work: Add a cockpit-lane normalization layer to harness next output without renaming existing commands.
+    tracker_slice_candidate: Add five-lane cockpit model to harness next
+  - id: portability-canary-gate
+    title: Portability gate before more ratchets
+    intent: Prove the installed package works in downstream repos before adding more advisory packet surfaces.
+    current_evidence:
+      - North-star product bar is zero customer integration ceremony.
+      - Recent PR review history repeatedly found installed/downstream drift around scripts, package paths, and public command availability.
+      - Current package exposes the harness binary and includes scripts/contracts in package files.
+    canary_commands:
+      - harness next --json
+      - harness commands --json --for-agent
+      - harness session-distill --json
+      - harness agent-native-ratchets --json
+      - harness agent-rework --json
+      - harness reviewer-decision --json
+      - harness init --dry-run --json
+    acceptance_criteria:
+      - A temp downstream repo can install the packaged artifact and run all canary commands from the downstream cwd.
+      - Commands do not require source-repo package scripts unless the target repo explicitly defines them.
+      - Missing optional evidence degrades to needs_evidence, unknown, or a named blocker rather than crashing.
+      - The canary writes a machine-readable result artifact.
+      - The gate is runnable in CI before release.
+    proof_gap: Need a deterministic packaged-install fixture, not just source-tree command tests.
+    smallest_next_work: Create a package-installed-downstream-canary eval fixture or package test.
+    tracker_slice_candidate: Add installed-package downstream portability gate
+  - id: review-feedback-to-guardrail-loop
+    title: Review comments become harness fuel
+    intent: Convert recurring PR review comments into structured failure classes, candidate guardrails, and eval seeds.
+    acceptance_criteria:
+      - A review comment can be represented as structured input with source, file, line, severity, failure_class, evidence, and requested_fix.
+      - The harness can classify whether the comment maps to code fix, schema fix, test fixture, eval seed, docs update, or stale finding.
+      - Repeated classes recommend durable guardrails instead of another one-off patch.
+      - Generated eval seeds remain separate from production traces and retain provenance.
+    proof_gap: Need a real importer or normalized review-comment artifact.
+    smallest_next_work: Define review-feedback-seed/v1 and one fixture from the repeated PR feedback thread.
+    tracker_slice_candidate: Normalize PR review comments into eval seed candidates
+  - id: delivery-lane-product-intent-packets
+    title: Product-intent packet per delivery lane
+    intent: Give each major delivery lane explicit product intent, constraints, owner, acceptance criteria, and evidence.
+    lanes:
+      session-distill:
+        owner: context_handoff
+        acceptance: Resumed agent can recover objective, changed files, non-claims, and next checks.
+      agent-rework:
+        owner: repair_loop
+        acceptance: Failed evidence maps to next action or explicit unavailable state.
+      reviewer-decision:
+        owner: review_lane
+        acceptance: Coverage evidence classifies accept, object, defer, and blocked states without merge claims.
+      pr-closeout:
+        owner: merge_readiness_synthesis
+        acceptance: Current CI, review, tracker, validation, branch, and handoff evidence are joined without collapsing lanes.
+    proof_gap: Existing packet contracts cover shape, but not consistently product intent and ownership.
+    smallest_next_work: Add product-intent metadata to one lane first, likely session-distill, then promote the pattern.
+    tracker_slice_candidate: Add product-intent contract to delivery packets
+  - id: eval-tiering-model
+    title: Separate local structural evals from trusted-live proof
+    intent: Separate fast structural regression proof from package-install proof, trusted-live PR-loop proof, and held-out review-comment regressions.
+    acceptance_criteria:
+      - Every eval scenario declares a tier.
+      - Local CI can run structural and package canary tiers deterministically.
+      - Trusted-live scenarios are credential-aware and fail as blocked, not as false regression, when credentials are missing.
+      - Held-out review cases are excluded from tuning fixtures until release-proof time.
+    proof_gap: Need tier metadata and runner filters that enforce tier selection.
+    smallest_next_work: Add tier metadata to registry and make unknown or unsupported eval-runner flags fail closed.
+    tracker_slice_candidate: Add eval tiers and runner enforcement
+  - id: runtime-packet-derived-field-policy
+    title: Remove or enforce derived runtime fields
+    intent: Prevent schema/type drift from redundant derived fields in runtime packet contracts.
+    example:
+      field: changedFileCount
+      source_packet: session-distill/v1
+      issue: Can be derived from changedFiles.length, so schema and typed gates can drift.
+    proof_gap: Current schema validates integer shape, while semantic parity lives outside JSON Schema.
+    smallest_next_work: Add a runtime-packet derived-field audit and decide changedFileCount v1 compatibility vs v2 removal.
+    tracker_slice_candidate: Define and enforce derived-field policy for runtime packets
+  - id: prompt-context-repair-receipt
+    title: Complete stale context repair
+    intent: Make prompt-context drift repair complete and consumable so users do not stitch write, validate, and resume steps together.
+    acceptance_criteria:
+      - Prompt-context write produces or points to a validation receipt.
+      - Validation emits prompt-context-repair-receipt/v1 or equivalent.
+      - harness next consumes the receipt and resumes the appropriate lane.
+      - Failed repair names stale surfaces, digest mismatch, and next recovery step.
+    proof_gap: There is detection and routing, but not a completed repair receipt consumed by next.
+    smallest_next_work: Add a combined repair command or receipt artifact consumed by harness next.
+    tracker_slice_candidate: Add prompt-context repair receipt and next integration
+recommended_tracker_order:
+  - priority: P0
+    slice: Add installed-package downstream portability gate
+  - priority: P0
+    slice: Add five-lane cockpit model to harness next
+  - priority: P1
+    slice: Normalize PR review comments into eval seed candidates
+  - priority: P1
+    slice: Add eval tiers and runner enforcement
+  - priority: P1
+    slice: Add product-intent contract to delivery packets
+  - priority: P2
+    slice: Add prompt-context repair receipt and next integration
+  - priority: P2
+    slice: Define and enforce derived-field policy for runtime packets
+exit_criteria:
+  proven:
+    - Product-direction ideas are decomposed into traceable work units.
+    - Each work unit has intent, evidence, acceptance criteria, proof gap, and smallest next work.
+    - Separate lanes for product proof, eval proof, packet contracts, and review feedback are preserved.
+  unproven:
+    - No tracker issues were created by trace-plan.
+    - No implementation was performed by trace-plan.
+    - No downstream portability canary was implemented or run.
+  handoff: tracker-plan

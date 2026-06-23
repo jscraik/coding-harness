@@ -208,15 +208,20 @@ artifacts. Keep `agent-native-ratchets/v1`, `session-distill/v1`,
 `agent-rework/v1`, `reviewer-decision/v1`, and
 `governance-decision-surface/v1` contract-first under `contracts/`, route
 their producers through `pnpm run agent-native:ratchets`,
-`pnpm run session:distill`, `pnpm run agent-rework:report`,
-`pnpm run reviewer:decision`, and `pnpm run governance:decision-surface`, and
-ratchet them with `node scripts/validate-runtime-packet-schemas.cjs --all`
-plus `pnpm artifact:types`. Expected pass evidence:
+their public CLI commands: `harness agent-native-ratchets`,
+`harness session-distill`, `harness agent-rework`,
+`harness reviewer-decision`, and `harness governance-decision-surface`.
+Ratchet them with `node scripts/validate-runtime-packet-schemas.cjs --all`
+plus `pnpm artifact:types`, and prove downstream portability with the
+`package-installed-downstream-canary` live fixture before claiming the cockpit
+works outside the source checkout. Expected pass evidence:
 
 - `node scripts/validate-runtime-packet-schemas.cjs --all` reports
   `packetCount=25` with no errors.
 - `pnpm artifact:types` reports `runtime_packets=25` plus
   `agent_native_packets=5`.
+- `node --import tsx scripts/run-harness-evals.mjs --scenario package-installed-downstream-canary`
+  reports the package-installed downstream canary as `status=pass`.
 
 If either command fails, stop at the first schema, manifest, or typed-contract
 mismatch, fix the packet producer or manifest entry from the repo root, and

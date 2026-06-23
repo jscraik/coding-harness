@@ -65,7 +65,7 @@ export function createAgentNativePacketCommandSpecs(): CommandSpec[] {
 			summary: "Emit an agent-rework/v1 packet from local rework evidence",
 			example: "agent-rework --json",
 			errorLabel: "Agent Rework Error",
-			baseArgs: [scriptPath, "--rework", "--json", "--validate"],
+			baseArgs: [scriptPath, "--rework", "--json"],
 		}),
 		createPacketCommandSpec({
 			name: "reviewer-decision",

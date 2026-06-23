@@ -28,8 +28,8 @@ const ratchetDefinitions = [
 		id: "orientation_packet",
 		purpose:
 			"Give cold agents a compact route from changed files to policy modules and gates.",
-		command: "pnpm run coding-policy:route -- <path...>",
-		packageScripts: ["coding-policy:route", "coding-policy:route:changed"],
+		command: "harness next --json",
+		packageScripts: [],
 		evidencePaths: [
 			"coding-policy.json",
 			"contracts/coding-policy.schema.json",
@@ -344,20 +344,20 @@ function sessionEvidenceLanes(files, status) {
 		{
 			id: "policy_route",
 			status: files.length > 0 ? "available" : "needs_changed_files",
-			evidenceRefs: ["coding-policy.json", "pnpm run coding-policy:route"],
+			evidenceRefs: ["coding-policy.json"],
 		},
 		{
 			id: "context_freshness",
 			status: "refresh_recommended",
 			evidenceRefs: [
-				"pnpm run prompt-context-drift:write",
-				"pnpm run prompt-context-drift:validate",
+				"harness prompt-context-drift:write",
+				"harness prompt-context-drift:validate",
 			],
 		},
 		{
 			id: "validation",
 			status: "not_run_by_distillation",
-			evidenceRefs: ["pnpm run agent-native:ratchets"],
+			evidenceRefs: ["harness agent-native-ratchets --json"],
 		},
 		{
 			id: "external_readiness",
@@ -380,9 +380,6 @@ function buildSessionDistillReport() {
 		changedFileCount: files.length,
 		evidenceLanes: sessionEvidenceLanes(files, status),
 		nextCommands: [
-			files.length > 0
-				? `pnpm run coding-policy:route -- ${files.map(shellQuote).join(" ")}`
-				: "pnpm run coding-policy:route:changed",
 			"harness prompt-context-drift:write",
 			"harness prompt-context-drift:validate",
 		],
@@ -539,10 +536,6 @@ function readGateLedgers(gatesRoot) {
 	} catch {
 		return [];
 	}
-}
-
-function shellQuote(value) {
-	return `'${String(value).replaceAll("'", "'\\''")}'`;
 }
 
 function buildReviewerDecisionReport(options) {

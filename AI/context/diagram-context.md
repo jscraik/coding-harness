@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-23T18:30:13Z
+Generated: 2026-06-23T23:55:04Z
 
 ## Table of Contents
 
@@ -29,15 +29,7 @@ Generated: 2026-06-23T18:30:13Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `package.json`
-- `src/commands/next-agent-native-ratchets.ts`
-- `src/commands/next-recommendation-decisions.ts`
 - `src/lib/cli/registry/agent-native-packet-command-specs.ts`
-- `src/lib/cli/registry/command-agent-catalog-rules.ts`
-- `src/lib/cli/registry/command-agent-native-capability-rules.ts`
-- `src/lib/cli/registry/command-capability-rules.ts`
-- `src/lib/cli/registry/command-specs-core.ts`
-- `src/lib/cli/registry/command-visibility-rules.ts`
 
 ## agent
 
@@ -1339,6 +1331,7 @@ graph LR
   ext_node_os_d93fe73a["node:os"] --> node_overload_guard_2748c559_3eff560b
   ext_node_os_d93fe73a["node:os"] --> node_performance_overload_c685bfcf_291ef65a
   ext_node_os_d93fe73a["node:os"] --> node_pr_closeout_env_9bfcd9ef_f476024a
+  ext_node_os_d93fe73a["node:os"] --> node_run_harness_evals_77704768_ba42904d
   ext_node_os_d93fe73a["node:os"] --> node_runner_1_6f281bf8_36f20bbb
   ext_node_os_d93fe73a["node:os"] --> node_test_harness_6e520b98_6b3d1d32
   ext_node_os_d93fe73a["node:os"] --> node_test_harness_upgrade_matrix_84113c4e_e0838daa

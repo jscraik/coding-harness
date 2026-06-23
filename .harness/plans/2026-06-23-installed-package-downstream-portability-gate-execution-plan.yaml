@@ -1,0 +1,269 @@
+schema_version: synaipse-execution-plan/v1
+stage: execution-plan
+status: pass
+repo: /Users/jamiecraik/dev/coding-harness
+branch: main
+head_sha: 8723b8a3d
+worktree: dirty_planning_artifacts_only
+requested_stage: sy-execution-plan
+selected_slice: Add installed-package downstream portability gate
+linear_issue: JSC-403
+linear_issue_url: https://linear.app/jscraik/issue/JSC-403/coding-harness-add-installed-package-downstream-portability-gate
+previous_stage_artifact:
+  status: pass
+  source: .harness/specs/2026-06-23-installed-package-downstream-portability-gate-spec.md
+evidence_refs:
+  - slice_spec: .harness/specs/2026-06-23-installed-package-downstream-portability-gate-spec.md
+  - tracker_plan: .harness/plans/2026-06-23-ai-delivery-harness-cockpit-tracker-plan.yaml
+  - trace_plan: .harness/plans/2026-06-23-ai-delivery-harness-cockpit-trace-plan.yaml
+  - eval_runner: scripts/run-harness-evals.mjs
+  - eval_runner_tests: src/dev/run-harness-evals-script.test.ts
+  - package_files_tests: src/dev/package-files-quality-scripts.test.ts
+blocked_by: []
+next_stage: work
+validation:
+  - command: git status --short --branch
+    outcome: pass
+    notes: Repo has local planning artifacts and .gitignore update only; no implementation has started.
+  - command: inspect sy-execution-plan skill contract
+    outcome: pass
+    notes: Stage owns implementation order, file targets, validation gates, rollback, and proof lanes before work.
+
+objective: >
+  Implement JSC-403 by adding a deterministic installed-package downstream
+  canary that packs Coding Harness, installs it into a tiny downstream fixture,
+  runs public harness commands from the downstream cwd, and records structured
+  pass/fail/blocker evidence.
+
+implementation_strategy:
+  summary: >
+    Keep the implementation narrow and eval-owned. Reuse the existing
+    north-star eval runner and package file tests, but make this canary stronger
+    than the current agent-native-ratchet-discovery fixture by invoking the
+    installed harness binary from a downstream repo instead of running source
+    repo package scripts with --repo-root.
+  principles:
+    - Public installed commands are the product boundary.
+    - Missing optional downstream evidence should degrade into structured packets, not runtime crashes.
+    - The fixture must not copy the source tree or rely on source package scripts.
+    - The canary result artifact is proof; prose closeout is not enough.
+
+file_targets:
+  - path: scripts/run-harness-evals.mjs
+    purpose: Add package-installed-downstream-canary fixture runner and helpers.
+    expected_changes:
+      - Add a branch in runLiveFixture for package-installed-downstream-canary.
+      - Add a fixture runner that packs the package, creates a downstream repo, installs the tarball, runs the harness binary from downstream cwd, captures outputs, and writes result.json.
+      - Add helper functions for command execution, JSON parsing, packet schema detection, source-path-leak scanning, and fixture state snapshots.
+      - Keep path handling inside existing safe fixture/root helpers.
+  - path: evals/scenarios/north-star-agent-delivery/registry.json
+    purpose: Register the package-installed downstream canary scenario.
+    expected_changes:
+      - Add one live_fixture scenario with expected artifacts and assertions matching IPD-001 through IPD-008.
+      - Set score weights toward command_routing, artifact_evidence, validation_sufficiency, blocker_honesty, and manual_step_reduction.
+  - path: src/dev/run-harness-evals-script.test.ts
+    purpose: Add focused regression tests for scenario selection and structured canary behavior.
+    expected_changes:
+      - Test that the new fixture result is parseable and records downstream cwd.
+      - Test that command records preserve stdout JSON parse status and failure classes.
+      - If scenario filtering is introduced, test it here.
+  - path: src/dev/package-files-quality-scripts.test.ts
+    purpose: Extend package file coverage for public installed command dependencies if the canary exposes missing files.
+    expected_changes:
+      - Add required packaged inputs only when the canary proves a package-file gap.
+      - Avoid broad package-file assertions unrelated to JSC-403.
+  - path: package.json
+    purpose: Avoid unless a repo-owned package script is needed to run the canary.
+    expected_changes:
+      - Prefer no package.json change for the first implementation.
+  - path: contracts/examples/agent-native-ratchets.example.json
+    purpose: Touch only if the installed canary exposes source-bound command drift in the published example.
+    expected_changes:
+      - Keep examples aligned with public harness commands.
+
+implementation_order:
+  - step: 1
+    name: Add scenario registration
+    details:
+      - Add package-installed-downstream-canary to evals/scenarios/north-star-agent-delivery/registry.json.
+      - Include expected artifact artifacts/evals/live-fixtures/package-installed-downstream-canary/result.json.
+      - Include assertions for IPD-001 through IPD-008.
+    proof:
+      - Registry loads under existing eval runner validation.
+  - step: 2
+    name: Add fixture runner skeleton
+    details:
+      - Add runPackageInstalledDownstreamCanaryFixture to scripts/run-harness-evals.mjs.
+      - Wire it from runLiveFixture.
+      - Return fixtureResult with placeholder assertions while helper functions are built.
+    proof:
+      - node --import tsx scripts/run-harness-evals.mjs can report the fixture rather than "No live fixture runner".
+  - step: 3
+    name: Build package tarball inside fixture-safe temp area
+    details:
+      - Use pnpm pack --pack-destination <fixturePath>/package.
+      - Parse pnpm pack --json output.
+      - Record packageSource in the result artifact.
+      - Keep tarball under fixturePath so cleanup remains bounded.
+    proof:
+      - Result artifact records packageSource and package file path inside fixture root.
+  - step: 4
+    name: Create downstream repo fixture
+    details:
+      - Create <fixturePath>/downstream.
+      - Initialize git.
+      - Create minimal package.json with no harness-specific scripts.
+      - Install the tarball using the repo package manager path available in CI.
+      - Resolve the installed harness binary through node_modules/.bin/harness.
+    proof:
+      - Command records show cwd is the downstream fixture and command starts from the installed harness binary/public command.
+  - step: 5
+    name: Run public canary commands
+    details:
+      - Run harness next --json.
+      - Run harness commands --json --for-agent.
+      - Run harness session-distill --json.
+      - Run harness agent-native-ratchets --json.
+      - Run harness agent-rework --json.
+      - Run harness reviewer-decision --json.
+      - Run harness init --dry-run --json.
+      - Capture exitCode, stdout, stderr summary, JSON parse status, packet schema version, status, and failureClass.
+    proof:
+      - result.json has one command record per required command.
+  - step: 6
+    name: Classify command outcomes
+    details:
+      - Treat parseable degraded packets such as needs_evidence or unknown as pass when the command contract permits missing optional evidence.
+      - Fail non-JSON stdout for JSON-mode commands.
+      - Fail source repo path leaks in stdout command strings or stderr summaries.
+      - Fail package-owned script resolution from downstream cwd.
+      - Block only environment/tooling conditions outside the canary contract.
+    proof:
+      - result.json summary counts pass/fail/blocked and failure classes.
+  - step: 7
+    name: Add focused tests
+    details:
+      - Add or update Vitest tests for helper behavior and failure classification.
+      - Extend package file tests only if a missing package file is discovered.
+    proof:
+      - Focused Vitest commands pass.
+  - step: 8
+    name: Run exact canary and contract gates
+    details:
+      - Run the scenario-specific canary command if filtering exists or is added.
+      - Otherwise run pnpm test:evals only after the focused tests pass.
+      - Run runtime schema and artifact type gates.
+      - Run fast codestyle closeout.
+    proof:
+      - Validation evidence block contains exact commands and pass/fail/blocked outcomes.
+
+canary_command_contract:
+  binary: node_modules/.bin/harness from downstream fixture install
+  cwd: downstream fixture repo
+  commands:
+    - id: next
+      argv: [next, --json]
+      expected_json: true
+    - id: commands
+      argv: [commands, --json, --for-agent]
+      expected_json: true
+    - id: session_distill
+      argv: [session-distill, --json]
+      expected_json: true
+    - id: agent_native_ratchets
+      argv: [agent-native-ratchets, --json]
+      expected_json: true
+    - id: agent_rework
+      argv: [agent-rework, --json]
+      expected_json: true
+    - id: reviewer_decision
+      argv: [reviewer-decision, --json]
+      expected_json: true
+    - id: init_dry_run
+      argv: [init, --dry-run, --json]
+      expected_json: true
+
+result_artifact:
+  path: artifacts/evals/live-fixtures/package-installed-downstream-canary/result.json
+  schema_version: package-installed-downstream-canary/v1
+  command_record_fields:
+    - id
+    - command
+    - cwd
+    - exitCode
+    - stdoutJson
+    - stderrSummary
+    - packetSchemaVersion
+    - status
+    - failureClass
+  failure_classes:
+    - none
+    - command_not_found
+    - non_json_stdout
+    - nonzero_exit
+    - source_repo_path_leak
+    - missing_optional_evidence_unstructured
+    - package_file_missing
+    - runtime_exception
+    - unknown
+
+validation_gates:
+  focused_required:
+    - command: pnpm exec vitest run src/dev/run-harness-evals-script.test.ts
+      purpose: Prove eval runner support for the new fixture/canary behavior.
+    - command: node --import tsx scripts/run-harness-evals.mjs --scenario package-installed-downstream-canary
+      purpose: Run the exact canary when scenario filtering exists or is added.
+    - command: pnpm exec vitest run src/dev/package-files-quality-scripts.test.ts
+      purpose: Prove packaged files include the public CLI and package-owned scripts needed by installed commands.
+  contract_required:
+    - command: node scripts/validate-runtime-packet-schemas.cjs --all
+      purpose: Ensure emitted runtime packets remain schema-valid.
+    - command: pnpm artifact:types
+      purpose: Ensure typed artifact contracts agree with runtime packet shapes.
+  closeout_required:
+    - command: bash scripts/validate-codestyle.sh --fast
+      purpose: Repo fast closeout gate after package/eval/test changes.
+  risk_based_broad:
+    - command: pnpm test:evals
+      purpose: Run all north-star eval fixtures if shared eval runner behavior changes.
+    - command: pnpm check
+      purpose: Broad repo proof before PR closeout if touched surfaces expand.
+
+rollback_plan:
+  - Revert the registry scenario if the fixture approach is wrong.
+  - Revert the runLiveFixture branch and package canary helper functions together.
+  - Remove any package file assertions added solely for the canary if packaging strategy changes.
+  - Keep the planning artifacts unless the product direction is explicitly retired; they document the reason for the attempted slice.
+
+proof_lanes:
+  local_artifact:
+    status: planned
+    expected: result.json records downstream cwd, commands, exit codes, JSON parse status, packet schema versions, summary counts, and claim boundary.
+  package_portability:
+    status: planned
+    expected: Harness commands run from installed package in downstream repo.
+  runtime_packet_contract:
+    status: planned
+    expected: Runtime schemas and artifact types pass after canary execution.
+  external_state:
+    status: not_claimed
+    expected: No CI, PR review, tracker completion, merge readiness, or npm publication claims from this slice.
+
+work_handoff:
+  next_stage: work
+  recommended_branch: jscraik/jsc-403-installed-package-downstream-portability-gate
+  first_file_to_edit: evals/scenarios/north-star-agent-delivery/registry.json
+  first_test_to_add_or_update: src/dev/run-harness-evals-script.test.ts
+  first_runtime_file_to_edit: scripts/run-harness-evals.mjs
+  stop_conditions:
+    - Stop if package install requires network credentials or live services.
+    - Stop if the canary can only be made to pass by copying the source tree into the downstream fixture.
+    - Stop if JSON-mode commands emit warnings on stdout instead of parseable JSON.
+    - Stop if scenario filtering is absent and adding it balloons beyond this slice; run the narrowest available eval command and record the limitation.
+  proven:
+    - Execution order, file targets, validation gates, rollback, and proof lanes are defined for JSC-403.
+    - No implementation changes have been made by execution-plan.
+  unproven:
+    - The package-installed downstream canary is not implemented yet.
+    - No canary result artifact exists yet.
+    - No PR, CI, or merge-readiness state has been proven.

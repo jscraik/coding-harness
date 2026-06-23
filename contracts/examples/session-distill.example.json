@@ -18,7 +18,10 @@
 			"evidenceRefs": ["ci", "review", "tracker", "merge"]
 		}
 	],
-	"nextCommands": ["pnpm run coding-policy:route -- package.json"],
+	"nextCommands": [
+		"harness prompt-context-drift:write",
+		"harness prompt-context-drift:validate"
+	],
 	"nonClaims": [
 		"ci_passed",
 		"review_resolved",
