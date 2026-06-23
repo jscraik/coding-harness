@@ -16,6 +16,10 @@ export const AGENT_NATIVE_ORIENT_COMMAND_NAMES = [
 	"governance-decision-surface",
 ] as const;
 
+/**
+ * Builds a static command-name lookup table where every listed command shares
+ * the same catalog classification value.
+ */
 export function mapCommands<const Names extends readonly string[], Value>(
 	names: Names,
 	value: Value,

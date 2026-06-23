@@ -516,6 +516,12 @@ const CLI_REGISTRY_SURFACE_RATCHETS = [
 		reason:
 			"Command capability rules must stay focused on static catalog classification tables.",
 	},
+	{
+		path: "src/lib/cli/registry/command-visibility-rules.ts",
+		maxLines: 80,
+		reason:
+			"Command visibility rules must stay focused on visibility classification tables.",
+	},
 ] as const;
 
 const PR_CLOSEOUT_SURFACE_RATCHETS = [

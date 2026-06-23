@@ -5,7 +5,6 @@ import type {
 	CommandPrimaryAudience,
 	CommandRetryability,
 	CommandTier,
-	CommandVisibility,
 } from "./command-capabilities.js";
 import {
 	AGENT_NATIVE_ORIENT_COMMAND_NAMES,
@@ -15,6 +14,7 @@ import {
 
 export { EXPECTED_ARTIFACTS_BY_NAME } from "./command-expected-artifacts.js";
 export { REQUIRED_FLAGS_BY_NAME } from "./command-required-flags.js";
+export { COMMAND_VISIBILITY_BY_NAME } from "./command-visibility-rules.js";
 
 export const COMMAND_CATEGORY_BY_NAME: Partial<
 	Record<string, CommandCategory>
@@ -314,34 +314,4 @@ export const AGENT_MODE_BY_NAME: Partial<Record<string, CommandAgentMode>> = {
 	learnings: "learn",
 	"north-star-feedback": "learn",
 	"feedback-loop-audit": "learn",
-};
-
-export const COMMAND_VISIBILITY_BY_NAME: Partial<
-	Record<string, CommandVisibility>
-> = {
-	next: "default",
-	"agent-readiness": "agent",
-	commands: "advanced",
-	check: "advanced",
-	init: "advanced",
-	...(mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, "advanced") as Partial<
-		Record<string, CommandVisibility>
-	>),
-	"prompt-context-drift:write": "advanced",
-	"prompt-context-drift:validate": "advanced",
-	"decision-request": "advanced",
-	doctor: "advanced",
-	health: "advanced",
-	fitness: "advanced",
-	"fleet-plan": "advanced",
-	"validation-plan": "advanced",
-	"review-context": "advanced",
-	"pattern-scope": "advanced",
-	"artifact-routine": "advanced",
-	"runtime-budget": "advanced",
-	contract: "advanced",
-	linear: "advanced",
-	"review-gate": "plumbing",
-	"pr-closeout": "advanced",
-	"docs-gate": "plumbing",
 };
