@@ -5448,6 +5448,17 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 			"WROTE: reviews/product.md",
 		].join("\n"),
 	);
+	const reworkRunRoot = resolveInside(
+		reviewerBase,
+		".harness/runs/20260623T000000Z-agent-native-fixture",
+	);
+	mkdirSync(resolveInside(reworkRunRoot, "gates"), { recursive: true });
+	writeJson(resolveInside(reworkRunRoot, "summary.json"), {
+		runId: "20260623T000000Z-agent-native-fixture",
+		overallStatus: "passed",
+		failedGateId: null,
+		freshVsResumed: "fresh",
+	});
 	const commandReports = {
 		ratchets: runRatchetPacketCommand(["run", "agent-native:ratchets"]),
 		session: runRatchetPacketCommand(["run", "session:distill"]),

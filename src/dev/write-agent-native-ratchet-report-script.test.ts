@@ -309,6 +309,44 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		expect(firstDecisionInput?.path.length).toBeGreaterThan(0);
 	});
 
+	it("keeps advertised reviewer decision commands usable without a manifest", () => {
+		const packageResult = spawnSync(
+			"pnpm",
+			["--silent", "run", "reviewer:decision"],
+			{
+				cwd: REPO_ROOT,
+				encoding: "utf8",
+			},
+		);
+		const cliResult = spawnSync(
+			process.execPath,
+			["--import", "tsx", "src/cli.ts", "reviewer-decision"],
+			{
+				cwd: REPO_ROOT,
+				encoding: "utf8",
+			},
+		);
+		const packageReport = JSON.parse(packageResult.stdout) as {
+			status: string;
+			decision: string;
+		};
+		const cliReport = JSON.parse(cliResult.stdout) as {
+			status: string;
+			decision: string;
+		};
+
+		expect(packageResult.status).toBe(0);
+		expect(packageReport).toMatchObject({
+			status: "needs_evidence",
+			decision: "needs_evidence",
+		});
+		expect(cliResult.status).toBe(0);
+		expect(cliReport).toMatchObject({
+			status: "needs_evidence",
+			decision: "needs_evidence",
+		});
+	});
+
 	it("maps reviewer coverage receipts into typed reviewer decisions", () => {
 		const root = mkdtempSync(join(REPO_ROOT, ".tmp-agent-native-reviewer-"));
 		tempRoots.push(root);

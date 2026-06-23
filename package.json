@@ -103,7 +103,7 @@
 		"agent-native:ratchets": "node scripts/write-agent-native-ratchet-report.cjs --json --validate",
 		"session:distill": "node scripts/write-agent-native-ratchet-report.cjs --session-distill --json --validate",
 		"agent-rework:report": "node scripts/write-agent-native-ratchet-report.cjs --rework --json --validate",
-		"reviewer:decision": "node scripts/write-agent-native-ratchet-report.cjs --reviewer-decision --json --validate",
+		"reviewer:decision": "node scripts/write-agent-native-ratchet-report.cjs --reviewer-decision --json",
 		"governance:decision-surface": "node scripts/write-agent-native-ratchet-report.cjs --governance --json --validate",
 		"prompt-context-drift:write": "node scripts/write-prompt-context-drift-report.cjs --repo-root .",
 		"prompt-context-drift:validate": "node scripts/validate-prompt-context-drift.cjs artifacts/context-integrity/prompt-context-drift-report.json --repo-root .",

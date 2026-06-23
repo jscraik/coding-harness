@@ -73,7 +73,7 @@ export function createAgentNativePacketCommandSpecs(): CommandSpec[] {
 				"Emit a reviewer-decision/v1 packet from review coverage evidence",
 			example: "reviewer-decision --json",
 			errorLabel: "Reviewer Decision Error",
-			baseArgs: [scriptPath, "--reviewer-decision", "--json", "--validate"],
+			baseArgs: [scriptPath, "--reviewer-decision", "--json"],
 		}),
 		createPacketCommandSpec({
 			name: "governance-decision-surface",
