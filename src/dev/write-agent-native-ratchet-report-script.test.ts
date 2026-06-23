@@ -287,6 +287,7 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		expect(reviewerResult.status).toBe(0);
 		const reviewer = JSON.parse(reviewerResult.stdout) as {
 			schemaVersion: string;
+			command: string;
 			decision: string;
 			outcomes: string[];
 		};
@@ -304,6 +305,9 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		expect(["available", "unavailable"]).toContain(rework.latestRun.status);
 		expect(rework.retryDecisions).toContain("retry");
 		expect(reviewer.schemaVersion).toBe("reviewer-decision/v1");
+		expect(reviewer.command).toBe(
+			"harness reviewer-decision --manifest <manifest> --reviews-dir artifacts/reviews --json",
+		);
 		expect(reviewer.decision).toBe("needs_evidence");
 		expect(reviewer.outcomes).toContain("needs_evidence");
 		expect(governance.schemaVersion).toBe("governance-decision-surface/v1");
@@ -423,6 +427,40 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 			missingArtifacts: 0,
 		});
 		expect(report.claimBoundary).toContain("review-lane evidence");
+	});
+
+	it("accepts repo roots outside the caller working directory", () => {
+		const root = mkdtempSync(join(tmpdir(), "agent-native-repo-root-"));
+		const callerRoot = mkdtempSync(join(tmpdir(), "agent-native-caller-"));
+		tempRoots.push(root, callerRoot);
+		const runRoot = join(root, ".harness", "runs", "20260621T220000Z-pass");
+		mkdirSync(runRoot, { recursive: true });
+		writeFileSync(
+			join(runRoot, "summary.json"),
+			JSON.stringify({
+				runId: "20260621T220000Z-pass",
+				overallStatus: "passed",
+				failedGateId: null,
+				freshVsResumed: "fresh",
+			}),
+		);
+
+		const result = runNodeScript(
+			SCRIPT_PATH,
+			["--rework", "--json", "--repo-root", root],
+			{ cwd: callerRoot },
+		);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			latestRun: { status: string; runId?: string };
+		};
+
+		expect(result.status).toBe(0);
+		expect(report.status).toBe("pass");
+		expect(report.latestRun).toMatchObject({
+			status: "available",
+			runId: "20260621T220000Z-pass",
+		});
 	});
 
 	it("resolves reviewer coverage validation from downstream repos", () => {

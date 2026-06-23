@@ -554,7 +554,7 @@ function buildReviewerDecisionReport(options) {
 		schemaVersion: REVIEWER_DECISION_SCHEMA_VERSION,
 		status: decision.status,
 		command:
-			"node scripts/validate-reviewer-coverage.cjs --manifest <manifest> --reviews-dir artifacts/reviews",
+			"harness reviewer-decision --manifest <manifest> --reviews-dir artifacts/reviews --json",
 		decision: decision.outcome,
 		outcomes: [
 			"accept",
@@ -810,7 +810,7 @@ function main() {
 		process.exit(2);
 	}
 	if (parsed.options.repoRoot) {
-		repoRoot = validateContainedPath(process.cwd(), parsed.options.repoRoot);
+		repoRoot = resolve(parsed.options.repoRoot);
 	}
 	const report = selectedReport(parsed.options);
 	const output = JSON.stringify(report, null, 2);
