@@ -11,7 +11,7 @@ const AGENT_REWORK_SCHEMA_VERSION = "agent-rework/v1";
 const REVIEWER_DECISION_SCHEMA_VERSION = "reviewer-decision/v1";
 const GOVERNANCE_DECISION_SCHEMA_VERSION = "governance-decision-surface/v1";
 
-const repoRoot = process.cwd();
+let repoRoot = process.cwd();
 const reporterScriptRoot = __dirname;
 const callerScopedGitEnvKeys = new Set([
 	"GIT_COMMON_DIR",
@@ -44,8 +44,8 @@ const ratchetDefinitions = [
 		id: "session_distillation",
 		purpose:
 			"Turn a run into a compact resumed-agent handoff instead of a transcript dump.",
-		command: "pnpm run session:distill",
-		packageScripts: ["session:distill"],
+		command: "harness session-distill --json",
+		packageScripts: [],
 		evidencePaths: [
 			"scripts/write-agent-native-ratchet-report.cjs",
 			"src/commands/runtime-card.ts",
@@ -60,8 +60,8 @@ const ratchetDefinitions = [
 		id: "agent_rework_loop",
 		purpose:
 			"Expose retry, stop, ownership, and next-action state as data instead of repeating human steering.",
-		command: "pnpm run agent-rework:report",
-		packageScripts: ["agent-rework:report"],
+		command: "harness agent-rework --json",
+		packageScripts: [],
 		evidencePaths: [
 			"scripts/verify-work.sh",
 			"scripts/write-agent-native-ratchet-report.cjs",
@@ -75,8 +75,8 @@ const ratchetDefinitions = [
 		id: "reviewer_decision_contract",
 		purpose:
 			"Make reviewer outcomes explicit enough for coordinators to route accept, object, defer, and blocked states.",
-		command: "pnpm run reviewer:decision",
-		packageScripts: ["reviewer:decision"],
+		command: "harness reviewer-decision --json",
+		packageScripts: [],
 		evidencePaths: [
 			"scripts/validate-reviewer-coverage.cjs",
 			"scripts/write-agent-native-ratchet-report.cjs",
@@ -90,8 +90,8 @@ const ratchetDefinitions = [
 		id: "governance_decision_surface",
 		purpose:
 			"Classify governance docs by whether they feed runtime decisions, operator policy, history, or archive candidates.",
-		command: "pnpm run governance:decision-surface",
-		packageScripts: ["governance:decision-surface"],
+		command: "harness governance-decision-surface --json",
+		packageScripts: [],
 		evidencePaths: [
 			"docs/doc-lifecycle-manifest.json",
 			"scripts/write-agent-native-ratchet-report.cjs",
@@ -109,6 +109,7 @@ function parseArgs(argv) {
 		json: false,
 		manifest: null,
 		reviewsDir: "artifacts/reviews",
+		repoRoot: null,
 		validate: false,
 	};
 	const errors = [];
@@ -153,6 +154,16 @@ function parseArgs(argv) {
 				options.reviewsDir = argv[index];
 			} else {
 				errors.push("missing reviews-dir value");
+				index -= 1;
+			}
+			continue;
+		}
+		if (arg === "--repo-root") {
+			index += 1;
+			if (typeof argv[index] === "string" && !argv[index].startsWith("--")) {
+				options.repoRoot = argv[index];
+			} else {
+				errors.push("missing repo-root value");
 				index -= 1;
 			}
 			continue;
@@ -429,14 +440,28 @@ function latestVerifyWorkRun() {
 		typeof summary?.failedGateId === "string" && summary.failedGateId.length > 0
 			? summary.failedGateId
 			: null;
-	const failedGates = gates
-		.filter((gate) => gate.status !== "passed")
-		.map((gate) => ({
-			gateId: gate.gateId,
-			status: gate.status,
-			failureClass: gate.failureClass,
-			nextAction: gate.nextAction,
-		}));
+	const candidateFailedGates = gates.filter((gate) => gate.status !== "passed");
+	const invalidFailedGate = candidateFailedGates.find(
+		(gate) => !isValidFailedGateLedger(gate),
+	);
+	if (invalidFailedGate) {
+		return {
+			status: "unavailable",
+			reason: "latest verify-work failed gate ledger is missing or invalid",
+		};
+	}
+	const failedGates = candidateFailedGates.map((gate) => ({
+		gateId: gate.gateId,
+		status: gate.status,
+		failureClass: gate.failureClass,
+		nextAction: gate.nextAction,
+	}));
+	if (failedGates.length > 0 && !failedGateId) {
+		return {
+			status: "unavailable",
+			reason: "latest verify-work failed gate summary is missing failedGateId",
+		};
+	}
 	if (
 		failedGateId &&
 		!failedGates.some((gate) => gate.gateId === failedGateId)
@@ -455,6 +480,22 @@ function latestVerifyWorkRun() {
 		gateCount: gates.length,
 		failedGates,
 	};
+}
+
+function isValidFailedGateLedger(gate) {
+	return (
+		gate &&
+		typeof gate === "object" &&
+		!Array.isArray(gate) &&
+		typeof gate.gateId === "string" &&
+		gate.gateId.length > 0 &&
+		["failed", "blocked"].includes(gate.status) &&
+		["transient_infra", "contract_policy", "internal_unknown"].includes(
+			gate.failureClass,
+		) &&
+		typeof gate.nextAction === "string" &&
+		gate.nextAction.length > 0
+	);
 }
 
 function safeRunDirectories(runsRoot) {
@@ -767,6 +808,9 @@ function main() {
 		process.stderr.write("agent-native-ratchets: failed\n");
 		process.stderr.write("- invalid command line arguments\n");
 		process.exit(2);
+	}
+	if (parsed.options.repoRoot) {
+		repoRoot = validateContainedPath(process.cwd(), parsed.options.repoRoot);
 	}
 	const report = selectedReport(parsed.options);
 	const output = JSON.stringify(report, null, 2);

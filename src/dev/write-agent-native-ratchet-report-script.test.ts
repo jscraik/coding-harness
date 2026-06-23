@@ -77,11 +77,18 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		});
 		const report = JSON.parse(result.stdout) as {
 			status: string;
-			ratchets: Array<{ status: string }>;
+			ratchets: Array<{ command: string; status: string }>;
 		};
 
 		expect(result.status).toBe(0);
 		expect(report.status).toBe("pass");
+		expect(report.ratchets.map((ratchet) => ratchet.command)).toEqual([
+			"pnpm run coding-policy:route -- <path...>",
+			"harness session-distill --json",
+			"harness agent-rework --json",
+			"harness reviewer-decision --json",
+			"harness governance-decision-surface --json",
+		]);
 		expect(report.ratchets.every((ratchet) => ratchet.status === "pass")).toBe(
 			true,
 		);
@@ -602,6 +609,85 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		expect(validatingReport.latestRun).toEqual({
 			status: "unavailable",
 			reason: "latest verify-work failed gate ledger is missing or invalid",
+		});
+	});
+
+	it("requires failed gate ledgers to include repair routing fields", () => {
+		const root = mkdtempSync(join(tmpdir(), "agent-native-rework-bad-gate-"));
+		tempRoots.push(root);
+		const runRoot = join(root, ".harness", "runs", "20260621T220000Z-bad");
+		mkdirSync(join(runRoot, "gates"), { recursive: true });
+		writeFileSync(
+			join(runRoot, "summary.json"),
+			JSON.stringify({
+				runId: "20260621T220000Z-bad",
+				overallStatus: "failed",
+				failedGateId: "lint",
+				freshVsResumed: "fresh",
+			}),
+		);
+		writeFileSync(
+			join(runRoot, "gates", "lint.json"),
+			JSON.stringify({
+				gateId: "lint",
+				status: "failed",
+				failureClass: "contract_policy",
+			}),
+		);
+
+		const result = runNodeScript(SCRIPT_PATH, ["--rework", "--json"], {
+			cwd: root,
+		});
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			latestRun: { status: string; reason: string; failedGateId?: string };
+		};
+
+		expect(result.status).toBe(0);
+		expect(report.status).toBe("needs_evidence");
+		expect(report.latestRun).toEqual({
+			status: "unavailable",
+			reason: "latest verify-work failed gate ledger is missing or invalid",
+		});
+	});
+
+	it("requires failed gate summaries to name failed ledgers", () => {
+		const root = mkdtempSync(join(tmpdir(), "agent-native-rework-no-id-"));
+		tempRoots.push(root);
+		const runRoot = join(root, ".harness", "runs", "20260621T220000Z-no-id");
+		mkdirSync(join(runRoot, "gates"), { recursive: true });
+		writeFileSync(
+			join(runRoot, "summary.json"),
+			JSON.stringify({
+				runId: "20260621T220000Z-no-id",
+				overallStatus: "failed",
+				failedGateId: null,
+				freshVsResumed: "fresh",
+			}),
+		);
+		writeFileSync(
+			join(runRoot, "gates", "lint.json"),
+			JSON.stringify({
+				gateId: "lint",
+				status: "failed",
+				failureClass: "contract_policy",
+				nextAction: "fix contract/policy mismatch, then rerun from this gate",
+			}),
+		);
+
+		const result = runNodeScript(SCRIPT_PATH, ["--rework", "--json"], {
+			cwd: root,
+		});
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			latestRun: { status: string; reason: string; failedGateId?: string };
+		};
+
+		expect(result.status).toBe(0);
+		expect(report.status).toBe("needs_evidence");
+		expect(report.latestRun).toEqual({
+			status: "unavailable",
+			reason: "latest verify-work failed gate summary is missing failedGateId",
 		});
 	});
 

@@ -5459,34 +5459,49 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 		failedGateId: null,
 		freshVsResumed: "fresh",
 	});
+	mkdirSync(resolveInside(reviewerBase, "docs"), { recursive: true });
+	writeJson(resolveInside(reviewerBase, "docs/doc-lifecycle-manifest.json"), {
+		documents: [
+			{
+				path: "docs/agents/07b-agent-governance.md",
+				lifecycleStage: "active",
+				knowledgeCategory: "agent_governance",
+				lifecycleState: "active",
+				canonicality: "canon",
+			},
+		],
+	});
 	const commandReports = {
 		ratchets: runRatchetPacketCommand({
-			args: ["run", "agent-native:ratchets"],
-			repoRoot: fixturePath,
+			args: ["run", "agent-native:ratchets", "--", "--repo-root", fixturePath],
 		}),
 		session: runRatchetPacketCommand({
-			args: ["run", "session:distill"],
-			repoRoot: fixturePath,
+			args: ["run", "session:distill", "--", "--repo-root", fixturePath],
 		}),
 		rework: runRatchetPacketCommand({
-			args: ["run", "agent-rework:report"],
-			repoRoot: fixturePath,
+			args: ["run", "agent-rework:report", "--", "--repo-root", fixturePath],
 		}),
 		reviewer: runRatchetPacketCommand({
 			args: [
 				"run",
 				"reviewer:decision",
 				"--",
+				"--repo-root",
+				fixturePath,
 				"--manifest",
 				reviewerManifestPath,
 				"--reviews-dir",
 				reviewerReviewsDir,
 			],
-			repoRoot: fixturePath,
 		}),
 		governance: runRatchetPacketCommand({
-			args: ["run", "governance:decision-surface"],
-			repoRoot: fixturePath,
+			args: [
+				"run",
+				"governance:decision-surface",
+				"--",
+				"--repo-root",
+				fixturePath,
+			],
 		}),
 	};
 	const report = {
@@ -5565,11 +5580,12 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 }
 
 function runRatchetPacketCommand(argsOrOptions) {
-	const args = Array.isArray(argsOrOptions) ? argsOrOptions : argsOrOptions.args;
-	const cwd = Array.isArray(argsOrOptions) ? REPO_ROOT : (argsOrOptions.repoRoot || REPO_ROOT);
+	const args = Array.isArray(argsOrOptions)
+		? argsOrOptions
+		: argsOrOptions.args;
 	try {
 		const stdout = execFileSync("pnpm", ["--silent", ...args], {
-			cwd,
+			cwd: REPO_ROOT,
 			encoding: "utf8",
 			timeout: RATCHET_PACKET_COMMAND_TIMEOUT_MS,
 			maxBuffer: RATCHET_PACKET_COMMAND_MAX_BUFFER,

@@ -66,6 +66,7 @@ const AGENT_REVIEW_COMMAND_RAIL_NAMES = [
 	"next",
 	"runtime-card",
 	"review-context",
+	"reviewer-decision",
 	"review-gate",
 ] as const;
 const AGENT_HANDOFF_COMMAND_RAIL_NAMES = [

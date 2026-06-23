@@ -25,6 +25,7 @@ const AGENT_REVIEW_COMMAND_NAMES = [
 	"runtime-card",
 	"review-gate",
 	"review-context",
+	"reviewer-decision",
 ] as const;
 const AGENT_HANDOFF_COMMAND_NAMES = [
 	"next",
