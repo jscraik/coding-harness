@@ -1,0 +1,142 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/coding-harness/governance-decision-surface.schema.json",
+	"title": "Governance Decision Surface",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"status",
+		"classes",
+		"documentsAnalyzed",
+		"classCounts",
+		"decisionInputs",
+		"archiveCandidates",
+		"evidencePaths",
+		"nextMove",
+		"claimBoundary"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "governance-decision-surface/v1"
+		},
+		"status": {
+			"enum": ["pass", "needs_evidence"]
+		},
+		"classes": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"enum": [
+					"feeds_runtime_decision",
+					"operator_policy",
+					"historical_context",
+					"archive_candidate"
+				]
+			}
+		},
+		"documentsAnalyzed": {
+			"type": "integer",
+			"minimum": 0
+		},
+		"classCounts": {
+			"$ref": "#/$defs/classCounts"
+		},
+		"decisionInputs": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/governanceDocument"
+			}
+		},
+		"archiveCandidates": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/governanceDocument"
+			}
+		},
+		"evidencePaths": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "string",
+				"minLength": 1
+			}
+		},
+		"nextMove": {
+			"type": "string",
+			"minLength": 1
+		},
+		"claimBoundary": {
+			"type": "string",
+			"minLength": 1
+		}
+	},
+	"$defs": {
+		"classCounts": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"feeds_runtime_decision",
+				"operator_policy",
+				"historical_context",
+				"archive_candidate"
+			],
+			"properties": {
+				"feeds_runtime_decision": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"operator_policy": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"historical_context": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"archive_candidate": {
+					"type": "integer",
+					"minimum": 0
+				}
+			}
+		},
+		"governanceDocument": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"path",
+				"classes",
+				"lifecycleStage",
+				"knowledgeCategory",
+				"lifecycleState"
+			],
+			"properties": {
+				"path": {
+					"type": "string",
+					"minLength": 1
+				},
+				"classes": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"enum": [
+							"feeds_runtime_decision",
+							"operator_policy",
+							"historical_context",
+							"archive_candidate"
+						]
+					}
+				},
+				"lifecycleStage": {
+					"type": "string"
+				},
+				"knowledgeCategory": {
+					"type": "string"
+				},
+				"lifecycleState": {
+					"type": "string"
+				}
+			}
+		}
+	}
+}

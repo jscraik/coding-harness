@@ -17,7 +17,7 @@ from typing import Literal, cast
 
 from jsonschema import Draft7Validator, Draft202012Validator, validate as validate_json_schema
 from jsonschema.exceptions import SchemaError, ValidationError as JsonSchemaValidationError
-from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, ValidationError, field_validator, model_validator
 import yaml
 
 
@@ -40,6 +40,36 @@ REQUIRED_PACKAGE_SCRIPTS = {
     "artifact:types",
     "types:check",
 }
+
+
+def reject_blank_string(value: str) -> str:
+    if not value.strip():
+        raise ValueError("must not be blank")
+    return value
+
+
+def reject_blank_optional_string(value: str | None) -> str | None:
+    if value is not None and not value.strip():
+        raise ValueError("must not be blank")
+    return value
+
+
+def reject_blank_list_items(value: list[str]) -> list[str]:
+    if any(not item.strip() for item in value):
+        raise ValueError("must not contain blank items")
+    return value
+
+
+def reject_empty_or_blank_list(value: list[str]) -> list[str]:
+    if not value:
+        raise ValueError("must contain at least one item")
+    return reject_blank_list_items(value)
+
+
+def reject_negative_int(value: int) -> int:
+    if value < 0:
+        raise ValueError("must be non-negative")
+    return value
 
 
 class CommandCapability(BaseModel):
@@ -345,6 +375,445 @@ class DocLifecycleFrontmatter(BaseModel):
         return value
 
 
+AgentNativeRatchetId = Literal[
+    "orientation_packet",
+    "session_distillation",
+    "agent_rework_loop",
+    "reviewer_decision_contract",
+    "governance_decision_surface",
+]
+
+AgentNativeRatchetStatus = Literal["pass", "needs_attention"]
+AgentNativeReportStatus = Literal["pass", "needs_attention"]
+EvidenceLaneId = Literal[
+    "worktree",
+    "policy_route",
+    "context_freshness",
+    "validation",
+    "external_readiness",
+]
+GovernanceClass = Literal[
+    "feeds_runtime_decision",
+    "operator_policy",
+    "historical_context",
+    "archive_candidate",
+]
+GOVERNANCE_CLASSES: tuple[GovernanceClass, ...] = (
+    "feeds_runtime_decision",
+    "operator_policy",
+    "historical_context",
+    "archive_candidate",
+)
+
+
+class AgentNativeRatchet(BaseModel):
+    """Typed contract for one agent-native ratchet lane."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: AgentNativeRatchetId
+    status: AgentNativeRatchetStatus
+    purpose: str
+    command: str
+    evidencePaths: list[str]
+    claimBoundary: str
+    nextMove: str
+
+    _reject_blank_strings = field_validator(
+        "purpose", "command", "claimBoundary", "nextMove"
+    )(reject_blank_string)
+    _reject_blank_evidence_paths = field_validator("evidencePaths")(
+        reject_empty_or_blank_list
+    )
+
+
+class AgentNativeRatchetsReport(BaseModel):
+    """Typed contract for the top-level agent-native ratchet report."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schemaVersion: Literal["agent-native-ratchets/v1"]
+    status: AgentNativeReportStatus
+    ratchets: list[AgentNativeRatchet]
+
+    @field_validator("ratchets")
+    @classmethod
+    def require_canonical_ratchet_set(
+        cls, value: list[AgentNativeRatchet]
+    ) -> list[AgentNativeRatchet]:
+        expected: list[AgentNativeRatchetId] = [
+            "orientation_packet",
+            "session_distillation",
+            "agent_rework_loop",
+            "reviewer_decision_contract",
+            "governance_decision_surface",
+        ]
+        ids = [ratchet.id for ratchet in value]
+        if ids != expected:
+            raise ValueError(f"must contain canonical ratchet ids in order: {', '.join(expected)}")
+        return value
+
+    @model_validator(mode="after")
+    def require_status_matches_ratchets(self) -> AgentNativeRatchetsReport:
+        expected_status = (
+            "pass" if all(ratchet.status == "pass" for ratchet in self.ratchets)
+            else "needs_attention"
+        )
+        if self.status != expected_status:
+            raise ValueError("status must match ratchet statuses")
+        return self
+
+
+class SessionEvidenceLane(BaseModel):
+    """Typed evidence lane for a resumed-agent session distillation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: EvidenceLaneId
+    status: str
+    evidenceRefs: list[str]
+
+    _reject_blank_status = field_validator("status")(reject_blank_string)
+    _reject_blank_evidence_refs = field_validator("evidenceRefs")(
+        reject_blank_list_items
+    )
+
+
+class SessionDistillReport(BaseModel):
+    """Typed contract for session-distill/v1 output."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schemaVersion: Literal["session-distill/v1"]
+    status: Literal["pass"]
+    branch: str
+    headSha: str
+    worktreeStatus: Literal["clean", "dirty"]
+    changedFiles: list[str]
+    changedFileCount: int
+    evidenceLanes: list[SessionEvidenceLane]
+    nextCommands: list[str]
+    nonClaims: list[str]
+    claimBoundary: str
+
+    _reject_blank_strings = field_validator("branch", "headSha", "claimBoundary")(
+        reject_blank_string
+    )
+    _reject_blank_items = field_validator("changedFiles", "nextCommands", "nonClaims")(
+        reject_blank_list_items
+    )
+
+    @model_validator(mode="after")
+    def require_session_consistency(self) -> SessionDistillReport:
+        if self.changedFileCount != len(self.changedFiles):
+            raise ValueError("changedFileCount must equal changedFiles length")
+        lane_ids = [lane.id for lane in self.evidenceLanes]
+        if len(lane_ids) != len(set(lane_ids)):
+            raise ValueError("evidenceLanes must not contain duplicate ids")
+        return self
+
+
+class AgentReworkFailedGate(BaseModel):
+    """Typed failed gate summary from verify-work attempt ledgers."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    gateId: str
+    status: str
+    failureClass: str
+    nextAction: str
+
+    _reject_blank_strings = field_validator(
+        "gateId", "status", "failureClass", "nextAction"
+    )(reject_blank_string)
+
+
+class AgentReworkAvailableRun(BaseModel):
+    """Typed available verify-work run summary."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["available"]
+    runId: str
+    overallStatus: str
+    failedGateId: str | None
+    freshVsResumed: str
+    gateCount: int
+    failedGates: list[AgentReworkFailedGate]
+
+    _reject_blank_strings = field_validator(
+        "runId", "overallStatus", "freshVsResumed", "failedGateId"
+    )(reject_blank_optional_string)
+    _reject_negative_gate_count = field_validator("gateCount")(reject_negative_int)
+
+    @model_validator(mode="after")
+    def require_gate_counts_consistent(self) -> AgentReworkAvailableRun:
+        if len(self.failedGates) > self.gateCount:
+            raise ValueError("failedGates length must not exceed gateCount")
+        if self.failedGateId is None and self.failedGates:
+            raise ValueError("failedGateId must name a failed gate when failedGates exist")
+        if self.failedGateId is not None and not any(
+            gate.gateId == self.failedGateId for gate in self.failedGates
+        ):
+            raise ValueError("failedGateId must match a failedGates entry")
+        return self
+
+
+class AgentReworkUnavailableRun(BaseModel):
+    """Typed unavailable verify-work run sentinel."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["unavailable"]
+    reason: str
+
+    _reject_blank_reason = field_validator("reason")(reject_blank_string)
+
+
+class AgentReworkReport(BaseModel):
+    """Typed contract for agent-rework/v1 output."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schemaVersion: Literal["agent-rework/v1"]
+    status: Literal["pass", "needs_evidence"]
+    attemptSource: str
+    command: str
+    latestRun: AgentReworkAvailableRun | AgentReworkUnavailableRun
+    retryDecisions: list[Literal["retry", "stop", "fix_contract", "fix_infra"]]
+    claimBoundary: str
+
+    _reject_blank_strings = field_validator("attemptSource", "command", "claimBoundary")(
+        reject_blank_string
+    )
+
+    @model_validator(mode="after")
+    def require_rework_status_consistency(self) -> AgentReworkReport:
+        expected_status = "needs_evidence" if self.latestRun.status == "unavailable" else "pass"
+        if self.status != expected_status:
+            raise ValueError("status must match latestRun availability")
+        return self
+
+
+class ReviewerCoverageReceiptSummary(BaseModel):
+    """Typed summary of reviewer coverage evidence embedded in reviewer decisions."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schemaVersion: Literal["reviewer-coverage-receipt/v1"]
+    status: str
+    blockerClass: str | None
+    reason: str
+    requestedRoles: int
+    completedRoles: int
+    blockedRoles: int
+    missingArtifacts: int
+    synthesisStatus: str | None
+    evidenceRefs: list[str]
+
+    _reject_blank_optional_strings = field_validator(
+        "status", "reason", "blockerClass", "synthesisStatus"
+    )(reject_blank_optional_string)
+    _reject_blank_evidence = field_validator("evidenceRefs")(
+        reject_blank_list_items
+    )
+    _reject_negative_counts = field_validator(
+        "requestedRoles",
+        "completedRoles",
+        "blockedRoles",
+        "missingArtifacts",
+    )(reject_negative_int)
+
+    @model_validator(mode="after")
+    def require_role_counts_consistent(self) -> ReviewerCoverageReceiptSummary:
+        if self.completedRoles + self.blockedRoles > self.requestedRoles:
+            raise ValueError("completedRoles + blockedRoles must not exceed requestedRoles")
+        if self.missingArtifacts > self.requestedRoles:
+            raise ValueError("missingArtifacts must not exceed requestedRoles")
+        return self
+
+
+class ReviewerDecisionReport(BaseModel):
+    """Typed contract for reviewer-decision/v1 output."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schemaVersion: Literal["reviewer-decision/v1"]
+    status: Literal["pass", "needs_evidence", "blocked", "defer"]
+    command: str
+    decision: Literal[
+        "accept",
+        "object",
+        "needs_evidence",
+        "defer",
+        "blocked_external",
+        "accepted_risk",
+    ]
+    outcomes: list[
+        Literal[
+            "accept",
+            "object",
+            "needs_evidence",
+            "defer",
+            "blocked_external",
+            "accepted_risk",
+        ]
+    ]
+    coverageReceipt: ReviewerCoverageReceiptSummary | None
+    nextMove: str
+    claimBoundary: str
+
+    _reject_blank_strings = field_validator("command", "nextMove", "claimBoundary")(
+        reject_blank_string
+    )
+
+    @model_validator(mode="after")
+    def require_reviewer_decision_consistency(self) -> ReviewerDecisionReport:
+        if self.status == "pass" and self.decision not in {"accept", "accepted_risk"}:
+            raise ValueError("passing reviewer decisions must accept or accept risk")
+        compatible_decisions = {
+            "pass": {"accept", "accepted_risk"},
+            "needs_evidence": {"needs_evidence"},
+            "blocked": {"blocked_external", "object"},
+            "defer": {"defer"},
+        }
+        if self.decision not in compatible_decisions[self.status]:
+            raise ValueError("decision must be compatible with status")
+        if self.decision not in self.outcomes:
+            raise ValueError("decision must be included in outcomes")
+        return self
+
+
+class GovernanceClassCounts(BaseModel):
+    """Typed governance classification counts."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    feeds_runtime_decision: int
+    operator_policy: int
+    historical_context: int
+    archive_candidate: int
+
+    _reject_negative_counts = field_validator(
+        "feeds_runtime_decision",
+        "operator_policy",
+        "historical_context",
+        "archive_candidate",
+    )(reject_negative_int)
+
+
+class GovernanceDocument(BaseModel):
+    """Typed governance document route entry."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    path: str
+    classes: list[GovernanceClass]
+    lifecycleStage: str
+    knowledgeCategory: str
+    lifecycleState: str
+
+    _reject_blank_path = field_validator("path")(reject_blank_string)
+
+    @field_validator("classes")
+    @classmethod
+    def require_governance_classes(cls, value: list[GovernanceClass]) -> list[GovernanceClass]:
+        if not value:
+            raise ValueError("must contain at least one class")
+        return value
+
+
+class GovernanceDecisionSurfaceReport(BaseModel):
+    """Typed contract for governance-decision-surface/v1 output."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schemaVersion: Literal["governance-decision-surface/v1"]
+    status: Literal["pass", "needs_evidence"]
+    classes: list[GovernanceClass]
+    documentsAnalyzed: int
+    classCounts: GovernanceClassCounts
+    decisionInputs: list[GovernanceDocument]
+    archiveCandidates: list[GovernanceDocument]
+    evidencePaths: list[str]
+    nextMove: str
+    claimBoundary: str
+
+    _reject_blank_evidence_paths = field_validator("evidencePaths")(
+        reject_empty_or_blank_list
+    )
+    _reject_blank_strings = field_validator("nextMove", "claimBoundary")(
+        reject_blank_string
+    )
+    _reject_negative_documents_analyzed = field_validator("documentsAnalyzed")(
+        reject_negative_int
+    )
+
+    @model_validator(mode="after")
+    def require_governance_class_consistency(self) -> GovernanceDecisionSurfaceReport:
+        if sorted(self.classes) != sorted(GOVERNANCE_CLASSES):
+            raise ValueError("classes must enumerate every governance class")
+        if any("feeds_runtime_decision" not in doc.classes for doc in self.decisionInputs):
+            raise ValueError("decisionInputs must feed runtime decisions")
+        if any("archive_candidate" not in doc.classes for doc in self.archiveCandidates):
+            raise ValueError("archiveCandidates must be archive candidates")
+        max_count = max(
+            self.classCounts.feeds_runtime_decision,
+            self.classCounts.operator_policy,
+            self.classCounts.historical_context,
+            self.classCounts.archive_candidate,
+        )
+        if self.documentsAnalyzed < max_count:
+            raise ValueError("documentsAnalyzed must cover every class count")
+        if self.classCounts.feeds_runtime_decision < len(self.decisionInputs):
+            raise ValueError("feeds_runtime_decision count must cover decisionInputs")
+        if self.classCounts.archive_candidate < len(self.archiveCandidates):
+            raise ValueError("archive_candidate count must cover archiveCandidates")
+        return self
+
+
+AGENT_NATIVE_PACKET_MODELS: dict[str, type[BaseModel]] = {
+    "agent-native-ratchets/v1": AgentNativeRatchetsReport,
+    "session-distill/v1": SessionDistillReport,
+    "agent-rework/v1": AgentReworkReport,
+    "reviewer-decision/v1": ReviewerDecisionReport,
+    "governance-decision-surface/v1": GovernanceDecisionSurfaceReport,
+}
+
+
+AGENT_NATIVE_LIVE_COMMANDS: dict[str, list[str]] = {
+    "agent-native-ratchets/v1": [
+        "node",
+        "scripts/write-agent-native-ratchet-report.cjs",
+        "--json",
+    ],
+    "session-distill/v1": [
+        "node",
+        "scripts/write-agent-native-ratchet-report.cjs",
+        "--session-distill",
+        "--json",
+    ],
+    "agent-rework/v1": [
+        "node",
+        "scripts/write-agent-native-ratchet-report.cjs",
+        "--rework",
+        "--json",
+    ],
+    "reviewer-decision/v1": [
+        "node",
+        "scripts/write-agent-native-ratchet-report.cjs",
+        "--reviewer-decision",
+        "--json",
+    ],
+    "governance-decision-surface/v1": [
+        "node",
+        "scripts/write-agent-native-ratchet-report.cjs",
+        "--governance",
+        "--json",
+    ],
+}
+
+
 class ArtifactHtmlParser(HTMLParser):
     """Minimal parser used to surface syntax-level HTML parser errors."""
 
@@ -363,6 +832,7 @@ class ArtifactReport:
     cli_json_contracts: int = 0
     command_catalog_commands: int = 0
     runtime_packets: int = 0
+    agent_native_packets: int = 0
     toml_files: int = 0
     html_files: int = 0
     shell_files: int = 0
@@ -718,6 +1188,81 @@ def validate_harness_decision_value(value: object, label: str, errors: list[str]
         errors.append(f"{label}: harness decision violates schema: {details}")
 
 
+def validate_pydantic_value(
+    model: type[BaseModel],
+    value: object,
+    label: str,
+    errors: list[str],
+) -> None:
+    try:
+        model.model_validate(value)
+    except ValidationError as exc:
+        details = "; ".join(
+            f"{'.'.join(str(part) for part in error['loc'])}: {error['msg']}"
+            for error in exc.errors()
+        )
+        errors.append(f"{label}: violates typed artifact contract: {details}")
+
+
+def agent_native_packet_entries(errors: list[str]) -> dict[str, dict[str, object]]:
+    manifest_path = REPO_ROOT / "contracts/runtime-packet-schemas.manifest.json"
+    manifest_data = as_object_map(load_json(manifest_path))
+    if manifest_data is None:
+        errors.append(f"{manifest_path}: manifest must be a JSON object")
+        return {}
+    packets_value = manifest_data.get("packets")
+    packets = cast(list[object], packets_value) if isinstance(packets_value, list) else []
+    entries: dict[str, dict[str, object]] = {}
+    for packet in (as_object_map(packet) for packet in packets):
+        if packet is None:
+            continue
+        schema_version = packet.get("schemaVersion")
+        if isinstance(schema_version, str) and schema_version in AGENT_NATIVE_PACKET_MODELS:
+            entries[schema_version] = packet
+    return entries
+
+
+def load_agent_native_example(
+    schema_version: str,
+    entry: dict[str, object],
+    errors: list[str],
+) -> tuple[str, object] | None:
+    example_path_value = entry.get("examplePath")
+    if not isinstance(example_path_value, str):
+        errors.append(f"{schema_version}: manifest examplePath must be a string")
+        return None
+    example_path = REPO_ROOT / example_path_value
+    if not example_path.exists():
+        errors.append(f"{schema_version}: examplePath does not exist: {example_path_value}")
+        return None
+    try:
+        return (example_path_value, load_json(example_path))
+    except (json.JSONDecodeError, OSError) as exc:
+        errors.append(f"{example_path_value}: {exc}")
+        return None
+
+
+def validate_agent_native_live_command(
+    schema_version: str,
+    model: type[BaseModel],
+    errors: list[str],
+) -> bool:
+    command = AGENT_NATIVE_LIVE_COMMANDS[schema_version]
+    result = run_command(command, timeout_seconds=120)
+    command_label = " ".join(command)
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout).strip()
+        errors.append(f"{schema_version}: live command failed: {command_label}: {detail}")
+        return False
+    try:
+        live_value = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        errors.append(f"{schema_version}: live command emitted invalid JSON: {exc}")
+        return False
+    validate_pydantic_value(model, live_value, command_label, errors)
+    return True
+
+
 def validate_cli_json_value(
     value: object,
     contract: CliJsonContract,
@@ -869,6 +1414,25 @@ def validate_cli_json_contracts(errors: list[str]) -> tuple[int, int]:
     return (len(manifest.contracts), command_catalog_commands)
 
 
+def validate_agent_native_packet_contracts(errors: list[str]) -> int:
+    checked = 0
+    packet_entries = agent_native_packet_entries(errors)
+    for schema_version, model in AGENT_NATIVE_PACKET_MODELS.items():
+        entry = packet_entries.get(schema_version)
+        if entry is None:
+            errors.append(f"{schema_version}: missing runtime packet manifest entry")
+            continue
+        example_result = load_agent_native_example(schema_version, entry, errors)
+        if example_result is None:
+            continue
+        example_path_value, example = example_result
+        validate_pydantic_value(model, example, example_path_value, errors)
+        if not validate_agent_native_live_command(schema_version, model, errors):
+            continue
+        checked += 1
+    return checked
+
+
 def validate_runtime_packet_schemas(errors: list[str]) -> int:
     result = run_command(["node", "scripts/validate-runtime-packet-schemas.cjs", "--all"])
     if result.returncode != 0:
@@ -969,6 +1533,7 @@ def build_report() -> ArtifactReport:
 
     cli_json_contracts, command_catalog_commands = validate_cli_json_contracts(errors)
     runtime_packets = validate_runtime_packet_schemas(errors)
+    agent_native_packets = validate_agent_native_packet_contracts(errors)
 
     toml_files = [path for path in files if path.suffix == ".toml"]
     for path in toml_files:
@@ -995,6 +1560,7 @@ def build_report() -> ArtifactReport:
         cli_json_contracts=cli_json_contracts,
         command_catalog_commands=command_catalog_commands,
         runtime_packets=runtime_packets,
+        agent_native_packets=agent_native_packets,
         toml_files=len(toml_files),
         html_files=len(html_files),
         shell_files=shell_count,
@@ -1018,6 +1584,7 @@ def main() -> int:
         f"cli_json_contracts={report.cli_json_contracts} "
         f"command_catalog_commands={report.command_catalog_commands} "
         f"runtime_packets={report.runtime_packets} "
+        f"agent_native_packets={report.agent_native_packets} "
         f"toml={report.toml_files} "
         f"html={report.html_files} shell={report.shell_files} node={report.node_files}"
     )

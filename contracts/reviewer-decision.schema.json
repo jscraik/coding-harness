@@ -1,0 +1,167 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/coding-harness/reviewer-decision.schema.json",
+	"title": "Reviewer Decision",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"status",
+		"command",
+		"decision",
+		"outcomes",
+		"coverageReceipt",
+		"nextMove",
+		"claimBoundary"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "reviewer-decision/v1"
+		},
+		"status": {
+			"enum": ["pass", "needs_evidence", "blocked", "defer"]
+		},
+		"command": {
+			"type": "string",
+			"minLength": 1
+		},
+		"decision": {
+			"enum": [
+				"accept",
+				"object",
+				"needs_evidence",
+				"defer",
+				"blocked_external",
+				"accepted_risk"
+			]
+		},
+		"outcomes": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "string",
+				"minLength": 1
+			}
+		},
+		"coverageReceipt": {
+			"anyOf": [
+				{
+					"$ref": "#/$defs/coverageReceipt"
+				},
+				{
+					"type": "null"
+				}
+			]
+		},
+		"nextMove": {
+			"type": "string",
+			"minLength": 1
+		},
+		"claimBoundary": {
+			"type": "string",
+			"minLength": 1
+		}
+	},
+	"anyOf": [
+		{
+			"properties": {
+				"status": {
+					"const": "pass"
+				},
+				"decision": {
+					"enum": ["accept", "accepted_risk"]
+				}
+			}
+		},
+		{
+			"properties": {
+				"status": {
+					"const": "needs_evidence"
+				},
+				"decision": {
+					"const": "needs_evidence"
+				}
+			}
+		},
+		{
+			"properties": {
+				"status": {
+					"const": "blocked"
+				},
+				"decision": {
+					"enum": ["blocked_external", "object"]
+				}
+			}
+		},
+		{
+			"properties": {
+				"status": {
+					"const": "defer"
+				},
+				"decision": {
+					"const": "defer"
+				}
+			}
+		}
+	],
+	"$defs": {
+		"coverageReceipt": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"schemaVersion",
+				"status",
+				"blockerClass",
+				"reason",
+				"requestedRoles",
+				"completedRoles",
+				"blockedRoles",
+				"missingArtifacts",
+				"synthesisStatus",
+				"evidenceRefs"
+			],
+			"properties": {
+				"schemaVersion": {
+					"const": "reviewer-coverage-receipt/v1"
+				},
+				"status": {
+					"type": "string",
+					"minLength": 1
+				},
+				"blockerClass": {
+					"type": ["string", "null"]
+				},
+				"reason": {
+					"type": "string",
+					"minLength": 1
+				},
+				"requestedRoles": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"completedRoles": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"blockedRoles": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"missingArtifacts": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"synthesisStatus": {
+					"type": ["string", "null"]
+				},
+				"evidenceRefs": {
+					"type": "array",
+					"items": {
+						"type": "string",
+						"minLength": 1
+					}
+				}
+			}
+		}
+	}
+}

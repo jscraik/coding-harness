@@ -201,6 +201,51 @@
 			"semanticValidatorPath": "scripts/validate-intermediary-receipt-coverage.cjs",
 			"ownerGap": "SPG-012",
 			"blockedBy": "PU-038 adds the intermediary receipt coverage contract before production realtime, browser, mailbox, stream, or compaction producers emit claim-routable runtime evidence."
+		},
+		{
+			"schemaVersion": "agent-native-ratchets/v1",
+			"schemaPath": "contracts/agent-native-ratchets.schema.json",
+			"examplePath": "contracts/examples/agent-native-ratchets.example.json",
+			"typeSourcePath": "scripts/write-agent-native-ratchet-report.cjs",
+			"runtimeStatus": "emitted",
+			"parityValidator": "agent-native-ratchets",
+			"ownerGap": "JSC-248"
+		},
+		{
+			"schemaVersion": "session-distill/v1",
+			"schemaPath": "contracts/session-distill.schema.json",
+			"examplePath": "contracts/examples/session-distill.example.json",
+			"typeSourcePath": "scripts/write-agent-native-ratchet-report.cjs",
+			"runtimeStatus": "emitted",
+			"parityValidator": "session-distill",
+			"ownerGap": "JSC-248"
+		},
+		{
+			"schemaVersion": "agent-rework/v1",
+			"schemaPath": "contracts/agent-rework.schema.json",
+			"examplePath": "contracts/examples/agent-rework.example.json",
+			"typeSourcePath": "scripts/write-agent-native-ratchet-report.cjs",
+			"runtimeStatus": "emitted",
+			"parityValidator": "agent-rework",
+			"ownerGap": "JSC-248"
+		},
+		{
+			"schemaVersion": "reviewer-decision/v1",
+			"schemaPath": "contracts/reviewer-decision.schema.json",
+			"examplePath": "contracts/examples/reviewer-decision.example.json",
+			"typeSourcePath": "scripts/write-agent-native-ratchet-report.cjs",
+			"runtimeStatus": "emitted",
+			"parityValidator": "reviewer-decision",
+			"ownerGap": "JSC-248"
+		},
+		{
+			"schemaVersion": "governance-decision-surface/v1",
+			"schemaPath": "contracts/governance-decision-surface.schema.json",
+			"examplePath": "contracts/examples/governance-decision-surface.example.json",
+			"typeSourcePath": "scripts/write-agent-native-ratchet-report.cjs",
+			"runtimeStatus": "emitted",
+			"parityValidator": "governance-decision-surface",
+			"ownerGap": "JSC-248"
 		}
 	]
 }

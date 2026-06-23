@@ -31,6 +31,7 @@ import {
 	inspectFlagValue,
 	parseIntegerArg,
 } from "../parse-utils.js";
+import { createAgentNativePacketCommandSpecs } from "./agent-native-packet-command-specs.js";
 import { createAgentReadinessCommandSpec } from "./agent-readiness-command-spec.js";
 import { createArtifactGateCommandSpec } from "./artifact-gate-command-spec.js";
 import { createAuditCommandSpec } from "./audit-command-spec.js";
@@ -116,6 +117,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createPresetCommandSpec(),
 	createCheckCommandSpec(),
 	createAgentReadinessCommandSpec(),
+	...createAgentNativePacketCommandSpecs(),
 	createNextCommandSpec(),
 	createFitnessCommandSpec(runFitnessCLI),
 	createRuntimeCardCommandSpec(),

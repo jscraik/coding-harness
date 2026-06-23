@@ -118,6 +118,16 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   `AI/context/diagram-context.md` and keep `AGENTS.md`,
   `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized
   when docs-gate reports architecture-context or agent-governance surfaces
+- agent-native ratchet packet changes should keep `agent-native-ratchets/v1`,
+  `session-distill/v1`, `agent-rework/v1`, `reviewer-decision/v1`, and
+  `governance-decision-surface/v1` contract-first under `contracts/`, route
+  producer entrypoints through package scripts, and prove the ratchet with
+  `node scripts/validate-runtime-packet-schemas.cjs --all`,
+  `pnpm artifact:types`, and focused fixture tests. These packets may orient
+  `harness next`, eval fixtures, review handoff, and governance decision
+  surfaces, but they must not become CI, review-thread, tracker, external
+  readiness, delivery-truth, or merge-readiness proof without an explicit
+  canonical consumer boundary and synchronized governance update
 - runtime-card trace-out changes should keep trace persistence in
   `src/lib/runtime-trace/`, reuse canonical run-record append/manifest
   helpers, constrain `--trace-out` to

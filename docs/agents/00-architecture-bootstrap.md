@@ -202,6 +202,29 @@ they add durable evidence artifacts consumed by the agent cockpit. Refresh
 `runtime-card --evidence-out`, `runtime-evidence-bundle/v1`, or related
 producer and adapter wiring changes.
 
+Agent-native ratchet packet changes belong in the same advisory cockpit lane
+when they turn review, session, rework, or governance feedback into durable
+artifacts. Keep `agent-native-ratchets/v1`, `session-distill/v1`,
+`agent-rework/v1`, `reviewer-decision/v1`, and
+`governance-decision-surface/v1` contract-first under `contracts/`, route
+their producers through `pnpm run agent-native:ratchets`,
+`pnpm run session:distill`, `pnpm run agent-rework:report`,
+`pnpm run reviewer:decision`, and `pnpm run governance:decision-surface`, and
+ratchet them with `node scripts/validate-runtime-packet-schemas.cjs --all`
+plus `pnpm artifact:types`. Expected pass evidence:
+
+- `node scripts/validate-runtime-packet-schemas.cjs --all` reports
+  `packetCount=25` with no errors.
+- `pnpm artifact:types` reports `runtime_packets=25` plus
+  `agent_native_packets=5`.
+
+If either command fails, stop at the first schema, manifest, or typed-contract
+mismatch, fix the packet producer or manifest entry from the repo root, and
+rerun both checks before handoff.
+These packets may steer `harness next` and eval fixtures, but they must not
+prove CI, review-thread state, tracker state, external readiness, or merge
+readiness without a separate canonical consumer boundary.
+
 Runtime-card trace-out changes belong in `src/lib/runtime-trace/` and must
 reuse the canonical run-record writer under `src/lib/contract/` instead of
 inventing a second JSONL/hash-chain persistence path. Keep `--trace-out`

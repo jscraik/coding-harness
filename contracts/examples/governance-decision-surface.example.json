@@ -1,0 +1,30 @@
+{
+	"schemaVersion": "governance-decision-surface/v1",
+	"status": "pass",
+	"classes": [
+		"feeds_runtime_decision",
+		"operator_policy",
+		"historical_context",
+		"archive_candidate"
+	],
+	"documentsAnalyzed": 1,
+	"classCounts": {
+		"feeds_runtime_decision": 1,
+		"operator_policy": 1,
+		"historical_context": 0,
+		"archive_candidate": 0
+	},
+	"decisionInputs": [
+		{
+			"path": "AGENTS.md",
+			"classes": ["feeds_runtime_decision", "operator_policy"],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "operator-policy",
+			"lifecycleState": "active"
+		}
+	],
+	"archiveCandidates": [],
+	"evidencePaths": ["docs/doc-lifecycle-manifest.json"],
+	"nextMove": "Use decisionInputs to route governance context before loading broad docs.",
+	"claimBoundary": "governance-decision-surface/v1 classifies docs for routing and pruning; source docs remain authoritative."
+}

@@ -25,13 +25,18 @@ import {
 const AGENT_COMMAND_RAIL_NAMES = [
 	"next",
 	"agent-readiness",
+	"agent-native-ratchets",
 	"commands",
+	"governance-decision-surface",
 	"runtime-card",
 	"session-context",
+	"session-distill",
 	"check",
 	"fitness",
 	"validation-plan",
 	"review-context",
+	"reviewer-decision",
+	"agent-rework",
 	"decision-request",
 	"pr-closeout",
 	"evidence-verify",
@@ -40,9 +45,14 @@ const AGENT_COMMAND_RAIL_NAMES = [
 const AGENT_ORIENT_COMMAND_RAIL_NAMES = [
 	"next",
 	"agent-readiness",
+	"agent-native-ratchets",
 	"commands",
+	"governance-decision-surface",
 	"runtime-card",
 	"session-context",
+	"session-distill",
+	"reviewer-decision",
+	"agent-rework",
 ] as const;
 const AGENT_VERIFY_COMMAND_RAIL_NAMES = [
 	"next",
@@ -56,6 +66,7 @@ const AGENT_REVIEW_COMMAND_RAIL_NAMES = [
 	"next",
 	"runtime-card",
 	"review-context",
+	"reviewer-decision",
 	"review-gate",
 ] as const;
 const AGENT_HANDOFF_COMMAND_RAIL_NAMES = [
@@ -1329,7 +1340,7 @@ describe("'commands' command execution", () => {
 
 			expect(commandNames).toEqual(expectedNames);
 			expect(parsed.commandCount).toBe(expectedNames.length);
-			expect(parsed.commandCount).toBeLessThan(8);
+			expect(parsed.commandCount).toBeLessThan(11);
 		} finally {
 			infoSpy.mockRestore();
 		}

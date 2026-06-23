@@ -1,6 +1,31 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+prepend_standard_tool_paths() {
+	local candidate
+	local idx
+	local home_dir="${HOME:-}"
+	local candidates=(
+		"${home_dir:+$home_dir/.local/share/mise/shims}"
+		"${home_dir:+$home_dir/.local/bin}"
+		"/opt/homebrew/bin"
+		"/opt/homebrew/sbin"
+		"/usr/local/bin"
+		"/usr/sbin"
+		"/sbin"
+	)
+	if [[ -z "${PATH:-}" ]]; then
+		PATH="/usr/bin:/bin"
+	fi
+	for (( idx=${#candidates[@]} - 1; idx >= 0; idx-- )); do
+		candidate="${candidates[$idx]}"
+		[[ -n "$candidate" && -d "$candidate" && ":$PATH:" != *":$candidate:"* ]] && PATH="$candidate:$PATH"
+	done
+	export PATH
+}
+
+prepend_standard_tool_paths
+
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 

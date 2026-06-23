@@ -1,0 +1,140 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/coding-harness/agent-rework.schema.json",
+	"title": "Agent Rework",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"status",
+		"attemptSource",
+		"command",
+		"latestRun",
+		"retryDecisions",
+		"claimBoundary"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "agent-rework/v1"
+		},
+		"status": {
+			"enum": ["pass", "needs_evidence"]
+		},
+		"attemptSource": {
+			"type": "string",
+			"minLength": 1
+		},
+		"command": {
+			"type": "string",
+			"minLength": 1
+		},
+		"latestRun": {
+			"anyOf": [
+				{
+					"$ref": "#/$defs/availableRun"
+				},
+				{
+					"$ref": "#/$defs/unavailableRun"
+				}
+			]
+		},
+		"retryDecisions": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "string",
+				"minLength": 1
+			}
+		},
+		"claimBoundary": {
+			"type": "string",
+			"minLength": 1
+		}
+	},
+	"$defs": {
+		"availableRun": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"status",
+				"runId",
+				"overallStatus",
+				"failedGateId",
+				"freshVsResumed",
+				"gateCount",
+				"failedGates"
+			],
+			"properties": {
+				"status": {
+					"const": "available"
+				},
+				"runId": {
+					"type": "string",
+					"minLength": 1
+				},
+				"overallStatus": {
+					"enum": ["passed", "pass", "failed", "blocked", "unknown"]
+				},
+				"failedGateId": {
+					"anyOf": [
+						{
+							"type": "string",
+							"minLength": 1
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"freshVsResumed": {
+					"enum": ["fresh", "resume", "unknown"]
+				},
+				"gateCount": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"failedGates": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/failedGate"
+					}
+				}
+			}
+		},
+		"unavailableRun": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["status", "reason"],
+			"properties": {
+				"status": {
+					"const": "unavailable"
+				},
+				"reason": {
+					"type": "string",
+					"minLength": 1
+				}
+			}
+		},
+		"failedGate": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["gateId", "status", "failureClass", "nextAction"],
+			"properties": {
+				"gateId": {
+					"type": "string",
+					"minLength": 1
+				},
+				"status": {
+					"enum": ["passed", "failed", "blocked"]
+				},
+				"failureClass": {
+					"enum": ["transient_infra", "contract_policy", "internal_unknown"]
+				},
+				"nextAction": {
+					"type": "string",
+					"minLength": 1
+				}
+			}
+		}
+	}
+}

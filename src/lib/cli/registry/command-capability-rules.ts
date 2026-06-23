@@ -5,11 +5,16 @@ import type {
 	CommandPrimaryAudience,
 	CommandRetryability,
 	CommandTier,
-	CommandVisibility,
 } from "./command-capabilities.js";
+import {
+	AGENT_NATIVE_ORIENT_COMMAND_NAMES,
+	AGENT_NATIVE_PACKET_COMMAND_NAMES,
+	mapCommands,
+} from "./command-agent-native-capability-rules.js";
 
 export { EXPECTED_ARTIFACTS_BY_NAME } from "./command-expected-artifacts.js";
 export { REQUIRED_FLAGS_BY_NAME } from "./command-required-flags.js";
+export { COMMAND_VISIBILITY_BY_NAME } from "./command-visibility-rules.js";
 
 export const COMMAND_CATEGORY_BY_NAME: Partial<
 	Record<string, CommandCategory>
@@ -21,8 +26,10 @@ export const COMMAND_CATEGORY_BY_NAME: Partial<
 	eject: "bootstrap-governance",
 	check: "bootstrap-governance",
 	next: "bootstrap-governance",
-	"runtime-card": "bootstrap-governance",
-	"session-context": "bootstrap-governance",
+	...(mapCommands(
+		AGENT_NATIVE_PACKET_COMMAND_NAMES,
+		"bootstrap-governance",
+	) as Partial<Record<string, CommandCategory>>),
 	doctor: "bootstrap-governance",
 	audit: "bootstrap-governance",
 	brain: "bootstrap-governance",
@@ -120,8 +127,9 @@ export const RETRYABILITY_BY_NAME: Partial<
 	next: "safe",
 	"pr-closeout": "safe",
 	"decision-request": "safe",
-	"runtime-card": "safe",
-	"session-context": "safe",
+	...(mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, "safe") as Partial<
+		Record<string, CommandRetryability>
+	>),
 	"prompt-context-drift:write": "safe",
 	"prompt-context-drift:validate": "safe",
 	"runtime-budget": "safe",
@@ -160,8 +168,9 @@ export const SAFE_FIRST_ALTERNATIVES_BY_NAME: Partial<
 export const COMMAND_TIER_BY_NAME: Partial<Record<string, CommandTier>> = {
 	check: "cockpit",
 	next: "cockpit",
-	"runtime-card": "domain",
-	"session-context": "domain",
+	...(mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, "domain") as Partial<
+		Record<string, CommandTier>
+	>),
 	"decision-request": "domain",
 	"agent-readiness": "domain",
 	"fleet-plan": "domain",
@@ -215,8 +224,9 @@ export const PRIMARY_AUDIENCE_BY_NAME: Partial<
 	"agent-readiness": "agent",
 	check: "both",
 	next: "agent",
-	"runtime-card": "agent",
-	"session-context": "agent",
+	...(mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, "agent") as Partial<
+		Record<string, CommandPrimaryAudience>
+	>),
 	"prompt-context-drift:write": "agent",
 	"prompt-context-drift:validate": "agent",
 	"decision-request": "agent",
@@ -244,8 +254,9 @@ export const ORCHESTRATED_BY_BY_NAME: Partial<
 > = {
 	next: [],
 	"agent-readiness": ["next"],
-	"runtime-card": ["next"],
-	"session-context": ["next"],
+	...(mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, ["next"]) as Partial<
+		Record<string, CommandOrchestrator[]>
+	>),
 	"prompt-context-drift:write": ["next"],
 	"prompt-context-drift:validate": ["next"],
 	"fleet-plan": ["next"],
@@ -273,8 +284,11 @@ export const AGENT_MODE_BY_NAME: Partial<Record<string, CommandAgentMode>> = {
 	"agent-readiness": "orient",
 	check: "verify",
 	next: "orient",
-	"runtime-card": "orient",
-	"session-context": "orient",
+	...(mapCommands(AGENT_NATIVE_ORIENT_COMMAND_NAMES, "orient") as Partial<
+		Record<string, CommandAgentMode>
+	>),
+	"agent-rework": "repair",
+	"reviewer-decision": "review",
 	"prompt-context-drift:write": "repair",
 	"prompt-context-drift:validate": "verify",
 	init: "orient",
@@ -300,33 +314,4 @@ export const AGENT_MODE_BY_NAME: Partial<Record<string, CommandAgentMode>> = {
 	learnings: "learn",
 	"north-star-feedback": "learn",
 	"feedback-loop-audit": "learn",
-};
-
-export const COMMAND_VISIBILITY_BY_NAME: Partial<
-	Record<string, CommandVisibility>
-> = {
-	next: "default",
-	"agent-readiness": "agent",
-	commands: "advanced",
-	check: "advanced",
-	init: "advanced",
-	"runtime-card": "advanced",
-	"session-context": "advanced",
-	"prompt-context-drift:write": "advanced",
-	"prompt-context-drift:validate": "advanced",
-	"decision-request": "advanced",
-	doctor: "advanced",
-	health: "advanced",
-	fitness: "advanced",
-	"fleet-plan": "advanced",
-	"validation-plan": "advanced",
-	"review-context": "advanced",
-	"pattern-scope": "advanced",
-	"artifact-routine": "advanced",
-	"runtime-budget": "advanced",
-	contract: "advanced",
-	linear: "advanced",
-	"review-gate": "plumbing",
-	"pr-closeout": "advanced",
-	"docs-gate": "plumbing",
 };

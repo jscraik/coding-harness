@@ -115,7 +115,7 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(report).toMatchObject({
 			schemaVersion: "runtime-packet-schema-validation/v1",
 			status: "pass",
-			packetCount: 20,
+			packetCount: 25,
 			errors: [],
 		});
 	});
@@ -362,6 +362,81 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(report.errors).toEqual(
 			expect.arrayContaining([
 				expect.stringContaining(".repository is required"),
+			]),
+		);
+	});
+
+	it("fails session-distill examples with mismatched changed-file counts", () => {
+		const root = createTempRoot("session-distill-changed-file-count-");
+		const badExample = readJson(
+			"contracts/examples/session-distill.example.json",
+		) as Record<string, unknown>;
+		badExample.changedFiles = ["src/a.ts", "src/b.ts"];
+		badExample.changedFileCount = 0;
+		const badExamplePath = join(root, "session-distill-count-mismatch.json");
+		writeFileSync(badExamplePath, JSON.stringify(badExample, null, 2));
+		const manifestPath = manifestWithEntryPatch(
+			"session-distill/v1",
+			(entry) => ({
+				...entry,
+				examplePath: badExamplePath,
+			}),
+		);
+
+		const result = runValidator(["--manifest", manifestPath]);
+
+		expect(result.status).toBe(1);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			errors: string[];
+		};
+		expect(report.status).toBe("fail");
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining(
+					"changedFileCount must equal changedFiles length",
+				),
+			]),
+		);
+	});
+
+	it("fails agent-native ratchet examples with inconsistent aggregate status", () => {
+		const root = createTempRoot("agent-native-ratchets-status-");
+		const badExample = readJson(
+			"contracts/examples/agent-native-ratchets.example.json",
+		) as Record<string, unknown>;
+		const ratchets = badExample.ratchets as Array<Record<string, unknown>>;
+		badExample.ratchets = [
+			{
+				...ratchets[0],
+				status: "needs_attention",
+			},
+			...ratchets.slice(1),
+		];
+		badExample.status = "pass";
+		const badExamplePath = join(root, "agent-native-ratchets-status.json");
+		writeFileSync(badExamplePath, JSON.stringify(badExample, null, 2));
+		const manifestPath = manifestWithEntryPatch(
+			"agent-native-ratchets/v1",
+			(entry) => ({
+				...entry,
+				examplePath: badExamplePath,
+			}),
+		);
+
+		const result = runValidator(["--manifest", manifestPath]);
+
+		expect(result.status).toBe(1);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			errors: string[];
+		};
+		expect(report.status).toBe("fail");
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining(
+					"status must be needs_attention when derived from ratchets[].status",
+				),
 			]),
 		);
 	});

@@ -21,6 +21,11 @@ const VALID_PARITY_VALIDATORS = new Set([
 	"decision-request",
 	"session-context",
 	"prompt-context-drift-report",
+	"agent-native-ratchets",
+	"session-distill",
+	"agent-rework",
+	"reviewer-decision",
+	"governance-decision-surface",
 	"none",
 ]);
 const SUPPORTED_SCHEMA_KEYWORDS = new Set([
@@ -29,17 +34,20 @@ const SUPPORTED_SCHEMA_KEYWORDS = new Set([
 	"$schema",
 	"$defs",
 	"additionalProperties",
+	"allOf",
 	"anyOf",
 	"const",
 	"description",
 	"enum",
 	"format",
 	"items",
+	"maxItems",
 	"maxLength",
 	"minItems",
 	"minLength",
 	"minimum",
 	"pattern",
+	"prefixItems",
 	"properties",
 	"required",
 	"title",
@@ -206,6 +214,17 @@ function validateSupportedSchemaKeywords(
 			);
 		}
 	}
+	if (Array.isArray(schema.allOf)) {
+		for (const [index, candidate] of schema.allOf.entries()) {
+			validateSupportedSchemaKeywords(
+				candidate,
+				schemaPath,
+				errors,
+				`${schemaNodePath}.allOf[${index}]`,
+				visitedRefs,
+			);
+		}
+	}
 	if (isObject(schema.additionalProperties)) {
 		errors.push(
 			`${schemaPath}${schemaNodePath}.additionalProperties uses schema-valued additionalProperties, which this validator does not support`,
@@ -245,6 +264,17 @@ function validateSupportedSchemaKeywords(
 			`${schemaNodePath}.items`,
 			visitedRefs,
 		);
+	}
+	if (Array.isArray(schema.prefixItems)) {
+		for (const [index, itemSchema] of schema.prefixItems.entries()) {
+			validateSupportedSchemaKeywords(
+				itemSchema,
+				schemaPath,
+				errors,
+				`${schemaNodePath}.prefixItems[${index}]`,
+				visitedRefs,
+			);
+		}
 	}
 	if (Array.isArray(schema.anyOf)) {
 		for (const [index, candidate] of schema.anyOf.entries()) {
@@ -293,6 +323,11 @@ function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
 		});
 		if (!anyOfPassed) {
 			errors.push(`${valuePath} must match at least one anyOf schema`);
+		}
+	}
+	if (Array.isArray(schema.allOf)) {
+		for (const candidate of schema.allOf) {
+			validateExampleValue(candidate, value, valuePath, errors, schemaPath);
 		}
 	}
 	if (Object.hasOwn(schema, "const") && !valuesEqual(value, schema.const)) {
@@ -355,6 +390,21 @@ function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
 	if (Array.isArray(value)) {
 		if (typeof schema.minItems === "number" && value.length < schema.minItems) {
 			errors.push(`${valuePath} must have at least ${schema.minItems} items`);
+		}
+		if (typeof schema.maxItems === "number" && value.length > schema.maxItems) {
+			errors.push(`${valuePath} must have at most ${schema.maxItems} items`);
+		}
+		if (Array.isArray(schema.prefixItems)) {
+			for (const [index, itemSchema] of schema.prefixItems.entries()) {
+				if (index >= value.length) break;
+				validateExampleValue(
+					itemSchema,
+					value[index],
+					`${valuePath}[${index}]`,
+					errors,
+					schemaPath,
+				);
+			}
 		}
 		if (isObject(schema.items)) {
 			for (const [index, item] of value.entries()) {
@@ -567,6 +617,7 @@ function validateSchemaAndExample(entry, errors) {
 		errors,
 		entry.schemaPath,
 	);
+	validatePacketSemanticInvariants(entry, example, errors);
 	if (resolvedSemanticValidatorPath) {
 		validateExampleWithSemanticValidator(
 			entry,
@@ -574,6 +625,37 @@ function validateSchemaAndExample(entry, errors) {
 			resolvedPaths.examplePath,
 			errors,
 		);
+	}
+}
+
+function validatePacketSemanticInvariants(entry, example, errors) {
+	if (!isObject(example)) {
+		return;
+	}
+	if (
+		entry.schemaVersion === "session-distill/v1" &&
+		Array.isArray(example.changedFiles) &&
+		Number.isInteger(example.changedFileCount) &&
+		example.changedFileCount !== example.changedFiles.length
+	) {
+		errors.push(
+			`${entry.examplePath}.changedFileCount must equal changedFiles length`,
+		);
+	}
+	if (
+		entry.schemaVersion === "agent-native-ratchets/v1" &&
+		Array.isArray(example.ratchets)
+	) {
+		const expectedStatus = example.ratchets.some(
+			(ratchet) => isObject(ratchet) && ratchet.status === "needs_attention",
+		)
+			? "needs_attention"
+			: "pass";
+		if (example.status !== expectedStatus) {
+			errors.push(
+				`${entry.examplePath}.status must be ${expectedStatus} when derived from ratchets[].status`,
+			);
+		}
 	}
 }
 

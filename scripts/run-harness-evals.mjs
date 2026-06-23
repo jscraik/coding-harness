@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
 import {
+	lstatSync,
 	mkdirSync,
 	readFileSync,
+	realpathSync,
 	renameSync,
 	rmSync,
 	writeFileSync,
@@ -14,12 +16,15 @@ const REPO_ROOT = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
 	"..",
 );
+const REPO_ROOT_REAL = realpathSync(REPO_ROOT);
 
 const DEFAULT_REGISTRY =
 	"evals/scenarios/north-star-agent-delivery/registry.json";
 const DEFAULT_OUTPUT = "artifacts/evals/result.json";
 const DEFAULT_OBSERVABILITY_OUTPUT = "artifacts/evals/braintrust-log-data.json";
 const DEFAULT_FIXTURE_ROOT = "artifacts/evals/live-fixtures";
+const RATCHET_PACKET_COMMAND_TIMEOUT_MS = 60_000;
+const RATCHET_PACKET_COMMAND_MAX_BUFFER = 10 * 1024 * 1024;
 const VALIDATION_PLAN_MODULE_URL = pathToFileURL(
 	path.join(REPO_ROOT, "src/lib/learnings/validation-plan.ts"),
 ).href;
@@ -90,19 +95,10 @@ const ALLOWED_REVIEW_ISSUE_TYPES = [
 ];
 const ALLOWED_REVIEW_SEVERITIES = ["low", "medium", "high"];
 
-const args = parseArgs(process.argv.slice(2));
-const registryPath = path.resolve(REPO_ROOT, args.registry ?? DEFAULT_REGISTRY);
-const outputPath = path.resolve(REPO_ROOT, args.output ?? DEFAULT_OUTPUT);
-const observabilityOutputPath = path.resolve(
-	REPO_ROOT,
-	args.observabilityOutput ?? DEFAULT_OBSERVABILITY_OUTPUT,
-);
-const fixtureRoot = path.resolve(
-	REPO_ROOT,
-	args.fixtureRoot ?? DEFAULT_FIXTURE_ROOT,
-);
-
 const findings = [];
+const args = parseArgs(process.argv.slice(2));
+const { registryPath, outputPath, observabilityOutputPath, fixtureRoot } =
+	resolveEvaluationPaths(args, findings);
 const liveFixtureResults = [];
 let registry = {
 	schemaVersion: "harness-north-star-agent-delivery-evals/v1",
@@ -121,32 +117,36 @@ let registry = {
 	scenarios: [],
 };
 
-try {
-	registry = readJson(registryPath);
+if (registryPath) {
 	try {
-		validateRegistry(registry, findings);
+		registry = readJson(registryPath);
+		try {
+			validateRegistry(registry, findings);
+		} catch (error) {
+			findings.push(
+				errorFinding(
+					"registry.validate",
+					`Failed to validate ${path.relative(REPO_ROOT, registryPath)}: ${error.message}`,
+				),
+			);
+		}
 	} catch (error) {
 		findings.push(
 			errorFinding(
-				"registry.validate",
-				`Failed to validate ${path.relative(REPO_ROOT, registryPath)}: ${error.message}`,
+				"registry.load",
+				`Failed to load ${path.relative(REPO_ROOT, registryPath)}: ${error.message}`,
 			),
 		);
 	}
-} catch (error) {
-	findings.push(
-		errorFinding(
-			"registry.load",
-			`Failed to load ${path.relative(REPO_ROOT, registryPath)}: ${error.message}`,
-		),
-	);
 }
 
 const scenarios = Array.isArray(registry.scenarios) ? registry.scenarios : [];
-for (const scenario of scenarios.filter(
-	(item) => item && item.type === "live_fixture",
-)) {
-	liveFixtureResults.push(await runLiveFixture(scenario));
+if (fixtureRoot) {
+	for (const scenario of scenarios.filter(
+		(item) => item && item.type === "live_fixture",
+	)) {
+		liveFixtureResults.push(await runLiveFixture(scenario));
+	}
 }
 
 const scenarioResults = scenarios.map((scenario) => {
@@ -193,7 +193,9 @@ const status =
 const result = {
 	schemaVersion: "harness-eval-result/v1",
 	status,
-	registry: path.relative(REPO_ROOT, registryPath),
+	registry: registryPath
+		? path.relative(REPO_ROOT, registryPath)
+		: (args.registry ?? DEFAULT_REGISTRY),
 	summary: {
 		registeredScenarios: scenarios.filter(
 			(scenario) => scenario?.type !== "live_fixture",
@@ -251,14 +253,16 @@ const observabilityEntries = scenarios.map((scenario) => {
 	};
 });
 
-mkdirSync(path.dirname(outputPath), { recursive: true });
-mkdirSync(path.dirname(observabilityOutputPath), { recursive: true });
-writeJson(outputPath, result);
-writeJson(observabilityOutputPath, {
-	schemaVersion:
-		registry.observabilityContract?.schemaVersion ?? "braintrust-log-data/v1",
-	entries: observabilityEntries,
-});
+if (outputPath) {
+	writeJson(outputPath, result);
+}
+if (observabilityOutputPath) {
+	writeJson(observabilityOutputPath, {
+		schemaVersion:
+			registry.observabilityContract?.schemaVersion ?? "braintrust-log-data/v1",
+		entries: observabilityEntries,
+	});
+}
 
 console.info(JSON.stringify(result, null, 2));
 process.exitCode = status === "pass" ? 0 : 1;
@@ -282,14 +286,118 @@ function parseArgs(rawArgs) {
 	return parsed;
 }
 
+function resolveEvaluationPaths(parsedArgs, pathFindings) {
+	return {
+		registryPath: resolvePathArg(
+			parsedArgs.registry ?? DEFAULT_REGISTRY,
+			"registry",
+			pathFindings,
+		),
+		outputPath: resolvePathArg(
+			parsedArgs.output ?? DEFAULT_OUTPUT,
+			"output",
+			pathFindings,
+		),
+		observabilityOutputPath: resolvePathArg(
+			parsedArgs.observabilityOutput ?? DEFAULT_OBSERVABILITY_OUTPUT,
+			"observabilityOutput",
+			pathFindings,
+		),
+		fixtureRoot: resolvePathArg(
+			parsedArgs.fixtureRoot ?? DEFAULT_FIXTURE_ROOT,
+			"fixtureRoot",
+			pathFindings,
+		),
+	};
+}
+
+function resolvePathArg(value, field, pathFindings) {
+	try {
+		return resolveRepoPath(value);
+	} catch (error) {
+		pathFindings.push(
+			errorFinding(
+				`args.${field}`,
+				`${field} path must resolve inside repository root: ${error.message}`,
+			),
+		);
+		return null;
+	}
+}
+
 function readJson(filePath) {
-	return JSON.parse(readFileSync(filePath, "utf-8"));
+	const target = resolveExistingRepoFile(filePath);
+	const relativeTarget = path.relative(REPO_ROOT_REAL, target);
+	if (relativeTarget.startsWith("..") || path.isAbsolute(relativeTarget)) {
+		throw new Error("Invalid file path");
+	}
+	return JSON.parse(readFileSync(pathToFileURL(target), "utf-8"));
 }
 
 function writeJson(filePath, value) {
-	writeFileSync(`${filePath}.tmp`, `${JSON.stringify(value, null, 2)}\n`);
-	rmSync(filePath, { force: true });
-	renameSync(`${filePath}.tmp`, filePath);
+	const target = resolveRepoPath(filePath);
+	const parent = resolveRepoPath(path.dirname(target));
+	mkdirSync(parent, { recursive: true });
+	const realParent = resolveExistingRepoDirectory(parent);
+	const realTarget = resolveInside(realParent, path.basename(target));
+	const tempPath = resolveInside(
+		realParent,
+		`.${path.basename(target)}.${process.pid}.${Date.now()}.tmp`,
+	);
+	writeFileSync(tempPath, `${JSON.stringify(value, null, 2)}\n`, {
+		flag: "wx",
+	});
+	renameSync(tempPath, realTarget);
+}
+
+function resolveRepoPath(targetPath) {
+	return assertPathInside(REPO_ROOT, normalizeUnder(REPO_ROOT, targetPath));
+}
+
+function resolveInside(basePath, targetPath) {
+	const base = normalizeUnder(REPO_ROOT, basePath);
+	const target = normalizeUnder(base, targetPath);
+	return assertPathInside(base, target);
+}
+
+function normalizeUnder(basePath, targetPath) {
+	if (typeof targetPath !== "string" || targetPath.includes("\0")) {
+		throw new Error("Invalid file path");
+	}
+	return path.isAbsolute(targetPath)
+		? path.normalize(targetPath)
+		: path.normalize(`${basePath}${path.sep}${targetPath}`);
+}
+
+function assertPathInside(base, target) {
+	const relativePath = path.relative(base, target);
+	if (
+		relativePath === "" ||
+		(!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+	) {
+		return target;
+	}
+	throw new Error("Invalid file path");
+}
+
+function resolveExistingRepoFile(filePath) {
+	const target = resolveRepoPath(filePath);
+	if (lstatSync(target).isSymbolicLink()) {
+		throw new Error("Invalid file path");
+	}
+	const realTarget = realpathSync(target);
+	if (!isPathInside(realTarget, REPO_ROOT_REAL)) {
+		throw new Error("Invalid file path");
+	}
+	return realTarget;
+}
+
+function resolveExistingRepoDirectory(directoryPath) {
+	const realDirectory = realpathSync(resolveRepoPath(directoryPath));
+	if (!isPathInside(realDirectory, REPO_ROOT_REAL)) {
+		throw new Error("Invalid file path");
+	}
+	return realDirectory;
 }
 
 /**
@@ -676,6 +784,11 @@ async function runLiveFixture(scenario) {
 			result = runAgenticEvalContractCoverageFixture(scenario, fixturePath);
 		} else if (scenario.id === "agent-next-action-parity") {
 			result = await runAgentNextActionParityFixture(scenario, fixturePath);
+		} else if (scenario.id === "agent-native-ratchet-discovery") {
+			result = await runAgentNativeRatchetDiscoveryFixture(
+				scenario,
+				fixturePath,
+			);
 		} else {
 			result = {
 				id: scenario.id,
@@ -5299,6 +5412,194 @@ async function runAgentNextActionParityFixture(scenario, fixturePath) {
 					"pr_closeout_artifact_invalid",
 		),
 	]);
+}
+
+async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
+	const [{ runHarnessNext }] = await Promise.all([
+		import(pathToFileURL(path.join(REPO_ROOT, "src/commands/next.ts")).href),
+	]);
+	const changedFiles = ["src/commands/next-recommendation-decisions.ts"];
+	const decision = runHarnessNext({
+		inspectChangedFiles: () => changedFiles,
+		repoRoot: fixturePath,
+		worktreeRole: "dirty-with-justification",
+	});
+	const reviewerBase = resolveRepoPath(fixturePath);
+	const reviewerManifestPath = resolveInside(
+		reviewerBase,
+		"reviewer-manifest.json",
+	);
+	const reviewerReviewsDir = resolveInside(reviewerBase, "reviews");
+	mkdirSync(reviewerReviewsDir, { recursive: true });
+	writeJson(reviewerManifestPath, {
+		requiredReviewers: [
+			{
+				role: "harness-product-code-reviewer",
+				artifact: "product.md",
+			},
+		],
+		synthesisStatus: "complete",
+	});
+	const reviewerArtifactPath = resolveInside(reviewerReviewsDir, "product.md");
+	writeFileSync(
+		reviewerArtifactPath,
+		[
+			"head_sha: 0123456789abcdef0123456789abcdef01234567",
+			"WROTE: reviews/product.md",
+		].join("\n"),
+	);
+	const reworkRunRoot = resolveInside(
+		reviewerBase,
+		".harness/runs/20260623T000000Z-agent-native-fixture",
+	);
+	mkdirSync(resolveInside(reworkRunRoot, "gates"), { recursive: true });
+	writeJson(resolveInside(reworkRunRoot, "summary.json"), {
+		runId: "20260623T000000Z-agent-native-fixture",
+		overallStatus: "passed",
+		failedGateId: null,
+		freshVsResumed: "fresh",
+	});
+	mkdirSync(resolveInside(reviewerBase, "docs"), { recursive: true });
+	writeJson(resolveInside(reviewerBase, "docs/doc-lifecycle-manifest.json"), {
+		documents: [
+			{
+				path: "docs/agents/07b-agent-governance.md",
+				lifecycleStage: "active",
+				knowledgeCategory: "agent_governance",
+				lifecycleState: "active",
+				canonicality: "canon",
+			},
+		],
+	});
+	const commandReports = {
+		ratchets: runRatchetPacketCommand({
+			args: ["run", "agent-native:ratchets", "--", "--repo-root", fixturePath],
+		}),
+		session: runRatchetPacketCommand({
+			args: ["run", "session:distill", "--", "--repo-root", fixturePath],
+		}),
+		rework: runRatchetPacketCommand({
+			args: ["run", "agent-rework:report", "--", "--repo-root", fixturePath],
+		}),
+		reviewer: runRatchetPacketCommand({
+			args: [
+				"run",
+				"reviewer:decision",
+				"--",
+				"--repo-root",
+				fixturePath,
+				"--manifest",
+				reviewerManifestPath,
+				"--reviews-dir",
+				reviewerReviewsDir,
+			],
+		}),
+		governance: runRatchetPacketCommand({
+			args: [
+				"run",
+				"governance:decision-surface",
+				"--",
+				"--repo-root",
+				fixturePath,
+			],
+		}),
+	};
+	const report = {
+		schemaVersion: "agent-native-ratchet-discovery-fixture/v1",
+		sourceScenario: scenario.id,
+		changedFiles,
+		decision: {
+			status: decision.status,
+			nextCommand: decision.nextCommand,
+			followUpCommands: decision.followUpCommands,
+			hiddenPlumbing: decision.hiddenPlumbing,
+			meta: decision.meta?.agentNativeRatchets,
+		},
+		commandReports,
+	};
+	const reportPath = resolveInside(
+		reviewerBase,
+		"agent-native-ratchet-discovery.json",
+	);
+	writeJson(reportPath, report);
+
+	return fixtureResult(scenario.id, [
+		assertion(
+			"agent-native ratchet discovery evidence is written",
+			readJson(reportPath).schemaVersion ===
+				"agent-native-ratchet-discovery-fixture/v1",
+		),
+		assertion(
+			"harness next exposes ratchet follow-up commands",
+			normalizeArray(decision.followUpCommands).includes(
+				"harness session-distill --json",
+			) &&
+				normalizeArray(decision.followUpCommands).includes(
+					"harness agent-native-ratchets --json",
+				),
+		),
+		assertion(
+			"harness next marks ratchets as hidden plumbing",
+			normalizeArray(decision.hiddenPlumbing).includes("agent-native-ratchets"),
+		),
+		assertion(
+			"harness next lists all five agent-native packets",
+			[
+				"session-distill/v1",
+				"agent-native-ratchets/v1",
+				"agent-rework/v1",
+				"reviewer-decision/v1",
+				"governance-decision-surface/v1",
+			].every((packet) =>
+				normalizeArray(decision.meta?.agentNativeRatchets?.packets).includes(
+					packet,
+				),
+			),
+		),
+		assertion(
+			"agent-native ratchet commands emit expected schemas",
+			commandReports.ratchets.schemaVersion === "agent-native-ratchets/v1" &&
+				commandReports.session.schemaVersion === "session-distill/v1" &&
+				commandReports.rework.schemaVersion === "agent-rework/v1" &&
+				commandReports.reviewer.schemaVersion === "reviewer-decision/v1" &&
+				commandReports.governance.schemaVersion ===
+					"governance-decision-surface/v1",
+		),
+		assertion(
+			"agent-native ratchet packets preserve separate evidence lanes",
+			normalizeArray(commandReports.session.evidenceLanes).length >= 4 &&
+				normalizeArray(commandReports.session.nonClaims).includes(
+					"merge_ready",
+				) &&
+				commandReports.session.claimBoundary ===
+					"session-distill/v1 orients resumed agents; it is not validation, CI, review, tracker, or merge readiness proof." &&
+				commandReports.reviewer.claimBoundary ===
+					"reviewer-decision/v1 is review-lane evidence and must be composed by PR closeout before merge claims.",
+		),
+	]);
+}
+
+function runRatchetPacketCommand(argsOrOptions) {
+	const args = Array.isArray(argsOrOptions)
+		? argsOrOptions
+		: argsOrOptions.args;
+	try {
+		const stdout = execFileSync("pnpm", ["--silent", ...args], {
+			cwd: REPO_ROOT,
+			encoding: "utf8",
+			timeout: RATCHET_PACKET_COMMAND_TIMEOUT_MS,
+			maxBuffer: RATCHET_PACKET_COMMAND_MAX_BUFFER,
+		});
+		return JSON.parse(stdout);
+	} catch (error) {
+		const stderr =
+			error && typeof error === "object" && "stderr" in error
+				? String(error.stderr ?? "").trim()
+				: "";
+		throw new Error(
+			`ratchet packet command failed: pnpm --silent ${args.join(" ")}${stderr ? ` :: ${stderr}` : ""}`,
+		);
+	}
 }
 
 function runSideEffectAuthorizationValidatorFixture(scenario, fixturePath) {
