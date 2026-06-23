@@ -5451,7 +5451,13 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 	const commandReports = {
 		ratchets: runRatchetPacketCommand(["run", "agent-native:ratchets"]),
 		session: runRatchetPacketCommand(["run", "session:distill"]),
-		rework: runRatchetPacketCommand(["run", "agent-rework:report"]),
+		rework: runRatchetPacketCommand([
+			"exec",
+			"node",
+			"scripts/write-agent-native-ratchet-report.cjs",
+			"--rework",
+			"--json",
+		]),
 		reviewer: runRatchetPacketCommand([
 			"run",
 			"reviewer:decision",

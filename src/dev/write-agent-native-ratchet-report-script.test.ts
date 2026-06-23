@@ -529,7 +529,7 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		});
 		const report = JSON.parse(result.stdout) as {
 			status: string;
-			latestRun: { status: string; reason: string; failedGateId: string };
+			latestRun: { status: string; reason: string; failedGateId?: string };
 		};
 
 		expect(result.status).toBe(0);
@@ -537,7 +537,21 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		expect(report.latestRun).toMatchObject({
 			status: "unavailable",
 			reason: "latest verify-work failed gate ledger is missing or invalid",
-			failedGateId: "lint",
+		});
+		expect(report.latestRun).not.toHaveProperty("failedGateId");
+
+		const validatingResult = runNodeScript(
+			SCRIPT_PATH,
+			["--rework", "--json", "--validate"],
+			{ cwd: root },
+		);
+		const validatingReport = JSON.parse(validatingResult.stdout) as {
+			latestRun: { status: string; reason: string; failedGateId?: string };
+		};
+		expect(validatingResult.status).toBe(1);
+		expect(validatingReport.latestRun).toEqual({
+			status: "unavailable",
+			reason: "latest verify-work failed gate ledger is missing or invalid",
 		});
 	});
 

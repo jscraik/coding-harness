@@ -444,8 +444,6 @@ function latestVerifyWorkRun() {
 		return {
 			status: "unavailable",
 			reason: "latest verify-work failed gate ledger is missing or invalid",
-			runId: summary?.runId ?? latest.name,
-			failedGateId,
 		};
 	}
 	return {
