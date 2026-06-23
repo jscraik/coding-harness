@@ -448,8 +448,8 @@ function safeRunDirectories(runsRoot) {
 
 function readJsonUnder(basePath, ...segments) {
 	try {
-		const base = resolve(basePath);
-		const target = resolve(base, ...segments);
+		const base = repoContainedPath(basePath);
+		const target = resolve(base, join(...segments));
 		const relativeTarget = relative(base, target);
 		if (relativeTarget.startsWith("..") || isAbsolute(relativeTarget)) {
 			throw new Error("Invalid path");
