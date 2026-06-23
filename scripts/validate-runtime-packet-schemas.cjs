@@ -629,18 +629,33 @@ function validateSchemaAndExample(entry, errors) {
 }
 
 function validatePacketSemanticInvariants(entry, example, errors) {
-	if (
-		entry.schemaVersion !== "session-distill/v1" ||
-		!isObject(example) ||
-		!Array.isArray(example.changedFiles) ||
-		!Number.isInteger(example.changedFileCount)
-	) {
+	if (!isObject(example)) {
 		return;
 	}
-	if (example.changedFileCount !== example.changedFiles.length) {
+	if (
+		entry.schemaVersion === "session-distill/v1" &&
+		Array.isArray(example.changedFiles) &&
+		Number.isInteger(example.changedFileCount) &&
+		example.changedFileCount !== example.changedFiles.length
+	) {
 		errors.push(
 			`${entry.examplePath}.changedFileCount must equal changedFiles length`,
 		);
+	}
+	if (
+		entry.schemaVersion === "agent-native-ratchets/v1" &&
+		Array.isArray(example.ratchets)
+	) {
+		const expectedStatus = example.ratchets.some(
+			(ratchet) => isObject(ratchet) && ratchet.status === "needs_attention",
+		)
+			? "needs_attention"
+			: "pass";
+		if (example.status !== expectedStatus) {
+			errors.push(
+				`${entry.examplePath}.status must be ${expectedStatus} when derived from ratchets[].status`,
+			);
+		}
 	}
 }
 

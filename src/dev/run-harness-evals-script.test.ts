@@ -12,6 +12,7 @@ import { runNodeScript } from "./script-test-utils.js";
 
 const REPO_ROOT = process.cwd();
 const SCRIPT_PATH = join(REPO_ROOT, "scripts/run-harness-evals.mjs");
+const CACHE_ROOT = join(REPO_ROOT, ".cache");
 const tempRoots: string[] = [];
 
 afterEach(() => {
@@ -22,7 +23,8 @@ afterEach(() => {
 
 describe("run-harness-evals.mjs", () => {
 	it("emits structured JSON when path arguments escape the repository", () => {
-		const outputRoot = mkdtempSync(join(REPO_ROOT, ".cache/eval-script-test-"));
+		mkdirSync(CACHE_ROOT, { recursive: true });
+		const outputRoot = mkdtempSync(join(CACHE_ROOT, "eval-script-test-"));
 		tempRoots.push(outputRoot);
 
 		const result = runNodeScript(SCRIPT_PATH, [
@@ -55,7 +57,8 @@ describe("run-harness-evals.mjs", () => {
 	});
 
 	it("rejects symlinked registry files instead of following them", () => {
-		const outputRoot = mkdtempSync(join(REPO_ROOT, ".cache/eval-script-test-"));
+		mkdirSync(CACHE_ROOT, { recursive: true });
+		const outputRoot = mkdtempSync(join(CACHE_ROOT, "eval-script-test-"));
 		const externalRoot = mkdtempSync(join(tmpdir(), "eval-script-external-"));
 		tempRoots.push(outputRoot, externalRoot);
 		const externalRegistry = join(externalRoot, "registry.json");

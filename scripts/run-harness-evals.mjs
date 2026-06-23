@@ -6,6 +6,7 @@ import {
 	readFileSync,
 	realpathSync,
 	renameSync,
+	rmSync,
 	writeFileSync,
 } from "node:fs";
 import path from "node:path";
