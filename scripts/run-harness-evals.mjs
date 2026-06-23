@@ -334,15 +334,14 @@ function parseArgs(rawArgs) {
 }
 
 function readJson(filePath) {
-	const target = resolveRepoPath(filePath);
-	const realTarget = realpathSync(target);
-	const base = realpathSync(REPO_ROOT);
-	const relativePath = path.relative(base, realTarget);
+	const base = path.resolve(REPO_ROOT);
+	const target = path.resolve(base, filePath);
+	const relativePath = path.relative(base, target);
 	if (
 		relativePath === "" ||
 		(!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
 	) {
-		return JSON.parse(readFileSync(realTarget, "utf-8"));
+		return JSON.parse(readFileSync(target, "utf-8"));
 	}
 	throw new Error("Invalid file path");
 }
