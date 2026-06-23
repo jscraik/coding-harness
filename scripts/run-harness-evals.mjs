@@ -361,10 +361,15 @@ function writeJson(filePath, value) {
 	) {
 		throw new Error("Invalid file path");
 	}
-	const tempPath = path.join(realTargetDir, `${path.basename(target)}.tmp`);
+	const resolvedTarget = path.resolve(base, path.basename(target));
+	const relativeTarget = path.relative(base, resolvedTarget);
+	if (relativeTarget.startsWith("..") || path.isAbsolute(relativeTarget)) {
+		throw new Error("Invalid file path");
+	}
+	const tempPath = path.join(realTargetDir, `${path.basename(resolvedTarget)}.tmp`);
 	writeFileSync(tempPath, `${JSON.stringify(value, null, 2)}\n`);
-	rmSync(target, { force: true });
-	renameSync(tempPath, target);
+	rmSync(resolvedTarget, { force: true });
+	renameSync(tempPath, resolvedTarget);
 }
 
 function resolveRepoPath(targetPath) {
