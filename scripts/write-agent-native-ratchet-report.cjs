@@ -3,7 +3,7 @@
 
 const { execFileSync, spawnSync } = require("node:child_process");
 const { existsSync, readdirSync, readFileSync, statSync } = require("node:fs");
-const { isAbsolute, relative, resolve } = require("node:path");
+const { isAbsolute, join, relative, resolve } = require("node:path");
 
 const SCHEMA_VERSION = "agent-native-ratchets/v1";
 const SESSION_DISTILL_SCHEMA_VERSION = "session-distill/v1";
@@ -168,7 +168,7 @@ function parseArgs(argv) {
 
 function validateContainedPath(basePath, ...segments) {
 	const base = resolve(basePath);
-	const target = resolve(base, ...segments);
+	const target = resolve(base, join(...segments));
 	const relativeTarget = relative(base, target);
 	if (
 		relativeTarget === "" ||
@@ -189,7 +189,7 @@ function childPath(basePath, ...segments) {
 
 function repoContainedPath(targetPath) {
 	const base = resolve(repoRoot);
-	const target = resolve(base, targetPath);
+	const target = resolve(targetPath);
 	const relativeTarget = relative(base, target);
 	if (
 		relativeTarget === "" ||
