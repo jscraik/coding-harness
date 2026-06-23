@@ -16,9 +16,12 @@ export const AGENT_NATIVE_ORIENT_COMMAND_NAMES = [
 	"governance-decision-surface",
 ] as const;
 
-export function mapCommands<Value>(
-	names: readonly string[],
+export function mapCommands<const Names extends readonly string[], Value>(
+	names: Names,
 	value: Value,
-): Record<string, Value> {
-	return Object.fromEntries(names.map((name) => [name, value]));
+): Record<Names[number], Value> {
+	return Object.fromEntries(names.map((name) => [name, value])) as Record<
+		Names[number],
+		Value
+	>;
 }

@@ -26,7 +26,10 @@ export const COMMAND_CATEGORY_BY_NAME: Partial<
 	eject: "bootstrap-governance",
 	check: "bootstrap-governance",
 	next: "bootstrap-governance",
-	...mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, "bootstrap-governance"),
+	...(mapCommands(
+		AGENT_NATIVE_PACKET_COMMAND_NAMES,
+		"bootstrap-governance",
+	) as Partial<Record<string, CommandCategory>>),
 	doctor: "bootstrap-governance",
 	audit: "bootstrap-governance",
 	brain: "bootstrap-governance",
@@ -124,7 +127,9 @@ export const RETRYABILITY_BY_NAME: Partial<
 	next: "safe",
 	"pr-closeout": "safe",
 	"decision-request": "safe",
-	...mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, "safe"),
+	...(mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, "safe") as Partial<
+		Record<string, CommandRetryability>
+	>),
 	"prompt-context-drift:write": "safe",
 	"prompt-context-drift:validate": "safe",
 	"runtime-budget": "safe",
@@ -163,7 +168,9 @@ export const SAFE_FIRST_ALTERNATIVES_BY_NAME: Partial<
 export const COMMAND_TIER_BY_NAME: Partial<Record<string, CommandTier>> = {
 	check: "cockpit",
 	next: "cockpit",
-	...mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, "domain"),
+	...(mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, "domain") as Partial<
+		Record<string, CommandTier>
+	>),
 	"decision-request": "domain",
 	"agent-readiness": "domain",
 	"fleet-plan": "domain",
@@ -217,7 +224,9 @@ export const PRIMARY_AUDIENCE_BY_NAME: Partial<
 	"agent-readiness": "agent",
 	check: "both",
 	next: "agent",
-	...mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, "agent"),
+	...(mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, "agent") as Partial<
+		Record<string, CommandPrimaryAudience>
+	>),
 	"prompt-context-drift:write": "agent",
 	"prompt-context-drift:validate": "agent",
 	"decision-request": "agent",
@@ -245,7 +254,9 @@ export const ORCHESTRATED_BY_BY_NAME: Partial<
 > = {
 	next: [],
 	"agent-readiness": ["next"],
-	...mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, ["next"]),
+	...(mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, ["next"]) as Partial<
+		Record<string, CommandOrchestrator[]>
+	>),
 	"prompt-context-drift:write": ["next"],
 	"prompt-context-drift:validate": ["next"],
 	"fleet-plan": ["next"],
@@ -273,7 +284,9 @@ export const AGENT_MODE_BY_NAME: Partial<Record<string, CommandAgentMode>> = {
 	"agent-readiness": "orient",
 	check: "verify",
 	next: "orient",
-	...mapCommands(AGENT_NATIVE_ORIENT_COMMAND_NAMES, "orient"),
+	...(mapCommands(AGENT_NATIVE_ORIENT_COMMAND_NAMES, "orient") as Partial<
+		Record<string, CommandAgentMode>
+	>),
 	"agent-rework": "repair",
 	"reviewer-decision": "review",
 	"prompt-context-drift:write": "repair",
@@ -311,7 +324,9 @@ export const COMMAND_VISIBILITY_BY_NAME: Partial<
 	commands: "advanced",
 	check: "advanced",
 	init: "advanced",
-	...mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, "advanced"),
+	...(mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, "advanced") as Partial<
+		Record<string, CommandVisibility>
+	>),
 	"prompt-context-drift:write": "advanced",
 	"prompt-context-drift:validate": "advanced",
 	"decision-request": "advanced",
