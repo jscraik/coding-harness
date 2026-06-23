@@ -236,16 +236,17 @@ function sanitizeGitEnvironment(environment) {
 	return sanitized;
 }
 
-function gitResult(args) {
+function gitResult(args, options = {}) {
 	try {
+		const stdout = execFileSync("git", ["-C", repoRoot, ...args], {
+			cwd: repoRoot,
+			encoding: "utf8",
+			env: sanitizeGitEnvironment(process.env),
+			stdio: ["ignore", "pipe", "pipe"],
+		});
 		return {
 			ok: true,
-			stdout: execFileSync("git", ["-C", repoRoot, ...args], {
-				cwd: repoRoot,
-				encoding: "utf8",
-				env: sanitizeGitEnvironment(process.env),
-				stdio: ["ignore", "pipe", "pipe"],
-			}),
+			stdout: options.trim === false ? stdout : stdout.trim(),
 		};
 	} catch (error) {
 		return {
@@ -258,8 +259,8 @@ function gitResult(args) {
 	}
 }
 
-function requiredGitOutput(args, label) {
-	const result = gitResult(args);
+function requiredGitOutput(args, label, options = {}) {
+	const result = gitResult(args, options);
 	if (!result.ok) {
 		throw new Error(
 			`session-distill requires git evidence for ${label}; ${result.message}`,
@@ -269,7 +270,11 @@ function requiredGitOutput(args, label) {
 }
 
 function requiredGitLines(args, label, useNulDelimiter = false) {
-	const output = requiredGitOutput(args, label);
+	const output = requiredGitOutput(
+		args,
+		label,
+		useNulDelimiter ? { trim: false } : {},
+	);
 	if (output.length === 0) return [];
 	if (useNulDelimiter) {
 		return output.split("\0").filter(Boolean);
@@ -367,8 +372,8 @@ function buildSessionDistillReport() {
 			files.length > 0
 				? `pnpm run coding-policy:route -- ${files.map(shellQuote).join(" ")}`
 				: "pnpm run coding-policy:route:changed",
-			"pnpm run prompt-context-drift:write",
-			"pnpm run prompt-context-drift:validate",
+			"harness prompt-context-drift:write",
+			"harness prompt-context-drift:validate",
 		],
 		nonClaims: [
 			"ci_passed",
@@ -420,21 +425,37 @@ function latestVerifyWorkRun() {
 		};
 	}
 	const gates = readGateLedgers(childPath(latest.path, "gates"));
+	const failedGateId =
+		typeof summary?.failedGateId === "string" && summary.failedGateId.length > 0
+			? summary.failedGateId
+			: null;
+	const failedGates = gates
+		.filter((gate) => gate.status !== "passed")
+		.map((gate) => ({
+			gateId: gate.gateId,
+			status: gate.status,
+			failureClass: gate.failureClass,
+			nextAction: gate.nextAction,
+		}));
+	if (
+		failedGateId &&
+		!failedGates.some((gate) => gate.gateId === failedGateId)
+	) {
+		return {
+			status: "unavailable",
+			reason: "latest verify-work failed gate ledger is missing or invalid",
+			runId: summary?.runId ?? latest.name,
+			failedGateId,
+		};
+	}
 	return {
 		status: "available",
 		runId: summary?.runId ?? latest.name,
 		overallStatus: summary?.overallStatus ?? "unknown",
-		failedGateId: summary?.failedGateId ?? null,
+		failedGateId,
 		freshVsResumed: summary?.freshVsResumed ?? "unknown",
 		gateCount: gates.length,
-		failedGates: gates
-			.filter((gate) => gate.status !== "passed")
-			.map((gate) => ({
-				gateId: gate.gateId,
-				status: gate.status,
-				failureClass: gate.failureClass,
-				nextAction: gate.nextAction,
-			})),
+		failedGates,
 	};
 }
 

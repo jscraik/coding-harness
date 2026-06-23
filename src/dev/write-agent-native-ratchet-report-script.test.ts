@@ -116,8 +116,9 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 			"validation",
 			"external_readiness",
 		]);
+		expect(report.nextCommands).toContain("harness prompt-context-drift:write");
 		expect(report.nextCommands).toContain(
-			"pnpm run prompt-context-drift:write",
+			"harness prompt-context-drift:validate",
 		);
 		expect(report.nonClaims).toContain("merge_ready");
 		expect(report.claimBoundary).toContain("not validation");
@@ -165,6 +166,8 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		}
 		writeFileSync(join(root, "new-file.txt"), "new\n");
 		writeFileSync(join(root, "docs my file.md"), "new\n");
+		writeFileSync(join(root, " spaced file.txt "), "new\n");
+		writeFileSync(join(root, "line\nbreak.txt"), "new\n");
 
 		result = runNodeScript(SCRIPT_PATH, ["--session-distill", "--json"], {
 			cwd: root,
@@ -178,10 +181,13 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		expect(result.status).toBe(0);
 		expect(report.changedFiles).toContain("new-file.txt");
 		expect(report.changedFiles).toContain("docs my file.md");
-		expect(report.changedFileCount).toBe(2);
-		expect(report.nextCommands[0]).toBe(
-			"pnpm run coding-policy:route -- 'docs my file.md' 'new-file.txt'",
-		);
+		expect(report.changedFiles).toContain(" spaced file.txt ");
+		expect(report.changedFiles).toContain("line\nbreak.txt");
+		expect(report.changedFileCount).toBe(4);
+		expect(report.nextCommands[0]).toContain("' spaced file.txt '");
+		expect(report.nextCommands[0]).toContain("'docs my file.md'");
+		expect(report.nextCommands[0]).toContain("'line\nbreak.txt'");
+		expect(report.nextCommands[0]).toContain("'new-file.txt'");
 	});
 
 	it("ignores caller-scoped git environment when distilling session state", () => {
@@ -500,6 +506,38 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		expect(report.latestRun).toMatchObject({
 			status: "unavailable",
 			reason: "latest verify-work run summary is missing or invalid",
+		});
+	});
+
+	it("requires the referenced failed gate ledger before passing rework routing", () => {
+		const root = mkdtempSync(join(tmpdir(), "agent-native-rework-no-gate-"));
+		tempRoots.push(root);
+		const runRoot = join(root, ".harness", "runs", "20260621T220000Z-missing");
+		mkdirSync(join(runRoot, "gates"), { recursive: true });
+		writeFileSync(
+			join(runRoot, "summary.json"),
+			JSON.stringify({
+				runId: "20260621T220000Z-missing",
+				overallStatus: "failed",
+				failedGateId: "lint",
+				freshVsResumed: "fresh",
+			}),
+		);
+
+		const result = runNodeScript(SCRIPT_PATH, ["--rework", "--json"], {
+			cwd: root,
+		});
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			latestRun: { status: string; reason: string; failedGateId: string };
+		};
+
+		expect(result.status).toBe(0);
+		expect(report.status).toBe("needs_evidence");
+		expect(report.latestRun).toMatchObject({
+			status: "unavailable",
+			reason: "latest verify-work failed gate ledger is missing or invalid",
+			failedGateId: "lint",
 		});
 	});
 

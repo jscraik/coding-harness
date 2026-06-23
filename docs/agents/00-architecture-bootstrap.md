@@ -211,9 +211,12 @@ their producers through `pnpm run agent-native:ratchets`,
 `pnpm run session:distill`, `pnpm run agent-rework:report`,
 `pnpm run reviewer:decision`, and `pnpm run governance:decision-surface`, and
 ratchet them with `node scripts/validate-runtime-packet-schemas.cjs --all`
-plus `pnpm artifact:types`. Expected pass evidence is schema validation with:
-  - `runtime_packets` from `node scripts/validate-runtime-packet-schemas.cjs --all`
-  - `agent_native_packets=5` from `pnpm artifact:types`
+plus `pnpm artifact:types`. Expected pass evidence:
+
+- `node scripts/validate-runtime-packet-schemas.cjs --all` reports
+  `packetCount=25` with no errors.
+- `pnpm artifact:types` reports `runtime_packets=25` plus
+  `agent_native_packets=5`.
 
 If either command fails, stop at the first schema, manifest, or typed-contract
 mismatch, fix the packet producer or manifest entry from the repo root, and

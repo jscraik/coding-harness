@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
 import {
+	lstatSync,
 	mkdirSync,
 	readFileSync,
 	realpathSync,
 	renameSync,
-	rmSync,
 	writeFileSync,
 } from "node:fs";
 import path from "node:path";
@@ -15,6 +15,7 @@ const REPO_ROOT = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
 	"..",
 );
+const REPO_ROOT_REAL = realpathSync(REPO_ROOT);
 
 const DEFAULT_REGISTRY =
 	"evals/scenarios/north-star-agent-delivery/registry.json";
@@ -93,67 +94,10 @@ const ALLOWED_REVIEW_ISSUE_TYPES = [
 ];
 const ALLOWED_REVIEW_SEVERITIES = ["low", "medium", "high"];
 
-const args = parseArgs(process.argv.slice(2));
-
-let registryPath;
-let outputPath;
-let observabilityOutputPath;
-let fixtureRoot;
-
 const findings = [];
-
-try {
-	registryPath = resolveRepoPath(args.registry ?? DEFAULT_REGISTRY);
-	outputPath = resolveRepoPath(args.output ?? DEFAULT_OUTPUT);
-	observabilityOutputPath = resolveRepoPath(
-		args.observabilityOutput ?? DEFAULT_OBSERVABILITY_OUTPUT,
-	);
-	fixtureRoot = resolveRepoPath(args.fixtureRoot ?? DEFAULT_FIXTURE_ROOT);
-} catch (error) {
-	const result = {
-		schemaVersion: "harness-eval-result/v1",
-		status: "fail",
-		registry: args.registry ?? DEFAULT_REGISTRY,
-		summary: {
-			registeredScenarios: 0,
-			liveFixtures: 0,
-			liveFixtureFailures: 0,
-			liveFixtureDurationMs: 0,
-			slowestLiveFixture: null,
-			findings: 1,
-			observabilityEntries: 0,
-			falsePositiveCount: 0,
-			falseNegativeCount: 0,
-			stageFailuresByStage: {},
-			guardrailEffectiveness: {
-				falsePositive: 0,
-				falseNegative: 0,
-				truePositive: 0,
-				trueNegative: 0,
-				stageFailuresByStage: {},
-			},
-			agenticCoverage: {
-				commandRouting: { covered: 0, total: 0 },
-				artifactEvidence: { covered: 0, total: 0 },
-				validationSufficiency: { covered: 0, total: 0 },
-				blockerHonesty: { covered: 0, total: 0 },
-				manualStepReduction: { covered: 0, total: 0 },
-			},
-		},
-		findings: [
-			{
-				id: "args.path_resolution",
-				severity: "error",
-				message: `Failed to resolve file paths: ${error.message}`,
-			},
-		],
-		scenarioResults: [],
-	};
-	console.info(JSON.stringify(result, null, 2));
-	process.exitCode = 1;
-	process.exit(1);
-}
-
+const args = parseArgs(process.argv.slice(2));
+const { registryPath, outputPath, observabilityOutputPath, fixtureRoot } =
+	resolveEvaluationPaths(args, findings);
 const liveFixtureResults = [];
 let registry = {
 	schemaVersion: "harness-north-star-agent-delivery-evals/v1",
@@ -172,32 +116,36 @@ let registry = {
 	scenarios: [],
 };
 
-try {
-	registry = readJson(registryPath);
+if (registryPath) {
 	try {
-		validateRegistry(registry, findings);
+		registry = readJson(registryPath);
+		try {
+			validateRegistry(registry, findings);
+		} catch (error) {
+			findings.push(
+				errorFinding(
+					"registry.validate",
+					`Failed to validate ${path.relative(REPO_ROOT, registryPath)}: ${error.message}`,
+				),
+			);
+		}
 	} catch (error) {
 		findings.push(
 			errorFinding(
-				"registry.validate",
-				`Failed to validate ${path.relative(REPO_ROOT, registryPath)}: ${error.message}`,
+				"registry.load",
+				`Failed to load ${path.relative(REPO_ROOT, registryPath)}: ${error.message}`,
 			),
 		);
 	}
-} catch (error) {
-	findings.push(
-		errorFinding(
-			"registry.load",
-			`Failed to load ${path.relative(REPO_ROOT, registryPath)}: ${error.message}`,
-		),
-	);
 }
 
 const scenarios = Array.isArray(registry.scenarios) ? registry.scenarios : [];
-for (const scenario of scenarios.filter(
-	(item) => item && item.type === "live_fixture",
-)) {
-	liveFixtureResults.push(await runLiveFixture(scenario));
+if (fixtureRoot) {
+	for (const scenario of scenarios.filter(
+		(item) => item && item.type === "live_fixture",
+	)) {
+		liveFixtureResults.push(await runLiveFixture(scenario));
+	}
 }
 
 const scenarioResults = scenarios.map((scenario) => {
@@ -244,7 +192,9 @@ const status =
 const result = {
 	schemaVersion: "harness-eval-result/v1",
 	status,
-	registry: path.relative(REPO_ROOT, registryPath),
+	registry: registryPath
+		? path.relative(REPO_ROOT, registryPath)
+		: (args.registry ?? DEFAULT_REGISTRY),
 	summary: {
 		registeredScenarios: scenarios.filter(
 			(scenario) => scenario?.type !== "live_fixture",
@@ -302,14 +252,16 @@ const observabilityEntries = scenarios.map((scenario) => {
 	};
 });
 
-mkdirSync(path.dirname(outputPath), { recursive: true });
-mkdirSync(path.dirname(observabilityOutputPath), { recursive: true });
-writeJson(outputPath, result);
-writeJson(observabilityOutputPath, {
-	schemaVersion:
-		registry.observabilityContract?.schemaVersion ?? "braintrust-log-data/v1",
-	entries: observabilityEntries,
-});
+if (outputPath) {
+	writeJson(outputPath, result);
+}
+if (observabilityOutputPath) {
+	writeJson(observabilityOutputPath, {
+		schemaVersion:
+			registry.observabilityContract?.schemaVersion ?? "braintrust-log-data/v1",
+		entries: observabilityEntries,
+	});
+}
 
 console.info(JSON.stringify(result, null, 2));
 process.exitCode = status === "pass" ? 0 : 1;
@@ -333,52 +285,90 @@ function parseArgs(rawArgs) {
 	return parsed;
 }
 
-function readJson(filePath) {
-	const base = path.resolve(REPO_ROOT);
-	const target = path.resolve(base, filePath);
-	const relativePath = path.relative(base, target);
-	if (
-		relativePath === "" ||
-		(!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
-	) {
-		return JSON.parse(readFileSync(target, "utf-8"));
+function resolveEvaluationPaths(parsedArgs, pathFindings) {
+	return {
+		registryPath: resolvePathArg(
+			parsedArgs.registry ?? DEFAULT_REGISTRY,
+			"registry",
+			pathFindings,
+		),
+		outputPath: resolvePathArg(
+			parsedArgs.output ?? DEFAULT_OUTPUT,
+			"output",
+			pathFindings,
+		),
+		observabilityOutputPath: resolvePathArg(
+			parsedArgs.observabilityOutput ?? DEFAULT_OBSERVABILITY_OUTPUT,
+			"observabilityOutput",
+			pathFindings,
+		),
+		fixtureRoot: resolvePathArg(
+			parsedArgs.fixtureRoot ?? DEFAULT_FIXTURE_ROOT,
+			"fixtureRoot",
+			pathFindings,
+		),
+	};
+}
+
+function resolvePathArg(value, field, pathFindings) {
+	try {
+		return resolveRepoPath(value);
+	} catch (error) {
+		pathFindings.push(
+			errorFinding(
+				`args.${field}`,
+				`${field} path must resolve inside repository root: ${error.message}`,
+			),
+		);
+		return null;
 	}
-	throw new Error("Invalid file path");
+}
+
+function readJson(filePath) {
+	const target = resolveExistingRepoFile(filePath);
+	const relativeTarget = path.relative(REPO_ROOT_REAL, target);
+	if (relativeTarget.startsWith("..") || path.isAbsolute(relativeTarget)) {
+		throw new Error("Invalid file path");
+	}
+	return JSON.parse(readFileSync(pathToFileURL(target), "utf-8"));
 }
 
 function writeJson(filePath, value) {
 	const target = resolveRepoPath(filePath);
-	const targetDir = path.dirname(target);
-	mkdirSync(targetDir, { recursive: true });
-	const realTargetDir = realpathSync(targetDir);
-	const base = realpathSync(REPO_ROOT);
-	const relativePath = path.relative(base, realTargetDir);
-	if (
-		!(
-			relativePath === "" ||
-			(!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
-		)
-	) {
-		throw new Error("Invalid file path");
-	}
-	const resolvedTarget = path.resolve(base, path.basename(target));
-	const relativeTarget = path.relative(base, resolvedTarget);
-	if (relativeTarget.startsWith("..") || path.isAbsolute(relativeTarget)) {
-		throw new Error("Invalid file path");
-	}
-	const tempPath = path.join(realTargetDir, `${path.basename(resolvedTarget)}.tmp`);
-	writeFileSync(tempPath, `${JSON.stringify(value, null, 2)}\n`);
-	rmSync(resolvedTarget, { force: true });
-	renameSync(tempPath, resolvedTarget);
+	const parent = resolveRepoPath(path.dirname(target));
+	mkdirSync(parent, { recursive: true });
+	const realParent = resolveExistingRepoDirectory(parent);
+	const realTarget = resolveInside(realParent, path.basename(target));
+	const tempPath = resolveInside(
+		realParent,
+		`.${path.basename(target)}.${process.pid}.${Date.now()}.tmp`,
+	);
+	writeFileSync(tempPath, `${JSON.stringify(value, null, 2)}\n`, {
+		flag: "wx",
+	});
+	renameSync(tempPath, realTarget);
 }
 
 function resolveRepoPath(targetPath) {
-	return resolveInside(REPO_ROOT, targetPath);
+	return assertPathInside(REPO_ROOT, normalizeUnder(REPO_ROOT, targetPath));
 }
 
 function resolveInside(basePath, targetPath) {
-	const base = path.resolve(basePath);
-	const target = path.resolve(base, targetPath);
+	const base = normalizeUnder(REPO_ROOT, basePath);
+	const target = normalizeUnder(base, targetPath);
+	return assertPathInside(base, target);
+}
+
+function normalizeUnder(basePath, targetPath) {
+	if (typeof targetPath !== "string" || targetPath.includes("\0")) {
+		throw new Error("Invalid file path");
+	}
+	return path.isAbsolute(targetPath)
+		? path.normalize(targetPath)
+		: path.normalize(`${basePath}${path.sep}${targetPath}`);
+}
+
+function assertPathInside(base, target) {
 	const relativePath = path.relative(base, target);
 	if (
 		relativePath === "" ||
@@ -387,6 +377,26 @@ function resolveInside(basePath, targetPath) {
 		return target;
 	}
 	throw new Error("Invalid file path");
+}
+
+function resolveExistingRepoFile(filePath) {
+	const target = resolveRepoPath(filePath);
+	if (lstatSync(target).isSymbolicLink()) {
+		throw new Error("Invalid file path");
+	}
+	const realTarget = realpathSync(target);
+	if (!isPathInside(realTarget, REPO_ROOT_REAL)) {
+		throw new Error("Invalid file path");
+	}
+	return realTarget;
+}
+
+function resolveExistingRepoDirectory(directoryPath) {
+	const realDirectory = realpathSync(resolveRepoPath(directoryPath));
+	if (!isPathInside(realDirectory, REPO_ROOT_REAL)) {
+		throw new Error("Invalid file path");
+	}
+	return realDirectory;
 }
 
 /**
