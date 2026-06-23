@@ -326,6 +326,18 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 				encoding: "utf8",
 			},
 		);
+
+		if (packageResult.status !== 0) {
+			throw new Error(
+				`Package command failed with exit code ${packageResult.status}: ${packageResult.stderr}`,
+			);
+		}
+		if (cliResult.status !== 0) {
+			throw new Error(
+				`CLI command failed with exit code ${cliResult.status}: ${cliResult.stderr}`,
+			);
+		}
+
 		const packageReport = JSON.parse(packageResult.stdout) as {
 			status: string;
 			decision: string;

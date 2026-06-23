@@ -5460,19 +5460,34 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 		freshVsResumed: "fresh",
 	});
 	const commandReports = {
-		ratchets: runRatchetPacketCommand(["run", "agent-native:ratchets"]),
-		session: runRatchetPacketCommand(["run", "session:distill"]),
-		rework: runRatchetPacketCommand(["run", "agent-rework:report"]),
-		reviewer: runRatchetPacketCommand([
-			"run",
-			"reviewer:decision",
-			"--",
-			"--manifest",
-			reviewerManifestPath,
-			"--reviews-dir",
-			reviewerReviewsDir,
-		]),
-		governance: runRatchetPacketCommand(["run", "governance:decision-surface"]),
+		ratchets: runRatchetPacketCommand({
+			args: ["run", "agent-native:ratchets"],
+			repoRoot: fixturePath,
+		}),
+		session: runRatchetPacketCommand({
+			args: ["run", "session:distill"],
+			repoRoot: fixturePath,
+		}),
+		rework: runRatchetPacketCommand({
+			args: ["run", "agent-rework:report"],
+			repoRoot: fixturePath,
+		}),
+		reviewer: runRatchetPacketCommand({
+			args: [
+				"run",
+				"reviewer:decision",
+				"--",
+				"--manifest",
+				reviewerManifestPath,
+				"--reviews-dir",
+				reviewerReviewsDir,
+			],
+			repoRoot: fixturePath,
+		}),
+		governance: runRatchetPacketCommand({
+			args: ["run", "governance:decision-surface"],
+			repoRoot: fixturePath,
+		}),
 	};
 	const report = {
 		schemaVersion: "agent-native-ratchet-discovery-fixture/v1",
@@ -5549,10 +5564,12 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 	]);
 }
 
-function runRatchetPacketCommand(args) {
+function runRatchetPacketCommand(argsOrOptions) {
+	const args = Array.isArray(argsOrOptions) ? argsOrOptions : argsOrOptions.args;
+	const cwd = Array.isArray(argsOrOptions) ? REPO_ROOT : (argsOrOptions.repoRoot || REPO_ROOT);
 	try {
 		const stdout = execFileSync("pnpm", ["--silent", ...args], {
-			cwd: REPO_ROOT,
+			cwd,
 			encoding: "utf8",
 			timeout: RATCHET_PACKET_COMMAND_TIMEOUT_MS,
 			maxBuffer: RATCHET_PACKET_COMMAND_MAX_BUFFER,
