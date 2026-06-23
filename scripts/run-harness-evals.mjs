@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import {
 	mkdirSync,
 	readFileSync,
+	realpathSync,
 	renameSync,
 	rmSync,
 	writeFileSync,
@@ -93,14 +94,66 @@ const ALLOWED_REVIEW_ISSUE_TYPES = [
 const ALLOWED_REVIEW_SEVERITIES = ["low", "medium", "high"];
 
 const args = parseArgs(process.argv.slice(2));
-const registryPath = resolveRepoPath(args.registry ?? DEFAULT_REGISTRY);
-const outputPath = resolveRepoPath(args.output ?? DEFAULT_OUTPUT);
-const observabilityOutputPath = resolveRepoPath(
-	args.observabilityOutput ?? DEFAULT_OBSERVABILITY_OUTPUT,
-);
-const fixtureRoot = resolveRepoPath(args.fixtureRoot ?? DEFAULT_FIXTURE_ROOT);
+
+let registryPath;
+let outputPath;
+let observabilityOutputPath;
+let fixtureRoot;
 
 const findings = [];
+
+try {
+	registryPath = resolveRepoPath(args.registry ?? DEFAULT_REGISTRY);
+	outputPath = resolveRepoPath(args.output ?? DEFAULT_OUTPUT);
+	observabilityOutputPath = resolveRepoPath(
+		args.observabilityOutput ?? DEFAULT_OBSERVABILITY_OUTPUT,
+	);
+	fixtureRoot = resolveRepoPath(args.fixtureRoot ?? DEFAULT_FIXTURE_ROOT);
+} catch (error) {
+	const result = {
+		schemaVersion: "harness-eval-result/v1",
+		status: "fail",
+		registry: args.registry ?? DEFAULT_REGISTRY,
+		summary: {
+			registeredScenarios: 0,
+			liveFixtures: 0,
+			liveFixtureFailures: 0,
+			liveFixtureDurationMs: 0,
+			slowestLiveFixture: null,
+			findings: 1,
+			observabilityEntries: 0,
+			falsePositiveCount: 0,
+			falseNegativeCount: 0,
+			stageFailuresByStage: {},
+			guardrailEffectiveness: {
+				falsePositive: 0,
+				falseNegative: 0,
+				truePositive: 0,
+				trueNegative: 0,
+				stageFailuresByStage: {},
+			},
+			agenticCoverage: {
+				commandRouting: { covered: 0, total: 0 },
+				artifactEvidence: { covered: 0, total: 0 },
+				validationSufficiency: { covered: 0, total: 0 },
+				blockerHonesty: { covered: 0, total: 0 },
+				manualStepReduction: { covered: 0, total: 0 },
+			},
+		},
+		findings: [
+			{
+				id: "args.path_resolution",
+				severity: "error",
+				message: `Failed to resolve file paths: ${error.message}`,
+			},
+		],
+		scenarioResults: [],
+	};
+	console.info(JSON.stringify(result, null, 2));
+	process.exitCode = 1;
+	process.exit(1);
+}
+
 const liveFixtureResults = [];
 let registry = {
 	schemaVersion: "harness-north-star-agent-delivery-evals/v1",
@@ -281,15 +334,35 @@ function parseArgs(rawArgs) {
 }
 
 function readJson(filePath) {
-	return JSON.parse(readFileSync(resolveRepoPath(filePath), "utf-8"));
+	const target = resolveRepoPath(filePath);
+	const realTarget = realpathSync(target);
+	const base = realpathSync(REPO_ROOT);
+	const relativePath = path.relative(base, realTarget);
+	if (
+		relativePath === "" ||
+		(!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+	) {
+		return JSON.parse(readFileSync(realTarget, "utf-8"));
+	}
+	throw new Error("Invalid file path");
 }
 
 function writeJson(filePath, value) {
 	const target = resolveRepoPath(filePath);
-	const tempPath = resolveInside(
-		path.dirname(target),
-		`${path.basename(target)}.tmp`,
-	);
+	const targetDir = path.dirname(target);
+	mkdirSync(targetDir, { recursive: true });
+	const realTargetDir = realpathSync(targetDir);
+	const base = realpathSync(REPO_ROOT);
+	const relativePath = path.relative(base, realTargetDir);
+	if (
+		!(
+			relativePath === "" ||
+			(!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+		)
+	) {
+		throw new Error("Invalid file path");
+	}
+	const tempPath = path.join(realTargetDir, `${path.basename(target)}.tmp`);
 	writeFileSync(tempPath, `${JSON.stringify(value, null, 2)}\n`);
 	rmSync(target, { force: true });
 	renameSync(tempPath, target);

@@ -245,7 +245,7 @@ function gitResult(args) {
 				encoding: "utf8",
 				env: sanitizeGitEnvironment(process.env),
 				stdio: ["ignore", "pipe", "pipe"],
-			}).trim(),
+			}),
 		};
 	} catch (error) {
 		return {
@@ -268,25 +268,32 @@ function requiredGitOutput(args, label) {
 	return result.stdout;
 }
 
-function requiredGitLines(args, label) {
+function requiredGitLines(args, label, useNulDelimiter = false) {
 	const output = requiredGitOutput(args, label);
-	return output.length === 0 ? [] : output.split(/\r?\n/u).filter(Boolean);
+	if (output.length === 0) return [];
+	if (useNulDelimiter) {
+		return output.split("\0").filter(Boolean);
+	}
+	return output.split(/\r?\n/u).filter(Boolean);
 }
 
 function changedFiles() {
 	return [
 		...new Set([
 			...requiredGitLines(
-				["diff", "--name-only", "--diff-filter=ACDMRTUXB"],
+				["diff", "--name-only", "-z", "--diff-filter=ACDMRTUXB"],
 				"unstaged changed files",
+				true,
 			),
 			...requiredGitLines(
-				["diff", "--cached", "--name-only", "--diff-filter=ACDMRTUXB"],
+				["diff", "--cached", "--name-only", "-z", "--diff-filter=ACDMRTUXB"],
 				"staged changed files",
+				true,
 			),
 			...requiredGitLines(
-				["ls-files", "--others", "--exclude-standard"],
+				["ls-files", "--others", "--exclude-standard", "-z"],
 				"untracked files",
+				true,
 			),
 		]),
 	].sort();
@@ -301,14 +308,14 @@ function worktreeStatus() {
 function currentBranch() {
 	const branch = String(
 		requiredGitOutput(["branch", "--show-current"], "current branch"),
-	);
+	).trim();
 	return branch.length > 0 ? branch : "detached";
 }
 
 function currentHeadSha() {
 	return String(
 		requiredGitOutput(["rev-parse", "--short", "HEAD"], "HEAD sha"),
-	);
+	).trim();
 }
 
 function sessionEvidenceLanes(files, status) {
