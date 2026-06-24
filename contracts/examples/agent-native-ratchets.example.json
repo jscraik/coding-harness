@@ -7,6 +7,19 @@
 			"status": "pass",
 			"purpose": "Give cold agents a compact route from changed files to policy modules and gates.",
 			"command": "harness next --json",
+			"nativeAuthority": "harness",
+			"sourceKind": "repo_contract",
+			"mayClaim": ["repo_orientation", "policy_route"],
+			"mustNotClaim": [
+				"codex_context_current",
+				"codex_session_truth",
+				"connector_snapshot_current",
+				"sidecar_export_current",
+				"ci_passed",
+				"review_threads_resolved",
+				"tracker_closed",
+				"merge_ready"
+			],
 			"evidencePaths": ["coding-policy.json"],
 			"claimBoundary": "Orientation only; gate execution, CI state, review state, and merge readiness remain separate lanes.",
 			"nextMove": "Use this route before loading broad codestyle or governance context."
@@ -16,6 +29,20 @@
 			"status": "pass",
 			"purpose": "Turn a run into a compact resumed-agent handoff instead of a transcript dump.",
 			"command": "harness session-distill --json",
+			"nativeAuthority": "harness",
+			"sourceKind": "repo_worktree",
+			"mayClaim": ["repo_handoff_orientation", "worktree_changed_files"],
+			"mustNotClaim": [
+				"codex_context_current",
+				"codex_session_truth",
+				"connector_snapshot_current",
+				"sidecar_export_current",
+				"ci_passed",
+				"review_threads_resolved",
+				"tracker_closed",
+				"merge_ready",
+				"validation_passed"
+			],
 			"evidencePaths": ["scripts/write-agent-native-ratchet-report.cjs"],
 			"claimBoundary": "Distillation summarizes local orientation and does not prove CI, review, tracker, or merge readiness.",
 			"nextMove": "Attach session-distill/v1 to PR closeout and resumed-agent handoff flows."
@@ -25,6 +52,19 @@
 			"status": "pass",
 			"purpose": "Expose retry, stop, ownership, and next-action state as data.",
 			"command": "harness agent-rework --json",
+			"nativeAuthority": "harness",
+			"sourceKind": "repo_artifact",
+			"mayClaim": ["local_recovery_state"],
+			"mustNotClaim": [
+				"codex_context_current",
+				"codex_session_truth",
+				"connector_snapshot_current",
+				"sidecar_export_current",
+				"ci_passed",
+				"review_threads_resolved",
+				"tracker_closed",
+				"merge_ready"
+			],
 			"evidencePaths": ["scripts/verify-work.sh"],
 			"claimBoundary": "Rework evidence explains local recovery state and does not make delivery or merge claims.",
 			"nextMove": "Promote repeated recovery patterns into validators, tests, or tracked exceptions."
@@ -34,6 +74,19 @@
 			"status": "pass",
 			"purpose": "Make reviewer outcomes explicit enough for coordinators to route accept, object, defer, and blocked states.",
 			"command": "harness reviewer-decision --json",
+			"nativeAuthority": "harness",
+			"sourceKind": "repo_artifact",
+			"mayClaim": ["review_lane_decision"],
+			"mustNotClaim": [
+				"codex_context_current",
+				"codex_session_truth",
+				"connector_snapshot_current",
+				"sidecar_export_current",
+				"ci_passed",
+				"review_threads_resolved",
+				"tracker_closed",
+				"merge_ready"
+			],
 			"evidencePaths": ["scripts/validate-reviewer-coverage.cjs"],
 			"claimBoundary": "Reviewer decisions are review evidence only; PR closeout still owns merge-readiness synthesis.",
 			"nextMove": "Require typed reviewer outcomes before treating review coverage as satisfied."
@@ -43,6 +96,19 @@
 			"status": "pass",
 			"purpose": "Classify governance docs by whether they feed runtime decisions, operator policy, history, or archive candidates.",
 			"command": "harness governance-decision-surface --json",
+			"nativeAuthority": "harness",
+			"sourceKind": "repo_artifact",
+			"mayClaim": ["governance_routing"],
+			"mustNotClaim": [
+				"codex_context_current",
+				"codex_session_truth",
+				"connector_snapshot_current",
+				"sidecar_export_current",
+				"ci_passed",
+				"review_threads_resolved",
+				"tracker_closed",
+				"merge_ready"
+			],
 			"evidencePaths": ["docs/doc-lifecycle-manifest.json"],
 			"claimBoundary": "Governance classification is routing metadata; it cannot override source docs or validation results.",
 			"nextMove": "Use this surface to prune governance that does not feed a decision or durable policy."

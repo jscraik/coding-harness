@@ -41,6 +41,26 @@ REQUIRED_PACKAGE_SCRIPTS = {
     "types:check",
 }
 
+NativeAuthority = Literal["harness", "codex", "connector", "sidecar"]
+NativeSourceKind = Literal[
+    "repo_contract",
+    "repo_worktree",
+    "repo_artifact",
+    "connector_snapshot",
+    "sidecar_export",
+    "normalized_external_snapshot",
+]
+FORBIDDEN_HARNESS_CLAIMS = {
+    "codex_context_current",
+    "codex_session_truth",
+    "connector_snapshot_current",
+    "sidecar_export_current",
+    "ci_passed",
+    "review_threads_resolved",
+    "tracker_closed",
+    "merge_ready",
+}
+
 
 def reject_blank_string(value: str) -> str:
     if not value.strip():
@@ -66,10 +86,43 @@ def reject_empty_or_blank_list(value: list[str]) -> list[str]:
     return reject_blank_list_items(value)
 
 
+def reject_duplicate_items(value: list[str]) -> list[str]:
+    if len(value) != len(set(value)):
+        raise ValueError("must not contain duplicate items")
+    return value
+
+
 def reject_negative_int(value: int) -> int:
     if value < 0:
         raise ValueError("must be non-negative")
     return value
+
+
+def require_harness_native_boundary(
+    native_authority: NativeAuthority,
+    source_kind: NativeSourceKind,
+    may_claim: list[str],
+    must_not_claim: list[str],
+    *,
+    expected_source_kind: NativeSourceKind,
+    extra_forbidden_claims: set[str] | None = None,
+) -> None:
+    if native_authority != "harness":
+        raise ValueError("agent-native packet must remain harness-native")
+    if source_kind != expected_source_kind:
+        raise ValueError(f"agent-native packet must use {expected_source_kind} sourceKind")
+    forbidden_claims = FORBIDDEN_HARNESS_CLAIMS | (extra_forbidden_claims or set())
+    missing = sorted(forbidden_claims.difference(must_not_claim))
+    if missing:
+        raise ValueError(
+            "agent-native packet must reject cross-authority claims: "
+            + ", ".join(missing)
+        )
+    overlap = sorted(set(may_claim).intersection(must_not_claim))
+    if overlap:
+        raise ValueError(
+            "mayClaim and mustNotClaim must not overlap: " + ", ".join(overlap)
+        )
 
 
 class CommandCapability(BaseModel):
@@ -416,6 +469,10 @@ class AgentNativeRatchet(BaseModel):
     status: AgentNativeRatchetStatus
     purpose: str
     command: str
+    nativeAuthority: NativeAuthority
+    sourceKind: NativeSourceKind
+    mayClaim: list[str]
+    mustNotClaim: list[str]
     evidencePaths: list[str]
     claimBoundary: str
     nextMove: str
@@ -426,6 +483,31 @@ class AgentNativeRatchet(BaseModel):
     _reject_blank_evidence_paths = field_validator("evidencePaths")(
         reject_empty_or_blank_list
     )
+    _reject_blank_claims = field_validator("mayClaim", "mustNotClaim")(
+        reject_empty_or_blank_list
+    )
+    _reject_duplicate_claims = field_validator("mayClaim", "mustNotClaim")(
+        reject_duplicate_items
+    )
+
+    @model_validator(mode="after")
+    def require_harness_boundary(self) -> AgentNativeRatchet:
+        expected_source_kind: NativeSourceKind = (
+            "repo_contract" if self.id == "orientation_packet"
+            else "repo_worktree" if self.id == "session_distillation"
+            else "repo_artifact"
+        )
+        require_harness_native_boundary(
+            self.nativeAuthority,
+            self.sourceKind,
+            self.mayClaim,
+            self.mustNotClaim,
+            expected_source_kind=expected_source_kind,
+            extra_forbidden_claims={"validation_passed"}
+            if self.id == "session_distillation"
+            else None,
+        )
+        return self
 
 
 class AgentNativeRatchetsReport(BaseModel):
@@ -492,6 +574,10 @@ class SessionDistillReport(BaseModel):
     worktreeStatus: Literal["clean", "dirty"]
     changedFiles: list[str]
     changedFileCount: int
+    nativeAuthority: NativeAuthority
+    sourceKind: NativeSourceKind
+    mayClaim: list[str]
+    mustNotClaim: list[str]
     evidenceLanes: list[SessionEvidenceLane]
     nextCommands: list[str]
     nonClaims: list[str]
@@ -503,6 +589,12 @@ class SessionDistillReport(BaseModel):
     _reject_blank_items = field_validator("changedFiles", "nextCommands", "nonClaims")(
         reject_blank_list_items
     )
+    _reject_blank_claims = field_validator("mayClaim", "mustNotClaim")(
+        reject_empty_or_blank_list
+    )
+    _reject_duplicate_claims = field_validator("mayClaim", "mustNotClaim")(
+        reject_duplicate_items
+    )
 
     @model_validator(mode="after")
     def require_session_consistency(self) -> SessionDistillReport:
@@ -511,6 +603,14 @@ class SessionDistillReport(BaseModel):
         lane_ids = [lane.id for lane in self.evidenceLanes]
         if len(lane_ids) != len(set(lane_ids)):
             raise ValueError("evidenceLanes must not contain duplicate ids")
+        require_harness_native_boundary(
+            self.nativeAuthority,
+            self.sourceKind,
+            self.mayClaim,
+            self.mustNotClaim,
+            expected_source_kind="repo_worktree",
+            extra_forbidden_claims={"validation_passed"},
+        )
         return self
 
 
@@ -580,6 +680,10 @@ class AgentReworkReport(BaseModel):
     status: Literal["pass", "needs_evidence"]
     attemptSource: str
     command: str
+    nativeAuthority: NativeAuthority
+    sourceKind: NativeSourceKind
+    mayClaim: list[str]
+    mustNotClaim: list[str]
     latestRun: AgentReworkAvailableRun | AgentReworkUnavailableRun
     retryDecisions: list[Literal["retry", "stop", "fix_contract", "fix_infra"]]
     claimBoundary: str
@@ -587,12 +691,25 @@ class AgentReworkReport(BaseModel):
     _reject_blank_strings = field_validator("attemptSource", "command", "claimBoundary")(
         reject_blank_string
     )
+    _reject_blank_claims = field_validator("mayClaim", "mustNotClaim")(
+        reject_empty_or_blank_list
+    )
+    _reject_duplicate_claims = field_validator("mayClaim", "mustNotClaim")(
+        reject_duplicate_items
+    )
 
     @model_validator(mode="after")
     def require_rework_status_consistency(self) -> AgentReworkReport:
         expected_status = "needs_evidence" if self.latestRun.status == "unavailable" else "pass"
         if self.status != expected_status:
             raise ValueError("status must match latestRun availability")
+        require_harness_native_boundary(
+            self.nativeAuthority,
+            self.sourceKind,
+            self.mayClaim,
+            self.mustNotClaim,
+            expected_source_kind="repo_artifact",
+        )
         return self
 
 
@@ -642,6 +759,10 @@ class ReviewerDecisionReport(BaseModel):
     schemaVersion: Literal["reviewer-decision/v1"]
     status: Literal["pass", "needs_evidence", "blocked", "defer"]
     command: str
+    nativeAuthority: NativeAuthority
+    sourceKind: NativeSourceKind
+    mayClaim: list[str]
+    mustNotClaim: list[str]
     decision: Literal[
         "accept",
         "object",
@@ -667,6 +788,12 @@ class ReviewerDecisionReport(BaseModel):
     _reject_blank_strings = field_validator("command", "nextMove", "claimBoundary")(
         reject_blank_string
     )
+    _reject_blank_claims = field_validator("mayClaim", "mustNotClaim")(
+        reject_empty_or_blank_list
+    )
+    _reject_duplicate_claims = field_validator("mayClaim", "mustNotClaim")(
+        reject_duplicate_items
+    )
 
     @model_validator(mode="after")
     def require_reviewer_decision_consistency(self) -> ReviewerDecisionReport:
@@ -682,6 +809,13 @@ class ReviewerDecisionReport(BaseModel):
             raise ValueError("decision must be compatible with status")
         if self.decision not in self.outcomes:
             raise ValueError("decision must be included in outcomes")
+        require_harness_native_boundary(
+            self.nativeAuthority,
+            self.sourceKind,
+            self.mayClaim,
+            self.mustNotClaim,
+            expected_source_kind="repo_artifact",
+        )
         return self
 
 
@@ -732,6 +866,10 @@ class GovernanceDecisionSurfaceReport(BaseModel):
     schemaVersion: Literal["governance-decision-surface/v1"]
     status: Literal["pass", "needs_evidence"]
     classes: list[GovernanceClass]
+    nativeAuthority: NativeAuthority
+    sourceKind: NativeSourceKind
+    mayClaim: list[str]
+    mustNotClaim: list[str]
     documentsAnalyzed: int
     classCounts: GovernanceClassCounts
     decisionInputs: list[GovernanceDocument]
@@ -742,6 +880,12 @@ class GovernanceDecisionSurfaceReport(BaseModel):
 
     _reject_blank_evidence_paths = field_validator("evidencePaths")(
         reject_empty_or_blank_list
+    )
+    _reject_blank_claims = field_validator("mayClaim", "mustNotClaim")(
+        reject_empty_or_blank_list
+    )
+    _reject_duplicate_claims = field_validator("mayClaim", "mustNotClaim")(
+        reject_duplicate_items
     )
     _reject_blank_strings = field_validator("nextMove", "claimBoundary")(
         reject_blank_string
@@ -770,6 +914,13 @@ class GovernanceDecisionSurfaceReport(BaseModel):
             raise ValueError("feeds_runtime_decision count must cover decisionInputs")
         if self.classCounts.archive_candidate < len(self.archiveCandidates):
             raise ValueError("archive_candidate count must cover archiveCandidates")
+        require_harness_native_boundary(
+            self.nativeAuthority,
+            self.sourceKind,
+            self.mayClaim,
+            self.mustNotClaim,
+            expected_source_kind="repo_artifact",
+        )
         return self
 
 

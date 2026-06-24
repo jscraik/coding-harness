@@ -5787,7 +5787,41 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 				commandReports.reviewer.claimBoundary ===
 					"reviewer-decision/v1 is review-lane evidence and must be composed by PR closeout before merge claims.",
 		),
+		assertion(
+			"agent-native ratchet packets declare native boundaries",
+			allHarnessNativeBoundaries([
+				...normalizeArray(commandReports.ratchets.ratchets),
+				commandReports.session,
+				commandReports.rework,
+				commandReports.reviewer,
+				commandReports.governance,
+			]),
+		),
 	]);
+}
+
+function allHarnessNativeBoundaries(packets) {
+	const forbiddenClaims = [
+		"codex_context_current",
+		"codex_session_truth",
+		"connector_snapshot_current",
+		"sidecar_export_current",
+		"ci_passed",
+		"review_threads_resolved",
+		"tracker_closed",
+		"merge_ready",
+	];
+	return packets.every((packet) => {
+		const mayClaim = normalizeArray(packet?.mayClaim);
+		const mustNotClaim = normalizeArray(packet?.mustNotClaim);
+		return (
+			packet?.nativeAuthority === "harness" &&
+			typeof packet?.sourceKind === "string" &&
+			mayClaim.length > 0 &&
+			forbiddenClaims.every((claim) => mustNotClaim.includes(claim)) &&
+			!mayClaim.some((claim) => mustNotClaim.includes(claim))
+		);
+	});
 }
 
 function runRatchetPacketCommand(argsOrOptions) {

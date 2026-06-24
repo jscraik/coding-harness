@@ -120,6 +120,49 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		});
 	});
 
+	it("rejects harness-native ratchets that claim Codex or delivery truth", () => {
+		const root = createTempRoot("agent-native-boundary-claims-");
+		const packet = readJson(
+			"contracts/examples/agent-native-ratchets.example.json",
+		) as Record<string, unknown>;
+		const ratchets = packet.ratchets as Array<Record<string, unknown>>;
+		packet.ratchets = [
+			{
+				...ratchets[0],
+				mayClaim: ["repo_orientation", "codex_context_current"],
+				mustNotClaim: [
+					"codex_context_current",
+					"codex_session_truth",
+					"connector_snapshot_current",
+					"sidecar_export_current",
+				],
+			},
+			...ratchets.slice(1),
+		];
+		const packetPath = join(root, "agent-native-ratchets.json");
+		writeFileSync(packetPath, JSON.stringify(packet, null, 2));
+		const manifestPath = manifestWithEntryPatch(
+			"agent-native-ratchets/v1",
+			(entry) => ({
+				...entry,
+				examplePath: packetPath,
+			}),
+		);
+
+		const result = runValidator(["--manifest", manifestPath]);
+		const report = JSON.parse(result.stdout) as { errors: string[] };
+
+		expect(result.status).toBe(1);
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining(
+					"mustNotClaim must include cross-authority claims",
+				),
+				expect.stringContaining("mayClaim must not overlap mustNotClaim"),
+			]),
+		);
+	});
+
 	it("keeps ReplayPacket/v1 examples aligned with the TypeScript validator", () => {
 		const packet = readJson("contracts/examples/replay-packet.example.json");
 

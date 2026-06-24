@@ -52,6 +52,17 @@ const SUPPORTED_SCHEMA_KEYWORDS = new Set([
 	"required",
 	"title",
 	"type",
+	"uniqueItems",
+]);
+const FORBIDDEN_HARNESS_CLAIMS = new Set([
+	"codex_context_current",
+	"codex_session_truth",
+	"connector_snapshot_current",
+	"sidecar_export_current",
+	"ci_passed",
+	"review_threads_resolved",
+	"tracker_closed",
+	"merge_ready",
 ]);
 
 function parseArgs(argv) {
@@ -394,6 +405,12 @@ function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
 		if (typeof schema.maxItems === "number" && value.length > schema.maxItems) {
 			errors.push(`${valuePath} must have at most ${schema.maxItems} items`);
 		}
+		if (
+			schema.uniqueItems === true &&
+			new Set(value.map((item) => JSON.stringify(item))).size !== value.length
+		) {
+			errors.push(`${valuePath} must contain unique items`);
+		}
 		if (Array.isArray(schema.prefixItems)) {
 			for (const [index, itemSchema] of schema.prefixItems.entries()) {
 				if (index >= value.length) break;
@@ -642,6 +659,17 @@ function validatePacketSemanticInvariants(entry, example, errors) {
 			`${entry.examplePath}.changedFileCount must equal changedFiles length`,
 		);
 	}
+	if (entry.schemaVersion === "session-distill/v1") {
+		validateHarnessBoundaryClaims(
+			example,
+			`${entry.examplePath}`,
+			errors,
+			new Set([...FORBIDDEN_HARNESS_CLAIMS, "validation_passed"]),
+		);
+		if (example.sourceKind !== "repo_worktree") {
+			errors.push(`${entry.examplePath}.sourceKind must be repo_worktree`);
+		}
+	}
 	if (
 		entry.schemaVersion === "agent-native-ratchets/v1" &&
 		Array.isArray(example.ratchets)
@@ -656,6 +684,69 @@ function validatePacketSemanticInvariants(entry, example, errors) {
 				`${entry.examplePath}.status must be ${expectedStatus} when derived from ratchets[].status`,
 			);
 		}
+		for (const [index, ratchet] of example.ratchets.entries()) {
+			validateHarnessBoundaryClaims(
+				ratchet,
+				`${entry.examplePath}.ratchets[${index}]`,
+				errors,
+				FORBIDDEN_HARNESS_CLAIMS,
+			);
+		}
+	}
+	if (entry.schemaVersion === "agent-rework/v1") {
+		validateHarnessBoundaryClaims(
+			example,
+			`${entry.examplePath}`,
+			errors,
+			FORBIDDEN_HARNESS_CLAIMS,
+		);
+		if (example.sourceKind !== "repo_artifact") {
+			errors.push(`${entry.examplePath}.sourceKind must be repo_artifact`);
+		}
+	}
+	if (entry.schemaVersion === "reviewer-decision/v1") {
+		validateHarnessBoundaryClaims(
+			example,
+			`${entry.examplePath}`,
+			errors,
+			FORBIDDEN_HARNESS_CLAIMS,
+		);
+		if (example.sourceKind !== "repo_artifact") {
+			errors.push(`${entry.examplePath}.sourceKind must be repo_artifact`);
+		}
+	}
+	if (entry.schemaVersion === "governance-decision-surface/v1") {
+		validateHarnessBoundaryClaims(
+			example,
+			`${entry.examplePath}`,
+			errors,
+			FORBIDDEN_HARNESS_CLAIMS,
+		);
+		if (example.sourceKind !== "repo_artifact") {
+			errors.push(`${entry.examplePath}.sourceKind must be repo_artifact`);
+		}
+	}
+}
+
+function validateHarnessBoundaryClaims(value, path, errors, forbiddenClaims) {
+	if (!isObject(value) || value.nativeAuthority !== "harness") return;
+	const mustNotClaim = new Set(
+		Array.isArray(value.mustNotClaim) ? value.mustNotClaim : [],
+	);
+	const missing = [...forbiddenClaims].filter(
+		(claim) => !mustNotClaim.has(claim),
+	);
+	if (missing.length > 0) {
+		errors.push(
+			`${path}.mustNotClaim must include cross-authority claims: ${missing.join(", ")}`,
+		);
+	}
+	const mayClaim = new Set(Array.isArray(value.mayClaim) ? value.mayClaim : []);
+	const overlap = [...mayClaim].filter((claim) => mustNotClaim.has(claim));
+	if (overlap.length > 0) {
+		errors.push(
+			`${path}.mayClaim must not overlap mustNotClaim: ${overlap.join(", ")}`,
+		);
 	}
 }
 

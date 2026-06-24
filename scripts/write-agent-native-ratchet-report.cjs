@@ -10,6 +10,36 @@ const SESSION_DISTILL_SCHEMA_VERSION = "session-distill/v1";
 const AGENT_REWORK_SCHEMA_VERSION = "agent-rework/v1";
 const REVIEWER_DECISION_SCHEMA_VERSION = "reviewer-decision/v1";
 const GOVERNANCE_DECISION_SCHEMA_VERSION = "governance-decision-surface/v1";
+const HARNESS_NATIVE_AUTHORITY = "harness";
+const FORBIDDEN_DELIVERY_CLAIMS = [
+	"ci_passed",
+	"review_threads_resolved",
+	"tracker_closed",
+	"merge_ready",
+];
+const FORBIDDEN_CODEX_RUNTIME_CLAIMS = [
+	"codex_context_current",
+	"codex_session_truth",
+];
+const FORBIDDEN_CONNECTOR_CLAIMS = ["connector_snapshot_current"];
+const FORBIDDEN_SIDECAR_CLAIMS = ["sidecar_export_current"];
+const FORBIDDEN_HARNESS_NATIVE_CLAIMS = [
+	...FORBIDDEN_CODEX_RUNTIME_CLAIMS,
+	...FORBIDDEN_CONNECTOR_CLAIMS,
+	...FORBIDDEN_SIDECAR_CLAIMS,
+	...FORBIDDEN_DELIVERY_CLAIMS,
+];
+const SESSION_DISTILL_MAY_CLAIMS = [
+	"repo_handoff_orientation",
+	"worktree_changed_files",
+];
+const SESSION_DISTILL_MUST_NOT_CLAIM = [
+	...FORBIDDEN_HARNESS_NATIVE_CLAIMS,
+	"validation_passed",
+];
+const LOCAL_RECOVERY_MAY_CLAIMS = ["local_recovery_state"];
+const REVIEWER_DECISION_MAY_CLAIMS = ["review_lane_decision"];
+const GOVERNANCE_DECISION_MAY_CLAIMS = ["governance_routing"];
 
 let repoRoot = process.cwd();
 const reporterScriptRoot = __dirname;
@@ -29,6 +59,10 @@ const ratchetDefinitions = [
 		purpose:
 			"Give cold agents a compact route from changed files to policy modules and gates.",
 		command: "harness next --json",
+		nativeAuthority: HARNESS_NATIVE_AUTHORITY,
+		sourceKind: "repo_contract",
+		mayClaim: ["repo_orientation", "policy_route"],
+		mustNotClaim: FORBIDDEN_HARNESS_NATIVE_CLAIMS,
 		packageScripts: [],
 		evidencePaths: [
 			"coding-policy.json",
@@ -45,6 +79,10 @@ const ratchetDefinitions = [
 		purpose:
 			"Turn a run into a compact resumed-agent handoff instead of a transcript dump.",
 		command: "harness session-distill --json",
+		nativeAuthority: HARNESS_NATIVE_AUTHORITY,
+		sourceKind: "repo_worktree",
+		mayClaim: SESSION_DISTILL_MAY_CLAIMS,
+		mustNotClaim: SESSION_DISTILL_MUST_NOT_CLAIM,
 		packageScripts: [],
 		evidencePaths: [
 			"scripts/write-agent-native-ratchet-report.cjs",
@@ -61,6 +99,10 @@ const ratchetDefinitions = [
 		purpose:
 			"Expose retry, stop, ownership, and next-action state as data instead of repeating human steering.",
 		command: "harness agent-rework --json",
+		nativeAuthority: HARNESS_NATIVE_AUTHORITY,
+		sourceKind: "repo_artifact",
+		mayClaim: ["local_recovery_state"],
+		mustNotClaim: FORBIDDEN_HARNESS_NATIVE_CLAIMS,
 		packageScripts: [],
 		evidencePaths: [
 			"scripts/verify-work.sh",
@@ -76,6 +118,10 @@ const ratchetDefinitions = [
 		purpose:
 			"Make reviewer outcomes explicit enough for coordinators to route accept, object, defer, and blocked states.",
 		command: "harness reviewer-decision --json",
+		nativeAuthority: HARNESS_NATIVE_AUTHORITY,
+		sourceKind: "repo_artifact",
+		mayClaim: ["review_lane_decision"],
+		mustNotClaim: FORBIDDEN_HARNESS_NATIVE_CLAIMS,
 		packageScripts: [],
 		evidencePaths: [
 			"scripts/validate-reviewer-coverage.cjs",
@@ -91,6 +137,10 @@ const ratchetDefinitions = [
 		purpose:
 			"Classify governance docs by whether they feed runtime decisions, operator policy, history, or archive candidates.",
 		command: "harness governance-decision-surface --json",
+		nativeAuthority: HARNESS_NATIVE_AUTHORITY,
+		sourceKind: "repo_artifact",
+		mayClaim: ["governance_routing"],
+		mustNotClaim: FORBIDDEN_HARNESS_NATIVE_CLAIMS,
 		packageScripts: [],
 		evidencePaths: [
 			"docs/doc-lifecycle-manifest.json",
@@ -218,6 +268,10 @@ function buildRatchetReport() {
 			status: "pass",
 			purpose: ratchet.purpose,
 			command: ratchet.command,
+			nativeAuthority: ratchet.nativeAuthority,
+			sourceKind: ratchet.sourceKind,
+			mayClaim: ratchet.mayClaim,
+			mustNotClaim: ratchet.mustNotClaim,
 			evidencePaths: ratchet.evidencePaths,
 			claimBoundary: ratchet.claimBoundary,
 			nextMove: ratchet.nextMove,
@@ -378,6 +432,10 @@ function buildSessionDistillReport() {
 		worktreeStatus: status,
 		changedFiles: files,
 		changedFileCount: files.length,
+		nativeAuthority: HARNESS_NATIVE_AUTHORITY,
+		sourceKind: "repo_worktree",
+		mayClaim: SESSION_DISTILL_MAY_CLAIMS,
+		mustNotClaim: SESSION_DISTILL_MUST_NOT_CLAIM,
 		evidenceLanes: sessionEvidenceLanes(files, status),
 		nextCommands: [
 			"harness prompt-context-drift:write",
@@ -402,6 +460,10 @@ function buildReworkReport() {
 		status: latestRun.status === "unavailable" ? "needs_evidence" : "pass",
 		attemptSource: "scripts/verify-work.sh attempt-ledger/v1 gate artifacts",
 		command: "bash scripts/verify-work.sh --fast",
+		nativeAuthority: HARNESS_NATIVE_AUTHORITY,
+		sourceKind: "repo_artifact",
+		mayClaim: LOCAL_RECOVERY_MAY_CLAIMS,
+		mustNotClaim: FORBIDDEN_HARNESS_NATIVE_CLAIMS,
 		latestRun,
 		retryDecisions: ["retry", "stop", "fix_contract", "fix_infra"],
 		claimBoundary:
@@ -548,6 +610,10 @@ function buildReviewerDecisionReport(options) {
 		status: decision.status,
 		command:
 			"harness reviewer-decision --manifest <manifest> --reviews-dir artifacts/reviews --json",
+		nativeAuthority: HARNESS_NATIVE_AUTHORITY,
+		sourceKind: "repo_artifact",
+		mayClaim: REVIEWER_DECISION_MAY_CLAIMS,
+		mustNotClaim: FORBIDDEN_HARNESS_NATIVE_CLAIMS,
 		decision: decision.outcome,
 		outcomes: [
 			"accept",
@@ -716,6 +782,10 @@ function buildGovernanceDecisionReport() {
 			"historical_context",
 			"archive_candidate",
 		],
+		nativeAuthority: HARNESS_NATIVE_AUTHORITY,
+		sourceKind: "repo_artifact",
+		mayClaim: GOVERNANCE_DECISION_MAY_CLAIMS,
+		mustNotClaim: FORBIDDEN_HARNESS_NATIVE_CLAIMS,
 		documentsAnalyzed: documents.length,
 		classCounts,
 		decisionInputs: classified

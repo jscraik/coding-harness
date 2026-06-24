@@ -8,6 +8,10 @@
 		"schemaVersion",
 		"status",
 		"classes",
+		"nativeAuthority",
+		"sourceKind",
+		"mayClaim",
+		"mustNotClaim",
 		"documentsAnalyzed",
 		"classCounts",
 		"decisionInputs",
@@ -33,6 +37,37 @@
 					"historical_context",
 					"archive_candidate"
 				]
+			}
+		},
+		"nativeAuthority": {
+			"enum": ["harness", "codex", "connector", "sidecar"]
+		},
+		"sourceKind": {
+			"enum": [
+				"repo_contract",
+				"repo_worktree",
+				"repo_artifact",
+				"connector_snapshot",
+				"sidecar_export",
+				"normalized_external_snapshot"
+			]
+		},
+		"mayClaim": {
+			"type": "array",
+			"minItems": 1,
+			"uniqueItems": true,
+			"items": {
+				"type": "string",
+				"minLength": 1
+			}
+		},
+		"mustNotClaim": {
+			"type": "array",
+			"minItems": 1,
+			"uniqueItems": true,
+			"items": {
+				"type": "string",
+				"minLength": 1
 			}
 		},
 		"documentsAnalyzed": {

@@ -3,6 +3,19 @@
 	"status": "pass",
 	"attemptSource": "scripts/verify-work.sh attempt-ledger/v1 gate artifacts",
 	"command": "bash scripts/verify-work.sh --fast",
+	"nativeAuthority": "harness",
+	"sourceKind": "repo_artifact",
+	"mayClaim": ["local_recovery_state"],
+	"mustNotClaim": [
+		"codex_context_current",
+		"codex_session_truth",
+		"connector_snapshot_current",
+		"sidecar_export_current",
+		"ci_passed",
+		"review_threads_resolved",
+		"tracker_closed",
+		"merge_ready"
+	],
 	"latestRun": {
 		"status": "available",
 		"runId": "20260621T220000Z-123",
