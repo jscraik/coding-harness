@@ -359,7 +359,9 @@
 					"seed classifies repeated remediation signal",
 					"seed artifact writes inside the live fixture root",
 					"seed candidates preserve feedback provenance",
-					"review-derived seeds use bounded issue taxonomy"
+					"review-derived seeds use bounded issue taxonomy",
+					"review comments classify current stale unmapped and unsafe findings",
+					"repeated installed command drift recommends eval seed without production trace"
 				],
 				"stopConditions": [
 					"Do not promote one-off review noise into eval coverage without repeated signal and a concrete file match."

@@ -122,7 +122,10 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   runtime-packet schema checks and `pnpm artifact:types`, expose their
   operator path through public `harness ...` commands, and prove installed
   downstream portability with the package canary before claiming source-checkout
-  independence. Keep CI, review threads, tracker state, external readiness, and
+  independence. Review-feedback eval-seed classifiers are part of this advisory
+  cockpit surface when they turn raw review comments into current, stale,
+  unmapped, or unsafe candidate evidence without production traces. Keep CI,
+  review threads, tracker state, external readiness, and
   merge readiness separate until a canonical consumer explicitly joins those
   lanes.
 - `harness-decision/v1` cockpit lanes are advisory route metadata for

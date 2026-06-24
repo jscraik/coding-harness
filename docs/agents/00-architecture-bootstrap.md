@@ -217,6 +217,9 @@ their producers through `pnpm run agent-native:ratchets`,
 their public CLI commands: `harness agent-native-ratchets`,
 `harness session-distill`, `harness agent-rework`,
 `harness reviewer-decision`, and `harness governance-decision-surface`.
+Review-feedback eval-seed changes are the same cockpit-feedback surface when
+they classify raw review comments into current, stale, unmapped, or unsafe
+candidate evidence without promoting production traces.
 Ratchet them with `node scripts/validate-runtime-packet-schemas.cjs --all`
 plus `pnpm artifact:types`, and prove downstream portability with the
 `package-installed-downstream-canary` live fixture before claiming the cockpit
