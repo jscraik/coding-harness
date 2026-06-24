@@ -405,11 +405,13 @@ function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
 		if (typeof schema.maxItems === "number" && value.length > schema.maxItems) {
 			errors.push(`${valuePath} must have at most ${schema.maxItems} items`);
 		}
-		if (
-			schema.uniqueItems === true &&
-			new Set(value.map((item) => JSON.stringify(item))).size !== value.length
-		) {
-			errors.push(`${valuePath} must contain unique items`);
+		if (schema.uniqueItems === true) {
+			const hasDuplicate = value.some((item, index) =>
+				value.slice(index + 1).some((other) => valuesEqual(item, other)),
+			);
+			if (hasDuplicate) {
+				errors.push(`${valuePath} must contain unique items`);
+			}
 		}
 		if (Array.isArray(schema.prefixItems)) {
 			for (const [index, itemSchema] of schema.prefixItems.entries()) {
