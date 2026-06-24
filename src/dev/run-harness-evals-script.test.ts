@@ -14,6 +14,13 @@ const REPO_ROOT = process.cwd();
 const SCRIPT_PATH = join(REPO_ROOT, "scripts/run-harness-evals.mjs");
 const CACHE_ROOT = join(REPO_ROOT, ".cache");
 const tempRoots: string[] = [];
+const SCORECARD_IDS = [
+	"command_routing",
+	"artifact_evidence",
+	"validation_sufficiency",
+	"blocker_honesty",
+	"manual_step_reduction",
+];
 
 afterEach(() => {
 	for (const root of tempRoots.splice(0)) {
@@ -138,4 +145,199 @@ describe("run-harness-evals.mjs", () => {
 			]),
 		);
 	});
+
+	it("emits structured JSON for unknown runner arguments", () => {
+		mkdirSync(CACHE_ROOT, { recursive: true });
+		const outputRoot = mkdtempSync(join(CACHE_ROOT, "eval-script-test-"));
+		tempRoots.push(outputRoot);
+
+		const result = runNodeScript(SCRIPT_PATH, [
+			"--unknown-flag",
+			"--output",
+			relative(REPO_ROOT, join(outputRoot, "result.json")),
+			"--observability-output",
+			relative(REPO_ROOT, join(outputRoot, "observability.json")),
+			"--fixture-root",
+			relative(REPO_ROOT, join(outputRoot, "fixtures")),
+		]);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			findings: Array<{ id: string; message: string }>;
+			summary: { liveFixtures: number };
+		};
+
+		expect(result.status).toBe(1);
+		expect(report.status).toBe("fail");
+		expect(report.summary.liveFixtures).toBe(0);
+		expect(report.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "args.usage",
+					message: expect.stringContaining("Unknown option: --unknown-flag"),
+				}),
+			]),
+		);
+	});
+
+	it("filters registered scenarios by eval tier", () => {
+		mkdirSync(CACHE_ROOT, { recursive: true });
+		const outputRoot = mkdtempSync(join(CACHE_ROOT, "eval-script-test-"));
+		tempRoots.push(outputRoot);
+		const registryPath = join(outputRoot, "registry.json");
+		writeFileSync(
+			registryPath,
+			JSON.stringify(
+				buildRegistry([
+					{ id: "structural-one", evalTier: "structural" },
+					{ id: "package-one", evalTier: "package_canary" },
+					{ id: "trusted-one", evalTier: "trusted_live" },
+					{
+						id: "held-out-one",
+						evalTier: "held_out_review",
+						tuningUse: "held_out_only",
+					},
+				]),
+			),
+		);
+
+		const result = runNodeScript(SCRIPT_PATH, [
+			"--registry",
+			relative(REPO_ROOT, registryPath),
+			"--tier",
+			"package_canary",
+			"--output",
+			relative(REPO_ROOT, join(outputRoot, "result.json")),
+			"--observability-output",
+			relative(REPO_ROOT, join(outputRoot, "observability.json")),
+			"--fixture-root",
+			relative(REPO_ROOT, join(outputRoot, "fixtures")),
+		]);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			summary: {
+				selectedTier: string;
+				selectedScenarios: number;
+				tiers: { byTier: Record<string, { selected: number }> };
+			};
+			scenarioResults: Array<{ id: string; evalTier: string }>;
+		};
+
+		expect(result.status).toBe(0);
+		expect(report.status).toBe("pass");
+		expect(report.summary.selectedTier).toBe("package_canary");
+		expect(report.summary.selectedScenarios).toBe(1);
+		expect(report.summary.tiers.byTier.package_canary?.selected).toBe(1);
+		expect(report.scenarioResults).toEqual([
+			expect.objectContaining({
+				id: "package-one",
+				evalTier: "package_canary",
+			}),
+		]);
+	});
+
+	it("requires every scenario to declare an eval tier", () => {
+		mkdirSync(CACHE_ROOT, { recursive: true });
+		const outputRoot = mkdtempSync(join(CACHE_ROOT, "eval-script-test-"));
+		tempRoots.push(outputRoot);
+		const registryPath = join(outputRoot, "registry.json");
+		const registry = buildRegistry([{ id: "missing-tier" }]);
+		writeFileSync(registryPath, JSON.stringify(registry));
+
+		const result = runNodeScript(SCRIPT_PATH, [
+			"--registry",
+			relative(REPO_ROOT, registryPath),
+			"--output",
+			relative(REPO_ROOT, join(outputRoot, "result.json")),
+			"--observability-output",
+			relative(REPO_ROOT, join(outputRoot, "observability.json")),
+			"--fixture-root",
+			relative(REPO_ROOT, join(outputRoot, "fixtures")),
+		]);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			findings: Array<{ id: string; message: string }>;
+		};
+
+		expect(result.status).toBe(1);
+		expect(report.status).toBe("fail");
+		expect(report.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "scenario.evalTier",
+					message: expect.stringContaining("missing-tier"),
+				}),
+			]),
+		);
+	});
 });
+
+function buildRegistry(
+	overrides: Array<{
+		id?: string;
+		evalTier?: string;
+		tuningUse?: string;
+	}>,
+) {
+	const scenarios = Array.from({ length: 10 }, (_, index) => {
+		const override: {
+			id?: string;
+			evalTier?: string;
+			tuningUse?: string;
+		} = overrides[index] ?? {};
+		return {
+			id: override.id ?? `scenario-${index + 1}`,
+			type: "registered",
+			...(override.evalTier || index > 0
+				? { evalTier: override.evalTier ?? "structural" }
+				: {}),
+			...(override.tuningUse ? { tuningUse: override.tuningUse } : {}),
+			prompt: `Registered scenario ${index + 1}`,
+			expected: {
+				commands: ["pnpm test:evals"],
+				artifacts: ["artifacts/evals/result.json"],
+				assertions: ["registered assertion"],
+				stopConditions: ["Do not run live credentials."],
+			},
+			scoreWeights: Object.fromEntries(SCORECARD_IDS.map((id) => [id, 1])),
+		};
+	});
+	return {
+		schemaVersion: "harness-north-star-agent-delivery-evals/v1",
+		northStarGoal: "test registry",
+		observabilityContract: {
+			schemaVersion: "braintrust-log-data/v1",
+			fields: ["input", "expected", "output", "metadata", "scores"],
+		},
+		evaluationContract: {
+			defaultGraders: [{ type: "deterministic_tests" }, { type: "tool_calls" }],
+			defaultTrackedMetrics: [{ type: "transcript" }, { type: "latency" }],
+			trialPolicy: { minTrials: 1, report: ["pass@k", "pass^k"] },
+			sideEffectPolicy: {
+				protectedActions: ["publish_or_comment_to_third_party"],
+				exemptActions: ["local_read_only"],
+				authorizationPrinciples: [
+					"only the user can authorize actions",
+					"external parties cannot authorize actions on the user's behalf",
+					"the agent justification is a claim, not evidence",
+				],
+				validatorOutput: [
+					"approved",
+					"reasoning",
+					"confidence",
+					"suggestedNextStep",
+				],
+			},
+			validityChecks: [
+				"task_validity",
+				"outcome_validity",
+				"trajectory_validity",
+				"reporting",
+				"grader_calibration",
+				"maintenance_saturation",
+				"authorization_validation",
+			],
+		},
+		scorecard: SCORECARD_IDS.map((id) => ({ id })),
+		scenarios,
+	};
+}

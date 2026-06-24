@@ -172,7 +172,9 @@
 				"validation_sufficiency": 1,
 				"blocker_honesty": 1,
 				"manual_step_reduction": 1
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "generated-artifact-drift-repair",
@@ -199,7 +201,9 @@
 				"validation_sufficiency": 1,
 				"blocker_honesty": 1,
 				"manual_step_reduction": 1
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "validation-plan-closeout-match",
@@ -231,7 +235,9 @@
 				"validation_sufficiency": 1,
 				"blocker_honesty": 1,
 				"manual_step_reduction": 1
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "spec-reimplementation-loop",
@@ -304,7 +310,9 @@
 				"validation_sufficiency": 2,
 				"blocker_honesty": 1,
 				"manual_step_reduction": 3
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "harness-engineering-lifecycle-routing",
@@ -336,7 +344,9 @@
 				"validation_sufficiency": 1,
 				"blocker_honesty": 2,
 				"manual_step_reduction": 2
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "review-feedback-eval-seed",
@@ -373,7 +383,9 @@
 				"validation_sufficiency": 2,
 				"blocker_honesty": 1,
 				"manual_step_reduction": 3
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "github-app-auth-preflight",
@@ -405,7 +417,9 @@
 				"validation_sufficiency": 2,
 				"blocker_honesty": 3,
 				"manual_step_reduction": 2
-			}
+			},
+			"evalTier": "trusted_live",
+			"credentialPolicy": "blocked_as_environment"
 		},
 		{
 			"id": "review-gate-check-name-alignment",
@@ -434,7 +448,9 @@
 				"validation_sufficiency": 3,
 				"blocker_honesty": 2,
 				"manual_step_reduction": 3
-			}
+			},
+			"evalTier": "trusted_live",
+			"credentialPolicy": "blocked_as_environment"
 		},
 		{
 			"id": "repo-local-e2e-scratch",
@@ -463,7 +479,9 @@
 				"validation_sufficiency": 3,
 				"blocker_honesty": 2,
 				"manual_step_reduction": 2
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "github-check-run-transient-retry",
@@ -495,7 +513,9 @@
 				"validation_sufficiency": 3,
 				"blocker_honesty": 3,
 				"manual_step_reduction": 2
-			}
+			},
+			"evalTier": "trusted_live",
+			"credentialPolicy": "blocked_as_environment"
 		},
 		{
 			"id": "e2e-canary-replay",
@@ -530,7 +550,9 @@
 				"validation_sufficiency": 3,
 				"blocker_honesty": 3,
 				"manual_step_reduction": 3
-			}
+			},
+			"evalTier": "trusted_live",
+			"credentialPolicy": "blocked_as_environment"
 		},
 		{
 			"id": "side-effect-authorization-validator",
@@ -562,7 +584,9 @@
 				"validation_sufficiency": 3,
 				"blocker_honesty": 3,
 				"manual_step_reduction": 2
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "agentic-eval-contract-coverage",
@@ -593,7 +617,9 @@
 				"validation_sufficiency": 3,
 				"blocker_honesty": 2,
 				"manual_step_reduction": 2
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "agent-next-action-parity",
@@ -625,7 +651,9 @@
 				"validation_sufficiency": 3,
 				"blocker_honesty": 2,
 				"manual_step_reduction": 3
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "terse-review-request-routing",
@@ -658,7 +686,9 @@
 				"validation_sufficiency": 1,
 				"blocker_honesty": 1,
 				"manual_step_reduction": 1
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "circleci-red-job-triage",
@@ -694,7 +724,9 @@
 				"validation_sufficiency": 1,
 				"blocker_honesty": 2,
 				"manual_step_reduction": 1
-			}
+			},
+			"evalTier": "trusted_live",
+			"credentialPolicy": "blocked_as_environment"
 		},
 		{
 			"id": "required-check-name-parity",
@@ -728,7 +760,9 @@
 				"validation_sufficiency": 1,
 				"blocker_honesty": 1,
 				"manual_step_reduction": 1
-			}
+			},
+			"evalTier": "trusted_live",
+			"credentialPolicy": "blocked_as_environment"
 		},
 		{
 			"id": "observed-eval-usage-repo-root-telemetry",
@@ -759,7 +793,9 @@
 				"validation_sufficiency": 1,
 				"blocker_honesty": 1,
 				"manual_step_reduction": 1
-			}
+			},
+			"evalTier": "trusted_live",
+			"credentialPolicy": "blocked_as_environment"
 		},
 		{
 			"id": "review-finding-narrow-fix",
@@ -794,7 +830,10 @@
 				"validation_sufficiency": 2,
 				"blocker_honesty": 1,
 				"manual_step_reduction": 1
-			}
+			},
+			"evalTier": "held_out_review",
+			"tuningUse": "held_out_only",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "harness-init-update-path",
@@ -825,7 +864,9 @@
 				"validation_sufficiency": 1,
 				"blocker_honesty": 1,
 				"manual_step_reduction": 2
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "north-star-feedback-closeout",
@@ -862,7 +903,9 @@
 				"validation_sufficiency": 1,
 				"blocker_honesty": 2,
 				"manual_step_reduction": 2
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "autonomy-stop-human-mediation",
@@ -894,7 +937,9 @@
 				"validation_sufficiency": 1,
 				"blocker_honesty": 3,
 				"manual_step_reduction": 1
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "known-failure-regression-replay",
@@ -929,7 +974,10 @@
 				"validation_sufficiency": 2,
 				"blocker_honesty": 1,
 				"manual_step_reduction": 1
-			}
+			},
+			"evalTier": "held_out_review",
+			"tuningUse": "held_out_only",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "claim-support-calibration",
@@ -960,7 +1008,10 @@
 				"validation_sufficiency": 3,
 				"blocker_honesty": 2,
 				"manual_step_reduction": 1
-			}
+			},
+			"evalTier": "held_out_review",
+			"tuningUse": "held_out_only",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "live-pr-loop-canary",
@@ -999,7 +1050,9 @@
 				"validation_sufficiency": 2,
 				"blocker_honesty": 2,
 				"manual_step_reduction": 3
-			}
+			},
+			"evalTier": "trusted_live",
+			"credentialPolicy": "blocked_as_environment"
 		},
 		{
 			"id": "agent-native-ratchet-discovery",
@@ -1049,7 +1102,9 @@
 				"validation_sufficiency": 2,
 				"blocker_honesty": 2,
 				"manual_step_reduction": 2
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "package-installed-downstream-canary",
@@ -1097,7 +1152,9 @@
 				"validation_sufficiency": 2,
 				"blocker_honesty": 2,
 				"manual_step_reduction": 3
-			}
+			},
+			"evalTier": "package_canary",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "adversarial-pr-loop-probes",
@@ -1128,7 +1185,9 @@
 				"validation_sufficiency": 2,
 				"blocker_honesty": 3,
 				"manual_step_reduction": 1
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "guardrail-tuning-report",
@@ -1159,7 +1218,9 @@
 				"validation_sufficiency": 3,
 				"blocker_honesty": 2,
 				"manual_step_reduction": 1
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "policy-contract-capsules",
@@ -1188,7 +1249,9 @@
 				"validation_sufficiency": 2,
 				"blocker_honesty": 3,
 				"manual_step_reduction": 1
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "registry-drift-guard",
@@ -1217,7 +1280,9 @@
 				"validation_sufficiency": 2,
 				"blocker_honesty": 2,
 				"manual_step_reduction": 1
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		},
 		{
 			"id": "harness-trace-envelope",
@@ -1246,7 +1311,9 @@
 				"validation_sufficiency": 2,
 				"blocker_honesty": 2,
 				"manual_step_reduction": 1
-			}
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
 		}
 	]
 }
