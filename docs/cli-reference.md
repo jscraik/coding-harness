@@ -29,6 +29,9 @@ For repo-facing onboarding and common workflows, start at [`README.md`](../READM
 Use `harness next --json` as the read-only agent cockpit entrypoint. It
 inspects changed files from git by default, emits a `HarnessDecision`, and
 points `nextCommand` at an existing command instead of inventing a new workflow.
+The decision includes `cockpitLane` so operators and agents can branch through
+the five product lanes: `orient`, `prove`, `repair`, `review`, and
+`handoff`.
 
 ```bash
 harness next --json

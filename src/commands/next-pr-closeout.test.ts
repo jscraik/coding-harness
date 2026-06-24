@@ -526,6 +526,7 @@ describe("harness next pr-closeout evidence", () => {
 			const decision = parseDecision(output);
 			expect(decision.status).toBe("pass");
 			expect(decision.nextCommand).toBe("harness check --json");
+			expect(decision.cockpitLane).toBe("handoff");
 			expect(decision.meta).toMatchObject({
 				prCloseout: {
 					artifactPath: "pr-closeout.json",

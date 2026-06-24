@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-21
+last_validated: 2026-06-24
 ---
 
 # Architecture bootstrap
@@ -194,6 +194,12 @@ reads and persisted outputs within `--repo`, and synchronize `AGENTS.md`,
 `docs/agents/00-architecture-bootstrap.md`, and
 `docs/agents/07b-agent-governance.md` when docs-gate reports governance
 surfaces.
+Harness-decision cockpit-lane changes are architecture-adjacent when they alter
+`harness-decision/v1`, `harness next --json`, or the phase-to-lane routing
+model. Keep the runtime schema, typed artifact contract, next-command tests,
+and generated architecture context synchronized, and keep the lane advisory:
+`orient`, `prove`, `repair`, `review`, and `handoff` route operator work
+without proving CI, review-thread state, tracker state, or merge readiness.
 Runtime-card evidence producer changes are architecture-artifact changes because
 they add durable evidence artifacts consumed by the agent cockpit. Refresh
 `AI/context/diagram-context.md` and keep `AGENTS.md`,

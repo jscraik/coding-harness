@@ -23,6 +23,7 @@ function validDecision(
 		nextAction: "Run the focused review-gate tests before broader validation.",
 		nextCommand: "pnpm vitest run src/commands/review-gate.test.ts",
 		phase: "review",
+		cockpitLane: "review",
 		objective: "Run focused review-gate tests before broader validation.",
 		requiredEvidence: ["git:changed-files", "harness.contract.json"],
 		stopConditions: [],
@@ -58,6 +59,14 @@ describe("validateHarnessDecision", () => {
 
 	it("accepts a complete harness-decision/v1 fixture", () => {
 		const result = validateHarnessDecision(validDecision());
+
+		expect(result).toEqual({ valid: true, errors: [] });
+	});
+
+	it("accepts legacy harness-decision/v1 packets without cockpitLane", () => {
+		const { cockpitLane: _cockpitLane, ...legacyDecision } = validDecision();
+
+		const result = validateHarnessDecision(legacyDecision);
 
 		expect(result).toEqual({ valid: true, errors: [] });
 	});
@@ -138,6 +147,7 @@ describe("validateHarnessDecision", () => {
 		const result = validateHarnessDecision({
 			...validDecision(),
 			phase: "wander",
+			cockpitLane: "meander",
 			objective: "",
 			stopConditions: "none",
 			humanEscalation: "",
@@ -148,6 +158,7 @@ describe("validateHarnessDecision", () => {
 		expect(errorCodes(result)).toEqual(
 			expect.arrayContaining([
 				"phase must be one of orient, verify, review, repair, handoff",
+				"cockpitLane must be one of orient, prove, repair, review, handoff",
 				"objective must be a non-empty string",
 				"stopConditions must be a string array",
 				"humanEscalation must be a non-empty string or null",
@@ -326,6 +337,7 @@ describe("buildHarnessDecision", () => {
 			schemaVersion: HARNESS_DECISION_SCHEMA_VERSION,
 			producer: "next",
 			phase: "review",
+			cockpitLane: "review",
 			objective: "Run focused validation.",
 			requiredEvidence: ["input:files"],
 			stopConditions: [],
@@ -356,6 +368,7 @@ describe("buildHarnessDecision", () => {
 		});
 
 		expect(decision.phase).toBe("handoff");
+		expect(decision.cockpitLane).toBe("handoff");
 		expect(validateHarnessDecision(decision)).toEqual({
 			valid: true,
 			errors: [],
@@ -379,6 +392,7 @@ describe("buildHarnessDecision", () => {
 		});
 
 		expect(decision.phase).toBe("orient");
+		expect(decision.cockpitLane).toBe("orient");
 		expect(validateHarnessDecision(decision)).toEqual({
 			valid: true,
 			errors: [],
@@ -402,6 +416,7 @@ describe("buildHarnessDecision", () => {
 		});
 
 		expect(decision.phase).toBe("repair");
+		expect(decision.cockpitLane).toBe("repair");
 		expect(decision.humanEscalation).toBe(
 			"Run harness doctor and retry harness next.",
 		);
@@ -431,6 +446,7 @@ describe("buildHarnessDecision", () => {
 		});
 
 		expect(decision.phase).toBe("repair");
+		expect(decision.cockpitLane).toBe("repair");
 		expect(decision.humanEscalation).toBe("Restore review context inputs.");
 		expect(validateHarnessDecision(decision)).toEqual({
 			valid: true,

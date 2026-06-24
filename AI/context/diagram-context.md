@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-23T23:55:04Z
+Generated: 2026-06-24T01:05:41Z
 
 ## Table of Contents
 
@@ -29,7 +29,10 @@ Generated: 2026-06-23T23:55:04Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `src/lib/cli/registry/agent-native-packet-command-specs.ts`
+- `src/lib/decision/harness-decision-builder.ts`
+- `src/lib/decision/harness-decision-types.ts`
+- `src/lib/decision/harness-decision-validation.ts`
+- `src/lib/decision/harness-decision.ts`
 
 ## agent
 
@@ -514,8 +517,8 @@ classDiagram
   class run_records_core_89286dfa {
     +src/lib/contract/run-records-core.ts
   }
-  class harness_decision_881bdc15 {
-    +src/lib/decision/harness-decision.ts
+  class harness_decision_types_6e63df74 {
+    +src/lib/decision/harness-decision-types.ts
   }
   class he_phase_exit_core_1148895b {
     +src/lib/decision/he-phase-exit-core.ts

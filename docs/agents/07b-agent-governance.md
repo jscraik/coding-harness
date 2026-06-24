@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-21
+last_validated: 2026-06-24
 ---
 
 # Agent governance
@@ -130,6 +130,13 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   surfaces, but they must not become CI, review-thread, tracker, external
   readiness, delivery-truth, or merge-readiness proof without an explicit
   canonical consumer boundary and synchronized governance update
+- `harness-decision/v1` cockpit-lane changes should keep `harness next --json`
+  route metadata synchronized across schema, TypeScript types, Python artifact
+  contracts, focused next tests, generated architecture context, `AGENTS.md`,
+  and `docs/agents/00-architecture-bootstrap.md`. The lane vocabulary
+  (`orient`, `prove`, `repair`, `review`, `handoff`) is guidance for the next
+  operator question and must not become CI, review-thread, tracker,
+  external-readiness, delivery-truth, or merge-readiness proof.
 - runtime-card trace-out changes should keep trace persistence in
   `src/lib/runtime-trace/`, reuse canonical run-record append/manifest
   helpers, constrain `--trace-out` to

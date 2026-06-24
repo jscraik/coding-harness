@@ -161,6 +161,7 @@ class HarnessDecision(BaseModel):
     nextAction: str
     nextCommand: str | None
     phase: Literal["orient", "verify", "review", "repair", "handoff"]
+    cockpitLane: Literal["orient", "prove", "repair", "review", "handoff"] | None = None
     objective: str
     requiredEvidence: list[str]
     stopConditions: list[str]
