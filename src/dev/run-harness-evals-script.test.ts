@@ -269,26 +269,84 @@ describe("run-harness-evals.mjs", () => {
 			]),
 		);
 	});
+
+	it("reports trusted-live credential blockers only for blocked results", () => {
+		mkdirSync(CACHE_ROOT, { recursive: true });
+		const outputRoot = mkdtempSync(join(CACHE_ROOT, "eval-script-test-"));
+		tempRoots.push(outputRoot);
+		const registryPath = join(outputRoot, "registry.json");
+		writeFileSync(
+			registryPath,
+			JSON.stringify(
+				buildRegistry([
+					{
+						id: "trusted-product-regression",
+						type: "live_fixture",
+						evalTier: "trusted_live",
+						credentialPolicy: "blocked_as_environment",
+					},
+				]),
+			),
+		);
+
+		const result = runNodeScript(SCRIPT_PATH, [
+			"--registry",
+			relative(REPO_ROOT, registryPath),
+			"--tier",
+			"trusted_live",
+			"--output",
+			relative(REPO_ROOT, join(outputRoot, "result.json")),
+			"--observability-output",
+			relative(REPO_ROOT, join(outputRoot, "observability.json")),
+			"--fixture-root",
+			relative(REPO_ROOT, join(outputRoot, "fixtures")),
+		]);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			summary: {
+				liveFixtures: number;
+				tiers: {
+					trustedLiveCredentialBlockers: Array<{ id: string }>;
+					trustedLiveProductRegressions: Array<{ id: string }>;
+				};
+			};
+		};
+
+		expect(result.status).toBe(1);
+		expect(report.status).toBe("fail");
+		expect(report.summary.liveFixtures).toBe(1);
+		expect(report.summary.tiers.trustedLiveCredentialBlockers).toEqual([]);
+		expect(report.summary.tiers.trustedLiveProductRegressions).toEqual([
+			expect.objectContaining({ id: "trusted-product-regression" }),
+		]);
+	});
 });
 
 function buildRegistry(
 	overrides: Array<{
 		id?: string;
+		type?: "registered" | "live_fixture";
 		evalTier?: string;
+		credentialPolicy?: "blocked_as_environment" | "none_required";
 		tuningUse?: string;
 	}>,
 ) {
 	const scenarios = Array.from({ length: 10 }, (_, index) => {
 		const override: {
 			id?: string;
+			type?: "registered" | "live_fixture";
 			evalTier?: string;
+			credentialPolicy?: "blocked_as_environment" | "none_required";
 			tuningUse?: string;
 		} = overrides[index] ?? {};
 		return {
 			id: override.id ?? `scenario-${index + 1}`,
-			type: "registered",
+			type: override.type ?? "registered",
 			...(override.evalTier || index > 0
 				? { evalTier: override.evalTier ?? "structural" }
+				: {}),
+			...(override.credentialPolicy
+				? { credentialPolicy: override.credentialPolicy }
 				: {}),
 			...(override.tuningUse ? { tuningUse: override.tuningUse } : {}),
 			prompt: `Registered scenario ${index + 1}`,

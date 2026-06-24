@@ -6558,7 +6558,10 @@ function summarizeTierOutcomes(selectedScenarios, results) {
 			byTier[tier].failed += 1;
 		}
 		if (tier !== "trusted_live") continue;
-		if (scenario.credentialPolicy === "blocked_as_environment") {
+		if (
+			scenario.credentialPolicy === "blocked_as_environment" &&
+			status === "blocked"
+		) {
 			trustedLiveCredentialBlockers.push({
 				id: scenario.id,
 				status,
