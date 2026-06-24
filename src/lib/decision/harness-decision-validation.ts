@@ -284,12 +284,14 @@ function validateDecisionFields(
 	validateString(value.nextAction, "nextAction", errors);
 	validateNullableString(value.nextCommand, "nextCommand", errors);
 	validateEnum(value.phase, "phase", VALID_HARNESS_DECISION_PHASES, errors);
-	validateEnum(
-		value.cockpitLane,
-		"cockpitLane",
-		VALID_HARNESS_DECISION_COCKPIT_LANES,
-		errors,
-	);
+	if (value.cockpitLane !== undefined) {
+		validateEnum(
+			value.cockpitLane,
+			"cockpitLane",
+			VALID_HARNESS_DECISION_COCKPIT_LANES,
+			errors,
+		);
+	}
 	validateString(value.objective, "objective", errors);
 	validateNullableString(value.humanEscalation, "humanEscalation", errors);
 	validateNullableString(value.failureClass, "failureClass", errors);

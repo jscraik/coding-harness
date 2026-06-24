@@ -12,7 +12,6 @@
 		"nextAction",
 		"nextCommand",
 		"phase",
-		"cockpitLane",
 		"objective",
 		"requiredEvidence",
 		"stopConditions",

@@ -63,6 +63,14 @@ describe("validateHarnessDecision", () => {
 		expect(result).toEqual({ valid: true, errors: [] });
 	});
 
+	it("accepts legacy harness-decision/v1 packets without cockpitLane", () => {
+		const { cockpitLane: _cockpitLane, ...legacyDecision } = validDecision();
+
+		const result = validateHarnessDecision(legacyDecision);
+
+		expect(result).toEqual({ valid: true, errors: [] });
+	});
+
 	it("narrows valid decisions with the type guard", () => {
 		const candidate: unknown = validDecision({ status: "pass" });
 

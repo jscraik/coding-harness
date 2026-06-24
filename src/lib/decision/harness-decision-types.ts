@@ -130,8 +130,8 @@ export interface HarnessDecision {
 	nextCommand: string | null;
 	/** Agent work phase for the recommendation. */
 	phase: HarnessDecisionPhase;
-	/** Product cockpit lane for guided operator routing. */
-	cockpitLane: HarnessDecisionCockpitLane;
+	/** Product cockpit lane for guided operator routing. New producers emit this; legacy v1 packets may omit it. */
+	cockpitLane?: HarnessDecisionCockpitLane;
 	/** Plain-language outcome the agent is trying to complete. */
 	objective: string;
 	/** Evidence artifacts, checks, or refs needed before closeout. */
