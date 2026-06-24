@@ -32,6 +32,10 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 				id: string;
 				status: string;
 				command: string;
+				nativeAuthority: string;
+				sourceKind: string;
+				mayClaim: string[];
+				mustNotClaim: string[];
 				evidencePaths: string[];
 				claimBoundary: string;
 			}>;
@@ -54,10 +58,27 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 			report.ratchets.every(
 				(ratchet) =>
 					ratchet.command.length > 0 &&
+					ratchet.nativeAuthority === "harness" &&
+					ratchet.mayClaim.length > 0 &&
+					ratchet.mustNotClaim.includes("codex_context_current") &&
+					ratchet.mustNotClaim.includes("codex_session_truth") &&
+					ratchet.mustNotClaim.includes("connector_snapshot_current") &&
+					ratchet.mustNotClaim.includes("sidecar_export_current") &&
+					ratchet.mustNotClaim.includes("merge_ready") &&
+					!ratchet.mayClaim.some((claim) =>
+						ratchet.mustNotClaim.includes(claim),
+					) &&
 					ratchet.evidencePaths.length > 0 &&
 					ratchet.claimBoundary.length > 0,
 			),
 		).toBe(true);
+		expect(report.ratchets.map((ratchet) => ratchet.sourceKind)).toEqual([
+			"repo_contract",
+			"repo_worktree",
+			"repo_artifact",
+			"repo_artifact",
+			"repo_artifact",
+		]);
 	});
 
 	it("emits aggregate ratchets in downstream repos without source package scripts", () => {
@@ -103,6 +124,10 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 			headSha: string;
 			worktreeStatus: string;
 			changedFileCount: number;
+			nativeAuthority: string;
+			sourceKind: string;
+			mayClaim: string[];
+			mustNotClaim: string[];
 			evidenceLanes: Array<{ id: string; status: string }>;
 			nextCommands: string[];
 			nonClaims: string[];
@@ -116,6 +141,28 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		expect(report.headSha.length).toBeGreaterThan(0);
 		expect(["clean", "dirty"]).toContain(report.worktreeStatus);
 		expect(report.changedFileCount).toBeGreaterThanOrEqual(0);
+		expect(report.nativeAuthority).toBe("harness");
+		expect(report.sourceKind).toBe("repo_worktree");
+		expect(report.mayClaim).toEqual([
+			"repo_handoff_orientation",
+			"worktree_changed_files",
+		]);
+		expect(report.mustNotClaim).toEqual(
+			expect.arrayContaining([
+				"codex_context_current",
+				"codex_session_truth",
+				"connector_snapshot_current",
+				"sidecar_export_current",
+				"ci_passed",
+				"review_threads_resolved",
+				"tracker_closed",
+				"merge_ready",
+				"validation_passed",
+			]),
+		);
+		expect(
+			report.mayClaim.some((claim) => report.mustNotClaim.includes(claim)),
+		).toBe(false);
 		expect(report.evidenceLanes.map((lane) => lane.id)).toEqual([
 			"worktree",
 			"policy_route",
@@ -128,6 +175,8 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 			"harness prompt-context-drift:validate",
 		);
 		expect(report.nonClaims).toContain("merge_ready");
+		expect(report.nonClaims).toContain("review_threads_resolved");
+		expect(report.nonClaims).not.toContain("review_resolved");
 		expect(report.claimBoundary).toContain("not validation");
 	});
 
@@ -281,6 +330,10 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		expect(reworkResult.status).toBe(0);
 		const rework = JSON.parse(reworkResult.stdout) as {
 			schemaVersion: string;
+			nativeAuthority: string;
+			sourceKind: string;
+			mayClaim: string[];
+			mustNotClaim: string[];
 			latestRun: { status: string };
 			retryDecisions: string[];
 		};
@@ -289,6 +342,10 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		const reviewer = JSON.parse(reviewerResult.stdout) as {
 			schemaVersion: string;
 			command: string;
+			nativeAuthority: string;
+			sourceKind: string;
+			mayClaim: string[];
+			mustNotClaim: string[];
 			decision: string;
 			outcomes: string[];
 		};
@@ -297,21 +354,70 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		const governance = JSON.parse(governanceResult.stdout) as {
 			schemaVersion: string;
 			classes: string[];
+			nativeAuthority: string;
+			sourceKind: string;
+			mayClaim: string[];
+			mustNotClaim: string[];
 			documentsAnalyzed: number;
 			classCounts: { feeds_runtime_decision: number };
 			decisionInputs: Array<{ path: string; classes: string[] }>;
 		};
 
 		expect(rework.schemaVersion).toBe("agent-rework/v1");
+		expect(rework.nativeAuthority).toBe("harness");
+		expect(rework.sourceKind).toBe("repo_artifact");
+		expect(rework.mayClaim).toEqual(["local_recovery_state"]);
+		expect(rework.mustNotClaim).toEqual(
+			expect.arrayContaining([
+				"codex_context_current",
+				"codex_session_truth",
+				"connector_snapshot_current",
+				"sidecar_export_current",
+				"ci_passed",
+				"review_threads_resolved",
+				"tracker_closed",
+				"merge_ready",
+			]),
+		);
 		expect(["available", "unavailable"]).toContain(rework.latestRun.status);
 		expect(rework.retryDecisions).toContain("retry");
 		expect(reviewer.schemaVersion).toBe("reviewer-decision/v1");
+		expect(reviewer.nativeAuthority).toBe("harness");
+		expect(reviewer.sourceKind).toBe("repo_artifact");
+		expect(reviewer.mayClaim).toEqual(["review_lane_decision"]);
+		expect(reviewer.mustNotClaim).toEqual(
+			expect.arrayContaining([
+				"codex_context_current",
+				"codex_session_truth",
+				"connector_snapshot_current",
+				"sidecar_export_current",
+				"ci_passed",
+				"review_threads_resolved",
+				"tracker_closed",
+				"merge_ready",
+			]),
+		);
 		expect(reviewer.command).toBe(
 			"harness reviewer-decision --manifest <manifest> --reviews-dir artifacts/reviews --json",
 		);
 		expect(reviewer.decision).toBe("needs_evidence");
 		expect(reviewer.outcomes).toContain("needs_evidence");
 		expect(governance.schemaVersion).toBe("governance-decision-surface/v1");
+		expect(governance.nativeAuthority).toBe("harness");
+		expect(governance.sourceKind).toBe("repo_artifact");
+		expect(governance.mayClaim).toEqual(["governance_routing"]);
+		expect(governance.mustNotClaim).toEqual(
+			expect.arrayContaining([
+				"codex_context_current",
+				"codex_session_truth",
+				"connector_snapshot_current",
+				"sidecar_export_current",
+				"ci_passed",
+				"review_threads_resolved",
+				"tracker_closed",
+				"merge_ready",
+			]),
+		);
 		expect(governance.classes).toContain("feeds_runtime_decision");
 		expect(governance.documentsAnalyzed).toBeGreaterThan(0);
 		expect(governance.classCounts.feeds_runtime_decision).toBeGreaterThan(0);
