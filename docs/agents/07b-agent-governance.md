@@ -130,6 +130,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   surfaces, but they must not become CI, review-thread, tracker, external
   readiness, delivery-truth, or merge-readiness proof without an explicit
   canonical consumer boundary and synchronized governance update
+- review-feedback eval-seed classifiers are advisory agent-native feedback
+  surfaces when they turn raw review comments into current, stale, unmapped, or
+  unsafe candidate evidence; they must keep generated seeds separate from
+  production traces and preserve review-thread truth as an external evidence
+  lane
 - `harness-decision/v1` cockpit-lane changes should keep `harness next --json`
   route metadata synchronized across schema, TypeScript types, Python artifact
   contracts, focused next tests, generated architecture context, `AGENTS.md`,

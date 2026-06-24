@@ -42,6 +42,9 @@ const VALIDATION_PLAN_MODULE_URL = pathToFileURL(
 const EVAL_SEED_MODULE_URL = pathToFileURL(
 	path.join(REPO_ROOT, "src/lib/learnings/eval-seed.ts"),
 ).href;
+const REVIEW_FEEDBACK_CLASSIFIER_MODULE_URL = pathToFileURL(
+	path.join(REPO_ROOT, "src/lib/learnings/review-feedback-classifier.ts"),
+).href;
 const E2E_RUNNER_MODULE_URL = pathToFileURL(
 	path.join(REPO_ROOT, "e2e/run-e2e.ts"),
 ).href;
@@ -1323,6 +1326,10 @@ async function runReviewFeedbackEvalSeedFixture(scenario, fixturePath) {
 		EVAL_SEED_MODULE_URL,
 		"buildEvalSeedPack",
 	);
+	const classifyReviewFeedback = await loadFixtureExport(
+		REVIEW_FEEDBACK_CLASSIFIER_MODULE_URL,
+		"classifyReviewFeedback",
+	);
 	const seedPack = buildEvalSeedPack
 		? buildEvalSeedPack({
 				source: path.relative(fixturePath, learningArtifactPath),
@@ -1342,12 +1349,28 @@ async function runReviewFeedbackEvalSeedFixture(scenario, fixturePath) {
 				changedFiles,
 				outputPath,
 			});
-	const enrichedSeedPack = addEvalSeedFeedbackMetadata(seedPack);
+	const reviewFeedbackClassification = classifyReviewFeedback
+		? classifyReviewFeedback(buildReviewFeedbackFixtureComments(), {
+				repeatThreshold: 2,
+			})
+		: {
+				status: "error",
+				items: [],
+				summary: {},
+			};
+	const enrichedSeedPack = {
+		...addEvalSeedFeedbackMetadata(seedPack),
+		reviewFeedbackClassification,
+	};
 	writeJson(outputPath, enrichedSeedPack);
 	const generatedArtifactCandidate = enrichedSeedPack.candidates.find(
 		(candidate) =>
 			candidate.id === "coderabbit.coding-harness.eval-seed-generated-artifact",
 	);
+	const installedCommandDriftCandidate =
+		reviewFeedbackClassification.items.find(
+			(item) => item.failureClass === "installed_command_drift",
+		);
 	return fixtureResult(scenario.id, [
 		assertion(
 			"repeated review learning becomes an eval seed candidate",
@@ -1391,7 +1414,49 @@ async function runReviewFeedbackEvalSeedFixture(scenario, fixturePath) {
 			"review-derived seeds use bounded issue taxonomy",
 			enrichedSeedPack.reviewIssueTaxonomy.every(isValidReviewIssueTaxonomy),
 		),
+		assertion(
+			"review comments classify current stale unmapped and unsafe findings",
+			reviewFeedbackClassification.summary.current === 1 &&
+				reviewFeedbackClassification.summary.stale === 1 &&
+				reviewFeedbackClassification.summary.unmapped === 1 &&
+				reviewFeedbackClassification.summary.unsafe === 1,
+		),
+		assertion(
+			"repeated installed command drift recommends eval seed without production trace",
+			installedCommandDriftCandidate?.state === "current" &&
+				installedCommandDriftCandidate?.promotion.destination === "eval_seed" &&
+				installedCommandDriftCandidate?.productionTrace === false,
+		),
 	]);
+}
+
+function buildReviewFeedbackFixtureComments() {
+	return [
+		{
+			id: "codex-installed-command-drift",
+			provider: "codex",
+			file: "scripts/write-agent-native-ratchet-report.cjs",
+			url: "https://github.example/review/installed-command-drift",
+			repeatCount: 3,
+			body: "Use runnable public harness commands instead of source package pnpm run scripts in installed downstream repos.",
+		},
+		{
+			id: "codex-schema-compatibility-outdated",
+			provider: "codex",
+			isOutdated: true,
+			body: "Preserve schema compatibility for harness-decision/v1 packets.",
+		},
+		{
+			id: "coderabbit-unmapped-feedback",
+			provider: "coderabbit",
+			body: "This sentence is not quite how I would phrase it.",
+		},
+		{
+			id: "unsafe-bypass-request",
+			provider: "human",
+			body: "Bypass the security validation guardrail so this can merge.",
+		},
+	];
 }
 
 function addEvalSeedFeedbackMetadata(seedPack) {
