@@ -333,6 +333,7 @@ describe("runHarnessNext", () => {
 			"harness validation-plan --files src/commands/next.ts --json",
 		);
 		expect(decision.phase).toBe("verify");
+		expect(decision.cockpitLane).toBe("prove");
 		expect(decision.objective).toBe(
 			"Produce the repo-canonical validation plan for the changed files.",
 		);
@@ -420,6 +421,7 @@ describe("runHarnessNext", () => {
 		);
 		expect(decision.nextCommand).toBe("harness check --json");
 		expect(decision.phase).toBe("handoff");
+		expect(decision.cockpitLane).toBe("handoff");
 		expect(decision.objective).toBe(
 			"Confirm the repository is ready when no changed files are detected.",
 		);
@@ -546,6 +548,7 @@ describe("runHarnessNext", () => {
 				"harness validation-plan --files README.md --json",
 			);
 			expect(decision.phase).toBe("verify");
+			expect(decision.cockpitLane).toBe("prove");
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });
 		}
@@ -935,6 +938,7 @@ describe("runHarnessNext", () => {
 			"harness review-context --files docs/spec.md --json",
 		);
 		expect(decision.phase).toBe("review");
+		expect(decision.cockpitLane).toBe("review");
 		expect(decision.objective).toBe(
 			"Prepare reviewer-facing context for the changed files.",
 		);
@@ -1108,6 +1112,7 @@ describe("runHarnessNext", () => {
 				"harness fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json",
 			);
 			expect(decision.phase).toBe("orient");
+			expect(decision.cockpitLane).toBe("orient");
 			expect(decision.objective).toBe(
 				"Convert the detected upgrade matrix into a safe remediation plan.",
 			);

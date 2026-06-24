@@ -6,6 +6,7 @@
 	"nextAction": "Run the focused review-gate tests before broader validation.",
 	"nextCommand": "pnpm vitest run src/commands/review-gate.test.ts",
 	"phase": "review",
+	"cockpitLane": "review",
 	"objective": "Run focused review-gate tests before broader validation.",
 	"requiredEvidence": ["git:changed-files", "harness.contract.json"],
 	"stopConditions": [],

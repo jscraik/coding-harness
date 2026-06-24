@@ -109,6 +109,7 @@ function validHarnessDecision(
 		nextAction: "Run the focused route-decision tests.",
 		nextCommand: "pnpm test src/lib/decision/route-decision.test.ts",
 		phase: "review",
+		cockpitLane: "review",
 		objective: "Prove route metadata remains advisory.",
 		requiredEvidence: ["src/lib/decision/route-decision.test.ts"],
 		stopConditions: [],

@@ -125,6 +125,12 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   independence. Keep CI, review threads, tracker state, external readiness, and
   merge readiness separate until a canonical consumer explicitly joins those
   lanes.
+- `harness-decision/v1` cockpit lanes are advisory route metadata for
+  `harness next --json`, not delivery truth. Keep `cockpitLane` synchronized
+  across schema, TypeScript types, Python artifact contracts, next-decision
+  tests, generated architecture context, and operator docs; `orient`, `prove`,
+  `repair`, `review`, and `handoff` must route operator work without collapsing
+  CI, review-thread, tracker, external-readiness, or merge-readiness claims.
 - PR closeout handoff evidence must stay claim/evidence driven. `harness next
   --pr-closeout <path>` may consume only validated `pr-closeout/v1` artifacts
   and must fail closed into repair guidance when required evidence is missing,

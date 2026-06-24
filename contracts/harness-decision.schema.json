@@ -12,6 +12,7 @@
 		"nextAction",
 		"nextCommand",
 		"phase",
+		"cockpitLane",
 		"objective",
 		"requiredEvidence",
 		"stopConditions",
@@ -52,6 +53,9 @@
 		},
 		"phase": {
 			"enum": ["orient", "verify", "review", "repair", "handoff"]
+		},
+		"cockpitLane": {
+			"enum": ["orient", "prove", "repair", "review", "handoff"]
 		},
 		"objective": {
 			"type": "string",
