@@ -28,6 +28,9 @@
 							"properties": {
 								"id": {
 									"const": "orientation_packet"
+								},
+								"sourceKind": {
+									"const": "repo_contract"
 								}
 							}
 						}
@@ -44,6 +47,9 @@
 							"properties": {
 								"id": {
 									"const": "session_distillation"
+								},
+								"sourceKind": {
+									"const": "repo_worktree"
 								}
 							}
 						}
@@ -60,6 +66,9 @@
 							"properties": {
 								"id": {
 									"const": "agent_rework_loop"
+								},
+								"sourceKind": {
+									"const": "repo_artifact"
 								}
 							}
 						}
@@ -76,6 +85,9 @@
 							"properties": {
 								"id": {
 									"const": "reviewer_decision_contract"
+								},
+								"sourceKind": {
+									"const": "repo_artifact"
 								}
 							}
 						}
@@ -92,6 +104,9 @@
 							"properties": {
 								"id": {
 									"const": "governance_decision_surface"
+								},
+								"sourceKind": {
+									"const": "repo_artifact"
 								}
 							}
 						}
@@ -137,7 +152,7 @@
 					"pattern": "\\S"
 				},
 				"nativeAuthority": {
-					"enum": ["harness", "codex", "connector", "sidecar"]
+					"const": "harness"
 				},
 				"sourceKind": {
 					"enum": [
@@ -154,9 +169,7 @@
 					"minItems": 1,
 					"uniqueItems": true,
 					"items": {
-						"type": "string",
-						"minLength": 1,
-						"pattern": "\\S"
+						"$ref": "#/$defs/claimToken"
 					}
 				},
 				"mustNotClaim": {
@@ -164,9 +177,7 @@
 					"minItems": 1,
 					"uniqueItems": true,
 					"items": {
-						"type": "string",
-						"minLength": 1,
-						"pattern": "\\S"
+						"$ref": "#/$defs/claimToken"
 					}
 				},
 				"evidencePaths": {
@@ -189,6 +200,26 @@
 					"pattern": "\\S"
 				}
 			}
+		},
+		"claimToken": {
+			"enum": [
+				"ci_passed",
+				"codex_context_current",
+				"codex_session_truth",
+				"connector_snapshot_current",
+				"governance_routing",
+				"local_recovery_state",
+				"merge_ready",
+				"policy_route",
+				"repo_handoff_orientation",
+				"repo_orientation",
+				"review_lane_decision",
+				"review_threads_resolved",
+				"sidecar_export_current",
+				"tracker_closed",
+				"validation_passed",
+				"worktree_changed_files"
+			]
 		}
 	}
 }

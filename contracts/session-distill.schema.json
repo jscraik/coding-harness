@@ -51,7 +51,7 @@
 			"minimum": 0
 		},
 		"nativeAuthority": {
-			"enum": ["harness", "codex", "connector", "sidecar"]
+			"const": "harness"
 		},
 		"sourceKind": {
 			"enum": [
@@ -68,8 +68,7 @@
 			"minItems": 1,
 			"uniqueItems": true,
 			"items": {
-				"type": "string",
-				"minLength": 1
+				"$ref": "#/$defs/claimToken"
 			}
 		},
 		"mustNotClaim": {
@@ -77,8 +76,7 @@
 			"minItems": 1,
 			"uniqueItems": true,
 			"items": {
-				"type": "string",
-				"minLength": 1
+				"$ref": "#/$defs/claimToken"
 			}
 		},
 		"evidenceLanes": {
@@ -100,8 +98,7 @@
 			"type": "array",
 			"minItems": 1,
 			"items": {
-				"type": "string",
-				"minLength": 1
+				"$ref": "#/$defs/claimToken"
 			}
 		},
 		"claimBoundary": {
@@ -110,6 +107,21 @@
 		}
 	},
 	"$defs": {
+		"claimToken": {
+			"enum": [
+				"ci_passed",
+				"codex_context_current",
+				"codex_session_truth",
+				"connector_snapshot_current",
+				"merge_ready",
+				"repo_handoff_orientation",
+				"review_threads_resolved",
+				"sidecar_export_current",
+				"tracker_closed",
+				"validation_passed",
+				"worktree_changed_files"
+			]
+		},
 		"evidenceLane": {
 			"type": "object",
 			"additionalProperties": false,

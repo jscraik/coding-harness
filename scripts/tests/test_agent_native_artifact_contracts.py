@@ -138,6 +138,14 @@ class TestAgentNativeRatchetsReport:
         with pytest.raises(ValidationError, match="cross-authority claims"):
             AgentNativeRatchetsReport.model_validate(payload)
 
+    def test_rejects_unknown_claim_tokens(self) -> None:
+        payload = deepcopy(_load_example("agent-native-ratchets.example.json"))
+        ratchets = cast(list[dict[str, Any]], payload["ratchets"])
+        ratchets[0]["mayClaim"] = ["repo_orientation", "review_resolved"]
+
+        with pytest.raises(ValidationError, match="unknown claim token"):
+            AgentNativeRatchetsReport.model_validate(payload)
+
     def test_rejects_harness_ratchet_with_wrong_source_kind(self) -> None:
         payload = deepcopy(_load_example("agent-native-ratchets.example.json"))
         ratchets = cast(list[dict[str, Any]], payload["ratchets"])

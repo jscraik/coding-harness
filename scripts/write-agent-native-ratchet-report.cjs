@@ -443,7 +443,7 @@ function buildSessionDistillReport() {
 		],
 		nonClaims: [
 			"ci_passed",
-			"review_resolved",
+			"review_threads_resolved",
 			"tracker_closed",
 			"merge_ready",
 			"validation_passed",

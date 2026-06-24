@@ -40,7 +40,7 @@
 			}
 		},
 		"nativeAuthority": {
-			"enum": ["harness", "codex", "connector", "sidecar"]
+			"const": "harness"
 		},
 		"sourceKind": {
 			"enum": [
@@ -57,8 +57,7 @@
 			"minItems": 1,
 			"uniqueItems": true,
 			"items": {
-				"type": "string",
-				"minLength": 1
+				"$ref": "#/$defs/claimToken"
 			}
 		},
 		"mustNotClaim": {
@@ -66,8 +65,7 @@
 			"minItems": 1,
 			"uniqueItems": true,
 			"items": {
-				"type": "string",
-				"minLength": 1
+				"$ref": "#/$defs/claimToken"
 			}
 		},
 		"documentsAnalyzed": {
@@ -107,6 +105,19 @@
 		}
 	},
 	"$defs": {
+		"claimToken": {
+			"enum": [
+				"ci_passed",
+				"codex_context_current",
+				"codex_session_truth",
+				"connector_snapshot_current",
+				"governance_routing",
+				"merge_ready",
+				"review_threads_resolved",
+				"sidecar_export_current",
+				"tracker_closed"
+			]
+		},
 		"classCounts": {
 			"type": "object",
 			"additionalProperties": false,

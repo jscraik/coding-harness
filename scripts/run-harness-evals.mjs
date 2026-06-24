@@ -5782,6 +5782,12 @@ async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {
 				normalizeArray(commandReports.session.nonClaims).includes(
 					"merge_ready",
 				) &&
+				normalizeArray(commandReports.session.nonClaims).includes(
+					"review_threads_resolved",
+				) &&
+				!normalizeArray(commandReports.session.nonClaims).includes(
+					"review_resolved",
+				) &&
 				commandReports.session.claimBoundary ===
 					"session-distill/v1 orients resumed agents; it is not validation, CI, review, tracker, or merge readiness proof." &&
 				commandReports.reviewer.claimBoundary ===
@@ -5814,14 +5820,43 @@ function allHarnessNativeBoundaries(packets) {
 	return packets.every((packet) => {
 		const mayClaim = normalizeArray(packet?.mayClaim);
 		const mustNotClaim = normalizeArray(packet?.mustNotClaim);
+		const expectedSourceKind = expectedNativeSourceKind(packet);
+		const requiredForbiddenClaims =
+			packet?.schemaVersion === "session-distill/v1" ||
+			packet?.id === "session_distillation"
+				? [...forbiddenClaims, "validation_passed"]
+				: forbiddenClaims;
 		return (
 			packet?.nativeAuthority === "harness" &&
-			typeof packet?.sourceKind === "string" &&
+			expectedSourceKind !== null &&
+			packet?.sourceKind === expectedSourceKind &&
 			mayClaim.length > 0 &&
-			forbiddenClaims.every((claim) => mustNotClaim.includes(claim)) &&
+			requiredForbiddenClaims.every((claim) => mustNotClaim.includes(claim)) &&
 			!mayClaim.some((claim) => mustNotClaim.includes(claim))
 		);
 	});
+}
+
+function expectedNativeSourceKind(packet) {
+	if (!packet || typeof packet !== "object") return null;
+	if (packet.id === "orientation_packet") return "repo_contract";
+	if (packet.id === "session_distillation") return "repo_worktree";
+	if (
+		packet.id === "agent_rework_loop" ||
+		packet.id === "reviewer_decision_contract" ||
+		packet.id === "governance_decision_surface"
+	) {
+		return "repo_artifact";
+	}
+	if (packet.schemaVersion === "session-distill/v1") return "repo_worktree";
+	if (
+		packet.schemaVersion === "agent-rework/v1" ||
+		packet.schemaVersion === "reviewer-decision/v1" ||
+		packet.schemaVersion === "governance-decision-surface/v1"
+	) {
+		return "repo_artifact";
+	}
+	return null;
 }
 
 function runRatchetPacketCommand(argsOrOptions) {

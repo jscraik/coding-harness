@@ -60,6 +60,16 @@ FORBIDDEN_HARNESS_CLAIMS = {
     "tracker_closed",
     "merge_ready",
 }
+ALLOWED_AGENT_NATIVE_CLAIMS = FORBIDDEN_HARNESS_CLAIMS | {
+    "governance_routing",
+    "local_recovery_state",
+    "policy_route",
+    "repo_handoff_orientation",
+    "repo_orientation",
+    "review_lane_decision",
+    "validation_passed",
+    "worktree_changed_files",
+}
 
 
 def reject_blank_string(value: str) -> str:
@@ -111,6 +121,14 @@ def require_harness_native_boundary(
         raise ValueError("agent-native packet must remain harness-native")
     if source_kind != expected_source_kind:
         raise ValueError(f"agent-native packet must use {expected_source_kind} sourceKind")
+    unknown_claims = sorted(
+        (set(may_claim) | set(must_not_claim)).difference(ALLOWED_AGENT_NATIVE_CLAIMS)
+    )
+    if unknown_claims:
+        raise ValueError(
+            "agent-native packet uses unknown claim token: "
+            + ", ".join(unknown_claims)
+        )
     forbidden_claims = FORBIDDEN_HARNESS_CLAIMS | (extra_forbidden_claims or set())
     missing = sorted(forbidden_claims.difference(must_not_claim))
     if missing:

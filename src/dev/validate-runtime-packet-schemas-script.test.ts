@@ -229,6 +229,38 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		);
 	});
 
+	it("rejects unknown agent-native claim tokens at the schema boundary", () => {
+		const root = createTempRoot("agent-native-unknown-claim-");
+		const packet = readJson(
+			"contracts/examples/agent-native-ratchets.example.json",
+		) as Record<string, unknown>;
+		const ratchets = packet.ratchets as Array<Record<string, unknown>>;
+		packet.ratchets = [
+			{
+				...ratchets[0],
+				mayClaim: ["repo_orientation", "review_resolved"],
+			},
+			...ratchets.slice(1),
+		];
+		const packetPath = join(root, "agent-native-unknown-claim.json");
+		writeFileSync(packetPath, JSON.stringify(packet, null, 2));
+		const manifestPath = manifestWithEntryPatch(
+			"agent-native-ratchets/v1",
+			(entry) => ({
+				...entry,
+				examplePath: packetPath,
+			}),
+		);
+
+		const result = runValidator(["--manifest", manifestPath]);
+		const report = JSON.parse(result.stdout) as { errors: string[] };
+
+		expect(result.status).toBe(1);
+		expect(report.errors.join("\n")).toContain(
+			"mayClaim[1] must be one of schema enum values",
+		);
+	});
+
 	it("keeps ReplayPacket/v1 examples aligned with the TypeScript validator", () => {
 		const packet = readJson("contracts/examples/replay-packet.example.json");
 

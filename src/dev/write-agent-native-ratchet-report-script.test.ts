@@ -175,6 +175,8 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 			"harness prompt-context-drift:validate",
 		);
 		expect(report.nonClaims).toContain("merge_ready");
+		expect(report.nonClaims).toContain("review_threads_resolved");
+		expect(report.nonClaims).not.toContain("review_resolved");
 		expect(report.claimBoundary).toContain("not validation");
 	});
 
