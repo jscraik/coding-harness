@@ -179,6 +179,40 @@ describe("run-harness-evals.mjs", () => {
 		);
 	});
 
+	it("fails with a structured finding for an unknown eval tier", () => {
+		mkdirSync(CACHE_ROOT, { recursive: true });
+		const outputRoot = mkdtempSync(join(CACHE_ROOT, "eval-script-test-"));
+		tempRoots.push(outputRoot);
+
+		const result = runNodeScript(SCRIPT_PATH, [
+			"--tier",
+			"customer-live",
+			"--output",
+			relative(REPO_ROOT, join(outputRoot, "result.json")),
+			"--observability-output",
+			relative(REPO_ROOT, join(outputRoot, "observability.json")),
+			"--fixture-root",
+			relative(REPO_ROOT, join(outputRoot, "fixtures")),
+		]);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			findings: Array<{ id: string; message: string }>;
+			summary: { liveFixtures: number };
+		};
+
+		expect(result.status).toBe(1);
+		expect(report.status).toBe("fail");
+		expect(report.summary.liveFixtures).toBe(0);
+		expect(report.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "args.tier",
+					message: expect.stringContaining("customer-live"),
+				}),
+			]),
+		);
+	});
+
 	it("filters registered scenarios by eval tier", () => {
 		mkdirSync(CACHE_ROOT, { recursive: true });
 		const outputRoot = mkdtempSync(join(CACHE_ROOT, "eval-script-test-"));
@@ -270,6 +304,46 @@ describe("run-harness-evals.mjs", () => {
 		);
 	});
 
+	it("requires every scenario to declare a supported credential policy", () => {
+		mkdirSync(CACHE_ROOT, { recursive: true });
+		const outputRoot = mkdtempSync(join(CACHE_ROOT, "eval-script-test-"));
+		tempRoots.push(outputRoot);
+		const registryPath = join(outputRoot, "registry.json");
+		const registry = buildRegistry([
+			{
+				id: "invalid-credential-policy",
+				credentialPolicy: "source_checkout_only",
+			},
+		]);
+		writeFileSync(registryPath, JSON.stringify(registry));
+
+		const result = runNodeScript(SCRIPT_PATH, [
+			"--registry",
+			relative(REPO_ROOT, registryPath),
+			"--output",
+			relative(REPO_ROOT, join(outputRoot, "result.json")),
+			"--observability-output",
+			relative(REPO_ROOT, join(outputRoot, "observability.json")),
+			"--fixture-root",
+			relative(REPO_ROOT, join(outputRoot, "fixtures")),
+		]);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			findings: Array<{ id: string; message: string }>;
+		};
+
+		expect(result.status).toBe(1);
+		expect(report.status).toBe("fail");
+		expect(report.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "scenario.credentialPolicy",
+					message: expect.stringContaining("invalid-credential-policy"),
+				}),
+			]),
+		);
+	});
+
 	it("reports trusted-live credential blockers only for blocked results", () => {
 		mkdirSync(CACHE_ROOT, { recursive: true });
 		const outputRoot = mkdtempSync(join(CACHE_ROOT, "eval-script-test-"));
@@ -327,7 +401,7 @@ function buildRegistry(
 		id?: string;
 		type?: "registered" | "live_fixture";
 		evalTier?: string;
-		credentialPolicy?: "blocked_as_environment" | "none_required";
+		credentialPolicy?: string;
 		tuningUse?: string;
 	}>,
 ) {
@@ -336,7 +410,7 @@ function buildRegistry(
 			id?: string;
 			type?: "registered" | "live_fixture";
 			evalTier?: string;
-			credentialPolicy?: "blocked_as_environment" | "none_required";
+			credentialPolicy?: string;
 			tuningUse?: string;
 		} = overrides[index] ?? {};
 		return {
@@ -345,9 +419,7 @@ function buildRegistry(
 			...(override.evalTier || index > 0
 				? { evalTier: override.evalTier ?? "structural" }
 				: {}),
-			...(override.credentialPolicy
-				? { credentialPolicy: override.credentialPolicy }
-				: {}),
+			credentialPolicy: override.credentialPolicy ?? "none_required",
 			...(override.tuningUse ? { tuningUse: override.tuningUse } : {}),
 			prompt: `Registered scenario ${index + 1}`,
 			expected: {

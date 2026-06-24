@@ -96,7 +96,10 @@ The executable suite runs these local fixtures:
 - `agent-native-ratchet-discovery`: proves `harness next` exposes agent-native packet producers and public rerunnable follow-up commands.
 - `package-installed-downstream-canary`: installs the packed harness into a downstream fixture repo and runs public `harness ... --json` commands without source-checkout package scripts.
 
-These fixtures require no GitHub, CircleCI, CodeRabbit, Semgrep, or npm registry credentials.
+Structural and package-canary fixtures must run without GitHub, CircleCI,
+CodeRabbit, Semgrep, or npm registry credentials. Trusted-live fixtures may
+report credential or external-service blockers, and the runner keeps those
+separate from product regressions.
 
 ## Spec Reimplementation Loop
 

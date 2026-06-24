@@ -33,6 +33,7 @@ const EVAL_TIERS = [
 	"trusted_live",
 	"held_out_review",
 ];
+const CREDENTIAL_POLICIES = ["none_required", "blocked_as_environment"];
 const ALLOWED_ARGS = new Set([
 	"fixtureRoot",
 	"observabilityOutput",
@@ -727,6 +728,16 @@ function validateScenario(scenario, ids, registryFindings, registryValue) {
 			errorFinding(
 				"scenario.evalTier",
 				`${scenario.id} must declare evalTier as one of: ${EVAL_TIERS.join(
+					", ",
+				)}.`,
+			),
+		);
+	}
+	if (!CREDENTIAL_POLICIES.includes(scenario.credentialPolicy)) {
+		registryFindings.push(
+			errorFinding(
+				"scenario.credentialPolicy",
+				`${scenario.id} must declare credentialPolicy as one of: ${CREDENTIAL_POLICIES.join(
 					", ",
 				)}.`,
 			),
