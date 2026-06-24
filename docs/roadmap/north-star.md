@@ -27,8 +27,8 @@ Coding Harness exists to let a solo developer with limited cognitive bandwidth
 orchestrate agentic software work to professional standards through compact
 orientation, executable guardrails, durable memory, and evidence-based handoff.
 
-Short form: Thin surface. Strong guardrails. Durable memory. Professional
-output.
+Short form: Thin Surfaces. Strong Guardrails. Durable Memory. Self Improving.
+Professional Output.
 
 Expected outcome: Coding Harness becomes a portable agent operating system that
 makes Codex behave like a software engineer, not merely a code generator, across

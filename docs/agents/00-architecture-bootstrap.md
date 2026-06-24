@@ -75,7 +75,13 @@ registry adapters describe catalog shape, and option parsing, policy, behavior,
 and presentation live in the named owner module. Update the registry and
 `src/lib/architecture/module-boundaries.test.ts` when a new family adopts this
 split, then refresh generated architecture context when docs-gate requires it.
-For north-star contract/scaffold updates that affect workflow authority, update this guide and `docs/agents/07b-agent-governance.md` together in the same PR.
+For north-star contract/scaffold updates that affect workflow authority, update
+this guide and `docs/agents/07b-agent-governance.md` together in the same PR.
+When the compact north-star mnemonic changes, keep `README.md`,
+`UBIQUITOUS_LANGUAGE.md`, `docs/roadmap/north-star.md`,
+`docs/roadmap/agent-first-status.md`, and
+`docs/architecture/runtime-aware-harness-control-plane.md` synchronized so
+restart, status, and architecture paths do not disagree.
 For root-surface cleanup, use `docs/architecture/root-surface-classification.md` as the tracked classification contract. Move historical root evidence into `docs/archive/root-cleanup/` or a domain docs surface before considering deletion; when a tracked root entry is deleted under explicit destructive-cleanup authority, record that decision in the classification table. Keep `AGENTS.md`, this guide, `docs/README.md`, and `docs/agents/07b-agent-governance.md` synchronized when docs-gate reports architecture-context or agent-governance surfaces.
 Rule lifecycle governance updates are architecture-adjacent when they alter the manifest schema, `rule-lifecycle-gate`, or rule metadata validation. Keep this guide synchronized with `AGENTS.md` and `README.md` when docs-gate reports architecture-context or contract-policy surfaces, and ensure schema validation resolves from the target repo root rather than the caller's shell cwd.
 Documentation lifecycle governance updates are architecture-adjacent when they

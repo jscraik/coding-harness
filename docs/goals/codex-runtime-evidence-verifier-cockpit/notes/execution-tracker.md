@@ -18,7 +18,12 @@ does not replace `goal.md`, `state.yaml`, or `receipts.jsonl`; it compresses
 their current operational truth so old route history and context debt do not
 drive the next implementation decision.
 
-Mantra: thin surface, strong guardrails, durable memory, professional output.
+Mantra:
+Thin Surfaces,
+Strong Guardrails,
+Durable Memory,
+Self Improving,
+Professional Output.
 
 ## Current Control Surface
 
