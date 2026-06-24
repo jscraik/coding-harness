@@ -685,11 +685,22 @@ function validatePacketSemanticInvariants(entry, example, errors) {
 			);
 		}
 		for (const [index, ratchet] of example.ratchets.entries()) {
+			const expectedSourceKind = expectedRatchetSourceKind(ratchet);
+			if (
+				expectedSourceKind !== null &&
+				ratchet.sourceKind !== expectedSourceKind
+			) {
+				errors.push(
+					`${entry.examplePath}.ratchets[${index}].sourceKind must be ${expectedSourceKind}`,
+				);
+			}
 			validateHarnessBoundaryClaims(
 				ratchet,
 				`${entry.examplePath}.ratchets[${index}]`,
 				errors,
-				FORBIDDEN_HARNESS_CLAIMS,
+				ratchet?.id === "session_distillation"
+					? new Set([...FORBIDDEN_HARNESS_CLAIMS, "validation_passed"])
+					: FORBIDDEN_HARNESS_CLAIMS,
 			);
 		}
 	}
@@ -729,7 +740,10 @@ function validatePacketSemanticInvariants(entry, example, errors) {
 }
 
 function validateHarnessBoundaryClaims(value, path, errors, forbiddenClaims) {
-	if (!isObject(value) || value.nativeAuthority !== "harness") return;
+	if (!isObject(value)) return;
+	if (value.nativeAuthority !== "harness") {
+		errors.push(`${path}.nativeAuthority must be harness`);
+	}
 	const mustNotClaim = new Set(
 		Array.isArray(value.mustNotClaim) ? value.mustNotClaim : [],
 	);
@@ -748,6 +762,13 @@ function validateHarnessBoundaryClaims(value, path, errors, forbiddenClaims) {
 			`${path}.mayClaim must not overlap mustNotClaim: ${overlap.join(", ")}`,
 		);
 	}
+}
+
+function expectedRatchetSourceKind(value) {
+	if (!isObject(value)) return null;
+	if (value.id === "orientation_packet") return "repo_contract";
+	if (value.id === "session_distillation") return "repo_worktree";
+	return "repo_artifact";
 }
 
 function validateExampleWithSemanticValidator(

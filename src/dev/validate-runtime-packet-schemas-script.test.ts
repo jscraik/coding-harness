@@ -163,6 +163,72 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		);
 	});
 
+	it("rejects non-harness authority in harness-native advisory packets", () => {
+		const root = createTempRoot("session-distill-native-authority-");
+		const packet = readJson(
+			"contracts/examples/session-distill.example.json",
+		) as Record<string, unknown>;
+		packet.nativeAuthority = "codex";
+		packet.mayClaim = ["repo_handoff_orientation", "codex_context_current"];
+		packet.mustNotClaim = ["ci_passed"];
+		const packetPath = join(root, "session-distill-non-harness.json");
+		writeFileSync(packetPath, JSON.stringify(packet, null, 2));
+		const manifestPath = manifestWithEntryPatch(
+			"session-distill/v1",
+			(entry) => ({
+				...entry,
+				examplePath: packetPath,
+			}),
+		);
+
+		const result = runValidator(["--manifest", manifestPath]);
+		const report = JSON.parse(result.stdout) as { errors: string[] };
+
+		expect(result.status).toBe(1);
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("nativeAuthority must be harness"),
+				expect.stringContaining(
+					"mustNotClaim must include cross-authority claims",
+				),
+			]),
+		);
+	});
+
+	it("rejects ratchet sourceKind values that contradict the ratchet id", () => {
+		const root = createTempRoot("agent-native-ratchet-source-kind-");
+		const packet = readJson(
+			"contracts/examples/agent-native-ratchets.example.json",
+		) as Record<string, unknown>;
+		const ratchets = packet.ratchets as Array<Record<string, unknown>>;
+		packet.ratchets = [
+			{
+				...ratchets[0],
+				sourceKind: "repo_artifact",
+			},
+			...ratchets.slice(1),
+		];
+		const packetPath = join(root, "agent-native-ratchet-source-kind.json");
+		writeFileSync(packetPath, JSON.stringify(packet, null, 2));
+		const manifestPath = manifestWithEntryPatch(
+			"agent-native-ratchets/v1",
+			(entry) => ({
+				...entry,
+				examplePath: packetPath,
+			}),
+		);
+
+		const result = runValidator(["--manifest", manifestPath]);
+		const report = JSON.parse(result.stdout) as { errors: string[] };
+
+		expect(result.status).toBe(1);
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("ratchets[0].sourceKind must be repo_contract"),
+			]),
+		);
+	});
+
 	it("keeps ReplayPacket/v1 examples aligned with the TypeScript validator", () => {
 		const packet = readJson("contracts/examples/replay-packet.example.json");
 
