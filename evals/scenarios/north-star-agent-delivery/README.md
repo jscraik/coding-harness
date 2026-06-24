@@ -4,6 +4,7 @@
 
 - [Purpose](#purpose)
 - [Scenario Classes](#scenario-classes)
+- [Eval Tiers](#eval-tiers)
 - [Live Fixtures](#live-fixtures)
 - [Spec Reimplementation Loop](#spec-reimplementation-loop)
 - [Lifecycle Routing](#lifecycle-routing)
@@ -27,7 +28,7 @@ The registry intentionally favors realistic agent-delivery prompts over generic 
 
 ## Scenario Classes
 
-The registry contains 30 high-signal live scenarios:
+The registry contains 32 high-signal live scenarios:
 
 - `live_fixture`: deterministic local fixture executed by `pnpm test:evals`
 - `registered`: reserved for future scenario contracts before a full runner exists
@@ -35,6 +36,28 @@ The registry contains 30 high-signal live scenarios:
 All current scenarios run as local fixtures. Future registered scenarios remain
 valuable when they preserve expected command routing, stop conditions, and
 artifact evidence before a full runner exists.
+
+## Eval Tiers
+
+Every registry scenario declares exactly one `evalTier` so the runner can keep
+fast structural regressions, package portability, trusted-live product proof,
+and held-out review regressions separate.
+
+- `structural`: deterministic local fixtures for fast regression proof.
+- `package_canary`: package-installed downstream repo canaries that must run
+  without external credentials or customer integration ceremony.
+- `trusted_live`: local or replay-backed canaries for live product surfaces.
+  Credential and external-service blockers stay separate from product
+  regressions in the result summary.
+- `held_out_review`: review-comment regression cases reserved for anti-fitting
+  proof. These scenarios set `tuningUse: "held_out_only"` and must not be used
+  as tuning fixtures.
+
+Run a single tier with:
+
+```bash
+node --import tsx scripts/run-harness-evals.mjs --tier structural
+```
 
 ## Live Fixtures
 
@@ -57,6 +80,7 @@ The executable suite runs these local fixtures:
 - `terse-review-request-routing`: blocks ambiguous review baselines, fixes only verified findings, skips stale findings, and avoids broad refactors.
 - `circleci-red-job-triage`: records deterministic CI-lane decisions from failing CircleCI evidence while keeping review, security, and credential blockers separate.
 - `required-check-name-parity`: verifies CircleCI, CodeRabbit, and Snyk ownership lanes without promoting GitHub Actions fallback checks.
+- `observed-eval-usage-repo-root-telemetry`: proves observed eval usage reads repo-contained CircleCI telemetry from the requested repo root.
 - `review-finding-narrow-fix`: verifies review findings against current code, skips stale comments with evidence, and routes generated artifacts through canonical regeneration.
 - `harness-init-update-path`: records a dry-run upgrade preview with tracked manifest, update details, canonical surface updates, and overwrite approval boundaries.
 - `north-star-feedback-closeout`: proves changed-file exactness, missing learning artifact honesty, and repeated-feedback promotion or explicit skip decisions.
@@ -69,8 +93,13 @@ The executable suite runs these local fixtures:
 - `policy-contract-capsules`: evaluates compact risk-tiered policy capsules for autonomy mode, required evidence, and rollback requirements.
 - `registry-drift-guard`: verifies live fixture registry entries keep expected artifacts, stop conditions, and scorecard weights.
 - `harness-trace-envelope`: validates the minimal redacted trace envelope for closeout, CI, review-context, and claim-verification evidence.
+- `agent-native-ratchet-discovery`: proves `harness next` exposes agent-native packet producers and public rerunnable follow-up commands.
+- `package-installed-downstream-canary`: installs the packed harness into a downstream fixture repo and runs public `harness ... --json` commands without source-checkout package scripts.
 
-These fixtures require no GitHub, CircleCI, CodeRabbit, Semgrep, or npm registry credentials.
+Structural and package-canary fixtures must run without GitHub, CircleCI,
+CodeRabbit, Semgrep, or npm registry credentials. Trusted-live fixtures may
+report credential or external-service blockers, and the runner keeps those
+separate from product regressions.
 
 ## Spec Reimplementation Loop
 

@@ -27,6 +27,21 @@ const DEFAULT_FIXTURE_ROOT = "artifacts/evals/live-fixtures";
 const RATCHET_PACKET_COMMAND_TIMEOUT_MS = 60_000;
 const PACKAGE_CANARY_INSTALL_TIMEOUT_MS = 30_000;
 const RATCHET_PACKET_COMMAND_MAX_BUFFER = 10 * 1024 * 1024;
+const EVAL_TIERS = [
+	"structural",
+	"package_canary",
+	"trusted_live",
+	"held_out_review",
+];
+const CREDENTIAL_POLICIES = ["none_required", "blocked_as_environment"];
+const ALLOWED_ARGS = new Set([
+	"fixtureRoot",
+	"observabilityOutput",
+	"output",
+	"registry",
+	"scenario",
+	"tier",
+]);
 const CANARY_COMMANDS = [
 	{ id: "next", args: ["next", "--json"] },
 	{ id: "commands", args: ["commands", "--json", "--for-agent"] },
@@ -110,7 +125,7 @@ const ALLOWED_REVIEW_ISSUE_TYPES = [
 const ALLOWED_REVIEW_SEVERITIES = ["low", "medium", "high"];
 
 const findings = [];
-const args = parseArgs(process.argv.slice(2));
+const args = parseArgs(process.argv.slice(2), findings);
 const { registryPath, outputPath, observabilityOutputPath, fixtureRoot } =
 	resolveEvaluationPaths(args, findings);
 const liveFixtureResults = [];
@@ -157,18 +172,48 @@ if (registryPath) {
 const scenarios = Array.isArray(registry.scenarios) ? registry.scenarios : [];
 const selectedScenarioId =
 	typeof args.scenario === "string" ? args.scenario : null;
-const selectedScenarios = selectedScenarioId
-	? scenarios.filter((scenario) => scenario?.id === selectedScenarioId)
-	: scenarios;
+const selectedTier = typeof args.tier === "string" ? args.tier : null;
+if (selectedTier && !EVAL_TIERS.includes(selectedTier)) {
+	findings.push(
+		errorFinding(
+			"args.tier",
+			`Unknown eval tier ${selectedTier}. Expected one of: ${EVAL_TIERS.join(
+				", ",
+			)}.`,
+		),
+	);
+}
+const selectedScenarios = scenarios.filter((scenario) =>
+	scenarioMatchesSelection(scenario, {
+		selectedScenarioId,
+		selectedTier,
+	}),
+);
 if (selectedScenarioId && selectedScenarios.length === 0) {
 	findings.push(
 		errorFinding(
 			"args.scenario",
-			`No scenario found with id ${selectedScenarioId}.`,
+			`No scenario found with id ${selectedScenarioId}${selectedTier ? ` in tier ${selectedTier}` : ""}.`,
 		),
 	);
 }
-if (fixtureRoot) {
+if (
+	selectedTier &&
+	EVAL_TIERS.includes(selectedTier) &&
+	!selectedScenarioId &&
+	selectedScenarios.length === 0
+) {
+	findings.push(
+		errorFinding(
+			"args.tier",
+			`No scenarios found in eval tier ${selectedTier}.`,
+		),
+	);
+}
+const hasArgumentErrors = findings.some((finding) =>
+	String(finding.id).startsWith("args."),
+);
+if (fixtureRoot && !hasArgumentErrors) {
 	for (const scenario of selectedScenarios.filter(
 		(item) => item && item.type === "live_fixture",
 	)) {
@@ -184,6 +229,7 @@ const scenarioResults = selectedScenarios.map((scenario) => {
 	return {
 		id: scenario.id,
 		type: scenario.type,
+		evalTier: scenario.evalTier,
 		status,
 		durationMs: liveResult?.durationMs,
 		stages: liveResult?.stages ?? [],
@@ -211,6 +257,7 @@ const slowestLiveFixture = liveFixtureResults.reduce((slowest, item) => {
 	return slowest;
 }, null);
 const guardrailEffectiveness = summarizeGuardrailEffectiveness(scenarioResults);
+const tierSummary = summarizeTierOutcomes(selectedScenarios, scenarioResults);
 const status =
 	findings.some((finding) => finding.severity === "error") ||
 	liveFixtureFailures.length > 0
@@ -228,6 +275,7 @@ const result = {
 			(scenario) => scenario?.type !== "live_fixture",
 		).length,
 		selectedScenario: selectedScenarioId,
+		selectedTier,
 		selectedScenarios: selectedScenarios.length,
 		liveFixtures: liveFixtureResults.length,
 		liveFixtureFailures: liveFixtureFailures.length,
@@ -240,6 +288,7 @@ const result = {
 		stageFailuresByStage: guardrailEffectiveness.stageFailuresByStage,
 		guardrailEffectiveness,
 		agenticCoverage: summarizeAgenticCoverage(registry, scenarios),
+		tiers: tierSummary,
 	},
 	findings,
 	scenarioResults,
@@ -268,6 +317,7 @@ const observabilityEntries = selectedScenarios.map((scenario) => {
 		metadata: {
 			registrySchemaVersion: registry.schemaVersion,
 			northStarGoal: registry.northStarGoal,
+			evalTier: scenario.evalTier,
 			localOnly: true,
 			durationMs: scenarioResult?.durationMs ?? 0,
 			graders: effectiveGraders(registry, scenario),
@@ -296,14 +346,22 @@ if (observabilityOutputPath) {
 console.info(JSON.stringify(result, null, 2));
 process.exitCode = status === "pass" ? 0 : 1;
 
-function parseArgs(rawArgs) {
+function parseArgs(rawArgs, argFindings) {
 	const parsed = {};
 	for (let index = 0; index < rawArgs.length; index += 1) {
 		const arg = rawArgs[index];
-		if (!arg.startsWith("--")) continue;
+		if (!arg.startsWith("--")) {
+			argFindings.push(
+				errorFinding("args.usage", `Unexpected positional argument: ${arg}.`),
+			);
+			continue;
+		}
 		const key = arg
 			.slice(2)
 			.replace(/-([a-z])/g, (_, char) => char.toUpperCase());
+		if (!ALLOWED_ARGS.has(key)) {
+			argFindings.push(errorFinding("args.usage", `Unknown option: ${arg}.`));
+		}
 		const next = rawArgs[index + 1];
 		if (next && !next.startsWith("--")) {
 			parsed[key] = next;
@@ -313,6 +371,16 @@ function parseArgs(rawArgs) {
 		parsed[key] = "true";
 	}
 	return parsed;
+}
+
+function scenarioMatchesSelection(
+	scenario,
+	{ selectedScenarioId, selectedTier },
+) {
+	if (!scenario) return false;
+	if (selectedScenarioId && scenario.id !== selectedScenarioId) return false;
+	if (selectedTier && scenario.evalTier !== selectedTier) return false;
+	return true;
 }
 
 function resolveEvaluationPaths(parsedArgs, pathFindings) {
@@ -653,6 +721,37 @@ function validateScenario(scenario, ids, registryFindings, registryValue) {
 	if (!scenario.prompt) {
 		registryFindings.push(
 			errorFinding("scenario.prompt", `${scenario.id} prompt is required.`),
+		);
+	}
+	if (!EVAL_TIERS.includes(scenario.evalTier)) {
+		registryFindings.push(
+			errorFinding(
+				"scenario.evalTier",
+				`${scenario.id} must declare evalTier as one of: ${EVAL_TIERS.join(
+					", ",
+				)}.`,
+			),
+		);
+	}
+	if (!CREDENTIAL_POLICIES.includes(scenario.credentialPolicy)) {
+		registryFindings.push(
+			errorFinding(
+				"scenario.credentialPolicy",
+				`${scenario.id} must declare credentialPolicy as one of: ${CREDENTIAL_POLICIES.join(
+					", ",
+				)}.`,
+			),
+		);
+	}
+	if (
+		scenario.evalTier === "held_out_review" &&
+		scenario.tuningUse !== "held_out_only"
+	) {
+		registryFindings.push(
+			errorFinding(
+				"scenario.tuningUse",
+				`${scenario.id} held-out review scenarios must set tuningUse to held_out_only.`,
+			),
 		);
 	}
 	for (const field of [
@@ -6444,6 +6543,52 @@ function decisionMatchesExpected(decision) {
 		(decision.validator.suggestedNextStep ?? null) ===
 			(decision.expectedSuggestedNextStep ?? null)
 	);
+}
+
+function summarizeTierOutcomes(selectedScenarios, results) {
+	const resultById = new Map(results.map((result) => [result.id, result]));
+	const byTier = Object.fromEntries(
+		EVAL_TIERS.map((tier) => [
+			tier,
+			{ selected: 0, passed: 0, failed: 0, blocked: 0 },
+		]),
+	);
+	const trustedLiveCredentialBlockers = [];
+	const trustedLiveProductRegressions = [];
+	for (const scenario of normalizeArray(selectedScenarios)) {
+		const tier = scenario.evalTier;
+		if (!byTier[tier]) continue;
+		const result = resultById.get(scenario.id);
+		const status = result?.status ?? "registered";
+		byTier[tier].selected += 1;
+		if (status === "pass") {
+			byTier[tier].passed += 1;
+		} else if (status === "blocked") {
+			byTier[tier].blocked += 1;
+		} else if (status === "fail") {
+			byTier[tier].failed += 1;
+		}
+		if (tier !== "trusted_live") continue;
+		if (
+			scenario.credentialPolicy === "blocked_as_environment" &&
+			status === "blocked"
+		) {
+			trustedLiveCredentialBlockers.push({
+				id: scenario.id,
+				status,
+				policy: scenario.credentialPolicy,
+			});
+			continue;
+		}
+		if (status === "fail") {
+			trustedLiveProductRegressions.push({ id: scenario.id, status });
+		}
+	}
+	return {
+		byTier,
+		trustedLiveCredentialBlockers,
+		trustedLiveProductRegressions,
+	};
 }
 
 function summarizeAgenticCoverage(registryValue, scenarios) {
