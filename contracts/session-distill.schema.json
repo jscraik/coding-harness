@@ -54,14 +54,7 @@
 			"const": "harness"
 		},
 		"sourceKind": {
-			"enum": [
-				"repo_contract",
-				"repo_worktree",
-				"repo_artifact",
-				"connector_snapshot",
-				"sidecar_export",
-				"normalized_external_snapshot"
-			]
+			"const": "repo_worktree"
 		},
 		"mayClaim": {
 			"type": "array",

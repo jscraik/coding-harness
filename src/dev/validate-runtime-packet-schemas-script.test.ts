@@ -195,6 +195,34 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		);
 	});
 
+	it("rejects top-level packet sourceKind values that contradict the packet kind", () => {
+		const root = createTempRoot("session-distill-source-kind-");
+		const packet = readJson(
+			"contracts/examples/session-distill.example.json",
+		) as Record<string, unknown>;
+		packet.sourceKind = "repo_artifact";
+		const packetPath = join(root, "session-distill-wrong-source-kind.json");
+		writeFileSync(packetPath, JSON.stringify(packet, null, 2));
+		const manifestPath = manifestWithEntryPatch(
+			"session-distill/v1",
+			(entry) => ({
+				...entry,
+				examplePath: packetPath,
+			}),
+		);
+
+		const result = runValidator(["--manifest", manifestPath]);
+		const report = JSON.parse(result.stdout) as { errors: string[] };
+
+		expect(result.status).toBe(1);
+		expect(report.errors).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("sourceKind must equal schema const"),
+				expect.stringContaining("sourceKind must be repo_worktree"),
+			]),
+		);
+	});
+
 	it("rejects ratchet sourceKind values that contradict the ratchet id", () => {
 		const root = createTempRoot("agent-native-ratchet-source-kind-");
 		const packet = readJson(
