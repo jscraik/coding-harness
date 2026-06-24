@@ -6,6 +6,20 @@
 	"worktreeStatus": "dirty",
 	"changedFiles": ["package.json"],
 	"changedFileCount": 1,
+	"nativeAuthority": "harness",
+	"sourceKind": "repo_worktree",
+	"mayClaim": ["repo_handoff_orientation", "worktree_changed_files"],
+	"mustNotClaim": [
+		"codex_context_current",
+		"codex_session_truth",
+		"connector_snapshot_current",
+		"sidecar_export_current",
+		"ci_passed",
+		"review_threads_resolved",
+		"tracker_closed",
+		"merge_ready",
+		"validation_passed"
+	],
 	"evidenceLanes": [
 		{
 			"id": "worktree",
@@ -24,7 +38,7 @@
 	],
 	"nonClaims": [
 		"ci_passed",
-		"review_resolved",
+		"review_threads_resolved",
 		"tracker_closed",
 		"merge_ready",
 		"validation_passed"

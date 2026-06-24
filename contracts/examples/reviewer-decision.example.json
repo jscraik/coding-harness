@@ -2,6 +2,19 @@
 	"schemaVersion": "reviewer-decision/v1",
 	"status": "needs_evidence",
 	"command": "node scripts/validate-reviewer-coverage.cjs --manifest <manifest> --reviews-dir artifacts/reviews",
+	"nativeAuthority": "harness",
+	"sourceKind": "repo_artifact",
+	"mayClaim": ["review_lane_decision"],
+	"mustNotClaim": [
+		"codex_context_current",
+		"codex_session_truth",
+		"connector_snapshot_current",
+		"sidecar_export_current",
+		"ci_passed",
+		"review_threads_resolved",
+		"tracker_closed",
+		"merge_ready"
+	],
 	"decision": "needs_evidence",
 	"outcomes": [
 		"accept",

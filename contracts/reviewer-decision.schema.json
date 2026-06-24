@@ -8,6 +8,10 @@
 		"schemaVersion",
 		"status",
 		"command",
+		"nativeAuthority",
+		"sourceKind",
+		"mayClaim",
+		"mustNotClaim",
 		"decision",
 		"outcomes",
 		"coverageReceipt",
@@ -24,6 +28,28 @@
 		"command": {
 			"type": "string",
 			"minLength": 1
+		},
+		"nativeAuthority": {
+			"const": "harness"
+		},
+		"sourceKind": {
+			"const": "repo_artifact"
+		},
+		"mayClaim": {
+			"type": "array",
+			"minItems": 1,
+			"uniqueItems": true,
+			"items": {
+				"$ref": "#/$defs/claimToken"
+			}
+		},
+		"mustNotClaim": {
+			"type": "array",
+			"minItems": 1,
+			"uniqueItems": true,
+			"items": {
+				"$ref": "#/$defs/claimToken"
+			}
 		},
 		"decision": {
 			"enum": [
@@ -105,6 +131,19 @@
 		}
 	],
 	"$defs": {
+		"claimToken": {
+			"enum": [
+				"ci_passed",
+				"codex_context_current",
+				"codex_session_truth",
+				"connector_snapshot_current",
+				"merge_ready",
+				"review_lane_decision",
+				"review_threads_resolved",
+				"sidecar_export_current",
+				"tracker_closed"
+			]
+		},
 		"coverageReceipt": {
 			"type": "object",
 			"additionalProperties": false,

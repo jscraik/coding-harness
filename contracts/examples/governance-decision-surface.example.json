@@ -7,6 +7,19 @@
 		"historical_context",
 		"archive_candidate"
 	],
+	"nativeAuthority": "harness",
+	"sourceKind": "repo_artifact",
+	"mayClaim": ["governance_routing"],
+	"mustNotClaim": [
+		"codex_context_current",
+		"codex_session_truth",
+		"connector_snapshot_current",
+		"sidecar_export_current",
+		"ci_passed",
+		"review_threads_resolved",
+		"tracker_closed",
+		"merge_ready"
+	],
 	"documentsAnalyzed": 1,
 	"classCounts": {
 		"feeds_runtime_decision": 1,

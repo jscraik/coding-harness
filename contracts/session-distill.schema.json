@@ -12,6 +12,10 @@
 		"worktreeStatus",
 		"changedFiles",
 		"changedFileCount",
+		"nativeAuthority",
+		"sourceKind",
+		"mayClaim",
+		"mustNotClaim",
 		"evidenceLanes",
 		"nextCommands",
 		"nonClaims",
@@ -46,6 +50,28 @@
 			"type": "integer",
 			"minimum": 0
 		},
+		"nativeAuthority": {
+			"const": "harness"
+		},
+		"sourceKind": {
+			"const": "repo_worktree"
+		},
+		"mayClaim": {
+			"type": "array",
+			"minItems": 1,
+			"uniqueItems": true,
+			"items": {
+				"$ref": "#/$defs/claimToken"
+			}
+		},
+		"mustNotClaim": {
+			"type": "array",
+			"minItems": 1,
+			"uniqueItems": true,
+			"items": {
+				"$ref": "#/$defs/claimToken"
+			}
+		},
 		"evidenceLanes": {
 			"type": "array",
 			"minItems": 1,
@@ -65,8 +91,7 @@
 			"type": "array",
 			"minItems": 1,
 			"items": {
-				"type": "string",
-				"minLength": 1
+				"$ref": "#/$defs/claimToken"
 			}
 		},
 		"claimBoundary": {
@@ -75,6 +100,21 @@
 		}
 	},
 	"$defs": {
+		"claimToken": {
+			"enum": [
+				"ci_passed",
+				"codex_context_current",
+				"codex_session_truth",
+				"connector_snapshot_current",
+				"merge_ready",
+				"repo_handoff_orientation",
+				"review_threads_resolved",
+				"sidecar_export_current",
+				"tracker_closed",
+				"validation_passed",
+				"worktree_changed_files"
+			]
+		},
 		"evidenceLane": {
 			"type": "object",
 			"additionalProperties": false,
