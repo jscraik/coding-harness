@@ -19,7 +19,7 @@ rules:
 thin_execution_tracker:
   status: "active"
   admitted_at: "2026-06-08T13:15:59Z"
-  mantra: "Thin surface. Strong guardrails. Durable memory. Professional output."
+  mantra: "Thin Surfaces, Strong Guardrails, Durable Memory, Self Improving, Professional Output."
   tracker_path: "docs/goals/codex-runtime-evidence-verifier-cockpit/notes/execution-tracker.md"
   current_route_packet: "docs/goals/codex-runtime-evidence-verifier-cockpit/current-route.json"
   architecture_finding: "The previous goal board/state shape repeated route history across multiple surfaces, making the active interface shallow and costly for agents to navigate."
