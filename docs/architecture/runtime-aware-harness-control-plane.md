@@ -5,6 +5,7 @@ last_validated: 2026-05-16
 # Runtime-Aware Harness Control Plane
 
 ## Table of Contents
+
 - [Purpose](#purpose)
 - [Architecture Posture](#architecture-posture)
 - [Evidence Spine](#evidence-spine)
@@ -115,7 +116,7 @@ The initial tracer proof is intentionally narrow:
   ledger validation, phase-exit evidence, and Project Brain providers can share
   one type instead of inventing parallel packets.
 - Documentation links the contract to north-star language: thin surface, strong
-  guardrails, durable memory, and professional output.
+  guardrails, durable memory, self improving, and professional output.
 
 ## Next Slices
 
@@ -124,7 +125,7 @@ The initial tracer proof is intentionally narrow:
 2. Introduce typed operation profile policy for validation lanes and stop
    conditions.
 3. Emit run-record companion artifacts that reference the run context.
-4. Validate or autofill PR work-ledger fields from run context plus run-record
+4. Validate or auto-fill PR work-ledger fields from run context plus run-record
    evidence.
 5. Add a lifecycle status classifier for PR babysitting and CI wait loops.
 6. Expose Project Brain list/read/search/active context as a provider-style

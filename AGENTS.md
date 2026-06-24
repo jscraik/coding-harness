@@ -223,3 +223,7 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   [docs/roadmap/agent-first-status.md](./docs/roadmap/agent-first-status.md);
   refresh it with `harness.contract.json` when drift-gate reports an
   agent-first-status-matrix cadence breach.
+- North-star mnemonic wording must stay synchronized across
+  [UBIQUITOUS_LANGUAGE.md](./UBIQUITOUS_LANGUAGE.md),
+  [docs/roadmap/north-star.md](./docs/roadmap/north-star.md), the weekly status
+  surface, and runtime-aware architecture context.

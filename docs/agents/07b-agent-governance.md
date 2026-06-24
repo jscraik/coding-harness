@@ -277,6 +277,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   generic/default subagent when the project-local role boundary is required.
   Start a fresh thread rooted in this checkout before relying on that boundary.
 - north-star contract/scaffold updates that affect architecture context should update `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and this guide in the same PR
+- north-star mnemonic wording changes should keep `README.md`,
+  `UBIQUITOUS_LANGUAGE.md`, `docs/roadmap/north-star.md`,
+  `docs/roadmap/agent-first-status.md`, and runtime-aware architecture context
+  synchronized so restart, status, and architecture routes share one compact
+  orientation phrase
 - north-star artifact contract changes should keep the README command evidence
   surface, AGENTS shared-vocabulary guidance, and this guide synchronized in
   the same PR
