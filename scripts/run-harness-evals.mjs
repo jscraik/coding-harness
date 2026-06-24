@@ -1795,6 +1795,7 @@ function runObservedEvalUsageRepoRootTelemetryFixture(scenario, fixturePath) {
 function initializeObservedEvalUsageFixtureRepo(repoRoot) {
 	mkdirSync(repoRoot, { recursive: true });
 	writeFileSync(path.join(repoRoot, "README.md"), "# Fixture checkout\n");
+	writeFileSync(path.join(repoRoot, ".gitignore"), ".codex/config.toml\n");
 	execFileSync("git", ["init"], { cwd: repoRoot, stdio: "ignore" });
 	execFileSync("git", ["config", "user.email", "fixture@example.invalid"], {
 		cwd: repoRoot,
@@ -1804,7 +1805,10 @@ function initializeObservedEvalUsageFixtureRepo(repoRoot) {
 		cwd: repoRoot,
 		stdio: "ignore",
 	});
-	execFileSync("git", ["add", "README.md"], { cwd: repoRoot, stdio: "ignore" });
+	execFileSync("git", ["add", ".gitignore", "README.md"], {
+		cwd: repoRoot,
+		stdio: "ignore",
+	});
 	execFileSync("git", ["commit", "-m", "fixture checkout"], {
 		cwd: repoRoot,
 		stdio: "ignore",
