@@ -1050,6 +1050,54 @@
 			}
 		},
 		{
+			"id": "package-installed-downstream-canary",
+			"type": "live_fixture",
+			"prompt": "Pack Coding Harness, install it into a downstream fixture repo, and prove public harness commands run from the downstream cwd without source-checkout assumptions.",
+			"expected": {
+				"commands": [
+					"node --import tsx scripts/run-harness-evals.mjs --scenario package-installed-downstream-canary"
+				],
+				"artifacts": [
+					"package-installed downstream canary result",
+					"artifacts/evals/live-fixtures/package-installed-downstream-canary/result.json"
+				],
+				"assertions": [
+					"package-installed downstream canary result is written",
+					"canary commands run from downstream cwd",
+					"canary invokes public harness commands",
+					"canary command stdout is parseable JSON",
+					"canary outputs do not leak source checkout command paths",
+					"missing optional evidence degrades structurally",
+					"agent-native ratchet packet commands are public harness commands",
+					"harness init dry-run does not write unexpected files",
+					"canary runs without external credentials"
+				],
+				"artifactSchemas": {
+					"artifacts/evals/live-fixtures/package-installed-downstream-canary/result.json": {
+						"schemaVersion": "package-installed-downstream-canary/v1",
+						"requiredFields": [
+							"packageSource.tarballPath",
+							"downstreamRepo.path",
+							"commands",
+							"summary.commandCount",
+							"claimBoundary"
+						]
+					}
+				},
+				"stopConditions": [
+					"Do not claim installed portability from source-repo package scripts.",
+					"Do not require external credentials or live services for the downstream canary."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 3,
+				"artifact_evidence": 3,
+				"validation_sufficiency": 2,
+				"blocker_honesty": 2,
+				"manual_step_reduction": 3
+			}
+		},
+		{
 			"id": "adversarial-pr-loop-probes",
 			"type": "live_fixture",
 			"prompt": "Run local adversarial probes against PR-loop readiness claims and prove unsafe shortcuts are blocked.",

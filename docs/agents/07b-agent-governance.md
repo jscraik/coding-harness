@@ -121,10 +121,12 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - agent-native ratchet packet changes should keep `agent-native-ratchets/v1`,
   `session-distill/v1`, `agent-rework/v1`, `reviewer-decision/v1`, and
   `governance-decision-surface/v1` contract-first under `contracts/`, route
-  producer entrypoints through package scripts, and prove the ratchet with
+  producer entrypoints through public `harness ...` commands, and prove the
+  ratchet with
   `node scripts/validate-runtime-packet-schemas.cjs --all`,
-  `pnpm artifact:types`, and focused fixture tests. These packets may orient
-  `harness next`, eval fixtures, review handoff, and governance decision
+  `pnpm artifact:types`, focused fixture tests, and the installed downstream
+  package canary before claiming source-checkout independence. These packets may
+  orient `harness next`, eval fixtures, review handoff, and governance decision
   surfaces, but they must not become CI, review-thread, tracker, external
   readiness, delivery-truth, or merge-readiness proof without an explicit
   canonical consumer boundary and synchronized governance update

@@ -119,9 +119,12 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   truth. Keep `agent-native-ratchets/v1`, `session-distill/v1`,
   `agent-rework/v1`, `reviewer-decision/v1`, and
   `governance-decision-surface/v1` contract-first, validate them through
-  runtime-packet schema checks and `pnpm artifact:types`, and keep CI, review
-  threads, tracker state, external readiness, and merge readiness separate
-  until a canonical consumer explicitly joins those lanes.
+  runtime-packet schema checks and `pnpm artifact:types`, expose their
+  operator path through public `harness ...` commands, and prove installed
+  downstream portability with the package canary before claiming source-checkout
+  independence. Keep CI, review threads, tracker state, external readiness, and
+  merge readiness separate until a canonical consumer explicitly joins those
+  lanes.
 - PR closeout handoff evidence must stay claim/evidence driven. `harness next
   --pr-closeout <path>` may consume only validated `pr-closeout/v1` artifacts
   and must fail closed into repair guidance when required evidence is missing,

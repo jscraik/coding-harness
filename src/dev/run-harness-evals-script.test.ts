@@ -103,4 +103,39 @@ describe("run-harness-evals.mjs", () => {
 			]),
 		);
 	});
+
+	it("emits structured JSON for an unknown selected scenario", () => {
+		mkdirSync(CACHE_ROOT, { recursive: true });
+		const outputRoot = mkdtempSync(join(CACHE_ROOT, "eval-script-test-"));
+		tempRoots.push(outputRoot);
+
+		const result = runNodeScript(SCRIPT_PATH, [
+			"--scenario",
+			"missing-scenario",
+			"--output",
+			relative(REPO_ROOT, join(outputRoot, "result.json")),
+			"--observability-output",
+			relative(REPO_ROOT, join(outputRoot, "observability.json")),
+			"--fixture-root",
+			relative(REPO_ROOT, join(outputRoot, "fixtures")),
+		]);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			summary: { selectedScenario: string; selectedScenarios: number };
+			findings: Array<{ id: string; message: string }>;
+		};
+
+		expect(result.status).toBe(1);
+		expect(report.status).toBe("fail");
+		expect(report.summary.selectedScenario).toBe("missing-scenario");
+		expect(report.summary.selectedScenarios).toBe(0);
+		expect(report.findings).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "args.scenario",
+					message: expect.stringContaining("No scenario found"),
+				}),
+			]),
+		);
+	});
 });

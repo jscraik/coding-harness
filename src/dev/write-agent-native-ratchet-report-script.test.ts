@@ -83,7 +83,7 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		expect(result.status).toBe(0);
 		expect(report.status).toBe("pass");
 		expect(report.ratchets.map((ratchet) => ratchet.command)).toEqual([
-			"pnpm run coding-policy:route -- <path...>",
+			"harness next --json",
 			"harness session-distill --json",
 			"harness agent-rework --json",
 			"harness reviewer-decision --json",
@@ -131,7 +131,7 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		expect(report.claimBoundary).toContain("not validation");
 	});
 
-	it("includes untracked files in session distillation changed-file routing", () => {
+	it("includes untracked files without source-only session commands", () => {
 		const root = mkdtempSync(join(tmpdir(), "agent-native-session-distill-"));
 		tempRoots.push(root);
 		let result = spawnSync("git", ["init"], { cwd: root, encoding: "utf8" });
@@ -191,10 +191,11 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		expect(report.changedFiles).toContain(" spaced file.txt ");
 		expect(report.changedFiles).toContain("line\nbreak.txt");
 		expect(report.changedFileCount).toBe(4);
-		expect(report.nextCommands[0]).toContain("' spaced file.txt '");
-		expect(report.nextCommands[0]).toContain("'docs my file.md'");
-		expect(report.nextCommands[0]).toContain("'line\nbreak.txt'");
-		expect(report.nextCommands[0]).toContain("'new-file.txt'");
+		expect(report.nextCommands).toEqual([
+			"harness prompt-context-drift:write",
+			"harness prompt-context-drift:validate",
+		]);
+		expect(report.nextCommands.join("\n")).not.toContain("pnpm run");
 	});
 
 	it("ignores caller-scoped git environment when distilling session state", () => {

@@ -72,6 +72,8 @@ gardener-report.json
 !.harness/decisions/.gitkeep
 !.harness/linear/
 !.harness/linear/**/*.md
+!.harness/plans/
+!.harness/plans/**/*.yaml
 !.harness/refactors/
 !.harness/refactors/**/*.md
 !.harness/features/

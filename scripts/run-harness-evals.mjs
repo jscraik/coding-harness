@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import {
 	lstatSync,
 	mkdirSync,
@@ -9,6 +9,7 @@ import {
 	rmSync,
 	writeFileSync,
 } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -24,7 +25,17 @@ const DEFAULT_OUTPUT = "artifacts/evals/result.json";
 const DEFAULT_OBSERVABILITY_OUTPUT = "artifacts/evals/braintrust-log-data.json";
 const DEFAULT_FIXTURE_ROOT = "artifacts/evals/live-fixtures";
 const RATCHET_PACKET_COMMAND_TIMEOUT_MS = 60_000;
+const PACKAGE_CANARY_INSTALL_TIMEOUT_MS = 30_000;
 const RATCHET_PACKET_COMMAND_MAX_BUFFER = 10 * 1024 * 1024;
+const CANARY_COMMANDS = [
+	{ id: "next", args: ["next", "--json"] },
+	{ id: "commands", args: ["commands", "--json", "--for-agent"] },
+	{ id: "session_distill", args: ["session-distill", "--json"] },
+	{ id: "agent_native_ratchets", args: ["agent-native-ratchets", "--json"] },
+	{ id: "agent_rework", args: ["agent-rework", "--json"] },
+	{ id: "reviewer_decision", args: ["reviewer-decision", "--json"] },
+	{ id: "init_dry_run", args: ["init", "--dry-run", "--json"], dryRun: true },
+];
 const VALIDATION_PLAN_MODULE_URL = pathToFileURL(
 	path.join(REPO_ROOT, "src/lib/learnings/validation-plan.ts"),
 ).href;
@@ -141,15 +152,28 @@ if (registryPath) {
 }
 
 const scenarios = Array.isArray(registry.scenarios) ? registry.scenarios : [];
+const selectedScenarioId =
+	typeof args.scenario === "string" ? args.scenario : null;
+const selectedScenarios = selectedScenarioId
+	? scenarios.filter((scenario) => scenario?.id === selectedScenarioId)
+	: scenarios;
+if (selectedScenarioId && selectedScenarios.length === 0) {
+	findings.push(
+		errorFinding(
+			"args.scenario",
+			`No scenario found with id ${selectedScenarioId}.`,
+		),
+	);
+}
 if (fixtureRoot) {
-	for (const scenario of scenarios.filter(
+	for (const scenario of selectedScenarios.filter(
 		(item) => item && item.type === "live_fixture",
 	)) {
 		liveFixtureResults.push(await runLiveFixture(scenario));
 	}
 }
 
-const scenarioResults = scenarios.map((scenario) => {
+const scenarioResults = selectedScenarios.map((scenario) => {
 	const liveResult = liveFixtureResults.find(
 		(result) => result.id === scenario.id,
 	);
@@ -200,12 +224,14 @@ const result = {
 		registeredScenarios: scenarios.filter(
 			(scenario) => scenario?.type !== "live_fixture",
 		).length,
+		selectedScenario: selectedScenarioId,
+		selectedScenarios: selectedScenarios.length,
 		liveFixtures: liveFixtureResults.length,
 		liveFixtureFailures: liveFixtureFailures.length,
 		liveFixtureDurationMs: Number(liveFixtureDurationMs.toFixed(2)),
 		slowestLiveFixture,
 		findings: findings.length,
-		observabilityEntries: scenarios.length,
+		observabilityEntries: selectedScenarios.length,
 		falsePositiveCount: guardrailEffectiveness.falsePositive,
 		falseNegativeCount: guardrailEffectiveness.falseNegative,
 		stageFailuresByStage: guardrailEffectiveness.stageFailuresByStage,
@@ -216,7 +242,7 @@ const result = {
 	scenarioResults,
 };
 
-const observabilityEntries = scenarios.map((scenario) => {
+const observabilityEntries = selectedScenarios.map((scenario) => {
 	const scenarioResult = scenarioResults.find(
 		(item) => item.id === scenario.id,
 	);
@@ -789,6 +815,11 @@ async function runLiveFixture(scenario) {
 				scenario,
 				fixturePath,
 			);
+		} else if (scenario.id === "package-installed-downstream-canary") {
+			result = runPackageInstalledDownstreamCanaryFixture(
+				scenario,
+				fixturePath,
+			);
 		} else {
 			result = {
 				id: scenario.id,
@@ -810,6 +841,18 @@ async function runLiveFixture(scenario) {
 			startedAt,
 		);
 	} catch (error) {
+		if (scenario.id === "package-installed-downstream-canary") {
+			writeJson(path.join(fixturePath, "result.json"), {
+				schemaVersion: "package-installed-downstream-canary/v1",
+				status: "fail",
+				failureClass: "fixture_exception",
+				errorMessage: error instanceof Error ? error.message : String(error),
+				commands: [],
+				summary: summarizeCanaryCommands([]),
+				claimBoundary:
+					"This canary proves installed local command portability for the covered commands. It does not prove live CI, PR review state, tracker state, merge readiness, or npm publication.",
+			});
+		}
 		return withFixtureDuration(
 			{
 				id: scenario.id,
@@ -5600,6 +5643,423 @@ function runRatchetPacketCommand(argsOrOptions) {
 			`ratchet packet command failed: pnpm --silent ${args.join(" ")}${stderr ? ` :: ${stderr}` : ""}`,
 		);
 	}
+}
+
+function runPackageInstalledDownstreamCanaryFixture(scenario, fixturePath) {
+	const reportPath = path.join(fixturePath, "result.json");
+	const packageRoot = resolveInside(fixturePath, "package");
+	const runtimeRoot = path.join(
+		process.env.TMPDIR || tmpdir(),
+		"coding-harness-evals",
+		scenario.id,
+		String(process.pid),
+	);
+	const downstreamRoot = path.join(runtimeRoot, "downstream");
+	const pnpmStore = path.join(runtimeRoot, "pnpm-store");
+	const downstreamRef = `<tmp>/coding-harness-evals/${scenario.id}/<run>/downstream`;
+	mkdirSync(packageRoot, { recursive: true });
+	rmSync(runtimeRoot, { force: true, recursive: true });
+	mkdirSync(downstreamRoot, { recursive: true });
+	writeFileSync(
+		path.join(downstreamRoot, "package.json"),
+		`${JSON.stringify(
+			{
+				name: "harness-downstream-canary",
+				private: true,
+				scripts: {
+					ordinary: "node -e \"console.log('downstream')\"",
+				},
+			},
+			null,
+			2,
+		)}\n`,
+	);
+	writeFileSync(path.join(downstreamRoot, ".gitignore"), "node_modules/\n");
+	runCanaryProcess("git", ["init"], downstreamRoot);
+	runCanaryProcess(
+		"git",
+		["add", "package.json", ".gitignore"],
+		downstreamRoot,
+	);
+	runCanaryProcess(
+		"git",
+		[
+			"-c",
+			"user.email=harness-canary@example.invalid",
+			"-c",
+			"user.name=Harness Canary",
+			"commit",
+			"-m",
+			"seed downstream fixture",
+		],
+		downstreamRoot,
+	);
+
+	const build = runCanaryProcess("pnpm", ["build"], REPO_ROOT, 120_000);
+	const pack =
+		build.exitCode === 0
+			? runCanaryProcess(
+					"pnpm",
+					["pack", "--pack-destination", packageRoot, "--json"],
+					REPO_ROOT,
+				)
+			: {
+					exitCode: 1,
+					stdout: "",
+					stderr: "package build failed",
+				};
+	const packOutput = build.exitCode === 0 ? parsePackOutput(pack.stdout) : null;
+	const tarballPath = packOutput?.filename
+		? resolveInside(packageRoot, packOutput.filename)
+		: null;
+	const packageManifest =
+		build.exitCode === 0
+			? readJson(path.join(REPO_ROOT, "package.json"))
+			: null;
+	const install =
+		build.exitCode === 0 && tarballPath && pack.exitCode === 0
+			? installCanaryPackage(
+					tarballPath,
+					downstreamRoot,
+					pnpmStore,
+					runtimeRoot,
+					packageManifest?.name,
+				)
+			: {
+					exitCode: 1,
+					stdout: "",
+					stderr:
+						build.exitCode === 0
+							? "package tarball was not produced"
+							: "package build failed",
+					method: "not_attempted",
+				};
+	const harnessBin = resolveInside(downstreamRoot, "node_modules/.bin/harness");
+	if (install.exitCode === 0) {
+		commitCanaryInstallState(downstreamRoot);
+	}
+	const commandRecords =
+		install.exitCode === 0
+			? runInstalledHarnessCommands(harnessBin, downstreamRoot, downstreamRef)
+			: [];
+	const summary = summarizeCanaryCommands(commandRecords);
+	const reportStatus =
+		build.exitCode === 0 &&
+		pack.exitCode === 0 &&
+		install.exitCode === 0 &&
+		commandRecords.length === CANARY_COMMANDS.length &&
+		commandRecords.every((record) => record.status === "pass")
+			? "pass"
+			: "fail";
+	const report = {
+		schemaVersion: "package-installed-downstream-canary/v1",
+		status: reportStatus,
+		packageSource: {
+			buildCommand: "pnpm build",
+			buildExitCode: build.exitCode,
+			buildStdoutSummary: summarizeCanaryProcessOutput(build.stdout),
+			buildStderrSummary: summarizeCanaryProcessOutput(build.stderr),
+			packCommand: "pnpm pack --pack-destination <fixture>/package --json",
+			tarballPath: tarballPath ? path.relative(REPO_ROOT, tarballPath) : null,
+			packExitCode: pack.exitCode,
+			installMethod: install.method,
+			installExitCode: install.exitCode,
+			primaryInstallExitCode: install.primaryExitCode ?? install.exitCode,
+			installStdoutSummary: summarizeCanaryProcessOutput(install.stdout),
+			installStderrSummary: summarizeCanaryProcessOutput(install.stderr),
+		},
+		downstreamRepo: {
+			path: downstreamRef,
+			harnessBin: `${downstreamRef}/node_modules/.bin/harness`,
+			hasHarnessSpecificScripts: false,
+		},
+		commands: commandRecords,
+		summary,
+		claimBoundary:
+			"This canary proves installed local command portability for the covered commands. It does not prove live CI, PR review state, tracker state, merge readiness, or npm publication.",
+	};
+	writeJson(reportPath, report);
+
+	return fixtureResult(scenario.id, [
+		assertion(
+			"package-installed downstream canary result is written",
+			readJson(reportPath).schemaVersion ===
+				"package-installed-downstream-canary/v1",
+		),
+		assertion(
+			"canary commands run from downstream cwd",
+			commandRecords.length === CANARY_COMMANDS.length &&
+				commandRecords.every((record) => record.cwd === downstreamRef),
+		),
+		assertion(
+			"canary invokes public harness commands",
+			commandRecords.length === CANARY_COMMANDS.length &&
+				commandRecords.every((record) => record.command.startsWith("harness ")),
+		),
+		assertion(
+			"canary command stdout is parseable JSON",
+			commandRecords.length === CANARY_COMMANDS.length &&
+				commandRecords.every((record) => record.stdoutJson),
+		),
+		assertion(
+			"canary outputs do not leak source checkout command paths",
+			summary.sourceRepoPathLeakCount === 0,
+		),
+		assertion(
+			"missing optional evidence degrades structurally",
+			canaryCommandStatus(commandRecords, "agent_rework") === "pass" &&
+				canaryCommandStatus(commandRecords, "reviewer_decision") === "pass",
+		),
+		assertion(
+			"agent-native ratchet packet commands are public harness commands",
+			ratchetPacketCommandsArePublic(commandRecords),
+		),
+		assertion(
+			"harness init dry-run does not write unexpected files",
+			initDryRunPreservesGitStatus(commandRecords),
+		),
+		assertion(
+			"canary runs without external credentials",
+			summary.blockedCount === 0,
+		),
+	]);
+}
+
+function installCanaryPackage(
+	tarballPath,
+	downstreamRoot,
+	pnpmStore,
+	_runtimeRoot,
+	_packageName,
+) {
+	return {
+		...runCanaryProcess(
+			"pnpm",
+			["--store-dir", pnpmStore, "add", tarballPath, "--ignore-scripts"],
+			downstreamRoot,
+			PACKAGE_CANARY_INSTALL_TIMEOUT_MS,
+		),
+		method: "pnpm_add_tarball",
+	};
+}
+
+function commitCanaryInstallState(downstreamRoot) {
+	runCanaryProcess(
+		"git",
+		["add", "package.json", "pnpm-lock.yaml"],
+		downstreamRoot,
+	);
+	runCanaryProcess(
+		"git",
+		[
+			"-c",
+			"user.email=harness-canary@example.invalid",
+			"-c",
+			"user.name=Harness Canary",
+			"commit",
+			"-m",
+			"install harness package",
+		],
+		downstreamRoot,
+	);
+}
+
+function runInstalledHarnessCommands(
+	harnessBin,
+	downstreamRoot,
+	downstreamRef,
+) {
+	return CANARY_COMMANDS.map((definition) => {
+		const beforeStatus = definition.dryRun
+			? gitStatusShort(downstreamRoot)
+			: null;
+		const result = runCanaryProcess(
+			harnessBin,
+			definition.args,
+			downstreamRoot,
+			60_000,
+		);
+		const afterStatus = definition.dryRun
+			? gitStatusShort(downstreamRoot)
+			: null;
+		return classifyCanaryCommand(
+			definition,
+			result,
+			downstreamRef,
+			beforeStatus,
+			afterStatus,
+		);
+	});
+}
+
+function classifyCanaryCommand(
+	definition,
+	result,
+	downstreamRef,
+	beforeStatus,
+	afterStatus,
+) {
+	const parsed = parseJsonOutput(result.stdout);
+	const sourcePathLeak =
+		hasSourcePathLeak(result.stdout) || hasSourcePathLeak(result.stderr);
+	const degradedStructured =
+		parsed.ok &&
+		["needs_evidence", "unknown"].includes(String(parsed.value.status ?? ""));
+	const packetBlocked = parsed.ok && parsed.value.status === "blocked";
+	let status = "pass";
+	let failureClass = "none";
+	if (sourcePathLeak) {
+		status = "fail";
+		failureClass = "source_repo_path_leak";
+	} else if (!parsed.ok) {
+		status = "fail";
+		failureClass = "non_json_stdout";
+	} else if (packetBlocked) {
+		status = "blocked";
+		failureClass = "packet_blocked";
+	} else if (result.exitCode !== 0 && !degradedStructured) {
+		status = "fail";
+		failureClass = "nonzero_exit";
+	}
+	return {
+		id: definition.id,
+		command: `harness ${definition.args.join(" ")}`,
+		cwd: downstreamRef,
+		exitCode: result.exitCode,
+		stdoutJson: parsed.ok,
+		stderrSummary: summarizeStderr(result.stderr),
+		packetSchemaVersion: parsed.ok
+			? (parsed.value.schemaVersion ?? parsed.value.schema_version ?? null)
+			: null,
+		packetStatus: parsed.ok ? (parsed.value.status ?? null) : null,
+		status,
+		failureClass,
+		...(beforeStatus !== null
+			? { beforeGitStatus: beforeStatus, afterGitStatus: afterStatus }
+			: {}),
+		...(parsed.ok ? { json: parsed.value } : {}),
+	};
+}
+
+function runCanaryProcess(command, args, cwd, timeout = 60_000) {
+	const result = spawnSync(command, args, {
+		cwd,
+		encoding: "utf8",
+		timeout,
+		maxBuffer: RATCHET_PACKET_COMMAND_MAX_BUFFER,
+		env: {
+			...process.env,
+			FORCE_COLOR: "0",
+			NO_COLOR: "1",
+		},
+	});
+	return {
+		exitCode: result.status ?? 1,
+		stdout: result.stdout ?? "",
+		stderr: result.stderr ?? (result.error ? result.error.message : ""),
+	};
+}
+
+function parsePackOutput(stdout) {
+	const parsed = parseJsonOutput(stdout);
+	if (!parsed.ok) return null;
+	return Array.isArray(parsed.value) ? (parsed.value[0] ?? null) : parsed.value;
+}
+
+function parseJsonOutput(stdout) {
+	try {
+		return { ok: true, value: JSON.parse(stdout) };
+	} catch {
+		return { ok: false, value: null };
+	}
+}
+
+function summarizeCanaryCommands(records) {
+	return {
+		commandCount: records.length,
+		passCount: records.filter((record) => record.status === "pass").length,
+		failCount: records.filter((record) => record.status === "fail").length,
+		blockedCount: records.filter((record) => record.status === "blocked")
+			.length,
+		sourceRepoPathLeakCount: records.filter(
+			(record) => record.failureClass === "source_repo_path_leak",
+		).length,
+		nonJsonStdoutCount: records.filter(
+			(record) => record.failureClass === "non_json_stdout",
+		).length,
+	};
+}
+
+function summarizeStderr(stderr) {
+	return String(stderr ?? "")
+		.trim()
+		.split("\n")
+		.slice(-5)
+		.join("\n");
+}
+
+function summarizeCanaryProcessOutput(output) {
+	const relativeSourceRoot = path.relative(process.cwd(), REPO_ROOT);
+	const summary = summarizeStderr(output).replaceAll(
+		REPO_ROOT,
+		"<source-repo>",
+	);
+	return relativeSourceRoot
+		? summary.replaceAll(relativeSourceRoot, "<source-repo>")
+		: summary;
+}
+
+function hasSourcePathLeak(value) {
+	const text = String(value ?? "");
+	return (
+		text.includes(REPO_ROOT) ||
+		text.includes("node scripts/write-agent-native-ratchet-report.cjs") ||
+		text.includes("pnpm run session:distill") ||
+		text.includes("pnpm run agent-native:ratchets") ||
+		text.includes("pnpm run agent-rework:report") ||
+		text.includes("pnpm run reviewer:decision")
+	);
+}
+
+function canaryCommandStatus(records, id) {
+	return records.find((record) => record.id === id)?.status ?? "missing";
+}
+
+function ratchetPacketCommandsArePublic(records) {
+	const ratchets = records.find(
+		(record) => record.id === "agent_native_ratchets",
+	)?.json?.ratchets;
+	const expectedRatchetIds = [
+		"session_distillation",
+		"agent_rework_loop",
+		"reviewer_decision_contract",
+		"governance_decision_surface",
+	];
+	return (
+		Array.isArray(ratchets) &&
+		expectedRatchetIds.every((id) => {
+			const ratchet = ratchets.find((item) => item.id === id);
+			return String(ratchet?.command ?? "").startsWith("harness ");
+		})
+	);
+}
+
+function initDryRunPreservesGitStatus(records) {
+	const record = records.find((item) => item.id === "init_dry_run");
+	return (
+		record?.status === "pass" &&
+		record.beforeGitStatus !== null &&
+		record.beforeGitStatus === record.afterGitStatus
+	);
+}
+
+function gitStatusShort(repoPath) {
+	const result = runCanaryProcess(
+		"git",
+		["status", "--short", "--untracked-files=all"],
+		repoPath,
+	);
+	return result.stdout;
 }
 
 function runSideEffectAuthorizationValidatorFixture(scenario, fixturePath) {
