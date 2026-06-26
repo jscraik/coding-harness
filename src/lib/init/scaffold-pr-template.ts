@@ -8,7 +8,13 @@ type PullRequestTemplateOptions = {
 };
 
 function renderRequiredWorkFieldLines(): string {
-	return REQUIRED_WORK_FIELDS.map((field) => `- ${field.label}:`).join("\n");
+	return REQUIRED_WORK_FIELDS.map((field) => {
+		const line = `- ${field.label}:`;
+		if (field.label !== "AI session / traceability") {
+			return line;
+		}
+		return `${line}\n<!-- Cite durable session/run/runtime-card references when available. Do not paste raw transcripts, prompts, secrets, or bulky telemetry. -->`;
+	}).join("\n");
 }
 
 function renderBehaviorProofSection(): string {
@@ -20,6 +26,7 @@ docs, or any observable operator experience. Use \`n.a.\` with a concrete reason
 for docs-only, metadata-only, or evidence-only changes where no behavior path
 exists.
 
+- Behavior before fix:
 - Behavior or issue addressed:
 - Real environment tested:
 - Exact steps or command run after this patch:
@@ -27,7 +34,6 @@ exists.
 - Observed result after fix:
 - What was not tested:
 - Proof limitations or environment constraints:
-- Before evidence, if available:
 
 Behavior proof guidance: Behavior proof is separate from unit tests, lint,
 typecheck, and CI. Use it to show the actual production path or nearest
@@ -57,13 +63,13 @@ Write for human maintainers first. Use \`n.a.\` with a concrete reason when a
 field does not apply. Do not paste secrets, raw transcripts, bulky telemetry,
 or local absolute paths.
 
-## Motivation
+## What Problem This Solves
 
 - Motivation:
 - Reasoning:
 - Chosen approach:
 
-## Summary
+## Why This Change Was Made
 
 - Problem:
 - Why now:
@@ -86,11 +92,14 @@ ${renderRequiredWorkFieldLines()}
 - [ ] Required local gates run: \`${options.codestyleCommand}\`, \`${options.checkCommand}\`, \`${options.memoryValidateCommand}\`.
 ${codeRabbitChecklist}- [ ] **(Pending)** Codex review completed and findings handled (or explicitly waived).
 - [ ] Any CodeRabbit Semgrep findings were either fixed or explicitly justified when warning-level-only.
+- [ ] This change is user-facing and I added a changelog entry.
+- [ ] This change is not user-facing.
 - [ ] Merge is blocked until all required checks pass.
 - [ ] I will delete branch/worktree after merge.
 
 ## Testing
 
+- regression_test_plan:
 - verification_commands:
 - verification_outcomes:
 - blocked_steps_reason:

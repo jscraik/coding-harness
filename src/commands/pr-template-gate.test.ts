@@ -15,13 +15,13 @@ import {
 	runPrTemplateGateCLI,
 } from "./pr-template-gate.js";
 
-const VALID_BODY = `## Motivation
+const VALID_BODY = `## What Problem This Solves
 
 - Motivation: PR bodies need to explain the decision pressure behind the work, not only list changed files.
 - Reasoning: Maintainers can review intent faster when motivation is captured near the top of the PR.
 - Chosen approach: Add a required Motivation section to the template and validator instead of relying on optional prose in Summary.
 
-## Summary
+## Why This Change Was Made
 
 - Problem: PR bodies could omit required validation evidence.
 - Why now: CI should catch incomplete PR templates before review.
@@ -32,6 +32,7 @@ const VALID_BODY = `## Motivation
 
 ## Behavior Proof
 
+- Behavior before fix: PR-template gate accepted bodies without an explicit regression test plan.
 - Behavior or issue addressed: PR-template gate validates complete PR bodies.
 - Real environment tested: local command-gate fixture through Vitest.
 - Exact steps or command run after this patch: pnpm vitest run src/commands/pr-template-gate.test.ts.
@@ -39,7 +40,6 @@ const VALID_BODY = `## Motivation
 - Observed result after fix: Complete PR body fixture passed the gate.
 - What was not tested: live GitHub PR submission is n.a. because this fixture tests the local command path.
 - Proof limitations or environment constraints: none for the local command-gate path.
-- Before evidence, if available: n.a. because this fixture describes the valid after state.
 
 ## Work performed
 
@@ -75,6 +75,7 @@ const VALID_BODY = `## Motivation
 
 ## Testing
 
+- regression_test_plan: Unit fixture coverage validates the command accepts complete bodies and rejects incomplete bodies.
 - verification_commands: \`pnpm lint\`; \`pnpm typecheck\`; \`pnpm test\`; \`pnpm audit\`; \`pnpm check\`
 - verification_outcomes: \`pass\`; \`pass\`; \`pass\`; \`pass\`; \`pass\`
 - blocked_steps_reason: none
@@ -197,7 +198,7 @@ describe("pr-template-gate command", () => {
 
 	it("requires motivation fields near the top of the PR body", () => {
 		const invalid = VALID_BODY.replace(
-			/## Motivation[\s\S]*?(?=## Summary)/,
+			/## What Problem This Solves[\s\S]*?(?=## Why This Change Was Made)/,
 			"",
 		);
 
@@ -207,7 +208,7 @@ describe("pr-template-gate command", () => {
 		if (result.ok) {
 			expect(result.output.passed).toBe(false);
 			expect(result.output.errors).toContain(
-				"Missing required section: ## Motivation",
+				"Missing required section: ## What Problem This Solves",
 			);
 			expect(result.output.errors).toContain("Missing motivation block.");
 		}
@@ -229,7 +230,7 @@ describe("pr-template-gate command", () => {
 			.mockImplementation(() => undefined);
 		const exitCode = runPrTemplateGateCLI({
 			prBody:
-				"## Summary\n\n## Checklist\n\n- [ ] placeholder checklist item\n\n## Testing\n\npass/fail\n\n## Review artifacts\n\n<link / artifact path / comment ID>\n\n## Notes\n\nAdd one-paragraph merge rationale here.",
+				"## Why This Change Was Made\n\n## Checklist\n\n- [ ] placeholder checklist item\n\n## Testing\n\npass/fail\n\n## Review artifacts\n\n<link / artifact path / comment ID>\n\n## Notes\n\nAdd one-paragraph merge rationale here.",
 		});
 		expect(exitCode).toBe(EXIT_CODES.POLICY_VIOLATION);
 		expect(consoleError).toHaveBeenCalled();

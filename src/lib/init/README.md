@@ -71,8 +71,8 @@ thin and delegate into this deep module.
   a submitted PR body, so scaffold fixtures must prove those placeholders are
   absent from freshly rendered templates and that a completed fixture can still
   satisfy `pr-template-gate`.
-- Generated PR templates must keep the `Motivation` section synchronized with
-  the repository PR template and validator rules. Generated PR bodies need
+- Generated PR templates must keep the `What Problem This Solves` section
+  synchronized with the repository PR template and validator rules. Generated PR bodies need
   explicit `Motivation`, `Reasoning`, and `Chosen approach` fields near
   the top so maintainers can review intent before implementation detail.
 - Generated hook setup must route direct `prek` execution through

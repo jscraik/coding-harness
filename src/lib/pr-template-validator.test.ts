@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { validatePrTemplateBody } from "./pr-template-validator.js";
 
-const VALID_BODY = `## Motivation
+const VALID_BODY = `## What Problem This Solves
 
 - Motivation: PR bodies need to explain the decision pressure behind the work, not only list changed files.
 - Reasoning: Maintainers can review intent faster when motivation is captured near the top of the PR.
 - Chosen approach: Add a required Motivation section to the template and validator instead of relying on optional prose in Summary.
 
-## Summary
+## Why This Change Was Made
 
 - Problem: PR bodies could omit required validation evidence.
 - Why now: CI should catch incomplete PR templates before review.
@@ -18,6 +18,7 @@ const VALID_BODY = `## Motivation
 
 ## Behavior Proof
 
+- Behavior before fix: PR-template validation accepted bodies without an explicit regression test plan.
 - Behavior or issue addressed: PR-template validation rejects incomplete PR bodies.
 - Real environment tested: local source-repo validator path through Vitest.
 - Exact steps or command run after this patch: pnpm vitest run src/lib/pr-template-validator.test.ts.
@@ -25,7 +26,6 @@ const VALID_BODY = `## Motivation
 - Observed result after fix: Complete PR body fixture passed validation.
 - What was not tested: live GitHub PR submission is n.a. because this fixture tests local validator behavior.
 - Proof limitations or environment constraints: none for the local validator path.
-- Before evidence, if available: n.a. because this fixture describes the valid after state.
 
 ## Work performed
 
@@ -61,6 +61,7 @@ const VALID_BODY = `## Motivation
 
 ## Testing
 
+- regression_test_plan: Unit fixture coverage validates the PR-template gate accepts complete bodies and rejects incomplete bodies.
 - verification_commands: \`pnpm lint\`; \`pnpm typecheck\`; \`pnpm test\`; \`pnpm audit\`; \`pnpm check\`
 - verification_outcomes: \`pass\`; \`pass\`; \`pass\`; \`pass\`; \`pass\`
 - blocked_steps_reason: none
@@ -89,13 +90,15 @@ describe("validatePrTemplateBody", () => {
 		expect(validatePrTemplateBody(VALID_BODY)).toEqual([]);
 	});
 
-	it("fails when the Motivation section is missing", () => {
+	it("fails when the problem section is missing", () => {
 		const MISSING_MOTIVATION_BODY = VALID_BODY.replace(
-			/## Motivation\n[\s\S]*?(?=## )/g,
+			/## What Problem This Solves\n[\s\S]*?(?=## )/g,
 			"",
 		);
 		const errors = validatePrTemplateBody(MISSING_MOTIVATION_BODY);
-		expect(errors).toContain("Missing required section: ## Motivation");
+		expect(errors).toContain(
+			"Missing required section: ## What Problem This Solves",
+		);
 	});
 
 	it("fails linked issue bodies without acceptance IDs or preparatory relationship", () => {
@@ -247,7 +250,9 @@ describe("validatePrTemplateBody", () => {
 	});
 
 	it("fails when required sections are missing", () => {
-		const errors = validatePrTemplateBody("## Summary\n\nOnly summary.");
+		const errors = validatePrTemplateBody(
+			"## Why This Change Was Made\n\nOnly summary.",
+		);
 		expect(errors).toContain("Missing required section: ## Behavior Proof");
 		expect(errors).toContain("Missing required section: ## Work performed");
 		expect(errors).toContain("Missing required section: ## Checklist");
@@ -331,7 +336,7 @@ describe("validatePrTemplateBody", () => {
 	});
 
 	it("fails when headings appear only in prose without markdown headers", () => {
-		const body = `## Summary
+		const body = `## Why This Change Was Made
 
 This PR addresses the Work performed: field, the Checklist: items, Testing: outcomes, Review artifacts: links, and Notes: section.`;
 		const errors = validatePrTemplateBody(body);

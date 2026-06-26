@@ -175,7 +175,7 @@ function collectBehaviorProofFieldErrors(body: string): string[] {
 function collectMotivationFieldErrors(body: string): string[] {
 	return collectFieldErrors(
 		body,
-		"## Motivation",
+		"## What Problem This Solves",
 		REQUIRED_MOTIVATION_FIELDS,
 		"motivation",
 	);

@@ -343,6 +343,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   is the operator-evidence lane for observable runtime, CLI, generated-artifact,
   validation, agent-workflow, and user-facing documentation changes; it is
   separate from unit tests and CI status.
+- PR-template changelog, regression-plan, or AI traceability changes should keep
+  the source template, scaffolded downstream template, validator rules,
+  CHANGELOG entry, and review handoff docs synchronized. AI traceability should
+  cite durable session, run, or runtime-card references without pasting raw
+  transcripts, prompts, secrets, or bulky telemetry.
 - PR-template linked-issue evidence must separate traceability from closure:
   `Linear reference` records issue refs such as `Refs JSC-363`,
   `Fixes JSC-363`, or `Closes JSC-363`, while
