@@ -29,6 +29,14 @@
 - Public functions and module entrypoints MUST have explicit type hints.
 - Prefer concrete types and `typing` primitives over untyped dictionaries at boundaries.
 - Validate external input payloads before use and narrow types early.
+- Avoid mutable default arguments. Use `None` sentinels and initialize new
+  mutable values inside the function body.
+- Avoid boolean flag parameters that hide behavior changes. Prefer named
+  options objects, separate functions, or strategy objects when a call site
+  would otherwise read as `process(value, True, False)`.
+- Prefer functions over classes unless shared state, polymorphism, or a
+  framework contract justifies a class. Avoid `Manager`, `Utils`, and `Helper`
+  classes that collect unrelated behavior.
 - For JSON/YAML/TOML or subprocess boundaries, prefer `dataclass`,
   `TypedDict`, Pydantic models, or schema validators over open-ended
   `dict[str, object]` plumbing after the boundary has been parsed.
@@ -49,8 +57,15 @@
 
 ## Error handling and observability
 - Do not swallow exceptions.
+- Do not use bare `except:` or `except Exception: pass`. Catch specific
+  exceptions, add context, and re-raise or return a typed error shape when the
+  caller owns recovery.
 - Add actionable context to raised errors and logs.
+- Use `logging` or structured machine-readable output for diagnostics in
+  scripts. Plain `print()` is acceptable for intentional stdout output, not for
+  hidden operational logging.
 - When scripts produce machine-consumed output, keep message structure stable.
+- Keep imports explicit; do not use `from module import *` in repository code.
 
 ## Enforcement
 - Python changes MUST pass the repository contract checks:

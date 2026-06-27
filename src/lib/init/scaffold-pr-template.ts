@@ -7,22 +7,18 @@ type PullRequestTemplateOptions = {
 	memoryValidateCommand: string;
 };
 
+/** Render PR evidence fields with traceability guidance where needed. */
 function renderRequiredWorkFieldLines(): string {
 	return REQUIRED_WORK_FIELDS.map((field) => {
-		if (field.label === "Validation evidence") {
-			return "- Validation evidence: See Testing.";
-		}
-		if (field.label === "Review artifacts") {
-			return "- Review artifacts: See Review artifacts.";
-		}
 		const line = `- ${field.label}:`;
-		if (field.label === "AI session / traceability") {
-			return `${line}\n<!-- Cite durable session/run/runtime-card references when available. Do not paste raw transcripts, prompts, secrets, or bulky telemetry. -->`;
+		if (field.label !== "AI session / traceability") {
+			return line;
 		}
-		return line;
+		return `${line}\n<!-- Cite durable session/run/runtime-card references when available. Do not paste raw transcripts, prompts, secrets, or bulky telemetry. -->`;
 	}).join("\n");
 }
 
+/** Render the reusable PR behavior-proof guidance section. */
 function renderBehaviorProofSection(): string {
 	return `## Behavior Proof
 

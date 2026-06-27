@@ -9,6 +9,8 @@ import {
 	QUALITY_LANE_ID,
 	TYPECHECK_LANE_ID,
 } from "./artifact-normalizers.js";
+import { FITNESS_COMMANDS } from "./commands.js";
+import { fitnessCoverage } from "./coverage.js";
 import { buildFitnessTrendSnapshot } from "./trend.js";
 import type {
 	FitnessEnforcement,
@@ -42,12 +44,13 @@ export interface BuildFitnessReportOptions
 
 const ARCHITECTURE_LANE_ID = "architecture-fitness";
 
+/** Build the deterministic baseline lane set before artifact enrichment. */
 function createBaseLanes(): FitnessLane[] {
 	return [
 		{
 			id: ARCHITECTURE_LANE_ID,
 			label: "Architecture fitness",
-			command: "pnpm architecture:check",
+			command: FITNESS_COMMANDS.ARCHITECTURE_CHECK,
 			principle: "protect_deep_module_boundaries",
 			enforcement: "architecture_fitness",
 			status: "not_run",
@@ -57,7 +60,7 @@ function createBaseLanes(): FitnessLane[] {
 		{
 			id: QUALITY_LANE_ID,
 			label: "Quality structure",
-			command: "pnpm run quality:size",
+			command: FITNESS_COMMANDS.QUALITY_SIZE,
 			principle: "reduce_cognitive_load",
 			enforcement: "quality_structure",
 			status: "not_run",
@@ -67,7 +70,7 @@ function createBaseLanes(): FitnessLane[] {
 		{
 			id: TYPECHECK_LANE_ID,
 			label: "Type safety",
-			command: "pnpm run fitness:typecheck-artifact",
+			command: FITNESS_COMMANDS.TYPECHECK_ARTIFACT,
 			principle: "prove_type_safety",
 			enforcement: "type_safety",
 			status: "not_run",
@@ -77,7 +80,7 @@ function createBaseLanes(): FitnessLane[] {
 		{
 			id: LINT_LANE_ID,
 			label: "Static lint",
-			command: "pnpm run fitness:lint-artifact",
+			command: FITNESS_COMMANDS.LINT_ARTIFACT,
 			principle: "preserve_static_contracts",
 			enforcement: "static_analysis",
 			status: "not_run",
@@ -87,7 +90,7 @@ function createBaseLanes(): FitnessLane[] {
 		{
 			id: BEHAVIOR_LANE_ID,
 			label: "Behavior proof",
-			command: "pnpm run quality:behavior-tests",
+			command: FITNESS_COMMANDS.BEHAVIOR_TESTS,
 			principle: "prove_behavior_outcomes",
 			enforcement: "hard_blocker",
 			status: "not_run",
@@ -97,7 +100,7 @@ function createBaseLanes(): FitnessLane[] {
 		{
 			id: FEEDBACK_LANE_ID,
 			label: "Feedback learning",
-			command: "pnpm run harness:audit-tracking",
+			command: FITNESS_COMMANDS.AUDIT_TRACKING,
 			principle: "compound_feedback_to_harness",
 			enforcement: "hard_blocker",
 			status: "not_run",
@@ -152,6 +155,7 @@ function architectureFindingTitle(rule: string): string {
 	return `Architecture rule ${rule} reported a finding`;
 }
 
+/** Normalize one architecture-check violation into a fitness finding. */
 function normalizeArchitectureViolation(
 	violation: ArchitectureCheckViolation,
 ): FitnessFinding | undefined {
@@ -180,12 +184,13 @@ function normalizeArchitectureViolation(
 			message,
 		},
 		risk: "Architecture boundary drift increases change amplification and makes agent repairs harder to localize.",
-		recommendedCommand: "pnpm architecture:check",
+		recommendedCommand: FITNESS_COMMANDS.ARCHITECTURE_CHECK,
 		claimBoundary:
 			"Architecture fitness evidence only; this does not prove tests, PR checks, review state, or merge readiness.",
 	};
 }
 
+/** Build a fitness finding for malformed architecture artifact input. */
 function malformedArchitectureArtifactFinding(
 	path: string,
 	message: string,
@@ -203,7 +208,7 @@ function malformedArchitectureArtifactFinding(
 			message,
 		},
 		risk: "Malformed architecture evidence can mask real boundary regressions.",
-		recommendedCommand: "pnpm architecture:check",
+		recommendedCommand: FITNESS_COMMANDS.ARCHITECTURE_CHECK,
 		claimBoundary:
 			"Architecture artifact evidence only; regenerate the source gate before using this lane as proof.",
 	};
@@ -349,6 +354,7 @@ export function buildFitnessReport(
 		generatedAt: (options.now ?? new Date()).toISOString(),
 		summary: fitnessSummary(lanes, findings),
 		lanes,
+		coverage: fitnessCoverage(),
 		topDeterministicFinding: selectTopDeterministicFitnessFinding(findings),
 		claimBoundaries: [
 			"Fitness reports normalize local gate evidence only.",

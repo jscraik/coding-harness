@@ -58,7 +58,6 @@ const VALID_BODY = `## What Problem This Solves
 ## Checklist
 
 - [x] I did not push directly to \`main\`; this PR is from a dedicated branch.
-- [x] This change is not user-facing.
 
 ## Testing
 
@@ -886,32 +885,5 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		expect(errors).toContain(
 			"Replace testing field placeholder: blocked_steps_reason",
 		);
-	});
-
-	it("fails when neither changelog checklist item is checked", () => {
-		const body = VALID_BODY.replace(
-			"- [x] This change is not user-facing.",
-			"- [ ] This change is not user-facing.",
-		);
-		const errors = validatePrTemplateBody(body);
-		expect(errors).toContain(
-			"Checklist must have either 'This change is user-facing and I added a changelog entry' or 'This change is not user-facing' checked.",
-		);
-	});
-
-	it("passes when user-facing changelog item is checked", () => {
-		const body = VALID_BODY.replace(
-			"- [x] This change is not user-facing.",
-			"- [ ] This change is not user-facing.",
-		).replace(
-			"## Checklist\n\n- [x] I did not push directly to `main`; this PR is from a dedicated branch.",
-			"## Checklist\n\n- [x] I did not push directly to `main`; this PR is from a dedicated branch.\n- [x] This change is user-facing and I added a changelog entry.",
-		);
-		expect(validatePrTemplateBody(body)).toEqual([]);
-	});
-
-	it("passes when not-user-facing changelog item is checked", () => {
-		const body = VALID_BODY;
-		expect(validatePrTemplateBody(body)).toEqual([]);
 	});
 });

@@ -108,6 +108,22 @@ function canonicalLanes(
 	];
 }
 
+function canonicalCoverage() {
+	return [
+		{
+			category: "typescript-type-discipline",
+			concern: "TypeScript anti-pattern coverage.",
+			laneIds: ["type-safety", "static-lint"],
+			commands: [
+				"pnpm run fitness:typecheck-artifact",
+				"pnpm run fitness:lint-artifact",
+			],
+			coverage: "Typecheck and lint evidence.",
+			claimBoundary: "Local type and lint evidence only.",
+		},
+	];
+}
+
 function fitnessReport(overrides: Record<string, unknown> = {}) {
 	return {
 		schemaVersion: "harness-fitness/v1",
@@ -121,6 +137,7 @@ function fitnessReport(overrides: Record<string, unknown> = {}) {
 			lanesNeedingEvidence: 0,
 		},
 		lanes: canonicalLanes(),
+		coverage: canonicalCoverage(),
 		topDeterministicFinding: null,
 		claimBoundaries: ["Fitness reports normalize local gate evidence only."],
 		...overrides,
@@ -176,6 +193,16 @@ describe("validateFitnessReport", () => {
 				}),
 			]),
 		);
+	});
+
+	it("accepts legacy v1 reports without coverage metadata", () => {
+		const report = fitnessReport();
+		const { coverage, ...legacyReport } = report;
+
+		expect(coverage).toEqual(canonicalCoverage());
+		const result = validateFitnessReport(legacyReport);
+
+		expect(result.valid).toBe(true);
 	});
 
 	it("rejects warn status when failures require fail", () => {
@@ -383,6 +410,21 @@ describe("validateFitnessReport", () => {
 			expect.arrayContaining([
 				expect.objectContaining({
 					code: "lanes must not contain duplicate lane ids",
+				}),
+			]),
+		);
+	});
+
+	it("rejects empty coverage metadata when present", () => {
+		const report = fitnessReport({ coverage: [] });
+
+		const result = validateFitnessReport(report);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "coverage must not be empty",
 				}),
 			]),
 		);

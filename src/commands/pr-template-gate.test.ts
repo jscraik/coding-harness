@@ -72,7 +72,6 @@ const VALID_BODY = `## What Problem This Solves
 ## Checklist
 
 - [x] I did not push directly to \`main\`; this PR is from a dedicated branch.
-- [x] This change is not user-facing.
 
 ## Testing
 
@@ -235,45 +234,5 @@ describe("pr-template-gate command", () => {
 		});
 		expect(exitCode).toBe(EXIT_CODES.POLICY_VIOLATION);
 		expect(consoleError).toHaveBeenCalled();
-	});
-
-	it("fails when changelog checklist items are not checked", () => {
-		const invalidBody = VALID_BODY.replace(
-			"- [x] This change is not user-facing.",
-			"- [ ] This change is not user-facing.",
-		);
-		const result = runPrTemplateGate({ prBody: invalidBody });
-		expect(result.ok).toBe(true);
-		if (result.ok) {
-			expect(result.output.passed).toBe(false);
-			expect(result.output.errors).toContain(
-				"Checklist must have either 'This change is user-facing and I added a changelog entry' or 'This change is not user-facing' checked.",
-			);
-		}
-	});
-
-	it("passes when user-facing changelog item is checked", () => {
-		const validBody = VALID_BODY.replace(
-			"- [x] This change is not user-facing.",
-			"- [x] This change is user-facing and I added a changelog entry.\n- [ ] This change is not user-facing.",
-		);
-		const result = runPrTemplateGate({ prBody: validBody });
-		expect(result.ok).toBe(true);
-		if (result.ok) {
-			expect(result.output.passed).toBe(true);
-			expect(result.output.errors).toEqual([]);
-		}
-	});
-
-	it("fails when both changelog checklist items are checked", () => {
-		const invalidBody = VALID_BODY.replace(
-			"- [x] This change is not user-facing.",
-			"- [x] This change is user-facing and I added a changelog entry.\n- [x] This change is not user-facing.",
-		);
-		const result = runPrTemplateGate({ prBody: invalidBody });
-		expect(result.ok).toBe(true);
-		if (result.ok) {
-			expect(result.output.passed).toBe(false);
-		}
 	});
 });

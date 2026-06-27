@@ -24,6 +24,7 @@ graph LR
   node_check_20f65c28_48d25399["check_20f65c28"]
   node_check_architecture_rules_6b7347fd_dc8f2cf3["check_architecture_rules_6b7347fd"]
   node_check_behavior_tests_2577f6be_58dc87b2["check_behavior_tests_2577f6be"]
+  node_check_code_quality_debt_cba04f67_104c73f4["check_code_quality_debt_cba04f67"]
   node_check_code_size_9c5efc3a_154124ae["check_code_size_9c5efc3a"]
   node_check_codex_agent_roles_5bb2e89b_c1a9a472["check_codex_agent_roles_5bb2e89b"]
   node_check_environment_core_2c16213f_a8a456d9["check_environment_core_2c16213f"]
@@ -333,10 +334,12 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_changed_files_4c0102f6_bfd165bc
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_architecture_rules_6b7347fd_dc8f2cf3
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_behavior_tests_2577f6be_58dc87b2
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_check_code_quality_debt_cba04f67_104c73f4
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_environment_core_2c16213f_a8a456d9
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_harness_audit_tracking_33e6a72e_eeff5b52
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_node_engine_217689bf_3e5964b2
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_check_public_api_docs_a9604f1b_f824853c
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_types_policy_cfbecf01_fb84cd04
   ext_node_child_process_f62b7d19["node:child_process"] --> node_ci_migrate_core_7005b5af_7e295ae3
   ext_node_child_process_f62b7d19["node:child_process"] --> node_cli_5_9c446a0f_12d0ff9c
@@ -390,6 +393,7 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_artifact_io_ba511748_6d1faad8
   ext_node_crypto_c7dfc512["node:crypto"] --> node_automation_run_records_e3246015_a281ec3e
   ext_node_crypto_c7dfc512["node:crypto"] --> node_check_behavior_tests_2577f6be_58dc87b2
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_check_code_quality_debt_cba04f67_104c73f4
   ext_node_crypto_c7dfc512["node:crypto"] --> node_check_environment_core_2c16213f_a8a456d9
   ext_node_crypto_c7dfc512["node:crypto"] --> node_ci_migrate_signing_2d82ac3f_9e5e8974
   ext_node_crypto_c7dfc512["node:crypto"] --> node_control_plane_core_db3b4cb2_27437a14
@@ -455,6 +459,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_check_20f65c28_48d25399
   ext_node_fs_a15b7d96["node:fs"] --> node_check_architecture_rules_6b7347fd_dc8f2cf3
   ext_node_fs_a15b7d96["node:fs"] --> node_check_behavior_tests_2577f6be_58dc87b2
+  ext_node_fs_a15b7d96["node:fs"] --> node_check_code_quality_debt_cba04f67_104c73f4
   ext_node_fs_a15b7d96["node:fs"] --> node_check_code_size_9c5efc3a_154124ae
   ext_node_fs_a15b7d96["node:fs"] --> node_check_codex_agent_roles_5bb2e89b_c1a9a472
   ext_node_fs_a15b7d96["node:fs"] --> node_check_environment_core_2c16213f_a8a456d9
@@ -725,6 +730,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_check_20f65c28_48d25399
   ext_node_path_78811c13["node:path"] --> node_check_architecture_rules_6b7347fd_dc8f2cf3
   ext_node_path_78811c13["node:path"] --> node_check_behavior_tests_2577f6be_58dc87b2
+  ext_node_path_78811c13["node:path"] --> node_check_code_quality_debt_cba04f67_104c73f4
   ext_node_path_78811c13["node:path"] --> node_check_code_size_9c5efc3a_154124ae
   ext_node_path_78811c13["node:path"] --> node_check_codex_agent_roles_5bb2e89b_c1a9a472
   ext_node_path_78811c13["node:path"] --> node_check_environment_core_2c16213f_a8a456d9
@@ -993,6 +999,7 @@ graph LR
   ext_semver_b4039641["semver"] --> node_validator_helpers_7b927667_8b691f8f
   ext_sqlite_vec_bae73cf2["sqlite-vec"] --> node_store_824d80d7_69038a3e
   ext_typescript_fb9da861["typescript"] --> node_check_behavior_tests_2577f6be_58dc87b2
+  ext_typescript_fb9da861["typescript"] --> node_check_code_quality_debt_cba04f67_104c73f4
   ext_typescript_fb9da861["typescript"] --> node_check_code_size_9c5efc3a_154124ae
   ext_typescript_fb9da861["typescript"] --> node_check_public_api_docs_a9604f1b_f824853c
   ext_typescript_fb9da861["typescript"] --> node_check_self_affirming_tests_7638e575_c6155698

@@ -40,6 +40,61 @@ PR merge gate MUST pass the repository contract commands:
 * `bash scripts/verify-work.sh --fast`
 
 Coverage and mutation thresholds MAY be enforced only when wired to executable repository validators.
+`pnpm run quality:debt` is the executable legacy-debt ratchet. It prevents new
+size, complexity, TypeScript escape-hatch, production-marker, and duplicate-block
+debt from entering the tree while allowing existing debt to burn down through a
+source-controlled baseline.
+
+### Engineering judgement checklist
+
+Use this checklist when reviewing AI-generated or agent-assisted changes. Each
+item should map to a repo command, schema, artifact, test, or explicit blocker;
+do not satisfy it with generic prose alone.
+
+* Structure: avoid distributed monoliths, god services, big balls of mud,
+  circular dependencies, tight coupling, leaky abstractions, shotgun surgery,
+  and copy-paste programming. Prefer clear ownership, dependency direction, and
+  small modules. Use `pnpm run quality:debt` to detect new duplicate-block,
+  size, and complexity debt.
+* Behavior and APIs: preserve versioned contracts, idempotency, pagination,
+  rate-limit behavior, consistent error envelopes, and boundary validation.
+  Do not return success-shaped responses for errors.
+* Failure: design for timeouts, retries, queues, backpressure, partial failure,
+  graceful degradation, and recovery paths. Do not assume networks, disks,
+  external APIs, or model calls always succeed.
+* Security: enforce least privilege, input validation, secret boundaries, audit
+  logging, and injection protections. Do not trust client-side validation or
+  model output as authority.
+* Testing and evals: select the smallest exact behavior proof first, then widen
+  through related tests, artifact contracts, deterministic evals, and calibrated
+  judges only where those are repo-defined.
+* Observability: include actionable logs, metrics, traces, health checks, and
+  service identity where the product or CLI can fail in operation.
+* CI/CD and release: keep pipelines reproducible, fast enough for feedback,
+  rollback-aware, and separate from review, tracker, and merge-readiness claims.
+* Accessibility: for UI work, preserve keyboard flow, semantic structure,
+  labels, contrast, and focus states before claiming user-facing readiness.
+* AI engineering: avoid prompt spaghetti, context-window dumping, blind trust in
+  model output, tool explosion, unbounded agent loops, missing grounding, and
+  missing human approval for authority-bearing actions.
+
+`harness fitness --json` exposes these review families as coverage metadata
+alongside deterministic lane evidence. Treat that metadata as routing context;
+a lane is proof only when its source command or artifact has current evidence.
+
+### Legacy debt ratchet
+
+The legacy-debt baseline is [contracts/code-quality-debt-baseline.json](../contracts/code-quality-debt-baseline.json).
+It is allowed to contain existing debt, but it is not a permission slip for new
+debt.
+
+* New debt MUST fail `pnpm run quality:debt`.
+* Resolved debt SHOULD be removed from the baseline in the same PR that burns it
+  down.
+* Baseline refreshes MUST be deliberate and reviewable; do not refresh the
+  baseline just to hide a regression.
+* The debt report is local static evidence only. It does not prove behavior,
+  CI, review-thread state, tracker state, or merge readiness.
 
 ---
 

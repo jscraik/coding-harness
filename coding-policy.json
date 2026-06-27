@@ -56,7 +56,11 @@
 				"src/templates/**/*.yaml"
 			],
 			"sourceRules": ["ci-safety", "script-delegation", "stateful-artifacts"],
-			"requiredGates": ["pnpm check", "bash scripts/validate-codestyle.sh"]
+			"requiredGates": [
+				"pnpm check",
+				"pnpm run quality:debt",
+				"bash scripts/validate-codestyle.sh"
+			]
 		},
 		{
 			"id": "python",
@@ -74,7 +78,13 @@
 				"src/lib/**/*.ts"
 			],
 			"sourceRules": ["code-formatting", "testing-standards"],
-			"requiredGates": ["pnpm lint", "pnpm typecheck", "pnpm run test:related"]
+			"requiredGates": [
+				"pnpm lint",
+				"pnpm typecheck",
+				"pnpm run quality:size",
+				"pnpm run quality:debt",
+				"pnpm run test:related"
+			]
 		},
 		{
 			"id": "shell",

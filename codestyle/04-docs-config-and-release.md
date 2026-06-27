@@ -57,12 +57,27 @@ MDX:
 * Prefer machine-generated JSON for large files; minimize hand-edited large JSON.
 * Transformations MUST use `jq` (not regex).
 * In JS/TS, JSON inputs at boundaries MUST be schema-validated.
+* JSON used as a contract, artifact, manifest, or tool output MUST have a
+  schema or typed validator. Avoid duplicate keys, mixed value shapes, deep
+  nesting, and hidden defaults that only the writer understands.
+* JSON MUST NOT contain comments or trailing commas unless the file is
+  explicitly JSONC and the consuming tool supports JSONC.
+* Secrets, tokens, private URLs, and credential material MUST NOT be stored in
+  JSON config. Use secret references, environment injection, or the approved
+  secret manager path.
 
 ### YAML
 
 * YAML MUST be linted (repo-selected linter) and schema-validated where applicable.
 * Indentation MUST be 2 spaces; tabs forbidden.
 * Avoid ambiguous scalars; prefer explicit `true`/`false`.
+* Quote dates, version-like values, and strings such as `yes`, `no`, `on`, or
+  `off` when the consuming parser could coerce them unexpectedly.
+* Avoid clever anchors, aliases, and templating that make CI or agent behavior
+  depend on hidden inheritance. Split large files by ownership when nesting
+  obscures review.
+* YAML MUST NOT contain secrets; use secret references or environment-specific
+  injection paths.
 * GitHub Actions YAML MUST avoid large inline scripts when a repo script exists.
 * YAML suppressions (if supported by the linter) MUST follow the same waiver model.
 
@@ -71,6 +86,21 @@ MDX:
 * TOML files MUST be syntactically valid and formatted consistently.
 * Tool pinning files (for example `.mise.toml`) are authoritative and MUST be reviewed like code.
 * Validation MUST occur via the consuming tool in CI (mise/ruff/etc.), plus a syntax check if available.
+* Keep table structure shallow and obvious. Do not encode complex documents,
+  branching logic, or environment-specific programming into TOML.
+* Repeated similar table blocks SHOULD use clear names or split files rather
+  than deep chains such as `app.settings.database.production.replica.region`.
+
+### General config rules
+
+* Human-edited config SHOULD use comments-capable formats when explanation is
+  necessary; strict model outputs and tool contracts SHOULD use JSON.
+* Environment-specific config MUST avoid copy-paste drift. Prefer shared
+  defaults plus small overrides, or generate environment artifacts from one
+  validated source.
+* Config MUST NOT become a programming language. If behavior needs loops,
+  branching, templating, retries, or policy decisions, move that logic into a
+  typed script or application module and keep config declarative.
 
 ---
 

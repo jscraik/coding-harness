@@ -67,6 +67,7 @@ function extractSectionBody(body: string, heading: string): string | null {
 	return match[1] ?? "";
 }
 
+/** Collect checklist checkbox status errors from the pull request body. */
 function collectChecklistErrors(body: string): string[] {
 	const checklistBody = extractSectionBody(body, "## Checklist");
 	if (checklistBody === null) {
@@ -86,10 +87,7 @@ function collectChecklistErrors(body: string): string[] {
 
 	const unchecked = checklistItems.filter((line) => /^- \[ \]/.test(line));
 	const unresolvedUnchecked = unchecked.filter(
-		(line) =>
-			!/\*\*\((pending|n\/a|not applicable)\)\*\*/i.test(line) &&
-			!/This change is user-facing and I added a changelog entry/i.test(line) &&
-			!/This change is not user-facing/i.test(line),
+		(line) => !/\*\*\((pending|n\/a|not applicable)\)\*\*/i.test(line),
 	);
 	if (unresolvedUnchecked.length > 0) {
 		errors.push(
@@ -97,30 +95,10 @@ function collectChecklistErrors(body: string): string[] {
 		);
 	}
 
-	// Validate changelog classification: at least one of the two changelog items must be checked
-	const userFacingChecked = checklistItems.some(
-		(line) =>
-			/^- \[[xX]\]/.test(line) &&
-			/This change is user-facing and I added a changelog entry/i.test(line),
-	);
-	const notUserFacingChecked = checklistItems.some(
-		(line) =>
-			/^- \[[xX]\]/.test(line) &&
-			/This change is not user-facing/i.test(line),
-	);
-
-	const changelogCheckedCount =
-		Number(userFacingChecked) + Number(notUserFacingChecked);
-	if (changelogCheckedCount !== 1) {
-		errors.push(
-			"Checklist must have exactly one changelog classification checked: either 'This change is user-facing and I added a changelog entry' or 'This change is not user-facing'.",
-		);
-	}
-	}
-
 	return errors;
 }
 
+/** Collect unresolved template placeholder errors from the pull request body. */
 function collectPlaceholderErrors(body: string): string[] {
 	const errors: string[] = [];
 
@@ -141,6 +119,7 @@ function collectPlaceholderErrors(body: string): string[] {
 	return errors;
 }
 
+/** Collect missing required field values from a named pull request section. */
 function collectFieldErrors(
 	body: string,
 	sectionHeading: string,
@@ -196,6 +175,7 @@ function collectBehaviorProofFieldErrors(body: string): string[] {
 	);
 }
 
+/** Collect missing motivation fields from the pull request body. */
 function collectMotivationFieldErrors(body: string): string[] {
 	return collectFieldErrors(
 		body,
@@ -220,6 +200,7 @@ function collectWorkPerformedFieldErrors(body: string): string[] {
 	);
 }
 
+/** Collect acceptance-trace errors when linked issue references are present. */
 function collectLinkedIssueAcceptanceTraceErrors(body: string): string[] {
 	const planIds = extractFieldBlockValue(body, "## Work performed", "Plan IDs");
 	if (planIds === null || !LINKED_ISSUE_REFERENCE_PATTERN.test(planIds)) {

@@ -49,6 +49,32 @@ describe("buildFitnessReport", () => {
 			"pnpm run quality:behavior-tests",
 			"pnpm run harness:audit-tracking",
 		]);
+		expect(report.coverage).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					category: "typescript-type-discipline",
+					commands: expect.arrayContaining([
+						"pnpm run fitness:typecheck-artifact",
+					]),
+				}),
+				expect.objectContaining({
+					category: "structure-and-architecture",
+					commands: expect.arrayContaining(["pnpm run quality:debt"]),
+				}),
+				expect.objectContaining({
+					category: "python-and-script-hygiene",
+					commands: expect.arrayContaining(["pnpm run python:types"]),
+				}),
+				expect.objectContaining({
+					category: "config-and-contract-data",
+					commands: expect.arrayContaining(["pnpm run artifact:types"]),
+				}),
+				expect.objectContaining({
+					category: "engineering-judgment-and-agent-safety",
+					claimBoundary: expect.stringContaining("routing metadata"),
+				}),
+			]),
+		);
 		expect(report.topDeterministicFinding).toBeNull();
 	});
 

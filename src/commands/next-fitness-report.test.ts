@@ -161,6 +161,22 @@ function canonicalDeterministicLanes() {
 	];
 }
 
+function canonicalCoverage() {
+	return [
+		{
+			category: "typescript-type-discipline",
+			concern: "TypeScript anti-pattern coverage.",
+			laneIds: ["type-safety", "static-lint"],
+			commands: [
+				"pnpm run fitness:typecheck-artifact",
+				"pnpm run fitness:lint-artifact",
+			],
+			coverage: "Typecheck and lint evidence.",
+			claimBoundary: "Local type and lint evidence only.",
+		},
+	];
+}
+
 function fitnessReport(overrides: Record<string, unknown>) {
 	const providedLanes = Array.isArray(overrides.lanes) ? overrides.lanes : [];
 	const providedIds = new Set(
@@ -184,6 +200,7 @@ function fitnessReport(overrides: Record<string, unknown>) {
 		status: "pass",
 		generatedAt: "2026-06-19T12:00:00.000Z",
 		topDeterministicFinding: null,
+		coverage: canonicalCoverage(),
 		claimBoundaries: ["Fitness reports normalize local gate evidence only."],
 		...overrides,
 		summary: {

@@ -55,7 +55,9 @@ path actually ran.
 
 ## Changed-code ratchets
 
-- `pnpm run quality:docstrings` requires JSDoc for changed exported public API declarations in production `src/**` files.
+- `pnpm run quality:docstrings` requires JSDoc for changed exported public API
+  declarations in production `src/**` files and enforces an 80% per-file
+  JSDoc coverage ratchet for touched function-like declarations.
 - `pnpm run quality:size` enforces changed-file size limits for production `src/**` files and reports explicit legacy allowlist skips.
 - `pnpm run quality:scripts` catches shell syntax regressions before broad gates spend time on docs, types, or Vitest.
 - `pnpm run tooling:parity` catches stale required-tool drift across policy, environment, CI, and scaffolding surfaces.
