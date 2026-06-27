@@ -67,6 +67,7 @@ const baselineScripts = {
 	typecheck: "true",
 	"quality:docstrings": "true",
 	"quality:size": "true",
+	"quality:debt": "true",
 	test: "true",
 };
 

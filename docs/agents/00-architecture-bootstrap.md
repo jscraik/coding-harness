@@ -176,6 +176,12 @@ synchronized. Deterministic lanes currently cover architecture, quality size,
 type safety, static lint, behavior proof, and feedback learning; AI-assisted
 review and trend snapshots remain advisory and must not become the blocking
 authority without an explicit contract update.
+Code-quality debt ratchets and CLI error-envelope contracts are part of this
+validation graph when they alter `quality:debt`, debt baselines, CLI JSON error
+schemas, or command failure output. Keep the baseline contract, package script,
+artifact type validation, CLI JSON manifest, generated architecture context,
+and focused regression tests synchronized so agents can distinguish deliberate
+legacy debt from newly introduced debt and parse command failures consistently.
 Codestyle policy-index and nested instruction-surface changes are part of this
 same validation graph when they add or alter `coding-policy.json`, policy
 schemas, policy validators, scoped `AGENTS.md` routing cards, docs-gate
