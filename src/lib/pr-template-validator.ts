@@ -109,10 +109,13 @@ function collectChecklistErrors(body: string): string[] {
 			/This change is not user-facing/i.test(line),
 	);
 
-	if (!userFacingChecked && !notUserFacingChecked) {
+	const changelogCheckedCount =
+		Number(userFacingChecked) + Number(notUserFacingChecked);
+	if (changelogCheckedCount !== 1) {
 		errors.push(
-			"Checklist must have either 'This change is user-facing and I added a changelog entry' or 'This change is not user-facing' checked.",
+			"Checklist must have exactly one changelog classification checked: either 'This change is user-facing and I added a changelog entry' or 'This change is not user-facing'.",
 		);
+	}
 	}
 
 	return errors;
