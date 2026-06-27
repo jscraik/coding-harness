@@ -9,11 +9,17 @@ type PullRequestTemplateOptions = {
 
 function renderRequiredWorkFieldLines(): string {
 	return REQUIRED_WORK_FIELDS.map((field) => {
-		const line = `- ${field.label}:`;
-		if (field.label !== "AI session / traceability") {
-			return line;
+		if (field.label === "Validation evidence") {
+			return "- Validation evidence: See Testing.";
 		}
-		return `${line}\n<!-- Cite durable session/run/runtime-card references when available. Do not paste raw transcripts, prompts, secrets, or bulky telemetry. -->`;
+		if (field.label === "Review artifacts") {
+			return "- Review artifacts: See Review artifacts.";
+		}
+		const line = `- ${field.label}:`;
+		if (field.label === "AI session / traceability") {
+			return `${line}\n<!-- Cite durable session/run/runtime-card references when available. Do not paste raw transcripts, prompts, secrets, or bulky telemetry. -->`;
+		}
+		return line;
 	}).join("\n");
 }
 
