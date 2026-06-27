@@ -264,4 +264,16 @@ describe("pr-template-gate command", () => {
 			expect(result.output.errors).toEqual([]);
 		}
 	});
+
+	it("fails when both changelog checklist items are checked", () => {
+		const invalidBody = VALID_BODY.replace(
+			"- [x] This change is not user-facing.",
+			"- [x] This change is user-facing and I added a changelog entry.\n- [x] This change is not user-facing.",
+		);
+		const result = runPrTemplateGate({ prBody: invalidBody });
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.passed).toBe(false);
+		}
+	});
 });
