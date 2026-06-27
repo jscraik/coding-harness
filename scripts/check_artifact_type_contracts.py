@@ -387,6 +387,37 @@ AgentNativeRatchetId = Literal[
 
 AgentNativeRatchetStatus = Literal["pass", "needs_attention"]
 AgentNativeReportStatus = Literal["pass", "needs_attention"]
+NativeAuthority = Literal["harness"]
+NativeClaim = str
+CANONICAL_NATIVE_CLAIMS = {
+    "repo_orientation",
+    "policy_route",
+    "repo_handoff_orientation",
+    "worktree_changed_files",
+    "local_recovery_state",
+    "review_lane_decision",
+    "governance_routing",
+    "codex_context_current",
+    "codex_session_truth",
+    "connector_snapshot_current",
+    "sidecar_export_current",
+    "ci_passed",
+    "review_threads_resolved",
+    "tracker_closed",
+    "merge_ready",
+    "validation_passed",
+}
+CROSS_AUTHORITY_CLAIMS = {
+    "codex_context_current",
+    "codex_session_truth",
+    "connector_snapshot_current",
+    "sidecar_export_current",
+    "ci_passed",
+    "review_threads_resolved",
+    "tracker_closed",
+    "merge_ready",
+}
+RatchetSourceKind = Literal["repo_contract", "repo_worktree", "repo_artifact"]
 EvidenceLaneId = Literal[
     "worktree",
     "policy_route",
@@ -408,6 +439,25 @@ GOVERNANCE_CLASSES: tuple[GovernanceClass, ...] = (
 )
 
 
+def validate_native_claim_boundary(
+    may_claim: Sequence[str], must_not_claim: Sequence[str]
+) -> None:
+    """Validate harness-native authority claim boundaries."""
+
+    claim_tokens = set(may_claim) | set(must_not_claim)
+    unknown_claims = sorted(claim_tokens - CANONICAL_NATIVE_CLAIMS)
+    if unknown_claims:
+        raise ValueError(f"unknown claim token: {', '.join(unknown_claims)}")
+    missing_claims = sorted(CROSS_AUTHORITY_CLAIMS - set(must_not_claim))
+    if missing_claims:
+        raise ValueError(
+            f"mustNotClaim must include cross-authority claims: {', '.join(missing_claims)}"
+        )
+    overlap = sorted(set(may_claim) & set(must_not_claim))
+    if overlap:
+        raise ValueError(f"mayClaim must not overlap mustNotClaim: {', '.join(overlap)}")
+
+
 class AgentNativeRatchet(BaseModel):
     """Typed contract for one agent-native ratchet lane."""
 
@@ -417,6 +467,10 @@ class AgentNativeRatchet(BaseModel):
     status: AgentNativeRatchetStatus
     purpose: str
     command: str
+    nativeAuthority: NativeAuthority
+    sourceKind: RatchetSourceKind
+    mayClaim: list[NativeClaim]
+    mustNotClaim: list[NativeClaim]
     evidencePaths: list[str]
     claimBoundary: str
     nextMove: str
@@ -427,6 +481,25 @@ class AgentNativeRatchet(BaseModel):
     _reject_blank_evidence_paths = field_validator("evidencePaths")(
         reject_empty_or_blank_list
     )
+    _reject_empty_may_claim = field_validator("mayClaim")(reject_empty_or_blank_list)
+    _reject_empty_must_not_claim = field_validator("mustNotClaim")(
+        reject_empty_or_blank_list
+    )
+
+    @model_validator(mode="after")
+    def require_harness_claim_boundary(self) -> AgentNativeRatchet:
+        expected_source_kinds = {
+            "orientation_packet": "repo_contract",
+            "session_distillation": "repo_worktree",
+            "agent_rework_loop": "repo_artifact",
+            "reviewer_decision_contract": "repo_artifact",
+            "governance_decision_surface": "repo_artifact",
+        }
+        expected_source_kind = expected_source_kinds[self.id]
+        if self.sourceKind != expected_source_kind:
+            raise ValueError(f"{self.id} must use {expected_source_kind} sourceKind")
+        validate_native_claim_boundary(self.mayClaim, self.mustNotClaim)
+        return self
 
 
 class AgentNativeRatchetsReport(BaseModel):
@@ -493,6 +566,10 @@ class SessionDistillReport(BaseModel):
     worktreeStatus: Literal["clean", "dirty"]
     changedFiles: list[str]
     changedFileCount: int
+    nativeAuthority: NativeAuthority
+    sourceKind: Literal["repo_worktree"]
+    mayClaim: list[NativeClaim]
+    mustNotClaim: list[NativeClaim]
     evidenceLanes: list[SessionEvidenceLane]
     nextCommands: list[str]
     nonClaims: list[str]
@@ -504,9 +581,14 @@ class SessionDistillReport(BaseModel):
     _reject_blank_items = field_validator("changedFiles", "nextCommands", "nonClaims")(
         reject_blank_list_items
     )
+    _reject_empty_may_claim = field_validator("mayClaim")(reject_empty_or_blank_list)
+    _reject_empty_must_not_claim = field_validator("mustNotClaim")(
+        reject_empty_or_blank_list
+    )
 
     @model_validator(mode="after")
     def require_session_consistency(self) -> SessionDistillReport:
+        validate_native_claim_boundary(self.mayClaim, self.mustNotClaim)
         if self.changedFileCount != len(self.changedFiles):
             raise ValueError("changedFileCount must equal changedFiles length")
         lane_ids = [lane.id for lane in self.evidenceLanes]
@@ -579,6 +661,10 @@ class AgentReworkReport(BaseModel):
 
     schemaVersion: Literal["agent-rework/v1"]
     status: Literal["pass", "needs_evidence"]
+    nativeAuthority: NativeAuthority
+    sourceKind: Literal["repo_artifact"]
+    mayClaim: list[NativeClaim]
+    mustNotClaim: list[NativeClaim]
     attemptSource: str
     command: str
     latestRun: AgentReworkAvailableRun | AgentReworkUnavailableRun
@@ -588,9 +674,14 @@ class AgentReworkReport(BaseModel):
     _reject_blank_strings = field_validator("attemptSource", "command", "claimBoundary")(
         reject_blank_string
     )
+    _reject_empty_may_claim = field_validator("mayClaim")(reject_empty_or_blank_list)
+    _reject_empty_must_not_claim = field_validator("mustNotClaim")(
+        reject_empty_or_blank_list
+    )
 
     @model_validator(mode="after")
     def require_rework_status_consistency(self) -> AgentReworkReport:
+        validate_native_claim_boundary(self.mayClaim, self.mustNotClaim)
         expected_status = "needs_evidence" if self.latestRun.status == "unavailable" else "pass"
         if self.status != expected_status:
             raise ValueError("status must match latestRun availability")
@@ -642,6 +733,10 @@ class ReviewerDecisionReport(BaseModel):
 
     schemaVersion: Literal["reviewer-decision/v1"]
     status: Literal["pass", "needs_evidence", "blocked", "defer"]
+    nativeAuthority: NativeAuthority
+    sourceKind: Literal["repo_artifact"]
+    mayClaim: list[NativeClaim]
+    mustNotClaim: list[NativeClaim]
     command: str
     decision: Literal[
         "accept",
@@ -668,9 +763,14 @@ class ReviewerDecisionReport(BaseModel):
     _reject_blank_strings = field_validator("command", "nextMove", "claimBoundary")(
         reject_blank_string
     )
+    _reject_empty_may_claim = field_validator("mayClaim")(reject_empty_or_blank_list)
+    _reject_empty_must_not_claim = field_validator("mustNotClaim")(
+        reject_empty_or_blank_list
+    )
 
     @model_validator(mode="after")
     def require_reviewer_decision_consistency(self) -> ReviewerDecisionReport:
+        validate_native_claim_boundary(self.mayClaim, self.mustNotClaim)
         if self.status == "pass" and self.decision not in {"accept", "accepted_risk"}:
             raise ValueError("passing reviewer decisions must accept or accept risk")
         compatible_decisions = {
@@ -732,6 +832,10 @@ class GovernanceDecisionSurfaceReport(BaseModel):
 
     schemaVersion: Literal["governance-decision-surface/v1"]
     status: Literal["pass", "needs_evidence"]
+    nativeAuthority: NativeAuthority
+    sourceKind: Literal["repo_artifact"]
+    mayClaim: list[NativeClaim]
+    mustNotClaim: list[NativeClaim]
     classes: list[GovernanceClass]
     documentsAnalyzed: int
     classCounts: GovernanceClassCounts
@@ -747,12 +851,17 @@ class GovernanceDecisionSurfaceReport(BaseModel):
     _reject_blank_strings = field_validator("nextMove", "claimBoundary")(
         reject_blank_string
     )
+    _reject_empty_may_claim = field_validator("mayClaim")(reject_empty_or_blank_list)
+    _reject_empty_must_not_claim = field_validator("mustNotClaim")(
+        reject_empty_or_blank_list
+    )
     _reject_negative_documents_analyzed = field_validator("documentsAnalyzed")(
         reject_negative_int
     )
 
     @model_validator(mode="after")
     def require_governance_class_consistency(self) -> GovernanceDecisionSurfaceReport:
+        validate_native_claim_boundary(self.mayClaim, self.mustNotClaim)
         if sorted(self.classes) != sorted(GOVERNANCE_CLASSES):
             raise ValueError("classes must enumerate every governance class")
         if any("feeds_runtime_decision" not in doc.classes for doc in self.decisionInputs):

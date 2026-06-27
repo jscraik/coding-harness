@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
+from collections.abc import Sequence
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, cast
@@ -43,8 +44,8 @@ def _load_example(name: str) -> dict[str, Any]:
 def _assert_harness_boundary(
     native_authority: str,
     source_kind: str,
-    may_claim: list[str],
-    must_not_claim: list[str],
+    may_claim: Sequence[str],
+    must_not_claim: Sequence[str],
     *,
     expected_source_kind: str,
 ) -> None:

@@ -26,6 +26,7 @@
 				"pnpm types:check",
 				"pnpm quality:docstrings",
 				"pnpm quality:size",
+				"pnpm quality:debt",
 				"pnpm quality:self-affirming",
 				"pnpm quality:behavior-tests",
 				"pnpm quality:git-env-sanitizer",
@@ -138,6 +139,12 @@
 			"lane": "source-quality",
 			"owner": "quality",
 			"proves": "changed production source respects size limits or owned ratchets"
+		},
+		{
+			"command": "pnpm quality:debt",
+			"lane": "source-quality",
+			"owner": "quality",
+			"proves": "legacy debt ratchet passes without adding new tracked production debt"
 		},
 		{
 			"command": "pnpm quality:self-affirming",
