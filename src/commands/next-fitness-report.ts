@@ -129,6 +129,7 @@ function topFitnessFinding(
 	);
 }
 
+/** Build the blocked next-action decision for a trusted deterministic fitness finding. */
 function deterministicFitnessDecision(args: {
 	artifactPath: string;
 	mode: HarnessNextMode;

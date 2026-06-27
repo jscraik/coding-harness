@@ -89,6 +89,19 @@ function validateCoverage(
 	validateString(value.concern, `${field}.concern`, errors);
 	validateStringArray(value.laneIds, `${field}.laneIds`, errors);
 	validateStringArray(value.commands, `${field}.commands`, errors);
+	if (
+		Array.isArray(value.laneIds) &&
+		Array.isArray(value.commands) &&
+		value.laneIds.length === 0 &&
+		value.commands.length === 0
+	) {
+		errors.push(
+			toValidationError(
+				`${field} must define at least one laneId or command`,
+				field,
+			),
+		);
+	}
 	validateString(value.coverage, `${field}.coverage`, errors);
 	validateString(value.claimBoundary, `${field}.claimBoundary`, errors);
 }

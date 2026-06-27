@@ -10,6 +10,7 @@
 		"generatedAt",
 		"summary",
 		"lanes",
+		"coverage",
 		"topDeterministicFinding",
 		"claimBoundaries"
 	],

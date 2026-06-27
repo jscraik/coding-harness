@@ -149,4 +149,116 @@ describe("check-code-quality-debt.mjs", () => {
 			]),
 		);
 	});
+
+	it("reports size, complexity, and TypeScript escape hatch debt categories", () => {
+		const root = createTempRepo();
+		writeSource(
+			root,
+			"src/clean.ts",
+			"export function clean() {\n\treturn 1;\n}\n",
+		);
+		expect(runScript(root, ["--update-baseline"]).status).toBe(0);
+
+		writeSource(
+			root,
+			"src/large.ts",
+			Array.from(
+				{ length: 401 },
+				(_, index) =>
+					`export const productionValue${String(index)} = ${String(index)};`,
+			).join("\n"),
+		);
+		writeSource(
+			root,
+			"src/large.test.ts",
+			Array.from(
+				{ length: 1201 },
+				(_, index) => `testValue${String(index)};`,
+			).join("\n"),
+		);
+		writeSource(
+			root,
+			"src/long-function.ts",
+			[
+				"export function longFunction() {",
+				...Array.from(
+					{ length: 81 },
+					(_, index) => `\tconst value${String(index)} = ${String(index)};`,
+				),
+				"\treturn value0;",
+				"}",
+				"",
+			].join("\n"),
+		);
+		writeSource(
+			root,
+			"src/complex.ts",
+			[
+				"export function complex(input: number) {",
+				...Array.from(
+					{ length: 11 },
+					(_, index) =>
+						`\tif (input === ${String(index)}) return ${String(index)};`,
+				),
+				"\treturn input;",
+				"}",
+				"",
+			].join("\n"),
+		);
+		writeSource(
+			root,
+			"src/unsafe.ts",
+			[
+				"export const unsafe: any = 1;",
+				"// @ts-ignore test fixture",
+				"export const ignored = unsafe;",
+				"",
+			].join("\n"),
+		);
+
+		const result = runScript(root, ["--json"]);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			newDebt: Array<{ category: string; path: string; symbol?: string }>;
+		};
+		const categories = report.newDebt.map((item) => item.category);
+
+		expect(result.status).toBe(1);
+		expect(report.status).toBe("fail");
+		expect(categories).toEqual(
+			expect.arrayContaining([
+				"oversized_file",
+				"oversized_test_file",
+				"oversized_function",
+				"high_complexity_function",
+				"typescript_escape_hatch",
+			]),
+		);
+		expect(report.newDebt).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					category: "oversized_file",
+					path: "src/large.ts",
+				}),
+				expect.objectContaining({
+					category: "oversized_test_file",
+					path: "src/large.test.ts",
+				}),
+				expect.objectContaining({
+					category: "oversized_function",
+					path: "src/long-function.ts",
+					symbol: "longFunction",
+				}),
+				expect.objectContaining({
+					category: "high_complexity_function",
+					path: "src/complex.ts",
+					symbol: "complex",
+				}),
+				expect.objectContaining({
+					category: "typescript_escape_hatch",
+					path: "src/unsafe.ts",
+				}),
+			]),
+		);
+	});
 });

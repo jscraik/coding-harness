@@ -92,5 +92,9 @@ const FITNESS_COVERAGE: FitnessCoverage[] = [
 
 /** Build anti-pattern and engineering-judgement coverage metadata. */
 export function fitnessCoverage(): FitnessCoverage[] {
-	return FITNESS_COVERAGE;
+	return FITNESS_COVERAGE.map((entry) => ({
+		...entry,
+		laneIds: [...entry.laneIds],
+		commands: [...entry.commands],
+	}));
 }

@@ -430,6 +430,42 @@ describe("validateFitnessReport", () => {
 		);
 	});
 
+	it("rejects coverage entries without a route target", () => {
+		const [entry] = canonicalCoverage();
+		const result = validateFitnessReport(
+			fitnessReport({
+				coverage: [{ ...entry, laneIds: [], commands: [] }],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "coverage[0] must define at least one laneId or command",
+				}),
+			]),
+		);
+	});
+
+	it("rejects coverage entries with an empty claim boundary", () => {
+		const [entry] = canonicalCoverage();
+		const result = validateFitnessReport(
+			fitnessReport({
+				coverage: [{ ...entry, claimBoundary: "" }],
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "coverage[0].claimBoundary must be a non-empty string",
+				}),
+			]),
+		);
+	});
+
 	it("accepts well-formed trend snapshots", () => {
 		const result = validateFitnessReport(
 			fitnessReport({

@@ -17,6 +17,16 @@ const modeStaged = args.has("--staged");
 const coverageThreshold = Number.parseFloat(
 	process.env.DOCSTRING_COVERAGE_THRESHOLD ?? "80",
 );
+if (
+	!Number.isFinite(coverageThreshold) ||
+	coverageThreshold < 0 ||
+	coverageThreshold > 100
+) {
+	console.error(
+		`[check-public-api-docs] invalid DOCSTRING_COVERAGE_THRESHOLD: ${String(process.env.DOCSTRING_COVERAGE_THRESHOLD ?? "80")}`,
+	);
+	process.exit(1);
+}
 
 function isProductionSource(path) {
 	return (
@@ -80,6 +90,10 @@ function addDiffLines(output, changedLines) {
 		}
 		const start = Number.parseInt(match[1], 10);
 		const count = match[2] ? Number.parseInt(match[2], 10) : 1;
+		if (count === 0) {
+			changedLines.add(Math.max(1, start));
+			continue;
+		}
 		for (let offset = 0; offset < count; offset += 1) {
 			changedLines.add(start + offset);
 		}
@@ -156,6 +170,10 @@ function lineFor(sourceFile, node) {
 
 function endLineFor(sourceFile, node) {
 	return sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1;
+}
+
+function fullStartLineFor(sourceFile, node) {
+	return sourceFile.getLineAndCharacterOfPosition(node.getFullStart()).line + 1;
 }
 
 function lineRangeTouches(changedLines, startLine, endLine) {
@@ -264,7 +282,7 @@ function checkFile(path) {
 		(target) =>
 			lineRangeTouches(
 				changedLines,
-				lineFor(sourceFile, target.node),
+				fullStartLineFor(sourceFile, target.docNode),
 				endLineFor(sourceFile, target.node),
 			),
 	);

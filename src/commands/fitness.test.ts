@@ -2,7 +2,6 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CLI_ERROR_SCHEMA_VERSION } from "../lib/cli/error-envelope.js";
 import { COMMAND_SPECS } from "../lib/cli/registry/command-specs.js";
 import { runFitnessCLI } from "./fitness.js";
 
@@ -191,7 +190,7 @@ describe("runFitnessCLI", () => {
 		expect(runFitnessCLI(["--json", "--architecture-report"])).toBe(2);
 
 		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
-		expect(result.schemaVersion).toBe(CLI_ERROR_SCHEMA_VERSION);
+		expect(result.schemaVersion).toBe("harness-cli-error/v1");
 		expect(result.status).toBe("error");
 		expect(result.error.code).toBe("fitness.architecture_report_required");
 	});

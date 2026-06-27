@@ -412,7 +412,9 @@ function duplicateDebt(sources) {
 	for (const [fingerprint, entries] of windows) {
 		const uniquePaths = new Set(entries.map((entry) => entry.path));
 		if (uniquePaths.size < 2) continue;
-		const [first, second] = entries;
+		const [first] = entries;
+		const second = entries.find((entry) => entry.path !== first.path);
+		if (!second) continue;
 		const paths = [...uniquePaths].sort();
 		const pairKey = paths.slice(0, 2).join("\u0000");
 		if (reportedPairs.has(pairKey)) continue;
