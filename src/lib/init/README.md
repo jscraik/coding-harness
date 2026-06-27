@@ -73,8 +73,8 @@ thin and delegate into this deep module.
   satisfy `pr-template-gate`.
 - Generated PR templates must keep the `What Problem This Solves` section
   synchronized with the repository PR template and validator rules. Generated PR bodies need
-  explicit `Motivation`, `Reasoning`, and `Chosen approach` fields near
-  the top so maintainers can review intent before implementation detail.
+  explicit `What Problem This Solves` and `Why This Change Was Made`
+  sections near the top so maintainers can review intent before implementation detail.
 - Generated hook setup must route direct `prek` execution through
   `scripts/run-prek.sh`. The wrapper sets `PREK_HOME` to the worktree cache
   before invoking `prek`, so sandboxed Codex runs and downstream repositories do
