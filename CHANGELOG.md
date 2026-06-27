@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [Unreleased]
+
+### Changed
+
+* Clarified the pull request template with problem-oriented section headings,
+  regression test plan evidence, AI traceability guidance, and changelog
+  classification checkboxes.
+
 ## [0.15.1](https://github.com/jscraik/coding-harness/compare/v0.15.0...v0.15.1) (2026-05-06)
 
 ### Bug Fixes

@@ -79,6 +79,19 @@ function staticPassingFitnessReport(generatedAt: string) {
 				findings: [],
 			},
 		],
+		coverage: [
+			{
+				category: "typescript-type-discipline",
+				concern: "TypeScript anti-pattern coverage.",
+				laneIds: ["type-safety", "static-lint"],
+				commands: [
+					"pnpm run fitness:typecheck-artifact",
+					"pnpm run fitness:lint-artifact",
+				],
+				coverage: "Typecheck and lint evidence.",
+				claimBoundary: "Local type and lint evidence only.",
+			},
+		],
 		topDeterministicFinding: null,
 		claimBoundaries: ["Fitness reports normalize local gate evidence only."],
 	};
@@ -122,6 +135,24 @@ describe("runFitnessCLI", () => {
 				command: "pnpm run fitness:lint-artifact",
 			}),
 		);
+		expect(result.coverage).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					category: "typescript-type-discipline",
+					commands: expect.arrayContaining([
+						"pnpm run fitness:typecheck-artifact",
+					]),
+				}),
+				expect.objectContaining({
+					category: "structure-and-architecture",
+					commands: expect.arrayContaining(["pnpm run quality:debt"]),
+				}),
+				expect.objectContaining({
+					category: "config-and-contract-data",
+					commands: expect.arrayContaining(["pnpm run artifact:types"]),
+				}),
+			]),
+		);
 	});
 
 	it("returns failure when ingested architecture findings include errors", () => {
@@ -159,6 +190,8 @@ describe("runFitnessCLI", () => {
 		expect(runFitnessCLI(["--json", "--architecture-report"])).toBe(2);
 
 		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(result.schemaVersion).toBe("harness-cli-error/v1");
+		expect(result.status).toBe("error");
 		expect(result.error.code).toBe("fitness.architecture_report_required");
 	});
 

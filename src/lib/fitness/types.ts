@@ -76,6 +76,16 @@ export interface FitnessLane {
 }
 
 /** Public API export. */
+export interface FitnessCoverage {
+	category: string;
+	concern: string;
+	laneIds: string[];
+	commands: string[];
+	coverage: string;
+	claimBoundary: string;
+}
+
+/** Public API export. */
 export interface FitnessTrendPoint {
 	status: FitnessStatus;
 	findings: number;
@@ -121,6 +131,7 @@ export interface FitnessReport {
 		lanesNeedingEvidence: number;
 	};
 	lanes: FitnessLane[];
+	coverage?: FitnessCoverage[];
 	topDeterministicFinding: FitnessFinding | null;
 	trendSnapshot?: FitnessTrendSnapshot;
 	claimBoundaries: string[];

@@ -1,0 +1,8 @@
+{
+	"schemaVersion": "harness-cli-error/v1",
+	"status": "error",
+	"error": {
+		"code": "fitness.architecture_report_required",
+		"message": "harness fitness requires a value after --architecture-report."
+	}
+}

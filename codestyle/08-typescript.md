@@ -15,12 +15,23 @@
 
 ## Type discipline
 - Explicit types at public API boundaries (functions, modules, component props) are REQUIRED.
-- Exported public API declarations in changed production `src/**` files MUST have JSDoc; `pnpm run quality:docstrings` enforces this changed-file ratchet.
+- Exported public API declarations in changed production `src/**` files MUST
+  have JSDoc; touched function-like declarations in each changed production
+  file MUST keep JSDoc coverage at or above 80%. `pnpm run
+  quality:docstrings` enforces both changed-code ratchets.
 - Use strict TypeScript configuration and keep boundary validation explicit.
 - Repository TypeScript projects SHOULD keep `strict`,
   `noUncheckedIndexedAccess`, and `exactOptionalPropertyTypes` enabled unless
   a documented migration or waiver explains why a target cannot support them.
 - `any` SHOULD be avoided in production paths; use concrete types or `unknown` plus narrowing. If a temporary `any` is unavoidable, keep it local, justified, and covered by tests or a follow-up waiver.
+- Treat every `any`, unsafe `as`, non-null assertion, and TypeScript
+  suppression as a review checkpoint. Each occurrence needs a local reason, a
+  runtime guard or type-narrowing path where data is external, and focused
+  behavior proof when the value crosses a command, file, network, or user-input
+  boundary.
+- Prefer discriminated unions over large untagged unions and prefer shared
+  domain types over duplicate interface definitions across command, report,
+  schema, and UI surfaces.
 
 ## Banned patterns
 - Unjustified `: any`, `as any`, `Promise<any>`, and `Record<string, any>` in production code.
@@ -43,6 +54,9 @@
 - With `verbatimModuleSyntax` enabled, imports MUST reflect runtime semantics; use `import type` for type-only imports.
 - JSON imports in NodeNext-style modules MUST use import attributes when the runtime/compiler requires them, for example `with { type: "json" }`.
 - Keep imports acyclic; avoid barrels that create circular dependency chains.
+- Avoid deep relative imports and broad `index.ts` barrels when they obscure
+  ownership or create circular dependency chains. Extract a narrow domain
+  module or registry instead.
 - Node scripts that consume JSON, command output, environment variables, or
   filesystem state MUST validate and narrow those values at the boundary before
   domain logic uses them. Prefer small typed helpers over repeated ad hoc
@@ -62,6 +76,14 @@
 - Changed production `src/**` modules MUST stay at or below 400 logical lines,
   functions MUST stay at or below 80 logical lines, and function complexity MUST
   stay at or below 10.
+- `pnpm run quality:debt` compares the whole source tree against the
+  code-quality debt baseline and fails when changed work introduces new size,
+  complexity, duplicate-block, production-marker, or TypeScript escape-hatch
+  debt.
+- Avoid god classes, god interfaces, massive switch statements, and utility
+  files that mix unrelated domains. Prefer small modules, options objects over
+  positional boolean flags, handler maps or discriminated unions for command
+  dispatch, and composition over inheritance.
 - Changed test files MUST stay at or below 1,200 logical lines.
 - `scripts/check-code-size.mjs` enforces these limits directly for changed files.
   Prefer extracting pure helpers, schema tables, or adapter-specific logic before
@@ -87,6 +109,7 @@
   - `pnpm run quality:docstrings`
 
   - `pnpm run quality:size`
+  - `pnpm run quality:debt`
   - `pnpm run test:related`
 
   - `pnpm test`

@@ -1,6 +1,6 @@
 export const REQUIRED_SECTIONS = [
-	"## Motivation",
-	"## Summary",
+	"## What Problem This Solves",
+	"## Why This Change Was Made",
 	"## Behavior Proof",
 	"## Work performed",
 	"## Checklist",
@@ -51,6 +51,11 @@ export const PREPARATORY_NO_ACCEPTANCE_COMPLETION_PATTERN =
 
 export const REQUIRED_TESTING_FIELDS = [
 	{
+		label: "regression_test_plan",
+		placeholder:
+			"describe unit, integration, contract, operator, or n.a. regression coverage",
+	},
+	{
 		label: "verification_commands",
 		placeholder: "list exact commands run here",
 	},
@@ -84,6 +89,10 @@ export const REQUIRED_MOTIVATION_FIELDS = [
 
 export const REQUIRED_BEHAVIOR_PROOF_FIELDS = [
 	{
+		label: "Behavior before fix",
+		placeholder: "describe the previous behavior, baseline, or n.a. reason",
+	},
+	{
 		label: "Behavior or issue addressed",
 		placeholder: "describe the observable behavior, issue, or n.a. reason",
 	},
@@ -111,11 +120,6 @@ export const REQUIRED_BEHAVIOR_PROOF_FIELDS = [
 	{
 		label: "Proof limitations or environment constraints",
 		placeholder: "state limitations, blockers, or `none`",
-	},
-	{
-		label: "Before evidence, if available",
-		placeholder:
-			"link before evidence, summarize baseline, or `n.a.` with reason",
 	},
 ] as const;
 

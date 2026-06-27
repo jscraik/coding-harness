@@ -67,6 +67,7 @@ function extractSectionBody(body: string, heading: string): string | null {
 	return match[1] ?? "";
 }
 
+/** Collect checklist checkbox status errors from the pull request body. */
 function collectChecklistErrors(body: string): string[] {
 	const checklistBody = extractSectionBody(body, "## Checklist");
 	if (checklistBody === null) {
@@ -97,6 +98,7 @@ function collectChecklistErrors(body: string): string[] {
 	return errors;
 }
 
+/** Collect unresolved template placeholder errors from the pull request body. */
 function collectPlaceholderErrors(body: string): string[] {
 	const errors: string[] = [];
 
@@ -117,6 +119,7 @@ function collectPlaceholderErrors(body: string): string[] {
 	return errors;
 }
 
+/** Collect missing required field values from a named pull request section. */
 function collectFieldErrors(
 	body: string,
 	sectionHeading: string,
@@ -172,10 +175,11 @@ function collectBehaviorProofFieldErrors(body: string): string[] {
 	);
 }
 
+/** Collect missing motivation fields from the pull request body. */
 function collectMotivationFieldErrors(body: string): string[] {
 	return collectFieldErrors(
 		body,
-		"## Motivation",
+		"## What Problem This Solves",
 		REQUIRED_MOTIVATION_FIELDS,
 		"motivation",
 	);
@@ -196,6 +200,7 @@ function collectWorkPerformedFieldErrors(body: string): string[] {
 	);
 }
 
+/** Collect acceptance-trace errors when linked issue references are present. */
 function collectLinkedIssueAcceptanceTraceErrors(body: string): string[] {
 	const planIds = extractFieldBlockValue(body, "## Work performed", "Plan IDs");
 	if (planIds === null || !LINKED_ISSUE_REFERENCE_PATTERN.test(planIds)) {

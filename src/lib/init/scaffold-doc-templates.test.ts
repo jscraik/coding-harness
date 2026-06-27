@@ -129,8 +129,8 @@ const completedBehaviorProofValues = new Map<string, string>([
 	],
 	["Proof limitations or environment constraints", "none for local rendering."],
 	[
-		"Before evidence, if available",
-		"n.a. because this fixture asserts the rendered after state.",
+		"Behavior before fix",
+		"generated PR templates did not require an explicit regression test plan.",
 	],
 ]);
 
@@ -299,12 +299,17 @@ describe("document scaffold templates", () => {
 		);
 		expect(template).toContain("CodeRabbit review completed");
 		expect(template).toContain("Codex review completed");
-		expect(template).toContain("## Motivation");
+		expect(template).toContain(
+			"This change is user-facing and I added a changelog entry.",
+		);
+		expect(template).toContain("This change is not user-facing.");
+		expect(template).toContain("## What Problem This Solves");
 		for (const field of REQUIRED_MOTIVATION_FIELDS) {
 			expect(template).toContain(`- ${field.label}:`);
 		}
 		expect(template).toContain("## Behavior Proof");
 		expect(template).toContain("Behavior proof is separate from unit tests");
+		expect(template).toContain("regression_test_plan");
 		expect(template).toContain("verification_commands");
 		expect(template).toContain("blocked_steps_reason");
 		for (const label of requiredWorkPerformedLabels) {

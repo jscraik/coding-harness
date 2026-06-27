@@ -3,6 +3,10 @@ import { readRepoRuntimeArtifactText } from "../lib/runtime/repo-runtime-artifac
 import { selectTopDeterministicFitnessFinding } from "../lib/fitness/report.js";
 import type { FitnessFinding, FitnessReport } from "../lib/fitness/types.js";
 import { validateFitnessReport } from "../lib/fitness/validation.js";
+import {
+	FITNESS_COMMANDS_THAT_WRITE_FILES,
+	trustedFitnessCommand,
+} from "../lib/fitness/commands.js";
 import { sanitizeEvidenceText } from "../lib/input/sanitize.js";
 import { createNextDecision } from "./next-decision-meta.js";
 import { blockedDecision, type HarnessNextMode } from "./next-decisions.js";
@@ -125,24 +129,7 @@ function topFitnessFinding(
 	);
 }
 
-const TRUSTED_FITNESS_COMMANDS = new Set([
-	"pnpm architecture:check",
-	"pnpm run quality:size",
-	"pnpm run fitness:typecheck-artifact",
-	"pnpm run fitness:lint-artifact",
-	"pnpm run quality:behavior-tests",
-	"pnpm run harness:audit-tracking",
-]);
-const FITNESS_COMMANDS_THAT_WRITE_FILES = new Set([
-	"pnpm run fitness:typecheck-artifact",
-	"pnpm run fitness:lint-artifact",
-]);
-
-function trustedFitnessCommand(command: string): string | null {
-	const normalized = command.trim();
-	return TRUSTED_FITNESS_COMMANDS.has(normalized) ? normalized : null;
-}
-
+/** Build the blocked next-action decision for a trusted deterministic fitness finding. */
 function deterministicFitnessDecision(args: {
 	artifactPath: string;
 	mode: HarnessNextMode;

@@ -33,6 +33,27 @@
 				"stdoutJson": true,
 				"reason": "harness next returns 1 for legitimate blocked decision output."
 			}
+		},
+		{
+			"name": "harness-fitness-error",
+			"command": [
+				"node",
+				"--import",
+				"tsx",
+				"src/cli.ts",
+				"fitness",
+				"--json",
+				"--architecture-report"
+			],
+			"expectedSchemaVersion": "harness-cli-error/v1",
+			"schemaPath": "contracts/harness-cli-error.schema.json",
+			"examplePath": "contracts/examples/harness-cli-error.example.json",
+			"liveValidation": {
+				"enabled": true,
+				"allowedExitCodes": [2],
+				"stdoutJson": true,
+				"reason": "harness fitness returns 2 for usage errors while still emitting a schema-backed JSON error envelope."
+			}
 		}
 	]
 }

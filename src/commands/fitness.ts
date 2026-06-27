@@ -1,4 +1,6 @@
 import { inspectFlagValue } from "../lib/cli/parse-utils.js";
+import { createCliErrorEnvelope } from "../lib/cli/error-envelope.js";
+import { FITNESS_COMMANDS } from "../lib/fitness/commands.js";
 import { buildFitnessReport } from "../lib/fitness/report.js";
 import type { FitnessReport } from "../lib/fitness/types.js";
 
@@ -9,6 +11,84 @@ const EXIT_CODES = {
 } as const;
 
 type FitnessFlag = ReturnType<typeof inspectFlagValue>;
+
+const FITNESS_REQUIRED_FLAGS = [
+	{
+		key: "architectureReport",
+		flag: "--architecture-report",
+		code: "fitness.architecture_report_required",
+		help:
+			"  --architecture-report <path>   Ingest " +
+			FITNESS_COMMANDS.ARCHITECTURE_CHECK +
+			" JSON output",
+	},
+	{
+		key: "artifactsDir",
+		flag: "--from-existing-artifacts",
+		code: "fitness.artifacts_dir_required",
+		help: "  --from-existing-artifacts <dir> Discover conventional gate JSON artifacts",
+	},
+	{
+		key: "qualitySizeReport",
+		flag: "--quality-size-report",
+		code: "fitness.quality_size_report_required",
+		help:
+			"  --quality-size-report <path>   Ingest " +
+			FITNESS_COMMANDS.QUALITY_SIZE +
+			" JSON output",
+	},
+	{
+		key: "typecheckReport",
+		flag: "--typecheck-report",
+		code: "fitness.typecheck_report_required",
+		help:
+			"  --typecheck-report <path>      Ingest " +
+			FITNESS_COMMANDS.TYPECHECK_ARTIFACT +
+			" output",
+	},
+	{
+		key: "lintReport",
+		flag: "--lint-report",
+		code: "fitness.lint_report_required",
+		help:
+			"  --lint-report <path>           Ingest " +
+			FITNESS_COMMANDS.LINT_ARTIFACT +
+			" output",
+	},
+	{
+		key: "behaviorTestsReport",
+		flag: "--behavior-tests-report",
+		code: "fitness.behavior_tests_report_required",
+		help:
+			"  --behavior-tests-report <path> Ingest " +
+			FITNESS_COMMANDS.BEHAVIOR_TESTS +
+			" JSON output",
+	},
+	{
+		key: "auditTrackingReport",
+		flag: "--audit-tracking-report",
+		code: "fitness.audit_tracking_report_required",
+		help:
+			"  --audit-tracking-report <path> Ingest " +
+			FITNESS_COMMANDS.AUDIT_TRACKING +
+			" JSON output",
+	},
+	{
+		key: "advisoryReviewReport",
+		flag: "--advisory-review-report",
+		code: "fitness.advisory_review_report_required",
+		help: "  --advisory-review-report <path> Ingest structured AI review output as advisory",
+	},
+	{
+		key: "trendBaseline",
+		flag: "--trend-baseline",
+		code: "fitness.trend_baseline_required",
+		help: "  --trend-baseline <path>       Compare against a previous harness-fitness/v1 report",
+	},
+] as const;
+
+type FitnessRequiredFlag = (typeof FITNESS_REQUIRED_FLAGS)[number];
+type FitnessFlagKey = FitnessRequiredFlag["key"];
 
 interface FitnessFlags {
 	architectureReport: FitnessFlag;
@@ -64,70 +144,24 @@ export function runFitnessCLI(args: string[]): number {
 	}
 }
 
+/** Parse required fitness artifact flags from command arguments. */
 function parseFitnessFlags(args: string[]): FitnessFlags {
-	return {
-		architectureReport: inspectFlagValue(args, "--architecture-report"),
-		artifactsDir: inspectFlagValue(args, "--from-existing-artifacts"),
-		qualitySizeReport: inspectFlagValue(args, "--quality-size-report"),
-		typecheckReport: inspectFlagValue(args, "--typecheck-report"),
-		lintReport: inspectFlagValue(args, "--lint-report"),
-		behaviorTestsReport: inspectFlagValue(args, "--behavior-tests-report"),
-		auditTrackingReport: inspectFlagValue(args, "--audit-tracking-report"),
-		advisoryReviewReport: inspectFlagValue(args, "--advisory-review-report"),
-		trendBaseline: inspectFlagValue(args, "--trend-baseline"),
-	};
+	const flags = {} as FitnessFlags;
+	for (const { key, flag } of FITNESS_REQUIRED_FLAGS) {
+		flags[key as FitnessFlagKey] = inspectFlagValue(args, flag);
+	}
+	return flags;
 }
 
+/** Return the first required fitness flag that was provided without a value. */
 function missingFitnessFlag(
 	flags: FitnessFlags,
 ): MissingFitnessFlag | undefined {
-	return [
-		{
-			flag: flags.architectureReport,
-			code: "fitness.architecture_report_required",
-			name: "--architecture-report",
-		},
-		{
-			flag: flags.artifactsDir,
-			code: "fitness.artifacts_dir_required",
-			name: "--from-existing-artifacts",
-		},
-		{
-			flag: flags.qualitySizeReport,
-			code: "fitness.quality_size_report_required",
-			name: "--quality-size-report",
-		},
-		{
-			flag: flags.typecheckReport,
-			code: "fitness.typecheck_report_required",
-			name: "--typecheck-report",
-		},
-		{
-			flag: flags.lintReport,
-			code: "fitness.lint_report_required",
-			name: "--lint-report",
-		},
-		{
-			flag: flags.behaviorTestsReport,
-			code: "fitness.behavior_tests_report_required",
-			name: "--behavior-tests-report",
-		},
-		{
-			flag: flags.auditTrackingReport,
-			code: "fitness.audit_tracking_report_required",
-			name: "--audit-tracking-report",
-		},
-		{
-			flag: flags.advisoryReviewReport,
-			code: "fitness.advisory_review_report_required",
-			name: "--advisory-review-report",
-		},
-		{
-			flag: flags.trendBaseline,
-			code: "fitness.trend_baseline_required",
-			name: "--trend-baseline",
-		},
-	].find(({ flag }) => flag.missingValue);
+	return FITNESS_REQUIRED_FLAGS.map(({ key, code, flag }) => ({
+		flag: flags[key as FitnessFlagKey],
+		code,
+		name: flag,
+	})).find(({ flag }) => flag.missingValue);
 }
 
 function fitnessReportOptions(flags: FitnessFlags) {
@@ -162,6 +196,7 @@ function fitnessReportOptions(flags: FitnessFlags) {
 	};
 }
 
+/** Print human-readable usage for the fitness command. */
 function printFitnessHelp(): void {
 	console.info(
 		"Usage: harness fitness [--json] [--from-existing-artifacts <dir>] [artifact flags]",
@@ -173,33 +208,9 @@ function printFitnessHelp(): void {
 	console.info("");
 	console.info("Options:");
 	console.info("  --json                         Emit machine-readable JSON");
-	console.info(
-		"  --from-existing-artifacts <dir> Discover conventional gate JSON artifacts",
-	);
-	console.info(
-		"  --architecture-report <path>   Ingest pnpm architecture:check JSON output",
-	);
-	console.info(
-		"  --quality-size-report <path>   Ingest pnpm run quality:size JSON output",
-	);
-	console.info(
-		"  --typecheck-report <path>      Ingest pnpm run fitness:typecheck-artifact output",
-	);
-	console.info(
-		"  --lint-report <path>           Ingest pnpm run fitness:lint-artifact output",
-	);
-	console.info(
-		"  --behavior-tests-report <path> Ingest pnpm run quality:behavior-tests JSON output",
-	);
-	console.info(
-		"  --audit-tracking-report <path> Ingest pnpm run harness:audit-tracking JSON output",
-	);
-	console.info(
-		"  --advisory-review-report <path> Ingest structured AI review output as advisory",
-	);
-	console.info(
-		"  --trend-baseline <path>       Compare against a previous harness-fitness/v1 report",
-	);
+	for (const { help } of FITNESS_REQUIRED_FLAGS) {
+		console.info(help);
+	}
 }
 
 function renderFitnessReport(report: FitnessReport, json: boolean): void {
@@ -222,6 +233,7 @@ function renderFitnessReport(report: FitnessReport, json: boolean): void {
 	}
 }
 
+/** Emit a fitness command error in JSON or text form and return its exit code. */
 function emitFitnessError(options: {
 	json: boolean;
 	code: string;
@@ -231,11 +243,10 @@ function emitFitnessError(options: {
 	if (options.json) {
 		console.info(
 			JSON.stringify(
-				{
-					schemaVersion: "harness-cli-error/v1",
-					status: "error",
-					error: { code: options.code, message: options.message },
-				},
+				createCliErrorEnvelope({
+					code: options.code,
+					message: options.message,
+				}),
 				null,
 				2,
 			),

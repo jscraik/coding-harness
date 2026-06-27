@@ -1,0 +1,21 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/harness-cli-error.schema.json",
+	"title": "Harness CLI Error",
+	"type": "object",
+	"additionalProperties": false,
+	"required": ["schemaVersion", "status", "error"],
+	"properties": {
+		"schemaVersion": { "const": "harness-cli-error/v1" },
+		"status": { "const": "error" },
+		"error": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["code", "message"],
+			"properties": {
+				"code": { "type": "string", "minLength": 1 },
+				"message": { "type": "string", "minLength": 1 }
+			}
+		}
+	}
+}

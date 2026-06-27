@@ -13,6 +13,7 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 - [Baselines](#baselines)
 - [Toolchain config](#toolchain-config)
 - [Codestyle modules](#codestyle-modules)
+- [Engineering judgement coverage](#engineering-judgement-coverage)
 - [Machine-readable policy index](#machine-readable-policy-index)
 - [Enforcement model](#enforcement-model)
 - [How to use this pack](#how-to-use-this-pack)
@@ -58,6 +59,32 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 - [codestyle/19-development-workflow.md](./codestyle/19-development-workflow.md)
 - [codestyle/20-go.md](./codestyle/20-go.md)
 
+## Engineering judgement coverage
+- Treat language, config, architecture, testing, security, observability, CI/CD,
+  and AI-agent anti-patterns as review vocabulary tied to executable gates.
+- Use [codestyle/08-typescript.md](./codestyle/08-typescript.md) for
+  TypeScript-specific type-system hazards such as `any`, unsafe assertions,
+  non-null assertions, duplicate types, unvalidated external data, and module
+  boundary drift.
+- Use [codestyle/07-python.md](./codestyle/07-python.md) for Python-specific
+  hazards such as mutable defaults, broad exception handling, untyped public
+  boundaries, implicit global state, subprocess misuse, and print-only
+  diagnostics.
+- Use [codestyle/04-docs-config-and-release.md](./codestyle/04-docs-config-and-release.md)
+  for JSON/YAML/TOML hazards such as missing schemas, ambiguous scalars,
+  duplicate or mixed-shape data, secrets in config, hidden defaults, and config
+  used as a programming language.
+- Use [codestyle/05-quality-security-ops.md](./codestyle/05-quality-security-ops.md)
+  for cross-layer engineering judgement: system design, API contracts,
+  security, testing, observability, CI/CD, accessibility, and AI-agent safety.
+- `harness fitness --json` exposes a schema-backed `coverage` section that maps
+  these review areas to deterministic lanes, adjacent required gates, and claim
+  boundaries. Coverage metadata routes proof; it does not prove a command ran.
+- `pnpm run quality:debt` is the legacy-debt ratchet. It compares current
+  size, complexity, TypeScript escape hatches, production markers, and duplicate
+  production blocks against [contracts/code-quality-debt-baseline.json](./contracts/code-quality-debt-baseline.json).
+  New debt fails; resolved debt is reported as burn-down.
+
 ## Machine-readable policy index
 - [coding-policy.json](./coding-policy.json) is the machine-readable index for this codestyle pack.
 - Markdown modules remain the prose authority; the JSON file maps changed-file routing, module ownership, source-rule lineage, required gates, and claim boundaries for validators and agents.
@@ -81,6 +108,7 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
   - `pnpm audit`
   - `pnpm check`
   - `pnpm run coding-policy:validate`
+  - `pnpm run quality:debt`
   - `bash scripts/validate-codestyle.sh`
   - `bash scripts/verify-work.sh --fast`
 

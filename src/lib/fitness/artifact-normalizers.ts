@@ -12,6 +12,7 @@ import {
 	requiredRecordArray,
 } from "./artifact-evidence.js";
 import { firstString, gateArtifactFindings } from "./gate-artifact-findings.js";
+import { FITNESS_COMMANDS } from "./commands.js";
 
 /** Public API export. */
 export interface FitnessArtifactReportOptions {
@@ -57,12 +58,13 @@ export function conventionalArtifactPath(
 	return existsSync(candidate) ? candidate : undefined;
 }
 
+/** Convert quality:size artifact findings into fitness lane findings. */
 function qualitySizeFindings(path: string): FitnessFinding[] {
 	return gateArtifactFindings({
 		path,
 		detailsField: "findings",
 		lane: QUALITY_LANE_ID,
-		command: "pnpm run quality:size",
+		command: FITNESS_COMMANDS.QUALITY_SIZE,
 		principle: "reduce_cognitive_load",
 		enforcement: "quality_structure",
 		idPrefix: "quality-size",
@@ -117,12 +119,13 @@ function qualitySizeMetrics(
 	return { [actualKey]: actual, [maxKey]: max };
 }
 
+/** Convert typecheck artifact failures into fitness lane findings. */
 function typecheckFindings(path: string): FitnessFinding[] {
 	return gateArtifactFindings({
 		path,
 		detailsField: "failures",
 		lane: TYPECHECK_LANE_ID,
-		command: "pnpm run fitness:typecheck-artifact",
+		command: FITNESS_COMMANDS.TYPECHECK_ARTIFACT,
 		principle: "prove_type_safety",
 		enforcement: "type_safety",
 		idPrefix: "typecheck",
@@ -137,12 +140,13 @@ function typecheckFindings(path: string): FitnessFinding[] {
 	});
 }
 
+/** Convert lint artifact findings into fitness lane findings. */
 function lintFindings(path: string): FitnessFinding[] {
 	return gateArtifactFindings({
 		path,
 		detailsField: "findings",
 		lane: LINT_LANE_ID,
-		command: "pnpm run fitness:lint-artifact",
+		command: FITNESS_COMMANDS.LINT_ARTIFACT,
 		principle: "preserve_static_contracts",
 		enforcement: "static_analysis",
 		idPrefix: "lint",
@@ -157,6 +161,7 @@ function lintFindings(path: string): FitnessFinding[] {
 	});
 }
 
+/** Convert behavior-test artifact failures into fitness lane findings. */
 function behaviorTestFindings(path: string): FitnessFinding[] {
 	const report = readJsonFile(path);
 	const result = requiredRecordArray(
@@ -164,7 +169,7 @@ function behaviorTestFindings(path: string): FitnessFinding[] {
 		"failures",
 		path,
 		BEHAVIOR_LANE_ID,
-		"pnpm run quality:behavior-tests",
+		FITNESS_COMMANDS.BEHAVIOR_TESTS,
 		"prove_behavior_outcomes",
 		"hard_blocker",
 	);
@@ -176,7 +181,7 @@ function behaviorTestFindings(path: string): FitnessFinding[] {
 			emptyDetailsFinding({
 				path,
 				lane: BEHAVIOR_LANE_ID,
-				command: "pnpm run quality:behavior-tests",
+				command: FITNESS_COMMANDS.BEHAVIOR_TESTS,
 				principle: "prove_behavior_outcomes",
 				enforcement: "hard_blocker",
 				status,
@@ -196,12 +201,13 @@ function behaviorTestFindings(path: string): FitnessFinding[] {
 				"Behavior test gate reported a failure.",
 		},
 		risk: "Behavior proof is failing, so the implementation outcome is not locally proven.",
-		recommendedCommand: "pnpm run quality:behavior-tests",
+		recommendedCommand: FITNESS_COMMANDS.BEHAVIOR_TESTS,
 		claimBoundary:
 			"Behavior-test evidence only; this does not prove PR checks, review state, tracker state, or merge readiness.",
 	}));
 }
 
+/** Convert audit-tracking artifact failures into feedback lane findings. */
 function auditTrackingFindings(path: string): FitnessFinding[] {
 	const report = readJsonFile(path);
 	const result = requiredRecordArray(
@@ -209,7 +215,7 @@ function auditTrackingFindings(path: string): FitnessFinding[] {
 		"failures",
 		path,
 		FEEDBACK_LANE_ID,
-		"pnpm run harness:audit-tracking",
+		FITNESS_COMMANDS.AUDIT_TRACKING,
 		"compound_feedback_to_harness",
 		"hard_blocker",
 	);
@@ -221,7 +227,7 @@ function auditTrackingFindings(path: string): FitnessFinding[] {
 			emptyDetailsFinding({
 				path,
 				lane: FEEDBACK_LANE_ID,
-				command: "pnpm run harness:audit-tracking",
+				command: FITNESS_COMMANDS.AUDIT_TRACKING,
 				principle: "compound_feedback_to_harness",
 				enforcement: "hard_blocker",
 				status,
@@ -241,12 +247,13 @@ function auditTrackingFindings(path: string): FitnessFinding[] {
 				"Harness audit tracking reported a missing contract.",
 		},
 		risk: "Repeated steering cannot compound if the harness audit trail is not intact.",
-		recommendedCommand: "pnpm run harness:audit-tracking",
+		recommendedCommand: FITNESS_COMMANDS.AUDIT_TRACKING,
 		claimBoundary:
 			"Feedback-learning evidence only; this does not prove tests, CI, review state, or merge readiness.",
 	}));
 }
 
+/** Convert advisory review artifacts into non-blocking fitness findings. */
 function advisoryReviewFindings(path: string): FitnessFinding[] {
 	const report = readJsonFile(path);
 	const records =
@@ -266,7 +273,7 @@ function advisoryReviewFindings(path: string): FitnessFinding[] {
 				"AI-assisted review reported an advisory finding.",
 		},
 		risk: "Advisory review feedback may improve the patch but does not independently block deterministic local gates.",
-		recommendedCommand: "pnpm run autoreview",
+		recommendedCommand: FITNESS_COMMANDS.AUTOREVIEW,
 		claimBoundary:
 			"AI review is advisory evidence only; deterministic gates remain the blocking authority.",
 	}));
@@ -296,6 +303,7 @@ function laneStatus(findings: readonly FitnessFinding[]): FitnessLaneStatus {
 	return "pass";
 }
 
+/** Add or refresh the optional advisory review lane when a report is supplied. */
 function maybeAddAdvisoryLane(
 	lanes: FitnessLane[],
 	path: string | undefined,
@@ -305,7 +313,7 @@ function maybeAddAdvisoryLane(
 	const advisoryLane: FitnessLane = {
 		id: "ai-review-advisory",
 		label: "AI review advisory",
-		command: "pnpm run autoreview",
+		command: FITNESS_COMMANDS.AUTOREVIEW,
 		principle: "compound_feedback_to_harness",
 		enforcement: "advisory",
 		status: findings.length > 0 ? "warn" : "pass",

@@ -75,6 +75,56 @@ function validateLane(
 	validateFindings(value.findings, `${field}.findings`, errors);
 }
 
+/** Validate one fitness coverage contract entry. */
+function validateCoverage(
+	value: unknown,
+	field: string,
+	errors: HeValidationError[],
+): void {
+	if (!isRecord(value)) {
+		errors.push(toValidationError(`${field} must be an object`, field));
+		return;
+	}
+	validateString(value.category, `${field}.category`, errors);
+	validateString(value.concern, `${field}.concern`, errors);
+	validateStringArray(value.laneIds, `${field}.laneIds`, errors);
+	validateStringArray(value.commands, `${field}.commands`, errors);
+	if (
+		Array.isArray(value.laneIds) &&
+		Array.isArray(value.commands) &&
+		value.laneIds.length === 0 &&
+		value.commands.length === 0
+	) {
+		errors.push(
+			toValidationError(
+				`${field} must define at least one laneId or command`,
+				field,
+			),
+		);
+	}
+	validateString(value.coverage, `${field}.coverage`, errors);
+	validateString(value.claimBoundary, `${field}.claimBoundary`, errors);
+}
+
+/** Validate the non-empty fitness coverage contract array. */
+function validateCoverageArray(
+	value: unknown,
+	field: string,
+	errors: HeValidationError[],
+): void {
+	if (!Array.isArray(value)) {
+		errors.push(toValidationError(`${field} must be an array`, field));
+		return;
+	}
+	if (value.length === 0) {
+		errors.push(toValidationError(`${field} must not be empty`, field));
+	}
+	value.forEach((coverage, index) => {
+		validateCoverage(coverage, `${field}[${String(index)}]`, errors);
+	});
+}
+
+/** Validate the fitness summary counters used by status invariants. */
 function validateSummary(value: unknown, errors: HeValidationError[]): void {
 	if (!isRecord(value)) {
 		errors.push(toValidationError("summary must be an object", "summary"));
@@ -285,6 +335,9 @@ export function validateFitnessReport(
 		value.lanes.forEach((lane, index) => {
 			validateLane(lane, `lanes[${String(index)}]`, errors);
 		});
+	}
+	if (value.coverage !== undefined) {
+		validateCoverageArray(value.coverage, "coverage", errors);
 	}
 	if (value.topDeterministicFinding !== null) {
 		validateFinding(
