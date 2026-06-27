@@ -86,11 +86,32 @@ function collectChecklistErrors(body: string): string[] {
 
 	const unchecked = checklistItems.filter((line) => /^- \[ \]/.test(line));
 	const unresolvedUnchecked = unchecked.filter(
-		(line) => !/\*\*\((pending|n\/a|not applicable)\)\*\*/i.test(line),
+		(line) =>
+			!/\*\*\((pending|n\/a|not applicable)\)\*\*/i.test(line) &&
+			!/This change is user-facing and I added a changelog entry/i.test(line) &&
+			!/This change is not user-facing/i.test(line),
 	);
 	if (unresolvedUnchecked.length > 0) {
 		errors.push(
 			`Checklist has unchecked item(s) without explicit status marker ((Pending) or (N/A)):\n${unresolvedUnchecked.join("\n")}`,
+		);
+	}
+
+	// Validate changelog classification: at least one of the two changelog items must be checked
+	const userFacingChecked = checklistItems.some(
+		(line) =>
+			/^- \[[xX]\]/.test(line) &&
+			/This change is user-facing and I added a changelog entry/i.test(line),
+	);
+	const notUserFacingChecked = checklistItems.some(
+		(line) =>
+			/^- \[[xX]\]/.test(line) &&
+			/This change is not user-facing/i.test(line),
+	);
+
+	if (!userFacingChecked && !notUserFacingChecked) {
+		errors.push(
+			"Checklist must have either 'This change is user-facing and I added a changelog entry' or 'This change is not user-facing' checked.",
 		);
 	}
 
