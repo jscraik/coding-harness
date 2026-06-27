@@ -124,6 +124,7 @@ function validateCoverageArray(
 	});
 }
 
+/** Validate the fitness summary counters used by status invariants. */
 function validateSummary(value: unknown, errors: HeValidationError[]): void {
 	if (!isRecord(value)) {
 		errors.push(toValidationError("summary must be an object", "summary"));
