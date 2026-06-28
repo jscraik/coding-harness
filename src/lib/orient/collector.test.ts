@@ -188,6 +188,66 @@ describe("collectHarnessOrient", () => {
 		expect(report.status).toBe("warn");
 	});
 
+	it("warns when a passing preflight receipt used a non-required mode", () => {
+		writeWorkspaceFile(
+			"package.json",
+			JSON.stringify({ name: "@brainwav/coding-harness" }),
+		);
+		writeWorkspaceFile("src/cli.ts", "export {};\n");
+		writeWorkspaceFile("dist/cli.js", "export {};\n");
+		writeWorkspaceFile("AGENTS.md", "# Agents\n");
+		writeWorkspaceFile("CODESTYLE.md", "# Codestyle\n");
+		writeWorkspaceFile("AI/context/diagram-context.md", "# Diagram context\n");
+		writeWorkspaceFile(
+			".harness/runtime/codex-preflight-status.json",
+			JSON.stringify({
+				schemaVersion: "codex-preflight-status/v1",
+				generatedAt: "2026-06-28T10:00:00.000Z",
+				status: "pass",
+				mode: "optional",
+				command: "bash scripts/codex-preflight.sh --stack auto --mode optional",
+				checks: [],
+			}),
+		);
+		writeWorkspaceFile(
+			".harness/knowledge/INDEX.md",
+			"# Index\n\n**Last updated:** 2026-06-28\n\n| Domain | Focus |\n| --- | --- |\n| [cli](./cli/) | CLI delivery evidence |\n",
+		);
+		writeWorkspaceFile(
+			".harness/knowledge/cli/knowledge.md",
+			"# CLI Knowledge\n\n**Last verified:** 2026-06-28\n**Verification source:** manual\n**Confidence:** high\n**Owner:** harness-maintainers\n\nThe CLI domain is verified for orient tests.\n",
+		);
+		writeWorkspaceFile(
+			".harness/knowledge/cli/hypotheses.md",
+			"# CLI Hypotheses\n\n- H-1: Orient should warn on weaker preflight modes.\n",
+		);
+		writeWorkspaceFile(
+			".harness/knowledge/cli/rules.md",
+			"# CLI Rules\n\n- **R-1**: Required preflight mode is the orient proof lane.\n",
+		);
+		writeWorkspaceFile(
+			".harness/quality/criteria.md",
+			"# Quality Criteria\n\n- Q-1 Gate: orient warns on weaker preflight modes.\n",
+		);
+		writeWorkspaceFile(
+			".harness/review-log.md",
+			"# Review Log\n\n- 2026-06-28: Orient preflight mode reviewed.\n",
+		);
+
+		const report = collectHarnessOrient({
+			repoRoot: workspacePath,
+			now: new Date("2026-06-28T10:00:00.000Z"),
+			nextDecisionProvider: passNextDecisionFixture,
+		});
+
+		expect(report.preflightReceipt).toMatchObject({
+			status: "pass",
+			mode: "optional",
+		});
+		expect(report.projectBrain.validationSummary?.errors).toBe(0);
+		expect(report.status).toBe("warn");
+	});
+
 	it("treats schema-mismatched preflight receipts as invalid", () => {
 		writeWorkspaceFile(
 			"package.json",

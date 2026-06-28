@@ -348,11 +348,19 @@ function hasOrientWarningStatus(args: {
 		args.nextDecision.status === "blocked" ||
 		args.sessionContext.status !== "pass" ||
 		args.contextHealth.status !== "pass" ||
-		args.preflightReceipt.status !== "pass" ||
+		!preflightReceiptSatisfiesRequiredMode(args.preflightReceipt) ||
 		args.architectureContext.status !== "present" ||
 		args.projectBrain.brainStatus !== "observed" ||
 		args.projectBrain.brainStale !== "pass" ||
 		projectBrainHasValidationErrors(args.projectBrain)
+	);
+}
+
+function preflightReceiptSatisfiesRequiredMode(
+	preflightReceipt: HarnessOrientPreflightReceipt,
+): boolean {
+	return (
+		preflightReceipt.status === "pass" && preflightReceipt.mode === "required"
 	);
 }
 
