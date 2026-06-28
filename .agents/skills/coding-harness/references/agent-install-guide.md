@@ -21,6 +21,17 @@ implementation probes; in consumer repos, use the installed `harness` binary.
 ```bash
 pwd
 git status --short --branch
+harness next --json
+harness --help
+harness commands --json --for-agent
+harness commands --json
+```
+
+For source-checkout public-bin proof after dependencies are installed and the
+checkout is built:
+
+```bash
+pnpm build
 pnpm exec harness next --json
 pnpm exec harness --help
 pnpm exec harness commands --json --for-agent

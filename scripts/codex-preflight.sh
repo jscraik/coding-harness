@@ -131,6 +131,20 @@ JSON
 	fi
 }
 
+clear_preflight_receipt() {
+	if [[ -f "${PREFLIGHT_RECEIPT_PATH}" ]] && ! rm -f -- "${PREFLIGHT_RECEIPT_PATH}"; then
+		log_warn "could not clear stale preflight receipt: ${PREFLIGHT_RECEIPT_PATH}"
+	fi
+}
+
+PREFLIGHT_EXIT_RECEIPT_MODE='required'
+write_preflight_failure_receipt_on_exit() {
+	local exit_code="$?"
+	if (( exit_code != 0 )); then
+		write_preflight_receipt 'fail' "${PREFLIGHT_EXIT_RECEIPT_MODE:-required}"
+	fi
+}
+
 workspace_git() {
 	if (( WORKSPACE_GIT_USE_WORKTREE_OVERRIDE )); then
 		GIT_WORK_TREE="${WORKSPACE_ROOT}" git -C "${WORKSPACE_ROOT}" "$@"
@@ -793,6 +807,9 @@ main() {
 	local bins_csv=''
 	local paths_csv=''
 
+	PREFLIGHT_EXIT_RECEIPT_MODE="${local_memory_mode}"
+	trap write_preflight_failure_receipt_on_exit EXIT
+
 	if (( $# > 0 )) && [[ "${1}" != --* ]] && [[ "${1}" != '-h' ]]; then
 		if (( $# == 2 )) && [[ "${1}" =~ ^(auto|js|py|rust)$ ]] && [[ "${2}" =~ ^(off|optional|required)$ ]]; then
 			stack="${1}"
@@ -849,6 +866,7 @@ main() {
 		off|optional|required) ;;
 		*) log_err "invalid --mode: ${local_memory_mode}"; exit 2 ;;
 	esac
+	PREFLIGHT_EXIT_RECEIPT_MODE="${local_memory_mode}"
 
 	log_section 'Codex Preflight'
 	echo "pwd: $(pwd)"
@@ -883,6 +901,7 @@ main() {
 	fi
 
 	cd "${WORKSPACE_ROOT}"
+	clear_preflight_receipt
 
 	if [[ "${stack}" == 'auto' ]]; then
 		stack="$(detect_stack)"
@@ -921,6 +940,7 @@ main() {
 	fi
 
 	write_preflight_receipt 'pass' "${local_memory_mode}"
+	trap - EXIT
 	log_ok 'preflight passed'
 }
 

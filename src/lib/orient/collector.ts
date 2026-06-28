@@ -13,6 +13,7 @@ import {
 	buildContextCommands,
 	buildOrientationRefs,
 	DIAGRAM_MANIFEST_PATH,
+	type HarnessOrientCommandPrefix,
 	TRUTH_LANE_WARNINGS,
 } from "./context.js";
 import type {
@@ -93,24 +94,21 @@ function canonicalRepoRoot(repoRoot: string): string {
 }
 
 /** Pick the public command prefix that matches package source checkouts. */
-function commandPrefixFor(repoRoot: string): "pnpm exec harness" | "harness" {
+function commandPrefixFor(repoRoot: string): HarnessOrientCommandPrefix {
 	const packagePath = join(repoRoot, "package.json");
 	const sourceCliPath = join(repoRoot, "src/cli.ts");
 	const distCliPath = join(repoRoot, "dist/cli.js");
-	if (
-		!existsSync(packagePath) ||
-		!existsSync(sourceCliPath) ||
-		!existsSync(distCliPath)
-	) {
+	if (!existsSync(packagePath) || !existsSync(sourceCliPath)) {
 		return "harness";
 	}
 	try {
 		const parsed = JSON.parse(readFileSync(packagePath, "utf8")) as {
 			name?: unknown;
 		};
-		return parsed.name === SOURCE_CHECKOUT_PACKAGE_NAME
+		if (parsed.name !== SOURCE_CHECKOUT_PACKAGE_NAME) return "harness";
+		return existsSync(distCliPath)
 			? "pnpm exec harness"
-			: "harness";
+			: "node --import tsx src/cli.ts";
 	} catch {
 		return "harness";
 	}

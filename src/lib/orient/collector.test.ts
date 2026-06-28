@@ -167,7 +167,7 @@ describe("collectHarnessOrient", () => {
 		expect(report.status).toBe("warn");
 	});
 
-	it("falls back to installed command wording before the source checkout is built", () => {
+	it("uses the source probe command rail before the source checkout is built", () => {
 		writeWorkspaceFile(
 			"package.json",
 			JSON.stringify({ name: "@brainwav/coding-harness" }),
@@ -181,15 +181,15 @@ describe("collectHarnessOrient", () => {
 		});
 
 		expect(report.contextCommands.map((command) => command.command)).toEqual([
-			"harness next --json",
-			"harness session-context --json --repo-root .",
-			"harness agent-readiness . --json",
-			"harness commands --json --for-agent --mode orient",
+			"node --import tsx src/cli.ts next --json",
+			"node --import tsx src/cli.ts session-context --json --repo-root .",
+			"node --import tsx src/cli.ts agent-readiness . --json",
+			"node --import tsx src/cli.ts commands --json --for-agent --mode orient",
 		]);
 		expect(
 			report.conditionalContext.find(
 				(context) => context.read === "docs/cli-reference.md",
 			)?.validate,
-		).toBe("harness commands --json --for-agent");
+		).toBe("node --import tsx src/cli.ts commands --json --for-agent");
 	});
 });

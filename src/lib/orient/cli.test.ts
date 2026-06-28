@@ -76,4 +76,21 @@ describe("runOrientCLI argument validation", () => {
 		});
 		expect(errorSpy).not.toHaveBeenCalled();
 	});
+
+	it("rejects --repo-root without a following value", () => {
+		const provider = failingProvider();
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		const exitCode = runOrientCLI(["--repo-root", "--json"], provider);
+
+		expect(exitCode).toBe(2);
+		expect(provider).not.toHaveBeenCalled();
+		expect(readJsonUsage(infoSpy)).toMatchObject({
+			schemaVersion: "harness-orient-error/v1",
+			status: "error",
+			error: { code: "orient.flag_value_required" },
+		});
+		expect(errorSpy).not.toHaveBeenCalled();
+	});
 });

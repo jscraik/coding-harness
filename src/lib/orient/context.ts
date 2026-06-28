@@ -7,6 +7,12 @@ import type {
 	HarnessOrientTruthLaneWarning,
 } from "./types.js";
 
+/** Public command prefix used when orient suggests follow-up harness commands. */
+export type HarnessOrientCommandPrefix =
+	| "pnpm exec harness"
+	| "harness"
+	| "node --import tsx src/cli.ts";
+
 /** Repository-relative path for the lazy architecture context map. */
 export const ARCHITECTURE_CONTEXT_PATH = "AI/context/diagram-context.md";
 
@@ -93,7 +99,7 @@ export function buildOrientationRefs(
 
 /** Build the follow-up command rail using the repo-appropriate public entrypoint. */
 export function buildContextCommands(
-	commandPrefix: "pnpm exec harness" | "harness",
+	commandPrefix: HarnessOrientCommandPrefix,
 ): HarnessOrientContextCommand[] {
 	return [
 		{
@@ -123,7 +129,7 @@ export function buildContextCommands(
 
 /** List context files that should be opened only when their trigger surface is touched. */
 export function buildConditionalContext(
-	commandPrefix: "pnpm exec harness" | "harness",
+	commandPrefix: HarnessOrientCommandPrefix,
 ): HarnessOrientConditionalContext[] {
 	return [
 		{
