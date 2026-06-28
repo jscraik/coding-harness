@@ -101,6 +101,12 @@ thin and delegate into this deep module.
   `linear-gate` jobs are emitted. Those jobs should call the shared helper
   instead of carrying separate inline PR-context resolution logic, and the helper
   must remain part of the downstream support-file baseline.
+- Generated CircleCI governance jobs must keep authenticated GitHub CLI steps
+  separate from public tool bootstrap. Prefer
+  `GITHUB_PERSONAL_ACCESS_TOKEN` for `gh`-backed PR lookups when it is
+  available, but run `mise install` bootstrap helpers with `GH_TOKEN`,
+  `GITHUB_TOKEN`, and `GITHUB_PERSONAL_ACCESS_TOKEN` unset so expired or
+  PR-scoped tokens do not break public aqua/GitHub release downloads.
 - Generated Python validation scaffolds must include `scripts/run-uv-python.sh`
   whenever uv-backed type, artifact, or governance helpers are emitted. The
   wrapper owns repo-scoped `UV_CACHE_DIR` and `UV_PROJECT_ENVIRONMENT` defaults

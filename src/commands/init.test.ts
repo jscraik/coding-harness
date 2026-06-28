@@ -463,7 +463,7 @@ describe("runInit", () => {
 			);
 			expect(circleConfig).toContain("mise trust --yes .mise.toml");
 			expect(circleConfig).toContain("name: Ensure pnpm available");
-			expect(circleConfig).toContain("install_uv_without_pr_tokens");
+			expect(circleConfig).toContain("install_mise_without_github_tokens");
 			expect(circleConfig).toContain(
 				"unset GH_TOKEN GITHUB_TOKEN GITHUB_PERSONAL_ACCESS_TOKEN",
 			);
@@ -472,6 +472,9 @@ describe("runInit", () => {
 			);
 			expect(circleConfig).toContain(
 				'export GITHUB_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"',
+			);
+			expect(circleConfig.indexOf("GITHUB_PERSONAL_ACCESS_TOKEN")).toBeLessThan(
+				circleConfig.indexOf("GH_TOKEN is already available"),
 			);
 			expect(circleConfig).toContain("run-governance-check:");
 			expect(circleConfig).toContain("check_name:");
@@ -533,7 +536,9 @@ describe("runInit", () => {
 			expect(circleConfig).toContain(
 				'sudo apt-get install -y "${packages[@]}"',
 			);
-			expect(circleConfig).toContain("mise install rust@stable");
+			expect(circleConfig).toContain(
+				"retry_cmd 3 install_mise_without_github_tokens rust@stable",
+			);
 			expect(circleConfig).not.toContain(
 				"if ! command -v cargo >/dev/null 2>&1; then",
 			);
@@ -547,7 +552,9 @@ describe("runInit", () => {
 				'ln -sf "$SEMGREP_VENV/bin/semgrep" "$HOME/.local/bin/semgrep"',
 			);
 			expect(circleConfig).toContain("export MISE_NODE_VERIFY=false");
-			expect(circleConfig).toContain("mise install \\");
+			expect(circleConfig).toContain(
+				"retry_cmd 3 install_mise_without_github_tokens \\",
+			);
 			expect(circleConfig).toContain("semgrep --version");
 			expect(circleConfig).toContain("bash scripts/check-environment.sh");
 
