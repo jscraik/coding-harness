@@ -81,7 +81,14 @@
 		".agents/skills/coding-harness"
 	],
 	"type": "module",
-	"description": "Control plane for agentic development",
+	"description": "SynAIpse AI Delivery Harness for evidence-backed agentic software delivery",
+	"keywords": [
+		"ai-delivery-harness",
+		"agentic-ai",
+		"codex",
+		"harness",
+		"workflow"
+	],
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/jscraik/coding-harness.git"

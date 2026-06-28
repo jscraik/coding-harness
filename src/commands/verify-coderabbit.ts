@@ -8,9 +8,11 @@
  * - .npmrc security posture
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
-
+import {
+	CODERABBIT_CHECK_NAME,
+	verifyLocalCodeRabbitSetup,
+	type CodeRabbitCheck,
+} from "../lib/coderabbit/local-checks.js";
 import { GitHubClient } from "../lib/github/client.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 
@@ -43,17 +45,7 @@ export interface CodeRabbitVerificationResult {
 	};
 }
 
-/** One verification check outcome within a CodeRabbit verification run. */
-export interface CodeRabbitCheck {
-	name: string;
-	status: "pass" | "fail" | "warn";
-	message: string;
-	details?: Record<string, unknown>;
-}
-
-const CODERABBIT_CHECK_NAME = "CodeRabbit";
-const CODERABBIT_CONFIG_FILE = ".coderabbit.yaml";
-const CODERABBIT_TEMPLATE_FILE = "src/templates/coderabbit.yaml";
+export type { CodeRabbitCheck } from "../lib/coderabbit/local-checks.js";
 
 /**
  * Normalize a potential token string into a trimmed token or `undefined`.
@@ -74,230 +66,6 @@ function normalizeToken(value: string | undefined): string | undefined {
 		return undefined;
 	}
 	return trimmed;
-}
-
-/**
- * Validate the repository's .coderabbit.yaml and report any missing or misconfigured settings.
- *
- * Inspects the resolved .coderabbit.yaml for a top-level `reviews:` section, the `commit_status` boolean,
- * and whether `auto_review` is disabled. The returned check indicates whether the configuration is valid,
- * contains warnings, or is missing critical elements.
- *
- * @param repoPath - Path to the repository root where `.coderabbit.yaml` will be read.
- * @returns A `CodeRabbitCheck` describing the outcome. `details.path` is always included; when applicable,
- * `details.issues` lists human-readable problems and `details.features` lists detected positive settings.
- */
-function verifyCodeRabbitConfig(repoPath: string): CodeRabbitCheck {
-	const configPath = resolve(repoPath, CODERABBIT_CONFIG_FILE);
-
-	if (!existsSync(configPath)) {
-		return {
-			name: `${CODERABBIT_CONFIG_FILE} config`,
-			status: "fail",
-			message: `${CODERABBIT_CONFIG_FILE} not found. Run \`harness init\` to scaffold a baseline configuration.`,
-			details: { path: configPath },
-		};
-	}
-
-	try {
-		const content = readFileSync(configPath, "utf-8");
-		const issues: string[] = [];
-		const features: string[] = [];
-
-		// Required: reviews section
-		if (!/^reviews:/m.test(content)) {
-			issues.push("missing top-level 'reviews:' section");
-		} else {
-			features.push("reviews section present");
-		}
-
-		// Required: commit_status should be true for branch protection to work.
-		// Anchor the key so fail_commit_status does not trigger a false warning.
-		if (/^\s*commit_status:\s*false\b/m.test(content)) {
-			issues.push(
-				"'commit_status: false' disables the CodeRabbit check — branch protection will not work",
-			);
-		} else if (/^\s*commit_status:\s*true\b/m.test(content)) {
-			features.push("commit_status enabled");
-		}
-
-		// Warn if auto_review is disabled
-		if (/auto_review:\s*\n\s+enabled:\s*false/m.test(content)) {
-			issues.push(
-				"auto_review is disabled — CodeRabbit will not review PRs automatically",
-			);
-		}
-
-		if (issues.length > 0) {
-			return {
-				name: `${CODERABBIT_CONFIG_FILE} config`,
-				status: issues.some((i) => i.includes("missing")) ? "fail" : "warn",
-				message: `${CODERABBIT_CONFIG_FILE} has issues: ${issues.join(", ")}`,
-				details: { path: configPath, issues, features },
-			};
-		}
-
-		return {
-			name: `${CODERABBIT_CONFIG_FILE} config`,
-			status: "pass",
-			message: `Valid ${CODERABBIT_CONFIG_FILE}: ${features.join(", ")}`,
-			details: { path: configPath, features },
-		};
-	} catch (e) {
-		return {
-			name: `${CODERABBIT_CONFIG_FILE} config`,
-			status: "fail",
-			message: `Failed to read ${CODERABBIT_CONFIG_FILE}: ${e instanceof Error ? e.message : "Unknown error"}`,
-			details: { path: configPath },
-		};
-	}
-}
-
-function verifyCodeRabbitTemplateParity(repoPath: string): CodeRabbitCheck {
-	const configPath = resolve(repoPath, CODERABBIT_CONFIG_FILE);
-	const templatePath = resolve(repoPath, CODERABBIT_TEMPLATE_FILE);
-
-	if (!existsSync(templatePath)) {
-		return {
-			name: "CodeRabbit template parity",
-			status: "warn",
-			message:
-				CODERABBIT_TEMPLATE_FILE +
-				" not found; skipping harness template parity check.",
-			details: { path: templatePath },
-		};
-	}
-	if (!existsSync(configPath)) {
-		return {
-			name: "CodeRabbit template parity",
-			status: "fail",
-			message:
-				CODERABBIT_CONFIG_FILE +
-				" not found, so template parity cannot be verified.",
-			details: { configPath, templatePath },
-		};
-	}
-
-	try {
-		const configContent = readFileSync(configPath, "utf-8");
-		const templateContent = readFileSync(templatePath, "utf-8");
-		if (configContent !== templateContent) {
-			return {
-				name: "CodeRabbit template parity",
-				status: "fail",
-				message:
-					CODERABBIT_CONFIG_FILE +
-					" and " +
-					CODERABBIT_TEMPLATE_FILE +
-					" differ; update both or regenerate the template.",
-				details: { configPath, templatePath },
-			};
-		}
-		return {
-			name: "CodeRabbit template parity",
-			status: "pass",
-			message: `${CODERABBIT_CONFIG_FILE} matches ${CODERABBIT_TEMPLATE_FILE}.`,
-			details: { configPath, templatePath },
-		};
-	} catch (e) {
-		return {
-			name: "CodeRabbit template parity",
-			status: "fail",
-			message:
-				"Failed to compare CodeRabbit config/template parity: " +
-				(e instanceof Error ? e.message : "Unknown error"),
-			details: { configPath, templatePath },
-		};
-	}
-}
-
-/**
- * Inspect the repository's .npmrc for security-relevant settings.
- *
- * Checks for presence of the file, scoped registry entries, an embedded `_authToken`, and whether `ignore-scripts=true` is set; provides recommendations when insecure or missing settings are found.
- *
- * @param repoPath - Filesystem path to the repository root where `.npmrc` should be inspected
- * @returns A `CodeRabbitCheck` describing the outcome: `status` is `"pass"` when `.npmrc` exists and no issues are found, `"warn"` for non-critical recommendations (for example missing `ignore-scripts=true`), and `"fail"` for critical issues (missing `@brainwav:registry`, embedded `_authToken`, or read errors)
- */
-function verifyNpmrc(repoPath: string): CodeRabbitCheck {
-	const npmrcPath = resolve(repoPath, ".npmrc");
-
-	if (!existsSync(npmrcPath)) {
-		return {
-			name: ".npmrc configuration",
-			status: "warn",
-			message:
-				"No .npmrc file found. Run 'harness init' to scaffold a baseline .npmrc with security defaults (ignore-scripts=true).",
-			details: { path: npmrcPath },
-		};
-	}
-
-	try {
-		const content = readFileSync(npmrcPath, "utf-8");
-		const issues: string[] = [];
-		const features: string[] = [];
-		const activeLines = content
-			.split(/\r?\n/)
-			.map((line) => line.trim())
-			.filter(
-				(line) =>
-					line.length > 0 && !line.startsWith("#") && !line.startsWith(";"),
-			);
-
-		const hasBrainwavScopedRegistry = activeLines.some((line) =>
-			/^@brainwav:registry\s*=\s*https:\/\/registry\.npmjs\.org\/?$/i.test(
-				line,
-			),
-		);
-		const hasAuthToken = activeLines.some((line) =>
-			/_authToken\s*=/.test(line),
-		);
-		const hasIgnoreScripts = activeLines.some((line) =>
-			/^ignore-scripts\s*=\s*true$/i.test(line),
-		);
-
-		if (hasBrainwavScopedRegistry) features.push("@brainwav scoped registry");
-		if (hasIgnoreScripts) features.push("ignore-scripts=true (security)");
-
-		if (!hasBrainwavScopedRegistry) {
-			issues.push(
-				"add @brainwav:registry=https://registry.npmjs.org/ for scope routing",
-			);
-		}
-		if (!hasIgnoreScripts) {
-			issues.push("consider setting ignore-scripts=true for security");
-		}
-		if (hasAuthToken) {
-			issues.push(
-				"move auth token config to user-level ~/.npmrc or CI-injected ~/.npmrc instead of repo .npmrc",
-			);
-		}
-
-		if (issues.length > 0) {
-			// Fail if scoped registry is missing or auth token is present
-			const hasCriticalIssue = !hasBrainwavScopedRegistry || hasAuthToken;
-			return {
-				name: ".npmrc configuration",
-				status: hasCriticalIssue ? "fail" : "warn",
-				message: `.npmrc exists but has ${hasCriticalIssue ? "critical issues" : "recommendations"}: ${issues.join(", ")}`,
-				details: { path: npmrcPath, features, issues },
-			};
-		}
-
-		return {
-			name: ".npmrc configuration",
-			status: "pass",
-			message: `Valid .npmrc${features.length > 0 ? ` with: ${features.join(", ")}` : ""}`,
-			details: { path: npmrcPath, features },
-		};
-	} catch (e) {
-		return {
-			name: ".npmrc configuration",
-			status: "fail",
-			message: `Failed to read .npmrc: ${e instanceof Error ? e.message : "Unknown error"}`,
-			details: { path: npmrcPath },
-		};
-	}
 }
 
 /**
@@ -471,11 +239,7 @@ export async function runVerifyCodeRabbit(
 ): Promise<CodeRabbitVerificationResult> {
 	const repoPath = options.repoPath ?? process.cwd();
 
-	const localChecks: CodeRabbitCheck[] = [
-		verifyCodeRabbitConfig(repoPath),
-		verifyCodeRabbitTemplateParity(repoPath),
-		verifyNpmrc(repoPath),
-	];
+	const localChecks = verifyLocalCodeRabbitSetup(repoPath);
 
 	const token =
 		normalizeToken(options.token) ??

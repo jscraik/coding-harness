@@ -20,7 +20,7 @@ reviews:
   request_changes_workflow: false
   high_level_summary_in_walkthrough: true
   review_details: true
-  sequence_diagrams: true
+  sequence_diagrams: false
   commit_status: true
   fail_commit_status: false
   poem: false
@@ -28,7 +28,7 @@ reviews:
   auto_review:
     enabled: true
     auto_incremental_review: true
-    auto_pause_after_reviewed_commits: 0
+    auto_pause_after_reviewed_commits: 3
     # Draft PRs are intentionally skipped; convert to ready-for-review or run
     # `coderabbit review --agent` manually when early analysis is needed.
     drafts: false
@@ -41,7 +41,9 @@ reviews:
     - "!build/**"
     - "!coverage/**"
     - "!dist/**"
+    - "!docs/doc-lifecycle-manifest.json"
     - "!node_modules/**"
+    - "!pnpm-lock.yaml"
     - "!**/*.min.js"
     - "!**/*.png"
     - "!**/*.jpg"
@@ -53,6 +55,7 @@ reviews:
         Use repository evidence first: package scripts, tracked docs, harness contracts, and validation wrappers over assumptions.
         Treat contradictions between code, docs, and workflow policy as review-worthy even when code changes look reasonable.
         Prioritize behavioral risk, missing validation, and governance drift over style-only feedback.
+        Avoid style-only comments unless they affect an executable contract, agent workflow, or future maintenance cost.
     - path: "src/**/*.ts"
       instructions: |
         Check schema boundaries, public command contracts, exit-code compatibility, and whether tests cover malformed inputs and operational failure states.
@@ -124,7 +127,7 @@ knowledge_base:
   mcp:
     usage: "enabled"
   web_search:
-    enabled: true
+    enabled: false
 
 issue_enrichment:
   auto_enrich:

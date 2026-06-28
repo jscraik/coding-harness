@@ -11,7 +11,7 @@ audience:
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-06-20
+last_reviewed: 2026-06-28
 review_cadence: quarterly
 maintenance_trigger:
   - product-surface-change
@@ -27,21 +27,25 @@ depends_on:
   - harness.contract.json
 ---
 
-# Coding Harness
+# SynAIpse
+
+AI Delivery Harness for evidence-backed agentic software delivery.
 
 Status: [CircleCI main](https://app.circleci.com/pipelines/github/jscraik/coding-harness?branch=main) | [npm package](https://www.npmjs.com/package/@brainwav/coding-harness) | [Apache-2.0 license](LICENSE) | [OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/jscraik/coding-harness)
 
-![synAIpse AI Delivery Harness logo](./docs/brand/synaipse-logo.png)
+![SynAIpse AI Delivery Harness logo](./docs/brand/synaipse-logo.png)
 
-synAIpse is the AI Delivery Harness implemented by this repository and the `@brainwav/coding-harness` package. It gives AI-assisted repositories a small command surface for orientation, local verification, review policy, CI migration, durable memory, and evidence-backed handoff.
+SynAIpse is the AI Delivery Harness implemented by this repository and the `@brainwav/coding-harness` package. It gives AI-assisted repositories a small command surface for orientation, local verification, review policy, CI migration, durable memory, and evidence-backed handoff.
 
 Short version: thin surface, strong guardrails, durable memory, professional output.
 
-Coding Harness exists to let a solo developer with limited cognitive bandwidth
+SynAIpse exists to let a solo developer with limited cognitive bandwidth
 orchestrate agentic software work to professional standards through compact
 orientation, executable guardrails, durable memory, and evidence-based handoff.
 Its primary metric is PR lead time from open to merge, and its primary
 bottleneck is the review and rework loop.
+The coding-harness repository remains the current package, CLI, and governance
+contract implementation boundary.
 The weekly reviewed status surface for that contract is
 [docs/roadmap/agent-first-status.md](./docs/roadmap/agent-first-status.md).
 
@@ -92,7 +96,7 @@ node --import tsx src/cli.ts harness check --json
 
 ## What It Does
 
-Coding Harness is the control plane around AI coding agents. It is not the agent runtime and it does not replace human review.
+SynAIpse is the AI Delivery Harness around AI coding agents. It is not the agent runtime and it does not replace human review.
 
 It helps a repository answer five practical questions:
 
@@ -189,92 +193,92 @@ packets instead of requiring source-checkout package scripts. This is local
 installed-command portability proof, not npm publication, hosted CI, review, or
 merge-readiness proof.
 
-| Command                         | Reference                                |
-| ------------------------------- | ---------------------------------------- |
-| `agent-readiness`               | [CLI reference](./docs/cli-reference.md) |
-| `agent-native-ratchets`         | [CLI reference](./docs/cli-reference.md) |
-| `agent-rework`                  | [CLI reference](./docs/cli-reference.md) |
-| `artifact-gate`                 | [CLI reference](./docs/cli-reference.md) |
-| `artifact-routine`              | [CLI reference](./docs/cli-reference.md) |
-| `audit`                         | [CLI reference](./docs/cli-reference.md) |
-| `automation-run`                | [CLI reference](./docs/cli-reference.md) |
-| `blast-radius`                  | [CLI reference](./docs/cli-reference.md) |
-| `brain`                         | [CLI reference](./docs/cli-reference.md) |
-| `brainstorm-gate`               | [CLI reference](./docs/cli-reference.md) |
-| `branch-protect`                | [CLI reference](./docs/cli-reference.md) |
-| `check`                         | [CLI reference](./docs/cli-reference.md) |
-| `check-authz`                   | [CLI reference](./docs/cli-reference.md) |
-| `check-environment`             | [CLI reference](./docs/cli-reference.md) |
-| `ci-migrate`                    | [CLI reference](./docs/cli-reference.md) |
-| `ci-ownership-gate`             | [CLI reference](./docs/cli-reference.md) |
-| `commands`                      | [CLI reference](./docs/cli-reference.md) |
-| `context`                       | [CLI reference](./docs/cli-reference.md) |
-| `context-health`                | [CLI reference](./docs/cli-reference.md) |
-| `contract`                      | [CLI reference](./docs/cli-reference.md) |
-| `decision-request`              | [CLI reference](./docs/cli-reference.md) |
-| `diff-budget`                   | [CLI reference](./docs/cli-reference.md) |
-| `docs-gate`                     | [CLI reference](./docs/cli-reference.md) |
-| `doctor`                        | [CLI reference](./docs/cli-reference.md) |
-| `drift-gate`                    | [CLI reference](./docs/cli-reference.md) |
-| `eject`                         | [CLI reference](./docs/cli-reference.md) |
-| `evidence-verify`               | [CLI reference](./docs/cli-reference.md) |
-| `feedback-loop-audit`           | [CLI reference](./docs/cli-reference.md) |
-| `fleet-plan`                    | [CLI reference](./docs/cli-reference.md) |
+| Command                         | Reference                                           |
+| ------------------------------- | --------------------------------------------------- |
+| `agent-readiness`               | [CLI reference](./docs/cli-reference.md)            |
+| `agent-native-ratchets`         | [CLI reference](./docs/cli-reference.md)            |
+| `agent-rework`                  | [CLI reference](./docs/cli-reference.md)            |
+| `artifact-gate`                 | [CLI reference](./docs/cli-reference.md)            |
+| `artifact-routine`              | [CLI reference](./docs/cli-reference.md)            |
+| `audit`                         | [CLI reference](./docs/cli-reference.md)            |
+| `automation-run`                | [CLI reference](./docs/cli-reference.md)            |
+| `blast-radius`                  | [CLI reference](./docs/cli-reference.md)            |
+| `brain`                         | [CLI reference](./docs/cli-reference.md)            |
+| `brainstorm-gate`               | [CLI reference](./docs/cli-reference.md)            |
+| `branch-protect`                | [CLI reference](./docs/cli-reference.md)            |
+| `check`                         | [CLI reference](./docs/cli-reference.md)            |
+| `check-authz`                   | [CLI reference](./docs/cli-reference.md)            |
+| `check-environment`             | [CLI reference](./docs/cli-reference.md)            |
+| `ci-migrate`                    | [CLI reference](./docs/cli-reference.md)            |
+| `ci-ownership-gate`             | [CLI reference](./docs/cli-reference.md)            |
+| `commands`                      | [CLI reference](./docs/cli-reference.md)            |
+| `context`                       | [CLI reference](./docs/cli-reference.md)            |
+| `context-health`                | [CLI reference](./docs/cli-reference.md)            |
+| `contract`                      | [CLI reference](./docs/cli-reference.md)            |
+| `decision-request`              | [CLI reference](./docs/cli-reference.md)            |
+| `diff-budget`                   | [CLI reference](./docs/cli-reference.md)            |
+| `docs-gate`                     | [CLI reference](./docs/cli-reference.md)            |
+| `doctor`                        | [CLI reference](./docs/cli-reference.md)            |
+| `drift-gate`                    | [CLI reference](./docs/cli-reference.md)            |
+| `eject`                         | [CLI reference](./docs/cli-reference.md)            |
+| `evidence-verify`               | [CLI reference](./docs/cli-reference.md)            |
+| `feedback-loop-audit`           | [CLI reference](./docs/cli-reference.md)            |
+| `fleet-plan`                    | [CLI reference](./docs/cli-reference.md)            |
 | `fitness`                       | [CLI contract](./docs/cli-specs/harness-fitness.md) |
-| `gap-case`                      | [CLI reference](./docs/cli-reference.md) |
-| `gardener`                      | [CLI reference](./docs/cli-reference.md) |
-| `governance-decision-surface`   | [CLI reference](./docs/cli-reference.md) |
-| `health`                        | [CLI reference](./docs/cli-reference.md) |
-| `index-context`                 | [CLI reference](./docs/cli-reference.md) |
-| `init`                          | [CLI reference](./docs/cli-reference.md) |
-| `learnings`                     | [CLI reference](./docs/cli-reference.md) |
-| `license-gate`                  | [CLI reference](./docs/cli-reference.md) |
-| `linear`                        | [CLI reference](./docs/cli-reference.md) |
-| `linear-gate`                   | [CLI reference](./docs/cli-reference.md) |
-| `local-memory-preflight`        | [CLI reference](./docs/cli-reference.md) |
-| `memory-gate`                   | [CLI reference](./docs/cli-reference.md) |
-| `next`                          | [CLI reference](./docs/cli-reference.md) |
-| `north-star-feedback`           | [CLI reference](./docs/cli-reference.md) |
-| `observability-gate`            | [CLI reference](./docs/cli-reference.md) |
-| `org-audit`                     | [CLI reference](./docs/cli-reference.md) |
-| `orient`                        | [CLI reference](./docs/cli-reference.md) |
-| `pattern-scope`                 | [CLI reference](./docs/cli-reference.md) |
-| `pilot-evaluate`                | [CLI reference](./docs/cli-reference.md) |
-| `pilot-rollback`                | [CLI reference](./docs/cli-reference.md) |
-| `plan-gate`                     | [CLI reference](./docs/cli-reference.md) |
-| `policy-gate`                   | [CLI reference](./docs/cli-reference.md) |
-| `pr-closeout`                   | [CLI reference](./docs/cli-reference.md) |
-| `pr-template-gate`              | [CLI reference](./docs/cli-reference.md) |
-| `preflight-gate`                | [CLI reference](./docs/cli-reference.md) |
-| `preset`                        | [CLI reference](./docs/cli-reference.md) |
-| `prompt-context-drift:validate` | [CLI reference](./docs/cli-reference.md) |
-| `prompt-context-drift:write`    | [CLI reference](./docs/cli-reference.md) |
-| `prompt-gate`                   | [CLI reference](./docs/cli-reference.md) |
-| `remediate`                     | [CLI reference](./docs/cli-reference.md) |
-| `replay`                        | [CLI reference](./docs/cli-reference.md) |
-| `review-context`                | [CLI reference](./docs/cli-reference.md) |
-| `review-gate`                   | [CLI reference](./docs/cli-reference.md) |
-| `reviewer-decision`             | [CLI reference](./docs/cli-reference.md) |
-| `risk-tier`                     | [CLI reference](./docs/cli-reference.md) |
-| `rule-lifecycle-gate`           | [CLI reference](./docs/cli-reference.md) |
-| `runtime-budget`                | [CLI reference](./docs/cli-reference.md) |
-| `runtime-card`                  | [CLI reference](./docs/cli-reference.md) |
-| `search`                        | [CLI reference](./docs/cli-reference.md) |
-| `session-context`               | [CLI reference](./docs/cli-reference.md) |
-| `session-distill`               | [CLI reference](./docs/cli-reference.md) |
-| `silent-error`                  | [CLI reference](./docs/cli-reference.md) |
-| `simulate`                      | [CLI reference](./docs/cli-reference.md) |
-| `source-outline`                | [CLI reference](./docs/cli-reference.md) |
-| `symphony-check`                | [CLI reference](./docs/cli-reference.md) |
-| `tooling-audit`                 | [CLI reference](./docs/cli-reference.md) |
-| `ui:explore`                    | [CLI reference](./docs/cli-reference.md) |
-| `ui:fast`                       | [CLI reference](./docs/cli-reference.md) |
-| `ui:verify`                     | [CLI reference](./docs/cli-reference.md) |
-| `upgrade`                       | [CLI reference](./docs/cli-reference.md) |
-| `validation-plan`               | [CLI reference](./docs/cli-reference.md) |
-| `verify-coderabbit`             | [CLI reference](./docs/cli-reference.md) |
-| `verify-work`                   | [CLI reference](./docs/cli-reference.md) |
-| `workflow:generate`             | [CLI reference](./docs/cli-reference.md) |
+| `gap-case`                      | [CLI reference](./docs/cli-reference.md)            |
+| `gardener`                      | [CLI reference](./docs/cli-reference.md)            |
+| `governance-decision-surface`   | [CLI reference](./docs/cli-reference.md)            |
+| `health`                        | [CLI reference](./docs/cli-reference.md)            |
+| `index-context`                 | [CLI reference](./docs/cli-reference.md)            |
+| `init`                          | [CLI reference](./docs/cli-reference.md)            |
+| `learnings`                     | [CLI reference](./docs/cli-reference.md)            |
+| `license-gate`                  | [CLI reference](./docs/cli-reference.md)            |
+| `linear`                        | [CLI reference](./docs/cli-reference.md)            |
+| `linear-gate`                   | [CLI reference](./docs/cli-reference.md)            |
+| `local-memory-preflight`        | [CLI reference](./docs/cli-reference.md)            |
+| `memory-gate`                   | [CLI reference](./docs/cli-reference.md)            |
+| `next`                          | [CLI reference](./docs/cli-reference.md)            |
+| `north-star-feedback`           | [CLI reference](./docs/cli-reference.md)            |
+| `observability-gate`            | [CLI reference](./docs/cli-reference.md)            |
+| `org-audit`                     | [CLI reference](./docs/cli-reference.md)            |
+| `orient`                        | [CLI reference](./docs/cli-reference.md)            |
+| `pattern-scope`                 | [CLI reference](./docs/cli-reference.md)            |
+| `pilot-evaluate`                | [CLI reference](./docs/cli-reference.md)            |
+| `pilot-rollback`                | [CLI reference](./docs/cli-reference.md)            |
+| `plan-gate`                     | [CLI reference](./docs/cli-reference.md)            |
+| `policy-gate`                   | [CLI reference](./docs/cli-reference.md)            |
+| `pr-closeout`                   | [CLI reference](./docs/cli-reference.md)            |
+| `pr-template-gate`              | [CLI reference](./docs/cli-reference.md)            |
+| `preflight-gate`                | [CLI reference](./docs/cli-reference.md)            |
+| `preset`                        | [CLI reference](./docs/cli-reference.md)            |
+| `prompt-context-drift:validate` | [CLI reference](./docs/cli-reference.md)            |
+| `prompt-context-drift:write`    | [CLI reference](./docs/cli-reference.md)            |
+| `prompt-gate`                   | [CLI reference](./docs/cli-reference.md)            |
+| `remediate`                     | [CLI reference](./docs/cli-reference.md)            |
+| `replay`                        | [CLI reference](./docs/cli-reference.md)            |
+| `review-context`                | [CLI reference](./docs/cli-reference.md)            |
+| `review-gate`                   | [CLI reference](./docs/cli-reference.md)            |
+| `reviewer-decision`             | [CLI reference](./docs/cli-reference.md)            |
+| `risk-tier`                     | [CLI reference](./docs/cli-reference.md)            |
+| `rule-lifecycle-gate`           | [CLI reference](./docs/cli-reference.md)            |
+| `runtime-budget`                | [CLI reference](./docs/cli-reference.md)            |
+| `runtime-card`                  | [CLI reference](./docs/cli-reference.md)            |
+| `search`                        | [CLI reference](./docs/cli-reference.md)            |
+| `session-context`               | [CLI reference](./docs/cli-reference.md)            |
+| `session-distill`               | [CLI reference](./docs/cli-reference.md)            |
+| `silent-error`                  | [CLI reference](./docs/cli-reference.md)            |
+| `simulate`                      | [CLI reference](./docs/cli-reference.md)            |
+| `source-outline`                | [CLI reference](./docs/cli-reference.md)            |
+| `symphony-check`                | [CLI reference](./docs/cli-reference.md)            |
+| `tooling-audit`                 | [CLI reference](./docs/cli-reference.md)            |
+| `ui:explore`                    | [CLI reference](./docs/cli-reference.md)            |
+| `ui:fast`                       | [CLI reference](./docs/cli-reference.md)            |
+| `ui:verify`                     | [CLI reference](./docs/cli-reference.md)            |
+| `upgrade`                       | [CLI reference](./docs/cli-reference.md)            |
+| `validation-plan`               | [CLI reference](./docs/cli-reference.md)            |
+| `verify-coderabbit`             | [CLI reference](./docs/cli-reference.md)            |
+| `verify-work`                   | [CLI reference](./docs/cli-reference.md)            |
+| `workflow:generate`             | [CLI reference](./docs/cli-reference.md)            |
 
 ### Bootstrap A Repository
 

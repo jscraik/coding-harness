@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-28T16:10:00Z
+Generated: 2026-06-28T17:53:16Z
 
 ## Table of Contents
 
@@ -34,15 +34,19 @@ Generated: 2026-06-28T16:10:00Z
 - `src/commands/next-decision-meta.ts`
 - `src/commands/next-orientation-meta.ts`
 - `src/commands/orient.ts`
+- `src/commands/verify-coderabbit.ts`
 - `src/lib/cli/registry/command-agent-catalog-rules.ts`
 - `src/lib/cli/registry/command-capability-rules.ts`
 - `src/lib/cli/registry/command-specs-core.ts`
 - `src/lib/cli/registry/command-visibility-rules.ts`
 - `src/lib/cli/registry/orient-command-spec.ts`
+- `src/lib/coderabbit/local-checks.ts`
+- `src/lib/coderabbit/npmrc-check.ts`
 - `src/lib/orient/cli.ts`
 - `src/lib/orient/collector.ts`
 - `src/lib/orient/context.ts`
 - `src/lib/orient/types.ts`
+- `src/templates/coderabbit.yaml`
 
 ## agent
 
@@ -800,6 +804,7 @@ graph LR
   node_lint_pages_e33301d0_51f54ed1["lint_pages_e33301d0"]
   node_loader_1_16749818_9255dc35["loader_1_16749818"]
   node_loader_d47712cc_1c3a0e19["loader_d47712cc"]
+  node_local_checks_98fa27f8_460aa6a0["local_checks_98fa27f8"]
   node_local_memory_0db17ecc_97fe98ce["local_memory_0db17ecc"]
   node_local_runtime_card_artifacts_35c25816_0ad02372["local_runtime_card_artifacts_35c25816"]
   node_local_runtime_card_d7fd59bf_beed7160["local_runtime_card_d7fd59bf"]
@@ -819,6 +824,7 @@ graph LR
   node_normalize_workflow_contracts_8701f1c8_0fdf7d2f["normalize_workflow_contracts_8701f1c8"]
   node_north_star_artifact_io_9f2c34b2_6490caba["north_star_artifact_io_9f2c34b2"]
   node_north_star_feedback_1_9c32c60d_b0cd38dc["north_star_feedback_1_9c32c60d"]
+  node_npmrc_check_0cd4f16b_ada5b5ab["npmrc_check_0cd4f16b"]
   node_observed_circleci_telemetry_d3fd7f78_8b45a4f9["observed_circleci_telemetry_d3fd7f78"]
   node_observed_circleci_telemetry_support_10d1ee3b_8e5efa66["observed_circleci_telemetry_support_10d1ee3b"]
   node_observed_skill_usage_ed7d5930_7f7edbe6["observed_skill_usage_ed7d5930"]
@@ -961,7 +967,6 @@ graph LR
   node_validator_core_1_1518647e_d8d0b249["validator_core_1_1518647e"]
   node_validator_f82af321_9bdac96c["validator_f82af321"]
   node_validator_helpers_7b927667_8b691f8f["validator_helpers_7b927667"]
-  node_verify_coderabbit_490b4e71_8859655f["verify_coderabbit_490b4e71"]
   node_version_5ca4f385_fd75945b["version_5ca4f385"]
   node_version_coherence_69733bcb_00c8d5d9["version_coherence_69733bcb"]
   node_vitest_e2e_config_4e2a61bc_3efa3f07["vitest_e2e_config_4e2a61bc"]
@@ -1215,6 +1220,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_lint_pages_e33301d0_51f54ed1
   ext_node_fs_a15b7d96["node:fs"] --> node_loader_1_16749818_9255dc35
   ext_node_fs_a15b7d96["node:fs"] --> node_loader_d47712cc_1c3a0e19
+  ext_node_fs_a15b7d96["node:fs"] --> node_local_checks_98fa27f8_460aa6a0
   ext_node_fs_a15b7d96["node:fs"] --> node_local_memory_0db17ecc_97fe98ce
   ext_node_fs_a15b7d96["node:fs"] --> node_local_runtime_card_artifacts_35c25816_0ad02372
   ext_node_fs_a15b7d96["node:fs"] --> node_local_runtime_card_phase_exit_275ffa9a_383aa95e
@@ -1228,6 +1234,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_normalize_workflow_contracts_8701f1c8_0fdf7d2f
   ext_node_fs_a15b7d96["node:fs"] --> node_north_star_artifact_io_9f2c34b2_6490caba
   ext_node_fs_a15b7d96["node:fs"] --> node_north_star_feedback_1_9c32c60d_b0cd38dc
+  ext_node_fs_a15b7d96["node:fs"] --> node_npmrc_check_0cd4f16b_ada5b5ab
   ext_node_fs_a15b7d96["node:fs"] --> node_observed_circleci_telemetry_d3fd7f78_8b45a4f9
   ext_node_fs_a15b7d96["node:fs"] --> node_observed_circleci_telemetry_support_10d1ee3b_8e5efa66
   ext_node_fs_a15b7d96["node:fs"] --> node_observed_skill_usage_ed7d5930_7f7edbe6
@@ -1347,7 +1354,6 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_validator_7_f836eb0e_79c58987
   ext_node_fs_a15b7d96["node:fs"] --> node_validator_core_1_1518647e_d8d0b249
   ext_node_fs_a15b7d96["node:fs"] --> node_validator_f82af321_9bdac96c
-  ext_node_fs_a15b7d96["node:fs"] --> node_verify_coderabbit_490b4e71_8859655f
   ext_node_fs_a15b7d96["node:fs"] --> node_version_5ca4f385_fd75945b
   ext_node_fs_a15b7d96["node:fs"] --> node_version_coherence_69733bcb_00c8d5d9
   ext_node_fs_a15b7d96["node:fs"] --> node_workflow_generate_2fc0af62_803bbfeb
@@ -1483,6 +1489,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_lint_pages_e33301d0_51f54ed1
   ext_node_path_78811c13["node:path"] --> node_loader_1_16749818_9255dc35
   ext_node_path_78811c13["node:path"] --> node_loader_d47712cc_1c3a0e19
+  ext_node_path_78811c13["node:path"] --> node_local_checks_98fa27f8_460aa6a0
   ext_node_path_78811c13["node:path"] --> node_local_runtime_card_artifacts_35c25816_0ad02372
   ext_node_path_78811c13["node:path"] --> node_local_runtime_card_phase_exit_275ffa9a_383aa95e
   ext_node_path_78811c13["node:path"] --> node_metadata_scanner_6a101b66_5ca79039
@@ -1495,6 +1502,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_normalize_workflow_contracts_8701f1c8_0fdf7d2f
   ext_node_path_78811c13["node:path"] --> node_north_star_artifact_io_9f2c34b2_6490caba
   ext_node_path_78811c13["node:path"] --> node_north_star_feedback_1_9c32c60d_b0cd38dc
+  ext_node_path_78811c13["node:path"] --> node_npmrc_check_0cd4f16b_ada5b5ab
   ext_node_path_78811c13["node:path"] --> node_observed_circleci_telemetry_d3fd7f78_8b45a4f9
   ext_node_path_78811c13["node:path"] --> node_observed_circleci_telemetry_support_10d1ee3b_8e5efa66
   ext_node_path_78811c13["node:path"] --> node_observed_skill_usage_ed7d5930_7f7edbe6
@@ -1595,7 +1603,6 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_validator_5_b19ac2be_2ed2ef42
   ext_node_path_78811c13["node:path"] --> node_validator_7_f836eb0e_79c58987
   ext_node_path_78811c13["node:path"] --> node_validator_core_1_1518647e_d8d0b249
-  ext_node_path_78811c13["node:path"] --> node_verify_coderabbit_490b4e71_8859655f
   ext_node_path_78811c13["node:path"] --> node_version_5ca4f385_fd75945b
   ext_node_path_78811c13["node:path"] --> node_version_coherence_69733bcb_00c8d5d9
   ext_node_path_78811c13["node:path"] --> node_workflow_generate_2fc0af62_803bbfeb

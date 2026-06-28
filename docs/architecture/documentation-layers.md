@@ -47,12 +47,12 @@ This document defines the progressive-disclosure model for Coding Harness docume
 
 ## Layer model
 
-| Layer | Audience | Purpose | Token budget | Entry point |
-| --- | --- | --- | --- | --- |
-| **0 — Repo-facing** | All operators | Mandatory baseline: defaults, startup flow, routing | Minimal | `AGENTS.md` |
-| **1 — Quickstart** | New users, new agents | Immediate execution without deep governance | Small | `docs/agents/quickstart.md` |
-| **2 — Core concepts** | Active contributors | Operational SOPs, tooling contracts, workflow state machines | Medium | `docs/README.md` → task routing |
-| **3 — Extended reference** | Maintainers, auditors | Deep governance specs, operational specs, rollout contracts | Large | `docs/agents/01-instruction-map.md` → deep links |
+| Layer                      | Audience              | Purpose                                                      | Token budget | Entry point                                      |
+| -------------------------- | --------------------- | ------------------------------------------------------------ | ------------ | ------------------------------------------------ |
+| **0 — Repo-facing**        | All operators         | Mandatory baseline: defaults, startup flow, routing          | Minimal      | `AGENTS.md`                                      |
+| **1 — Quickstart**         | New users, new agents | Immediate execution without deep governance                  | Small        | `docs/agents/quickstart.md`                      |
+| **2 — Core concepts**      | Active contributors   | Operational SOPs, tooling contracts, workflow state machines | Medium       | `docs/README.md` → task routing                  |
+| **3 — Extended reference** | Maintainers, auditors | Deep governance specs, operational specs, rollout contracts  | Large        | `docs/agents/01-instruction-map.md` → deep links |
 
 ### Invariants
 
@@ -67,6 +67,7 @@ This document defines the progressive-disclosure model for Coding Harness docume
 Single canonical file: **`AGENTS.md`**
 
 Contents:
+
 - Project description
 - Mandatory workflow snippet
 - Required essentials (runtime/toolchain, baseline gates)
@@ -77,6 +78,7 @@ Contents:
 - Implementation conventions
 
 What it does **not** contain:
+
 - Detailed SOP steps
 - State machine definitions
 - Governance escalation procedures
@@ -90,6 +92,7 @@ Single canonical file: **`docs/agents/quickstart.md`**
 Purpose: get any operator (human or agent) executing common workflows immediately without reading governance docs.
 
 Contents:
+
 - Prerequisites (2-line version check)
 - Three hero workflows: install → validate → PR
 - Common command reference (5 commands)
@@ -99,44 +102,44 @@ Contents:
 
 These files define operational contracts for active contributors:
 
-| File | Domain |
-| --- | --- |
-| `docs/agents/02-tooling-policy.md` | Tooling contracts, command reference |
-| `docs/agents/04-validation.md` | Validation gates, check suites |
-| `docs/agents/13-linear-production-workflow.md` | Linear issue lifecycle |
-| `docs/lifecycle/issue-to-main.md` | Issue-to-main Lifecycle Harness truth lanes |
-| `docs/lifecycle/truth-lanes.md` | Lane-specific status and evidence reporting |
-| `docs/lifecycle/feedback-loop.md` | Durable feedback absorption routing |
-| `docs/domain/context-map.md` | synAIpse bounded contexts and lane relationships |
-| `docs/domain/claim-authority.md` | Claim-family authority and evidence support rules |
-| `docs/guardrails/README.md` | Guardrail index for repeated delivery-risk domains |
-| `docs/automations/README.md` | Runbook convention for recurring automation loops |
-| `docs/agents/06-security-and-governance.md` | Security posture, secret handling |
-| `docs/agents/08-release-and-change-control.md` | Release process |
-| `docs/agents/03-local-memory.md` | Memory/LEARNINGS workflow |
-| `docs/README.md` | Layer 2 index and routing |
+| File                                           | Domain                                             |
+| ---------------------------------------------- | -------------------------------------------------- |
+| `docs/agents/02-tooling-policy.md`             | Tooling contracts, command reference               |
+| `docs/agents/04-validation.md`                 | Validation gates, check suites                     |
+| `docs/agents/13-linear-production-workflow.md` | Linear issue lifecycle                             |
+| `docs/lifecycle/issue-to-main.md`              | Issue-to-main Lifecycle Harness truth lanes        |
+| `docs/lifecycle/truth-lanes.md`                | Lane-specific status and evidence reporting        |
+| `docs/lifecycle/feedback-loop.md`              | Durable feedback absorption routing                |
+| `docs/domain/context-map.md`                   | SynAIpse bounded contexts and lane relationships   |
+| `docs/domain/claim-authority.md`               | Claim-family authority and evidence support rules  |
+| `docs/guardrails/README.md`                    | Guardrail index for repeated delivery-risk domains |
+| `docs/automations/README.md`                   | Runbook convention for recurring automation loops  |
+| `docs/agents/06-security-and-governance.md`    | Security posture, secret handling                  |
+| `docs/agents/08-release-and-change-control.md` | Release process                                    |
+| `docs/agents/03-local-memory.md`               | Memory/LEARNINGS workflow                          |
+| `docs/README.md`                               | Layer 2 index and routing                          |
 
 ## Extended governance reference (Layer 3)
 
 Deep-dive operational specs, rollout contracts, and governance detail:
 
-| Category | Files |
-| --- | --- |
-| Linear operations | `16-linear-production-compact.md`, `18-github-linear-automation.md`, `19-linear-templates.md` |
-| Context integrity | `15-context-integrity-compact.md` |
-| Review governance | `12-ai-review-governance.md`, `review-gate-*.md` |
-| Testing gates | `10-agent-testing-gates.md`, `11-flaky-test-artifacts.md`, `agent-testing-gates-operational-spec.md` |
-| Docs governance | `14-docs-gate-rollout.md`, `docs-gate-rollout-operational-spec.md` |
-| Guardrails | `guardrails/*.md` for deep guardrail standards linked from `docs/guardrails/README.md` |
-| Automation runbooks | `automations/*.md` for recurring workflow contracts linked from `docs/automations/README.md` |
-| Release governance | `release-change-control-operational-spec.md` |
-| Architecture | `00-architecture-bootstrap.md` |
-| Role governance | `07a-role-governance.md`, `07b-agent-governance.md` |
-| Audit | `09-audit-trail-policy.md`, `05-contradictions-and-cleanup.md` |
-| CI | `17-ci-required-checks.md` |
-| Project Brain | `20-project-brain-memory-extension-rollout.md` |
-| Plans & specs | `docs/plans/*`, `docs/specs/*` |
-| ADRs | `docs/adr/*` |
+| Category            | Files                                                                                                |
+| ------------------- | ---------------------------------------------------------------------------------------------------- |
+| Linear operations   | `16-linear-production-compact.md`, `18-github-linear-automation.md`, `19-linear-templates.md`        |
+| Context integrity   | `15-context-integrity-compact.md`                                                                    |
+| Review governance   | `12-ai-review-governance.md`, `review-gate-*.md`                                                     |
+| Testing gates       | `10-agent-testing-gates.md`, `11-flaky-test-artifacts.md`, `agent-testing-gates-operational-spec.md` |
+| Docs governance     | `14-docs-gate-rollout.md`, `docs-gate-rollout-operational-spec.md`                                   |
+| Guardrails          | `guardrails/*.md` for deep guardrail standards linked from `docs/guardrails/README.md`               |
+| Automation runbooks | `automations/*.md` for recurring workflow contracts linked from `docs/automations/README.md`         |
+| Release governance  | `release-change-control-operational-spec.md`                                                         |
+| Architecture        | `00-architecture-bootstrap.md`                                                                       |
+| Role governance     | `07a-role-governance.md`, `07b-agent-governance.md`                                                  |
+| Audit               | `09-audit-trail-policy.md`, `05-contradictions-and-cleanup.md`                                       |
+| CI                  | `17-ci-required-checks.md`                                                                           |
+| Project Brain       | `20-project-brain-memory-extension-rollout.md`                                                       |
+| Plans & specs       | `docs/plans/*`, `docs/specs/*`                                                                       |
+| ADRs                | `docs/adr/*`                                                                                         |
 
 ## Layer routing rules
 

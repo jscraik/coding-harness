@@ -11,7 +11,7 @@ audience:
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-06-04
+last_reviewed: 2026-06-28
 review_cadence: quarterly
 maintenance_trigger:
   - brand-name-change
@@ -41,7 +41,7 @@ implemented by the coding-harness package and repository.
 
 ## Canonical Name
 
-Use synAIpse as the product name in prose. Use AI Delivery Harness as the
+Use SynAIpse as the product name in prose. Use AI Delivery Harness as the
 descriptor.
 
 Use Coding Harness, coding-harness, and @brainwav/coding-harness only when
@@ -50,10 +50,10 @@ surfaces that have not yet been formally renamed.
 
 ## Logo
 
-![synAIpse AI Delivery Harness logo](./synaipse-logo.png)
+![SynAIpse AI Delivery Harness logo](./synaipse-logo.png)
 
 The current repo-owned logo asset is [synaipse-logo.png](./synaipse-logo.png).
-It is the approved documentation asset for the synAIpse brand lockup.
+It is the approved documentation asset for the SynAIpse brand lockup.
 
 ## Usage Boundary
 

@@ -43,7 +43,7 @@ depends_on:
 ## Purpose
 
 This document defines the canonical issue-to-main operating model inside
-synAIpse, the AI Delivery Harness currently implemented by the coding-harness
+SynAIpse, the AI Delivery Harness currently implemented by the coding-harness
 repository.
 
 The short form is:
@@ -67,20 +67,20 @@ into the smallest durable surface that prevents repeat work.
 
 ## Lifecycle
 
-| Stage | Source of truth | Lifecycle Harness responsibility | Exit evidence |
-| --- | --- | --- | --- |
-| Linear issue | Linear | Preserve issue key, scope, status, and relationship to specs or plans | Linked issue reference and acceptance trace |
-| Spec | Harness specs, docs specs, or approved issue text | Convert intent into bounded requirements and acceptance criteria | Spec path or explicit n.a. reason |
-| Plan | Harness plan, docs plans, or PR work ledger | Sequence implementation, validation, risk, and rollback | Plan path, slice, or explicit n.a. reason |
-| Implement | Source tree | Make the smallest scoped change that satisfies the plan | Changed files and affected-surface classification |
-| Pre-commit | Local repo | Run narrow proof first, then required local gates for the touched surface | Exact command outcomes |
-| Review | Local review artifacts and PR review tools | Separate self-check, independent review, CodeRabbit, and Codex review | Review artifact refs or blocked reason |
-| Commit | Git | Keep the change atomic, branch-scoped, and traceable | Commit hash and branch state |
-| PR | GitHub | Open or update the PR with complete evidence fields | PR URL and completed template |
-| Poll PR | GitHub and CI | Re-check current PR state instead of trusting stale summaries | Current PR status, checks, and review-thread state |
-| Green checks | CircleCI, CodeRabbit, Semgrep Cloud, GitHub checks | Treat every required check as its own lane | Current green check evidence |
-| Merge | GitHub | Merge only when local, PR, CI, review, tracker, and merge-readiness lanes agree | Merge commit and closed PR |
-| Main sync | Git | Checkout main, pull latest, and remove or archive the completed worktree or branch | Main at latest origin state |
+| Stage        | Source of truth                                    | Lifecycle Harness responsibility                                                   | Exit evidence                                      |
+| ------------ | -------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Linear issue | Linear                                             | Preserve issue key, scope, status, and relationship to specs or plans              | Linked issue reference and acceptance trace        |
+| Spec         | Harness specs, docs specs, or approved issue text  | Convert intent into bounded requirements and acceptance criteria                   | Spec path or explicit n.a. reason                  |
+| Plan         | Harness plan, docs plans, or PR work ledger        | Sequence implementation, validation, risk, and rollback                            | Plan path, slice, or explicit n.a. reason          |
+| Implement    | Source tree                                        | Make the smallest scoped change that satisfies the plan                            | Changed files and affected-surface classification  |
+| Pre-commit   | Local repo                                         | Run narrow proof first, then required local gates for the touched surface          | Exact command outcomes                             |
+| Review       | Local review artifacts and PR review tools         | Separate self-check, independent review, CodeRabbit, and Codex review              | Review artifact refs or blocked reason             |
+| Commit       | Git                                                | Keep the change atomic, branch-scoped, and traceable                               | Commit hash and branch state                       |
+| PR           | GitHub                                             | Open or update the PR with complete evidence fields                                | PR URL and completed template                      |
+| Poll PR      | GitHub and CI                                      | Re-check current PR state instead of trusting stale summaries                      | Current PR status, checks, and review-thread state |
+| Green checks | CircleCI, CodeRabbit, Semgrep Cloud, GitHub checks | Treat every required check as its own lane                                         | Current green check evidence                       |
+| Merge        | GitHub                                             | Merge only when local, PR, CI, review, tracker, and merge-readiness lanes agree    | Merge commit and closed PR                         |
+| Main sync    | Git                                                | Checkout main, pull latest, and remove or archive the completed worktree or branch | Main at latest origin state                        |
 
 ## Truth lanes
 
@@ -127,14 +127,14 @@ Feedback sources include:
 
 When feedback appears, Lifecycle Harness classifies it:
 
-| Feedback class | Durable destination |
-| --- | --- |
-| One-off implementation detail | Current plan, PR body, or implementation note |
-| Repeated steering | AGENTS.md, codestyle, validator, Project Brain, skill, or tracked exception |
-| Deterministic policy gap | Guard script, schema, docs-gate, or CLI validator |
-| Workflow ambiguity | Lifecycle doc, Linear workflow doc, PR template, or harness command output |
-| Review pattern | Test fixture, CodeRabbit learning import, north-star feedback loop, or reviewer role instruction |
-| Downstream setup risk | Template, packaged skill, harness init or upgrade regression test |
+| Feedback class                | Durable destination                                                                              |
+| ----------------------------- | ------------------------------------------------------------------------------------------------ |
+| One-off implementation detail | Current plan, PR body, or implementation note                                                    |
+| Repeated steering             | AGENTS.md, codestyle, validator, Project Brain, skill, or tracked exception                      |
+| Deterministic policy gap      | Guard script, schema, docs-gate, or CLI validator                                                |
+| Workflow ambiguity            | Lifecycle doc, Linear workflow doc, PR template, or harness command output                       |
+| Review pattern                | Test fixture, CodeRabbit learning import, north-star feedback loop, or reviewer role instruction |
+| Downstream setup risk         | Template, packaged skill, harness init or upgrade regression test                                |
 
 The goal is not to capture every comment forever. The goal is to make the next
 occurrence cheaper, clearer, or impossible to miss.
@@ -143,14 +143,14 @@ occurrence cheaper, clearer, or impossible to miss.
 
 Documentation participates in the same lifecycle:
 
-| State | Meaning |
-| --- | --- |
-| proposed | Drafted but not yet accepted as operating truth |
+| State        | Meaning                                               |
+| ------------ | ----------------------------------------------------- |
+| proposed     | Drafted but not yet accepted as operating truth       |
 | experimental | Used in limited scope while the model is being tested |
-| active | Current source of truth for its declared scope |
-| deprecated | Still present, but planned for replacement or removal |
-| superseded | Replaced by a named newer surface |
-| archived | Historical evidence, not current instruction |
+| active       | Current source of truth for its declared scope        |
+| deprecated   | Still present, but planned for replacement or removal |
+| superseded   | Replaced by a named newer surface                     |
+| archived     | Historical evidence, not current instruction          |
 
 Every governed document declares its owner, audience, review cadence,
 dependencies, lifecycle state, distribution boundary, and SemVer impact in
@@ -159,7 +159,7 @@ those declarations.
 
 ## Distribution boundary
 
-This document is source-only. It should explain synAIpse itself, but it
+This document is source-only. It should explain SynAIpse itself, but it
 must not be copied into downstream projects by harness init or harness upgrade.
 
 Downstream projects should receive only the thin surfaces they need:
@@ -177,14 +177,14 @@ reference source-only docs under docs/ or .agents/ directly.
 Documentation changes can affect SemVer when they change a contract that users
 or agents rely on.
 
-| Change | Default SemVer impact |
-| --- | --- |
-| Typo or clarification in source-only docs | patch |
-| New source-only governance model | minor |
-| Packaged skill behavior or command guidance change | minor |
-| Downstream template contract change | minor |
-| Removal or incompatible change to downstream scaffold expectations | major |
-| Historical archive only | none |
+| Change                                                             | Default SemVer impact |
+| ------------------------------------------------------------------ | --------------------- |
+| Typo or clarification in source-only docs                          | patch                 |
+| New source-only governance model                                   | minor                 |
+| Packaged skill behavior or command guidance change                 | minor                 |
+| Downstream template contract change                                | minor                 |
+| Removal or incompatible change to downstream scaffold expectations | major                 |
+| Historical archive only                                            | none                  |
 
 PR closeout must classify documentation lifecycle impact and SemVer impact so
 reviewers can tell whether a documentation change is local explanation,

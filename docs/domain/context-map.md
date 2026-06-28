@@ -38,32 +38,32 @@ depends_on:
 
 ## Purpose
 
-This document names the bounded contexts inside the synAIpse issue-to-main
+This document names the bounded contexts inside the SynAIpse issue-to-main
 lifecycle. Use it to keep domain language, source-of-truth artifacts, and claim
 authority separated before changing docs, gates, skills, or lifecycle behavior.
 
 ## Core domain
 
-synAIpse is the AI Delivery Harness for evidence-backed agentic software
+SynAIpse is the AI Delivery Harness for evidence-backed agentic software
 delivery: moving a Linear issue to main through explicit scopes, validation,
 review, external-state checks, merge readiness, and post-merge learning without
 collapsing those truth lanes into one status.
 
 ## Bounded contexts
 
-| Context | Owns | Source of truth | Must not claim |
-| --- | --- | --- | --- |
-| Intake | Issue key, scope, acceptance intent | Linear issue or admitted work artifact | Implementation is complete |
-| Specification | Requirements, acceptance criteria, exclusions | Active spec or approved issue text | Validation has passed |
-| Planning | Work slices, risk, rollback, validation plan | Active plan or PR work ledger | Scope is implemented |
-| Implementation | Source changes and local behavior | Git worktree and changed files | PR, CI, or review state |
-| Local validation | Local command evidence | Exact command outcomes | Remote checks are green |
-| Review state | Human, Codex, and CodeRabbit findings | Review artifacts and PR threads | CI or tracker state |
-| External state | PR, CI, check, and tracker snapshots | Fresh GitHub, CI, CodeRabbit, Semgrep, Linear evidence | Local behavior correctness |
-| Artifact evidence | Receipts, runtime cards, evals, screenshots, reports | Tracked or generated artifacts with source refs | Merge readiness unless a contract allows it |
-| Merge readiness | Branch protection and policy composition | Current PR head, checks, reviews, tracker and policy evidence | Post-merge main sync |
-| Main sync | Checkout, pull, branch/worktree cleanup | Local git state after merge | Original issue acceptance unless tracker evidence agrees |
-| Learning loop | Durable feedback absorption | AGENTS, guardrails, validators, skills, Project Brain, glossary, or tracked exception | One-off implementation behavior |
+| Context           | Owns                                                 | Source of truth                                                                       | Must not claim                                           |
+| ----------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Intake            | Issue key, scope, acceptance intent                  | Linear issue or admitted work artifact                                                | Implementation is complete                               |
+| Specification     | Requirements, acceptance criteria, exclusions        | Active spec or approved issue text                                                    | Validation has passed                                    |
+| Planning          | Work slices, risk, rollback, validation plan         | Active plan or PR work ledger                                                         | Scope is implemented                                     |
+| Implementation    | Source changes and local behavior                    | Git worktree and changed files                                                        | PR, CI, or review state                                  |
+| Local validation  | Local command evidence                               | Exact command outcomes                                                                | Remote checks are green                                  |
+| Review state      | Human, Codex, and CodeRabbit findings                | Review artifacts and PR threads                                                       | CI or tracker state                                      |
+| External state    | PR, CI, check, and tracker snapshots                 | Fresh GitHub, CI, CodeRabbit, Semgrep, Linear evidence                                | Local behavior correctness                               |
+| Artifact evidence | Receipts, runtime cards, evals, screenshots, reports | Tracked or generated artifacts with source refs                                       | Merge readiness unless a contract allows it              |
+| Merge readiness   | Branch protection and policy composition             | Current PR head, checks, reviews, tracker and policy evidence                         | Post-merge main sync                                     |
+| Main sync         | Checkout, pull, branch/worktree cleanup              | Local git state after merge                                                           | Original issue acceptance unless tracker evidence agrees |
+| Learning loop     | Durable feedback absorption                          | AGENTS, guardrails, validators, skills, Project Brain, glossary, or tracked exception | One-off implementation behavior                          |
 
 ## Context relationships
 
