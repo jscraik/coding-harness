@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import type { SessionContextTraversalHint } from "../session-context/types.js";
 import type {
 	HarnessOrientConditionalContext,
 	HarnessOrientContextCommand,
@@ -125,6 +126,52 @@ export function buildContextCommands(
 			reason: "List the compact command rail available for orientation work.",
 		},
 	];
+}
+
+/** Normalize embedded harness command hints to the entrypoint orient selected. */
+export function normalizeOrientHarnessCommand(
+	command: string | null,
+	commandPrefix: HarnessOrientCommandPrefix,
+): string | null {
+	if (command === null) return null;
+	return command.replace(
+		/^(?:pnpm exec harness|harness|node --import tsx src\/cli\.ts)(?=\s|$)/,
+		commandPrefix,
+	);
+}
+
+/** Rebuild session-context hints with the public command prefix orient selected. */
+export function buildOrientTraversalHints(
+	commandPrefix: HarnessOrientCommandPrefix,
+): SessionContextTraversalHint[] {
+	return (
+		[
+			[
+				"agent cockpit",
+				"next --json",
+				"Ask the narrow cockpit for the next safe command before acting.",
+			],
+			[
+				"runtime card",
+				"runtime-card --json --repo .",
+				"Refresh the runtime-card summary when local runtime evidence is missing or stale.",
+			],
+			[
+				"agent readiness",
+				"agent-readiness --json --repo-root .",
+				"Check instruction, artifact, capability, approval, traceability, and context-health surfaces.",
+			],
+			[
+				"orientation rail",
+				"commands --json --for-agent --mode orient",
+				"List the compact orient-mode command rail available to agents.",
+			],
+		] as const
+	).map(([label, command, reason]) => ({
+		label,
+		command: `${commandPrefix} ${command}`,
+		reason,
+	}));
 }
 
 /** List context files that should be opened only when their trigger surface is touched. */

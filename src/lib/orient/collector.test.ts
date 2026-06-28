@@ -33,6 +33,11 @@ function nextDecisionFixture() {
 		writesFiles: false,
 		evidenceRef: ["fixture:next"],
 		failureClass: null,
+		followUpCommands: [
+			"harness next --json",
+			"pnpm exec harness commands --json",
+			"pnpm test",
+		],
 		retry: "safe",
 		riskTier: "low",
 	});
@@ -95,6 +100,14 @@ describe("collectHarnessOrient", () => {
 			status: "unobserved",
 			command: "bash scripts/codex-preflight.sh --stack auto --mode required",
 		});
+		expect(report.nextDecision.nextCommand).toBe(
+			"pnpm exec harness validation-plan --json",
+		);
+		expect(report.nextDecision.followUpCommands).toEqual([
+			"pnpm exec harness next --json",
+			"pnpm exec harness commands --json",
+			"pnpm test",
+		]);
 		expect(report.architectureContext).toMatchObject({
 			path: "AI/context/diagram-context.md",
 			status: "present",
@@ -203,6 +216,14 @@ describe("collectHarnessOrient", () => {
 				hint.command.includes("src/cli.ts"),
 			),
 		).toBe(false);
+		expect(report.nextDecision.nextCommand).toBe(
+			"harness validation-plan --json",
+		);
+		expect(report.nextDecision.followUpCommands).toEqual([
+			"harness next --json",
+			"harness commands --json",
+			"pnpm test",
+		]);
 	});
 
 	it("uses the source probe command rail before the source checkout is built", () => {
@@ -231,6 +252,14 @@ describe("collectHarnessOrient", () => {
 			"node --import tsx src/cli.ts runtime-card --json --repo .",
 			"node --import tsx src/cli.ts agent-readiness --json --repo-root .",
 			"node --import tsx src/cli.ts commands --json --for-agent --mode orient",
+		]);
+		expect(report.nextDecision.nextCommand).toBe(
+			"node --import tsx src/cli.ts validation-plan --json",
+		);
+		expect(report.nextDecision.followUpCommands).toEqual([
+			"node --import tsx src/cli.ts next --json",
+			"node --import tsx src/cli.ts commands --json",
+			"pnpm test",
 		]);
 		expect(
 			report.conditionalContext.find(

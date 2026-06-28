@@ -6,17 +6,16 @@ import type { HarnessDecision } from "../decision/harness-decision.js";
 import { runBrainStale } from "../project-brain/stale-cli.js";
 import { runBrainStatus } from "../project-brain/status-cli.js";
 import { collectSessionContext } from "../session-context/collector.js";
-import type {
-	SessionContextReport,
-	SessionContextTraversalHint,
-} from "../session-context/types.js";
+import type { SessionContextReport } from "../session-context/types.js";
 import {
 	ARCHITECTURE_CONTEXT_PATH,
 	buildConditionalContext,
 	buildContextCommands,
 	buildOrientationRefs,
+	buildOrientTraversalHints,
 	DIAGRAM_MANIFEST_PATH,
 	type HarnessOrientCommandPrefix,
+	normalizeOrientHarnessCommand,
 	TRUTH_LANE_WARNINGS,
 } from "./context.js";
 import type {
@@ -78,7 +77,7 @@ export function collectHarnessOrient(
 		}),
 		evidenceUse: "orientation",
 		repoRoot,
-		nextDecision: summarizeNextDecision(nextDecision),
+		nextDecision: summarizeNextDecision(nextDecision, commandPrefix),
 		sessionContext: summarizeSessionContext(sessionContext, commandPrefix),
 		agentReadinessContextHealth: agentReadiness.contextHealth,
 		preflightReceipt,
@@ -120,6 +119,7 @@ function commandPrefixFor(repoRoot: string): HarnessOrientCommandPrefix {
 /** Convert the full next decision into the compact orient packet shape. */
 function summarizeNextDecision(
 	decision: HarnessDecision,
+	commandPrefix: HarnessOrientCommandPrefix,
 ): HarnessOrientNextDecision {
 	return {
 		schemaVersion: decision.schemaVersion,
@@ -128,11 +128,17 @@ function summarizeNextDecision(
 		cockpitLane: decision.cockpitLane ?? null,
 		summary: decision.summary,
 		nextAction: decision.nextAction,
-		nextCommand: decision.nextCommand,
+		nextCommand: normalizeOrientHarnessCommand(
+			decision.nextCommand,
+			commandPrefix,
+		),
 		failureClass: decision.failureClass,
 		requiredEvidence: [...decision.requiredEvidence],
 		stopConditions: [...decision.stopConditions],
-		followUpCommands: [...decision.followUpCommands],
+		followUpCommands: decision.followUpCommands.map(
+			(command) =>
+				normalizeOrientHarnessCommand(command, commandPrefix) ?? command,
+		),
 	};
 }
 
@@ -155,36 +161,6 @@ function summarizeSessionContext(
 		staleState: report.staleState,
 		nextTraversalHints: buildOrientTraversalHints(commandPrefix),
 	};
-}
-
-/** Rebuild session-context hints with the public command prefix orient selected. */
-function buildOrientTraversalHints(
-	commandPrefix: HarnessOrientCommandPrefix,
-): SessionContextTraversalHint[] {
-	return [
-		{
-			label: "agent cockpit",
-			command: `${commandPrefix} next --json`,
-			reason: "Ask the narrow cockpit for the next safe command before acting.",
-		},
-		{
-			label: "runtime card",
-			command: `${commandPrefix} runtime-card --json --repo .`,
-			reason:
-				"Refresh the runtime-card summary when local runtime evidence is missing or stale.",
-		},
-		{
-			label: "agent readiness",
-			command: `${commandPrefix} agent-readiness --json --repo-root .`,
-			reason:
-				"Check instruction, artifact, capability, approval, traceability, and context-health surfaces.",
-		},
-		{
-			label: "orientation rail",
-			command: `${commandPrefix} commands --json --for-agent --mode orient`,
-			reason: "List the compact orient-mode command rail available to agents.",
-		},
-	];
 }
 
 /** Read the latest preflight receipt, or emit an explicit unobserved state. */
