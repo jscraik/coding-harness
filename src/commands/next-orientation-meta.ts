@@ -6,10 +6,10 @@ const NEXT_ORIENTATION_REFS = [
 ] as const;
 
 const NEXT_CONTEXT_COMMANDS = [
-	"pnpm exec harness orient --json",
-	"pnpm exec harness session-context --json --repo-root .",
-	"pnpm exec harness agent-readiness . --json",
-	"pnpm exec harness commands --json --for-agent --mode orient",
+	"orient --json",
+	"session-context --json --repo-root .",
+	"agent-readiness . --json",
+	"commands --json --for-agent --mode orient",
 ] as const;
 
 const NEXT_CONDITIONAL_CONTEXT = [
@@ -28,7 +28,7 @@ const NEXT_TRUTH_LANE_WARNINGS = [
 export interface NextOrientationMeta {
 	/** Context files a cold agent should read before acting on a lane. */
 	orientationRefs: string[];
-	/** Read-only commands that deepen local orientation evidence. */
+	/** Invocation-neutral command fragments that deepen local orientation evidence. */
 	contextCommands: string[];
 	/** Conditional context rules for architecture-sensitive changes. */
 	conditionalContext: Array<{
