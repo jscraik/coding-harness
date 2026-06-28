@@ -11,25 +11,23 @@ import {
 	type RuntimeCard,
 } from "../lib/runtime/runtime-card.js";
 import type { AgentReadinessContextHealth } from "../lib/agent-readiness/types.js";
+import { orientationMeta } from "./next-orientation-meta.js";
 import { decisionMeta, sourceMetaExtra } from "./next-support.js";
 import type { HarnessNextMode } from "./next-decision-types.js";
 
 type DecisionMetaArgs = Parameters<typeof decisionMeta>[0];
-
 /** Build a standardized decision scoped to the harness next CLI. */
 export function createNextDecision(
 	decision: HarnessDecisionInput,
 ): HarnessDecision {
 	return buildHarnessDecision("harness next", decision);
 }
-
+/** Normalize HE phase-exit evidence when present. */
 function phaseExitMeta(
 	phaseExit: HePhaseExit | undefined,
 ): Record<string, unknown> | undefined {
 	if (!phaseExit) return undefined;
-	return {
-		hePhaseExit: normaliseHePhaseExitResult(phaseExit),
-	};
+	return { hePhaseExit: normaliseHePhaseExitResult(phaseExit) };
 }
 
 function runtimeCardMeta(
@@ -67,6 +65,7 @@ function agentReadinessContextMeta(
 	};
 }
 
+/** Add optional decision metadata only when the caller observed a value. */
 function addDefinedMetaArg<K extends keyof DecisionMetaArgs>(
 	meta: DecisionMetaArgs,
 	key: K,
@@ -97,6 +96,7 @@ export function nextDecisionOperationalMeta(args: {
 	const metaArgs: DecisionMetaArgs = {
 		mode: args.mode,
 		extra: {
+			...orientationMeta(),
 			...(args.extra ?? {}),
 			...sourceMetaExtra(args.sourceErrors ?? []),
 			...phaseExitMeta(args.phaseExit),

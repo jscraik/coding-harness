@@ -26,16 +26,24 @@ For repo-facing onboarding and common workflows, start at [`README.md`](../READM
 
 ## Agent cockpit entrypoint
 
-Use `harness next --json` as the read-only agent cockpit entrypoint. It
-inspects changed files from git by default, emits a `HarnessDecision`, and
-points `nextCommand` at an existing command instead of inventing a new workflow.
-The decision includes `cockpitLane` so operators and agents can branch through
-the five product lanes: `orient`, `prove`, `repair`, `review`, and
-`handoff`.
+Use `harness orient --json` as the read-only cold-start entrypoint. It
+emits a compact `harness-orient/v1` packet that wraps existing read-only
+surfaces: `harness next`, `session-context/v1`, agent-readiness
+context health, preflight receipt observation, Project Brain refs, architecture
+context refs, and local truth-lane caveats. Use `harness next --json` when
+you only need the next safe action.
 
 ```bash
+harness orient --json
 harness next --json
 ```
+
+The `harness next --json` decision inspects changed files from git by
+default, emits a `HarnessDecision`, and points `nextCommand` at an
+existing command instead of inventing a new workflow. The decision includes
+`cockpitLane` so operators and agents can branch through the five product
+lanes: `orient`, `prove`, `repair`, `review`, and
+`handoff`.
 
 Optional overrides:
 
@@ -149,6 +157,7 @@ Taxonomy note: section headings in this document represent command families. The
 | `agent-readiness`   | Audit agent-readable instructions, artifacts, capabilities, approval gates, traceability, and context freshness (`--json`, optional path, optional `--repo-root`)                                                                                                                                                                                                                            |
 | `agent-native-ratchets` | Emit an `agent-native-ratchets/v1` packet for ratchet discovery (`--json`)                                                                                                                                                                                                                                                                                                                   |
 | `agent-rework`      | Emit an `agent-rework/v1` packet from local rework evidence (`--json`)                                                                                                                                                                                                                                                                                                                       |
+| `orient`            | Emit a compact cold-start `harness-orient/v1` packet with next, session-context, agent-readiness context health, preflight receipt status, architecture refs, Project Brain refs, and truth-lane warnings (`--json`, optional `--repo-root`)                                                                                                                                            |
 | `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`)                                                                                                                                                                                                                    |
 | `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)                                                                                                                                                                                                                           |
 | `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                                                                                                                                                                                                                                   |

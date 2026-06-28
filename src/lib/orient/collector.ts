@@ -1,0 +1,333 @@
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { assessAgentReadiness } from "../agent-readiness/checker.js";
+import type { AgentReadinessContextHealth } from "../agent-readiness/types.js";
+import type { HarnessDecision } from "../decision/harness-decision.js";
+import { runBrainStale } from "../project-brain/stale-cli.js";
+import { runBrainStatus } from "../project-brain/status-cli.js";
+import { collectSessionContext } from "../session-context/collector.js";
+import type { SessionContextReport } from "../session-context/types.js";
+import {
+	ARCHITECTURE_CONTEXT_PATH,
+	buildConditionalContext,
+	buildContextCommands,
+	buildOrientationRefs,
+	DIAGRAM_MANIFEST_PATH,
+	TRUTH_LANE_WARNINGS,
+} from "./context.js";
+import type {
+	HarnessOrientArchitectureContext,
+	HarnessOrientNextDecision,
+	HarnessOrientOptions,
+	HarnessOrientPreflightReceipt,
+	HarnessOrientProjectBrain,
+	HarnessOrientReport,
+	HarnessOrientStatus,
+} from "./types.js";
+
+/** Repository-relative path where orient looks for the latest Codex preflight receipt. */
+export const PREFLIGHT_RECEIPT_PATH =
+	".harness/runtime/codex-preflight-status.json";
+
+const PREFLIGHT_COMMAND =
+	"bash scripts/codex-preflight.sh --stack auto --mode required";
+const SOURCE_CHECKOUT_PACKAGE_NAME = "@brainwav/coding-harness";
+
+/** Build the read-only cold-start orientation packet from existing harness surfaces. */
+export function collectHarnessOrient(
+	options: HarnessOrientOptions,
+): HarnessOrientReport {
+	const generatedAt = (options.now ?? new Date()).toISOString();
+	const repoRoot = canonicalRepoRoot(options.repoRoot ?? process.cwd());
+	const commandPrefix = commandPrefixFor(repoRoot);
+	const clock = options.now ? { now: options.now } : {};
+	const agentReadiness = assessAgentReadiness({
+		repoRoot,
+		...clock,
+	});
+	const sessionContext = collectSessionContext({
+		repoRoot,
+		...clock,
+	});
+	const nextDecision = options.nextDecisionProvider({
+		repoRoot,
+		contextHealth: agentReadiness.contextHealth,
+	});
+	const preflightReceipt = readPreflightReceipt(repoRoot);
+	const architectureContext = buildArchitectureContext(repoRoot);
+	const projectBrain = buildProjectBrain(repoRoot);
+	const orientationRefs = buildOrientationRefs(repoRoot);
+	const contextCommands = buildContextCommands(commandPrefix);
+	const conditionalContext = buildConditionalContext();
+
+	return {
+		schemaVersion: "harness-orient/v1",
+		generatedAt,
+		producer: "harness:orient",
+		status: deriveOrientStatus({
+			nextDecision,
+			sessionContext,
+			contextHealth: agentReadiness.contextHealth,
+			preflightReceipt,
+			architectureContext,
+			projectBrain,
+		}),
+		evidenceUse: "orientation",
+		repoRoot,
+		nextDecision: summarizeNextDecision(nextDecision),
+		sessionContext: summarizeSessionContext(sessionContext),
+		agentReadinessContextHealth: agentReadiness.contextHealth,
+		preflightReceipt,
+		architectureContext,
+		projectBrain,
+		orientationRefs,
+		contextCommands,
+		conditionalContext,
+		truthLaneWarnings: TRUTH_LANE_WARNINGS,
+	};
+}
+
+/** Resolve the requested repo root to a stable canonical filesystem path. */
+function canonicalRepoRoot(repoRoot: string): string {
+	return realpathSync(resolve(repoRoot));
+}
+
+/** Pick the public command prefix that matches package source checkouts. */
+function commandPrefixFor(repoRoot: string): "pnpm exec harness" | "harness" {
+	const packagePath = join(repoRoot, "package.json");
+	const sourceCliPath = join(repoRoot, "src/cli.ts");
+	if (!existsSync(packagePath) || !existsSync(sourceCliPath)) return "harness";
+	try {
+		const parsed = JSON.parse(readFileSync(packagePath, "utf8")) as {
+			name?: unknown;
+		};
+		return parsed.name === SOURCE_CHECKOUT_PACKAGE_NAME
+			? "pnpm exec harness"
+			: "harness";
+	} catch {
+		return "harness";
+	}
+}
+
+/** Convert the full next decision into the compact orient packet shape. */
+function summarizeNextDecision(
+	decision: HarnessDecision,
+): HarnessOrientNextDecision {
+	return {
+		schemaVersion: decision.schemaVersion,
+		status: decision.status,
+		phase: decision.phase,
+		cockpitLane: decision.cockpitLane ?? null,
+		summary: decision.summary,
+		nextAction: decision.nextAction,
+		nextCommand: decision.nextCommand,
+		failureClass: decision.failureClass,
+		requiredEvidence: [...decision.requiredEvidence],
+		stopConditions: [...decision.stopConditions],
+		followUpCommands: [...decision.followUpCommands],
+	};
+}
+
+/** Summarize session-context evidence without embedding bulky changed-file data. */
+function summarizeSessionContext(
+	report: SessionContextReport,
+): HarnessOrientReport["sessionContext"] {
+	return {
+		schemaVersion: report.schemaVersion,
+		status: report.status,
+		repository: report.repository,
+		branch: report.branch,
+		headSha: report.headSha,
+		issueRef: report.issueRef,
+		changedFileCount: report.changedFiles.length,
+		activeArtifactCount: report.activeArtifacts.length,
+		runtimeCardCount: report.runtimeCards.length,
+		reviewArtifactCount: report.reviewArtifacts.length,
+		staleState: report.staleState,
+		nextTraversalHints: report.nextTraversalHints,
+	};
+}
+
+/** Read the latest preflight receipt, or emit an explicit unobserved state. */
+function readPreflightReceipt(repoRoot: string): HarnessOrientPreflightReceipt {
+	const absolutePath = join(repoRoot, PREFLIGHT_RECEIPT_PATH);
+	if (!existsSync(absolutePath)) {
+		return {
+			path: PREFLIGHT_RECEIPT_PATH,
+			status: "unobserved",
+			schemaVersion: null,
+			generatedAt: null,
+			mode: null,
+			command: PREFLIGHT_COMMAND,
+			reason:
+				"No codex preflight receipt was found; run the suggested command before relying on preflight status.",
+		};
+	}
+	try {
+		const parsed = JSON.parse(readFileSync(absolutePath, "utf8")) as {
+			schemaVersion?: unknown;
+			generatedAt?: unknown;
+			mode?: unknown;
+			status?: unknown;
+			command?: unknown;
+		};
+		const status = preflightStatus(parsed.status);
+		if (status === "invalid") {
+			return invalidPreflightReceipt("Receipt status was not recognized.");
+		}
+		return {
+			path: PREFLIGHT_RECEIPT_PATH,
+			status,
+			schemaVersion:
+				typeof parsed.schemaVersion === "string" ? parsed.schemaVersion : null,
+			generatedAt:
+				typeof parsed.generatedAt === "string" ? parsed.generatedAt : null,
+			mode: typeof parsed.mode === "string" ? parsed.mode : null,
+			command:
+				typeof parsed.command === "string" ? parsed.command : PREFLIGHT_COMMAND,
+			reason: null,
+		};
+	} catch (error) {
+		return invalidPreflightReceipt(
+			"Receipt could not be parsed as JSON: " +
+				(error instanceof Error ? error.message : String(error)) +
+				".",
+		);
+	}
+}
+
+/** Build an invalid preflight receipt with the recovery command preserved. */
+function invalidPreflightReceipt(
+	reason: string,
+): HarnessOrientPreflightReceipt {
+	return {
+		path: PREFLIGHT_RECEIPT_PATH,
+		status: "invalid",
+		schemaVersion: null,
+		generatedAt: null,
+		mode: null,
+		command: PREFLIGHT_COMMAND,
+		reason,
+	};
+}
+
+/** Normalize a raw preflight status field into the orient status vocabulary. */
+function preflightStatus(
+	status: unknown,
+): HarnessOrientPreflightReceipt["status"] {
+	return status === "pass" ||
+		status === "warn" ||
+		status === "fail" ||
+		status === "blocked"
+		? status
+		: "invalid";
+}
+
+/** Describe the lazy architecture context and its freshness check command. */
+function buildArchitectureContext(
+	repoRoot: string,
+): HarnessOrientArchitectureContext {
+	return {
+		path: ARCHITECTURE_CONTEXT_PATH,
+		status: pathExists(repoRoot, ARCHITECTURE_CONTEXT_PATH)
+			? "present"
+			: "missing",
+		manifestPath: DIAGRAM_MANIFEST_PATH,
+		readWhen:
+			"Read when touching src/**, scripts/**, command registry, architecture docs, generated diagrams, or module boundaries.",
+		validateWhenChangedCommand: "bash scripts/check-diagram-freshness.sh",
+	};
+}
+
+/** Inspect Project Brain as orientation evidence without promoting it to delivery truth. */
+function buildProjectBrain(repoRoot: string): HarnessOrientProjectBrain {
+	const harnessDir = join(repoRoot, ".harness");
+	if (!safeDirectoryExists(harnessDir)) {
+		return {
+			brainStatus: "unobserved",
+			brainStale: "unobserved",
+			authority: "orientation_only",
+			refs: projectBrainRefs(repoRoot),
+			validationSummary: null,
+			staleFileCount: null,
+			reason: ".harness directory was not found.",
+		};
+	}
+	try {
+		const status = runBrainStatus(harnessDir);
+		const stale = runBrainStale(harnessDir);
+		const staleFiles = Array.isArray(stale.report.staleFiles)
+			? stale.report.staleFiles
+			: [];
+		return {
+			brainStatus: "observed",
+			brainStale: staleFiles.length > 0 ? "warn" : "pass",
+			authority: "orientation_only",
+			refs: projectBrainRefs(repoRoot),
+			validationSummary: status.validation.summary as Record<string, unknown>,
+			staleFileCount: staleFiles.length,
+			reason: null,
+		};
+	} catch (error) {
+		return {
+			brainStatus: "unobserved",
+			brainStale: "unobserved",
+			authority: "orientation_only",
+			refs: projectBrainRefs(repoRoot),
+			validationSummary: null,
+			staleFileCount: null,
+			reason:
+				"Project Brain could not be inspected: " +
+				(error instanceof Error ? error.message : String(error)) +
+				".",
+		};
+	}
+}
+
+/** Return present Project Brain references that a cold agent can inspect next. */
+function projectBrainRefs(repoRoot: string): string[] {
+	return [
+		".harness/knowledge/INDEX.md",
+		".harness/memory/LEARNINGS.md",
+		".harness/review-log.md",
+	].filter((path) => pathExists(repoRoot, path));
+}
+
+/** Reduce component statuses into the single advisory orient status. */
+function deriveOrientStatus(args: {
+	nextDecision: HarnessDecision;
+	sessionContext: SessionContextReport;
+	contextHealth: AgentReadinessContextHealth;
+	preflightReceipt: HarnessOrientPreflightReceipt;
+	architectureContext: HarnessOrientArchitectureContext;
+	projectBrain: HarnessOrientProjectBrain;
+}): HarnessOrientStatus {
+	if (args.contextHealth.status === "fail") return "fail";
+	if (args.nextDecision.status === "fail") return "fail";
+	if (
+		args.nextDecision.status === "blocked" ||
+		args.sessionContext.status !== "pass" ||
+		args.contextHealth.status !== "pass" ||
+		args.preflightReceipt.status !== "pass" ||
+		args.architectureContext.status !== "present" ||
+		args.projectBrain.brainStatus !== "observed" ||
+		args.projectBrain.brainStale !== "pass"
+	) {
+		return "warn";
+	}
+	return "pass";
+}
+
+/** Check for a repository-relative path without following any higher-level policy. */
+function pathExists(repoRoot: string, repoPath: string): boolean {
+	return existsSync(join(repoRoot, repoPath));
+}
+
+/** Check whether a path is an existing directory while treating stat errors as absent. */
+function safeDirectoryExists(path: string): boolean {
+	try {
+		return existsSync(path) && statSync(path).isDirectory();
+	} catch {
+		return false;
+	}
+}

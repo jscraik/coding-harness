@@ -14,6 +14,7 @@ import { runFitnessCLI } from "../../../commands/fitness.js";
 import { runIndexContextCLI } from "../../../commands/index-context.js";
 import { runLearningsCLI } from "../../../commands/learnings.js";
 import { runNorthStarFeedbackCLI } from "../../../commands/north-star-feedback.js";
+import { runOrientCLI } from "../../../commands/orient.js";
 import { runPatternScopeCLI } from "../../../commands/pattern-scope.js";
 import { runPilotEvaluateCLI } from "../../../commands/pilot-evaluate.js";
 import { runPilotRollbackCLI } from "../../../commands/pilot-rollback.js";
@@ -63,6 +64,7 @@ import { createLocalMemoryPreflightCommandSpec } from "./local-memory-preflight-
 import { createMemoryGateCommandSpec } from "./memory-gate-command-spec.js";
 import { createNextCommandSpec } from "./next-command-spec.js";
 import { createObservabilityGateCommandSpec } from "./observability-gate-command-spec.js";
+import { createOrientCommandSpec } from "./orient-command-spec.js";
 import { createOrgAuditCommandSpec } from "./org-audit-command-spec.js";
 import { createPilotEvaluateCommandSpec } from "./pilot-evaluate-command-spec.js";
 import { createPilotRollbackCommandSpec } from "./pilot-rollback-command-spec.js";
@@ -118,6 +120,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 	createCheckCommandSpec(),
 	createAgentReadinessCommandSpec(),
 	...createAgentNativePacketCommandSpecs(),
+	createOrientCommandSpec(runOrientCLI),
 	createNextCommandSpec(),
 	createFitnessCommandSpec(runFitnessCLI),
 	createRuntimeCardCommandSpec(),

@@ -48,13 +48,11 @@ function printUsage(options: { includeExpertCommands?: boolean } = {}): void {
 
 	console.info("Usage: harness <command> [options]");
 	console.info("");
-	console.info("Start here: harness next --json");
+	console.info("Start here: harness orient --json");
 	console.info("");
 	console.info("Agent memory rule:");
-	console.info("  Run harness next --json first.");
-	console.info(
-		"  Let that decision packet choose setup, checks, review, or repair.",
-	);
+	console.info("  Run harness orient --json first for cold-start context.");
+	console.info("  Use harness next --json when you only need the next action.");
 	console.info("");
 	const helpRows = getRegistryCommandHelpRows({
 		includeExpert: includeExpertCommands,
@@ -113,6 +111,99 @@ function stripOptionalBinaryPrefix(args: string[]): string[] {
 	return args[0] === "harness" ? args.slice(1) : args;
 }
 
+type RegistryDispatch = NonNullable<ReturnType<typeof dispatchRegistryCommand>>;
+
+interface RunState {
+	dispatchArgs: string[];
+	version: string;
+	command: string | undefined;
+	jsonFlag: boolean;
+	allowFuzzy: boolean;
+	includeExpertCommandsInHelp: boolean;
+	hasCommandToken: boolean;
+	noCommandHelpRequested: boolean;
+	commandHelpFlagIndex: number;
+	firstArg: string | undefined;
+}
+
+/** Parse top-level CLI flags and command identity once for dispatch. */
+function parseRunState(args: string[]): RunState {
+	const allowFuzzyFlag = args.includes("--allow-fuzzy");
+	const disableFuzzyFlag = args.includes("--no-fuzzy");
+	const allowFuzzyFromEnv = process.env.HARNESS_ALLOW_FUZZY_COMMANDS === "1";
+	const dispatchArgs = stripOptionalBinaryPrefix(args).filter(
+		(arg) => arg !== "--allow-fuzzy" && arg !== "--no-fuzzy",
+	);
+	const firstArg = dispatchArgs[0];
+	const hasCommandToken =
+		typeof firstArg === "string" &&
+		firstArg.length > 0 &&
+		!firstArg.startsWith("-");
+	return {
+		dispatchArgs,
+		version: getVersion(),
+		command: firstArg,
+		jsonFlag: dispatchArgs.includes("--json"),
+		allowFuzzy: !disableFuzzyFlag && (allowFuzzyFlag || allowFuzzyFromEnv),
+		includeExpertCommandsInHelp:
+			dispatchArgs.includes("--all-commands") || dispatchArgs.includes("--all"),
+		hasCommandToken,
+		noCommandHelpRequested:
+			!hasCommandToken &&
+			dispatchArgs.some((arg) => arg === "--help" || arg === "-h"),
+		commandHelpFlagIndex: hasCommandToken
+			? dispatchArgs.findIndex(
+					(arg, index) => index > 0 && (arg === "--help" || arg === "-h"),
+				)
+			: -1,
+		firstArg,
+	};
+}
+
+/** Schedule process termination for a registry command result. */
+function exitFromRegistryDispatch(dispatch: RegistryDispatch): void {
+	if (dispatch.result instanceof Promise) {
+		dispatch.result
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError(dispatch.spec.errorLabel, error));
+		return;
+	}
+	process.exit(dispatch.result);
+}
+
+/** Handle top-level version/help flags before command dispatch. */
+function printTopLevelMetaIfRequested(state: RunState): boolean {
+	if (
+		!state.hasCommandToken &&
+		(state.firstArg === "--version" || state.firstArg === "-v")
+	) {
+		console.info(`harness v${state.version}`);
+		return true;
+	}
+	if (
+		state.noCommandHelpRequested ||
+		(state.hasCommandToken && state.commandHelpFlagIndex === 1)
+	) {
+		console.info(`harness v${state.version}`);
+		printUsage({
+			includeExpertCommands: state.includeExpertCommandsInHelp,
+		});
+		return true;
+	}
+	return false;
+}
+
+/** Dispatch an exact registry command when present. */
+function dispatchExactCommand(
+	command: string | undefined,
+	args: string[],
+): boolean {
+	const registryDispatch = dispatchRegistryCommand(command, args);
+	if (!registryDispatch) return false;
+	exitFromRegistryDispatch(registryDispatch);
+	return true;
+}
+
 /**
  * Attempt fuzzy command resolution and dispatch if a match is found.
  *
@@ -152,18 +243,52 @@ function tryFuzzyDispatch(
 		correctedArgs,
 	);
 	if (correctedDispatch) {
-		if (correctedDispatch.result instanceof Promise) {
-			correctedDispatch.result
-				.then((exitCode) => process.exit(exitCode))
-				.catch((error) =>
-					handleFatalError(correctedDispatch.spec.errorLabel, error),
-				);
-			return true;
-		}
-		process.exit(correctedDispatch.result);
+		exitFromRegistryDispatch(correctedDispatch);
 		return true;
 	}
 	return false;
+}
+
+/** Render the rich unknown-command response and exit with the unknown-command code. */
+function exitUnknownCommand(command: string, jsonFlag: boolean): void {
+	const expertHelpHint =
+		'Run "harness --help --all-commands" for the full expert command list.';
+	const suggestions = suggestCommands(command);
+	if (jsonFlag) {
+		const capabilitySuggestions = suggestCommandCapabilities(command);
+		console.info(
+			JSON.stringify({
+				status: "error",
+				error: "unknown_command",
+				received: command,
+				suggestions: capabilitySuggestions.map(({ capability }) => ({
+					name: capability.name,
+					summary: capability.summary,
+					mutability: capability.mutability,
+					retryability: capability.retryability,
+					requiredFlags: capability.requiredFlags,
+					safeFirstAlternatives: capability.safeFirstAlternatives,
+					...(capability.example
+						? { example: `harness ${capability.example}` }
+						: {}),
+				})),
+				hint: expertHelpHint,
+			}),
+		);
+	} else {
+		console.info(`Unknown command: "${command}"`);
+		console.info("");
+		console.info("Did you mean one of these?");
+		for (const { spec } of suggestions) {
+			console.info(`  ${spec.name.padEnd(24)} ${spec.summary}`);
+			if (spec.example) {
+				console.info(`  ${"".padEnd(24)} Example: harness ${spec.example}`);
+			}
+		}
+		console.info("");
+		console.info(expertHelpHint);
+	}
+	process.exit(1);
 }
 
 /**
@@ -174,123 +299,31 @@ function tryFuzzyDispatch(
  * @param args - Command-line arguments excluding the node and executable path (e.g., `process.argv.slice(2)`)
  */
 export function run(args: string[]): void {
-	const allowFuzzyFlag = args.includes("--allow-fuzzy");
-	const disableFuzzyFlag = args.includes("--no-fuzzy");
-	const allowFuzzyFromEnv = process.env.HARNESS_ALLOW_FUZZY_COMMANDS === "1";
-	const allowFuzzy = !disableFuzzyFlag && (allowFuzzyFlag || allowFuzzyFromEnv);
-	const dispatchArgs = stripOptionalBinaryPrefix(args).filter(
-		(arg) => arg !== "--allow-fuzzy" && arg !== "--no-fuzzy",
-	);
-	const version = getVersion();
-	const firstArg = dispatchArgs[0];
-	const hasCommandToken =
-		typeof firstArg === "string" &&
-		firstArg.length > 0 &&
-		!firstArg.startsWith("-");
-	const includeExpertCommandsInHelp =
-		dispatchArgs.includes("--all-commands") || dispatchArgs.includes("--all");
-	const noCommandHelpRequested =
-		!hasCommandToken &&
-		dispatchArgs.some((arg) => arg === "--help" || arg === "-h");
-	const commandHelpFlagIndex = hasCommandToken
-		? dispatchArgs.findIndex(
-				(arg, index) => index > 0 && (arg === "--help" || arg === "-h"),
-			)
-		: -1;
-
-	// Handle top-level --version before parsing command.
-	// This only applies in no-command mode.
-	if (!hasCommandToken && (firstArg === "--version" || firstArg === "-v")) {
-		console.info(`harness v${version}`);
+	const state = parseRunState(args);
+	if (printTopLevelMetaIfRequested(state)) {
 		return;
 	}
 
-	// Handle top-level --help/-h in no-command mode.
-	// In command mode, only short-circuit when help is the first command option
-	// (`harness <command> --help`) so malformed invocations like
-	// `harness policy-gate --files --help` still return usage errors.
-	if (
-		noCommandHelpRequested ||
-		(hasCommandToken && commandHelpFlagIndex === 1)
-	) {
-		console.info(`harness v${version}`);
-		printUsage({ includeExpertCommands: includeExpertCommandsInHelp });
-		return;
-	}
-
-	// Parse command
-	const command = dispatchArgs[0];
-	const jsonFlag = dispatchArgs.includes("--json");
-
-	// Exact registry dispatch
-	const registryDispatch = dispatchRegistryCommand(command, dispatchArgs);
-	if (registryDispatch) {
-		if (registryDispatch.result instanceof Promise) {
-			registryDispatch.result
-				.then((exitCode) => process.exit(exitCode))
-				.catch((error) =>
-					handleFatalError(registryDispatch.spec.errorLabel, error),
-				);
-			return;
-		}
-		process.exit(registryDispatch.result);
+	if (dispatchExactCommand(state.command, state.dispatchArgs)) {
 		return;
 	}
 
 	const fuzzyDispatch = tryFuzzyDispatch(
-		command,
-		dispatchArgs,
-		allowFuzzy,
-		jsonFlag,
+		state.command,
+		state.dispatchArgs,
+		state.allowFuzzy,
+		state.jsonFlag,
 	);
 	if (fuzzyDispatch) {
 		return;
 	}
-	if (command) {
-		// No match at all — rich error message with suggestions
-		const expertHelpHint =
-			'Run "harness --help --all-commands" for the full expert command list.';
-		const suggestions = suggestCommands(command);
-		if (jsonFlag) {
-			const capabilitySuggestions = suggestCommandCapabilities(command);
-			console.info(
-				JSON.stringify({
-					status: "error",
-					error: "unknown_command",
-					received: command,
-					suggestions: capabilitySuggestions.map(({ capability }) => ({
-						name: capability.name,
-						summary: capability.summary,
-						mutability: capability.mutability,
-						retryability: capability.retryability,
-						requiredFlags: capability.requiredFlags,
-						safeFirstAlternatives: capability.safeFirstAlternatives,
-						...(capability.example
-							? { example: `harness ${capability.example}` }
-							: {}),
-					})),
-					hint: expertHelpHint,
-				}),
-			);
-		} else {
-			console.info(`Unknown command: "${command}"`);
-			console.info("");
-			console.info("Did you mean one of these?");
-			for (const { spec } of suggestions) {
-				console.info(`  ${spec.name.padEnd(24)} ${spec.summary}`);
-				if (spec.example) {
-					console.info(`  ${"".padEnd(24)} Example: harness ${spec.example}`);
-				}
-			}
-			console.info("");
-			console.info(expertHelpHint);
-		}
-		process.exit(1);
+	if (state.command) {
+		exitUnknownCommand(state.command, state.jsonFlag);
 		return;
 	}
 
 	// No command at all — show help
-	console.info(`harness v${version}`);
+	console.info(`harness v${state.version}`);
 	printUsage();
 }
 
