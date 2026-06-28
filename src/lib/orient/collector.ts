@@ -314,18 +314,37 @@ function deriveOrientStatus(args: {
 }): HarnessOrientStatus {
 	if (args.contextHealth.status === "fail") return "fail";
 	if (args.nextDecision.status === "fail") return "fail";
-	if (
+	if (hasOrientWarningStatus(args)) return "warn";
+	return "pass";
+}
+
+/** Check whether any advisory orient component should reduce status to warn. */
+function hasOrientWarningStatus(args: {
+	nextDecision: HarnessDecision;
+	sessionContext: SessionContextReport;
+	contextHealth: AgentReadinessContextHealth;
+	preflightReceipt: HarnessOrientPreflightReceipt;
+	architectureContext: HarnessOrientArchitectureContext;
+	projectBrain: HarnessOrientProjectBrain;
+}): boolean {
+	return (
 		args.nextDecision.status === "blocked" ||
 		args.sessionContext.status !== "pass" ||
 		args.contextHealth.status !== "pass" ||
 		args.preflightReceipt.status !== "pass" ||
 		args.architectureContext.status !== "present" ||
 		args.projectBrain.brainStatus !== "observed" ||
-		args.projectBrain.brainStale !== "pass"
-	) {
-		return "warn";
-	}
-	return "pass";
+		args.projectBrain.brainStale !== "pass" ||
+		projectBrainHasValidationErrors(args.projectBrain)
+	);
+}
+
+/** Check whether Project Brain validation surfaced errors in the orient packet. */
+function projectBrainHasValidationErrors(
+	projectBrain: HarnessOrientProjectBrain,
+): boolean {
+	const errors = projectBrain.validationSummary?.errors;
+	return typeof errors === "number" && errors > 0;
 }
 
 /** Check for a repository-relative path without following any higher-level policy. */

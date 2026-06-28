@@ -16,7 +16,7 @@ export function verifyNpmrc(repoPath: string): CodeRabbitCheck {
 			name: ".npmrc configuration",
 			status: "fail",
 			message:
-				"No .npmrc file found. Run 'harness init' to scaffold the repo security baseline.",
+				"No .npmrc file found. Run 'harness init' to scaffold the repo security baseline with ignore-scripts=true.",
 			details: { path: npmrcPath },
 		};
 	}

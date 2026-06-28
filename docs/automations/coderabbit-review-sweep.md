@@ -181,6 +181,9 @@ Track optimization by decision quality, not raw comment volume:
 
 A sweep or PM handoff reply must write a `thread-report/v1` artifact when a
 thread is coordinating review state, cost optimization, or cross-thread work.
+No repo-owned `thread-report/v1` writer command exists yet; until one lands,
+record the artifact writer as blocked and include the current provider query,
+review-state wrapper output, and PM Hub destination in the handoff evidence.
 The artifact must include:
 
 - task id, source thread id, repo path, branch, and current head SHA when known
@@ -202,5 +205,7 @@ decision is required.
 
 ## Validation
 
-Use the current provider query or review-state wrapper. For runbook changes, run
-pnpm docs:lifecycle and docs-gate.
+Use the current provider query or review-state wrapper and validate any
+`review-state/v1` packet with `validateReviewStatePacket` or the owning
+wrapper that calls it. For runbook changes, run `pnpm docs:lifecycle` and
+`bash scripts/run-harness-gate.sh docs-gate --mode required --json`.

@@ -35,8 +35,14 @@ describe("verifyLocalCodeRabbitSetup - CodeRabbit cost controls", () => {
 				'    - "!build/**"',
 				'    - "!coverage/**"',
 				'    - "!dist/**"',
+				'    - "!docs/doc-lifecycle-manifest.json"',
 				'    - "!node_modules/**"',
+				'    - "!pnpm-lock.yaml"',
 				'    - "!**/*.min.js"',
+				'    - "!**/*.png"',
+				'    - "!**/*.jpg"',
+				'    - "!**/*.jpeg"',
+				'    - "!**/*.gif"',
 				"knowledge_base:",
 				"  web_search:",
 				"    enabled: false",
@@ -82,9 +88,47 @@ describe("verifyLocalCodeRabbitSetup - CodeRabbit cost controls", () => {
 		expect(costCheck?.status).toBe("warn");
 		expect(costCheck?.message).toContain("drafts: false");
 		expect(costCheck?.message).toContain(
-			"auto_pause_after_reviewed_commits above 0",
+			"auto_pause_after_reviewed_commits to 3",
 		);
 		expect(costCheck?.message).toContain("web_search.enabled: false");
+	});
+
+	it("warns when incremental reviews pause at a non-baseline threshold", () => {
+		repoPath = createRepoFixture(
+			[
+				"reviews:",
+				"  commit_status: true",
+				"  sequence_diagrams: false",
+				"  auto_review:",
+				"    enabled: true",
+				"    drafts: false",
+				"    auto_pause_after_reviewed_commits: 1",
+				"  path_filters:",
+				'    - "!artifacts/**"',
+				'    - "!build/**"',
+				'    - "!coverage/**"',
+				'    - "!dist/**"',
+				'    - "!docs/doc-lifecycle-manifest.json"',
+				'    - "!node_modules/**"',
+				'    - "!pnpm-lock.yaml"',
+				'    - "!**/*.min.js"',
+				'    - "!**/*.png"',
+				'    - "!**/*.jpg"',
+				'    - "!**/*.jpeg"',
+				'    - "!**/*.gif"',
+				"knowledge_base:",
+				"  web_search:",
+				"    enabled: false",
+				"",
+			].join("\n"),
+		);
+
+		const costCheck = costControlCheck(repoPath);
+
+		expect(costCheck?.status).toBe("warn");
+		expect(costCheck?.message).toContain(
+			"auto_pause_after_reviewed_commits to 3",
+		);
 	});
 });
 

@@ -396,10 +396,10 @@ describe("runHarnessNext", () => {
 				".harness/active-artifacts.md",
 			]),
 			contextCommands: expect.arrayContaining([
-				"harness orient --json",
-				"harness session-context --json --repo-root .",
-				"harness agent-readiness . --json",
-				"harness commands --json --for-agent --mode orient",
+				"pnpm exec harness orient --json",
+				"pnpm exec harness session-context --json --repo-root .",
+				"pnpm exec harness agent-readiness . --json",
+				"pnpm exec harness commands --json --for-agent --mode orient",
 			]),
 			conditionalContext: expect.arrayContaining([
 				expect.objectContaining({

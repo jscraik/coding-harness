@@ -77,10 +77,11 @@ without dumping raw artifacts:
 harness orient --json
 ```
 
-When working from a source checkout, run the public command through the
-workspace-linked binary:
+When working from a source checkout, build the local package first, then run the
+public command through the workspace-linked binary:
 
 ```bash
+pnpm build
 pnpm exec harness orient --json
 ```
 

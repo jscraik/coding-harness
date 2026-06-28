@@ -38,6 +38,23 @@ function nextDecisionFixture() {
 	});
 }
 
+function passNextDecisionFixture() {
+	return buildHarnessDecision("next", {
+		status: "pass",
+		summary: "Fixture next decision passed.",
+		nextAction: "Continue with current lane.",
+		nextCommand: "pnpm exec harness next --json",
+		safeToRun: true,
+		requiresHuman: false,
+		requiresNetwork: false,
+		writesFiles: false,
+		evidenceRef: ["fixture:next-pass"],
+		failureClass: null,
+		retry: "safe",
+		riskTier: "low",
+	});
+}
+
 describe("collectHarnessOrient", () => {
 	it("emits a compact cold-start packet without requiring a preflight receipt", () => {
 		writeWorkspaceFile(
@@ -115,6 +132,39 @@ describe("collectHarnessOrient", () => {
 			"tracker",
 			"merge_readiness",
 		]);
+	});
+
+	it("warns when Project Brain validation has errors", () => {
+		writeWorkspaceFile(
+			"package.json",
+			JSON.stringify({ name: "@brainwav/coding-harness" }),
+		);
+		writeWorkspaceFile("src/cli.ts", "export {};\n");
+		writeWorkspaceFile("dist/cli.js", "export {};\n");
+		writeWorkspaceFile("AGENTS.md", "# Agents\n");
+		writeWorkspaceFile("CODESTYLE.md", "# Codestyle\n");
+		writeWorkspaceFile("AI/context/diagram-context.md", "# Diagram context\n");
+		writeWorkspaceFile(
+			".harness/runtime/codex-preflight-status.json",
+			JSON.stringify({
+				schemaVersion: "codex-preflight-status/v1",
+				generatedAt: "2026-06-28T10:00:00.000Z",
+				status: "pass",
+				mode: "required",
+				command: "bash scripts/codex-preflight.sh --stack auto --mode required",
+				checks: [],
+			}),
+		);
+		writeWorkspaceFile(".harness/README.md", "# Project Brain\n");
+
+		const report = collectHarnessOrient({
+			repoRoot: workspacePath,
+			now: new Date("2026-06-28T10:00:00.000Z"),
+			nextDecisionProvider: passNextDecisionFixture,
+		});
+
+		expect(report.projectBrain.validationSummary?.errors).toBeGreaterThan(0);
+		expect(report.status).toBe("warn");
 	});
 
 	it("falls back to installed command wording before the source checkout is built", () => {

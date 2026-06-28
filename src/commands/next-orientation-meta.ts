@@ -6,10 +6,10 @@ const NEXT_ORIENTATION_REFS = [
 ] as const;
 
 const NEXT_CONTEXT_COMMANDS = [
-	"harness orient --json",
-	"harness session-context --json --repo-root .",
-	"harness agent-readiness . --json",
-	"harness commands --json --for-agent --mode orient",
+	"pnpm exec harness orient --json",
+	"pnpm exec harness session-context --json --repo-root .",
+	"pnpm exec harness agent-readiness . --json",
+	"pnpm exec harness commands --json --for-agent --mode orient",
 ] as const;
 
 const NEXT_CONDITIONAL_CONTEXT = [

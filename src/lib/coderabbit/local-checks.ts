@@ -5,6 +5,7 @@ import { verifyNpmrc } from "./npmrc-check.js";
 export const CODERABBIT_CHECK_NAME = "CodeRabbit";
 const CODERABBIT_CONFIG_FILE = ".coderabbit.yaml";
 const CODERABBIT_TEMPLATE_FILE = "src/templates/coderabbit.yaml";
+const EXPECTED_AUTO_PAUSE_AFTER_REVIEWED_COMMITS = 3;
 
 /** One verification check outcome within a CodeRabbit verification run. */
 export interface CodeRabbitCheck {
@@ -45,8 +46,14 @@ const GENERATED_FILTERS = [
 	"!build/**",
 	"!coverage/**",
 	"!dist/**",
+	"!docs/doc-lifecycle-manifest.json",
 	"!node_modules/**",
+	"!pnpm-lock.yaml",
 	"!**/*.min.js",
+	"!**/*.png",
+	"!**/*.jpg",
+	"!**/*.jpeg",
+	"!**/*.gif",
 ];
 
 /** Run local CodeRabbit repository checks in stable report order. */
@@ -209,13 +216,15 @@ function collectCostControlFindings(content: string): {
 		(rule) => rule.issue,
 	);
 	const pauseAfterReviewedCommits = parsePauseAfterReviewedCommits(content);
-	if (pauseAfterReviewedCommits > 0) {
+	if (
+		pauseAfterReviewedCommits === EXPECTED_AUTO_PAUSE_AFTER_REVIEWED_COMMITS
+	) {
 		features.push(
 			`incremental auto-review pauses after ${pauseAfterReviewedCommits} reviewed commits`,
 		);
 	} else {
 		issues.push(
-			"set reviews.auto_review.auto_pause_after_reviewed_commits above 0 to cap incremental-review loops",
+			`set reviews.auto_review.auto_pause_after_reviewed_commits to ${EXPECTED_AUTO_PAUSE_AFTER_REVIEWED_COMMITS} to cap incremental-review loops`,
 		);
 	}
 	const missingFilters = GENERATED_FILTERS.filter(
