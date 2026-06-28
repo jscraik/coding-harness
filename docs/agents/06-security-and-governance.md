@@ -163,10 +163,10 @@ post-change markdown/docs validation.
   `.harness` artifacts from becoming unsupported closeout evidence.
 - CircleCI test reliability guardrail: use `pnpm test:ci` (which invokes `scripts/test-ci.sh`) so the long-running `ci-migrate` suite executes in an isolated lane with scoped Vitest worker-timeout mitigation configured in `vitest.config.ts` (timeout settings and `onUnhandledError` handler) while all functional assertions remain enforced.
 - Source-checkout harness-gate fallback is narrow by design: `scripts/run-harness-gate.sh` may fall back from the source CLI command to `node dist/cli.js` only when the actual command emits the known runner IPC `EPERM` temp-pipe signature. Missing `pnpm`, missing source files, or non-matching runner failures must remain fail-closed.
-- Source-checkout public command proof should prefer the built command surface
+- Source-checkout public command proof SHOULD prefer the built command surface
   (`pnpm exec harness ...` after `dist/cli.js` exists). Before-build
-  current-tree probes may use `node --import tsx src/cli.ts ...`, but generated
-  environment checks should try the repo-local wrapper or built dist CLI before
+  current-tree probes MAY use `node --import tsx src/cli.ts ...`, but generated
+  environment checks SHOULD try the repo-local wrapper or built dist CLI before
   the source-loader path so stale global binaries and missing builds stay visible.
 
 ## Governance escalation
