@@ -56,7 +56,8 @@ Use this skill to operate `@brainwav/coding-harness` from live repo evidence, no
 Do not use for unrelated feature delivery, generic cloud deployment, or security work that is not tied to harness setup, policy gates, or CI ownership.
 
 ## Command Truth
-- Fresh-agent entrypoint: `harness next --json`.
+- Fresh-agent first-contact entrypoint: `harness orient --json`.
+- Action-only follow-up entrypoint: `harness next --json`.
 - Focused first-contact help: `harness --help`.
 - Public agent rail catalog: `harness commands --json --for-agent`.
 - Full expert catalog: `harness commands --json` and `harness --help --all-commands`.
@@ -71,7 +72,7 @@ Do not use for unrelated feature delivery, generic cloud deployment, or security
 ## Workflow
 1. Confirm the mode: explanation-only or execution.
 2. Confirm repo root, dirty worktree, package manager, and available auth before mutations.
-3. Discover live truth with `harness next --json`; in this source repo use `pnpm exec harness next --json` for public-bin proof, or `node --import tsx src/cli.ts next --json` for current-tree development probes.
+3. Discover first-contact context with `harness orient --json`, then use `harness next --json` for the action-only follow-up; in this source repo use `pnpm exec harness orient --json` for public-bin proof, or `node --import tsx src/cli.ts orient --json` for current-tree development probes.
 4. For first-time bootstrap, run `harness init --dry-run`, review planned writes, then run `harness init`.
 5. For update checks, run `harness init --check-updates`; use `harness upgrade --dry-run` and `harness upgrade` for routine existing-repo updates.
 6. For CI migration, run the snapshot commands in order and preserve rollback evidence.
@@ -80,6 +81,7 @@ Do not use for unrelated feature delivery, generic cloud deployment, or security
 
 ## Validation
 Command discovery:
+- `harness orient --json`
 - `harness next --json`
 - `harness --help`
 - `harness commands --json --for-agent`
@@ -87,6 +89,7 @@ Command discovery:
 - `harness --help --all-commands`
 
 Source-repo equivalents:
+- `pnpm exec harness orient --json`
 - `pnpm exec harness next --json`
 - `pnpm exec harness --help`
 - `pnpm exec harness commands --json --for-agent`
@@ -94,6 +97,7 @@ Source-repo equivalents:
 - `pnpm exec harness --help --all-commands`
 
 Current-tree development probes:
+- `node --import tsx src/cli.ts orient --json`
 - `node --import tsx src/cli.ts next --json`
 - `node --import tsx src/cli.ts --help`
 - `node --import tsx src/cli.ts commands --json --for-agent`

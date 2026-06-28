@@ -188,6 +188,37 @@ describe("collectHarnessOrient", () => {
 		expect(report.status).toBe("warn");
 	});
 
+	it("treats schema-mismatched preflight receipts as invalid", () => {
+		writeWorkspaceFile(
+			"package.json",
+			JSON.stringify({ name: "@brainwav/coding-harness" }),
+		);
+		writeWorkspaceFile("src/cli.ts", "export {};\n");
+		writeWorkspaceFile("dist/cli.js", "export {};\n");
+		writeWorkspaceFile(
+			".harness/runtime/codex-preflight-status.json",
+			JSON.stringify({
+				schemaVersion: "foreign-status/v1",
+				status: "pass",
+				generatedAt: "2026-06-28T10:00:00.000Z",
+				mode: "required",
+			}),
+		);
+
+		const report = collectHarnessOrient({
+			repoRoot: workspacePath,
+			now: new Date("2026-06-28T10:00:00.000Z"),
+			nextDecisionProvider: passNextDecisionFixture,
+		});
+
+		expect(report.preflightReceipt).toMatchObject({
+			status: "invalid",
+			schemaVersion: null,
+			reason: "Receipt schemaVersion was not codex-preflight-status/v1.",
+		});
+		expect(report.status).toBe("warn");
+	});
+
 	it("uses installed harness traversal hints for downstream repositories", () => {
 		writeWorkspaceFile("package.json", JSON.stringify({ name: "fixture-app" }));
 

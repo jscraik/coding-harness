@@ -190,14 +190,23 @@ function readPreflightReceipt(repoRoot: string): HarnessOrientPreflightReceipt {
 		if (status === "invalid") {
 			return invalidPreflightReceipt("Receipt status was not recognized.");
 		}
+		if (parsed.schemaVersion !== "codex-preflight-status/v1") {
+			return invalidPreflightReceipt(
+				"Receipt schemaVersion was not codex-preflight-status/v1.",
+			);
+		}
+		if (typeof parsed.generatedAt !== "string") {
+			return invalidPreflightReceipt("Receipt generatedAt was not a string.");
+		}
+		if (typeof parsed.mode !== "string") {
+			return invalidPreflightReceipt("Receipt mode was not a string.");
+		}
 		return {
 			path: PREFLIGHT_RECEIPT_PATH,
 			status,
-			schemaVersion:
-				typeof parsed.schemaVersion === "string" ? parsed.schemaVersion : null,
-			generatedAt:
-				typeof parsed.generatedAt === "string" ? parsed.generatedAt : null,
-			mode: typeof parsed.mode === "string" ? parsed.mode : null,
+			schemaVersion: parsed.schemaVersion,
+			generatedAt: parsed.generatedAt,
+			mode: parsed.mode,
 			command:
 				typeof parsed.command === "string" ? parsed.command : PREFLIGHT_COMMAND,
 			reason: null,
