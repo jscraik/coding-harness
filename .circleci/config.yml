@@ -144,7 +144,13 @@ jobs:
             }
             export PATH="$HOME/.local/bin:$PATH"
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
-            retry_cmd 3 mise install uv
+            install_uv_without_pr_tokens() {
+              (
+                unset GH_TOKEN GITHUB_TOKEN GITHUB_PERSONAL_ACCESS_TOKEN
+                mise install uv
+              )
+            }
+            retry_cmd 3 install_uv_without_pr_tokens
             uv_path="$(mise which uv)"
             if [[ -z "$uv_path" ]]; then
               echo "Error: mise which uv returned nothing" >&2

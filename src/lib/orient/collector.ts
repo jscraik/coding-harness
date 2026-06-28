@@ -6,7 +6,10 @@ import type { HarnessDecision } from "../decision/harness-decision.js";
 import { runBrainStale } from "../project-brain/stale-cli.js";
 import { runBrainStatus } from "../project-brain/status-cli.js";
 import { collectSessionContext } from "../session-context/collector.js";
-import type { SessionContextReport } from "../session-context/types.js";
+import type {
+	SessionContextReport,
+	SessionContextTraversalHint,
+} from "../session-context/types.js";
 import {
 	ARCHITECTURE_CONTEXT_PATH,
 	buildConditionalContext,
@@ -76,7 +79,7 @@ export function collectHarnessOrient(
 		evidenceUse: "orientation",
 		repoRoot,
 		nextDecision: summarizeNextDecision(nextDecision),
-		sessionContext: summarizeSessionContext(sessionContext),
+		sessionContext: summarizeSessionContext(sessionContext, commandPrefix),
 		agentReadinessContextHealth: agentReadiness.contextHealth,
 		preflightReceipt,
 		architectureContext,
@@ -136,6 +139,7 @@ function summarizeNextDecision(
 /** Summarize session-context evidence without embedding bulky changed-file data. */
 function summarizeSessionContext(
 	report: SessionContextReport,
+	commandPrefix: HarnessOrientCommandPrefix,
 ): HarnessOrientReport["sessionContext"] {
 	return {
 		schemaVersion: report.schemaVersion,
@@ -149,8 +153,38 @@ function summarizeSessionContext(
 		runtimeCardCount: report.runtimeCards.length,
 		reviewArtifactCount: report.reviewArtifacts.length,
 		staleState: report.staleState,
-		nextTraversalHints: report.nextTraversalHints,
+		nextTraversalHints: buildOrientTraversalHints(commandPrefix),
 	};
+}
+
+/** Rebuild session-context hints with the public command prefix orient selected. */
+function buildOrientTraversalHints(
+	commandPrefix: HarnessOrientCommandPrefix,
+): SessionContextTraversalHint[] {
+	return [
+		{
+			label: "agent cockpit",
+			command: `${commandPrefix} next --json`,
+			reason: "Ask the narrow cockpit for the next safe command before acting.",
+		},
+		{
+			label: "runtime card",
+			command: `${commandPrefix} runtime-card --json --repo .`,
+			reason:
+				"Refresh the runtime-card summary when local runtime evidence is missing or stale.",
+		},
+		{
+			label: "agent readiness",
+			command: `${commandPrefix} agent-readiness --json --repo-root .`,
+			reason:
+				"Check instruction, artifact, capability, approval, traceability, and context-health surfaces.",
+		},
+		{
+			label: "orientation rail",
+			command: `${commandPrefix} commands --json --for-agent --mode orient`,
+			reason: "List the compact orient-mode command rail available to agents.",
+		},
+	];
 }
 
 /** Read the latest preflight receipt, or emit an explicit unobserved state. */

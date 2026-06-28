@@ -116,6 +116,14 @@ describe("collectHarnessOrient", () => {
 			"pnpm exec harness agent-readiness . --json",
 			"pnpm exec harness commands --json --for-agent --mode orient",
 		]);
+		expect(
+			report.sessionContext.nextTraversalHints.map((hint) => hint.command),
+		).toEqual([
+			"pnpm exec harness next --json",
+			"pnpm exec harness runtime-card --json --repo .",
+			"pnpm exec harness agent-readiness --json --repo-root .",
+			"pnpm exec harness commands --json --for-agent --mode orient",
+		]);
 		expect(report.conditionalContext).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
@@ -167,6 +175,36 @@ describe("collectHarnessOrient", () => {
 		expect(report.status).toBe("warn");
 	});
 
+	it("uses installed harness traversal hints for downstream repositories", () => {
+		writeWorkspaceFile("package.json", JSON.stringify({ name: "fixture-app" }));
+
+		const report = collectHarnessOrient({
+			repoRoot: workspacePath,
+			now: new Date("2026-06-28T10:00:00.000Z"),
+			nextDecisionProvider: nextDecisionFixture,
+		});
+
+		expect(report.contextCommands.map((command) => command.command)).toEqual([
+			"harness next --json",
+			"harness session-context --json --repo-root .",
+			"harness agent-readiness . --json",
+			"harness commands --json --for-agent --mode orient",
+		]);
+		expect(
+			report.sessionContext.nextTraversalHints.map((hint) => hint.command),
+		).toEqual([
+			"harness next --json",
+			"harness runtime-card --json --repo .",
+			"harness agent-readiness --json --repo-root .",
+			"harness commands --json --for-agent --mode orient",
+		]);
+		expect(
+			report.sessionContext.nextTraversalHints.some((hint) =>
+				hint.command.includes("src/cli.ts"),
+			),
+		).toBe(false);
+	});
+
 	it("uses the source probe command rail before the source checkout is built", () => {
 		writeWorkspaceFile(
 			"package.json",
@@ -184,6 +222,14 @@ describe("collectHarnessOrient", () => {
 			"node --import tsx src/cli.ts next --json",
 			"node --import tsx src/cli.ts session-context --json --repo-root .",
 			"node --import tsx src/cli.ts agent-readiness . --json",
+			"node --import tsx src/cli.ts commands --json --for-agent --mode orient",
+		]);
+		expect(
+			report.sessionContext.nextTraversalHints.map((hint) => hint.command),
+		).toEqual([
+			"node --import tsx src/cli.ts next --json",
+			"node --import tsx src/cli.ts runtime-card --json --repo .",
+			"node --import tsx src/cli.ts agent-readiness --json --repo-root .",
 			"node --import tsx src/cli.ts commands --json --for-agent --mode orient",
 		]);
 		expect(

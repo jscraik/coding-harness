@@ -463,6 +463,10 @@ describe("runInit", () => {
 			);
 			expect(circleConfig).toContain("mise trust --yes .mise.toml");
 			expect(circleConfig).toContain("name: Ensure pnpm available");
+			expect(circleConfig).toContain("install_uv_without_pr_tokens");
+			expect(circleConfig).toContain(
+				"unset GH_TOKEN GITHUB_TOKEN GITHUB_PERSONAL_ACCESS_TOKEN",
+			);
 			expect(circleConfig).toContain(
 				'export GH_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"',
 			);
