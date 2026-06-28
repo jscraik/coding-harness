@@ -45,11 +45,18 @@ harness commands --json
 harness --help --all-commands
 ```
 
-When maintaining this source repo, avoid stale globals:
+When maintaining this source repo, avoid stale globals by proving the public
+command through the workspace-linked binary:
+
+```bash
+pnpm exec harness next --json
+pnpm exec harness commands --json
+```
+
+Use the TypeScript entrypoint only when probing unbuilt implementation changes:
 
 ```bash
 node --import tsx src/cli.ts next --json
-node --import tsx src/cli.ts commands --json
 ```
 
 ## Install

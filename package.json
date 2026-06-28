@@ -195,6 +195,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.15",
 		"@brainwav/diagram": "^1.1.0",
+		"@brainwav/coding-harness-source-bin": "workspace:*",
 		"@total-typescript/shoehorn": "^0.1.2",
 		"@types/better-sqlite3": "^7.6.13",
 		"@types/lodash": "^4.17.24",

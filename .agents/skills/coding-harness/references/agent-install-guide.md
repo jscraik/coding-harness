@@ -13,8 +13,9 @@
 
 ## Purpose
 Use this guide when installing or repairing `@brainwav/coding-harness` in a
-consumer repository. In the source repo, prefer `node --import tsx src/cli.ts ...`;
-in consumer repos, use the installed `harness` binary.
+consumer repository. In the source repo, prefer `pnpm exec harness ...` for
+public-bin proof and `node --import tsx src/cli.ts ...` only for unbuilt
+implementation probes; in consumer repos, use the installed `harness` binary.
 
 ## Preflight
 ```bash

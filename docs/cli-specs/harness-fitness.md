@@ -32,7 +32,13 @@ state, install dependencies, update PRs, or resolve review/tracker state.
 harness fitness [--json] [--from-existing-artifacts <dir>] [artifact flags]
 ```
 
-Source-checkout equivalent:
+Source-checkout public-bin equivalent:
+
+```bash
+pnpm exec harness fitness [--json] [--from-existing-artifacts <dir>] [artifact flags]
+```
+
+Current-tree development probe:
 
 ```bash
 node --import tsx src/cli.ts fitness [--json] [--from-existing-artifacts <dir>] [artifact flags]

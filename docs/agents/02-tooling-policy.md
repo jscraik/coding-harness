@@ -308,11 +308,13 @@ Use repo scripts as the source of truth and do not assume global shortcuts. If a
 
 Exception for harness readiness:
 
+- Source-checkout public command proof should use `pnpm exec harness ...` when dependencies are installed and `dist/cli.js` exists; use `node --import tsx src/cli.ts ...` only for before-build current-tree probes.
 - Generated `scripts/check-environment.sh` in harness-managed repositories should prefer a dedicated harness runner using the following lookup order:
-  1. `node --import tsx src/cli.ts` (when repo-local TS source exists)
-  2. `bash scripts/harness-cli.sh`
-  3. `mise which harness`
-  4. global `harness` binary
+  1. `bash scripts/harness-cli.sh`
+  2. `node --import tsx src/cli.ts` (when repo-local TS source exists and a before-build current-tree probe is required)
+  3. `node dist/cli.js`
+  4. `mise which harness`
+  5. global `harness` binary
 - `scripts/run-harness-gate.sh` should treat the real source CLI command as the source-checkout probe. Use `node --import tsx`, not `pnpm exec tsx`, for source-checkout probes because the `tsx` CLI can fail before harness code runs with a temp-pipe `listen EPERM: operation not permitted` startup error in sandboxed runners. Fallback to `node dist/cli.js` is allowed only for the explicit runner temp-pipe signature.
 - This lookup order avoids stale Homebrew/global binaries shadowing the pinned runtime toolchain.
 - Keep `scripts/check-environment.sh` validation-only for `mise`: it may assert that `mise` exists, is trusted, and can activate the repo, but CI/bootstrap flows must install `mise` and run `mise trust --yes .mise.toml` before invoking the gate.

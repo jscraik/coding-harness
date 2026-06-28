@@ -1,5 +1,6 @@
 packages:
   - "."
+  - "tools/source-harness-bin"
 
 overrides:
   "axios": "^1.15.0"
