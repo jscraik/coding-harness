@@ -101,6 +101,11 @@ thin and delegate into this deep module.
   `linear-gate` jobs are emitted. Those jobs should call the shared helper
   instead of carrying separate inline PR-context resolution logic, and the helper
   must remain part of the downstream support-file baseline.
+- Generated CircleCI scaffolds must include
+  `scripts/read-circleci-pr-metadata.sh` whenever `pr-template` or
+  `linear-gate` jobs are emitted. Those jobs should prefer authenticated
+  GitHub CLI metadata, then fall back to the public GitHub REST pull endpoint
+  for public repositories when CircleCI has stale or invalid GitHub credentials.
 - Generated CircleCI governance jobs must keep authenticated GitHub CLI steps
   separate from public tool bootstrap. Prefer
   `GITHUB_PERSONAL_ACCESS_TOKEN` for `gh`-backed PR lookups when it is

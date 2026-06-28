@@ -226,7 +226,7 @@ workflows:
           command: |
             pr_ref="$(HARNESS_CIRCLECI_PR_REF_CHECK_NAME=pr-template GH_BIN="$GH_BIN" bash scripts/resolve-circleci-pr-ref.sh)"
             export PR_TEMPLATE_BODY
-            PR_TEMPLATE_BODY="$("$GH_BIN" pr view "$pr_ref" --json body --jq .body)"
+            PR_TEMPLATE_BODY="$(GH_BIN="$GH_BIN" bash scripts/read-circleci-pr-metadata.sh "$pr_ref" | jq -r '.body // ""')"
             bash scripts/run-harness-gate.sh pr-template-gate --json
           filters:
             tags:

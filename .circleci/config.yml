@@ -254,7 +254,7 @@ workflows:
           command: |
             pr_ref="$(HARNESS_CIRCLECI_PR_REF_CHECK_NAME=pr-template bash scripts/resolve-circleci-pr-ref.sh)"
             export PR_TEMPLATE_BODY
-            PR_TEMPLATE_BODY="$(gh pr view "$pr_ref" --json body --jq .body)"
+            PR_TEMPLATE_BODY="$(bash scripts/read-circleci-pr-metadata.sh "$pr_ref" | jq -r '.body // ""')"
             bash scripts/run-harness-gate.sh pr-template-gate --json
           filters:
             tags:
@@ -266,9 +266,10 @@ workflows:
             - pr-template
           command: |
             pr_ref="$(HARNESS_CIRCLECI_PR_REF_CHECK_NAME=linear-gate bash scripts/resolve-circleci-pr-ref.sh)"
-            branch_name="$(gh pr view "$pr_ref" --json headRefName --jq .headRefName)"
-            pr_title="$(gh pr view "$pr_ref" --json title --jq .title)"
-            pr_body="$(gh pr view "$pr_ref" --json body --jq .body)"
+            pr_metadata="$(bash scripts/read-circleci-pr-metadata.sh "$pr_ref")"
+            branch_name="$(printf '%s\n' "$pr_metadata" | jq -r '.headRefName // ""')"
+            pr_title="$(printf '%s\n' "$pr_metadata" | jq -r '.title // ""')"
+            pr_body="$(printf '%s\n' "$pr_metadata" | jq -r '.body // ""')"
             linear_gate_args=(
               --pr-title "$pr_title"
               --pr-body "$pr_body"

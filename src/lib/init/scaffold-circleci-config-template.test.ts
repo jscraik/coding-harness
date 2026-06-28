@@ -25,6 +25,7 @@ describe("scaffold CircleCI config template", () => {
 		expect(config).toContain("HARNESS_CIRCLECI_PR_REF_CHECK_NAME=pr-template");
 		expect(config).toContain("HARNESS_CIRCLECI_PR_REF_CHECK_NAME=linear-gate");
 		expect(config).toContain("bash scripts/resolve-circleci-pr-ref.sh");
+		expect(config).toContain("bash scripts/read-circleci-pr-metadata.sh");
 		expect(config).toContain("install_mise_without_github_tokens");
 		expect(config.indexOf("GITHUB_PERSONAL_ACCESS_TOKEN")).toBeLessThan(
 			config.indexOf("GH_TOKEN is already available"),
@@ -77,6 +78,7 @@ describe("scaffold CircleCI config template", () => {
 			"HARNESS_CIRCLECI_PR_REF_CHECK_NAME=linear-gate",
 		);
 		expect(config).toContain("bash scripts/resolve-circleci-pr-ref.sh");
+		expect(config).toContain("bash scripts/read-circleci-pr-metadata.sh");
 		expect(config).not.toContain("}}      -");
 		expect(config).toContain("            - pr-template\n");
 		expect(config).not.toContain("            - linear-gate");

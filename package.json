@@ -34,6 +34,7 @@
 		"scripts/check-node-engine.mjs",
 		"scripts/validate-coding-policy.cjs",
 		"scripts/resolve-circleci-pr-ref.sh",
+		"scripts/read-circleci-pr-metadata.sh",
 		"scripts/run-prek.sh",
 		"scripts/run-uv-python.sh",
 		"scripts/check-doc-style.sh",

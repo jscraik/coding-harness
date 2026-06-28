@@ -124,6 +124,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/validate-codestyle.sh",
 	"scripts/check-node-engine.mjs",
 	"scripts/resolve-circleci-pr-ref.sh",
+	"scripts/read-circleci-pr-metadata.sh",
 	"scripts/with-validation-lock.sh",
 	"scripts/check-validation-locks.sh",
 	"scripts/check-codestyle-parity.sh",
@@ -497,6 +498,9 @@ describe("runInit", () => {
 				"HARNESS_CIRCLECI_PR_REF_CHECK_NAME=pr-template",
 			);
 			expect(circleConfig).toContain("bash scripts/resolve-circleci-pr-ref.sh");
+			expect(circleConfig).toContain(
+				"bash scripts/read-circleci-pr-metadata.sh",
+			);
 			expect(circleConfig).toContain(
 				"bash scripts/run-harness-gate.sh pr-template-gate --json",
 			);
@@ -2309,6 +2313,9 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"scripts/check-node-engine.mjs"');
 			expect(environmentCheck).toContain(
 				'"scripts/resolve-circleci-pr-ref.sh"',
+			);
+			expect(environmentCheck).toContain(
+				'"scripts/read-circleci-pr-metadata.sh"',
 			);
 			expect(environmentCheck).toContain('"scripts/lib/changed-files.mjs"');
 			expect(environmentCheck).toContain('"scripts/check-semgrep-changed.sh"');
