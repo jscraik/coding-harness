@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file. See [standa
 
 ## [Unreleased]
 
+### Added
+
+* Added source-checkout public `pnpm exec harness ...` support and a
+  `harness orient --json` cold-start rail for agent context discovery.
+
 ### Changed
 
 * Clarified the pull request template with problem-oriented section headings,
