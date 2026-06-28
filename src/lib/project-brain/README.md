@@ -23,6 +23,11 @@ Git environment handling for Project Brain preflight must use the shared
 `sanitizeGitEnvironment` helper instead of local `GIT_*` deletion so packaged
 and source-checkout validation follow the same trust-boundary rule.
 
+`stale-cli.ts` accepts an injected clock from callers that need deterministic
+orientation or eval evidence. Production CLI paths should omit that option and
+use the current time; tests and orientation collectors may pass `now` so stale
+Project Brain findings do not drift between repeated runs.
+
 Presenter logic currently lives inside each command module. If a command grows
 large enough to extract a presenter, keep the presenter beside the command and
 add a command-level test proving the CLI path uses it.

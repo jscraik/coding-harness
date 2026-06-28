@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync, spawnSync } from "node:child_process";
 import {
+	existsSync,
 	lstatSync,
 	mkdirSync,
 	readFileSync,
@@ -5627,30 +5628,6 @@ async function runAgentNextActionParityFixture(scenario, fixturePath) {
 	]);
 }
 
-async function loadColdAgentOrientationModules() {
-	const [
-		{ collectHarnessOrient },
-		{ getRegistryAgentCommandCatalogDocument },
-		{ runHarnessNext },
-	] = await Promise.all([
-		import(
-			pathToFileURL(path.join(REPO_ROOT, "src/lib/orient/collector.ts")).href
-		),
-		import(
-			pathToFileURL(path.join(REPO_ROOT, "src/lib/cli/command-registry.ts"))
-				.href
-		),
-		import(
-			pathToFileURL(path.join(REPO_ROOT, "src/commands/next-runner.ts")).href
-		),
-	]);
-	return {
-		collectHarnessOrient,
-		getRegistryAgentCommandCatalogDocument,
-		runHarnessNext,
-	};
-}
-
 function writeColdAgentOrientationFixtureRepo(fixturePath) {
 	writeJson(path.join(fixturePath, "package.json"), {
 		name: "@brainwav/coding-harness",
@@ -5683,6 +5660,24 @@ function writeColdAgentOrientationFixtureRepo(fixturePath) {
 	writeFileSync(path.join(fixturePath, ".harness/review-log.md"), "# Review\n");
 	mkdirSync(path.join(fixturePath, "docs"), { recursive: true });
 	writeFileSync(path.join(fixturePath, "docs/cli-reference.md"), "# CLI\n");
+	initializeColdAgentOrientationFixtureGit(fixturePath);
+}
+
+function initializeColdAgentOrientationFixtureGit(fixturePath) {
+	execFileSync("git", ["init"], { cwd: fixturePath, stdio: "ignore" });
+	execFileSync("git", ["config", "user.email", "fixture@example.invalid"], {
+		cwd: fixturePath,
+		stdio: "ignore",
+	});
+	execFileSync("git", ["config", "user.name", "Fixture Runner"], {
+		cwd: fixturePath,
+		stdio: "ignore",
+	});
+	execFileSync("git", ["add", "."], { cwd: fixturePath, stdio: "ignore" });
+	execFileSync("git", ["commit", "-m", "cold agent orientation fixture"], {
+		cwd: fixturePath,
+		stdio: "ignore",
+	});
 }
 
 function writeColdAgentOrientationEvidence({
@@ -5748,23 +5743,20 @@ function coldAgentOrientationAssertions({ commandNames, orient, reportPath }) {
 }
 
 async function runColdAgentOrientationRailFixture(scenario, fixturePath) {
-	const {
-		collectHarnessOrient,
-		getRegistryAgentCommandCatalogDocument,
-		runHarnessNext,
-	} = await loadColdAgentOrientationModules();
 	writeColdAgentOrientationFixtureRepo(fixturePath);
-	const orient = collectHarnessOrient({
-		repoRoot: fixturePath,
-		now: new Date("2026-06-28T10:00:00.000Z"),
-		nextDecisionProvider: ({ repoRoot, contextHealth }) =>
-			runHarnessNext({
-				repoRoot,
-				worktreeRole: "dirty-with-justification",
-				agentReadinessContext: contextHealth,
-			}),
-	});
-	const catalog = getRegistryAgentCommandCatalogDocument("orient");
+	const orient = runSourceHarnessJsonCommand([
+		"orient",
+		"--json",
+		"--repo-root",
+		fixturePath,
+	]);
+	const catalog = runSourceHarnessJsonCommand([
+		"commands",
+		"--json",
+		"--for-agent",
+		"--mode",
+		"orient",
+	]);
 	const commandNames = catalog.commands.map((command) => command.name);
 	const reportPath = writeColdAgentOrientationEvidence({
 		fixturePath,
@@ -5777,6 +5769,45 @@ async function runColdAgentOrientationRailFixture(scenario, fixturePath) {
 		scenario.id,
 		coldAgentOrientationAssertions({ commandNames, orient, reportPath }),
 	);
+}
+
+function sourceHarnessCommand(args) {
+	const builtCliPath = path.join(REPO_ROOT, "dist/cli.js");
+	if (existsSync(builtCliPath)) {
+		return {
+			command: "pnpm",
+			args: ["exec", "harness", ...args],
+			display: `pnpm exec harness ${args.join(" ")}`,
+		};
+	}
+	const sourceCliPath = path.join(REPO_ROOT, "src/cli.ts");
+	return {
+		command: "node",
+		args: ["--import", "tsx", sourceCliPath, ...args],
+		display: `node --import tsx src/cli.ts ${args.join(" ")}`,
+	};
+}
+
+function runSourceHarnessJsonCommand(args) {
+	const invocation = sourceHarnessCommand(args);
+	const result = runCanaryProcess(
+		invocation.command,
+		invocation.args,
+		REPO_ROOT,
+		60_000,
+	);
+	if (result.exitCode !== 0) {
+		throw new Error(
+			`${invocation.display} failed with exit code ${result.exitCode}: ${summarizeStderr(result.stderr)}`,
+		);
+	}
+	const parsed = parseJsonOutput(result.stdout);
+	if (!parsed.ok) {
+		throw new Error(
+			`${invocation.display} did not emit JSON stdout: ${summarizeCanaryProcessOutput(result.stdout)}`,
+		);
+	}
+	return parsed.value;
 }
 
 async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {

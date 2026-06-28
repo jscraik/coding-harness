@@ -11,7 +11,7 @@ const builtCliPath = resolve(repositoryRoot, "dist/cli.js");
 if (!existsSync(builtCliPath)) {
 	console.error("Error: source checkout harness binary requires dist/cli.js.");
 	console.error(
-		"Run pnpm build, or use node --import tsx src/cli.ts ... for current-tree development probes.",
+		`Run cd ${JSON.stringify(repositoryRoot)} && pnpm build, or run node --import tsx ${JSON.stringify(resolve(repositoryRoot, "src/cli.ts"))} ... for current-tree development probes.`,
 	);
 	process.exit(1);
 }

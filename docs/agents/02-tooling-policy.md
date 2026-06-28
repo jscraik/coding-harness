@@ -311,8 +311,8 @@ Exception for harness readiness:
 - Source-checkout public command proof should use `pnpm exec harness ...` when dependencies are installed and `dist/cli.js` exists; use `node --import tsx src/cli.ts ...` only for before-build current-tree probes.
 - Generated `scripts/check-environment.sh` in harness-managed repositories should prefer a dedicated harness runner using the following lookup order:
   1. `bash scripts/harness-cli.sh`
-  2. `node --import tsx src/cli.ts` (when repo-local TS source exists and a before-build current-tree probe is required)
-  3. `node dist/cli.js`
+  2. `node dist/cli.js`
+  3. `node --import tsx src/cli.ts` (only when `dist/cli.js` is absent and a before-build current-tree probe is required)
   4. `mise which harness`
   5. global `harness` binary
 - `scripts/run-harness-gate.sh` should treat the real source CLI command as the source-checkout probe. Use `node --import tsx`, not `pnpm exec tsx`, for source-checkout probes because the `tsx` CLI can fail before harness code runs with a temp-pipe `listen EPERM: operation not permitted` startup error in sandboxed runners. Fallback to `node dist/cli.js` is allowed only for the explicit runner temp-pipe signature.

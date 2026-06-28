@@ -122,7 +122,9 @@ export function buildContextCommands(
 }
 
 /** List context files that should be opened only when their trigger surface is touched. */
-export function buildConditionalContext(): HarnessOrientConditionalContext[] {
+export function buildConditionalContext(
+	commandPrefix: "pnpm exec harness" | "harness",
+): HarnessOrientConditionalContext[] {
 	return [
 		{
 			when: "touching src/**, scripts/**, command registry, architecture docs, or module boundaries",
@@ -138,7 +140,7 @@ export function buildConditionalContext(): HarnessOrientConditionalContext[] {
 		{
 			when: "touching command metadata, command docs, or agent command discovery",
 			read: "docs/cli-reference.md",
-			validate: "pnpm exec harness commands --json --for-agent",
+			validate: `${commandPrefix} commands --json --for-agent`,
 		},
 	];
 }

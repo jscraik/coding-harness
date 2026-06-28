@@ -16,11 +16,12 @@ import { renderBrainStaleHuman } from "./stale-presenter.js";
 /** Public API export. */
 export function runBrainStale(
 	harnessDir: string,
-	options?: { thresholdDays?: number },
+	options?: { thresholdDays?: number; now?: Date },
 ): BrainStaleResult {
 	const scanOptions: { thresholdDays?: number; now?: Date } = {};
 	if (options?.thresholdDays !== undefined)
 		scanOptions.thresholdDays = options.thresholdDays;
+	if (options?.now !== undefined) scanOptions.now = options.now;
 	const report = scanBrainMetadata(harnessDir, scanOptions);
 	return { report };
 }

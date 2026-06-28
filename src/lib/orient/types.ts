@@ -214,7 +214,11 @@ export interface HarnessOrientUsageError {
 	/** Structured usage error. */
 	error: {
 		/** Stable machine-readable error code. */
-		code: "orient.flag_value_required" | "orient.invalid_repo_root";
+		code:
+			| "orient.flag_value_required"
+			| "orient.invalid_repo_root"
+			| "orient.unexpected_positional"
+			| "orient.unknown_flag";
 		/** Human-readable error message. */
 		message: string;
 	};

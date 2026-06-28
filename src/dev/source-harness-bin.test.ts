@@ -20,6 +20,10 @@ function readPackageJson(packageDirectory: string): PackageJson {
 
 describe("source checkout harness binary", () => {
 	it("links a repo-local harness binary for pnpm exec", () => {
+		const workspaceManifest = readFileSync(
+			join(process.cwd(), "pnpm-workspace.yaml"),
+			"utf8",
+		);
 		const rootPackage = readPackageJson(".");
 		const sourceBinPackage = readPackageJson("tools/source-harness-bin");
 
@@ -30,6 +34,7 @@ describe("source checkout harness binary", () => {
 		expect(sourceBinPackage.private).toBe(true);
 		expect(sourceBinPackage.type).toBe("module");
 		expect(sourceBinPackage.bin?.harness).toBe("cli.js");
+		expect(workspaceManifest).toContain("tools/source-harness-bin");
 	});
 
 	it("routes pnpm exec through the built public CLI", () => {

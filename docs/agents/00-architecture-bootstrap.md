@@ -214,6 +214,7 @@ and generated architecture context synchronized, and keep the lane advisory:
 without proving CI, review-thread state, tracker state, or merge readiness.
 Cold-start orientation rail changes are architecture-adjacent when they alter
 `harness orient --json`, `harness-orient/v1`, `src/lib/orient/**`,
+`src/commands/orient.ts`, `src/lib/cli/registry/orient-command-spec.ts`,
 `src/commands/next-orientation-meta.ts`, or command-catalog orientation
 metadata. Keep generated architecture context, this guide, `AGENTS.md`,
 `README.md`, and `docs/cli-reference.md` synchronized so fresh-agent routing

@@ -96,12 +96,12 @@ export function nextDecisionOperationalMeta(args: {
 	const metaArgs: DecisionMetaArgs = {
 		mode: args.mode,
 		extra: {
-			...orientationMeta(),
 			...(args.extra ?? {}),
 			...sourceMetaExtra(args.sourceErrors ?? []),
 			...phaseExitMeta(args.phaseExit),
 			...runtimeCardMeta(args.runtimeCard),
 			...agentReadinessContextMeta(args.agentReadinessContext),
+			...orientationMeta(),
 		},
 	};
 	addDefinedMetaArg(metaArgs, "filesSource", args.filesSource);

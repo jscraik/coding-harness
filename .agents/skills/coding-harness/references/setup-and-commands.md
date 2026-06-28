@@ -23,7 +23,7 @@
 - [Boundaries](#boundaries)
 
 ## Prerequisites
-- Node.js `>=24.0.0`
+- Node.js `>=26.3.0`
 - `pnpm@10.33.0` for this source repo
 - `NPM_TOKEN` for private package install checks
 - `jq`, `rg`, `fd`, `git`, and `mise` when available

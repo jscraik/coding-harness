@@ -9,7 +9,6 @@ const nextDecisionProvider: HarnessOrientNextDecisionProvider = ({
 }) =>
 	runHarnessNext({
 		repoRoot,
-		worktreeRole: "dirty-with-justification",
 		agentReadinessContext: contextHealth,
 	});
 

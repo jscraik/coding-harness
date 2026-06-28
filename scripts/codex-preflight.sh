@@ -57,6 +57,7 @@ SCRIPT_PATH="$(resolve_script_path)"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${SCRIPT_PATH}")" && pwd -P)"
 WORKSPACE_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
 PREFLIGHT_OVERRIDES_FILE="${WORKSPACE_ROOT}/.harness/memory/codex-preflight-overrides.env"
+PREFLIGHT_RECEIPT_PATH="${WORKSPACE_ROOT}/.harness/runtime/codex-preflight-status.json"
 LOCAL_MEMORY_FALLBACK_SCRIPT="${SCRIPT_DIR}/codex-preflight-local-memory-legacy.sh"
 GIT_COMMON_CONFIG_GUARD_SCRIPT="${SCRIPT_DIR}/check-git-common-config.sh"
 PROJECT_BRAIN_REQUIRED_PATHS='.harness/README.md,.harness/memory/LEARNINGS.md,.harness/knowledge/INDEX.md,.harness/knowledge/cli/knowledge.md,.harness/knowledge/cli/hypotheses.md,.harness/knowledge/cli/rules.md,.harness/knowledge/ci/knowledge.md,.harness/knowledge/ci/hypotheses.md,.harness/knowledge/ci/rules.md,.harness/knowledge/governance/knowledge.md,.harness/knowledge/governance/hypotheses.md,.harness/knowledge/governance/rules.md,.harness/knowledge/tooling/knowledge.md,.harness/knowledge/tooling/hypotheses.md,.harness/knowledge/tooling/rules.md,.harness/knowledge/tooling/codex-learn-summary.md,.harness/decisions,.harness/quality/criteria.md,.harness/review-log.md'
@@ -105,6 +106,29 @@ log_warn() {
 
 log_err() {
 	printf '❌ %s\n' "$*" >&2
+}
+
+write_preflight_receipt() {
+	local status="$1"
+	local mode="$2"
+	local generated_at=''
+	generated_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+	if ! mkdir -p "$(dirname -- "${PREFLIGHT_RECEIPT_PATH}")"; then
+		log_warn "could not create preflight receipt directory"
+		return 0
+	fi
+	if ! cat >"${PREFLIGHT_RECEIPT_PATH}" <<JSON
+{
+  "schemaVersion": "codex-preflight-status/v1",
+  "generatedAt": "${generated_at}",
+  "mode": "${mode}",
+  "status": "${status}",
+  "command": "bash scripts/codex-preflight.sh --stack auto --mode ${mode}"
+}
+JSON
+	then
+		log_warn "could not write preflight receipt: ${PREFLIGHT_RECEIPT_PATH}"
+	fi
 }
 
 workspace_git() {
@@ -896,6 +920,7 @@ main() {
 		fi
 	fi
 
+	write_preflight_receipt 'pass' "${local_memory_mode}"
 	log_ok 'preflight passed'
 }
 

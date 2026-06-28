@@ -45,6 +45,7 @@ describe("collectHarnessOrient", () => {
 			JSON.stringify({ name: "@brainwav/coding-harness" }),
 		);
 		writeWorkspaceFile("src/cli.ts", "export {};\n");
+		writeWorkspaceFile("dist/cli.js", "export {};\n");
 		writeWorkspaceFile("AGENTS.md", "# Agents\n");
 		writeWorkspaceFile("CODESTYLE.md", "# Codestyle\n");
 		writeWorkspaceFile("AI/context/diagram-context.md", "# Diagram context\n");
@@ -114,5 +115,31 @@ describe("collectHarnessOrient", () => {
 			"tracker",
 			"merge_readiness",
 		]);
+	});
+
+	it("falls back to installed command wording before the source checkout is built", () => {
+		writeWorkspaceFile(
+			"package.json",
+			JSON.stringify({ name: "@brainwav/coding-harness" }),
+		);
+		writeWorkspaceFile("src/cli.ts", "export {};\n");
+
+		const report = collectHarnessOrient({
+			repoRoot: workspacePath,
+			now: new Date("2026-06-28T10:00:00.000Z"),
+			nextDecisionProvider: nextDecisionFixture,
+		});
+
+		expect(report.contextCommands.map((command) => command.command)).toEqual([
+			"harness next --json",
+			"harness session-context --json --repo-root .",
+			"harness agent-readiness . --json",
+			"harness commands --json --for-agent --mode orient",
+		]);
+		expect(
+			report.conditionalContext.find(
+				(context) => context.read === "docs/cli-reference.md",
+			)?.validate,
+		).toBe("harness commands --json --for-agent");
 	});
 });

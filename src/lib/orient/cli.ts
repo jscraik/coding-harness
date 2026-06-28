@@ -13,12 +13,26 @@ const EXIT_CODES = {
 	USAGE: 2,
 } as const;
 
+const VALUE_FLAGS = new Set(["--repo-root"]);
+const VALID_FLAGS = new Set(["--json", ...VALUE_FLAGS]);
+
 /** Run the read-only orient command from CLI arguments. */
 export function runOrientCLI(
 	args: string[],
 	nextDecisionProvider: HarnessOrientNextDecisionProvider,
 ): number {
 	const json = args.includes("--json");
+	const unknownFlag = args.find(
+		(arg) => arg.startsWith("-") && !VALID_FLAGS.has(arg),
+	);
+	if (unknownFlag) {
+		return emitUsage(
+			json,
+			"orient.unknown_flag",
+			`harness orient does not support ${unknownFlag}.`,
+		);
+	}
+
 	const repoRootFlag = inspectFlagValue(args, "--repo-root");
 	if (repoRootFlag.missingValue) {
 		return emitUsage(
@@ -28,7 +42,19 @@ export function runOrientCLI(
 		);
 	}
 
-	const targetDir = args.find((arg) => !arg.startsWith("-"));
+	const positionals = collectPositionals(args);
+	if (
+		positionals.length > 1 ||
+		(repoRootFlag.value && positionals.length > 0)
+	) {
+		return emitUsage(
+			json,
+			"orient.unexpected_positional",
+			"harness orient accepts at most one repository path; use either --repo-root PATH or a single positional PATH.",
+		);
+	}
+
+	const targetDir = positionals[0];
 	const repoRoot = repoRootFlag.value ?? targetDir ?? process.cwd();
 	if (!isDirectory(repoRoot)) {
 		return emitUsage(
@@ -45,6 +71,23 @@ export function runOrientCLI(
 		emitHumanReport(report);
 	}
 	return report.status === "fail" ? EXIT_CODES.FAILURE : EXIT_CODES.SUCCESS;
+}
+
+/** Return positional arguments while skipping values consumed by value flags. */
+function collectPositionals(args: string[]): string[] {
+	const positionals: string[] = [];
+	for (let index = 0; index < args.length; index += 1) {
+		const arg = args[index];
+		if (arg === undefined) continue;
+		if (VALUE_FLAGS.has(arg)) {
+			index += 1;
+			continue;
+		}
+		if (!arg.startsWith("-")) {
+			positionals.push(arg);
+		}
+	}
+	return positionals;
 }
 
 /** Print the orient packet as compact human-readable command guidance. */

@@ -21,10 +21,10 @@ implementation probes; in consumer repos, use the installed `harness` binary.
 ```bash
 pwd
 git status --short --branch
-harness next --json
-harness --help
-harness commands --json --for-agent
-harness commands --json
+pnpm exec harness next --json
+pnpm exec harness --help
+pnpm exec harness commands --json --for-agent
+pnpm exec harness commands --json
 ```
 
 If the repo owns a preflight wrapper:

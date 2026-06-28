@@ -55,10 +55,10 @@ export function collectHarnessOrient(
 	});
 	const preflightReceipt = readPreflightReceipt(repoRoot);
 	const architectureContext = buildArchitectureContext(repoRoot);
-	const projectBrain = buildProjectBrain(repoRoot);
+	const projectBrain = buildProjectBrain(repoRoot, options.now);
 	const orientationRefs = buildOrientationRefs(repoRoot);
 	const contextCommands = buildContextCommands(commandPrefix);
-	const conditionalContext = buildConditionalContext();
+	const conditionalContext = buildConditionalContext(commandPrefix);
 
 	return {
 		schemaVersion: "harness-orient/v1",
@@ -96,7 +96,14 @@ function canonicalRepoRoot(repoRoot: string): string {
 function commandPrefixFor(repoRoot: string): "pnpm exec harness" | "harness" {
 	const packagePath = join(repoRoot, "package.json");
 	const sourceCliPath = join(repoRoot, "src/cli.ts");
-	if (!existsSync(packagePath) || !existsSync(sourceCliPath)) return "harness";
+	const distCliPath = join(repoRoot, "dist/cli.js");
+	if (
+		!existsSync(packagePath) ||
+		!existsSync(sourceCliPath) ||
+		!existsSync(distCliPath)
+	) {
+		return "harness";
+	}
 	try {
 		const parsed = JSON.parse(readFileSync(packagePath, "utf8")) as {
 			name?: unknown;
@@ -240,7 +247,10 @@ function buildArchitectureContext(
 }
 
 /** Inspect Project Brain as orientation evidence without promoting it to delivery truth. */
-function buildProjectBrain(repoRoot: string): HarnessOrientProjectBrain {
+function buildProjectBrain(
+	repoRoot: string,
+	now?: Date,
+): HarnessOrientProjectBrain {
 	const harnessDir = join(repoRoot, ".harness");
 	if (!safeDirectoryExists(harnessDir)) {
 		return {
@@ -255,7 +265,7 @@ function buildProjectBrain(repoRoot: string): HarnessOrientProjectBrain {
 	}
 	try {
 		const status = runBrainStatus(harnessDir);
-		const stale = runBrainStale(harnessDir);
+		const stale = runBrainStale(harnessDir, now ? { now } : undefined);
 		const staleFiles = Array.isArray(stale.report.staleFiles)
 			? stale.report.staleFiles
 			: [];

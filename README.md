@@ -182,7 +182,7 @@ machine-readable command metadata.
 
 Agents should start with `harness orient --json` for cold-start context, use
 `harness next --json` for the next actionable step, and use
-`harness commands --json --for-agent` for command discovery. The full index
+`harness commands --json` for command discovery. The full index
 below is an expert reference, not the first surface an agent needs to understand.
 
 The installed-package portability canary for this agent surface is
