@@ -95,6 +95,7 @@ describe("collectHarnessOrient", () => {
 			now: new Date("2026-06-28T10:00:00.000Z"),
 			nextDecisionProvider: nextDecisionFixture,
 		});
+		const repoRef = shellQuote(realpathSync(workspacePath));
 
 		expect(report.schemaVersion).toBe("harness-orient/v1");
 		expect(report.generatedAt).toBe("2026-06-28T10:00:00.000Z");
@@ -111,11 +112,11 @@ describe("collectHarnessOrient", () => {
 			command: "bash scripts/codex-preflight.sh --stack auto --mode required",
 		});
 		expect(report.nextDecision.nextCommand).toBe(
-			"pnpm exec harness validation-plan --json",
+			`cd ${repoRef} && pnpm exec harness validation-plan --json`,
 		);
 		expect(report.nextDecision.followUpCommands).toEqual([
-			"pnpm exec harness next --json",
-			"pnpm exec harness commands --json",
+			`cd ${repoRef} && pnpm exec harness next --json`,
+			`cd ${repoRef} && pnpm exec harness commands --json`,
 			"pnpm test",
 		]);
 		expect(report.architectureContext).toMatchObject({
@@ -133,7 +134,6 @@ describe("collectHarnessOrient", () => {
 				}),
 			]),
 		);
-		const repoRef = shellQuote(realpathSync(workspacePath));
 		expect(report.contextCommands.map((command) => command.command)).toEqual([
 			`cd ${repoRef} && pnpm exec harness next --json`,
 			`cd ${repoRef} && pnpm exec harness session-context --json --repo-root ${repoRef}`,
@@ -320,11 +320,11 @@ describe("collectHarnessOrient", () => {
 			),
 		).toBe(false);
 		expect(report.nextDecision.nextCommand).toBe(
-			"harness validation-plan --json",
+			`cd ${repoRef} && harness validation-plan --json`,
 		);
 		expect(report.nextDecision.followUpCommands).toEqual([
-			"harness next --json",
-			"harness commands --json",
+			`cd ${repoRef} && harness next --json`,
+			`cd ${repoRef} && harness commands --json`,
 			"pnpm test",
 		]);
 	});
@@ -358,11 +358,11 @@ describe("collectHarnessOrient", () => {
 			`cd ${repoRef} && node --import tsx src/cli.ts commands --json --for-agent --mode orient`,
 		]);
 		expect(report.nextDecision.nextCommand).toBe(
-			"node --import tsx src/cli.ts validation-plan --json",
+			`cd ${repoRef} && node --import tsx src/cli.ts validation-plan --json`,
 		);
 		expect(report.nextDecision.followUpCommands).toEqual([
-			"node --import tsx src/cli.ts next --json",
-			"node --import tsx src/cli.ts commands --json",
+			`cd ${repoRef} && node --import tsx src/cli.ts next --json`,
+			`cd ${repoRef} && node --import tsx src/cli.ts commands --json`,
 			"pnpm test",
 		]);
 		expect(

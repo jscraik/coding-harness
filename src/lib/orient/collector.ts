@@ -15,7 +15,7 @@ import {
 	buildOrientTraversalHints,
 	DIAGRAM_MANIFEST_PATH,
 	type HarnessOrientCommandPrefix,
-	normalizeOrientHarnessCommand,
+	scopeOrientHarnessCommand,
 	TRUTH_LANE_WARNINGS,
 } from "./context.js";
 import type {
@@ -77,7 +77,7 @@ export function collectHarnessOrient(
 		}),
 		evidenceUse: "orientation",
 		repoRoot,
-		nextDecision: summarizeNextDecision(nextDecision, commandPrefix),
+		nextDecision: summarizeNextDecision(nextDecision, commandPrefix, repoRoot),
 		sessionContext: summarizeSessionContext(
 			sessionContext,
 			commandPrefix,
@@ -124,6 +124,7 @@ function commandPrefixFor(repoRoot: string): HarnessOrientCommandPrefix {
 function summarizeNextDecision(
 	decision: HarnessDecision,
 	commandPrefix: HarnessOrientCommandPrefix,
+	repoRoot: string,
 ): HarnessOrientNextDecision {
 	return {
 		schemaVersion: decision.schemaVersion,
@@ -132,16 +133,17 @@ function summarizeNextDecision(
 		cockpitLane: decision.cockpitLane ?? null,
 		summary: decision.summary,
 		nextAction: decision.nextAction,
-		nextCommand: normalizeOrientHarnessCommand(
+		nextCommand: scopeOrientHarnessCommand(
 			decision.nextCommand,
 			commandPrefix,
+			repoRoot,
 		),
 		failureClass: decision.failureClass,
 		requiredEvidence: [...decision.requiredEvidence],
 		stopConditions: [...decision.stopConditions],
 		followUpCommands: decision.followUpCommands.map(
 			(command) =>
-				normalizeOrientHarnessCommand(command, commandPrefix) ?? command,
+				scopeOrientHarnessCommand(command, commandPrefix, repoRoot) ?? command,
 		),
 	};
 }

@@ -148,9 +148,23 @@ export function normalizeOrientHarnessCommand(
 	commandPrefix: HarnessOrientCommandPrefix,
 ): string | null {
 	if (command === null) return null;
-	return command.replace(
-		/^(?:pnpm exec harness|harness|node --import tsx src\/cli\.ts)(?=\s|$)/,
+	return command.replace(HARNESS_COMMAND_PREFIX_PATTERN, commandPrefix);
+}
+
+/** Scope embedded harness command hints to the repository orient inspected. */
+export function scopeOrientHarnessCommand(
+	command: string | null,
+	commandPrefix: HarnessOrientCommandPrefix,
+	repoRoot: string,
+): string | null {
+	if (command === null) return null;
+	const normalized = normalizeOrientHarnessCommand(command, commandPrefix);
+	if (normalized === null) return null;
+	if (!HARNESS_COMMAND_PREFIX_PATTERN.test(command)) return normalized;
+	return scopedHarnessCommand(
 		commandPrefix,
+		repoRoot,
+		commandWithoutPrefix(normalized),
 	);
 }
 
@@ -228,10 +242,17 @@ function scopedHarnessCommand(
 	return `cd ${shellQuote(repoRoot)} && ${commandPrefix} ${args}`;
 }
 
+function commandWithoutPrefix(command: string): string {
+	return command.replace(HARNESS_COMMAND_PREFIX_PATTERN, "").trimStart();
+}
+
 /** Quote a filesystem path for shell command rails emitted by orient. */
 function shellQuote(value: string): string {
 	return `'${value.replaceAll("'", "'\\''")}'`;
 }
+
+const HARNESS_COMMAND_PREFIX_PATTERN =
+	/^(?:pnpm exec harness|harness|node --import tsx src\/cli\.ts)(?=\s|$)/;
 
 /** Check for a repository-relative path inside context helpers. */
 function pathExists(repoRoot: string, repoPath: string): boolean {
