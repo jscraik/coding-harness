@@ -8,8 +8,10 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { AgentReadinessContextHealth } from "../agent-readiness/types.js";
 import { buildHarnessDecision } from "../decision/harness-decision.js";
 import { collectHarnessOrient } from "./collector.js";
+import { summarizeAgentReadinessContextHealth } from "./context.js";
 
 let workspacePath: string;
 
@@ -71,6 +73,61 @@ function passNextDecisionFixture() {
 }
 
 describe("collectHarnessOrient", () => {
+	it("scopes non-harness readiness refresh commands to the inspected repository", () => {
+		const repoRoot = realpathSync(workspacePath);
+		const repoRef = shellQuote(repoRoot);
+		const contextHealth: AgentReadinessContextHealth = {
+			schemaVersion: "agent-readiness-context-health/v1",
+			status: "warn",
+			evidenceUse: "orientation",
+			canonicalReport: {
+				schemaVersion: "context-health-report/v1",
+				command: "harness context-health --json",
+				available: true,
+				prerequisiteStatus: "pass",
+				prerequisiteEvidence: [],
+			},
+			surfaces: [
+				{
+					id: "prompt_context_drift",
+					status: "warn",
+					evidenceUse: "orientation",
+					evidence: [
+						"artifacts/context-integrity/prompt-context-drift-report.json",
+						"artifacts/prompt-context-drift-report.json",
+					],
+					staleReasons: ["Duplicate prompt-context-drift reports."],
+					suggestedRefreshCommands: [
+						"rm artifacts/prompt-context-drift-report.json",
+						"harness prompt-context-drift:write",
+					],
+				},
+			],
+			suggestedRefreshCommands: [
+				"rm artifacts/prompt-context-drift-report.json",
+				"harness prompt-context-drift:write",
+			],
+		};
+
+		const summarized = summarizeAgentReadinessContextHealth(
+			contextHealth,
+			"harness",
+			repoRoot,
+		);
+
+		expect(summarized.canonicalReport.command).toBe(
+			`cd ${repoRef} && harness context-health --json`,
+		);
+		expect(summarized.surfaces[0]?.suggestedRefreshCommands).toEqual([
+			`cd ${repoRef} && rm artifacts/prompt-context-drift-report.json`,
+			`cd ${repoRef} && harness prompt-context-drift:write`,
+		]);
+		expect(summarized.suggestedRefreshCommands).toEqual([
+			`cd ${repoRef} && rm artifacts/prompt-context-drift-report.json`,
+			`cd ${repoRef} && harness prompt-context-drift:write`,
+		]);
+	});
+
 	it("emits a compact cold-start packet without requiring a preflight receipt", () => {
 		writeWorkspaceFile(
 			"package.json",

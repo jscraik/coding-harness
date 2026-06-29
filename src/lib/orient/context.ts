@@ -181,7 +181,7 @@ export function summarizeAgentReadinessContextHealth(
 		canonicalReport: {
 			...contextHealth.canonicalReport,
 			command:
-				scopeOrientHarnessCommand(
+				scopeOrientReadinessCommand(
 					contextHealth.canonicalReport.command,
 					commandPrefix,
 					repoRoot,
@@ -191,15 +191,32 @@ export function summarizeAgentReadinessContextHealth(
 			...surface,
 			suggestedRefreshCommands: surface.suggestedRefreshCommands.map(
 				(command) =>
-					scopeOrientHarnessCommand(command, commandPrefix, repoRoot) ??
+					scopeOrientReadinessCommand(command, commandPrefix, repoRoot) ??
 					command,
 			),
 		})),
 		suggestedRefreshCommands: contextHealth.suggestedRefreshCommands.map(
 			(command) =>
-				scopeOrientHarnessCommand(command, commandPrefix, repoRoot) ?? command,
+				scopeOrientReadinessCommand(command, commandPrefix, repoRoot) ??
+				command,
 		),
 	};
+}
+
+/** Scope readiness refresh commands to the repository orient inspected. */
+function scopeOrientReadinessCommand(
+	command: string | null,
+	commandPrefix: HarnessOrientCommandPrefix,
+	repoRoot: string,
+): string | null {
+	if (command === null) return null;
+	if (!HARNESS_COMMAND_PREFIX_PATTERN.test(command)) {
+		return scopedShellCommand(repoRoot, command);
+	}
+	return (
+		scopeOrientHarnessCommand(command, commandPrefix, repoRoot) ??
+		scopedShellCommand(repoRoot, command)
+	);
 }
 
 /** Rebuild session-context hints with the public command prefix orient selected. */
