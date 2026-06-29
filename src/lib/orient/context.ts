@@ -101,28 +101,42 @@ export function buildOrientationRefs(
 /** Build the follow-up command rail using the repo-appropriate public entrypoint. */
 export function buildContextCommands(
 	commandPrefix: HarnessOrientCommandPrefix,
+	repoRoot: string,
 ): HarnessOrientContextCommand[] {
+	const quotedRepoRoot = shellQuote(repoRoot);
 	return [
 		{
 			id: "next",
-			command: `${commandPrefix} next --json`,
+			command: scopedHarnessCommand(commandPrefix, repoRoot, "next --json"),
 			reason: "Get the next action only, without the full orientation bundle.",
 		},
 		{
 			id: "session-context",
-			command: `${commandPrefix} session-context --json --repo-root .`,
+			command: scopedHarnessCommand(
+				commandPrefix,
+				repoRoot,
+				`session-context --json --repo-root ${quotedRepoRoot}`,
+			),
 			reason:
 				"Inspect local branch, changed files, artifacts, runtime cards, reviews, and traversal hints.",
 		},
 		{
 			id: "agent-readiness",
-			command: `${commandPrefix} agent-readiness . --json`,
+			command: scopedHarnessCommand(
+				commandPrefix,
+				repoRoot,
+				`agent-readiness --json --repo-root ${quotedRepoRoot}`,
+			),
 			reason:
 				"Audit agent-readable instructions, artifacts, capabilities, approval gates, traceability, and context health.",
 		},
 		{
 			id: "commands-orient",
-			command: `${commandPrefix} commands --json --for-agent --mode orient`,
+			command: scopedHarnessCommand(
+				commandPrefix,
+				repoRoot,
+				"commands --json --for-agent --mode orient",
+			),
 			reason: "List the compact command rail available for orientation work.",
 		},
 	];
@@ -143,7 +157,9 @@ export function normalizeOrientHarnessCommand(
 /** Rebuild session-context hints with the public command prefix orient selected. */
 export function buildOrientTraversalHints(
 	commandPrefix: HarnessOrientCommandPrefix,
+	repoRoot: string,
 ): SessionContextTraversalHint[] {
+	const quotedRepoRoot = shellQuote(repoRoot);
 	return (
 		[
 			[
@@ -153,12 +169,12 @@ export function buildOrientTraversalHints(
 			],
 			[
 				"runtime card",
-				"runtime-card --json --repo .",
+				`runtime-card --json --repo ${quotedRepoRoot}`,
 				"Refresh the runtime-card summary when local runtime evidence is missing or stale.",
 			],
 			[
 				"agent readiness",
-				"agent-readiness --json --repo-root .",
+				`agent-readiness --json --repo-root ${quotedRepoRoot}`,
 				"Check instruction, artifact, capability, approval, traceability, and context-health surfaces.",
 			],
 			[
@@ -169,7 +185,7 @@ export function buildOrientTraversalHints(
 		] as const
 	).map(([label, command, reason]) => ({
 		label,
-		command: `${commandPrefix} ${command}`,
+		command: scopedHarnessCommand(commandPrefix, repoRoot, command),
 		reason,
 	}));
 }
@@ -177,6 +193,7 @@ export function buildOrientTraversalHints(
 /** List context files that should be opened only when their trigger surface is touched. */
 export function buildConditionalContext(
 	commandPrefix: HarnessOrientCommandPrefix,
+	repoRoot: string,
 ): HarnessOrientConditionalContext[] {
 	return [
 		{
@@ -193,9 +210,27 @@ export function buildConditionalContext(
 		{
 			when: "touching command metadata, command docs, or agent command discovery",
 			read: "docs/cli-reference.md",
-			validate: `${commandPrefix} commands --json --for-agent`,
+			validate: scopedHarnessCommand(
+				commandPrefix,
+				repoRoot,
+				"commands --json --for-agent",
+			),
 		},
 	];
+}
+
+/** Build a follow-up command that first enters the repository orient inspected. */
+function scopedHarnessCommand(
+	commandPrefix: HarnessOrientCommandPrefix,
+	repoRoot: string,
+	args: string,
+): string {
+	return `cd ${shellQuote(repoRoot)} && ${commandPrefix} ${args}`;
+}
+
+/** Quote a filesystem path for shell command rails emitted by orient. */
+function shellQuote(value: string): string {
+	return `'${value.replaceAll("'", "'\\''")}'`;
 }
 
 /** Check for a repository-relative path inside context helpers. */

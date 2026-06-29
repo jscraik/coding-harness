@@ -5633,7 +5633,10 @@ function writeColdAgentOrientationFixtureRepo(fixturePath) {
 		name: "@brainwav/coding-harness",
 	});
 	mkdirSync(path.join(fixturePath, "src"), { recursive: true });
-	writeFileSync(path.join(fixturePath, "src/cli.ts"), "export {};\n");
+	writeFileSync(
+		path.join(fixturePath, "src/cli.ts"),
+		`import { run } from ${JSON.stringify(pathToFileURL(path.join(REPO_ROOT, "src/cli.ts")).href)};\nrun(process.argv.slice(2));\n`,
+	);
 	writeFileSync(path.join(fixturePath, "AGENTS.md"), "# Agents\n");
 	writeFileSync(path.join(fixturePath, "CODESTYLE.md"), "# Codestyle\n");
 	mkdirSync(path.join(fixturePath, "AI/context"), { recursive: true });
@@ -5712,6 +5715,21 @@ function coldAgentOrientationAssertions({ commandNames, orient, reportPath }) {
 				),
 		),
 		assertion(
+			"orient command rail is scoped to the inspected repository",
+			orient.contextCommands.every((command) =>
+				command.command.includes(orient.repoRoot),
+			) &&
+				orient.sessionContext.nextTraversalHints.every((hint) =>
+					hint.command.includes(orient.repoRoot),
+				),
+		),
+		assertion(
+			"orient command rail emits runnable JSON commands",
+			orient.contextCommands.every((command) =>
+				commandRailInvocationEmitsJson(command.command),
+			),
+		),
+		assertion(
 			"architecture context is lazy and has a freshness check",
 			orient.architectureContext.path === "AI/context/diagram-context.md" &&
 				orient.architectureContext.validateWhenChangedCommand ===
@@ -5740,6 +5758,22 @@ function coldAgentOrientationAssertions({ commandNames, orient, reportPath }) {
 				"cold-agent-orientation-rail-fixture/v1",
 		),
 	];
+}
+
+function commandRailInvocationEmitsJson(command) {
+	const result = spawnSync("zsh", ["-lc", command], {
+		cwd: REPO_ROOT,
+		encoding: "utf8",
+		maxBuffer: 1024 * 1024,
+		timeout: 60_000,
+	});
+	if (result.status === null) return false;
+	try {
+		JSON.parse(result.stdout);
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 async function runColdAgentOrientationRailFixture(scenario, fixturePath) {

@@ -60,8 +60,8 @@ export function collectHarnessOrient(
 	const architectureContext = buildArchitectureContext(repoRoot);
 	const projectBrain = buildProjectBrain(repoRoot, options.now);
 	const orientationRefs = buildOrientationRefs(repoRoot);
-	const contextCommands = buildContextCommands(commandPrefix);
-	const conditionalContext = buildConditionalContext(commandPrefix);
+	const contextCommands = buildContextCommands(commandPrefix, repoRoot);
+	const conditionalContext = buildConditionalContext(commandPrefix, repoRoot);
 
 	return {
 		schemaVersion: "harness-orient/v1",
@@ -78,7 +78,11 @@ export function collectHarnessOrient(
 		evidenceUse: "orientation",
 		repoRoot,
 		nextDecision: summarizeNextDecision(nextDecision, commandPrefix),
-		sessionContext: summarizeSessionContext(sessionContext, commandPrefix),
+		sessionContext: summarizeSessionContext(
+			sessionContext,
+			commandPrefix,
+			repoRoot,
+		),
 		agentReadinessContextHealth: agentReadiness.contextHealth,
 		preflightReceipt,
 		architectureContext,
@@ -146,6 +150,7 @@ function summarizeNextDecision(
 function summarizeSessionContext(
 	report: SessionContextReport,
 	commandPrefix: HarnessOrientCommandPrefix,
+	repoRoot: string,
 ): HarnessOrientReport["sessionContext"] {
 	return {
 		schemaVersion: report.schemaVersion,
@@ -159,7 +164,7 @@ function summarizeSessionContext(
 		runtimeCardCount: report.runtimeCards.length,
 		reviewArtifactCount: report.reviewArtifacts.length,
 		staleState: report.staleState,
-		nextTraversalHints: buildOrientTraversalHints(commandPrefix),
+		nextTraversalHints: buildOrientTraversalHints(commandPrefix, repoRoot),
 	};
 }
 

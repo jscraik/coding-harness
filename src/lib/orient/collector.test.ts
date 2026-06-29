@@ -1,4 +1,10 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	realpathSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -19,6 +25,10 @@ function writeWorkspaceFile(path: string, contents: string): void {
 	const targetPath = join(workspacePath, path);
 	mkdirSync(dirname(targetPath), { recursive: true });
 	writeFileSync(targetPath, contents);
+}
+
+function shellQuote(value: string): string {
+	return `'${value.replaceAll("'", "'\\''")}'`;
 }
 
 function nextDecisionFixture() {
@@ -123,19 +133,20 @@ describe("collectHarnessOrient", () => {
 				}),
 			]),
 		);
+		const repoRef = shellQuote(realpathSync(workspacePath));
 		expect(report.contextCommands.map((command) => command.command)).toEqual([
-			"pnpm exec harness next --json",
-			"pnpm exec harness session-context --json --repo-root .",
-			"pnpm exec harness agent-readiness . --json",
-			"pnpm exec harness commands --json --for-agent --mode orient",
+			`cd ${repoRef} && pnpm exec harness next --json`,
+			`cd ${repoRef} && pnpm exec harness session-context --json --repo-root ${repoRef}`,
+			`cd ${repoRef} && pnpm exec harness agent-readiness --json --repo-root ${repoRef}`,
+			`cd ${repoRef} && pnpm exec harness commands --json --for-agent --mode orient`,
 		]);
 		expect(
 			report.sessionContext.nextTraversalHints.map((hint) => hint.command),
 		).toEqual([
-			"pnpm exec harness next --json",
-			"pnpm exec harness runtime-card --json --repo .",
-			"pnpm exec harness agent-readiness --json --repo-root .",
-			"pnpm exec harness commands --json --for-agent --mode orient",
+			`cd ${repoRef} && pnpm exec harness next --json`,
+			`cd ${repoRef} && pnpm exec harness runtime-card --json --repo ${repoRef}`,
+			`cd ${repoRef} && pnpm exec harness agent-readiness --json --repo-root ${repoRef}`,
+			`cd ${repoRef} && pnpm exec harness commands --json --for-agent --mode orient`,
 		]);
 		expect(report.conditionalContext).toEqual(
 			expect.arrayContaining([
@@ -288,19 +299,20 @@ describe("collectHarnessOrient", () => {
 			nextDecisionProvider: nextDecisionFixture,
 		});
 
+		const repoRef = shellQuote(realpathSync(workspacePath));
 		expect(report.contextCommands.map((command) => command.command)).toEqual([
-			"harness next --json",
-			"harness session-context --json --repo-root .",
-			"harness agent-readiness . --json",
-			"harness commands --json --for-agent --mode orient",
+			`cd ${repoRef} && harness next --json`,
+			`cd ${repoRef} && harness session-context --json --repo-root ${repoRef}`,
+			`cd ${repoRef} && harness agent-readiness --json --repo-root ${repoRef}`,
+			`cd ${repoRef} && harness commands --json --for-agent --mode orient`,
 		]);
 		expect(
 			report.sessionContext.nextTraversalHints.map((hint) => hint.command),
 		).toEqual([
-			"harness next --json",
-			"harness runtime-card --json --repo .",
-			"harness agent-readiness --json --repo-root .",
-			"harness commands --json --for-agent --mode orient",
+			`cd ${repoRef} && harness next --json`,
+			`cd ${repoRef} && harness runtime-card --json --repo ${repoRef}`,
+			`cd ${repoRef} && harness agent-readiness --json --repo-root ${repoRef}`,
+			`cd ${repoRef} && harness commands --json --for-agent --mode orient`,
 		]);
 		expect(
 			report.sessionContext.nextTraversalHints.some((hint) =>
@@ -330,19 +342,20 @@ describe("collectHarnessOrient", () => {
 			nextDecisionProvider: nextDecisionFixture,
 		});
 
+		const repoRef = shellQuote(realpathSync(workspacePath));
 		expect(report.contextCommands.map((command) => command.command)).toEqual([
-			"node --import tsx src/cli.ts next --json",
-			"node --import tsx src/cli.ts session-context --json --repo-root .",
-			"node --import tsx src/cli.ts agent-readiness . --json",
-			"node --import tsx src/cli.ts commands --json --for-agent --mode orient",
+			`cd ${repoRef} && node --import tsx src/cli.ts next --json`,
+			`cd ${repoRef} && node --import tsx src/cli.ts session-context --json --repo-root ${repoRef}`,
+			`cd ${repoRef} && node --import tsx src/cli.ts agent-readiness --json --repo-root ${repoRef}`,
+			`cd ${repoRef} && node --import tsx src/cli.ts commands --json --for-agent --mode orient`,
 		]);
 		expect(
 			report.sessionContext.nextTraversalHints.map((hint) => hint.command),
 		).toEqual([
-			"node --import tsx src/cli.ts next --json",
-			"node --import tsx src/cli.ts runtime-card --json --repo .",
-			"node --import tsx src/cli.ts agent-readiness --json --repo-root .",
-			"node --import tsx src/cli.ts commands --json --for-agent --mode orient",
+			`cd ${repoRef} && node --import tsx src/cli.ts next --json`,
+			`cd ${repoRef} && node --import tsx src/cli.ts runtime-card --json --repo ${repoRef}`,
+			`cd ${repoRef} && node --import tsx src/cli.ts agent-readiness --json --repo-root ${repoRef}`,
+			`cd ${repoRef} && node --import tsx src/cli.ts commands --json --for-agent --mode orient`,
 		]);
 		expect(report.nextDecision.nextCommand).toBe(
 			"node --import tsx src/cli.ts validation-plan --json",
@@ -356,6 +369,8 @@ describe("collectHarnessOrient", () => {
 			report.conditionalContext.find(
 				(context) => context.read === "docs/cli-reference.md",
 			)?.validate,
-		).toBe("node --import tsx src/cli.ts commands --json --for-agent");
+		).toBe(
+			`cd ${repoRef} && node --import tsx src/cli.ts commands --json --for-agent`,
+		);
 	});
 });
