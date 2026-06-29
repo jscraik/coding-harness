@@ -5761,7 +5761,9 @@ function coldAgentOrientationAssertions({ commandNames, orient, reportPath }) {
 }
 
 function commandRailInvocationEmitsJson(command) {
-	const result = spawnSync("zsh", ["-lc", command], {
+	const shellCommand = commandRailShellCommand();
+	if (!shellCommand) return false;
+	const result = spawnSync(shellCommand, ["-lc", command], {
 		cwd: REPO_ROOT,
 		encoding: "utf8",
 		maxBuffer: 1024 * 1024,
@@ -5774,6 +5776,30 @@ function commandRailInvocationEmitsJson(command) {
 	} catch {
 		return false;
 	}
+}
+
+/** Select an available POSIX shell for command-rail execution in local and CI environments. */
+function commandRailShellCommand() {
+	const candidates = [
+		process.env.SHELL,
+		"/bin/bash",
+		"bash",
+		"/bin/sh",
+		"sh",
+	].filter((candidate, index, values) => {
+		return typeof candidate === "string" && values.indexOf(candidate) === index;
+	});
+	return (
+		candidates.find((candidate) => {
+			if (candidate.includes("/") && !existsSync(candidate)) return false;
+			const result = spawnSync(candidate, ["-lc", "true"], {
+				cwd: REPO_ROOT,
+				encoding: "utf8",
+				timeout: 5_000,
+			});
+			return result.status === 0;
+		}) ?? null
+	);
 }
 
 async function runColdAgentOrientationRailFixture(scenario, fixturePath) {
