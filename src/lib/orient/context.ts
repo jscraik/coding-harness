@@ -3,6 +3,7 @@ import { join } from "node:path";
 import type { AgentReadinessContextHealth } from "../agent-readiness/types.js";
 import type { SessionContextTraversalHint } from "../session-context/types.js";
 import type {
+	HarnessOrientArchitectureContext,
 	HarnessOrientConditionalContext,
 	HarnessOrientContextCommand,
 	HarnessOrientContextRef,
@@ -271,6 +272,25 @@ export function buildConditionalContext(
 	];
 }
 
+/** Describe the lazy architecture context and its freshness check command. */
+export function buildArchitectureContext(
+	repoRoot: string,
+): HarnessOrientArchitectureContext {
+	return {
+		path: ARCHITECTURE_CONTEXT_PATH,
+		status: pathExists(repoRoot, ARCHITECTURE_CONTEXT_PATH)
+			? "present"
+			: "missing",
+		manifestPath: DIAGRAM_MANIFEST_PATH,
+		readWhen:
+			"Read when touching src/**, scripts/**, command registry, architecture docs, generated diagrams, or module boundaries.",
+		validateWhenChangedCommand: scopedShellCommand(
+			repoRoot,
+			"bash scripts/check-diagram-freshness.sh",
+		),
+	};
+}
+
 /** Build a follow-up command that first enters the repository orient inspected. */
 function scopedHarnessCommand(
 	commandPrefix: HarnessOrientCommandPrefix,
@@ -281,7 +301,7 @@ function scopedHarnessCommand(
 }
 
 /** Build a non-harness validation command that first enters the repository orient inspected. */
-function scopedShellCommand(repoRoot: string, command: string): string {
+export function scopedShellCommand(repoRoot: string, command: string): string {
 	return `cd ${shellQuote(repoRoot)} && ${command}`;
 }
 

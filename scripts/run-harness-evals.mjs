@@ -5749,12 +5749,19 @@ function coldAgentOrientationAssertions({ commandNames, orient, reportPath }) {
 		assertion(
 			"architecture context is lazy and has a freshness check",
 			orient.architectureContext.path === "AI/context/diagram-context.md" &&
-				orient.architectureContext.validateWhenChangedCommand ===
-					"bash scripts/check-diagram-freshness.sh" &&
+				commandScopesToRepo(
+					orient.architectureContext.validateWhenChangedCommand,
+					orient.repoRoot,
+					"bash scripts/check-diagram-freshness.sh",
+				) &&
 				orient.conditionalContext.some(
 					(item) =>
 						item.read === "AI/context/diagram-context.md" &&
-						item.validate === "bash scripts/check-diagram-freshness.sh",
+						commandScopesToRepo(
+							item.validate,
+							orient.repoRoot,
+							"bash scripts/check-diagram-freshness.sh",
+						),
 				),
 		),
 		assertion(
@@ -5775,6 +5782,14 @@ function coldAgentOrientationAssertions({ commandNames, orient, reportPath }) {
 				"cold-agent-orientation-rail-fixture/v1",
 		),
 	];
+}
+
+function commandScopesToRepo(command, _repoRoot, expectedCommand) {
+	return (
+		typeof command === "string" &&
+		/^cd (?:'[^']+'|"[^"]+"|\S+) && /.test(command) &&
+		command.endsWith(`&& ${expectedCommand}`)
+	);
 }
 
 function commandRailInvocationEmitsJson(command) {

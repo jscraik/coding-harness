@@ -8,12 +8,11 @@ import { runBrainStatus } from "../project-brain/status-cli.js";
 import { collectSessionContext } from "../session-context/collector.js";
 import type { SessionContextReport } from "../session-context/types.js";
 import {
-	ARCHITECTURE_CONTEXT_PATH,
+	buildArchitectureContext,
 	buildConditionalContext,
 	buildContextCommands,
 	buildOrientationRefs,
 	buildOrientTraversalHints,
-	DIAGRAM_MANIFEST_PATH,
 	type HarnessOrientCommandPrefix,
 	scopeOrientHarnessCommand,
 	summarizeAgentReadinessContextHealth,
@@ -259,22 +258,6 @@ function preflightStatus(
 		: "invalid";
 }
 
-/** Describe the lazy architecture context and its freshness check command. */
-function buildArchitectureContext(
-	repoRoot: string,
-): HarnessOrientArchitectureContext {
-	return {
-		path: ARCHITECTURE_CONTEXT_PATH,
-		status: pathExists(repoRoot, ARCHITECTURE_CONTEXT_PATH)
-			? "present"
-			: "missing",
-		manifestPath: DIAGRAM_MANIFEST_PATH,
-		readWhen:
-			"Read when touching src/**, scripts/**, command registry, architecture docs, generated diagrams, or module boundaries.",
-		validateWhenChangedCommand: "bash scripts/check-diagram-freshness.sh",
-	};
-}
-
 /** Inspect Project Brain as orientation evidence without promoting it to delivery truth. */
 function buildProjectBrain(
 	repoRoot: string,
@@ -368,6 +351,7 @@ function hasOrientWarningStatus(args: {
 	);
 }
 
+/** Check whether a required-mode preflight receipt passed. */
 function preflightReceiptSatisfiesRequiredMode(
 	preflightReceipt: HarnessOrientPreflightReceipt,
 ): boolean {

@@ -122,7 +122,7 @@ describe("collectHarnessOrient", () => {
 		expect(report.architectureContext).toMatchObject({
 			path: "AI/context/diagram-context.md",
 			status: "present",
-			validateWhenChangedCommand: "bash scripts/check-diagram-freshness.sh",
+			validateWhenChangedCommand: `cd ${repoRef} && bash scripts/check-diagram-freshness.sh`,
 		});
 		expect(report.projectBrain.authority).toBe("orientation_only");
 		expect(report.orientationRefs).toEqual(

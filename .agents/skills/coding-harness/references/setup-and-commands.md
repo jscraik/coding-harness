@@ -33,8 +33,11 @@
 Start fresh agents from:
 
 ```bash
-harness next --json
+harness orient --json
 ```
+
+Use `harness next --json` only after orientation when you need the next
+action-only follow-up command.
 
 First-contact help and catalogs:
 
@@ -49,14 +52,20 @@ When maintaining this source repo, avoid stale globals by proving the public
 command through the workspace-linked binary:
 
 ```bash
-pnpm exec harness next --json
+pnpm exec harness orient --json
 pnpm exec harness commands --json
+```
+
+After reviewing the orientation packet, ask for the action-only follow-up:
+
+```bash
+pnpm exec harness next --json
 ```
 
 Use the TypeScript entrypoint only when probing unbuilt implementation changes:
 
 ```bash
-node --import tsx src/cli.ts next --json
+node --import tsx src/cli.ts orient --json
 ```
 
 ## Install
