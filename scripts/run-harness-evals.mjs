@@ -5631,7 +5631,15 @@ async function runAgentNextActionParityFixture(scenario, fixturePath) {
 function writeColdAgentOrientationFixtureRepo(fixturePath) {
 	writeJson(path.join(fixturePath, "package.json"), {
 		name: "@brainwav/coding-harness",
+		scripts: {
+			test: "echo fixture-test",
+			"test:ci": "echo fixture-test-ci",
+		},
 	});
+	writeFileSync(
+		path.join(fixturePath, ".gitignore"),
+		"cold-agent-orientation.json\n",
+	);
 	mkdirSync(path.join(fixturePath, "src"), { recursive: true });
 	writeFileSync(
 		path.join(fixturePath, "src/cli.ts"),
@@ -5649,6 +5657,10 @@ function writeColdAgentOrientationFixtureRepo(fixturePath) {
 	});
 	mkdirSync(path.join(fixturePath, ".harness/memory"), { recursive: true });
 	writeFileSync(
+		path.join(fixturePath, ".harness/README.md"),
+		"# Harness\n\nexecution-input durable authority\n",
+	);
+	writeFileSync(
 		path.join(fixturePath, ".harness/active-artifacts.md"),
 		"# Current Active Route\n\n# Artifact Index\n",
 	);
@@ -5662,7 +5674,12 @@ function writeColdAgentOrientationFixtureRepo(fixturePath) {
 	);
 	writeFileSync(path.join(fixturePath, ".harness/review-log.md"), "# Review\n");
 	mkdirSync(path.join(fixturePath, "docs"), { recursive: true });
+	mkdirSync(path.join(fixturePath, "docs/agents"), { recursive: true });
 	writeFileSync(path.join(fixturePath, "docs/cli-reference.md"), "# CLI\n");
+	writeFileSync(
+		path.join(fixturePath, "docs/agents/06-security-and-governance.md"),
+		"# Security And Governance\n\nDestructive, global, and unsafe side effects require approval.\n",
+	);
 	initializeColdAgentOrientationFixtureGit(fixturePath);
 }
 
@@ -5769,7 +5786,7 @@ function commandRailInvocationEmitsJson(command) {
 		maxBuffer: 1024 * 1024,
 		timeout: 60_000,
 	});
-	if (result.status === null) return false;
+	if (result.status !== 0) return false;
 	try {
 		JSON.parse(result.stdout);
 		return true;
