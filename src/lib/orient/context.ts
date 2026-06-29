@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import type { AgentReadinessContextHealth } from "../agent-readiness/types.js";
 import type { SessionContextTraversalHint } from "../session-context/types.js";
 import type {
 	HarnessOrientConditionalContext,
@@ -168,6 +169,38 @@ export function scopeOrientHarnessCommand(
 	);
 }
 
+/** Normalize embedded agent-readiness context-health command hints for orient's selected repo command rail. */
+export function summarizeAgentReadinessContextHealth(
+	contextHealth: AgentReadinessContextHealth,
+	commandPrefix: HarnessOrientCommandPrefix,
+	repoRoot: string,
+): AgentReadinessContextHealth {
+	return {
+		...contextHealth,
+		canonicalReport: {
+			...contextHealth.canonicalReport,
+			command:
+				scopeOrientHarnessCommand(
+					contextHealth.canonicalReport.command,
+					commandPrefix,
+					repoRoot,
+				) ?? contextHealth.canonicalReport.command,
+		},
+		surfaces: contextHealth.surfaces.map((surface) => ({
+			...surface,
+			suggestedRefreshCommands: surface.suggestedRefreshCommands.map(
+				(command) =>
+					scopeOrientHarnessCommand(command, commandPrefix, repoRoot) ??
+					command,
+			),
+		})),
+		suggestedRefreshCommands: contextHealth.suggestedRefreshCommands.map(
+			(command) =>
+				scopeOrientHarnessCommand(command, commandPrefix, repoRoot) ?? command,
+		),
+	};
+}
+
 /** Rebuild session-context hints with the public command prefix orient selected. */
 export function buildOrientTraversalHints(
 	commandPrefix: HarnessOrientCommandPrefix,
@@ -213,13 +246,18 @@ export function buildConditionalContext(
 		{
 			when: "touching src/**, scripts/**, command registry, architecture docs, or module boundaries",
 			read: ARCHITECTURE_CONTEXT_PATH,
-			validate: "bash scripts/check-diagram-freshness.sh",
+			validate: scopedShellCommand(
+				repoRoot,
+				"bash scripts/check-diagram-freshness.sh",
+			),
 		},
 		{
 			when: "touching docs/**, README.md, AGENTS.md, templates, or PR/checklist surfaces",
 			read: "docs/agents/04-validation.md",
-			validate:
+			validate: scopedShellCommand(
+				repoRoot,
 				"bash scripts/run-harness-gate.sh docs-gate --mode required --json",
+			),
 		},
 		{
 			when: "touching command metadata, command docs, or agent command discovery",
@@ -240,6 +278,11 @@ function scopedHarnessCommand(
 	args: string,
 ): string {
 	return `cd ${shellQuote(repoRoot)} && ${commandPrefix} ${args}`;
+}
+
+/** Build a non-harness validation command that first enters the repository orient inspected. */
+function scopedShellCommand(repoRoot: string, command: string): string {
+	return `cd ${shellQuote(repoRoot)} && ${command}`;
 }
 
 function commandWithoutPrefix(command: string): string {

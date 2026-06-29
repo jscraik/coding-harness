@@ -152,7 +152,11 @@ describe("collectHarnessOrient", () => {
 			expect.arrayContaining([
 				expect.objectContaining({
 					read: "AI/context/diagram-context.md",
-					validate: "bash scripts/check-diagram-freshness.sh",
+					validate: `cd ${repoRef} && bash scripts/check-diagram-freshness.sh`,
+				}),
+				expect.objectContaining({
+					read: "docs/agents/04-validation.md",
+					validate: `cd ${repoRef} && bash scripts/run-harness-gate.sh docs-gate --mode required --json`,
 				}),
 			]),
 		);
@@ -319,6 +323,17 @@ describe("collectHarnessOrient", () => {
 				hint.command.includes("src/cli.ts"),
 			),
 		).toBe(false);
+		expect(
+			JSON.stringify(report.agentReadinessContextHealth).includes("src/cli.ts"),
+		).toBe(false);
+		expect(report.agentReadinessContextHealth.canonicalReport.command).toBe(
+			`cd ${repoRef} && harness context-health --json`,
+		);
+		expect(
+			report.agentReadinessContextHealth.suggestedRefreshCommands.every(
+				(command) => command.startsWith(`cd ${repoRef} && harness `),
+			),
+		).toBe(true);
 		expect(report.nextDecision.nextCommand).toBe(
 			`cd ${repoRef} && harness validation-plan --json`,
 		);
@@ -371,6 +386,18 @@ describe("collectHarnessOrient", () => {
 			)?.validate,
 		).toBe(
 			`cd ${repoRef} && node --import tsx src/cli.ts commands --json --for-agent`,
+		);
+		expect(
+			report.conditionalContext.find(
+				(context) => context.read === "AI/context/diagram-context.md",
+			)?.validate,
+		).toBe(`cd ${repoRef} && bash scripts/check-diagram-freshness.sh`);
+		expect(
+			report.conditionalContext.find(
+				(context) => context.read === "docs/agents/04-validation.md",
+			)?.validate,
+		).toBe(
+			`cd ${repoRef} && bash scripts/run-harness-gate.sh docs-gate --mode required --json`,
 		);
 	});
 });

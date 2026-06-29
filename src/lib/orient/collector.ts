@@ -16,6 +16,7 @@ import {
 	DIAGRAM_MANIFEST_PATH,
 	type HarnessOrientCommandPrefix,
 	scopeOrientHarnessCommand,
+	summarizeAgentReadinessContextHealth,
 	TRUTH_LANE_WARNINGS,
 } from "./context.js";
 import type {
@@ -83,7 +84,11 @@ export function collectHarnessOrient(
 			commandPrefix,
 			repoRoot,
 		),
-		agentReadinessContextHealth: agentReadiness.contextHealth,
+		agentReadinessContextHealth: summarizeAgentReadinessContextHealth(
+			agentReadiness.contextHealth,
+			commandPrefix,
+			repoRoot,
+		),
 		preflightReceipt,
 		architectureContext,
 		projectBrain,
