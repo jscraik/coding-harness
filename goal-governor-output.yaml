@@ -8,7 +8,7 @@ governor_start_command: "/goal Follow docs/goals/gap-register-ratchet-program/go
 truth_lanes:
   local_validation: current
   generated_artifacts: current
-  remote_pr_checks: failing
+  remote_pr_checks: pending
   review_threads: pending
   tracker_state: unknown
   merge_readiness: blocked
