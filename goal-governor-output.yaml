@@ -6,12 +6,12 @@ board_status: active
 next_action: continue
 governor_start_command: "/goal Follow docs/goals/gap-register-ratchet-program/goal.md"
 truth_lanes:
-  local_validation: pending
-  generated_artifacts: pending
-  remote_pr_checks: unknown
-  review_threads: unknown
+  local_validation: current
+  generated_artifacts: current
+  remote_pr_checks: failing
+  review_threads: pending
   tracker_state: unknown
-  merge_readiness: unknown
+  merge_readiness: blocked
 continuation_gate:
   queued_user_input: absent
   pending_work: present
@@ -31,8 +31,39 @@ native_blocker_audit:
 worker_must_pause: false
 work_should_pause: false
 validation_evidence:
-  - status: pending
-    reason: "Goal board was just created; validation runs after file creation."
+  - command: "bash scripts/check-goal-board.sh docs/goals/gap-register-ratchet-program"
+    outcome: pass
+    evidence_scope: "goal board schema and task flow"
+  - command: "jq -c . docs/goals/gap-register-ratchet-program/receipts.jsonl >/dev/null"
+    outcome: pass
+    evidence_scope: "goal board receipts JSONL parse"
+  - command: "pnpm exec markdownlint-cli2 docs/goals/gap-register-ratchet-program/goal.md"
+    outcome: pass
+    evidence_scope: "goal board markdown lint"
+  - command: "pnpm run coding-policy:route:changed"
+    outcome: pass
+    evidence_scope: "changed-file policy routing"
+  - command: "pnpm docs:lifecycle"
+    outcome: pass
+    evidence_scope: "governed documentation lifecycle metadata"
+  - command: "pnpm docs:lint"
+    outcome: pass
+    evidence_scope: "documentation lint"
+  - command: "pnpm run coding-policy:validate"
+    outcome: pass
+    evidence_scope: "coding-policy contract validation"
+  - command: "bash scripts/run-harness-gate.sh docs-gate --mode required --json"
+    outcome: pass
+    evidence_scope: "docs-gate required validation"
+  - command: "git diff --check"
+    outcome: pass
+    evidence_scope: "diff whitespace"
+  - command: "pnpm lint"
+    outcome: pass
+    evidence_scope: "repository lint"
+  - command: "pnpm typecheck"
+    outcome: pass
+    evidence_scope: "TypeScript typecheck"
 risks:
   - "This flow does not close the gap register by itself."
   - "Future gap fixes must keep local validation, CI, review, tracker, and merge readiness separate."
@@ -48,4 +79,4 @@ evidence_surface:
   - ".harness/research/audits/2026-06-30-evidence-led-codebase-gap-audit.md"
 remaining_uncertainty:
   - "First implementation gap has not been selected; report-derived default is GAP-001, safer-first alternative is GAP-003."
-  - "No PR exists for this flow yet."
+  - "PR #458 hosted check state, review-thread state, tracker state, and merge readiness remain separate external lanes."
