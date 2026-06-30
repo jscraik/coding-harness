@@ -40,6 +40,7 @@ if [[ -n "${GOAL_GOVERNOR_CHECK_BOARD:-}" ]]; then
 fi
 
 checker_candidates+=(
+	"$repo_root/scripts/check-goal-board.py"
 	"$repo_root/../agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py"
 )
 

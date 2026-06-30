@@ -157,11 +157,87 @@ function writeRuntimeEvidenceReceipts(repo: string, headSha: string) {
 	]);
 }
 
+function writeGenericGoalBoard(goalDir: string) {
+	mkdirSync(goalDir, { recursive: true });
+	writeFileSync(
+		join(goalDir, "goal.md"),
+		[
+			"# Fixture Goal",
+			"",
+			"## Table of Contents",
+			"",
+			"- [Scope](#scope)",
+			"",
+			"## Scope",
+			"",
+		].join("\n"),
+	);
+	writeFileSync(
+		join(goalDir, "state.yaml"),
+		[
+			"tasks:",
+			'  - id: "T001"',
+			'    type: "scout"',
+			'    assignee: "Scout"',
+			'    status: "active"',
+			'    objective: "Validate fixture board."',
+			'    receipt_id: "R001"',
+			'  - id: "T002"',
+			'    type: "judge"',
+			'    assignee: "Judge"',
+			'    status: "queued"',
+			'    objective: "Review fixture board."',
+			"",
+		].join("\n"),
+	);
+	writeFileSync(
+		join(goalDir, "receipts.jsonl"),
+		[
+			JSON.stringify({
+				id: "R001",
+				task_id: "T001",
+				decision: "created",
+				summary: "Fixture board created.",
+			}),
+			"",
+		].join("\n"),
+	);
+}
+
 describe("check-goal-board.py", () => {
 	afterEach(() => {
 		for (const root of tempRoots.splice(0)) {
 			rmSync(root, { force: true, recursive: true });
 		}
+	});
+
+	it("falls back to repo-local validation when no skill checkout exists", () => {
+		const root = createTempRoot("goal-board-local-fallback-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(repo, "docs/goals/example");
+		mkdirSync(scriptsDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeGenericGoalBoard(goalDir);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", "docs/goals/example"],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: "",
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					HOME: join(root, "home-without-agent-skills"),
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("PASS: goal board is valid");
 	});
 
 	it("honors the legacy Goal Governor override variable", () => {

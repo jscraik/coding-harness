@@ -37,9 +37,9 @@ Transcript source:
 - Video ID: 7PKEXIq25H0
 - Title: The Tessl Agent: Build Your Software Factory on Autopilot
 - Uploader: AI Native Dev
-- Transcript words: 10810
-- Raw metadata: .harness/research/2026-06-30-video-transcript-batch/raw/7PKEXIq25H0/7PKEXIq25H0.info.json
-- Raw captions: .harness/research/2026-06-30-video-transcript-batch/raw/7PKEXIq25H0/7PKEXIq25H0.en.vtt
+- Observed transcript words: 10810
+- Source index: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md
+- Raw transcript, caption, and metadata exports are not retained in durable docs.
 
 Evidence posture:
 
@@ -965,27 +965,27 @@ Only short quotes are included here; most evidence above is paraphrased to avoid
 
 Evidence anchors:
 
-- Transcript metadata and source boundary: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:1
-- Factory-building agent and CLI interface: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:143
-- Interactive-to-background migration and CI/CD suggestion: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:200
-- Agentic code review setup story: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:246
-- Evidence-backed skill creation from PRs, issues, and session logs: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:266
-- Team-owned review skill and CI/GitHub flow: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:306
-- Agent/model agnostic review execution: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:383
-- Human review risk gate and policy: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:426
-- Verifiers as focused LLM linting rules: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:471
-- Recurring daily/weekly improvement loop: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:537
-- Loop-first adoption and local maxima: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:610
-- Observation-derived evals: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:706
-- Cost optimization through boxed recurring workflows: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:794
-- Tessl Launch and environment primitives: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:943
-- Open modular factory ownership: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:1045
-- Context and review brain portability: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:1158
-- Skill sprawl and governance-first path: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:1242
-- Loop-first path and team-local scaling: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:1320
-- Product-shape thesis: tools, skills, harness, control center: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:1533
-- Outcome-oriented product interface: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:1580
-- Other loop examples: delegation scan, frontend failures, repo readiness, architecture review, flaky tests: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md:1660
+- Transcript metadata and source boundary: TS-A01.
+- Factory-building agent and CLI interface: TS-A18.
+- Interactive-to-background migration and CI/CD suggestion: TS-A02.
+- Agentic code review setup story: TS-A03.
+- Evidence-backed skill creation from PRs, issues, and session logs: TS-A04.
+- Team-owned review skill and CI/GitHub flow: TS-A05.
+- Agent/model agnostic review execution: TS-A06.
+- Human review risk gate and policy: TS-A07.
+- Verifiers as focused LLM linting rules: TS-A08.
+- Recurring daily/weekly improvement loop: TS-A09.
+- Loop-first adoption and local maxima: TS-A10.
+- Observation-derived evals: TS-A11.
+- Cost optimization through boxed recurring workflows: TS-A12.
+- Tessl Launch and environment primitives: TS-A13.
+- Open modular factory ownership: TS-A14.
+- Context and review brain portability: TS-A15.
+- Skill sprawl and governance-first path: TS-A16.
+- Loop-first path and team-local scaling: TS-A17.
+- Product-shape thesis: tools, skills, harness, control center: TS-A18.
+- Outcome-oriented product interface: TS-A19.
+- Other loop examples: delegation scan, frontend failures, repo readiness, architecture review, flaky tests: TS-A20.
 
 ## Final Assessment
 
@@ -1046,9 +1046,9 @@ Immediate implementation candidates:
 - Command: git status --short --branch -> pass (## HEAD (no branch))
 - Command: find .harness/research -maxdepth 3 -type f | sort | head -80 -> pass (confirmed existing transcript/research layout)
 - Command: yt-dlp --version -> pass (2026.06.09)
-- Command: head -120 .harness/research/2026-06-30-tessl-agent-video-transcript-research.md -> pass (confirmed existing transcript intake for target video)
-- Command: wc -l .harness/research/2026-06-30-tessl-agent-video-transcript-research.md .harness/research/deep/2026-05-18-sean-grove-evidence.md -> pass (confirmed source and prior deep extraction format sizes)
-- Command: rg -n "Tessl|agent|loop|spec|MCP|CI|validation|eval|GitHub|IDE|Cursor|Claude|Codex|factory|review|PR|test|workflow|background|memory|context|tool|autopilot" .harness/research/2026-06-30-tessl-agent-video-transcript-research.md | head -220 -> pass (identified evidence bands)
+- Command: head -120 .harness/research/2026-06-30-tessl-agent-video-transcript-research.md -> pass (confirmed original transcript intake for target video before redaction)
+- Command: wc -l .harness/research/2026-06-30-tessl-agent-video-transcript-research.md .harness/research/deep/2026-05-18-sean-grove-evidence.md -> pass (confirmed original source and prior deep extraction format sizes before redaction)
+- Command: rg -n "Tessl|agent|loop|spec|MCP|CI|validation|eval|GitHub|IDE|Cursor|Claude|Codex|factory|review|PR|test|workflow|background|memory|context|tool|autopilot" .harness/research/2026-06-30-tessl-agent-video-transcript-research.md | head -220 -> pass (identified original evidence bands before redaction)
 
 ## Promotion Boundary
 
