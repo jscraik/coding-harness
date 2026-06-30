@@ -157,7 +157,7 @@ tasks:
     expected_output: "Validated board plus first-gap recommendation or blocker."
     allowed_files: []
     verify:
-      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/gap-register-ratchet-program"
+      - "bash scripts/check-goal-board.sh docs/goals/gap-register-ratchet-program"
     stop_if:
       - "Board validation fails."
       - "Dirty work overlaps the selected gap's expected files."

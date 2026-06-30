@@ -45,7 +45,9 @@ each gap-fix slice.
 - Evidence extraction:
   .harness/research/deep/2026-06-30-tessl-agent-evidence.md
 - Gap-register working recommendation:
-  .codex/attachments/b2418e97-a9d5-45f4-ac90-c6907a49c6f5/pasted-text.txt
+  Incorporated into the tracked gap audit and this goal board. Future
+  continuations must use the repo-owned audit and board files above instead of
+  local attachment state.
 - Project north star:
   docs/roadmap/north-star.md
 - Agent-first status:
