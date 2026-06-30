@@ -215,20 +215,26 @@ def resolve_goal_dir(argv: list[str]) -> Path:
 
 
 def task_list_from_state(state: Mapping[str, object]) -> list[dict[str, object]]:
-    tasks = state.get("tasks")
-    if not isinstance(tasks, list):
+    raw_tasks = state.get("tasks")
+    if not isinstance(raw_tasks, list):
         return []
-    return [cast(dict[str, object], task) for task in tasks if isinstance(task, dict)]
+    tasks: list[dict[str, object]] = []
+    for raw_task in cast(list[object], raw_tasks):
+        if isinstance(raw_task, dict):
+            tasks.append(cast(dict[str, object], raw_task))
+    return tasks
 
 
 def parse_tasks_fallback(state_path: Path) -> list[dict[str, object]]:
     tasks: list[dict[str, object]] = []
     in_tasks = False
+    task_item_indent: int | None = None
     current: dict[str, object] | None = None
     for raw_line in state_path.read_text(encoding="utf-8").splitlines():
         stripped = raw_line.strip()
         if not stripped or stripped.startswith("#"):
             continue
+        indent = len(raw_line) - len(raw_line.lstrip())
         if raw_line.startswith("tasks:"):
             in_tasks = True
             continue
@@ -237,6 +243,10 @@ def parse_tasks_fallback(state_path: Path) -> list[dict[str, object]]:
         if not raw_line.startswith(" ") and not raw_line.startswith("-"):
             break
         if stripped.startswith("- "):
+            if task_item_indent is None:
+                task_item_indent = indent
+            if indent != task_item_indent:
+                continue
             if current is not None:
                 tasks.append(current)
             current = {}
@@ -246,6 +256,8 @@ def parse_tasks_fallback(state_path: Path) -> list[dict[str, object]]:
                 current[key.strip()] = parse_yaml_scalar(value.strip())
             continue
         if current is None or ":" not in stripped:
+            continue
+        if task_item_indent is not None and indent <= task_item_indent:
             continue
         key, value = stripped.split(":", 1)
         current[key.strip()] = parse_yaml_scalar(value.strip())
