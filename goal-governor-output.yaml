@@ -31,9 +31,8 @@ native_blocker_audit:
 worker_must_pause: false
 work_should_pause: false
 validation_evidence:
-  - command: "pending"
-    outcome: blocked
-    note: "Goal board was just created; validation runs after file creation."
+  - status: pending
+    reason: "Goal board was just created; validation runs after file creation."
 risks:
   - "This flow does not close the gap register by itself."
   - "Future gap fixes must keep local validation, CI, review, tracker, and merge readiness separate."

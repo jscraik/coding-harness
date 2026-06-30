@@ -1,3 +1,30 @@
+---
+doc_schema: coding-harness-doc/v1
+doc_type: governance
+authority: canon
+distribution: source-only
+audience:
+  - coding-harness-maintainer
+  - codex-agent
+lifecycle_state: active
+owner: coding-harness-maintainers
+created: 2026-06-30
+last_reviewed: 2026-06-30
+review_cadence: per-gap-slice
+maintenance_trigger:
+  - gap-register-audit-update
+  - goal-board-validation-change
+  - ratchet-ladder-change
+semver_impact: none
+validated_by:
+  - docs/goals/gap-register-ratchet-program/state.yaml
+depends_on:
+  - .harness/research/audits/2026-06-30-evidence-led-codebase-gap-audit.md
+  - docs/roadmap/north-star.md
+  - docs/roadmap/agent-first-status.md
+  - docs/agents/17-ci-required-checks.md
+---
+
 # Gap Register Ratchet Program Goal
 
 ## Table of Contents

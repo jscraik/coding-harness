@@ -52,14 +52,14 @@ The SynAIpse name better describes the product direction, but renaming the
 repo, package, CLI, templates, generated artifacts, CI references, and
 downstream surfaces in one step would create a high-noise migration.
 
-Current worktree evidence before this decision:
+Evidence supporting this decision:
 
-- The repo is on main.
-- The restored research/audit lane is local work:
+- The research/audit lane artifacts are checked in and provide durable evidence:
   - .harness/research/evidence-patterns.json
   - .harness/research/audits/2026-06-30-evidence-led-codebase-gap-audit.md
   - .harness/research/deep/2026-06-30-tessl-agent-evidence.md
-- The package and CLI identity remain @brainwav/coding-harness and harness.
+- The package and CLI identity remain @brainwav/coding-harness and harness
+  (verified in package.json).
 
 ## Why This Decision Exists
 
@@ -169,10 +169,10 @@ Revisit this decision when at least one of these is true:
 
 Facts:
 
-- git status --short --branch after stash pop showed the checkout on main with
-  only the restored research/audit edits listed.
-- git stash pop stash@{0} restored the Tessl research/audit files onto main and
-  dropped the cleanup stash.
+- The research/audit artifacts are checked in at:
+  - .harness/research/evidence-patterns.json
+  - .harness/research/audits/2026-06-30-evidence-led-codebase-gap-audit.md
+  - .harness/research/deep/2026-06-30-tessl-agent-evidence.md
 - package.json currently defines the package as @brainwav/coding-harness and
   the binary as harness.
 - The 2026-06-30 evidence-led audit grades the codebase as a strong
