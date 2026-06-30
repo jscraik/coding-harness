@@ -158,6 +158,7 @@ tasks:
     allowed_files: []
     verify:
       - "bash scripts/check-goal-board.sh docs/goals/gap-register-ratchet-program"
+      - "bash scripts/run-harness-gate.sh docs-gate --mode required --json"
     stop_if:
       - "Board validation fails."
       - "Dirty work overlaps the selected gap's expected files."
