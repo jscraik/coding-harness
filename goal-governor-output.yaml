@@ -1,54 +1,52 @@
 schema_version: 1
-mode: continue
-goal_path: docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md
+mode: create
+goal_path: docs/goals/gap-register-ratchet-program/goal.md
 native_goal_status: unknown
 board_status: active
 next_action: continue
+governor_start_command: "/goal Follow docs/goals/gap-register-ratchet-program/goal.md"
 truth_lanes:
-  local_validation: blocked
-  generated_artifacts: current
-  remote_pr_checks: not_rechecked
-  review_threads: not_rechecked
-  tracker_state: current
-  merge_readiness: not_rechecked
+  local_validation: pending
+  generated_artifacts: pending
+  remote_pr_checks: unknown
+  review_threads: unknown
+  tracker_state: unknown
+  merge_readiness: unknown
 continuation_gate:
   queued_user_input: absent
   pending_work: present
   decision: open
-  reason: >-
-    read goal.md and state.yaml first; receipts.jsonl selected R516 on current
-    main, and the remaining work is proof/authority closeout rather than a new
-    feature slice.
+  reason: "Board creation is the current work; implementation slices are not started."
+token_budget:
+  total_goal_budget_tokens: 250000
+  scout_gap_selection_tokens: 20000
+  worker_implementation_slice_tokens: 80000
+  judge_validation_review_synthesis_tokens: 30000
+  pm_pr_green_sweep_triage_tokens: 40000
+  rule: "Budget pressure is routing evidence, not completion evidence."
 native_blocker_audit:
-  observed_repeated_turns: 1
+  observed_repeated_turns: 0
   required_repeated_turns: 3
   gate_met: false
 worker_must_pause: false
 work_should_pause: false
 validation_evidence:
-  - command: jq -c . docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl >/dev/null
-    outcome: pass
-    note: receipts parsed after R516 receipt update.
-  - command: python3 scripts/check-goal-audit-freshness.py docs/goals/codex-runtime-evidence-verifier-cockpit --repo .
-    outcome: pass
-    note: audit freshness selected R516 at current main fe30a9bab5906475bf79f39403c36ef1c9bc9262.
-  - command: python3 scripts/check-goal-board.py docs/goals/codex-runtime-evidence-verifier-cockpit
-    outcome: pass
-    note: goal board passed after removing the stray current-route.json root artifact and repairing active-artifacts refs.
-  - command: node scripts/validate-goal-kanban-script.cjs .harness/implementation-notes/goal-kanban-board.html
-    outcome: pass
-    note: Kanban inline script parsed.
-  - command: bash scripts/run-harness-gate.sh docs-gate --mode required --json
-    outcome: pass
-    note: >-
-      docs-gate exited 0 with status pass after
-      docs/agents/07b-agent-governance.md was synchronized with AGENTS.md and
-      docs/agents/00-architecture-bootstrap.md. Advisory archive-candidate
-      warnings remain non-blocking.
-  - command: git diff --check
-    outcome: pass
-    note: whitespace check passed.
+  - command: "pending"
+    outcome: blocked
+    note: "Goal board was just created; validation runs after file creation."
 risks:
-  - cannot mark complete without final Judge/PM audit receipt
-  - missing completion evidence: independent reviewer artifacts are absent or not yet explicitly blocked
-  - Linear field-text currency remains unclaimed beyond repo-truth comment evidence
+  - "This flow does not close the gap register by itself."
+  - "Future gap fixes must keep local validation, CI, review, tracker, and merge readiness separate."
+  - "Proposed commands are not evidence until implemented and run."
+claim_ledger:
+  - claim: "Gap-register work should run as a ratchet program."
+    status: separated
+    evidence: "docs/goals/gap-register-ratchet-program/goal.md"
+evidence_surface:
+  - "docs/goals/gap-register-ratchet-program/goal.md"
+  - "docs/goals/gap-register-ratchet-program/state.yaml"
+  - "docs/goals/gap-register-ratchet-program/receipts.jsonl"
+  - ".harness/research/audits/2026-06-30-evidence-led-codebase-gap-audit.md"
+remaining_uncertainty:
+  - "First implementation gap has not been selected; report-derived default is GAP-001, safer-first alternative is GAP-003."
+  - "No PR exists for this flow yet."

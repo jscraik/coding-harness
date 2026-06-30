@@ -1,0 +1,206 @@
+version: 2
+goal:
+  slug: "gap-register-ratchet-program"
+  status: "active"
+  objective: "Govern closure of the 2026-06-30 evidence-led gap register as a one-gap-at-a-time ratchet program with testing, eval classification, simplify, commit, and PR green-sweep gates."
+  native_goal_id: null
+  native_thread_id: null
+  native_objective: "Follow docs/goals/gap-register-ratchet-program/goal.md"
+  native_status: null
+  token_budget: 250000
+  tokens_used: 0
+  time_used_seconds: 0
+  native_created_at: null
+  native_updated_at: null
+rules:
+  one_active_task: true
+  require_fresh_verification: true
+  require_final_audit: true
+completion_contract:
+  outcome: "Each accepted 2026-06-30 gap-register item is closed, explicitly blocked, or converted into a tracked implementation slice with a durable ratchet and current evidence."
+  verification_surface:
+    - "docs/goals/gap-register-ratchet-program/goal.md"
+    - "docs/goals/gap-register-ratchet-program/state.yaml"
+    - "docs/goals/gap-register-ratchet-program/receipts.jsonl"
+    - ".harness/research/audits/2026-06-30-evidence-led-codebase-gap-audit.md"
+    - "Slice-specific tests, validators, or schemas"
+    - "Slice-specific simplify output"
+    - "Slice-specific eval classification"
+    - "Slice-specific PR green-sweep evidence"
+  constraints:
+    - "One gap slice at a time unless Jamie explicitly authorizes a named exception."
+    - "Do not conflate local validation with CI, review, tracker, or merge-readiness truth."
+    - "Do not introduce a new validator, script, skill, or gate when an existing nearby mechanism can be improved."
+    - "Do not treat research-audit findings as accepted governance until promoted through a goal, spec, ADR, or implementation slice."
+    - "Preserve unrelated dirty worktree files."
+  boundaries:
+    - "This board authorizes flow creation and future gap-slice governance, not bulk implementation of all gaps."
+    - "A gap is not closed by prose alone."
+    - "A proposed command is not validation evidence until it exists and runs."
+    - "PR green-sweep may classify live PR state, but merge and destructive cleanup still require explicit authority."
+  iteration_policy: "Scout selects one gap, Worker implements the smallest ratchet-backed slice only after board activation, Judge verifies testing, eval classification, simplify output, and validation evidence, then PM runs PR green-sweep and records live PR truth before the next gap starts."
+  blocked_stop_condition: "Stop if the board is invalid, native and board state conflict, the selected gap lacks a concrete unsafe claim, validation cannot run, eval evidence is missing for an eval-shaped change, simplify cannot preserve behavior, PR truth is stale, or dirty work overlaps required files."
+continuation_gate:
+  native_status: "unknown"
+  thread_idle: "unknown"
+  goal_active: "pass"
+  queued_user_input: "absent"
+  pending_work: "present"
+  auto_continue_allowed: "yes"
+checks:
+  dirty_fingerprint: "Initial creation observed existing local artifact changes from the 2026-06-30 audit and SynAIpse ADR; future slices must preserve unrelated dirty files."
+  last_verification:
+    command: null
+    outcome: "unknown"
+    checked_at: null
+artifacts:
+  primary_flow:
+    path: "docs/goals/gap-register-ratchet-program/goal.md"
+    format: "markdown"
+    status: "present"
+  source_audit:
+    path: ".harness/research/audits/2026-06-30-evidence-led-codebase-gap-audit.md"
+    authority: "secondary-context"
+    status: "present"
+budget_policy:
+  total_goal_budget_tokens: 250000
+  default_lane_budgets:
+    scout_gap_selection: 20000
+    worker_implementation_slice: 80000
+    judge_validation_review_synthesis: 30000
+    pm_pr_green_sweep_triage: 40000
+  checkpoints:
+    - lane: "scout_gap_selection"
+      threshold: "75%"
+      required_evidence: "single selected gap or blocker receipt"
+    - lane: "worker_implementation_slice"
+      threshold: "50%"
+      required_evidence: "focused ratchet design"
+    - lane: "worker_implementation_slice"
+      threshold: "75%"
+      required_evidence: "proof command run or blocked with fallback"
+    - lane: "judge_validation_review_synthesis"
+      threshold: "75%"
+      required_evidence: "testing, eval classification, and simplify evidence"
+    - lane: "pm_pr_green_sweep_triage"
+      threshold: "75%"
+      required_evidence: "live PR truth refresh or blocker brief"
+  stop_states:
+    - "budgetLimited"
+    - "budget_limited"
+    - "usageLimited"
+    - "usage_limited"
+  rule: "Budget pressure is routing evidence, not completion evidence."
+gap_queue:
+  source: ".harness/research/audits/2026-06-30-evidence-led-codebase-gap-audit.md"
+  queue_status: "adopted_for_governed_flow"
+  items:
+    - id: "GAP-001"
+      title: "Prompt-context drift evidence is stale against live HEAD"
+      order: 1
+      first_ratchet_target: "prompt-context drift lifecycle and freshness validation"
+      report_basis: "highest-leverage rank 1 and immediate next action"
+    - id: "GAP-003"
+      title: "CLI reference advertises an invalid next mode"
+      order: 2
+      first_ratchet_target: "executable orient command example or CLI mode test"
+      report_basis: "safest first patch and highest-leverage rank 2"
+    - id: "GAP-002"
+      title: "Required-check and workflow authority drift"
+      order: 3
+      first_ratchet_target: "scripts/check-ci-required-check-source-parity.mjs"
+      report_basis: "highest-risk missing system and highest-leverage rank 3"
+    - id: "GAP-004"
+      title: "Agent-native ratchet checks are not part of the default static lane"
+      order: 4
+      first_ratchet_target: "proposed pnpm run agent-native:validate with current fallback commands"
+      report_basis: "best validation command to add first and highest-leverage rank 4"
+    - id: "GAP-006"
+      title: "CLI JSON contract manifest is narrower than public agent command surface"
+      order: 5
+      first_ratchet_target: "expanded CLI JSON contract manifest and validator"
+      report_basis: "highest-leverage rank 5"
+    - id: "GAP-007"
+      title: "Architecture warnings are baselined without visible repair metadata"
+      order: 6
+      first_ratchet_target: "architecture checker baseline metadata"
+      report_basis: "highest-leverage rank 6"
+    - id: "GAP-005"
+      title: "Root AGENTS.md is overloaded"
+      order: 7
+      first_ratchet_target: "front-door density or duplicate-policy guard"
+      report_basis: "highest-leverage rank 7"
+    - id: "GAP-008"
+      title: "Research audit artifacts need clearer advisory authority"
+      order: 8
+      first_ratchet_target: "research-audit authority banner and promotion path"
+      report_basis: "highest-leverage rank 8"
+tasks:
+  - id: "T001"
+    type: "scout"
+    assignee: "Scout"
+    status: "active"
+    objective: "Validate the new ratchet-program board and select the first candidate gap only after current dirty work and validation scope are reconciled."
+    inputs:
+      - "docs/goals/gap-register-ratchet-program/goal.md"
+      - "docs/goals/gap-register-ratchet-program/state.yaml"
+      - "docs/goals/gap-register-ratchet-program/receipts.jsonl"
+      - ".harness/research/audits/2026-06-30-evidence-led-codebase-gap-audit.md"
+      - "state.yaml:gap_queue"
+      - "docs/roadmap/north-star.md"
+      - "docs/roadmap/agent-first-status.md"
+    constraints:
+      - "Read-only gap selection until a slice contract is recorded."
+      - "No Worker implementation in this setup task."
+      - "Preserve existing local artifact changes."
+      - "Use the scout_gap_selection token budget and stop at the checkpoint if no single gap is selected."
+    expected_output: "Validated board plus first-gap recommendation or blocker."
+    allowed_files: []
+    verify:
+      - "PYTHONDONTWRITEBYTECODE=1 python3 /Users/jamiecraik/dev/agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py docs/goals/gap-register-ratchet-program"
+    stop_if:
+      - "Board validation fails."
+      - "Dirty work overlaps the selected gap's expected files."
+      - "No current executable validation fallback exists."
+      - "Token budget checkpoint is crossed without selected gap or blocker evidence."
+    receipt_id: "R001"
+  - id: "T002"
+    type: "judge"
+    assignee: "Judge"
+    status: "queued"
+    objective: "Before any gap implementation commit, verify the slice has testing proof, eval classification, simplify output, required validation, and truth-lane separation."
+    inputs:
+      - "Active gap slice receipt"
+      - "Changed files"
+      - "Validation command output"
+    constraints:
+      - "Read-only unless the board activates a scoped repair task."
+    expected_output: "Judge receipt approving commit gate or naming blocker."
+    allowed_files: []
+    verify: []
+    stop_if:
+      - "Testing proof is missing."
+      - "Eval-shaped work lacks eval-route evidence."
+      - "Simplify pass is absent."
+      - "Validation commands are proposed but not executable and no fallback ran."
+    receipt_id: null
+  - id: "T003"
+    type: "pm"
+    assignee: "PM"
+    status: "queued"
+    objective: "After a gap-fix PR exists, run PR green-sweep triage and record live PR, CI, review-thread, tracker, and merge-state lanes separately."
+    inputs:
+      - "PR URL"
+      - "Latest head SHA"
+      - "Local validation evidence"
+    constraints:
+      - "No merge, remote branch deletion, or worktree deletion without explicit owner authority."
+    expected_output: "PR green-sweep receipt or blocker brief."
+    allowed_files: []
+    verify: []
+    stop_if:
+      - "PR URL is missing."
+      - "Required checks are pending, failing, stale, or on an older head SHA."
+      - "Review threads are unresolved."
+      - "Merge authority is missing."
+    receipt_id: null
