@@ -23,7 +23,7 @@
 - [Boundaries](#boundaries)
 
 ## Prerequisites
-- Node.js `>=24.0.0`
+- Node.js `>=26.3.0`
 - `pnpm@10.33.0` for this source repo
 - `NPM_TOKEN` for private package install checks
 - `jq`, `rg`, `fd`, `git`, and `mise` when available
@@ -33,8 +33,11 @@
 Start fresh agents from:
 
 ```bash
-harness next --json
+harness orient --json
 ```
+
+Use `harness next --json` only after orientation when you need the next
+action-only follow-up command.
 
 First-contact help and catalogs:
 
@@ -45,11 +48,24 @@ harness commands --json
 harness --help --all-commands
 ```
 
-When maintaining this source repo, avoid stale globals:
+When maintaining this source repo, avoid stale globals by proving the public
+command through the workspace-linked binary:
 
 ```bash
-node --import tsx src/cli.ts next --json
-node --import tsx src/cli.ts commands --json
+pnpm exec harness orient --json
+pnpm exec harness commands --json
+```
+
+After reviewing the orientation packet, ask for the action-only follow-up:
+
+```bash
+pnpm exec harness next --json
+```
+
+Use the TypeScript entrypoint only when probing unbuilt implementation changes:
+
+```bash
+node --import tsx src/cli.ts orient --json
 ```
 
 ## Install

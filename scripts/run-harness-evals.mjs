@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync, spawnSync } from "node:child_process";
 import {
+	existsSync,
 	lstatSync,
 	mkdirSync,
 	readFileSync,
@@ -912,6 +913,8 @@ async function runLiveFixture(scenario) {
 			result = runAgenticEvalContractCoverageFixture(scenario, fixturePath);
 		} else if (scenario.id === "agent-next-action-parity") {
 			result = await runAgentNextActionParityFixture(scenario, fixturePath);
+		} else if (scenario.id === "cold-agent-orientation-rail") {
+			result = await runColdAgentOrientationRailFixture(scenario, fixturePath);
 		} else if (scenario.id === "agent-native-ratchet-discovery") {
 			result = await runAgentNativeRatchetDiscoveryFixture(
 				scenario,
@@ -5623,6 +5626,280 @@ async function runAgentNextActionParityFixture(scenario, fixturePath) {
 					"pr_closeout_artifact_invalid",
 		),
 	]);
+}
+
+function writeColdAgentOrientationFixtureRepo(fixturePath) {
+	writeJson(path.join(fixturePath, "package.json"), {
+		name: "@brainwav/coding-harness",
+		scripts: {
+			test: "echo fixture-test",
+			"test:ci": "echo fixture-test-ci",
+		},
+	});
+	writeFileSync(
+		path.join(fixturePath, ".gitignore"),
+		"cold-agent-orientation.json\n",
+	);
+	mkdirSync(path.join(fixturePath, "src"), { recursive: true });
+	writeFileSync(
+		path.join(fixturePath, "src/cli.ts"),
+		`import { run } from ${JSON.stringify(pathToFileURL(path.join(REPO_ROOT, "src/cli.ts")).href)};\nrun(process.argv.slice(2));\n`,
+	);
+	writeFileSync(path.join(fixturePath, "AGENTS.md"), "# Agents\n");
+	writeFileSync(path.join(fixturePath, "CODESTYLE.md"), "# Codestyle\n");
+	mkdirSync(path.join(fixturePath, "AI/context"), { recursive: true });
+	writeFileSync(
+		path.join(fixturePath, "AI/context/diagram-context.md"),
+		"# Diagram context\n",
+	);
+	mkdirSync(path.join(fixturePath, ".harness/knowledge"), {
+		recursive: true,
+	});
+	mkdirSync(path.join(fixturePath, ".harness/memory"), { recursive: true });
+	writeFileSync(
+		path.join(fixturePath, ".harness/README.md"),
+		"# Harness\n\nexecution-input durable authority\n",
+	);
+	writeFileSync(
+		path.join(fixturePath, ".harness/active-artifacts.md"),
+		"# Current Active Route\n\n# Artifact Index\n",
+	);
+	writeFileSync(
+		path.join(fixturePath, ".harness/knowledge/INDEX.md"),
+		"# Knowledge\n",
+	);
+	writeFileSync(
+		path.join(fixturePath, ".harness/memory/LEARNINGS.md"),
+		"# Learnings\n",
+	);
+	writeFileSync(path.join(fixturePath, ".harness/review-log.md"), "# Review\n");
+	mkdirSync(path.join(fixturePath, "docs"), { recursive: true });
+	mkdirSync(path.join(fixturePath, "docs/agents"), { recursive: true });
+	writeFileSync(path.join(fixturePath, "docs/cli-reference.md"), "# CLI\n");
+	writeFileSync(
+		path.join(fixturePath, "docs/agents/06-security-and-governance.md"),
+		"# Security And Governance\n\nDestructive, global, and unsafe side effects require approval.\n",
+	);
+	initializeColdAgentOrientationFixtureGit(fixturePath);
+}
+
+function initializeColdAgentOrientationFixtureGit(fixturePath) {
+	execFileSync("git", ["init"], { cwd: fixturePath, stdio: "ignore" });
+	execFileSync("git", ["config", "user.email", "fixture@example.invalid"], {
+		cwd: fixturePath,
+		stdio: "ignore",
+	});
+	execFileSync("git", ["config", "user.name", "Fixture Runner"], {
+		cwd: fixturePath,
+		stdio: "ignore",
+	});
+	execFileSync("git", ["add", "."], { cwd: fixturePath, stdio: "ignore" });
+	execFileSync("git", ["commit", "-m", "cold agent orientation fixture"], {
+		cwd: fixturePath,
+		stdio: "ignore",
+	});
+}
+
+function writeColdAgentOrientationEvidence({
+	fixturePath,
+	scenario,
+	commandNames,
+	orient,
+}) {
+	const reportPath = path.join(fixturePath, "cold-agent-orientation.json");
+	writeJson(reportPath, {
+		schemaVersion: "cold-agent-orientation-rail-fixture/v1",
+		sourceScenario: scenario.id,
+		commandNames,
+		orient,
+	});
+	return reportPath;
+}
+
+function coldAgentOrientationAssertions({ commandNames, orient, reportPath }) {
+	return [
+		assertion(
+			"cold agent discovers orient and next from the command catalog",
+			commandNames.includes("orient") && commandNames.includes("next"),
+		),
+		assertion(
+			"orient packet points to session-context and agent-readiness",
+			orient.contextCommands.some(
+				(command) => command.id === "session-context",
+			) &&
+				orient.contextCommands.some(
+					(command) => command.id === "agent-readiness",
+				),
+		),
+		assertion(
+			"orient command rail is scoped to the inspected repository",
+			orient.contextCommands.every((command) =>
+				command.command.includes(orient.repoRoot),
+			) &&
+				orient.sessionContext.nextTraversalHints.every((hint) =>
+					hint.command.includes(orient.repoRoot),
+				),
+		),
+		assertion(
+			"orient command rail emits runnable JSON commands",
+			orient.contextCommands.every((command) =>
+				commandRailInvocationEmitsJson(command.command),
+			),
+		),
+		assertion(
+			"architecture context is lazy and has a freshness check",
+			orient.architectureContext.path === "AI/context/diagram-context.md" &&
+				commandScopesToRepo(
+					orient.architectureContext.validateWhenChangedCommand,
+					orient.repoRoot,
+					"bash scripts/check-diagram-freshness.sh",
+				) &&
+				orient.conditionalContext.some(
+					(item) =>
+						item.read === "AI/context/diagram-context.md" &&
+						commandScopesToRepo(
+							item.validate,
+							orient.repoRoot,
+							"bash scripts/check-diagram-freshness.sh",
+						),
+				),
+		),
+		assertion(
+			"missing preflight receipt stays explicit with recovery command",
+			orient.preflightReceipt.status === "unobserved" &&
+				orient.preflightReceipt.command ===
+					"bash scripts/codex-preflight.sh --stack auto --mode required",
+		),
+		assertion(
+			"truth-lane warnings block external readiness claims",
+			["pr_ci", "review_threads", "tracker", "merge_readiness"].every((lane) =>
+				orient.truthLaneWarnings.some((warning) => warning.lane === lane),
+			),
+		),
+		assertion(
+			"orientation fixture writes durable eval evidence",
+			readJson(reportPath).schemaVersion ===
+				"cold-agent-orientation-rail-fixture/v1",
+		),
+	];
+}
+
+function commandScopesToRepo(command, _repoRoot, expectedCommand) {
+	return (
+		typeof command === "string" &&
+		/^cd (?:'[^']+'|"[^"]+"|\S+) && /.test(command) &&
+		command.endsWith(`&& ${expectedCommand}`)
+	);
+}
+
+function commandRailInvocationEmitsJson(command) {
+	const shellCommand = commandRailShellCommand();
+	if (!shellCommand) return false;
+	const result = spawnSync(shellCommand, ["-lc", command], {
+		cwd: REPO_ROOT,
+		encoding: "utf8",
+		maxBuffer: 1024 * 1024,
+		timeout: 60_000,
+	});
+	if (result.status !== 0) return false;
+	try {
+		JSON.parse(result.stdout);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+/** Select an available POSIX shell for command-rail execution in local and CI environments. */
+function commandRailShellCommand() {
+	const candidates = [
+		process.env.SHELL,
+		"/bin/bash",
+		"bash",
+		"/bin/sh",
+		"sh",
+	].filter((candidate, index, values) => {
+		return typeof candidate === "string" && values.indexOf(candidate) === index;
+	});
+	return (
+		candidates.find((candidate) => {
+			if (candidate.includes("/") && !existsSync(candidate)) return false;
+			const result = spawnSync(candidate, ["-lc", "true"], {
+				cwd: REPO_ROOT,
+				encoding: "utf8",
+				timeout: 5_000,
+			});
+			return result.status === 0;
+		}) ?? null
+	);
+}
+
+async function runColdAgentOrientationRailFixture(scenario, fixturePath) {
+	writeColdAgentOrientationFixtureRepo(fixturePath);
+	const orient = runSourceHarnessJsonCommand([
+		"orient",
+		"--json",
+		"--repo-root",
+		fixturePath,
+	]);
+	const catalog = runSourceHarnessJsonCommand([
+		"commands",
+		"--json",
+		"--for-agent",
+		"--mode",
+		"orient",
+	]);
+	const commandNames = catalog.commands.map((command) => command.name);
+	const reportPath = writeColdAgentOrientationEvidence({
+		fixturePath,
+		scenario,
+		commandNames,
+		orient,
+	});
+
+	return fixtureResult(
+		scenario.id,
+		coldAgentOrientationAssertions({ commandNames, orient, reportPath }),
+	);
+}
+
+function sourceHarnessCommand(args) {
+	const builtCliPath = path.join(REPO_ROOT, "dist/cli.js");
+	if (existsSync(builtCliPath)) {
+		return {
+			command: "pnpm",
+			args: ["exec", "harness", ...args],
+			display: `pnpm exec harness ${args.join(" ")}`,
+		};
+	}
+	const sourceCliPath = path.join(REPO_ROOT, "src/cli.ts");
+	return {
+		command: "node",
+		args: ["--import", "tsx", sourceCliPath, ...args],
+		display: `node --import tsx src/cli.ts ${args.join(" ")}`,
+	};
+}
+
+function runSourceHarnessJsonCommand(args) {
+	const invocation = sourceHarnessCommand(args);
+	const result = runCanaryProcess(
+		invocation.command,
+		invocation.args,
+		REPO_ROOT,
+		60_000,
+	);
+	if (result.exitCode !== 0) {
+		throw new Error(
+			`${invocation.display} failed with exit code ${result.exitCode}: ${summarizeStderr(result.stderr)}`,
+		);
+	}
+	const parsed = parseJsonOutput(result.stdout);
+	if (!parsed.ok) {
+		throw new Error(
+			`${invocation.display} did not emit JSON stdout: ${summarizeCanaryProcessOutput(result.stdout)}`,
+		);
+	}
+	return parsed.value;
 }
 
 async function runAgentNativeRatchetDiscoveryFixture(scenario, fixturePath) {

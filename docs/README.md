@@ -52,7 +52,7 @@ depends_on:
 
 ### Workflows
 
-- [Brand](./brand/README.md) — synAIpse name, descriptor, logo, and rename boundary
+- [Brand](./brand/README.md) — SynAIpse name, descriptor, logo, and rename boundary
 - [Linear production workflow](./agents/13-linear-production-workflow.md) — issue lifecycle, states, transitions
 - [Lifecycle Harness](./lifecycle/issue-to-main.md) — issue-to-main truth lanes from Linear issue to synced main
 - [Truth lanes](./lifecycle/truth-lanes.md) — separate status lanes for local, PR, CI, review, tracker, artifact, merge, main-sync, and learning evidence

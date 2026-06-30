@@ -24,6 +24,7 @@ import {
 
 const AGENT_COMMAND_RAIL_NAMES = [
 	"next",
+	"orient",
 	"agent-readiness",
 	"agent-native-ratchets",
 	"commands",
@@ -44,6 +45,7 @@ const AGENT_COMMAND_RAIL_NAMES = [
 ] as const;
 const AGENT_ORIENT_COMMAND_RAIL_NAMES = [
 	"next",
+	"orient",
 	"agent-readiness",
 	"agent-native-ratchets",
 	"commands",
@@ -85,6 +87,7 @@ describe("command registry", () => {
 		expect(MIGRATED_COMMAND_NAMES).toEqual(capabilityNames);
 		expect(MIGRATED_COMMAND_NAMES).toContain("commands");
 		expect(MIGRATED_COMMAND_NAMES).toContain("contract");
+		expect(MIGRATED_COMMAND_NAMES).toContain("orient");
 		expect(MIGRATED_COMMAND_NAMES).toContain("session-context");
 		expect(MIGRATED_COMMAND_NAMES).toContain("decision-request");
 		expect(MIGRATED_COMMAND_NAMES).not.toContain("repo");
@@ -115,6 +118,53 @@ describe("command registry", () => {
 			const parsed = JSON.parse(String(output));
 			expect(parsed.schemaVersion).toBe("session-context/v1");
 			expect(parsed.repoRoot).toBe(process.cwd());
+		} finally {
+			infoSpy.mockRestore();
+		}
+	});
+
+	it("dispatches orient from registry", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		try {
+			const result = dispatchRegistryCommand("orient", [
+				"orient",
+				"--repo-root",
+				".",
+				"--json",
+			]);
+			expect(result?.spec.name).toBe("orient");
+			expect(result?.result).toBe(0);
+
+			const output = infoSpy.mock.calls.at(-1)?.[0];
+			expect(typeof output).toBe("string");
+			const parsed = JSON.parse(String(output));
+			expect(parsed.schemaVersion).toBe("harness-orient/v1");
+			expect(parsed.evidenceUse).toBe("orientation");
+			expect(parsed.nextDecision.schemaVersion).toBe("harness-decision/v1");
+			expect(parsed.preflightReceipt.path).toBe(
+				".harness/runtime/codex-preflight-status.json",
+			);
+			expect(
+				parsed.contextCommands.map((command: { id: string }) => command.id),
+			).toEqual([
+				"next",
+				"session-context",
+				"agent-readiness",
+				"commands-orient",
+			]);
+			expect(
+				parsed.truthLaneWarnings.map(
+					(warning: { lane: string }) => warning.lane,
+				),
+			).toEqual([
+				"local_code",
+				"runtime_artifact",
+				"pr_ci",
+				"review_threads",
+				"tracker",
+				"merge_readiness",
+			]);
 		} finally {
 			infoSpy.mockRestore();
 		}
@@ -344,12 +394,12 @@ describe("command registry", () => {
 		expect(new Set(names).size).toBe(names.length);
 	});
 
-	it("keeps the first cockpit help surface limited to the runnable memory rule", () => {
+	it("keeps the first cockpit help surface limited to first-contact commands", () => {
 		const cockpitRows = getRegistryCommandHelpRows()
 			.filter((row) => row.tier === "cockpit")
 			.map((row) => row.name);
 
-		expect(cockpitRows).toEqual(["next"]);
+		expect(cockpitRows).toEqual(["orient", "next"]);
 		expect(cockpitRows).not.toContain("check");
 		expect(cockpitRows).not.toContain("pr-ready");
 		expect(cockpitRows).not.toContain("fix-review");
@@ -656,7 +706,7 @@ describe("getRegistryCommandCapabilities", () => {
 			.filter((capability) => capability.tier === "cockpit")
 			.map((capability) => capability.name);
 
-		expect(cockpitNames).toEqual(["check", "next"]);
+		expect(cockpitNames).toEqual(["check", "orient", "next"]);
 		expect(MIGRATED_COMMAND_NAMES).toEqual(
 			expect.arrayContaining(cockpitNames),
 		);
@@ -674,6 +724,7 @@ describe("getRegistryCommandCapabilities", () => {
 		);
 		const expected = [
 			["check", "cockpit", "both", ["next"]],
+			["orient", "cockpit", "agent", []],
 			["next", "cockpit", "agent", []],
 			["session-context", "domain", "agent", ["next"]],
 			["decision-request", "domain", "agent", ["next", "pr-ready"]],
@@ -703,6 +754,10 @@ describe("getRegistryCommandCapabilities", () => {
 			]),
 		);
 
+		expect(capabilitiesByName.get("orient")).toMatchObject({
+			agentMode: "orient",
+			visibility: "default",
+		});
 		expect(capabilitiesByName.get("next")).toMatchObject({
 			agentMode: "orient",
 			visibility: "default",
@@ -1340,7 +1395,7 @@ describe("'commands' command execution", () => {
 
 			expect(commandNames).toEqual(expectedNames);
 			expect(parsed.commandCount).toBe(expectedNames.length);
-			expect(parsed.commandCount).toBeLessThan(11);
+			expect(parsed.commandCount).toBeLessThan(12);
 		} finally {
 			infoSpy.mockRestore();
 		}
@@ -1472,7 +1527,7 @@ describe("getRegistryCommandHelpRows (updated)", () => {
 	it("returns only default first-contact rows by default", () => {
 		const helpRows = getRegistryCommandHelpRows();
 
-		expect(helpRows.map((r) => r.name)).toEqual(["next"]);
+		expect(helpRows.map((r) => r.name)).toEqual(["orient", "next"]);
 	});
 
 	it("returns full capability names when full help is requested", () => {

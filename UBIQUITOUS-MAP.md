@@ -16,7 +16,7 @@ or update the canonical term table only when the work changes meaning.
 
 | Context | Canonical Terms | Use When |
 | --- | --- | --- |
-| Product identity | synAIpse, AI Delivery Harness, Coding Harness | Separating external product language from repository/package identity. |
+| Product identity | SynAIpse, AI Delivery Harness, Coding Harness | Separating external product language from repository/package identity. |
 | Delivery truth | Truth Lane, Claim Authority, Safety Floor, Outcome Closeout Schema | Describing what a piece of evidence can and cannot prove. |
 | Agent operating model | Lifecycle Harness, Expected Outcome Contract, Portable Agent Operating System | Explaining the issue-to-main agent workflow and north-star outcome. |
 | Command architecture | Command Facade, Command Core, Output Renderer, Deep Module Boundary | Reviewing CLI surface area, module placement, or architecture bloat. |

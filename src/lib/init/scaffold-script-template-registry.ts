@@ -168,6 +168,11 @@ export const CODEX_AND_WORKFLOW_SCRIPT_TEMPLATES: readonly Template[] = [
 		render: () => renderPackagedRootFile("scripts/resolve-circleci-pr-ref.sh"),
 	},
 	{
+		path: "scripts/read-circleci-pr-metadata.sh",
+		render: () =>
+			renderPackagedRootFile("scripts/read-circleci-pr-metadata.sh"),
+	},
+	{
 		path: "scripts/check-codestyle-parity.sh",
 		render: () => renderCheckCodestyleParityScript(),
 	},

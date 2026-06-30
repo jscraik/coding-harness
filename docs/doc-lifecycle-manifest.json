@@ -124,7 +124,7 @@
 		},
 		{
 			"path": "docs/brand/README.md",
-			"purpose": "Canonical source-repository brand language, logo asset, and rename boundary for synAIpse.",
+			"purpose": "Canonical source-repository brand language, logo asset, and rename boundary for SynAIpse.",
 			"audience": [
 				"human-operator",
 				"codex-agent",
@@ -214,7 +214,7 @@
 		},
 		{
 			"path": "docs/lifecycle/issue-to-main.md",
-			"purpose": "Canonical issue-to-main operating model for synAIpse lifecycle work.",
+			"purpose": "Canonical issue-to-main operating model for SynAIpse lifecycle work.",
 			"audience": [
 				"human-operator",
 				"codex-agent",
@@ -237,7 +237,7 @@
 		},
 		{
 			"path": "docs/domain/context-map.md",
-			"purpose": "Bounded-context map for synAIpse lifecycle truth lanes and claim authority.",
+			"purpose": "Bounded-context map for SynAIpse lifecycle truth lanes and claim authority.",
 			"audience": [
 				"human-operator",
 				"codex-agent",

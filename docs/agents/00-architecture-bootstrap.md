@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-24
+last_validated: 2026-06-28
 ---
 
 # Architecture bootstrap
@@ -212,6 +212,14 @@ model. Keep the runtime schema, typed artifact contract, next-command tests,
 and generated architecture context synchronized, and keep the lane advisory:
 `orient`, `prove`, `repair`, `review`, and `handoff` route operator work
 without proving CI, review-thread state, tracker state, or merge readiness.
+Cold-start orientation rail changes are architecture-adjacent when they alter
+`harness orient --json`, `harness-orient/v1`, `src/lib/orient/**`,
+`src/commands/orient.ts`, `src/lib/cli/registry/orient-command-spec.ts`,
+`src/commands/next-orientation-meta.ts`, or command-catalog orientation
+metadata. Keep generated architecture context, this guide, `AGENTS.md`,
+`README.md`, and `docs/cli-reference.md` synchronized so fresh-agent routing
+stays read-only orientation evidence and does not prove CI, review-thread
+state, tracker state, or merge readiness.
 Runtime-card evidence producer changes are architecture-artifact changes because
 they add durable evidence artifacts consumed by the agent cockpit. Refresh
 `AI/context/diagram-context.md` and keep `AGENTS.md`,

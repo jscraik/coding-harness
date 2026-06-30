@@ -21,18 +21,18 @@ jobs:
       - run:
           name: Verify GH token wiring
           command: |
-            if [ -n "${GH_TOKEN:-}" ]; then
-              echo "GH_TOKEN is already available for gh-backed steps."
-            elif [ -n "${GITHUB_TOKEN:-}" ]; then
-              export GH_TOKEN="${GITHUB_TOKEN}"
-              echo 'export GH_TOKEN="${GITHUB_TOKEN}"' >> "$BASH_ENV"
-              echo "Promoted GITHUB_TOKEN to GH_TOKEN for gh-backed steps."
-            elif [ -n "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
+            if [ -n "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
               export GH_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"
               export GITHUB_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"
               echo 'export GH_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"' >> "$BASH_ENV"
               echo 'export GITHUB_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"' >> "$BASH_ENV"
               echo "Promoted GITHUB_PERSONAL_ACCESS_TOKEN to GH_TOKEN/GITHUB_TOKEN for gh-backed steps."
+            elif [ -n "${GH_TOKEN:-}" ]; then
+              echo "GH_TOKEN is already available for gh-backed steps."
+            elif [ -n "${GITHUB_TOKEN:-}" ]; then
+              export GH_TOKEN="${GITHUB_TOKEN}"
+              echo 'export GH_TOKEN="${GITHUB_TOKEN}"' >> "$BASH_ENV"
+              echo "Promoted GITHUB_TOKEN to GH_TOKEN for gh-backed steps."
             else
               echo "GH_TOKEN/GITHUB_PERSONAL_ACCESS_TOKEN not set; gh-backed steps may fail."
             fi
@@ -126,9 +126,15 @@ jobs:
                 attempt=$(( attempt + 1 ))
               done
             }
+            install_mise_without_github_tokens() {
+              (
+                unset GH_TOKEN GITHUB_TOKEN GITHUB_PERSONAL_ACCESS_TOKEN
+                mise install "$@"
+              )
+            }
             export PATH="$HOME/.local/bin:$PATH"
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
-            retry_cmd 3 mise install uv
+            retry_cmd 3 install_mise_without_github_tokens uv
             uv_path="$(mise which uv)"
             if [[ -z "$uv_path" ]]; then
               echo "Error: mise which uv returned nothing" >&2
@@ -220,7 +226,7 @@ workflows:
           command: |
             pr_ref="$(HARNESS_CIRCLECI_PR_REF_CHECK_NAME=pr-template GH_BIN="$GH_BIN" bash scripts/resolve-circleci-pr-ref.sh)"
             export PR_TEMPLATE_BODY
-            PR_TEMPLATE_BODY="$("$GH_BIN" pr view "$pr_ref" --json body --jq .body)"
+            PR_TEMPLATE_BODY="$(GH_BIN="$GH_BIN" bash scripts/read-circleci-pr-metadata.sh "$pr_ref" | jq -r '.body // ""')"
             bash scripts/run-harness-gate.sh pr-template-gate --json
           filters:
             tags:
@@ -247,6 +253,27 @@ workflows:
           name: orb-pinning
           check_name: orb-pinning
           command: |
+            retry_cmd() {
+              local max_attempts="${1:-3}"
+              shift
+              local attempt=1
+              until "$@"; do
+                if (( attempt >= max_attempts )); then
+                  return 1
+                fi
+                local sleep_seconds=$(( attempt * 5 ))
+                echo "Command failed (attempt ${attempt}/${max_attempts}): $*"
+                echo "Retrying in ${sleep_seconds}s..."
+                sleep "${sleep_seconds}"
+                attempt=$(( attempt + 1 ))
+              done
+            }
+            install_mise_without_github_tokens() {
+              (
+                unset GH_TOKEN GITHUB_TOKEN GITHUB_PERSONAL_ACCESS_TOKEN
+                mise install "$@"
+              )
+            }
             packages=()
             if ! dpkg -s python3-venv >/dev/null 2>&1; then
               packages+=("python3-venv")
@@ -255,13 +282,13 @@ workflows:
               packages+=("python3-pip")
             fi
             if (( ${#packages[@]} > 0 )); then
-              sudo apt-get update
-              sudo apt-get install -y "${packages[@]}"
+              retry_cmd 3 sudo apt-get update
+              retry_cmd 3 sudo apt-get install -y "${packages[@]}"
             fi
             mkdir -p "$HOME/.local/bin" "$HOME/.local/share"
             export PATH="$HOME/.local/bin:$PATH"
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
-            mise install rust@stable
+            retry_cmd 3 install_mise_without_github_tokens rust@stable
             if [[ -f "$HOME/.cargo/env" ]]; then
               # rustup does not update the current shell PATH for non-interactive jobs.
               . "$HOME/.cargo/env"
@@ -270,12 +297,12 @@ workflows:
             SEMGREP_VENV="$HOME/.local/share/semgrep-venv-${SEMGREP_VERSION}"
             if [[ ! -x "$SEMGREP_VENV/bin/semgrep" ]]; then
               python3 -m venv "$SEMGREP_VENV"
-              "$SEMGREP_VENV/bin/python" -m pip install --quiet --upgrade pip "semgrep>=${SEMGREP_VERSION},<2.0.0"
+              retry_cmd 3 "$SEMGREP_VENV/bin/python" -m pip install --quiet --upgrade pip "semgrep==${SEMGREP_VERSION}"
             fi
             ln -sf "$SEMGREP_VENV/bin/semgrep" "$HOME/.local/bin/semgrep"
             export MISE_CARGO_BINSTALL=false
             export MISE_NODE_VERIFY=false
-            mise install \
+            retry_cmd 3 install_mise_without_github_tokens \
               node pnpm python uv cargo:prek \
               npm:@brainwav/diagram npm:@argos-ci/cli cosign cloudflared npm:vitest \
               ruff npm:eslint npm:agent-browser npm:agentation npm:agentation-mcp \

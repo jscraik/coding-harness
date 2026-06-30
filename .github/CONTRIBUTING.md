@@ -1,4 +1,7 @@
-# Contributing to Coding Harness
+# Contributing to SynAIpse
+
+This is the contribution guide for the coding-harness repository and package
+implementation of the SynAIpse AI Delivery Harness.
 
 ## Table of Contents
 

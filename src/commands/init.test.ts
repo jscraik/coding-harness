@@ -124,6 +124,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/validate-codestyle.sh",
 	"scripts/check-node-engine.mjs",
 	"scripts/resolve-circleci-pr-ref.sh",
+	"scripts/read-circleci-pr-metadata.sh",
 	"scripts/with-validation-lock.sh",
 	"scripts/check-validation-locks.sh",
 	"scripts/check-codestyle-parity.sh",
@@ -463,11 +464,18 @@ describe("runInit", () => {
 			);
 			expect(circleConfig).toContain("mise trust --yes .mise.toml");
 			expect(circleConfig).toContain("name: Ensure pnpm available");
+			expect(circleConfig).toContain("install_mise_without_github_tokens");
+			expect(circleConfig).toContain(
+				"unset GH_TOKEN GITHUB_TOKEN GITHUB_PERSONAL_ACCESS_TOKEN",
+			);
 			expect(circleConfig).toContain(
 				'export GH_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"',
 			);
 			expect(circleConfig).toContain(
 				'export GITHUB_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"',
+			);
+			expect(circleConfig.indexOf("GITHUB_PERSONAL_ACCESS_TOKEN")).toBeLessThan(
+				circleConfig.indexOf("GH_TOKEN is already available"),
 			);
 			expect(circleConfig).toContain("run-governance-check:");
 			expect(circleConfig).toContain("check_name:");
@@ -490,6 +498,9 @@ describe("runInit", () => {
 				"HARNESS_CIRCLECI_PR_REF_CHECK_NAME=pr-template",
 			);
 			expect(circleConfig).toContain("bash scripts/resolve-circleci-pr-ref.sh");
+			expect(circleConfig).toContain(
+				"bash scripts/read-circleci-pr-metadata.sh",
+			);
 			expect(circleConfig).toContain(
 				"bash scripts/run-harness-gate.sh pr-template-gate --json",
 			);
@@ -529,7 +540,9 @@ describe("runInit", () => {
 			expect(circleConfig).toContain(
 				'sudo apt-get install -y "${packages[@]}"',
 			);
-			expect(circleConfig).toContain("mise install rust@stable");
+			expect(circleConfig).toContain(
+				"retry_cmd 3 install_mise_without_github_tokens rust@stable",
+			);
 			expect(circleConfig).not.toContain(
 				"if ! command -v cargo >/dev/null 2>&1; then",
 			);
@@ -543,7 +556,9 @@ describe("runInit", () => {
 				'ln -sf "$SEMGREP_VENV/bin/semgrep" "$HOME/.local/bin/semgrep"',
 			);
 			expect(circleConfig).toContain("export MISE_NODE_VERIFY=false");
-			expect(circleConfig).toContain("mise install \\");
+			expect(circleConfig).toContain(
+				"retry_cmd 3 install_mise_without_github_tokens \\",
+			);
 			expect(circleConfig).toContain("semgrep --version");
 			expect(circleConfig).toContain("bash scripts/check-environment.sh");
 
@@ -2298,6 +2313,9 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"scripts/check-node-engine.mjs"');
 			expect(environmentCheck).toContain(
 				'"scripts/resolve-circleci-pr-ref.sh"',
+			);
+			expect(environmentCheck).toContain(
+				'"scripts/read-circleci-pr-metadata.sh"',
 			);
 			expect(environmentCheck).toContain('"scripts/lib/changed-files.mjs"');
 			expect(environmentCheck).toContain('"scripts/check-semgrep-changed.sh"');

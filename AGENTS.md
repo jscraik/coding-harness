@@ -124,9 +124,10 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   `agent-rework/v1`, `reviewer-decision/v1`, and
   `governance-decision-surface/v1` contract-first, validate them through
   runtime-packet schema checks and `pnpm artifact:types`, expose their
-  operator path through public `harness ...` commands, and prove installed
-  downstream portability with the package canary before claiming source-checkout
-  independence. Review-feedback eval-seed classifiers are part of this advisory
+  operator path through public `harness ...` commands, prove source-checkout
+  public command behavior with `pnpm exec harness ...` after dependencies and
+  `dist/cli.js` exist, and prove installed downstream portability with the
+  package canary before claiming package independence. Review-feedback eval-seed classifiers are part of this advisory
   cockpit surface when they turn raw review comments into current, stale,
   unmapped, or unsafe candidate evidence without production traces. Keep CI,
   review threads, tracker state, external readiness, and

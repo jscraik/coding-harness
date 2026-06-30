@@ -34,6 +34,7 @@
 		"scripts/check-node-engine.mjs",
 		"scripts/validate-coding-policy.cjs",
 		"scripts/resolve-circleci-pr-ref.sh",
+		"scripts/read-circleci-pr-metadata.sh",
 		"scripts/run-prek.sh",
 		"scripts/run-uv-python.sh",
 		"scripts/check-doc-style.sh",
@@ -81,7 +82,14 @@
 		".agents/skills/coding-harness"
 	],
 	"type": "module",
-	"description": "Control plane for agentic development",
+	"description": "SynAIpse AI Delivery Harness for evidence-backed agentic software delivery",
+	"keywords": [
+		"ai-delivery-harness",
+		"agentic-ai",
+		"codex",
+		"harness",
+		"workflow"
+	],
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/jscraik/coding-harness.git"
@@ -195,6 +203,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.15",
 		"@brainwav/diagram": "^1.1.0",
+		"@brainwav/coding-harness-source-bin": "workspace:*",
 		"@total-typescript/shoehorn": "^0.1.2",
 		"@types/better-sqlite3": "^7.6.13",
 		"@types/lodash": "^4.17.24",

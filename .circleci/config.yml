@@ -24,18 +24,18 @@ jobs:
       - run:
           name: Verify GH token wiring
           command: |
-            if [ -n "${GH_TOKEN:-}" ]; then
-              echo "GH_TOKEN is already available for gh-backed steps."
-            elif [ -n "${GITHUB_TOKEN:-}" ]; then
-              export GH_TOKEN="${GITHUB_TOKEN}"
-              echo 'export GH_TOKEN="${GITHUB_TOKEN}"' >> "$BASH_ENV"
-              echo "Promoted GITHUB_TOKEN to GH_TOKEN for gh-backed steps."
-            elif [ -n "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
+            if [ -n "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
               export GH_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"
               export GITHUB_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"
               echo 'export GH_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"' >> "$BASH_ENV"
               echo 'export GITHUB_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"' >> "$BASH_ENV"
               echo "Promoted GITHUB_PERSONAL_ACCESS_TOKEN to GH_TOKEN/GITHUB_TOKEN for gh-backed steps."
+            elif [ -n "${GH_TOKEN:-}" ]; then
+              echo "GH_TOKEN is already available for gh-backed steps."
+            elif [ -n "${GITHUB_TOKEN:-}" ]; then
+              export GH_TOKEN="${GITHUB_TOKEN}"
+              echo 'export GH_TOKEN="${GITHUB_TOKEN}"' >> "$BASH_ENV"
+              echo "Promoted GITHUB_TOKEN to GH_TOKEN for gh-backed steps."
             else
               echo "GH_TOKEN/GITHUB_TOKEN/GITHUB_PERSONAL_ACCESS_TOKEN not set; gh-backed steps may fail."
             fi
@@ -142,9 +142,15 @@ jobs:
                 attempt=$(( attempt + 1 ))
               done
             }
+            install_mise_without_github_tokens() {
+              (
+                unset GH_TOKEN GITHUB_TOKEN GITHUB_PERSONAL_ACCESS_TOKEN
+                mise install "$@"
+              )
+            }
             export PATH="$HOME/.local/bin:$PATH"
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
-            retry_cmd 3 mise install uv
+            retry_cmd 3 install_mise_without_github_tokens uv
             uv_path="$(mise which uv)"
             if [[ -z "$uv_path" ]]; then
               echo "Error: mise which uv returned nothing" >&2
@@ -248,7 +254,7 @@ workflows:
           command: |
             pr_ref="$(HARNESS_CIRCLECI_PR_REF_CHECK_NAME=pr-template bash scripts/resolve-circleci-pr-ref.sh)"
             export PR_TEMPLATE_BODY
-            PR_TEMPLATE_BODY="$(gh pr view "$pr_ref" --json body --jq .body)"
+            PR_TEMPLATE_BODY="$(bash scripts/read-circleci-pr-metadata.sh "$pr_ref" | jq -r '.body // ""')"
             bash scripts/run-harness-gate.sh pr-template-gate --json
           filters:
             tags:
@@ -260,9 +266,10 @@ workflows:
             - pr-template
           command: |
             pr_ref="$(HARNESS_CIRCLECI_PR_REF_CHECK_NAME=linear-gate bash scripts/resolve-circleci-pr-ref.sh)"
-            branch_name="$(gh pr view "$pr_ref" --json headRefName --jq .headRefName)"
-            pr_title="$(gh pr view "$pr_ref" --json title --jq .title)"
-            pr_body="$(gh pr view "$pr_ref" --json body --jq .body)"
+            pr_metadata="$(bash scripts/read-circleci-pr-metadata.sh "$pr_ref")"
+            branch_name="$(printf '%s\n' "$pr_metadata" | jq -r '.headRefName // ""')"
+            pr_title="$(printf '%s\n' "$pr_metadata" | jq -r '.title // ""')"
+            pr_body="$(printf '%s\n' "$pr_metadata" | jq -r '.body // ""')"
             linear_gate_args=(
               --pr-title "$pr_title"
               --pr-body "$pr_body"
@@ -334,6 +341,12 @@ workflows:
                 attempt=$(( attempt + 1 ))
               done
             }
+            install_mise_without_github_tokens() {
+              (
+                unset GH_TOKEN GITHUB_TOKEN GITHUB_PERSONAL_ACCESS_TOKEN
+                mise install "$@"
+              )
+            }
             packages=()
             if ! dpkg -s python3-venv >/dev/null 2>&1; then
               packages+=("python3-venv")
@@ -348,7 +361,7 @@ workflows:
             mkdir -p "$HOME/.local/bin" "$HOME/.local/share"
             export PATH="$HOME/.local/bin:$PATH"
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
-            retry_cmd 3 mise install rust@stable
+            retry_cmd 3 install_mise_without_github_tokens rust@stable
             if [[ -f "$HOME/.cargo/env" ]]; then
               # rustup does not update the current shell PATH for non-interactive jobs.
               . "$HOME/.cargo/env"
@@ -362,7 +375,7 @@ workflows:
             ln -sf "$SEMGREP_VENV/bin/semgrep" "$HOME/.local/bin/semgrep"
             export MISE_CARGO_BINSTALL=false
             export MISE_NODE_VERIFY=false
-            retry_cmd 3 mise install \
+            retry_cmd 3 install_mise_without_github_tokens \
               node pnpm python uv cargo:prek \
               npm:@brainwav/diagram npm:@argos-ci/cli cosign cloudflared npm:vitest \
               ruff npm:eslint npm:agent-browser npm:agentation npm:agentation-mcp \

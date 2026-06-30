@@ -656,6 +656,53 @@
 			"credentialPolicy": "none_required"
 		},
 		{
+			"id": "cold-agent-orientation-rail",
+			"type": "live_fixture",
+			"prompt": "Prove a fresh agent can discover the cold-start orientation rail, context commands, architecture map guidance, preflight receipt status, and truth-lane boundaries from local command surfaces.",
+			"expected": {
+				"commands": ["pnpm test:evals"],
+				"artifacts": [
+					"artifacts/evals/result.json",
+					"artifacts/evals/braintrust-log-data.json",
+					"artifacts/evals/live-fixtures/cold-agent-orientation-rail/cold-agent-orientation.json"
+				],
+				"assertions": [
+					"cold agent discovers orient and next from the command catalog",
+					"orient packet points to session-context and agent-readiness",
+					"architecture context is lazy and has a freshness check",
+					"missing preflight receipt stays explicit with recovery command",
+					"truth-lane warnings block external readiness claims",
+					"orientation fixture writes durable eval evidence"
+				],
+				"artifactSchemas": {
+					"artifacts/evals/live-fixtures/cold-agent-orientation-rail/cold-agent-orientation.json": {
+						"schemaVersion": "cold-agent-orientation-rail-fixture/v1",
+						"requiredFields": [
+							"commandNames",
+							"orient.schemaVersion",
+							"orient.nextDecision.schemaVersion",
+							"orient.sessionContext.schemaVersion",
+							"orient.preflightReceipt.status",
+							"orient.truthLaneWarnings"
+						]
+					}
+				},
+				"stopConditions": [
+					"Do not rely on raw chat history for cold-start choreography when harness orient, session-context, agent-readiness, and command catalog surfaces are available.",
+					"Do not claim PR, CI, review-thread, tracker, or merge readiness from local orientation output."
+				]
+			},
+			"scoreWeights": {
+				"command_routing": 3,
+				"artifact_evidence": 3,
+				"validation_sufficiency": 2,
+				"blocker_honesty": 3,
+				"manual_step_reduction": 3
+			},
+			"evalTier": "structural",
+			"credentialPolicy": "none_required"
+		},
+		{
 			"id": "terse-review-request-routing",
 			"type": "live_fixture",
 			"prompt": "Review my uncommitted changes and only fix verified findings.",

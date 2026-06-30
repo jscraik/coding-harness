@@ -423,14 +423,14 @@ if [[ -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
 		echo "Error: repo wrapper failed to run check-environment successfully."
 		exit 1
 	fi
-elif [[ -f "$REPO_ROOT/src/cli.ts" ]] && command -v node >/dev/null 2>&1; then
-	if ! run_check_environment_with_runner "repo source CLI (mise exec -- node --import tsx src/cli.ts)" mise --cd "$REPO_ROOT" exec -- node --import tsx "$REPO_ROOT/src/cli.ts"; then
-		echo "Error: repo source CLI failed to run check-environment successfully."
-		exit 1
-	fi
 elif [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
 	if ! run_check_environment_with_runner "repo dist CLI (mise exec -- node dist/cli.js)" mise --cd "$REPO_ROOT" exec -- node "$REPO_ROOT/dist/cli.js"; then
 		echo "Error: repo dist CLI failed to run check-environment successfully."
+		exit 1
+	fi
+elif [[ -f "$REPO_ROOT/src/cli.ts" ]] && command -v node >/dev/null 2>&1; then
+	if ! run_check_environment_with_runner "repo source CLI (mise exec -- node --import tsx src/cli.ts)" mise --cd "$REPO_ROOT" exec -- node --import tsx "$REPO_ROOT/src/cli.ts"; then
+		echo "Error: repo source CLI failed to run check-environment successfully."
 		exit 1
 	fi
 else

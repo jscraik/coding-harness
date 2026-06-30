@@ -121,11 +121,12 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - agent-native ratchet packet changes should keep `agent-native-ratchets/v1`,
   `session-distill/v1`, `agent-rework/v1`, `reviewer-decision/v1`, and
   `governance-decision-surface/v1` contract-first under `contracts/`, route
-  producer entrypoints through public `harness ...` commands, and prove the
-  ratchet with
+  producer entrypoints through public `harness ...` commands, prove
+  source-checkout public command behavior with `pnpm exec harness ...` after
+  dependencies and `dist/cli.js` exist, and prove the ratchet with
   `node scripts/validate-runtime-packet-schemas.cjs --all`,
   `pnpm artifact:types`, focused fixture tests, and the installed downstream
-  package canary before claiming source-checkout independence. These packets may
+  package canary before claiming package independence. These packets may
   orient `harness next`, eval fixtures, review handoff, and governance decision
   surfaces, but they must not become CI, review-thread, tracker, external
   readiness, delivery-truth, or merge-readiness proof without an explicit
@@ -333,7 +334,8 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   handoff
 - packaged coding-harness skill changes should keep AGENTS, README, skill
   eval cases, and this guide synchronized so downstream agent behavior,
-  validation expectations, and anti-overfit criteria remain governed together
+  source-checkout public command proof, validation expectations, and anti-overfit
+  criteria remain governed together
 - PR-template contract changes should keep local validation, GitHub PR body
   structure, and reviewer handoff evidence synchronized so the work-performed
   ledger remains enforceable before closeout

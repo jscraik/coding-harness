@@ -389,6 +389,27 @@ describe("runHarnessNext", () => {
 				schemaVersion: "agent-readiness-context-health/v1",
 				evidenceUse: "orientation",
 			},
+			orientationRefs: expect.arrayContaining([
+				"AGENTS.md",
+				"CODESTYLE.md",
+				"AI/context/diagram-context.md",
+				".harness/active-artifacts.md",
+			]),
+			contextCommands: expect.arrayContaining([
+				"orient --json",
+				"session-context --json --repo-root .",
+				"agent-readiness . --json",
+				"commands --json --for-agent --mode orient",
+			]),
+			conditionalContext: expect.arrayContaining([
+				expect.objectContaining({
+					read: "AI/context/diagram-context.md",
+					validate: "bash scripts/check-diagram-freshness.sh",
+				}),
+			]),
+			truthLaneWarnings: expect.arrayContaining([
+				"Local next/orient output does not prove PR, CI, review-thread, tracker, or merge-readiness truth.",
+			]),
 			execution: {
 				profile: "read_only",
 				startupCost: "low",

@@ -35,6 +35,7 @@ export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/validate-codestyle.sh",
 	"scripts/check-node-engine.mjs",
 	"scripts/resolve-circleci-pr-ref.sh",
+	"scripts/read-circleci-pr-metadata.sh",
 	"scripts/run-harness-gate.sh",
 	"scripts/with-validation-lock.sh",
 	"scripts/check-validation-locks.sh",

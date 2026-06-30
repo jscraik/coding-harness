@@ -6,9 +6,10 @@
           command: |
             export GH_BIN="${HARNESS_GH_BIN:-${GH_BIN:-gh}}"
             pr_ref="$(HARNESS_CIRCLECI_PR_REF_CHECK_NAME=linear-gate GH_BIN="$GH_BIN" bash scripts/resolve-circleci-pr-ref.sh)"
-            branch_name="$("$GH_BIN" pr view "$pr_ref" --json headRefName --jq .headRefName)"
-            pr_title="$("$GH_BIN" pr view "$pr_ref" --json title --jq .title)"
-            pr_body="$("$GH_BIN" pr view "$pr_ref" --json body --jq .body)"
+            pr_metadata="$(GH_BIN="$GH_BIN" bash scripts/read-circleci-pr-metadata.sh "$pr_ref")"
+            branch_name="$(printf '%s\n' "$pr_metadata" | jq -r '.headRefName // ""')"
+            pr_title="$(printf '%s\n' "$pr_metadata" | jq -r '.title // ""')"
+            pr_body="$(printf '%s\n' "$pr_metadata" | jq -r '.body // ""')"
             bash scripts/run-harness-gate.sh linear-gate \
               --branch "$branch_name" \
               --pr-title "$pr_title" \

@@ -7,6 +7,7 @@ import {
 export const COMMAND_VISIBILITY_BY_NAME: Partial<
 	Record<string, CommandVisibility>
 > = {
+	orient: "default",
 	next: "default",
 	"agent-readiness": "agent",
 	commands: "advanced",

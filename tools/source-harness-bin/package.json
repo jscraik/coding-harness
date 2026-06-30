@@ -1,0 +1,10 @@
+{
+	"name": "@brainwav/coding-harness-source-bin",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"description": "Source checkout harness binary shim for pnpm exec.",
+	"bin": {
+		"harness": "cli.js"
+	}
+}
