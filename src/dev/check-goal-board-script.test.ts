@@ -1,5 +1,6 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import {
+	chmodSync,
 	copyFileSync,
 	existsSync,
 	mkdirSync,
@@ -12,6 +13,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 const SCRIPT_PATH = join(process.cwd(), "scripts/check-goal-board.py");
+const SHELL_SCRIPT_PATH = join(process.cwd(), "scripts/check-goal-board.sh");
 
 const tempRoots: string[] = [];
 
@@ -263,6 +265,51 @@ describe("check-goal-board.py", () => {
 
 		expect(result.status).toBe(0);
 		expect(result.stdout).toContain(`legacy-override:${goalDir}`);
+	});
+
+	it("shell wrapper prefers sibling Goal Governor validator before local fallback", () => {
+		const root = createTempRoot("goal-board-shell-external-first-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(repo, "docs/goals/example");
+		const validatorPath = join(
+			root,
+			"agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py",
+		);
+		mkdirSync(scriptsDir, { recursive: true });
+		mkdirSync(goalDir, { recursive: true });
+		copyFileSync(SHELL_SCRIPT_PATH, join(scriptsDir, "check-goal-board.sh"));
+		chmodSync(join(scriptsDir, "check-goal-board.sh"), 0o755);
+		writeFileSync(
+			join(scriptsDir, "check-goal-board.py"),
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				'print("local-fallback")',
+				"",
+			].join("\n"),
+		);
+		writeValidator(validatorPath, "sibling-validator");
+
+		const result = spawnSync(
+			"bash",
+			["scripts/check-goal-board.sh", "docs/goals/example"],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: "",
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("sibling-validator:");
+		expect(result.stdout).toContain("coding-harness/docs/goals/example");
+		expect(result.stdout).not.toContain("local-fallback");
 	});
 
 	it("normalizes option-bearing calls before invoking an external validator", () => {

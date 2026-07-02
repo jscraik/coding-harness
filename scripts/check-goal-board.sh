@@ -40,7 +40,6 @@ if [[ -n "${GOAL_GOVERNOR_CHECK_BOARD:-}" ]]; then
 fi
 
 checker_candidates+=(
-	"$repo_root/scripts/check-goal-board.py"
 	"$repo_root/../agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py"
 )
 
@@ -49,6 +48,10 @@ if [[ -n "$source_checkout_root" && "$source_checkout_root" != "$repo_root" ]]; 
 		"$source_checkout_root/../agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py"
 	)
 fi
+
+checker_candidates+=(
+	"$repo_root/scripts/check-goal-board.py"
+)
 
 checker_path=""
 for candidate in "${checker_candidates[@]}"; do
