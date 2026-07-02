@@ -27,6 +27,7 @@ RELATIVE_SKILL_VALIDATOR = Path(
     "Skills/agent-ops/goal-governor/scripts/check_goal_board.py",
 )
 ENV_OVERRIDES = ("GOAL_GOVERNOR_CHECK_GOAL_BOARD", "GOAL_GOVERNOR_CHECK_BOARD")
+OPTION_VALUE_FLAGS = {"--mode"}
 GENERIC_ALLOWED_GOAL_ROOT = {
     "goal.md",
     "state.yaml",
@@ -202,16 +203,36 @@ def resolve_validator() -> Path | None:
     return None
 
 
-def resolve_goal_dir(argv: list[str]) -> Path:
+def goal_dir_argument(argv: list[str]) -> str | None:
+    skip_next = False
     for value in argv:
+        if skip_next:
+            skip_next = False
+            continue
+        if value in OPTION_VALUE_FLAGS:
+            skip_next = True
+            continue
+        if any(value.startswith(f"{flag}=") for flag in OPTION_VALUE_FLAGS):
+            continue
         if value.startswith("-"):
             continue
-        goal_dir = Path(value).expanduser()
+        return value
+    return None
+
+
+def resolve_goal_dir(argv: list[str]) -> Path:
+    goal_arg = goal_dir_argument(argv)
+    if goal_arg is not None:
+        goal_dir = Path(goal_arg).expanduser()
         if not goal_dir.is_absolute():
             goal_dir = REPO_ROOT / goal_dir
-        return goal_dir.resolve()
+        return goal_dir.absolute()
     print("Goal directory argument is required.", file=sys.stderr)
     raise SystemExit(2)
+
+
+def validator_argv(argv: list[str]) -> list[str]:
+    return [str(resolve_goal_dir(argv))]
 
 
 def task_list_from_state(state: Mapping[str, object]) -> list[dict[str, object]]:
@@ -371,16 +392,9 @@ def run_goal_board_validator(validator: Path, argv: list[str]) -> int:
 
 def resolve_runtime_evidence_goal_path(argv: list[str]) -> Path | None:
     expected_goal_path = (REPO_ROOT / RUNTIME_EVIDENCE_COCKPIT_GOAL).resolve()
-    for value in argv:
-        if value.startswith("-"):
-            continue
-        candidate = Path(value).expanduser()
-        if not candidate.is_absolute():
-            candidate = (REPO_ROOT / candidate).resolve()
-        else:
-            candidate = candidate.resolve()
-        if candidate == expected_goal_path:
-            return candidate
+    candidate = resolve_goal_dir(argv)
+    if candidate.resolve() == expected_goal_path:
+        return expected_goal_path
     return None
 
 
@@ -899,10 +913,15 @@ def run_goal_extensions(argv: list[str]) -> int:
 
 if __name__ == "__main__":
     validator = resolve_validator()
+    argv = validator_argv(sys.argv[1:])
     if validator is None:
-        validator_status = generic_validate_goal_board(sys.argv[1:])
+        validator_status = (
+            0
+            if resolve_runtime_evidence_goal_path(argv) is not None
+            else generic_validate_goal_board(argv)
+        )
     else:
-        validator_status = run_goal_board_validator(validator, sys.argv[1:])
+        validator_status = run_goal_board_validator(validator, argv)
     if validator_status != 0:
         raise SystemExit(validator_status)
-    raise SystemExit(run_goal_extensions(sys.argv[1:]))
+    raise SystemExit(run_goal_extensions(argv))

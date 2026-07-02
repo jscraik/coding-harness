@@ -29,7 +29,8 @@ evidence_registry_id: 2026-06-30-tessl-agent
 
 Generated: 2026-06-30
 
-Primary source: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md
+Primary source index:
+.harness/research/2026-06-30-tessl-agent-video-transcript-research.md
 
 Transcript source:
 
@@ -38,7 +39,8 @@ Transcript source:
 - Title: The Tessl Agent: Build Your Software Factory on Autopilot
 - Uploader: AI Native Dev
 - Observed transcript words: 10810
-- Source index: .harness/research/2026-06-30-tessl-agent-video-transcript-research.md
+- Durable source index:
+  .harness/research/2026-06-30-tessl-agent-video-transcript-research.md
 - Raw transcript, caption, and metadata exports are not retained in durable docs.
 
 Evidence posture:

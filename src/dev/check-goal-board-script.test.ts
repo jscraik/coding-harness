@@ -265,6 +265,32 @@ describe("check-goal-board.py", () => {
 		expect(result.stdout).toContain(`legacy-override:${goalDir}`);
 	});
 
+	it("normalizes option-bearing calls before invoking an external validator", () => {
+		const root = createTempRoot("goal-board-option-");
+		const validatorPath = join(root, "check_goal_board.py");
+		const goalDir = join(root, "goal");
+		mkdirSync(goalDir);
+		writeValidator(validatorPath, "option-override");
+
+		const result = spawnSync(
+			"python3",
+			[SCRIPT_PATH, "--mode", "required", goalDir],
+			{
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain(`option-override:${goalDir}`);
+		expect(result.stdout).not.toContain("required");
+	});
+
 	it("resolves the validator adjacent to the git source checkout", () => {
 		const root = createTempRoot("goal-board-source-root-");
 		const sourceParent = join(root, "source-parent");
@@ -366,6 +392,66 @@ describe("check-goal-board.py", () => {
 		expect(result.status).toBe(0);
 		expect(result.stdout).toContain(`goal-board:${goalDir}`);
 		expect(existsSync(markerPath)).toBe(true);
+	});
+
+	it("preserves runtime evidence extensions when no external validator exists", () => {
+		const root = createTempRoot("goal-board-runtime-local-fallback-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(
+			repo,
+			"docs/goals/codex-runtime-evidence-verifier-cockpit",
+		);
+		mkdirSync(scriptsDir, { recursive: true });
+		mkdirSync(goalDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeRuntimeEvidenceReceipts(repo, "current-pr-head");
+		writeRuntimeEvidenceActiveArtifacts(repo);
+		writeFileSync(
+			join(scriptsDir, "check-goal-audit-freshness.py"),
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"raise SystemExit(0)",
+				"",
+			].join("\n"),
+		);
+		writeFileSync(
+			join(goalDir, "state.yaml"),
+			[
+				"tasks:",
+				'  - id: "T004"',
+				'    type: "worker"',
+				'    assignee: "Worker"',
+				'    status: "active"',
+				'    objective: "Fixture runtime route task."',
+				"",
+			].join("\n"),
+		);
+
+		const result = spawnSync(
+			"python3",
+			[
+				"scripts/check-goal-board.py",
+				"--mode",
+				"required",
+				"docs/goals/codex-runtime-evidence-verifier-cockpit",
+			],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: "",
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					HOME: join(root, "home-without-agent-skills"),
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stderr).not.toContain("T004 missing receipt_id");
 	});
 
 	it("fails the runtime evidence cockpit goal when audit freshness fails", () => {
@@ -634,7 +720,8 @@ describe("check-goal-board.py", () => {
 		);
 
 		expect(result.status).toBe(0);
-		expect(result.stdout).toContain("goal-board:--mode");
+		expect(result.stdout).toContain(`goal-board:${goalDir}`);
+		expect(result.stdout).not.toContain("goal-board:--mode");
 		expect(existsSync(markerPath)).toBe(true);
 	});
 
