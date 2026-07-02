@@ -605,13 +605,21 @@ def receipts_for_local_path_guard(
     return receipts[-1:]
 
 
+def receipt_local_path_diagnostic_label(receipt_id: object, line_number: int) -> str:
+    if not isinstance(receipt_id, str) or not receipt_id.strip():
+        return f"line {line_number}"
+    if local_home_path_kind(receipt_id) is not None:
+        return f"line {line_number}"
+    return receipt_id.strip()
+
+
 def check_receipt_local_path_hygiene(receipts_path: Path) -> int:
     violations: list[str] = []
     for line_number, receipt in receipts_for_local_path_guard(
         load_runtime_evidence_receipts(receipts_path),
     ):
         receipt_id = receipt.get("id")
-        receipt_label = receipt_id if isinstance(receipt_id, str) else f"line {line_number}"
+        receipt_label = receipt_local_path_diagnostic_label(receipt_id, line_number)
         for json_path, value in iter_string_leaves(receipt):
             path_kind = local_home_path_kind(value)
             if path_kind is None:

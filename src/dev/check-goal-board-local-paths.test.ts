@@ -288,6 +288,25 @@ describe("check-goal-board.py local path receipt guard", () => {
 		expect(result.stderr).not.toContain("file:///Users/jamie");
 	});
 
+	it("redacts local paths stored in malformed receipt IDs", () => {
+		const result = runGoalBoard(
+			createFixture("goal-board-local-path-receipt-id-", [
+				{
+					id: "R151-/Users/jamie/.codex/memories/MEMORY.md",
+					head_sha: "current-pr-head",
+					lifecycle_unit: "receipt-local-path-guard",
+					pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
+				},
+			]),
+		);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("receipt line 1");
+		expect(result.stderr).toContain("$.id");
+		expect(result.stderr).not.toContain("/Users/jamie");
+		expect(result.stderr).not.toContain("R151-/Users");
+	});
+
 	it("fails on post-cutover local paths stored as JSON object keys", () => {
 		const result = runGoalBoard(
 			createFixture("goal-board-local-path-key-", [
