@@ -469,4 +469,29 @@ describe("validate-evidence-patterns script", () => {
 			]),
 		);
 	});
+
+	it("validates the real repository evidence-patterns manifest, including the new tessl-agent entry", () => {
+		const result = spawnSync(process.execPath, [SCRIPT_PATH, "--json"], {
+			encoding: "utf8",
+			env: {
+				...process.env,
+				SHELL: "/bin/sh",
+			},
+		});
+		const report = parseReport(result);
+
+		expect(result.status).toBe(0);
+		expect(report.status).toBe("pass");
+		expect(report.manifest).toBe(".harness/research/evidence-patterns.json");
+		expect(report.errors).toEqual([]);
+		expect(report.statusSummary.patterns).toEqual(
+			expect.arrayContaining([
+				{
+					id: "2026-06-30-tessl-agent",
+					status: "deferred",
+					sourceStatus: "deferred",
+				},
+			]),
+		);
+	});
 });

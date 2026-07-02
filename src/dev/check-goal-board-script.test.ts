@@ -2,9 +2,11 @@ import { execFileSync, spawnSync } from "node:child_process";
 import {
 	chmodSync,
 	copyFileSync,
+	cpSync,
 	existsSync,
 	mkdirSync,
 	mkdtempSync,
+	readFileSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs";
@@ -14,6 +16,10 @@ import { afterEach, describe, expect, it } from "vitest";
 
 const SCRIPT_PATH = join(process.cwd(), "scripts/check-goal-board.py");
 const SHELL_SCRIPT_PATH = join(process.cwd(), "scripts/check-goal-board.sh");
+const GAP_REGISTER_GOAL_DIR = join(
+	process.cwd(),
+	"docs/goals/gap-register-ratchet-program",
+);
 
 const tempRoots: string[] = [];
 
@@ -372,6 +378,120 @@ describe("check-goal-board.py", () => {
 
 		expect(result.status).toBe(1);
 		expect(result.stderr).toContain("exactly one task must be active");
+	});
+
+	it("validates the real gap-register-ratchet-program goal board via the generic fallback", () => {
+		const root = createTempRoot("goal-board-gap-register-real-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(repo, "docs/goals/gap-register-ratchet-program");
+		mkdirSync(scriptsDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		mkdirSync(join(goalDir, ".."), { recursive: true });
+		cpSync(GAP_REGISTER_GOAL_DIR, goalDir, { recursive: true });
+
+		const result = spawnSync(
+			"python3",
+			[
+				"scripts/check-goal-board.py",
+				"docs/goals/gap-register-ratchet-program",
+			],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: "",
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					HOME: join(root, "home-without-agent-skills"),
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("PASS: goal board is valid");
+	});
+
+	it("shell wrapper validates the real gap-register-ratchet-program goal board", () => {
+		const root = createTempRoot("goal-board-gap-register-shell-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(repo, "docs/goals/gap-register-ratchet-program");
+		mkdirSync(scriptsDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		copyFileSync(SHELL_SCRIPT_PATH, join(scriptsDir, "check-goal-board.sh"));
+		chmodSync(join(scriptsDir, "check-goal-board.sh"), 0o755);
+		mkdirSync(join(goalDir, ".."), { recursive: true });
+		cpSync(GAP_REGISTER_GOAL_DIR, goalDir, { recursive: true });
+
+		const result = spawnSync(
+			"bash",
+			[
+				"scripts/check-goal-board.sh",
+				"docs/goals/gap-register-ratchet-program",
+			],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: "",
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					HOME: join(root, "home-without-agent-skills"),
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("PASS: goal board is valid");
+	});
+
+	it("rejects the real gap-register-ratchet-program board when a task references a missing receipt", () => {
+		const root = createTempRoot("goal-board-gap-register-bad-receipt-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(repo, "docs/goals/gap-register-ratchet-program");
+		mkdirSync(scriptsDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		mkdirSync(join(goalDir, ".."), { recursive: true });
+		cpSync(GAP_REGISTER_GOAL_DIR, goalDir, { recursive: true });
+
+		const statePath = join(goalDir, "state.yaml");
+		const originalState = readFileSync(statePath, "utf8");
+		expect(originalState).toContain('receipt_id: "R001"');
+		writeFileSync(
+			statePath,
+			originalState.replace(
+				'receipt_id: "R001"',
+				'receipt_id: "R999-does-not-exist"',
+			),
+		);
+
+		const result = spawnSync(
+			"python3",
+			[
+				"scripts/check-goal-board.py",
+				"docs/goals/gap-register-ratchet-program",
+			],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: "",
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					HOME: join(root, "home-without-agent-skills"),
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"references missing receipt R999-does-not-exist",
+		);
 	});
 
 	it("honors the legacy Goal Governor override variable", () => {
