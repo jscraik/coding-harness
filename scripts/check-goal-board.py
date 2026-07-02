@@ -246,6 +246,25 @@ def task_list_from_state(state: Mapping[str, object]) -> list[dict[str, object]]
     return tasks
 
 
+def goal_board_is_complete(
+    state: Mapping[str, object],
+    tasks: list[dict[str, object]],
+) -> bool:
+    goal = state.get("goal")
+    goal_status = None
+    native_status = None
+    if isinstance(goal, Mapping):
+        goal_mapping = cast(Mapping[str, object], goal)
+        goal_status = goal_mapping.get("status")
+        native_status = goal_mapping.get("native_status")
+    return (
+        bool(tasks)
+        and goal_status == "done"
+        and (native_status in {None, "complete", "done"})
+        and all(task.get("status") == "done" for task in tasks)
+    )
+
+
 def parse_tasks_fallback(state_path: Path) -> list[dict[str, object]]:
     tasks: list[dict[str, object]] = []
     in_tasks = False
@@ -317,7 +336,10 @@ def generic_validate_goal_board(argv: list[str]) -> int:
     if not tasks:
         tasks = parse_tasks_fallback(goal_dir / "state.yaml")
     active_tasks = [task for task in tasks if task.get("status") == "active"]
-    if len(active_tasks) != 1:
+    if len(active_tasks) != 1 and not goal_board_is_complete(
+        cast(Mapping[str, object], state),
+        tasks,
+    ):
         print("FAIL: exactly one task must be active", file=sys.stderr)
         return 1
 

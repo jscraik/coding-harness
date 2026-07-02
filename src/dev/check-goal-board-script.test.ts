@@ -210,6 +210,61 @@ function writeGenericGoalBoard(goalDir: string) {
 	);
 }
 
+function writeCompletedGoalBoard(goalDir: string) {
+	mkdirSync(goalDir, { recursive: true });
+	writeFileSync(
+		join(goalDir, "goal.md"),
+		[
+			"# Completed Fixture Goal",
+			"",
+			"## Table of Contents",
+			"",
+			"- [Scope](#scope)",
+			"",
+			"## Scope",
+			"",
+		].join("\n"),
+	);
+	writeFileSync(
+		join(goalDir, "state.yaml"),
+		[
+			"goal:",
+			'  status: "done"',
+			'  native_status: "complete"',
+			"tasks:",
+			'  - id: "T001"',
+			'    type: "scout"',
+			'    assignee: "Scout"',
+			'    status: "done"',
+			'    objective: "Validate fixture board."',
+			'    receipt_id: "R001"',
+			'  - id: "T002"',
+			'    type: "judge"',
+			'    assignee: "Judge"',
+			'    status: "done"',
+			'    objective: "Review fixture board."',
+			'    receipt_id: "R002"',
+			"",
+		].join("\n"),
+	);
+	writeFileSync(
+		join(goalDir, "receipts.jsonl"),
+		[
+			JSON.stringify({
+				id: "R001",
+				task_id: "T001",
+				decision: "created",
+			}),
+			JSON.stringify({
+				id: "R002",
+				task_id: "T002",
+				decision: "completed",
+			}),
+			"",
+		].join("\n"),
+	);
+}
+
 describe("check-goal-board.py", () => {
 	afterEach(() => {
 		for (const root of tempRoots.splice(0)) {
@@ -244,6 +299,79 @@ describe("check-goal-board.py", () => {
 
 		expect(result.status).toBe(0);
 		expect(result.stdout).toContain("PASS: goal board is valid");
+	});
+
+	it("fallback accepts completed boards with no active tasks", () => {
+		const root = createTempRoot("goal-board-complete-fallback-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(repo, "docs/goals/completed-example");
+		mkdirSync(scriptsDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeCompletedGoalBoard(goalDir);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", "docs/goals/completed-example"],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: "",
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					HOME: join(root, "home-without-agent-skills"),
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("PASS: goal board is valid");
+	});
+
+	it("fallback still rejects incomplete boards with no active tasks", () => {
+		const root = createTempRoot("goal-board-incomplete-no-active-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(repo, "docs/goals/incomplete-example");
+		mkdirSync(scriptsDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeCompletedGoalBoard(goalDir);
+		writeFileSync(
+			join(goalDir, "state.yaml"),
+			[
+				"goal:",
+				'  status: "active"',
+				"tasks:",
+				'  - id: "T001"',
+				'    type: "scout"',
+				'    assignee: "Scout"',
+				'    status: "done"',
+				'    objective: "Validate fixture board."',
+				'    receipt_id: "R001"',
+				"",
+			].join("\n"),
+		);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", "docs/goals/incomplete-example"],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: "",
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					HOME: join(root, "home-without-agent-skills"),
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("exactly one task must be active");
 	});
 
 	it("honors the legacy Goal Governor override variable", () => {
