@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { DEFAULT_CI_OWNERSHIP_POLICY } from "../contract/types-core.js";
-import { SEMGREP_CLOUD_CHECK_NAME } from "../policy/required-checks.js";
 import { CIRCLECI_PRIMARY_CHECK } from "./branch-protect-sync.js";
+import { normalizeCIOwnership } from "./ownership-gate-normalization.js";
+import { validateCIOwnershipContract } from "./ownership-gate-validation.js";
 
 export const CI_OWNERSHIP_GATE_SCHEMA_VERSION = "ci-ownership-gate/v1";
 
@@ -59,30 +59,9 @@ interface HarnessContractLike {
 
 const DEFAULT_CONTRACT_PATH = "harness.contract.json";
 const CODERABBIT_REQUIRED_CHECK = "CodeRabbit";
-const CI_FALLBACK_WORKFLOW_ROLES = new Set([
-	"fallback_pr_gate",
-	"release_publishing",
-]);
-const DEFAULT_CI_OWNERSHIP = {
-	...DEFAULT_CI_OWNERSHIP_POLICY,
-	securityChecks: [...DEFAULT_CI_OWNERSHIP_POLICY.securityChecks],
-	fallbackWorkflows: [...(DEFAULT_CI_OWNERSHIP_POLICY.fallbackWorkflows ?? [])],
-} as const;
-const ON_KEY_PATTERN = /^["']?on["']?\s*:\s*(.*)$/;
-const PR_TRIGGER_KEY_PATTERN =
-	/^["']?(pull_request|pull_request_target|merge_group)["']?\s*:/;
-const PR_TRIGGER_LIST_PATTERN =
-	/^-\s*["']?(pull_request|pull_request_target|merge_group)["']?\s*(?:#.*)?$/;
-const YAML_COMMENT_PATTERN = /(?:^|\s+)#.*$/;
 
 /**
  * Evaluate a repository's CI ownership contract and produce machine-readable findings about primary provider, review, and security check requirements.
- *
- * @param options - Optional overrides:
- *   - repoRoot: filesystem root of the repository (defaults to `process.cwd()`).
- *   - contractPath: path to the CI ownership contract relative to `repoRoot` (defaults to `harness.contract.json`).
- *   - expectedPrimaryProvider: expected active CI provider for the primary PR gate (defaults to `"circleci"`).
- * @returns The gate result containing schemaVersion, overall status (`"pass"` or `"fail"`), the resolved contractPath, an array of findings, and a summary with counts of errors and info findings.
  */
 export function runCIOwnershipGate(
 	options: RunCIOwnershipGateOptions = {},
@@ -92,560 +71,152 @@ export function runCIOwnershipGate(
 	const expectedPrimaryProvider = options.expectedPrimaryProvider ?? "circleci";
 	const resolvedContractPath = resolve(repoRoot, contractPath);
 	const findings: CIOwnershipGateFinding[] = [];
+	const contract = readHarnessContract({
+		resolvedContractPath,
+		contractPath,
+		findings,
+	});
+	if (!contract) return buildResult(contractPath, findings);
 
-	if (!existsSync(resolvedContractPath)) {
-		findings.push({
-			id: "ci-ownership.contract.missing",
-			severity: "error",
-			message: `CI ownership contract not found at ${contractPath}.`,
-			path: contractPath,
-			fix: "Create or restore harness.contract.json with ciProviderPolicy and branchProtection.requiredChecks.",
-		});
-		return buildResult(contractPath, findings);
-	}
-
-	let contract: HarnessContractLike;
-	try {
-		contract = JSON.parse(
-			readFileSync(resolvedContractPath, "utf-8"),
-		) as HarnessContractLike;
-	} catch (error) {
-		findings.push({
-			id: "ci-ownership.contract.unreadable",
-			severity: "error",
-			message: `CI ownership contract could not be parsed: ${error instanceof Error ? error.message : String(error)}`,
-			path: contractPath,
-			fix: "Fix harness.contract.json so it is valid JSON.",
-		});
-		return buildResult(contractPath, findings);
-	}
-
-	const activeProvider = contract.ciProviderPolicy?.activeProvider;
 	const ciOwnership = normalizeCIOwnership(contract.ciOwnership);
-	if (!contract.ciOwnership) {
-		findings.push({
-			id: "ci-ownership.contract.defaulted",
-			severity: "info",
-			message:
-				"ciOwnership is missing; using deterministic legacy defaults for CircleCI primary, CodeRabbit review, and Semgrep Cloud security ownership.",
-			path: contractPath,
-		});
-	}
+	appendDefaultedOwnershipFinding({
+		hasCIOwnership: Boolean(contract.ciOwnership),
+		findings,
+		contractPath,
+	});
 	validateCIOwnershipContract({
 		findings,
 		ciOwnership,
 		contractPath,
 		repoRoot,
 	});
-
-	if (activeProvider !== expectedPrimaryProvider) {
-		findings.push({
-			id: "ci-ownership.primary-provider.mismatch",
-			severity: "error",
-			message: `Primary PR gate provider must be ${expectedPrimaryProvider}; found ${String(activeProvider ?? "missing")}.`,
-			path: contractPath,
-			fix: `Set ciProviderPolicy.activeProvider to ${expectedPrimaryProvider} or update the CI ownership policy intentionally.`,
-		});
-	} else {
-		findings.push({
-			id: "ci-ownership.primary-provider.ok",
-			severity: "info",
-			message: `Primary PR gate provider is ${expectedPrimaryProvider}.`,
-			path: contractPath,
-		});
-	}
-
-	const requiredChecks = normalizeRequiredChecks(
-		contract.branchProtection?.requiredChecks,
-	);
-	requireCheck({
+	appendPrimaryProviderFinding({
 		findings,
-		requiredChecks,
-		check: CIRCLECI_PRIMARY_CHECK,
-		id: "ci-ownership.circleci-primary-check.missing",
-		message: `${CIRCLECI_PRIMARY_CHECK} must remain the CircleCI-owned primary PR workflow check.`,
+		activeProvider: contract.ciProviderPolicy?.activeProvider,
+		expectedPrimaryProvider,
 		contractPath,
 	});
-	requireCheck({
+	appendRequiredCheckFindings({
 		findings,
-		requiredChecks,
-		check: CODERABBIT_REQUIRED_CHECK,
-		id: "ci-ownership.coderabbit-review-check.missing",
-		message: "CodeRabbit must remain an independent required review check.",
+		requiredChecks: normalizeRequiredChecks(
+			contract.branchProtection?.requiredChecks,
+		),
+		securityChecks: ciOwnership.securityChecks,
 		contractPath,
 	});
-	for (const securityCheck of ciOwnership.securityChecks) {
-		requireCheck({
-			findings,
-			requiredChecks,
-			check: securityCheck,
-			id: `ci-ownership.security-check.${findingIdToken(securityCheck)}.missing`,
-			message: `${securityCheck} must remain an independent required security check.`,
-			contractPath,
-		});
-	}
 
 	return buildResult(contractPath, findings);
 }
 
-/**
- * Normalize a possibly missing or malformed `ciOwnership` contract section into a deterministic structure.
- *
- * @param value - The raw `ciOwnership` value from a parsed harness contract; may be undefined, null, or not an object.
- * @returns An object with the normalized fields:
- * - `schemaVersion`: the schema version string.
- * - `policyValid`: whether the top-level `ciOwnership` value is a plain object.
- * - `primaryPrGate`: the designated primary PR gate name.
- * - `reviewProvider`: the designated review provider name.
- * - `securityChecks`: an array of security check names (only string entries are kept).
- * - `fallbackWorkflows`: an array of fallback workflow descriptors, each containing:
- *   - `path`: workflow file path (string).
- *   - `role`: workflow role (string).
- *   - `purpose`: workflow purpose (string).
- *   - `allowAutomaticPrTriggers`: boolean indicating whether automatic PR triggers are allowed.
- *
- * When `value` is missing, the function returns the module's default CI ownership structure. Malformed top-level values are marked invalid.
- */
-function normalizeCIOwnership(value: HarnessContractLike["ciOwnership"]): {
-	schemaVersion: string;
-	policyValid: boolean;
-	primaryPrGate: string;
-	reviewProvider: string;
-	securityChecks: string[];
-	securityChecksValid: boolean;
-	fallbackWorkflowsValid: boolean;
-	fallbackWorkflows: Array<{
-		path: string;
-		role: string;
-		purpose: string;
-		allowAutomaticPrTriggers: boolean;
-		allowAutomaticPrTriggersValid: boolean;
-	}>;
-} {
-	if (value === undefined) {
-		return {
-			...DEFAULT_CI_OWNERSHIP,
-			policyValid: true,
-			securityChecks: [...DEFAULT_CI_OWNERSHIP.securityChecks],
-			securityChecksValid: true,
-			fallbackWorkflowsValid: true,
-			fallbackWorkflows: [],
-		};
-	}
-	if (value === null || typeof value !== "object" || Array.isArray(value)) {
-		return {
-			...DEFAULT_CI_OWNERSHIP,
-			policyValid: false,
-			securityChecks: [...DEFAULT_CI_OWNERSHIP.securityChecks],
-			securityChecksValid: true,
-			fallbackWorkflowsValid: true,
-			fallbackWorkflows: [],
-		};
-	}
-	return {
-		policyValid: true,
-		schemaVersion:
-			typeof value.schemaVersion === "string"
-				? value.schemaVersion
-				: DEFAULT_CI_OWNERSHIP.schemaVersion,
-		primaryPrGate:
-			typeof value.primaryPrGate === "string"
-				? value.primaryPrGate
-				: DEFAULT_CI_OWNERSHIP.primaryPrGate,
-		reviewProvider:
-			typeof value.reviewProvider === "string"
-				? value.reviewProvider
-				: DEFAULT_CI_OWNERSHIP.reviewProvider,
-		securityChecks: Array.isArray(value.securityChecks)
-			? value.securityChecks
-					.filter(isValidSecurityCheckName)
-					.map((check) => check.trim())
-			: [...DEFAULT_CI_OWNERSHIP.securityChecks],
-		securityChecksValid:
-			value.securityChecks === undefined ||
-			(Array.isArray(value.securityChecks) &&
-				value.securityChecks.every(isValidSecurityCheckName)),
-		fallbackWorkflowsValid:
-			value.fallbackWorkflows === undefined ||
-			(Array.isArray(value.fallbackWorkflows) &&
-				value.fallbackWorkflows.every(isFallbackWorkflowInputValid)),
-		fallbackWorkflows: Array.isArray(value.fallbackWorkflows)
-			? value.fallbackWorkflows
-					.filter(isFallbackWorkflowRecord)
-					.map((workflow) => ({
-						path: String(workflow.path ?? ""),
-						role: String(workflow.role ?? ""),
-						purpose: String(workflow.purpose ?? ""),
-						allowAutomaticPrTriggers:
-							workflow.allowAutomaticPrTriggers === true,
-						allowAutomaticPrTriggersValid:
-							typeof workflow.allowAutomaticPrTriggers === "boolean",
-					}))
-			: [],
-	};
-}
-
-/**
- * Validate a normalized CI ownership contract and append any resulting findings.
- *
- * Validates schema version, primary PR gate, review provider, and required security checks; it also validates each configured fallback workflow and pushes corresponding findings into the supplied findings array.
- *
- * @param input - Validation inputs
- * @param input.findings - Array that will receive new findings describing validation errors or informational notes
- * @param input.ciOwnership - Normalized CI ownership object to validate
- * @param input.contractPath - Path to the contract file used as the `path` in any findings
- * @param input.repoRoot - Repository root directory used when validating fallback workflow file paths
- */
-function validateCIOwnershipContract(input: {
-	findings: CIOwnershipGateFinding[];
-	ciOwnership: ReturnType<typeof normalizeCIOwnership>;
+/** Read and parse the harness contract, appending a finding when it is missing or invalid. */
+function readHarnessContract(input: {
+	resolvedContractPath: string;
 	contractPath: string;
-	repoRoot: string;
-}): void {
-	if (!input.ciOwnership.policyValid) {
-		input.findings.push({
-			id: "ci-ownership.policy.invalid",
-			severity: "error",
-			message: "ciOwnership malformed: expected object.",
-			path: input.contractPath,
-			fix: "Set ciOwnership to an object with schemaVersion, primaryPrGate, reviewProvider, securityChecks, and fallbackWorkflows.",
-		});
-	}
-	if (input.ciOwnership.schemaVersion !== DEFAULT_CI_OWNERSHIP.schemaVersion) {
-		input.findings.push({
-			id: "ci-ownership.schema-version.invalid",
-			severity: "error",
-			message: `ciOwnership.schemaVersion must be ${DEFAULT_CI_OWNERSHIP.schemaVersion}.`,
-			path: input.contractPath,
-			fix: `Update ciOwnership.schemaVersion to ${DEFAULT_CI_OWNERSHIP.schemaVersion} and migrate fields intentionally.`,
-		});
-	}
-	if (input.ciOwnership.primaryPrGate !== DEFAULT_CI_OWNERSHIP.primaryPrGate) {
-		input.findings.push({
-			id: "ci-ownership.primary-role.mismatch",
-			severity: "error",
-			message: `ciOwnership.primaryPrGate must remain ${DEFAULT_CI_OWNERSHIP.primaryPrGate}.`,
-			path: input.contractPath,
-			fix: `Set ciOwnership.primaryPrGate to ${DEFAULT_CI_OWNERSHIP.primaryPrGate} unless an intentional ownership migration is planned.`,
-		});
-	}
-	if (
-		input.ciOwnership.reviewProvider !== DEFAULT_CI_OWNERSHIP.reviewProvider
-	) {
-		input.findings.push({
-			id: "ci-ownership.review-provider.mismatch",
-			severity: "error",
-			message: `ciOwnership.reviewProvider must remain ${DEFAULT_CI_OWNERSHIP.reviewProvider}.`,
-			path: input.contractPath,
-			fix: `Set ciOwnership.reviewProvider to ${DEFAULT_CI_OWNERSHIP.reviewProvider}.`,
-		});
-	}
-	const requiredSecurityCheck =
-		DEFAULT_CI_OWNERSHIP.securityChecks[0] ?? SEMGREP_CLOUD_CHECK_NAME;
-	if (!input.ciOwnership.securityChecks.includes(requiredSecurityCheck)) {
-		input.findings.push({
-			id: "ci-ownership.security-check.semgrep-cloud.missing",
-			severity: "error",
-			message: `ciOwnership.securityChecks must include ${requiredSecurityCheck}.`,
-			path: input.contractPath,
-			fix: `Add ${requiredSecurityCheck} to ciOwnership.securityChecks.`,
-		});
-	}
-	if (!input.ciOwnership.securityChecksValid) {
-		input.findings.push({
-			id: "ci-ownership.security-checks.invalid",
-			severity: "error",
-			message:
-				"ciOwnership.securityChecks must be an array of non-empty check names.",
-			path: input.contractPath,
-			fix: "Set ciOwnership.securityChecks to an array containing semgrep-cloud-platform/scan.",
-		});
-	}
-	if (!input.ciOwnership.fallbackWorkflowsValid) {
-		input.findings.push({
-			id: "ci-ownership.fallback-workflows.invalid",
-			severity: "error",
-			message:
-				"ciOwnership.fallbackWorkflows must be an array of workflow objects with typed fields.",
-			path: input.contractPath,
-			fix: "Set ciOwnership.fallbackWorkflows to an array of workflow objects, or remove the malformed value.",
-		});
-	}
-	for (const workflow of input.ciOwnership.fallbackWorkflows) {
-		validateFallbackWorkflow({
-			findings: input.findings,
-			workflow,
-			repoRoot: input.repoRoot,
-		});
-	}
-}
-
-/**
- * Validate a single configured fallback workflow and append findings describing its status.
- *
- * Checks that the referenced workflow file exists and ensures fallback workflow roles do not contain automatic PR-like triggers unless
- * `allowAutomaticPrTriggers` is true. Findings describing errors or informational status (and suggested fixes)
- * are pushed into `input.findings`.
- *
- * @param input - Validation inputs
- * @param input.findings - Array that will receive generated findings describing problems or OK statuses
- * @param input.workflow - A normalized fallback workflow entry (from `normalizeCIOwnership(...).fallbackWorkflows`)
- * @param input.repoRoot - Repository root used to resolve the workflow file path
- */
-function validateFallbackWorkflow(input: {
 	findings: CIOwnershipGateFinding[];
-	workflow: ReturnType<
-		typeof normalizeCIOwnership
-	>["fallbackWorkflows"][number];
-	repoRoot: string;
-}): void {
-	const workflowPath = resolve(input.repoRoot, input.workflow.path);
-	if (input.workflow.path.trim() === "") {
+}): HarnessContractLike | null {
+	if (!existsSync(input.resolvedContractPath)) {
 		input.findings.push({
-			id: "ci-ownership.fallback-workflow.path.invalid",
+			id: "ci-ownership.contract.missing",
 			severity: "error",
-			message: "Configured fallback workflow requires a non-empty path.",
-			fix: "Set ciOwnership.fallbackWorkflows[].path to a workflow file path or remove the entry.",
+			message: `CI ownership contract not found at ${input.contractPath}.`,
+			path: input.contractPath,
+			fix: "Create or restore harness.contract.json with ciProviderPolicy and branchProtection.requiredChecks.",
 		});
-		return;
+		return null;
 	}
-	if (!CI_FALLBACK_WORKFLOW_ROLES.has(input.workflow.role)) {
-		input.findings.push({
-			id: `ci-ownership.fallback-workflow.${input.workflow.path}.role-invalid`,
-			severity: "error",
-			message: `${input.workflow.path} has unsupported fallback workflow role ${input.workflow.role || "missing"}.`,
-			path: input.workflow.path,
-			fix: "Use role fallback_pr_gate or release_publishing.",
-		});
-		return;
-	}
-	if (input.workflow.purpose.trim() === "") {
-		input.findings.push({
-			id: `ci-ownership.fallback-workflow.${input.workflow.path}.purpose-invalid`,
-			severity: "error",
-			message: `${input.workflow.path} requires a non-empty fallback workflow purpose.`,
-			path: input.workflow.path,
-			fix: "Describe why this fallback workflow exists in ciOwnership.fallbackWorkflows[].purpose.",
-		});
-		return;
-	}
-	if (!input.workflow.allowAutomaticPrTriggersValid) {
-		input.findings.push({
-			id: `ci-ownership.fallback-workflow.${input.workflow.path}.allow-automatic-pr-triggers-invalid`,
-			severity: "error",
-			message: `${input.workflow.path} requires boolean allowAutomaticPrTriggers.`,
-			path: input.workflow.path,
-			fix: "Set allowAutomaticPrTriggers to true or false.",
-		});
-		return;
-	}
-	if (!existsSync(workflowPath)) {
-		input.findings.push({
-			id: `ci-ownership.fallback-workflow.${input.workflow.path}.missing`,
-			severity: "error",
-			message: `Configured fallback workflow is missing: ${input.workflow.path}.`,
-			path: input.workflow.path,
-			fix: "Restore the workflow or remove it from ciOwnership.fallbackWorkflows.",
-		});
-		return;
-	}
-	let content: string;
 	try {
-		content = readFileSync(workflowPath, "utf-8");
+		return JSON.parse(
+			readFileSync(input.resolvedContractPath, "utf-8"),
+		) as HarnessContractLike;
 	} catch (error) {
 		input.findings.push({
-			id: `ci-ownership.fallback-workflow.${input.workflow.path}.read-failed`,
+			id: "ci-ownership.contract.unreadable",
 			severity: "error",
-			message: `Configured fallback workflow could not be read: ${input.workflow.path}.`,
-			path: input.workflow.path,
-			fix: `Restore readable workflow contents or remove ${input.workflow.path} from ciOwnership.fallbackWorkflows. ${error instanceof Error ? error.message : String(error)}`,
+			message: `CI ownership contract could not be parsed: ${error instanceof Error ? error.message : String(error)}`,
+			path: input.contractPath,
+			fix: "Fix harness.contract.json so it is valid JSON.",
 		});
-		return;
+		return null;
 	}
-	const hasPrTrigger = workflowHasAutomaticPrTrigger(content);
-	if (hasPrTrigger && !input.workflow.allowAutomaticPrTriggers) {
+}
+
+/** Record that legacy deterministic CI ownership defaults were used. */
+function appendDefaultedOwnershipFinding(input: {
+	hasCIOwnership: boolean;
+	findings: CIOwnershipGateFinding[];
+	contractPath: string;
+}): void {
+	if (input.hasCIOwnership) return;
+	input.findings.push({
+		id: "ci-ownership.contract.defaulted",
+		severity: "info",
+		message:
+			"ciOwnership is missing; using deterministic defaults for CircleCI primary, CodeRabbit review, and CircleCI security-scan ownership.",
+		path: input.contractPath,
+	});
+}
+
+/** Validate that the configured primary PR provider remains CircleCI. */
+function appendPrimaryProviderFinding(input: {
+	findings: CIOwnershipGateFinding[];
+	activeProvider: unknown;
+	expectedPrimaryProvider: "circleci";
+	contractPath: string;
+}): void {
+	if (input.activeProvider === input.expectedPrimaryProvider) {
 		input.findings.push({
-			id: `ci-ownership.fallback-workflow.${input.workflow.path}.automatic-pr-trigger`,
-			severity: "error",
-			message: `${input.workflow.path} is classified as ${input.workflow.role} but has automatic PR-like triggers.`,
-			path: input.workflow.path,
-			fix: "Remove pull_request, pull_request_target, or merge_group triggers, or explicitly migrate CI ownership in harness.contract.json.",
+			id: "ci-ownership.primary-provider.ok",
+			severity: "info",
+			message: `Primary PR gate provider is ${input.expectedPrimaryProvider}.`,
+			path: input.contractPath,
 		});
 		return;
 	}
 	input.findings.push({
-		id: `ci-ownership.fallback-workflow.${input.workflow.path}.ok`,
-		severity: "info",
-		message: `${input.workflow.path} is constrained for ${input.workflow.role} ownership.`,
-		path: input.workflow.path,
+		id: "ci-ownership.primary-provider.mismatch",
+		severity: "error",
+		message: `Primary PR gate provider must be ${input.expectedPrimaryProvider}; found ${String(input.activeProvider ?? "missing")}.`,
+		path: input.contractPath,
+		fix: `Set ciProviderPolicy.activeProvider to ${input.expectedPrimaryProvider} or update the CI ownership policy intentionally.`,
 	});
 }
 
-/**
- * Detects whether a workflow declares an automatic PR-family trigger.
- *
- * @param content - Raw workflow YAML content.
- * @returns True when `pull_request`, `pull_request_target`, or `merge_group` appears as an inline `on:` trigger or inside an `on:` trigger block.
- */
-function workflowHasAutomaticPrTrigger(content: string): boolean {
-	let inOnBlock = false;
-	let onBlockIndent = 0;
-	let onEventIndent: number | undefined;
-	return content.split(/\r?\n/).some((line) => {
-		const indent = line.length - line.trimStart().length;
-		const trimmed = line.trim();
-		if (trimmed === "" || trimmed.startsWith("#")) return false;
-		if (inOnBlock && indent <= onBlockIndent && !trimmed.startsWith("-")) {
-			inOnBlock = false;
-			onEventIndent = undefined;
-		}
-		if (inOnBlock && indent > onBlockIndent) {
-			onEventIndent ??= indent;
-			if (indent !== onEventIndent) return false;
-			return (
-				PR_TRIGGER_KEY_PATTERN.test(trimmed) ||
-				PR_TRIGGER_LIST_PATTERN.test(trimmed)
-			);
-		}
-		const onMatch = trimmed.match(ON_KEY_PATTERN);
-		if (!onMatch) return false;
-		const inlineValue = stripYamlComment(onMatch[1] ?? "");
-		if (inlineValue !== "") return inlineOnHasAutomaticPrTrigger(inlineValue);
-		onBlockIndent = indent;
-		onEventIndent = undefined;
-		inOnBlock = true;
-		return false;
+/** Validate required branch-protection checks for CI, review, and security ownership. */
+function appendRequiredCheckFindings(input: {
+	findings: CIOwnershipGateFinding[];
+	requiredChecks: Set<string>;
+	securityChecks: string[];
+	contractPath: string;
+}): void {
+	requireCheck({
+		findings: input.findings,
+		requiredChecks: input.requiredChecks,
+		check: CIRCLECI_PRIMARY_CHECK,
+		id: "ci-ownership.circleci-primary-check.missing",
+		message: `${CIRCLECI_PRIMARY_CHECK} must remain the CircleCI-owned primary PR workflow check.`,
+		contractPath: input.contractPath,
 	});
-}
-
-/**
- * Detects PR-family triggers in inline `on:` YAML values without matching nested workflow inputs.
- *
- * @param inlineValue - Comment-stripped inline value after the `on:` key.
- * @returns True when the inline value names a PR-family event at the top level.
- */
-function inlineOnHasAutomaticPrTrigger(inlineValue: string): boolean {
-	const value = inlineValue.trim();
-	if (value === "") return false;
-	if (value.startsWith("{") && value.endsWith("}")) {
-		return splitTopLevelYamlFlow(value.slice(1, -1)).some((entry) => {
-			const separator = entry.indexOf(":");
-			if (separator === -1) return false;
-			return isPrTriggerName(entry.slice(0, separator));
+	requireCheck({
+		findings: input.findings,
+		requiredChecks: input.requiredChecks,
+		check: CODERABBIT_REQUIRED_CHECK,
+		id: "ci-ownership.coderabbit-review-check.missing",
+		message: "CodeRabbit must remain an independent required review check.",
+		contractPath: input.contractPath,
+	});
+	for (const securityCheck of input.securityChecks) {
+		requireCheck({
+			findings: input.findings,
+			requiredChecks: input.requiredChecks,
+			check: securityCheck,
+			id: `ci-ownership.security-check.${findingIdToken(securityCheck)}.missing`,
+			message: `${securityCheck} must remain an independent required security check.`,
+			contractPath: input.contractPath,
 		});
 	}
-	if (value.startsWith("[") && value.endsWith("]")) {
-		return splitTopLevelYamlFlow(value.slice(1, -1)).some(isPrTriggerName);
-	}
-	return isPrTriggerName(value);
 }
 
-function splitTopLevelYamlFlow(value: string): string[] {
-	const entries: string[] = [];
-	let current = "";
-	let depth = 0;
-	let quote: '"' | "'" | null = null;
-	let escaped = false;
-	for (const char of value) {
-		if (escaped) {
-			current += char;
-			escaped = false;
-			continue;
-		}
-		if (char === "\\") {
-			current += char;
-			escaped = true;
-			continue;
-		}
-		if (quote) {
-			current += char;
-			if (char === quote) quote = null;
-			continue;
-		}
-		if (char === '"' || char === "'") {
-			current += char;
-			quote = char;
-			continue;
-		}
-		if (char === "{" || char === "[") {
-			current += char;
-			depth += 1;
-			continue;
-		}
-		if (char === "}" || char === "]") {
-			current += char;
-			depth = Math.max(0, depth - 1);
-			continue;
-		}
-		if (char === "," && depth === 0) {
-			entries.push(current.trim());
-			current = "";
-			continue;
-		}
-		current += char;
-	}
-	if (current.trim() !== "") entries.push(current.trim());
-	return entries;
-}
-
-function isPrTriggerName(value: string): boolean {
-	const name = value.trim().replace(/^["']|["']$/g, "");
-	return (
-		name === "pull_request" ||
-		name === "pull_request_target" ||
-		name === "merge_group"
-	);
-}
-
-function stripYamlComment(value: string): string {
-	return value.replace(YAML_COMMENT_PATTERN, "").trim();
-}
-
-/**
- * Determine whether a fallback workflow value is an object record.
- *
- * @param value - Raw value from `ciOwnership.fallbackWorkflows`.
- * @returns True when the value can be inspected as a workflow object.
- */
-function isFallbackWorkflowRecord(
-	value: unknown,
-): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-/**
- * Validate the raw shape of a fallback workflow entry before normalization.
- *
- * @param value - Raw fallback workflow value from the contract.
- * @returns True when the entry is an object with string metadata fields and a boolean or omitted `allowAutomaticPrTriggers`.
- */
-function isFallbackWorkflowInputValid(value: unknown): boolean {
-	if (!isFallbackWorkflowRecord(value)) return false;
-	return (
-		(value.path === undefined || typeof value.path === "string") &&
-		(value.role === undefined || typeof value.role === "string") &&
-		(value.purpose === undefined || typeof value.purpose === "string") &&
-		(value.allowAutomaticPrTriggers === undefined ||
-			typeof value.allowAutomaticPrTriggers === "boolean")
-	);
-}
-
-/**
- * Determine whether a raw `ciOwnership.securityChecks` value is a usable check name.
- *
- * @param value - The unknown value from the parsed contract array.
- * @returns True when the value is a non-empty string after trimming whitespace.
- */
-function isValidSecurityCheckName(value: unknown): value is string {
-	return typeof value === "string" && value.trim().length > 0;
-}
-
-/**
- * Normalize a branch-protection `requiredChecks`-like value into a set of check names.
- *
- * @param value - The `branchProtection.requiredChecks`-style input (expected to be an array of values)
- * @returns A Set containing string entries from `value`; empty if `value` is not an array
- */
+/** Normalize branch-protection required checks into a lookup set. */
 function normalizeRequiredChecks(value: unknown): Set<string> {
 	if (!Array.isArray(value)) return new Set();
 	return new Set(
@@ -653,17 +224,7 @@ function normalizeRequiredChecks(value: unknown): Set<string> {
 	);
 }
 
-/**
- * Adds an "info" finding when a specific required check exists in the normalized set, otherwise adds an "error" finding that includes a suggested fix to add the check.
- *
- * @param input - Function inputs
- * @param input.findings - Array to which the generated finding will be appended
- * @param input.requiredChecks - Normalized set of required branch-protection checks
- * @param input.check - The check name to verify presence of in `requiredChecks`
- * @param input.id - Finding identifier to use when the check is missing (".missing" will be replaced with ".ok" for the present case)
- * @param input.message - Error message to use when the check is missing
- * @param input.contractPath - Path to the contract file used as the finding's `path`
- */
+/** Append a pass or fail finding for a single required check. */
 function requireCheck(input: {
 	findings: CIOwnershipGateFinding[];
 	requiredChecks: Set<string>;
@@ -690,6 +251,7 @@ function requireCheck(input: {
 	});
 }
 
+/** Convert a check name into a stable finding identifier token. */
 function findingIdToken(value: string): string {
 	return value
 		.trim()
@@ -698,13 +260,7 @@ function findingIdToken(value: string): string {
 		.replace(/^-+|-+$/g, "");
 }
 
-/**
- * Assembles the final CI ownership gate result object.
- *
- * @param contractPath - Filesystem path to the resolved contract used to produce the result
- * @param findings - All findings produced by the gate checks
- * @returns The gate result object containing `schemaVersion`, `status` (`"fail"` if any finding has `severity === "error"`, otherwise `"pass"`), the provided `contractPath`, `findings`, and a `summary` with counts of errors, info, and total findings
- */
+/** Build the final CI ownership gate result summary. */
 function buildResult(
 	contractPath: string,
 	findings: CIOwnershipGateFinding[],

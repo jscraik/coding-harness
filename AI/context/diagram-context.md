@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-06-29T06:13:03Z
+Generated: 2026-07-03T14:49:03Z
 
 ## Table of Contents
 
@@ -29,32 +29,21 @@ Generated: 2026-06-29T06:13:03Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `package.json`
-- `src/cli.ts`
-- `src/commands/next-decision-meta.ts`
-- `src/commands/next-orientation-meta.ts`
-- `src/commands/orient.ts`
-- `src/commands/verify-coderabbit.ts`
-- `src/lib/cli/registry/command-agent-catalog-rules.ts`
-- `src/lib/cli/registry/command-capability-rules.ts`
-- `src/lib/cli/registry/command-specs-core.ts`
-- `src/lib/cli/registry/command-visibility-rules.ts`
-- `src/lib/cli/registry/orient-command-spec.ts`
-- `src/lib/coderabbit/local-checks.ts`
-- `src/lib/coderabbit/npmrc-check.ts`
+- `src/lib/ci/ownership-gate-normalization.ts`
+- `src/lib/ci/ownership-gate-validation.ts`
+- `src/lib/ci/ownership-gate-workflow-triggers.ts`
+- `src/lib/ci/ownership-gate.ts`
 - `src/lib/init/README.md`
-- `src/lib/init/scaffold-script-template-registry.ts`
-- `src/lib/orient/cli.ts`
-- `src/lib/orient/collector.ts`
-- `src/lib/orient/context.ts`
-- `src/lib/orient/types.ts`
-- `src/lib/policy/tooling-paths.ts`
-- `src/lib/project-brain/README.md`
-- `src/lib/project-brain/stale-cli.ts`
-- `src/templates/circleci-config.yml`
-- `src/templates/circleci-linear-gate.yml`
-- `src/templates/coderabbit.yaml`
-- `src/templates/codex-preflight.sh`
+- `src/lib/policy/required-check-names.ts`
+- `src/lib/policy/required-check-profiles.ts`
+- `src/lib/policy/required-checks.ts`
+- `src/presets/go-base.json`
+- `src/presets/minimal.json`
+- `src/presets/python-base.json`
+- `src/presets/rust-base.json`
+- `src/presets/strict.json`
+- `src/presets/swift-base.json`
+- `src/presets/typescript-base.json`
 
 ## agent
 
@@ -841,6 +830,7 @@ graph LR
   node_overload_guard_2748c559_3eff560b["overload_guard_2748c559"]
   node_overrides_ab2dd33e_6115e15e["overrides_ab2dd33e"]
   node_ownership_gate_2e194d13_2b02b2e1["ownership_gate_2e194d13"]
+  node_ownership_gate_validation_52f19397_e0754c57["ownership_gate_validation_52f19397"]
   node_pattern_scope_61ff946d_a1f21fd8["pattern_scope_61ff946d"]
   node_pattern_scope_siblings_43abe000_821756b0["pattern_scope_siblings_43abe000"]
   node_performance_overload_c685bfcf_291ef65a["performance_overload_c685bfcf"]
@@ -1250,6 +1240,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_org_audit_d739e44b_e522723c
   ext_node_fs_a15b7d96["node:fs"] --> node_overrides_ab2dd33e_6115e15e
   ext_node_fs_a15b7d96["node:fs"] --> node_ownership_gate_2e194d13_2b02b2e1
+  ext_node_fs_a15b7d96["node:fs"] --> node_ownership_gate_validation_52f19397_e0754c57
   ext_node_fs_a15b7d96["node:fs"] --> node_pattern_scope_61ff946d_a1f21fd8
   ext_node_fs_a15b7d96["node:fs"] --> node_pattern_scope_siblings_43abe000_821756b0
   ext_node_fs_a15b7d96["node:fs"] --> node_pilot_evaluate_core_48a59b4a_deb218dc
@@ -1518,6 +1509,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_org_audit_d739e44b_e522723c
   ext_node_path_78811c13["node:path"] --> node_overrides_ab2dd33e_6115e15e
   ext_node_path_78811c13["node:path"] --> node_ownership_gate_2e194d13_2b02b2e1
+  ext_node_path_78811c13["node:path"] --> node_ownership_gate_validation_52f19397_e0754c57
   ext_node_path_78811c13["node:path"] --> node_pattern_scope_61ff946d_a1f21fd8
   ext_node_path_78811c13["node:path"] --> node_pattern_scope_siblings_43abe000_821756b0
   ext_node_path_78811c13["node:path"] --> node_pilot_evaluate_core_48a59b4a_deb218dc
@@ -1749,7 +1741,7 @@ flowchart TD
     cli_args_1_6144b055{{"cli-args"}}
     ci_migrate_merge_queue_window_0070bd6d{{"ci-migrate-merge-queue-window"}}
     ci_migrate_promotion_evidence_1a2dc527{{"ci-migrate-promotion-evidence"}}
-    ownership_gate_2e194d13{{"ownership-gate"}}
+    ownership_gate_workflow_triggers_b60d2eab{{"ownership-gate-workflow-triggers"}}
     docs_gate_command_spec_16795187{{"docs-gate-command-spec"}}
     harness_run_c0761792{{"harness-run"}}
     json_schema_core_96d7e328{{"json-schema-core"}}
@@ -1765,7 +1757,7 @@ flowchart TD
     scaffold_github_actions_pr_pipeline_renderer_1ee18de5{{"scaffold-github-actions-pr-pipeline-renderer"}}
   end
   classDef eventNode fill:#db2777,color:#fff
-  class validate_action_review_receipt_fa2f06c3,validate_review_lifecycle_0b410d1e,validate_steering_queue_4bc0cc94,ci_migrate_core_7005b5af,context_health_80bb7da9,pilot_rollback_00c1f82c,replay_output_993eda9e,replay_run_record_9a08cce2,runtime_card_args_2b3d4b28,runtime_card_artifacts_143b799c,runtime_card_options_c9156ad5,runtime_card_e06b53e1,validation_98c41dcd,cli_args_1_6144b055,ci_migrate_merge_queue_window_0070bd6d,ci_migrate_promotion_evidence_1a2dc527,ownership_gate_2e194d13,docs_gate_command_spec_16795187,harness_run_c0761792,json_schema_core_96d7e328,policy_validators_core_714a3fe7,run_record_emitter_core_688049d5,run_records_core_89286dfa,judge_pm_audit_ccd20b35,types_11_4be3ee64,observed_skill_usage_ed7d5930,outcome_closeout_ba497ec2,client_948fe603,mutation_queue_ce5a530e,scaffold_github_actions_pr_pipeline_renderer_1ee18de5 eventNode
+  class validate_action_review_receipt_fa2f06c3,validate_review_lifecycle_0b410d1e,validate_steering_queue_4bc0cc94,ci_migrate_core_7005b5af,context_health_80bb7da9,pilot_rollback_00c1f82c,replay_output_993eda9e,replay_run_record_9a08cce2,runtime_card_args_2b3d4b28,runtime_card_artifacts_143b799c,runtime_card_options_c9156ad5,runtime_card_e06b53e1,validation_98c41dcd,cli_args_1_6144b055,ci_migrate_merge_queue_window_0070bd6d,ci_migrate_promotion_evidence_1a2dc527,ownership_gate_workflow_triggers_b60d2eab,docs_gate_command_spec_16795187,harness_run_c0761792,json_schema_core_96d7e328,policy_validators_core_714a3fe7,run_record_emitter_core_688049d5,run_records_core_89286dfa,judge_pm_audit_ccd20b35,types_11_4be3ee64,observed_skill_usage_ed7d5930,outcome_closeout_ba497ec2,client_948fe603,mutation_queue_ce5a530e,scaffold_github_actions_pr_pipeline_renderer_1ee18de5 eventNode
 
 ```
 
