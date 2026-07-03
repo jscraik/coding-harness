@@ -4,11 +4,11 @@
 	"reviewPolicy": {
 		"timeoutSeconds": 600,
 		"timeoutAction": "fail",
-		"requiredChecks": ["security-scan", "semgrep-cloud-platform/scan"],
+		"requiredChecks": ["security-scan"],
 		"enforceReviewerIndependence": false
 	},
 	"branchProtection": {
-		"requiredChecks": ["security-scan", "semgrep-cloud-platform/scan"],
+		"requiredChecks": ["security-scan"],
 		"restrictDeletions": true,
 		"blockForcePushes": true,
 		"requireLinearHistory": true,
@@ -32,8 +32,8 @@
 			"required": true,
 			"publicOnly": true,
 			"tool": "CodeQL",
-			"alertsThreshold": "errors",
-			"securityAlertsThreshold": "high_or_higher"
+			"alertsThreshold": "all",
+			"securityAlertsThreshold": "all"
 		}
 	},
 	"evidencePolicy": {

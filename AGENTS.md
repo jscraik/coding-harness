@@ -82,6 +82,10 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 - Types and schemas are contract surfaces. TypeScript, Python, JSON, YAML,
   Markdown metadata, shell, and generated artifacts should use configured type,
   schema, lint, and validation gates rather than ad hoc string assumptions.
+- Required status checks and code scanning are separate merge lanes: this repo's
+  status checks are `pr-pipeline`, `security-scan`, and `CodeRabbit`;
+  public code scanning is the `CodeQL` ruleset backed by
+  `.github/workflows/codeql.yml`.
 - Coding policy routing is a machine-readable control-plane surface:
   `coding-policy.json` maps changed-file patterns to codestyle modules and
   required gates, while Markdown codestyle modules remain the prose authority.

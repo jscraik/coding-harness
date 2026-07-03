@@ -152,7 +152,7 @@
 	"reviewPolicy": {
 		"timeoutSeconds": 600,
 		"timeoutAction": "fail",
-		"requiredChecks": ["security-scan", "semgrep-cloud-platform/scan"],
+		"requiredChecks": ["security-scan"],
 		"enforceReviewerIndependence": true,
 		"requireReviewContext": false,
 		"reviewContextPath": "artifacts/review-context/pr-context.json",
@@ -187,12 +187,7 @@
 		"enforceBranchProtection": true
 	},
 	"branchProtection": {
-		"requiredChecks": [
-			"pr-pipeline",
-			"security-scan",
-			"CodeRabbit",
-			"semgrep-cloud-platform/scan"
-		],
+		"requiredChecks": ["pr-pipeline", "security-scan", "CodeRabbit"],
 		"restrictDeletions": true,
 		"blockForcePushes": true,
 		"requireLinearHistory": true,
@@ -216,8 +211,8 @@
 			"required": true,
 			"publicOnly": true,
 			"tool": "CodeQL",
-			"alertsThreshold": "errors",
-			"securityAlertsThreshold": "high_or_higher"
+			"alertsThreshold": "all",
+			"securityAlertsThreshold": "all"
 		}
 	},
 	"issueTrackingPolicy": {
@@ -1070,7 +1065,7 @@
 		"schemaVersion": "ci-ownership/v1",
 		"primaryPrGate": "circleci",
 		"reviewProvider": "coderabbit",
-		"securityChecks": ["semgrep-cloud-platform/scan"],
+		"securityChecks": ["security-scan"],
 		"fallbackWorkflows": [
 			{
 				"path": ".github/workflows/release-private-npm.yml",

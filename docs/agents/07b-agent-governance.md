@@ -40,6 +40,10 @@ artifacts, validation, ownership, and review expectations.
 - `bash scripts/validate-codestyle.sh`
 - `docs-gate` (CI check for documentation parity)
 - Code-review pass-through via PR workflow (no direct `main` commits).
+- Required status checks and code scanning stay separate: branch protection
+  status checks require `pr-pipeline`, `security-scan`, and
+  `CodeRabbit`, while public code scanning requires CodeQL results from
+  `.github/workflows/codeql.yml`.
 
 When agent work changes tooling/runtime contract surfaces or architecture-context refresh behavior, the matching docs are part of the required gate, not optional polish:
 
@@ -502,7 +506,7 @@ implementation into the harness.
 - For downstream scaffold output, repositories scaffolded by `harness init` receive generated PR, workflow, and worktree guidance that uses `jscraik/feature/*` for agent-created branches; keep those emitted surfaces synchronized through the init scaffold prefix constant.
 - CodeRabbit review must be independent from code authorship (coding agent cannot act as approving review agent).
 - Legacy review bridge workflows may exist in downstream repositories, but they are not the primary review authority for this repository.
-- CI ownership is enforced by `harness.contract.json` `ciOwnership`: CircleCI owns the primary PR gate, CodeRabbit remains the independent review check, Semgrep Cloud remains the independent external security check, and GitHub Actions workflows are release/fallback surfaces only unless an intentional contract migration says otherwise.
+- CI ownership is enforced by `harness.contract.json` `ciOwnership`: CircleCI owns the primary PR gate and `security-scan` status, CodeRabbit remains the independent review check, and CodeQL remains the separate public code-scanning rule backed by `.github/workflows/codeql.yml`. GitHub Actions workflows must not become required status-check PR gates unless an intentional contract migration says otherwise.
 - Manual GitHub Actions release inputs are shell-boundary data. Pass
   `workflow_dispatch` values through named `env` variables before shell
   validation instead of interpolating `github.event.inputs.*` directly inside

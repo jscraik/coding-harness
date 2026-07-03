@@ -801,11 +801,12 @@ write_run_header() {
 						status: "ci_owned"
 					}
 				],
-				externalRequired: [
+				codeScanning: [
 					{
-						name: "semgrep-cloud-platform/scan",
-						provider: "semgrep-cloud",
-						status: "external_required_check"
+						name: "CodeQL",
+						provider: "github-code-scanning",
+						workflow: ".github/workflows/codeql.yml",
+						status: "code_scanning_required"
 					}
 				]
 			}

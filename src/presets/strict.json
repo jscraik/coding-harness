@@ -19,7 +19,6 @@
 			"typecheck",
 			"test",
 			"security-scan",
-			"semgrep-cloud-platform/scan",
 			"dependency-review"
 		],
 		"enforceReviewerIndependence": true
@@ -30,7 +29,6 @@
 			"typecheck",
 			"test",
 			"security-scan",
-			"semgrep-cloud-platform/scan",
 			"dependency-review"
 		],
 		"restrictDeletions": true,
@@ -56,8 +54,8 @@
 			"required": true,
 			"publicOnly": true,
 			"tool": "CodeQL",
-			"alertsThreshold": "errors",
-			"securityAlertsThreshold": "high_or_higher"
+			"alertsThreshold": "all",
+			"securityAlertsThreshold": "all"
 		}
 	},
 	"evidencePolicy": {
