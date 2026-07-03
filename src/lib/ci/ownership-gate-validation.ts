@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { isAbsolute, relative, resolve } from "node:path";
 import type { CIOwnershipGateFinding } from "./ownership-gate.js";
 import {
 	DEFAULT_CI_OWNERSHIP,
@@ -156,6 +156,17 @@ function validateFallbackWorkflow(input: {
 		return;
 	}
 	const workflowPath = resolve(input.repoRoot, input.workflow.path);
+	if (!isPathContainedInRoot(input.repoRoot, workflowPath)) {
+		input.findings.push({
+			id: `ci-ownership.fallback-workflow.${findingIdToken(input.workflow.path)}.path-escapes-root`,
+			severity: "error",
+			message:
+				"Configured fallback workflow resolves outside the repository root.",
+			path: input.workflow.path,
+			fix: "Use a repo-relative workflow path that does not escape the repository root.",
+		});
+		return;
+	}
 	const content = readWorkflowContent({
 		findings: input.findings,
 		workflow: input.workflow,
@@ -209,6 +220,18 @@ function fallbackWorkflowStaticFinding(
 		};
 	}
 	return null;
+}
+
+/** Return whether a resolved candidate path stays inside the repository root. */
+function isPathContainedInRoot(
+	repoRoot: string,
+	candidatePath: string,
+): boolean {
+	const relativePath = relative(resolve(repoRoot), resolve(candidatePath));
+	return (
+		relativePath === "" ||
+		(!relativePath.startsWith("..") && !isAbsolute(relativePath))
+	);
 }
 
 /** Read a declared workflow file, appending findings for missing or unreadable files. */

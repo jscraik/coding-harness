@@ -39,7 +39,7 @@ function lineHasAutomaticPrTrigger(line: string, state: OnBlockState): boolean {
 	const trimmed = line.trim();
 	if (trimmed === "" || trimmed.startsWith("#")) return false;
 	closeOnBlockIfNeeded({ indent, trimmed, state });
-	if (state.inOnBlock && indent > state.onBlockIndent) {
+	if (state.inOnBlock && indent >= state.onBlockIndent) {
 		return onBlockLineHasAutomaticPrTrigger({ indent, trimmed, state });
 	}
 	const onMatch = trimmed.match(ON_KEY_PATTERN);

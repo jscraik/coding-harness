@@ -106,6 +106,7 @@ export function formatRequiredChecksBulleted(
 export function getEcosystemChecks(
 	ecosystem: string,
 ): readonly string[] | undefined {
+	if (!Object.hasOwn(ECOSYSTEM_PROFILES, ecosystem)) return undefined;
 	return ECOSYSTEM_PROFILES[ecosystem as EcosystemProfile];
 }
 

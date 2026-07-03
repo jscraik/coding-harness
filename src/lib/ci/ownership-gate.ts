@@ -125,9 +125,24 @@ function readHarnessContract(input: {
 		return null;
 	}
 	try {
-		return JSON.parse(
+		const parsed: unknown = JSON.parse(
 			readFileSync(input.resolvedContractPath, "utf-8"),
-		) as HarnessContractLike;
+		);
+		if (
+			typeof parsed !== "object" ||
+			parsed === null ||
+			Array.isArray(parsed)
+		) {
+			input.findings.push({
+				id: "ci-ownership.contract.invalid-root",
+				severity: "error",
+				message: "CI ownership contract root must be a JSON object.",
+				path: input.contractPath,
+				fix: "Ensure harness.contract.json's top level is a JSON object.",
+			});
+			return null;
+		}
+		return parsed as HarnessContractLike;
 	} catch (error) {
 		input.findings.push({
 			id: "ci-ownership.contract.unreadable",
@@ -204,7 +219,7 @@ function appendRequiredCheckFindings(input: {
 		message: "CodeRabbit must remain an independent required review check.",
 		contractPath: input.contractPath,
 	});
-	for (const securityCheck of input.securityChecks) {
+	for (const securityCheck of new Set(input.securityChecks)) {
 		requireCheck({
 			findings: input.findings,
 			requiredChecks: input.requiredChecks,

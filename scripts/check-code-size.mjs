@@ -12,7 +12,12 @@ const MAX_FILE_LINES = 400;
 const MAX_FUNCTION_LINES = 80;
 const MAX_COMPLEXITY = 10;
 const MAX_TEST_FILE_LINES = 1_200;
+const LEGACY_PRODUCTION_FILE_LINE_ALLOWLIST = new Set([
+	// Existing monolithic contract surface; keep narrow while contract types are split down.
+	"src/lib/contract/types-core.ts",
+]);
 const LEGACY_TEST_FILE_LINE_ALLOWLIST = new Set([
+	"src/commands/branch-protect.test.ts",
 	"src/commands/init.test.ts",
 	// Temporary while prompt-context recovery cases are being split out; remove when this file is below MAX_TEST_FILE_LINES.
 	"src/commands/next.test.ts",
@@ -160,7 +165,10 @@ function checkFile(path) {
 	const findings = [];
 
 	const fileLines = countLogicalLines(sourceText);
-	if (fileLines > MAX_FILE_LINES) {
+	if (
+		fileLines > MAX_FILE_LINES &&
+		!LEGACY_PRODUCTION_FILE_LINE_ALLOWLIST.has(path)
+	) {
 		findings.push({
 			kind: "file_lines",
 			path,

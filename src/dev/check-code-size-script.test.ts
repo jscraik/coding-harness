@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -21,6 +21,7 @@ function createTempRepo() {
 }
 
 function writeSource(root: string, path: string, content: string): void {
+	mkdirSync(dirname(join(root, path)), { recursive: true });
 	writeFileSync(join(root, path), content);
 }
 
@@ -86,6 +87,23 @@ describe("check-code-size.mjs", () => {
 		expect(result.status).toBe(1);
 		expect(result.stderr).toContain("src/oversized.ts:1 oversized has");
 		expect(result.stderr).toContain("max is 80");
+	});
+
+	it("allows explicitly listed legacy production files to exceed file length", () => {
+		const root = createTempRepo();
+		writeSource(
+			root,
+			"src/lib/contract/types-core.ts",
+			Array.from(
+				{ length: 401 },
+				(_, index) => `export const value${String(index)} = ${String(index)};`,
+			).join("\n"),
+		);
+
+		const result = runScript(root);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("size and complexity limits passed");
 	});
 
 	it("blocks changed production functions over complexity 10", () => {

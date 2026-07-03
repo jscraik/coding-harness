@@ -45,12 +45,7 @@ describe("runBranchProtect", () => {
 				version: "1.0",
 				riskTierRules: {},
 				branchProtection: {
-					requiredChecks: [
-						"pr-pipeline",
-						"security-scan",
-						"CodeRabbit",
-						"semgrep-cloud-platform/scan",
-					],
+					requiredChecks: ["pr-pipeline", "security-scan", "CodeRabbit"],
 				},
 			};
 		});
@@ -574,7 +569,6 @@ describe("runBranchProtect", () => {
 				{ context: "pr-pipeline" },
 				{ context: "security-scan" },
 				{ context: "CodeRabbit" },
-				{ context: "semgrep-cloud-platform/scan" },
 			],
 		});
 	});
@@ -672,7 +666,6 @@ describe("runBranchProtect", () => {
 				{ context: "pr-pipeline" },
 				{ context: "security-scan" },
 				{ context: "CodeRabbit" },
-				{ context: "semgrep-cloud-platform/scan" },
 			],
 		});
 	});
@@ -1526,10 +1519,7 @@ describe("runBranchProtect", () => {
 			expect(result.ok).toBe(true);
 			if (result.ok) {
 				expect(result.output.ecosystem).toBe("minimal");
-				expect(result.output.requiredChecks).toEqual([
-					"lint",
-					"semgrep-cloud-platform/scan",
-				]);
+				expect(result.output.requiredChecks).toEqual(["lint", "security-scan"]);
 			}
 		});
 

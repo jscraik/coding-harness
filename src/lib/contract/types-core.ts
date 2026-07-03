@@ -998,7 +998,7 @@ export const DEFAULT_CI_OWNERSHIP_POLICY: CIOwnershipPolicy = {
 	schemaVersion: "ci-ownership/v1",
 	primaryPrGate: "circleci",
 	reviewProvider: "coderabbit",
-	securityChecks: ["semgrep-cloud-platform/scan"],
+	securityChecks: ["security-scan"],
 	fallbackWorkflows: [],
 };
 

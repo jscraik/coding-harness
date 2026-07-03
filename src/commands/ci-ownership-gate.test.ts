@@ -210,6 +210,47 @@ describe("ci-ownership-gate command", () => {
 		);
 	});
 
+	it("fails when fallback workflows use same-indent list-style PR triggers", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["security-scan"],
+				fallbackWorkflows: [
+					{
+						path: ".github/workflows/pr-fallback-same-indent-list.yml",
+						role: "fallback_pr_gate",
+						purpose: "Emergency fallback only.",
+						allowAutomaticPrTriggers: false,
+					},
+				],
+			},
+			branchProtection: {
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
+			},
+		});
+		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
+		writeFileSync(
+			join(repoRoot, ".github/workflows/pr-fallback-same-indent-list.yml"),
+			["name: PR fallback", "on:", "- push", "- pull_request", "jobs: {}"].join(
+				"\n",
+			),
+		);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(1);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).toContain(
+			"ci-ownership.fallback-workflow..github/workflows/pr-fallback-same-indent-list.yml.automatic-pr-trigger",
+		);
+	});
+
 	it("fails when fallback workflows use quoted on keys with PR triggers", () => {
 		const repoRoot = writeContract({
 			ciProviderPolicy: { activeProvider: "circleci" },
@@ -541,6 +582,33 @@ describe("ci-ownership-gate command", () => {
 		).toContain("ci-ownership.security-check.custom-security.missing");
 	});
 
+	it("deduplicates repeated contract-declared security check findings", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["security-scan", "custom-security", "custom-security"],
+				fallbackWorkflows: [],
+			},
+			branchProtection: {
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
+			},
+		});
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(1);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		const duplicateFindings = payload.findings.filter(
+			(finding: { id: string }) =>
+				finding.id === "ci-ownership.security-check.custom-security.missing",
+		);
+		expect(duplicateFindings).toHaveLength(1);
+	});
+
 	it("uses deterministic legacy defaults when ciOwnership is absent", () => {
 		const repoRoot = writeContract({
 			ciProviderPolicy: { activeProvider: "circleci" },
@@ -643,6 +711,38 @@ describe("ci-ownership-gate command", () => {
 		expect(
 			payload.findings.map((finding: { id: string }) => finding.id),
 		).toContain("ci-ownership.fallback-workflows.invalid");
+	});
+
+	it("fails before reading fallback workflows outside the repository root", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["security-scan"],
+				fallbackWorkflows: [
+					{
+						path: "../outside.yml",
+						role: "fallback_pr_gate",
+						purpose: "Emergency fallback only.",
+						allowAutomaticPrTriggers: false,
+					},
+				],
+			},
+			branchProtection: {
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
+			},
+		});
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(1);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).toContain("ci-ownership.fallback-workflow.outside-yml.path-escapes-root");
 	});
 
 	it("fails when ciOwnership securityChecks contains non-string values", () => {

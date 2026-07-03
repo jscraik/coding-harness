@@ -483,7 +483,7 @@ repository paths, git-tracked proof, or stale artifacts. Refresh
 `docs/agents/07b-agent-governance.md` whenever making trust-boundary validator
 changes that classify repo paths, git-tracked proof, or stale artifacts.
 
-For required-check architecture changes, keep the branch-protection identity set aligned across `harness.contract.json`, `.harness/ci-required-checks.json`, generated scaffold templates, and external app checks such as `semgrep-cloud-platform/scan`.
+For required-check architecture changes, keep the branch-protection identity set aligned across `harness.contract.json`, `.harness/ci-required-checks.json`, generated scaffold templates, the CircleCI `security-scan` status, the independent `CodeRabbit` status, and the CodeQL code-scanning ruleset lane.
 When required-check or CI migration logic is split into deep modules, keep the
 public command facade as orchestration only, add or update executable module
 ratchets in `src/lib/architecture/module-boundaries.test.ts`, and document the

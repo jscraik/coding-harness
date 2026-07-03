@@ -43,7 +43,9 @@ artifacts, validation, ownership, and review expectations.
 - Required status checks and code scanning stay separate: branch protection
   status checks require `pr-pipeline`, `security-scan`, and
   `CodeRabbit`, while public code scanning requires CodeQL results from
-  `.github/workflows/codeql.yml`.
+  `.github/workflows/codeql.yml`. The `security-scan` status owns repo-run
+  Semgrep/Snyk security validation; a separate Semgrep Cloud app check is not
+  a required branch-protection status context.
 
 When agent work changes tooling/runtime contract surfaces or architecture-context refresh behavior, the matching docs are part of the required gate, not optional polish:
 

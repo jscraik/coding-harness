@@ -85,7 +85,9 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 - Required status checks and code scanning are separate merge lanes: this repo's
   status checks are `pr-pipeline`, `security-scan`, and `CodeRabbit`;
   public code scanning is the `CodeQL` ruleset backed by
-  `.github/workflows/codeql.yml`.
+  `.github/workflows/codeql.yml`. The `security-scan` status owns repo-run
+  Semgrep/Snyk security validation; do not reintroduce a separate Semgrep
+  Cloud app check as a branch-protection status context.
 - Coding policy routing is a machine-readable control-plane surface:
   `coding-policy.json` maps changed-file patterns to codestyle modules and
   required gates, while Markdown codestyle modules remain the prose authority.
