@@ -404,7 +404,6 @@ describe("runInit", () => {
 				"memory",
 				"security-scan",
 				"CodeRabbit",
-				"semgrep-cloud-platform/scan",
 			]);
 			expect(
 				generatedChecks.every(
@@ -416,8 +415,7 @@ describe("runInit", () => {
 					.filter(
 						(entry) =>
 							entry.displayName !== "CodeRabbit" &&
-							entry.displayName !== "security-scan" &&
-							entry.displayName !== "semgrep-cloud-platform/scan",
+							entry.displayName !== "security-scan",
 					)
 					.every((entry) => entry.githubCheckName === "pr-pipeline"),
 			).toBe(true);
@@ -432,14 +430,6 @@ describe("runInit", () => {
 			);
 			expect(codeRabbitCheck?.provider).toBe("coderabbit");
 			expect(codeRabbitCheck?.githubCheckName).toBe("CodeRabbit");
-			const semgrepCloudCheck = generatedChecks.find(
-				(entry) => entry.displayName === "semgrep-cloud-platform/scan",
-			);
-			expect(semgrepCloudCheck?.provider).toBe("semgrep-cloud-platform");
-			expect(semgrepCloudCheck?.githubCheckName).toBe(
-				"semgrep-cloud-platform/scan",
-			);
-
 			const circleConfig = require("node:fs").readFileSync(
 				join(tempDir, ".circleci/config.yml"),
 				"utf-8",
@@ -710,7 +700,7 @@ describe("runInit", () => {
 				"security-scan",
 			);
 			expect(content.branchProtection.requiredChecks).toContain("CodeRabbit");
-			expect(content.branchProtection.requiredChecks).toContain(
+			expect(content.branchProtection.requiredChecks).not.toContain(
 				"semgrep-cloud-platform/scan",
 			);
 			expect(content.branchProtection.requiredChecks).not.toContain(
@@ -4987,12 +4977,7 @@ describe("--update flag", () => {
 					}
 				).requiredChecks,
 			).toEqual(
-				expect.arrayContaining([
-					"pr-pipeline",
-					"security-scan",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				]),
+				expect.arrayContaining(["pr-pipeline", "security-scan", "CodeRabbit"]),
 			);
 			expect(result.output.ownershipDecisions ?? []).toEqual(
 				expect.arrayContaining([
@@ -5113,9 +5098,7 @@ describe("--update flag", () => {
 		) as { requiredChecks: Array<{ displayName: string }> };
 		expect(
 			requiredChecks.requiredChecks.map((check) => check.displayName),
-		).toEqual(
-			expect.arrayContaining(["CodeRabbit", "semgrep-cloud-platform/scan"]),
-		);
+		).toEqual(expect.arrayContaining(["security-scan", "CodeRabbit"]));
 		expect(
 			readFileSync(join(tempDir, "scripts/check-semgrep-changed.sh"), "utf-8"),
 		).toContain("run_semgrep scan");

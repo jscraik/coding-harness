@@ -322,7 +322,7 @@ Configure GitHub branch protection (or rulesets) on `main`:
   - `CodeRabbit`
 - Require branches to be up to date before merge.
 - Require code quality results with severity `all`.
-- In public repositories, require `CodeQL` code scanning results with `all` security alerts and `all` alerts thresholds.
+- In public repositories, require `CodeQL` code scanning results with `errors` alerts and `high_or_higher` security-alert thresholds.
 - Allow merge commits, squash merges, and rebase merges.
 - Require workflows to pin third-party actions to full commit SHAs.
 - Configure required checks workflows to run on both `pull_request` and `merge_group` when using merge queue.

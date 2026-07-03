@@ -211,8 +211,8 @@
 			"required": true,
 			"publicOnly": true,
 			"tool": "CodeQL",
-			"alertsThreshold": "all",
-			"securityAlertsThreshold": "all"
+			"alertsThreshold": "errors",
+			"securityAlertsThreshold": "high_or_higher"
 		}
 	},
 	"issueTrackingPolicy": {

@@ -96,6 +96,12 @@ thin and delegate into this deep module.
   ambient shell is below the required Node floor but mise can resolve the pinned
   repository Node, the checker should retry through that pinned runtime before
   producing the fail-closed diagnostic.
+- Generated required-check manifests and contract branch-protection defaults must
+  use `security-scan` as the required security status check and `CodeRabbit`
+  as the independent review status check. Semgrep Cloud scanner execution may
+  remain inside the CircleCI-owned security lane, but it must not be emitted as
+  a separate required GitHub status context unless the required-check authority
+  model is intentionally changed.
 - Generated CircleCI scaffolds must include
   `scripts/resolve-circleci-pr-ref.sh` whenever `pr-template` or
   `linear-gate` jobs are emitted. Those jobs should call the shared helper

@@ -25,7 +25,7 @@ describe("ci-ownership-gate command", () => {
 		return repoRoot;
 	}
 
-	it("passes for CircleCI primary ownership with CodeRabbit and Semgrep Cloud required", () => {
+	it("passes for CircleCI primary ownership with CodeRabbit and security-scan required", () => {
 		const repoRoot = writeContract({
 			ciProviderPolicy: { activeProvider: "circleci" },
 			branchProtection: {
@@ -33,7 +33,7 @@ describe("ci-ownership-gate command", () => {
 					"pr-pipeline",
 					"security-scan",
 					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
+					"security-scan",
 				],
 			},
 		});
@@ -51,11 +51,7 @@ describe("ci-ownership-gate command", () => {
 		const repoRoot = writeContract({
 			ciProviderPolicy: { activeProvider: "github-actions" },
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
@@ -87,7 +83,7 @@ describe("ci-ownership-gate command", () => {
 		).toEqual(
 			expect.arrayContaining([
 				"ci-ownership.coderabbit-review-check.missing",
-				"ci-ownership.security-check.semgrep-cloud-platform-scan.missing",
+				"ci-ownership.security-check.security-scan.missing",
 			]),
 		);
 	});
@@ -99,15 +95,11 @@ describe("ci-ownership-gate command", () => {
 				schemaVersion: "ci-ownership/v1",
 				primaryPrGate: "circleci",
 				reviewProvider: "coderabbit",
-				securityChecks: ["semgrep-cloud-platform/scan", " "],
+				securityChecks: ["security-scan", " "],
 				fallbackWorkflows: [],
 			},
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
@@ -126,11 +118,7 @@ describe("ci-ownership-gate command", () => {
 			ciProviderPolicy: { activeProvider: "circleci" },
 			ciOwnership: [],
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
@@ -151,7 +139,7 @@ describe("ci-ownership-gate command", () => {
 				schemaVersion: "ci-ownership/v1",
 				primaryPrGate: "circleci",
 				reviewProvider: "coderabbit",
-				securityChecks: ["semgrep-cloud-platform/scan"],
+				securityChecks: ["security-scan"],
 				fallbackWorkflows: [
 					{
 						path: ".github/workflows/pr-fallback.yml",
@@ -162,11 +150,7 @@ describe("ci-ownership-gate command", () => {
 				],
 			},
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
@@ -194,7 +178,7 @@ describe("ci-ownership-gate command", () => {
 				schemaVersion: "ci-ownership/v1",
 				primaryPrGate: "circleci",
 				reviewProvider: "coderabbit",
-				securityChecks: ["semgrep-cloud-platform/scan"],
+				securityChecks: ["security-scan"],
 				fallbackWorkflows: [
 					{
 						path: ".github/workflows/pr-fallback-list.yml",
@@ -205,11 +189,7 @@ describe("ci-ownership-gate command", () => {
 				],
 			},
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
@@ -230,6 +210,47 @@ describe("ci-ownership-gate command", () => {
 		);
 	});
 
+	it("fails when fallback workflows use same-indent list-style PR triggers", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["security-scan"],
+				fallbackWorkflows: [
+					{
+						path: ".github/workflows/pr-fallback-same-indent-list.yml",
+						role: "fallback_pr_gate",
+						purpose: "Emergency fallback only.",
+						allowAutomaticPrTriggers: false,
+					},
+				],
+			},
+			branchProtection: {
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
+			},
+		});
+		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
+		writeFileSync(
+			join(repoRoot, ".github/workflows/pr-fallback-same-indent-list.yml"),
+			["name: PR fallback", "on:", "- push", "- pull_request", "jobs: {}"].join(
+				"\n",
+			),
+		);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(1);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).toContain(
+			"ci-ownership.fallback-workflow..github/workflows/pr-fallback-same-indent-list.yml.automatic-pr-trigger",
+		);
+	});
+
 	it("fails when fallback workflows use quoted on keys with PR triggers", () => {
 		const repoRoot = writeContract({
 			ciProviderPolicy: { activeProvider: "circleci" },
@@ -237,7 +258,7 @@ describe("ci-ownership-gate command", () => {
 				schemaVersion: "ci-ownership/v1",
 				primaryPrGate: "circleci",
 				reviewProvider: "coderabbit",
-				securityChecks: ["semgrep-cloud-platform/scan"],
+				securityChecks: ["security-scan"],
 				fallbackWorkflows: [
 					{
 						path: ".github/workflows/quoted-on.yml",
@@ -248,11 +269,7 @@ describe("ci-ownership-gate command", () => {
 				],
 			},
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
@@ -282,7 +299,7 @@ describe("ci-ownership-gate command", () => {
 				schemaVersion: "ci-ownership/v1",
 				primaryPrGate: "circleci",
 				reviewProvider: "coderabbit",
-				securityChecks: ["semgrep-cloud-platform/scan"],
+				securityChecks: ["security-scan"],
 				fallbackWorkflows: [
 					{
 						path: ".github/workflows/commented-on.yml",
@@ -293,11 +310,7 @@ describe("ci-ownership-gate command", () => {
 				],
 			},
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
@@ -330,7 +343,7 @@ describe("ci-ownership-gate command", () => {
 				schemaVersion: "ci-ownership/v1",
 				primaryPrGate: "circleci",
 				reviewProvider: "coderabbit",
-				securityChecks: ["semgrep-cloud-platform/scan"],
+				securityChecks: ["security-scan"],
 				fallbackWorkflows: [
 					{
 						path: ".github/workflows/not-pr.yml",
@@ -341,11 +354,7 @@ describe("ci-ownership-gate command", () => {
 				],
 			},
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
@@ -379,7 +388,7 @@ describe("ci-ownership-gate command", () => {
 				schemaVersion: "ci-ownership/v1",
 				primaryPrGate: "circleci",
 				reviewProvider: "coderabbit",
-				securityChecks: ["semgrep-cloud-platform/scan"],
+				securityChecks: ["security-scan"],
 				fallbackWorkflows: [
 					{
 						path: ".github/workflows/manual.yml",
@@ -390,11 +399,7 @@ describe("ci-ownership-gate command", () => {
 				],
 			},
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
@@ -430,7 +435,7 @@ describe("ci-ownership-gate command", () => {
 				schemaVersion: "ci-ownership/v1",
 				primaryPrGate: "circleci",
 				reviewProvider: "coderabbit",
-				securityChecks: ["semgrep-cloud-platform/scan"],
+				securityChecks: ["security-scan"],
 				fallbackWorkflows: [
 					{
 						path: ".github/workflows/manual-inline.yml",
@@ -441,11 +446,7 @@ describe("ci-ownership-gate command", () => {
 				],
 			},
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
@@ -477,7 +478,7 @@ describe("ci-ownership-gate command", () => {
 				schemaVersion: "ci-ownership/v1",
 				primaryPrGate: "circleci",
 				reviewProvider: "coderabbit",
-				securityChecks: ["semgrep-cloud-platform/scan"],
+				securityChecks: ["security-scan"],
 				fallbackWorkflows: [
 					{
 						path: ".github/workflows/release.yml",
@@ -488,11 +489,7 @@ describe("ci-ownership-gate command", () => {
 				],
 			},
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
@@ -528,7 +525,7 @@ describe("ci-ownership-gate command", () => {
 				schemaVersion: "ci-ownership/v1",
 				primaryPrGate: "circleci",
 				reviewProvider: "coderabbit",
-				securityChecks: ["semgrep-cloud-platform/scan"],
+				securityChecks: ["security-scan"],
 				fallbackWorkflows: [
 					{
 						path: ".github/workflows/release.yml",
@@ -539,11 +536,7 @@ describe("ci-ownership-gate command", () => {
 				],
 			},
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		mkdirSync(join(repoRoot, ".github/workflows"), { recursive: true });
@@ -571,15 +564,11 @@ describe("ci-ownership-gate command", () => {
 				schemaVersion: "ci-ownership/v1",
 				primaryPrGate: "circleci",
 				reviewProvider: "coderabbit",
-				securityChecks: ["semgrep-cloud-platform/scan", "custom-security"],
+				securityChecks: ["security-scan", "custom-security"],
 				fallbackWorkflows: [],
 			},
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
@@ -593,15 +582,38 @@ describe("ci-ownership-gate command", () => {
 		).toContain("ci-ownership.security-check.custom-security.missing");
 	});
 
+	it("deduplicates repeated contract-declared security check findings", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["security-scan", "custom-security", "custom-security"],
+				fallbackWorkflows: [],
+			},
+			branchProtection: {
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
+			},
+		});
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(1);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		const duplicateFindings = payload.findings.filter(
+			(finding: { id: string }) =>
+				finding.id === "ci-ownership.security-check.custom-security.missing",
+		);
+		expect(duplicateFindings).toHaveLength(1);
+	});
+
 	it("uses deterministic legacy defaults when ciOwnership is absent", () => {
 		const repoRoot = writeContract({
 			ciProviderPolicy: { activeProvider: "circleci" },
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
@@ -622,7 +634,7 @@ describe("ci-ownership-gate command", () => {
 				schemaVersion: "ci-ownership/v1",
 				primaryPrGate: "circleci",
 				reviewProvider: "coderabbit",
-				securityChecks: ["semgrep-cloud-platform/scan"],
+				securityChecks: ["security-scan"],
 				fallbackWorkflows: [
 					{
 						path: ".github/workflows/pr-fallback.yml",
@@ -633,11 +645,7 @@ describe("ci-ownership-gate command", () => {
 				],
 			},
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
@@ -660,17 +668,13 @@ describe("ci-ownership-gate command", () => {
 				schemaVersion: "ci-ownership/v1",
 				primaryPrGate: "circleci",
 				reviewProvider: "coderabbit",
-				securityChecks: ["semgrep-cloud-platform/scan"],
+				securityChecks: ["security-scan"],
 				fallbackWorkflows: {
 					path: ".github/workflows/pr-fallback.yml",
 				},
 			},
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
@@ -691,15 +695,11 @@ describe("ci-ownership-gate command", () => {
 				schemaVersion: "ci-ownership/v1",
 				primaryPrGate: "circleci",
 				reviewProvider: "coderabbit",
-				securityChecks: ["semgrep-cloud-platform/scan"],
+				securityChecks: ["security-scan"],
 				fallbackWorkflows: ["not-a-workflow"],
 			},
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
@@ -713,6 +713,38 @@ describe("ci-ownership-gate command", () => {
 		).toContain("ci-ownership.fallback-workflows.invalid");
 	});
 
+	it("fails before reading fallback workflows outside the repository root", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			ciOwnership: {
+				schemaVersion: "ci-ownership/v1",
+				primaryPrGate: "circleci",
+				reviewProvider: "coderabbit",
+				securityChecks: ["security-scan"],
+				fallbackWorkflows: [
+					{
+						path: "../outside.yml",
+						role: "fallback_pr_gate",
+						purpose: "Emergency fallback only.",
+						allowAutomaticPrTriggers: false,
+					},
+				],
+			},
+			branchProtection: {
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
+			},
+		});
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(1);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).toContain("ci-ownership.fallback-workflow.outside-yml.path-escapes-root");
+	});
+
 	it("fails when ciOwnership securityChecks contains non-string values", () => {
 		const repoRoot = writeContract({
 			ciProviderPolicy: { activeProvider: "circleci" },
@@ -720,15 +752,11 @@ describe("ci-ownership-gate command", () => {
 				schemaVersion: "ci-ownership/v1",
 				primaryPrGate: "circleci",
 				reviewProvider: "coderabbit",
-				securityChecks: ["semgrep-cloud-platform/scan", 42],
+				securityChecks: ["security-scan", 42],
 				fallbackWorkflows: [],
 			},
 			branchProtection: {
-				requiredChecks: [
-					"pr-pipeline",
-					"CodeRabbit",
-					"semgrep-cloud-platform/scan",
-				],
+				requiredChecks: ["pr-pipeline", "CodeRabbit", "security-scan"],
 			},
 		});
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});

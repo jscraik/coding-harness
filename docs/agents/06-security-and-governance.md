@@ -99,14 +99,14 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - If sensitive material appears in a file, sanitize and rotate as soon as practical.
 - Keep environment-specific credentials outside repo and out of command snippets unless placeholders are explicit.
 - Keep repo-specific Gitleaks allow lists in the repo-root `.gitleaks.toml` so staged scans and manual secret scans share the same reviewed exceptions.
-- CircleCI now owns repo-run non-release security scanning in this repository. Keep `security-scan` in `.circleci/config.yml` and avoid reintroducing non-release GitHub Actions security workflows. The workflow includes the repo-run Semgrep lane and an explicit report-only Snyk dependency lane; Snyk CLI install, auth, and findings must not fail CircleCI PRs that the external GitHub Snyk delta check has cleared. Semgrep Cloud is enforced separately through the external GitHub App check `semgrep-cloud-platform/scan`; do not fold that required check into CircleCI workflow metadata.
+- CircleCI now owns repo-run non-release security scanning in this repository. Keep `security-scan` in `.circleci/config.yml` and avoid reintroducing non-release GitHub Actions security workflows. The workflow includes the repo-run Semgrep lane and an explicit report-only Snyk dependency lane; Snyk CLI install, auth, and findings must not fail CircleCI PRs that the external GitHub Snyk delta check has cleared. Public repositories also require CodeQL code-scanning results from `.github/workflows/codeql.yml`, but CodeQL remains a ruleset/code-scanning lane rather than a branch-protection status context.
 - CircleCI PR governance checks must fail closed only after bounded PR-context resolution attempts. The `pr-template` and `linear-gate` jobs may retry `CIRCLE_PULL_REQUEST`, `CIRCLE_PULL_REQUESTS`, branch lookups, and commit-to-PR lookup briefly, but must not bypass PR-template, Linear, or security policy gates when PR context remains unavailable.
 - The CircleCI PR-context resolver is a shared packaged helper
   (`scripts/resolve-circleci-pr-ref.sh`), not inline duplicated shell. Keep the
   live CircleCI config, scaffold templates, package files, generated
   environment support-file inventory, and script-level regression tests aligned
   when changing that lookup sequence or retry budget.
-- `harness.contract.json` `ciOwnership` is the machine-readable contract for that split: `primaryPrGate` must remain `circleci`, `reviewProvider` must remain `coderabbit`, `securityChecks` must include `semgrep-cloud-platform/scan`, and any GitHub Actions fallback PR workflow must stay manual/emergency-only unless the contract is intentionally migrated.
+- `harness.contract.json` `ciOwnership` is the machine-readable contract for that split: `primaryPrGate` must remain `circleci`, `reviewProvider` must remain `coderabbit`, `securityChecks` must include `security-scan`, and any GitHub Actions fallback PR workflow must stay manual/emergency-only unless the contract is intentionally migrated.
 
 ## Policy-gate risk chain
 
@@ -338,10 +338,11 @@ supplied by CircleCI project environment variables. Install failures, auth
 failures, and issue findings must not fail the workflow because the external
 GitHub Snyk PR check remains the blocking dependency-delta signal.
 
-### Semgrep Cloud
+### Code Scanning
 
-Keep Semgrep Cloud's `semgrep-cloud-platform/scan` branch-protection check as
-an independent external app gate.
+Keep CodeQL code scanning as an independent public-repository ruleset lane.
+Branch-protection status checks should stay focused on `pr-pipeline`,
+`security-scan`, and `CodeRabbit`.
 
 ### Setup
 

@@ -146,6 +146,11 @@ classification, outcome-closeout validation, generated Codex environment setup,
 or init scaffolding tests in one branch, keep `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and `docs/agents/07b-agent-governance.md` in the diff with the
 refreshed architecture context so reviewers can trace why the context pack
 changed.
+Required-check authority repairs that split CI ownership or policy modules are
+part of that architecture-context lane when they refresh `.diagram/**` or
+`AI/context/diagram-context.md`: commit this guide with the generated context
+pack so future agents can trace the security-check authority model, init
+scaffold evidence, and diagram refresh as one review surface.
 For release packaging changes that alter runtime dependency metadata, pass the packed CLI smoke path before publish, and commit any required `AI/context/diagram-context.md` refresh and its required docs-gate surfaces (including `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and `docs/agents/07b-agent-governance.md`) that pre-push or docs-gate reports.
 For formatter or linter major-version migrations, expect generated architecture context to drop newly ignored local analysis paths and refresh `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and `docs/agents/07b-agent-governance.md` with the committed `AI/context/diagram-context.md` update so reviewers know the architecture pack changed because tracked tooling rules changed.
 For validation gate graph changes, refresh `AI/context/diagram-context.md` and keep the validation governance surfaces synchronized (`AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and `docs/agents/07b-agent-governance.md`) when typed gate specs, phase-exit evidence gates, local review/validation artifact adapters, `harness next --phase-exit` visibility, parity tests, or resume-checkpoint guards are added or changed. Rollback: revert the branch to remove the typed mirror, evidence-gate contract, adapter wiring, dispatch guard, cockpit visibility, parity tests, and synchronized doc updates.
@@ -478,7 +483,7 @@ repository paths, git-tracked proof, or stale artifacts. Refresh
 `docs/agents/07b-agent-governance.md` whenever making trust-boundary validator
 changes that classify repo paths, git-tracked proof, or stale artifacts.
 
-For required-check architecture changes, keep the branch-protection identity set aligned across `harness.contract.json`, `.harness/ci-required-checks.json`, generated scaffold templates, and external app checks such as `semgrep-cloud-platform/scan`.
+For required-check architecture changes, keep the branch-protection identity set aligned across `harness.contract.json`, `.harness/ci-required-checks.json`, generated scaffold templates, the CircleCI `security-scan` status, the independent `CodeRabbit` status, and the CodeQL code-scanning ruleset lane.
 When required-check or CI migration logic is split into deep modules, keep the
 public command facade as orchestration only, add or update executable module
 ratchets in `src/lib/architecture/module-boundaries.test.ts`, and document the

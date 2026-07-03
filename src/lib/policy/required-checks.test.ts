@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	BRANCH_PROTECTION_REQUIRED_CHECKS,
 	CIRCLECI_JOB_NAME_CHECK_NAMES,
-	SEMGREP_CLOUD_CHECK_NAME,
+	SECURITY_SCAN_CHECK_NAME,
 	findCircleCIJobNamedCheckBindings,
 	isNonWorkflowRequiredCheck,
 	normalizeRequiredChecksManifest,
@@ -65,11 +65,14 @@ function readVerifyWorkSuspiciousCircleCIJobNames(): string[] {
 }
 
 describe("normalizeRequiredChecksManifest", () => {
-	it("treats Semgrep Cloud as a default non-workflow required check", () => {
-		expect(BRANCH_PROTECTION_REQUIRED_CHECKS).toContain(
-			SEMGREP_CLOUD_CHECK_NAME,
-		);
-		expect(isNonWorkflowRequiredCheck(SEMGREP_CLOUD_CHECK_NAME)).toBe(true);
+	it("keeps required status checks separate from code-scanning tools", () => {
+		expect(BRANCH_PROTECTION_REQUIRED_CHECKS).toEqual([
+			"pr-pipeline",
+			SECURITY_SCAN_CHECK_NAME,
+			"CodeRabbit",
+		]);
+		expect(isNonWorkflowRequiredCheck("CodeRabbit")).toBe(true);
+		expect(isNonWorkflowRequiredCheck(SECURITY_SCAN_CHECK_NAME)).toBe(false);
 	});
 
 	it.each([
