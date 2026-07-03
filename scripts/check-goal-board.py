@@ -945,11 +945,7 @@ if __name__ == "__main__":
     validator = resolve_validator()
     argv = validator_argv(sys.argv[1:])
     if validator is None:
-        validator_status = (
-            0
-            if resolve_runtime_evidence_goal_path(argv) is not None
-            else generic_validate_goal_board(argv)
-        )
+        validator_status = generic_validate_goal_board(argv)
     else:
         validator_status = run_goal_board_validator(validator, argv)
     if validator_status != 0:

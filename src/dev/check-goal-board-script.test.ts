@@ -700,6 +700,19 @@ describe("check-goal-board.py", () => {
 		mkdirSync(scriptsDir, { recursive: true });
 		mkdirSync(goalDir, { recursive: true });
 		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeFileSync(
+			join(goalDir, "goal.md"),
+			[
+				"# Fixture Runtime Evidence Goal",
+				"",
+				"## Table of Contents",
+				"",
+				"- [Scope](#scope)",
+				"",
+				"## Scope",
+				"",
+			].join("\n"),
+		);
 		writeRuntimeEvidenceReceipts(repo, "current-pr-head");
 		writeRuntimeEvidenceActiveArtifacts(repo);
 		writeFileSync(
@@ -720,6 +733,7 @@ describe("check-goal-board.py", () => {
 				'    assignee: "Worker"',
 				'    status: "active"',
 				'    objective: "Fixture runtime route task."',
+				'    receipt_id: "R999"',
 				"",
 			].join("\n"),
 		);

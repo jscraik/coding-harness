@@ -140,6 +140,40 @@ function writeAuditFreshnessValidator(repo: string) {
 	);
 }
 
+function writeGenericGoalMarkdown(goalDir: string) {
+	writeFileSync(
+		join(goalDir, "goal.md"),
+		[
+			"# Fixture Runtime Evidence Goal",
+			"",
+			"## Table of Contents",
+			"",
+			"- [Scope](#scope)",
+			"",
+			"## Scope",
+			"",
+		].join("\n"),
+	);
+}
+
+function runtimeStateYaml(openPrCount: number) {
+	return [
+		"tasks:",
+		'  - id: "T004"',
+		'    type: "worker"',
+		'    assignee: "Worker"',
+		'    status: "active"',
+		'    objective: "Fixture runtime route task."',
+		'    receipt_id: "R999"',
+		"thin_execution_tracker:",
+		"  active_route:",
+		'    kind: "github_pr"',
+		'    active_branch: "codex/jsc-363-runtime-evidence-cockpit-refresh"',
+		`    open_pr_count: ${openPrCount}`,
+		"",
+	].join("\n");
+}
+
 function runGoalBoard(repo: string, goalDir: string, validatorPath: string) {
 	return spawnSync("python3", ["scripts/check-goal-board.py", goalDir], {
 		cwd: repo,
@@ -148,6 +182,20 @@ function runGoalBoard(repo: string, goalDir: string, validatorPath: string) {
 			...process.env,
 			GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
 			GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+			PYTHONDONTWRITEBYTECODE: "1",
+		},
+	});
+}
+
+function runGoalBoardWithoutExternalValidator(repo: string, goalDir: string) {
+	return spawnSync("python3", ["scripts/check-goal-board.py", goalDir], {
+		cwd: repo,
+		encoding: "utf8",
+		env: {
+			...process.env,
+			GOAL_GOVERNOR_CHECK_BOARD: "",
+			GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+			HOME: join(repo, "home-without-agent-skills"),
 			PYTHONDONTWRITEBYTECODE: "1",
 		},
 	});
@@ -166,21 +214,11 @@ function createRouteFixture(prefix: string, headSha: string, status: string) {
 	mkdirSync(goalDir, { recursive: true });
 	copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
 	writeValidator(validatorPath, "goal-board");
+	writeGenericGoalMarkdown(goalDir);
 	writeRuntimeEvidenceReceipts(repo, headSha);
 	writeRuntimeEvidenceActiveArtifacts(repo, activeArtifactsRow(status));
 	writeAuditFreshnessValidator(repo);
-	writeFileSync(
-		join(goalDir, "state.yaml"),
-		[
-			"version: 2",
-			"thin_execution_tracker:",
-			"  active_route:",
-			'    kind: "github_pr"',
-			'    active_branch: "codex/jsc-363-runtime-evidence-cockpit-refresh"',
-			"    open_pr_count: 1",
-			"",
-		].join("\n"),
-	);
+	writeFileSync(join(goalDir, "state.yaml"), runtimeStateYaml(1));
 	return { goalDir, repo, validatorPath };
 }
 
@@ -216,15 +254,7 @@ describe("check-goal-board.py runtime route validation", () => {
 		);
 		writeFileSync(
 			join(fixture.goalDir, "state.yaml"),
-			[
-				"version: 2",
-				"thin_execution_tracker:",
-				"  active_route:",
-				'    kind: "github_pr"',
-				'    active_branch: "codex/jsc-363-post-pr384-linear-blocker-refresh"',
-				"    open_pr_count: 0",
-				"",
-			].join("\n"),
+			runtimeStateYaml(0),
 		);
 
 		const result = runGoalBoard(
@@ -248,7 +278,13 @@ describe("check-goal-board.py runtime route validation", () => {
 		writeFileSync(
 			join(fixture.goalDir, "state.yaml"),
 			[
-				"version: 2",
+				"tasks:",
+				'  - id: "T004"',
+				'    type: "worker"',
+				'    assignee: "Worker"',
+				'    status: "active"',
+				'    objective: "Fixture runtime route task."',
+				'    receipt_id: "R999"',
 				"thin_execution_tracker:",
 				"  active_route:",
 				"    kind: 'github_pr' # single quotes and comment need YAML parsing",
@@ -267,5 +303,23 @@ describe("check-goal-board.py runtime route validation", () => {
 		expect(result.status).toBe(1);
 		expect(result.stderr).toContain("github_pr active_route");
 		expect(result.stderr).toContain("open_pr_count: 0");
+	});
+
+	it("runs fallback generic validation before runtime extensions", () => {
+		const fixture = createRouteFixture(
+			"goal-board-missing-goal-local-fallback-",
+			"current-pr-head",
+			"latest route head current-pr-head",
+		);
+		rmSync(join(fixture.goalDir, "goal.md"));
+
+		const result = runGoalBoardWithoutExternalValidator(
+			fixture.repo,
+			fixture.goalDir,
+		);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("missing required files: goal.md");
+		expect(result.stdout).not.toContain(`goal-board:${fixture.goalDir}`);
 	});
 });
