@@ -29,7 +29,7 @@ This document is the operational source of truth for CI ownership intent. `harne
 2. **No duplicated gates.** The same check must not run in both systems unless explicitly transitional.
 3. **Branch protection references canonical checks only.** The required-check list must match the owning system `githubCheckName` values.
 4. **Publishing is single-owner.** GitHub Actions is the only publish path in this repository.
-5. **Repo-run security scanning is single-owner.** CircleCI is the only repo-run security scan owner in this repository; independent app checks such as Semgrep Cloud stay external required checks.
+5. **Repo-run security scanning is single-owner.** CircleCI owns the required `security-scan` status check, while GitHub Actions owns CodeQL code-scanning upload for the separate GitHub code-scanning rule.
 
 ## Responsibility Assignment
 
@@ -46,24 +46,23 @@ This document is the operational source of truth for CI ownership intent. `harne
 | Responsibility                                        | Workflow              | Job       | Trigger                                       | Workflow File                               |
 | ----------------------------------------------------- | --------------------- | --------- | --------------------------------------------- | ------------------------------------------- |
 | npm publish + provenance attestation + GitHub Release | `release-private-npm` | `publish` | `Semver` tag push and guarded manual dispatch | `.github/workflows/release-private-npm.yml` |
+| CodeQL code-scanning upload                           | `CodeQL`              | `Analyze (javascript-typescript)` | Pull request, main push, weekly schedule, and manual dispatch | `.github/workflows/codeql.yml` |
 
 ### Not Owned by Either CI System
 
-| Check Name                    | Source                   | Notes                                        |
-| ----------------------------- | ------------------------ | -------------------------------------------- |
-| `CodeRabbit`                  | CodeRabbit GitHub App    | Independent review bot                       |
-| `semgrep-cloud-platform/scan` | Semgrep Cloud GitHub App | Independent Semgrep Cloud code scanning gate |
+| Check Name   | Source                | Notes                  |
+| ------------ | --------------------- | ---------------------- |
+| `CodeRabbit` | CodeRabbit GitHub App | Independent review bot |
 
 ## Canonical Status Checks
 
 These are the check names that GitHub branch protection must reference:
 
-| Canonical Check Name          | Owning System     | Workflow File          |
-| ----------------------------- | ----------------- | ---------------------- |
-| `pr-pipeline`                 | CircleCI          | `.circleci/config.yml` |
-| `security-scan`               | CircleCI          | `.circleci/config.yml` |
-| `CodeRabbit`                  | CodeRabbit App    | (external)             |
-| `semgrep-cloud-platform/scan` | Semgrep Cloud App | (external)             |
+| Canonical Check Name | Owning System  | Workflow File          |
+| -------------------- | -------------- | ---------------------- |
+| `pr-pipeline`        | CircleCI       | `.circleci/config.yml` |
+| `security-scan`      | CircleCI       | `.circleci/config.yml` |
+| `CodeRabbit`         | CodeRabbit App | (external)             |
 
 All harness governance checks (`pr-template`, `linear-gate`, `risk-policy-gate`, `docs-gate`, `lint`, `typecheck`, `test`, `audit`, `check`, `memory`) are tracked as CircleCI fan-out jobs under the `pr-pipeline` workflow. The `test` job owns the full `pnpm test:ci` Vitest lane; the `check` job runs `pnpm test:related` and `pnpm check:static` after `test` so CI keeps the changed-source related-test ratchet without duplicating the full suite.
 
@@ -92,17 +91,18 @@ The repository is in a **CircleCI-primary state**:
 
 - CircleCI is the canonical owner for PR governance and security checks.
 - The CircleCI `security-scan` workflow runs repo-owned Semgrep and report-only Snyk lanes while preserving the single GitHub check-run name `security-scan`.
-- GitHub Actions is retained only for release publishing at `.github/workflows/release-private-npm.yml`.
-- `.harness/ci-required-checks.json` maps `security-scan` to CircleCI, `CodeRabbit` to the CodeRabbit app, and `semgrep-cloud-platform/scan` to the Semgrep Cloud app.
+- GitHub Actions owns release publishing at `.github/workflows/release-private-npm.yml` and CodeQL code-scanning upload at `.github/workflows/codeql.yml`.
+- `.harness/ci-required-checks.json` maps `security-scan` to CircleCI and `CodeRabbit` to the CodeRabbit app. CodeQL is tracked by `harness.contract.json → branchProtection.publicCodeScanning` instead of the required status-check manifest.
 
 ## Target State
 
 Current target:
 
-1. CircleCI remains the sole owner of non-release CI checks.
-2. GitHub Actions remains release-only.
-3. Branch protection references `pr-pipeline`, `security-scan`, `CodeRabbit`, and `semgrep-cloud-platform/scan`.
-4. No fallback or duplicate non-release workflows exist in `.github/workflows/`.
+1. CircleCI remains the owner of required PR status checks.
+2. GitHub Actions owns release publishing and CodeQL code-scanning upload only.
+3. Branch protection status checks reference `pr-pipeline`, `security-scan`, and `CodeRabbit`.
+4. The public code-scanning ruleset requires the `CodeQL` tool, backed by `.github/workflows/codeql.yml`.
+5. No fallback or duplicate non-release status-check workflows exist in `.github/workflows/`.
 
 ## Migration Rules
 

@@ -1113,7 +1113,7 @@ function runGeneratedArtifactDriftFixture(scenario, fixturePath) {
 	const generatedPath = path.join(fixturePath, "generated-artifact.json");
 	const canonical = {
 		schemaVersion: "fixture-source/v1",
-		requiredChecks: ["CircleCI", "CodeRabbit", "semgrep-cloud-platform/scan"],
+		requiredChecks: ["CircleCI", "CodeRabbit", "security-scan"],
 	};
 	const staleGenerated = {
 		schemaVersion: "fixture-generated/v1",
@@ -1658,7 +1658,7 @@ function runCircleCiRedJobTriageFixture(scenario, fixturePath) {
 				byId
 					.get("independent-review-and-security")
 					?.independentChecks.every((check) =>
-						["CodeRabbit", "Semgrep Cloud"].includes(check),
+						["CodeRabbit", "CodeQL"].includes(check),
 					),
 		),
 		assertion(
@@ -1853,14 +1853,14 @@ function buildCircleCiRedJobTriageCases() {
 			checks: [
 				{ name: "CodeRabbit", provider: "review", status: "fail" },
 				{
-					name: "security/semgrep-cloud-platform/scan",
+					name: "code-scanning/CodeQL",
 					provider: "security",
 					status: "fail",
 				},
 				{ name: "ci/circleci: test", provider: "circleci", status: "pass" },
 			],
 			circleCiOutput: [],
-			evidenceRefs: ["coderabbit://threads/open", "semgrep://pr-check"],
+			evidenceRefs: ["coderabbit://threads/open", "codeql://analysis"],
 			changedFiles: [],
 			validationCommands: [],
 		},
@@ -1908,9 +1908,7 @@ function resolveCircleCiTriageCase(triageCase) {
 	}
 	const independentChecks = triageCase.checks
 		.filter((check) => ["review", "security"].includes(check.provider))
-		.map((check) =>
-			check.provider === "review" ? "CodeRabbit" : "Semgrep Cloud",
-		);
+		.map((check) => (check.provider === "review" ? "CodeRabbit" : "CodeQL"));
 	if (independentChecks.length > 0) {
 		return {
 			caseId: triageCase.id,
@@ -2838,7 +2836,7 @@ function buildLivePrLoopCanary() {
 				reason: "network or token unavailable in local canary",
 			},
 			{
-				name: "security/semgrep-cloud-platform/scan",
+				name: "code-scanning/CodeQL",
 				status: "blocked",
 				blockerClassification: "environment/tooling issue",
 				reason: "external security check must be refreshed remotely",
@@ -2851,7 +2849,7 @@ function buildLivePrLoopCanary() {
 		manualStepsBefore: [
 			"ask which check failed",
 			"ask for CircleCI job URL",
-			"ask whether Semgrep Cloud is separate",
+			"ask whether CodeQL is separate",
 			"ask which validation was run",
 			"ask whether review is current",
 		],
@@ -3645,8 +3643,8 @@ function runRequiredCheckNameParityFixture(scenario, fixturePath) {
 		{ name: "pr-pipeline", owner: "CircleCI", lane: "primary_ci" },
 		{ name: "CodeRabbit", owner: "CodeRabbit", lane: "independent_review" },
 		{
-			name: "security/semgrep-cloud-platform/scan",
-			owner: "Semgrep Cloud",
+			name: "code-scanning/CodeQL",
+			owner: "CodeQL",
 			lane: "security",
 		},
 	];
@@ -3676,8 +3674,8 @@ function runRequiredCheckNameParityFixture(scenario, fixturePath) {
 			parity.independentReview === "CodeRabbit",
 		),
 		assertion(
-			"Semgrep Cloud remains independent external security check",
-			parity.securityLane === "Semgrep Cloud",
+			"CodeQL remains independent code-scanning rule",
+			parity.securityLane === "CodeQL",
 		),
 		assertion(
 			"GitHub Actions fallback is not promoted into required gates",

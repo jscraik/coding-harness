@@ -64,9 +64,9 @@ depends_on:
 - Delete branch/worktree after merge.
 - CI ownership is contractual: CircleCI owns PR governance, CodeRabbit remains an
   independent review check, CircleCI owns repo-run Semgrep and Snyk security
-  checks, Semgrep Cloud remains an independent security check, and GitHub
-  Actions workflows must not become automatic PR gates without an explicit
-  `ciOwnership` migration.
+  checks through the `security-scan` status, CodeQL remains the separate
+  GitHub code-scanning rule, and GitHub Actions workflows must not become
+  automatic PR gates without an explicit `ciOwnership` migration.
 - Manual GitHub Actions release inputs must be assigned to named environment
   variables before shell validation; release shell bodies must not directly
   interpolate `github.event.inputs.*` expressions.
@@ -100,7 +100,7 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 - bash scripts/validate-codestyle.sh
 - pnpm check
 - test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null
-- CircleCI PR governance/security checks, including repo-run Semgrep and Snyk lanes, plus the external GitHub App required check `semgrep-cloud-platform/scan`, must be green before merge.
+- CircleCI PR governance/security checks, including repo-run Semgrep and Snyk lanes surfaced through `security-scan`, must be green before merge. Public repositories must also have current CodeQL code-scanning results.
 - PR closeout evidence must use the current PR head and the branch-protection
   required check set; failed or pending `gh pr checks` output remains check
   evidence when the CLI emits parseable JSON.
@@ -153,7 +153,7 @@ Recommended policy:
   facade thin, document the new seam in `docs/architecture/module-boundaries.md`,
   and prove the branch-protection identity set still matches
   `harness.contract.json`, `.harness/ci-required-checks.json`, generated
-  scaffolds, CircleCI, CodeRabbit, and `semgrep-cloud-platform/scan`.
+  scaffolds, CircleCI, CodeRabbit, `security-scan`, and CodeQL code scanning.
 - Treat `scripts/new-task.sh` as the canonical task-entry helper so each task starts with a repo-local branch/worktree boundary instead of branch switching inside a shared checkout.
 - Treat `scripts/prepare-worktree.sh` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies and canonical hook wiring.
 - Treat `scripts/check-environment.sh` as the local readiness gate for required tooling.
@@ -320,10 +320,9 @@ Configure GitHub branch protection (or rulesets) on `main`:
   - `pr-pipeline`
   - `security-scan`
   - `CodeRabbit`
-  - `semgrep-cloud-platform/scan`
 - Require branches to be up to date before merge.
 - Require code quality results with severity `all`.
-- In public repositories, require `CodeQL` code scanning results with `high_or_higher` security alerts and `errors` alerts thresholds.
+- In public repositories, require `CodeQL` code scanning results with `all` security alerts and `all` alerts thresholds.
 - Allow merge commits, squash merges, and rebase merges.
 - Require workflows to pin third-party actions to full commit SHAs.
 - Configure required checks workflows to run on both `pull_request` and `merge_group` when using merge queue.

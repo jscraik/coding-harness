@@ -25,6 +25,7 @@ The harness maintains **two independent "required checks" concepts** that are of
 | ---------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------- |
 | **Harness internal checks**  | `.harness/ci-required-checks.json`                                         | Tracks what the harness considers a complete CI run for governance gates | `lint`, `typecheck`, `test`, `audit`, `docs-gate` |
 | **GitHub branch protection** | GitHub Ruleset / `harness.contract.json → branchProtection.requiredChecks` | The actual check names GitHub enforces before a PR can merge             | `pr-pipeline`, `harness-gates`                    |
+| **GitHub code scanning**     | GitHub Ruleset / `branchProtection.publicCodeScanning` and `.github/workflows/codeql.yml` | Uploads CodeQL analysis for code-scanning rules before merge             | tool `CodeQL`                                      |
 
 > [!IMPORTANT]
 > These systems use **completely different check names**. A project can have 15 harness internal checks but only 2 GitHub branch protection checks. They are independent.
@@ -188,10 +189,17 @@ Add these to GitHub branch protection rulesets:
 pr-pipeline     ← CircleCI workflow-level check context for harness checks
 security-scan   ← CircleCI security check context
 CodeRabbit      ← CodeRabbit review check context
-semgrep-cloud-platform/scan  ← Semgrep Cloud code scanning check context
 ```
 
-Run `harness branch-protect` to apply via the contract.
+Enable the separate GitHub code-scanning rule for the `CodeQL` tool when the
+repository is public. The repo-owned workflow source for that rule is
+`.github/workflows/codeql.yml`; it is not listed in
+`.harness/ci-required-checks.json` because CodeQL is a code-scanning tool, not a
+required status-check context.
+
+Run `harness branch-protect` to apply status-check requirements via the
+contract, then keep the repository ruleset's code-scanning rule aligned with
+`branchProtection.publicCodeScanning`.
 
 ### GitHub Actions (legacy / fallback)
 
@@ -218,7 +226,6 @@ harness ci-migrate status --provider circleci
 #   GitHub branch protection check: pr-pipeline
 #   GitHub branch protection check: security-scan
 #   GitHub branch protection check: CodeRabbit
-#   GitHub branch protection check: semgrep-cloud-platform/scan
 ```
 
 `harness ci-migrate bootstrap` seeds `.harness/ci-required-checks.json` and adds `githubCheckName` metadata automatically for the target provider.

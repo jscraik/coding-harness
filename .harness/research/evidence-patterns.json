@@ -349,6 +349,17 @@
 				}
 			],
 			"dispositionReason": "Admitted from the June 8 CodeRabbit learning export as deterministic learning only: future CodeRabbit-derived learning must be represented as enforcementRules with target surfaces and validation commands, not as prose-only memory."
+		},
+		{
+			"id": "2026-06-30-tessl-agent",
+			"source": ".harness/research/deep/2026-06-30-tessl-agent-evidence.md",
+			"status": "deferred",
+			"owner": "jamie",
+			"targetSurfaces": [
+				".harness/research/audits/2026-06-30-evidence-led-codebase-gap-audit.md"
+			],
+			"validationCommand": "node scripts/validate-evidence-patterns.cjs --json",
+			"dispositionReason": "Tracked as Tessl Agent loop-engineering research and used as secondary-context input for the 2026-06-30 evidence-led audit; implementation authority requires a separate adoption decision."
 		}
 	]
 }

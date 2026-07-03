@@ -107,6 +107,11 @@ It helps a repository answer five practical questions:
 - **Can we change CI or policy without guessing?** `ci-migrate`, branch-protection sync, rollback metadata, and parity checks keep migration reversible.
 - **Did we learn anything durable?** Project Brain, Local Memory, learning gates, and review-context tooling turn repeated steering into guardrails instead of repeated reminders.
 
+The repository's merge policy keeps required status checks and code scanning as
+separate lanes: branch protection requires `pr-pipeline`, `security-scan`,
+and `CodeRabbit`, while public code-scanning rules require CodeQL results
+from `.github/workflows/codeql.yml`.
+
 The product bar is simple: a dropped-in agent should diagnose, bootstrap, validate, and explain blockers without the user wiring the operating system by hand.
 
 ## Install

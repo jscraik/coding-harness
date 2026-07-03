@@ -27,6 +27,18 @@ RELATIVE_SKILL_VALIDATOR = Path(
     "Skills/agent-ops/goal-governor/scripts/check_goal_board.py",
 )
 ENV_OVERRIDES = ("GOAL_GOVERNOR_CHECK_GOAL_BOARD", "GOAL_GOVERNOR_CHECK_BOARD")
+OPTION_VALUE_FLAGS = {"--mode"}
+GENERIC_ALLOWED_GOAL_ROOT = {
+    "goal.md",
+    "state.yaml",
+    "receipts.jsonl",
+    "notes",
+    "current-route.json",
+}
+GENERIC_TASK_ID = re.compile(r"^T\d{3}$")
+GENERIC_TASK_TYPES = {"scout", "judge", "worker", "pm"}
+GENERIC_ASSIGNEES = {"Scout", "Judge", "Worker", "PM"}
+GENERIC_STATUSES = {"queued", "active", "blocked", "done"}
 RUNTIME_EVIDENCE_COCKPIT_GOAL = Path(
     "docs/goals/codex-runtime-evidence-verifier-cockpit",
 )
@@ -184,17 +196,197 @@ def candidate_validators() -> list[Path]:
     return list(dict.fromkeys(candidates))
 
 
-def resolve_validator() -> Path:
+def resolve_validator() -> Path | None:
     for candidate in candidate_validators():
         if candidate.is_file():
             return candidate
-    searched = "\n- ".join(str(candidate) for candidate in candidate_validators())
-    raise SystemExit(
-        "Cannot find Goal Governor board validator. Searched:\n"
-        f"- {searched}\n"
-        "Set GOAL_GOVERNOR_CHECK_GOAL_BOARD or GOAL_GOVERNOR_CHECK_BOARD "
-        "to the validator path if your skill checkout lives elsewhere.",
+    return None
+
+
+def goal_dir_argument(argv: list[str]) -> str | None:
+    skip_next = False
+    for value in argv:
+        if skip_next:
+            skip_next = False
+            continue
+        if value in OPTION_VALUE_FLAGS:
+            skip_next = True
+            continue
+        if any(value.startswith(f"{flag}=") for flag in OPTION_VALUE_FLAGS):
+            continue
+        if value.startswith("-"):
+            continue
+        return value
+    return None
+
+
+def resolve_goal_dir(argv: list[str]) -> Path:
+    goal_arg = goal_dir_argument(argv)
+    if goal_arg is not None:
+        goal_dir = Path(goal_arg).expanduser()
+        if not goal_dir.is_absolute():
+            goal_dir = REPO_ROOT / goal_dir
+        return goal_dir.absolute()
+    print("Goal directory argument is required.", file=sys.stderr)
+    raise SystemExit(2)
+
+
+def validator_argv(argv: list[str]) -> list[str]:
+    return [str(resolve_goal_dir(argv))]
+
+
+def task_list_from_state(state: Mapping[str, object]) -> list[dict[str, object]]:
+    raw_tasks = state.get("tasks")
+    if not isinstance(raw_tasks, list):
+        return []
+    tasks: list[dict[str, object]] = []
+    for raw_task in cast(list[object], raw_tasks):
+        if isinstance(raw_task, dict):
+            tasks.append(cast(dict[str, object], raw_task))
+    return tasks
+
+
+def goal_board_is_complete(
+    state: Mapping[str, object],
+    tasks: list[dict[str, object]],
+) -> bool:
+    goal = state.get("goal")
+    goal_status = None
+    native_status = None
+    if isinstance(goal, Mapping):
+        goal_mapping = cast(Mapping[str, object], goal)
+        goal_status = goal_mapping.get("status")
+        native_status = goal_mapping.get("native_status")
+    return (
+        bool(tasks)
+        and goal_status == "done"
+        and (native_status in {None, "complete", "done"})
+        and all(task.get("status") == "done" for task in tasks)
     )
+
+
+def parse_tasks_fallback(state_path: Path) -> list[dict[str, object]]:
+    tasks: list[dict[str, object]] = []
+    in_tasks = False
+    task_item_indent: int | None = None
+    current: dict[str, object] | None = None
+    for raw_line in state_path.read_text(encoding="utf-8").splitlines():
+        stripped = raw_line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        indent = len(raw_line) - len(raw_line.lstrip())
+        if raw_line.startswith("tasks:"):
+            in_tasks = True
+            continue
+        if not in_tasks:
+            continue
+        if not raw_line.startswith(" ") and not raw_line.startswith("-"):
+            break
+        if stripped.startswith("- "):
+            if task_item_indent is None:
+                task_item_indent = indent
+            if indent != task_item_indent:
+                continue
+            if current is not None:
+                tasks.append(current)
+            current = {}
+            item = stripped[2:].strip()
+            if ":" in item:
+                key, value = item.split(":", 1)
+                current[key.strip()] = parse_yaml_scalar(value.strip())
+            continue
+        if current is None or ":" not in stripped:
+            continue
+        if task_item_indent is not None and indent <= task_item_indent:
+            continue
+        key, value = stripped.split(":", 1)
+        current[key.strip()] = parse_yaml_scalar(value.strip())
+    if current is not None:
+        tasks.append(current)
+    return tasks
+
+
+def generic_validate_goal_board(argv: list[str]) -> int:
+    goal_dir = resolve_goal_dir(argv)
+    if not goal_dir.is_dir():
+        print(f"Goal directory not found: {goal_dir}", file=sys.stderr)
+        return 2
+
+    root_entries = {entry.name for entry in goal_dir.iterdir()}
+    unexpected = sorted(root_entries - GENERIC_ALLOWED_GOAL_ROOT)
+    if unexpected:
+        print(f"FAIL: unexpected root entries: {', '.join(unexpected)}", file=sys.stderr)
+        return 1
+
+    required = ("goal.md", "state.yaml", "receipts.jsonl")
+    missing = [name for name in required if not (goal_dir / name).is_file()]
+    if missing:
+        print(f"FAIL: missing required files: {', '.join(missing)}", file=sys.stderr)
+        return 1
+
+    try:
+        state = load_state_mapping(goal_dir / "state.yaml")
+    except SystemExit as exc:
+        return normalize_exit_code(exc.code)
+    if not isinstance(state, Mapping):
+        print("FAIL: state.yaml must parse as a mapping", file=sys.stderr)
+        return 1
+
+    tasks = task_list_from_state(cast(Mapping[str, object], state))
+    if not tasks:
+        tasks = parse_tasks_fallback(goal_dir / "state.yaml")
+    active_tasks = [task for task in tasks if task.get("status") == "active"]
+    if len(active_tasks) != 1 and not goal_board_is_complete(
+        cast(Mapping[str, object], state),
+        tasks,
+    ):
+        print("FAIL: exactly one task must be active", file=sys.stderr)
+        return 1
+
+    for index, task in enumerate(tasks, start=1):
+        task_id = task.get("id")
+        task_type = task.get("type")
+        assignee = task.get("assignee")
+        status = task.get("status")
+        receipt_id = task.get("receipt_id")
+        if not isinstance(task_id, str) or not GENERIC_TASK_ID.match(task_id):
+            print(f"FAIL: tasks[{index}] has invalid id", file=sys.stderr)
+            return 1
+        if task_type not in GENERIC_TASK_TYPES:
+            print(f"FAIL: {task_id} has invalid type", file=sys.stderr)
+            return 1
+        if assignee not in GENERIC_ASSIGNEES:
+            print(f"FAIL: {task_id} has invalid assignee", file=sys.stderr)
+            return 1
+        if status not in GENERIC_STATUSES:
+            print(f"FAIL: {task_id} has invalid status", file=sys.stderr)
+            return 1
+        if status in {"active", "done"} and (
+            not isinstance(receipt_id, str) or not receipt_id.strip()
+        ):
+            print(f"FAIL: {task_id} missing receipt_id", file=sys.stderr)
+            return 1
+
+    try:
+        receipts = load_runtime_evidence_receipts(goal_dir / "receipts.jsonl")
+    except SystemExit as exc:
+        return normalize_exit_code(exc.code)
+    receipt_ids = {
+        receipt.get("id")
+        for _line_number, receipt in receipts
+        if isinstance(receipt.get("id"), str)
+    }
+    for task in tasks:
+        receipt_id = task.get("receipt_id")
+        if isinstance(receipt_id, str) and receipt_id not in receipt_ids:
+            print(
+                f"FAIL: {task.get('id')} references missing receipt {receipt_id}",
+                file=sys.stderr,
+            )
+            return 1
+
+    print("PASS: goal board is valid")
+    return 0
 
 
 def normalize_exit_code(value: object) -> int:
@@ -222,16 +414,9 @@ def run_goal_board_validator(validator: Path, argv: list[str]) -> int:
 
 def resolve_runtime_evidence_goal_path(argv: list[str]) -> Path | None:
     expected_goal_path = (REPO_ROOT / RUNTIME_EVIDENCE_COCKPIT_GOAL).resolve()
-    for value in argv:
-        if value.startswith("-"):
-            continue
-        candidate = Path(value).expanduser()
-        if not candidate.is_absolute():
-            candidate = (REPO_ROOT / candidate).resolve()
-        else:
-            candidate = candidate.resolve()
-        if candidate == expected_goal_path:
-            return candidate
+    candidate = resolve_goal_dir(argv)
+    if candidate.resolve() == expected_goal_path:
+        return expected_goal_path
     return None
 
 
@@ -420,13 +605,21 @@ def receipts_for_local_path_guard(
     return receipts[-1:]
 
 
+def receipt_local_path_diagnostic_label(receipt_id: object, line_number: int) -> str:
+    if not isinstance(receipt_id, str) or not receipt_id.strip():
+        return f"line {line_number}"
+    if local_home_path_kind(receipt_id) is not None:
+        return f"line {line_number}"
+    return receipt_id.strip()
+
+
 def check_receipt_local_path_hygiene(receipts_path: Path) -> int:
     violations: list[str] = []
     for line_number, receipt in receipts_for_local_path_guard(
         load_runtime_evidence_receipts(receipts_path),
     ):
         receipt_id = receipt.get("id")
-        receipt_label = receipt_id if isinstance(receipt_id, str) else f"line {line_number}"
+        receipt_label = receipt_local_path_diagnostic_label(receipt_id, line_number)
         for json_path, value in iter_string_leaves(receipt):
             path_kind = local_home_path_kind(value)
             if path_kind is None:
@@ -750,7 +943,11 @@ def run_goal_extensions(argv: list[str]) -> int:
 
 if __name__ == "__main__":
     validator = resolve_validator()
-    validator_status = run_goal_board_validator(validator, sys.argv[1:])
+    argv = validator_argv(sys.argv[1:])
+    if validator is None:
+        validator_status = generic_validate_goal_board(argv)
+    else:
+        validator_status = run_goal_board_validator(validator, argv)
     if validator_status != 0:
         raise SystemExit(validator_status)
-    raise SystemExit(run_goal_extensions(sys.argv[1:]))
+    raise SystemExit(run_goal_extensions(argv))

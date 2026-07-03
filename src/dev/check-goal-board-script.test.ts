@@ -1,9 +1,12 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import {
+	chmodSync,
 	copyFileSync,
+	cpSync,
 	existsSync,
 	mkdirSync,
 	mkdtempSync,
+	readFileSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs";
@@ -12,6 +15,11 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 const SCRIPT_PATH = join(process.cwd(), "scripts/check-goal-board.py");
+const SHELL_SCRIPT_PATH = join(process.cwd(), "scripts/check-goal-board.sh");
+const GAP_REGISTER_GOAL_DIR = join(
+	process.cwd(),
+	"docs/goals/gap-register-ratchet-program",
+);
 
 const tempRoots: string[] = [];
 
@@ -157,11 +165,333 @@ function writeRuntimeEvidenceReceipts(repo: string, headSha: string) {
 	]);
 }
 
+function writeGenericGoalBoard(goalDir: string) {
+	mkdirSync(goalDir, { recursive: true });
+	writeFileSync(
+		join(goalDir, "goal.md"),
+		[
+			"# Fixture Goal",
+			"",
+			"## Table of Contents",
+			"",
+			"- [Scope](#scope)",
+			"",
+			"## Scope",
+			"",
+		].join("\n"),
+	);
+	writeFileSync(
+		join(goalDir, "state.yaml"),
+		[
+			"tasks:",
+			'  - id: "T001"',
+			'    type: "scout"',
+			'    assignee: "Scout"',
+			'    status: "active"',
+			'    objective: "Validate fixture board."',
+			"    inputs:",
+			'      - "docs/goals/example/goal.md"',
+			"    verify:",
+			'      - "bash scripts/check-goal-board.sh docs/goals/example"',
+			'    receipt_id: "R001"',
+			'  - id: "T002"',
+			'    type: "judge"',
+			'    assignee: "Judge"',
+			'    status: "queued"',
+			'    objective: "Review fixture board."',
+			"",
+		].join("\n"),
+	);
+	writeFileSync(
+		join(goalDir, "receipts.jsonl"),
+		[
+			JSON.stringify({
+				id: "R001",
+				task_id: "T001",
+				decision: "created",
+				summary: "Fixture board created.",
+			}),
+			"",
+		].join("\n"),
+	);
+}
+
+function writeCompletedGoalBoard(goalDir: string) {
+	mkdirSync(goalDir, { recursive: true });
+	writeFileSync(
+		join(goalDir, "goal.md"),
+		[
+			"# Completed Fixture Goal",
+			"",
+			"## Table of Contents",
+			"",
+			"- [Scope](#scope)",
+			"",
+			"## Scope",
+			"",
+		].join("\n"),
+	);
+	writeFileSync(
+		join(goalDir, "state.yaml"),
+		[
+			"goal:",
+			'  status: "done"',
+			'  native_status: "complete"',
+			"tasks:",
+			'  - id: "T001"',
+			'    type: "scout"',
+			'    assignee: "Scout"',
+			'    status: "done"',
+			'    objective: "Validate fixture board."',
+			'    receipt_id: "R001"',
+			'  - id: "T002"',
+			'    type: "judge"',
+			'    assignee: "Judge"',
+			'    status: "done"',
+			'    objective: "Review fixture board."',
+			'    receipt_id: "R002"',
+			"",
+		].join("\n"),
+	);
+	writeFileSync(
+		join(goalDir, "receipts.jsonl"),
+		[
+			JSON.stringify({
+				id: "R001",
+				task_id: "T001",
+				decision: "created",
+			}),
+			JSON.stringify({
+				id: "R002",
+				task_id: "T002",
+				decision: "completed",
+			}),
+			"",
+		].join("\n"),
+	);
+}
+
 describe("check-goal-board.py", () => {
 	afterEach(() => {
 		for (const root of tempRoots.splice(0)) {
 			rmSync(root, { force: true, recursive: true });
 		}
+	});
+
+	it("falls back to repo-local validation when no skill checkout exists", () => {
+		const root = createTempRoot("goal-board-local-fallback-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(repo, "docs/goals/example");
+		mkdirSync(scriptsDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeGenericGoalBoard(goalDir);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", "docs/goals/example"],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: "",
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					HOME: join(root, "home-without-agent-skills"),
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("PASS: goal board is valid");
+	});
+
+	it("fallback accepts completed boards with no active tasks", () => {
+		const root = createTempRoot("goal-board-complete-fallback-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(repo, "docs/goals/completed-example");
+		mkdirSync(scriptsDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeCompletedGoalBoard(goalDir);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", "docs/goals/completed-example"],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: "",
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					HOME: join(root, "home-without-agent-skills"),
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("PASS: goal board is valid");
+	});
+
+	it("fallback still rejects incomplete boards with no active tasks", () => {
+		const root = createTempRoot("goal-board-incomplete-no-active-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(repo, "docs/goals/incomplete-example");
+		mkdirSync(scriptsDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeCompletedGoalBoard(goalDir);
+		writeFileSync(
+			join(goalDir, "state.yaml"),
+			[
+				"goal:",
+				'  status: "active"',
+				"tasks:",
+				'  - id: "T001"',
+				'    type: "scout"',
+				'    assignee: "Scout"',
+				'    status: "done"',
+				'    objective: "Validate fixture board."',
+				'    receipt_id: "R001"',
+				"",
+			].join("\n"),
+		);
+
+		const result = spawnSync(
+			"python3",
+			["scripts/check-goal-board.py", "docs/goals/incomplete-example"],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: "",
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					HOME: join(root, "home-without-agent-skills"),
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("exactly one task must be active");
+	});
+
+	it("validates the real gap-register-ratchet-program goal board via the generic fallback", () => {
+		const root = createTempRoot("goal-board-gap-register-real-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(repo, "docs/goals/gap-register-ratchet-program");
+		mkdirSync(scriptsDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		mkdirSync(join(goalDir, ".."), { recursive: true });
+		cpSync(GAP_REGISTER_GOAL_DIR, goalDir, { recursive: true });
+
+		const result = spawnSync(
+			"python3",
+			[
+				"scripts/check-goal-board.py",
+				"docs/goals/gap-register-ratchet-program",
+			],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: "",
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					HOME: join(root, "home-without-agent-skills"),
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("PASS: goal board is valid");
+	});
+
+	it("shell wrapper validates the real gap-register-ratchet-program goal board", () => {
+		const root = createTempRoot("goal-board-gap-register-shell-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(repo, "docs/goals/gap-register-ratchet-program");
+		mkdirSync(scriptsDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		copyFileSync(SHELL_SCRIPT_PATH, join(scriptsDir, "check-goal-board.sh"));
+		chmodSync(join(scriptsDir, "check-goal-board.sh"), 0o755);
+		mkdirSync(join(goalDir, ".."), { recursive: true });
+		cpSync(GAP_REGISTER_GOAL_DIR, goalDir, { recursive: true });
+
+		const result = spawnSync(
+			"bash",
+			[
+				"scripts/check-goal-board.sh",
+				"docs/goals/gap-register-ratchet-program",
+			],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: "",
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					HOME: join(root, "home-without-agent-skills"),
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("PASS: goal board is valid");
+	});
+
+	it("rejects the real gap-register-ratchet-program board when a task references a missing receipt", () => {
+		const root = createTempRoot("goal-board-gap-register-bad-receipt-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(repo, "docs/goals/gap-register-ratchet-program");
+		mkdirSync(scriptsDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		mkdirSync(join(goalDir, ".."), { recursive: true });
+		cpSync(GAP_REGISTER_GOAL_DIR, goalDir, { recursive: true });
+
+		const statePath = join(goalDir, "state.yaml");
+		const originalState = readFileSync(statePath, "utf8");
+		expect(originalState).toContain('receipt_id: "R001"');
+		writeFileSync(
+			statePath,
+			originalState.replace(
+				'receipt_id: "R001"',
+				'receipt_id: "R999-does-not-exist"',
+			),
+		);
+
+		const result = spawnSync(
+			"python3",
+			[
+				"scripts/check-goal-board.py",
+				"docs/goals/gap-register-ratchet-program",
+			],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: "",
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					HOME: join(root, "home-without-agent-skills"),
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"references missing receipt R999-does-not-exist",
+		);
 	});
 
 	it("honors the legacy Goal Governor override variable", () => {
@@ -183,6 +513,77 @@ describe("check-goal-board.py", () => {
 
 		expect(result.status).toBe(0);
 		expect(result.stdout).toContain(`legacy-override:${goalDir}`);
+	});
+
+	it("shell wrapper prefers sibling Goal Governor validator before local fallback", () => {
+		const root = createTempRoot("goal-board-shell-external-first-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(repo, "docs/goals/example");
+		const validatorPath = join(
+			root,
+			"agent-skills/Skills/agent-ops/goal-governor/scripts/check_goal_board.py",
+		);
+		mkdirSync(scriptsDir, { recursive: true });
+		mkdirSync(goalDir, { recursive: true });
+		copyFileSync(SHELL_SCRIPT_PATH, join(scriptsDir, "check-goal-board.sh"));
+		chmodSync(join(scriptsDir, "check-goal-board.sh"), 0o755);
+		writeFileSync(
+			join(scriptsDir, "check-goal-board.py"),
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				'print("local-fallback")',
+				"",
+			].join("\n"),
+		);
+		writeValidator(validatorPath, "sibling-validator");
+
+		const result = spawnSync(
+			"bash",
+			["scripts/check-goal-board.sh", "docs/goals/example"],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: "",
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("sibling-validator:");
+		expect(result.stdout).toContain("coding-harness/docs/goals/example");
+		expect(result.stdout).not.toContain("local-fallback");
+	});
+
+	it("normalizes option-bearing calls before invoking an external validator", () => {
+		const root = createTempRoot("goal-board-option-");
+		const validatorPath = join(root, "check_goal_board.py");
+		const goalDir = join(root, "goal");
+		mkdirSync(goalDir);
+		writeValidator(validatorPath, "option-override");
+
+		const result = spawnSync(
+			"python3",
+			[SCRIPT_PATH, "--mode", "required", goalDir],
+			{
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain(`option-override:${goalDir}`);
+		expect(result.stdout).not.toContain("required");
 	});
 
 	it("resolves the validator adjacent to the git source checkout", () => {
@@ -286,6 +687,80 @@ describe("check-goal-board.py", () => {
 		expect(result.status).toBe(0);
 		expect(result.stdout).toContain(`goal-board:${goalDir}`);
 		expect(existsSync(markerPath)).toBe(true);
+	});
+
+	it("preserves runtime evidence extensions when no external validator exists", () => {
+		const root = createTempRoot("goal-board-runtime-local-fallback-");
+		const repo = join(root, "coding-harness");
+		const scriptsDir = join(repo, "scripts");
+		const goalDir = join(
+			repo,
+			"docs/goals/codex-runtime-evidence-verifier-cockpit",
+		);
+		mkdirSync(scriptsDir, { recursive: true });
+		mkdirSync(goalDir, { recursive: true });
+		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
+		writeFileSync(
+			join(goalDir, "goal.md"),
+			[
+				"# Fixture Runtime Evidence Goal",
+				"",
+				"## Table of Contents",
+				"",
+				"- [Scope](#scope)",
+				"",
+				"## Scope",
+				"",
+			].join("\n"),
+		);
+		writeRuntimeEvidenceReceipts(repo, "current-pr-head");
+		writeRuntimeEvidenceActiveArtifacts(repo);
+		writeFileSync(
+			join(scriptsDir, "check-goal-audit-freshness.py"),
+			[
+				"#!/usr/bin/env python3",
+				"from __future__ import annotations",
+				"raise SystemExit(0)",
+				"",
+			].join("\n"),
+		);
+		writeFileSync(
+			join(goalDir, "state.yaml"),
+			[
+				"tasks:",
+				'  - id: "T004"',
+				'    type: "worker"',
+				'    assignee: "Worker"',
+				'    status: "active"',
+				'    objective: "Fixture runtime route task."',
+				'    receipt_id: "R999"',
+				"",
+			].join("\n"),
+		);
+
+		const result = spawnSync(
+			"python3",
+			[
+				"scripts/check-goal-board.py",
+				"--mode",
+				"required",
+				"docs/goals/codex-runtime-evidence-verifier-cockpit",
+			],
+			{
+				cwd: repo,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					GOAL_GOVERNOR_CHECK_BOARD: "",
+					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
+					HOME: join(root, "home-without-agent-skills"),
+					PYTHONDONTWRITEBYTECODE: "1",
+				},
+			},
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stderr).not.toContain("T004 missing receipt_id");
 	});
 
 	it("fails the runtime evidence cockpit goal when audit freshness fails", () => {
@@ -554,7 +1029,8 @@ describe("check-goal-board.py", () => {
 		);
 
 		expect(result.status).toBe(0);
-		expect(result.stdout).toContain("goal-board:--mode");
+		expect(result.stdout).toContain(`goal-board:${goalDir}`);
+		expect(result.stdout).not.toContain("goal-board:--mode");
 		expect(existsSync(markerPath)).toBe(true);
 	});
 
@@ -614,634 +1090,5 @@ describe("check-goal-board.py", () => {
 		expect(result.stdout).toContain(`goal-board:${goalDir}`);
 		expect(result.stderr).toContain("stale route state");
 		expect(result.stderr).toContain("new-pr-head");
-	});
-
-	it("passes when active artifacts include the latest route receipt head", () => {
-		const root = createTempRoot("goal-board-current-pr-head-");
-		const repo = join(root, "coding-harness");
-		const scriptsDir = join(repo, "scripts");
-		const goalDir = join(
-			repo,
-			"docs/goals/codex-runtime-evidence-verifier-cockpit",
-		);
-		const validatorPath = join(root, "check_goal_board.py");
-		mkdirSync(scriptsDir, { recursive: true });
-		mkdirSync(goalDir, { recursive: true });
-		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
-		writeValidator(validatorPath, "goal-board");
-		writeRuntimeEvidenceReceipts(repo, "current-pr-head");
-		writeRuntimeEvidenceActiveArtifacts(
-			repo,
-			[
-				"# Active Harness Specs And Plans",
-				"",
-				"## Current Active Route",
-				"",
-				"| Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |",
-				"| --- | --- | --- | --- | --- |",
-				"| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md | latest route head current-pr-head | continue |",
-				"",
-			].join("\n"),
-		);
-		writeFileSync(
-			join(scriptsDir, "check-goal-audit-freshness.py"),
-			[
-				"#!/usr/bin/env python3",
-				"from __future__ import annotations",
-				"raise SystemExit(0)",
-				"",
-			].join("\n"),
-		);
-
-		const result = spawnSync(
-			"python3",
-			["scripts/check-goal-board.py", goalDir],
-			{
-				cwd: repo,
-				encoding: "utf8",
-				env: {
-					...process.env,
-					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
-					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
-					PYTHONDONTWRITEBYTECODE: "1",
-				},
-			},
-		);
-
-		expect(result.status).toBe(0);
-		expect(result.stdout).toContain(`goal-board:${goalDir}`);
-	});
-
-	it("fails when a merged PR route still tells operators to merge the stale branch", () => {
-		const root = createTempRoot("goal-board-stale-merged-route-");
-		const repo = join(root, "coding-harness");
-		const scriptsDir = join(repo, "scripts");
-		const goalDir = join(
-			repo,
-			"docs/goals/codex-runtime-evidence-verifier-cockpit",
-		);
-		const validatorPath = join(root, "check_goal_board.py");
-		mkdirSync(scriptsDir, { recursive: true });
-		mkdirSync(goalDir, { recursive: true });
-		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
-		writeValidator(validatorPath, "goal-board");
-		writeRuntimeEvidenceReceipts(repo, "merged-main-head");
-		writeRuntimeEvidenceActiveArtifacts(
-			repo,
-			[
-				"# Active Harness Specs And Plans",
-				"",
-				"## Current Active Route",
-				"",
-				"| Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |",
-				"| --- | --- | --- | --- | --- |",
-				"| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md | merged-main-head | Next Safe Action: merge this post-PR384 blocker refresh |",
-				"",
-			].join("\n"),
-		);
-		writeFileSync(
-			join(goalDir, "state.yaml"),
-			[
-				"version: 2",
-				"thin_execution_tracker:",
-				"  active_route:",
-				'    kind: "github_pr"',
-				'    active_branch: "codex/jsc-363-post-pr384-linear-blocker-refresh"',
-				"    open_pr_count: 0",
-				"",
-			].join("\n"),
-		);
-		writeFileSync(
-			join(scriptsDir, "check-goal-audit-freshness.py"),
-			[
-				"#!/usr/bin/env python3",
-				"from __future__ import annotations",
-				"raise SystemExit(0)",
-				"",
-			].join("\n"),
-		);
-
-		const result = spawnSync(
-			"python3",
-			["scripts/check-goal-board.py", goalDir],
-			{
-				cwd: repo,
-				encoding: "utf8",
-				env: {
-					...process.env,
-					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
-					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
-					PYTHONDONTWRITEBYTECODE: "1",
-				},
-			},
-		);
-
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain("github_pr active_route");
-		expect(result.stderr).toContain("open_pr_count: 0");
-		expect(result.stderr).toContain("merge this post-PR");
-	});
-
-	it("parses runtime active_route through YAML rather than line regexes", () => {
-		const root = createTempRoot("goal-board-yaml-active-route-");
-		const repo = join(root, "coding-harness");
-		const scriptsDir = join(repo, "scripts");
-		const goalDir = join(
-			repo,
-			"docs/goals/codex-runtime-evidence-verifier-cockpit",
-		);
-		const validatorPath = join(root, "check_goal_board.py");
-		mkdirSync(scriptsDir, { recursive: true });
-		mkdirSync(goalDir, { recursive: true });
-		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
-		writeValidator(validatorPath, "goal-board");
-		writeRuntimeEvidenceReceipts(repo, "merged-main-head");
-		writeRuntimeEvidenceActiveArtifacts(
-			repo,
-			[
-				"# Active Harness Specs And Plans",
-				"",
-				"## Current Active Route",
-				"",
-				"| Route | Linear Key | Canonical Artifacts | Status | Next Safe Action |",
-				"| --- | --- | --- | --- | --- |",
-				"| Codex runtime evidence verifier cockpit | JSC-363 | .harness/specs/2026-05-24-codex-runtime-evidence-verifier-cockpit-spec.md plus .harness/plan/2026-05-24-codex-runtime-evidence-verifier-cockpit-plan.md plus docs/goals/codex-runtime-evidence-verifier-cockpit/goal.md plus .harness/research/audits/2026-05-26-evidence-led-codebase-gap-audit.md | merged-main-head | continue |",
-				"",
-			].join("\n"),
-		);
-		writeFileSync(
-			join(goalDir, "state.yaml"),
-			[
-				"version: 2",
-				"thin_execution_tracker:",
-				"  active_route:",
-				"    kind: 'github_pr' # single quotes and comment need YAML parsing",
-				"    active_branch: 'codex/jsc-363-post-pr384-linear-blocker-refresh'",
-				"    open_pr_count: 0",
-				"",
-			].join("\n"),
-		);
-		writeFileSync(
-			join(scriptsDir, "check-goal-audit-freshness.py"),
-			[
-				"#!/usr/bin/env python3",
-				"from __future__ import annotations",
-				"raise SystemExit(0)",
-				"",
-			].join("\n"),
-		);
-
-		const result = spawnSync(
-			"python3",
-			["scripts/check-goal-board.py", goalDir],
-			{
-				cwd: repo,
-				encoding: "utf8",
-				env: {
-					...process.env,
-					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
-					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
-					PYTHONDONTWRITEBYTECODE: "1",
-				},
-			},
-		);
-
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain("github_pr active_route");
-		expect(result.stderr).toContain("open_pr_count: 0");
-	});
-
-	it("fails when the current runtime evidence receipt contains a local home path", () => {
-		const root = createTempRoot("goal-board-local-path-");
-		const repo = join(root, "coding-harness");
-		const scriptsDir = join(repo, "scripts");
-		const goalDir = join(
-			repo,
-			"docs/goals/codex-runtime-evidence-verifier-cockpit",
-		);
-		const validatorPath = join(root, "check_goal_board.py");
-		mkdirSync(scriptsDir, { recursive: true });
-		mkdirSync(goalDir, { recursive: true });
-		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
-		writeValidator(validatorPath, "goal-board");
-		writeRuntimeEvidenceActiveArtifacts(repo);
-		writeRuntimeEvidenceReceiptsFromObjects(repo, [
-			{
-				id: "R150",
-				head_sha: "current-pr-head",
-				lifecycle_unit: "pre-cutover-latest-receipt",
-				memory_surfaces_read: ["/Users/jamiecraik/.codex/memories/MEMORY.md"],
-				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
-			},
-		]);
-		writeFileSync(
-			join(scriptsDir, "check-goal-audit-freshness.py"),
-			[
-				"#!/usr/bin/env python3",
-				"from __future__ import annotations",
-				"raise SystemExit(0)",
-				"",
-			].join("\n"),
-		);
-
-		const result = spawnSync(
-			"python3",
-			["scripts/check-goal-board.py", goalDir],
-			{
-				cwd: repo,
-				encoding: "utf8",
-				env: {
-					...process.env,
-					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
-					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
-					PYTHONDONTWRITEBYTECODE: "1",
-				},
-			},
-		);
-
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain("local home path");
-		expect(result.stderr).toContain("receipt R150");
-		expect(result.stderr).toContain("$.memory_surfaces_read[0]");
-		expect(result.stderr).not.toContain("/Users/jamiecraik");
-	});
-
-	it("fails when runtime evidence receipt ids are duplicated", () => {
-		const root = createTempRoot("goal-board-duplicate-receipt-");
-		const repo = join(root, "coding-harness");
-		const scriptsDir = join(repo, "scripts");
-		const goalDir = join(
-			repo,
-			"docs/goals/codex-runtime-evidence-verifier-cockpit",
-		);
-		const validatorPath = join(root, "check_goal_board.py");
-		mkdirSync(scriptsDir, { recursive: true });
-		mkdirSync(goalDir, { recursive: true });
-		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
-		writeValidator(validatorPath, "goal-board");
-		writeRuntimeEvidenceActiveArtifacts(repo);
-		writeRuntimeEvidenceReceiptsFromObjects(repo, [
-			{
-				id: "R151",
-				head_sha: "current-pr-head",
-				lifecycle_unit: "first-route-refresh",
-				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
-			},
-			{
-				id: "R151",
-				head_sha: "current-pr-head",
-				lifecycle_unit: "duplicate-route-refresh",
-				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
-			},
-		]);
-		writeFileSync(
-			join(scriptsDir, "check-goal-audit-freshness.py"),
-			[
-				"#!/usr/bin/env python3",
-				"from __future__ import annotations",
-				"raise SystemExit(0)",
-				"",
-			].join("\n"),
-		);
-
-		const result = spawnSync(
-			"python3",
-			["scripts/check-goal-board.py", goalDir],
-			{
-				cwd: repo,
-				encoding: "utf8",
-				env: {
-					...process.env,
-					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
-					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
-					PYTHONDONTWRITEBYTECODE: "1",
-				},
-			},
-		);
-
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain("receipt id must be unique");
-		expect(result.stderr).toContain("R151");
-		expect(result.stderr).toContain("lines 1 and 2");
-	});
-
-	it("does not fail on historical local paths once the cutover receipt exists", () => {
-		const root = createTempRoot("goal-board-historical-local-path-");
-		const repo = join(root, "coding-harness");
-		const scriptsDir = join(repo, "scripts");
-		const goalDir = join(
-			repo,
-			"docs/goals/codex-runtime-evidence-verifier-cockpit",
-		);
-		const validatorPath = join(root, "check_goal_board.py");
-		mkdirSync(scriptsDir, { recursive: true });
-		mkdirSync(goalDir, { recursive: true });
-		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
-		writeValidator(validatorPath, "goal-board");
-		writeRuntimeEvidenceActiveArtifacts(repo);
-		writeRuntimeEvidenceReceiptsFromObjects(repo, [
-			{
-				id: "R150",
-				head_sha: "old-pr-head",
-				lifecycle_unit: "pre-cutover-historical-receipt",
-				memory_surfaces_read: ["/Users/jamiecraik/.codex/memories/MEMORY.md"],
-				pr_state_snapshot: { pr: 309, head_sha: "old-pr-head" },
-			},
-			{
-				id: "R151",
-				head_sha: "current-pr-head",
-				lifecycle_unit: "receipt-local-path-guard",
-				memory_surfaces_read: ["<REDACTED_HOME_PATH>/memories/MEMORY.md"],
-				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
-			},
-		]);
-		writeFileSync(
-			join(scriptsDir, "check-goal-audit-freshness.py"),
-			[
-				"#!/usr/bin/env python3",
-				"from __future__ import annotations",
-				"raise SystemExit(0)",
-				"",
-			].join("\n"),
-		);
-
-		const result = spawnSync(
-			"python3",
-			["scripts/check-goal-board.py", goalDir],
-			{
-				cwd: repo,
-				encoding: "utf8",
-				env: {
-					...process.env,
-					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
-					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
-					PYTHONDONTWRITEBYTECODE: "1",
-				},
-			},
-		);
-
-		expect(result.status).toBe(0);
-		expect(result.stdout).toContain(`goal-board:${goalDir}`);
-	});
-
-	it("fails on post-cutover local paths even when a later receipt is clean", () => {
-		const root = createTempRoot("goal-board-hidden-local-path-");
-		const repo = join(root, "coding-harness");
-		const scriptsDir = join(repo, "scripts");
-		const goalDir = join(
-			repo,
-			"docs/goals/codex-runtime-evidence-verifier-cockpit",
-		);
-		const validatorPath = join(root, "check_goal_board.py");
-		mkdirSync(scriptsDir, { recursive: true });
-		mkdirSync(goalDir, { recursive: true });
-		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
-		writeValidator(validatorPath, "goal-board");
-		writeRuntimeEvidenceActiveArtifacts(repo);
-		writeRuntimeEvidenceReceiptsFromObjects(repo, [
-			{
-				id: "R151",
-				head_sha: "old-pr-head",
-				lifecycle_unit: "receipt-local-path-guard",
-				evidence: {
-					source: "file:///Users/jamie/.codex/memories/MEMORY.md",
-				},
-				pr_state_snapshot: { pr: 309, head_sha: "old-pr-head" },
-			},
-			{
-				id: "R152",
-				head_sha: "current-pr-head",
-				lifecycle_unit: "clean-later-receipt",
-				evidence: { source: "docs/goals/current-receipt.md" },
-				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
-			},
-		]);
-		writeFileSync(
-			join(scriptsDir, "check-goal-audit-freshness.py"),
-			[
-				"#!/usr/bin/env python3",
-				"from __future__ import annotations",
-				"raise SystemExit(0)",
-				"",
-			].join("\n"),
-		);
-
-		const result = spawnSync(
-			"python3",
-			["scripts/check-goal-board.py", goalDir],
-			{
-				cwd: repo,
-				encoding: "utf8",
-				env: {
-					...process.env,
-					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
-					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
-					PYTHONDONTWRITEBYTECODE: "1",
-				},
-			},
-		);
-
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain("receipt R151");
-		expect(result.stderr).toContain("$.evidence.source");
-		expect(result.stderr).not.toContain("file:///Users/jamie");
-	});
-
-	it("fails on malformed post-cutover receipt IDs with local paths", () => {
-		const root = createTempRoot("goal-board-malformed-cutover-id-");
-		const repo = join(root, "coding-harness");
-		const scriptsDir = join(repo, "scripts");
-		const goalDir = join(
-			repo,
-			"docs/goals/codex-runtime-evidence-verifier-cockpit",
-		);
-		const validatorPath = join(root, "check_goal_board.py");
-		mkdirSync(scriptsDir, { recursive: true });
-		mkdirSync(goalDir, { recursive: true });
-		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
-		writeValidator(validatorPath, "goal-board");
-		writeRuntimeEvidenceActiveArtifacts(repo);
-		writeRuntimeEvidenceReceiptsFromObjects(repo, [
-			{
-				id: "R151a",
-				head_sha: "old-pr-head",
-				lifecycle_unit: "malformed-cutover-receipt",
-				evidence: {
-					source: "file:///Users/jamie/.codex/memories/MEMORY.md",
-				},
-				pr_state_snapshot: { pr: 309, head_sha: "old-pr-head" },
-			},
-			{
-				id: "R152",
-				head_sha: "current-pr-head",
-				lifecycle_unit: "clean-later-receipt",
-				evidence: { source: "docs/goals/current-receipt.md" },
-				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
-			},
-		]);
-		writeFileSync(
-			join(scriptsDir, "check-goal-audit-freshness.py"),
-			[
-				"#!/usr/bin/env python3",
-				"from __future__ import annotations",
-				"raise SystemExit(0)",
-				"",
-			].join("\n"),
-		);
-
-		const result = spawnSync(
-			"python3",
-			["scripts/check-goal-board.py", goalDir],
-			{
-				cwd: repo,
-				encoding: "utf8",
-				env: {
-					...process.env,
-					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
-					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
-					PYTHONDONTWRITEBYTECODE: "1",
-				},
-			},
-		);
-
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain("receipt R151a");
-		expect(result.stderr).toContain("$.evidence.source");
-		expect(result.stderr).not.toContain("file:///Users/jamie");
-	});
-
-	it("fails on post-cutover local paths stored as JSON object keys", () => {
-		const root = createTempRoot("goal-board-local-path-key-");
-		const repo = join(root, "coding-harness");
-		const scriptsDir = join(repo, "scripts");
-		const goalDir = join(
-			repo,
-			"docs/goals/codex-runtime-evidence-verifier-cockpit",
-		);
-		const validatorPath = join(root, "check_goal_board.py");
-		mkdirSync(scriptsDir, { recursive: true });
-		mkdirSync(goalDir, { recursive: true });
-		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
-		writeValidator(validatorPath, "goal-board");
-		writeRuntimeEvidenceActiveArtifacts(repo);
-		writeRuntimeEvidenceReceiptsFromObjects(repo, [
-			{
-				id: "R151",
-				head_sha: "current-pr-head",
-				lifecycle_unit: "receipt-local-path-guard",
-				evidence: {
-					"/Users/jamie/.codex/memories/MEMORY.md": "memory-index",
-					"C:/Users/Jamie/.codex/memories/MEMORY.md": "windows-index",
-					"~/.codex/memories/MEMORY.md": "tilde-index",
-				},
-				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
-			},
-		]);
-		writeFileSync(
-			join(scriptsDir, "check-goal-audit-freshness.py"),
-			[
-				"#!/usr/bin/env python3",
-				"from __future__ import annotations",
-				"raise SystemExit(0)",
-				"",
-			].join("\n"),
-		);
-
-		const result = spawnSync(
-			"python3",
-			["scripts/check-goal-board.py", goalDir],
-			{
-				cwd: repo,
-				encoding: "utf8",
-				env: {
-					...process.env,
-					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
-					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
-					PYTHONDONTWRITEBYTECODE: "1",
-				},
-			},
-		);
-
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain("receipt R151");
-		expect(result.stderr).toContain("$.evidence[<key>]");
-		expect(result.stderr).toContain("Unix or macOS home path");
-		expect(result.stderr).toContain("Windows user profile path");
-		expect(result.stderr).toContain("tilde home path");
-		expect(result.stderr).not.toContain("/Users/jamie");
-		expect(result.stderr).not.toContain("C:/Users/Jamie");
-		expect(result.stderr).not.toContain("~/.codex");
-	});
-
-	it("rejects Unix and Windows user-profile paths in nested post-cutover receipts", () => {
-		const root = createTempRoot("goal-board-cross-platform-paths-");
-		const repo = join(root, "coding-harness");
-		const scriptsDir = join(repo, "scripts");
-		const goalDir = join(
-			repo,
-			"docs/goals/codex-runtime-evidence-verifier-cockpit",
-		);
-		const validatorPath = join(root, "check_goal_board.py");
-		mkdirSync(scriptsDir, { recursive: true });
-		mkdirSync(goalDir, { recursive: true });
-		copyFileSync(SCRIPT_PATH, join(scriptsDir, "check-goal-board.py"));
-		writeValidator(validatorPath, "goal-board");
-		writeRuntimeEvidenceActiveArtifacts(repo);
-		writeRuntimeEvidenceReceiptsFromObjects(repo, [
-			{
-				id: "R151",
-				head_sha: "current-pr-head",
-				lifecycle_unit: "receipt-local-path-guard",
-				evidence: {
-					unixHome: "/home/jamie/.codex/memories/MEMORY.md",
-					varHome: "/var/home/jamie/.codex/memories/MEMORY.md",
-					windowsForward: "C:/Users/Jamie/.codex/memories/MEMORY.md",
-					windowsBackslash: "C:\\Users\\Jamie\\.codex\\memories\\MEMORY.md",
-					wslHome: "/mnt/c/Users/Jamie/.codex/memories/MEMORY.md",
-					tildeHome: "~/.codex/memories/MEMORY.md",
-				},
-				pr_state_snapshot: { pr: 309, head_sha: "current-pr-head" },
-			},
-		]);
-		writeFileSync(
-			join(scriptsDir, "check-goal-audit-freshness.py"),
-			[
-				"#!/usr/bin/env python3",
-				"from __future__ import annotations",
-				"raise SystemExit(0)",
-				"",
-			].join("\n"),
-		);
-
-		const result = spawnSync(
-			"python3",
-			["scripts/check-goal-board.py", goalDir],
-			{
-				cwd: repo,
-				encoding: "utf8",
-				env: {
-					...process.env,
-					GOAL_GOVERNOR_CHECK_BOARD: validatorPath,
-					GOAL_GOVERNOR_CHECK_GOAL_BOARD: "",
-					PYTHONDONTWRITEBYTECODE: "1",
-				},
-			},
-		);
-
-		expect(result.status).toBe(1);
-		expect(result.stderr).toContain("receipt R151");
-		expect(result.stderr).toContain("$.evidence.unixHome");
-		expect(result.stderr).toContain("$.evidence.varHome");
-		expect(result.stderr).toContain("$.evidence.windowsForward");
-		expect(result.stderr).toContain("$.evidence.windowsBackslash");
-		expect(result.stderr).toContain("$.evidence.wslHome");
-		expect(result.stderr).toContain("$.evidence.tildeHome");
-		expect(result.stderr).toContain("Unix or macOS home path");
-		expect(result.stderr).toContain("Windows user profile path");
-		expect(result.stderr).toContain("WSL user profile path");
-		expect(result.stderr).toContain("tilde home path");
-		expect(result.stderr).not.toContain("/home/jamie");
-		expect(result.stderr).not.toContain("C:/Users/Jamie");
-		expect(result.stderr).not.toContain("~/.codex");
 	});
 });

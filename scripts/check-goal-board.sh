@@ -49,6 +49,10 @@ if [[ -n "$source_checkout_root" && "$source_checkout_root" != "$repo_root" ]]; 
 	)
 fi
 
+checker_candidates+=(
+	"$repo_root/scripts/check-goal-board.py"
+)
+
 checker_path=""
 for candidate in "${checker_candidates[@]}"; do
 	if [[ -f "$candidate" ]]; then
