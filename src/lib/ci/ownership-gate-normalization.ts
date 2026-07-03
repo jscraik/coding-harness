@@ -97,10 +97,16 @@ function normalizeSecurityChecks(value: unknown): {
 	securityChecks: string[];
 	securityChecksValid: boolean;
 } {
-	if (!Array.isArray(value)) {
+	if (value === undefined) {
 		return {
 			securityChecks: [...DEFAULT_CI_OWNERSHIP.securityChecks],
 			securityChecksValid: true,
+		};
+	}
+	if (!Array.isArray(value)) {
+		return {
+			securityChecks: [...DEFAULT_CI_OWNERSHIP.securityChecks],
+			securityChecksValid: false,
 		};
 	}
 	return {
