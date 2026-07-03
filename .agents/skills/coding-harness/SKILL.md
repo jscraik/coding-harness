@@ -67,7 +67,7 @@ Do not use for unrelated feature delivery, generic cloud deployment, or security
 - Existing-repo updates: preview with `harness upgrade --dry-run`, then apply with `harness upgrade`.
 - Scaffold transitions only: `harness init --update`, `--interactive`, `--migrate`, or `--rollback`.
 - CI migration is snapshot-backed. Use `prepare`, `verify`, `commit`, and `abort`; do not manually delete `.github/workflows/`.
-- CI ownership: CircleCI is the primary PR gate, CodeRabbit is the independent review check, Semgrep Cloud is the independent external security check, and GitHub Actions is release/fallback unless intentionally migrated.
+- CI ownership: CircleCI is the primary PR gate, `security-scan` is the required security status context, CodeRabbit is the independent review check, CodeQL is the separate public code-scanning lane, and GitHub Actions is release/fallback unless intentionally migrated.
 
 ## Workflow
 1. Confirm the mode: explanation-only or execution.

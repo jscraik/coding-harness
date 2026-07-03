@@ -89,22 +89,26 @@ The dry-run created counts are large for several repos, especially
 write-canary should not apply the full scaffold blindly. The next branch step
 should classify the minimal profile or upgrade path before any downstream write.
 
-### F5: Installed-package proof is still missing
+### F5: Installed-package canary passes
 
-The shell could not find `harness` on `PATH` in any canary cwd. This branch
-has not yet proven the installed npm package path. Before release, run the
-package-installed canary and/or install the packed candidate into an isolated
-test environment.
+The shell could not find `harness` on `PATH` in any canary cwd during the
+first sweep, but the package-installed downstream canary now passes from the
+source repo. That proves the packed package can run public
+`harness ... --json` commands from a downstream repository cwd without
+source-checkout command paths, external credentials, or unexpected dry-run
+writes.
+
+This is package-canary evidence, not npm publication, live repo adoption,
+remote CI, or merge-readiness evidence.
 
 ## Next Steps
 
-1. Run the package-installed downstream canary from the source repo.
-2. Convert this first-pass report into a structured JSON or Markdown artifact
+1. Convert this first-pass report into a structured JSON or Markdown artifact
    with full command outcomes.
-3. Re-run one canary with `--worktree-role dirty-with-justification` only if
+2. Re-run one canary with `--worktree-role dirty-with-justification` only if
    Jamie explicitly wants recommendations despite dirty worktrees.
-4. Investigate the `agent-skills` symlink blocker.
-5. Select one write-canary repo only after dirty worktree ownership and planned
+3. Investigate the `agent-skills` symlink blocker.
+4. Select one write-canary repo only after dirty worktree ownership and planned
    writes are reviewed.
 
 Recommended first write-canary after read-only remediation: `diagram-cli`.
@@ -128,3 +132,5 @@ Command: `test -f /Users/jamiecraik/dev/coding-harness/dist/cli.js` from `/Users
 Command: `node /Users/jamiecraik/dev/coding-harness/dist/cli.js orient --json` from `/Users/jamiecraik/dev/diagram-cli` -> pass (`harness-orient/v1`, `status=warn`, `failureClass=worktree_state_blocked`)
 
 Command: bounded read-only canary summary runner over `agent-skills`, `diagram-cli`, `knowledge-OS`, `x-writer`, and `brainwav.io` -> pass (wrote summarized evidence to `/private/tmp/coding-harness-live-canary-summary.json`; no downstream repo write permission granted)
+
+Command: `node --import tsx scripts/run-harness-evals.mjs --scenario package-installed-downstream-canary` -> pass (`status=pass`; `package_canary` tier selected 1, passed 1; 10 package-installed assertions passed)
