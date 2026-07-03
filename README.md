@@ -138,6 +138,17 @@ harness init --dry-run
 **Expected:** File list preview showing harness.contract.json, .harness/ directory, and scaffold files.
 **On failure:** Inspect diff output for missing/unexpected files (developer); re-run with `--verbose` for diagnostics (developer).
 
+JSON dry-runs include a `dryRunPlan` advisory object with the selected profile,
+planned create/skip counts, a risk score, a risk level, and a recommendation.
+Treat `riskLevel: "high"` as a review checkpoint before applying writes; it is
+not npm publication, hosted CI, review, or merge-readiness proof.
+
+Brownfield repositories may contain relative symlinked directories inside the
+repo, for example `scripts -> Infrastructure/scripts`. Harness accepts those
+only when the symlink target resolves inside the repository. Absolute symlinks
+and symlink escapes remain blocked before dry-runs, updates, or tracked writes
+can follow them.
+
 Apply the standard scaffold only after the preview looks right:
 
 ```bash

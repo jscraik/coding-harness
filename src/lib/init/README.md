@@ -137,6 +137,16 @@ thin and delegate into this deep module.
   `gtimeout` are unavailable. The fallback watchdog is part of the hook and CI
   reliability contract because stale scanner binaries must fail fast rather than
   hang pre-push or remote security lanes.
+- Normal `harness init --dry-run --json` output includes `dryRunPlan`
+  advisory metadata with the selected profile, planned create/skip counts, risk
+  score, risk level, and operator recommendation. This helps downstream canaries
+  identify broad write scopes before applying files, including cases where
+  `--minimal` still plans a high-risk number of writes.
+- Init path safety permits relative symlink segments that resolve inside the
+  target repository, such as `scripts -> Infrastructure/scripts`, so brownfield
+  repositories can preview or update repo-owned scaffold files. Absolute
+  symlink targets and symlink escapes remain blocked before dry-runs, updates,
+  backups, or tracked writes can follow them.
 
 ## Documentation Alignment
 
