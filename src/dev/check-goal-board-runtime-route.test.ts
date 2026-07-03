@@ -252,10 +252,7 @@ describe("check-goal-board.py runtime route validation", () => {
 			"merged-main-head",
 			"merged-main-head | Next Safe Action: merge this post-PR384 blocker refresh",
 		);
-		writeFileSync(
-			join(fixture.goalDir, "state.yaml"),
-			runtimeStateYaml(0),
-		);
+		writeFileSync(join(fixture.goalDir, "state.yaml"), runtimeStateYaml(0));
 
 		const result = runGoalBoard(
 			fixture.repo,
