@@ -9,8 +9,14 @@
  * @module lib/init/update
  */
 
-import { existsSync, lstatSync, readFileSync, realpathSync } from "node:fs";
-import { dirname, resolve, sep } from "node:path";
+import {
+	existsSync,
+	lstatSync,
+	readFileSync,
+	readlinkSync,
+	realpathSync,
+} from "node:fs";
+import { dirname, isAbsolute, resolve, sep } from "node:path";
 import semver from "semver";
 import { mergeContracts } from "../contract/merger.js";
 import type { HarnessContract } from "../contract/types.js";
@@ -138,22 +144,27 @@ function validateUpdateTargetPath(
 	targetPath: string,
 ): { ok: true } | { ok: false; error: InitErrorOutput } {
 	try {
+		const realTargetDir = realpathSync(targetDir);
 		if (existsSync(targetPath) && lstatSync(targetPath).isSymbolicLink()) {
-			return {
-				ok: false,
-				error: {
-					code: "WRITE_ERROR",
-					message: `Symlink detected at update target: ${templatePath} — update rejected`,
-					path: templatePath,
-				},
-			};
+			const linkTarget = readlinkSync(targetPath);
+			const realTarget = realpathSync(targetPath);
+			if (
+				isAbsolute(linkTarget) ||
+				!realTarget.startsWith(`${realTargetDir}${sep}`)
+			) {
+				return {
+					ok: false,
+					error: {
+						code: "WRITE_ERROR",
+						message: `Symlink detected at update target: ${templatePath} — update rejected`,
+						path: templatePath,
+					},
+				};
+			}
 		}
 
-		const realTargetDir = realpathSync(targetDir);
 		const parentDir = dirname(targetPath);
-		const realParent = existsSync(parentDir)
-			? realpathSync(parentDir)
-			: parentDir;
+		const realParent = realpathSync(nearestExistingAncestor(parentDir));
 		if (
 			realParent !== realTargetDir &&
 			!realParent.startsWith(`${realTargetDir}${sep}`)
@@ -204,6 +215,22 @@ function resolveUpdateTemplateTargetPath(
 		templatePath,
 	);
 	return symlinkPathResult.ok ? symlinkPathResult : pathResult;
+}
+
+/** Resolve an existing update target so atomic writes preserve safe symlinks. */
+function updateWritePath(targetPath: string): string {
+	return existsSync(targetPath) ? realpathSync(targetPath) : targetPath;
+}
+
+/** Find the nearest existing ancestor for validating paths with missing leaves. */
+function nearestExistingAncestor(path: string): string {
+	let current = path;
+	while (!existsSync(current)) {
+		const parent = dirname(current);
+		if (parent === current) break;
+		current = parent;
+	}
+	return current;
 }
 
 /**
@@ -703,9 +730,7 @@ export function executeUpdate(
 			try {
 				const realTargetDir = realpathSync(targetDir);
 				const parentDir = dirname(targetPath);
-				const realParent = existsSync(parentDir)
-					? realpathSync(parentDir)
-					: parentDir;
+				const realParent = realpathSync(nearestExistingAncestor(parentDir));
 				if (
 					realParent !== realTargetDir &&
 					!realParent.startsWith(`${realTargetDir}${sep}`)
@@ -745,7 +770,7 @@ export function executeUpdate(
 				);
 			}
 			if (!dryRun) {
-				const writeResult = atomicWrite(targetPath, content);
+				const writeResult = atomicWrite(updateWritePath(targetPath), content);
 				if (!writeResult.ok) {
 					return writeResult;
 				}
@@ -762,22 +787,27 @@ export function executeUpdate(
 		// symlinked directory (e.g. .github -> /etc) passes the prefix check.
 		// We mirror the same guard used in executeRollback.
 		try {
+			const realTargetDir = realpathSync(targetDir);
 			if (existsSync(targetPath) && lstatSync(targetPath).isSymbolicLink()) {
-				return {
-					ok: false,
-					error: {
-						code: "WRITE_ERROR",
-						message: `Symlink detected at update target: ${entry.path} — update rejected`,
-						path: entry.path,
-					},
-				};
+				const linkTarget = readlinkSync(targetPath);
+				const realTarget = realpathSync(targetPath);
+				if (
+					isAbsolute(linkTarget) ||
+					!realTarget.startsWith(`${realTargetDir}${sep}`)
+				) {
+					return {
+						ok: false,
+						error: {
+							code: "WRITE_ERROR",
+							message: `Symlink detected at update target: ${entry.path} — update rejected`,
+							path: entry.path,
+						},
+					};
+				}
 			}
 
-			const realTargetDir = realpathSync(targetDir);
 			const parentDir = dirname(targetPath);
-			const realParent = existsSync(parentDir)
-				? realpathSync(parentDir)
-				: parentDir;
+			const realParent = realpathSync(nearestExistingAncestor(parentDir));
 			if (
 				realParent !== realTargetDir &&
 				!realParent.startsWith(`${realTargetDir}${sep}`)
@@ -829,7 +859,7 @@ export function executeUpdate(
 			);
 		}
 		if (!dryRun) {
-			const writeResult = atomicWrite(targetPath, content);
+			const writeResult = atomicWrite(updateWritePath(targetPath), content);
 			if (!writeResult.ok) {
 				return writeResult;
 			}
@@ -866,7 +896,7 @@ export function executeUpdate(
 					...contractRefreshResult.value.ownershipDecisions,
 				);
 				if (!dryRun) {
-					const writeResult = atomicWrite(targetPath, content);
+					const writeResult = atomicWrite(updateWritePath(targetPath), content);
 					if (!writeResult.ok) {
 						return writeResult;
 					}
@@ -887,7 +917,7 @@ export function executeUpdate(
 
 				const content = template.render(packageManager, renderContext);
 				if (!dryRun) {
-					const writeResult = atomicWrite(targetPath, content);
+					const writeResult = atomicWrite(updateWritePath(targetPath), content);
 					if (!writeResult.ok) {
 						return writeResult;
 					}
@@ -913,7 +943,7 @@ export function executeUpdate(
 		}
 
 		if (!dryRun) {
-			const writeResult = atomicWrite(targetPath, content);
+			const writeResult = atomicWrite(updateWritePath(targetPath), content);
 			if (!writeResult.ok) {
 				return writeResult;
 			}

@@ -10,6 +10,7 @@
 
 import {
 	existsSync,
+	mkdirSync,
 	mkdtempSync,
 	readFileSync,
 	readdirSync,
@@ -64,6 +65,23 @@ describe("sanitizePath", () => {
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
 			expect(result.error.code).toBe("PATH_TRAVERSAL");
+		}
+	});
+
+	it("accepts a path through a symlinked parent directory inside base", () => {
+		const realScripts = join(root, "Infrastructure", "scripts");
+		mkdirSync(realScripts, { recursive: true });
+		writeFileSync(join(realScripts, "validate-commit-msg.js"), "ok");
+
+		const symlinkPath = join(root, "scripts");
+		symlinkSync("Infrastructure/scripts", symlinkPath);
+
+		const result = sanitizePath(root, "scripts/validate-commit-msg.js");
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.value).toBe(
+				join(root, "scripts", "validate-commit-msg.js"),
+			);
 		}
 	});
 
@@ -134,6 +152,21 @@ describe("createBackup", () => {
 				const content = readFileSync(join(backupDir, bak), "utf-8");
 				expect(content).not.toContain("sensitive-data");
 			}
+		}
+	});
+
+	it("backs up a file through a symlinked parent directory inside base", () => {
+		const realScripts = join(root, "Infrastructure", "scripts");
+		mkdirSync(realScripts, { recursive: true });
+		writeFileSync(join(realScripts, "validate-commit-msg.js"), "ok");
+
+		const symlinkDir = join(root, "scripts");
+		symlinkSync("Infrastructure/scripts", symlinkDir);
+
+		const result = createBackup(root, "scripts/validate-commit-msg.js");
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.value).not.toBeNull();
 		}
 	});
 

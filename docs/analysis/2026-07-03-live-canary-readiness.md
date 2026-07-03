@@ -70,24 +70,28 @@ Across all five canaries, `next --json` exited 1 and emitted a blocked
 `harness-decision/v1` payload. Treat this as expected fail-closed behavior,
 not as a successful next-action recommendation.
 
-### F3: `agent-skills` exposes a symlink path traversal blocker
+### F3: `agent-skills` exposed an internal-symlink dry-run blocker
 
-`agent-skills` dry-run failed with:
+`agent-skills` first dry-run failed with:
 
 ```text
 PATH_TRAVERSAL: Symlink detected in path: scripts/validate-commit-msg.js
 ```
 
-This is a release-relevant portability finding. The next slice should determine
-whether this is a legitimate unsafe symlink, an expected brownfield pattern that
-needs an explicit skip/ownership policy, or a dry-run false positive.
+Classification showed `scripts` is a tracked internal symlink to
+`Infrastructure/scripts`, and the resolved target stays inside the repository.
+Current source now permits internal symlink segments that remain inside the repo
+while continuing to reject symlink escapes.
 
 ### F4: Initial dry-run scope is broad in not-yet-adopted repos
 
 The dry-run created counts are large for several repos, especially
 `brainwav.io` with `created=120` and `skipped=0`. That indicates a first
 write-canary should not apply the full scaffold blindly. The next branch step
-should classify the minimal profile or upgrade path before any downstream write.
+should classify the minimal profile or upgrade path before any downstream
+write. Current source now emits `dryRunPlan` metadata so JSON consumers can see
+the selected profile, planned create/skip counts, risk score, risk level, and
+recommendation instead of inferring risk from raw arrays.
 
 ### F5: Installed-package canary passes
 
@@ -107,13 +111,17 @@ remote CI, or merge-readiness evidence.
    with full command outcomes.
 2. Re-run one canary with `--worktree-role dirty-with-justification` only if
    Jamie explicitly wants recommendations despite dirty worktrees.
-3. Investigate the `agent-skills` symlink blocker.
+3. Build or pack the current source before using `dist/cli.js` for
+   downstream symlink proof.
 4. Select one write-canary repo only after dirty worktree ownership and planned
    writes are reviewed.
 
 Recommended first write-canary after read-only remediation: `diagram-cli`.
 It is CLI-shaped and its dry-run showed existing harness-managed surfaces
-(`skipped=33`) instead of a completely fresh scaffold.
+(`skipped=33`) instead of a completely fresh scaffold. The first downstream
+write branch should be in `diagram-cli`, for example
+`codex/harness-canary-diagram-cli-profile`, after Jamie confirms downstream
+write permission.
 
 ## Evidence
 
@@ -134,3 +142,11 @@ Command: `node /Users/jamiecraik/dev/coding-harness/dist/cli.js orient --json` f
 Command: bounded read-only canary summary runner over `agent-skills`, `diagram-cli`, `knowledge-OS`, `x-writer`, and `brainwav.io` -> pass (wrote summarized evidence to `/private/tmp/coding-harness-live-canary-summary.json`; no downstream repo write permission granted)
 
 Command: `node --import tsx scripts/run-harness-evals.mjs --scenario package-installed-downstream-canary` -> pass (`status=pass`; `package_canary` tier selected 1, passed 1; 10 package-installed assertions passed)
+
+Command: `/usr/bin/git -C /Users/jamiecraik/dev/agent-skills ls-files -s scripts Infrastructure/scripts/validate-commit-msg.js` -> pass (`scripts` is tracked mode `120000`; target file is tracked mode `100755`)
+
+Command: `/Users/jamiecraik/dev/coding-harness/node_modules/.bin/tsx /Users/jamiecraik/dev/coding-harness/src/cli.ts init --dry-run --json` from `/Users/jamiecraik/dev/agent-skills` -> pass (`scripts/validate-commit-msg.js` appears in `skipped`; no `PATH_TRAVERSAL` error)
+
+Command: `/Users/jamiecraik/dev/coding-harness/node_modules/.bin/tsx /Users/jamiecraik/dev/coding-harness/src/cli.ts init --dry-run --json` from `/Users/jamiecraik/dev/diagram-cli` -> pass (`dryRunPlan.profile=standard`; `riskLevel=high`; `riskScore=84`; `plannedCreates=87`; `plannedSkips=33`)
+
+Command: `/Users/jamiecraik/dev/coding-harness/node_modules/.bin/tsx /Users/jamiecraik/dev/coding-harness/src/cli.ts init --dry-run --json --minimal` from `/Users/jamiecraik/dev/diagram-cli` -> pass (`dryRunPlan.profile=minimal`; `riskLevel=high`; `riskScore=74`; `plannedCreates=87`; `plannedSkips=31`)

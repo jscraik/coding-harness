@@ -13,6 +13,7 @@
 
 import type { HarnessContract } from "../contract/types.js";
 import type { DetectionResult, ProjectType } from "../project-type/types.js";
+import type { InitDryRunPlan } from "./dry-run-plan.js";
 
 // === Exit Codes ===
 
@@ -308,6 +309,7 @@ export interface InitOutput {
 	proposedChanges?: ProposedChange[]; // Populated in interactive dry-run
 	projectTypeDetection?: DetectionResult; // Populated on all normal init runs
 	ownershipDecisions?: OwnershipDecision[]; // Populated for schema-aware update paths
+	dryRunPlan?: InitDryRunPlan; // Populated on normal init --dry-run
 }
 
 /** Machine-readable error payload emitted by init modes. */

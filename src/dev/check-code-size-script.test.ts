@@ -119,6 +119,28 @@ describe("check-code-size.mjs", () => {
 		expect(result.stderr).toContain("max is 10");
 	});
 
+	it("suppresses size findings already present in the debt baseline", () => {
+		const root = createTempRepo();
+		writeSource(root, "src/tangled.ts", complexFunctionSource(11));
+		writeSource(
+			root,
+			"contracts/code-quality-debt-baseline.json",
+			JSON.stringify({
+				schemaVersion: "code-quality-debt-baseline/v1",
+				entries: [
+					{
+						id: "high_complexity_function:src/tangled.ts:tangled",
+					},
+				],
+			}),
+		);
+
+		const result = runScript(root);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("1 baselined finding(s) suppressed");
+	});
+
 	it("emits structured JSON findings for AST-derived size failures", () => {
 		const root = createTempRepo();
 		writeSource(root, "src/tangled.ts", complexFunctionSource(11));
