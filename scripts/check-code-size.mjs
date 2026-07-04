@@ -169,7 +169,15 @@ function debtIdForFinding(finding) {
 function readBaselineDebtIds() {
 	const baselineFile = resolve(repoRoot, BASELINE_PATH);
 	if (!existsSync(baselineFile)) return new Set();
-	const parsed = JSON.parse(readFileSync(baselineFile, "utf8"));
+	let parsed;
+	try {
+		parsed = JSON.parse(readFileSync(baselineFile, "utf8"));
+	} catch (error) {
+		console.error(
+			`[check-code-size] failed to parse ${BASELINE_PATH}: ${error.message}`,
+		);
+		return new Set();
+	}
 	const entries = Array.isArray(parsed.entries) ? parsed.entries : [];
 	return new Set(
 		entries
