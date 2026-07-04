@@ -132,6 +132,24 @@ function isEnforcedUpdateTemplatePath(templatePath: string): boolean {
 }
 
 /**
+ * Determine whether an existing symlink target can be safely updated in-place.
+ *
+ * @param linkTarget - Raw target stored in the symlink
+ * @param realTarget - Canonical filesystem path reached through the symlink
+ * @param realTargetDir - Canonical workspace root directory
+ * @returns true only for relative symlinks whose real target stays inside the workspace
+ */
+function isSafeWorkspaceSymlinkTarget(
+	linkTarget: string,
+	realTarget: string,
+	realTargetDir: string,
+): boolean {
+	return (
+		!isAbsolute(linkTarget) && realTarget.startsWith(`${realTargetDir}${sep}`)
+	);
+}
+
+/**
  * Validate that a template update target path is safe to write within the workspace.
  *
  * @param targetDir - The workspace root directory against which safety is checked
@@ -149,8 +167,7 @@ function validateUpdateTargetPath(
 			const linkTarget = readlinkSync(targetPath);
 			const realTarget = realpathSync(targetPath);
 			if (
-				isAbsolute(linkTarget) ||
-				!realTarget.startsWith(`${realTargetDir}${sep}`)
+				!isSafeWorkspaceSymlinkTarget(linkTarget, realTarget, realTargetDir)
 			) {
 				return {
 					ok: false,
@@ -792,8 +809,7 @@ export function executeUpdate(
 				const linkTarget = readlinkSync(targetPath);
 				const realTarget = realpathSync(targetPath);
 				if (
-					isAbsolute(linkTarget) ||
-					!realTarget.startsWith(`${realTargetDir}${sep}`)
+					!isSafeWorkspaceSymlinkTarget(linkTarget, realTarget, realTargetDir)
 				) {
 					return {
 						ok: false,
