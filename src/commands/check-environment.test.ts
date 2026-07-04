@@ -123,6 +123,65 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 		expect(result.output.posture.runtime?.uvVersion).toBe("0.10.9");
 	});
 
+	it("uses the consumer contract python pin instead of the harness fallback", async () => {
+		const defaultToolingPolicy = DEFAULT_CONTRACT.toolingPolicy;
+		expect(defaultToolingPolicy).toBeDefined();
+		if (!defaultToolingPolicy) return;
+		writeFileSync(
+			join(tempDir, contractPath),
+			JSON.stringify(
+				{
+					...DEFAULT_CONTRACT,
+					toolingPolicy: {
+						...defaultToolingPolicy,
+						requiredMiseTools: defaultToolingPolicy.requiredMiseTools.map(
+							(tool) =>
+								tool.tool === "python" ? { ...tool, version: "3.13" } : tool,
+						),
+					},
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+		const { spawnSync } = await import("node:child_process");
+		const { runCheckEnvironment } = await import("./check-environment.js");
+		vi.mocked(spawnSync).mockImplementation((command) => {
+			if (command === "python3") {
+				return {
+					status: 0,
+					stdout: "Python 3.12.10\n",
+					stderr: "",
+				} as never;
+			}
+			if (command === "uv") {
+				return {
+					status: 0,
+					stdout: `uv ${PREFLIGHT_UV_VERSION_PIN}\n`,
+					stderr: "",
+				} as never;
+			}
+			return { status: 127, stdout: "", stderr: "unexpected command" } as never;
+		});
+
+		const result = await runCheckEnvironment({ contractPath });
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.output.passed).toBe(false);
+		expect(
+			result.output.violations.find(
+				(v) => v.type === "runtime_dependency_version_mismatch",
+			)?.expected,
+		).toBe(">= 3.13");
+		expect(
+			result.output.violations.find(
+				(v) => v.type === "runtime_dependency_version_mismatch",
+			)?.value,
+		).toBe("3.12.10");
+	});
+
 	it("reports a mismatch violation using the consumer contract pin, not the harness fallback", async () => {
 		const defaultToolingPolicy = DEFAULT_CONTRACT.toolingPolicy;
 		expect(defaultToolingPolicy).toBeDefined();
@@ -171,6 +230,58 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 				(v) => v.type === "runtime_dependency_version_mismatch",
 			)?.expected,
 		).toBe("0.10.9");
+	});
+
+	it("rejects unparseable consumer contract uv pins", async () => {
+		const defaultToolingPolicy = DEFAULT_CONTRACT.toolingPolicy;
+		expect(defaultToolingPolicy).toBeDefined();
+		if (!defaultToolingPolicy) return;
+		writeFileSync(
+			join(tempDir, contractPath),
+			JSON.stringify(
+				{
+					...DEFAULT_CONTRACT,
+					toolingPolicy: {
+						...defaultToolingPolicy,
+						requiredMiseTools: defaultToolingPolicy.requiredMiseTools.map(
+							(tool) =>
+								tool.tool === "uv" ? { ...tool, version: "latest" } : tool,
+						),
+					},
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+		const { spawnSync } = await import("node:child_process");
+		const { runCheckEnvironment } = await import("./check-environment.js");
+		vi.mocked(spawnSync).mockImplementation((command) => {
+			if (command === "python3") {
+				return { status: 0, stdout: "Python 3.12.10\n", stderr: "" } as never;
+			}
+			if (command === "uv") {
+				return {
+					status: 0,
+					stdout: `uv ${PREFLIGHT_UV_VERSION_PIN}\n`,
+					stderr: "",
+				} as never;
+			}
+			return { status: 127, stdout: "", stderr: "unexpected command" } as never;
+		});
+
+		const result = await runCheckEnvironment({ contractPath });
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.output.passed).toBe(false);
+		expect(result.output.violations).toContainEqual(
+			expect.objectContaining({
+				type: "runtime_dependency_pin_invalid",
+				value: "latest",
+				expected: "Set toolingPolicy.requiredMiseTools uv to a semver version",
+			}),
+		);
 	});
 	it("fails closed when mise cannot resolve pinned runtime probes", async () => {
 		writeFileSync(
