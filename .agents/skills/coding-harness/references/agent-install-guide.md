@@ -100,8 +100,8 @@ harness ci-migrate commit --snapshot <snapshot-id>
 harness ci-migrate abort --snapshot <snapshot-id>
 ```
 
-CircleCI owns the primary PR gate. CodeRabbit is the independent review check.
-Semgrep Cloud is the independent external security check. GitHub Actions remains
+CircleCI owns the primary PR gate. `security-scan` is the required security status context. CodeRabbit is the independent review check.
+CodeQL is the separate public code-scanning lane. GitHub Actions remains
 release or fallback only unless an intentional migration changes the contract.
 
 ## Existing Repos

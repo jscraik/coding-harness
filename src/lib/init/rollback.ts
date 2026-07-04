@@ -4,10 +4,11 @@ import {
 	existsSync,
 	lstatSync,
 	mkdirSync,
+	readlinkSync,
 	realpathSync,
 	rmSync,
 } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { sanitizeError } from "../input/sanitize.js";
 import { atomicWrite } from "./migration.js";
 import {
@@ -62,8 +63,10 @@ function isPathWithinBase(
 	);
 }
 
+/** Validate symlink path segments without rejecting relative in-repo links. */
 function checkPathSymlinks(
 	normalizedBase: string,
+	baseRealPath: string,
 	resolvedPath: string,
 	relativePath: string,
 ): PathResult {
@@ -76,7 +79,23 @@ function checkPathSymlinks(
 			break;
 		}
 		try {
-			if (lstatSync(walkPath).isSymbolicLink()) {
+			if (!lstatSync(walkPath).isSymbolicLink()) {
+				continue;
+			}
+
+			if (isAbsolute(readlinkSync(walkPath))) {
+				return {
+					ok: false,
+					error: {
+						code: "PATH_TRAVERSAL",
+						message: `Symlink detected in path: ${relativePath}`,
+						path: relativePath,
+					},
+				};
+			}
+
+			const realSymlinkTarget = realpathSync(walkPath);
+			if (!isPathWithinBase(baseRealPath, realSymlinkTarget)) {
 				return {
 					ok: false,
 					error: {
@@ -196,6 +215,7 @@ export function sanitizePath(base: string, relativePath: string): PathResult {
 
 	const symlinkCheck = checkPathSymlinks(
 		normalizedBase,
+		baseRealPath,
 		resolved,
 		relativePath,
 	);

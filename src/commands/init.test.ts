@@ -271,6 +271,43 @@ describe("runInit", () => {
 			).toBe(false);
 			expect(existsSync(join(tempDir, "memory.json"))).toBe(false);
 		});
+
+		it("emits broad-scope risk metadata for standard dry-runs", () => {
+			const result = runInit(tempDir, { dryRun: true, force: false });
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.dryRunPlan).toMatchObject({
+					profile: "standard",
+					riskLevel: "high",
+					plannedCreates: EXPECTED_TEMPLATE_COUNT,
+					plannedSkips: 0,
+				});
+				expect(result.output.dryRunPlan?.riskScore).toBeGreaterThanOrEqual(70);
+				expect(result.output.dryRunPlan?.recommendation).toContain(
+					"harness init --dry-run --minimal",
+				);
+			}
+		});
+
+		it("records minimal profile in dry-run risk metadata", () => {
+			const result = runInit(tempDir, {
+				dryRun: true,
+				force: false,
+				minimal: true,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.dryRunPlan?.profile).toBe("minimal");
+				expect(result.output.dryRunPlan?.plannedCreates).toBe(
+					result.output.created.length,
+				);
+				expect(result.output.dryRunPlan?.plannedSkips).toBe(
+					result.output.skipped.length,
+				);
+			}
+		});
 	});
 
 	describe("normal mode", () => {

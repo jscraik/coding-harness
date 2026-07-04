@@ -119,6 +119,53 @@ describe("check-code-size.mjs", () => {
 		expect(result.stderr).toContain("max is 10");
 	});
 
+	it("suppresses size findings already present in the debt baseline", () => {
+		const root = createTempRepo();
+		writeSource(root, "src/tangled.ts", complexFunctionSource(11));
+		writeSource(
+			root,
+			"contracts/code-quality-debt-baseline.json",
+			JSON.stringify({
+				schemaVersion: "code-quality-debt-baseline/v1",
+				entries: [
+					{
+						id: "high_complexity_function:src/tangled.ts:tangled",
+					},
+				],
+			}),
+		);
+
+		const result = runScript(root);
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toContain("1 baselined finding(s) suppressed");
+	});
+
+	it("does not suppress unrelated size findings with a different baseline id", () => {
+		const root = createTempRepo();
+		writeSource(root, "src/tangled.ts", complexFunctionSource(11));
+		writeSource(
+			root,
+			"contracts/code-quality-debt-baseline.json",
+			JSON.stringify({
+				schemaVersion: "code-quality-debt-baseline/v1",
+				entries: [
+					{
+						id: "high_complexity_function:src/other.ts:tangled",
+					},
+				],
+			}),
+		);
+
+		const result = runScript(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain(
+			"src/tangled.ts:1 tangled has complexity 12",
+		);
+		expect(result.stderr).not.toContain("baselined finding(s) suppressed");
+	});
+
 	it("emits structured JSON findings for AST-derived size failures", () => {
 		const root = createTempRepo();
 		writeSource(root, "src/tangled.ts", complexFunctionSource(11));

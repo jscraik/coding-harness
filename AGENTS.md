@@ -177,7 +177,9 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   manager rather than hard-coding pnpm.
 - Changed production source requires `pnpm run quality:docstrings`,
   `pnpm run quality:size`, and `pnpm run test:related`; `quality:size`
-  enforces changed production file size, function size, and function complexity.
+  enforces changed production file size, function size, and function complexity
+  for findings that are not already in the debt baseline while
+  `pnpm run quality:debt` remains the ratchet for existing legacy size debt.
   Changed tests require `pnpm run quality:self-affirming`.
 - Runtime or artifact behavior changes require `pnpm test:deep`.
 - Docs-gate categories require

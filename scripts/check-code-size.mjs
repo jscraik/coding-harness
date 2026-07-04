@@ -8,6 +8,7 @@ const SOURCE_EXTENSIONS = /\.(ts|tsx|js|jsx|mts|cts)$/;
 const TYPE_DECLARATION = /\.d\.ts$/;
 const TEST_SOURCE = /([./](?:__tests__|test|tests)[./]|\.test\.|\.spec\.)/;
 const PROD_SOURCE_PREFIX = "src/";
+const BASELINE_PATH = "contracts/code-quality-debt-baseline.json";
 const MAX_FILE_LINES = 400;
 const MAX_FUNCTION_LINES = 80;
 const MAX_COMPLEXITY = 10;
@@ -152,6 +153,39 @@ function functionComplexity(node) {
 	return complexity;
 }
 
+function debtIdForFinding(finding) {
+	if (finding.kind === "file_lines") {
+		return `oversized_file:${finding.path}`;
+	}
+	if (finding.kind === "function_lines") {
+		return `oversized_function:${finding.path}:${finding.symbol}`;
+	}
+	if (finding.kind === "function_complexity") {
+		return `high_complexity_function:${finding.path}:${finding.symbol}`;
+	}
+	return null;
+}
+
+function readBaselineDebtIds() {
+	const baselineFile = resolve(repoRoot, BASELINE_PATH);
+	if (!existsSync(baselineFile)) return new Set();
+	let parsed;
+	try {
+		parsed = JSON.parse(readFileSync(baselineFile, "utf8"));
+	} catch (error) {
+		console.error(
+			`[check-code-size] failed to parse ${BASELINE_PATH}: ${error.message}`,
+		);
+		return new Set();
+	}
+	const entries = Array.isArray(parsed.entries) ? parsed.entries : [];
+	return new Set(
+		entries
+			.map((entry) => (typeof entry.id === "string" ? entry.id : null))
+			.filter(Boolean),
+	);
+}
+
 function checkFile(path) {
 	const absolutePath = resolve(repoRoot, path);
 	const sourceText = readFileSync(absolutePath, "utf8");
@@ -229,12 +263,12 @@ if (files.length === 0 && !json) {
 	console.info("[check-code-size] no changed production source files.");
 }
 
+const baselineDebtIds = readBaselineDebtIds();
 const findings = [];
 for (const path of files) {
 	const result = checkFile(path);
 	findings.push(...result.findings);
 }
-
 let checkedTestFiles = 0;
 for (const path of testFiles) {
 	if (LEGACY_TEST_FILE_LINE_ALLOWLIST.has(path)) {
@@ -260,7 +294,12 @@ for (const path of testFiles) {
 	}
 }
 
-if (findings.length > 0) {
+const unbaselinedFindings = findings.filter((finding) => {
+	const debtId = debtIdForFinding(finding);
+	return debtId === null || !baselineDebtIds.has(debtId);
+});
+
+if (unbaselinedFindings.length > 0) {
 	if (json) {
 		console.info(
 			JSON.stringify(
@@ -269,7 +308,7 @@ if (findings.length > 0) {
 					status: "fail",
 					checkedProductionFiles: files.length,
 					checkedTestFiles,
-					findings,
+					findings: unbaselinedFindings,
 				},
 				null,
 				2,
@@ -277,7 +316,7 @@ if (findings.length > 0) {
 		);
 	} else {
 		console.error("[check-code-size] code size limits exceeded:");
-		for (const finding of findings) {
+		for (const finding of unbaselinedFindings) {
 			console.error(
 				`  ${relative(repoRoot, resolve(repoRoot, finding.path))}:${finding.line} ${finding.message}`,
 			);
@@ -293,6 +332,7 @@ if (findings.length > 0) {
 				checkedProductionFiles: files.length,
 				checkedTestFiles,
 				findings: [],
+				baselinedFindings: findings.length,
 			},
 			null,
 			2,
@@ -300,6 +340,6 @@ if (findings.length > 0) {
 	);
 } else {
 	console.info(
-		`[check-code-size] checked ${files.length} production file(s), reviewed ${checkedTestFiles} test file(s); size and complexity limits passed.`,
+		`[check-code-size] checked ${files.length} production file(s), reviewed ${checkedTestFiles} test file(s); size and complexity limits passed (${findings.length} baselined finding(s) suppressed).`,
 	);
 }

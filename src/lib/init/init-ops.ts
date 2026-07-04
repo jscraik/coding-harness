@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 
 import type { DetectionResult } from "../project-type/types.js";
 import { getVersion } from "../version.js";
+import { buildDryRunPlan } from "./dry-run-plan.js";
 import { CONTRACT_FILE, atomicWrite } from "./migration.js";
 import { createBackup, sanitizePath } from "./rollback.js";
 import {
@@ -415,6 +416,16 @@ export function executeNormalInstall(
 			created,
 			skipped,
 			projectTypeDetection: detectionResult,
+			...(options.dryRun
+				? {
+						dryRunPlan: buildDryRunPlan(
+							created,
+							skipped,
+							options,
+							detectionResult,
+						),
+					}
+				: {}),
 		},
 	};
 }
