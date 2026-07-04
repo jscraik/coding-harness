@@ -152,7 +152,11 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 				return { status: 0, stdout: "Python 3.12.10\n", stderr: "" } as never;
 			}
 			if (command === "uv") {
-				return { status: 0, stdout: `uv ${PREFLIGHT_UV_VERSION_PIN}\n`, stderr: "" } as never;
+				return {
+					status: 0,
+					stdout: `uv ${PREFLIGHT_UV_VERSION_PIN}\n`,
+					stderr: "",
+				} as never;
 			}
 			return { status: 127, stdout: "", stderr: "unexpected command" } as never;
 		});
