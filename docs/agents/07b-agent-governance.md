@@ -61,6 +61,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   domain document the map points to.
 - agent-readiness or `harness next` context-health changes should keep `harness.contract.json`, `AGENTS.md`, `README.md`, `.harness/core/agent-readiness-contract.md`, and this guide synchronized. Shared-state action authority belongs in `toolingPolicy.sharedStateActions`; context-health warnings are orientation evidence only unless a separate validated consumer promotes them.
 - tooling/runtime changes should update `docs/agents/02-tooling-policy.md` and `docs/agents/06-security-and-governance.md`
+- runtime-pin learning updates that affect `harness check-environment` should
+  keep consumer `harness.contract.json` `toolingPolicy.requiredMiseTools` pins
+  authoritative over harness package fallback pins, and synchronize `AGENTS.md`,
+  tooling policy, security governance, and this guide when docs-gate reports
+  agent-governance or tooling-runtime surfaces
 - uv-backed Python helper changes should keep `scripts/run-uv-python.sh`,
   scaffold inventories, tooling baseline parity, `AGENTS.md`, tooling policy,
   and security governance synchronized so generated hooks and package scripts

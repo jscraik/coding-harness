@@ -226,6 +226,10 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 
 - At session start, read `~/.codex/instructions/Learnings.md` and
   [.harness/memory/LEARNINGS.md](./.harness/memory/LEARNINGS.md) when present.
+- Runtime/tooling learnings that affect `harness check-environment` must keep
+  consumer `harness.contract.json` `toolingPolicy.requiredMiseTools` pins ahead
+  of harness source fallback pins, then synchronize tooling/security docs and
+  agent-governance guidance when docs-gate reports those surfaces.
 - Use [UBIQUITOUS-MAP.md](./UBIQUITOUS-MAP.md) for fast language-context
   routing and [UBIQUITOUS_LANGUAGE.md](./UBIQUITOUS_LANGUAGE.md) for
   authoritative project terms.

@@ -76,6 +76,53 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 		);
 	});
 
+	it("uses the consumer contract uv pin instead of the harness fallback", async () => {
+		const defaultToolingPolicy = DEFAULT_CONTRACT.toolingPolicy;
+		expect(defaultToolingPolicy).toBeDefined();
+		if (!defaultToolingPolicy) return;
+		writeFileSync(
+			join(tempDir, contractPath),
+			JSON.stringify(
+				{
+					...DEFAULT_CONTRACT,
+					toolingPolicy: {
+						...defaultToolingPolicy,
+						requiredMiseTools: defaultToolingPolicy.requiredMiseTools.map(
+							(tool) =>
+								tool.tool === "uv" ? { ...tool, version: "0.10.9" } : tool,
+						),
+					},
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+		const { spawnSync } = await import("node:child_process");
+		const { runCheckEnvironment } = await import("./check-environment.js");
+		vi.mocked(spawnSync).mockImplementation((command) => {
+			if (command === "python3") {
+				return {
+					status: 0,
+					stdout: "Python 3.12.10\n",
+					stderr: "",
+				} as never;
+			}
+			if (command === "uv") {
+				return { status: 0, stdout: "uv 0.10.9\n", stderr: "" } as never;
+			}
+			return { status: 127, stdout: "", stderr: "unexpected command" } as never;
+		});
+
+		const result = await runCheckEnvironment({ contractPath });
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.output.passed).toBe(true);
+		expect(result.output.violations).toHaveLength(0);
+		expect(result.output.posture.runtime?.uvVersion).toBe("0.10.9");
+	});
+
 	it("fails closed when mise cannot resolve pinned runtime probes", async () => {
 		writeFileSync(
 			join(tempDir, ".mise.toml"),

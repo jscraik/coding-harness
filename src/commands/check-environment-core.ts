@@ -222,6 +222,21 @@ function detectHeadSha(): string | undefined {
 }
 
 /**
+ * Return the consumer contract's required mise tool version, falling back to the
+ * harness default only when the consumer contract omits that tool.
+ */
+function requiredMiseToolVersion(
+	contract: HarnessContract,
+	toolName: string,
+	fallbackVersion: string,
+): string {
+	const contractVersion = contract.toolingPolicy?.requiredMiseTools.find(
+		(tool) => tool.tool === toolName,
+	)?.version;
+	return contractVersion ?? fallbackVersion;
+}
+
+/**
  * Run environment preflight check.
  * This function is usable as a library (does not output to console).
  */
@@ -306,6 +321,11 @@ export async function runCheckEnvironment(
 	}
 
 	// Runtime dependency checks for local preflight execution.
+	const requiredUvVersion = requiredMiseToolVersion(
+		contract,
+		"uv",
+		PREFLIGHT_UV_VERSION_PIN,
+	);
 	const pythonProbe = probeCommandVersion(
 		"python3",
 		["--version"],
@@ -343,7 +363,7 @@ export async function runCheckEnvironment(
 		violations.push({
 			type: "runtime_dependency_missing",
 			message: "uv is required but was not found",
-			expected: `Install uv ${PREFLIGHT_UV_VERSION_PIN}`,
+			expected: `Install uv ${requiredUvVersion}`,
 		});
 	} else {
 		posture.runtime = {
@@ -351,13 +371,13 @@ export async function runCheckEnvironment(
 			uvVersion: uvProbe.version,
 		};
 		const current = parseSemverLoose(uvProbe.version);
-		const required = parseSemverLoose(PREFLIGHT_UV_VERSION_PIN);
+		const required = parseSemverLoose(requiredUvVersion);
 		if (current && required && !semver.eq(current, required)) {
 			violations.push({
 				type: "runtime_dependency_version_mismatch",
 				message: `uv version ${uvProbe.version} does not match the pinned runtime`,
 				value: uvProbe.version,
-				expected: PREFLIGHT_UV_VERSION_PIN,
+				expected: requiredUvVersion,
 			});
 		}
 	}

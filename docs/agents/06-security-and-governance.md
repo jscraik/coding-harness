@@ -39,6 +39,7 @@ This repository follows conservative defaults:
 - Local Memory preflight fallback probes must fail fast: keep bounded curl timeouts in `scripts/codex-preflight-local-memory-legacy.sh`, validate only the `rest_api.*` settings actually used to construct the health URL, and treat helper-runner exit code `3` as "unavailable, try the next runner" rather than a terminal failure.
 - Harness-managed consumer repositories are a defined exception: `scripts/check-environment.sh` should prefer a repo-local CLI runner or wrapper, then a mise-resolved harness binary (`mise which harness`), and use a global npm install of `@brainwav/coding-harness` only as the final fallback with explicit `NPM_TOKEN` auth wiring.
 - CircleCI bootstrap is allowed to install baseline shell tooling (`gh`, `rg`, `fd`, `jq`, `make`, `realpath`) and `mise`, then trust `.mise.toml` (via `mise trust --yes`), before readiness gates run; reusable governance jobs that run `pnpm check` must also install and verify pinned `uv` through trusted `mise` before Python/Pydantic type-contract gates run, and the readiness gate itself must remain fail-closed instead of hiding missing-tool drift by self-installing required tools.
+- Harness runtime checks must compare `uv` against the consumer contract's `toolingPolicy.requiredMiseTools` pin when present, not the harness package's own fallback pin.
 - uv-backed Python validation helpers must route through
   `scripts/run-uv-python.sh` so worktree-scoped uv cache and virtual
   environment settings stay centralized and do not drift across package scripts,
