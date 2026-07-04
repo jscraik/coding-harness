@@ -36,7 +36,7 @@ function dryRunRecommendation(
 		return "Review planned files before applying; minimal profile still has a broad planned write set.";
 	}
 	if (riskLevel === "medium") {
-		return "Review planned files before applying; prefer the smallest profile that covers the canary goal.";
+		return "Review planned files before applying; prefer the smallest profile that covers your goal.";
 	}
 	return "Review the resulting diff after apply before committing.";
 }
