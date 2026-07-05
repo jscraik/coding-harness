@@ -77,6 +77,9 @@ and presentation live in the named owner module. Update the registry and
 split, then refresh generated architecture context when docs-gate requires it.
 For north-star contract/scaffold updates that affect workflow authority, update
 this guide and `docs/agents/07b-agent-governance.md` together in the same PR.
+The executable north-star contract includes the compact mantra and personal
+standards arrays; schema, validators, generated contract scaffolds, README,
+roadmap, and status docs must move together when those fields change.
 When the compact north-star mnemonic changes, keep `README.md`,
 `UBIQUITOUS_LANGUAGE.md`, `docs/roadmap/north-star.md`,
 `docs/roadmap/agent-first-status.md`, and

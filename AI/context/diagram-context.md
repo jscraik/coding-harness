@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-03T14:49:03Z
+Generated: 2026-07-05T22:39:48Z
 
 ## Table of Contents
 
@@ -29,21 +29,31 @@ Generated: 2026-07-03T14:49:03Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `src/lib/ci/ownership-gate-normalization.ts`
-- `src/lib/ci/ownership-gate-validation.ts`
-- `src/lib/ci/ownership-gate-workflow-triggers.ts`
-- `src/lib/ci/ownership-gate.ts`
+- `src/commands/context.ts`
+- `src/commands/doctor-file-checks.ts`
+- `src/commands/pilot-rollback.ts`
+- `src/commands/remediate-apply-transactions.ts`
+- `src/commands/tooling-audit-core.ts`
+- `src/lib/context-compound/indexer.ts`
+- `src/lib/contract/contract-presets.ts`
+- `src/lib/contract/json-schema-core.ts`
+- `src/lib/contract/north-star-alignment.ts`
+- `src/lib/contract/north-star-contract-validators.ts`
+- `src/lib/contract/run-records-core.ts`
+- `src/lib/contract/types-core.ts`
+- `src/lib/contract/validator-core.ts`
+- `src/lib/docs-surface/archive-candidates.ts`
+- `src/lib/evidence-reference/evidence-reference.ts`
+- `src/lib/github/client.ts`
 - `src/lib/init/README.md`
-- `src/lib/policy/required-check-names.ts`
-- `src/lib/policy/required-check-profiles.ts`
-- `src/lib/policy/required-checks.ts`
-- `src/presets/go-base.json`
-- `src/presets/minimal.json`
-- `src/presets/python-base.json`
-- `src/presets/rust-base.json`
-- `src/presets/strict.json`
-- `src/presets/swift-base.json`
-- `src/presets/typescript-base.json`
+- `src/lib/init/migration.ts`
+- `src/lib/init/scaffold-contract-template.ts`
+- `src/lib/pr-template-validator-rules.ts`
+- `src/lib/pr-template-validator.ts`
+- `src/lib/silent-error/detector.ts`
+- `src/lib/simulate/analysis.ts`
+- `src/lib/workflow/plan.ts`
+- `src/templates/release-private-npm.yml`
 
 ## agent
 
@@ -1087,6 +1097,7 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_repository_identity_9dc13d37_eaffcd1e
   ext_node_crypto_c7dfc512["node:crypto"] --> node_required_checks_46396214_9d882ad3
   ext_node_crypto_c7dfc512["node:crypto"] --> node_rollback_da25480f_48e45364
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_run_harness_evals_77704768_ba42904d
   ext_node_crypto_c7dfc512["node:crypto"] --> node_run_record_emitter_core_688049d5_2036fd6f
   ext_node_crypto_c7dfc512["node:crypto"] --> node_run_records_core_89286dfa_4ce958f7
   ext_node_crypto_c7dfc512["node:crypto"] --> node_run_state_core_25a955bc_a562e9bf

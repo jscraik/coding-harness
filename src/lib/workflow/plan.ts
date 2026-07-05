@@ -41,6 +41,7 @@ export interface CreatePlanOptions {
 const PLANS_DIR = "docs/plans";
 const FORBIDDEN_CHARS = /[<>:"/\\|?*!.,]/g;
 
+/** Parse a workflow plan type from untrusted frontmatter. */
 function parsePlanType(type: unknown): PlanFrontmatter["type"] | null {
 	return type === "feature" ||
 		type === "refactor" ||

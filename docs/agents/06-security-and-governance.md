@@ -108,6 +108,10 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
   environment support-file inventory, and script-level regression tests aligned
   when changing that lookup sequence or retry budget.
 - `harness.contract.json` `ciOwnership` is the machine-readable contract for that split: `primaryPrGate` must remain `circleci`, `reviewProvider` must remain `coderabbit`, `securityChecks` must include `security-scan`, and any GitHub Actions fallback PR workflow must stay manual/emergency-only unless the contract is intentionally migrated.
+- GitHub Actions release workflows are privileged shell boundaries. Route
+  manual dispatch inputs through named environment variables before validation,
+  keep publish permissions job-scoped, and preserve OIDC trusted publishing as
+  the default path with token fallback limited to explicit bootstrap recovery.
 
 ## Policy-gate risk chain
 

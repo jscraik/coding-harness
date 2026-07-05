@@ -145,6 +145,10 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   tests, generated architecture context, and operator docs; `orient`, `prove`,
   `repair`, `review`, and `handoff` must route operator work without collapsing
   CI, review-thread, tracker, external-readiness, or merge-readiness claims.
+- North-star contract fields are executable workflow authority, not prose-only
+  branding. Keep `northStar.mantra` and `northStar.personalStandards`
+  synchronized across `harness.contract.json`, schema/type validators, scaffold
+  templates, README/roadmap language, and architecture/status docs.
 - PR closeout handoff evidence must stay claim/evidence driven. `harness next
   --pr-closeout <path>` may consume only validated `pr-closeout/v1` artifacts
   and must fail closed into repair guidance when required evidence is missing,
