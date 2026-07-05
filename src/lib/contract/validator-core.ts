@@ -1938,7 +1938,7 @@ export function validateContract(
 				message:
 					"northStar is required for contract versions 1.6+ to keep north-star governance load-bearing",
 				expected:
-					"{ mission: string, primaryMetric: 'pr_lead_time', primaryBottleneck: 'review_rework_loop', autonomyBoundary: string, safetyFloor: string[], nonGoals: string[], decisionQuestions: [{ id, prompt }] }",
+					"{ mission: string, mantra: string[], personalStandards: string[], primaryMetric: 'pr_lead_time', primaryBottleneck: 'review_rework_loop', autonomyBoundary: string, safetyFloor: string[], nonGoals: string[], decisionQuestions: [{ id, prompt }] }",
 				received: "undefined",
 				fix: "Add a canonical northStar block to harness.contract.json",
 			});
@@ -1949,9 +1949,9 @@ export function validateContract(
 				code: ValidationErrorCode.INVALID_VALUE,
 				path: "northStar",
 				message:
-					"northStar must define canonical mission, metric, bottleneck, boundary, safety/non-goal arrays, and ordered canonical decision questions",
+					"northStar must define canonical mission, mantra, personal standards, metric, bottleneck, boundary, safety/non-goal arrays, and ordered canonical decision questions",
 				expected:
-					"{ mission: string, primaryMetric: 'pr_lead_time', primaryBottleneck: 'review_rework_loop', autonomyBoundary: string, safetyFloor: string[], nonGoals: string[], decisionQuestions: [{ id, prompt }] }",
+					"{ mission: string, mantra: string[], personalStandards: string[], primaryMetric: 'pr_lead_time', primaryBottleneck: 'review_rework_loop', autonomyBoundary: string, safetyFloor: string[], nonGoals: string[], decisionQuestions: [{ id, prompt }] }",
 				received: JSON.stringify(obj.northStar),
 				fix: "Use the canonical northStar shape and preserve the required decisionQuestions ids, order, and prompt text",
 			});

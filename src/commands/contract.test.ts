@@ -37,6 +37,7 @@ import {
 	SCHEMA_VERSION,
 	buildContractJsonSchema,
 } from "../lib/contract/json-schema.js";
+import { DEFAULT_NORTH_STAR_CONTRACT } from "../lib/contract/types.js";
 
 import {
 	CONTRACT_PRESETS,
@@ -119,6 +120,8 @@ function canonicalNorthStarBlock(overrides: Record<string, unknown> = {}) {
 	return {
 		mission:
 			"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+		mantra: [...DEFAULT_NORTH_STAR_CONTRACT.mantra],
+		personalStandards: [...DEFAULT_NORTH_STAR_CONTRACT.personalStandards],
 		primaryMetric: NORTH_STAR_PRIMARY_METRIC,
 		primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
 		autonomyBoundary:

@@ -240,6 +240,7 @@ export class GitHubClient {
 		return `${this.owner}/${this.repo}`;
 	}
 
+	/** List GitHub check runs for a branch, tag, or commit reference with retries. */
 	async listCheckRunsForRef(ref: string): Promise<CheckRun[]> {
 		for (
 			let attempt = 0;

@@ -7,6 +7,7 @@ import {
 	DEFAULT_HARNESS_DIR,
 } from "../lib/context-compound/constants.js";
 import {
+	DEFAULT_NORTH_STAR_CONTRACT,
 	NORTH_STAR_DECISION_QUESTION_SPECS,
 	NORTH_STAR_PRIMARY_BOTTLENECK,
 	NORTH_STAR_PRIMARY_METRIC,
@@ -68,6 +69,8 @@ function minimalValidContract(overrides: Record<string, unknown> = {}) {
 		northStar: {
 			mission:
 				"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+			mantra: [...DEFAULT_NORTH_STAR_CONTRACT.mantra],
+			personalStandards: [...DEFAULT_NORTH_STAR_CONTRACT.personalStandards],
 			primaryMetric: NORTH_STAR_PRIMARY_METRIC,
 			primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
 			autonomyBoundary:

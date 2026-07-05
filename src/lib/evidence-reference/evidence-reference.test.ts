@@ -49,7 +49,7 @@ describe("evidence reference durability", () => {
 	it("accepts local-only review artifacts when a tracked receipt mirrors them", () => {
 		const result = validateDurableEvidenceMap({
 			durableEvidenceMap:
-				"ignored-local artifacts/reviews/agent.md -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113",
+				"ignored-local artifacts/reviews/agent.md -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113; schema/version: workflow-closeout/v1; producer command: pnpm-review-agent; digest: sha256:1234567890abcdef; replay command: pnpm-review-agent-replay; authority: retained context",
 			reviewArtifacts: "Codex: artifacts/reviews/agent.md",
 		});
 
@@ -74,7 +74,7 @@ describe("evidence reference durability", () => {
 	it("requires each local artifact to be paired with durable evidence on its own entry", () => {
 		const result = validateDurableEvidenceMap({
 			durableEvidenceMap:
-				"ignored-local artifacts/reviews/agent.md -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113\nignored-local artifacts/reviews/adversarial.md -> local note only",
+				"ignored-local artifacts/reviews/agent.md -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113; schema/version: workflow-closeout/v1; producer command: pnpm-review-agent; digest: sha256:1234567890abcdef; replay command: pnpm-review-agent-replay; authority: retained context\nignored-local artifacts/reviews/adversarial.md -> local note only",
 			reviewArtifacts:
 				"Codex: artifacts/reviews/agent.md\nAdversarial: artifacts/reviews/adversarial.md",
 		});

@@ -145,6 +145,7 @@ export function runDocsArchiveCandidates(
 	return report;
 }
 
+/** Return generated-projection repair findings for ignored archive candidates. */
 function generatedProjectionRepairFindings(
 	_ignoredFiles: readonly ArchiveIgnoredFile[],
 ): ArchiveRepairFinding[] {

@@ -33,8 +33,10 @@ The canonical north-star contract lives in
 - Mission: let a solo developer with limited cognitive bandwidth orchestrate
   agentic software work to professional standards through compact orientation,
   executable guardrails, durable memory, and evidence-based handoff.
-- Mnemonic: Thin Surfaces. Strong Guardrails. Durable Memory. Self Improving.
-  Professional Output.
+- Mnemonic: Thin Surface. Strong Guardrails. Durable Memory. Simplicity /
+  Minimalism. Self Improvement. Professional Output.
+- Personal standards: moral courage, self-discipline, respect for others,
+  integrity, loyalty to self and others, and selfless commitment.
 - Primary metric: PR lead time from open to merge.
 - Primary bottleneck: review and rework loop cost.
 - Boundary: low and medium-risk autonomy only; high-risk remains

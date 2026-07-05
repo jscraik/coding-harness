@@ -19,12 +19,18 @@ const LEGACY_PRODUCTION_FILE_LINE_ALLOWLIST = new Set([
 ]);
 const LEGACY_TEST_FILE_LINE_ALLOWLIST = new Set([
 	"src/commands/branch-protect.test.ts",
+	// Existing monolithic contract validation suite; split before removing.
+	"src/commands/contract.test.ts",
 	"src/commands/init.test.ts",
 	// Temporary while prompt-context recovery cases are being split out; remove when this file is below MAX_TEST_FILE_LINES.
 	"src/commands/next.test.ts",
+	// Existing monolithic review-gate suite; split before removing.
+	"src/commands/review-gate.test.ts",
 	"src/cli-dispatch.test.ts",
 	"src/lib/architecture/module-boundaries.test.ts",
 	"src/lib/cli/command-registry.test.ts",
+	// Existing monolithic contract validator suite; split before removing.
+	"src/lib/contract/validator.test.ts",
 ]);
 
 const args = new Set(process.argv.slice(2));

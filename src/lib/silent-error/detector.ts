@@ -229,10 +229,10 @@ function isErrorVariableUsed(
 	return matches.length > 1;
 }
 
+/** Remove line and block comments from a catch body before empty-body checks. */
 function stripCommentsFromCatchBody(body: string): string {
 	let output = "";
 	let index = 0;
-
 	while (index < body.length) {
 		if (body.startsWith("//", index)) {
 			const newlineIndex = body.indexOf("\n", index + 2);
@@ -256,6 +256,7 @@ function stripCommentsFromCatchBody(body: string): string {
 	return output;
 }
 
+/** Detect catch blocks whose body is empty or contains comments only. */
 function isEmptyOrCommentOnlyCatch(matchText: string): boolean {
 	const openBrace = matchText.indexOf("{");
 	const closeBrace = matchText.lastIndexOf("}");

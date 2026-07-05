@@ -165,6 +165,7 @@ function buildUnknownFindingTransaction(
 	});
 }
 
+/** Apply one canonical finding transaction and write its remediation artifact. */
 function applyFindingTransaction(
 	finding: CanonicalFinding,
 	workspaceRoot: string,

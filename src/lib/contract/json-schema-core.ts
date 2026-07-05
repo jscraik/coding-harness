@@ -262,6 +262,8 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 					"Canonical north-star contract that defines throughput mission, metric, bottleneck, autonomy boundary, and decision rubric.",
 				required: [
 					"mission",
+					"mantra",
+					"personalStandards",
 					"primaryMetric",
 					"primaryBottleneck",
 					"autonomyBoundary",
@@ -275,6 +277,20 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 						type: "string",
 						minLength: 1,
 						description: "Canonical mission statement.",
+					},
+					mantra: {
+						type: "array",
+						minItems: 1,
+						items: { type: "string", minLength: 1 },
+						description:
+							"Canonical compact mantra used by north-star orientation surfaces.",
+					},
+					personalStandards: {
+						type: "array",
+						minItems: 1,
+						items: { type: "string", minLength: 1 },
+						description:
+							"Personal values and standards that constrain planning, implementation, review, and closeout.",
 					},
 					primaryMetric: {
 						type: "string",

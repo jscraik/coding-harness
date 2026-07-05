@@ -167,6 +167,7 @@ function collectPairedLocalReferences(mapValue: string): Set<string> {
 	return paired;
 }
 
+/** Find retained local artifact map entries missing compact evidence-index fields. */
 function collectCompactEvidenceIndexErrors(mapValue: string): string[] {
 	const errors: string[] = [];
 	for (const line of mapValue.split(/\r?\n/)) {

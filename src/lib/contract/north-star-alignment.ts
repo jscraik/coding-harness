@@ -152,6 +152,8 @@ export function evaluateNorthStarSurfaceParity(
 				missingMetric ||
 				missingBottleneck ||
 				!hasAllClauses(surface.content, MISSION_CLAUSES) ||
+				!hasAllClauses(surface.content, contract.northStar.mantra) ||
+				!hasAllClauses(surface.content, contract.northStar.personalStandards) ||
 				!hasAllClauses(surface.content, AUTONOMY_BOUNDARY_CLAUSES) ||
 				!hasAllClauses(surface.content, SAFETY_FLOOR_CLAUSES)
 			) {
@@ -159,7 +161,7 @@ export function evaluateNorthStarSurfaceParity(
 					ruleId: "status.north_star.contract_parity.north_star_doc",
 					path: surface.path,
 					message:
-						"North-star roadmap doc does not preserve the canonical mission, metric, bottleneck, autonomy boundary, and safety-floor clauses from harness.contract.json.",
+						"North-star roadmap doc does not preserve the canonical mission, mnemonic, personal standards, metric, bottleneck, autonomy boundary, and safety-floor clauses from harness.contract.json.",
 					severity: "error",
 					failureClass: "drift_blocking",
 				});
@@ -171,7 +173,8 @@ export function evaluateNorthStarSurfaceParity(
 			surface.key === "readme" &&
 			(missingMetric ||
 				missingBottleneck ||
-				!hasAllClauses(surface.content, MISSION_CLAUSES))
+				!hasAllClauses(surface.content, MISSION_CLAUSES) ||
+				!hasAllClauses(surface.content, contract.northStar.mantra))
 		) {
 			issues.push({
 				ruleId: "status.north_star.contract_parity.readme",

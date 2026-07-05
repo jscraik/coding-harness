@@ -115,8 +115,9 @@ The initial tracer proof is intentionally narrow:
 - The public contract barrel exports the model so future `harness doctor`, PR
   ledger validation, phase-exit evidence, and Project Brain providers can share
   one type instead of inventing parallel packets.
-- Documentation links the contract to north-star language: Thin Surfaces. Strong
-  Guardrails. Durable Memory. Self Improving. Professional Output.
+- Documentation links the contract to north-star language: Thin Surface. Strong
+  Guardrails. Durable Memory. Simplicity / Minimalism. Self Improvement.
+  Professional Output.
 
 ## Next Slices
 

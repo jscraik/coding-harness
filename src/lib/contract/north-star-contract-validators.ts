@@ -18,6 +18,8 @@ import { isPlainObject, isStringArray } from "./validator-helpers.js";
 
 const VALID_NORTH_STAR_KEYS = [
 	"mission",
+	"mantra",
+	"personalStandards",
 	"primaryMetric",
 	"primaryBottleneck",
 	"autonomyBoundary",
@@ -74,7 +76,7 @@ const VALID_TRUSTED_REVIEWER_STATUSES: TrustedReviewerStatus[] = [
 	"active",
 	"revoked",
 ];
-
+/** Validate the canonical north-star decision-question ids, prompts, and order. */
 function isValidNorthStarDecisionQuestions(
 	value: unknown,
 ): value is NorthStarDecisionQuestion[] {
@@ -84,7 +86,6 @@ function isValidNorthStarDecisionQuestions(
 	if (value.length !== NORTH_STAR_DECISION_QUESTION_SPECS.length) {
 		return false;
 	}
-
 	for (const [index, question] of value.entries()) {
 		if (!isPlainObject(question)) {
 			return false;
@@ -102,9 +103,7 @@ function isValidNorthStarDecisionQuestions(
 		}
 
 		const canonical = NORTH_STAR_DECISION_QUESTION_SPECS[index];
-		if (canonical === undefined) {
-			return false;
-		}
+		if (canonical === undefined) return false;
 		if (
 			decisionQuestion.id !== canonical.id ||
 			decisionQuestion.prompt !== canonical.prompt
@@ -141,6 +140,12 @@ export function isValidNorthStarContract(
 		typeof northStar.mission !== "string" ||
 		northStar.mission.trim().length === 0
 	) {
+		return false;
+	}
+	if (!isStringArray(northStar.mantra, { minLength: 1 })) {
+		return false;
+	}
+	if (!isStringArray(northStar.personalStandards, { minLength: 1 })) {
 		return false;
 	}
 	if (northStar.primaryMetric !== NORTH_STAR_PRIMARY_METRIC) {

@@ -100,6 +100,7 @@ function isFlagToken(value: string | undefined): boolean {
 	return value?.startsWith("-") ?? false;
 }
 
+/** Parse a CLI option as a positive integer, returning undefined for invalid input. */
 function parsePositiveInteger(value: string | undefined): number | undefined {
 	if (value === undefined) {
 		return undefined;
@@ -115,6 +116,7 @@ function parsePositiveInteger(value: string | undefined): number | undefined {
 	return parsed;
 }
 
+/** Parse a CLI threshold option as a decimal between 0 and 1. */
 function parseThreshold(value: string | undefined): number | undefined {
 	if (value === undefined) {
 		return undefined;

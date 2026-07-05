@@ -187,6 +187,7 @@ function readRollbackPolicy(
 	}
 }
 
+/** Append a rollback event record using a temp-file write and atomic rename. */
 function appendRollbackEvent(
 	eventsPath: string,
 	record: RollbackEventsRecord,

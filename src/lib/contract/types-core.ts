@@ -275,6 +275,8 @@ export interface NorthStarDecisionQuestion {
 /** North Star Contract. */
 export interface NorthStarContract {
 	mission: string;
+	mantra: string[];
+	personalStandards: string[];
 	primaryMetric: NorthStarPrimaryMetric;
 	primaryBottleneck: NorthStarPrimaryBottleneck;
 	autonomyBoundary: string;
@@ -333,6 +335,22 @@ export interface OverrideReviewerRegistry {
 export const DEFAULT_NORTH_STAR_CONTRACT: NorthStarContract = {
 	mission:
 		"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+	mantra: [
+		"Thin Surface",
+		"Strong Guardrails",
+		"Durable Memory",
+		"Simplicity / Minimalism",
+		"Self Improvement",
+		"Professional Output",
+	],
+	personalStandards: [
+		"moral courage",
+		"self-discipline",
+		"respect for others",
+		"integrity",
+		"loyalty to self and others",
+		"selfless commitment",
+	],
 	primaryMetric: NORTH_STAR_PRIMARY_METRIC,
 	primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
 	autonomyBoundary:
