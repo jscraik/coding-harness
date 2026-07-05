@@ -244,7 +244,7 @@ describe("SA15 — detectProjectType is read-only (source inspection)", () => {
 		expect(result).toMatchObject({
 			projectType: expect.any(String),
 			matchedRule: expect.anything(),
-			confidence: expect.stringMatching(/^high|low$/),
+			confidence: expect.stringMatching(/^(?:high|low)$/),
 			signals: expect.any(Array),
 		});
 	});

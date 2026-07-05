@@ -30,10 +30,8 @@ const PATTERNS: PatternDefinition[] = [
 		description: "Catch block with no error handling",
 		severity: "error",
 		regexes: [
-			// Empty catch: catch { } or catch (e) { }
-			/catch\s*(?:\([^)]*\))?\s*\{\s*\}/g,
-			// catch with only whitespace/comments
-			/catch\s*(?:\([^)]*\))?\s*\{\s*(?:(?:\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/)|\s)*\}/g,
+			// Empty or comment-only catch blocks with no nested braces.
+			/catch\s*(?:\([^)]*\))?\s*\{[^{}]*\}/g,
 		],
 		suggestion: "Add error logging or re-throw the error",
 	},
@@ -231,6 +229,43 @@ function isErrorVariableUsed(
 	return matches.length > 1;
 }
 
+function stripCommentsFromCatchBody(body: string): string {
+	let output = "";
+	let index = 0;
+
+	while (index < body.length) {
+		if (body.startsWith("//", index)) {
+			const newlineIndex = body.indexOf("\n", index + 2);
+			if (newlineIndex === -1) {
+				break;
+			}
+			output += "\n";
+			index = newlineIndex + 1;
+			continue;
+		}
+
+		if (body.startsWith("/*", index)) {
+			const commentEnd = body.indexOf("*/", index + 2);
+			index = commentEnd === -1 ? body.length : commentEnd + 2;
+			continue;
+		}
+
+		output += body[index];
+		index++;
+	}
+	return output;
+}
+
+function isEmptyOrCommentOnlyCatch(matchText: string): boolean {
+	const openBrace = matchText.indexOf("{");
+	const closeBrace = matchText.lastIndexOf("}");
+	if (openBrace === -1 || closeBrace <= openBrace) {
+		return false;
+	}
+	const body = matchText.slice(openBrace + 1, closeBrace);
+	return stripCommentsFromCatchBody(body).trim().length === 0;
+}
+
 /**
  * Analyze a single file for silent error patterns
  */
@@ -249,6 +284,14 @@ function analyzeFile(filePath: string): SilentErrorDetection[] {
 
 				let match: RegExpExecArray | null = regex.exec(content);
 				while (match !== null) {
+					if (
+						pattern.id === "empty-catch" &&
+						!isEmptyOrCommentOnlyCatch(match[0])
+					) {
+						match = regex.exec(content);
+						continue;
+					}
+
 					const { line, column } = findPosition(content, match.index);
 					const locationKey = `${filePath}:${line}:${column}:${pattern.id}`;
 

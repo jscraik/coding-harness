@@ -146,9 +146,8 @@ export function runDocsArchiveCandidates(
 }
 
 function generatedProjectionRepairFindings(
-	ignoredFiles: readonly ArchiveIgnoredFile[],
+	_ignoredFiles: readonly ArchiveIgnoredFile[],
 ): ArchiveRepairFinding[] {
-	ignoredFiles;
 	return [];
 }
 

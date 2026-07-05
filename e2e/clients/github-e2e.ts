@@ -5,7 +5,7 @@
  * Wraps the production GitHubClient with resource tracking and test helpers.
  */
 
-import { writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GitHubClient } from "../../src/lib/github/client.js";
@@ -120,7 +120,7 @@ export class GitHubE2EClient {
 			const { spawnSync } = await import("node:child_process");
 
 			// Create a temporary directory for git operations
-			const tempDir = join(tmpdir(), `github-e2e-${Date.now()}`);
+			const tempDir = mkdtempSync(join(tmpdir(), "github-e2e-"));
 
 			// Clone the repo
 			const cloneResult = spawnSync(

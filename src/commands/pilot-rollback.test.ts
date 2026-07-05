@@ -312,9 +312,9 @@ describe("pilot-rollback", () => {
 		// Security: symlinked artifacts directory must be rejected
 		it("rejects artifacts dir that resolves through a symlink outside cwd", async () => {
 			createContract({ mode: "autonomous" });
-			const outsideDir = "/tmp/coding-harness-test-outside-dir";
+			const { tmpdir } = require("node:os");
+			const outsideDir = mkdtempSync(join(tmpdir(), "pilot-rollback-outside-"));
 			const linkedDir = join(testDir, "artifacts-link");
-			mkdirSync(outsideDir, { recursive: true });
 			mkdirSync(dirname(linkedDir), { recursive: true });
 			symlinkSync(outsideDir, linkedDir, "dir");
 
@@ -341,8 +341,10 @@ describe("pilot-rollback", () => {
 			const artifactsDir = join(testDir, "artifacts/pilot");
 			mkdirSync(artifactsDir, { recursive: true });
 
-			const outsideEvents = "/tmp/coding-harness-test-outside-events.jsonl";
-			const outsideMarker = "/tmp/coding-harness-test-outside-marker.json";
+			const { tmpdir } = require("node:os");
+			const outsideDir = mkdtempSync(join(tmpdir(), "pilot-rollback-outside-"));
+			const outsideEvents = join(outsideDir, "rollback-events.jsonl");
+			const outsideMarker = join(outsideDir, "rollback-marker.json");
 			writeFileSync(outsideEvents, "", "utf-8");
 			writeFileSync(outsideMarker, "", "utf-8");
 			symlinkSync(outsideEvents, join(artifactsDir, "rollback-events.jsonl"));
@@ -368,8 +370,7 @@ describe("pilot-rollback", () => {
 					"",
 				);
 			} finally {
-				rmSync(outsideEvents, { force: true });
-				rmSync(outsideMarker, { force: true });
+				rmSync(outsideDir, { recursive: true, force: true });
 			}
 		});
 

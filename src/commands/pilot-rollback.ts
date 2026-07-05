@@ -195,7 +195,7 @@ function appendRollbackEvent(
 	const line = `${JSON.stringify(record)}\n`;
 
 	// Atomic append: write to temp file, then rename (prevents race conditions)
-	const tempPath = `${eventsPath}.${process.pid}.${Date.now()}.tmp`;
+	const tempPath = `${eventsPath}.${process.pid}.${randomUUID()}.tmp`;
 	try {
 		// Atomic append without loading the entire file into memory:
 		// copy existing log to temp, then append the new line to the temp file.

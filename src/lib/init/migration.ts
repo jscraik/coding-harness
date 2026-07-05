@@ -68,10 +68,11 @@ export function atomicWrite(filePath: string, content: string): WriteResult {
 		if (targetMode !== undefined) {
 			writeFileSync(tempPath, content, {
 				encoding: "utf-8",
+				flag: "wx",
 				mode: targetMode,
 			});
 		} else {
-			writeFileSync(tempPath, content, "utf-8");
+			writeFileSync(tempPath, content, { encoding: "utf-8", flag: "wx" });
 		}
 		renameSync(tempPath, filePath);
 		if (targetMode !== undefined) {

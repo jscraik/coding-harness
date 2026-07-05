@@ -1,4 +1,10 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	mkdtempSync,
+	mkdirSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 /**
@@ -90,7 +96,7 @@ describe("getActiveGHAJobNames", () => {
 	let dir: string;
 
 	beforeEach(() => {
-		dir = join(tmpdir(), `bprox-test-${Date.now()}`);
+		dir = mkdtempSync(join(tmpdir(), "bprox-test-"));
 		mkdirSync(join(dir, ".github", "workflows"), { recursive: true });
 	});
 
@@ -99,7 +105,8 @@ describe("getActiveGHAJobNames", () => {
 	});
 
 	it("returns empty array when .github/workflows does not exist", () => {
-		const noDir = join(tmpdir(), `no-workflows-${Date.now()}`);
+		const noDir = mkdtempSync(join(tmpdir(), "no-workflows-"));
+		rmSync(noDir, { recursive: true, force: true });
 		expect(getActiveGHAJobNames(noDir)).toEqual([]);
 	});
 

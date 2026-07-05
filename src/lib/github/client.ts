@@ -243,7 +243,7 @@ export class GitHubClient {
 	async listCheckRunsForRef(ref: string): Promise<CheckRun[]> {
 		for (
 			let attempt = 0;
-			attempt <= TRANSIENT_RETRY_DELAYS_MS.length;
+			attempt < TRANSIENT_RETRY_DELAYS_MS.length + 1;
 			attempt++
 		) {
 			try {

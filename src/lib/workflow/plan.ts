@@ -36,7 +36,7 @@ export interface CreatePlanOptions {
 }
 
 const PLANS_DIR = "docs/plans";
-const FORBIDDEN_CHARS = /[<>:""/\\|?*!.,]/g;
+const FORBIDDEN_CHARS = /[<>:"/\\|?*!.,]/g;
 
 function parsePlanType(type: unknown): PlanFrontmatter["type"] | null {
 	return type === "feature" ||

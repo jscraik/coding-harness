@@ -105,7 +105,7 @@ function parsePositiveInteger(value: string | undefined): number | undefined {
 		return undefined;
 	}
 	const trimmed = value.trim();
-	if (!/^-?\d+$/.test(trimmed)) {
+	if (!/^-?(?:0|[1-9]\d*)$/.test(trimmed)) {
 		return undefined;
 	}
 	const parsed = Number.parseInt(trimmed, 10);
@@ -120,7 +120,7 @@ function parseThreshold(value: string | undefined): number | undefined {
 		return undefined;
 	}
 	const trimmed = value.trim();
-	if (!/^-?(?:\d+|\d*\.\d+)$/.test(trimmed)) {
+	if (!/^-?(?:(?:0|[1-9]\d*)|(?:\d+\.\d+|\.\d+))$/.test(trimmed)) {
 		return undefined;
 	}
 	const parsed = Number.parseFloat(trimmed);

@@ -993,7 +993,7 @@ export function appendCanonicalEvent(options: {
 	}
 
 	const line = `${JSON.stringify(withHash)}\n`;
-	const tempPath = `${paths.eventsPath}.${process.pid}.${Date.now()}.tmp`;
+	const tempPath = `${paths.eventsPath}.${process.pid}.${randomUUID()}.tmp`;
 	mkdirSync(dirname(paths.eventsPath), { recursive: true });
 	try {
 		if (existsSync(paths.eventsPath)) {

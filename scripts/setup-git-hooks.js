@@ -42,7 +42,7 @@ const GIT_HOOKS_DIR = resolve(
 const PREK_HOME = process.env.PREK_HOME ?? resolve(REPO_ROOT, ".cache/prek");
 const LEGACY_PREK_HOOK_PATCH = [
 	"# Keep prek cache/logs in repo-local .git to avoid home-dir sandbox write failures",
-	'PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"',
+	String.raw`PREK_HOME="\${PREK_HOME:-$HERE/../.cache/prek}"`,
 	'mkdir -p "$PREK_HOME" 2>/dev/null || true',
 	"export PREK_HOME",
 	"",
@@ -52,7 +52,7 @@ const PREK_HOME_PATCH_SENTINEL =
 const PREK_HOOK_PATCH = [
 	"# Keep prek cache/logs local to the active worktree instead of the shared git-dir.",
 	PREK_HOME_PATCH_SENTINEL,
-	'PREK_HOME="${PREK_HOME:-$WORKTREE_ROOT/.cache/prek}"',
+	String.raw`PREK_HOME="\${PREK_HOME:-$WORKTREE_ROOT/.cache/prek}"`,
 	'mkdir -p "$PREK_HOME" 2>/dev/null || true',
 	"export PREK_HOME",
 	"",

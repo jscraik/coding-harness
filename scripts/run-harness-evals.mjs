@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 import { execFileSync, spawnSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import {
 	existsSync,
 	lstatSync,
+	mkdtempSync,
 	mkdirSync,
 	readFileSync,
 	realpathSync,
@@ -440,7 +442,7 @@ function writeJson(filePath, value) {
 	const realTarget = resolveInside(realParent, path.basename(target));
 	const tempPath = resolveInside(
 		realParent,
-		`.${path.basename(target)}.${process.pid}.${Date.now()}.tmp`,
+		`.${path.basename(target)}.${process.pid}.${randomUUID()}.tmp`,
 	);
 	writeFileSync(tempPath, `${JSON.stringify(value, null, 2)}\n`, {
 		flag: "wx",
@@ -6160,17 +6162,17 @@ function runRatchetPacketCommand(argsOrOptions) {
 function runPackageInstalledDownstreamCanaryFixture(scenario, fixturePath) {
 	const reportPath = path.join(fixturePath, "result.json");
 	const packageRoot = resolveInside(fixturePath, "package");
-	const runtimeRoot = path.join(
+	const runtimeParent = path.join(
 		process.env.TMPDIR || tmpdir(),
 		"coding-harness-evals",
 		scenario.id,
-		String(process.pid),
 	);
+	mkdirSync(runtimeParent, { recursive: true });
+	const runtimeRoot = mkdtempSync(path.join(runtimeParent, "run-"));
 	const downstreamRoot = path.join(runtimeRoot, "downstream");
 	const pnpmStore = path.join(runtimeRoot, "pnpm-store");
 	const downstreamRef = `<tmp>/coding-harness-evals/${scenario.id}/<run>/downstream`;
 	mkdirSync(packageRoot, { recursive: true });
-	rmSync(runtimeRoot, { force: true, recursive: true });
 	mkdirSync(downstreamRoot, { recursive: true });
 	writeFileSync(
 		path.join(downstreamRoot, "package.json"),

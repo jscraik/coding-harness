@@ -193,12 +193,12 @@ function collectPackageDependencies(manifest: PackageManifest): Set<string> {
  * If the contract includes a packagePolicy, the returned set contains any explicitly declared capabilities and any capabilities inferred from the manifest's dependencies when a manifest is provided.
  *
  * @param contract - The harness contract that may include a `toolingPolicy.packagePolicy`
- * @param manifest - The parsed package manifest (`package.json`) or `null` when no manifest is available
+ * @param manifest - The parsed package manifest (`package.json`)
  * @returns A set of capability identifiers present either explicitly in the contract or inferred from the manifest's dependency markers
  */
 function detectCapabilities(
 	contract: HarnessContract,
-	manifest: PackageManifest | null,
+	manifest: PackageManifest,
 ): Set<string> {
 	const capabilities = new Set<string>();
 	const packagePolicy = contract.toolingPolicy?.packagePolicy;
@@ -208,10 +208,6 @@ function detectCapabilities(
 
 	for (const capability of packagePolicy.explicitCapabilities ?? []) {
 		capabilities.add(capability);
-	}
-
-	if (manifest === null) {
-		return capabilities;
 	}
 
 	const dependencyNames = collectPackageDependencies(manifest);

@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import {
 	existsSync,
+	mkdtempSync,
 	mkdirSync,
 	readFileSync,
 	rmSync,
@@ -28,9 +29,7 @@ vi.mock("node:child_process", async (importOriginal) => {
 const mockSpawnSync = vi.mocked(spawnSync);
 
 function makeTmpDir(): string {
-	const d = join(tmpdir(), `doctor-test-${Date.now()}`);
-	mkdirSync(d, { recursive: true });
-	return d;
+	return mkdtempSync(join(tmpdir(), "doctor-test-"));
 }
 
 function makeSpawnResult(

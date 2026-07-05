@@ -50,6 +50,15 @@ const LOCAL_PATH_PATTERN =
 	/^(?:\.\/)?(?:AI|artifacts|codestyle|contracts|docs|fixtures|scripts|src|test|tests|\.github|\.harness)\/[\w./-]+$/i;
 const NOT_APPLICABLE_PATTERN =
 	/^(?:n\.?a\.?|n\/a|not applicable|none)(?:\b|\s|[.;:,(])/i;
+const AUTHORITY_PATTERN = /\b(?:source-of-truth|retained context)\b/i;
+const DIGEST_PATTERN =
+	/\b(?:sha256:[a-f0-9]{12,}|digest\s*:?\s*(?:sha256:)?[a-f0-9]{12,}|digest\s*:?\s*n\.?a\.?)\b/i;
+const PRODUCER_PATTERN =
+	/\b(?:producer command|producer|produced by)\s*:?\s*(?:`[^`]+`|\S.{2,})/i;
+const REPLAY_PATTERN =
+	/\b(?:replay command|replay)\s*:?\s*(?:`[^`]+`|n\.?a\.?|n\/a|not applicable|\S.{2,})/i;
+const SCHEMA_VERSION_PATTERN =
+	/\b(?:schema\/version|schema|version)\s*:?\s*(?:`[^`]+`|[\w./:-]+\/v\d+|v\d+|\S.{2,})/i;
 
 const REFERENCE_TOKEN_PATTERN =
 	/(https?:\/\/[^\s)\]>]+|(?:\.\/)?(?:AI|artifacts|codestyle|contracts|docs|fixtures|scripts|src|test|tests|\.github|\.harness)\/[\w./-]+|(?:runtime-card|runtime-card-handoff|runtime-evidence-bundle|receipts|evidence-receipts|sync-receipts)[\w./-]*(?:\.json|\.jsonl)?)/gi;
@@ -158,6 +167,46 @@ function collectPairedLocalReferences(mapValue: string): Set<string> {
 	return paired;
 }
 
+function collectCompactEvidenceIndexErrors(mapValue: string): string[] {
+	const errors: string[] = [];
+	for (const line of mapValue.split(/\r?\n/)) {
+		const lineReferences = extractEvidenceReferences(line);
+		const localReferences = lineReferences.filter(
+			(reference) => reference.durability === "ignored_local_path",
+		);
+		if (localReferences.length === 0) {
+			continue;
+		}
+		if (!lineReferences.some((reference) => isDurableReference(reference))) {
+			continue;
+		}
+
+		const requiredFields: ReadonlyArray<readonly [string, RegExp]> = [
+			["schema/version", SCHEMA_VERSION_PATTERN],
+			["producer command", PRODUCER_PATTERN],
+			["digest", DIGEST_PATTERN],
+			["replay command", REPLAY_PATTERN],
+			["authority", AUTHORITY_PATTERN],
+		];
+		const missingFields = requiredFields
+			.filter(([, pattern]) => !pattern.test(line))
+			.map(([label]) => label);
+
+		if (missingFields.length > 0) {
+			for (const reference of localReferences) {
+				errors.push(
+					"Durable evidence map entry for " +
+						reference.value +
+						" must include schema/version, producer command, digest, replay command, and authority (`source-of-truth` or `retained context`); missing: " +
+						missingFields.join(", ") +
+						".",
+				);
+			}
+		}
+	}
+	return errors;
+}
+
 /**
  * Validate that ignored local artifact references are mirrored by durable evidence.
  *
@@ -228,6 +277,8 @@ export function validateDurableEvidenceMap(input: {
 			"Durable evidence map must pair ignored local artifact paths with a tracked receipt, runtime card, PR comment, GitHub check, or CI artifact URL.",
 		);
 	}
+
+	errors.push(...collectCompactEvidenceIndexErrors(mapValue));
 
 	return { references, localOnlyReferences, durableReferences, errors };
 }
