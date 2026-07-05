@@ -58,6 +58,7 @@ export interface EnvironmentViolation {
 		| "artifact_path_traversal"
 		| "artifact_write_failed"
 		| "runtime_dependency_missing"
+		| "runtime_dependency_pin_invalid"
 		| "runtime_dependency_version_mismatch";
 	/** Human-readable message */
 	message: string;
@@ -222,6 +223,39 @@ function detectHeadSha(): string | undefined {
 }
 
 /**
+ * Return the consumer contract's required mise tool version, falling back to the
+ * harness default only when the consumer contract omits that tool.
+ */
+function requiredMiseToolVersion(
+	contract: HarnessContract,
+	toolName: string,
+	fallbackVersion: string,
+): string {
+	const contractVersion = contract.toolingPolicy?.requiredMiseTools.find(
+		(tool) => tool.tool === toolName,
+	)?.version;
+	return contractVersion ?? fallbackVersion;
+}
+
+/**
+ * Build a fail-closed violation when a required runtime pin cannot be compared.
+ */
+function requiredRuntimeVersionViolation(
+	toolName: string,
+	version: string,
+): EnvironmentViolation | undefined {
+	if (parseSemverLoose(version)) {
+		return undefined;
+	}
+	return {
+		type: "runtime_dependency_pin_invalid",
+		message: `Required ${toolName} runtime pin '${version}' is not parseable as a semver version`,
+		value: version,
+		expected: `Set toolingPolicy.requiredMiseTools ${toolName} to a semver version`,
+	};
+}
+
+/**
  * Run environment preflight check.
  * This function is usable as a library (does not output to console).
  */
@@ -306,6 +340,26 @@ export async function runCheckEnvironment(
 	}
 
 	// Runtime dependency checks for local preflight execution.
+	const requiredPythonVersion = requiredMiseToolVersion(
+		contract,
+		"python",
+		PREFLIGHT_PYTHON_VERSION_PIN,
+	);
+	const requiredUvVersion = requiredMiseToolVersion(
+		contract,
+		"uv",
+		PREFLIGHT_UV_VERSION_PIN,
+	);
+	const requiredPython = parseSemverLoose(requiredPythonVersion);
+	const requiredUv = parseSemverLoose(requiredUvVersion);
+	for (const violation of [
+		requiredRuntimeVersionViolation("python", requiredPythonVersion),
+		requiredRuntimeVersionViolation("uv", requiredUvVersion),
+	]) {
+		if (violation) {
+			violations.push(violation);
+		}
+	}
 	const pythonProbe = probeCommandVersion(
 		"python3",
 		["--version"],
@@ -315,7 +369,7 @@ export async function runCheckEnvironment(
 		violations.push({
 			type: "runtime_dependency_missing",
 			message: "python3 is required but was not found",
-			expected: `Install Python ${PREFLIGHT_PYTHON_VERSION_PIN}.x`,
+			expected: `Install Python ${requiredPythonVersion}.x`,
 		});
 	} else {
 		posture.runtime = {
@@ -323,13 +377,12 @@ export async function runCheckEnvironment(
 			pythonVersion: pythonProbe.version,
 		};
 		const current = parseSemverLoose(pythonProbe.version);
-		const required = parseSemverLoose(PREFLIGHT_PYTHON_VERSION_PIN);
-		if (current && required && !semver.gte(current, required)) {
+		if (current && requiredPython && !semver.gte(current, requiredPython)) {
 			violations.push({
 				type: "runtime_dependency_version_mismatch",
 				message: `python3 version ${pythonProbe.version} is lower than required`,
 				value: pythonProbe.version,
-				expected: `>= ${PREFLIGHT_PYTHON_VERSION_PIN}`,
+				expected: `>= ${requiredPythonVersion}`,
 			});
 		}
 	}
@@ -343,7 +396,7 @@ export async function runCheckEnvironment(
 		violations.push({
 			type: "runtime_dependency_missing",
 			message: "uv is required but was not found",
-			expected: `Install uv ${PREFLIGHT_UV_VERSION_PIN}`,
+			expected: `Install uv ${requiredUvVersion}`,
 		});
 	} else {
 		posture.runtime = {
@@ -351,13 +404,12 @@ export async function runCheckEnvironment(
 			uvVersion: uvProbe.version,
 		};
 		const current = parseSemverLoose(uvProbe.version);
-		const required = parseSemverLoose(PREFLIGHT_UV_VERSION_PIN);
-		if (current && required && !semver.eq(current, required)) {
+		if (current && requiredUv && !semver.eq(current, requiredUv)) {
 			violations.push({
 				type: "runtime_dependency_version_mismatch",
 				message: `uv version ${uvProbe.version} does not match the pinned runtime`,
 				value: uvProbe.version,
-				expected: PREFLIGHT_UV_VERSION_PIN,
+				expected: requiredUvVersion,
 			});
 		}
 	}
