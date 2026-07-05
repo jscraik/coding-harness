@@ -28,12 +28,14 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  attestations: write
-  contents: write
-  id-token: write
+  contents: read
 
 jobs:
   publish:
+    permissions:
+      attestations: write
+      contents: write
+      id-token: write
     runs-on: ubuntu-latest
     environment:
       name: npm-release
@@ -54,10 +56,12 @@ jobs:
       - name: Resolve and validate release tag
         id: release-tag
         shell: bash
+        env:
+          RELEASE_TAG_INPUT: ${{ github.event.inputs.release_tag }}
         run: |
           set -euo pipefail
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
-            TAG="${{ github.event.inputs.release_tag }}"
+            TAG="${RELEASE_TAG_INPUT}"
           else
             TAG="${GITHUB_REF_NAME}"
           fi
@@ -223,8 +227,15 @@ jobs:
 
       - name: Verify publish auth mode
         id: publish-auth
+        env:
+          PUBLISH_AUTH_INPUT: ${{ github.event.inputs.publish_auth }}
+          NPM_PUBLISH_AUTH_MODE: ${{ vars.NPM_PUBLISH_AUTH || 'oidc' }}
         run: |
-          MODE="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.publish_auth || vars.NPM_PUBLISH_AUTH || 'oidc' }}"
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            MODE="${PUBLISH_AUTH_INPUT:-oidc}"
+          else
+            MODE="${NPM_PUBLISH_AUTH_MODE:-oidc}"
+          fi
           if [[ -z "$MODE" ]]; then
             MODE="oidc"
           fi
