@@ -52,7 +52,7 @@ const NOT_APPLICABLE_PATTERN =
 	/^(?:n\.?a\.?|n\/a|not applicable|none)(?:\b|\s|[.;:,(])/i;
 const AUTHORITY_PATTERN = /\b(?:source-of-truth|retained context)\b/i;
 const DIGEST_PATTERN =
-	/\b(?:sha256:[a-f0-9]{12,}|digest\s*:?\s*(?:sha256:)?[a-f0-9]{12,}|digest\s*:?\s*n\.?a\.?)\b/i;
+	/\b(?:sha256:[a-f0-9]{12,}|digest\s*:?\s*(?:sha256:)?[a-f0-9]{12,})\b/i;
 const PRODUCER_PATTERN =
 	/\b(?:producer command|producer|produced by)\s*:?\s*(?:`[^`]+`|\S.{2,})/i;
 const REPLAY_PATTERN =
@@ -129,9 +129,9 @@ export function extractEvidenceReferences(text: string): EvidenceReference[] {
 	}).filter((reference) => reference.value.length > 0);
 }
 
-function isDurableReference(reference: EvidenceReference): boolean {
+/** Return true when a reference can mirror retained artifact content. */
+function isDurableEvidenceMirror(reference: EvidenceReference): boolean {
 	return [
-		"tracked_repo_path",
 		"ci_artifact_url",
 		"github_pr_comment",
 		"github_check_url",
@@ -144,6 +144,7 @@ function uniqueReferenceValues(references: EvidenceReference[]): string[] {
 	return Array.from(new Set(references.map((reference) => reference.value)));
 }
 
+/** Collect local artifact paths that share a row with a receipt-like mirror. */
 function collectPairedLocalReferences(mapValue: string): Set<string> {
 	const paired = new Set<string>();
 	for (const line of mapValue.split(/\r?\n/)) {
@@ -155,7 +156,9 @@ function collectPairedLocalReferences(mapValue: string): Set<string> {
 		) {
 			continue;
 		}
-		if (!lineReferences.some((reference) => isDurableReference(reference))) {
+		if (
+			!lineReferences.some((reference) => isDurableEvidenceMirror(reference))
+		) {
 			continue;
 		}
 		for (const reference of lineReferences) {
@@ -178,7 +181,9 @@ function collectCompactEvidenceIndexErrors(mapValue: string): string[] {
 		if (localReferences.length === 0) {
 			continue;
 		}
-		if (!lineReferences.some((reference) => isDurableReference(reference))) {
+		if (
+			!lineReferences.some((reference) => isDurableEvidenceMirror(reference))
+		) {
 			continue;
 		}
 
@@ -285,7 +290,7 @@ export function validateDurableEvidenceMap(input: {
 	const durableReferences = Array.from(
 		new Set(
 			mapReferences
-				.filter((reference) => isDurableReference(reference))
+				.filter((reference) => isDurableEvidenceMirror(reference))
 				.map((reference) => reference.value),
 		),
 	);

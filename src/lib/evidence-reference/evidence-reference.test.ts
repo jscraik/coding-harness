@@ -72,6 +72,34 @@ describe("evidence reference durability", () => {
 		);
 	});
 
+	it("rejects n.a. digests for local artifact evidence-map entries", () => {
+		const result = validateDurableEvidenceMap({
+			durableEvidenceMap:
+				"ignored-local artifacts/reviews/agent.md -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113; schema/version: workflow-closeout/v1; producer command: pnpm-review-agent; digest: n.a.; replay command: n.a.; authority: retained context",
+			reviewArtifacts: "Codex: artifacts/reviews/agent.md",
+		});
+
+		expect(result.errors).toContain(
+			"Durable evidence map entry for artifacts/reviews/agent.md must include schema/version, producer command, digest, replay command, and authority (`source-of-truth` or `retained context`); missing: digest.",
+		);
+	});
+
+	it("rejects tracked source paths as durable mirrors for local artifacts", () => {
+		const result = validateDurableEvidenceMap({
+			durableEvidenceMap:
+				"ignored-local artifacts/run.json -> src/lib/foo.ts; schema/version: run/v1; producer command: pnpm x; digest: sha256:1234567890abcdef; replay command: pnpm x; authority: retained context",
+			reviewArtifacts: "Codex: artifacts/run.json",
+		});
+
+		expect(result.durableReferences).toEqual([]);
+		expect(result.errors).toContain(
+			"Durable evidence map must pair local-only artifact reference artifacts/run.json with durable evidence on the same map entry.",
+		);
+		expect(result.errors).toContain(
+			"Durable evidence map must pair ignored local artifact paths with a tracked receipt, runtime card, PR comment, GitHub check, or CI artifact URL.",
+		);
+	});
+
 	it("rejects map-only local artifacts without durable evidence", () => {
 		const result = validateDurableEvidenceMap({
 			durableEvidenceMap:
