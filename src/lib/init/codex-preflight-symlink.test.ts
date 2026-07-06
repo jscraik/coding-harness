@@ -69,9 +69,6 @@ function runIsAllowedRepoExternalPath(
 	const result = spawnSync(
 		"bash",
 		[
-			"-c",
-			'source "$1"; is_allowed_repo_external_path "$2" "$3" "$4"',
-			"bash",
 			PREFLIGHT_PATH,
 			root,
 			matchArg,
