@@ -59,6 +59,35 @@ describe("evidence reference durability", () => {
 		);
 	});
 
+	it("accepts table-form durable evidence map entries with compact evidence columns", () => {
+		const result = validateDurableEvidenceMap({
+			durableEvidenceMap:
+				"| artifacts/reviews/agent.md | docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113 | review-artifact/v1 | pnpm-review-agent | sha256:1234567890abcdef | pnpm-review-agent-replay | retained context |",
+			reviewArtifacts: "Codex: artifacts/reviews/agent.md",
+		});
+
+		expect(result.errors).toEqual([]);
+		expect(result.durableReferences).toContain(
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		);
+	});
+
+	it("rejects map-only local artifacts without durable evidence", () => {
+		const result = validateDurableEvidenceMap({
+			durableEvidenceMap:
+				"artifacts/run.json; schema/version: run/v1; producer command: pnpm x; digest: sha256:1234567890abcdef; replay command: pnpm x; authority: retained context",
+			reviewArtifacts:
+				"CodeRabbit: https://github.com/jscraik/coding-harness/pull/309#issuecomment-1",
+		});
+
+		expect(result.errors).toContain(
+			"Durable evidence map must pair local-only artifact reference artifacts/run.json with durable evidence on the same map entry.",
+		);
+		expect(result.errors).toContain(
+			"Durable evidence map must pair ignored local artifact paths with a tracked receipt, runtime card, PR comment, GitHub check, or CI artifact URL.",
+		);
+	});
+
 	it("rejects substring aliases instead of exact local artifact mappings", () => {
 		const result = validateDurableEvidenceMap({
 			durableEvidenceMap:

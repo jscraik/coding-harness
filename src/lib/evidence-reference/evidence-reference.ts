@@ -182,16 +182,7 @@ function collectCompactEvidenceIndexErrors(mapValue: string): string[] {
 			continue;
 		}
 
-		const requiredFields: ReadonlyArray<readonly [string, RegExp]> = [
-			["schema/version", SCHEMA_VERSION_PATTERN],
-			["producer command", PRODUCER_PATTERN],
-			["digest", DIGEST_PATTERN],
-			["replay command", REPLAY_PATTERN],
-			["authority", AUTHORITY_PATTERN],
-		];
-		const missingFields = requiredFields
-			.filter(([, pattern]) => !pattern.test(line))
-			.map(([label]) => label);
+		const missingFields = collectMissingCompactEvidenceFields(line);
 
 		if (missingFields.length > 0) {
 			for (const reference of localReferences) {
@@ -206,6 +197,63 @@ function collectCompactEvidenceIndexErrors(mapValue: string): string[] {
 		}
 	}
 	return errors;
+}
+
+function collectMissingCompactEvidenceFields(line: string): string[] {
+	const requiredFields: ReadonlyArray<readonly [string, RegExp]> = [
+		["schema/version", SCHEMA_VERSION_PATTERN],
+		["producer command", PRODUCER_PATTERN],
+		["digest", DIGEST_PATTERN],
+		["replay command", REPLAY_PATTERN],
+		["authority", AUTHORITY_PATTERN],
+	];
+	const tableFields = parseCompactEvidenceTableFields(line);
+	return requiredFields
+		.filter(([label, pattern]) => {
+			if (pattern.test(line)) {
+				return false;
+			}
+			const tableValue = tableFields?.[label];
+			return tableValue === undefined || !pattern.test(tableValue);
+		})
+		.map(([label]) => label);
+}
+
+function parseCompactEvidenceTableFields(
+	line: string,
+): Record<string, string> | null {
+	const trimmed = line.trim();
+	if (!trimmed.startsWith("|") || !trimmed.endsWith("|")) {
+		return null;
+	}
+	if (/^\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?$/.test(trimmed)) {
+		return null;
+	}
+
+	const cells = trimmed
+		.slice(1, -1)
+		.split("|")
+		.map((cell) => cell.trim())
+		.filter((cell) => cell.length > 0);
+	if (cells.length < 6) {
+		return null;
+	}
+	const lowerCells = cells.map((cell) => cell.toLowerCase());
+	if (
+		lowerCells.some((cell) => cell.includes("schema")) &&
+		lowerCells.some((cell) => cell.includes("producer"))
+	) {
+		return null;
+	}
+
+	const offset = cells.length >= 7 ? 2 : 1;
+	return {
+		"schema/version": `schema/version: ${cells[offset] ?? ""}`,
+		"producer command": `producer command: ${cells[offset + 1] ?? ""}`,
+		digest: `digest: ${cells[offset + 2] ?? ""}`,
+		"replay command": `replay command: ${cells[offset + 3] ?? ""}`,
+		authority: `authority: ${cells[offset + 4] ?? ""}`,
+	};
 }
 
 /**
@@ -232,11 +280,6 @@ export function validateDurableEvidenceMap(input: {
 			(reference) => reference.durability === "ignored_local_path",
 		),
 	);
-	const evidenceLocalOnlyReferences = uniqueReferenceValues(
-		evidenceReferences.filter(
-			(reference) => reference.durability === "ignored_local_path",
-		),
-	);
 	const durableReferences = Array.from(
 		new Set(
 			mapReferences
@@ -260,7 +303,7 @@ export function validateDurableEvidenceMap(input: {
 	}
 
 	const pairedLocalReferences = collectPairedLocalReferences(mapValue);
-	for (const localReference of evidenceLocalOnlyReferences) {
+	for (const localReference of localOnlyReferences) {
 		if (!pairedLocalReferences.has(localReference)) {
 			errors.push(
 				"Durable evidence map must pair local-only artifact reference " +
@@ -270,10 +313,7 @@ export function validateDurableEvidenceMap(input: {
 		}
 	}
 
-	if (
-		evidenceLocalOnlyReferences.length > 0 &&
-		durableReferences.length === 0
-	) {
+	if (localOnlyReferences.length > 0 && durableReferences.length === 0) {
 		errors.push(
 			"Durable evidence map must pair ignored local artifact paths with a tracked receipt, runtime card, PR comment, GitHub check, or CI artifact URL.",
 		);
