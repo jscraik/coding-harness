@@ -284,6 +284,7 @@ const VALID_CODE_SCANNING_ALERTS_THRESHOLDS: CodeScanningAlertsThreshold[] = [
 	"all",
 ];
 
+/** Backfill north-star orientation fields added after early 1.6 contracts. */
 function withLegacyNorthStarDefaults(value: unknown): unknown {
 	if (!isPlainObject(value)) {
 		return value;

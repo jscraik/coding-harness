@@ -2664,6 +2664,7 @@ printf '%s\\n' '{"passed":true}'
 					encoding: "utf8",
 					env: {
 						...inheritedEnv,
+						MISE_TRUSTED_CONFIG_PATHS: join(tempDir, ".mise.toml"),
 						PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
 						GLOBAL_HARNESS_LOG: globalHarnessLog,
 					},
@@ -3476,13 +3477,19 @@ exit 1
 				"utf-8",
 			);
 
+			const {
+				BASH_ENV: _ignoredBashEnv,
+				ENV: _ignoredEnv,
+				...inheritedEnv
+			} = process.env;
 			const verify = spawnSync("bash", ["scripts/verify-work.sh", "--fast"], {
 				cwd: tempDir,
 				encoding: "utf8",
 				env: {
-					...process.env,
+					...inheritedEnv,
 					FAKE_PNPM_LOG: fakePnpmLog,
 					HARNESS_VERIFY_WORK_NO_DELEGATE: "1",
+					MISE_TRUSTED_CONFIG_PATHS: join(tempDir, ".mise.toml"),
 					PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
 				},
 			});

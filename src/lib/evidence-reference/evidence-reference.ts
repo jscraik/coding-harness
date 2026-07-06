@@ -199,6 +199,7 @@ function collectCompactEvidenceIndexErrors(mapValue: string): string[] {
 	return errors;
 }
 
+/** Return compact evidence index fields missing from a durable evidence row. */
 function collectMissingCompactEvidenceFields(line: string): string[] {
 	const requiredFields: ReadonlyArray<readonly [string, RegExp]> = [
 		["schema/version", SCHEMA_VERSION_PATTERN],
@@ -219,6 +220,7 @@ function collectMissingCompactEvidenceFields(line: string): string[] {
 		.map(([label]) => label);
 }
 
+/** Parse a compact evidence table row into field labels and values. */
 function parseCompactEvidenceTableFields(
 	line: string,
 ): Record<string, string> | null {

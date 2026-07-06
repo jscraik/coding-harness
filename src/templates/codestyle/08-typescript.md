@@ -24,17 +24,30 @@
   `noUncheckedIndexedAccess`, and `exactOptionalPropertyTypes` enabled unless
   a documented migration or waiver explains why a target cannot support them.
 - `any` SHOULD be avoided in production paths; use concrete types or `unknown` plus narrowing. If a temporary `any` is unavoidable, keep it local, justified, and covered by tests or a follow-up waiver.
+- Unknown, raw, JSON-ish, or dynamic data MUST be eliminated at the declared
+  system boundary. If application, domain, service, UI, or orchestration logic
+  needs a generic shape helper, fix the upstream parser, schema, API adapter,
+  DTO, config loader, CLI parser, storage decoder, migration importer, or test
+  fixture boundary first.
 
 ## Banned patterns
 - Unjustified `: any`, `as any`, `Promise<any>`, and `Record<string, any>` in production code.
 - `value as unknown as T` double assertions without runtime validation.
 - `// @ts-ignore` and `// @ts-nocheck`; use `@ts-expect-error` with rationale only when unavoidable.
 - Unsafe type assertions without guard functions or schema validation.
+- New generic late-boundary helpers named `isRecord`, `isPlainObject`,
+  `isObject`, `isDict`, `asRecord`, `coerceRecord`, `normalizeUnknown`,
+  `parseUnknown`, or similarly broad shape probes outside declared boundary
+  modules. These are architecture failures before naming failures.
 
 ## Linting and module rules
 - Biome handles formatting and style-level lint in this repository and MUST pass where enabled.
 - Biome configuration lives in `biome.json`; when the Biome package version changes, keep the schema URL and lockfile in sync.
 - TypeScript type safety MUST be enforced with `tsc --noEmit`.
+- `scripts/check-boundary-unknown-guards.mjs` enforces the cross-language
+  `boundary-no-late-unknown` ratchet beside Biome for newly added generic
+  shape helpers. `scripts/check-types-policy.mjs` remains the TypeScript
+  escape-hatch ratchet for `any`, double assertions, and suppressions.
 - Downstream projects MAY use ESLint for additional policy checks when an `eslint.config.*` file exists; do not claim ESLint coverage where it is not configured.
 - Prefer ESM and explicit module syntax for Node/TS packages.
 - Local ESM imports MUST include `.js` extensions for emitted JavaScript compatibility.

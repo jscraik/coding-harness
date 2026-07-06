@@ -1,6 +1,6 @@
 # sha256 manifest for codestyle parity enforcement
 # format: <sha256>  <relative-path-from-repo-root>
-c036c0373e1034dfa9034d399e3328231953c3f86288c6f67cf3f61ba4a68af3  CODESTYLE.md
+7a5aba6593804cad97d5d474baa5b45ae464247fd996ef5b9735f4069bbd912c  CODESTYLE.md
 5046765e436a0c24e52b71756a66d14740c9d8b39038054e23d8c661c68b2a51  codestyle/01-foundations.md
 e22f8aba02af91c075bf91f03897790ac14f596d13c1bd1ab4ae89ff1ae6ebe4  codestyle/02-javascript-ui.md
 14350d1f761c0900135d411f1d4cfa3403cdb250f3441ab021ad26acad92718c  codestyle/03-rust-tauri.md
@@ -8,7 +8,7 @@ e1f0bd58a8f0c4ae33d321901c70771f7593385e58c50f927def6f38efc20f1b  codestyle/04-d
 9560dd5bd7f588fb03390206adafcacf3bfce9225fc0104fd69ec1c14639fc6d  codestyle/05-quality-security-ops.md
 f062ce4201d5b47f8efc9686024f0b1aba5c9b7e0283541acb06763f525cad27  codestyle/06-appendices-and-project-overrides.md
 b118599c0abf13c817c5cd7f3db37532483b49b33176e375eef747048f8d0f6c  codestyle/07-python.md
-bcf816ecad33a632d5b18cf6d3285ef5cbd770265ff6d893ed8e2629194abe7a  codestyle/08-typescript.md
+22eda369f65cf131688bae8d909f9310d63bb4be27045d2b30bf455f8121b0f1  codestyle/08-typescript.md
 0e98da9cd1005fb5cc602d1ace238fd8107a1a8ddf186fd85bfe553182e551b2  codestyle/09-web.md
 e43d7c4a55ab4d918e54805af8cb3469a6691b02546cac2a9ebda923929a6169  codestyle/10-shell-bash-zsh.md
 c70b230fec46dfb0069f7a1d146f09c3beb00383d4a1501c017736e28e0ef69d  codestyle/11-package-managers-pnpm-npm.md
