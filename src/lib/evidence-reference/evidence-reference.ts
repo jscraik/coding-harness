@@ -199,6 +199,12 @@ function collectCompactEvidenceIndexErrors(mapValue: string): string[] {
 	return errors;
 }
 
+/**
+ * Reports which required compact evidence fields are absent from a line.
+ *
+ * @param line Evidence-map line to inspect, including optional table cells.
+ * @returns Required field labels that are not present in prose or table form.
+ */
 function collectMissingCompactEvidenceFields(line: string): string[] {
 	const requiredFields: ReadonlyArray<readonly [string, RegExp]> = [
 		["schema/version", SCHEMA_VERSION_PATTERN],
@@ -219,6 +225,12 @@ function collectMissingCompactEvidenceFields(line: string): string[] {
 		.map(([label]) => label);
 }
 
+/**
+ * Extracts named compact evidence fields from a Markdown table row.
+ *
+ * @param line Candidate table row containing durable evidence metadata cells.
+ * @returns A field map when the row has the expected compact evidence shape.
+ */
 function parseCompactEvidenceTableFields(
 	line: string,
 ): Record<string, string> | null {
