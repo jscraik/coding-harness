@@ -193,6 +193,30 @@ describe("buildContractJsonSchema", () => {
 		expect(canonicalVersionPattern).toContain("[2-9][0-9]*");
 	});
 
+	it("allows legacy 1.6 northStar blocks to omit backfilled orientation fields in schema consumers", () => {
+		const schema = buildContractJsonSchema() as {
+			properties: {
+				northStar: {
+					required: string[];
+				};
+			};
+		};
+
+		expect(schema.properties.northStar.required).toEqual([
+			"mission",
+			"primaryMetric",
+			"primaryBottleneck",
+			"autonomyBoundary",
+			"safetyFloor",
+			"nonGoals",
+			"decisionQuestions",
+		]);
+		expect(schema.properties.northStar.required).not.toContain("mantra");
+		expect(schema.properties.northStar.required).not.toContain(
+			"personalStandards",
+		);
+	});
+
 	it("keeps version schema patterns aligned with runtime version semantics", () => {
 		const schema = buildContractJsonSchema() as {
 			anyOf: Array<{
