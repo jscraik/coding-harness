@@ -8,6 +8,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { clearContractCache } from "../lib/contract/loader.js";
@@ -270,7 +271,6 @@ describe("pilot-rollback", () => {
 		// Security: default artifacts path (no --artifacts flag) must still be validated
 		it("returns error when default artifacts dir is a symlink outside cwd", async () => {
 			const { mkdtempSync } = require("node:fs");
-			const { tmpdir } = require("node:os");
 			const originalCwd = process.cwd();
 			const sandboxDir = mkdtempSync(join(tmpdir(), "pilot-rollback-"));
 			const outsideDir = mkdtempSync(join(tmpdir(), "pilot-rollback-outside-"));
@@ -312,7 +312,6 @@ describe("pilot-rollback", () => {
 		// Security: symlinked artifacts directory must be rejected
 		it("rejects artifacts dir that resolves through a symlink outside cwd", async () => {
 			createContract({ mode: "autonomous" });
-			const { tmpdir } = require("node:os");
 			const outsideDir = mkdtempSync(join(tmpdir(), "pilot-rollback-outside-"));
 			const linkedDir = join(testDir, "artifacts-link");
 			mkdirSync(dirname(linkedDir), { recursive: true });
