@@ -255,6 +255,30 @@ describe("validateContract", () => {
 			);
 		});
 
+		it("backfills new northStar orientation fields for existing 1.6 contracts", () => {
+			const legacyNorthStar = {
+				mission: validNorthStar.mission,
+				primaryMetric: validNorthStar.primaryMetric,
+				primaryBottleneck: validNorthStar.primaryBottleneck,
+				autonomyBoundary: validNorthStar.autonomyBoundary,
+				safetyFloor: validNorthStar.safetyFloor,
+				nonGoals: validNorthStar.nonGoals,
+				decisionQuestions: validNorthStar.decisionQuestions,
+			};
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.6.0",
+					northStar: legacyNorthStar,
+				}),
+			);
+
+			expect(result.success).toBe(true);
+			expect(result.data?.northStar?.mantra).toEqual(validNorthStar.mantra);
+			expect(result.data?.northStar?.personalStandards).toEqual(
+				validNorthStar.personalStandards,
+			);
+		});
+
 		it("rejects northStar with non-canonical decision question order", () => {
 			const reversedQuestions = [...canonicalDecisionQuestions].reverse();
 			const result = validateContract(

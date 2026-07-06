@@ -82,7 +82,11 @@ import type {
 	UILoopPolicy,
 	UILoopSLO,
 } from "./types.js";
-import { PREFLIGHT_POST_HOOK_IDS, PREFLIGHT_PRE_HOOK_IDS } from "./types.js";
+import {
+	DEFAULT_NORTH_STAR_CONTRACT,
+	PREFLIGHT_POST_HOOK_IDS,
+	PREFLIGHT_PRE_HOOK_IDS,
+} from "./types.js";
 import { isValidUILoopCommandSpec } from "./ui-loop-command.js";
 import {
 	FORBIDDEN_KEYS,
@@ -279,6 +283,27 @@ const VALID_CODE_SCANNING_ALERTS_THRESHOLDS: CodeScanningAlertsThreshold[] = [
 	"errors_and_warnings",
 	"all",
 ];
+
+function withLegacyNorthStarDefaults(value: unknown): unknown {
+	if (!isPlainObject(value)) {
+		return value;
+	}
+
+	const northStar = { ...value };
+	if (!Object.hasOwn(northStar, "mantra") || northStar.mantra === undefined) {
+		northStar.mantra = [...DEFAULT_NORTH_STAR_CONTRACT.mantra];
+	}
+	if (
+		!Object.hasOwn(northStar, "personalStandards") ||
+		northStar.personalStandards === undefined
+	) {
+		northStar.personalStandards = [
+			...DEFAULT_NORTH_STAR_CONTRACT.personalStandards,
+		];
+	}
+
+	return northStar;
+}
 const VALID_CODE_SCANNING_SECURITY_ALERTS_THRESHOLDS: CodeScanningSecurityAlertsThreshold[] =
 	["high_or_higher", "medium_or_higher", "all"];
 const VALID_CONTROL_PLANE_OVERRIDE_SCOPES: ControlPlaneOverrideScope[] = [
@@ -1944,7 +1969,8 @@ export function validateContract(
 			});
 		}
 	} else {
-		if (!isValidNorthStarContract(obj.northStar)) {
+		const normalizedNorthStar = withLegacyNorthStarDefaults(obj.northStar);
+		if (!isValidNorthStarContract(normalizedNorthStar)) {
 			errors.push({
 				code: ValidationErrorCode.INVALID_VALUE,
 				path: "northStar",
@@ -1956,7 +1982,7 @@ export function validateContract(
 				fix: "Use the canonical northStar shape and preserve the required decisionQuestions ids, order, and prompt text",
 			});
 		} else {
-			northStar = obj.northStar as NorthStarContract;
+			northStar = normalizedNorthStar;
 		}
 	}
 
