@@ -65,14 +65,14 @@ transcripts, bulky telemetry, or local absolute paths.
 - Validation evidence: See Testing.
 - Review artifacts: See Review artifacts.
 - Durable evidence map:
-<!-- For evidence-heavy PRs, include a compact index rather than bulky logs.
-Use repo-relative paths only. Do not paste raw transcripts, secrets, bulky
-telemetry, or local absolute paths. Mark each artifact as `source-of-truth`
-or `retained context`.
+<!-- For evidence-heavy PRs, index each local artifact inline, one entry per
+line, using repo-relative paths only. Do not paste raw transcripts, secrets,
+bulky telemetry, or local absolute paths.
 
-| Artifact | Schema / version | Producer command | Digest | Replay command | Authority |
-| --- | --- | --- | --- | --- | --- |
-|  |  |  |  |  | `source-of-truth` / `retained context` |
+Format per entry:
+<local-path> -> <durable reference (tracked receipt / PR comment / CI URL / runtime-card ref)>;
+schema/version: <value>; producer command: <value>; digest: <value>;
+replay command: <value>; authority: `source-of-truth` or `retained context`.
 
 `source-of-truth` means the artifact is authoritative for a deterministic
 lane claim. `retained context` means the artifact supports review or
