@@ -284,7 +284,13 @@ const VALID_CODE_SCANNING_ALERTS_THRESHOLDS: CodeScanningAlertsThreshold[] = [
 	"all",
 ];
 
-/** Backfill north-star orientation fields added after early 1.6 contracts. */
+/**
+ * Backfills legacy north-star contract payloads with current default fields.
+ *
+ * @param value Candidate north-star contract value loaded from user config.
+ * @returns The original value for non-object inputs, or a shallow copy with
+ * missing default arrays populated for legacy object payloads.
+ */
 function withLegacyNorthStarDefaults(value: unknown): unknown {
 	if (!isPlainObject(value)) {
 		return value;

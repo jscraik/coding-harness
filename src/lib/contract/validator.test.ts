@@ -279,6 +279,29 @@ describe("validateContract", () => {
 			);
 		});
 
+		it("rejects explicitly invalid northStar orientation fields", () => {
+			const legacyNorthStar = {
+				mission: validNorthStar.mission,
+				primaryMetric: validNorthStar.primaryMetric,
+				primaryBottleneck: validNorthStar.primaryBottleneck,
+				autonomyBoundary: validNorthStar.autonomyBoundary,
+				safetyFloor: validNorthStar.safetyFloor,
+				nonGoals: validNorthStar.nonGoals,
+				decisionQuestions: validNorthStar.decisionQuestions,
+				mantra: [],
+			};
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.6.0",
+					northStar: legacyNorthStar,
+				}),
+			);
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("northStar");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+		});
+
 		it("rejects northStar with non-canonical decision question order", () => {
 			const reversedQuestions = [...canonicalDecisionQuestions].reverse();
 			const result = validateContract(

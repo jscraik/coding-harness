@@ -144,7 +144,69 @@ function uniqueReferenceValues(references: EvidenceReference[]): string[] {
 	return Array.from(new Set(references.map((reference) => reference.value)));
 }
 
-/** Collect local artifact paths that share a row with a receipt-like mirror. */
+/** Split a compact evidence table row without dropping intentionally blank cells. */
+function splitCompactEvidenceTableCells(line: string): string[] | null {
+	const trimmed = line.trim();
+	if (!trimmed.startsWith("|") || !trimmed.endsWith("|")) {
+		return null;
+	}
+	if (/^\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?$/.test(trimmed)) {
+		return null;
+	}
+	return trimmed
+		.slice(1, -1)
+		.split("|")
+		.map((cell) => cell.trim());
+}
+
+/** Extract only references that can mirror a local artifact on this map entry. */
+function extractDurableMirrorReferences(line: string): EvidenceReference[] {
+	const tableCells = splitCompactEvidenceTableCells(line);
+	if (tableCells && tableCells.length >= 7) {
+		return extractEvidenceReferences(tableCells[1] ?? "").filter((reference) =>
+			isDurableEvidenceMirror(reference),
+		);
+	}
+
+	const withoutCommandFields = line.replace(
+		/\b(?:producer command|producer|produced by|replay command|replay)\s*:?\s*(?:`[^`]+`|[^;|]+)/giu,
+		"",
+	);
+	return extractEvidenceReferences(withoutCommandFields).filter((reference) =>
+		isDurableEvidenceMirror(reference),
+	);
+}
+
+/**
+ * Finds required compact evidence columns that are present but intentionally blank.
+ *
+ * @param line Candidate table row from the durable evidence map.
+ * @returns Required compact evidence field labels with empty table cells.
+ */
+function collectBlankCompactEvidenceTableFields(line: string): string[] {
+	const cells = splitCompactEvidenceTableCells(line);
+	if (!cells) {
+		return [];
+	}
+	const offset = cells.length >= 7 ? 2 : 1;
+	const fields: ReadonlyArray<readonly [string, string | undefined]> = [
+		["schema/version", cells[offset]],
+		["producer command", cells[offset + 1]],
+		["digest", cells[offset + 2]],
+		["replay command", cells[offset + 3]],
+		["authority", cells[offset + 4]],
+	];
+	return fields.flatMap(([label, value]) =>
+		value !== undefined && value.length === 0 ? [label] : [],
+	);
+}
+
+/**
+ * Collects local artifact paths that have an accepted durable mirror on the same row.
+ *
+ * @param mapValue Durable evidence map text from a PR body.
+ * @returns Local artifact references paired with durable proof.
+ */
 function collectPairedLocalReferences(mapValue: string): Set<string> {
 	const paired = new Set<string>();
 	for (const line of mapValue.split(/\r?\n/)) {
@@ -156,9 +218,7 @@ function collectPairedLocalReferences(mapValue: string): Set<string> {
 		) {
 			continue;
 		}
-		if (
-			!lineReferences.some((reference) => isDurableEvidenceMirror(reference))
-		) {
+		if (extractDurableMirrorReferences(line).length === 0) {
 			continue;
 		}
 		for (const reference of lineReferences) {
@@ -181,13 +241,14 @@ function collectCompactEvidenceIndexErrors(mapValue: string): string[] {
 		if (localReferences.length === 0) {
 			continue;
 		}
-		if (
-			!lineReferences.some((reference) => isDurableEvidenceMirror(reference))
-		) {
+		if (extractDurableMirrorReferences(line).length === 0) {
 			continue;
 		}
 
-		const missingFields = collectMissingCompactEvidenceFields(line);
+		const missingFields = [
+			...collectBlankCompactEvidenceTableFields(line),
+			...collectMissingCompactEvidenceFields(line),
+		];
 
 		if (missingFields.length > 0) {
 			for (const reference of localReferences) {
@@ -204,7 +265,12 @@ function collectCompactEvidenceIndexErrors(mapValue: string): string[] {
 	return errors;
 }
 
-/** Return compact evidence index fields missing from a durable evidence row. */
+/**
+ * Reports which required compact evidence fields are absent from a line.
+ *
+ * @param line Evidence-map line to inspect, including optional table cells.
+ * @returns Required field labels that are not present in prose or table form.
+ */
 function collectMissingCompactEvidenceFields(line: string): string[] {
 	const requiredFields: ReadonlyArray<readonly [string, RegExp]> = [
 		["schema/version", SCHEMA_VERSION_PATTERN],
@@ -216,7 +282,7 @@ function collectMissingCompactEvidenceFields(line: string): string[] {
 	const tableFields = parseCompactEvidenceTableFields(line);
 	return requiredFields
 		.filter(([label, pattern]) => {
-			if (pattern.test(line)) {
+			if (!tableFields && pattern.test(line)) {
 				return false;
 			}
 			const tableValue = tableFields?.[label];
@@ -225,7 +291,12 @@ function collectMissingCompactEvidenceFields(line: string): string[] {
 		.map(([label]) => label);
 }
 
-/** Parse a compact evidence table row into field labels and values. */
+/**
+ * Extracts named compact evidence fields from a Markdown table row.
+ *
+ * @param line Candidate table row containing durable evidence metadata cells.
+ * @returns A field map when the row has the expected compact evidence shape.
+ */
 function parseCompactEvidenceTableFields(
 	line: string,
 ): Record<string, string> | null {
@@ -237,11 +308,7 @@ function parseCompactEvidenceTableFields(
 		return null;
 	}
 
-	const cells = trimmed
-		.slice(1, -1)
-		.split("|")
-		.map((cell) => cell.trim())
-		.filter((cell) => cell.length > 0);
+	const cells = splitCompactEvidenceTableCells(line) ?? [];
 	if (cells.length < 6) {
 		return null;
 	}
@@ -280,19 +347,16 @@ export function validateDurableEvidenceMap(input: {
 	const references = extractEvidenceReferences(
 		[mapValue, evidenceText].join("\n"),
 	);
-	const mapReferences = extractEvidenceReferences(mapValue);
 	const evidenceReferences = extractEvidenceReferences(evidenceText);
 	const localOnlyReferences = uniqueReferenceValues(
 		references.filter(
 			(reference) => reference.durability === "ignored_local_path",
 		),
 	);
-	const durableReferences = Array.from(
-		new Set(
-			mapReferences
-				.filter((reference) => isDurableEvidenceMirror(reference))
-				.map((reference) => reference.value),
-		),
+	const durableReferences = uniqueReferenceValues(
+		mapValue
+			.split(/\r?\n/)
+			.flatMap((line) => extractDurableMirrorReferences(line)),
 	);
 	const errors: string[] = [];
 
