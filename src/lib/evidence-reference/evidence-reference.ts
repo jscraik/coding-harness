@@ -50,7 +50,8 @@ const LOCAL_PATH_PATTERN =
 	/^(?:\.\/)?(?:AI|artifacts|codestyle|contracts|docs|fixtures|scripts|src|test|tests|\.github|\.harness)\/[\w./-]+$/i;
 const NOT_APPLICABLE_PATTERN =
 	/^(?:n\.?a\.?|n\/a|not applicable|none)(?:\b|\s|[.;:,(])/i;
-const AUTHORITY_PATTERN = /\b(?:source-of-truth|retained context)\b/i;
+const AUTHORITY_PATTERN =
+	/\bauthority\s*:?\s*(?:source-of-truth|retained context)\b/i;
 const DIGEST_PATTERN =
 	/\b(?:sha256:[a-f0-9]{12,}|digest\s*:?\s*(?:sha256:)?[a-f0-9]{12,})\b/i;
 const PRODUCER_PATTERN =

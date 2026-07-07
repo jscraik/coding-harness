@@ -125,6 +125,31 @@ describe("check-boundary-unknown-guards.mjs", () => {
 		expect(result.stderr).toContain("boundary-no-late-unknown:as_record");
 	});
 
+	it("fails TypeScript typed arrow generic shape guards", () => {
+		const root = createTempRepo("boundary-unknown-typed-arrow-");
+		writeBaseline(root);
+		writeSource(
+			root,
+			"src/domain/shape.ts",
+			[
+				"const isRecord: (value: unknown) => value is Record<string, unknown> = (value) =>",
+				'\ttypeof value === "object" && value !== null;',
+			].join("\n"),
+		);
+		track(root, [
+			"scripts/boundary-unknown-guards-baseline.json",
+			"src/domain/shape.ts",
+		]);
+
+		const result = runGuard(root);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("boundary-no-late-unknown:isRecord");
+		expect(result.stderr).toContain(
+			"const isRecord: (value: unknown) => value is Record<string, unknown> = (value) =>",
+		);
+	});
+
 	it("allows typed domain validators that do not introduce late unknown helpers", () => {
 		const root = createTempRepo("boundary-unknown-domain-validator-");
 		writeBaseline(root);

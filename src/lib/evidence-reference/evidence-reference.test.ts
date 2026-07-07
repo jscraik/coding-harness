@@ -84,6 +84,18 @@ describe("evidence reference durability", () => {
 		);
 	});
 
+	it("requires an authority label before accepting source-of-truth values", () => {
+		const result = validateDurableEvidenceMap({
+			durableEvidenceMap:
+				"ignored-local artifacts/reviews/agent.md -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113; schema/version: workflow-closeout/v1; producer command: retained context export; digest: sha256:1234567890abcdef; replay command: pnpm-review-agent-replay",
+			reviewArtifacts: "Codex: artifacts/reviews/agent.md",
+		});
+
+		expect(result.errors).toContain(
+			"Durable evidence map entry for artifacts/reviews/agent.md must include schema/version, producer command, digest, replay command, and authority (`source-of-truth` or `retained context`); missing: authority.",
+		);
+	});
+
 	it("rejects tracked source paths as durable mirrors for local artifacts", () => {
 		const result = validateDurableEvidenceMap({
 			durableEvidenceMap:
