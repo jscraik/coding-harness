@@ -24,6 +24,49 @@ describe("scaffold private npm release template", () => {
 		expect(workflow).not.toMatch(/__[A-Z_]+__/);
 	});
 
+	it("keeps workflow dispatch inputs out of shell interpolation", () => {
+		const workflow = renderReleasePrivateNpmWorkflow({
+			packageManager: "npm",
+			installCommand: "npm ci",
+			checkCommand: "npm run check",
+			buildCommand: "npm run build",
+		});
+
+		const githubExpression = "$" + "{{";
+		const shellParameter = "$" + "{";
+
+		expect(workflow).toContain(
+			`RELEASE_TAG_INPUT: ${githubExpression} github.event.inputs.release_tag }}`,
+		);
+		expect(workflow).toContain(
+			`PUBLISH_AUTH_INPUT: ${githubExpression} github.event.inputs.publish_auth }}`,
+		);
+		expect(workflow).toContain(`TAG="${shellParameter}RELEASE_TAG_INPUT}"`);
+		expect(workflow).toContain(
+			`MODE="${shellParameter}PUBLISH_AUTH_INPUT:-oidc}"`,
+		);
+		expect(workflow).not.toContain(
+			`TAG="${githubExpression} github.event.inputs.release_tag }}"`,
+		);
+		expect(workflow).not.toContain(
+			`MODE="${githubExpression} github.event_name == 'workflow_dispatch' && github.event.inputs.publish_auth`,
+		);
+	});
+
+	it("scopes write permissions to the publish job", () => {
+		const workflow = renderReleasePrivateNpmWorkflow({
+			packageManager: "npm",
+			installCommand: "npm ci",
+			checkCommand: "npm run check",
+			buildCommand: "npm run build",
+		});
+
+		expect(workflow).toContain("permissions:\n  contents: read\n\njobs:");
+		expect(workflow).toContain(
+			"  publish:\n    permissions:\n      attestations: write\n      contents: write\n      id-token: write",
+		);
+	});
+
 	it("renders the private npm release workflow for npm without pnpm setup", () => {
 		const workflow = renderReleasePrivateNpmWorkflow({
 			packageManager: "npm",

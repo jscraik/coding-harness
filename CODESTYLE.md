@@ -66,6 +66,12 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
   TypeScript-specific type-system hazards such as `any`, unsafe assertions,
   non-null assertions, duplicate types, unvalidated external data, and module
   boundary drift.
+- Unknown, raw, JSON-ish, or dynamic data MUST be eliminated at declared system
+  boundaries. Generic late-boundary helpers such as `isRecord`, `isPlainObject`,
+  `isDict`, `asRecord`, or similar shape probes in application logic are design
+  failures first; fix the parser, schema, API adapter, DTO, config loader, CLI
+  parser, storage decoder, migration importer, or test fixture boundary before
+  passing values inward.
 - Use [codestyle/07-python.md](./codestyle/07-python.md) for Python-specific
   hazards such as mutable defaults, broad exception handling, untyped public
   boundaries, implicit global state, subprocess misuse, and print-only

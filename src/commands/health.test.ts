@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 /**
@@ -17,9 +17,7 @@ vi.mock("node:child_process", async (importOriginal) => {
 const mockSpawnSync = vi.mocked(spawnSync);
 
 function makeTmpDir(): string {
-	const dir = join(tmpdir(), `health-test-${Date.now()}`);
-	mkdirSync(dir, { recursive: true });
-	return dir;
+	return mkdtempSync(join(tmpdir(), "health-test-"));
 }
 
 function writeContract(dir: string): void {

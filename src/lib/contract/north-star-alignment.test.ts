@@ -14,6 +14,22 @@ describe("evaluateNorthStarSurfaceParity", () => {
 		northStar: {
 			mission:
 				"Coding Harness exists to let a solo developer with limited cognitive bandwidth orchestrate agentic software work to professional standards through compact orientation, executable guardrails, durable memory, and evidence-based handoff.",
+			mantra: [
+				"Thin Surface",
+				"Strong Guardrails",
+				"Durable Memory",
+				"Simplicity / Minimalism",
+				"Self Improvement",
+				"Professional Output",
+			],
+			personalStandards: [
+				"moral courage",
+				"self-discipline",
+				"respect for others",
+				"integrity",
+				"loyalty to self and others",
+				"selfless commitment",
+			],
 			primaryMetric: "pr_lead_time",
 			primaryBottleneck: "review_rework_loop",
 			autonomyBoundary:
@@ -103,6 +119,8 @@ describe("evaluateNorthStarSurfaceParity", () => {
 				key: "north_star_doc",
 				path: "docs/roadmap/north-star.md",
 				content: `Coding Harness exists to let a solo developer with limited cognitive bandwidth orchestrate agentic software work to professional standards through compact orientation, executable guardrails, durable memory, and evidence-based handoff.
+	Thin Surface. Strong Guardrails. Durable Memory. Simplicity / Minimalism. Self Improvement. Professional Output.
+	Personal standards: moral courage, self-discipline, respect for others, integrity, loyalty to self and others, and selfless commitment.
 	PR lead time is the primary north-star metric.
 	The primary bottleneck is the review and rework loop.
 	Low and medium-risk autonomy should be automated.
@@ -112,6 +130,44 @@ deterministic evidence, current-head sha discipline, bounded auto-remediation, e
 		];
 		const issues = evaluateNorthStarSurfaceParity(baseContract, surfaces);
 		expect(issues).toHaveLength(0);
+	});
+
+	it("emits drift_blocking when the canonical mantra is missing from north_star_doc", () => {
+		const surfaces: NorthStarSurfaceInput[] = [
+			{
+				key: "north_star_doc",
+				path: "docs/roadmap/north-star.md",
+				content: `Coding Harness exists to let a solo developer with limited cognitive bandwidth orchestrate agentic software work to professional standards through compact orientation, executable guardrails, durable memory, and evidence-based handoff.
+	Personal standards: moral courage, self-discipline, respect for others, integrity, loyalty to self and others, and selfless commitment.
+	PR lead time is the primary north-star metric.
+	The primary bottleneck is the review and rework loop.
+	Low and medium-risk autonomy should be automated.
+High-risk changes remain human-mediated.
+deterministic evidence, current-head sha discipline, bounded auto-remediation, explicit rollback paths, independent review`,
+			},
+		];
+		const issues = evaluateNorthStarSurfaceParity(baseContract, surfaces);
+		expect(issues).toHaveLength(1);
+		expect(issues[0]?.message).toContain("mnemonic");
+	});
+
+	it("emits drift_blocking when personal standards are missing from north_star_doc", () => {
+		const surfaces: NorthStarSurfaceInput[] = [
+			{
+				key: "north_star_doc",
+				path: "docs/roadmap/north-star.md",
+				content: `Coding Harness exists to let a solo developer with limited cognitive bandwidth orchestrate agentic software work to professional standards through compact orientation, executable guardrails, durable memory, and evidence-based handoff.
+	Thin Surface. Strong Guardrails. Durable Memory. Simplicity / Minimalism. Self Improvement. Professional Output.
+	PR lead time is the primary north-star metric.
+	The primary bottleneck is the review and rework loop.
+	Low and medium-risk autonomy should be automated.
+High-risk changes remain human-mediated.
+deterministic evidence, current-head sha discipline, bounded auto-remediation, explicit rollback paths, independent review`,
+			},
+		];
+		const issues = evaluateNorthStarSurfaceParity(baseContract, surfaces);
+		expect(issues).toHaveLength(1);
+		expect(issues[0]?.message).toContain("personal standards");
 	});
 });
 

@@ -441,6 +441,9 @@ Environment variables controlling external normalization behavior:
 - Keep release docs and scaffolds aligned with this split:
   - CircleCI: PR governance and security checks.
   - GitHub Actions: private npm publish + attestation + GitHub release creation.
+  - Manual `workflow_dispatch` inputs must flow through named environment
+    variables before shell validation; release templates and source workflows
+    must stay aligned when this boundary changes.
 
 ## Tooling verification checklist
 

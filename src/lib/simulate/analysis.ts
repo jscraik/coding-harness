@@ -587,7 +587,7 @@ export function computeDeltas(
 export function computeConfidence(
 	dataQuality: DataQualityAssessment,
 ): ConfidenceAssessment {
-	let level: ConfidenceAssessment["level"] = "insufficient-data";
+	let level: ConfidenceAssessment["level"];
 	const rationale: string[] = [];
 
 	if (

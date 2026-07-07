@@ -49,13 +49,108 @@ describe("evidence reference durability", () => {
 	it("accepts local-only review artifacts when a tracked receipt mirrors them", () => {
 		const result = validateDurableEvidenceMap({
 			durableEvidenceMap:
-				"ignored-local artifacts/reviews/agent.md -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113",
+				"ignored-local artifacts/reviews/agent.md -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113; schema/version: workflow-closeout/v1; producer command: pnpm-review-agent; digest: sha256:1234567890abcdef; replay command: pnpm-review-agent-replay; authority: retained context",
 			reviewArtifacts: "Codex: artifacts/reviews/agent.md",
 		});
 
 		expect(result.errors).toEqual([]);
 		expect(result.durableReferences).toContain(
 			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		);
+	});
+
+	it("accepts table-form durable evidence map entries with compact evidence columns", () => {
+		const result = validateDurableEvidenceMap({
+			durableEvidenceMap:
+				"| artifacts/reviews/agent.md | docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113 | review-artifact/v1 | pnpm-review-agent | sha256:1234567890abcdef | pnpm-review-agent-replay | retained context |",
+			reviewArtifacts: "Codex: artifacts/reviews/agent.md",
+		});
+
+		expect(result.errors).toEqual([]);
+		expect(result.durableReferences).toContain(
+			"docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl",
+		);
+	});
+
+	it("rejects n.a. digests for local artifact evidence-map entries", () => {
+		const result = validateDurableEvidenceMap({
+			durableEvidenceMap:
+				"ignored-local artifacts/reviews/agent.md -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113; schema/version: workflow-closeout/v1; producer command: pnpm-review-agent; digest: n.a.; replay command: n.a.; authority: retained context",
+			reviewArtifacts: "Codex: artifacts/reviews/agent.md",
+		});
+
+		expect(result.errors).toContain(
+			"Durable evidence map entry for artifacts/reviews/agent.md must include schema/version, producer command, digest, replay command, and authority (`source-of-truth` or `retained context`); missing: digest.",
+		);
+	});
+
+	it("requires an authority label before accepting source-of-truth values", () => {
+		const result = validateDurableEvidenceMap({
+			durableEvidenceMap:
+				"ignored-local artifacts/reviews/agent.md -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113; schema/version: workflow-closeout/v1; producer command: retained context export; digest: sha256:1234567890abcdef; replay command: pnpm-review-agent-replay",
+			reviewArtifacts: "Codex: artifacts/reviews/agent.md",
+		});
+
+		expect(result.errors).toContain(
+			"Durable evidence map entry for artifacts/reviews/agent.md must include schema/version, producer command, digest, replay command, and authority (`source-of-truth` or `retained context`); missing: authority.",
+		);
+	});
+
+	it("rejects tracked source paths as durable mirrors for local artifacts", () => {
+		const result = validateDurableEvidenceMap({
+			durableEvidenceMap:
+				"ignored-local artifacts/run.json -> src/lib/foo.ts; schema/version: run/v1; producer command: pnpm x; digest: sha256:1234567890abcdef; replay command: pnpm x; authority: retained context",
+			reviewArtifacts: "Codex: artifacts/run.json",
+		});
+
+		expect(result.durableReferences).toEqual([]);
+		expect(result.errors).toContain(
+			"Durable evidence map must pair local-only artifact reference artifacts/run.json with durable evidence on the same map entry.",
+		);
+		expect(result.errors).toContain(
+			"Durable evidence map must pair ignored local artifact paths with a tracked receipt, runtime card, PR comment, GitHub check, or CI artifact URL.",
+		);
+	});
+
+	it("rejects table-form durable evidence rows with malformed compact fields", () => {
+		const result = validateDurableEvidenceMap({
+			durableEvidenceMap:
+				"| artifacts/reviews/agent.md | docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113 | review-artifact/v1 |  | sha256:1234567890abcdef | pnpm-review-agent-replay | retained context |",
+			reviewArtifacts: "Codex: artifacts/reviews/agent.md",
+		});
+
+		expect(
+			result.errors.some((error) => error.includes("producer command")),
+		).toBe(true);
+	});
+
+	it("rejects map-only local artifacts without durable evidence", () => {
+		const result = validateDurableEvidenceMap({
+			durableEvidenceMap:
+				"artifacts/run.json; schema/version: run/v1; producer command: pnpm x; digest: sha256:1234567890abcdef; replay command: pnpm x; authority: retained context",
+			reviewArtifacts:
+				"CodeRabbit: https://github.com/jscraik/coding-harness/pull/309#issuecomment-1",
+		});
+
+		expect(result.errors).toContain(
+			"Durable evidence map must pair local-only artifact reference artifacts/run.json with durable evidence on the same map entry.",
+		);
+		expect(result.errors).toContain(
+			"Durable evidence map must pair ignored local artifact paths with a tracked receipt, runtime card, PR comment, GitHub check, or CI artifact URL.",
+		);
+	});
+
+	it("rejects replay command paths as durable evidence mirrors", () => {
+		const result = validateDurableEvidenceMap({
+			durableEvidenceMap:
+				"artifacts/run.json; schema/version: run/v1; producer command: pnpm x; digest: sha256:1234567890abcdef; replay command: node scripts/replay.ts; authority: retained context",
+			reviewArtifacts:
+				"CodeRabbit: https://github.com/jscraik/coding-harness/pull/309#issuecomment-1",
+		});
+
+		expect(result.durableReferences).toEqual([]);
+		expect(result.errors).toContain(
+			"Durable evidence map must pair local-only artifact reference artifacts/run.json with durable evidence on the same map entry.",
 		);
 	});
 
@@ -74,7 +169,7 @@ describe("evidence reference durability", () => {
 	it("requires each local artifact to be paired with durable evidence on its own entry", () => {
 		const result = validateDurableEvidenceMap({
 			durableEvidenceMap:
-				"ignored-local artifacts/reviews/agent.md -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113\nignored-local artifacts/reviews/adversarial.md -> local note only",
+				"ignored-local artifacts/reviews/agent.md -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113; schema/version: workflow-closeout/v1; producer command: pnpm-review-agent; digest: sha256:1234567890abcdef; replay command: pnpm-review-agent-replay; authority: retained context\nignored-local artifacts/reviews/adversarial.md -> local note only",
 			reviewArtifacts:
 				"Codex: artifacts/reviews/agent.md\nAdversarial: artifacts/reviews/adversarial.md",
 		});

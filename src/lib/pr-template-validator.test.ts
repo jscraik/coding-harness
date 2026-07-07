@@ -303,7 +303,7 @@ describe("validatePrTemplateBody", () => {
 			"- Review artifacts: Codex: artifacts/reviews/codex-review.md",
 		).replace(
 			"- Durable evidence map: n.a. because review artifacts are represented by PR body links rather than local-only artifact paths.",
-			"- Durable evidence map: ignored-local artifacts/reviews/codex-review.md -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113.",
+			"- Durable evidence map: artifact artifacts/reviews/codex-review.md; schema/version review-artifact/v1; producer command `codex review`; digest sha256:0123456789abcdef; replay command n.a. retained reviewer context; authority retained context; tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113.",
 		);
 
 		expect(validatePrTemplateBody(body)).toEqual([]);
@@ -315,10 +315,24 @@ describe("validatePrTemplateBody", () => {
 			"- Review artifacts: Codex: artifacts/reviews/codex-review.md",
 		).replace(
 			"- Durable evidence map: n.a. because review artifacts are represented by PR body links rather than local-only artifact paths.",
-			"- Durable evidence map:\n  - ignored-local artifacts/reviews/codex-review.md -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113.",
+			"- Durable evidence map:\n  - artifact artifacts/reviews/codex-review.md; schema/version review-artifact/v1; producer command `codex review`; digest sha256:0123456789abcdef; replay command n.a. retained reviewer context; authority retained context; tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113.",
 		);
 
 		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
+	it("fails local-only durable evidence map entries without compact index metadata", () => {
+		const body = VALID_BODY.replace(
+			"- Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.",
+			"- Review artifacts: Codex: artifacts/reviews/codex-review.md",
+		).replace(
+			"- Durable evidence map: n.a. because review artifacts are represented by PR body links rather than local-only artifact paths.",
+			"- Durable evidence map: artifacts/reviews/codex-review.md -> tracked receipt docs/goals/codex-runtime-evidence-verifier-cockpit/receipts.jsonl#R113.",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Durable evidence map entry for artifacts/reviews/codex-review.md must include schema/version, producer command, digest, replay command, and authority (`source-of-truth` or `retained context`); missing: schema/version, producer command, digest, replay command, authority.",
+		);
 	});
 
 	it("fails when durable evidence map aliases the local artifact path", () => {
@@ -745,15 +759,10 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		const body = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",
 			`Jamie reported ${trigger} before the agent updated its operating system.`,
-		)
-			.replace(
-				"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
-				"- Meta-behavior proof: n.a. (not needed)",
-			)
-			.replace(
-				"- Learning / reinforcement: none; no durable learning promoted.",
-				"- Learning / reinforcement: none; no durable learning promoted.",
-			);
+		).replace(
+			"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
+			"- Meta-behavior proof: n.a. (not needed)",
+		);
 
 		const errors = validatePrTemplateBody(body);
 		expect(errors).toContain(
@@ -768,15 +777,10 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		const body = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",
 			"Admitted repeated steering feedback into PR metadata.",
-		)
-			.replace(
-				"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
-				"- Meta-behavior proof: n.a. (not needed)",
-			)
-			.replace(
-				"- Learning / reinforcement: none; no durable learning promoted.",
-				"- Learning / reinforcement: none; no durable learning promoted.",
-			);
+		).replace(
+			"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
+			"- Meta-behavior proof: n.a. (not needed)",
+		);
 
 		const errors = validatePrTemplateBody(body);
 		expect(errors).toContain(
@@ -791,15 +795,10 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		const body = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",
 			"Jamie said the agent is not permitted to proceed until this becomes a durable control.",
-		)
-			.replace(
-				"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
-				"- Meta-behavior proof: n.a. (not needed)",
-			)
-			.replace(
-				"- Learning / reinforcement: none; no durable learning promoted.",
-				"- Learning / reinforcement: none; no durable learning promoted.",
-			);
+		).replace(
+			"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).",
+			"- Meta-behavior proof: n.a. (not needed)",
+		);
 
 		const errors = validatePrTemplateBody(body);
 		expect(errors).toContain(

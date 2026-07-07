@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 import { execFileSync, spawnSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import {
 	existsSync,
 	lstatSync,
+	mkdtempSync,
 	mkdirSync,
 	readFileSync,
 	realpathSync,
@@ -440,7 +442,7 @@ function writeJson(filePath, value) {
 	const realTarget = resolveInside(realParent, path.basename(target));
 	const tempPath = resolveInside(
 		realParent,
-		`.${path.basename(target)}.${process.pid}.${Date.now()}.tmp`,
+		`.${path.basename(target)}.${process.pid}.${randomUUID()}.tmp`,
 	);
 	writeFileSync(tempPath, `${JSON.stringify(value, null, 2)}\n`, {
 		flag: "wx",
@@ -6160,181 +6162,191 @@ function runRatchetPacketCommand(argsOrOptions) {
 function runPackageInstalledDownstreamCanaryFixture(scenario, fixturePath) {
 	const reportPath = path.join(fixturePath, "result.json");
 	const packageRoot = resolveInside(fixturePath, "package");
-	const runtimeRoot = path.join(
+	const runtimeParent = path.join(
 		process.env.TMPDIR || tmpdir(),
 		"coding-harness-evals",
 		scenario.id,
-		String(process.pid),
 	);
-	const downstreamRoot = path.join(runtimeRoot, "downstream");
-	const pnpmStore = path.join(runtimeRoot, "pnpm-store");
-	const downstreamRef = `<tmp>/coding-harness-evals/${scenario.id}/<run>/downstream`;
-	mkdirSync(packageRoot, { recursive: true });
-	rmSync(runtimeRoot, { force: true, recursive: true });
-	mkdirSync(downstreamRoot, { recursive: true });
-	writeFileSync(
-		path.join(downstreamRoot, "package.json"),
-		`${JSON.stringify(
-			{
-				name: "harness-downstream-canary",
-				private: true,
-				scripts: {
-					ordinary: "node -e \"console.log('downstream')\"",
+	mkdirSync(runtimeParent, { recursive: true });
+	const runtimeRoot = mkdtempSync(path.join(runtimeParent, "run-"));
+	try {
+		const downstreamRoot = path.join(runtimeRoot, "downstream");
+		const pnpmStore = path.join(runtimeRoot, "pnpm-store");
+		const downstreamRef = `<tmp>/coding-harness-evals/${scenario.id}/<run>/downstream`;
+		mkdirSync(packageRoot, { recursive: true });
+		mkdirSync(downstreamRoot, { recursive: true });
+		writeFileSync(
+			path.join(downstreamRoot, "package.json"),
+			`${JSON.stringify(
+				{
+					name: "harness-downstream-canary",
+					private: true,
+					scripts: {
+						ordinary: "node -e \"console.log('downstream')\"",
+					},
 				},
-			},
-			null,
-			2,
-		)}\n`,
-	);
-	writeFileSync(path.join(downstreamRoot, ".gitignore"), "node_modules/\n");
-	runCanaryProcess("git", ["init"], downstreamRoot);
-	runCanaryProcess(
-		"git",
-		["add", "package.json", ".gitignore"],
-		downstreamRoot,
-	);
-	runCanaryProcess(
-		"git",
-		[
-			"-c",
-			"user.email=harness-canary@example.invalid",
-			"-c",
-			"user.name=Harness Canary",
-			"commit",
-			"-m",
-			"seed downstream fixture",
-		],
-		downstreamRoot,
-	);
+				null,
+				2,
+			)}\n`,
+		);
+		writeFileSync(path.join(downstreamRoot, ".gitignore"), "node_modules/\n");
+		runCanaryProcess("git", ["init"], downstreamRoot);
+		runCanaryProcess(
+			"git",
+			["add", "package.json", ".gitignore"],
+			downstreamRoot,
+		);
+		runCanaryProcess(
+			"git",
+			[
+				"-c",
+				"user.email=harness-canary@example.invalid",
+				"-c",
+				"user.name=Harness Canary",
+				"commit",
+				"-m",
+				"seed downstream fixture",
+			],
+			downstreamRoot,
+		);
 
-	const build = runCanaryProcess("pnpm", ["build"], REPO_ROOT, 120_000);
-	const pack =
-		build.exitCode === 0
-			? runCanaryProcess(
-					"pnpm",
-					["pack", "--pack-destination", packageRoot, "--json"],
-					REPO_ROOT,
-				)
-			: {
-					exitCode: 1,
-					stdout: "",
-					stderr: "package build failed",
-				};
-	const packOutput = build.exitCode === 0 ? parsePackOutput(pack.stdout) : null;
-	const tarballPath = packOutput?.filename
-		? resolveInside(packageRoot, packOutput.filename)
-		: null;
-	const packageManifest =
-		build.exitCode === 0
-			? readJson(path.join(REPO_ROOT, "package.json"))
+		const build = runCanaryProcess("pnpm", ["build"], REPO_ROOT, 120_000);
+		const pack =
+			build.exitCode === 0
+				? runCanaryProcess(
+						"pnpm",
+						["pack", "--pack-destination", packageRoot, "--json"],
+						REPO_ROOT,
+					)
+				: {
+						exitCode: 1,
+						stdout: "",
+						stderr: "package build failed",
+					};
+		const packOutput =
+			build.exitCode === 0 ? parsePackOutput(pack.stdout) : null;
+		const tarballPath = packOutput?.filename
+			? resolveInside(packageRoot, packOutput.filename)
 			: null;
-	const install =
-		build.exitCode === 0 && tarballPath && pack.exitCode === 0
-			? installCanaryPackage(
-					tarballPath,
-					downstreamRoot,
-					pnpmStore,
-					runtimeRoot,
-					packageManifest?.name,
-				)
-			: {
-					exitCode: 1,
-					stdout: "",
-					stderr:
-						build.exitCode === 0
-							? "package tarball was not produced"
-							: "package build failed",
-					method: "not_attempted",
-				};
-	const harnessBin = resolveInside(downstreamRoot, "node_modules/.bin/harness");
-	if (install.exitCode === 0) {
-		commitCanaryInstallState(downstreamRoot);
-	}
-	const commandRecords =
-		install.exitCode === 0
-			? runInstalledHarnessCommands(harnessBin, downstreamRoot, downstreamRef)
-			: [];
-	const summary = summarizeCanaryCommands(commandRecords);
-	const reportStatus =
-		build.exitCode === 0 &&
-		pack.exitCode === 0 &&
-		install.exitCode === 0 &&
-		commandRecords.length === CANARY_COMMANDS.length &&
-		commandRecords.every((record) => record.status === "pass")
-			? "pass"
-			: "fail";
-	const report = {
-		schemaVersion: "package-installed-downstream-canary/v1",
-		status: reportStatus,
-		packageSource: {
-			buildCommand: "pnpm build",
-			buildExitCode: build.exitCode,
-			buildStdoutSummary: summarizeCanaryProcessOutput(build.stdout),
-			buildStderrSummary: summarizeCanaryProcessOutput(build.stderr),
-			packCommand: "pnpm pack --pack-destination <fixture>/package --json",
-			tarballPath: tarballPath ? path.relative(REPO_ROOT, tarballPath) : null,
-			packExitCode: pack.exitCode,
-			installMethod: install.method,
-			installExitCode: install.exitCode,
-			primaryInstallExitCode: install.primaryExitCode ?? install.exitCode,
-			installStdoutSummary: summarizeCanaryProcessOutput(install.stdout),
-			installStderrSummary: summarizeCanaryProcessOutput(install.stderr),
-		},
-		downstreamRepo: {
-			path: downstreamRef,
-			harnessBin: `${downstreamRef}/node_modules/.bin/harness`,
-			hasHarnessSpecificScripts: false,
-		},
-		commands: commandRecords,
-		summary,
-		claimBoundary:
-			"This canary proves installed local command portability for the covered commands. It does not prove live CI, PR review state, tracker state, merge readiness, or npm publication.",
-	};
-	writeJson(reportPath, report);
+		const packageManifest =
+			build.exitCode === 0
+				? readJson(path.join(REPO_ROOT, "package.json"))
+				: null;
+		const install =
+			build.exitCode === 0 && tarballPath && pack.exitCode === 0
+				? installCanaryPackage(
+						tarballPath,
+						downstreamRoot,
+						pnpmStore,
+						runtimeRoot,
+						packageManifest?.name,
+					)
+				: {
+						exitCode: 1,
+						stdout: "",
+						stderr:
+							build.exitCode === 0
+								? "package tarball was not produced"
+								: "package build failed",
+						method: "not_attempted",
+					};
+		const harnessBin = resolveInside(
+			downstreamRoot,
+			"node_modules/.bin/harness",
+		);
+		if (install.exitCode === 0) {
+			commitCanaryInstallState(downstreamRoot);
+		}
+		const commandRecords =
+			install.exitCode === 0
+				? runInstalledHarnessCommands(harnessBin, downstreamRoot, downstreamRef)
+				: [];
+		const summary = summarizeCanaryCommands(commandRecords);
+		const reportStatus =
+			build.exitCode === 0 &&
+			pack.exitCode === 0 &&
+			install.exitCode === 0 &&
+			commandRecords.length === CANARY_COMMANDS.length &&
+			commandRecords.every((record) => record.status === "pass")
+				? "pass"
+				: "fail";
+		const report = {
+			schemaVersion: "package-installed-downstream-canary/v1",
+			status: reportStatus,
+			packageSource: {
+				buildCommand: "pnpm build",
+				buildExitCode: build.exitCode,
+				buildStdoutSummary: summarizeCanaryProcessOutput(build.stdout),
+				buildStderrSummary: summarizeCanaryProcessOutput(build.stderr),
+				packCommand: "pnpm pack --pack-destination <fixture>/package --json",
+				tarballPath: tarballPath ? path.relative(REPO_ROOT, tarballPath) : null,
+				packExitCode: pack.exitCode,
+				installMethod: install.method,
+				installExitCode: install.exitCode,
+				primaryInstallExitCode: install.primaryExitCode ?? install.exitCode,
+				installStdoutSummary: summarizeCanaryProcessOutput(install.stdout),
+				installStderrSummary: summarizeCanaryProcessOutput(install.stderr),
+			},
+			downstreamRepo: {
+				path: downstreamRef,
+				harnessBin: `${downstreamRef}/node_modules/.bin/harness`,
+				hasHarnessSpecificScripts: false,
+			},
+			commands: commandRecords,
+			summary,
+			claimBoundary:
+				"This canary proves installed local command portability for the covered commands. It does not prove live CI, PR review state, tracker state, merge readiness, or npm publication.",
+		};
+		writeJson(reportPath, report);
 
-	return fixtureResult(scenario.id, [
-		assertion(
-			"package-installed downstream canary result is written",
-			readJson(reportPath).schemaVersion ===
-				"package-installed-downstream-canary/v1",
-		),
-		assertion(
-			"canary commands run from downstream cwd",
-			commandRecords.length === CANARY_COMMANDS.length &&
-				commandRecords.every((record) => record.cwd === downstreamRef),
-		),
-		assertion(
-			"canary invokes public harness commands",
-			commandRecords.length === CANARY_COMMANDS.length &&
-				commandRecords.every((record) => record.command.startsWith("harness ")),
-		),
-		assertion(
-			"canary command stdout is parseable JSON",
-			commandRecords.length === CANARY_COMMANDS.length &&
-				commandRecords.every((record) => record.stdoutJson),
-		),
-		assertion(
-			"canary outputs do not leak source checkout command paths",
-			summary.sourceRepoPathLeakCount === 0,
-		),
-		assertion(
-			"missing optional evidence degrades structurally",
-			canaryCommandStatus(commandRecords, "agent_rework") === "pass" &&
-				canaryCommandStatus(commandRecords, "reviewer_decision") === "pass",
-		),
-		assertion(
-			"agent-native ratchet packet commands are public harness commands",
-			ratchetPacketCommandsArePublic(commandRecords),
-		),
-		assertion(
-			"harness init dry-run does not write unexpected files",
-			initDryRunPreservesGitStatus(commandRecords),
-		),
-		assertion(
-			"canary runs without external credentials",
-			summary.blockedCount === 0,
-		),
-	]);
+		return fixtureResult(scenario.id, [
+			assertion(
+				"package-installed downstream canary result is written",
+				readJson(reportPath).schemaVersion ===
+					"package-installed-downstream-canary/v1",
+			),
+			assertion(
+				"canary commands run from downstream cwd",
+				commandRecords.length === CANARY_COMMANDS.length &&
+					commandRecords.every((record) => record.cwd === downstreamRef),
+			),
+			assertion(
+				"canary invokes public harness commands",
+				commandRecords.length === CANARY_COMMANDS.length &&
+					commandRecords.every((record) =>
+						record.command.startsWith("harness "),
+					),
+			),
+			assertion(
+				"canary command stdout is parseable JSON",
+				commandRecords.length === CANARY_COMMANDS.length &&
+					commandRecords.every((record) => record.stdoutJson),
+			),
+			assertion(
+				"canary outputs do not leak source checkout command paths",
+				summary.sourceRepoPathLeakCount === 0,
+			),
+			assertion(
+				"missing optional evidence degrades structurally",
+				canaryCommandStatus(commandRecords, "agent_rework") === "pass" &&
+					canaryCommandStatus(commandRecords, "reviewer_decision") === "pass",
+			),
+			assertion(
+				"agent-native ratchet packet commands are public harness commands",
+				ratchetPacketCommandsArePublic(commandRecords),
+			),
+			assertion(
+				"harness init dry-run does not write unexpected files",
+				initDryRunPreservesGitStatus(commandRecords),
+			),
+			assertion(
+				"canary runs without external credentials",
+				summary.blockedCount === 0,
+			),
+		]);
+	} finally {
+		rmSync(runtimeRoot, { recursive: true, force: true });
+	}
 }
 
 function installCanaryPackage(

@@ -661,8 +661,7 @@ describe("runInit", () => {
 
 	describe("path traversal protection", () => {
 		it("rejects symlinked .harness before any tracked writes", () => {
-			const outsideDir = join(tmpdir(), `harness-outside-${Date.now()}`);
-			mkdirSync(outsideDir, { recursive: true });
+			const outsideDir = mkdtempSync(join(tmpdir(), "harness-outside-"));
 			symlinkSync(outsideDir, join(tempDir, ".harness"), "dir");
 			writeFileSync(
 				join(tempDir, "harness.contract.json"),
@@ -2665,6 +2664,7 @@ printf '%s\\n' '{"passed":true}'
 					encoding: "utf8",
 					env: {
 						...inheritedEnv,
+						MISE_TRUSTED_CONFIG_PATHS: join(tempDir, ".mise.toml"),
 						PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
 						GLOBAL_HARNESS_LOG: globalHarnessLog,
 					},
@@ -3477,13 +3477,19 @@ exit 1
 				"utf-8",
 			);
 
+			const {
+				BASH_ENV: _ignoredBashEnv,
+				ENV: _ignoredEnv,
+				...inheritedEnv
+			} = process.env;
 			const verify = spawnSync("bash", ["scripts/verify-work.sh", "--fast"], {
 				cwd: tempDir,
 				encoding: "utf8",
 				env: {
-					...process.env,
+					...inheritedEnv,
 					FAKE_PNPM_LOG: fakePnpmLog,
 					HARNESS_VERIFY_WORK_NO_DELEGATE: "1",
+					MISE_TRUSTED_CONFIG_PATHS: join(tempDir, ".mise.toml"),
 					PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
 				},
 			});
@@ -3671,8 +3677,7 @@ describe("--track flag", () => {
 	let tempDir: string;
 
 	beforeEach(() => {
-		tempDir = join(tmpdir(), `harness-track-test-${Date.now()}`);
-		mkdirSync(tempDir, { recursive: true });
+		tempDir = mkdtempSync(join(tmpdir(), "harness-track-test-"));
 	});
 
 	afterEach(() => {
@@ -3872,8 +3877,7 @@ describe("--rollback flag", () => {
 	let tempDir: string;
 
 	beforeEach(() => {
-		tempDir = join(tmpdir(), `harness-rollback-test-${Date.now()}`);
-		mkdirSync(tempDir, { recursive: true });
+		tempDir = mkdtempSync(join(tmpdir(), "harness-rollback-test-"));
 	});
 
 	afterEach(() => {
@@ -4147,8 +4151,7 @@ describe("--check-updates flag", () => {
 	let tempDir: string;
 
 	beforeEach(() => {
-		tempDir = join(tmpdir(), `harness-check-updates-test-${Date.now()}`);
-		mkdirSync(tempDir, { recursive: true });
+		tempDir = mkdtempSync(join(tmpdir(), "harness-check-updates-test-"));
 	});
 
 	afterEach(() => {
@@ -4261,8 +4264,7 @@ describe("--update flag", () => {
 	let tempDir: string;
 
 	beforeEach(() => {
-		tempDir = join(tmpdir(), `harness-update-test-${Date.now()}`);
-		mkdirSync(tempDir, { recursive: true });
+		tempDir = mkdtempSync(join(tmpdir(), "harness-update-test-"));
 	});
 
 	afterEach(() => {
@@ -5224,10 +5226,8 @@ describe("--update flag", () => {
 			(entry) => entry.path !== ".coderabbit.yaml",
 		);
 		writeFileSync(manifestPath, JSON.stringify(manifest));
-		const outsideConfig = join(
-			tmpdir(),
-			`harness-coderabbit-${Date.now()}.yaml`,
-		);
+		const outsideConfigDir = mkdtempSync(join(tmpdir(), "harness-coderabbit-"));
+		const outsideConfig = join(outsideConfigDir, "config.yaml");
 		writeFileSync(outsideConfig, "language: en-US\n");
 		rmSync(join(tempDir, ".coderabbit.yaml"), { force: true });
 		symlinkSync(outsideConfig, join(tempDir, ".coderabbit.yaml"));
@@ -5244,7 +5244,7 @@ describe("--update flag", () => {
 			expect(result.error.path).toBe(".coderabbit.yaml");
 		}
 		expect(readFileSync(outsideConfig, "utf-8")).toBe("language: en-US\n");
-		rmSync(outsideConfig, { force: true });
+		rmSync(outsideConfigDir, { recursive: true, force: true });
 	});
 
 	it("rejects updates that would downgrade the contract version", () => {
@@ -5355,8 +5355,7 @@ describe("--update flag", () => {
 		expect(installResult.ok).toBe(true);
 
 		const githubDir = join(tempDir, ".github");
-		const outsideDir = join(tmpdir(), `harness-outside-${Date.now()}`);
-		mkdirSync(outsideDir, { recursive: true });
+		const outsideDir = mkdtempSync(join(tmpdir(), "harness-outside-"));
 
 		// Replace the tracked .github directory with a symlink to an outside location.
 		rmSync(githubDir, { recursive: true, force: true });
@@ -5385,8 +5384,7 @@ describe("--interactive flag", () => {
 	let tempDir: string;
 
 	beforeEach(() => {
-		tempDir = join(tmpdir(), `harness-interactive-test-${Date.now()}`);
-		mkdirSync(tempDir, { recursive: true });
+		tempDir = mkdtempSync(join(tmpdir(), "harness-interactive-test-"));
 	});
 
 	afterEach(() => {
@@ -5572,8 +5570,7 @@ describe("--migrate flag", () => {
 	let tempDir: string;
 
 	beforeEach(() => {
-		tempDir = join(tmpdir(), `harness-migrate-test-${Date.now()}`);
-		mkdirSync(tempDir, { recursive: true });
+		tempDir = mkdtempSync(join(tmpdir(), "harness-migrate-test-"));
 	});
 
 	afterEach(() => {
@@ -5859,8 +5856,7 @@ describe("detectContractVersion", () => {
 	let tempDir: string;
 
 	beforeEach(() => {
-		tempDir = join(tmpdir(), `harness-version-test-${Date.now()}`);
-		mkdirSync(tempDir, { recursive: true });
+		tempDir = mkdtempSync(join(tmpdir(), "harness-version-test-"));
 	});
 
 	afterEach(() => {
@@ -5909,8 +5905,7 @@ describe("tooling version detection (JSC-57)", () => {
 	let tempDir: string;
 
 	beforeEach(() => {
-		tempDir = join(tmpdir(), `harness-tooling-version-test-${Date.now()}`);
-		mkdirSync(tempDir, { recursive: true });
+		tempDir = mkdtempSync(join(tmpdir(), "harness-tooling-version-test-"));
 	});
 
 	afterEach(() => {
@@ -6034,8 +6029,7 @@ describe("project-type detection integration", () => {
 	let tempDir: string;
 
 	beforeEach(() => {
-		tempDir = join(tmpdir(), `harness-pt-test-${Date.now()}`);
-		mkdirSync(tempDir, { recursive: true });
+		tempDir = mkdtempSync(join(tmpdir(), "harness-pt-test-"));
 	});
 
 	afterEach(() => {

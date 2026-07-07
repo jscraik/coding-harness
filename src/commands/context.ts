@@ -100,12 +100,13 @@ function isFlagToken(value: string | undefined): boolean {
 	return value?.startsWith("-") ?? false;
 }
 
+/** Parse a CLI option as a positive integer, returning undefined for invalid input. */
 function parsePositiveInteger(value: string | undefined): number | undefined {
 	if (value === undefined) {
 		return undefined;
 	}
 	const trimmed = value.trim();
-	if (!/^-?\d+$/.test(trimmed)) {
+	if (!/^-?(?:0|[1-9]\d*)$/.test(trimmed)) {
 		return undefined;
 	}
 	const parsed = Number.parseInt(trimmed, 10);
@@ -115,12 +116,13 @@ function parsePositiveInteger(value: string | undefined): number | undefined {
 	return parsed;
 }
 
+/** Parse a CLI threshold option as a decimal between 0 and 1. */
 function parseThreshold(value: string | undefined): number | undefined {
 	if (value === undefined) {
 		return undefined;
 	}
 	const trimmed = value.trim();
-	if (!/^-?(?:\d+|\d*\.\d+)$/.test(trimmed)) {
+	if (!/^-?(?:(?:0|[1-9]\d*)|(?:\d+\.\d+|\.\d+))$/.test(trimmed)) {
 		return undefined;
 	}
 	const parsed = Number.parseFloat(trimmed);

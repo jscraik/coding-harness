@@ -5,7 +5,7 @@
  * Uses real API calls - no mocks.
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -32,8 +32,7 @@ describe("Linear Integration E2E", () => {
 	beforeEach(async () => {
 		ctx = createTestContext("linear-integration", env.recordingsDir);
 		linear = new LinearE2EClient({ env, tracker: ctx.tracker });
-		tempDir = join(tmpdir(), `e2e-linear-${Date.now()}`);
-		mkdirSync(tempDir, { recursive: true });
+		tempDir = mkdtempSync(join(tmpdir(), "e2e-linear-"));
 
 		// Get the team ID for creating issues
 		if (!teamId) {

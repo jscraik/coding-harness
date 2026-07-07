@@ -28,12 +28,15 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  attestations: write
-  contents: write
-  id-token: write
+  contents: read
 
 jobs:
   publish:
+    # contents:write -> gh release create; attestations:write + id-token:write -> OIDC publish + build provenance attestation
+    permissions:
+      attestations: write
+      contents: write
+      id-token: write
     runs-on: ubuntu-latest
     environment:
       name: npm-release
@@ -154,8 +157,15 @@ jobs:
 
       - name: Verify publish auth mode
         id: publish-auth
+        env:
+          PUBLISH_AUTH_INPUT: ${{ github.event.inputs.publish_auth }}
+          NPM_PUBLISH_AUTH_MODE: ${{ vars.NPM_PUBLISH_AUTH || 'oidc' }}
         run: |
-          MODE="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.publish_auth || vars.NPM_PUBLISH_AUTH || 'oidc' }}"
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            MODE="${PUBLISH_AUTH_INPUT:-oidc}"
+          else
+            MODE="${NPM_PUBLISH_AUTH_MODE:-oidc}"
+          fi
           if [[ -z "$MODE" ]]; then
             MODE="oidc"
           fi

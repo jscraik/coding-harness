@@ -141,6 +141,7 @@ export const DOCTOR_FILE_CHECKS: DoctorCheckFn[] = [
 		if (
 			typeof baseline === "object" &&
 			baseline !== null &&
+			!Array.isArray(baseline) &&
 			Object.keys(baseline).length === 0
 		) {
 			return {

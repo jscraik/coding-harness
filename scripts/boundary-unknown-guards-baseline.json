@@ -1,0 +1,430 @@
+{
+	"schema_version": 1,
+	"description": "Current boundary-no-late-unknown guard baseline. New unbaselined generic shape helpers fail scripts/check-boundary-unknown-guards.mjs.",
+	"entries": [
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "scripts/check-scorecard-regressions.mjs",
+			"line": 61,
+			"language": "javascript",
+			"snippet": "function isRecord(value) {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "scripts/validate-action-review-receipt.cjs",
+			"line": 128,
+			"language": "javascript",
+			"snippet": "function isRecord(value) {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "scripts/validate-artifact-runtime-surface.cjs",
+			"line": 492,
+			"language": "javascript",
+			"snippet": "function isRecord(value) {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isObject",
+			"file": "scripts/validate-coding-policy.cjs",
+			"line": 304,
+			"language": "javascript",
+			"snippet": "function isObject(value) {",
+			"message": "Do not add isObject here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isObject",
+			"file": "scripts/validate-decision-request.cjs",
+			"line": 26,
+			"language": "javascript",
+			"snippet": "function isObject(value) {",
+			"message": "Do not add isObject here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "scripts/validate-evidence-patterns.cjs",
+			"line": 136,
+			"language": "javascript",
+			"snippet": "function isRecord(value) {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isObject",
+			"file": "scripts/validate-goal-completion-audit-receipt.cjs",
+			"line": 46,
+			"language": "javascript",
+			"snippet": "function isObject(value) {",
+			"message": "Do not add isObject here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "scripts/validate-replay-packet.cjs",
+			"line": 573,
+			"language": "javascript",
+			"snippet": "function isRecord(value) {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isObject",
+			"file": "scripts/validate-review-lifecycle.cjs",
+			"line": 117,
+			"language": "javascript",
+			"snippet": "function isObject(value) {",
+			"message": "Do not add isObject here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isObject",
+			"file": "scripts/validate-runtime-packet-schemas.cjs",
+			"line": 102,
+			"language": "javascript",
+			"snippet": "function isObject(value) {",
+			"message": "Do not add isObject here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "scripts/validate-steering-application-receipt.cjs",
+			"line": 89,
+			"language": "javascript",
+			"snippet": "function isRecord(value) {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isObject",
+			"file": "scripts/validate-steering-queue.cjs",
+			"line": 112,
+			"language": "javascript",
+			"snippet": "function isObject(value) {",
+			"message": "Do not add isObject here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isObjectRecord",
+			"file": "src/commands/next-pr-closeout-assurance.ts",
+			"line": 21,
+			"language": "typescript",
+			"snippet": "function isObjectRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isObjectRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isObjectRecord",
+			"file": "src/commands/next-pr-closeout-contract.ts",
+			"line": 72,
+			"language": "typescript",
+			"snippet": "function isObjectRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isObjectRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:asRecord",
+			"file": "src/commands/pr-closeout-github-proof.ts",
+			"line": 15,
+			"language": "typescript",
+			"snippet": "function asRecord(value: unknown): Record<string, unknown> | null {",
+			"message": "Do not add asRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/commands/pr-closeout/input-validation.ts",
+			"line": 233,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/commands/runtime-card.ts",
+			"line": 24,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/action-review/validation.ts",
+			"line": 639,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/agent-readiness/package-scripts.ts",
+			"line": 23,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/artifact-provenance.ts",
+			"line": 397,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/artifact-runtime-surface/validation-helpers.ts",
+			"line": 220,
+			"language": "typescript",
+			"snippet": "export function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/browser-evidence/manifest-parser-helpers.ts",
+			"line": 24,
+			"language": "typescript",
+			"snippet": "export function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/contract/harness-run-context.ts",
+			"line": 149,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isObject",
+			"file": "src/lib/contract/run-records-core.ts",
+			"line": 232,
+			"language": "typescript",
+			"snippet": "function isObject(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isObject here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isPlainObject",
+			"file": "src/lib/contract/validator-helpers.ts",
+			"line": 19,
+			"language": "typescript",
+			"snippet": "export function isPlainObject(",
+			"message": "Do not add isPlainObject here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/decision/validators.ts",
+			"line": 46,
+			"language": "typescript",
+			"snippet": "export function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/delivery-truth/goal-completion-audit-receipt-validation.ts",
+			"line": 478,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/evals/observed-circleci-telemetry-support.ts",
+			"line": 86,
+			"language": "typescript",
+			"snippet": "export function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/evals/observed-skill-usage.ts",
+			"line": 707,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/evidence/evidence-receipt.ts",
+			"line": 191,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/external-state/validation-helpers.ts",
+			"line": 149,
+			"language": "typescript",
+			"snippet": "export function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/feedback-loop-audit.ts",
+			"line": 108,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:asRecords",
+			"file": "src/lib/fitness/artifact-normalizers.ts",
+			"line": 45,
+			"language": "typescript",
+			"snippet": "function asRecords(value: unknown): Record<string, unknown>[] {",
+			"message": "Do not add asRecords here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/flow-ops/outcome-closeout.ts",
+			"line": 202,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isPlainObject",
+			"file": "src/lib/init/update-core.ts",
+			"line": 118,
+			"language": "typescript",
+			"snippet": "function isPlainObject(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isPlainObject here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/intermediary-receipts/validation-helpers.ts",
+			"line": 24,
+			"language": "typescript",
+			"snippet": "export function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/learnings/enforcement-status.ts",
+			"line": 441,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/learnings/gate.ts",
+			"line": 158,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/learnings/live-companion.ts",
+			"line": 146,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/pr-closeout/blockers.ts",
+			"line": 446,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/project-brain/suggestion-generator.ts",
+			"line": 116,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/prompt-context-drift/prompt-context-drift-validation-utils.ts",
+			"line": 268,
+			"language": "typescript",
+			"snippet": "export function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/prompt-context/prompt-context-receipt.ts",
+			"line": 599,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/replay/replay-packet.ts",
+			"line": 712,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/replay/trace-normalizer.ts",
+			"line": 134,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/review-state/review-lifecycle-validation-helpers.ts",
+			"line": 16,
+			"language": "typescript",
+			"snippet": "export function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/review-state/validation.ts",
+			"line": 511,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/rule-lifecycle.ts",
+			"line": 662,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/runtime/codex-runtime-evidence-validation-helpers.ts",
+			"line": 94,
+			"language": "typescript",
+			"snippet": "export function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/runtime/runtime-evidence-contract-validation-sections.ts",
+			"line": 318,
+			"language": "typescript",
+			"snippet": "export function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/session/session-closeout.ts",
+			"line": 102,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/steering-queue/validation-helpers.ts",
+			"line": 236,
+			"language": "typescript",
+			"snippet": "export function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		},
+		{
+			"pattern": "boundary-no-late-unknown:isRecord",
+			"file": "src/lib/tool-exposure/validation.ts",
+			"line": 58,
+			"language": "typescript",
+			"snippet": "function isRecord(value: unknown): value is Record<string, unknown> {",
+			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
+		}
+	]
+}

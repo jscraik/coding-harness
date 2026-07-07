@@ -66,16 +66,27 @@ function runIsAllowedRepoExternalPath(
 	abs: string,
 	cwd: string,
 ): number {
-	const script = [
-		`source "${PREFLIGHT_PATH}"`,
-		`is_allowed_repo_external_path "${root}" "${matchArg}" "${abs}"`,
-	].join("\n");
-
-	const result = spawnSync("bash", ["-c", script], {
-		cwd,
-		encoding: "utf8",
-		env: { ...process.env, CODEX_PREFLIGHT_ALLOW_SOURCE: "1" },
-	});
+	const probePath = join(cwd, "invoke-is-allowed-repo-external-path.sh");
+	writeFileSync(
+		probePath,
+		[
+			"#!/usr/bin/env bash",
+			"set -euo pipefail",
+			'source "$1"',
+			'is_allowed_repo_external_path "$2" "$3" "$4"',
+			"",
+		].join("\n"),
+		"utf-8",
+	);
+	const result = spawnSync(
+		"bash",
+		[probePath, PREFLIGHT_PATH, root, matchArg, abs],
+		{
+			cwd,
+			encoding: "utf8",
+			env: { ...process.env, CODEX_PREFLIGHT_ALLOW_SOURCE: "1" },
+		},
+	);
 
 	return result.status ?? 127;
 }

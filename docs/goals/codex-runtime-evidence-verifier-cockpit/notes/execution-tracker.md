@@ -19,10 +19,11 @@ their current operational truth so old route history and context debt do not
 drive the next implementation decision.
 
 Mantra:
-Thin Surfaces,
+Thin Surface,
 Strong Guardrails,
 Durable Memory,
-Self Improving,
+Simplicity / Minimalism,
+Self Improvement,
 Professional Output.
 
 ## Current Control Surface

@@ -37,6 +37,7 @@ import {
 	SCHEMA_VERSION,
 	buildContractJsonSchema,
 } from "../lib/contract/json-schema.js";
+import { DEFAULT_NORTH_STAR_CONTRACT } from "../lib/contract/types.js";
 
 import {
 	CONTRACT_PRESETS,
@@ -119,6 +120,8 @@ function canonicalNorthStarBlock(overrides: Record<string, unknown> = {}) {
 	return {
 		mission:
 			"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+		mantra: [...DEFAULT_NORTH_STAR_CONTRACT.mantra],
+		personalStandards: [...DEFAULT_NORTH_STAR_CONTRACT.personalStandards],
 		primaryMetric: NORTH_STAR_PRIMARY_METRIC,
 		primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
 		autonomyBoundary:
@@ -188,6 +191,30 @@ describe("buildContractJsonSchema", () => {
 			.find((pattern): pattern is string => typeof pattern === "string");
 		expect(canonicalVersionPattern).toContain("1\\.(?:[6-9]");
 		expect(canonicalVersionPattern).toContain("[2-9][0-9]*");
+	});
+
+	it("allows legacy 1.6 northStar blocks to omit backfilled orientation fields in schema consumers", () => {
+		const schema = buildContractJsonSchema() as {
+			properties: {
+				northStar: {
+					required: string[];
+				};
+			};
+		};
+
+		expect(schema.properties.northStar.required).toEqual([
+			"mission",
+			"primaryMetric",
+			"primaryBottleneck",
+			"autonomyBoundary",
+			"safetyFloor",
+			"nonGoals",
+			"decisionQuestions",
+		]);
+		expect(schema.properties.northStar.required).not.toContain("mantra");
+		expect(schema.properties.northStar.required).not.toContain(
+			"personalStandards",
+		);
 	});
 
 	it("keeps version schema patterns aligned with runtime version semantics", () => {

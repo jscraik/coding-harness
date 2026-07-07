@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
 	existsSync,
 	mkdirSync,
@@ -165,6 +165,7 @@ function buildUnknownFindingTransaction(
 	});
 }
 
+/** Apply one canonical finding transaction and write its remediation artifact. */
 function applyFindingTransaction(
 	finding: CanonicalFinding,
 	workspaceRoot: string,
@@ -188,12 +189,16 @@ function applyFindingTransaction(
 		workspaceRoot,
 		validatePath(workspaceRoot, finding.filePath),
 	);
-	const backupPath = `${targetPath}.harness-bak.${Date.now()}`;
-	const tempPath = `${targetPath}.harness-tmp.${Date.now()}`;
+	const transactionId = `${process.pid}.${randomUUID()}`;
+	const backupPath = `${targetPath}.harness-bak.${transactionId}`;
+	const tempPath = `${targetPath}.harness-tmp.${transactionId}`;
 
 	try {
 		const originalContent = readFileSync(targetPath, "utf-8");
-		writeFileSync(backupPath, originalContent, "utf-8");
+		writeFileSync(backupPath, originalContent, {
+			encoding: "utf-8",
+			flag: "wx",
+		});
 		const startLine = patchResult.patch.startLine ?? finding.lineStart;
 		const endLine =
 			patchResult.patch.endLine ??
@@ -204,7 +209,7 @@ function applyFindingTransaction(
 			endLine,
 			patchResult.patch.content,
 		);
-		writeFileSync(tempPath, updatedContent, "utf-8");
+		writeFileSync(tempPath, updatedContent, { encoding: "utf-8", flag: "wx" });
 		const currentContent = readFileSync(targetPath, "utf-8");
 		if (currentContent !== originalContent) {
 			unlinkSync(backupPath);

@@ -37,7 +37,8 @@ Status: [CircleCI main](https://app.circleci.com/pipelines/github/jscraik/coding
 
 SynAIpse is the AI Delivery Harness implemented by this repository and the `@brainwav/coding-harness` package. It gives AI-assisted repositories a small command surface for orientation, local verification, review policy, CI migration, durable memory, and evidence-backed handoff.
 
-Short version: thin surface, strong guardrails, durable memory, professional output.
+Short version: thin surface, strong guardrails, durable memory,
+simplicity/minimalism, self improvement, professional output.
 
 SynAIpse exists to let a solo developer with limited cognitive bandwidth
 orchestrate agentic software work to professional standards through compact

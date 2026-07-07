@@ -134,7 +134,7 @@ function getRelativePathWithinBase(
 	filepath: string,
 	basePath: string,
 ): Result<string, IndexerError> {
-	let resolvedFilePath = filepath;
+	let resolvedFilePath: string;
 	let resolvedBasePath: string;
 	try {
 		resolvedFilePath = validatePath(basePath, filepath);

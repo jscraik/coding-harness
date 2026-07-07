@@ -66,7 +66,7 @@ describe("simulate output path validation", () => {
 	// cwd-relative workspace temp dir for setup
 	const testRoot = join(process.cwd(), ".harness-simulate-test");
 	// Genuinely outside cwd — mirrors the real PoC attack (ln -s /tmp/escape artifacts-link)
-	const externalDir = join(tmpdir(), `harness-simulate-escape-${Date.now()}`);
+	const externalDir = mkdtempSync(join(tmpdir(), "harness-simulate-escape-"));
 
 	afterEach(() => {
 		vi.restoreAllMocks();

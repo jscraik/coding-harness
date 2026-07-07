@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 /**
@@ -10,9 +10,7 @@ import { isSoloCommitMode } from "./ci-migrate.js";
 // Helpers
 
 function tmpDir(): string {
-	const dir = join(tmpdir(), `jsc58-test-${Date.now()}-${Math.random()}`);
-	mkdirSync(dir, { recursive: true });
-	return dir;
+	return mkdtempSync(join(tmpdir(), "jsc58-test-"));
 }
 
 function writeContract(dir: string, policy: Record<string, unknown>): void {

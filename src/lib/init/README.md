@@ -147,6 +147,14 @@ thin and delegate into this deep module.
   repositories can preview or update repo-owned scaffold files. Absolute
   symlink targets and symlink escapes remain blocked before dry-runs, updates,
   backups, or tracked writes can follow them.
+- Init migration writes must create temporary files with exclusive-create
+  semantics before the final rename. This keeps scaffold and migration writes
+  fail-closed when a stale or competing temp path already exists instead of
+  silently overwriting unexpected content.
+- Codex preflight symlink tests must pass path inputs as shell arguments rather
+  than interpolating them into sourced shell snippets. This keeps fixture paths
+  and generated symlink targets inside the same shell-boundary contract as the
+  production preflight helpers.
 
 ## Documentation Alignment
 

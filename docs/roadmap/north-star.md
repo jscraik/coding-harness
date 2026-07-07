@@ -27,8 +27,12 @@ Coding Harness exists to let a solo developer with limited cognitive bandwidth
 orchestrate agentic software work to professional standards through compact
 orientation, executable guardrails, durable memory, and evidence-based handoff.
 
-Short form: Thin Surfaces. Strong Guardrails. Durable Memory. Self Improving.
-Professional Output.
+Short form: Thin Surface. Strong Guardrails. Durable Memory. Simplicity /
+Minimalism. Self Improvement. Professional Output.
+
+Personal standards: moral courage, self-discipline, respect for others,
+integrity, loyalty to self and others, and selfless commitment. These standards
+shape how work is planned, implemented, reviewed, and closed out.
 
 Expected outcome: Coding Harness becomes a portable agent operating system that
 makes Codex behave like a software engineer, not merely a code generator, across
@@ -198,6 +202,11 @@ polishing instructions in isolation.
 ## Operating Principles
 
 - Treat code as abundant and human attention as scarce.
+- Hold work to the personal standards of moral courage, self-discipline,
+  respect for others, integrity, loyalty to self and others, and selfless
+  commitment.
+- Prefer simplicity and minimalism before adding new surface area; make the
+  smallest interface that can carry strong guardrails and professional output.
 - Practice systems thinking: spot recurring blockers, design ways for people or
   agents to overcome them systematically, and explain how code carries that
   leverage instead of leaving the fix as advice.

@@ -110,7 +110,8 @@ decision-log updates.
 | Outcome Closeout Schema | A machine-readable closeout packet that summarizes changed items, proof, blockers, handoffs, and claim boundaries from structured source events instead of prose-only status. |
 | North-Star Contract | The canonical mission, metric, bottleneck, autonomy boundary, safety floor, and decision rubric in `docs/roadmap/north-star.md`; summaries and governed PR decisions should derive from this contract. Does the change improve or preserve durable learning and evidence capture? |
 | North-Star Mission | Coding Harness exists to let a solo developer with limited cognitive bandwidth orchestrate agentic software work to professional standards through compact orientation, executable guardrails, durable memory, and evidence-based handoff. Does the change improve or preserve durable learning and evidence capture? |
-| North-Star Mnemonic | Thin Surfaces. Strong Guardrails. Durable Memory. Self Improving. Professional Output. Does the change improve or preserve durable learning and evidence capture? |
+| North-Star Mnemonic | Thin Surface. Strong Guardrails. Durable Memory. Simplicity / Minimalism. Self Improvement. Professional Output. Does the change improve or preserve durable learning and evidence capture? |
+| Personal Standards | Courage (especially moral courage), self-discipline, respect for others, integrity, loyalty to self and others, and selfless commitment. Does the work uphold these standards in planning, implementation, review, and closeout? |
 | PR Lead Time | The primary north-star metric: time from PR open to merge. |
 | Review and Rework Loop | The primary bottleneck Coding Harness optimizes: finding issues, producing acceptable fixes, verifying them, and getting the PR ready to merge. |
 | Manual Glue Work | Repeated human coordination between review, remediation, verification, and merge that should become automation, guardrails, templates, or explicit exceptions. |
@@ -153,7 +154,7 @@ decision-log updates.
 | "Can I call this done?" | Outcome Closeout Schema | Completion claims must be constrained by source events, proof, blockers, handoffs, and claim boundaries. |
 | "Is this aligned with the north star?" | `North-Star Contract` decision check | Answer against PR lead time, review/rework cost, manual glue reduction, agent reliability, and the safety floor; do not treat generic usefulness as enough. Does the change improve or preserve durable learning and evidence capture? |
 | "Agents never forget" | Durable north-star guardrail | Convert repeated failures into guardrails, tests, prompts, policy checks, review-context facts, or explicit exceptions in Project Brain. |
-| "Thin Surfaces. Strong Guardrails. Durable Memory. Self Improving. Professional Output." | `North-Star Mnemonic` | Use this as the compact orientation phrase for the project, not as a replacement for the PR lead-time metric. |
+| "Thin Surface. Strong Guardrails. Durable Memory. Simplicity / Minimalism. Self Improvement. Professional Output." | `North-Star Mnemonic` | Use this as the compact orientation phrase for the project, not as a replacement for the PR lead-time metric. |
 
 ## Relationships and Lifecycle
 1. User prompt enters with plain language.

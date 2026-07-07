@@ -5,7 +5,7 @@ import ts from "typescript";
 import { collectChangedPaths } from "./lib/changed-files.mjs";
 
 const TEST_FILE_RE =
-	/(?:^|[./])(?:__tests__|test|tests)(?:[./])|\.(?:test|spec)\.(?:c|m)?(?:t|j)sx?$/;
+	/^(?:(?:.*(?:^|[./])(?:__tests__|test|tests)(?:[./]).*)|(?:.*\.(?:test|spec)\.(?:c|m)?(?:t|j)sx?))$/;
 const SOURCE_EXTENSIONS = /\.(?:c|m)?(?:t|j)sx?$/;
 const ASSERTION_METHODS = new Set([
 	"toBe",

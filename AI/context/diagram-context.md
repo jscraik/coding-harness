@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-03T14:49:03Z
+Generated: 2026-07-06T21:29:23Z
 
 ## Table of Contents
 
@@ -29,21 +29,34 @@ Generated: 2026-07-03T14:49:03Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `src/lib/ci/ownership-gate-normalization.ts`
-- `src/lib/ci/ownership-gate-validation.ts`
-- `src/lib/ci/ownership-gate-workflow-triggers.ts`
-- `src/lib/ci/ownership-gate.ts`
+- `package.json`
+- `src/commands/context.ts`
+- `src/commands/doctor-file-checks.ts`
+- `src/commands/pilot-rollback.ts`
+- `src/commands/remediate-apply-transactions.ts`
+- `src/commands/tooling-audit-core.ts`
+- `src/lib/context-compound/indexer.ts`
+- `src/lib/contract/contract-presets.ts`
+- `src/lib/contract/json-schema-core.ts`
+- `src/lib/contract/north-star-alignment.ts`
+- `src/lib/contract/north-star-contract-validators.ts`
+- `src/lib/contract/run-records-core.ts`
+- `src/lib/contract/types-core.ts`
+- `src/lib/contract/validator-core.ts`
+- `src/lib/docs-surface/archive-candidates.ts`
+- `src/lib/evidence-reference/evidence-reference.ts`
+- `src/lib/github/client.ts`
 - `src/lib/init/README.md`
-- `src/lib/policy/required-check-names.ts`
-- `src/lib/policy/required-check-profiles.ts`
-- `src/lib/policy/required-checks.ts`
-- `src/presets/go-base.json`
-- `src/presets/minimal.json`
-- `src/presets/python-base.json`
-- `src/presets/rust-base.json`
-- `src/presets/strict.json`
-- `src/presets/swift-base.json`
-- `src/presets/typescript-base.json`
+- `src/lib/init/migration.ts`
+- `src/lib/init/scaffold-contract-template.ts`
+- `src/lib/pr-template-validator-rules.ts`
+- `src/lib/pr-template-validator.ts`
+- `src/lib/silent-error/detector.ts`
+- `src/lib/simulate/analysis.ts`
+- `src/lib/workflow/plan.ts`
+- `src/templates/codestyle/08-typescript.md`
+- `src/templates/codestyle/CHECKSUMS.sha256`
+- `src/templates/release-private-npm.yml`
 
 ## agent
 
@@ -681,6 +694,7 @@ graph LR
   node_check_20f65c28_48d25399["check_20f65c28"]
   node_check_architecture_rules_6b7347fd_dc8f2cf3["check_architecture_rules_6b7347fd"]
   node_check_behavior_tests_2577f6be_58dc87b2["check_behavior_tests_2577f6be"]
+  node_check_boundary_unknown_guards_f66586e1_cce34324["check_boundary_unknown_guards_f66586e1"]
   node_check_code_quality_debt_cba04f67_104c73f4["check_code_quality_debt_cba04f67"]
   node_check_code_size_9c5efc3a_154124ae["check_code_size_9c5efc3a"]
   node_check_codex_agent_roles_5bb2e89b_c1a9a472["check_codex_agent_roles_5bb2e89b"]
@@ -996,6 +1010,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_changed_files_4c0102f6_bfd165bc
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_architecture_rules_6b7347fd_dc8f2cf3
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_behavior_tests_2577f6be_58dc87b2
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_check_boundary_unknown_guards_f66586e1_cce34324
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_code_quality_debt_cba04f67_104c73f4
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_environment_core_2c16213f_a8a456d9
   ext_node_child_process_f62b7d19["node:child_process"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
@@ -1087,6 +1102,7 @@ graph LR
   ext_node_crypto_c7dfc512["node:crypto"] --> node_repository_identity_9dc13d37_eaffcd1e
   ext_node_crypto_c7dfc512["node:crypto"] --> node_required_checks_46396214_9d882ad3
   ext_node_crypto_c7dfc512["node:crypto"] --> node_rollback_da25480f_48e45364
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_run_harness_evals_77704768_ba42904d
   ext_node_crypto_c7dfc512["node:crypto"] --> node_run_record_emitter_core_688049d5_2036fd6f
   ext_node_crypto_c7dfc512["node:crypto"] --> node_run_records_core_89286dfa_4ce958f7
   ext_node_crypto_c7dfc512["node:crypto"] --> node_run_state_core_25a955bc_a562e9bf
@@ -1121,6 +1137,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_check_20f65c28_48d25399
   ext_node_fs_a15b7d96["node:fs"] --> node_check_architecture_rules_6b7347fd_dc8f2cf3
   ext_node_fs_a15b7d96["node:fs"] --> node_check_behavior_tests_2577f6be_58dc87b2
+  ext_node_fs_a15b7d96["node:fs"] --> node_check_boundary_unknown_guards_f66586e1_cce34324
   ext_node_fs_a15b7d96["node:fs"] --> node_check_code_quality_debt_cba04f67_104c73f4
   ext_node_fs_a15b7d96["node:fs"] --> node_check_code_size_9c5efc3a_154124ae
   ext_node_fs_a15b7d96["node:fs"] --> node_check_codex_agent_roles_5bb2e89b_c1a9a472
@@ -1397,6 +1414,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_check_20f65c28_48d25399
   ext_node_path_78811c13["node:path"] --> node_check_architecture_rules_6b7347fd_dc8f2cf3
   ext_node_path_78811c13["node:path"] --> node_check_behavior_tests_2577f6be_58dc87b2
+  ext_node_path_78811c13["node:path"] --> node_check_boundary_unknown_guards_f66586e1_cce34324
   ext_node_path_78811c13["node:path"] --> node_check_code_quality_debt_cba04f67_104c73f4
   ext_node_path_78811c13["node:path"] --> node_check_code_size_9c5efc3a_154124ae
   ext_node_path_78811c13["node:path"] --> node_check_codex_agent_roles_5bb2e89b_c1a9a472
@@ -1613,6 +1631,7 @@ graph LR
   ext_node_perf_hooks_906292ff["node:perf_hooks"] --> node_performance_overload_c685bfcf_291ef65a
   ext_node_process_00cdf119["node:process"] --> node_args_090772cf_1bac9202
   ext_node_process_00cdf119["node:process"] --> node_check_20f65c28_48d25399
+  ext_node_process_00cdf119["node:process"] --> node_check_boundary_unknown_guards_f66586e1_cce34324
   ext_node_process_00cdf119["node:process"] --> node_check_types_policy_cfbecf01_fb84cd04
   ext_node_process_00cdf119["node:process"] --> node_ci_migrate_core_7005b5af_7e295ae3
   ext_node_process_00cdf119["node:process"] --> node_ci_migrate_signing_2d82ac3f_9e5e8974

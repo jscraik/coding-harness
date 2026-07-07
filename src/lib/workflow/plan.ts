@@ -9,6 +9,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { findRecentBrainstorms, loadBrainstorm } from "./brainstorm.js";
 
+/** YAML frontmatter stored on a workflow plan document. */
 export interface PlanFrontmatter {
 	title: string;
 	date: string;
@@ -20,12 +21,14 @@ export interface PlanFrontmatter {
 	last_validated?: string;
 }
 
+/** Loaded workflow plan with path, metadata, and markdown body. */
 export interface PlanMetadata {
 	path: string;
 	frontmatter: PlanFrontmatter;
 	content: string;
 }
 
+/** Inputs used to create a new workflow plan document. */
 export interface CreatePlanOptions {
 	title: string;
 	type: PlanFrontmatter["type"];
@@ -36,8 +39,9 @@ export interface CreatePlanOptions {
 }
 
 const PLANS_DIR = "docs/plans";
-const FORBIDDEN_CHARS = /[<>:""/\\|?*!.,]/g;
+const FORBIDDEN_CHARS = /[<>:"/\\|?*!.,]/g;
 
+/** Parse a workflow plan type from untrusted frontmatter. */
 function parsePlanType(type: unknown): PlanFrontmatter["type"] | null {
 	return type === "feature" ||
 		type === "refactor" ||

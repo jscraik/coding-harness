@@ -82,7 +82,11 @@ import type {
 	UILoopPolicy,
 	UILoopSLO,
 } from "./types.js";
-import { PREFLIGHT_POST_HOOK_IDS, PREFLIGHT_PRE_HOOK_IDS } from "./types.js";
+import {
+	DEFAULT_NORTH_STAR_CONTRACT,
+	PREFLIGHT_POST_HOOK_IDS,
+	PREFLIGHT_PRE_HOOK_IDS,
+} from "./types.js";
 import { isValidUILoopCommandSpec } from "./ui-loop-command.js";
 import {
 	FORBIDDEN_KEYS,
@@ -279,6 +283,34 @@ const VALID_CODE_SCANNING_ALERTS_THRESHOLDS: CodeScanningAlertsThreshold[] = [
 	"errors_and_warnings",
 	"all",
 ];
+
+/**
+ * Backfills legacy north-star contract payloads with current default fields.
+ *
+ * @param value Candidate north-star contract value loaded from user config.
+ * @returns The original value for non-object inputs, or a shallow copy with
+ * missing default arrays populated for legacy object payloads.
+ */
+function withLegacyNorthStarDefaults(value: unknown): unknown {
+	if (!isPlainObject(value)) {
+		return value;
+	}
+
+	const northStar = { ...value };
+	if (!Object.hasOwn(northStar, "mantra") || northStar.mantra === undefined) {
+		northStar.mantra = [...DEFAULT_NORTH_STAR_CONTRACT.mantra];
+	}
+	if (
+		!Object.hasOwn(northStar, "personalStandards") ||
+		northStar.personalStandards === undefined
+	) {
+		northStar.personalStandards = [
+			...DEFAULT_NORTH_STAR_CONTRACT.personalStandards,
+		];
+	}
+
+	return northStar;
+}
 const VALID_CODE_SCANNING_SECURITY_ALERTS_THRESHOLDS: CodeScanningSecurityAlertsThreshold[] =
 	["high_or_higher", "medium_or_higher", "all"];
 const VALID_CONTROL_PLANE_OVERRIDE_SCOPES: ControlPlaneOverrideScope[] = [
@@ -1938,25 +1970,26 @@ export function validateContract(
 				message:
 					"northStar is required for contract versions 1.6+ to keep north-star governance load-bearing",
 				expected:
-					"{ mission: string, primaryMetric: 'pr_lead_time', primaryBottleneck: 'review_rework_loop', autonomyBoundary: string, safetyFloor: string[], nonGoals: string[], decisionQuestions: [{ id, prompt }] }",
+					"{ mission: string, mantra: string[], personalStandards: string[], primaryMetric: 'pr_lead_time', primaryBottleneck: 'review_rework_loop', autonomyBoundary: string, safetyFloor: string[], nonGoals: string[], decisionQuestions: [{ id, prompt }] }",
 				received: "undefined",
 				fix: "Add a canonical northStar block to harness.contract.json",
 			});
 		}
 	} else {
-		if (!isValidNorthStarContract(obj.northStar)) {
+		const normalizedNorthStar = withLegacyNorthStarDefaults(obj.northStar);
+		if (!isValidNorthStarContract(normalizedNorthStar)) {
 			errors.push({
 				code: ValidationErrorCode.INVALID_VALUE,
 				path: "northStar",
 				message:
-					"northStar must define canonical mission, metric, bottleneck, boundary, safety/non-goal arrays, and ordered canonical decision questions",
+					"northStar must define canonical mission, mantra, personal standards, metric, bottleneck, boundary, safety/non-goal arrays, and ordered canonical decision questions",
 				expected:
-					"{ mission: string, primaryMetric: 'pr_lead_time', primaryBottleneck: 'review_rework_loop', autonomyBoundary: string, safetyFloor: string[], nonGoals: string[], decisionQuestions: [{ id, prompt }] }",
+					"{ mission: string, mantra: string[], personalStandards: string[], primaryMetric: 'pr_lead_time', primaryBottleneck: 'review_rework_loop', autonomyBoundary: string, safetyFloor: string[], nonGoals: string[], decisionQuestions: [{ id, prompt }] }",
 				received: JSON.stringify(obj.northStar),
 				fix: "Use the canonical northStar shape and preserve the required decisionQuestions ids, order, and prompt text",
 			});
 		} else {
-			northStar = obj.northStar as NorthStarContract;
+			northStar = normalizedNorthStar;
 		}
 	}
 

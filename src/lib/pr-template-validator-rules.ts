@@ -222,7 +222,7 @@ export const REQUIRED_WORK_FIELDS = [
 	{
 		label: "Durable evidence map",
 		placeholder:
-			"classify every local-only artifact reference as tracked receipt, PR comment, CI artifact URL, runtime-card/evidence-bundle ref, or `n.a.` with reason; use repo-relative paths only",
+			"for evidence-heavy PRs, index each artifact with schema/version, producer command, digest, replay command, and authority (`source-of-truth` or `retained context`); classify every local-only artifact reference as tracked receipt, PR comment, CI artifact URL, runtime-card/evidence-bundle ref, or `n.a.` with reason; use repo-relative paths only",
 	},
 	{
 		label: "Runtime impact",

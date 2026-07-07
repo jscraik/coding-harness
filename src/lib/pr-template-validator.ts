@@ -54,8 +54,9 @@ function normalizeFieldBlockValue(value: string): string {
 	return normalized.trim();
 }
 
+/** Extract the markdown content below a named PR-template heading. */
 function extractSectionBody(body: string, heading: string): string | null {
-	const escapedHeading = heading.replace(/[.*+?^${}()|[\]]/g, "\\$&");
+	const escapedHeading = heading.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
 	const pattern = new RegExp(
 		`(?:^|\\n)${escapedHeading}[ \\t]*(?:\\r?\\n)([\\s\\S]*?)(?=\\r?\\n## |\\r?\\n# |$)`,
 		"i",

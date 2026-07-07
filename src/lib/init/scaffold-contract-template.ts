@@ -10,6 +10,7 @@
 import {
 	DEFAULT_CI_PROVIDER_POLICY,
 	DEFAULT_CONTRACT,
+	DEFAULT_NORTH_STAR_CONTRACT,
 	type HarnessContract,
 	NORTH_STAR_DECISION_QUESTION_SPECS,
 	NORTH_STAR_PRIMARY_BOTTLENECK,
@@ -34,12 +35,15 @@ function renderScriptCommand(packageManager: string, script: string): string {
 	return `${packageManager} ${script}`;
 }
 
+/** Render the scaffolded north-star block for a target repository. */
 function renderScaffoldNorthStar(
 	context: TemplateRenderContext,
 ): NonNullable<HarnessContract["northStar"]> {
 	const projectName = context.projectName?.trim() || "This repository";
 	return {
 		mission: `${projectName} uses Coding Harness to reduce PR lead time while preserving safe, evidence-backed human oversight.`,
+		mantra: [...DEFAULT_NORTH_STAR_CONTRACT.mantra],
+		personalStandards: [...DEFAULT_NORTH_STAR_CONTRACT.personalStandards],
 		primaryMetric: NORTH_STAR_PRIMARY_METRIC,
 		primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
 		autonomyBoundary:

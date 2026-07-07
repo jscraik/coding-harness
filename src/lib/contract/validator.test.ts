@@ -12,6 +12,22 @@ const canonicalDecisionQuestions = NORTH_STAR_DECISION_QUESTION_SPECS.map(
 const validNorthStar = {
 	mission:
 		"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+	mantra: [
+		"Thin Surface",
+		"Strong Guardrails",
+		"Durable Memory",
+		"Simplicity / Minimalism",
+		"Self Improvement",
+		"Professional Output",
+	],
+	personalStandards: [
+		"moral courage",
+		"self-discipline",
+		"respect for others",
+		"integrity",
+		"loyalty to self and others",
+		"selfless commitment",
+	],
 	primaryMetric: "pr_lead_time",
 	primaryBottleneck: "review_rework_loop",
 	autonomyBoundary:
@@ -237,6 +253,53 @@ describe("validateContract", () => {
 			expect(result.data?.northStar?.decisionQuestions).toEqual(
 				canonicalDecisionQuestions,
 			);
+		});
+
+		it("backfills new northStar orientation fields for existing 1.6 contracts", () => {
+			const legacyNorthStar = {
+				mission: validNorthStar.mission,
+				primaryMetric: validNorthStar.primaryMetric,
+				primaryBottleneck: validNorthStar.primaryBottleneck,
+				autonomyBoundary: validNorthStar.autonomyBoundary,
+				safetyFloor: validNorthStar.safetyFloor,
+				nonGoals: validNorthStar.nonGoals,
+				decisionQuestions: validNorthStar.decisionQuestions,
+			};
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.6.0",
+					northStar: legacyNorthStar,
+				}),
+			);
+
+			expect(result.success).toBe(true);
+			expect(result.data?.northStar?.mantra).toEqual(validNorthStar.mantra);
+			expect(result.data?.northStar?.personalStandards).toEqual(
+				validNorthStar.personalStandards,
+			);
+		});
+
+		it("rejects explicitly invalid northStar orientation fields", () => {
+			const legacyNorthStar = {
+				mission: validNorthStar.mission,
+				primaryMetric: validNorthStar.primaryMetric,
+				primaryBottleneck: validNorthStar.primaryBottleneck,
+				autonomyBoundary: validNorthStar.autonomyBoundary,
+				safetyFloor: validNorthStar.safetyFloor,
+				nonGoals: validNorthStar.nonGoals,
+				decisionQuestions: validNorthStar.decisionQuestions,
+				mantra: [],
+			};
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.6.0",
+					northStar: legacyNorthStar,
+				}),
+			);
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("northStar");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
 		});
 
 		it("rejects northStar with non-canonical decision question order", () => {

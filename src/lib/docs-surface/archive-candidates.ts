@@ -145,10 +145,10 @@ export function runDocsArchiveCandidates(
 	return report;
 }
 
+/** Return generated-projection repair findings for ignored archive candidates. */
 function generatedProjectionRepairFindings(
-	ignoredFiles: readonly ArchiveIgnoredFile[],
+	_ignoredFiles: readonly ArchiveIgnoredFile[],
 ): ArchiveRepairFinding[] {
-	ignoredFiles;
 	return [];
 }
 

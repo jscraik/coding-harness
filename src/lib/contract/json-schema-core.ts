@@ -276,6 +276,20 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 						minLength: 1,
 						description: "Canonical mission statement.",
 					},
+					mantra: {
+						type: "array",
+						minItems: 1,
+						items: { type: "string", minLength: 1 },
+						description:
+							"Canonical compact mantra used by north-star orientation surfaces.",
+					},
+					personalStandards: {
+						type: "array",
+						minItems: 1,
+						items: { type: "string", minLength: 1 },
+						description:
+							"Personal values and standards that constrain planning, implementation, review, and closeout.",
+					},
 					primaryMetric: {
 						type: "string",
 						enum: [NORTH_STAR_PRIMARY_METRIC],

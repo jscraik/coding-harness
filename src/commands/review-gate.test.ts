@@ -5,6 +5,7 @@ import { type PartialDeep, fromPartial } from "@total-typescript/shoehorn";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { writeNorthStarOverrideAcknowledgement } from "../lib/contract/north-star-artifact-io.js";
 import {
+	DEFAULT_NORTH_STAR_CONTRACT,
 	NORTH_STAR_DECISION_QUESTION_SPECS,
 	NORTH_STAR_PRIMARY_BOTTLENECK,
 	NORTH_STAR_PRIMARY_METRIC,
@@ -87,6 +88,17 @@ const mockRunCheckAuthz = vi.mocked(runCheckAuthz);
 const mockEmitReviewGateDecisionArtifacts = vi.mocked(
 	emitReviewGateDecisionArtifacts,
 );
+
+function mockNorthStar(
+	overrides: Partial<typeof DEFAULT_NORTH_STAR_CONTRACT> = {},
+): typeof DEFAULT_NORTH_STAR_CONTRACT {
+	return {
+		...DEFAULT_NORTH_STAR_CONTRACT,
+		mantra: [...DEFAULT_NORTH_STAR_CONTRACT.mantra],
+		personalStandards: [...DEFAULT_NORTH_STAR_CONTRACT.personalStandards],
+		...overrides,
+	};
+}
 
 const authzPassOutput = {
 	passed: true,
@@ -1024,7 +1036,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -1042,7 +1054,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [
@@ -1099,7 +1111,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -1117,7 +1129,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [
@@ -1174,7 +1186,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -1187,7 +1199,7 @@ describe("runReviewGate", () => {
 				],
 				nonGoals: ["governance surface area as a proxy for progress"],
 				decisionQuestions: [],
-			},
+			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [
@@ -1246,7 +1258,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission: "Test mission",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
 				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
@@ -1257,7 +1269,7 @@ describe("runReviewGate", () => {
 					id: q.id,
 					prompt: q.prompt,
 				})),
-			},
+			}),
 			overrideReviewerRegistry: {
 				trustedReviewers: [
 					{
@@ -1369,7 +1381,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -1387,7 +1399,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [
@@ -1447,7 +1459,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -1465,7 +1477,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const prBody = [
@@ -1523,7 +1535,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -1541,7 +1553,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const prBody = [
@@ -1599,7 +1611,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -1617,7 +1629,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [
@@ -1677,7 +1689,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -1695,7 +1707,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [
@@ -1755,7 +1767,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -1773,7 +1785,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [
@@ -1838,7 +1850,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -1856,7 +1868,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [
@@ -1918,7 +1930,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -1936,7 +1948,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [
@@ -2002,7 +2014,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -2020,7 +2032,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [
@@ -2083,7 +2095,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -2101,7 +2113,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [
@@ -2164,7 +2176,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -2182,7 +2194,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [
@@ -2248,7 +2260,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -2266,7 +2278,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [
@@ -2327,7 +2339,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -2345,7 +2357,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [
@@ -2406,7 +2418,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -2424,7 +2436,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [
@@ -2487,7 +2499,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -2505,7 +2517,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [
@@ -2566,7 +2578,7 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: {
+			northStar: mockNorthStar({
 				mission:
 					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
 				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
@@ -2584,7 +2596,7 @@ describe("runReviewGate", () => {
 						prompt: question.prompt,
 					}),
 				),
-			},
+			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [

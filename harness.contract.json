@@ -8,6 +8,22 @@
 	},
 	"northStar": {
 		"mission": "Coding Harness exists to let a solo developer with limited cognitive bandwidth orchestrate agentic software work to professional standards through compact orientation, executable guardrails, durable memory, and evidence-based handoff.",
+		"mantra": [
+			"Thin Surface",
+			"Strong Guardrails",
+			"Durable Memory",
+			"Simplicity / Minimalism",
+			"Self Improvement",
+			"Professional Output"
+		],
+		"personalStandards": [
+			"moral courage",
+			"self-discipline",
+			"respect for others",
+			"integrity",
+			"loyalty to self and others",
+			"selfless commitment"
+		],
 		"primaryMetric": "pr_lead_time",
 		"primaryBottleneck": "review_rework_loop",
 		"autonomyBoundary": "Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",

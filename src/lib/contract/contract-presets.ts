@@ -98,10 +98,13 @@ const STANDARD_RISK_TIER_RULES = {
 	"**/*.test.ts": "low",
 };
 
+/** Build canonical north-star surfaces with cloned arrays for preset output. */
 function buildCanonicalNorthStarSurfaces(): Record<string, unknown> {
 	return {
 		northStar: {
 			...DEFAULT_NORTH_STAR_CONTRACT,
+			mantra: [...DEFAULT_NORTH_STAR_CONTRACT.mantra],
+			personalStandards: [...DEFAULT_NORTH_STAR_CONTRACT.personalStandards],
 			safetyFloor: [...DEFAULT_NORTH_STAR_CONTRACT.safetyFloor],
 			nonGoals: [...DEFAULT_NORTH_STAR_CONTRACT.nonGoals],
 			decisionQuestions: DEFAULT_NORTH_STAR_CONTRACT.decisionQuestions.map(
