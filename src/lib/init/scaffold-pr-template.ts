@@ -11,10 +11,25 @@ type PullRequestTemplateOptions = {
 function renderRequiredWorkFieldLines(): string {
 	return REQUIRED_WORK_FIELDS.map((field) => {
 		const line = `- ${field.label}:`;
-		if (field.label !== "AI session / traceability") {
-			return line;
+		if (field.label === "AI session / traceability") {
+			return `${line}\n<!-- Cite durable session/run/runtime-card references when available. Do not paste raw transcripts, prompts, secrets, or bulky telemetry. -->`;
 		}
-		return `${line}\n<!-- Cite durable session/run/runtime-card references when available. Do not paste raw transcripts, prompts, secrets, or bulky telemetry. -->`;
+		if (field.label === "Durable evidence map") {
+			return `${line}\n<!-- For evidence-heavy PRs, include a compact index rather than bulky logs.
+Use repo-relative paths only. Do not paste raw transcripts, secrets, bulky
+telemetry, or local absolute paths.
+
+| Artifact | Durable reference | Schema / version | Producer command | Digest | Replay command | Authority |
+| --- | --- | --- | --- | --- | --- | --- |
+|  |  |  |  |  |  | \`source-of-truth\` / \`retained context\` |
+
+\`source-of-truth\` means the artifact is authoritative for a deterministic
+lane claim. \`retained context\` means the artifact supports review or
+traceability but does not prove behavior by itself. For large PRs, prefer
+splitting source/schema/CLI/validator changes from retained evidence fixtures
+or generated context instead of splitting only by feature area. -->`;
+		}
+		return line;
 	}).join("\n");
 }
 
@@ -44,6 +59,32 @@ state the blocker and the nearest fallback. Do not paste secrets, raw
 transcripts, bulky telemetry, or local absolute paths.`;
 }
 
+/** Render the reusable PR release-boundary guidance section. */
+function renderReleaseBoundarySection(): string {
+	return `## Release Boundary
+
+Choose the release standard before listing proof. Use \`n.a.\` with a concrete
+reason only when the change has no release-stage meaning.
+
+- Release mode: Prototype / Portfolio / Product / Harness / n.a. because reason
+- Done line:
+- Explicit non-goals:
+- Allowed polish:
+- Deferred polish / follow-up work:
+- Promotion rule:
+
+<!--
+Prototype: prove the idea has value. Core path works; known gaps are listed; no unsafe behavior.
+Portfolio: credible, coherent, navigable, and explainable. Demo, screenshots, and trade-offs matter more than infrastructure hardening.
+Product: reusable and maintained. Tests, docs, release path, versioning, and supportable architecture are expected.
+Harness: trust boundary or repeatable proof. Deterministic checks, receipts, failure behavior, and evidence boundaries are expected.
+
+Promotion rule should name what would force this PR into a more serious mode.
+If a new improvement does not fit the selected release mode or done line, defer
+it to follow-up work instead of absorbing it into this PR.
+-->`;
+}
+
 /**
  * Render the GitHub pull request template used for downstream repositories.
  *
@@ -70,6 +111,8 @@ or local absolute paths.
 - Motivation:
 - Reasoning:
 - Chosen approach:
+
+${renderReleaseBoundarySection()}
 
 ## Why This Change Was Made
 

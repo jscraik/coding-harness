@@ -10,6 +10,29 @@ or local absolute paths.
 - Reasoning:
 - Chosen approach:
 
+## Release Boundary
+
+Choose the release standard before listing proof. Use `n.a.` with a concrete
+reason only when the change has no release-stage meaning.
+
+- Release mode: Prototype / Portfolio / Product / Harness / n.a. because reason
+- Done line:
+- Explicit non-goals:
+- Allowed polish:
+- Deferred polish / follow-up work:
+- Promotion rule:
+
+<!--
+Prototype: prove the idea has value. Core path works; known gaps are listed; no unsafe behavior.
+Portfolio: credible, coherent, navigable, and explainable. Demo, screenshots, and trade-offs matter more than infrastructure hardening.
+Product: reusable and maintained. Tests, docs, release path, versioning, and supportable architecture are expected.
+Harness: trust boundary or repeatable proof. Deterministic checks, receipts, failure behavior, and evidence boundaries are expected.
+
+Promotion rule should name what would force this PR into a more serious mode.
+If a new improvement does not fit the selected release mode or done line, defer
+it to follow-up work instead of absorbing it into this PR.
+-->
+
 ## Why This Change Was Made
 
 - Problem:
@@ -65,14 +88,13 @@ transcripts, bulky telemetry, or local absolute paths.
 - Validation evidence: See Testing.
 - Review artifacts: See Review artifacts.
 - Durable evidence map:
-<!-- For evidence-heavy PRs, index each local artifact inline, one entry per
-line, using repo-relative paths only. Do not paste raw transcripts, secrets,
-bulky telemetry, or local absolute paths.
+<!-- For evidence-heavy PRs, include a compact index rather than bulky logs.
+Use repo-relative paths only. Do not paste raw transcripts, secrets, bulky
+telemetry, or local absolute paths.
 
-Format per entry:
-<local-path> -> <durable reference (tracked receipt / PR comment / CI URL / runtime-card ref)>;
-schema/version: <value>; producer command: <value>; digest: <value>;
-replay command: <value>; authority: `source-of-truth` or `retained context`.
+| Artifact | Durable reference | Schema / version | Producer command | Digest | Replay command | Authority |
+| --- | --- | --- | --- | --- | --- | --- |
+|  |  |  |  |  |  | `source-of-truth` / `retained context` |
 
 `source-of-truth` means the artifact is authoritative for a deterministic
 lane claim. `retained context` means the artifact supports review or

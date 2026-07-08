@@ -58,12 +58,24 @@ thin and delegate into this deep module.
   acceptance IDs need to be bound to the linked issue key (for example,
   `JSC-999 SA-999-001 -> evidence`), and preparatory/no-completion text must
   name the concrete issue key rather than a generic linked issue.
+- Generated PR templates must keep the `Release Boundary` lane synchronized
+  with the repository PR template and validator rules. Generated PR bodies need
+  explicit `Release mode`, `Done line`, `Explicit non-goals`,
+  `Allowed polish`, `Deferred polish / follow-up work`, and `Promotion rule`
+  fields so downstream maintainers can review Prototype, Portfolio, Product,
+  and Harness work against the selected release standard.
 - Generated PR templates must keep the `Behavior Proof` evidence lane
   synchronized with the repository PR template and validator rules. Observable
   runtime, CLI, generated-artifact, validation, agent-workflow, and user-facing
   documentation changes need proof fields that describe the behavior addressed,
   path tested, evidence observed, untested paths, proof limits, and before
   evidence when available.
+- Generated PR templates must keep the `Durable evidence map` compact table
+  synchronized with the repository PR template and validator rules. Evidence-heavy
+  PRs need table columns for artifact, durable reference, schema/version,
+  producer command, digest, replay command, and authority so local-only
+  artifacts can be paired with durable receipts, PR comments, CI artifacts,
+  GitHub checks, or runtime-card references.
 - Generated PR templates must keep required evidence fields blank by default
   and place example command/status syntax only in Markdown comments. Literal
   placeholder text such as `pass/fail`, `<link / artifact path / comment ID>`,

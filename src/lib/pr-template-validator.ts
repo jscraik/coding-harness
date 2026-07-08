@@ -8,6 +8,7 @@ import {
 	PREPARATORY_LINKED_ISSUE_TRACE_PATTERN,
 	REQUIRED_BEHAVIOR_PROOF_FIELDS,
 	REQUIRED_MOTIVATION_FIELDS,
+	REQUIRED_RELEASE_BOUNDARY_FIELDS,
 	REQUIRED_SECTIONS,
 	REQUIRED_TESTING_FIELDS,
 	REQUIRED_WORK_FIELDS,
@@ -37,7 +38,6 @@ function normalizeFieldValue(value: string): string {
 
 	return normalized.replace(/\s+/g, " ").trim();
 }
-
 function normalizeFieldBlockValue(value: string): string {
 	let normalized = value.trim();
 
@@ -54,6 +54,8 @@ function normalizeFieldBlockValue(value: string): string {
 	return normalized.trim();
 }
 
+const RELEASE_MODE_PATTERN = /^(?:Prototype|Portfolio|Product|Harness)$/i;
+const NOT_APPLICABLE_RELEASE_MODE_PATTERN = /^n\.?a\.?\s+because\s+\S.+/i;
 /** Extract the markdown content below a named PR-template heading. */
 function extractSectionBody(body: string, heading: string): string | null {
 	const escapedHeading = heading.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
@@ -184,6 +186,36 @@ function collectMotivationFieldErrors(body: string): string[] {
 		REQUIRED_MOTIVATION_FIELDS,
 		"motivation",
 	);
+}
+
+/** Collect missing release-boundary fields from the pull request body. */
+function collectReleaseBoundaryFieldErrors(body: string): string[] {
+	const errors = collectFieldErrors(
+		body,
+		"## Release Boundary",
+		REQUIRED_RELEASE_BOUNDARY_FIELDS,
+		"release boundary",
+	);
+	const releaseMode = extractFieldBlockValue(
+		body,
+		"## Release Boundary",
+		"Release mode",
+	);
+	if (releaseMode === null) {
+		return errors;
+	}
+
+	const normalizedReleaseMode = normalizeFieldValue(releaseMode);
+	if (
+		!RELEASE_MODE_PATTERN.test(normalizedReleaseMode) &&
+		!NOT_APPLICABLE_RELEASE_MODE_PATTERN.test(normalizedReleaseMode)
+	) {
+		errors.push(
+			"Release mode must be Prototype, Portfolio, Product, Harness, or `n.a. because <reason>`.",
+		);
+	}
+
+	return errors;
 }
 
 /**
@@ -350,6 +382,7 @@ export function validatePrTemplateBody(body: string): string[] {
 	}
 
 	errors.push(...collectMotivationFieldErrors(body));
+	errors.push(...collectReleaseBoundaryFieldErrors(body));
 	errors.push(...collectWorkPerformedFieldErrors(body));
 	errors.push(
 		...collectLinkedIssueRelationshipErrors(body, extractFieldBlockValue),

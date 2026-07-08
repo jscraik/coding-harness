@@ -21,6 +21,15 @@ const VALID_BODY = `## What Problem This Solves
 - Reasoning: Maintainers can review intent faster when motivation is captured near the top of the PR.
 - Chosen approach: Add a required Motivation section to the template and validator instead of relying on optional prose in Summary.
 
+## Release Boundary
+
+- Release mode: Harness
+- Done line: PR-template gate rejects incomplete evidence while keeping the release scope bounded.
+- Explicit non-goals: Changing GitHub branch protection or expanding adjacent workflow gates.
+- Allowed polish: Template wording that improves reviewer clarity without adding new evidence systems.
+- Deferred polish / follow-up work: none; fixture-only validation change.
+- Promotion rule: New validators or adjacent workflow changes require a follow-up issue unless required for this gate to stay truthful.
+
 ## Why This Change Was Made
 
 - Problem: PR bodies could omit required validation evidence.
@@ -211,6 +220,23 @@ describe("pr-template-gate command", () => {
 				"Missing required section: ## What Problem This Solves",
 			);
 			expect(result.output.errors).toContain("Missing motivation block.");
+		}
+	});
+
+	it("requires release mode to be selected from the template options", () => {
+		const invalid = VALID_BODY.replace(
+			"- Release mode: Harness",
+			"- Release mode: Prototype / Portfolio / Product / Harness / n.a. because reason",
+		);
+
+		const result = runPrTemplateGate({ prBody: invalid });
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.passed).toBe(false);
+			expect(result.output.errors).toContain(
+				"Release mode must be Prototype, Portfolio, Product, Harness, or `n.a. because <reason>`.",
+			);
 		}
 	});
 

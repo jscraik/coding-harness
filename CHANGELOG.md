@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file. See [standa
 - Clarified the pull request template with problem-oriented section headings,
   regression test plan evidence, AI traceability guidance, and changelog
   classification checkboxes.
+- Added validator-backed pull request release-boundary fields and compact
+  durable evidence map guidance to the source template and downstream scaffold.
 
 ### Fixed
 

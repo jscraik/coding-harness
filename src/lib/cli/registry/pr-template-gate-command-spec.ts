@@ -14,6 +14,7 @@ export function createPrTemplateGateCommandSpec(): CommandSpec {
 	};
 }
 
+/** Parse CLI registry args and delegate to the PR template gate runner. */
 function runPrTemplateGateCommand(args: string[]): number {
 	const jsonFlag = args.includes("--json");
 	const prBodyIndex = args.indexOf("--pr-body");
@@ -22,10 +23,14 @@ function runPrTemplateGateCommand(args: string[]): number {
 	const options: Parameters<typeof runPrTemplateGateCLI>[0] = {};
 
 	if (jsonFlag) options.json = true;
-	const prBodyArg = getFlagValue(args, prBodyIndex);
-	if (prBodyArg !== undefined) options.prBody = prBodyArg;
-	const prBodyFileArg = getFlagValue(args, prBodyFileIndex);
-	if (prBodyFileArg !== undefined) options.prBodyFile = prBodyFileArg;
+	if (prBodyIndex >= 0) {
+		const prBodyArg = getFlagValue(args, prBodyIndex);
+		if (prBodyArg !== undefined) options.prBody = prBodyArg;
+	}
+	if (prBodyFileIndex >= 0) {
+		const prBodyFileArg = getFlagValue(args, prBodyFileIndex);
+		if (prBodyFileArg !== undefined) options.prBodyFile = prBodyFileArg;
+	}
 
 	return runPrTemplateGateCLI(options);
 }
