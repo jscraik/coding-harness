@@ -247,6 +247,10 @@ function fillRenderedPullRequestTemplate(template: string): string {
 
 	body = body
 		.replace(
+			"- regression_test_plan:",
+			"- regression_test_plan: Render the scaffolded PR template and validate the completed fixture against pr-template-gate.",
+		)
+		.replace(
 			"- verification_commands:",
 			"- verification_commands: pnpm vitest run src/lib/init/scaffold-doc-templates.test.ts",
 		)

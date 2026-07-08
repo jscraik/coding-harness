@@ -383,6 +383,7 @@ Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`, `ci`
 On agent branches (`codex/*`, `claude/*`), the commit-msg hook reminds about PR template requirements:
 
 - ## What Problem This Solves (motivation, reasoning, chosen approach)
+- ## Release Boundary (release mode, done line, explicit non-goals, allowed polish, deferred polish / follow-up work, promotion rule)
 - ## Why This Change Was Made (problem, timing, outcome, scope, review focus, risk)
 - ## Work performed (plan IDs, phase/slice, session IDs, trace IDs, AI session/traceability mapping, completed work, documentation impact, documentation lifecycle impact, SemVer impact, acceptance trace, validation evidence, review artifacts, learning/reinforcement, deferred work)
 - ## Checklist (all items checked)

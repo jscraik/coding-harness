@@ -51,11 +51,12 @@ function normalizeFieldBlockValue(value: string): string {
 		normalized = inlineCodeMatch[1] ?? "";
 	}
 
-	return normalized.trim();
+	return normalized.replace(/<!--\s*[\s\S]*?\s*-->/g, "").trim();
 }
 
 const RELEASE_MODE_PATTERN = /^(?:Prototype|Portfolio|Product|Harness)$/i;
-const NOT_APPLICABLE_RELEASE_MODE_PATTERN = /^n\.?a\.?\s+because\s+\S.+/i;
+const NOT_APPLICABLE_RELEASE_MODE_PATTERN =
+	/^(?:n\.a\.|n\/a|not applicable)\s+because\s+(?!reason\b)(?!<reason>\b)\S.{6,}\S$/i;
 /** Extract the markdown content below a named PR-template heading. */
 function extractSectionBody(body: string, heading: string): string | null {
 	const escapedHeading = heading.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
@@ -137,17 +138,15 @@ function collectFieldErrors(
 	const errors: string[] = [];
 
 	for (const field of fields) {
-		const escapedLabel = field.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-		const pattern = new RegExp(`^-\\s*${escapedLabel}:\\s*(.+)$`, "im");
-		const match = sectionBody.match(pattern);
-		if (!match) {
+		const value = extractFieldBlockValue(body, sectionHeading, field.label);
+		if (value === null) {
 			errors.push(`Missing required ${errorPrefix} field: ${field.label}`);
 			continue;
 		}
 
-		const value = normalizeFieldValue(match[1] ?? "");
+		const normalizedValue = normalizeFieldValue(value);
 		const placeholder = normalizeFieldValue(field.placeholder);
-		if (value.length === 0 || value === placeholder) {
+		if (normalizedValue.length === 0 || normalizedValue === placeholder) {
 			errors.push(`Replace ${errorPrefix} field placeholder: ${field.label}`);
 		}
 	}
@@ -316,7 +315,7 @@ function extractFieldBlockValue(
 
 	const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 	const pattern = new RegExp(
-		`^-\\s*${escapedLabel}:\\s*([\\s\\S]*?)(?=\\r?\\n-\\s*[A-Za-z][^\\n:]{0,80}:|\\r?\\n##\\s|(?![\\s\\S]))`,
+		`^-\\s*${escapedLabel}:[ \\t]*([\\s\\S]*?)(?=\\r?\\n-\\s*[A-Za-z][^\\n:]{0,80}:|\\r?\\n##\\s|(?![\\s\\S]))`,
 		"im",
 	);
 	const match = sectionBody.match(pattern);

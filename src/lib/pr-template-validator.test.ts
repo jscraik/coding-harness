@@ -140,6 +140,44 @@ describe("validatePrTemplateBody", () => {
 		expect(validatePrTemplateBody(body)).toEqual([]);
 	});
 
+	it("fails when release mode n.a. keeps the placeholder reason", () => {
+		const body = VALID_BODY.replace(
+			"- Release mode: Harness",
+			"- Release mode: n.a. because reason",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Release mode must be Prototype, Portfolio, Product, Harness, or `n.a. because <reason>`.",
+		);
+	});
+
+	it("fails when release-boundary fields are blank before guidance comments", () => {
+		const body = VALID_BODY.replace(
+			`- Done line: PR-template validation rejects incomplete evidence while keeping the release scope bounded.
+- Explicit non-goals: Changing GitHub branch protection or expanding adjacent workflow gates.
+- Allowed polish: Template wording that improves reviewer clarity without adding new evidence systems.
+- Deferred polish / follow-up work: none; fixture-only validation change.
+- Promotion rule: New validators or adjacent workflow changes require a follow-up issue unless required for this gate to stay truthful.`,
+			`- Done line:
+- Explicit non-goals:
+- Allowed polish:
+- Deferred polish / follow-up work:
+- Promotion rule:
+
+<!-- Guidance comment that must not satisfy blank release-boundary fields. -->`,
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual(
+			expect.arrayContaining([
+				"Replace release boundary field placeholder: Done line",
+				"Replace release boundary field placeholder: Explicit non-goals",
+				"Replace release boundary field placeholder: Allowed polish",
+				"Replace release boundary field placeholder: Deferred polish / follow-up work",
+				"Replace release boundary field placeholder: Promotion rule",
+			]),
+		);
+	});
+
 	it("fails linked issue bodies without acceptance IDs or preparatory relationship", () => {
 		const body = VALID_BODY.replace(
 			"- Acceptance trace: JSC-999 SA-999-001 -> src/lib/pr-template-validator.test.ts.",
