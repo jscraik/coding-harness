@@ -1,4 +1,4 @@
-import { REQUIRED_WORK_FIELDS } from "../pr-template-validator-rules.js";
+import { REQUIRED_WORK_FIELDS, REQUIRED_RELEASE_BOUNDARY_FIELDS } from "../pr-template-validator-rules.js";
 
 type PullRequestTemplateOptions = {
 	agentBranchPrefix: string;
@@ -15,19 +15,11 @@ function renderRequiredWorkFieldLines(): string {
 			return `${line}\n<!-- Cite durable session/run/runtime-card references when available. Do not paste raw transcripts, prompts, secrets, or bulky telemetry. -->`;
 		}
 		if (field.label === "Durable evidence map") {
-			return `${line}\n<!-- For evidence-heavy PRs, include a compact index rather than bulky logs.
-Use repo-relative paths only. Do not paste raw transcripts, secrets, bulky
-telemetry, or local absolute paths.
+			return `${line}\n<!-- ${field.placeholder}
 
 | Artifact | Durable reference | Schema / version | Producer command | Digest | Replay command | Authority |
 | --- | --- | --- | --- | --- | --- | --- |
-|  |  |  |  |  |  | \`source-of-truth\` / \`retained context\` |
-
-\`source-of-truth\` means the artifact is authoritative for a deterministic
-lane claim. \`retained context\` means the artifact supports review or
-traceability but does not prove behavior by itself. For large PRs, prefer
-splitting source/schema/CLI/validator changes from retained evidence fixtures
-or generated context instead of splitting only by feature area. -->`;
+|  |  |  |  |  |  | \`source-of-truth\` / \`retained context\` | -->`;
 		}
 		return line;
 	}).join("\n");
@@ -61,12 +53,15 @@ transcripts, bulky telemetry, or local absolute paths.`;
 
 /** Render the reusable PR release-boundary guidance section. */
 function renderReleaseBoundarySection(): string {
+	const releaseModeField = REQUIRED_RELEASE_BOUNDARY_FIELDS.find(
+		(field) => field.label === "Release mode",
+	);
 	return `## Release Boundary
 
 Choose the release standard before listing proof. Use \`n.a.\` with a concrete
 reason only when the change has no release-stage meaning.
 
-- Release mode: Prototype / Portfolio / Product / Harness / n.a. because reason
+- Release mode: ${releaseModeField?.placeholder}
 - Done line:
 - Explicit non-goals:
 - Allowed polish:
