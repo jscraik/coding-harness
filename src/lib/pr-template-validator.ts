@@ -51,7 +51,13 @@ function normalizeFieldBlockValue(value: string): string {
 		normalized = inlineCodeMatch[1] ?? "";
 	}
 
-	return normalized.replace(/<!--\s*[\s\S]*?\s*-->/g, "").trim();
+	let previous: string;
+	do {
+		previous = normalized;
+		normalized = normalized.replace(/<!--\s*[\s\S]*?\s*-->/g, "");
+	} while (normalized !== previous);
+
+	return normalized.trim();
 }
 
 const RELEASE_MODE_PATTERN = /^(?:Prototype|Portfolio|Product|Harness)$/i;
