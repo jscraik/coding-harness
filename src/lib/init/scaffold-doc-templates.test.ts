@@ -339,7 +339,9 @@ describe("document scaffold templates", () => {
 		expect(template).toContain("## Release Boundary");
 		for (const field of REQUIRED_RELEASE_BOUNDARY_FIELDS) {
 			expect(template).toContain(`- ${field.label}:`);
-			if (field.label !== "Release mode") {
+			if (field.label === "Release mode") {
+				expect(template).toContain(`- ${field.label}: ${field.placeholder}`);
+			} else {
 				expect(template).not.toContain(
 					`- ${field.label}: ${field.placeholder}`,
 				);
