@@ -1,4 +1,7 @@
-import { REQUIRED_WORK_FIELDS } from "../pr-template-validator-rules.js";
+import {
+	REQUIRED_WORK_FIELDS,
+	REQUIRED_RELEASE_BOUNDARY_FIELDS,
+} from "../pr-template-validator-rules.js";
 
 type PullRequestTemplateOptions = {
 	agentBranchPrefix: string;
@@ -11,10 +14,17 @@ type PullRequestTemplateOptions = {
 function renderRequiredWorkFieldLines(): string {
 	return REQUIRED_WORK_FIELDS.map((field) => {
 		const line = `- ${field.label}:`;
-		if (field.label !== "AI session / traceability") {
-			return line;
+		if (field.label === "AI session / traceability") {
+			return `${line}\n<!-- Cite durable session/run/runtime-card references when available. Do not paste raw transcripts, prompts, secrets, or bulky telemetry. -->`;
 		}
-		return `${line}\n<!-- Cite durable session/run/runtime-card references when available. Do not paste raw transcripts, prompts, secrets, or bulky telemetry. -->`;
+		if (field.label === "Durable evidence map") {
+			return `${line}\n<!-- ${field.placeholder}
+
+| Artifact | Durable reference | Schema / version | Producer command | Digest | Replay command | Authority |
+| --- | --- | --- | --- | --- | --- | --- |
+|  |  |  |  |  |  | \`source-of-truth\` / \`retained context\` | -->`;
+		}
+		return line;
 	}).join("\n");
 }
 
@@ -44,6 +54,35 @@ state the blocker and the nearest fallback. Do not paste secrets, raw
 transcripts, bulky telemetry, or local absolute paths.`;
 }
 
+/** Render the reusable PR release-boundary guidance section. */
+function renderReleaseBoundarySection(): string {
+	const releaseModeField = REQUIRED_RELEASE_BOUNDARY_FIELDS.find(
+		(field) => field.label === "Release mode",
+	);
+	return `## Release Boundary
+
+Choose the release standard before listing proof. Use \`n.a.\` with a concrete
+reason only when the change has no release-stage meaning.
+
+- Release mode: ${releaseModeField?.placeholder}
+- Done line:
+- Explicit non-goals:
+- Allowed polish:
+- Deferred polish / follow-up work:
+- Promotion rule:
+
+<!--
+Prototype: prove the idea has value. Core path works; known gaps are listed; no unsafe behavior.
+Portfolio: credible, coherent, navigable, and explainable. Demo, screenshots, and trade-offs matter more than infrastructure hardening.
+Product: reusable and maintained. Tests, docs, release path, versioning, and supportable architecture are expected.
+Harness: trust boundary or repeatable proof. Deterministic checks, receipts, failure behavior, and evidence boundaries are expected.
+
+Promotion rule should name what would force this PR into a more serious mode.
+If a new improvement does not fit the selected release mode or done line, defer
+it to follow-up work instead of absorbing it into this PR.
+-->`;
+}
+
 /**
  * Render the GitHub pull request template used for downstream repositories.
  *
@@ -70,6 +109,8 @@ or local absolute paths.
 - Motivation:
 - Reasoning:
 - Chosen approach:
+
+${renderReleaseBoundarySection()}
 
 ## Why This Change Was Made
 

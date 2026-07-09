@@ -7,6 +7,15 @@ const VALID_BODY = `## What Problem This Solves
 - Reasoning: Maintainers can review intent faster when motivation is captured near the top of the PR.
 - Chosen approach: Add a required Motivation section to the template and validator instead of relying on optional prose in Summary.
 
+## Release Boundary
+
+- Release mode: Harness
+- Done line: PR-template validation rejects incomplete evidence while keeping the release scope bounded.
+- Explicit non-goals: Changing GitHub branch protection or expanding adjacent workflow gates.
+- Allowed polish: Template wording that improves reviewer clarity without adding new evidence systems.
+- Deferred polish / follow-up work: none; fixture-only validation change.
+- Promotion rule: New validators or adjacent workflow changes require a follow-up issue unless required for this gate to stay truthful.
+
 ## Why This Change Was Made
 
 - Problem: PR bodies could omit required validation evidence.
@@ -98,6 +107,74 @@ describe("validatePrTemplateBody", () => {
 		const errors = validatePrTemplateBody(MISSING_MOTIVATION_BODY);
 		expect(errors).toContain(
 			"Missing required section: ## What Problem This Solves",
+		);
+	});
+
+	it("fails when the release boundary section is missing", () => {
+		const body = VALID_BODY.replace(
+			/## Release Boundary\n[\s\S]*?(?=## )/g,
+			"",
+		);
+		const errors = validatePrTemplateBody(body);
+		expect(errors).toContain("Missing required section: ## Release Boundary");
+		expect(errors).toContain("Missing release boundary block.");
+	});
+
+	it("fails when release mode is left as the template option list", () => {
+		const body = VALID_BODY.replace(
+			"- Release mode: Harness",
+			"- Release mode: Prototype / Portfolio / Product / Harness / n.a. because reason",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Release mode must be Prototype, Portfolio, Product, Harness, or `n.a. because <reason>`.",
+		);
+	});
+
+	it("accepts release mode n.a. when it includes a concrete reason", () => {
+		const body = VALID_BODY.replace(
+			"- Release mode: Harness",
+			"- Release mode: n.a. because this is a mechanical lockfile-only refresh",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
+	it("fails when release mode n.a. keeps the placeholder reason", () => {
+		const body = VALID_BODY.replace(
+			"- Release mode: Harness",
+			"- Release mode: n.a. because reason",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Release mode must be Prototype, Portfolio, Product, Harness, or `n.a. because <reason>`.",
+		);
+	});
+
+	it("fails when release-boundary fields are blank before guidance comments", () => {
+		const body = VALID_BODY.replace(
+			`- Done line: PR-template validation rejects incomplete evidence while keeping the release scope bounded.
+- Explicit non-goals: Changing GitHub branch protection or expanding adjacent workflow gates.
+- Allowed polish: Template wording that improves reviewer clarity without adding new evidence systems.
+- Deferred polish / follow-up work: none; fixture-only validation change.
+- Promotion rule: New validators or adjacent workflow changes require a follow-up issue unless required for this gate to stay truthful.`,
+			`- Done line:
+- Explicit non-goals:
+- Allowed polish:
+- Deferred polish / follow-up work:
+- Promotion rule:
+
+<!-- Guidance comment that must not satisfy blank release-boundary fields. -->`,
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual(
+			expect.arrayContaining([
+				"Replace release boundary field placeholder: Done line",
+				"Replace release boundary field placeholder: Explicit non-goals",
+				"Replace release boundary field placeholder: Allowed polish",
+				"Replace release boundary field placeholder: Deferred polish / follow-up work",
+				"Replace release boundary field placeholder: Promotion rule",
+			]),
 		);
 	});
 

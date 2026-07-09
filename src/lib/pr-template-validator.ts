@@ -8,6 +8,7 @@ import {
 	PREPARATORY_LINKED_ISSUE_TRACE_PATTERN,
 	REQUIRED_BEHAVIOR_PROOF_FIELDS,
 	REQUIRED_MOTIVATION_FIELDS,
+	REQUIRED_RELEASE_BOUNDARY_FIELDS,
 	REQUIRED_SECTIONS,
 	REQUIRED_TESTING_FIELDS,
 	REQUIRED_WORK_FIELDS,
@@ -37,23 +38,25 @@ function normalizeFieldValue(value: string): string {
 
 	return normalized.replace(/\s+/g, " ").trim();
 }
-
+/** Normalize a multi-line PR-template field value and drop guidance comments. */
 function normalizeFieldBlockValue(value: string): string {
 	let normalized = value.trim();
-
 	const fencedMatch = normalized.match(/^```[\w-]*\s*([\s\S]*?)\s*```$/);
 	if (fencedMatch) {
 		normalized = fencedMatch[1] ?? "";
 	}
-
 	const inlineCodeMatch = normalized.match(/^`([^`]+)`$/);
 	if (inlineCodeMatch) {
 		normalized = inlineCodeMatch[1] ?? "";
 	}
-
+	while (/<!--\s*[\s\S]*?\s*-->/.test(normalized)) {
+		normalized = normalized.replace(/<!--\s*[\s\S]*?\s*-->/g, "");
+	}
 	return normalized.trim();
 }
-
+const RELEASE_MODE_PATTERN = /^(?:Prototype|Portfolio|Product|Harness)$/i;
+const NOT_APPLICABLE_RELEASE_MODE_PATTERN =
+	/^(?:n\.a\.|n\/a|not applicable)\s+because\s+(?!reason\b)(?!<reason>\b)\S.{6,}\S$/i;
 /** Extract the markdown content below a named PR-template heading. */
 function extractSectionBody(body: string, heading: string): string | null {
 	const escapedHeading = heading.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
@@ -135,17 +138,15 @@ function collectFieldErrors(
 	const errors: string[] = [];
 
 	for (const field of fields) {
-		const escapedLabel = field.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-		const pattern = new RegExp(`^-\\s*${escapedLabel}:\\s*(.+)$`, "im");
-		const match = sectionBody.match(pattern);
-		if (!match) {
+		const value = extractFieldBlockValue(body, sectionHeading, field.label);
+		if (value === null) {
 			errors.push(`Missing required ${errorPrefix} field: ${field.label}`);
 			continue;
 		}
 
-		const value = normalizeFieldValue(match[1] ?? "");
+		const normalizedValue = normalizeFieldValue(value);
 		const placeholder = normalizeFieldValue(field.placeholder);
-		if (value.length === 0 || value === placeholder) {
+		if (normalizedValue.length === 0 || normalizedValue === placeholder) {
 			errors.push(`Replace ${errorPrefix} field placeholder: ${field.label}`);
 		}
 	}
@@ -184,6 +185,36 @@ function collectMotivationFieldErrors(body: string): string[] {
 		REQUIRED_MOTIVATION_FIELDS,
 		"motivation",
 	);
+}
+
+/** Collect missing release-boundary fields from the pull request body. */
+function collectReleaseBoundaryFieldErrors(body: string): string[] {
+	const errors = collectFieldErrors(
+		body,
+		"## Release Boundary",
+		REQUIRED_RELEASE_BOUNDARY_FIELDS,
+		"release boundary",
+	);
+	const releaseMode = extractFieldBlockValue(
+		body,
+		"## Release Boundary",
+		"Release mode",
+	);
+	if (releaseMode === null) {
+		return errors;
+	}
+
+	const normalizedReleaseMode = normalizeFieldValue(releaseMode);
+	if (
+		!RELEASE_MODE_PATTERN.test(normalizedReleaseMode) &&
+		!NOT_APPLICABLE_RELEASE_MODE_PATTERN.test(normalizedReleaseMode)
+	) {
+		errors.push(
+			"Release mode must be Prototype, Portfolio, Product, Harness, or `n.a. because <reason>`.",
+		);
+	}
+
+	return errors;
 }
 
 /**
@@ -272,6 +303,7 @@ function issueHasPreparatoryNoCompletionTrace(
 	);
 }
 
+/** Extract and normalize a named field from a bounded PR-template section. */
 function extractFieldBlockValue(
 	body: string,
 	sectionHeading: string,
@@ -284,7 +316,7 @@ function extractFieldBlockValue(
 
 	const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 	const pattern = new RegExp(
-		`^-\\s*${escapedLabel}:\\s*([\\s\\S]*?)(?=\\r?\\n-\\s*[A-Za-z][^\\n:]{0,80}:|\\r?\\n##\\s|(?![\\s\\S]))`,
+		`^-\\s*${escapedLabel}:[ \\t]*([\\s\\S]*?)(?=\\r?\\n-\\s*[A-Za-z][^\\n:]{0,80}:|\\r?\\n##\\s|(?![\\s\\S]))`,
 		"im",
 	);
 	const match = sectionBody.match(pattern);
@@ -350,6 +382,7 @@ export function validatePrTemplateBody(body: string): string[] {
 	}
 
 	errors.push(...collectMotivationFieldErrors(body));
+	errors.push(...collectReleaseBoundaryFieldErrors(body));
 	errors.push(...collectWorkPerformedFieldErrors(body));
 	errors.push(
 		...collectLinkedIssueRelationshipErrors(body, extractFieldBlockValue),

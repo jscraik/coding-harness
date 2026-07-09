@@ -10,6 +10,7 @@ import {
 import {
 	REQUIRED_BEHAVIOR_PROOF_FIELDS,
 	REQUIRED_MOTIVATION_FIELDS,
+	REQUIRED_RELEASE_BOUNDARY_FIELDS,
 	REQUIRED_WORK_FIELDS,
 } from "../pr-template-validator-rules.js";
 
@@ -164,6 +165,30 @@ function fillRenderedPullRequestTemplate(template: string): string {
 			`- Chosen approach: ${completedMotivationValues.get("Chosen approach")}`,
 		)
 		.replace(
+			"- Release mode: Prototype / Portfolio / Product / Harness / n.a. because reason",
+			"- Release mode: Harness",
+		)
+		.replace(
+			"- Done line:",
+			"- Done line: Generated PR templates satisfy the validator without broadening adjacent workflow gates.",
+		)
+		.replace(
+			"- Explicit non-goals:",
+			"- Explicit non-goals: Changing branch protection or release policy.",
+		)
+		.replace(
+			"- Allowed polish:",
+			"- Allowed polish: Template wording that improves reviewer clarity.",
+		)
+		.replace(
+			"- Deferred polish / follow-up work:",
+			"- Deferred polish / follow-up work: none for this fixture.",
+		)
+		.replace(
+			"- Promotion rule:",
+			"- Promotion rule: New validators or workflow changes require a follow-up issue unless required for template truth.",
+		)
+		.replace(
 			"- Problem:",
 			"- Problem: Generated PR templates could drift from validator contracts.",
 		)
@@ -221,6 +246,10 @@ function fillRenderedPullRequestTemplate(template: string): string {
 	}
 
 	body = body
+		.replace(
+			"- regression_test_plan:",
+			"- regression_test_plan: Render the scaffolded PR template and validate the completed fixture against pr-template-gate.",
+		)
 		.replace(
 			"- verification_commands:",
 			"- verification_commands: pnpm vitest run src/lib/init/scaffold-doc-templates.test.ts",
@@ -307,6 +336,17 @@ describe("document scaffold templates", () => {
 		for (const field of REQUIRED_MOTIVATION_FIELDS) {
 			expect(template).toContain(`- ${field.label}:`);
 		}
+		expect(template).toContain("## Release Boundary");
+		for (const field of REQUIRED_RELEASE_BOUNDARY_FIELDS) {
+			expect(template).toContain(`- ${field.label}:`);
+			if (field.label === "Release mode") {
+				expect(template).toContain(`- ${field.label}: ${field.placeholder}`);
+			} else {
+				expect(template).not.toContain(
+					`- ${field.label}: ${field.placeholder}`,
+				);
+			}
+		}
 		expect(template).toContain("## Behavior Proof");
 		expect(template).toContain("Behavior proof is separate from unit tests");
 		expect(template).toContain("regression_test_plan");
@@ -319,6 +359,9 @@ describe("document scaffold templates", () => {
 			expect(template).toContain(`- ${field.label}:`);
 			expect(template).not.toContain(`- ${field.label}: ${field.placeholder}`);
 		}
+		expect(template).toContain(
+			"| Artifact | Durable reference | Schema / version | Producer command | Digest | Replay command | Authority |",
+		);
 		for (const field of REQUIRED_BEHAVIOR_PROOF_FIELDS) {
 			expect(template).toContain(`- ${field.label}:`);
 			expect(template).not.toContain(`- ${field.label}: ${field.placeholder}`);

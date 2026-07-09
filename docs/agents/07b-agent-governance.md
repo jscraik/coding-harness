@@ -352,8 +352,8 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   source-checkout public command proof, validation expectations, and anti-overfit
   criteria remain governed together
 - PR-template contract changes should keep local validation, GitHub PR body
-  structure, and reviewer handoff evidence synchronized so the work-performed
-  ledger remains enforceable before closeout
+  structure, and reviewer handoff evidence synchronized so the release boundary
+  and work-performed ledger remain enforceable before closeout
 - PR-template Behavior Proof changes should keep the source PR template,
   downstream scaffolded PR template, validator rules, README guidance, AGENTS
   guidance, and affected deep-module README files synchronized. Behavior Proof

@@ -1,5 +1,6 @@
 export const REQUIRED_SECTIONS = [
 	"## What Problem This Solves",
+	"## Release Boundary",
 	"## Why This Change Was Made",
 	"## Behavior Proof",
 	"## Work performed",
@@ -84,6 +85,38 @@ export const REQUIRED_MOTIVATION_FIELDS = [
 		label: "Chosen approach",
 		placeholder:
 			"explain why this approach was chosen over simpler, broader, or deferred alternatives",
+	},
+] as const;
+
+export const REQUIRED_RELEASE_BOUNDARY_FIELDS = [
+	{
+		label: "Release mode",
+		placeholder:
+			"Prototype / Portfolio / Product / Harness / n.a. because reason",
+	},
+	{
+		label: "Done line",
+		placeholder:
+			"state the bounded shipping condition for the selected release mode",
+	},
+	{
+		label: "Explicit non-goals",
+		placeholder:
+			"list the work this PR is deliberately not absorbing, or `none` with reason",
+	},
+	{
+		label: "Allowed polish",
+		placeholder: "list polish allowed in this PR, or `none` with reason",
+	},
+	{
+		label: "Deferred polish / follow-up work",
+		placeholder:
+			"list polish or adjacent work intentionally deferred, or `none` with reason",
+	},
+	{
+		label: "Promotion rule",
+		placeholder:
+			"name what would justify promoting this PR into a more serious mode or follow-up issue",
 	},
 ] as const;
 
@@ -222,7 +255,7 @@ export const REQUIRED_WORK_FIELDS = [
 	{
 		label: "Durable evidence map",
 		placeholder:
-			"for evidence-heavy PRs, index each artifact with schema/version, producer command, digest, replay command, and authority (`source-of-truth` or `retained context`); classify every local-only artifact reference as tracked receipt, PR comment, CI artifact URL, runtime-card/evidence-bundle ref, or `n.a.` with reason; use repo-relative paths only",
+			"for evidence-heavy PRs, index each artifact in the compact table with a durable reference, schema/version, producer command, digest, replay command, and authority (`source-of-truth` or `retained context`); use `n.a.` with reason when no evidence map is needed; use repo-relative paths only",
 	},
 	{
 		label: "Runtime impact",
