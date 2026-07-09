@@ -1,4 +1,7 @@
-import { REQUIRED_WORK_FIELDS, REQUIRED_RELEASE_BOUNDARY_FIELDS } from "../pr-template-validator-rules.js";
+import {
+	REQUIRED_WORK_FIELDS,
+	REQUIRED_RELEASE_BOUNDARY_FIELDS,
+} from "../pr-template-validator-rules.js";
 
 type PullRequestTemplateOptions = {
 	agentBranchPrefix: string;

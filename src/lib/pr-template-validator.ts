@@ -38,28 +38,22 @@ function normalizeFieldValue(value: string): string {
 
 	return normalized.replace(/\s+/g, " ").trim();
 }
+/** Normalize a multi-line PR-template field value and drop guidance comments. */
 function normalizeFieldBlockValue(value: string): string {
 	let normalized = value.trim();
-
 	const fencedMatch = normalized.match(/^```[\w-]*\s*([\s\S]*?)\s*```$/);
 	if (fencedMatch) {
 		normalized = fencedMatch[1] ?? "";
 	}
-
 	const inlineCodeMatch = normalized.match(/^`([^`]+)`$/);
 	if (inlineCodeMatch) {
 		normalized = inlineCodeMatch[1] ?? "";
 	}
-
-	let previous: string;
-	do {
-		previous = normalized;
+	while (/<!--\s*[\s\S]*?\s*-->/.test(normalized)) {
 		normalized = normalized.replace(/<!--\s*[\s\S]*?\s*-->/g, "");
-	} while (normalized !== previous);
-
+	}
 	return normalized.trim();
 }
-
 const RELEASE_MODE_PATTERN = /^(?:Prototype|Portfolio|Product|Harness)$/i;
 const NOT_APPLICABLE_RELEASE_MODE_PATTERN =
 	/^(?:n\.a\.|n\/a|not applicable)\s+because\s+(?!reason\b)(?!<reason>\b)\S.{6,}\S$/i;
@@ -309,6 +303,7 @@ function issueHasPreparatoryNoCompletionTrace(
 	);
 }
 
+/** Extract and normalize a named field from a bounded PR-template section. */
 function extractFieldBlockValue(
 	body: string,
 	sectionHeading: string,
