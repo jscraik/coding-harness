@@ -25,6 +25,7 @@ validated_by:
 depends_on:
   - docs/adr/004-synaipse-agent-native-delivery-control-plane.md
   - docs/roadmap/north-star.md
+  - .harness/research/audits/2026-07-11-synaipse-consolidation-and-codex-boundary-audit.md
 title: SynAIpse Agent-Native Delivery Control Plane v1
 type: architecture
 status: accepted
@@ -33,6 +34,7 @@ origin: Jamie steering plus 2026-07-11 coding-harness forensic audit
 risk: high
 spec_depth: full
 last_validated: 2026-07-11
+tracking_issue: JSC-441
 ---
 
 # SynAIpse Agent-Native Delivery Control Plane v1
@@ -75,6 +77,10 @@ harness next --json
 
 Other commands are internal lifecycle operations, bounded administration,
 provider adapters, or temporary compatibility surfaces.
+
+Linear issue `JSC-441` admits publication of the consolidation plan and Phase
+0 characterization. It does not admit runtime deletion or refactoring; the
+first implementation slice requires its own Linear admission and PR.
 
 ## Problem And Outcome
 
@@ -376,8 +382,10 @@ deployment health.
 | Prioritization and unique admitted classes | Aikido | Advisory by default; only admitted unique critical classes block. |
 | Local/product/QA status | Constrained `gh-signoff` adapter | Bind to SHA; prohibit `-f`, `install`, and `uninstall`. |
 
-SynAIpse remains branch-protection authority. Provider fallback must be
-pre-authorized or treated as a Vital Decision.
+The target repository owns merge-policy intent, GitHub owns observed
+branch-protection and ruleset state, and SynAIpse may normalize, verify, or
+apply that policy only under admitted external-mutation authority. Provider
+fallback must be pre-authorized or treated as a Vital Decision.
 
 ## Jamie Core
 
@@ -437,6 +445,12 @@ routine command count, packet count, required files, and provider overlap.
 ## Consolidation Targets
 
 These are migration targets, not immediate deletion authority:
+
+The command-by-command and code-tree disposition ledger lives in
+`.harness/research/audits/2026-07-11-synaipse-consolidation-and-codex-boundary-audit.md`.
+That audit is the implementation decision input for keep, deepen, merge,
+delegate, extract, and delete work; this specification remains the canonical
+product and authority contract.
 
 | Surface | Target | Retirement proof |
 | --- | --- | --- |
