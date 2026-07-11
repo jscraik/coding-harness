@@ -1,4 +1,6 @@
 /** Effect classes that an agent must consider before invoking a command. */
+import { UI_FAST_EFFECTS } from "./command-invocation-effects-ui.js";
+
 export type CommandEffectClass =
 	| "pure_read"
 	| "writes_artifact"
@@ -396,4 +398,3 @@ export function getCommandInvocationEffects(
 		}),
 	];
 }
-import { UI_FAST_EFFECTS } from "./command-invocation-effects-ui.js";
