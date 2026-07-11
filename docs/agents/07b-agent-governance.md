@@ -498,6 +498,12 @@ Every agent handoff should include:
   review-gate alignment decisions live at
   `.harness/guardrails/north-star/alignment-decision.json`.
 
+Agent-facing responses follow the `Communication defaults` in `AGENTS.md`:
+lead with the verdict and its caveat, keep connected reasoning in direct
+technical prose, and make the mechanism and consequence explicit. Repository
+contracts, requested output formats, strict JSON, review schemas, and artifact
+templates take precedence over those defaults.
+
 When executable behavior changes, broad gates are necessary but not sufficient
 on their own. Run the smallest real executable path that exercises the exact
 

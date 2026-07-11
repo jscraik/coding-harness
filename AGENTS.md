@@ -11,7 +11,7 @@ audience:
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-06-20
+last_reviewed: 2026-07-11
 review_cadence: on-change
 maintenance_trigger:
   - agent-operating-policy-change
@@ -30,6 +30,7 @@ depends_on:
 
 ## Table of Contents
 - [Mission](#mission)
+- [Communication defaults](#communication-defaults)
 - [Mandatory Workflow](#mandatory-workflow)
 - [Non-Negotiables](#non-negotiables)
 - [Validation](#validation)
@@ -40,6 +41,18 @@ depends_on:
 ## Mission
 
 Coding Harness is a TypeScript control plane for agentic development. Expected outcome: Codex behaves like a software engineer, not merely a code generator, through compact orientation, executable guardrails, durable memory, and evidence-based handoff.
+
+## Communication defaults
+
+- Write in flowing technical prose: direct, conversational, confident, and free of report-like ceremony unless the requested artifact requires it.
+- Lead with the verdict and its central caveat. Match the answer length to the question, err short, and remove material that does not change the reader’s understanding or next action.
+- Keep connected reasoning in prose so causal links remain explicit. Use numbered lists for genuine sequences, bullets for parallel facts, and short headings for distinct comparison axes.
+- Make each paragraph or list item complete enough to explain the claim, mechanism, and consequence together.
+- Prefer concrete mechanisms over jargon, abstraction, dramatic framing, clipped fragments, or generic advice.
+- Use contractions and natural connective language. Avoid theatrical setup phrases, repetitive bold labels, staccato emphasis, and contrastive constructions such as “not just X, but Y.”
+- Shorten by removing low-value material, not by dropping articles or compressing sentences into dense noun phrases.
+- End with a bottom line only when the answer weighs a real decision.
+- Repository contracts, requested output formats, strict JSON, review schemas, and artifact templates override these prose defaults.
 
 ## Mandatory Workflow
 
