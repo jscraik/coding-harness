@@ -12,7 +12,7 @@
 				"commands",
 				"--json"
 			],
-			"expectedSchemaVersion": "harness-command-catalog/v3",
+			"expectedSchemaVersion": "harness-command-catalog/v4",
 			"schemaPath": "contracts/command-catalog.schema.json",
 			"examplePath": "contracts/examples/command-catalog.example.json",
 			"liveValidation": {

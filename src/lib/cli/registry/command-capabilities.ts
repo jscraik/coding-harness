@@ -4,6 +4,12 @@ import {
 	FIRST_CONTACT_COMMAND_NAMES,
 } from "./command-agent-catalog-rules.js";
 import {
+	type CommandInvocationEffect,
+	getCommandEffectCharacterization,
+	getCommandInvocationEffects,
+	getInvocationMutability,
+} from "./command-invocation-effects.js";
+import {
 	AGENT_MODE_BY_NAME,
 	COMMAND_CATEGORY_BY_NAME,
 	COMMAND_TIER_BY_NAME,
@@ -16,9 +22,7 @@ import {
 	SAFE_FIRST_ALTERNATIVES_BY_NAME,
 	WRITE_COMMANDS,
 } from "./command-capability-rules.js";
-
-export const COMMAND_CATALOG_SCHEMA_VERSION = "harness-command-catalog/v3";
-
+export const COMMAND_CATALOG_SCHEMA_VERSION = "harness-command-catalog/v4";
 /** High-level grouping used by command help and machine-readable catalogs. */
 export type CommandCategory =
 	| "discovery"
@@ -28,7 +32,6 @@ export type CommandCategory =
 	| "pilot-remediation"
 	| "drift-search-evidence"
 	| "uncategorized";
-
 export const COMMAND_CATEGORY_ORDER = [
 	"discovery",
 	"bootstrap-governance",
@@ -38,7 +41,6 @@ export const COMMAND_CATEGORY_ORDER = [
 	"drift-search-evidence",
 	"uncategorized",
 ] as const satisfies readonly CommandCategory[];
-
 export const COMMAND_CATEGORY_LABELS: Readonly<
 	Record<CommandCategory, string>
 > = {
@@ -50,22 +52,16 @@ export const COMMAND_CATEGORY_LABELS: Readonly<
 	"drift-search-evidence": "Drift, Search & Evidence",
 	uncategorized: "Other",
 };
-
 /** Whether a command is expected to mutate the repository or external state. */
 export type CommandMutability = "read" | "write";
-
 /** How safely an agent can retry a command after failure or interruption. */
 export type CommandRetryability = "safe" | "conditional" | "manual";
-
 /** Default discovery tier for human help and agent routing. */
 export type CommandTier = "cockpit" | "domain" | "plumbing" | "legacy";
-
 /** Primary consumer for a command capability. */
 export type CommandPrimaryAudience = "agent" | "human" | "both";
-
 /** Cockpit commands that may orchestrate or recommend expert commands. */
 export type CommandOrchestrator = "next" | "pr-ready" | "fix-review" | "learn";
-
 /** Agent moment served by a command in the public command surface. */
 export type CommandAgentMode =
 	| "orient"
@@ -76,14 +72,12 @@ export type CommandAgentMode =
 	| "handoff"
 	| "learn"
 	| "admin";
-
 /** Bounded catalog modes exposed by `harness commands --json --for-agent --mode`. */
 export type CommandAgentCatalogMode =
 	| "orient"
 	| "verify"
 	| "review"
 	| "handoff";
-
 /** Discovery layer where a command should appear by default. */
 export type CommandVisibility =
 	| "default"
@@ -92,8 +86,7 @@ export type CommandVisibility =
 	| "plumbing"
 	| "hidden"
 	| "legacy";
-
-/** Machine-readable capability metadata for one registry command. */
+/** Machine-readable command discovery metadata, including invocation effects. */
 export interface CommandCapability {
 	name: string;
 	aliases: string[];
@@ -103,6 +96,8 @@ export interface CommandCapability {
 	mutability: CommandMutability;
 	requiredFlags: string[];
 	expectedArtifacts: string[];
+	effectCharacterization: "characterized" | "legacy_uncharacterized";
+	invocationEffects: CommandInvocationEffect[];
 	retryability: CommandRetryability;
 	safeFirstAlternatives: string[];
 	tier: CommandTier;
@@ -111,7 +106,6 @@ export interface CommandCapability {
 	agentMode: CommandAgentMode;
 	visibility: CommandVisibility;
 }
-
 /** Versioned command capability catalog emitted by `harness commands --json`. */
 export interface CommandCapabilityCatalogDocument {
 	schemaVersion: typeof COMMAND_CATALOG_SCHEMA_VERSION;
@@ -119,13 +113,12 @@ export interface CommandCapabilityCatalogDocument {
 	commandCount: number;
 	commands: CommandCapability[];
 }
-
+/** Resolves the command names exposed for an agent catalog mode. */
 function getAgentCatalogCommandNames(
 	mode: CommandAgentCatalogMode | undefined,
 ): ReadonlySet<string> {
 	return new Set(AGENT_CATALOG_COMMAND_NAMES[mode ?? "default"]);
 }
-
 /** Parse the optional agent catalog phase mode from command arguments. */
 export function parseAgentCatalogMode(
 	args: readonly string[],
@@ -143,7 +136,6 @@ export function parseAgentCatalogMode(
 	}
 	return "invalid";
 }
-
 /**
  * Determine if a command belongs on first-contact agent surfaces.
  *
@@ -153,7 +145,6 @@ export function parseAgentCatalogMode(
 export function isFirstContactCommandName(name: string): boolean {
 	return FIRST_CONTACT_COMMAND_NAMES.has(name);
 }
-
 const AGENT_MODE_ORDER: Readonly<Record<CommandAgentMode, number>> = {
 	orient: 0,
 	plan: 1,
@@ -164,7 +155,6 @@ const AGENT_MODE_ORDER: Readonly<Record<CommandAgentMode, number>> = {
 	learn: 6,
 	admin: 7,
 };
-
 const AGENT_CATALOG_VISIBILITY_ORDER: Readonly<
 	Record<CommandVisibility, number>
 > = {
@@ -175,7 +165,7 @@ const AGENT_CATALOG_VISIBILITY_ORDER: Readonly<
 	hidden: 4,
 	legacy: 5,
 };
-
+/** Resolves a command category and rejects uncategorized development entries. */
 function getCommandCategory(name: string): CommandCategory {
 	const category = COMMAND_CATEGORY_BY_NAME[name];
 	if (!category) {
@@ -188,11 +178,7 @@ function getCommandCategory(name: string): CommandCategory {
 	}
 	return category;
 }
-
-function getCommandMutability(name: string): CommandMutability {
-	return WRITE_COMMANDS.has(name) ? "write" : "read";
-}
-
+/** Resolves the explicit retry rule or derives the conservative default. */
 function getCommandRetryability(
 	name: string,
 	mutability: CommandMutability,
@@ -201,7 +187,18 @@ function getCommandRetryability(
 	if (explicit) return explicit;
 	return mutability === "read" ? "safe" : "conditional";
 }
-
+/** Derives the safest retry classification from every characterized invocation. */
+function getInvocationRetryability(
+	effects: readonly CommandInvocationEffect[],
+): CommandRetryability {
+	if (effects.some((effect) => effect.retryPolicy === "manual"))
+		return "manual";
+	if (effects.some((effect) => effect.retryPolicy === "conditional")) {
+		return "conditional";
+	}
+	return "safe";
+}
+/** Resolves a command's default discovery tier. */
 function getCommandTier(name: string, category: CommandCategory): CommandTier {
 	const explicit = COMMAND_TIER_BY_NAME[name];
 	if (explicit) return explicit;
@@ -210,11 +207,11 @@ function getCommandTier(name: string, category: CommandCategory): CommandTier {
 	}
 	return "plumbing";
 }
-
+/** Resolves a command's primary audience. */
 function getCommandPrimaryAudience(name: string): CommandPrimaryAudience {
 	return PRIMARY_AUDIENCE_BY_NAME[name] ?? "both";
 }
-
+/** Resolves the agent mode for a command capability. */
 function getCommandAgentMode(
 	name: string,
 	category: CommandCategory,
@@ -237,6 +234,7 @@ function getCommandAgentMode(
 	return "orient";
 }
 
+/** Resolves the default discovery layer for a command capability. */
 function getCommandVisibility(
 	name: string,
 	tier: CommandTier,
@@ -251,13 +249,26 @@ function getCommandVisibility(
 	return "advanced";
 }
 
-/** Convert a command registry spec into agent-consumable capability metadata. */
+/** Translates a spec into catalog metadata and derives mutability from effects. */
 export function toCommandCapability(spec: CommandSpec): CommandCapability {
-	const mutability = getCommandMutability(spec.name);
+	const legacyMutability: CommandMutability = WRITE_COMMANDS.has(spec.name)
+		? "write"
+		: "read";
 	const category = getCommandCategory(spec.name);
-	const tier = getCommandTier(spec.name, category);
 	const primaryAudience = getCommandPrimaryAudience(spec.name);
 	const orchestratedBy = [...(ORCHESTRATED_BY_BY_NAME[spec.name] ?? [])];
+	const legacyRetryability = getCommandRetryability(
+		spec.name,
+		legacyMutability,
+	);
+	const invocationEffects = getCommandInvocationEffects(
+		spec.name,
+		legacyMutability,
+		legacyRetryability,
+	);
+	const mutability = getInvocationMutability(invocationEffects);
+	const retryability = getInvocationRetryability(invocationEffects);
+	const tier = getCommandTier(spec.name, category);
 	return {
 		name: spec.name,
 		aliases: [...(spec.aliases ?? [])],
@@ -267,7 +278,9 @@ export function toCommandCapability(spec: CommandSpec): CommandCapability {
 		mutability,
 		requiredFlags: [...(REQUIRED_FLAGS_BY_NAME[spec.name] ?? [])],
 		expectedArtifacts: [...(EXPECTED_ARTIFACTS_BY_NAME[spec.name] ?? [])],
-		retryability: getCommandRetryability(spec.name, mutability),
+		effectCharacterization: getCommandEffectCharacterization(spec.name),
+		invocationEffects,
+		retryability,
 		safeFirstAlternatives: [
 			...(SAFE_FIRST_ALTERNATIVES_BY_NAME[spec.name] ?? []),
 		],

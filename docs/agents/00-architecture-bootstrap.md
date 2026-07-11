@@ -56,6 +56,14 @@ For command-registry deep-module splits, keep the public command spec small,
 move action-specific option builders behind named internal adapter seams,
 refresh `AI/context/diagram-context.md`, and update README command-surface
 guidance when docs-gate reports a CLI-surface requirement.
+For truthful invocation-effect catalog changes, keep the public capability
+projection separate from the source-characterized effect declarations. Each
+declared invocation must identify its effect classes, targets, provider class,
+authority, retry policy, rollback, and expected evidence; derive the coarse
+read/write label from that declaration rather than maintaining a competing
+classification. Preserve a conservative legacy projection for commands that
+are not yet characterized, and make a diagnostic command's artifact writes an
+explicit opt-in so its default invocation remains safe for agent orientation.
 For validation-lock, hook, or local CI-equivalent guard changes that refresh
 `AI/context/diagram-context.md`, keep the generated `.diagram/` artifacts,
 this guide, `AGENTS.md`, and `docs/agents/07b-agent-governance.md`

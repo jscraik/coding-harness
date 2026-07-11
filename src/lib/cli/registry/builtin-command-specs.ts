@@ -40,6 +40,18 @@ export const BUILTIN_COMMAND_SPECS: CommandSpec[] = [
 	},
 ];
 
+/** Synchronous stdout boundary for machine-readable command catalog output. */
+export const COMMAND_CATALOG_OUTPUT = {
+	/** Writes catalog JSON and waits for a back-pressured stdout stream to drain. */
+	write(payload: string): void | Promise<void> {
+		if (process.stdout.write(payload)) return;
+		return new Promise((resolve, reject) => {
+			process.stdout.once("drain", resolve);
+			process.stdout.once("error", reject);
+		});
+	},
+};
+
 /** Create the registry command spec that emits the live command catalog. */
 export function createCommandsCatalogSpec(
 	getSpecs: () => CommandSpec[],
@@ -54,10 +66,11 @@ export function createCommandsCatalogSpec(
 	};
 }
 
+/** Builds and writes the command catalog response for the registry CLI flags. */
 function runCommandsCatalog(
 	args: readonly string[],
 	specs: CommandSpec[],
-): number {
+): number | Promise<number> {
 	const jsonFlag = args.includes("--json");
 	const forAgentFlag = args.includes("--for-agent");
 	const fullCatalogFlag = args.includes("--all") || args.includes("--plumbing");
@@ -75,8 +88,11 @@ function runCommandsCatalog(
 		specs,
 	);
 	if (jsonFlag) {
-		console.info(JSON.stringify(catalog));
-		return 0;
+		// `console.info` can lose a large catalog when stdout is a pipe and the
+		// process exits immediately. Write the JSON payload directly so the CLI
+		// remains a valid machine-readable contract for subprocess consumers.
+		const write = COMMAND_CATALOG_OUTPUT.write(`${JSON.stringify(catalog)}\n`);
+		return write instanceof Promise ? write.then(() => 0) : 0;
 	}
 	printCommandCatalog(catalog, forAgentFlag && !fullCatalogFlag);
 	return 0;

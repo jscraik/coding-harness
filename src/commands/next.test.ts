@@ -339,7 +339,7 @@ describe("runHarnessNext", () => {
 		);
 		expect(decision.requiredEvidence).toEqual([
 			"input:files",
-			"command-catalog:harness-command-catalog/v3",
+			"command-catalog:harness-command-catalog/v4",
 			"harness validation-plan --files src/commands/next.ts --json output",
 		]);
 		expect(decision.stopConditions).toEqual([
@@ -965,7 +965,7 @@ describe("runHarnessNext", () => {
 		);
 		expect(decision.requiredEvidence).toEqual([
 			"input:files",
-			"command-catalog:harness-command-catalog/v3",
+			"command-catalog:harness-command-catalog/v4",
 			"harness review-context --files docs/spec.md --json output",
 		]);
 		expect(decision.followUpCommands).toEqual([

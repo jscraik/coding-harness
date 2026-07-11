@@ -41,7 +41,7 @@
 						}
 					},
 					"expectedSchemaVersion": {
-						"enum": ["harness-command-catalog/v3", "harness-decision/v1"]
+						"enum": ["harness-command-catalog/v4", "harness-decision/v1"]
 					},
 					"schemaPath": {
 						"type": "string",
