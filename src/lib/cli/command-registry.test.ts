@@ -601,6 +601,13 @@ describe("getRegistryCommandCapabilities", () => {
 	});
 
 	it("every capability has required shape fields", () => {
+		const allowedEffectClasses = new Set([
+			"pure_read",
+			"writes_artifact",
+			"writes_repository",
+			"mutates_git",
+			"mutates_external",
+		]);
 		const capabilities = getRegistryCommandCapabilities();
 		for (const capability of capabilities) {
 			expect(typeof capability.name).toBe("string");
@@ -614,6 +621,11 @@ describe("getRegistryCommandCapabilities", () => {
 				capability.effectCharacterization,
 			);
 			expect(Array.isArray(capability.invocationEffects)).toBe(true);
+			for (const effect of capability.invocationEffects) {
+				for (const effectClass of effect.effectClasses) {
+					expect(allowedEffectClasses.has(effectClass)).toBe(true);
+				}
+			}
 			expect(capability.mutability).toBe(
 				capability.invocationEffects.every(
 					(effect) =>
