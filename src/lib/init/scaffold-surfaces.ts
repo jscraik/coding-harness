@@ -122,6 +122,8 @@ export function classifySurface(templatePath: string): ScaffoldSurface {
 	if (
 		templatePath === "CONTRIBUTING.md" ||
 		templatePath === "CODESTYLE.md" ||
+		templatePath === ".gitbook.yaml" ||
+		templatePath.startsWith("docs/public/") ||
 		templatePath === ".github/PULL_REQUEST_TEMPLATE.md"
 	) {
 		return "docs";
@@ -151,6 +153,7 @@ export function classifySurface(templatePath: string): ScaffoldSurface {
 		templatePath === ".harness/README.md" ||
 		templatePath === ".harness/active-artifacts.md" ||
 		templatePath === ".harness/artifact-provenance.json" ||
+		templatePath === ".harness/project-context-ref.json" ||
 		templatePath.startsWith(".harness/artifacts") ||
 		templatePath.startsWith("docs/goals/") ||
 		templatePath.startsWith(".harness/memory") ||

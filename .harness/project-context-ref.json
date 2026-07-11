@@ -1,0 +1,11 @@
+{
+	"schema_version": "synaipse-project-context-ref/v1",
+	"project_id": "coding-harness",
+	"registry": "jamie-brain-project-registry",
+	"catalog_required": true,
+	"gitbook": {
+		"required": true,
+		"source": "docs/public",
+		"state": "configured_unobserved"
+	}
+}

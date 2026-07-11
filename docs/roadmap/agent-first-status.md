@@ -1,10 +1,10 @@
 ---
-last_validated: 2026-07-04
+last_validated: 2026-07-11
 ---
 
 # Agent-First Status Matrix
 
-> Last updated: 2026-07-04
+> Last updated: 2026-07-11
 > Owner: Jamie Craik
 > Review cadence: Weekly
 
@@ -288,7 +288,7 @@ repo by hand first.
 | Level                          | Status     | Purpose                                                                                    | Proof Needed                                                                                                                        |
 | ------------------------------ | ---------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
 | Level 0: Diagnose only         | 📋 Planned | Inspect repo state with no writes.                                                         | `harness init --dry-run --json` reports stack, existing surfaces, conflicts, proposed writes, and rollback plan.                    |
-| Level 1: Thin operator surface | 📋 Planned | Let dropped-in agents self-bootstrap the minimum Codex orientation and validation mapping. | Existing `AGENTS.md`, scripts, CI, and PR templates are patched or skipped without overwrite; missing setup becomes named blockers. |
+| Level 1: Thin operator surface | 🔶 Partial | Let dropped-in agents self-bootstrap the minimum Codex orientation and validation mapping. | `harness init` now scaffolds the GitBook public-docs contract and a repo-owned private-context reference without writing to Jamie Brain; brownfield patch-or-skip proof remains outstanding. |
 | Level 2: Guardrails            | 🔶 Partial | Add executable checks for repeated PR/review failures.                                     | Metadata gates, rule lifecycle, review-context, and PR closeout evidence catch known failure classes before remote CI or merge.     |
 | Level 3: Runtime evidence      | 🔶 Partial | Feed current repo truth into `runtime-card`, `pr-closeout`, and `harness next`.            | Missing integrations degrade to `unknown`; available git/PR/CI/Linear/session evidence changes recommendations deterministically.   |
 | Level 4: Compounding memory    | 🔶 Partial | Convert failures into Project Brain, solutions, evals, and fixtures.                       | `he-reinforce` outputs map to durable rules only when evidence proves recurrence or resolution.                                     |

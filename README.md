@@ -158,7 +158,11 @@ harness contract validate
 harness health --json
 ```
 
-**Expected:** `harness init --track` creates harness.contract.json and .harness/ directory; `contract validate` reports zero validation errors; `health --json` shows all readiness checks passing.
+**Expected:** `harness init --track` creates `harness.contract.json`, the
+`.harness/` control plane, a logical project-context reference, and a
+GitBook-compatible `docs/public/` surface. `contract validate` reports zero
+validation errors; `node scripts/check-gitbook-readiness.mjs` checks the public
+documentation boundary; `health --json` reports repository readiness checks.
 **On failure:** For init issues, check file permissions and inspect validation output (developer); for health failures, check service logs or retry health checks (infra).
 
 `harness init` writes a valid `memory.json` even for repositories without a

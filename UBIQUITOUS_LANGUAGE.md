@@ -28,7 +28,31 @@ decision-log updates.
 | SynAIpse | The product and brand name for the AI Delivery Harness currently implemented by the coding-harness repository. Use this for external product language and concept docs. |
 | AI Delivery Harness | The product category and descriptor for SynAIpse: a governed system for moving AI-assisted software work from issue intake to merged main with evidence, review, and learning loops intact. |
 | Coding Harness | The TypeScript control-plane repository that governs agentic development, review workflows, and validation contracts. |
-| Lifecycle Harness | The issue-to-main operating model inside SynAIpse: Linear issue, spec, plan, implementation, local validation, review, PR polling, independent review, green checks, merge, main sync, and feedback-loop capture. |
+| Lifecycle Harness | The SynAIpse issue-to-main operating model: `Shape -> Admit -> Build -> Prove -> Review -> Integrate -> Improve`. Each transition requires current evidence and explicit authority; one stage or truth lane does not prove another. |
+| Jamie Core | The compact, versioned source for Jamie's CODESTYLE, mantra, taste, values, personal standards, authority preferences, and invariant working principles. It precedes the SynAIpse Baseline but does not replace target-repository domain truth. |
+| SynAIpse Baseline | The universal delivery policy inherited after Jamie Core: lifecycle contracts, truthful invocation effects, evidence and authority boundaries, `harness next --json`, adoption, improvement, and rollback. Optional capabilities require project admission. |
+| Shape | The lifecycle stage that turns an idea into a falsifiable outcome, acceptance evidence, non-goals, constraints, smallest mechanism, alternatives, rollback, and any Vital Decision. Shape does not create routine backlog. |
+| Admit | The lifecycle stage that gives merge-bound work a Linear owner or explicit exception, repository/branch/base, risk, authority, proof, independent review, rollback, and stop condition. |
+| Build | The lifecycle stage where Codex implements the smallest reversible mechanism under target-repository instructions and CODESTYLE. Ordinary engineering decisions remain with Codex. |
+| Prove | The lifecycle stage that gathers risk-proportionate local, integration, product, CLI, artifact, or generated-output evidence with exact commands and current SHA. |
+| Review | The lifecycle stage that uses current-SHA CodeRabbit evidence, valid-thread disposition, independent QA, security findings, taste, and residual risk to try to disprove the result. |
+| Integrate | The lifecycle stage that admits current-SHA PR, check, review, sign-off, and authority evidence, then observes merge and main sync as separate truth lanes. |
+| Improve | The lifecycle stage that turns observed friction or success into a classified, scoped, canary-tested, measured retain/change/consolidate/delete decision. |
+| Vital Decision | A decision reserved for Jamie because it changes the outcome or public commitment; destructive state; agent or provider authority; material recurring cost; privacy, security, legal, moral, or values posture; a policy waiver; strategic architecture or public compatibility; or a material trade-off unresolved by evidence and policy. |
+| Ordinary Engineering Decision | A reversible implementation, test, naming, refactor, tool, evidence-preserving repair, or recovery choice that Codex makes from repository policy without interrupting Jamie. |
+| Invocation Effect | The declared effect of an exact command invocation: `pure_read`, `writes_artifact`, `writes_repository`, `mutates_git`, or `mutates_external`, together with targets, authority, retry policy, evidence, and rollback. Command-level labels are insufficient when flags change effects. |
+| SynAIpse State | The `synaipse-state/v1` compact current-state projection emitted by `harness next --json`: repo/SHA, stage, authority, blockers by truth lane, admitted capabilities, evidence refs, one next action, invocation effects, freshness, and claim boundary. |
+| SynAIpse Transition | The `synaipse-transition/v1` record for a lifecycle transition, including from/to stage, current SHA, admitted/rejected evidence, policy, authority, blockers, waivers, decision time, and recovery. |
+| Improvement Case | The `synaipse-improvement-case/v1` feedback and disposal contract: observation, classification, sibling scope, candidates including deletion, selected mechanism, canary, measurement, disposition, owner, and retirement condition. |
+| Project Adoption | Observed `synaipse-project-adoption/v1` evidence that a canonical repository can use the universal core and admitted capabilities. Files or `.harness` directory presence alone do not prove adoption. |
+| SynAIpse Security Finding | The `synaipse-security-finding/v1` normalized record that gives one underlying finding one blocking owner, while preserving corroborating providers, suppression authority, expiry, Linear promotion, and disposition. |
+| SynAIpse Sign-off | The `synaipse-signoff/v1` current-SHA receipt for `signoff/local`, `signoff/product`, or `signoff/qa`. It does not grant branch-protection authority to `gh-signoff`. |
+| Universal Context Plane | The four-plane SynAIpse context architecture: Jamie Brain owns canonical project identity and governed catalog metadata; SynAIpse selects applicable refs; Codex retrieves selected sources; task snapshots preserve what governed admitted work. It is not a registry service or document-relocation feature. |
+| GitBook Projection | A public-safe presentation of repository-owned developer documentation. It records the source revision and publication result separately and never makes GitBook, Jamie Brain, or private context canonical. |
+| Context Catalog | The `synaipse-context-catalog/v1` project-scoped metadata interface over context IDs, kinds, authority, privacy, stages, requirements, lifecycle, providers, digests, and retention. The catalog, not its folder layout, is the agent interface. |
+| Context Reference | A `synaipse-context-ref/v1` logical pointer to a source. Product repositories use IDs/digests rather than Jamie-local paths or private bodies. |
+| Task Context Snapshot | The `synaipse-task-context/v1` Admit-time record of project/task identity, base SHA, outcome, non-goals, selected context refs/digests, proof, privacy, Vital Decisions, and refresh triggers. It is reproducibility evidence, not a new source of truth. |
+| Context Resolver | The first read-only SynAIpse selector that resolves project identity, stage, authority, privacy, lifecycle, freshness, and availability, then asks Codex to retrieve selected sources. |
 | Truth Lane | A separately observed source-of-truth lane such as local code, local validation, PR metadata, CI checks, review threads, tracker state, artifact evidence, merge readiness, or synced main. One lane does not prove another unless a current contract explicitly joins them. |
 | Claim Authority | The documented permission for a doc, artifact, gate, receipt, or external source to support a specific delivery claim. Claim authority must name freshness, source, head SHA when relevant, and the lane it proves. |
 | Guardrail | A durable standard, validator, schema, runbook, or review rule that prevents a repeated failure class from staying as chat-only guidance. |
@@ -77,7 +101,7 @@ decision-log updates.
 | Run Record | Durable run evidence under `artifacts/agent-runs/<runId>/`, including terminal manifests, event streams, and additive companion artifacts. |
 | Runtime Evidence | Structured evidence about what actually happened during a run, including profile, roots, permissions, sessions, traces, validation, review artifacts, blockers, and lifecycle state. |
 | Ablation Run | A controlled evaluation that removes a prompt, tool, context source, rule, gate, or workflow surface to prove whether behavior regresses or whether the removed surface was ceremony. |
-| Distillation | The compression of large evidence sets such as labels, rollouts, tool calls, review threads, traces, and feedback into smaller rules, fixtures, prompts, or gates that preserve the useful behavior. |
+| Distillation | The compression of large evidence sets such as labels, delivery runs, tool calls, review threads, traces, and feedback into smaller rules, fixtures, prompts, or gates that preserve the useful behavior. |
 | Organizational RLHF | The harness pattern of turning expert correction from onboarding, review, apprenticeship, incidents, and repeated work into evals, rules, memory, gates, and examples that shape future agent behavior. |
 | Systems Thinking | The operating habit of spotting recurring blockers, designing systematic ways for people or agents to overcome them, and explaining how code carries that leverage. |
 | Repeat-Feedback Admission | The stop-the-line process for handling high-signal steering the user has had to give more than once: infer the principle, search related surfaces, choose a durable destination, add an executable guard or tracked exception, and report the evidence before feature work resumes. |
@@ -135,6 +159,13 @@ decision-log updates.
 | --- | --- | --- |
 | "Coding Harness" in external product copy | SynAIpse | SynAIpse is the product and brand name; coding-harness remains the repository/package identity until a formal rename migration exists. |
 | "Lifecycle" by itself | Lifecycle Harness or issue-to-main lifecycle | Lifecycle is too broad to route safely without naming the operating model. |
+| "Jamie should choose" for a routine implementation detail | Ordinary Engineering Decision | Jamie is interrupted only when the Vital Decision definition applies. |
+| "The command is read-only" | Invocation Effect for the exact invocation | Flags and output modes can change effects; command-level labels can conceal writes. |
+| "The project has `.harness`, so it is adopted" | Project Adoption | Adoption requires observed entrypoint, provider, authority, canary, and rollback evidence. |
+| "Add another guardrail" | Improvement Case | Compare deletion, consolidation, and the smallest mechanism before adding surface area. |
+| "Sign-off means merge authority" | SynAIpse Sign-off plus Integrate authority | A commit status is evidence for one lane; standing integration authority remains separate. |
+| "Copy the spec into every repo" | Context Reference and Task Context Snapshot | Repositories keep executable truth and a logical ref; private planning context stays in its governed source. |
+| "Jamie Brain is required to build" | Universal Context Plane | Jamie Brain may govern Shape or Admit, but product builds and hosted CI remain independent. |
 | "Everything is green" | Truth Lane classification | Green local checks do not prove PR review, CI, tracker, merge readiness, or main-sync state. |
 | "The artifact proves it" | Claim Authority for the named lane | Artifacts are supporting evidence unless a contract says which claim family they can support. |
 | "Automation reminder" | Runbook-backed automation | Repeated automation behavior belongs in reviewed runbooks with cursors, stop conditions, and validation evidence. |
@@ -157,18 +188,27 @@ decision-log updates.
 | "Thin Surface. Strong Guardrails. Durable Memory. Simplicity / Minimalism. Self Improvement. Professional Output." | `North-Star Mnemonic` | Use this as the compact orientation phrase for the project, not as a replacement for the PR lead-time metric. |
 
 ## Relationships and Lifecycle
-1. User prompt enters with plain language.
-2. Agent maps wording through `Prompt translations`.
-3. Agent executes the correct `validation lane` with canonical wrappers.
-4. If multi-review is needed, run `review swarm` with `artifact-first review` outputs.
-5. Coordinator verifies all artifacts and reports any `coverage gap`.
-6. Final closeout includes exact command outcomes and blocker classification.
+
+1. `Shape` maps plain language through Jamie Core into a falsifiable outcome.
+2. `Admit` establishes Linear ownership, risk, evidence, authority, and stop conditions.
+3. `Build` lets Codex make Ordinary Engineering Decisions under target-repository truth.
+4. `Prove` gathers current-SHA evidence and exact command outcomes.
+5. `Review` adds CodeRabbit, independent QA, security, taste, and thread disposition.
+6. `Integrate` applies standing authority and observes merge and main sync separately.
+7. `Improve` opens an Improvement Case and disposes of the mechanism from canary evidence.
 
 ## Prompt Translations
 | User phrase | Canonical intent | Better Codex wording |
 | --- | --- | --- |
 | "this is our new name and logo" | Brand-language update without unsafe package rename | "Treat SynAIpse as the product name and AI Delivery Harness as the descriptor; update glossary and docs language first, and keep package, CLI, and downstream template renames behind an explicit migration plan." |
 | "where does the feedback loop fit?" | Lifecycle Harness learning loop | "Show feedback as the loop from review, CI, user steering, and post-merge evidence back into guardrails, runbooks, Project Brain, specs, and validation." |
+| "take this from idea to main" | Lifecycle Harness | "Route the work through Shape, Admit, Build, Prove, Review, Integrate, and Improve; preserve current-SHA evidence and authority at each transition." |
+| "I orchestrate, Codex decides" | Vital Decision boundary | "Ask Jamie only for Vital Decisions; let Codex make Ordinary Engineering Decisions from repository evidence and standing policy." |
+| "what should Codex run next?" | SynAIpse State | "Run `harness next --json`, return one action with its Invocation Effect, authority, evidence, and rollback, and avoid a diagnostic menu." |
+| "roll this out to all projects" | Project Adoption | "Diagnose each canonical repository, admit only needed capabilities, apply a reversible canary, record adoption evidence, and retain, change, or delete from measured results." |
+| "improve the harness" | Improvement Case | "Observe, classify, scope, compare deletion and consolidation, choose the smallest mechanism, canary, measure, then retain, change, consolidate, or delete." |
+| "find the context for this project" | Context Resolver | "Resolve the canonical project ID, select current stage-appropriate refs by authority and privacy, retrieve them through Codex, and report required/optional unavailable context explicitly." |
+| "what governed this task?" | Task Context Snapshot | "Read the Admit snapshot and verify project, base SHA, outcome, source digests, authority, privacy, and refresh triggers without treating the snapshot as repository truth." |
 | "enforce the truth lanes" | Claim authority governance | "Add or update guardrails, lifecycle metadata, and validation gates so each delivery claim names the lane and evidence that can prove it." |
 | "Make sure it works" | Validate changed surface with evidence | "Run the narrowest required validation lane for this change and report exact `pass\|fail\|blocked` outcomes for each command." |
 | "Fix drift" | Resolve canonical mismatch | "Identify config drift against canonical control-plane files, apply minimal fixes, and rerun the focused config-drift lane." |
@@ -185,7 +225,7 @@ decision-log updates.
 | "you are giving me the same feedback again" | Repeat-feedback admission | "Stop feature work, classify the repeated correction as an environment defect, update the narrowest durable repo surface or tracked exception, and run the guard that proves the admission did not stay in chat." |
 | "you are not permitted to proceed" | Current-session steering admission record | "Stop feature work, create the admission record, update the guard or tracked durable surface, run the focused validation command, and only then resume the narrow next action." |
 | "don't fight errors" | Repeated-error research pass | "When the same error happens twice, stop retrying locally, research web/upstream sources, list 3-5 possible fixes, choose the most efficient repo-fit fix, implement it, and record the research evidence." |
-| "these are in github and in ~/.codex/.env" | Env-backed validation recovery | "Do not treat the lane as blocked until you have checked required variable names without printing values, loaded `~/.codex/.env`, and rerun the exact credentialed validation command." |
+| "these are in GitHub and in ~/.codex/.env" | Env-backed validation recovery | "Do not treat the lane as blocked until you have checked required variable names without printing values, loaded `~/.codex/.env`, and rerun the exact credentialed validation command." |
 | "do not just fix that line" | Pattern scope inventory | "Infer the API/design principle, search sibling implementations and similar classes of misbehavior, update the shared pattern or all matching siblings, and record unchanged or deferred siblings with reasons." |
 | "this was an example" | Principle signal | "Treat the concrete correction as evidence of a broader design model, then run the pattern-generalization pass before claiming the fix is done." |
 | "make the skill reliable" | Workflow-skill eval loop | "Define the workflow skill win condition, run a capture-the-flag eval, capture self-reflection and trace evidence, then refine the skill or harness until the flag is captured reliably." |
@@ -214,7 +254,9 @@ Developer: "Perfect, and if anything blocks, call out the blocker string exactly
 ## Decision Log
 1. Glossary scope is repository-local to `/Users/jamiecraik/dev/coding-harness`.
 2. A lightweight docs/CI guard is required to ensure `AGENTS.md` keeps a reference to this glossary.
+3. SynAIpse v1 uses the seven-stage Lifecycle Harness, one routine `harness next --json` entrypoint, Jamie Core precedence, Vital Decision boundary, invocation-level effects, observed Project Adoption, and measured Improvement Cases.
 
 ## Source Notes
 - User-provided Codex subtree guidance in this session (scope, review swarm contract, validation lane names, and canonical-only posture).
 - `/Users/jamiecraik/dev/coding-harness/AGENTS.md` (repo workflow, validation contracts, and command evidence expectations).
+- `docs/specs/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-spec.md` (accepted SynAIpse v1 vocabulary and boundary contract).

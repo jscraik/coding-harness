@@ -151,6 +151,7 @@ gardener-report.json
 !.harness/ci-required-checks.json
 !.harness/ci-provider-transition-status.json
 !.harness/artifact-provenance.json
+!.harness/project-context-ref.json
 !.harness/*-manifest.json
 .harness/backups/
 .harness/*.db

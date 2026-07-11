@@ -11,7 +11,7 @@ audience:
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-06-04
+last_reviewed: 2026-07-11
 review_cadence: quarterly
 maintenance_trigger:
   - architecture-boundary-change
@@ -23,6 +23,8 @@ validated_by:
 depends_on:
   - AGENTS.md
   - docs/architecture/documentation-layers.md
+  - docs/adr/004-synaipse-agent-native-delivery-control-plane.md
+  - docs/specs/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-spec.md
   - AI/context/diagram-context.md
 ---
 
@@ -31,6 +33,8 @@ depends_on:
 ## Table of Contents
 
 - [Bird's Eye View](#birds-eye-view)
+- [SynAIpse Control Plane](#synaipse-control-plane)
+- [Universal Context Plane](#universal-context-plane)
 - [Source Map](#source-map)
 - [Code Map](#code-map)
 - [API Boundaries](#api-boundaries)
@@ -67,6 +71,100 @@ boundaries:
 This root document is a stable orientation map. Detailed operating policy lives
 in AGENTS.md, command and validation details live under docs/agents/, and
 generated architecture context lives in AI/context/diagram-context.md.
+
+## SynAIpse Control Plane
+
+SynAIpse is the AI Delivery Harness implemented by this repository. Its
+accepted v1 architecture keeps Codex as the execution runtime and makes
+SynAIpse the Jamie-specific delivery policy and evidence layer.
+
+    Jamie Core
+        |
+    SynAIpse lifecycle, authority, evidence, and improvement policy
+        |
+    Codex runtime: agent, tools, sessions, permissions, memory, review
+        |
+    Target repository: product, CODESTYLE, validation, privacy, rollback
+        |
+    CircleCI, Linear, CodeRabbit, security, sign-off, and git providers
+        |
+    Current-SHA evidence -> SynAIpse transition -> one next action
+
+The canonical lifecycle is:
+
+    Shape -> Admit -> Build -> Prove -> Review -> Integrate -> Improve
+
+`harness next --json` is the intended sole routine agent entrypoint. It
+projects `synaipse-state/v1`, including one action, truth-lane blockers,
+authority, evidence references, and invocation-level effects. Administrative,
+provider, diagnostic, and compatibility commands stay behind that cockpit.
+
+SynAIpse owns Jamie Core precedence, lifecycle transitions, provider ownership,
+project adoption, the Vital Decision Gate, and measured harness improvement.
+It does not own Codex execution, tools, sessions, sandbox controls, native
+memory, plugins, skills, MCP, or review execution. Target repositories retain
+non-overridable authority over domain truth, privacy, raw sources, durable
+knowledge, local instructions, CODESTYLE, validation, and rollback. Unresolved
+policy contradictions block progression.
+
+The accepted contract is
+`docs/specs/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-spec.md`;
+ADR 004 records the decision, and the companion plan sequences migration. This
+is the target architecture. Existing commands, packets, CI providers, and
+active-route surfaces remain current behavior until their individual migration
+slices produce caller, compatibility, canary, rollback, and independent-review
+evidence.
+
+## Universal Context Plane
+
+The accepted context architecture separates identity, catalog, resolution, and
+task reproducibility:
+
+    Project identity plane: Jamie Brain projects registry
+        |
+    Context catalog plane: governed metadata over Jamie Brain, KnowledgeOS,
+      Linear, and repository sources
+        |
+    Resolution plane: SynAIpse selects refs by project, stage, authority,
+      privacy, lifecycle, and freshness; Codex retrieves them
+        |
+    Task snapshot plane: Admit-time IDs, digests, base SHA, outcome, evidence,
+      privacy, and refresh triggers
+
+Jamie Brain `operating-system/projects.yaml` remains project identity authority;
+project cards remain human-readable summaries. A future governed project-context
+catalog is the agent interface to private context, but its tree must first be
+admitted through Jamie Brain CODE_TREE and validation. KnowledgeOS owns source
+evidence, Linear owns active work, and the target repository owns executable
+truth.
+
+Allowed dependency direction:
+
+- repository -> logical project/context reference;
+- SynAIpse -> registry, catalog, and provider adapters;
+- Codex -> selected source reads;
+- task snapshot -> immutable source refs.
+
+Forbidden direction:
+
+- repository or CI -> Jamie-specific absolute path or private document body;
+- product build -> Jamie Brain availability;
+- KnowledgeOS or generated bundle -> repository authority;
+- SynAIpse -> private Codex implementation path;
+- project -> copied coding-harness documentation tree.
+
+The first resolver is additive and read-only. It must prove required/optional
+unavailability, privacy, freshness, host resolution, and unfamiliar-agent
+outcomes across code, native, knowledge, minimal, and private canaries before
+any document migration or remote context projection.
+
+Public developer documentation follows a separate projection path. Every
+canonical project must provide a GitBook-compatible repository entrypoint or an
+explicit non-public exception. GitBook is presentation, not authority: the
+target repository owns the source, CircleCI validates it, and publication
+records source revision and result as a separate evidence lane. Jamie Brain
+project context, task snapshots, private plans, raw sources, secrets, and local
+paths are prohibited publication inputs.
 
 ## Source Map
 
@@ -222,7 +320,7 @@ Treat these surfaces as compatibility boundaries:
   requested.
 - Review-state and external-state packet schemas that keep review truth, remote
   checks, tracker state, and merge readiness as separate evidence families.
-- Intermediary receipt coverage schemas that keep realtime, browser, mailbox,
+- Intermediary receipt coverage schemas that keep real-time, browser, mailbox,
   compaction, visual, operator, and subagent observations orientation-only
   unless current receipts and canonical packet routes make claim support
   explicit.
@@ -230,6 +328,10 @@ Treat these surfaces as compatibility boundaries:
 - Generated Codex environment actions.
 - CI required-check contracts and branch-protection identities.
 - Runtime evidence schemas such as runtime cards and evidence bundles.
+- SynAIpse state, transition, improvement, adoption, security-finding, and
+  sign-off contracts introduced through the v1 migration.
+- SynAIpse context-catalog, context-ref, and task-context contracts introduced
+  through the read-only universal-context canary.
 
 Rules at these boundaries are stricter than rules inside an implementation
 module. Prefer additive changes, explicit migration notes, and narrow validation
@@ -262,6 +364,20 @@ The following rules are intentionally stable:
   not repository truth just because it sits under `.harness`.
 - Repeated human steering that implies a design principle should become a guard,
   validator, test, policy, documented exception, or tracked follow-up.
+- Codex owns execution primitives; SynAIpse may adapt stable signals but must
+  not copy Codex-owned sessions, tools, permissions, memory, skills, plugins,
+  MCP, or review execution.
+- `harness next --json` is the target routine cockpit; other commands must be
+  internal, administrative, provider, diagnostic, or compatibility surfaces.
+- The exact invocation declares read, artifact-write, repository-write, git,
+  and external effects; a command-level label cannot hide flag-dependent writes.
+- Higher-level policy may strengthen but never weaken repository-owned privacy,
+  raw-source, durable-knowledge, CODESTYLE, validation, or rollback constraints.
+- Every harness mechanism requires a canary, measurement, rollback, and
+  retain/change/consolidate/delete disposition.
+- Repositories and CI remain independent of private Jamie Brain availability;
+  cross-project context crosses boundaries only as logical IDs, approved
+  projections, digests, and source references.
 
 ## Cross-Cutting Concerns
 
@@ -323,5 +439,11 @@ real failure when the generated surface is part of review or runtime evidence.
 - docs/architecture/effect-deep-modules.md: Effect adoption boundary rules.
 - docs/architecture/runtime-aware-harness-control-plane.md: runtime-aware
   control-plane design.
+- docs/specs/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-spec.md:
+  accepted SynAIpse ownership, lifecycle, authority, and contract boundary.
+- docs/plans/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-plan.md:
+  reversible implementation and canary sequence.
+- docs/adr/004-synaipse-agent-native-delivery-control-plane.md: decision and
+  consequences for the v1 control-plane architecture.
 - docs/architecture/documentation-layers.md: documentation layering model.
 - AI/context/diagram-context.md: generated architecture context for agents.

@@ -29,6 +29,7 @@ import {
 	renderMiseConfigTemplate,
 } from "./scaffold-config-templates.js";
 import { renderHarnessContractTemplate } from "./scaffold-contract-template.js";
+import { GITBOOK_TEMPLATES } from "./scaffold-gitbook-templates.js";
 import {
 	renderCheckDiagramFreshnessScript,
 	renderDiagramRcTemplate,
@@ -166,6 +167,7 @@ export const TEMPLATES: Template[] = [
 		render: () => renderTransitionStatusArtifact(),
 	},
 	...PROJECT_BRAIN_TEMPLATES,
+	...GITBOOK_TEMPLATES,
 	{
 		path: ".npmrc",
 		render: () => renderDefaultNpmrc(),
