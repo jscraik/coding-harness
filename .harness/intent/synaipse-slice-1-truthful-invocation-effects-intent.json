@@ -48,6 +48,112 @@
 			"review-context",
 			"linear-gate"
 		],
+		"invocationEffects": {
+			"doctor": {
+				"identity": { "target": "doctor", "caller": "harness-cli", "provider": "internal-diagnostic" },
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "temporary-repository probe shows no artifact, Git, or repository mutation"
+			},
+			"docs-gate": {
+				"identity": { "target": "docs-gate", "caller": "harness-gate", "provider": "internal-validation" },
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "validation command produces exit code and diagnostics without side effects"
+			},
+			"contract": {
+				"identity": { "target": "contract", "caller": "harness-cli", "provider": "internal-diagnostic" },
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "contract analysis produces report without modifying workspace or repository state"
+			},
+			"context-health": {
+				"identity": { "target": "context-health", "caller": "harness-cli", "provider": "internal-diagnostic" },
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "health check reads context state without mutation"
+			},
+			"workflow:generate": {
+				"identity": { "target": "workflow:generate", "caller": "harness-cli", "provider": "internal-generator" },
+				"effectClasses": ["writes_artifact"],
+				"authority": "requires-approval",
+				"retryPolicy": "none",
+				"rollback": "delete-generated-artifacts",
+				"expectedEvidence": "generated workflow files written to .github/workflows; Git status shows new untracked files"
+			},
+			"pattern-scope": {
+				"identity": { "target": "pattern-scope", "caller": "harness-cli", "provider": "internal-diagnostic" },
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "pattern analysis produces scope report without modifying repository"
+			},
+			"drift-gate": {
+				"identity": { "target": "drift-gate", "caller": "harness-gate", "provider": "internal-validation" },
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "drift detection reports status without modifying workspace"
+			},
+			"check-environment": {
+				"identity": { "target": "check-environment", "caller": "harness-cli", "provider": "internal-diagnostic" },
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "environment check reads system state without mutation"
+			},
+			"ui:fast": {
+				"identity": { "target": "ui:fast", "caller": "harness-ui", "provider": "internal-viewer" },
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "UI fast mode displays data without persisting state changes"
+			},
+			"ui:verify": {
+				"identity": { "target": "ui:verify", "caller": "harness-ui", "provider": "internal-validation" },
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "UI verification checks state without modification"
+			},
+			"ui:explore": {
+				"identity": { "target": "ui:explore", "caller": "harness-ui", "provider": "internal-viewer" },
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "UI exploration mode reads and displays data without side effects"
+			},
+			"review-context": {
+				"identity": { "target": "review-context", "caller": "harness-cli", "provider": "internal-diagnostic" },
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "context review produces analysis report without mutating state"
+			},
+			"linear-gate": {
+				"identity": { "target": "linear-gate", "caller": "harness-gate", "provider": "external-linear-api" },
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "Linear API query returns issue status without mutating external state"
+			}
+		},
 		"implementationRule": "Add tests and characterization before changing command behavior. Keep compatibility surfaces callable and make diagnostics pure by default where practical; effectful artifact output must be explicit, and every invocation declares all applicable effect classes."
 	},
 	"nonGoals": [
@@ -60,23 +166,33 @@
 	"validationPlan": [
 		{
 			"command": "jq -e '(.schemaVersion == \"intent-artifact/v1\") and (.linearIssue == \"JSC-442\") and (.reviewStatus == \"pending\") and (.plannedChange.effectTaxonomy | type == \"array\" and length > 0) and (.plannedChange.characterizationTargets | type == \"array\" and length > 0) and (.validationPlan | type == \"array\" and length > 0) and all(.validationPlan[]; (.command | type == \"string\" and length > 0) and (.expected | type == \"string\" and length > 0)) and (.reviewRequirements.intentReviewBeforeImplementation | type == \"array\" and length > 0) and (.reviewRequirements.implementationReviewBeforeIntegration | type == \"array\" and length > 0) and (.acceptanceCriteria | type == \"array\" and length > 0)' .harness/intent/synaipse-slice-1-truthful-invocation-effects-intent.json >/dev/null",
-			"expected": "The admission artifact is syntactically valid, remains pending independent intent review, and retains non-empty effect, target, validation, review, and acceptance obligations."
+			"expected": "The admission artifact is syntactically valid, remains pending independent intent review, and retains non-empty effect, target, validation, review, and acceptance obligations.",
+			"phase": "admission"
 		},
 		{
 			"command": "bash scripts/run-harness-gate.sh docs-gate --mode required --json",
-			"expected": "The admission-only artifact satisfies the required documentation gate without claiming runtime behavior."
+			"expected": "The admission-only artifact satisfies the required documentation gate without claiming runtime behavior.",
+			"phase": "admission"
+		},
+		{
+			"command": "jq -e '(.plannedChange.invocationEffects | keys | length) == 13 and (.plannedChange.invocationEffects | to_entries | all(.value | (type == \"object\") and has(\"identity\") and has(\"effectClasses\") and has(\"authority\") and has(\"retryPolicy\") and has(\"rollback\") and has(\"expectedEvidence\") and (.effectClasses | type == \"array\" and length > 0)))' .harness/intent/synaipse-slice-1-truthful-invocation-effects-intent.json >/dev/null",
+			"expected": "Every characterizationTargets entry has a corresponding invocationEffects record with required fields (identity, effectClasses, authority, retryPolicy, rollback, expectedEvidence), and all declared effectClasses are valid taxonomy values.",
+			"phase": "admission"
 		},
 		{
 			"command": "pnpm run test:related",
-			"expected": "After implementation begins, focused characterization and negative undeclared-write tests pass before broader validation."
+			"expected": "After implementation begins, focused characterization and negative undeclared-write tests pass before broader validation.",
+			"phase": "deferred-implementation"
 		},
 		{
 			"command": "pnpm test:deep",
-			"expected": "After runtime or artifact behavior changes, the deep behavior gate passes."
+			"expected": "After runtime or artifact behavior changes, the deep behavior gate passes.",
+			"phase": "deferred-implementation"
 		},
 		{
 			"command": "temporary-repository pure-diagnostic probe",
-			"expected": "A nominally pure diagnostic leaves repository and Git state unchanged; any undeclared mutation fails the slice."
+			"expected": "A nominally pure diagnostic leaves repository and Git state unchanged; any undeclared mutation fails the slice.",
+			"phase": "deferred-implementation"
 		}
 	],
 	"reviewRequirements": {
@@ -96,6 +212,8 @@
 	},
 	"acceptanceCriteria": [
 		"Every affected recommended invocation declares every applicable effect class and names targets or provider class, authority, retry policy, rollback, and expected evidence.",
+		"Complete target coverage: every characterizationTargets entry has a corresponding invocationEffects record with all required fields (identity, effectClasses, authority, retryPolicy, rollback, expectedEvidence).",
+		"Accurate per-invocation declarations: declared effect classes match actual observed behavior in characterization tests.",
 		"Current write paths are characterized before behavior is changed.",
 		"Negative tests reject or surface undeclared writes.",
 		"Catalog tests and harness next --json tests project truthful effects.",
