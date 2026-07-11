@@ -59,8 +59,20 @@
 	],
 	"validationPlan": [
 		{
-			"command": "jq -e '(.schemaVersion == \"intent-artifact/v1\") and (.linearIssue == \"JSC-442\") and (.reviewStatus == \"pending\") and (.plannedChange.effectTaxonomy | type == \"array\" and length > 0) and (.plannedChange.characterizationTargets | type == \"array\" and length > 0) and (.validationPlan | type == \"array\" and length > 0) and all(.validationPlan[]; (.command | type == \"string\" and length > 0) and (.expected | type == \"string\" and length > 0)) and (.reviewRequirements.intentReviewBeforeImplementation | type == \"array\" and length > 0) and (.reviewRequirements.implementationReviewBeforeIntegration | type == \"array\" and length > 0) and (.acceptanceCriteria | type == \"array\" and length > 0)' .harness/intent/synaipse-slice-1-truthful-invocation-effects-intent.json >/dev/null",
-			"expected": "The admission artifact is syntactically valid, remains pending independent intent review, and retains non-empty effect, target, validation, review, and acceptance obligations."
+			"command": "jq -e '(.schemaVersion == \"intent-artifact/v1\") and (.linearIssue == \"JSC-442\") and (.reviewStatus == \"pending\")' .harness/intent/synaipse-slice-1-truthful-invocation-effects-intent.json >/dev/null",
+			"expected": "The admission artifact is syntactically valid and remains pending independent intent review."
+		},
+		{
+			"command": "jq -e '(.plannedChange.effectTaxonomy | type == \"array\" and length > 0) and (.plannedChange.characterizationTargets | type == \"array\" and length > 0)' .harness/intent/synaipse-slice-1-truthful-invocation-effects-intent.json >/dev/null",
+			"expected": "The artifact declares a non-empty effect taxonomy and explicit characterization targets."
+		},
+		{
+			"command": "jq -e '(.validationPlan | length > 0) and all(.validationPlan[]; (.command | type == \"string\" and length > 0) and (.expected | type == \"string\" and length > 0))' .harness/intent/synaipse-slice-1-truthful-invocation-effects-intent.json >/dev/null",
+			"expected": "Every validation-plan item has a non-empty command and expected result."
+		},
+		{
+			"command": "jq -e '(.reviewRequirements.intentReviewBeforeImplementation | length > 0) and (.reviewRequirements.implementationReviewBeforeIntegration | length > 0) and (.acceptanceCriteria | length > 0)' .harness/intent/synaipse-slice-1-truthful-invocation-effects-intent.json >/dev/null",
+			"expected": "The artifact retains pre-implementation review, pre-integration review, and acceptance obligations."
 		},
 		{
 			"command": "bash scripts/run-harness-gate.sh docs-gate --mode required --json",
