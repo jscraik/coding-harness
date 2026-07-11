@@ -87,8 +87,8 @@
 			"expected": "After runtime or artifact behavior changes, the deep behavior gate passes."
 		},
 		{
-			"command": "temporary-repository pure-diagnostic probe",
-			"expected": "A nominally pure diagnostic leaves repository and Git state unchanged; any undeclared mutation fails the slice."
+			"command": "bash -lc 't=$(mktemp -d); o=$(mktemp); git clone -q --depth=1 . \"$t\"; b=$(git -C \"$t\" status --short --untracked-files=all); (cd \"$t\" && pnpm install --frozen-lockfile --ignore-scripts >/dev/null && pnpm exec tsx src/cli.ts next --mode local --files src/cli.ts --json >\"$o\"); r=$?; a=$(git -C \"$t\" status --short --untracked-files=all); rm -rf \"$t\" \"$o\"; test $r -eq 0 && test \"$b\" = \"$a\"'",
+			"expected": "The temporary clone runs harness next with an explicit target, exits successfully, and has identical tracked/untracked Git state before and after; any undeclared mutation or non-zero diagnostic exit fails the probe."
 		}
 	],
 	"reviewRequirements": {
