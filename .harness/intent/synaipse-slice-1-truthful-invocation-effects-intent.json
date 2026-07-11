@@ -89,7 +89,9 @@
 		"claimBoundary": "This artifact and the draft PR admit test-first implementation planning only. Neither proves a runtime effect is fixed nor authorizes integration.",
 		"implementationReviewBeforeIntegration": [
 			"current-SHA CodeRabbit review after an implementation commit",
-			"independent QA review of the current implementation SHA"
+			"independent QA review of the current implementation SHA",
+			"all current-SHA CodeRabbit findings are resolved or explicitly waived",
+			"security findings are normalized and residual risk is recorded before integration"
 		]
 	},
 	"acceptanceCriteria": [
