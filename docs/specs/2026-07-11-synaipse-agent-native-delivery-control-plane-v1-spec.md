@@ -25,6 +25,7 @@ validated_by:
 depends_on:
   - docs/adr/004-synaipse-agent-native-delivery-control-plane.md
   - docs/roadmap/north-star.md
+  - .harness/research/audits/2026-07-11-synaipse-consolidation-and-codex-boundary-audit.md
 title: SynAIpse Agent-Native Delivery Control Plane v1
 type: architecture
 status: accepted

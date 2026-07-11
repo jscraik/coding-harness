@@ -577,7 +577,8 @@
 			"semverDefault": "minor",
 			"dependsOn": [
 				"docs/adr/004-synaipse-agent-native-delivery-control-plane.md",
-				"docs/roadmap/north-star.md"
+				"docs/roadmap/north-star.md",
+				".harness/research/audits/2026-07-11-synaipse-consolidation-and-codex-boundary-audit.md"
 			]
 		},
 		{
