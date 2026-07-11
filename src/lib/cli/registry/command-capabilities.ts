@@ -54,19 +54,14 @@ export const COMMAND_CATEGORY_LABELS: Readonly<
 };
 /** Whether a command is expected to mutate the repository or external state. */
 export type CommandMutability = "read" | "write";
-
 /** How safely an agent can retry a command after failure or interruption. */
 export type CommandRetryability = "safe" | "conditional" | "manual";
-
 /** Default discovery tier for human help and agent routing. */
 export type CommandTier = "cockpit" | "domain" | "plumbing" | "legacy";
-
 /** Primary consumer for a command capability. */
 export type CommandPrimaryAudience = "agent" | "human" | "both";
-
 /** Cockpit commands that may orchestrate or recommend expert commands. */
 export type CommandOrchestrator = "next" | "pr-ready" | "fix-review" | "learn";
-
 /** Agent moment served by a command in the public command surface. */
 export type CommandAgentMode =
 	| "orient"
@@ -77,14 +72,12 @@ export type CommandAgentMode =
 	| "handoff"
 	| "learn"
 	| "admin";
-
 /** Bounded catalog modes exposed by `harness commands --json --for-agent --mode`. */
 export type CommandAgentCatalogMode =
 	| "orient"
 	| "verify"
 	| "review"
 	| "handoff";
-
 /** Discovery layer where a command should appear by default. */
 export type CommandVisibility =
 	| "default"
@@ -93,7 +86,6 @@ export type CommandVisibility =
 	| "plumbing"
 	| "hidden"
 	| "legacy";
-
 /** Machine-readable command discovery metadata, including invocation effects. */
 export interface CommandCapability {
 	name: string;
@@ -114,7 +106,6 @@ export interface CommandCapability {
 	agentMode: CommandAgentMode;
 	visibility: CommandVisibility;
 }
-
 /** Versioned command capability catalog emitted by `harness commands --json`. */
 export interface CommandCapabilityCatalogDocument {
 	schemaVersion: typeof COMMAND_CATALOG_SCHEMA_VERSION;
@@ -122,13 +113,12 @@ export interface CommandCapabilityCatalogDocument {
 	commandCount: number;
 	commands: CommandCapability[];
 }
-
+/** Resolves the command names exposed for an agent catalog mode. */
 function getAgentCatalogCommandNames(
 	mode: CommandAgentCatalogMode | undefined,
 ): ReadonlySet<string> {
 	return new Set(AGENT_CATALOG_COMMAND_NAMES[mode ?? "default"]);
 }
-
 /** Parse the optional agent catalog phase mode from command arguments. */
 export function parseAgentCatalogMode(
 	args: readonly string[],
@@ -146,7 +136,6 @@ export function parseAgentCatalogMode(
 	}
 	return "invalid";
 }
-
 /**
  * Determine if a command belongs on first-contact agent surfaces.
  *
@@ -156,7 +145,6 @@ export function parseAgentCatalogMode(
 export function isFirstContactCommandName(name: string): boolean {
 	return FIRST_CONTACT_COMMAND_NAMES.has(name);
 }
-
 const AGENT_MODE_ORDER: Readonly<Record<CommandAgentMode, number>> = {
 	orient: 0,
 	plan: 1,
@@ -167,7 +155,6 @@ const AGENT_MODE_ORDER: Readonly<Record<CommandAgentMode, number>> = {
 	learn: 6,
 	admin: 7,
 };
-
 const AGENT_CATALOG_VISIBILITY_ORDER: Readonly<
 	Record<CommandVisibility, number>
 > = {
@@ -178,7 +165,6 @@ const AGENT_CATALOG_VISIBILITY_ORDER: Readonly<
 	hidden: 4,
 	legacy: 5,
 };
-
 /** Resolves a command category and rejects uncategorized development entries. */
 function getCommandCategory(name: string): CommandCategory {
 	const category = COMMAND_CATEGORY_BY_NAME[name];
@@ -192,7 +178,6 @@ function getCommandCategory(name: string): CommandCategory {
 	}
 	return category;
 }
-
 /** Resolves the explicit retry rule or derives the conservative default. */
 function getCommandRetryability(
 	name: string,
@@ -202,7 +187,6 @@ function getCommandRetryability(
 	if (explicit) return explicit;
 	return mutability === "read" ? "safe" : "conditional";
 }
-
 /** Derives the safest retry classification from every characterized invocation. */
 function getInvocationRetryability(
 	effects: readonly CommandInvocationEffect[],
@@ -214,7 +198,7 @@ function getInvocationRetryability(
 	}
 	return "safe";
 }
-
+/** Resolves a command's default discovery tier. */
 function getCommandTier(name: string, category: CommandCategory): CommandTier {
 	const explicit = COMMAND_TIER_BY_NAME[name];
 	if (explicit) return explicit;
@@ -223,11 +207,11 @@ function getCommandTier(name: string, category: CommandCategory): CommandTier {
 	}
 	return "plumbing";
 }
-
+/** Resolves a command's primary audience. */
 function getCommandPrimaryAudience(name: string): CommandPrimaryAudience {
 	return PRIMARY_AUDIENCE_BY_NAME[name] ?? "both";
 }
-
+/** Resolves the agent mode for a command capability. */
 function getCommandAgentMode(
 	name: string,
 	category: CommandCategory,

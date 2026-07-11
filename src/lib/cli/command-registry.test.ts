@@ -713,11 +713,16 @@ describe("getRegistryCommandCapabilities", () => {
 				expect.objectContaining({
 					invocation: "docs-gate --json",
 					effectClasses: ["writes_artifact", "writes_repository"],
+					targets: expect.arrayContaining([
+						"artifacts/context-integrity/contradiction-history.jsonl",
+					]),
 				}),
 				expect.objectContaining({
 					invocation: "docs-gate --out <path> --json",
 					effectClasses: ["writes_repository"],
-					targets: expect.arrayContaining([".harness contradiction history"]),
+					targets: expect.arrayContaining([
+						"artifacts/context-integrity/contradiction-history.jsonl",
+					]),
 					expectedEvidence: expect.arrayContaining([
 						"contradiction-history update",
 					]),
@@ -746,6 +751,7 @@ describe("getRegistryCommandCapabilities", () => {
 				}),
 				expect.objectContaining({
 					invocation: "context-health --out <path> --json",
+					effectClasses: ["writes_artifact", "writes_repository"],
 					targets: expect.arrayContaining([
 						"artifacts/context-integrity index-source-inventory artifact",
 						"conditional memory-metrics snapshot artifact",
@@ -764,6 +770,21 @@ describe("getRegistryCommandCapabilities", () => {
 					authority: "Local filesystem write authority is required.",
 				}),
 			]),
+		);
+	});
+
+	it("derives aggregate retryability from invocation effect policies", () => {
+		const capabilities = new Map(
+			getRegistryCommandCapabilities().map((capability) => [
+				capability.name,
+				capability,
+			]),
+		);
+
+		expect(capabilities.get("doctor")?.retryability).toBe("safe");
+		expect(capabilities.get("docs-gate")?.retryability).toBe("conditional");
+		expect(capabilities.get("context-health")?.retryability).toBe(
+			"conditional",
 		);
 	});
 
