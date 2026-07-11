@@ -103,7 +103,7 @@ SynAIpse is the AI Delivery Harness around AI coding agents. It is not the agent
 It helps a repository answer five practical questions:
 
 - **What should the agent read and do next?** `harness orient --json` exposes the cold-start context rail, while `harness next --json` turns local state into a safe next-command recommendation.
-- **Is this repo ready for agent work?** `agent-readiness`, `init`, `check`, `doctor`, `health`, and `contract validate` expose setup gaps, stale orientation context, and missing machine-readable policy.
+- **Is this repo ready for agent work?** `agent-readiness`, `init`, `check`, `doctor`, `health`, and `contract validate` expose setup gaps, stale orientation context, and missing machine-readable policy. `doctor` is read-only by default; request `--write-artifact` only when its north-star sidecar is needed.
 - **What must pass before handoff?** `verify-work`, `docs-gate`, `review-gate`, `plan-gate`, and related gates make proof explicit.
 - **Can we change CI or policy without guessing?** `ci-migrate`, branch-protection sync, rollback metadata, and parity checks keep migration reversible.
 - **Did we learn anything durable?** Project Brain, Local Memory, learning gates, and review-context tooling turn repeated steering into guardrails instead of repeated reminders.

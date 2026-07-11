@@ -1,5 +1,5 @@
 {
-	"schemaVersion": "harness-command-catalog/v3",
+	"schemaVersion": "harness-command-catalog/v4",
 	"generatedAt": "2026-06-06T00:00:00.000Z",
 	"commandCount": 1,
 	"commands": [
@@ -12,6 +12,19 @@
 			"mutability": "read",
 			"requiredFlags": [],
 			"expectedArtifacts": [],
+			"effectCharacterization": "legacy_uncharacterized",
+			"invocationEffects": [
+				{
+					"invocation": "commands",
+					"effectClasses": ["pure_read"],
+					"targets": ["repository working tree"],
+					"providerClass": "legacy_uncharacterized",
+					"authority": "No write authority required.",
+					"retryPolicy": "safe",
+					"rollback": "No state change to roll back.",
+					"expectedEvidence": ["command output"]
+				}
+			],
 			"retryability": "safe",
 			"safeFirstAlternatives": [],
 			"tier": "plumbing",

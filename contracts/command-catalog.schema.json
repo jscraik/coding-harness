@@ -7,7 +7,7 @@
 	"required": ["schemaVersion", "generatedAt", "commandCount", "commands"],
 	"properties": {
 		"schemaVersion": {
-			"const": "harness-command-catalog/v3"
+			"const": "harness-command-catalog/v4"
 		},
 		"generatedAt": {
 			"type": "string",
@@ -30,6 +30,8 @@
 					"mutability",
 					"requiredFlags",
 					"expectedArtifacts",
+					"effectCharacterization",
+					"invocationEffects",
 					"retryability",
 					"safeFirstAlternatives",
 					"tier",
@@ -84,6 +86,107 @@
 						"items": {
 							"type": "string",
 							"minLength": 1
+						}
+					},
+					"effectCharacterization": {
+						"enum": ["characterized", "legacy_uncharacterized"]
+					},
+					"invocationEffects": {
+						"type": "array",
+						"minItems": 1,
+						"items": {
+							"type": "object",
+							"additionalProperties": false,
+							"required": [
+								"invocation",
+								"effectClasses",
+								"targets",
+								"providerClass",
+								"authority",
+								"retryPolicy",
+								"rollback",
+								"expectedEvidence"
+							],
+							"properties": {
+								"invocation": {
+									"type": "string",
+									"minLength": 1,
+									"pattern": "\\S"
+								},
+								"effectClasses": {
+									"type": "array",
+									"minItems": 1,
+									"uniqueItems": true,
+									"items": {
+										"enum": [
+											"pure_read",
+											"writes_artifact",
+											"writes_repository",
+											"mutates_git",
+											"mutates_external"
+										]
+									}
+								},
+								"targets": {
+									"type": "array",
+									"minItems": 1,
+									"items": {
+										"type": "string",
+										"minLength": 1,
+										"pattern": "\\S"
+									}
+								},
+								"providerClass": {
+									"type": "string",
+									"minLength": 1,
+									"pattern": "\\S"
+								},
+								"authority": {
+									"type": "string",
+									"minLength": 1,
+									"pattern": "\\S"
+								},
+								"retryPolicy": {
+									"enum": ["safe", "conditional", "manual"]
+								},
+								"rollback": {
+									"type": "string",
+									"minLength": 1,
+									"pattern": "\\S"
+								},
+								"expectedEvidence": {
+									"type": "array",
+									"minItems": 1,
+									"items": {
+										"type": "string",
+										"minLength": 1,
+										"pattern": "\\S"
+									}
+								}
+							},
+							"allOf": [
+								{
+									"not": {
+										"properties": {
+											"effectClasses": {
+												"allOf": [
+													{ "contains": { "const": "pure_read" } },
+													{
+														"contains": {
+															"enum": [
+																"writes_artifact",
+																"writes_repository",
+																"mutates_git",
+																"mutates_external"
+															]
+														}
+													}
+												]
+											}
+										}
+									}
+								}
+							]
 						}
 					},
 					"retryability": {

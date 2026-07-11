@@ -96,6 +96,12 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 - Types and schemas are contract surfaces. TypeScript, Python, JSON, YAML,
   Markdown metadata, shell, and generated artifacts should use configured type,
   schema, lint, and validation gates rather than ad hoc string assumptions.
+- Command-catalog invocation effects are agent-safety contract surfaces. A
+  characterized invocation must name its effect classes, targets, provider,
+  authority, retry policy, rollback, and expected evidence. Derive its coarse
+  read/write label from those effects; leave commands that are not yet characterized on the
+  conservative legacy projection, and require an explicit flag before a
+  diagnostic command writes an artifact by default.
 - Required status checks and code scanning are separate merge lanes: this repo's
   status checks are `pr-pipeline`, `security-scan`, and `CodeRabbit`;
   public code scanning is the `CodeQL` ruleset backed by

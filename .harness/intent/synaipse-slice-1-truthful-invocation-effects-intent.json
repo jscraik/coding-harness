@@ -1,106 +1,104 @@
 {
-  "schemaVersion": "intent-artifact/v1",
-  "intentId": "synaipse-slice-1-truthful-invocation-effects",
-  "createdAt": "2026-07-11T18:49:37Z",
-  "owner": "coding-harness-maintainers",
-  "goalRef": "https://linear.app/jscraik/issue/JSC-442/coding-harness-admit-synaipse-slice-1-truthful-invocation-effects",
-  "planRef": "docs/plans/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-plan.md",
-  "linearIssue": "JSC-442",
-  "reviewStatus": "pending",
-  "slice": {
-    "id": "Slice-1",
-    "name": "Truthful invocation effects",
-    "purpose": "Make command invocation effects explicit, truthful, and testable before any consolidation, retirement, or wider SynAIpse lifecycle work.",
-    "feedbackSignals": [
-      "The consolidation audit found invocation-dependent writes hidden behind commands catalogued as safe reads.",
-      "The accepted plan requires a separate Linear admission, test-first proof, and independent QA before the first runtime implementation unit.",
-      "The Phase 0 independent QA receipt limits its findings to planning and structure, so runtime evidence must be created afresh on this branch."
-    ],
-    "rootOperationalFailure": "Agents cannot make safe delivery decisions when a recommended diagnostic invocation can change artifacts, repository state, Git state, or external-provider state without declaring that effect.",
-    "failureCategories": [
-      "undeclared mutation",
-      "misleading command contract",
-      "unclear authority boundary",
-      "insufficient negative coverage"
-    ]
-  },
-  "plannedChange": {
-    "baseRef": "origin/main@e3c6f3342ed4cc26e1dae2abc70364cb2c38c666",
-    "effectTaxonomy": [
-      "pure_read",
-      "writes_artifact",
-      "writes_repository",
-      "mutates_git",
-      "mutates_external"
-    ],
-    "characterizationTargets": [
-      "doctor",
-      "docs-gate",
-      "contract",
-      "context-health",
-      "workflow:generate",
-      "pattern-scope",
-      "drift-gate",
-      "check-environment",
-      "ui:fast",
-      "ui:verify",
-      "ui:explore",
-      "review-context",
-      "linear-gate"
-    ],
-    "implementationRule": "Add tests and characterization before changing command behavior. Keep compatibility surfaces callable and make diagnostics pure by default where practical; effectful artifact output must be explicit, and every invocation declares all applicable effect classes."
-  },
-  "nonGoals": [
-    "Do not delete, retire, rename, or broadly refactor command surfaces.",
-    "Do not implement the proposed adopt or diagnose commands.",
-    "Do not widen PR #465 or modify its GitBook/context canary scope.",
-    "Do not mutate downstream repositories or external-provider configuration.",
-    "Do not claim CI, CodeRabbit, hosted provider, merge, or downstream adoption truth from local tests or this intent artifact."
-  ],
-  "validationPlan": [
-    {
-      "command": "jq -e '(.schemaVersion == \"intent-artifact/v1\") and (.linearIssue == \"JSC-442\") and (.reviewStatus == \"pending\") and (.plannedChange.effectTaxonomy | type == \"array\" and length > 0) and (.plannedChange.characterizationTargets | type == \"array\" and length > 0) and (.validationPlan | type == \"array\" and length > 0) and all(.validationPlan[]; (.command | type == \"string\" and length > 0) and (.expected | type == \"string\" and length > 0)) and (.reviewRequirements.intentReviewBeforeImplementation | type == \"array\" and length > 0) and (.reviewRequirements.implementationReviewBeforeIntegration | type == \"array\" and length > 0) and (.acceptanceCriteria | type == \"array\" and length > 0)' .harness/intent/synaipse-slice-1-truthful-invocation-effects-intent.json >/dev/null",
-      "expected": "The admission artifact is syntactically valid, remains pending independent intent review, and retains non-empty effect, target, validation, review, and acceptance obligations."
-    },
-    {
-      "command": "bash scripts/run-harness-gate.sh docs-gate --mode required --json",
-      "expected": "The admission-only artifact satisfies the required documentation gate without claiming runtime behavior."
-    },
-    {
-      "command": "pnpm run test:related",
-      "expected": "After implementation begins, focused characterization and negative undeclared-write tests pass before broader validation."
-    },
-    {
-      "command": "pnpm test:deep",
-      "expected": "After runtime or artifact behavior changes, the deep behavior gate passes."
-    },
-    {
-      "command": "temporary-repository pure-diagnostic probe",
-      "expected": "A nominally pure diagnostic leaves repository and Git state unchanged; any undeclared mutation fails the slice."
-    }
-  ],
-  "reviewRequirements": {
-    "intentReviewBeforeImplementation": [
-      "independent QA disproof"
-    ],
-    "skillLenses": [
-      "improve-agent-native",
-      "improve-codebase-architecture",
-      "testing"
-    ],
-    "claimBoundary": "This artifact and the draft PR admit test-first implementation planning only. Neither proves a runtime effect is fixed nor authorizes integration.",
-    "implementationReviewBeforeIntegration": [
-      "current-SHA CodeRabbit review after an implementation commit",
-      "independent QA review of the current implementation SHA"
-    ]
-  },
-  "acceptanceCriteria": [
-    "Every affected recommended invocation declares every applicable effect class and names targets or provider class, authority, retry policy, rollback, and expected evidence.",
-    "Current write paths are characterized before behavior is changed.",
-    "Negative tests reject or surface undeclared writes.",
-    "Catalog tests and harness next --json tests project truthful effects.",
-    "A temporary-repository probe detects mutation from a nominally pure diagnostic.",
-    "Independent QA reviews the current implementation SHA before an integration request.",
-    "Rollback removes the additive projection or behavior change while retaining characterization and regression tests."
-  ]
+	"schemaVersion": "intent-artifact/v1",
+	"intentId": "synaipse-slice-1-truthful-invocation-effects",
+	"createdAt": "2026-07-11T18:49:37Z",
+	"owner": "coding-harness-maintainers",
+	"goalRef": "https://linear.app/jscraik/issue/JSC-442/coding-harness-admit-synaipse-slice-1-truthful-invocation-effects",
+	"planRef": "docs/plans/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-plan.md",
+	"linearIssue": "JSC-442",
+	"reviewStatus": "pending",
+	"slice": {
+		"id": "Slice-1",
+		"name": "Truthful invocation effects",
+		"purpose": "Make command invocation effects explicit, truthful, and testable before any consolidation, retirement, or wider SynAIpse lifecycle work.",
+		"feedbackSignals": [
+			"The consolidation audit found invocation-dependent writes hidden behind commands catalogued as safe reads.",
+			"The accepted plan requires a separate Linear admission, test-first proof, and independent QA before the first runtime implementation unit.",
+			"The Phase 0 independent QA receipt limits its findings to planning and structure, so runtime evidence must be created afresh on this branch."
+		],
+		"rootOperationalFailure": "Agents cannot make safe delivery decisions when a recommended diagnostic invocation can change artifacts, repository state, Git state, or external-provider state without declaring that effect.",
+		"failureCategories": [
+			"undeclared mutation",
+			"misleading command contract",
+			"unclear authority boundary",
+			"insufficient negative coverage"
+		]
+	},
+	"plannedChange": {
+		"baseRef": "origin/main@e3c6f3342ed4cc26e1dae2abc70364cb2c38c666",
+		"effectTaxonomy": [
+			"pure_read",
+			"writes_artifact",
+			"writes_repository",
+			"mutates_git",
+			"mutates_external"
+		],
+		"characterizationTargets": [
+			"doctor",
+			"docs-gate",
+			"contract",
+			"context-health",
+			"workflow:generate",
+			"pattern-scope",
+			"drift-gate",
+			"check-environment",
+			"ui:fast",
+			"ui:verify",
+			"ui:explore",
+			"review-context",
+			"linear-gate"
+		],
+		"implementationRule": "Add tests and characterization before changing command behavior. Keep compatibility surfaces callable and make diagnostics pure by default where practical; effectful artifact output must be explicit, and every invocation declares all applicable effect classes."
+	},
+	"nonGoals": [
+		"Do not delete, retire, rename, or broadly refactor command surfaces.",
+		"Do not implement the proposed adopt or diagnose commands.",
+		"Do not widen PR #465 or modify its GitBook/context canary scope.",
+		"Do not mutate downstream repositories or external-provider configuration.",
+		"Do not claim CI, CodeRabbit, hosted provider, merge, or downstream adoption truth from local tests or this intent artifact."
+	],
+	"validationPlan": [
+		{
+			"command": "jq -e '(.schemaVersion == \"intent-artifact/v1\") and (.linearIssue == \"JSC-442\") and (.reviewStatus == \"pending\") and (.plannedChange.effectTaxonomy | type == \"array\" and length > 0) and (.plannedChange.characterizationTargets | type == \"array\" and length > 0) and (.validationPlan | type == \"array\" and length > 0) and all(.validationPlan[]; (.command | type == \"string\" and length > 0) and (.expected | type == \"string\" and length > 0)) and (.reviewRequirements.intentReviewBeforeImplementation | type == \"array\" and length > 0) and (.reviewRequirements.implementationReviewBeforeIntegration | type == \"array\" and length > 0) and (.acceptanceCriteria | type == \"array\" and length > 0)' .harness/intent/synaipse-slice-1-truthful-invocation-effects-intent.json >/dev/null",
+			"expected": "The admission artifact is syntactically valid, remains pending independent intent review, and retains non-empty effect, target, validation, review, and acceptance obligations."
+		},
+		{
+			"command": "bash scripts/run-harness-gate.sh docs-gate --mode required --json",
+			"expected": "The admission-only artifact satisfies the required documentation gate without claiming runtime behavior."
+		},
+		{
+			"command": "pnpm run test:related",
+			"expected": "After implementation begins, focused characterization and negative undeclared-write tests pass before broader validation."
+		},
+		{
+			"command": "pnpm test:deep",
+			"expected": "After runtime or artifact behavior changes, the deep behavior gate passes."
+		},
+		{
+			"command": "temporary-repository pure-diagnostic probe",
+			"expected": "A nominally pure diagnostic leaves repository and Git state unchanged; any undeclared mutation fails the slice."
+		}
+	],
+	"reviewRequirements": {
+		"intentReviewBeforeImplementation": ["independent QA disproof"],
+		"skillLenses": [
+			"improve-agent-native",
+			"improve-codebase-architecture",
+			"testing"
+		],
+		"claimBoundary": "This artifact and the draft PR admit test-first implementation planning only. Neither proves a runtime effect is fixed nor authorizes integration.",
+		"implementationReviewBeforeIntegration": [
+			"current-SHA CodeRabbit review after an implementation commit",
+			"independent QA review of the current implementation SHA"
+		]
+	},
+	"acceptanceCriteria": [
+		"Every affected recommended invocation declares every applicable effect class and names targets or provider class, authority, retry policy, rollback, and expected evidence.",
+		"Current write paths are characterized before behavior is changed.",
+		"Negative tests reject or surface undeclared writes.",
+		"Catalog tests and harness next --json tests project truthful effects.",
+		"A temporary-repository probe detects mutation from a nominally pure diagnostic.",
+		"Independent QA reviews the current implementation SHA before an integration request.",
+		"Rollback removes the additive projection or behavior change while retaining characterization and regression tests."
+	]
 }

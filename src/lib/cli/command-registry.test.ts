@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EXIT_CODES as LOCAL_MEMORY_PREFLIGHT_EXIT_CODES } from "../../commands/local-memory-preflight.js";
+import { COMMAND_CATALOG_OUTPUT } from "./registry/builtin-command-specs.js";
 import {
 	COMMAND_CATALOG_SCHEMA_VERSION,
 	type CommandCapability,
@@ -95,9 +96,19 @@ describe("command registry", () => {
 	});
 
 	it("dispatches commands catalog from registry", () => {
-		const result = dispatchRegistryCommand("commands", ["commands", "--json"]);
-		expect(result?.spec.name).toBe("commands");
-		expect(result?.result).toBe(0);
+		const stdoutSpy = vi
+			.spyOn(COMMAND_CATALOG_OUTPUT, "write")
+			.mockImplementation(() => {});
+		try {
+			const result = dispatchRegistryCommand("commands", [
+				"commands",
+				"--json",
+			]);
+			expect(result?.spec.name).toBe("commands");
+			expect(result?.result).toBe(0);
+		} finally {
+			stdoutSpy.mockRestore();
+		}
 	});
 
 	it("dispatches session-context from registry", () => {
@@ -407,7 +418,9 @@ describe("command registry", () => {
 	});
 
 	it("exposes a stable machine-readable command capability catalog", () => {
-		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		const stdoutSpy = vi
+			.spyOn(COMMAND_CATALOG_OUTPUT, "write")
+			.mockImplementation(() => {});
 		try {
 			const dispatch = dispatchRegistryCommand("commands", [
 				"commands",
@@ -415,7 +428,7 @@ describe("command registry", () => {
 			]);
 			expect(dispatch?.result).toBe(0);
 
-			const output = infoSpy.mock.calls.at(-1)?.[0];
+			const output = stdoutSpy.mock.calls.at(-1)?.[0];
 			expect(typeof output).toBe("string");
 			const parsed = JSON.parse(String(output));
 			expect(parsed.schemaVersion).toBe(COMMAND_CATALOG_SCHEMA_VERSION);
@@ -442,7 +455,7 @@ describe("command registry", () => {
 				visibility: "plumbing",
 			});
 		} finally {
-			infoSpy.mockRestore();
+			stdoutSpy.mockRestore();
 		}
 	});
 
@@ -571,8 +584,8 @@ describe("suggestCommandCapabilities", () => {
 });
 
 describe("COMMAND_CATALOG_SCHEMA_VERSION", () => {
-	it("equals the stable literal 'harness-command-catalog/v3'", () => {
-		expect(COMMAND_CATALOG_SCHEMA_VERSION).toBe("harness-command-catalog/v3");
+	it("equals the stable literal 'harness-command-catalog/v4'", () => {
+		expect(COMMAND_CATALOG_SCHEMA_VERSION).toBe("harness-command-catalog/v4");
 	});
 });
 
@@ -597,6 +610,19 @@ describe("getRegistryCommandCapabilities", () => {
 			expect(typeof capability.mutability).toBe("string");
 			expect(Array.isArray(capability.requiredFlags)).toBe(true);
 			expect(Array.isArray(capability.expectedArtifacts)).toBe(true);
+			expect(["characterized", "legacy_uncharacterized"]).toContain(
+				capability.effectCharacterization,
+			);
+			expect(Array.isArray(capability.invocationEffects)).toBe(true);
+			expect(capability.mutability).toBe(
+				capability.invocationEffects.every(
+					(effect) =>
+						effect.effectClasses.length === 1 &&
+						effect.effectClasses[0] === "pure_read",
+				)
+					? "read"
+					: "write",
+			);
 			expect(typeof capability.retryability).toBe("string");
 			expect(Array.isArray(capability.safeFirstAlternatives)).toBe(true);
 			expect(typeof capability.tier).toBe("string");
@@ -605,6 +631,117 @@ describe("getRegistryCommandCapabilities", () => {
 			expect(typeof capability.agentMode).toBe("string");
 			expect(typeof capability.visibility).toBe("string");
 		}
+	});
+
+	it("declares truthful effects for each admitted Slice 1 invocation", () => {
+		const capabilities = new Map(
+			getRegistryCommandCapabilities().map((capability) => [
+				capability.name,
+				capability,
+			]),
+		);
+		for (const name of [
+			"doctor",
+			"docs-gate",
+			"contract",
+			"context-health",
+			"workflow:generate",
+			"pattern-scope",
+			"drift-gate",
+			"check-environment",
+			"ui:fast",
+			"ui:verify",
+			"ui:explore",
+			"review-context",
+			"linear-gate",
+		]) {
+			const capability = capabilities.get(name);
+			expect(capability?.invocationEffects.length).toBeGreaterThan(0);
+			for (const effect of capability?.invocationEffects ?? []) {
+				expect(effect.effectClasses.length).toBeGreaterThan(0);
+				expect(
+					effect.effectClasses.includes("pure_read") &&
+						effect.effectClasses.length > 1,
+				).toBe(false);
+				expect(effect.targets.length).toBeGreaterThan(0);
+				expect(effect.authority).not.toBe("");
+				expect(effect.retryPolicy).not.toBe("");
+				expect(effect.rollback).not.toBe("");
+				expect(effect.expectedEvidence.length).toBeGreaterThan(0);
+			}
+		}
+	});
+
+	it("distinguishes doctor diagnosis from its explicit artifact write", () => {
+		const doctor = getRegistryCommandCapabilities().find(
+			(capability) => capability.name === "doctor",
+		);
+
+		expect(doctor?.invocationEffects).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					invocation: "doctor --json",
+					effectClasses: ["pure_read"],
+				}),
+				expect.objectContaining({
+					invocation: "doctor --write-artifact --json",
+					effectClasses: ["writes_artifact"],
+				}),
+			]),
+		);
+	});
+
+	it("declares docs-gate default and explicit-output write boundaries", () => {
+		const docsGate = getRegistryCommandCapabilities().find(
+			(capability) => capability.name === "docs-gate",
+		);
+
+		expect(docsGate?.invocationEffects).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					invocation: "docs-gate --json",
+					effectClasses: ["writes_artifact", "writes_repository"],
+				}),
+				expect.objectContaining({
+					invocation: "docs-gate --out <path> --json",
+					effectClasses: ["writes_repository"],
+					targets: expect.arrayContaining([".harness contradiction history"]),
+					expectedEvidence: expect.arrayContaining([
+						"contradiction-history update",
+					]),
+				}),
+			]),
+		);
+	});
+
+	it("declares conditional snapshot and outside-repository write boundaries", () => {
+		const capabilities = new Map(
+			getRegistryCommandCapabilities().map((capability) => [
+				capability.name,
+				capability,
+			]),
+		);
+		const contextHealth = capabilities.get("context-health");
+		const contract = capabilities.get("contract");
+
+		expect(contextHealth?.invocationEffects).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					invocation: "context-health --json",
+					targets: expect.arrayContaining([
+						"conditional memory-metrics snapshot artifact",
+					]),
+				}),
+			]),
+		);
+		expect(contract?.invocationEffects).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					invocation: "contract init --output <path>",
+					authority: "Local filesystem write authority is required.",
+				}),
+			]),
+		);
 	});
 
 	it("capability mutability is always 'read' or 'write'", () => {
@@ -833,7 +970,9 @@ describe("getRegistryCommandCapabilities", () => {
 			"ci-migrate",
 			"branch-protect",
 			"linear",
-			"linear-gate",
+			"doctor",
+			"contract",
+			"drift-gate",
 			"automation-run",
 			"gap-case",
 			"remediate",
@@ -855,15 +994,13 @@ describe("getRegistryCommandCapabilities", () => {
 			"commands",
 			"fleet-plan",
 			"check",
-			"doctor",
 			"health",
-			"contract",
+			"linear-gate",
 			"policy-gate",
 			"preflight-gate",
 			"blast-radius",
 			"risk-tier",
 			"review-gate",
-			"drift-gate",
 			"search",
 			"context",
 			"source-outline",
@@ -1041,10 +1178,11 @@ describe("getRegistryCommandCapabilities", () => {
 			expect(cap?.retryability).toBe("safe");
 		});
 
-		it("read-only commands without explicit override default to 'safe'", () => {
-			// drift-gate is read, has no explicit override
+		it("legacy read commands without explicit override default to 'safe'", () => {
+			// search is read, has no explicit retryability override, and is not
+			// reclassified by the characterized Slice 1 invocation table.
 			const cap = getRegistryCommandCapabilities().find(
-				(c) => c.name === "drift-gate",
+				(c) => c.name === "search",
 			);
 			expect(cap?.mutability).toBe("read");
 			expect(cap?.retryability).toBe("safe");
@@ -1290,42 +1428,50 @@ describe("'commands' command execution", () => {
 	});
 
 	it("JSON mode catalog document has valid ISO 8601 generatedAt", () => {
-		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		const stdoutSpy = vi
+			.spyOn(COMMAND_CATALOG_OUTPUT, "write")
+			.mockImplementation(() => {});
 		try {
 			dispatchRegistryCommand("commands", ["commands", "--json"]);
-			const output = infoSpy.mock.calls.at(-1)?.[0];
+			const output = stdoutSpy.mock.calls.at(-1)?.[0];
 			const parsed = JSON.parse(String(output));
 			const date = new Date(parsed.generatedAt as string);
 			expect(date.toISOString()).toBe(parsed.generatedAt);
 		} finally {
-			infoSpy.mockRestore();
+			stdoutSpy.mockRestore();
 		}
 	});
 
 	it("JSON mode commandCount matches commands array length", () => {
-		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		const stdoutSpy = vi
+			.spyOn(COMMAND_CATALOG_OUTPUT, "write")
+			.mockImplementation(() => {});
 		try {
 			dispatchRegistryCommand("commands", ["commands", "--json"]);
-			const output = infoSpy.mock.calls.at(-1)?.[0];
+			const output = stdoutSpy.mock.calls.at(-1)?.[0];
 			const parsed = JSON.parse(String(output));
 			expect(parsed.commandCount).toBe((parsed.commands as unknown[]).length);
 		} finally {
-			infoSpy.mockRestore();
+			stdoutSpy.mockRestore();
 		}
 	});
 
-	it("JSON mode output is a single console.info call (no extra output)", () => {
-		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+	it("JSON mode writes exactly one JSON payload to stdout", () => {
+		const stdoutSpy = vi
+			.spyOn(COMMAND_CATALOG_OUTPUT, "write")
+			.mockImplementation(() => {});
 		try {
 			dispatchRegistryCommand("commands", ["commands", "--json"]);
-			expect(infoSpy.mock.calls).toHaveLength(1);
+			expect(stdoutSpy.mock.calls).toHaveLength(1);
 		} finally {
-			infoSpy.mockRestore();
+			stdoutSpy.mockRestore();
 		}
 	});
 
 	it("JSON --for-agent emits the public cross-phase agent rail set", () => {
-		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		const stdoutSpy = vi
+			.spyOn(COMMAND_CATALOG_OUTPUT, "write")
+			.mockImplementation(() => {});
 		try {
 			const dispatch = dispatchRegistryCommand("commands", [
 				"commands",
@@ -1333,7 +1479,7 @@ describe("'commands' command execution", () => {
 				"--for-agent",
 			]);
 			expect(dispatch?.result).toBe(0);
-			const output = infoSpy.mock.calls.at(-1)?.[0];
+			const output = stdoutSpy.mock.calls.at(-1)?.[0];
 			const parsed = JSON.parse(String(output));
 			const commandNames = parsed.commands.map(
 				(command: CommandCapability) => command.name,
@@ -1351,7 +1497,7 @@ describe("'commands' command execution", () => {
 				expect.arrayContaining(["policy-gate", "docs-gate"]),
 			);
 		} finally {
-			infoSpy.mockRestore();
+			stdoutSpy.mockRestore();
 		}
 	});
 
@@ -1377,7 +1523,9 @@ describe("'commands' command execution", () => {
 		["review", AGENT_REVIEW_COMMAND_RAIL_NAMES],
 		["handoff", AGENT_HANDOFF_COMMAND_RAIL_NAMES],
 	] as const)("JSON --for-agent --mode %s emits a compact phase rail", (mode, expectedNames) => {
-		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		const stdoutSpy = vi
+			.spyOn(COMMAND_CATALOG_OUTPUT, "write")
+			.mockImplementation(() => {});
 		try {
 			const dispatch = dispatchRegistryCommand("commands", [
 				"commands",
@@ -1387,7 +1535,7 @@ describe("'commands' command execution", () => {
 				mode,
 			]);
 			expect(dispatch?.result).toBe(0);
-			const output = infoSpy.mock.calls.at(-1)?.[0];
+			const output = stdoutSpy.mock.calls.at(-1)?.[0];
 			const parsed = JSON.parse(String(output));
 			const commandNames = parsed.commands.map(
 				(command: CommandCapability) => command.name,
@@ -1397,7 +1545,7 @@ describe("'commands' command execution", () => {
 			expect(parsed.commandCount).toBe(expectedNames.length);
 			expect(parsed.commandCount).toBeLessThan(12);
 		} finally {
-			infoSpy.mockRestore();
+			stdoutSpy.mockRestore();
 		}
 	});
 
@@ -1422,7 +1570,9 @@ describe("'commands' command execution", () => {
 	});
 
 	it("JSON --for-agent --all keeps the full catalog available", () => {
-		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		const stdoutSpy = vi
+			.spyOn(COMMAND_CATALOG_OUTPUT, "write")
+			.mockImplementation(() => {});
 		try {
 			const dispatch = dispatchRegistryCommand("commands", [
 				"commands",
@@ -1431,7 +1581,7 @@ describe("'commands' command execution", () => {
 				"--all",
 			]);
 			expect(dispatch?.result).toBe(0);
-			const output = infoSpy.mock.calls.at(-1)?.[0];
+			const output = stdoutSpy.mock.calls.at(-1)?.[0];
 			const parsed = JSON.parse(String(output));
 			const commandNames = parsed.commands.map(
 				(command: CommandCapability) => command.name,
@@ -1442,12 +1592,14 @@ describe("'commands' command execution", () => {
 				expect.arrayContaining(["policy-gate", "review-gate"]),
 			);
 		} finally {
-			infoSpy.mockRestore();
+			stdoutSpy.mockRestore();
 		}
 	});
 
 	it("JSON --all ignores unrelated invalid --mode values outside the agent rail", () => {
-		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		const stdoutSpy = vi
+			.spyOn(COMMAND_CATALOG_OUTPUT, "write")
+			.mockImplementation(() => {});
 		try {
 			const dispatch = dispatchRegistryCommand("commands", [
 				"commands",
@@ -1457,16 +1609,18 @@ describe("'commands' command execution", () => {
 				"anything",
 			]);
 			expect(dispatch?.result).toBe(0);
-			const output = infoSpy.mock.calls.at(-1)?.[0];
+			const output = stdoutSpy.mock.calls.at(-1)?.[0];
 			const parsed = JSON.parse(String(output));
 			expect(parsed.commandCount).toBe(MIGRATED_COMMAND_NAMES.length);
 		} finally {
-			infoSpy.mockRestore();
+			stdoutSpy.mockRestore();
 		}
 	});
 
 	it("JSON --for-agent --plumbing keeps the full catalog available", () => {
-		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		const stdoutSpy = vi
+			.spyOn(COMMAND_CATALOG_OUTPUT, "write")
+			.mockImplementation(() => {});
 		try {
 			const dispatch = dispatchRegistryCommand("commands", [
 				"commands",
@@ -1475,7 +1629,7 @@ describe("'commands' command execution", () => {
 				"--plumbing",
 			]);
 			expect(dispatch?.result).toBe(0);
-			const output = infoSpy.mock.calls.at(-1)?.[0];
+			const output = stdoutSpy.mock.calls.at(-1)?.[0];
 			const parsed = JSON.parse(String(output));
 			const commandNames = parsed.commands.map(
 				(command: CommandCapability) => command.name,
@@ -1486,7 +1640,7 @@ describe("'commands' command execution", () => {
 				expect.arrayContaining(["policy-gate", "review-gate"]),
 			);
 		} finally {
-			infoSpy.mockRestore();
+			stdoutSpy.mockRestore();
 		}
 	});
 });
