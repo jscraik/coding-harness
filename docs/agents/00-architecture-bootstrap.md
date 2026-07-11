@@ -154,6 +154,11 @@ part of that architecture-context lane when they refresh `.diagram/**` or
 `AI/context/diagram-context.md`: commit this guide with the generated context
 pack so future agents can trace the security-check authority model, init
 scaffold evidence, and diagram refresh as one review surface.
+GitBook public-root, privacy-validator, CircleCI docs-gate, and logical
+project-context-reference scaffolds are architecture-sensitive init surfaces.
+When they change, refresh `.diagram/**` and `AI/context/diagram-context.md` and
+keep this guide synchronized with the compact and extended agent-governance
+contracts.
 For release packaging changes that alter runtime dependency metadata, pass the packed CLI smoke path before publish, and commit any required `AI/context/diagram-context.md` refresh and its required docs-gate surfaces (including `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and `docs/agents/07b-agent-governance.md`) that pre-push or docs-gate reports.
 For formatter or linter major-version migrations, expect generated architecture context to drop newly ignored local analysis paths and refresh `AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and `docs/agents/07b-agent-governance.md` with the committed `AI/context/diagram-context.md` update so reviewers know the architecture pack changed because tracked tooling rules changed.
 For validation gate graph changes, refresh `AI/context/diagram-context.md` and keep the validation governance surfaces synchronized (`AGENTS.md`, `docs/agents/00-architecture-bootstrap.md`, and `docs/agents/07b-agent-governance.md`) when typed gate specs, phase-exit evidence gates, local review/validation artifact adapters, `harness next --phase-exit` visibility, parity tests, or resume-checkpoint guards are added or changed. Rollback: revert the branch to remove the typed mirror, evidence-gate contract, adapter wiring, dispatch guard, cockpit visibility, parity tests, and synchronized doc updates.
