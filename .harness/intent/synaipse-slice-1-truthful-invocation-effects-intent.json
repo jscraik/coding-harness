@@ -1,0 +1,276 @@
+{
+	"schemaVersion": "intent-artifact/v1",
+	"intentId": "synaipse-slice-1-truthful-invocation-effects",
+	"createdAt": "2026-07-11T18:49:37Z",
+	"owner": "coding-harness-maintainers",
+	"goalRef": "https://linear.app/jscraik/issue/JSC-442/coding-harness-admit-synaipse-slice-1-truthful-invocation-effects",
+	"planRef": "docs/plans/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-plan.md",
+	"linearIssue": "JSC-442",
+	"reviewStatus": "pending",
+	"slice": {
+		"id": "Slice-1",
+		"name": "Truthful invocation effects",
+		"purpose": "Make command invocation effects explicit, truthful, and testable before any consolidation, retirement, or wider SynAIpse lifecycle work.",
+		"feedbackSignals": [
+			"The consolidation audit found invocation-dependent writes hidden behind commands catalogued as safe reads.",
+			"The accepted plan requires a separate Linear admission, test-first proof, and independent QA before the first runtime implementation unit.",
+			"The Phase 0 independent QA receipt limits its findings to planning and structure, so runtime evidence must be created afresh on this branch."
+		],
+		"rootOperationalFailure": "Agents cannot make safe delivery decisions when a recommended diagnostic invocation can change artifacts, repository state, Git state, or external-provider state without declaring that effect.",
+		"failureCategories": [
+			"undeclared mutation",
+			"misleading command contract",
+			"unclear authority boundary",
+			"insufficient negative coverage"
+		]
+	},
+	"plannedChange": {
+		"baseRef": "origin/main@e3c6f3342ed4cc26e1dae2abc70364cb2c38c666",
+		"effectTaxonomy": [
+			"pure_read",
+			"writes_artifact",
+			"writes_repository",
+			"mutates_git",
+			"mutates_external"
+		],
+		"characterizationTargets": [
+			"doctor",
+			"docs-gate",
+			"contract",
+			"context-health",
+			"workflow:generate",
+			"pattern-scope",
+			"drift-gate",
+			"check-environment",
+			"ui:fast",
+			"ui:verify",
+			"ui:explore",
+			"review-context",
+			"linear-gate"
+		],
+		"invocationEffects": {
+			"doctor": {
+				"identity": {
+					"target": "doctor",
+					"caller": "harness-cli",
+					"provider": "internal-diagnostic"
+				},
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "temporary-repository probe shows no artifact, Git, or repository mutation"
+			},
+			"docs-gate": {
+				"identity": {
+					"target": "docs-gate",
+					"caller": "harness-gate",
+					"provider": "internal-validation"
+				},
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "validation command produces exit code and diagnostics without side effects"
+			},
+			"contract": {
+				"identity": {
+					"target": "contract",
+					"caller": "harness-cli",
+					"provider": "internal-diagnostic"
+				},
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "contract analysis produces report without modifying workspace or repository state"
+			},
+			"context-health": {
+				"identity": {
+					"target": "context-health",
+					"caller": "harness-cli",
+					"provider": "internal-diagnostic"
+				},
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "health check reads context state without mutation"
+			},
+			"workflow:generate": {
+				"identity": {
+					"target": "workflow:generate",
+					"caller": "harness-cli",
+					"provider": "internal-generator"
+				},
+				"effectClasses": ["writes_artifact"],
+				"authority": "requires-approval",
+				"retryPolicy": "none",
+				"rollback": "delete-generated-artifacts",
+				"expectedEvidence": "generated workflow files written to .github/workflows; Git status shows new untracked files"
+			},
+			"pattern-scope": {
+				"identity": {
+					"target": "pattern-scope",
+					"caller": "harness-cli",
+					"provider": "internal-diagnostic"
+				},
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "pattern analysis produces scope report without modifying repository"
+			},
+			"drift-gate": {
+				"identity": {
+					"target": "drift-gate",
+					"caller": "harness-gate",
+					"provider": "internal-validation"
+				},
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "drift detection reports status without modifying workspace"
+			},
+			"check-environment": {
+				"identity": {
+					"target": "check-environment",
+					"caller": "harness-cli",
+					"provider": "internal-diagnostic"
+				},
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "environment check reads system state without mutation"
+			},
+			"ui:fast": {
+				"identity": {
+					"target": "ui:fast",
+					"caller": "harness-ui",
+					"provider": "internal-viewer"
+				},
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "UI fast mode displays data without persisting state changes"
+			},
+			"ui:verify": {
+				"identity": {
+					"target": "ui:verify",
+					"caller": "harness-ui",
+					"provider": "internal-validation"
+				},
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "UI verification checks state without modification"
+			},
+			"ui:explore": {
+				"identity": {
+					"target": "ui:explore",
+					"caller": "harness-ui",
+					"provider": "internal-viewer"
+				},
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "UI exploration mode reads and displays data without side effects"
+			},
+			"review-context": {
+				"identity": {
+					"target": "review-context",
+					"caller": "harness-cli",
+					"provider": "internal-diagnostic"
+				},
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "context review produces analysis report without mutating state"
+			},
+			"linear-gate": {
+				"identity": {
+					"target": "linear-gate",
+					"caller": "harness-gate",
+					"provider": "external-linear-api"
+				},
+				"effectClasses": ["pure_read"],
+				"authority": "read-only",
+				"retryPolicy": "idempotent-retry",
+				"rollback": "not-applicable",
+				"expectedEvidence": "Linear API query returns issue status without mutating external state"
+			}
+		},
+		"implementationRule": "Add tests and characterization before changing command behavior. Keep compatibility surfaces callable and make diagnostics pure by default where practical; effectful artifact output must be explicit, and every invocation declares all applicable effect classes."
+	},
+	"nonGoals": [
+		"Do not delete, retire, rename, or broadly refactor command surfaces.",
+		"Do not implement the proposed adopt or diagnose commands.",
+		"Do not widen PR #465 or modify its GitBook/context canary scope.",
+		"Do not mutate downstream repositories or external-provider configuration.",
+		"Do not claim CI, CodeRabbit, hosted provider, merge, or downstream adoption truth from local tests or this intent artifact."
+	],
+	"validationPlan": [
+		{
+			"command": "jq -e '(.schemaVersion == \"intent-artifact/v1\") and (.linearIssue == \"JSC-442\") and (.reviewStatus == \"pending\") and (.plannedChange.effectTaxonomy | type == \"array\" and length > 0) and (.plannedChange.characterizationTargets | type == \"array\" and length > 0) and (.validationPlan | type == \"array\" and length > 0) and all(.validationPlan[]; (.command | type == \"string\" and length > 0) and (.expected | type == \"string\" and length > 0)) and (.reviewRequirements.intentReviewBeforeImplementation | type == \"array\" and length > 0) and (.reviewRequirements.implementationReviewBeforeIntegration | type == \"array\" and length > 0) and (.acceptanceCriteria | type == \"array\" and length > 0)' .harness/intent/synaipse-slice-1-truthful-invocation-effects-intent.json >/dev/null",
+			"expected": "The admission artifact is syntactically valid, remains pending independent intent review, and retains non-empty effect, target, validation, review, and acceptance obligations.",
+			"phase": "admission"
+		},
+		{
+			"command": "bash scripts/run-harness-gate.sh docs-gate --mode required --json",
+			"expected": "The admission-only artifact satisfies the required documentation gate without claiming runtime behavior.",
+			"phase": "admission"
+		},
+		{
+			"command": "jq -e '(.plannedChange.invocationEffects | keys | length) == 13 and (.plannedChange.invocationEffects | to_entries | all(.value | (type == \"object\") and has(\"identity\") and has(\"effectClasses\") and has(\"authority\") and has(\"retryPolicy\") and has(\"rollback\") and has(\"expectedEvidence\") and (.effectClasses | type == \"array\" and length > 0)))' .harness/intent/synaipse-slice-1-truthful-invocation-effects-intent.json >/dev/null",
+			"expected": "Every characterizationTargets entry has a corresponding invocationEffects record with required fields (identity, effectClasses, authority, retryPolicy, rollback, expectedEvidence), and all declared effectClasses are valid taxonomy values.",
+			"phase": "admission"
+		},
+		{
+			"command": "pnpm run test:related",
+			"expected": "After implementation begins, focused characterization and negative undeclared-write tests pass before broader validation.",
+			"phase": "deferred-implementation"
+		},
+		{
+			"command": "pnpm test:deep",
+			"expected": "After runtime or artifact behavior changes, the deep behavior gate passes.",
+			"phase": "deferred-implementation"
+		},
+		{
+			"command": "temporary-repository pure-diagnostic probe",
+			"expected": "A nominally pure diagnostic leaves repository and Git state unchanged; any undeclared mutation fails the slice.",
+			"phase": "deferred-implementation"
+		}
+	],
+	"reviewRequirements": {
+		"intentReviewBeforeImplementation": ["independent QA disproof"],
+		"skillLenses": [
+			"improve-agent-native",
+			"improve-codebase-architecture",
+			"testing"
+		],
+		"claimBoundary": "This artifact and the draft PR admit test-first implementation planning only. Neither proves a runtime effect is fixed nor authorizes integration.",
+		"implementationReviewBeforeIntegration": [
+			"current-SHA CodeRabbit review after an implementation commit",
+			"independent QA review of the current implementation SHA",
+			"all current-SHA CodeRabbit findings are resolved or explicitly waived",
+			"security findings are normalized and residual risk is recorded before integration"
+		]
+	},
+	"acceptanceCriteria": [
+		"Every affected recommended invocation declares every applicable effect class and names targets or provider class, authority, retry policy, rollback, and expected evidence.",
+		"Complete target coverage: every characterizationTargets entry has a corresponding invocationEffects record with all required fields (identity, effectClasses, authority, retryPolicy, rollback, expectedEvidence).",
+		"Accurate per-invocation declarations: declared effect classes match actual observed behavior in characterization tests.",
+		"Current write paths are characterized before behavior is changed.",
+		"Negative tests reject or surface undeclared writes.",
+		"Catalog tests and harness next --json tests project truthful effects.",
+		"A temporary-repository probe detects mutation from a nominally pure diagnostic.",
+		"Independent QA reviews the current implementation SHA before an integration request.",
+		"Rollback removes the additive projection or behavior change while retaining characterization and regression tests."
+	]
+}

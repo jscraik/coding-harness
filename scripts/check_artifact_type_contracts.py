@@ -72,6 +72,49 @@ def reject_negative_int(value: int) -> int:
     return value
 
 
+class CommandInvocationEffect(BaseModel):
+    """Typed contract for one command invocation's declared effects."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    invocation: str
+    effectClasses: list[
+        Literal[
+            "pure_read",
+            "writes_artifact",
+            "writes_repository",
+            "mutates_git",
+            "mutates_external",
+        ]
+    ]
+    targets: list[str]
+    providerClass: str
+    authority: str
+    retryPolicy: Literal["safe", "conditional", "manual"]
+    rollback: str
+    expectedEvidence: list[str]
+
+    @field_validator(
+        "invocation", "providerClass", "authority", "rollback", mode="after"
+    )
+    @classmethod
+    def reject_blank_effect_strings(cls, value: str) -> str:
+        return reject_blank_string(value)
+
+    @field_validator("effectClasses", "targets", "expectedEvidence", mode="after")
+    @classmethod
+    def require_effect_items(cls, value: list[str]) -> list[str]:
+        return reject_empty_or_blank_list(value)
+
+    @model_validator(mode="after")
+    def reject_impure_pure_read(self) -> CommandInvocationEffect:
+        if "pure_read" in self.effectClasses and len(self.effectClasses) > 1:
+            raise ValueError("pure_read cannot be combined with mutation effects")
+        if len(set(self.effectClasses)) != len(self.effectClasses):
+            raise ValueError("effectClasses must not contain duplicate entries")
+        return self
+
+
 class CommandCapability(BaseModel):
     """Typed contract for one command catalog entry."""
 
@@ -93,6 +136,8 @@ class CommandCapability(BaseModel):
     mutability: Literal["read", "write"]
     requiredFlags: list[str]
     expectedArtifacts: list[str]
+    effectCharacterization: Literal["characterized", "legacy_uncharacterized"]
+    invocationEffects: list[CommandInvocationEffect]
     retryability: Literal["safe", "conditional", "manual"]
     safeFirstAlternatives: list[str]
     tier: Literal["cockpit", "domain", "plumbing", "legacy"]
@@ -130,13 +175,22 @@ class CommandCapability(BaseModel):
             raise ValueError("must not contain blank items")
         return value
 
+    @field_validator("invocationEffects", mode="after")
+    @classmethod
+    def require_invocation_effects(
+        cls, value: list[CommandInvocationEffect]
+    ) -> list[CommandInvocationEffect]:
+        if not value:
+            raise ValueError("must contain at least one invocation effect")
+        return value
+
 
 class CommandCatalog(BaseModel):
     """Typed contract for command catalog JSON output."""
 
     model_config = ConfigDict(extra="forbid")
 
-    schemaVersion: Literal["harness-command-catalog/v3"]
+    schemaVersion: Literal["harness-command-catalog/v4"]
     generatedAt: str
     commandCount: int
     commands: list[CommandCapability]
@@ -241,7 +295,7 @@ class CliJsonContract(BaseModel):
     name: str
     command: list[str]
     expectedSchemaVersion: Literal[
-        "harness-command-catalog/v3",
+        "harness-command-catalog/v4",
         "harness-decision/v1",
         "harness-cli-error/v1",
     ]
@@ -1389,7 +1443,7 @@ def validate_cli_json_value(
         errors,
         f"{label}: schemaVersion must be {contract.expectedSchemaVersion}",
     )
-    if contract.expectedSchemaVersion == "harness-command-catalog/v3":
+    if contract.expectedSchemaVersion == "harness-command-catalog/v4":
         return validate_command_catalog_value(value, label, errors)
     if contract.expectedSchemaVersion == "harness-decision/v1":
         validate_harness_decision_value(value, label, errors)
@@ -1489,7 +1543,7 @@ def validate_cli_json_contracts(errors: list[str]) -> tuple[int, int]:
             contract.examplePath,
             errors,
         )
-        if contract.expectedSchemaVersion == "harness-command-catalog/v3":
+        if contract.expectedSchemaVersion == "harness-command-catalog/v4":
             command_catalog_commands = max(command_catalog_commands, example_count)
 
         if not contract.liveValidation.enabled:
@@ -1521,7 +1575,7 @@ def validate_cli_json_contracts(errors: list[str]) -> tuple[int, int]:
             " ".join(contract.command),
             errors,
         )
-        if contract.expectedSchemaVersion == "harness-command-catalog/v3":
+        if contract.expectedSchemaVersion == "harness-command-catalog/v4":
             command_catalog_commands = max(command_catalog_commands, live_count)
 
     return (len(manifest.contracts), command_catalog_commands)

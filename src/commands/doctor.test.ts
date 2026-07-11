@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import {
 	existsSync,
 	mkdtempSync,
@@ -92,6 +92,46 @@ describe("runDoctor — tool checks", () => {
 	afterEach(() => {
 		if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
 		vi.restoreAllMocks();
+	});
+
+	it("keeps the default CLI diagnosis pure in a temporary Git repository", () => {
+		mockAllToolsOk();
+		execFileSync("git", ["init", "--quiet", dir]);
+		const before = execFileSync("git", ["-C", dir, "status", "--porcelain"], {
+			encoding: "utf-8",
+		});
+		const output = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		runDoctorCLI(["--dir", dir, "--json"], () => "test-version");
+
+		expect(output).toHaveBeenCalledOnce();
+		expect(
+			existsSync(join(dir, getNorthStarSurfaceClassificationSnapshotPath())),
+		).toBe(false);
+		expect(
+			execFileSync("git", ["-C", dir, "status", "--porcelain"], {
+				encoding: "utf-8",
+			}),
+		).toBe(before);
+	});
+
+	it("writes the north-star artifact only when the CLI flag is explicit", () => {
+		mockAllToolsOk();
+		const output = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		runDoctorCLI(
+			["--dir", dir, "--write-artifact", "--json"],
+			() => "test-version",
+		);
+
+		expect(output).toHaveBeenCalledOnce();
+		expect(
+			existsSync(join(dir, getNorthStarSurfaceClassificationSnapshotPath())),
+		).toBe(true);
 	});
 
 	it("reports ok for node 26.3.0", () => {
@@ -509,7 +549,7 @@ describe("runDoctor — file checks", () => {
 		copyRepoFile(dir, "docs/roadmap/north-star.md");
 		mockAllToolsOk();
 
-		const report = runDoctor({ dir });
+		const report = runDoctor({ dir, writeArtifact: true });
 		const artifactPath = getNorthStarSurfaceClassificationSnapshotPath();
 		const resolvedArtifactPath = join(dir, artifactPath);
 

@@ -12,7 +12,7 @@
  *   1 — one or more prerequisites are missing / misconfigured
  *
  * Usage:
- *   harness doctor [--dir <path>] [--json]
+ *   harness doctor [--dir <path>] [--json] [--write-artifact]
  */
 
 import { resolve } from "node:path";
@@ -76,6 +76,8 @@ export interface DoctorReport {
 export interface DoctorOptions {
 	dir?: string;
 	json?: boolean;
+	/** Write the north-star classification sidecar after diagnosis. */
+	writeArtifact?: boolean;
 	/** If true, attempt auto-fix where possible (e.g. seeding files) */
 	fix?: boolean;
 	/** Harness version used for artifact/report provenance */
@@ -109,11 +111,11 @@ function countChecks(checks: DoctorCheck[]): DoctorReport["counts"] {
 /**
  * Run prerequisite checks for a target directory and produce a DoctorReport.
  *
- * Executes each check from DOCTOR_CHECKS against the resolved directory, aggregates counts and overall failure state,
- * and attempts to write a North Star surface classification artifact; if artifact creation fails the error is captured
- * as an additional failing check and included in the returned report.
+ * Executes each check from DOCTOR_CHECKS against the resolved directory and aggregates counts and overall failure state.
+ * The default diagnosis is read-only. When `options.writeArtifact` is true, it also writes a North Star surface
+ * classification artifact; a write failure is captured as an additional failing check in the returned report.
  *
- * @param options - Optional settings; `options.dir` overrides the current working directory used for checks.
+ * @param options - Optional settings; `options.dir` overrides the current working directory and `writeArtifact` opts into the sidecar artifact.
  * @returns A DoctorReport containing metadata, the full list of checks, aggregated `counts`, `hasFailures`, optional `artifact_refs`, and `postInitChecklist`.
  */
 export function runDoctor(options: DoctorOptions = {}): DoctorReport {
@@ -132,20 +134,24 @@ export function runDoctor(options: DoctorOptions = {}): DoctorReport {
 	};
 	report.hasFailures = report.counts.fail > 0;
 
-	try {
-		writeNorthStarSurfaceClassificationSnapshot(dir, report);
-		report.artifact_refs = [createNorthStarSurfaceClassificationArtifactRef()];
-	} catch (error) {
-		report.checks.push({
-			id: "artifact:north-star-surface-classification",
-			category: "config",
-			label: "North-star surface classification artifact",
-			status: "fail",
-			message: `failed to write ${getNorthStarSurfaceClassificationArtifactPath()}: ${sanitizeError(error)}`,
-			fix: "Confirm .harness/guardrails/north-star is writable, then rerun harness doctor --json.",
-		});
-		report.counts = countChecks(report.checks);
-		report.hasFailures = true;
+	if (options.writeArtifact) {
+		try {
+			writeNorthStarSurfaceClassificationSnapshot(dir, report);
+			report.artifact_refs = [
+				createNorthStarSurfaceClassificationArtifactRef(),
+			];
+		} catch (error) {
+			report.checks.push({
+				id: "artifact:north-star-surface-classification",
+				category: "config",
+				label: "North-star surface classification artifact",
+				status: "fail",
+				message: `failed to write ${getNorthStarSurfaceClassificationArtifactPath()}: ${sanitizeError(error)}`,
+				fix: "Confirm .harness/guardrails/north-star is writable, then rerun harness doctor --write-artifact --json.",
+			});
+			report.counts = countChecks(report.checks);
+			report.hasFailures = true;
+		}
 	}
 
 	attachRecoveryGuidance(report);
@@ -164,6 +170,7 @@ export function runDoctorCLI(args: string[], getVersion: () => string): number {
 
 	const jsonFlag = args.includes("--json");
 	const checklistFlag = args.includes("--checklist");
+	const writeArtifactFlag = args.includes("--write-artifact");
 	const dirFlag = inspectFlagValue(args, "--dir");
 	if (dirFlag.missingValue) {
 		console.error("Error: --dir requires a path");
@@ -172,6 +179,7 @@ export function runDoctorCLI(args: string[], getVersion: () => string): number {
 
 	const opts: DoctorOptions = {};
 	if (dirFlag.value) opts.dir = dirFlag.value;
+	opts.writeArtifact = writeArtifactFlag;
 
 	opts.version = getVersion();
 	const report = runDoctor(opts);
