@@ -86,7 +86,7 @@ const CHARACTERIZED_EFFECTS_BY_NAME: Readonly<
 			effectClasses: ["writes_artifact", "writes_repository"],
 			targets: [
 				"artifacts/consistency-gate docs-gate report",
-				".harness contradiction history",
+				"artifacts/context-integrity/contradiction-history.jsonl",
 			],
 			providerClass: "local_filesystem",
 			authority: "Repository write authority is required.",
@@ -98,7 +98,7 @@ const CHARACTERIZED_EFFECTS_BY_NAME: Readonly<
 			effectClasses: ["writes_repository"],
 			targets: [
 				"explicit docs-gate report output path",
-				".harness contradiction history",
+				"artifacts/context-integrity/contradiction-history.jsonl",
 			],
 			providerClass: "local_filesystem",
 			authority: "Repository write authority is required.",
@@ -155,7 +155,7 @@ const CHARACTERIZED_EFFECTS_BY_NAME: Readonly<
 			],
 		}),
 		effect("context-health --out <path> --json", {
-			effectClasses: ["writes_repository"],
+			effectClasses: ["writes_artifact", "writes_repository"],
 			targets: [
 				"explicit context-health output path",
 				"artifacts/context-integrity index-source-inventory artifact",
