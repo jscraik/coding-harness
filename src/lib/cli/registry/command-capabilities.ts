@@ -207,7 +207,8 @@ function getCommandRetryability(
 function getInvocationRetryability(
 	effects: readonly CommandInvocationEffect[],
 ): CommandRetryability {
-	if (effects.some((effect) => effect.retryPolicy === "manual")) return "manual";
+	if (effects.some((effect) => effect.retryPolicy === "manual"))
+		return "manual";
 	if (effects.some((effect) => effect.retryPolicy === "conditional")) {
 		return "conditional";
 	}
@@ -272,7 +273,10 @@ export function toCommandCapability(spec: CommandSpec): CommandCapability {
 	const category = getCommandCategory(spec.name);
 	const primaryAudience = getCommandPrimaryAudience(spec.name);
 	const orchestratedBy = [...(ORCHESTRATED_BY_BY_NAME[spec.name] ?? [])];
-	const legacyRetryability = getCommandRetryability(spec.name, legacyMutability);
+	const legacyRetryability = getCommandRetryability(
+		spec.name,
+		legacyMutability,
+	);
 	const invocationEffects = getCommandInvocationEffects(
 		spec.name,
 		legacyMutability,
