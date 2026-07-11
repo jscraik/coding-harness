@@ -203,6 +203,18 @@ function getCommandRetryability(
 	return mutability === "read" ? "safe" : "conditional";
 }
 
+/** Derives the safest retry classification from every characterized invocation. */
+function getInvocationRetryability(
+	effects: readonly CommandInvocationEffect[],
+): CommandRetryability {
+	if (effects.some((effect) => effect.retryPolicy === "manual"))
+		return "manual";
+	if (effects.some((effect) => effect.retryPolicy === "conditional")) {
+		return "conditional";
+	}
+	return "safe";
+}
+
 function getCommandTier(name: string, category: CommandCategory): CommandTier {
 	const explicit = COMMAND_TIER_BY_NAME[name];
 	if (explicit) return explicit;
@@ -261,13 +273,17 @@ export function toCommandCapability(spec: CommandSpec): CommandCapability {
 	const category = getCommandCategory(spec.name);
 	const primaryAudience = getCommandPrimaryAudience(spec.name);
 	const orchestratedBy = [...(ORCHESTRATED_BY_BY_NAME[spec.name] ?? [])];
-	const retryability = getCommandRetryability(spec.name, legacyMutability);
+	const legacyRetryability = getCommandRetryability(
+		spec.name,
+		legacyMutability,
+	);
 	const invocationEffects = getCommandInvocationEffects(
 		spec.name,
 		legacyMutability,
-		retryability,
+		legacyRetryability,
 	);
 	const mutability = getInvocationMutability(invocationEffects);
+	const retryability = getInvocationRetryability(invocationEffects);
 	const tier = getCommandTier(spec.name, category);
 	return {
 		name: spec.name,
