@@ -50,7 +50,11 @@
 		],
 		"invocationEffects": {
 			"doctor": {
-				"identity": { "target": "doctor", "caller": "harness-cli", "provider": "internal-diagnostic" },
+				"identity": {
+					"target": "doctor",
+					"caller": "harness-cli",
+					"provider": "internal-diagnostic"
+				},
 				"effectClasses": ["pure_read"],
 				"authority": "read-only",
 				"retryPolicy": "idempotent-retry",
@@ -58,7 +62,11 @@
 				"expectedEvidence": "temporary-repository probe shows no artifact, Git, or repository mutation"
 			},
 			"docs-gate": {
-				"identity": { "target": "docs-gate", "caller": "harness-gate", "provider": "internal-validation" },
+				"identity": {
+					"target": "docs-gate",
+					"caller": "harness-gate",
+					"provider": "internal-validation"
+				},
 				"effectClasses": ["pure_read"],
 				"authority": "read-only",
 				"retryPolicy": "idempotent-retry",
@@ -66,7 +74,11 @@
 				"expectedEvidence": "validation command produces exit code and diagnostics without side effects"
 			},
 			"contract": {
-				"identity": { "target": "contract", "caller": "harness-cli", "provider": "internal-diagnostic" },
+				"identity": {
+					"target": "contract",
+					"caller": "harness-cli",
+					"provider": "internal-diagnostic"
+				},
 				"effectClasses": ["pure_read"],
 				"authority": "read-only",
 				"retryPolicy": "idempotent-retry",
@@ -74,7 +86,11 @@
 				"expectedEvidence": "contract analysis produces report without modifying workspace or repository state"
 			},
 			"context-health": {
-				"identity": { "target": "context-health", "caller": "harness-cli", "provider": "internal-diagnostic" },
+				"identity": {
+					"target": "context-health",
+					"caller": "harness-cli",
+					"provider": "internal-diagnostic"
+				},
 				"effectClasses": ["pure_read"],
 				"authority": "read-only",
 				"retryPolicy": "idempotent-retry",
@@ -82,7 +98,11 @@
 				"expectedEvidence": "health check reads context state without mutation"
 			},
 			"workflow:generate": {
-				"identity": { "target": "workflow:generate", "caller": "harness-cli", "provider": "internal-generator" },
+				"identity": {
+					"target": "workflow:generate",
+					"caller": "harness-cli",
+					"provider": "internal-generator"
+				},
 				"effectClasses": ["writes_artifact"],
 				"authority": "requires-approval",
 				"retryPolicy": "none",
@@ -90,7 +110,11 @@
 				"expectedEvidence": "generated workflow files written to .github/workflows; Git status shows new untracked files"
 			},
 			"pattern-scope": {
-				"identity": { "target": "pattern-scope", "caller": "harness-cli", "provider": "internal-diagnostic" },
+				"identity": {
+					"target": "pattern-scope",
+					"caller": "harness-cli",
+					"provider": "internal-diagnostic"
+				},
 				"effectClasses": ["pure_read"],
 				"authority": "read-only",
 				"retryPolicy": "idempotent-retry",
@@ -98,7 +122,11 @@
 				"expectedEvidence": "pattern analysis produces scope report without modifying repository"
 			},
 			"drift-gate": {
-				"identity": { "target": "drift-gate", "caller": "harness-gate", "provider": "internal-validation" },
+				"identity": {
+					"target": "drift-gate",
+					"caller": "harness-gate",
+					"provider": "internal-validation"
+				},
 				"effectClasses": ["pure_read"],
 				"authority": "read-only",
 				"retryPolicy": "idempotent-retry",
@@ -106,7 +134,11 @@
 				"expectedEvidence": "drift detection reports status without modifying workspace"
 			},
 			"check-environment": {
-				"identity": { "target": "check-environment", "caller": "harness-cli", "provider": "internal-diagnostic" },
+				"identity": {
+					"target": "check-environment",
+					"caller": "harness-cli",
+					"provider": "internal-diagnostic"
+				},
 				"effectClasses": ["pure_read"],
 				"authority": "read-only",
 				"retryPolicy": "idempotent-retry",
@@ -114,7 +146,11 @@
 				"expectedEvidence": "environment check reads system state without mutation"
 			},
 			"ui:fast": {
-				"identity": { "target": "ui:fast", "caller": "harness-ui", "provider": "internal-viewer" },
+				"identity": {
+					"target": "ui:fast",
+					"caller": "harness-ui",
+					"provider": "internal-viewer"
+				},
 				"effectClasses": ["pure_read"],
 				"authority": "read-only",
 				"retryPolicy": "idempotent-retry",
@@ -122,7 +158,11 @@
 				"expectedEvidence": "UI fast mode displays data without persisting state changes"
 			},
 			"ui:verify": {
-				"identity": { "target": "ui:verify", "caller": "harness-ui", "provider": "internal-validation" },
+				"identity": {
+					"target": "ui:verify",
+					"caller": "harness-ui",
+					"provider": "internal-validation"
+				},
 				"effectClasses": ["pure_read"],
 				"authority": "read-only",
 				"retryPolicy": "idempotent-retry",
@@ -130,7 +170,11 @@
 				"expectedEvidence": "UI verification checks state without modification"
 			},
 			"ui:explore": {
-				"identity": { "target": "ui:explore", "caller": "harness-ui", "provider": "internal-viewer" },
+				"identity": {
+					"target": "ui:explore",
+					"caller": "harness-ui",
+					"provider": "internal-viewer"
+				},
 				"effectClasses": ["pure_read"],
 				"authority": "read-only",
 				"retryPolicy": "idempotent-retry",
@@ -138,7 +182,11 @@
 				"expectedEvidence": "UI exploration mode reads and displays data without side effects"
 			},
 			"review-context": {
-				"identity": { "target": "review-context", "caller": "harness-cli", "provider": "internal-diagnostic" },
+				"identity": {
+					"target": "review-context",
+					"caller": "harness-cli",
+					"provider": "internal-diagnostic"
+				},
 				"effectClasses": ["pure_read"],
 				"authority": "read-only",
 				"retryPolicy": "idempotent-retry",
@@ -146,7 +194,11 @@
 				"expectedEvidence": "context review produces analysis report without mutating state"
 			},
 			"linear-gate": {
-				"identity": { "target": "linear-gate", "caller": "harness-gate", "provider": "external-linear-api" },
+				"identity": {
+					"target": "linear-gate",
+					"caller": "harness-gate",
+					"provider": "external-linear-api"
+				},
 				"effectClasses": ["pure_read"],
 				"authority": "read-only",
 				"retryPolicy": "idempotent-retry",
