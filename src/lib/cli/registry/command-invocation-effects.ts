@@ -154,12 +154,21 @@ const CHARACTERIZED_EFFECTS_BY_NAME: Readonly<
 		}),
 		effect("context-health --out <path> --json", {
 			effectClasses: ["writes_repository"],
-			targets: ["explicit context-health output path"],
+			targets: [
+				"explicit context-health output path",
+				"artifacts/context-integrity index-source-inventory artifact",
+				"conditional memory-metrics snapshot artifact",
+			],
 			providerClass: "local_filesystem",
 			authority: "Repository write authority is required.",
 			retryPolicy: "conditional",
-			rollback: "Restore or remove the explicit context-health output.",
-			expectedEvidence: ["context-health report at the explicit output path"],
+			rollback:
+				"Restore or remove the explicit report, generated index-source-inventory artifact, and any memory-metrics snapshot.",
+			expectedEvidence: [
+				"context-health report at the explicit output path",
+				"index-source-inventory artifact",
+				"memory-metrics snapshot artifact when a source is present",
+			],
 		}),
 	],
 	"workflow:generate": [

@@ -732,6 +732,17 @@ describe("getRegistryCommandCapabilities", () => {
 						"conditional memory-metrics snapshot artifact",
 					]),
 				}),
+				expect.objectContaining({
+					invocation: "context-health --out <path> --json",
+					targets: expect.arrayContaining([
+						"artifacts/context-integrity index-source-inventory artifact",
+						"conditional memory-metrics snapshot artifact",
+					]),
+					expectedEvidence: expect.arrayContaining([
+						"index-source-inventory artifact",
+						"memory-metrics snapshot artifact when a source is present",
+					]),
+				}),
 			]),
 		);
 		expect(contract?.invocationEffects).toEqual(
