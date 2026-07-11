@@ -128,7 +128,7 @@ a distinct user outcome that existing surfaces cannot express safely.
 
 ### Codex main source
 
-- Repository: `/Users/jamiecraik/dev/codex`.
+- Repository: `OpenAI Codex repository` (logical source identifier).
 - Branch inspected: `main` tracking `origin/main`.
 - Commit inspected: `5c9905ae413e61c4bfaaa5fdfc5464583308e18a`.
 - `codex-rs/core-api/src/lib.rs` exports thread management, state, configuration,
