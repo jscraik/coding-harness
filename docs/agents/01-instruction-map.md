@@ -56,6 +56,7 @@ Load only the layer you need. Never require a higher layer to execute a lower-la
 | Intent | Primary doc |
 | --- | --- |
 | Architecture and cross-command changes | [00-architecture-bootstrap.md](./00-architecture-bootstrap.md) |
+| SynAIpse lifecycle, ownership, authority, or portfolio adoption | [SynAIpse v1 specification](../specs/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-spec.md) + [ADR 004](../adr/004-synaipse-agent-native-delivery-control-plane.md) |
 | Policy conflicts and inconsistencies | [05-contradictions-and-cleanup.md](./05-contradictions-and-cleanup.md) |
 | Role/accountability changes | [07a-role-governance.md](./07a-role-governance.md) + [07b-agent-governance.md](./07b-agent-governance.md) |
 | Auditability requirements | [09-audit-trail-policy.md](./09-audit-trail-policy.md) |

@@ -390,7 +390,9 @@ workflows:
       - run-governance-check:
           name: docs-gate
           check_name: docs-gate
-          command: bash scripts/run-harness-gate.sh docs-gate --mode required --json
+          command: |
+            pnpm docs:gitbook:check
+            bash scripts/run-harness-gate.sh docs-gate --mode required --json
           filters:
             tags:
               ignore: /.*/

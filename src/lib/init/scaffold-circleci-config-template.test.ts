@@ -59,6 +59,7 @@ describe("scaffold CircleCI config template", () => {
 			"snyk test --severity-threshold=high --file=package.json --package-manager=pnpm || true",
 		);
 		expect(config).toContain("name: security-scan");
+		expect(config).toContain("node scripts/check-gitbook-readiness.mjs");
 		expect(config).not.toContain("}}      -");
 		expect(config).not.toMatch(/{{[a-zA-Z]+}}/);
 	});

@@ -22,6 +22,12 @@ thin and delegate into this deep module.
   validation.
 - Scaffold template changes must keep generated downstream docs, PR templates,
   workflow files, and regression fixtures synchronized.
+- `scaffold-gitbook-templates.ts` owns the downstream `.gitbook.yaml`,
+  `docs/public/`, GitBook privacy validator, and logical
+  `.harness/project-context-ref.json`. The project reference is portable input
+  for SynAIpse's Jamie-local registrar; it must not contain Jamie Brain paths or
+  private context bodies. CircleCI runs the generated readiness validator before
+  the general docs gate.
 - Packaged files under `src/templates/` are reserved for generated scaffold
   assets and helper fragments consumed by init renderers. Manual setup payloads,
   such as Linear UI copy-paste templates, belong with their operator docs rather

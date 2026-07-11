@@ -144,6 +144,7 @@
 		"audit": "bash scripts/run-audit-with-timeout.sh",
 		"audit:strict": "pnpm audit --audit-level=high",
 		"docs:lint": "pnpm markdownlint",
+		"docs:gitbook:check": "node scripts/check-gitbook-readiness.mjs",
 		"docs:root-archive:links": "node scripts/check-root-archive-links.mjs",
 		"docs:ubiquitous:guard": "bash scripts/check-ubiquitous-language-link.sh",
 		"docs:steering:guard": "node scripts/check-steering-feedback-contract.cjs",

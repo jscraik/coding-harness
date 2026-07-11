@@ -54,6 +54,8 @@
 			"dependsOn": [
 				"AGENTS.md",
 				"docs/architecture/documentation-layers.md",
+				"docs/adr/004-synaipse-agent-native-delivery-control-plane.md",
+				"docs/specs/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-spec.md",
 				"AI/context/diagram-context.md"
 			]
 		},
@@ -560,6 +562,53 @@
 				"docs/guardrails/package-and-scaffold-release.md",
 				"docs/agents/08-release-and-change-control.md"
 			]
+		},
+		{
+			"path": "docs/specs/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-spec.md",
+			"purpose": "Canonical SynAIpse v1 ownership, lifecycle, authority, provider, adoption, and retirement contract.",
+			"audience": ["coding-harness-maintainer", "codex-agent", "reviewer"],
+			"lifecycleStage": "design",
+			"knowledgeCategory": "architecture",
+			"canonicality": "canon",
+			"docType": "architecture",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/adr/004-synaipse-agent-native-delivery-control-plane.md",
+				"docs/roadmap/north-star.md"
+			]
+		},
+		{
+			"path": "docs/plans/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-plan.md",
+			"purpose": "Reversible implementation, validation, canary, and retirement sequence for SynAIpse v1.",
+			"audience": ["coding-harness-maintainer", "codex-agent", "reviewer"],
+			"lifecycleStage": "execute",
+			"knowledgeCategory": "delivery-governance",
+			"canonicality": "supporting",
+			"docType": "governance",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": [
+				"docs/specs/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-spec.md"
+			]
+		},
+		{
+			"path": "docs/adr/004-synaipse-agent-native-delivery-control-plane.md",
+			"purpose": "Architecture decision assigning Codex, SynAIpse, target-repository, and provider ownership.",
+			"audience": ["coding-harness-maintainer", "codex-agent", "reviewer"],
+			"lifecycleStage": "design",
+			"knowledgeCategory": "architecture",
+			"canonicality": "canon",
+			"docType": "architecture",
+			"distribution": "source-only",
+			"lifecycleState": "active",
+			"owner": "coding-harness-maintainers",
+			"semverDefault": "minor",
+			"dependsOn": ["docs/roadmap/north-star.md"]
 		}
 	]
 }

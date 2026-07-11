@@ -302,6 +302,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   surface, AGENTS shared-vocabulary guidance, and this guide synchronized in
   the same PR
 - Project Brain or Harness Engineering control-plane changes should keep `.harness/README.md`, AGENTS, CONTRIBUTING, tooling policy, and security/governance guidance synchronized so agents know which `.harness` files are durable authority, secondary context, or generated runtime state.
+- GitBook and project-context injection changes must keep the source repository,
+  init scaffold, CircleCI docs gate, public-docs privacy validator, and logical
+  `.harness/project-context-ref.json` synchronized. Downstream repositories own
+  public developer documentation and must not receive Jamie Brain paths or
+  private context bodies; SynAIpse performs Jamie-local registration separately.
 - Tracked secondary `.harness` context is not enough to authorize implementation; agent execution should still route through admitted `.harness/linear`, `.harness/refactors`, `.harness/specs`, or `.harness/plan` slices.
 - agent-native cockpit changes should keep next-action safety evidence, generated environment action contracts, and docs-gate-required operator surfaces synchronized before the PR can be considered merge-ready
 - RouteDecision lifecycle metadata is part of the agent-native cockpit contract: `route-decision/v1` must remain additive to `harness-decision/v1`, must not make target commands executable authority by itself, and must keep architecture-context plus docs-gate-required governance surfaces synchronized

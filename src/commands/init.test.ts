@@ -57,6 +57,14 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".harness/decisions/.gitkeep",
 	".harness/quality/criteria.md",
 	".harness/review-log.md",
+	".gitbook.yaml",
+	"docs/public/README.md",
+	"docs/public/SUMMARY.md",
+	"docs/public/architecture.md",
+	"docs/public/delivery-lifecycle.md",
+	"docs/public/trust-and-privacy.md",
+	"scripts/check-gitbook-readiness.mjs",
+	".harness/project-context-ref.json",
 	".npmrc",
 	".coderabbit.yaml",
 	"CHANGELOG.md",
@@ -541,7 +549,10 @@ describe("runInit", () => {
 				"command: bash scripts/run-harness-gate.sh policy-gate --max-tier medium --json",
 			);
 			expect(circleConfig).toContain(
-				"command: bash scripts/run-harness-gate.sh docs-gate --mode required --json",
+				"node scripts/check-gitbook-readiness.mjs",
+			);
+			expect(circleConfig).toContain(
+				"bash scripts/run-harness-gate.sh docs-gate --mode required --json",
 			);
 			expect(circleConfig).toContain("store_test_results:");
 			expect(circleConfig).toContain("path: artifacts/test-results");

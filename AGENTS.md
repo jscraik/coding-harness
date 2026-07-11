@@ -203,6 +203,12 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 - `harness init` memory scaffolds must keep `memory.json` schema-compatible for
   non-package repositories by emitting a non-empty repo fallback. Environment
   readiness for this project is Python/uv-based and must not require Ralph.
+- `harness init` must emit a repository-owned GitBook surface under
+  `docs/public/`, `.gitbook.yaml`, the deterministic
+  `scripts/check-gitbook-readiness.mjs` privacy gate, and a logical
+  `.harness/project-context-ref.json`. Downstream repositories must never embed
+  Jamie Brain paths or private context bodies; SynAIpse resolves the logical
+  project ID from Jamie's local control plane.
 - Report exact commands with explicit `pass`, `fail`, or `blocked` outcomes.
 
 ## Routing
