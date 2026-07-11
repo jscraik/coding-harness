@@ -36,12 +36,17 @@
 		"characterizationTargets": [
 			"doctor",
 			"docs-gate",
-			"contract",
+			"contract init",
+			"contract validate",
+			"contract schema",
 			"context-health",
 			"workflow:generate",
 			"pattern-scope",
 			"drift-gate",
 			"check-environment",
+			"check",
+			"health",
+			"audit",
 			"ui:fast",
 			"ui:verify",
 			"ui:explore",
@@ -87,8 +92,8 @@
 			"expected": "After runtime or artifact behavior changes, the deep behavior gate passes."
 		},
 		{
-			"command": "bash -lc 't=$(mktemp -d); o=$(mktemp); git clone -q --depth=1 . \"$t\"; b=$(git -C \"$t\" status --short --untracked-files=all); (cd \"$t\" && pnpm install --frozen-lockfile --ignore-scripts >/dev/null && pnpm exec tsx src/cli.ts next --mode local --files src/cli.ts --json >\"$o\"); r=$?; a=$(git -C \"$t\" status --short --untracked-files=all); rm -rf \"$t\" \"$o\"; test $r -eq 0 && test \"$b\" = \"$a\"'",
-			"expected": "The temporary clone runs harness next with an explicit target, exits successfully, and has identical tracked/untracked Git state before and after; any undeclared mutation or non-zero diagnostic exit fails the probe."
+			"command": "bash -lc 't=$(mktemp -d); git clone -q --depth=1 . \"$t\"; (cd \"$t\" && pnpm install --frozen-lockfile --ignore-scripts >/dev/null); b=$( { git -C \"$t\" status --short --ignored --untracked-files=all; find \"$t\" -path \"$t/.git\" -prune -o -path \"$t/node_modules\" -prune -o -type f -print | sort; } ); (cd \"$t\" && pnpm exec tsx src/cli.ts doctor --json >/dev/null && pnpm exec tsx src/cli.ts docs-gate --json >/dev/null && pnpm exec tsx src/cli.ts contract validate --json >/dev/null && pnpm exec tsx src/cli.ts context-health --json >/dev/null && pnpm exec tsx src/cli.ts check --json >/dev/null && pnpm exec tsx src/cli.ts health --json >/dev/null && pnpm exec tsx src/cli.ts audit --json >/dev/null); r=$?; a=$( { git -C \"$t\" status --short --ignored --untracked-files=all; find \"$t\" -path \"$t/.git\" -prune -o -path \"$t/node_modules\" -prune -o -type f -print | sort; } ); rm -rf \"$t\"; test $r -eq 0 && test \"$b\" = \"$a\"'",
+			"expected": "A temporary clone executes the representative supposedly pure diagnostic invocations, exits successfully, and has identical tracked, untracked, ignored, and non-dependency filesystem manifests before and after; any undeclared mutation or non-zero diagnostic exit fails the probe."
 		}
 	],
 	"reviewRequirements": {
@@ -103,7 +108,9 @@
 		"claimBoundary": "This artifact and the draft PR admit test-first implementation planning only. Neither proves a runtime effect is fixed nor authorizes integration.",
 		"implementationReviewBeforeIntegration": [
 			"current-SHA CodeRabbit review after an implementation commit",
-			"independent QA review of the current implementation SHA"
+			"independent QA review of the current implementation SHA",
+			"all current-SHA CodeRabbit findings are resolved or explicitly waived",
+			"security findings are normalized and residual risk is recorded before integration"
 		]
 	},
 	"acceptanceCriteria": [
