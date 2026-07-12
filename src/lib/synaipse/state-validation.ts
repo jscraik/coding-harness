@@ -259,7 +259,8 @@ function validateInvocationEffects(
 	);
 	if (
 		!Array.isArray(value.effectClasses) ||
-		value.effectClasses.join(",") !== "pure_read"
+		value.effectClasses.length !== 1 ||
+		value.effectClasses[0] !== "pure_read"
 	)
 		errors.push({
 			path: "invocationEffects.effectClasses",
