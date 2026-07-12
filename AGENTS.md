@@ -165,6 +165,12 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   tests, generated architecture context, and operator docs; `orient`, `prove`,
   `repair`, `review`, and `handoff` must route operator work without collapsing
   CI, review-thread, tracker, external-readiness, or merge-readiness claims.
+- SynAIpse routine cockpit state is an additive `synaipse-state/v1` projection:
+  `next` owns routine orientation while `orient` remains a compatibility/admin
+  surface. Keep its schema, runtime-packet manifest, validators, focused tests,
+  and operator docs synchronized; the projection is orientation evidence, not
+  CI, review-thread, tracker, external-readiness, delivery-truth, or
+  merge-readiness proof.
 - North-star contract fields are executable workflow authority, not prose-only
   branding. Keep `northStar.mantra` and `northStar.personalStandards`
   synchronized across `harness.contract.json`, schema/type validators, scaffold
