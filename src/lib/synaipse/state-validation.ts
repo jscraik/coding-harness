@@ -58,6 +58,15 @@ function isDatePart(value: string): boolean {
 		!isDigits(value.slice(8, 10))
 	)
 		return false;
+	const month = Number.parseInt(value.slice(5, 7), 10);
+	const day = Number.parseInt(value.slice(8, 10), 10);
+	if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+	// Reject February 30-31, April/June/September/November 31
+	if (
+		(month === 2 && day > 29) ||
+		([4, 6, 9, 11].includes(month) && day > 30)
+	)
+		return false;
 	return true;
 }
 
@@ -83,14 +92,28 @@ function isSecondPart(value: string): boolean {
 /** Return whether the clock component has valid numeric fields and fraction shape. */
 function isTimePart(value: string): boolean {
 	const [hour, minute, second] = value.split(":");
-	return (
-		hour !== undefined &&
-		minute !== undefined &&
-		second !== undefined &&
-		isDigits(hour) &&
-		isDigits(minute) &&
-		isSecondPart(second)
-	);
+	if (
+		hour === undefined ||
+		minute === undefined ||
+		second === undefined ||
+		!isDigits(hour) ||
+		!isDigits(minute) ||
+		!isSecondPart(second)
+	)
+		return false;
+	const hourNum = Number.parseInt(hour, 10);
+	const minuteNum = Number.parseInt(minute, 10);
+	const secondNum = Number.parseInt(second.split(".")[0] ?? "0", 10);
+	if (
+		hourNum < 0 ||
+		hourNum > 23 ||
+		minuteNum < 0 ||
+		minuteNum > 59 ||
+		secondNum < 0 ||
+		secondNum > 59
+	)
+		return false;
+	return true;
 }
 
 /** Return whether a timezone component has RFC3339 UTC or numeric-offset shape. */

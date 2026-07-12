@@ -60,17 +60,17 @@
 		},
 		"truthLaneBlockers": {
 			"type": "array",
-			"items": { "type": "string", "minLength": 1 }
+			"items": { "type": "string", "minLength": 1, "pattern": "\\S" }
 		},
 		"admittedCapabilities": {
 			"type": "array",
 			"minItems": 1,
-			"items": { "type": "string", "minLength": 1 }
+			"items": { "type": "string", "minLength": 1, "pattern": "\\S" }
 		},
 		"evidenceRefs": {
 			"type": "array",
 			"minItems": 1,
-			"items": { "type": "string", "minLength": 1 }
+			"items": { "type": "string", "minLength": 1, "pattern": "\\S" }
 		},
 		"nextAction": { "type": "string", "minLength": 1 },
 		"invocationEffects": {
@@ -90,7 +90,7 @@
 				"targets": {
 					"type": "array",
 					"minItems": 1,
-					"items": { "type": "string", "minLength": 1 }
+					"items": { "type": "string", "minLength": 1, "pattern": "\\S" }
 				},
 				"writesFiles": { "const": false },
 				"mutatesGit": { "const": false },

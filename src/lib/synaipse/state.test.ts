@@ -62,6 +62,16 @@ describe("validateSynaipseState", () => {
 			"freshness.observedAt",
 		],
 		[
+			"February 30 overflow",
+			{ generatedAt: "2026-02-30T23:00:00Z" },
+			"generatedAt",
+		],
+		[
+			"hour 24 overflow",
+			{ generatedAt: "2026-07-11T24:00:00Z" },
+			"generatedAt",
+		],
+		[
 			"empty truth-lane blocker",
 			{ truthLaneBlockers: [" "] },
 			"truthLaneBlockers",
