@@ -58,7 +58,10 @@ function buildNextCliDecision(
 					? undefined
 					: usageDecision.meta?.synaipseState !== undefined
 						? usageDecision
-						: withSynaipseState(usageDecision, options.repoRoot ?? process.cwd()),
+						: withSynaipseState(
+								usageDecision,
+								options.repoRoot ?? process.cwd(),
+							),
 		};
 	}
 

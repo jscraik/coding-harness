@@ -47,27 +47,33 @@ function isDigits(value: string): boolean {
 	);
 }
 
+type DateParts = { month: number; day: number };
+
+/** Return whether a string has the fixed-width numeric date shape. */
+function isDateShape(value: string): boolean {
+	return (
+		value.length === 10 &&
+		value[4] === "-" &&
+		value[7] === "-" &&
+		isDigits(value.slice(0, 4)) &&
+		isDigits(value.slice(5, 7)) &&
+		isDigits(value.slice(8, 10))
+	);
+}
+
+/** Return whether month/day values fit the calendar bounds used by RFC3339. */
+function isCalendarDate({ month, day }: DateParts): boolean {
+	const maxDay = month === 2 ? 29 : [4, 6, 9, 11].includes(month) ? 30 : 31;
+	return month >= 1 && month <= 12 && day >= 1 && day <= maxDay;
+}
+
 /** Return whether the date component has the fixed-width RFC3339 shape. */
 function isDatePart(value: string): boolean {
-	if (
-		value.length !== 10 ||
-		value[4] !== "-" ||
-		value[7] !== "-" ||
-		!isDigits(value.slice(0, 4)) ||
-		!isDigits(value.slice(5, 7)) ||
-		!isDigits(value.slice(8, 10))
-	)
-		return false;
-	const month = Number.parseInt(value.slice(5, 7), 10);
-	const day = Number.parseInt(value.slice(8, 10), 10);
-	if (month < 1 || month > 12 || day < 1 || day > 31) return false;
-	// Reject February 30-31, April/June/September/November 31
-	if (
-		(month === 2 && day > 29) ||
-		([4, 6, 9, 11].includes(month) && day > 30)
-	)
-		return false;
-	return true;
+	if (!isDateShape(value)) return false;
+	return isCalendarDate({
+		month: Number.parseInt(value.slice(5, 7), 10),
+		day: Number.parseInt(value.slice(8, 10), 10),
+	});
 }
 
 /** Split the clock component from its RFC3339 timezone suffix. */
@@ -89,8 +95,10 @@ function isSecondPart(value: string): boolean {
 	);
 }
 
-/** Return whether the clock component has valid numeric fields and fraction shape. */
-function isTimePart(value: string): boolean {
+type TimeParts = { hour: number; minute: number; second: number };
+
+/** Parse the numeric clock fields after validating their fixed-width shape. */
+function parseTimeParts(value: string): TimeParts | null {
 	const [hour, minute, second] = value.split(":");
 	if (
 		hour === undefined ||
@@ -100,20 +108,30 @@ function isTimePart(value: string): boolean {
 		!isDigits(minute) ||
 		!isSecondPart(second)
 	)
-		return false;
-	const hourNum = Number.parseInt(hour, 10);
-	const minuteNum = Number.parseInt(minute, 10);
-	const secondNum = Number.parseInt(second.split(".")[0] ?? "0", 10);
-	if (
-		hourNum < 0 ||
-		hourNum > 23 ||
-		minuteNum < 0 ||
-		minuteNum > 59 ||
-		secondNum < 0 ||
-		secondNum > 59
-	)
-		return false;
-	return true;
+		return null;
+	return {
+		hour: Number.parseInt(hour, 10),
+		minute: Number.parseInt(minute, 10),
+		second: Number.parseInt(second.split(".")[0] ?? "0", 10),
+	};
+}
+
+/** Return whether numeric clock fields fit the RFC3339 time bounds. */
+function isClockRange({ hour, minute, second }: TimeParts): boolean {
+	return (
+		hour >= 0 &&
+		hour <= 23 &&
+		minute >= 0 &&
+		minute <= 59 &&
+		second >= 0 &&
+		second <= 59
+	);
+}
+
+/** Return whether the clock component has valid numeric fields and fraction shape. */
+function isTimePart(value: string): boolean {
+	const parts = parseTimeParts(value);
+	return parts !== null && isClockRange(parts);
 }
 
 /** Return whether a timezone component has RFC3339 UTC or numeric-offset shape. */

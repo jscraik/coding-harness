@@ -76,11 +76,7 @@ describe("validateSynaipseState", () => {
 			{ truthLaneBlockers: [" "] },
 			"truthLaneBlockers",
 		],
-		[
-			"empty evidence refs",
-			{ evidenceRefs: [] },
-			"evidenceRefs",
-		],
+		["empty evidence refs", { evidenceRefs: [] }, "evidenceRefs"],
 		[
 			"empty admitted capabilities",
 			{ admittedCapabilities: [] },
