@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-11T21:11:02Z
+Generated: 2026-07-12T11:11:54Z
 
 ## Table of Contents
 
@@ -29,11 +29,14 @@ Generated: 2026-07-11T21:11:02Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `src/commands/doctor.ts`
-- `src/lib/cli/registry/builtin-command-specs.ts`
-- `src/lib/cli/registry/command-capabilities.ts`
-- `src/lib/cli/registry/command-invocation-effects-ui.ts`
-- `src/lib/cli/registry/command-invocation-effects.ts`
+- `src/cli.ts`
+- `src/commands/next-runner.ts`
+- `src/commands/next.ts`
+- `src/lib/cli/registry/command-agent-catalog-rules.ts`
+- `src/lib/cli/registry/command-visibility-rules.ts`
+- `src/lib/synaipse/state-contract.ts`
+- `src/lib/synaipse/state-validation.ts`
+- `src/lib/synaipse/state.ts`
 
 ## agent
 
@@ -913,6 +916,7 @@ graph LR
   node_sources_878a52fc_cd312fcd["sources_878a52fc"]
   node_stale_cli_64548720_6bb67d64["stale_cli_64548720"]
   node_stale_detector_a563289e_653281b0["stale_detector_a563289e"]
+  node_state_4ba69735_bd75168c["state_4ba69735"]
   node_state_packet_evidence_0af7e8d0_58cc7a7f["state_packet_evidence_0af7e8d0"]
   node_status_cli_4c24a0d6_7dbac67a["status_cli_4c24a0d6"]
   node_store_1_0ab51284_0ffe807a["store_1_0ab51284"]
@@ -1033,6 +1037,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_script_test_utils_1ffe611e_a38f715e
   ext_node_child_process_f62b7d19["node:child_process"] --> node_search_24193290_6a30c5b7
   ext_node_child_process_f62b7d19["node:child_process"] --> node_setup_git_hooks_70750d40_b4ca2cf9
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_state_4ba69735_bd75168c
   ext_node_child_process_f62b7d19["node:child_process"] --> node_test_harness_6e520b98_6b3d1d32
   ext_node_child_process_f62b7d19["node:child_process"] --> node_test_harness_upgrade_matrix_84113c4e_e0838daa
   ext_node_child_process_f62b7d19["node:child_process"] --> node_ui_loop_internal_f2eb8892_c4b49e6a
