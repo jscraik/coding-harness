@@ -15,6 +15,7 @@ const VALID_PARITY_VALIDATORS = new Set([
 	"runtime-card",
 	"runtime-card-handoff",
 	"harness-decision",
+	"synaipse-state",
 	"review-state",
 	"external-state-snapshot",
 	"delivery-truth",

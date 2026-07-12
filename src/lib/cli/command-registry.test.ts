@@ -25,7 +25,6 @@ import {
 
 const AGENT_COMMAND_RAIL_NAMES = [
 	"next",
-	"orient",
 	"agent-readiness",
 	"agent-native-ratchets",
 	"commands",
@@ -46,7 +45,6 @@ const AGENT_COMMAND_RAIL_NAMES = [
 ] as const;
 const AGENT_ORIENT_COMMAND_RAIL_NAMES = [
 	"next",
-	"orient",
 	"agent-readiness",
 	"agent-native-ratchets",
 	"commands",
@@ -410,7 +408,7 @@ describe("command registry", () => {
 			.filter((row) => row.tier === "cockpit")
 			.map((row) => row.name);
 
-		expect(cockpitRows).toEqual(["orient", "next"]);
+		expect(cockpitRows).toEqual(["next"]);
 		expect(cockpitRows).not.toContain("check");
 		expect(cockpitRows).not.toContain("pr-ready");
 		expect(cockpitRows).not.toContain("fix-review");
@@ -937,7 +935,7 @@ describe("getRegistryCommandCapabilities", () => {
 
 		expect(capabilitiesByName.get("orient")).toMatchObject({
 			agentMode: "orient",
-			visibility: "default",
+			visibility: "legacy",
 		});
 		expect(capabilitiesByName.get("next")).toMatchObject({
 			agentMode: "orient",
@@ -1725,7 +1723,7 @@ describe("getRegistryCommandHelpRows (updated)", () => {
 	it("returns only default first-contact rows by default", () => {
 		const helpRows = getRegistryCommandHelpRows();
 
-		expect(helpRows.map((r) => r.name)).toEqual(["orient", "next"]);
+		expect(helpRows.map((r) => r.name)).toEqual(["next"]);
 	});
 
 	it("returns full capability names when full help is requested", () => {

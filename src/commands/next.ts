@@ -4,6 +4,7 @@ import {
 } from "../lib/decision/harness-decision.js";
 import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
+import { withSynaipseState } from "../lib/synaipse/state.js";
 import { parseNextArgs } from "./next-args.js";
 import { loadNextCliEvidence } from "./next-cli-evidence.js";
 import type { HarnessNextPrCloseoutEvidence } from "./next-pr-closeout.js";
@@ -43,14 +44,19 @@ function printDecision(decision: HarnessDecision, json: boolean): void {
 		console.info(`Next command: ${decision.nextCommand}`);
 }
 
+/** Build the validated decision payload for one CLI invocation. */
 function buildNextCliDecision(
 	parsed: ReturnType<typeof parseNextArgs>,
 	options: Omit<HarnessNextOptions, "mode" | "files">,
 ): { decision: HarnessDecision | undefined; usageError: boolean } {
 	if (parsed.error !== undefined) {
+		const usageDecision = usageErrorDecision(parsed, options, runHarnessNext);
 		return {
 			usageError: true,
-			decision: usageErrorDecision(parsed, options, runHarnessNext),
+			decision:
+				usageDecision === undefined
+					? undefined
+					: withSynaipseState(usageDecision, options.repoRoot ?? process.cwd()),
 		};
 	}
 

@@ -39,6 +39,15 @@
 			"ownerGap": "GAP-003"
 		},
 		{
+			"schemaVersion": "synaipse-state/v1",
+			"schemaPath": "contracts/synaipse-state.schema.json",
+			"examplePath": "contracts/examples/synaipse-state.example.json",
+			"typeSourcePath": "src/lib/synaipse/state.ts",
+			"runtimeStatus": "emitted",
+			"parityValidator": "synaipse-state",
+			"ownerGap": "JSC-443"
+		},
+		{
 			"schemaVersion": "review-state/v1",
 			"schemaPath": "contracts/review-state.schema.json",
 			"examplePath": "contracts/examples/review-state.example.json",

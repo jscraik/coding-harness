@@ -26,16 +26,16 @@ For repo-facing onboarding and common workflows, start at [`README.md`](../READM
 
 ## Agent cockpit entrypoint
 
-Use `harness orient --json` as the read-only cold-start entrypoint. It
-emits a compact `harness-orient/v1` packet that wraps existing read-only
-surfaces: `harness next`, `session-context/v1`, agent-readiness
-context health, preflight receipt observation, Project Brain refs, architecture
-context refs, and local truth-lane caveats. Use `harness next --json` when
-you only need the next safe action.
+Use `harness next --json` as the sole routine first-contact entrypoint. It
+emits the compact next-action decision and SynAIpse cockpit state for the
+current repository. Use `harness orient --json` only for legacy cold-start
+compatibility when a caller explicitly needs the older `harness-orient/v1`
+packet, which wraps the read-only context surfaces and local truth-lane
+caveats.
 
 ```bash
-harness orient --json
 harness next --json
+harness orient --json # legacy compatibility only
 ```
 
 The `harness next --json` decision inspects changed files from git by
