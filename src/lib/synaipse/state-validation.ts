@@ -48,7 +48,6 @@ function isDigits(value: string): boolean {
 }
 
 type DateParts = { year: number; month: number; day: number };
-
 /** Return whether a string has the fixed-width numeric date shape. */
 function isDateShape(value: string): boolean {
 	return (
@@ -65,13 +64,9 @@ function isDateShape(value: string): boolean {
 function isCalendarDate({ year, month, day }: DateParts): boolean {
 	const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 	const maxDay =
-		month === 2
-			? isLeapYear
-				? 29
-				: 28
-			: [4, 6, 9, 11].includes(month)
-				? 30
-				: 31;
+		[31, isLeapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][
+			month - 1
+		] ?? 0;
 	return month >= 1 && month <= 12 && day >= 1 && day <= maxDay;
 }
 
