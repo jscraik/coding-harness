@@ -47,7 +47,7 @@ function isDigits(value: string): boolean {
 	);
 }
 
-type DateParts = { month: number; day: number };
+type DateParts = { year: number; month: number; day: number };
 
 /** Return whether a string has the fixed-width numeric date shape. */
 function isDateShape(value: string): boolean {
@@ -62,8 +62,10 @@ function isDateShape(value: string): boolean {
 }
 
 /** Return whether month/day values fit the calendar bounds used by RFC3339. */
-function isCalendarDate({ month, day }: DateParts): boolean {
-	const maxDay = month === 2 ? 29 : [4, 6, 9, 11].includes(month) ? 30 : 31;
+function isCalendarDate({ year, month, day }: DateParts): boolean {
+	const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+	const maxDay =
+		month === 2 ? (isLeapYear ? 29 : 28) : [4, 6, 9, 11].includes(month) ? 30 : 31;
 	return month >= 1 && month <= 12 && day >= 1 && day <= maxDay;
 }
 
@@ -71,6 +73,7 @@ function isCalendarDate({ month, day }: DateParts): boolean {
 function isDatePart(value: string): boolean {
 	if (!isDateShape(value)) return false;
 	return isCalendarDate({
+		year: Number.parseInt(value.slice(0, 4), 10),
 		month: Number.parseInt(value.slice(5, 7), 10),
 		day: Number.parseInt(value.slice(8, 10), 10),
 	});
