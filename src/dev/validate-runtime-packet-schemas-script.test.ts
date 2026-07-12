@@ -115,7 +115,7 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(report).toMatchObject({
 			schemaVersion: "runtime-packet-schema-validation/v1",
 			status: "pass",
-			packetCount: 26,
+			packetCount: 28,
 			errors: [],
 		});
 	});

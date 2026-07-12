@@ -6,7 +6,6 @@ import {
 } from "./next-option-parsers.js";
 import { NEXT_ARTIFACT_ARG_SPECS } from "./next-artifact-args.js";
 export type { HarnessNextEvidenceMode } from "./next-option-parsers.js";
-
 /** Worktree cleanliness posture accepted by `harness next`. */
 export type HarnessNextWorktreeRole =
 	| "clean"
@@ -23,6 +22,7 @@ export interface ParsedNextArgs {
 	runtimeCardPath?: string;
 	prCloseoutPath?: string;
 	fitnessReportPath?: string;
+	synaipseTransitionPath?: string;
 	error?:
 		| "invalid_mode"
 		| "mode_missing"
@@ -32,15 +32,14 @@ export interface ParsedNextArgs {
 		| "runtime_card_missing"
 		| "pr_closeout_missing"
 		| "fitness_report_missing"
+		| "synaipse_transition_missing"
 		| "evidence_missing"
 		| "evidence_invalid"
 		| "worktree_role_invalid"
 		| "unknown_argument";
 	errorValue?: string;
 }
-
 const VALID_MODES: readonly HarnessNextMode[] = ["local", "pr", "ci"];
-
 interface NextArgsState {
 	json: boolean;
 	mode: HarnessNextMode;
@@ -51,8 +50,8 @@ interface NextArgsState {
 	runtimeCardPath?: string;
 	prCloseoutPath?: string;
 	fitnessReportPath?: string;
+	synaipseTransitionPath?: string;
 }
-
 type NextArgParseResult = { nextIndex: number } | { parsed: ParsedNextArgs };
 type NextArgHandler = (
 	state: NextArgsState,
@@ -85,7 +84,6 @@ function parseWorktreeRole(value: string | undefined): {
 	}
 	return { worktreeRole: value };
 }
-
 function stateToParsed(
 	state: NextArgsState,
 	overrides: Partial<ParsedNextArgs> = {},
@@ -109,6 +107,9 @@ function stateToParsed(
 			: {}),
 		...(state.fitnessReportPath !== undefined
 			? { fitnessReportPath: state.fitnessReportPath }
+			: {}),
+		...(state.synaipseTransitionPath !== undefined
+			? { synaipseTransitionPath: state.synaipseTransitionPath }
 			: {}),
 		...overrides,
 	};

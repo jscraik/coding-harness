@@ -106,7 +106,7 @@ const USAGE_ERROR_HANDLERS: Record<MappedUsageError, UsageErrorHandler> = {
 			mode: parsed.mode as HarnessNextMode,
 			summary: `Unknown next argument: ${parsed.errorValue}.`,
 			nextAction:
-				"Use harness next --json with optional --files, --phase-exit, --runtime-card, --pr-closeout, --fitness-report, and --mode flags.",
+				"Use harness next --json with optional --files, --phase-exit, --runtime-card, --pr-closeout, --fitness-report, --synaipse-transition, and --mode flags.",
 			failureClass: "unknown_argument",
 			extra: { argument: parsed.errorValue },
 		}),

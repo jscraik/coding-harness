@@ -1,0 +1,44 @@
+{
+	"schemaVersion": "synaipse-improvement-case/v1",
+	"runtimeStatus": "not_yet_emitted",
+	"repository": {
+		"name": "jscraik/coding-harness",
+		"sha": "63be2371437239c657d80b0a1b2709923bbb262d"
+	},
+	"observedAt": "2026-07-12T15:00:00Z",
+	"observation": "The transition route required a durable current-SHA guard.",
+	"classification": "systemic",
+	"siblingInventory": {
+		"searched": ["src/lib/synaipse"],
+		"changed": ["src/lib/synaipse/lifecycle.ts"],
+		"left": ["src/lib/synaipse/state.ts"],
+		"deferred": ["downstream adoption canary"]
+	},
+	"candidates": [
+		{
+			"disposition": "change",
+			"rationale": "Add a typed transition validator.",
+			"rollback": "Revert the additive lifecycle contract."
+		},
+		{
+			"disposition": "delete",
+			"rationale": "Delete only after a replacement canary proves parity.",
+			"rollback": "Restore the retained compatibility surface."
+		}
+	],
+	"selectedMechanism": {
+		"disposition": "change",
+		"rationale": "It is the smallest guardrail."
+	},
+	"canary": {
+		"command": "pnpm vitest run src/lib/synaipse/lifecycle.test.ts",
+		"expected": "valid and stale-SHA cases are deterministic"
+	},
+	"measurement": {
+		"metric": "stale transition rejection",
+		"target": "100%"
+	},
+	"disposition": "change",
+	"owner": "coding-harness-maintainers",
+	"retirementCondition": "Retire when the lifecycle contract is replaced by a canonical adapter."
+}

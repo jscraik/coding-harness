@@ -25,4 +25,11 @@ export const NEXT_ARTIFACT_ARG_SPECS = [
 		nextAction:
 			"Pass a harness-fitness/v1 artifact path, or omit --fitness-report.",
 	},
+	{
+		flag: "--synaipse-transition",
+		field: "synaipseTransitionPath",
+		error: "synaipse_transition_missing",
+		nextAction:
+			"Pass a synaipse-transition/v1 artifact path, or omit --synaipse-transition.",
+	},
 ] as const;

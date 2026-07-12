@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-12T11:11:54Z
+Generated: 2026-07-12T17:57:21Z
 
 ## Table of Contents
 
@@ -30,10 +30,20 @@ Generated: 2026-07-12T11:11:54Z
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
 - `src/cli.ts`
+- `src/commands/next-args.ts`
+- `src/commands/next-artifact-args.ts`
+- `src/commands/next-cli-evidence.ts`
+- `src/commands/next-decisions.ts`
 - `src/commands/next-runner.ts`
+- `src/commands/next-synaipse-transition-decision.ts`
+- `src/commands/next-synaipse-transition.ts`
+- `src/commands/next-usage-errors.ts`
 - `src/commands/next.ts`
 - `src/lib/cli/registry/command-agent-catalog-rules.ts`
 - `src/lib/cli/registry/command-visibility-rules.ts`
+- `src/lib/synaipse/improvement-case.ts`
+- `src/lib/synaipse/integration-validation.ts`
+- `src/lib/synaipse/lifecycle.ts`
 - `src/lib/synaipse/state-contract.ts`
 - `src/lib/synaipse/state-validation.ts`
 - `src/lib/synaipse/state.ts`
@@ -923,6 +933,7 @@ graph LR
   node_store_824d80d7_69038a3e["store_824d80d7"]
   node_suggestion_generator_0956f794_4fce3834["suggestion_generator_0956f794"]
   node_symphony_check_e97f2ea0_09eb5bd1["symphony_check_e97f2ea0"]
+  node_synaipse_contract_validators_c286cb93_fafb99c9["synaipse_contract_validators_c286cb93"]
   node_sync_codex_preflight_7e7a8dc2_f2ef0386["sync_codex_preflight_7e7a8dc2"]
   node_templates_9c6641c1_7da84505["templates_9c6641c1"]
   node_test_harness_6e520b98_6b3d1d32["test_harness_6e520b98"]
@@ -1319,6 +1330,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_store_824d80d7_69038a3e
   ext_node_fs_a15b7d96["node:fs"] --> node_suggestion_generator_0956f794_4fce3834
   ext_node_fs_a15b7d96["node:fs"] --> node_symphony_check_e97f2ea0_09eb5bd1
+  ext_node_fs_a15b7d96["node:fs"] --> node_synaipse_contract_validators_c286cb93_fafb99c9
   ext_node_fs_a15b7d96["node:fs"] --> node_sync_codex_preflight_7e7a8dc2_f2ef0386
   ext_node_fs_a15b7d96["node:fs"] --> node_templates_9c6641c1_7da84505
   ext_node_fs_a15b7d96["node:fs"] --> node_test_harness_6e520b98_6b3d1d32

@@ -11,55 +11,109 @@ import {
 	type HarnessNextPrCloseoutEvidence,
 } from "./next-pr-closeout.js";
 import { loadRuntimeCardArtifact } from "./next-runtime-card.js";
+import { loadSynaipseTransitionArtifact } from "./next-synaipse-transition.js";
 import type { HarnessNextOptions } from "./next-runner.js";
+
+type EvidenceSetters = {
+	setPhaseExit: (phaseExit: HePhaseExit) => void;
+	setRuntimeCard: (runtimeCard: RuntimeCard) => void;
+	setPrCloseout: (prCloseout: HarnessNextPrCloseoutEvidence) => void;
+	setSynaipseTransition: (transition: unknown) => void;
+};
+
+function loadPhaseExitEvidence(
+	parsed: ReturnType<typeof parseNextArgs>,
+	options: Omit<HarnessNextOptions, "mode" | "files">,
+	setters: EvidenceSetters,
+): HarnessDecision | undefined {
+	if (parsed.phaseExitPath === undefined) return undefined;
+	const loaded = loadPhaseExitArtifact(
+		options.repoRoot ?? cwd(),
+		parsed.phaseExitPath,
+		parsed.mode,
+	);
+	if ("decision" in loaded) return loaded.decision;
+	setters.setPhaseExit(loaded.phaseExit);
+	return undefined;
+}
+
+function loadRuntimeCardEvidence(
+	parsed: ReturnType<typeof parseNextArgs>,
+	options: Omit<HarnessNextOptions, "mode" | "files">,
+	setters: EvidenceSetters,
+): HarnessDecision | undefined {
+	if (parsed.runtimeCardPath === undefined) return undefined;
+	const loaded = loadRuntimeCardArtifact(
+		options.repoRoot ?? cwd(),
+		parsed.runtimeCardPath,
+		parsed.mode,
+	);
+	if ("decision" in loaded) return loaded.decision;
+	setters.setRuntimeCard(loaded.runtimeCard);
+	return undefined;
+}
+
+function loadPrCloseoutEvidence(
+	parsed: ReturnType<typeof parseNextArgs>,
+	options: Omit<HarnessNextOptions, "mode" | "files">,
+	setters: EvidenceSetters,
+): HarnessDecision | undefined {
+	const repoRoot = options.repoRoot ?? cwd();
+	const path =
+		parsed.prCloseoutPath ?? discoverPrCloseoutArtifactPath(repoRoot);
+	if (path === undefined) return undefined;
+	const loaded = loadPrCloseoutArtifact(repoRoot, path, parsed.mode);
+	if ("decision" in loaded) return loaded.decision;
+	setters.setPrCloseout(loaded.prCloseout);
+	return undefined;
+}
+
+function loadFitnessEvidence(
+	parsed: ReturnType<typeof parseNextArgs>,
+	options: Omit<HarnessNextOptions, "mode" | "files">,
+): HarnessDecision | undefined {
+	if (parsed.fitnessReportPath === undefined) return undefined;
+	const loaded = loadFitnessReportArtifact(
+		options.repoRoot ?? cwd(),
+		parsed.fitnessReportPath,
+		parsed.mode,
+	);
+	if ("decision" in loaded) return loaded.decision;
+	return undefined;
+}
+
+function loadSynaipseTransitionEvidence(
+	parsed: ReturnType<typeof parseNextArgs>,
+	options: Omit<HarnessNextOptions, "mode" | "files">,
+	setters: EvidenceSetters,
+): HarnessDecision | undefined {
+	if (parsed.synaipseTransitionPath === undefined) return undefined;
+	const loaded = loadSynaipseTransitionArtifact(
+		options.repoRoot ?? cwd(),
+		parsed.synaipseTransitionPath,
+		parsed.mode,
+	);
+	if ("decision" in loaded) return loaded.decision;
+	setters.setSynaipseTransition(loaded.synaipseTransition);
+	return undefined;
+}
 
 /** Load optional local evidence artifacts accepted by the harness next CLI. */
 export function loadNextCliEvidence(
 	parsed: ReturnType<typeof parseNextArgs>,
 	options: Omit<HarnessNextOptions, "mode" | "files">,
-	setters: {
-		setPhaseExit: (phaseExit: HePhaseExit) => void;
-		setRuntimeCard: (runtimeCard: RuntimeCard) => void;
-		setPrCloseout: (prCloseout: HarnessNextPrCloseoutEvidence) => void;
-	},
+	setters: EvidenceSetters,
 ): HarnessDecision | undefined {
-	const repoRoot = options.repoRoot ?? cwd();
-	if (parsed.phaseExitPath !== undefined) {
-		const loadedPhaseExit = loadPhaseExitArtifact(
-			repoRoot,
-			parsed.phaseExitPath,
-			parsed.mode,
-		);
-		if ("decision" in loadedPhaseExit) return loadedPhaseExit.decision;
-		setters.setPhaseExit(loadedPhaseExit.phaseExit);
-	}
-	if (parsed.runtimeCardPath !== undefined) {
-		const loadedRuntimeCard = loadRuntimeCardArtifact(
-			repoRoot,
-			parsed.runtimeCardPath,
-			parsed.mode,
-		);
-		if ("decision" in loadedRuntimeCard) return loadedRuntimeCard.decision;
-		setters.setRuntimeCard(loadedRuntimeCard.runtimeCard);
-	}
-	const prCloseoutPath =
-		parsed.prCloseoutPath ?? discoverPrCloseoutArtifactPath(repoRoot);
-	if (prCloseoutPath !== undefined) {
-		const loadedPrCloseout = loadPrCloseoutArtifact(
-			repoRoot,
-			prCloseoutPath,
-			parsed.mode,
-		);
-		if ("decision" in loadedPrCloseout) return loadedPrCloseout.decision;
-		setters.setPrCloseout(loadedPrCloseout.prCloseout);
-	}
-	if (parsed.fitnessReportPath !== undefined) {
-		const loadedFitnessReport = loadFitnessReportArtifact(
-			repoRoot,
-			parsed.fitnessReportPath,
-			parsed.mode,
-		);
-		if ("decision" in loadedFitnessReport) return loadedFitnessReport.decision;
+	const loaders = [
+		() => loadPhaseExitEvidence(parsed, options, setters),
+		() => loadRuntimeCardEvidence(parsed, options, setters),
+		() => loadPrCloseoutEvidence(parsed, options, setters),
+		() => loadFitnessEvidence(parsed, options),
+		() => loadSynaipseTransitionEvidence(parsed, options, setters),
+	];
+	for (const load of loaders) {
+		const decision = load();
+		if (decision !== undefined) return decision;
 	}
 	return undefined;
 }

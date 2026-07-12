@@ -3,7 +3,14 @@ import type { HarnessDecision } from "../lib/decision/harness-decision.js";
 import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
 import type { DecisionSource } from "../lib/decision/sources.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
-import { withSynaipseState } from "../lib/synaipse/state.js";
+import {
+	readSynaipseRepositorySha,
+	withSynaipseState,
+} from "../lib/synaipse/state.js";
+import {
+	isSynaipseVitalDecision,
+	validateSynaipseTransition,
+} from "../lib/synaipse/lifecycle.js";
 import type { HarnessNextPrCloseoutEvidence } from "./next-pr-closeout.js";
 import type {
 	HarnessNextWorktreeRole,
@@ -12,6 +19,7 @@ import type {
 import {
 	changedFilesDecision,
 	noChangedFilesDecision,
+	synaipseTransitionBlockedDecision,
 	type HarnessNextMode,
 } from "./next-decisions.js";
 import { resolveHarnessNextState } from "./next-runner-state.js";
@@ -40,6 +48,40 @@ export interface HarnessNextOptions {
 	evidenceMode?: HarnessNextEvidenceMode;
 	/** Worktree posture requested for next recommendations. */
 	worktreeRole?: HarnessNextWorktreeRole;
+	/** Optional lifecycle transition evidence to route before ordinary recommendations. */
+	synaipseTransition?: unknown;
+}
+
+function resolveSynaipseTransitionDecision(
+	options: HarnessNextOptions,
+	repoRoot: string,
+): HarnessDecision | undefined {
+	if (options.synaipseTransition === undefined) return undefined;
+	const currentSha = readSynaipseRepositorySha(repoRoot);
+	const validation =
+		currentSha === null
+			? {
+					valid: false,
+					errors: [
+						{
+							path: "repository.sha",
+							message: "current repository SHA is unavailable",
+						},
+					],
+				}
+			: validateSynaipseTransition(options.synaipseTransition, currentSha);
+	const vitalDecision =
+		currentSha !== null &&
+		isSynaipseVitalDecision(options.synaipseTransition, currentSha);
+	if (validation.valid && !vitalDecision) return undefined;
+	return withSynaipseState(
+		synaipseTransitionBlockedDecision({
+			mode: options.mode ?? "local",
+			vitalDecision,
+			validationErrors: validation.errors,
+		}),
+		repoRoot,
+	);
 }
 
 /**
@@ -51,12 +93,12 @@ export interface HarnessNextOptions {
 export function runHarnessNext(
 	options: HarnessNextOptions = {},
 ): HarnessDecision {
+	const repoRoot = options.repoRoot ?? process.cwd();
+	const synaipseDecision = resolveSynaipseTransitionDecision(options, repoRoot);
+	if (synaipseDecision !== undefined) return synaipseDecision;
 	const resolution = resolveHarnessNextState(options);
 	if (resolution.kind === "decision")
-		return withSynaipseState(
-			resolution.decision,
-			options.repoRoot ?? process.cwd(),
-		);
+		return withSynaipseState(resolution.decision, repoRoot);
 	const { changedFiles } = resolution;
 	const decision =
 		changedFiles.files.length === 0
@@ -86,5 +128,5 @@ export function runHarnessNext(
 						: {}),
 					agentReadinessContext: resolution.agentReadinessContext,
 				});
-	return withSynaipseState(decision, options.repoRoot ?? process.cwd());
+	return withSynaipseState(decision, repoRoot);
 }

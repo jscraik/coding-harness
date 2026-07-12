@@ -1,0 +1,32 @@
+{
+	"schemaVersion": "synaipse-transition/v1",
+	"runtimeStatus": "not_yet_emitted",
+	"fromStage": "shape",
+	"toStage": "admit",
+	"repository": {
+		"name": "jscraik/coding-harness",
+		"sha": "63be2371437239c657d80b0a1b2709923bbb262d"
+	},
+	"evidence": {
+		"admitted": ["plan:synaipse-v1"],
+		"rejected": [],
+		"integration": {
+			"prSha": "63be2371437239c657d80b0a1b2709923bbb262d",
+			"checksSha": "63be2371437239c657d80b0a1b2709923bbb262d",
+			"signoff": "independent-review",
+			"observedMerge": true,
+			"mainSyncSha": "63be2371437239c657d80b0a1b2709923bbb262d",
+			"mainSyncRef": "origin/main",
+			"mainSyncSource": "hosted-main-sync"
+		}
+	},
+	"policy": "standing_authority",
+	"authority": {
+		"owner": "codex",
+		"standing": true
+	},
+	"blockers": [],
+	"waivers": [],
+	"decidedAt": "2026-07-12T15:00:00Z",
+	"recovery": null
+}

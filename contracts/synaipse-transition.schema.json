@@ -1,0 +1,131 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/synaipse-transition.schema.json",
+	"title": "SynAIpse Transition",
+	"description": "A current-SHA-bound lifecycle transition decision with explicit authority, evidence, waivers, and recovery.",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"runtimeStatus",
+		"fromStage",
+		"toStage",
+		"repository",
+		"evidence",
+		"policy",
+		"authority",
+		"blockers",
+		"waivers",
+		"decidedAt",
+		"recovery"
+	],
+	"properties": {
+		"schemaVersion": { "const": "synaipse-transition/v1" },
+		"runtimeStatus": { "const": "not_yet_emitted" },
+		"fromStage": { "$ref": "#/$defs/stage" },
+		"toStage": { "$ref": "#/$defs/stage" },
+		"repository": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["name", "sha"],
+			"properties": {
+				"name": { "$ref": "#/$defs/nonEmptyString" },
+				"sha": { "$ref": "#/$defs/sha" }
+			}
+		},
+		"evidence": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["admitted", "rejected"],
+			"properties": {
+				"admitted": { "$ref": "#/$defs/stringArray" },
+				"rejected": { "$ref": "#/$defs/stringArray" },
+				"integration": { "$ref": "#/$defs/integrationEvidence" }
+			}
+		},
+		"policy": {
+			"enum": ["standing_authority", "vital_decision_gate"]
+		},
+		"authority": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["owner", "standing"],
+			"properties": {
+				"owner": { "enum": ["codex", "operator"] },
+				"standing": { "type": "boolean" }
+			}
+		},
+		"blockers": { "$ref": "#/$defs/stringArray" },
+		"waivers": {
+			"type": "array",
+			"items": { "$ref": "#/$defs/waiver" }
+		},
+		"decidedAt": { "type": "string", "format": "date-time" },
+		"recovery": {
+			"type": ["object", "null"],
+			"additionalProperties": false,
+			"required": ["stage", "action"],
+			"properties": {
+				"stage": { "$ref": "#/$defs/stage" },
+				"action": { "$ref": "#/$defs/nonEmptyString" }
+			}
+		}
+	},
+	"$defs": {
+		"stage": {
+			"enum": [
+				"shape",
+				"admit",
+				"build",
+				"prove",
+				"review",
+				"integrate",
+				"improve"
+			]
+		},
+		"sha": {
+			"type": "string",
+			"minLength": 40,
+			"maxLength": 40
+		},
+		"nonEmptyString": {
+			"type": "string",
+			"minLength": 1
+		},
+		"stringArray": {
+			"type": "array",
+			"items": { "$ref": "#/$defs/nonEmptyString" }
+		},
+		"integrationEvidence": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"prSha",
+				"checksSha",
+				"signoff",
+				"observedMerge",
+				"mainSyncSha",
+				"mainSyncRef",
+				"mainSyncSource"
+			],
+			"properties": {
+				"prSha": { "$ref": "#/$defs/sha" },
+				"checksSha": { "$ref": "#/$defs/sha" },
+				"signoff": { "$ref": "#/$defs/nonEmptyString" },
+				"observedMerge": { "const": true },
+				"mainSyncSha": { "$ref": "#/$defs/sha" },
+				"mainSyncRef": { "$ref": "#/$defs/nonEmptyString" },
+				"mainSyncSource": { "$ref": "#/$defs/nonEmptyString" }
+			}
+		},
+		"waiver": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["id", "expiresAt"],
+			"properties": {
+				"id": { "$ref": "#/$defs/nonEmptyString" },
+				"expiresAt": { "type": "string", "format": "date-time" }
+			}
+		}
+	}
+}

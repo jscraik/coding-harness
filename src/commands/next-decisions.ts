@@ -8,6 +8,7 @@ export {
 	runtimeCardBlockedDecision,
 	sourceBlockedDecision,
 } from "./next-blocked-decisions.js";
+export { synaipseTransitionBlockedDecision } from "./next-synaipse-transition-decision.js";
 export {
 	changedFilesDecision,
 	fleetMatrixArtifactDecision,

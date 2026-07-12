@@ -151,7 +151,7 @@ function isZonePart(value: string): boolean {
 }
 
 /** Return whether a string has an RFC3339 date-time shape and valid calendar value. */
-function isRfc3339DateTime(value: unknown): value is string {
+export function isRfc3339DateTime(value: unknown): value is string {
 	if (typeof value !== "string") return false;
 	const separator = value.indexOf("T");
 	if (separator !== 10 || value.indexOf("T", separator + 1) !== -1)

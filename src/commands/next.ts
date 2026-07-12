@@ -45,29 +45,54 @@ function printDecision(decision: HarnessDecision, json: boolean): void {
 }
 
 /** Build the validated decision payload for one CLI invocation. */
+function buildUsageErrorDecision(
+	parsed: ReturnType<typeof parseNextArgs>,
+	options: Omit<HarnessNextOptions, "mode" | "files">,
+): HarnessDecision | undefined {
+	const usageDecision = usageErrorDecision(parsed, options, runHarnessNext);
+	if (usageDecision === undefined) return undefined;
+	if (usageDecision.meta?.synaipseState !== undefined) return usageDecision;
+	return withSynaipseState(usageDecision, options.repoRoot ?? process.cwd());
+}
+
+function buildRunnerOptions(
+	parsed: ReturnType<typeof parseNextArgs>,
+	options: Omit<HarnessNextOptions, "mode" | "files">,
+	evidence: {
+		phaseExit?: HePhaseExit;
+		runtimeCard?: RuntimeCard;
+		prCloseout?: HarnessNextPrCloseoutEvidence;
+		synaipseTransition?: unknown;
+	},
+): HarnessNextOptions {
+	const runnerOptions: HarnessNextOptions = {
+		...options,
+		mode: parsed.mode,
+		...evidence,
+	};
+	if (parsed.worktreeRole !== undefined)
+		runnerOptions.worktreeRole = parsed.worktreeRole;
+	if (parsed.evidenceMode !== undefined)
+		runnerOptions.evidenceMode = parsed.evidenceMode;
+	if (parsed.files !== undefined) runnerOptions.files = parsed.files;
+	return runnerOptions;
+}
+
 function buildNextCliDecision(
 	parsed: ReturnType<typeof parseNextArgs>,
 	options: Omit<HarnessNextOptions, "mode" | "files">,
 ): { decision: HarnessDecision | undefined; usageError: boolean } {
 	if (parsed.error !== undefined) {
-		const usageDecision = usageErrorDecision(parsed, options, runHarnessNext);
 		return {
 			usageError: true,
-			decision:
-				usageDecision === undefined
-					? undefined
-					: usageDecision.meta?.synaipseState !== undefined
-						? usageDecision
-						: withSynaipseState(
-								usageDecision,
-								options.repoRoot ?? process.cwd(),
-							),
+			decision: buildUsageErrorDecision(parsed, options),
 		};
 	}
 
 	let phaseExit: HePhaseExit | undefined;
 	let runtimeCard: RuntimeCard | undefined;
 	let prCloseout: HarnessNextPrCloseoutEvidence | undefined;
+	let synaipseTransition: unknown;
 	let decision = loadNextCliEvidence(parsed, options, {
 		setPhaseExit: (value) => {
 			phaseExit = value;
@@ -78,21 +103,18 @@ function buildNextCliDecision(
 		setPrCloseout: (value) => {
 			prCloseout = value;
 		},
+		setSynaipseTransition: (value) => {
+			synaipseTransition = value;
+		},
 	});
-	decision ??= runHarnessNext({
-		...options,
-		mode: parsed.mode,
-		...(parsed.worktreeRole !== undefined
-			? { worktreeRole: parsed.worktreeRole }
-			: {}),
-		...(parsed.evidenceMode !== undefined
-			? { evidenceMode: parsed.evidenceMode }
-			: {}),
-		...(parsed.files !== undefined ? { files: parsed.files } : {}),
-		...(phaseExit !== undefined ? { phaseExit } : {}),
-		...(runtimeCard !== undefined ? { runtimeCard } : {}),
-		...(prCloseout !== undefined ? { prCloseout } : {}),
-	});
+	decision ??= runHarnessNext(
+		buildRunnerOptions(parsed, options, {
+			...(phaseExit !== undefined ? { phaseExit } : {}),
+			...(runtimeCard !== undefined ? { runtimeCard } : {}),
+			...(prCloseout !== undefined ? { prCloseout } : {}),
+			...(synaipseTransition !== undefined ? { synaipseTransition } : {}),
+		}),
+	);
 	return { decision, usageError: false };
 }
 

@@ -99,10 +99,15 @@ function repositoryState(repoRoot: string): SynaipseStateRepository {
 		),
 		branch: readGit(repoRoot, ["rev-parse", "--abbrev-ref", "HEAD"]),
 		baseRef: upstream,
-		headSha: readGit(repoRoot, ["rev-parse", "HEAD"]),
+		headSha: readSynaipseRepositorySha(repoRoot),
 		baseSha: upstream ? readGit(repoRoot, ["rev-parse", upstream]) : null,
 		clean: status === null ? null : status === "",
 	};
+}
+
+/** Read the current repository HEAD used to bind lifecycle evidence. */
+export function readSynaipseRepositorySha(repoRoot: string): string | null {
+	return readGit(repoRoot, ["rev-parse", "HEAD"]);
 }
 
 /** Preserve only terminal decision failures as truth-lane blockers. */
