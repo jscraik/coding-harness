@@ -66,6 +66,16 @@ describe("validateSynaipseState", () => {
 			{ truthLaneBlockers: [" "] },
 			"truthLaneBlockers",
 		],
+		[
+			"empty evidence refs",
+			{ evidenceRefs: [] },
+			"evidenceRefs",
+		],
+		[
+			"empty admitted capabilities",
+			{ admittedCapabilities: [] },
+			"admittedCapabilities",
+		],
 	] as const)("rejects contract-invalid %s", (_label, override, path) => {
 		const result = validateSynaipseState({ ...validState, ...override });
 		expect(result.valid).toBe(false);
