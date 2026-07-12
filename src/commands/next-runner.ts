@@ -3,6 +3,7 @@ import type { HarnessDecision } from "../lib/decision/harness-decision.js";
 import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
 import type { DecisionSource } from "../lib/decision/sources.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
+import { withSynaipseState } from "../lib/synaipse/state.js";
 import type { HarnessNextPrCloseoutEvidence } from "./next-pr-closeout.js";
 import type {
 	HarnessNextWorktreeRole,
@@ -51,29 +52,39 @@ export function runHarnessNext(
 	options: HarnessNextOptions = {},
 ): HarnessDecision {
 	const resolution = resolveHarnessNextState(options);
-	if (resolution.kind === "decision") return resolution.decision;
+	if (resolution.kind === "decision")
+		return withSynaipseState(
+			resolution.decision,
+			options.repoRoot ?? process.cwd(),
+		);
 	const { changedFiles } = resolution;
-	return changedFiles.files.length === 0
-		? noChangedFilesDecision({
-				mode: resolution.mode,
-				sourceErrors: resolution.sourceErrors,
-				...changedFiles,
-				...(resolution.phaseExit ? { phaseExit: resolution.phaseExit } : {}),
-				...(resolution.runtimeCard
-					? { runtimeCard: resolution.runtimeCard }
-					: {}),
-				...(resolution.prCloseout ? { prCloseout: resolution.prCloseout } : {}),
-				agentReadinessContext: resolution.agentReadinessContext,
-			})
-		: changedFilesDecision({
-				mode: resolution.mode,
-				sourceErrors: resolution.sourceErrors,
-				...changedFiles,
-				...(resolution.phaseExit ? { phaseExit: resolution.phaseExit } : {}),
-				...(resolution.runtimeCard
-					? { runtimeCard: resolution.runtimeCard }
-					: {}),
-				...(resolution.prCloseout ? { prCloseout: resolution.prCloseout } : {}),
-				agentReadinessContext: resolution.agentReadinessContext,
-			});
+	const decision =
+		changedFiles.files.length === 0
+			? noChangedFilesDecision({
+					mode: resolution.mode,
+					sourceErrors: resolution.sourceErrors,
+					...changedFiles,
+					...(resolution.phaseExit ? { phaseExit: resolution.phaseExit } : {}),
+					...(resolution.runtimeCard
+						? { runtimeCard: resolution.runtimeCard }
+						: {}),
+					...(resolution.prCloseout
+						? { prCloseout: resolution.prCloseout }
+						: {}),
+					agentReadinessContext: resolution.agentReadinessContext,
+				})
+			: changedFilesDecision({
+					mode: resolution.mode,
+					sourceErrors: resolution.sourceErrors,
+					...changedFiles,
+					...(resolution.phaseExit ? { phaseExit: resolution.phaseExit } : {}),
+					...(resolution.runtimeCard
+						? { runtimeCard: resolution.runtimeCard }
+						: {}),
+					...(resolution.prCloseout
+						? { prCloseout: resolution.prCloseout }
+						: {}),
+					agentReadinessContext: resolution.agentReadinessContext,
+				});
+	return withSynaipseState(decision, options.repoRoot ?? process.cwd());
 }

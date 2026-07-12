@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-24
+last_validated: 2026-07-12
 ---
 
 # Agent governance
@@ -153,6 +153,13 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   and `docs/agents/00-architecture-bootstrap.md`. The lane vocabulary
   (`orient`, `prove`, `repair`, `review`, `handoff`) is guidance for the next
   operator question and must not become CI, review-thread, tracker,
+  external-readiness, delivery-truth, or merge-readiness proof.
+- SynAIpse routine cockpit changes should keep the additive `synaipse-state/v1`
+  projection synchronized across its schema, runtime-packet manifest,
+  validators, focused tests, generated architecture context, `AGENTS.md`, and
+  `docs/agents/00-architecture-bootstrap.md`; `next` owns routine orientation
+  and `orient` remains a compatibility/admin surface. This state projection is
+  orientation evidence only and must not become CI, review-thread, tracker,
   external-readiness, delivery-truth, or merge-readiness proof.
 - runtime-card trace-out changes should keep trace persistence in
   `src/lib/runtime-trace/`, reuse canonical run-record append/manifest

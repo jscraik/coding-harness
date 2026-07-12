@@ -363,16 +363,12 @@ describe("run", () => {
 		run(["--help"]);
 
 		const lines = infoSpy.mock.calls.map((call) => String(call[0] ?? ""));
-		expect(lines).toContain("Start here: harness orient --json");
-		expect(lines.indexOf("Start here: harness orient --json")).toBeLessThan(
+		expect(lines).toContain("Start here: harness next --json");
+		expect(lines.indexOf("Start here: harness next --json")).toBeLessThan(
 			lines.indexOf("Commands (focused):"),
 		);
 		expect(lines).toContain("  Agent Cockpit:");
-		expect(
-			lines.some((line) =>
-				/^\s+orient\s+Emit a compact cold-start orientation packet/.test(line),
-			),
-		).toBe(true);
+		expect(lines.some((line) => /^\s+orient\s+/.test(line))).toBe(false);
 		expect(
 			lines.some((line) =>
 				/^\s+next\s+Recommend the next safe harness command/.test(line),

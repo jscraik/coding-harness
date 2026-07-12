@@ -32,6 +32,7 @@ import {
 	type RuntimeCard,
 	validateRuntimeCard,
 } from "../lib/runtime/runtime-card.js";
+import { validateSynaipseState } from "../lib/synaipse/state.js";
 import { parseGitStatusShort, runHarnessNext, runNextCLI } from "./next.js";
 
 function captureNextCLI(
@@ -313,6 +314,46 @@ describe("parseGitStatusShort", () => {
 });
 
 describe("runHarnessNext", () => {
+	it("emits a validated synaipse-state/v1 cockpit projection", () => {
+		const repoRoot = createGitRepoWithCommit();
+		try {
+			const decision = runHarnessNext({
+				repoRoot,
+				inspectChangedFiles: () => [],
+				agentReadinessContext: passingAgentReadinessContext(),
+			});
+			const state = (decision.meta as { synaipseState?: unknown } | undefined)
+				?.synaipseState;
+
+			expect(state).toMatchObject({
+				schemaVersion: "synaipse-state/v1",
+				stage: "handoff",
+				task: {
+					status: "pass",
+					objective:
+						"Confirm the repository is ready when no changed files are detected.",
+				},
+				truthLaneBlockers: [],
+				admittedCapabilities: ["harness next"],
+				evidenceRefs: ["git:status"],
+				nextAction: "Run harness check --json to confirm repo readiness.",
+				invocationEffects: {
+					effectClasses: ["pure_read"],
+					writesFiles: false,
+				},
+				freshness: { status: "current" },
+				claimBoundary: expect.stringContaining("does not prove"),
+				repository: {
+					branch: expect.any(String),
+					headSha: expect.any(String),
+				},
+			});
+			expect(validateSynaipseState(state)).toEqual({ valid: true, errors: [] });
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
 	it("recommends a safe validation command from changed files", () => {
 		const decision = runHarnessNext({
 			files: ["src/commands/next.ts"],
@@ -1598,7 +1639,19 @@ describe("runNextCLI", () => {
 			"Use --mode local, --mode pr, or --mode ci.",
 		);
 		expect(decision.retry).toBe("manual");
-		expect(decision).toEqual(directDecision);
+		expect(directDecision.status).toBe("blocked");
+		expect(directDecision.failureClass).toBe("invalid_mode");
+		expect(
+			(decision.meta as { synaipseState?: unknown }).synaipseState,
+		).toBeDefined();
+		expect(
+			(directDecision.meta as { synaipseState?: unknown }).synaipseState,
+		).toBeDefined();
+		expect(
+			validateSynaipseState(
+				(decision.meta as { synaipseState: unknown }).synaipseState,
+			),
+		).toEqual({ valid: true, errors: [] });
 	});
 
 	it("emits a usage decision for empty --files values", () => {

@@ -65,17 +65,17 @@ Pick the job that matches your situation; the reference links can wait until you
 
 | Job                           | First command                    | Then read                                |
 | ----------------------------- | -------------------------------- | ---------------------------------------- |
-| Agent in an existing repo     | `harness orient --json`          | [Use It](#use-it)                        |
+| Agent in an existing repo     | `harness next --json`            | [Use It](#use-it)                        |
 | Human trying harness          | `harness init --dry-run`         | [Install](#install)                      |
 | Solo or small-team adopter    | `harness init --minimal --track` | [Lite adoption](#lite-adoption)          |
 | Maintainer changing this repo | `AGENTS.md`                      | [For Contributors](#for-contributors)    |
 | Expert looking for commands   | `harness commands --json`        | [CLI reference](./docs/cli-reference.md) |
 
-The cold-start command is read-only and bundles the context a fresh agent needs
-without dumping raw artifacts:
+The routine first-contact command is read-only and returns the next safe route
+for a fresh agent without dumping raw artifacts:
 
 ```bash
-harness orient --json
+harness next --json
 ```
 
 When working from a source checkout, build the local package first, then run the
@@ -83,10 +83,11 @@ public command through the workspace-linked binary:
 
 ```bash
 pnpm build
-pnpm exec harness orient --json
+pnpm exec harness next --json
 ```
 
-Use `harness next --json` when you only need the next safe action.
+Use `harness orient --json` only for legacy cold-start compatibility when a
+caller explicitly needs the older orientation packet.
 
 For current-tree development probes before a build, the TypeScript entrypoint
 also accepts a leading `harness` token so displayed recommendations can be
@@ -102,7 +103,7 @@ SynAIpse is the AI Delivery Harness around AI coding agents. It is not the agent
 
 It helps a repository answer five practical questions:
 
-- **What should the agent read and do next?** `harness orient --json` exposes the cold-start context rail, while `harness next --json` turns local state into a safe next-command recommendation.
+- **What should the agent read and do next?** `harness next --json` is the routine first-contact route and turns local state into a safe next-command recommendation. `harness orient --json` remains available only for legacy cold-start compatibility.
 - **Is this repo ready for agent work?** `agent-readiness`, `init`, `check`, `doctor`, `health`, and `contract validate` expose setup gaps, stale orientation context, and missing machine-readable policy. `doctor` is read-only by default; request `--write-artifact` only when its north-star sidecar is needed.
 - **What must pass before handoff?** `verify-work`, `docs-gate`, `review-gate`, `plan-gate`, and related gates make proof explicit.
 - **Can we change CI or policy without guessing?** `ci-migrate`, branch-protection sync, rollback metadata, and parity checks keep migration reversible.
@@ -202,8 +203,8 @@ This index names every callable top-level command. Use
 [docs/cli-reference.md](./docs/cli-reference.md) for flags, examples, and
 machine-readable command metadata.
 
-Agents should start with `harness orient --json` for cold-start context, use
-`harness next --json` for the next actionable step, and use
+Agents should start with `harness next --json` for the routine route and use
+`harness orient --json` only for legacy cold-start compatibility. Use
 `harness commands --json` for command discovery. The full index
 below is an expert reference, not the first surface an agent needs to understand.
 
