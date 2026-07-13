@@ -1,6 +1,15 @@
 import { isRecord } from "../decision/validators.js";
 import { isRfc3339DateTime } from "./state-validation.js";
 import { validateIntegrationEvidence } from "./integration-validation.js";
+import {
+	add,
+	isSha,
+	isEnum,
+	requireString,
+	requireEnum,
+	requireStringArray,
+	rejectUnknownProperties,
+} from "./validation-helpers.js";
 
 /** Versioned transition contract identifier. */
 export const SYNAIPSE_TRANSITION_SCHEMA_VERSION =
@@ -43,79 +52,6 @@ export type SynaipseValidationResult = {
 };
 
 type ErrorList = SynaipseValidationError[];
-
-function add(errors: ErrorList, path: string, message: string): void {
-	errors.push({ path, message });
-}
-
-function isNonEmptyString(value: unknown): value is string {
-	return typeof value === "string" && value.trim().length > 0;
-}
-
-function isHexCharacter(value: string): boolean {
-	return (
-		(value >= "0" && value <= "9") ||
-		(value >= "a" && value <= "f") ||
-		(value >= "A" && value <= "F")
-	);
-}
-
-function isSha(value: unknown): value is string {
-	return (
-		typeof value === "string" &&
-		value.length === 40 &&
-		[...value].every(isHexCharacter)
-	);
-}
-
-function isEnum<T extends string>(
-	value: unknown,
-	values: readonly T[],
-): value is T {
-	return typeof value === "string" && values.includes(value as T);
-}
-
-function requireString(value: unknown, path: string, errors: ErrorList): void {
-	if (!isNonEmptyString(value)) add(errors, path, "must be a non-empty string");
-}
-
-function requireEnum<T extends string>(
-	value: unknown,
-	path: string,
-	values: readonly T[],
-	errors: ErrorList,
-): value is T {
-	if (!isEnum(value, values)) {
-		add(errors, path, `must be one of ${values.join(", ")}`);
-		return false;
-	}
-	return true;
-}
-
-function requireStringArray(
-	value: unknown,
-	path: string,
-	errors: ErrorList,
-): void {
-	if (
-		!Array.isArray(value) ||
-		!value.every((entry) => isNonEmptyString(entry))
-	) {
-		add(errors, path, "must be an array of non-empty strings");
-	}
-}
-
-function rejectUnknownProperties(
-	value: Record<string, unknown>,
-	allowed: readonly string[],
-	path: string,
-	errors: ErrorList,
-): void {
-	for (const key of Object.keys(value)) {
-		if (!allowed.includes(key))
-			add(errors, `${path}.${key}`, "must not contain unknown properties");
-	}
-}
 
 function validateRepository(
 	value: unknown,

@@ -1,44 +1,13 @@
 import { isRecord } from "../decision/validators.js";
 import type { SynaipseValidationError } from "./lifecycle.js";
+import {
+	add,
+	isSha,
+	requireString,
+	rejectUnknownProperties,
+} from "./validation-helpers.js";
 
 type ErrorList = SynaipseValidationError[];
-
-function add(errors: ErrorList, path: string, message: string): void {
-	errors.push({ path, message });
-}
-
-function isHexCharacter(value: string): boolean {
-	return (
-		(value >= "0" && value <= "9") ||
-		(value >= "a" && value <= "f") ||
-		(value >= "A" && value <= "F")
-	);
-}
-
-function isSha(value: unknown): value is string {
-	return (
-		typeof value === "string" &&
-		value.length === 40 &&
-		[...value].every(isHexCharacter)
-	);
-}
-
-function requireString(value: unknown, path: string, errors: ErrorList): void {
-	if (typeof value !== "string" || value.trim().length === 0)
-		add(errors, path, "must be a non-empty string");
-}
-
-function rejectUnknownProperties(
-	value: Record<string, unknown>,
-	allowed: readonly string[],
-	path: string,
-	errors: ErrorList,
-): void {
-	for (const key of Object.keys(value)) {
-		if (!allowed.includes(key))
-			add(errors, `${path}.${key}`, "must not contain unknown properties");
-	}
-}
 
 function validateCurrentSha(
 	integration: Record<string, unknown>,

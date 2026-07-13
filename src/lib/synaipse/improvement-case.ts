@@ -4,6 +4,15 @@ import type {
 	SynaipseValidationError,
 	SynaipseValidationResult,
 } from "./lifecycle.js";
+import {
+	add,
+	isNonEmptyString,
+	isSha,
+	isEnum,
+	requireString,
+	requireEnum,
+	rejectUnknownProperties,
+} from "./validation-helpers.js";
 
 /** Versioned improvement-case contract identifier. */
 export const SYNAIPSE_IMPROVEMENT_CASE_SCHEMA_VERSION =
@@ -13,56 +22,6 @@ const CLASSIFICATIONS = ["local", "systemic"] as const;
 const MECHANISMS = ["change", "retain", "delete", "defer"] as const;
 const RUNTIME_STATUS = "not_yet_emitted" as const;
 type ErrorList = SynaipseValidationError[];
-
-function add(errors: ErrorList, path: string, message: string): void {
-	errors.push({ path, message });
-}
-
-function isNonEmptyString(value: unknown): value is string {
-	return typeof value === "string" && value.trim().length > 0;
-}
-
-function isEnum<T extends string>(
-	value: unknown,
-	values: readonly T[],
-): value is T {
-	return typeof value === "string" && values.includes(value as T);
-}
-
-function requireString(value: unknown, path: string, errors: ErrorList): void {
-	if (!isNonEmptyString(value)) add(errors, path, "must be a non-empty string");
-}
-
-function requireEnum<T extends string>(
-	value: unknown,
-	path: string,
-	values: readonly T[],
-	errors: ErrorList,
-): void {
-	if (!isEnum(value, values))
-		add(errors, path, `must be one of ${values.join(", ")}`);
-}
-
-function rejectUnknownProperties(
-	value: Record<string, unknown>,
-	allowed: readonly string[],
-	path: string,
-	errors: ErrorList,
-): void {
-	for (const key of Object.keys(value))
-		if (!allowed.includes(key))
-			add(errors, `${path}.${key}`, "must not contain unknown properties");
-}
-
-function isSha(value: unknown): value is string {
-	const isHex = (character: string): boolean =>
-		(character >= "0" && character <= "9") ||
-		(character >= "a" && character <= "f") ||
-		(character >= "A" && character <= "F");
-	return (
-		typeof value === "string" && value.length === 40 && [...value].every(isHex)
-	);
-}
 
 function validateRepository(value: unknown, errors: ErrorList): void {
 	if (!isRecord(value)) {

@@ -301,7 +301,15 @@ function validateTransitionIntegration(value, errors) {
 				"evidence.admitted",
 				"review -> integrate requires admitted review evidence",
 			);
-		transitionIntegration(value.evidence?.integration, errors);
+		if (
+			!isShapeObject(value.evidence) ||
+			value.evidence.integration === undefined
+		)
+			add(
+				errors,
+				"evidence.integration",
+				"review -> integrate requires structured PR, checks, signoff, merge, and main-sync evidence",
+			);
 		if (value.policy !== "standing_authority")
 			add(errors, "policy", "review -> integrate requires standing authority");
 	}

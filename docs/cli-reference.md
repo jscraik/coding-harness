@@ -81,6 +81,15 @@ supplied, `harness next` normalizes the card into `meta.runtimeCard` and blocks
 the recommendation if the card reports blockers or a blocking lifecycle such as
 `ci_blocked`, `blocked`, or `stale`.
 
+`--synaipse-transition` accepts a local `synaipse-transition/v1` JSON artifact
+representing a current-SHA-bound lifecycle transition decision with authority,
+evidence, waivers, and recovery. When supplied, `harness next` validates the
+transition against the current repository SHA and blocks the recommendation if
+validation fails, the transition is stale (repository SHA mismatch), authority
+is not standing Codex authority, or the transition represents a Vital Decision
+requiring operator input. Vital Decision transitions pause routine automation
+until the operator provides a bounded decision response.
+
 Use `harness runtime-card --json` to produce the first local-only runtime card
 from git state and `.harness/active-artifacts.md`. Add `--live` when the card
 should also refresh bounded GitHub PR and Linear issue state. Live provider
