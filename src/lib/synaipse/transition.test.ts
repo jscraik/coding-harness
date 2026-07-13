@@ -211,6 +211,23 @@ describe("synaipse-transition/v1", () => {
 		});
 	});
 
+	it("rejects recovery with a refreshed SHA different from hosted main", () => {
+		const input = transitionWith({
+			recovery: {
+				fromBlocker: "stale_sha",
+				refreshedSha: "different-sha",
+				evidenceRefs: ["recovery:stale_sha"],
+			},
+		});
+		input.evidence.refs.push("recovery:stale_sha");
+		const result = validateSynaipseTransition(input);
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContainEqual({
+			path: "recovery.refreshedSha",
+			message: "must match evidence.hostedMain.sha",
+		});
+	});
+
 	it("rejects recovery when the blocker ref is absent from recovery evidence", () => {
 		const input = transitionWith({
 			recovery: {

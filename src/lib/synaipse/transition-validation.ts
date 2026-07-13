@@ -266,6 +266,12 @@ function validateShaBindings(
 				path: "evidence.currentSha",
 				message: "must match evidence.hostedMain.sha",
 			});
+		const recovery = isRecord(value.recovery) ? value.recovery : null;
+		if (recovery && recovery.refreshedSha !== hostedMain.sha)
+			errors.push({
+				path: "recovery.refreshedSha",
+				message: "must match evidence.hostedMain.sha",
+			});
 	}
 }
 

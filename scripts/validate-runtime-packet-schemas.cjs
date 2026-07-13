@@ -364,33 +364,6 @@ function validateSupportedSchemaKeywords(
 			);
 		}
 	}
-	if (isObject(schema.if)) {
-		validateSupportedSchemaKeywords(
-			schema.if,
-			schemaPath,
-			errors,
-			`${schemaNodePath}.if`,
-			visitedRefs,
-		);
-	}
-	if (isObject(schema.then)) {
-		validateSupportedSchemaKeywords(
-			schema.then,
-			schemaPath,
-			errors,
-			`${schemaNodePath}.then`,
-			visitedRefs,
-		);
-	}
-	if (isObject(schema.contains)) {
-		validateSupportedSchemaKeywords(
-			schema.contains,
-			schemaPath,
-			errors,
-			`${schemaNodePath}.contains`,
-			visitedRefs,
-		);
-	}
 }
 
 function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
