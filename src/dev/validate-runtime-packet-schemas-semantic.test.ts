@@ -108,6 +108,36 @@ describe("validate-runtime-packet-schemas semantic branches", () => {
 		);
 	});
 
+	it.each([
+		[
+			"evidence refs",
+			(example: Record<string, unknown>) => {
+				const evidence = example.evidence as Record<string, unknown>;
+				evidence.refs = ["   "];
+			},
+		],
+		[
+			"recovery evidence refs",
+			(example: Record<string, unknown>) => {
+				example.recovery = {
+					fromBlocker: "stale_sha",
+					refreshedSha: example.repositorySha,
+					evidenceRefs: ["   "],
+				};
+			},
+		],
+	])("rejects blank %s at the schema boundary", (_label, mutate) => {
+		const result = runValidator(
+			makeFixture(
+				"synaipse-transition/v1",
+				"contracts/examples/synaipse-transition.example.json",
+				mutate,
+			),
+		);
+		expect(result.status).toBe(1);
+		expect(result.stdout).toContain("must match pattern \\\\S");
+	});
+
 	it("rejects an invalid contains example and normalized date", () => {
 		const result = runValidator(
 			makeFixture(

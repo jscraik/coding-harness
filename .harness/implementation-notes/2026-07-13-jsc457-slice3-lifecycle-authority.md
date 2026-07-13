@@ -27,6 +27,12 @@ depends_on:
 
 # JSC-457 Slice 3 lifecycle and authority
 
+## Table of contents
+
+- [Scope](#scope)
+- [Feedback ratchet](#feedback-ratchet)
+- [Evidence boundary](#evidence-boundary)
+
 ## Scope
 
 This note records the bounded implementation for the `JSC-457` admission. The
