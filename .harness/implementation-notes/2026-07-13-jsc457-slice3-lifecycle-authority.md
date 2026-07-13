@@ -64,11 +64,27 @@ recovery rule; the transition schema now carries the same conditional
 operator-owner and operator-decision receipt requirement as the runtime
 validator.
 
+The follow-up contract review found nine additional P2 parity and completeness
+gaps. The bounded repair closes them by including every emitted blocker in the
+recovery vocabulary, requiring the recovery receipt to cite its blocker,
+rejecting Date.parse-normalized RFC3339 values, adopting the Shape -> Admit ->
+Build -> Prove -> Review -> Integrate -> Improve lifecycle, binding current-SHA
+fields and selected mechanisms through semantic validators, publishing both
+schemas and examples in the package allow-list, mirroring Vital Decision
+question rules in the schema, and rejecting non-authorizing waivers at the
+validation boundary. The runtime-packet manifest now records those semantic
+validator bindings and the checked-in examples exercise the published paths.
+
+The review-fix loop also caught a stale packet-count assertion when the two new
+schemas were added to the manifest. The test now expects the actual contract
+surface of 28 packets, preserving the manifest-count invariant.
+
 ## Evidence boundary
 
 Focused tests pass for both contracts, and the canonical aggregate gate passes
 when the isolated worktree's mise configuration is supplied through
 `MISE_TRUSTED_CONFIG_PATHS` (mise still reports a non-fatal tracking warning
-because the sandbox cannot create its state symlink). The patch remains
-unstaged and this note records validation evidence only; it does not claim
-review convergence, merge readiness, or overall SynAIpse completion.
+because the sandbox cannot create its state symlink). The review-fix patch is
+kept separate from Slice 4 and remains subject to fresh independent review;
+this note records validation evidence only and does not claim review
+convergence, merge readiness, or overall SynAIpse completion.

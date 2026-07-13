@@ -2,6 +2,7 @@
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
 	"$id": "https://brainwav.dev/schemas/synaipse-improvement-case.schema.json",
 	"title": "SynAIpse Improvement Case",
+	"$comment": "Semantic validation is required to bind selectedMechanism to the one selected candidate; use validateSynaipseImprovementCase from src/lib/synaipse/improvement-case.ts.",
 	"type": "object",
 	"additionalProperties": false,
 	"required": [

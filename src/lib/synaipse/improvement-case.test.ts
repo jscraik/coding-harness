@@ -62,6 +62,17 @@ describe("synaipse-improvement-case/v1", () => {
 		);
 	});
 
+	it("keeps the schema contract's semantic selected-candidate binding explicit", () => {
+		const result = validateSynaipseImprovementCase({
+			...VALID_CASE,
+			selectedMechanism: "prompt reminder",
+		});
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContainEqual(
+			expect.objectContaining({ path: "selectedMechanism" }),
+		);
+	});
+
 	it("rejects unknown dispositions instead of silently accepting them", () => {
 		const result = validateSynaipseImprovementCase({
 			...VALID_CASE,

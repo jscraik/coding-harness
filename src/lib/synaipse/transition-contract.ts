@@ -4,11 +4,13 @@ export const SYNAIPSE_TRANSITION_SCHEMA_VERSION =
 
 /** Lifecycle stages accepted by the transition contract. */
 export const STAGES = [
-	"orient",
-	"verify",
+	"shape",
+	"admit",
+	"build",
+	"prove",
 	"review",
-	"repair",
-	"handoff",
+	"integrate",
+	"improve",
 ] as const;
 
 /** Lifecycle stage type derived from the contract vocabulary. */
@@ -22,6 +24,10 @@ export const BLOCKERS = [
 	"vital_decision_required",
 	"standing_authority_required",
 	"waiver_expired",
+	"invalid_transition_options",
+	"authority_capability_missing",
+	"recovery_reference_invalid",
+	"waiver_scope_or_authority_invalid",
 ] as const;
 
 /** Recovery blocker type derived from the contract vocabulary. */

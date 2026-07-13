@@ -2,6 +2,7 @@
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
 	"$id": "https://brainwav.dev/schemas/synaipse-transition.schema.json",
 	"title": "SynAIpse Transition",
+	"$comment": "Semantic validation is required for SHA equality, recovery references, waiver authority, and lifecycle bindings; use validateSynaipseTransition from src/lib/synaipse/transition-validation.ts.",
 	"type": "object",
 	"additionalProperties": false,
 	"required": [
@@ -20,9 +21,11 @@
 	"allOf": [
 		{
 			"if": {
+				"required": ["recovery"],
 				"properties": {
 					"recovery": {
 						"type": "object",
+						"required": ["fromBlocker"],
 						"properties": {
 							"fromBlocker": { "const": "vital_decision_required" }
 						}
@@ -47,15 +50,73 @@
 					}
 				}
 			}
+		},
+		{
+			"if": {
+				"required": ["vitalDecision"],
+				"properties": {
+					"vitalDecision": {
+						"type": "object",
+						"required": ["required"],
+						"properties": { "required": { "const": true } }
+					}
+				}
+			},
+			"then": {
+				"properties": {
+					"vitalDecision": {
+						"properties": {
+							"question": { "type": "string", "minLength": 1 }
+						}
+					}
+				}
+			}
+		},
+		{
+			"if": {
+				"required": ["vitalDecision"],
+				"properties": {
+					"vitalDecision": {
+						"type": "object",
+						"required": ["required"],
+						"properties": { "required": { "const": false } }
+					}
+				}
+			},
+			"then": {
+				"properties": {
+					"vitalDecision": {
+						"properties": { "question": { "const": null } }
+					}
+				}
+			}
 		}
 	],
 	"properties": {
 		"schemaVersion": { "const": "synaipse-transition/v1" },
 		"transitionId": { "type": "string", "minLength": 1 },
 		"fromStage": {
-			"enum": ["orient", "verify", "review", "repair", "handoff"]
+			"enum": [
+				"shape",
+				"admit",
+				"build",
+				"prove",
+				"review",
+				"integrate",
+				"improve"
+			]
 		},
-		"toStage": { "enum": ["orient", "verify", "review", "repair", "handoff"] },
+		"toStage": {
+			"enum": [
+				"shape",
+				"admit",
+				"build",
+				"prove",
+				"review",
+				"integrate",
+				"improve"
+			]
+		},
 		"repositorySha": { "type": "string", "minLength": 1 },
 		"evidence": {
 			"type": "object",
@@ -141,7 +202,11 @@
 						"stage_transition_not_allowed",
 						"vital_decision_required",
 						"standing_authority_required",
-						"waiver_expired"
+						"waiver_expired",
+						"invalid_transition_options",
+						"authority_capability_missing",
+						"recovery_reference_invalid",
+						"waiver_scope_or_authority_invalid"
 					]
 				},
 				"refreshedSha": { "type": "string", "minLength": 1 },

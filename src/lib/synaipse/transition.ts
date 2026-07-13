@@ -24,11 +24,13 @@ export interface SynaipseTransitionDecision {
 const ALLOWED_TRANSITIONS: Readonly<
 	Record<(typeof STAGES)[number], readonly (typeof STAGES)[number][]>
 > = {
-	orient: ["verify"],
-	verify: ["review"],
-	review: ["repair", "handoff"],
-	repair: ["verify", "review"],
-	handoff: [],
+	shape: ["admit"],
+	admit: ["build"],
+	build: ["prove"],
+	prove: ["review"],
+	review: ["integrate"],
+	integrate: ["improve"],
+	improve: ["shape"],
 };
 
 /** Decide whether a transition can proceed without a new operator decision. */

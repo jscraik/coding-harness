@@ -12,8 +12,8 @@ function validTransition(): SynaipseTransitionInput {
 	return {
 		schemaVersion: "synaipse-transition/v1",
 		transitionId: "ch_transition_7K4M2P9QX3DR",
-		fromStage: "verify",
-		toStage: "review",
+		fromStage: "build",
+		toStage: "prove",
 		repositorySha: SHA,
 		evidence: {
 			currentSha: SHA,
@@ -29,7 +29,7 @@ function validTransition(): SynaipseTransitionInput {
 		authority: {
 			owner: "codex",
 			standing: true,
-			capabilities: ["transition:verify->review", "waiver:verify->review"],
+			capabilities: ["transition:build->prove", "waiver:build->prove"],
 		},
 		vitalDecision: { required: false, question: null },
 		waiver: null,
@@ -117,7 +117,7 @@ describe("synaipse-transition/v1", () => {
 			waiver: {
 				id: "ch_waiver_7K4M2P9QX3DR",
 				issuer: "codex",
-				scope: "verify->review",
+				scope: "build->prove",
 				reason: "temporary review exception",
 				compensation: "fresh adversarial review before handoff",
 				expiresAt: "2026-07-12T23:59:59Z",
@@ -140,7 +140,7 @@ describe("synaipse-transition/v1", () => {
 			waiver: {
 				id: "ch_waiver_7K4M2P9QX3DR",
 				issuer: "codex",
-				scope: "verify->review",
+				scope: "build->prove",
 				reason: "temporary review exception",
 				compensation: "fresh adversarial review before handoff",
 				expiresAt: "2026-07-14T23:59:59Z",
@@ -159,7 +159,7 @@ describe("synaipse-transition/v1", () => {
 			waiver: {
 				id: "ch_waiver_7K4M2P9QX3DR",
 				issuer: "codex",
-				scope: "review->handoff",
+				scope: "review->integrate",
 				reason: "temporary review exception",
 				compensation: "fresh adversarial review before handoff",
 				expiresAt: "2026-07-14T23:59:59Z",
@@ -172,12 +172,12 @@ describe("synaipse-transition/v1", () => {
 		});
 		expect(result).toMatchObject({
 			status: "blocked",
-			blockers: ["waiver_scope_or_authority_invalid"],
+			blockers: ["invalid_transition_contract"],
 		});
 	});
 
 	it("rejects stage transitions outside the lifecycle graph", () => {
-		const input = transitionWith({ fromStage: "orient", toStage: "handoff" });
+		const input = transitionWith({ fromStage: "shape", toStage: "integrate" });
 		const result = decideSynaipseTransition(input, {
 			expectedSha: SHA,
 			now: NOW,
@@ -209,12 +209,24 @@ describe("synaipse-transition/v1", () => {
 		});
 	});
 
+	it("rejects recovery when the blocker ref is absent from recovery evidence", () => {
+		const input = transitionWith({
+			recovery: {
+				fromBlocker: "stale_sha",
+				refreshedSha: SHA,
+				evidenceRefs: ["collector:current"],
+			},
+		});
+		input.evidence.refs.push("recovery:stale_sha");
+		expect(validateSynaipseTransition(input).valid).toBe(false);
+	});
+
 	it("requires an operator receipt to recover from a Vital Decision", () => {
 		const input = transitionWith({
 			authority: {
 				owner: "codex",
 				standing: true,
-				capabilities: ["transition:verify->review"],
+				capabilities: ["transition:build->prove"],
 			},
 			recovery: {
 				fromBlocker: "vital_decision_required",
@@ -237,7 +249,7 @@ describe("synaipse-transition/v1", () => {
 			authority: {
 				owner: "operator",
 				standing: true,
-				capabilities: ["transition:verify->review"],
+				capabilities: ["transition:build->prove"],
 			},
 			vitalDecision: { required: false, question: null },
 			recovery: {
@@ -326,6 +338,55 @@ describe("synaipse-transition/v1", () => {
 
 	it("rejects an RFC3339 timestamp without seconds", () => {
 		const input = transitionWith({ decidedAt: "2026-07-13T14:00Z" });
+		expect(validateSynaipseTransition(input).valid).toBe(false);
+	});
+
+	it.each([
+		"2026-02-30T23:00:00Z",
+		"2026-07-11T24:00:00Z",
+		"2026-07-11T23:00:00+24:00",
+	])("rejects normalized or out-of-range RFC3339 values: %s", (timestamp) => {
+		const input = transitionWith({ decidedAt: timestamp });
+		expect(validateSynaipseTransition(input).valid).toBe(false);
+	});
+
+	it("accepts every canonical lifecycle stage transition", () => {
+		const transitions = [
+			["shape", "admit"],
+			["admit", "build"],
+			["build", "prove"],
+			["prove", "review"],
+			["review", "integrate"],
+			["integrate", "improve"],
+			["improve", "shape"],
+		] as const;
+		for (const [fromStage, toStage] of transitions) {
+			const input = transitionWith({
+				fromStage,
+				toStage,
+				authority: {
+					...validTransition().authority,
+					capabilities: [`transition:${fromStage}->${toStage}`],
+				},
+			});
+			expect(
+				decideSynaipseTransition(input, { expectedSha: SHA, now: NOW }),
+			).toMatchObject({ status: "admitted" });
+		}
+	});
+
+	it("rejects a waiver that is not authorized at the validation boundary", () => {
+		const input = transitionWith({
+			waiver: {
+				id: "ch_waiver_7K4M2P9QX3DR",
+				issuer: "operator",
+				scope: "admit->build",
+				reason: "temporary exception",
+				compensation: "fresh review",
+				expiresAt: "2026-07-14T23:59:59Z",
+				retirementCondition: "remove after transition",
+			},
+		});
 		expect(validateSynaipseTransition(input).valid).toBe(false);
 	});
 });

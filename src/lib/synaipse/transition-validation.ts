@@ -283,7 +283,10 @@ function validateRecoveryReferences(
 	if (
 		!Array.isArray(recovery.evidenceRefs) ||
 		!stringRefs(recovery.evidenceRefs).every((ref) => refs.includes(ref)) ||
-		!refs.includes(`recovery:${recovery.fromBlocker}`)
+		!refs.includes(`recovery:${recovery.fromBlocker}`) ||
+		!stringRefs(recovery.evidenceRefs).includes(
+			`recovery:${recovery.fromBlocker}`,
+		)
 	)
 		errors.push({
 			path: "recovery.evidenceRefs",
@@ -328,6 +331,33 @@ function validateRecoveryBindings(
 	validateVitalDecisionRecovery(value, recovery, refs, errors);
 }
 
+/** Validate that a waiver authorizes this exact transition and authority owner. */
+function validateWaiverBindings(
+	value: Record<string, unknown>,
+	errors: Errors,
+): void {
+	const waiver = isRecord(value.waiver) ? value.waiver : null;
+	if (!waiver) return;
+	const authority = isRecord(value.authority) ? value.authority : null;
+	const expectedScope = `${String(value.fromStage)}->${String(value.toStage)}`;
+	if (waiver.scope !== expectedScope)
+		errors.push({
+			path: "waiver.scope",
+			message: "must cover the exact transition",
+		});
+	if (waiver.issuer !== authority?.owner)
+		errors.push({
+			path: "waiver.issuer",
+			message: "must match authority.owner",
+		});
+	const capabilities = stringRefs(authority?.capabilities);
+	if (!capabilities.includes(`waiver:${expectedScope}`))
+		errors.push({
+			path: "authority.capabilities",
+			message: "must include the matching waiver capability",
+		});
+}
+
 /** Validate all cross-field bindings in a transition receipt. */
 function validateBindings(
 	value: Record<string, unknown>,
@@ -335,6 +365,7 @@ function validateBindings(
 ): void {
 	validateShaBindings(value, errors);
 	validateRecoveryBindings(value, errors);
+	validateWaiverBindings(value, errors);
 }
 
 /** Validate one complete lifecycle transition receipt. */
