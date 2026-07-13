@@ -16,6 +16,8 @@ const VALID_PARITY_VALIDATORS = new Set([
 	"runtime-card-handoff",
 	"harness-decision",
 	"synaipse-state",
+	"synaipse-transition",
+	"synaipse-improvement-case",
 	"review-state",
 	"external-state-snapshot",
 	"delivery-truth",
@@ -34,8 +36,11 @@ const SUPPORTED_SCHEMA_KEYWORDS = new Set([
 	"$ref",
 	"$schema",
 	"$defs",
+	"$comment",
 	"additionalProperties",
 	"allOf",
+	"if",
+	"then",
 	"anyOf",
 	"const",
 	"description",
@@ -43,12 +48,15 @@ const SUPPORTED_SCHEMA_KEYWORDS = new Set([
 	"format",
 	"items",
 	"maxItems",
+	"maxContains",
 	"maxLength",
 	"minItems",
+	"minContains",
 	"minLength",
 	"minimum",
 	"pattern",
 	"prefixItems",
+	"contains",
 	"properties",
 	"required",
 	"title",
@@ -102,6 +110,52 @@ function resolveRepoContainedPath(inputPath, label) {
 
 function isObject(value) {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isCalendarDate(year, month, day) {
+	const leapYear = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+	const daysInMonth =
+		[31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][
+			month - 1
+		] ?? 0;
+	return month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth;
+}
+
+function isClockTime(hour, minute, second) {
+	return (
+		hour >= 0 &&
+		hour <= 23 &&
+		minute >= 0 &&
+		minute <= 59 &&
+		second >= 0 &&
+		second <= 59
+	);
+}
+
+function isTimeZone(zone) {
+	if (zone === "Z") return true;
+	const offsetHour = Number(zone.slice(1, 3));
+	const offsetMinute = Number(zone.slice(4, 6));
+	return offsetHour <= 23 && offsetMinute <= 59;
+}
+
+function isValidRfc3339DateTime(value) {
+	if (typeof value !== "string" || !RFC3339_DATE_TIME.test(value)) return false;
+	const zoneStart = value.endsWith("Z") ? value.length - 1 : value.length - 6;
+	const [year, month, day] = [
+		Number(value.slice(0, 4)),
+		Number(value.slice(5, 7)),
+		Number(value.slice(8, 10)),
+	];
+	const [hour, minute, second] = value
+		.slice(11, zoneStart)
+		.split(":")
+		.map((part) => Number(part.split(".")[0]));
+	return (
+		isCalendarDate(year, month, day) &&
+		isClockTime(hour, minute, second) &&
+		isTimeZone(value.slice(zoneStart))
+	);
 }
 
 function jsonType(value) {
@@ -237,6 +291,17 @@ function validateSupportedSchemaKeywords(
 			);
 		}
 	}
+	for (const keyword of ["if", "then", "contains"]) {
+		if (isObject(schema[keyword])) {
+			validateSupportedSchemaKeywords(
+				schema[keyword],
+				schemaPath,
+				errors,
+				`${schemaNodePath}.${keyword}`,
+				visitedRefs,
+			);
+		}
+	}
 	if (isObject(schema.additionalProperties)) {
 		errors.push(
 			`${schemaPath}${schemaNodePath}.additionalProperties uses schema-valued additionalProperties, which this validator does not support`,
@@ -342,6 +407,19 @@ function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
 			validateExampleValue(candidate, value, valuePath, errors, schemaPath);
 		}
 	}
+	if (isObject(schema.if)) {
+		const conditionErrors = [];
+		validateExampleValue(
+			schema.if,
+			value,
+			valuePath,
+			conditionErrors,
+			schemaPath,
+		);
+		if (conditionErrors.length === 0 && isObject(schema.then)) {
+			validateExampleValue(schema.then, value, valuePath, errors, schemaPath);
+		}
+	}
 	if (Object.hasOwn(schema, "const") && !valuesEqual(value, schema.const)) {
 		errors.push(`${valuePath} must equal schema const`);
 	}
@@ -385,10 +463,7 @@ function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
 				errors.push(`${valuePath} must match pattern ${schema.pattern}`);
 			}
 		}
-		if (
-			schema.format === "date-time" &&
-			(!RFC3339_DATE_TIME.test(value) || !(Date.parse(value) < Infinity))
-		) {
+		if (schema.format === "date-time" && !isValidRfc3339DateTime(value)) {
 			errors.push(`${valuePath} must be an RFC3339 date-time string`);
 		}
 	}
@@ -412,6 +487,35 @@ function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
 			);
 			if (hasDuplicate) {
 				errors.push(`${valuePath} must contain unique items`);
+			}
+		}
+		if (isObject(schema.contains)) {
+			let matchingItems = 0;
+			for (const [index, item] of value.entries()) {
+				const candidateErrors = [];
+				validateExampleValue(
+					schema.contains,
+					item,
+					`${valuePath}[${index}]`,
+					candidateErrors,
+					schemaPath,
+				);
+				if (candidateErrors.length === 0) matchingItems += 1;
+			}
+			const minContains =
+				typeof schema.minContains === "number" ? schema.minContains : 1;
+			if (matchingItems < minContains) {
+				errors.push(
+					`${valuePath} must contain at least ${minContains} matching items`,
+				);
+			}
+			if (
+				typeof schema.maxContains === "number" &&
+				matchingItems > schema.maxContains
+			) {
+				errors.push(
+					`${valuePath} must contain at most ${schema.maxContains} matching items`,
+				);
 			}
 		}
 		if (Array.isArray(schema.prefixItems)) {
