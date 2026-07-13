@@ -374,18 +374,11 @@ describe("synaipse-transition/v1", () => {
 		});
 	});
 
-	it("resolves a relative example path from an external cwd", () => {
-		const result = spawnSync(
-			process.execPath,
-			[
-				resolve("scripts/validate-synaipse-transition.cjs"),
-				"contracts/examples/synaipse-transition.example.json",
-			],
-			{ cwd: "/tmp", encoding: "utf8" },
-		);
-		expect(result.status).toBe(0);
-		expect(JSON.parse(result.stdout)).toEqual({ valid: true, errors: [] });
-	});
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { resolve } from "node:path";
+...
+			{ cwd: tmpdir(), encoding: "utf8" },
 
 	it("rejects an RFC3339 timestamp without seconds", () => {
 		const input = transitionWith({ decidedAt: "2026-07-13T14:00Z" });
