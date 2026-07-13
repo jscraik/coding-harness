@@ -358,6 +358,10 @@ describe("synaipse-transition/v1", () => {
 	it.each([
 		null,
 		undefined,
+		[],
+		"not-an-object",
+		42,
+		true,
 	])("fails closed for malformed top-level input: %s", (input) => {
 		expect(
 			decideSynaipseTransition(input as unknown as SynaipseTransitionInput, {
