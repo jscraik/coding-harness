@@ -1,6 +1,7 @@
 import { isRecord } from "../decision/validators.js";
 import { isRfc3339DateTime } from "./date-time.js";
 import { validateAuthorityRecovery } from "./transition-recovery-validation.js";
+import { validateEvidenceTimeOrder } from "./transition-time-validation.js";
 import {
 	BLOCKERS,
 	STAGES,
@@ -372,6 +373,7 @@ function validateBindings(
 	errors: Errors,
 ): void {
 	validateShaBindings(value, errors);
+	validateEvidenceTimeOrder(value, errors);
 	validateRecoveryBindings(value, errors);
 	validateWaiverBindings(value, errors);
 }

@@ -85,6 +85,12 @@ The review-fix loop also caught a stale packet-count assertion when the two new
 schemas were added to the manifest. The test now expects the actual contract
 surface of 28 packets, preserving the manifest-count invariant.
 
+The final hosted review sweep exposed two remaining schema and time-order
+boundaries. Required improvement-case strings now share one non-blank schema
+primitive, and a transition is invalid when either general evidence or the
+hosted-main observation postdates the recorded decision. Focused fixtures keep
+the schema-only and semantic-validator paths aligned on both rules.
+
 ## Evidence boundary
 
 Focused tests pass for both contracts, and the canonical aggregate gate passes

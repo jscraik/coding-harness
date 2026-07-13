@@ -366,6 +366,32 @@ describe("synaipse-transition/v1", () => {
 		expect(validateSynaipseTransition(input).valid).toBe(false);
 	});
 
+	it.each([
+		["evidence.observedAt", "evidence"],
+		["evidence.hostedMain.observedAt", "hosted main"],
+	] as const)("rejects decisions made before %s", (_path, source) => {
+		const evidence = validTransition().evidence;
+		const input = transitionWith({
+			evidence: {
+				...evidence,
+				observedAt:
+					source === "evidence" ? "2026-07-14T00:00:00Z" : evidence.observedAt,
+				hostedMain: {
+					...evidence.hostedMain,
+					observedAt:
+						source === "hosted main"
+							? "2026-07-14T00:00:00Z"
+							: evidence.hostedMain.observedAt,
+				},
+			},
+		});
+		const result = validateSynaipseTransition(input);
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContainEqual(
+			expect.objectContaining({ path: _path }),
+		);
+	});
+
 	it("rejects a standing authority without the transition capability", () => {
 		const input = transitionWith({
 			authority: { owner: "codex", standing: true, capabilities: ["read"] },

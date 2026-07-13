@@ -163,4 +163,18 @@ describe("validate-runtime-packet-schemas semantic branches", () => {
 			"candidates must contain at least 1 matching items",
 		);
 	});
+
+	it("rejects blank sibling inventory entries at the schema boundary", () => {
+		const result = runValidator(
+			makeFixture(
+				"synaipse-improvement-case/v1",
+				"contracts/examples/synaipse-improvement-case.example.json",
+				(example) => {
+					example.siblingInventory = ["   "];
+				},
+			),
+		);
+		expect(result.status).toBe(1);
+		expect(result.stdout).toContain("must match pattern \\\\S");
+	});
 });
