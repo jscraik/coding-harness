@@ -1,4 +1,10 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { spawnSync } from "node:child_process";
@@ -22,6 +28,7 @@ function makeFixture(
 	examplePath: string,
 	mutate: (example: Record<string, unknown>) => void,
 ): string {
+	mkdirSync(join(repoRoot, ".cache"), { recursive: true });
 	const root = mkdtempSync(join(repoRoot, ".cache/runtime-packet-semantic-"));
 	tempRoots.push(root);
 	const example = readJson(examplePath);
@@ -72,6 +79,32 @@ describe("validate-runtime-packet-schemas semantic branches", () => {
 		expect(result.status).toBe(1);
 		expect(result.stdout).toContain(
 			"vitalDecision.question must be type string",
+		);
+	});
+
+	it("rejects contradictory current-SHA evidence through the manifest", () => {
+		const result = runValidator(
+			makeFixture(
+				"synaipse-transition/v1",
+				"contracts/examples/synaipse-transition.example.json",
+				(example) => {
+					example.repositorySha = "different-repository-sha";
+					const evidence = example.evidence as Record<string, unknown>;
+					evidence.currentSha = "different-current-sha";
+				},
+			),
+		);
+		expect(result.status).toBe(1);
+		const output = JSON.parse(result.stdout) as { errors: string[] };
+		expect(output.errors).toContainEqual(
+			expect.stringContaining(
+				'"path":"repositorySha","message":"must match evidence.hostedMain.sha"',
+			),
+		);
+		expect(output.errors).toContainEqual(
+			expect.stringContaining(
+				'"path":"evidence.currentSha","message":"must match evidence.hostedMain.sha"',
+			),
 		);
 	});
 
