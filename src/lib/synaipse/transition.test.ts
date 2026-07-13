@@ -172,7 +172,7 @@ describe("synaipse-transition/v1", () => {
 		});
 		expect(result).toMatchObject({
 			status: "blocked",
-			blockers: ["invalid_transition_contract"],
+			blockers: ["waiver_scope_or_authority_invalid"],
 		});
 	});
 
@@ -240,7 +240,7 @@ describe("synaipse-transition/v1", () => {
 			decideSynaipseTransition(input, { expectedSha: SHA, now: NOW }),
 		).toMatchObject({
 			status: "blocked",
-			blockers: ["invalid_transition_contract"],
+			blockers: ["recovery_reference_invalid"],
 		});
 	});
 
@@ -289,7 +289,7 @@ describe("synaipse-transition/v1", () => {
 			decideSynaipseTransition(input, { expectedSha: SHA, now: NOW }),
 		).toMatchObject({
 			status: "blocked",
-			blockers: ["invalid_transition_contract"],
+			blockers: ["recovery_reference_invalid"],
 		});
 	});
 
@@ -388,5 +388,11 @@ describe("synaipse-transition/v1", () => {
 			},
 		});
 		expect(validateSynaipseTransition(input).valid).toBe(false);
+		expect(
+			decideSynaipseTransition(input, { expectedSha: SHA, now: NOW }),
+		).toMatchObject({
+			status: "blocked",
+			blockers: ["waiver_scope_or_authority_invalid"],
+		});
 	});
 });

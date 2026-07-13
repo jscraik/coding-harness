@@ -19,6 +19,13 @@ const DISPOSITIONS = [
 	"delete",
 	"block",
 ] as const;
+const CANDIDATE_SELECTION = {
+	NOT_SELECTED: "not_selected",
+	SELECTED_MISMATCH: "selected_mismatch",
+	SELECTED_MATCH: "selected_match",
+} as const;
+type CandidateSelection =
+	(typeof CANDIDATE_SELECTION)[keyof typeof CANDIDATE_SELECTION];
 
 /** Append one deterministic improvement-case validation error. */
 function error(
@@ -65,21 +72,16 @@ function rejectUnknownProperties(
 			error(errors, `${path}.${key}`, "must not contain unknown properties");
 }
 
-/** Candidate validation result states. */
-const NOT_SELECTED = 0 as const;
-const SELECTED_MISMATCHED = 1 as const;
-const SELECTED_MATCHED = 2 as const;
-
 /** Validate the candidate mechanisms and the selected-candidate binding. */
 function validateCandidate(
 	candidate: unknown,
 	path: string,
 	selectedMechanism: unknown,
 	errors: SynaipseImprovementCaseValidationResult["errors"],
-): typeof NOT_SELECTED | typeof SELECTED_MISMATCHED | typeof SELECTED_MATCHED {
+): CandidateSelection {
 	if (!isRecord(candidate)) {
 		error(errors, path, "must be an object");
-		return NOT_SELECTED;
+		return CANDIDATE_SELECTION.NOT_SELECTED;
 	}
 	rejectUnknownProperties(
 		candidate,
@@ -94,10 +96,11 @@ function validateCandidate(
 		candidate.disposition !== "rejected"
 	)
 		error(errors, `${path}.disposition`, "must be selected or rejected");
-	if (candidate.disposition !== "selected") return NOT_SELECTED;
+	if (candidate.disposition !== "selected")
+		return CANDIDATE_SELECTION.NOT_SELECTED;
 	return candidate.mechanism === selectedMechanism
-		? SELECTED_MATCHED
-		: SELECTED_MISMATCHED;
+		? CANDIDATE_SELECTION.SELECTED_MATCH
+		: CANDIDATE_SELECTION.SELECTED_MISMATCH;
 }
 
 /** Validate the candidate mechanisms and the selected-candidate binding. */
@@ -119,8 +122,13 @@ function validateCandidates(
 			selectedMechanism,
 			errors,
 		);
-		if (selected > NOT_SELECTED) selectedCandidateCount += 1;
-		if (selected === SELECTED_MATCHED) selectedMechanismCount += 1;
+		if (
+			selected === CANDIDATE_SELECTION.SELECTED_MATCH ||
+			selected === CANDIDATE_SELECTION.SELECTED_MISMATCH
+		)
+			selectedCandidateCount += 1;
+		if (selected === CANDIDATE_SELECTION.SELECTED_MATCH)
+			selectedMechanismCount += 1;
 	}
 	if (selectedCandidateCount !== 1 || selectedMechanismCount !== 1)
 		error(errors, "selectedMechanism", "must match one selected candidate");

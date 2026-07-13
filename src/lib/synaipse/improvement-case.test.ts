@@ -73,6 +73,31 @@ describe("synaipse-improvement-case/v1", () => {
 		);
 	});
 
+	it("rejects unknown top-level properties", () => {
+		const result = validateSynaipseImprovementCase({
+			...VALID_CASE,
+			unexpected: true,
+		});
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContainEqual(
+			expect.objectContaining({ path: "case.unexpected" }),
+		);
+	});
+
+	it("rejects cases with no selected candidate", () => {
+		const result = validateSynaipseImprovementCase({
+			...VALID_CASE,
+			candidates: VALID_CASE.candidates.map((candidate) => ({
+				...candidate,
+				disposition: "rejected",
+			})),
+		});
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContainEqual(
+			expect.objectContaining({ path: "selectedMechanism" }),
+		);
+	});
+
 	it("rejects unknown dispositions instead of silently accepting them", () => {
 		const result = validateSynaipseImprovementCase({
 			...VALID_CASE,

@@ -129,7 +129,11 @@
 					"minItems": 1,
 					"items": { "type": "string", "minLength": 1 }
 				},
-				"observedAt": { "type": "string", "format": "date-time" },
+				"observedAt": {
+					"type": "string",
+					"format": "date-time",
+					"pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$"
+				},
 				"hostedMain": {
 					"type": "object",
 					"additionalProperties": false,
@@ -140,7 +144,11 @@
 						},
 						"ref": { "const": "refs/heads/main" },
 						"sha": { "type": "string", "minLength": 1 },
-						"observedAt": { "type": "string", "format": "date-time" }
+						"observedAt": {
+							"type": "string",
+							"format": "date-time",
+							"pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$"
+						}
 					}
 				}
 			}
@@ -186,7 +194,11 @@
 				"scope": { "type": "string", "minLength": 1 },
 				"reason": { "type": "string", "minLength": 1 },
 				"compensation": { "type": "string", "minLength": 1 },
-				"expiresAt": { "type": "string", "format": "date-time" },
+				"expiresAt": {
+					"type": "string",
+					"format": "date-time",
+					"pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$"
+				},
 				"retirementCondition": { "type": "string", "minLength": 1 }
 			}
 		},
@@ -217,6 +229,10 @@
 				}
 			}
 		},
-		"decidedAt": { "type": "string", "format": "date-time" }
+		"decidedAt": {
+			"type": "string",
+			"format": "date-time",
+			"pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$"
+		}
 	}
 }

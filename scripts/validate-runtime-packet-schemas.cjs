@@ -245,6 +245,17 @@ function validateSupportedSchemaKeywords(
 			);
 		}
 	}
+	for (const keyword of ["if", "then", "contains"]) {
+		if (isObject(schema[keyword])) {
+			validateSupportedSchemaKeywords(
+				schema[keyword],
+				schemaPath,
+				errors,
+				`${schemaNodePath}.${keyword}`,
+				visitedRefs,
+			);
+		}
+	}
 	if (isObject(schema.additionalProperties)) {
 		errors.push(
 			`${schemaPath}${schemaNodePath}.additionalProperties uses schema-valued additionalProperties, which this validator does not support`,
@@ -377,6 +388,19 @@ function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
 			validateExampleValue(candidate, value, valuePath, errors, schemaPath);
 		}
 	}
+	if (isObject(schema.if)) {
+		const conditionErrors = [];
+		validateExampleValue(
+			schema.if,
+			value,
+			valuePath,
+			conditionErrors,
+			schemaPath,
+		);
+		if (conditionErrors.length === 0 && isObject(schema.then)) {
+			validateExampleValue(schema.then, value, valuePath, errors, schemaPath);
+		}
+	}
 	if (Object.hasOwn(schema, "const") && !valuesEqual(value, schema.const)) {
 		errors.push(`${valuePath} must equal schema const`);
 	}
@@ -447,6 +471,35 @@ function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
 			);
 			if (hasDuplicate) {
 				errors.push(`${valuePath} must contain unique items`);
+			}
+		}
+		if (isObject(schema.contains)) {
+			let matchingItems = 0;
+			for (const [index, item] of value.entries()) {
+				const candidateErrors = [];
+				validateExampleValue(
+					schema.contains,
+					item,
+					`${valuePath}[${index}]`,
+					candidateErrors,
+					schemaPath,
+				);
+				if (candidateErrors.length === 0) matchingItems += 1;
+			}
+			const minContains =
+				typeof schema.minContains === "number" ? schema.minContains : 1;
+			if (matchingItems < minContains) {
+				errors.push(
+					`${valuePath} must contain at least ${minContains} matching items`,
+				);
+			}
+			if (
+				typeof schema.maxContains === "number" &&
+				matchingItems > schema.maxContains
+			) {
+				errors.push(
+					`${valuePath} must contain at most ${schema.maxContains} matching items`,
+				);
 			}
 		}
 		if (Array.isArray(schema.prefixItems)) {
