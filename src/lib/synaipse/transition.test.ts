@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -374,10 +375,6 @@ describe("synaipse-transition/v1", () => {
 		});
 	});
 
-import { spawnSync } from "node:child_process";
-import { tmpdir } from "node:os";
-import { resolve } from "node:path";
-...
 			{ cwd: tmpdir(), encoding: "utf8" },
 
 	it("rejects an RFC3339 timestamp without seconds", () => {
