@@ -1,0 +1,62 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/synaipse-improvement-case.schema.json",
+	"title": "SynAIpse Improvement Case",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"caseId",
+		"observedAt",
+		"observation",
+		"classification",
+		"siblingInventory",
+		"candidates",
+		"selectedMechanism",
+		"canary",
+		"measurement",
+		"disposition",
+		"owner",
+		"retirementCondition"
+	],
+	"properties": {
+		"schemaVersion": { "const": "synaipse-improvement-case/v1" },
+		"caseId": { "type": "string", "minLength": 1 },
+		"observedAt": { "type": "string", "format": "date-time" },
+		"observation": { "type": "string", "minLength": 1 },
+		"classification": { "enum": ["local", "systemic"] },
+		"siblingInventory": {
+			"type": "array",
+			"minItems": 1,
+			"items": { "type": "string", "minLength": 1 }
+		},
+		"candidates": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["mechanism", "disposition", "rationale"],
+				"properties": {
+					"mechanism": { "type": "string", "minLength": 1 },
+					"disposition": { "enum": ["selected", "rejected"] },
+					"rationale": { "type": "string", "minLength": 1 }
+				}
+			},
+			"contains": {
+				"type": "object",
+				"properties": { "disposition": { "const": "selected" } }
+			},
+			"minContains": 1,
+			"maxContains": 1
+		},
+		"selectedMechanism": { "type": "string", "minLength": 1 },
+		"canary": { "type": "string", "minLength": 1 },
+		"measurement": { "type": "string", "minLength": 1 },
+		"disposition": {
+			"enum": ["retain", "change", "consolidate", "delete", "block"]
+		},
+		"owner": { "type": "string", "minLength": 1 },
+		"retirementCondition": { "type": "string", "minLength": 1 }
+	}
+}
