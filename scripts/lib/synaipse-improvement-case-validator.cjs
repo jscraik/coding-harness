@@ -59,7 +59,7 @@ function validateImprovementCaseInventory(value, errors) {
 				value.siblingInventory[field],
 				`siblingInventory.${field}`,
 				errors,
-				true,
+				field === "searched",
 			);
 	}
 }
