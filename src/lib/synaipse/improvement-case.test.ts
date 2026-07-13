@@ -94,4 +94,29 @@ describe("synaipse-improvement-case/v1", () => {
 			expect.objectContaining({ path: "siblingInventory" }),
 		);
 	});
+
+	it("rejects an improvement case with unknown top-level properties", () => {
+		const result = validateSynaipseImprovementCase({
+			...VALID_CASE,
+			unknownProperty: "unexpected",
+		});
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContainEqual(
+			expect.objectContaining({ path: "case.unknownProperty" }),
+		);
+	});
+
+	it("rejects an improvement case with no selected candidate", () => {
+		const result = validateSynaipseImprovementCase({
+			...VALID_CASE,
+			candidates: VALID_CASE.candidates.map((candidate) => ({
+				...candidate,
+				disposition: "rejected",
+			})),
+		});
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContainEqual(
+			expect.objectContaining({ path: "selectedMechanism" }),
+		);
+	});
 });

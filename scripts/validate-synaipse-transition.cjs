@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const { pathToFileURL } = require("node:url");
 const { spawnSync } = require("node:child_process");
-const { resolve } = require("node:path");
+const { resolve, dirname } = require("node:path");
 
 const examplePath = process.argv[2];
 if (!examplePath) {
@@ -9,7 +9,7 @@ if (!examplePath) {
 	process.exit(2);
 }
 const moduleUrl = pathToFileURL(
-	resolve("src/lib/synaipse/transition-validation.ts"),
+	resolve(dirname(__dirname), "src/lib/synaipse/transition-validation.ts"),
 ).href;
 const runner = [
 	"import { readFileSync } from 'node:fs';",

@@ -65,16 +65,21 @@ function rejectUnknownProperties(
 			error(errors, `${path}.${key}`, "must not contain unknown properties");
 }
 
+/** Candidate validation result states. */
+const NOT_SELECTED = 0 as const;
+const SELECTED_MISMATCHED = 1 as const;
+const SELECTED_MATCHED = 2 as const;
+
 /** Validate the candidate mechanisms and the selected-candidate binding. */
 function validateCandidate(
 	candidate: unknown,
 	path: string,
 	selectedMechanism: unknown,
 	errors: SynaipseImprovementCaseValidationResult["errors"],
-): 0 | 1 | 2 {
+): typeof NOT_SELECTED | typeof SELECTED_MISMATCHED | typeof SELECTED_MATCHED {
 	if (!isRecord(candidate)) {
 		error(errors, path, "must be an object");
-		return 0;
+		return NOT_SELECTED;
 	}
 	rejectUnknownProperties(
 		candidate,
@@ -89,8 +94,10 @@ function validateCandidate(
 		candidate.disposition !== "rejected"
 	)
 		error(errors, `${path}.disposition`, "must be selected or rejected");
-	if (candidate.disposition !== "selected") return 0;
-	return candidate.mechanism === selectedMechanism ? 2 : 1;
+	if (candidate.disposition !== "selected") return NOT_SELECTED;
+	return candidate.mechanism === selectedMechanism
+		? SELECTED_MATCHED
+		: SELECTED_MISMATCHED;
 }
 
 /** Validate the candidate mechanisms and the selected-candidate binding. */
@@ -112,8 +119,8 @@ function validateCandidates(
 			selectedMechanism,
 			errors,
 		);
-		if (selected > 0) selectedCandidateCount += 1;
-		if (selected === 2) selectedMechanismCount += 1;
+		if (selected > NOT_SELECTED) selectedCandidateCount += 1;
+		if (selected === SELECTED_MATCHED) selectedMechanismCount += 1;
 	}
 	if (selectedCandidateCount !== 1 || selectedMechanismCount !== 1)
 		error(errors, "selectedMechanism", "must match one selected candidate");

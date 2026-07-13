@@ -38,6 +38,13 @@ export function decideSynaipseTransition(
 	input: SynaipseTransitionInput,
 	options: { expectedSha: string; now: string },
 ): SynaipseTransitionDecision {
+	if (hasInvalidRecovery(input))
+		return blocked("recovery_reference_invalid", "refresh_recovery_evidence");
+	if (hasInvalidWaiver(input))
+		return blocked(
+			"waiver_scope_or_authority_invalid",
+			"renew_waiver_or_follow_policy",
+		);
 	const validation = validateSynaipseTransition(input);
 	if (!validation.valid)
 		return blocked("invalid_transition_contract", "repair_transition_contract");
@@ -90,7 +97,7 @@ function hasRequiredCapability(input: SynaipseTransitionInput): boolean {
 	);
 }
 
-/** Evaluate standing authority, time, capability, recovery, and waiver guards. */
+/** Evaluate standing authority, time, capability, and waiver expiry guards. */
 function evaluateAuthorityGuards(
 	input: SynaipseTransitionInput,
 	now: string,
@@ -104,13 +111,6 @@ function evaluateAuthorityGuards(
 			"authority_capability_missing",
 			"obtain_transition_capability",
 		);
-	if (hasInvalidRecovery(input))
-		return blocked("recovery_reference_invalid", "refresh_recovery_evidence");
-	if (hasInvalidWaiver(input))
-		return blocked(
-			"waiver_scope_or_authority_invalid",
-			"renew_waiver_or_follow_policy",
-		);
 	if (isExpiredWaiver(input.waiver, now))
 		return blocked("waiver_expired", "renew_waiver_or_follow_policy");
 	return null;
@@ -119,10 +119,32 @@ function evaluateAuthorityGuards(
 /** Return whether recovery cites a constrained blocker and refreshed evidence. */
 function hasInvalidRecovery(input: SynaipseTransitionInput): boolean {
 	if (input.recovery === null) return false;
+	if (
+		typeof input.recovery !== "object" ||
+		!input.recovery ||
+		typeof input.recovery.fromBlocker !== "string" ||
+		!Array.isArray(input.recovery.evidenceRefs) ||
+		typeof input.recovery.refreshedSha !== "string"
+	)
+		return false;
+	if (
+		typeof input.evidence !== "object" ||
+		!input.evidence ||
+		typeof input.evidence.hostedMain !== "object" ||
+		!input.evidence.hostedMain ||
+		typeof input.evidence.hostedMain.sha !== "string"
+	)
+		return false;
+	if (
+		typeof input.authority !== "object" ||
+		!input.authority ||
+		typeof input.authority.owner !== "string"
+	)
+		return false;
 	const requiresOperatorDecision =
 		input.recovery.fromBlocker === "vital_decision_required";
-	const hasOperatorDecisionReceipt = input.recovery.evidenceRefs.some((ref) =>
-		ref.startsWith("operator-decision:"),
+	const hasOperatorDecisionReceipt = input.recovery.evidenceRefs.some(
+		(ref) => typeof ref === "string" && ref.startsWith("operator-decision:"),
 	);
 	return (
 		!BLOCKERS.includes(input.recovery.fromBlocker as Blocker) ||
@@ -138,6 +160,25 @@ function hasInvalidRecovery(input: SynaipseTransitionInput): boolean {
 /** Return whether a waiver covers this exact transition and authority. */
 function hasInvalidWaiver(input: SynaipseTransitionInput): boolean {
 	if (input.waiver === null) return false;
+	if (
+		typeof input.waiver !== "object" ||
+		!input.waiver ||
+		typeof input.waiver.scope !== "string" ||
+		typeof input.waiver.issuer !== "string"
+	)
+		return false;
+	if (
+		typeof input.authority !== "object" ||
+		!input.authority ||
+		typeof input.authority.owner !== "string" ||
+		!Array.isArray(input.authority.capabilities)
+	)
+		return false;
+	if (
+		typeof input.fromStage !== "string" ||
+		typeof input.toStage !== "string"
+	)
+		return false;
 	const scope = `${input.fromStage}->${input.toStage}`;
 	return (
 		input.waiver.scope !== scope ||

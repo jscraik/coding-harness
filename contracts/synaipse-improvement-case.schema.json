@@ -23,7 +23,11 @@
 	"properties": {
 		"schemaVersion": { "const": "synaipse-improvement-case/v1" },
 		"caseId": { "type": "string", "minLength": 1 },
-		"observedAt": { "type": "string", "format": "date-time" },
+		"observedAt": {
+			"type": "string",
+			"format": "date-time",
+			"pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$"
+		},
 		"observation": { "type": "string", "minLength": 1 },
 		"classification": { "enum": ["local", "systemic"] },
 		"siblingInventory": {
