@@ -1,6 +1,3 @@
-import { spawnSync } from "node:child_process";
-import { tmpdir } from "node:os";
-import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
 	decideSynaipseTransition,
@@ -374,8 +371,6 @@ describe("synaipse-transition/v1", () => {
 			blockers: ["invalid_transition_contract"],
 		});
 	});
-
-			{ cwd: tmpdir(), encoding: "utf8" },
 
 	it("rejects an RFC3339 timestamp without seconds", () => {
 		const input = transitionWith({ decidedAt: "2026-07-13T14:00Z" });
