@@ -39,6 +39,8 @@ export function decideSynaipseTransition(
 	input: SynaipseTransitionInput,
 	options: { expectedSha: string; now: string },
 ): SynaipseTransitionDecision {
+	if (!isRecord(input))
+		return blocked("invalid_transition_contract", "repair_transition_contract");
 	const bindingBlocker = evaluateBindingGuards(input);
 	if (bindingBlocker) return bindingBlocker;
 	const validation = validateSynaipseTransition(input);

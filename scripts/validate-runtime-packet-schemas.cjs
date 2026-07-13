@@ -112,6 +112,52 @@ function isObject(value) {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isCalendarDate(year, month, day) {
+	const leapYear = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+	const daysInMonth =
+		[31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][
+			month - 1
+		] ?? 0;
+	return month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth;
+}
+
+function isClockTime(hour, minute, second) {
+	return (
+		hour >= 0 &&
+		hour <= 23 &&
+		minute >= 0 &&
+		minute <= 59 &&
+		second >= 0 &&
+		second <= 59
+	);
+}
+
+function isTimeZone(zone) {
+	if (zone === "Z") return true;
+	const offsetHour = Number(zone.slice(1, 3));
+	const offsetMinute = Number(zone.slice(4, 6));
+	return offsetHour <= 23 && offsetMinute <= 59;
+}
+
+function isValidRfc3339DateTime(value) {
+	if (typeof value !== "string" || !RFC3339_DATE_TIME.test(value)) return false;
+	const zoneStart = value.endsWith("Z") ? value.length - 1 : value.length - 6;
+	const [year, month, day] = [
+		Number(value.slice(0, 4)),
+		Number(value.slice(5, 7)),
+		Number(value.slice(8, 10)),
+	];
+	const [hour, minute, second] = value
+		.slice(11, zoneStart)
+		.split(":")
+		.map((part) => Number(part.split(".")[0]));
+	return (
+		isCalendarDate(year, month, day) &&
+		isClockTime(hour, minute, second) &&
+		isTimeZone(value.slice(zoneStart))
+	);
+}
+
 function jsonType(value) {
 	if (value === null) return "null";
 	if (Array.isArray(value)) return "array";
@@ -444,10 +490,7 @@ function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
 				errors.push(`${valuePath} must match pattern ${schema.pattern}`);
 			}
 		}
-		if (
-			schema.format === "date-time" &&
-			(!RFC3339_DATE_TIME.test(value) || !(Date.parse(value) < Infinity))
-		) {
+		if (schema.format === "date-time" && !isValidRfc3339DateTime(value)) {
 			errors.push(`${valuePath} must be an RFC3339 date-time string`);
 		}
 	}

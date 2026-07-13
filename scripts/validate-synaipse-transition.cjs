@@ -28,7 +28,7 @@ const child = spawnSync(
 		env: {
 			...process.env,
 			SYNAIPSE_MODULE_URL: moduleUrl,
-			SYNAIPSE_PACKET_PATH: resolve(examplePath),
+			SYNAIPSE_PACKET_PATH: resolve(repoRoot, examplePath),
 		},
 		encoding: "utf8",
 	},

@@ -1,3 +1,5 @@
+import { spawnSync } from "node:child_process";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
 	decideSynaipseTransition,
@@ -334,6 +336,34 @@ describe("synaipse-transition/v1", () => {
 			status: "blocked",
 			blockers: ["invalid_transition_options"],
 		});
+	});
+
+	it.each([
+		null,
+		undefined,
+	])("fails closed for malformed top-level input: %s", (input) => {
+		expect(
+			decideSynaipseTransition(input as unknown as SynaipseTransitionInput, {
+				expectedSha: SHA,
+				now: NOW,
+			}),
+		).toMatchObject({
+			status: "blocked",
+			blockers: ["invalid_transition_contract"],
+		});
+	});
+
+	it("resolves a relative example path from an external cwd", () => {
+		const result = spawnSync(
+			process.execPath,
+			[
+				resolve("scripts/validate-synaipse-transition.cjs"),
+				"contracts/examples/synaipse-transition.example.json",
+			],
+			{ cwd: "/tmp", encoding: "utf8" },
+		);
+		expect(result.status).toBe(0);
+		expect(JSON.parse(result.stdout)).toEqual({ valid: true, errors: [] });
 	});
 
 	it("rejects an RFC3339 timestamp without seconds", () => {
