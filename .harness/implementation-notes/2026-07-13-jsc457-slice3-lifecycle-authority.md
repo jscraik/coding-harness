@@ -1,3 +1,30 @@
+---
+schema_version: 1
+lifecycle_schema: harness-document-lifecycle/v1
+artifact_id: jsc457-slice3-lifecycle-authority
+artifact_type: implementation-note
+canonical_slug: jsc457-slice3-lifecycle-authority
+title: JSC-457 Slice 3 Lifecycle And Authority
+harness_stage: implementation-notes
+status: active
+date: 2026-07-13
+origin: JSC-457 phase-admitted Slice 3 implementation
+source_type: implementation-note
+authority: execution-input
+lifecycle_status: execution-input
+canonical_destination: src/lib/synaipse
+owner: coding-harness-maintainers
+created: 2026-07-13
+last_reviewed: 2026-07-13
+review_cadence: event-driven
+validated_by:
+  - pnpm check
+  - bash scripts/run-harness-gate.sh docs-gate --mode required --json
+depends_on:
+  - docs/specs/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-spec.md
+  - JSC-457
+---
+
 # JSC-457 Slice 3 lifecycle and authority
 
 ## Scope
