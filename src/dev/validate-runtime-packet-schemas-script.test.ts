@@ -742,12 +742,13 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 			})),
 		]);
 		expect(result.status).toBe(1);
-		const errors = (JSON.parse(result.stdout) as { errors: string[] }).errors;
-		expect(
-			errors.filter((error) =>
-				error.includes(`.${branch} uses unsupported JSON Schema keyword oneOf`),
-			),
-		).toHaveLength(1);
+		expect(JSON.parse(result.stdout)).toMatchObject({
+			errors: [
+				expect.stringContaining(
+					`.${branch} uses unsupported JSON Schema keyword oneOf`,
+				),
+			],
+		});
 	});
 
 	it("rejects decision-request examples with whitespace-only evidence refs", () => {
