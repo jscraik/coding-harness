@@ -291,6 +291,48 @@ describe("synaipse-transition/v1", () => {
 		).toMatchObject({ status: "admitted", blockers: [] });
 	});
 
+	it("rejects capability recovery while the capability is still missing", () => {
+		const input = transitionWith({
+			authority: { owner: "codex", standing: true, capabilities: ["read"] },
+			recovery: {
+				fromBlocker: "authority_capability_missing",
+				refreshedSha: SHA,
+				evidenceRefs: ["recovery:authority_capability_missing"],
+			},
+		});
+		input.evidence.refs.push("recovery:authority_capability_missing");
+		expect(validateSynaipseTransition(input)).toMatchObject({
+			valid: false,
+			errors: [
+				{
+					path: "authority.capabilities",
+					message: "must include the recovered transition capability",
+				},
+			],
+		});
+	});
+
+	it("rejects standing-authority recovery while authority is not standing", () => {
+		const input = transitionWith({
+			authority: { ...validTransition().authority, standing: false },
+			recovery: {
+				fromBlocker: "standing_authority_required",
+				refreshedSha: SHA,
+				evidenceRefs: ["recovery:standing_authority_required"],
+			},
+		});
+		input.evidence.refs.push("recovery:standing_authority_required");
+		expect(validateSynaipseTransition(input)).toMatchObject({
+			valid: false,
+			errors: [
+				{
+					path: "authority.standing",
+					message: "must be true after standing-authority recovery",
+				},
+			],
+		});
+	});
+
 	it("rejects recovery claims that cite an unconstrained blocker", () => {
 		const input = {
 			...validTransition(),

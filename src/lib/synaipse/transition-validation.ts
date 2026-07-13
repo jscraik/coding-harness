@@ -1,5 +1,6 @@
 import { isRecord } from "../decision/validators.js";
 import { isRfc3339DateTime } from "./date-time.js";
+import { validateAuthorityRecovery } from "./transition-recovery-validation.js";
 import {
 	BLOCKERS,
 	STAGES,
@@ -335,6 +336,7 @@ function validateRecoveryBindings(
 	const refs = stringRefs(evidence?.refs);
 	validateRecoveryReferences(recovery, refs, errors);
 	validateVitalDecisionRecovery(value, recovery, refs, errors);
+	validateAuthorityRecovery(value, recovery, errors);
 }
 
 /** Validate that a waiver authorizes this exact transition and authority owner. */
