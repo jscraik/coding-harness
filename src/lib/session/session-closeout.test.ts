@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	SESSION_CLOSEOUT_SCHEMA_VERSION,
+	buildLocalFitnessEvidence,
 	type SessionCloseout,
 	isSessionCloseout,
 	validateSessionCloseout,
@@ -55,6 +56,41 @@ describe("validateSessionCloseout", () => {
 			valid: true,
 			errors: [],
 		});
+	});
+
+	it("accepts local fitness evidence without promoting hosted truth", () => {
+		const localFitness = buildLocalFitnessEvidence(
+			"artifacts/fitness/report.json",
+			{ status: "warn" },
+		);
+		const result = validateSessionCloseout(
+			validCloseout({
+				localFitness,
+			}),
+		);
+
+		expect(result).toEqual({ valid: true, errors: [] });
+	});
+
+	it("rejects a fitness receipt that changes its evidence class", () => {
+		const result = validateSessionCloseout(
+			validCloseout({
+				localFitness: {
+					reportRef: "artifacts/fitness/report.json",
+					status: "pass",
+					evidenceClass: "merge_ready",
+					claimBoundary: "Merge readiness proven.",
+				} as unknown as NonNullable<SessionCloseout["localFitness"]>,
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				"localFitness.evidenceClass must be one of local_fitness",
+				"localFitness.claimBoundary must state the local-only boundary",
+			]),
+		);
 	});
 
 	it("narrows valid closeouts with the type guard", () => {

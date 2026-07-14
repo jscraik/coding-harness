@@ -1,12 +1,17 @@
 import { execFileSync } from "node:child_process";
 import { gitEnvironmentForRepoRoot } from "../lib/runtime/git-environment.js";
 import type { HarnessNextWorktreeRole } from "./next-args.js";
+import {
+	classifyChangedFiles,
+	type ChangedFileClassification,
+} from "./next-file-classification.js";
 import { parseGitStatusShort, type NextWorktreeState } from "./next-support.js";
 
 /** File-inspection summary produced by changed-file resolution. */
 export type ChangedFilesResult = {
 	files: string[];
 	filesSource: "override" | "git";
+	classification: ChangedFileClassification;
 };
 
 /** Options needed to resolve local changed files for harness next. */
@@ -104,10 +109,19 @@ export function resolveChangedFiles(
 	options: ChangedFilesResolutionOptions,
 ): ChangedFilesResult {
 	if (options.files !== undefined) {
-		return { files: [...options.files].sort(), filesSource: "override" };
+		const files = [...new Set(options.files)].sort();
+		return {
+			files,
+			filesSource: "override",
+			classification: classifyChangedFiles(files, { explicitInclude: true }),
+		};
 	}
+	const files = (options.inspectChangedFiles ?? inspectGitChangedFiles)(
+		repoRoot,
+	);
 	return {
-		files: (options.inspectChangedFiles ?? inspectGitChangedFiles)(repoRoot),
+		files,
 		filesSource: "git",
+		classification: classifyChangedFiles(files),
 	};
 }

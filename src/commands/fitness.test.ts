@@ -115,7 +115,15 @@ describe("runFitnessCLI", () => {
 		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
 		expect(result.schemaVersion).toBe("harness-fitness/v1");
 		expect(result.status).toBe("needs_evidence");
-		expect(result.lanes).toHaveLength(6);
+		expect(result.lanes).toHaveLength(10);
+		expect(result.lanes.slice(6)).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					capability: "agent_routing",
+					applicability: "not_applicable",
+				}),
+			]),
+		);
 		expect(result.lanes[0]).toEqual(
 			expect.objectContaining({
 				id: "architecture-fitness",

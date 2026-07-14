@@ -8,11 +8,15 @@ import type {
 import {
 	artifactStatus,
 	emptyDetailsFinding,
-	isArtifactRecord,
 	requiredRecordArray,
 } from "./artifact-evidence.js";
 import { firstString, gateArtifactFindings } from "./gate-artifact-findings.js";
 import { FITNESS_COMMANDS } from "./commands.js";
+import { maybeAddAdvisoryLane } from "./advisory-artifact-normalizer.js";
+import {
+	applyOptionalFitnessArtifactReports,
+	type OptionalFitnessArtifactPaths,
+} from "./optional-artifact-normalizers.js";
 
 /** Public API export. */
 export interface FitnessArtifactReportOptions {
@@ -22,6 +26,10 @@ export interface FitnessArtifactReportOptions {
 	lintReportPath?: string;
 	behaviorTestsReportPath?: string;
 	auditTrackingReportPath?: string;
+	agentRoutingReportPath?: string;
+	documentationLifecycleReportPath?: string;
+	testConfidenceReportPath?: string;
+	programDesignReportPath?: string;
 	advisoryReviewReportPath?: string;
 }
 
@@ -30,6 +38,12 @@ export const TYPECHECK_LANE_ID = "type-safety";
 export const LINT_LANE_ID = "static-lint";
 export const BEHAVIOR_LANE_ID = "behavior-proof";
 export const FEEDBACK_LANE_ID = "feedback-learning";
+export {
+	AGENT_ROUTING_LANE_ID,
+	DOCUMENTATION_LIFECYCLE_LANE_ID,
+	TEST_CONFIDENCE_LANE_ID,
+	PROGRAM_DESIGN_LANE_ID,
+} from "./optional-artifact-normalizers.js";
 
 const QUALITY_SIZE_METRIC_KEYS: Record<string, readonly [string, string]> = {
 	file_lines: ["moduleLogicalLines", "maxModuleLogicalLines"],
@@ -40,10 +54,6 @@ const QUALITY_SIZE_METRIC_KEYS: Record<string, readonly [string, string]> = {
 
 function readJsonFile(path: string): unknown {
 	return JSON.parse(readFileSync(path, "utf8"));
-}
-
-function asRecords(value: unknown): Record<string, unknown>[] {
-	return Array.isArray(value) ? value.filter(isArtifactRecord) : [];
 }
 
 /** Resolve an explicit or conventional fitness artifact path. */
@@ -253,43 +263,7 @@ function auditTrackingFindings(path: string): FitnessFinding[] {
 	}));
 }
 
-/** Convert advisory review artifacts into non-blocking fitness findings. */
-function advisoryReviewFindings(path: string): FitnessFinding[] {
-	const report = readJsonFile(path);
-	const records =
-		report && typeof report === "object"
-			? asRecords((report as Record<string, unknown>).findings)
-			: [];
-	return records.map((finding, index) => ({
-		id: `ai-review-advisory:${firstString(finding, ["title"]) ?? index}`,
-		title: firstString(finding, ["title"]) ?? "AI review advisory finding",
-		severity: "warning",
-		lane: "ai-review-advisory",
-		principle: "compound_feedback_to_harness",
-		enforcement: "advisory",
-		evidence: {
-			message:
-				firstString(finding, ["message", "title"]) ??
-				"AI-assisted review reported an advisory finding.",
-		},
-		risk: "Advisory review feedback may improve the patch but does not independently block deterministic local gates.",
-		recommendedCommand: FITNESS_COMMANDS.AUTOREVIEW,
-		claimBoundary:
-			"AI review is advisory evidence only; deterministic gates remain the blocking authority.",
-	}));
-}
-
-function applyLaneArtifact(
-	lane: FitnessLane | undefined,
-	path: string | undefined,
-	findingsForPath: (path: string) => FitnessFinding[],
-): void {
-	if (!lane || !path) return;
-	lane.findings = findingsForPath(path);
-	lane.status = laneStatus(lane.findings);
-	lane.evidenceSource = path;
-}
-
+/** Derive a lane status from normalized deterministic findings. */
 function laneStatus(findings: readonly FitnessFinding[]): FitnessLaneStatus {
 	if (
 		findings.some(
@@ -303,31 +277,17 @@ function laneStatus(findings: readonly FitnessFinding[]): FitnessLaneStatus {
 	return "pass";
 }
 
-/** Add or refresh the optional advisory review lane when a report is supplied. */
-function maybeAddAdvisoryLane(
-	lanes: FitnessLane[],
+/** Admit one required lane artifact and attach its normalized findings. */
+function applyLaneArtifact(
+	lane: FitnessLane | undefined,
 	path: string | undefined,
+	findingsForPath: (path: string) => FitnessFinding[],
 ): void {
-	if (!path) return;
-	const findings = advisoryReviewFindings(path);
-	const advisoryLane: FitnessLane = {
-		id: "ai-review-advisory",
-		label: "AI review advisory",
-		command: FITNESS_COMMANDS.AUTOREVIEW,
-		principle: "compound_feedback_to_harness",
-		enforcement: "advisory",
-		status: findings.length > 0 ? "warn" : "pass",
-		evidenceSource: path,
-		findings,
-	};
-	const existing = lanes.find((lane) => lane.id === advisoryLane.id);
-	if (existing) {
-		existing.status = advisoryLane.status;
-		existing.evidenceSource = advisoryLane.evidenceSource;
-		existing.findings = advisoryLane.findings;
-		return;
-	}
-	lanes.push(advisoryLane);
+	if (!lane || !path) return;
+	lane.applicability = "admitted";
+	lane.findings = findingsForPath(path);
+	lane.status = laneStatus(lane.findings);
+	lane.evidenceSource = path;
 }
 
 /** Apply local gate artifacts to their matching fitness lanes. */
@@ -335,51 +295,73 @@ export function applyFitnessArtifactReports(
 	lanes: FitnessLane[],
 	options: FitnessArtifactReportOptions,
 ): void {
-	applyLaneArtifact(
-		lanes.find((lane) => lane.id === QUALITY_LANE_ID),
-		conventionalArtifactPath(
+	const optionalPaths: OptionalFitnessArtifactPaths = {};
+	const optionalArtifacts = [
+		["agentRoutingPath", options.agentRoutingReportPath, "agent-routing.json"],
+		[
+			"documentationLifecyclePath",
+			options.documentationLifecycleReportPath,
+			"documentation-lifecycle.json",
+		],
+		[
+			"testConfidencePath",
+			options.testConfidenceReportPath,
+			"test-confidence.json",
+		],
+		[
+			"programDesignPath",
+			options.programDesignReportPath,
+			"program-design.json",
+		],
+	] as const;
+	for (const [key, explicitPath, filename] of optionalArtifacts) {
+		const path = conventionalArtifactPath(
 			options.artifactsDir,
+			explicitPath,
+			filename,
+		);
+		if (path) optionalPaths[key] = path;
+	}
+	applyOptionalFitnessArtifactReports(lanes, optionalPaths);
+	const requiredArtifacts = [
+		[
+			QUALITY_LANE_ID,
 			options.qualitySizeReportPath,
 			"quality-size.json",
-		),
-		qualitySizeFindings,
-	);
-	applyLaneArtifact(
-		lanes.find((lane) => lane.id === TYPECHECK_LANE_ID),
-		conventionalArtifactPath(
-			options.artifactsDir,
+			qualitySizeFindings,
+		],
+		[
+			TYPECHECK_LANE_ID,
 			options.typecheckReportPath,
 			"typecheck.json",
-		),
-		typecheckFindings,
-	);
-	applyLaneArtifact(
-		lanes.find((lane) => lane.id === LINT_LANE_ID),
-		conventionalArtifactPath(
-			options.artifactsDir,
-			options.lintReportPath,
-			"lint.json",
-		),
-		lintFindings,
-	);
-	applyLaneArtifact(
-		lanes.find((lane) => lane.id === BEHAVIOR_LANE_ID),
-		conventionalArtifactPath(
-			options.artifactsDir,
+			typecheckFindings,
+		],
+		[LINT_LANE_ID, options.lintReportPath, "lint.json", lintFindings],
+		[
+			BEHAVIOR_LANE_ID,
 			options.behaviorTestsReportPath,
 			"behavior-tests.json",
-		),
-		behaviorTestFindings,
-	);
-	applyLaneArtifact(
-		lanes.find((lane) => lane.id === FEEDBACK_LANE_ID),
-		conventionalArtifactPath(
-			options.artifactsDir,
+			behaviorTestFindings,
+		],
+		[
+			FEEDBACK_LANE_ID,
 			options.auditTrackingReportPath,
 			"harness-audit-tracking.json",
-		),
-		auditTrackingFindings,
-	);
+			auditTrackingFindings,
+		],
+	] as const;
+	for (const [
+		laneId,
+		explicitPath,
+		filename,
+		findingsForPath,
+	] of requiredArtifacts) {
+		applyLaneArtifact(
+			lanes.find((lane) => lane.id === laneId),
+			conventionalArtifactPath(options.artifactsDir, explicitPath, filename),
+			findingsForPath,
+		);
+	}
 	maybeAddAdvisoryLane(
 		lanes,
 		conventionalArtifactPath(

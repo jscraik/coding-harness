@@ -14,6 +14,7 @@ import type { AgentReadinessContextHealth } from "../lib/agent-readiness/types.j
 import { orientationMeta } from "./next-orientation-meta.js";
 import { decisionMeta, sourceMetaExtra } from "./next-support.js";
 import type { HarnessNextMode } from "./next-decision-types.js";
+import type { ChangedFileClassification } from "./next-file-classification.js";
 
 type DecisionMetaArgs = Parameters<typeof decisionMeta>[0];
 /** Build a standardized decision scoped to the harness next CLI. */
@@ -79,6 +80,7 @@ export function nextDecisionOperationalMeta(args: {
 	mode: HarnessNextMode;
 	filesSource?: "override" | "git";
 	changedFileCount?: number;
+	changedFileClassification?: ChangedFileClassification | undefined;
 	nextCommandArgv?: string[];
 	frictionClass?: Parameters<typeof decisionMeta>[0]["frictionClass"];
 	delayClass?: Parameters<typeof decisionMeta>[0]["delayClass"];
@@ -106,6 +108,16 @@ export function nextDecisionOperationalMeta(args: {
 	};
 	addDefinedMetaArg(metaArgs, "filesSource", args.filesSource);
 	addDefinedMetaArg(metaArgs, "changedFileCount", args.changedFileCount);
+	if (args.changedFileClassification) {
+		metaArgs.extra = {
+			...(metaArgs.extra ?? {}),
+			changedFileClassification: args.changedFileClassification.byCategory,
+			validationFileCount:
+				args.changedFileClassification.validationFiles.length,
+			excludedChangedFiles: args.changedFileClassification.excludedFiles,
+			exclusionReasons: args.changedFileClassification.exclusionReasons,
+		};
+	}
 	addDefinedMetaArg(metaArgs, "nextCommandArgv", args.nextCommandArgv);
 	addDefinedMetaArg(metaArgs, "frictionClass", args.frictionClass);
 	addDefinedMetaArg(metaArgs, "delayClass", args.delayClass);

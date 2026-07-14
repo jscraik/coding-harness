@@ -3,6 +3,7 @@ import { readRepoRuntimeArtifactText } from "../lib/runtime/repo-runtime-artifac
 import { selectTopDeterministicFitnessFinding } from "../lib/fitness/report.js";
 import type { FitnessFinding, FitnessReport } from "../lib/fitness/types.js";
 import { validateFitnessReport } from "../lib/fitness/validation.js";
+import { fitnessLaneRequiresEvidence } from "../lib/fitness/applicability.js";
 import {
 	FITNESS_COMMANDS_THAT_WRITE_FILES,
 	trustedFitnessCommand,
@@ -200,13 +201,14 @@ function nonPassingFitnessDecision(args: {
 	});
 }
 
+/** Route the next action from local fitness evidence without promoting readiness. */
 function missingFitnessEvidenceDecision(args: {
 	artifactPath: string;
 	mode: HarnessNextMode;
 	fitnessReport: FitnessReport;
 }): HarnessDecision {
 	const missingLanes = args.fitnessReport.lanes.filter(
-		(lane) => lane.status === "not_run",
+		(lane) => lane.status === "not_run" && fitnessLaneRequiresEvidence(lane),
 	);
 	const firstMissingLane = missingLanes[0];
 	const nextCommand =

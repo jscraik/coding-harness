@@ -23,6 +23,10 @@ import {
 	validateLaneStatusInvariant,
 	validateTopFindingInvariant,
 } from "./validation-invariants.js";
+import {
+	fitnessLaneRequiresEvidence,
+	VALID_FITNESS_APPLICABILITIES,
+} from "./applicability.js";
 
 const VALID_REPORT_STATUSES: readonly FitnessStatus[] = [
 	"pass",
@@ -51,6 +55,7 @@ export interface FitnessReportValidationResult {
 	errors: HeValidationError[];
 }
 
+/** Validate one lane and its additive applicability contract. */
 function validateLane(
 	value: unknown,
 	field: string,
@@ -63,6 +68,17 @@ function validateLane(
 	validateString(value.id, `${field}.id`, errors);
 	validateString(value.label, `${field}.label`, errors);
 	validateString(value.command, `${field}.command`, errors);
+	if (value.capability !== undefined) {
+		validateString(value.capability, `${field}.capability`, errors);
+	}
+	if (value.applicability !== undefined) {
+		validateEnum(
+			value.applicability,
+			`${field}.applicability`,
+			VALID_FITNESS_APPLICABILITIES,
+			errors,
+		);
+	}
 	validateEnum(value.principle, `${field}.principle`, VALID_PRINCIPLES, errors);
 	validateEnum(
 		value.enforcement,
@@ -73,6 +89,18 @@ function validateLane(
 	validateEnum(value.status, `${field}.status`, VALID_LANE_STATUSES, errors);
 	validateString(value.evidenceSource, `${field}.evidenceSource`, errors);
 	validateFindings(value.findings, `${field}.findings`, errors);
+	if (
+		value.applicability === "not_applicable" &&
+		(value.status !== "not_run" ||
+			(Array.isArray(value.findings) && value.findings.length > 0))
+	) {
+		errors.push(
+			toValidationError(
+				`${field} marked not_applicable must remain not_run with no findings`,
+				field,
+			),
+		);
+	}
 }
 
 /** Validate one fitness coverage contract entry. */
@@ -230,6 +258,7 @@ function validateStatusInvariant(
 	}
 }
 
+/** Validate derived report status, counts, and deterministic finding invariants. */
 function validateFitnessInvariants(
 	value: Record<string, unknown>,
 	errors: HeValidationError[],
@@ -246,7 +275,10 @@ function validateFitnessInvariants(
 		(finding) => severityOf(finding) === "warning",
 	).length;
 	const lanesNeedingEvidence = lanes.filter(
-		(lane) => isRecord(lane) && lane.status === "not_run",
+		(lane) =>
+			isRecord(lane) &&
+			lane.status === "not_run" &&
+			fitnessLaneRequiresEvidence(lane),
 	).length;
 	const failedLanes = lanes.filter(
 		(lane) => isRecord(lane) && lane.status === "fail",

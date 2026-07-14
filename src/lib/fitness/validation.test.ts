@@ -205,6 +205,73 @@ describe("validateFitnessReport", () => {
 		expect(result.valid).toBe(true);
 	});
 
+	it("accepts additive capability metadata and ignores not-applicable evidence debt", () => {
+		const optionalLane = lane(
+			"agent-routing",
+			"Agent routing",
+			"pnpm run coding-policy:route",
+			"preserve_static_contracts",
+			"static_analysis",
+			{
+				capability: "agent_routing",
+				applicability: "not_applicable",
+				status: "not_run",
+			},
+		);
+		const report = fitnessReport({
+			lanes: [...canonicalLanes(), optionalLane],
+			status: "pass",
+			summary: {
+				lanes: 7,
+				findings: 0,
+				failures: 0,
+				warnings: 0,
+				lanesNeedingEvidence: 0,
+			},
+		});
+
+		expect(validateFitnessReport(report)).toEqual({ valid: true, errors: [] });
+	});
+
+	it("rejects a not-applicable lane that claims a pass", () => {
+		const report = fitnessReport({
+			lanes: canonicalLanes({
+				"quality-structure": {
+					applicability: "not_applicable",
+					status: "pass",
+				},
+			}),
+		});
+
+		const result = validateFitnessReport(report);
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "lanes[1] marked not_applicable must remain not_run with no findings",
+				}),
+			]),
+		);
+	});
+
+	it("rejects an unknown applicability value", () => {
+		const report = fitnessReport({
+			lanes: canonicalLanes({
+				"quality-structure": { applicability: "maybe" },
+			}),
+		});
+
+		const result = validateFitnessReport(report);
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					code: "lanes[1].applicability must be one of required, admitted, not_applicable, blocked",
+				}),
+			]),
+		);
+	});
+
 	it("rejects warn status when failures require fail", () => {
 		const finding = errorFinding();
 		const result = validateFitnessReport(
@@ -620,6 +687,20 @@ describe("validateFitnessReport", () => {
 			expect(requirement.minContains).toBe(1);
 			expect(id.const).toBe(REQUIRED_SCHEMA_LANE_IDS[index]);
 		}
+	});
+
+	it("keeps capability and applicability metadata additive in the lane schema", () => {
+		const schema = harnessFitnessSchema();
+		const laneSchema = record(record(schema.$defs).lane);
+		const properties = record(laneSchema.properties);
+
+		expect(record(properties.capability).type).toBe("string");
+		expect(record(properties.applicability).enum).toEqual([
+			"required",
+			"admitted",
+			"not_applicable",
+			"blocked",
+		]);
 	});
 
 	it("keeps unavailable trend snapshots schema-compatible with attempted baseline refs", () => {

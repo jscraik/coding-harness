@@ -74,6 +74,30 @@ const FITNESS_REQUIRED_FLAGS = [
 			" JSON output",
 	},
 	{
+		key: "agentRoutingReport",
+		flag: "--agent-routing-report",
+		code: "fitness.agent_routing_report_required",
+		help: "  --agent-routing-report <path> Ingest pnpm run coding-policy:route JSON output",
+	},
+	{
+		key: "documentationLifecycleReport",
+		flag: "--documentation-lifecycle-report",
+		code: "fitness.documentation_lifecycle_report_required",
+		help: "  --documentation-lifecycle-report <path> Ingest pnpm run docs:lifecycle JSON output",
+	},
+	{
+		key: "testConfidenceReport",
+		flag: "--test-confidence-report",
+		code: "fitness.test_confidence_report_required",
+		help: "  --test-confidence-report <path> Ingest pnpm run quality:self-affirming JSON output",
+	},
+	{
+		key: "programDesignReport",
+		flag: "--program-design-report",
+		code: "fitness.program_design_report_required",
+		help: "  --program-design-report <path> Ingest pnpm run quality:debt JSON output",
+	},
+	{
 		key: "advisoryReviewReport",
 		flag: "--advisory-review-report",
 		code: "fitness.advisory_review_report_required",
@@ -98,6 +122,10 @@ interface FitnessFlags {
 	lintReport: FitnessFlag;
 	behaviorTestsReport: FitnessFlag;
 	auditTrackingReport: FitnessFlag;
+	agentRoutingReport: FitnessFlag;
+	documentationLifecycleReport: FitnessFlag;
+	testConfidenceReport: FitnessFlag;
+	programDesignReport: FitnessFlag;
 	advisoryReviewReport: FitnessFlag;
 	trendBaseline: FitnessFlag;
 }
@@ -107,6 +135,21 @@ interface MissingFitnessFlag {
 	code: string;
 	name: string;
 }
+
+const FITNESS_PATH_OPTIONS = [
+	["architectureReport", "architectureReportPath"],
+	["qualitySizeReport", "qualitySizeReportPath"],
+	["typecheckReport", "typecheckReportPath"],
+	["lintReport", "lintReportPath"],
+	["behaviorTestsReport", "behaviorTestsReportPath"],
+	["auditTrackingReport", "auditTrackingReportPath"],
+	["agentRoutingReport", "agentRoutingReportPath"],
+	["documentationLifecycleReport", "documentationLifecycleReportPath"],
+	["testConfidenceReport", "testConfidenceReportPath"],
+	["programDesignReport", "programDesignReportPath"],
+	["advisoryReviewReport", "advisoryReviewReportPath"],
+	["trendBaseline", "trendBaselinePath"],
+] as const;
 
 /** Run the repository fitness command. */
 export function runFitnessCLI(args: string[]): number {
@@ -164,36 +207,15 @@ function missingFitnessFlag(
 	})).find(({ flag }) => flag.missingValue);
 }
 
+/** Map parsed CLI flags into the normalized fitness report options. */
 function fitnessReportOptions(flags: FitnessFlags) {
-	return {
-		...(flags.artifactsDir.value
-			? { artifactsDir: flags.artifactsDir.value }
-			: {}),
-		...(flags.architectureReport.value
-			? { architectureReportPath: flags.architectureReport.value }
-			: {}),
-		...(flags.qualitySizeReport.value
-			? { qualitySizeReportPath: flags.qualitySizeReport.value }
-			: {}),
-		...(flags.typecheckReport.value
-			? { typecheckReportPath: flags.typecheckReport.value }
-			: {}),
-		...(flags.lintReport.value
-			? { lintReportPath: flags.lintReport.value }
-			: {}),
-		...(flags.behaviorTestsReport.value
-			? { behaviorTestsReportPath: flags.behaviorTestsReport.value }
-			: {}),
-		...(flags.auditTrackingReport.value
-			? { auditTrackingReportPath: flags.auditTrackingReport.value }
-			: {}),
-		...(flags.advisoryReviewReport.value
-			? { advisoryReviewReportPath: flags.advisoryReviewReport.value }
-			: {}),
-		...(flags.trendBaseline.value
-			? { trendBaselinePath: flags.trendBaseline.value }
-			: {}),
-	};
+	const options: Record<string, string> = {};
+	if (flags.artifactsDir.value) options.artifactsDir = flags.artifactsDir.value;
+	for (const [flagKey, optionKey] of FITNESS_PATH_OPTIONS) {
+		const value = flags[flagKey].value;
+		if (value) options[optionKey] = value;
+	}
+	return options;
 }
 
 /** Print human-readable usage for the fitness command. */

@@ -1,17 +1,14 @@
 import { readFileSync } from "node:fs";
 import {
 	applyFitnessArtifactReports,
-	BEHAVIOR_LANE_ID,
 	conventionalArtifactPath,
-	FEEDBACK_LANE_ID,
-	LINT_LANE_ID,
 	type FitnessArtifactReportOptions,
-	QUALITY_LANE_ID,
-	TYPECHECK_LANE_ID,
 } from "./artifact-normalizers.js";
+import { createBaseFitnessLanes } from "./base-lanes.js";
 import { FITNESS_COMMANDS } from "./commands.js";
 import { fitnessCoverage } from "./coverage.js";
 import { buildFitnessTrendSnapshot } from "./trend.js";
+import { fitnessLaneRequiresEvidence } from "./applicability.js";
 import type {
 	FitnessEnforcement,
 	FitnessFinding,
@@ -44,72 +41,7 @@ export interface BuildFitnessReportOptions
 
 const ARCHITECTURE_LANE_ID = "architecture-fitness";
 
-/** Build the deterministic baseline lane set before artifact enrichment. */
-function createBaseLanes(): FitnessLane[] {
-	return [
-		{
-			id: ARCHITECTURE_LANE_ID,
-			label: "Architecture fitness",
-			command: FITNESS_COMMANDS.ARCHITECTURE_CHECK,
-			principle: "protect_deep_module_boundaries",
-			enforcement: "architecture_fitness",
-			status: "not_run",
-			evidenceSource: "package.json scripts.architecture:check",
-			findings: [],
-		},
-		{
-			id: QUALITY_LANE_ID,
-			label: "Quality structure",
-			command: FITNESS_COMMANDS.QUALITY_SIZE,
-			principle: "reduce_cognitive_load",
-			enforcement: "quality_structure",
-			status: "not_run",
-			evidenceSource: "package.json scripts.quality:size",
-			findings: [],
-		},
-		{
-			id: TYPECHECK_LANE_ID,
-			label: "Type safety",
-			command: FITNESS_COMMANDS.TYPECHECK_ARTIFACT,
-			principle: "prove_type_safety",
-			enforcement: "type_safety",
-			status: "not_run",
-			evidenceSource: "package.json scripts.fitness:typecheck-artifact",
-			findings: [],
-		},
-		{
-			id: LINT_LANE_ID,
-			label: "Static lint",
-			command: FITNESS_COMMANDS.LINT_ARTIFACT,
-			principle: "preserve_static_contracts",
-			enforcement: "static_analysis",
-			status: "not_run",
-			evidenceSource: "package.json scripts.fitness:lint-artifact",
-			findings: [],
-		},
-		{
-			id: BEHAVIOR_LANE_ID,
-			label: "Behavior proof",
-			command: FITNESS_COMMANDS.BEHAVIOR_TESTS,
-			principle: "prove_behavior_outcomes",
-			enforcement: "hard_blocker",
-			status: "not_run",
-			evidenceSource: "package.json scripts.quality:behavior-tests",
-			findings: [],
-		},
-		{
-			id: FEEDBACK_LANE_ID,
-			label: "Feedback learning",
-			command: FITNESS_COMMANDS.AUDIT_TRACKING,
-			principle: "compound_feedback_to_harness",
-			enforcement: "hard_blocker",
-			status: "not_run",
-			evidenceSource: "package.json scripts.harness:audit-tracking",
-			findings: [],
-		},
-	];
-}
-
+/** Read a JSON gate artifact for report-specific normalization. */
 function readJsonFile(path: string): unknown {
 	return JSON.parse(readFileSync(path, "utf8"));
 }
@@ -274,9 +206,15 @@ function normalizeArchitectureReport(path: string): FitnessFinding[] {
 	return findings;
 }
 
+/** Derive report status while excluding explicit not-applicable lanes. */
 function reportStatus(lanes: readonly FitnessLane[]): FitnessReport["status"] {
 	if (lanes.some((lane) => lane.status === "fail")) return "fail";
-	if (lanes.some((lane) => lane.status === "not_run")) return "needs_evidence";
+	if (
+		lanes.some(
+			(lane) => lane.status === "not_run" && fitnessLaneRequiresEvidence(lane),
+		)
+	)
+		return "needs_evidence";
 	if (lanes.some((lane) => lane.status === "warn")) return "warn";
 	return "pass";
 }
@@ -299,6 +237,7 @@ function applyArchitectureArtifact(
 	architectureLane.evidenceSource = path;
 }
 
+/** Count findings and evidence debt from the current lane set. */
 function fitnessSummary(
 	lanes: readonly FitnessLane[],
 	findings: readonly FitnessFinding[],
@@ -312,8 +251,9 @@ function fitnessSummary(
 		).length,
 		warnings: findings.filter((finding) => finding.severity === "warning")
 			.length,
-		lanesNeedingEvidence: lanes.filter((lane) => lane.status === "not_run")
-			.length,
+		lanesNeedingEvidence: lanes.filter(
+			(lane) => lane.status === "not_run" && fitnessLaneRequiresEvidence(lane),
+		).length,
 	};
 }
 
@@ -344,7 +284,7 @@ export function selectTopDeterministicFitnessFinding(
 export function buildFitnessReport(
 	options: BuildFitnessReportOptions = {},
 ): FitnessReport {
-	const lanes = createBaseLanes();
+	const lanes = createBaseFitnessLanes();
 	applyArchitectureArtifact(lanes, options);
 	applyFitnessArtifactReports(lanes, options);
 	const findings = lanes.flatMap((lane) => lane.findings);

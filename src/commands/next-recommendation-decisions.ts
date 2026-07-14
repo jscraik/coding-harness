@@ -19,7 +19,9 @@ import type { HarnessNextMode } from "./next-decision-types.js";
 import * as agentNativeRatchets from "./next-agent-native-ratchets.js";
 import { promptContextDriftDecision } from "./next-prompt-context-drift.js";
 import { chooseNextCommandParts, shellQuote } from "./next-support.js";
+import type { ChangedFileClassification } from "./next-file-classification.js";
 
+/** Infer the broadest risk tier implied by the changed-file set. */
 function inferRiskTier(files: string[]): HarnessDecision["riskTier"] {
 	if (files.length === 0) return "low";
 	if (
@@ -61,6 +63,16 @@ function createRecommendationCandidate(args: {
 		requiresHuman: false,
 		requiresNetwork: false,
 		writesFiles: false,
+	};
+}
+
+/** Convert changed-file classification into decision metadata for operators. */
+function classificationMeta(classification: ChangedFileClassification) {
+	return {
+		changedFileClassification: classification.byCategory,
+		validationFileCount: classification.validationFiles.length,
+		excludedChangedFiles: classification.excludedFiles,
+		exclusionReasons: classification.exclusionReasons,
 	};
 }
 
@@ -129,6 +141,7 @@ export function fleetMatrixArtifactDecision(args: {
 export function noChangedFilesDecision(args: {
 	mode: HarnessNextMode;
 	filesSource: "override" | "git";
+	classification?: ChangedFileClassification;
 	sourceErrors: readonly DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
@@ -169,7 +182,10 @@ export function noChangedFilesDecision(args: {
 			sourceErrors: args.sourceErrors,
 			phaseExit: args.phaseExit,
 			runtimeCard: args.runtimeCard,
-			extra: prCloseoutDecisionMeta(args.prCloseout),
+			extra: {
+				...prCloseoutDecisionMeta(args.prCloseout),
+				...(args.classification ? classificationMeta(args.classification) : {}),
+			},
 			agentReadinessContext: args.agentReadinessContext,
 		}),
 	});
@@ -185,6 +201,7 @@ export function changedFilesDecision(args: {
 	mode: HarnessNextMode;
 	files: string[];
 	filesSource: "override" | "git";
+	classification: ChangedFileClassification;
 	sourceErrors: readonly DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
@@ -248,7 +265,60 @@ export function changedFilesDecision(args: {
 			extra: {
 				...prCloseoutDecisionMeta(args.prCloseout),
 				...agentNativeRatchets.agentNativeRatchetMeta(),
+				...classificationMeta(args.classification),
 			},
+			agentReadinessContext: args.agentReadinessContext,
+		}),
+	});
+}
+
+/** Recommend cleanup or explicit inclusion when only non-validation files changed. */
+export function operatorLocalOnlyDecision(args: {
+	mode: HarnessNextMode;
+	files: string[];
+	filesSource: "override" | "git";
+	classification: ChangedFileClassification;
+	sourceErrors: readonly DecisionSource[];
+	phaseExit?: HePhaseExit | undefined;
+	runtimeCard?: RuntimeCard | undefined;
+	prCloseout?: HarnessNextPrCloseoutEvidence | undefined;
+	agentReadinessContext?: AgentReadinessContextHealth | undefined;
+}): HarnessDecision {
+	return createNextDecision({
+		status: "action_required",
+		summary: `Detected ${args.files.length} changed file${args.files.length === 1 ? "" : "s"}; none require default validation.`,
+		nextAction:
+			"Review the operator-local, private-memory, or generated paths; clean or ignore them, or pass an explicit --files override when they are intentionally in scope.",
+		nextCommand: "harness check --json",
+		phase: "orient",
+		objective: "Separate local operator state from validation-relevant work.",
+		requiredEvidence: [
+			args.filesSource === "git" ? "git:status" : "input:files",
+			"changed-file-classification",
+		],
+		stopConditions: [
+			"Stop if an excluded path is actually part of the intended change and has not been explicitly included.",
+		],
+		humanEscalation: null,
+		followUpCommands: ["harness check --json"],
+		hiddenPlumbing: ["git:status", "changed-file-classification"],
+		safeToRun: true,
+		requiresHuman: false,
+		requiresNetwork: false,
+		writesFiles: false,
+		evidenceRef: [args.filesSource === "git" ? "git:status" : "input:files"],
+		failureClass: null,
+		retry: "safe",
+		riskTier: "low",
+		meta: nextDecisionOperationalMeta({
+			mode: args.mode,
+			filesSource: args.filesSource,
+			changedFileCount: args.files.length,
+			commands: ["harness check --json"],
+			sourceErrors: args.sourceErrors,
+			phaseExit: args.phaseExit,
+			runtimeCard: args.runtimeCard,
+			extra: classificationMeta(args.classification),
 			agentReadinessContext: args.agentReadinessContext,
 		}),
 	});
