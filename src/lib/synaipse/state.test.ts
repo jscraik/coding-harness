@@ -172,4 +172,85 @@ describe("validateSynaipseState", () => {
 			expect.objectContaining({ path: "contextRefs[0].contextId" }),
 		);
 	});
+
+	it("rejects malformed contextUnknowns", () => {
+		const result = validateSynaipseState({
+			...validState,
+			contextUnknowns: [
+				{ contextId: "invalid-context-id", reason: "missing_context" },
+			],
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContainEqual(
+			expect.objectContaining({ path: "contextUnknowns[0].contextId" }),
+		);
+	});
+
+	it("rejects contextUnknowns with invalid reason", () => {
+		const result = validateSynaipseState({
+			...validState,
+			contextUnknowns: [
+				{
+					contextId: "ch_context_7K4M2P9QX3DR",
+					reason: "not_a_valid_reason",
+				},
+			],
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContainEqual(
+			expect.objectContaining({ path: "contextUnknowns[0].reason" }),
+		);
+	});
+
+	it("rejects duplicate contextId in contextRefs", () => {
+		const result = validateSynaipseState({
+			...validState,
+			contextRefs: [
+				{
+					contextId: "ch_context_7K4M2P9QX3DR",
+					digest:
+						"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				},
+				{
+					contextId: "ch_context_7K4M2P9QX3DR",
+					digest:
+						"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+				},
+			],
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContainEqual(
+			expect.objectContaining({
+				path: "contextRefs[1].contextId",
+				message: "must not duplicate an earlier contextId",
+			}),
+		);
+	});
+
+	it("rejects duplicate contextId in contextUnknowns", () => {
+		const result = validateSynaipseState({
+			...validState,
+			contextUnknowns: [
+				{
+					contextId: "ch_context_7K4M2P9QX3DR",
+					reason: "missing_context",
+				},
+				{
+					contextId: "ch_context_7K4M2P9QX3DR",
+					reason: "provider_unavailable",
+				},
+			],
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContainEqual(
+			expect.objectContaining({
+				path: "contextUnknowns[1].contextId",
+				message: "must not duplicate an earlier contextId",
+			}),
+		);
+	});
 });

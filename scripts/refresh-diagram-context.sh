@@ -613,9 +613,9 @@ SOURCE_FOCUS_FILE="$TMP_DIR/source-focus.txt"
 {
 	base_ref="$(git -C "$ROOT_DIR" merge-base HEAD origin/main 2>/dev/null || true)"
 	if [[ -n "$base_ref" ]]; then
-		git -C "$ROOT_DIR" diff --name-only --diff-filter=ACMR "$base_ref"...HEAD -- src scripts docs/agents/linear-templates package.json tsconfig.json .diagramrc 2>/dev/null || true
+		git -C "$ROOT_DIR" diff --name-only --diff-filter=ACMR "$base_ref"...HEAD -- src scripts docs/agents/linear-templates contracts package.json tsconfig.json .diagramrc 2>/dev/null || true
 	else
-		git -C "$ROOT_DIR" diff --name-only --diff-filter=ACMR HEAD -- src scripts docs/agents/linear-templates package.json tsconfig.json .diagramrc 2>/dev/null || true
+		git -C "$ROOT_DIR" diff --name-only --diff-filter=ACMR HEAD -- src scripts docs/agents/linear-templates contracts package.json tsconfig.json .diagramrc 2>/dev/null || true
 	fi
 } | awk '
 	$0 ~ /^src\// && $0 !~ /\.(test|spec)\.(ts|js)$/ { print }
@@ -623,6 +623,10 @@ SOURCE_FOCUS_FILE="$TMP_DIR/source-focus.txt"
 	$0 ~ /^scripts\/refresh-diagram-context\.sh$/ { print }
 	$0 ~ /^scripts\/check-diagram-freshness\.sh$/ { print }
 	$0 ~ /^scripts\/lib\/normalize-mermaid-artifact\.cjs$/ { print }
+	$0 ~ /^contracts\/synaipse-context-catalog\.schema\.json$/ { print }
+	$0 ~ /^contracts\/synaipse-context-ref\.schema\.json$/ { print }
+	$0 ~ /^contracts\/synaipse-task-context\.schema\.json$/ { print }
+	$0 ~ /^contracts\/synaipse-state\.schema\.json$/ { print }
 	$0 == "package.json" || $0 == "tsconfig.json" || $0 == ".diagramrc" { print }
 ' | sort -u > "$SOURCE_FOCUS_FILE"
 

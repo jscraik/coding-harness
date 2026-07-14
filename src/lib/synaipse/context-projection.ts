@@ -65,9 +65,17 @@ export function validateSynaipseContextProjections(
 	if (!Array.isArray(value))
 		return [{ path: "contextRefs", message: "must be an array" }];
 	const errors: Array<{ path: string; message: string }> = [];
+	const seenContextIds = new Set<string>();
 	for (const [index, contextRef] of value.entries()) {
 		try {
-			parseSynaipseContextProjection(contextRef, `contextRefs[${index}]`);
+			const parsed = parseSynaipseContextProjection(contextRef, `contextRefs[${index}]`);
+			if (seenContextIds.has(parsed.contextId)) {
+				errors.push({
+					path: `contextRefs[${index}].contextId`,
+					message: "must not duplicate an earlier contextId",
+				});
+			}
+			seenContextIds.add(parsed.contextId);
 		} catch (error) {
 			if (error instanceof SynaipseContextContractError)
 				errors.push({ path: error.path, message: error.detail });
@@ -85,9 +93,17 @@ export function validateSynaipseContextUnknowns(
 	if (!Array.isArray(value))
 		return [{ path: "contextUnknowns", message: "must be an array" }];
 	const errors: Array<{ path: string; message: string }> = [];
+	const seenContextIds = new Set<string>();
 	for (const [index, contextUnknown] of value.entries()) {
 		try {
-			parseSynaipseContextUnknown(contextUnknown, `contextUnknowns[${index}]`);
+			const parsed = parseSynaipseContextUnknown(contextUnknown, `contextUnknowns[${index}]`);
+			if (seenContextIds.has(parsed.contextId)) {
+				errors.push({
+					path: `contextUnknowns[${index}].contextId`,
+					message: "must not duplicate an earlier contextId",
+				});
+			}
+			seenContextIds.add(parsed.contextId);
 		} catch (error) {
 			if (error instanceof SynaipseContextContractError)
 				errors.push({ path: error.path, message: error.detail });

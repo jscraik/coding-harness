@@ -18,8 +18,8 @@ created: 2026-07-13
 last_reviewed: 2026-07-13
 review_cadence: event-driven
 validated_by:
-  - pnpm vitest run src/lib/synaipse/context-plane.test.ts src/lib/synaipse/state.test.ts src/commands/next.test.ts --reporter=dot
-  - pnpm check
+  - pnpm vitest run src/lib/synaipse/context-plane.test.ts src/lib/synaipse/state.test.ts src/commands/next.test.ts --reporter=dot  # Expected: pass (all tests green)
+  - pnpm check  # Expected: pass (type-check, lint clean)
 depends_on:
   - docs/specs/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-spec.md
   - JSC-458
