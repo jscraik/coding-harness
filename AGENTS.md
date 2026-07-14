@@ -171,6 +171,15 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   and operator docs synchronized; the projection is orientation evidence, not
   CI, review-thread, tracker, external-readiness, delivery-truth, or
   merge-readiness proof.
+- SynAIpse context-plane changes must keep `synaipse-context-catalog/v1`,
+  `synaipse-context-ref/v1`, `synaipse-task-context/v1`, and
+  `synaipse-state/v1` synchronized across schemas, runtime validators, package
+  exports, state projection, `next`, focused tests, generated architecture
+  context, and operator docs. Resolve task-selected read-only metadata before
+  changed-file inspection and fail closed on invalid required context; optional
+  failures remain reasoned unknowns. Persist logical references and digests, not
+  provider bodies, and do not project private Jamie Brain content into hosted CI
+  or public PRs.
 - North-star contract fields are executable workflow authority, not prose-only
   branding. Keep `northStar.mantra` and `northStar.personalStandards`
   synchronized across `harness.contract.json`, schema/type validators, scaffold

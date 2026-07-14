@@ -72,6 +72,49 @@
 			"minItems": 1,
 			"items": { "type": "string", "minLength": 1, "pattern": "\\S" }
 		},
+		"contextRefs": {
+			"type": "array",
+			"uniqueItems": true,
+			"description": "Entries are keyed by contextId. Runtime validation rejects repeated contextId values and cross-collection collisions with contextUnknowns; uniqueItems also rejects exact duplicate objects.",
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["contextId", "digest"],
+				"properties": {
+					"contextId": {
+						"type": "string",
+						"pattern": "^ch_context_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
+					},
+					"digest": {
+						"type": "string",
+						"pattern": "^sha256:[0-9a-f]{64}$"
+					}
+				}
+			}
+		},
+		"contextUnknowns": {
+			"type": "array",
+			"uniqueItems": true,
+			"description": "Entries are keyed by contextId. Runtime validation rejects repeated contextId values and cross-collection collisions with contextRefs; uniqueItems also rejects exact duplicate objects.",
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["contextId", "reason"],
+				"properties": {
+					"contextId": {
+						"type": "string",
+						"pattern": "^ch_context_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
+					},
+					"reason": {
+						"enum": [
+							"missing_context",
+							"provider_unavailable",
+							"unresolved_host_path"
+						]
+					}
+				}
+			}
+		},
 		"nextAction": { "type": "string", "minLength": 1 },
 		"invocationEffects": {
 			"type": "object",

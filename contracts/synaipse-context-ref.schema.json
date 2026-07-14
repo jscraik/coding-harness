@@ -1,0 +1,147 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/synaipse-context-ref.schema.json",
+	"title": "SynAIpse Context Reference",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"contextId",
+		"kind",
+		"authority",
+		"privacy",
+		"lifecycle",
+		"stages",
+		"requirement",
+		"provider",
+		"digest",
+		"freshness"
+	],
+	"properties": {
+		"schemaVersion": { "const": "synaipse-context-ref/v1" },
+		"contextId": {
+			"type": "string",
+			"pattern": "^ch_context_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
+		},
+		"kind": {
+			"enum": [
+				"operator_intent",
+				"project_direction",
+				"taste_example",
+				"accepted_decision",
+				"specification",
+				"implementation_plan",
+				"task_snapshot",
+				"research_index",
+				"source_evidence",
+				"review_learning",
+				"delivery_receipt",
+				"historical_provenance",
+				"public_safe_proof",
+				"private_context"
+			]
+		},
+		"authority": {
+			"enum": [
+				"operator_intent",
+				"repository_authority",
+				"accepted_task_contract",
+				"work_ownership",
+				"architecture_decision",
+				"supporting_evidence",
+				"runtime_evidence",
+				"historical_provenance",
+				"generated_projection"
+			]
+		},
+		"privacy": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"classification",
+				"allowedConsumers",
+				"prohibitedDestinations"
+			],
+			"properties": {
+				"classification": {
+					"enum": ["public", "internal", "confidential", "restricted"]
+				},
+				"allowedConsumers": {
+					"type": "array",
+					"minItems": 1,
+					"uniqueItems": true,
+					"items": { "enum": ["local_agent", "remote_agent", "hosted_ci"] }
+				},
+				"prohibitedDestinations": {
+					"type": "array",
+					"minItems": 1,
+					"uniqueItems": true,
+					"items": {
+						"enum": ["local_task", "private_artifact", "public_pr", "hosted_ci"]
+					}
+				}
+			}
+		},
+		"lifecycle": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["status", "supersededBy"],
+			"properties": {
+				"status": { "enum": ["current", "superseded", "historical"] },
+				"supersededBy": {
+					"type": ["string", "null"],
+					"pattern": "^ch_context_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
+				}
+			},
+			"allOf": [
+				{
+					"if": { "properties": { "status": { "const": "superseded" } } },
+					"then": { "properties": { "supersededBy": { "type": "string" } } },
+					"else": { "properties": { "supersededBy": { "const": null } } }
+				}
+			]
+		},
+		"stages": {
+			"type": "array",
+			"minItems": 1,
+			"uniqueItems": true,
+			"items": {
+				"enum": [
+					"shape",
+					"admit",
+					"build",
+					"prove",
+					"review",
+					"integrate",
+					"improve"
+				]
+			}
+		},
+		"requirement": { "enum": ["required", "optional"] },
+		"provider": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "reference"],
+			"properties": {
+				"kind": {
+					"enum": ["repository", "filesystem", "connector", "plugin", "app"]
+				},
+				"reference": {
+					"type": "string",
+					"minLength": 1,
+					"pattern": "^(?!\\s*$)(?![\\s\\S]*[\\r\\n])(?![\\s\\S]*(?:^|/)\\.\\.(?:/|$))(?![A-Za-z]:)(?![\\s\\S]*\\\\)(?![\\\\/~])(?![Ff][Ii][Ll][Ee]:)[\\s\\S]+$"
+				}
+			}
+		},
+		"digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+		"freshness": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["observedAt", "expiresAt"],
+			"properties": {
+				"observedAt": { "type": "string", "format": "date-time" },
+				"expiresAt": { "type": ["string", "null"], "format": "date-time" }
+			}
+		}
+	}
+}

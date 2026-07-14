@@ -46,5 +46,11 @@
 		"owner": "pr-closeout",
 		"rationale": "PR closeout reports aggregate delivery evidence and must not infer missing claim support.",
 		"provingCommand": "pnpm vitest run src/lib/pr-closeout.test.ts"
+	},
+	{
+		"path": "src/lib/synaipse/context-plane.test.ts",
+		"owner": "synaipse-context-plane",
+		"rationale": "Context selection is a privacy, authority, freshness, and provider-evidence trust boundary for admitted tasks.",
+		"provingCommand": "pnpm vitest run src/lib/synaipse/context-plane.test.ts"
 	}
 ]

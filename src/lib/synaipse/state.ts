@@ -2,6 +2,10 @@ import { execFileSync } from "node:child_process";
 import type { HarnessDecision } from "../decision/harness-decision.js";
 import { gitEnvironmentForRepoRoot } from "../runtime/git-environment.js";
 import { SYNAIPSE_STATE_SCHEMA_VERSION } from "./state-contract.js";
+import type {
+	SynaipseContextProjection,
+	SynaipseContextUnknown,
+} from "./context-projection.js";
 
 export { SYNAIPSE_STATE_SCHEMA_VERSION } from "./state-contract.js";
 export type { SynaipseStateValidationResult } from "./state-contract.js";
@@ -45,6 +49,8 @@ export interface SynaipseState {
 	truthLaneBlockers: string[];
 	admittedCapabilities: string[];
 	evidenceRefs: string[];
+	contextRefs: SynaipseContextProjection[];
+	contextUnknowns: SynaipseContextUnknown[];
 	nextAction: string;
 	invocationEffects: SynaipseStateInvocationEffects;
 	freshness: {
@@ -80,6 +86,13 @@ function normalizeRepositoryName(remote: string | null): string | null {
 	return normalized.length > 0 ? normalized : null;
 }
 
+/** Read the target repository's normalized local origin identity. */
+export function readSynaipseRepositoryName(repoRoot: string): string | null {
+	return normalizeRepositoryName(
+		readGit(repoRoot, ["remote", "get-url", "origin"]),
+	);
+}
+
 /** Capture the read-only repository identity and current worktree posture. */
 function repositoryState(repoRoot: string): SynaipseStateRepository {
 	const upstream = readGit(repoRoot, [
@@ -94,9 +107,7 @@ function repositoryState(repoRoot: string): SynaipseStateRepository {
 		"--untracked-files=all",
 	]);
 	return {
-		name: normalizeRepositoryName(
-			readGit(repoRoot, ["remote", "get-url", "origin"]),
-		),
+		name: readSynaipseRepositoryName(repoRoot),
 		branch: readGit(repoRoot, ["rev-parse", "--abbrev-ref", "HEAD"]),
 		baseRef: upstream,
 		headSha: readGit(repoRoot, ["rev-parse", "HEAD"]),
@@ -116,6 +127,8 @@ export function buildSynaipseState(
 	decision: HarnessDecision,
 	repoRoot: string,
 	generatedAt = new Date().toISOString(),
+	contextRefs: SynaipseContextProjection[] = [],
+	contextUnknowns: SynaipseContextUnknown[] = [],
 ): SynaipseState {
 	const repository = repositoryState(repoRoot);
 	return {
@@ -134,6 +147,10 @@ export function buildSynaipseState(
 		truthLaneBlockers: stateBlockers(decision),
 		admittedCapabilities: ["harness next"],
 		evidenceRefs: [...decision.evidenceRef],
+		contextRefs: contextRefs.map((contextRef) => ({ ...contextRef })),
+		contextUnknowns: contextUnknowns.map((contextUnknown) => ({
+			...contextUnknown,
+		})),
 		nextAction: decision.nextAction,
 		invocationEffects: {
 			effectClasses: INVOCATION_EFFECT_CLASSES,
@@ -160,12 +177,20 @@ export function buildSynaipseState(
 export function withSynaipseState(
 	decision: HarnessDecision,
 	repoRoot: string,
+	contextRefs: SynaipseContextProjection[] = [],
+	contextUnknowns: SynaipseContextUnknown[] = [],
 ): HarnessDecision {
 	return {
 		...decision,
 		meta: {
 			...(decision.meta ?? {}),
-			synaipseState: buildSynaipseState(decision, repoRoot),
+			synaipseState: buildSynaipseState(
+				decision,
+				repoRoot,
+				new Date().toISOString(),
+				contextRefs,
+				contextUnknowns,
+			),
 		},
 	};
 }
