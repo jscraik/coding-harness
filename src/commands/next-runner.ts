@@ -131,6 +131,7 @@ function resolveNextContext(
 }
 
 /** Resolve optional context while preserving the no-context compatibility path. */
+/** Resolve optional context input, skipping resolution when the caller omits it. */
 function resolveOptionalNextContext(
 	value: unknown,
 	repoRoot: string,
