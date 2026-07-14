@@ -28,6 +28,11 @@ export function parseSynaipseContextObservations(value: unknown) {
 			] as const,
 			`${path}.status`,
 		);
+		if (status !== "available" && observation.digest !== undefined)
+			throw new SynaipseContextContractError(
+				`${path}.digest`,
+				"must be absent unless status is available",
+			);
 		return {
 			contextId: harnessId(
 				observation.contextId,
