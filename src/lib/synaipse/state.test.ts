@@ -19,6 +19,13 @@ describe("validateSynaipseState", () => {
 		truthLaneBlockers: [],
 		admittedCapabilities: ["harness next"],
 		evidenceRefs: ["git:status"],
+		contextRefs: [
+			{
+				contextId: "ch_context_7K4M2P9QX3DR",
+				digest:
+					"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			},
+		],
 		nextAction: "Continue",
 		invocationEffects: {
 			effectClasses: ["pure_read"],
@@ -150,5 +157,19 @@ describe("validateSynaipseState", () => {
 		});
 
 		expect(result).toEqual({ valid: true, errors: [] });
+	});
+
+	it("rejects context projections without a logical context ID", () => {
+		const result = validateSynaipseState({
+			...validState,
+			contextRefs: [
+				{ contextId: "context-without-type-prefix", digest: "sha256:a" },
+			],
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toContainEqual(
+			expect.objectContaining({ path: "contextRefs[0].contextId" }),
+		);
 	});
 });

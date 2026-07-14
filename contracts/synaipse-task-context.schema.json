@@ -1,0 +1,84 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/synaipse-task-context.schema.json",
+	"title": "SynAIpse Task Context",
+	"description": "Immutable Admit-time task context snapshot.",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"taskContextId",
+		"projectId",
+		"taskId",
+		"baseSha",
+		"outcome",
+		"nonGoals",
+		"selectedRefs",
+		"proofRefs",
+		"privacy",
+		"vitalDecisions",
+		"refreshTriggers",
+		"admittedAt"
+	],
+	"properties": {
+		"schemaVersion": { "const": "synaipse-task-context/v1" },
+		"taskContextId": {
+			"type": "string",
+			"pattern": "^ch_taskctx_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
+		},
+		"projectId": {
+			"type": "string",
+			"pattern": "^ch_project_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
+		},
+		"taskId": { "type": "string", "minLength": 1 },
+		"baseSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+		"outcome": { "type": "string", "minLength": 1 },
+		"nonGoals": {
+			"type": "array",
+			"minItems": 1,
+			"items": { "type": "string", "minLength": 1 }
+		},
+		"selectedRefs": {
+			"type": "array",
+			"minItems": 1,
+			"uniqueItems": true,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["contextId", "digest"],
+				"properties": {
+					"contextId": {
+						"type": "string",
+						"pattern": "^ch_context_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
+					},
+					"digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+				}
+			}
+		},
+		"proofRefs": {
+			"type": "array",
+			"minItems": 1,
+			"items": { "type": "string", "minLength": 1 }
+		},
+		"privacy": { "enum": ["public", "internal", "confidential", "restricted"] },
+		"vitalDecisions": {
+			"type": "array",
+			"items": { "type": "string", "minLength": 1 }
+		},
+		"refreshTriggers": {
+			"type": "array",
+			"minItems": 1,
+			"uniqueItems": true,
+			"items": {
+				"enum": [
+					"context_digest_changed",
+					"base_sha_changed",
+					"authority_changed",
+					"privacy_changed",
+					"lifecycle_changed"
+				]
+			}
+		},
+		"admittedAt": { "type": "string", "format": "date-time" }
+	}
+}

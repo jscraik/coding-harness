@@ -3,7 +3,18 @@ import type { HarnessDecision } from "../lib/decision/harness-decision.js";
 import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
 import type { DecisionSource } from "../lib/decision/sources.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
-import { withSynaipseState } from "../lib/synaipse/state.js";
+import {
+	SynaipseContextContractError,
+	resolveSynaipseContext,
+} from "../lib/synaipse/context-plane.js";
+import type {
+	SynaipseContextProjection,
+	SynaipseContextUnknown,
+} from "../lib/synaipse/context-projection.js";
+import {
+	readSynaipseRepositoryName,
+	withSynaipseState,
+} from "../lib/synaipse/state.js";
 import type { HarnessNextPrCloseoutEvidence } from "./next-pr-closeout.js";
 import type {
 	HarnessNextWorktreeRole,
@@ -11,6 +22,7 @@ import type {
 } from "./next-args.js";
 import {
 	changedFilesDecision,
+	blockedDecision,
 	noChangedFilesDecision,
 	type HarnessNextMode,
 } from "./next-decisions.js";
@@ -40,6 +52,78 @@ export interface HarnessNextOptions {
 	evidenceMode?: HarnessNextEvidenceMode;
 	/** Worktree posture requested for next recommendations. */
 	worktreeRole?: HarnessNextWorktreeRole;
+	/** Optional caller-supplied catalog, task snapshot, policy, and observations. */
+	synaipseContext?: unknown;
+}
+
+/** Resolve supplied task-admitted context before repository inspection begins. */
+function resolveNextContext(
+	value: unknown,
+	repoRoot: string,
+): {
+	decision: HarnessDecision | null;
+	refs: SynaipseContextProjection[];
+	unknowns: SynaipseContextUnknown[];
+} {
+	try {
+		const resolution = resolveSynaipseContext(value);
+		const targetRepository = readSynaipseRepositoryName(repoRoot);
+		if (targetRepository !== resolution.catalogRepository)
+			return {
+				decision: blockedDecision({
+					summary: "SynAIpse context targets a different repository.",
+					nextAction: "Rebuild the task context for the target repository.",
+					failureClass: "context_project_mismatch",
+					evidenceRef: [`repository:${resolution.catalogRepository}`],
+				}),
+				refs: [],
+				unknowns: [],
+			};
+		if (resolution.status === "resolved")
+			return {
+				decision: null,
+				refs: resolution.selectedRefs,
+				unknowns: resolution.unknowns,
+			};
+		const blocker = resolution.blockers[0];
+		return {
+			decision: blockedDecision({
+				summary: "Required SynAIpse context could not be resolved.",
+				nextAction: blocker?.recovery ?? "repair_context_contract",
+				failureClass: blocker?.code ?? "context_resolution_blocked",
+				evidenceRef: blocker ? [`context:${blocker.contextId}`] : [],
+			}),
+			refs: resolution.selectedRefs,
+			unknowns: resolution.unknowns,
+		};
+	} catch (error) {
+		const detail =
+			error instanceof SynaipseContextContractError
+				? `${error.path}: ${error.detail}`
+				: "context resolution input is invalid";
+		return {
+			decision: blockedDecision({
+				summary: `SynAIpse context contract is malformed: ${detail}.`,
+				nextAction:
+					"Repair the context packet, then rerun harness next --json.",
+				failureClass: "malformed_context",
+				evidenceRef: ["context:input"],
+			}),
+			refs: [],
+			unknowns: [],
+		};
+	}
+}
+
+/** Resolve optional context while preserving the no-context compatibility path. */
+function resolveOptionalNextContext(value: unknown, repoRoot: string) {
+	return value === undefined
+		? {
+				decision: null,
+				refs: [] as SynaipseContextProjection[],
+				unknowns: [] as SynaipseContextUnknown[],
+			}
+		: resolveNextContext(value, repoRoot);
 }
 
 /**
@@ -51,11 +135,22 @@ export interface HarnessNextOptions {
 export function runHarnessNext(
 	options: HarnessNextOptions = {},
 ): HarnessDecision {
+	const repoRoot = options.repoRoot ?? process.cwd();
+	const context = resolveOptionalNextContext(options.synaipseContext, repoRoot);
+	if (context.decision)
+		return withSynaipseState(
+			context.decision,
+			repoRoot,
+			context.refs,
+			context.unknowns,
+		);
 	const resolution = resolveHarnessNextState(options);
 	if (resolution.kind === "decision")
 		return withSynaipseState(
 			resolution.decision,
-			options.repoRoot ?? process.cwd(),
+			repoRoot,
+			context.refs,
+			context.unknowns,
 		);
 	const { changedFiles } = resolution;
 	const decision =
@@ -86,5 +181,5 @@ export function runHarnessNext(
 						: {}),
 					agentReadinessContext: resolution.agentReadinessContext,
 				});
-	return withSynaipseState(decision, options.repoRoot ?? process.cwd());
+	return withSynaipseState(decision, repoRoot, context.refs, context.unknowns);
 }
