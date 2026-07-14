@@ -1,6 +1,11 @@
 import { isRecord } from "../decision/validators.js";
 import { isRfc3339DateTime } from "./date-time.js";
 
+/** Version tag for the immutable Admit-time task-context contract. */
+export const SYNAIPSE_TASK_CONTEXT_SCHEMA_VERSION =
+	"synaipse-task-context/v1" as const;
+
+/** Allowed semantic kinds for catalogued context references. */
 export const CONTEXT_KINDS = [
 	"operator_intent",
 	"project_direction",
@@ -17,6 +22,7 @@ export const CONTEXT_KINDS = [
 	"public_safe_proof",
 	"private_context",
 ] as const;
+/** Authorities that may attest or admit a context reference. */
 export const AUTHORITIES = [
 	"operator_intent",
 	"repository_authority",
@@ -28,12 +34,14 @@ export const AUTHORITIES = [
 	"historical_provenance",
 	"generated_projection",
 ] as const;
+/** Privacy classifications used to constrain context consumers and destinations. */
 export const PRIVACY = [
 	"public",
 	"internal",
 	"confidential",
 	"restricted",
 ] as const;
+/** Lifecycle stages at which a context reference may be selected. */
 export const STAGES = [
 	"shape",
 	"admit",
@@ -43,15 +51,20 @@ export const STAGES = [
 	"integrate",
 	"improve",
 ] as const;
+/** Consumers permitted to resolve a context reference. */
 export const CONSUMERS = ["local_agent", "remote_agent", "hosted_ci"] as const;
+/** Destinations that receive resolved logical context metadata. */
 export const DESTINATIONS = [
 	"local_task",
 	"private_artifact",
 	"public_pr",
 	"hosted_ci",
 ] as const;
+/** Whether a context reference must resolve or may remain unknown. */
 export const REQUIREMENTS = ["required", "optional"] as const;
+/** Lifecycle status values for context references. */
 export const LIFECYCLE = ["current", "superseded", "historical"] as const;
+/** Provider kinds that may hold context bodies outside the contract boundary. */
 export const PROVIDERS = [
 	"repository",
 	"filesystem",
@@ -59,12 +72,20 @@ export const PROVIDERS = [
 	"plugin",
 	"app",
 ] as const;
+/** Events that invalidate a task-context snapshot and require refresh. */
 export const REFRESH_TRIGGERS = [
 	"context_digest_changed",
 	"base_sha_changed",
 	"authority_changed",
 	"privacy_changed",
 	"lifecycle_changed",
+] as const;
+
+/** Reasons emitted when optional context cannot be resolved. */
+export const CONTEXT_UNKNOWN_REASONS = [
+	"missing_context",
+	"provider_unavailable",
+	"unresolved_host_path",
 ] as const;
 
 /** Contract error raised before untrusted context metadata reaches domain logic. */

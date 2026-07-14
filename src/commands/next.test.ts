@@ -153,6 +153,10 @@ function nextContextInput(): Record<string, unknown> {
 	};
 }
 
+function matchingRepositoryIdentity() {
+	return "jscraik/coding-harness";
+}
+
 function hePayloadFor(gateId: HeGateId): HeGatePayload {
 	switch (gateId) {
 		case "simplify":
@@ -374,6 +378,7 @@ describe("runHarnessNext", () => {
 		const inspectChangedFiles = vi.fn(() => []);
 		const decision = runHarnessNext({
 			synaipseContext: nextContextInput(),
+			readRepositoryName: matchingRepositoryIdentity,
 			inspectChangedFiles,
 			agentReadinessContext: passingAgentReadinessContext(),
 		});
@@ -397,6 +402,7 @@ describe("runHarnessNext", () => {
 
 		const decision = runHarnessNext({
 			synaipseContext: input,
+			readRepositoryName: matchingRepositoryIdentity,
 			inspectChangedFiles,
 		});
 
@@ -417,6 +423,7 @@ describe("runHarnessNext", () => {
 
 		const decision = runHarnessNext({
 			synaipseContext: input,
+			readRepositoryName: matchingRepositoryIdentity,
 			inspectChangedFiles,
 		});
 
@@ -441,6 +448,7 @@ describe("runHarnessNext", () => {
 		];
 		const decision = runHarnessNext({
 			synaipseContext: input,
+			readRepositoryName: matchingRepositoryIdentity,
 			inspectChangedFiles: () => [],
 			agentReadinessContext: passingAgentReadinessContext(),
 		});
@@ -480,6 +488,7 @@ describe("runHarnessNext", () => {
 
 		const decision = runHarnessNext({
 			synaipseContext: input,
+			readRepositoryName: matchingRepositoryIdentity,
 			inspectChangedFiles: () => {
 				throw new Error("changed files must not be inspected");
 			},
@@ -499,12 +508,91 @@ describe("runHarnessNext", () => {
 		(input.catalog as Record<string, unknown>).repository = "other/project";
 		const decision = runHarnessNext({
 			synaipseContext: input,
+			readRepositoryName: matchingRepositoryIdentity,
 			inspectChangedFiles,
 		});
 		expect(inspectChangedFiles).not.toHaveBeenCalled();
 		expect(decision).toMatchObject({
 			status: "blocked",
 			failureClass: "context_project_mismatch",
+		});
+	});
+
+	it("uses the injected repository identity adapter for matching context", () => {
+		const inspectChangedFiles = vi.fn(() => []);
+		const readRepositoryName = vi.fn(() => "jscraik/coding-harness");
+		const decision = runHarnessNext({
+			synaipseContext: nextContextInput(),
+			readRepositoryName,
+			inspectChangedFiles,
+			agentReadinessContext: passingAgentReadinessContext(),
+		});
+
+		expect(readRepositoryName).toHaveBeenCalledOnce();
+		expect(inspectChangedFiles).toHaveBeenCalledOnce();
+		expect(decision.status).toBe("pass");
+	});
+
+	it("blocks before changed-file inspection when the identity adapter mismatches", () => {
+		const inspectChangedFiles = vi.fn(() => []);
+		const readRepositoryName = vi.fn(() => "other/repository");
+		const decision = runHarnessNext({
+			synaipseContext: nextContextInput(),
+			readRepositoryName,
+			inspectChangedFiles,
+		});
+
+		expect(readRepositoryName).toHaveBeenCalledOnce();
+		expect(inspectChangedFiles).not.toHaveBeenCalled();
+		expect(decision).toMatchObject({
+			status: "blocked",
+			failureClass: "context_project_mismatch",
+		});
+	});
+
+	it("fails closed when repository identity is unavailable", () => {
+		const inspectChangedFiles = vi.fn(() => []);
+		const decision = runHarnessNext({
+			synaipseContext: nextContextInput(),
+			readRepositoryName: () => null,
+			inspectChangedFiles,
+		});
+
+		expect(inspectChangedFiles).not.toHaveBeenCalled();
+		expect(decision).toMatchObject({
+			status: "blocked",
+			failureClass: "context_repository_identity_unavailable",
+		});
+	});
+
+	it("does not relabel unexpected repository adapter failures as malformed context", () => {
+		const inspectChangedFiles = vi.fn(() => []);
+		const adapterError = new Error("identity adapter failed");
+
+		expect(() =>
+			runHarnessNext({
+				synaipseContext: nextContextInput(),
+				readRepositoryName: () => {
+					throw adapterError;
+				},
+				inspectChangedFiles,
+			}),
+		).toThrow(adapterError);
+		expect(inspectChangedFiles).not.toHaveBeenCalled();
+	});
+
+	it("fails closed on malformed context before changed-file inspection", () => {
+		const inspectChangedFiles = vi.fn(() => []);
+		const decision = runHarnessNext({
+			synaipseContext: {},
+			readRepositoryName: matchingRepositoryIdentity,
+			inspectChangedFiles,
+		});
+
+		expect(inspectChangedFiles).not.toHaveBeenCalled();
+		expect(decision).toMatchObject({
+			status: "blocked",
+			failureClass: "malformed_context",
 		});
 	});
 

@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-14T08:40:56Z
+Generated: 2026-07-14T20:49:54Z
 
 ## Table of Contents
 
@@ -29,6 +29,10 @@ Generated: 2026-07-14T08:40:56Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
+- `contracts/synaipse-context-catalog.schema.json`
+- `contracts/synaipse-context-ref.schema.json`
+- `contracts/synaipse-state.schema.json`
+- `contracts/synaipse-task-context.schema.json`
 - `package.json`
 - `src/commands/next-runner.ts`
 - `src/lib/synaipse/context-contract.ts`

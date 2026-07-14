@@ -7,8 +7,21 @@ import {
 	rejectUnknown,
 } from "./context-contract.js";
 
+/** Provider observation status emitted by a read-only context resolver. */
+export type SynaipseContextObservation = {
+	contextId: string;
+	status:
+		| "available"
+		| "unavailable"
+		| "provider_unavailable"
+		| "unresolved_host_path";
+	digest: string | null;
+};
+
 /** Parse provider observations and reject conflicting duplicates. */
-export function parseSynaipseContextObservations(value: unknown) {
+export function parseSynaipseContextObservations(
+	value: unknown,
+): SynaipseContextObservation[] {
 	if (!Array.isArray(value))
 		throw new SynaipseContextContractError(
 			"resolution.observations",

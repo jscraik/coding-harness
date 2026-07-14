@@ -54,12 +54,17 @@ export interface HarnessNextOptions {
 	worktreeRole?: HarnessNextWorktreeRole;
 	/** Optional caller-supplied catalog, task snapshot, policy, and observations. */
 	synaipseContext?: unknown;
+	/** Test seam for the read-only repository identity adapter. */
+	readRepositoryName?: (repoRoot: string) => string | null;
 }
 
 /** Resolve supplied task-admitted context before repository inspection begins. */
 function resolveNextContext(
 	value: unknown,
 	repoRoot: string,
+	readRepositoryName: (
+		repoRoot: string,
+	) => string | null = readSynaipseRepositoryName,
 ): {
 	decision: HarnessDecision | null;
 	refs: SynaipseContextProjection[];
@@ -67,7 +72,19 @@ function resolveNextContext(
 } {
 	try {
 		const resolution = resolveSynaipseContext(value);
-		const targetRepository = readSynaipseRepositoryName(repoRoot);
+		const targetRepository = readRepositoryName(repoRoot);
+		if (targetRepository === null)
+			return {
+				decision: blockedDecision({
+					summary: "SynAIpse context repository identity is unavailable.",
+					nextAction:
+						"Restore repository identity discovery, then rerun harness next --json.",
+					failureClass: "context_repository_identity_unavailable",
+					evidenceRef: ["repository:identity"],
+				}),
+				refs: [],
+				unknowns: [],
+			};
 		if (targetRepository !== resolution.catalogRepository)
 			return {
 				decision: blockedDecision({
@@ -97,10 +114,8 @@ function resolveNextContext(
 			unknowns: resolution.unknowns,
 		};
 	} catch (error) {
-		const detail =
-			error instanceof SynaipseContextContractError
-				? `${error.path}: ${error.detail}`
-				: "context resolution input is invalid";
+		if (!(error instanceof SynaipseContextContractError)) throw error;
+		const detail = `${error.path}: ${error.detail}`;
 		return {
 			decision: blockedDecision({
 				summary: `SynAIpse context contract is malformed: ${detail}.`,
@@ -116,14 +131,18 @@ function resolveNextContext(
 }
 
 /** Resolve optional context while preserving the no-context compatibility path. */
-function resolveOptionalNextContext(value: unknown, repoRoot: string) {
+function resolveOptionalNextContext(
+	value: unknown,
+	repoRoot: string,
+	readRepositoryName: (repoRoot: string) => string | null,
+) {
 	return value === undefined
 		? {
 				decision: null,
 				refs: [] as SynaipseContextProjection[],
 				unknowns: [] as SynaipseContextUnknown[],
 			}
-		: resolveNextContext(value, repoRoot);
+		: resolveNextContext(value, repoRoot, readRepositoryName);
 }
 
 /**
@@ -136,7 +155,11 @@ export function runHarnessNext(
 	options: HarnessNextOptions = {},
 ): HarnessDecision {
 	const repoRoot = options.repoRoot ?? process.cwd();
-	const context = resolveOptionalNextContext(options.synaipseContext, repoRoot);
+	const context = resolveOptionalNextContext(
+		options.synaipseContext,
+		repoRoot,
+		options.readRepositoryName ?? readSynaipseRepositoryName,
+	);
 	if (context.decision)
 		return withSynaipseState(
 			context.decision,

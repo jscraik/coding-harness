@@ -21,6 +21,7 @@ import { parseSynaipseContextProvider } from "./context-provider.js";
 import { synaipsePrivacyBlocks } from "./context-privacy.js";
 import {
 	parseSynaipseContextProjection,
+	type ContextUnknownReason,
 	type SynaipseContextProjection,
 } from "./context-projection.js";
 import { parseSynaipseContextObservations } from "./context-observations.js";
@@ -33,9 +34,19 @@ export {
 } from "./context-task.js";
 export {
 	parseSynaipseContextProjection,
+	CONTEXT_UNKNOWN_REASONS,
+	type ContextUnknownReason,
 	type SynaipseContextProjection,
 	validateSynaipseContextProjections,
 } from "./context-projection.js";
+export {
+	parseSynaipseContextProvider,
+	type SynaipseContextProvider,
+} from "./context-provider.js";
+export {
+	parseSynaipseContextObservations,
+	type SynaipseContextObservation,
+} from "./context-observations.js";
 
 /** Parse privacy classification plus explicit consumers and destinations. */
 function parsePrivacy(value: unknown, path: string) {
@@ -242,11 +253,6 @@ type ContextBlockerCode =
 	| "stale_digest"
 	| "superseded_context"
 	| "unresolved_host_path";
-type ContextUnknownReason =
-	| "missing_context"
-	| "provider_unavailable"
-	| "unresolved_host_path";
-
 /** Build one deterministic context-selection blocker and recovery. */
 function contextBlocker(code: ContextBlockerCode, contextId: string) {
 	return {
@@ -306,6 +312,8 @@ function resolveObservation(
 	admittedDigest: string,
 	input: ReturnType<typeof parseResolutionInput>,
 ): RefResolution {
+	if (admittedDigest !== ref.digest)
+		return { kind: "blocked", code: "stale_digest" };
 	const observation = input.observations.find(
 		(candidate) => candidate.contextId === ref.contextId,
 	);
@@ -321,7 +329,7 @@ function resolveObservation(
 		return ref.requirement === "required"
 			? { kind: "blocked", code: "unresolved_host_path" }
 			: { kind: "unknown", reason: "unresolved_host_path" };
-	if (admittedDigest !== ref.digest || observation.digest !== ref.digest)
+	if (observation.digest !== ref.digest)
 		return { kind: "blocked", code: "stale_digest" };
 	return { kind: "selected" };
 }
@@ -335,7 +343,10 @@ function resolveRef(
 	const admitted = input.taskContext.selectedRefs.find(
 		(candidate) => candidate.contextId === ref.contextId,
 	);
-	if (!admitted) return { kind: "skip" };
+	if (!admitted)
+		return ref.requirement === "required"
+			? { kind: "blocked", code: "missing_context" }
+			: { kind: "skip" };
 	const policy = policyBlocker(ref, input);
 	if (policy) return { kind: "blocked", code: policy };
 	return resolveObservation(ref, admitted.digest, input);

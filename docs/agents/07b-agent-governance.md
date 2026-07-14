@@ -162,13 +162,13 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   orientation evidence only and must not become CI, review-thread, tracker,
   external-readiness, delivery-truth, or merge-readiness proof.
 - SynAIpse context-plane changes should keep `synaipse-context-catalog/v1`,
-  `synaipse-context-ref/v1`, and `synaipse-task-context/v1` synchronized across
-  schemas, runtime validators, package exports, state projection, `next`,
-  focused tests, generated architecture context, `AGENTS.md`, and the
-  architecture bootstrap. Resolution is read-only and precedes changed-file
-  inspection; required context fails closed, optional failures remain reasoned
-  unknowns, and only logical references plus digests may cross hosted or public
-  boundaries.
+  `synaipse-context-ref/v1`, `synaipse-task-context/v1`, and
+  `synaipse-state/v1` synchronized across schemas, runtime validators, package
+  exports, state projection, `next`, focused tests, generated architecture
+  context, `AGENTS.md`, and the architecture bootstrap. Resolution is read-only
+  and precedes changed-file inspection; required context fails closed, optional
+  failures remain reasoned unknowns, and only logical references plus digests may
+  cross hosted or public boundaries.
 - runtime-card trace-out changes should keep trace persistence in
   `src/lib/runtime-trace/`, reuse canonical run-record append/manifest
   helpers, constrain `--trace-out` to

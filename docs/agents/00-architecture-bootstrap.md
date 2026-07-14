@@ -123,15 +123,17 @@ archive, move, delete, demotion, metadata rewrite, manifest, active-artifact,
 or archive-index repair work requires a separate reviewed decision.
 For agent-native cockpit work, treat decision-envelope, generated environment action, hook setup, runtime-card evidence, and diagram-context changes as architecture-adjacent surfaces. Run `bash scripts/check-diagram-freshness.sh` explicitly for those changes, and use `bash scripts/refresh-diagram-context.sh --force` when the check reports stale or missing artifacts. Keep this guide synchronized with `AGENTS.md` and `docs/agents/07b-agent-governance.md` when `docs-gate` asks for architecture-context evidence. SynAIpse routine cockpit changes should keep the `synaipse-state/v1` contract additive, route routine orientation through `next`, and preserve `orient` as a compatibility/admin surface; validate the state schema and runtime-packet manifest with `node scripts/validate-runtime-packet-schemas.cjs --all` (must report successful validation with no errors; non-zero exit blocks promotion) before promotion, owned by the harness engineering team with fail-closed validation behavior.
 SynAIpse context-plane changes are architecture-adjacent contract changes. Keep
-`synaipse-context-catalog/v1`, `synaipse-context-ref/v1`, and
-`synaipse-task-context/v1` synchronized across their schemas, runtime
-validators, package exports, state projection, `next` entrypoint, and generated
-architecture context. Resolve only task-selected, read-only metadata before
-changed-file inspection; bind it to canonical repository identity, authority,
-privacy, freshness, and lifecycle constraints. Missing or invalid required
-context blocks routing, while optional context produces a reasoned unknown.
-Persist logical references and digests rather than provider bodies, and do not
-project private Jamie Brain content into hosted CI or public pull requests.
+`synaipse-context-catalog/v1`, `synaipse-context-ref/v1`,
+`synaipse-task-context/v1`, and `synaipse-state/v1` synchronized across their
+schemas, runtime validators, package exports, state projection, `next`
+entrypoint, focused tests, and generated architecture context. Resolve only
+task-selected, read-only metadata before changed-file inspection; bind it to
+canonical repository identity, authority, privacy, freshness, and lifecycle
+constraints. Missing or invalid required context blocks routing, while optional
+context produces a reasoned unknown. Persist logical references and digests
+rather than provider bodies, and do not project private Jamie Brain content into
+hosted CI or public pull requests. Before promotion, run the canonical focused
+proof `pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/context-plane.test.ts src/lib/synaipse/state.test.ts src/commands/next.test.ts --reporter=dot` and `pnpm check`; both must exit successfully, and any failure stops refresh or routing until repaired and rerun.
 RouteDecision lifecycle metadata belongs to this cockpit architecture-adjacent lane: keep `route-decision/v1` contract changes additive to `harness-decision/v1`, refresh `AI/context/diagram-context.md`, and commit this guide with the required docs-gate governance surfaces when `docs-gate` reports the architecture-context surface.
 Risk-tiered RouteDecision mutation authority is still advisory route metadata:
 only low-risk repo-local mutation routes with current evidence, validator

@@ -177,8 +177,40 @@ describe("SynAIpse universal context plane", () => {
 			status: "resolved",
 			selectedContextIds: [],
 			unknownContextIds: [SPEC_ID],
+			unknowns: [{ contextId: SPEC_ID, reason: "missing_context" }],
 			blockers: [],
 		});
+	});
+
+	it("blocks optional context when its admitted digest is stale", () => {
+		const input = resolutionInput(
+			[contextRef({ requirement: "optional" })],
+			[],
+		);
+		input.taskContext = taskContext([
+			{
+				contextId: SPEC_ID,
+				digest:
+					"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+			},
+		]);
+
+		expect(resolveSynaipseContext(input)).toMatchObject({
+			status: "blocked",
+			blockers: [{ code: "stale_digest", contextId: SPEC_ID }],
+		});
+	});
+
+	it("blocks stale context at or before its expiry boundary", () => {
+		for (const expiresAt of [NOW, "2026-07-13T21:59:59Z"]) {
+			const input = resolutionInput([
+				contextRef({ freshness: { observedAt: NOW, expiresAt } }),
+			]);
+			expect(resolveSynaipseContext(input)).toMatchObject({
+				status: "blocked",
+				blockers: [{ code: "stale_digest", contextId: SPEC_ID }],
+			});
+		}
 	});
 
 	it("rejects stale digest evidence", () => {
@@ -238,6 +270,7 @@ describe("SynAIpse universal context plane", () => {
 			status: "blocked",
 			selectedContextIds: [],
 			blockers: [
+				{ code: "missing_context", contextId: SPEC_ID },
 				{
 					code: "missing_context",
 					contextId: "ch_context_Q6PV8R3N5ZWA",
@@ -250,6 +283,38 @@ describe("SynAIpse universal context plane", () => {
 		expect(resolveSynaipseContext(input)).toMatchObject({
 			status: "blocked",
 			blockers: [{ code: "access_denied", contextId: SPEC_ID }],
+		});
+	});
+
+	it("blocks a required catalog ref omitted from task admission", () => {
+		const optionalId = "ch_context_Q6PV8R3N5ZWA";
+		const optional = contextRef({
+			contextId: optionalId,
+			requirement: "optional",
+		});
+		const input = resolutionInput(
+			[contextRef(), optional],
+			[
+				{
+					contextId: optionalId,
+					status: "available",
+					digest:
+						"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				},
+			],
+		);
+		input.taskContext = taskContext([
+			{
+				contextId: optionalId,
+				digest:
+					"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			},
+		]);
+
+		expect(resolveSynaipseContext(input)).toMatchObject({
+			status: "blocked",
+			selectedContextIds: [optionalId],
+			blockers: [{ code: "missing_context", contextId: SPEC_ID }],
 		});
 	});
 
@@ -290,7 +355,10 @@ describe("SynAIpse universal context plane", () => {
 		const unrelated = contextRef({ contextId: "ch_context_Q6PV8R3N5ZWA" });
 		expect(resolveSynaipseContext(resolutionInput([unrelated]))).toMatchObject({
 			status: "blocked",
-			blockers: [{ code: "missing_context", contextId: SPEC_ID }],
+			blockers: [
+				{ code: "missing_context", contextId: "ch_context_Q6PV8R3N5ZWA" },
+				{ code: "missing_context", contextId: SPEC_ID },
+			],
 		});
 	});
 
@@ -383,6 +451,9 @@ describe("SynAIpse universal context plane", () => {
 			"../../private.md",
 			"docs\\..\\private.md",
 			"C:private.md",
+			"file:/etc/secret",
+			"file:///etc/secret",
+			"docs/\n../private.md",
 		]) {
 			const ref = contextRef({ provider: { kind: "filesystem", reference } });
 			expect(() => resolveSynaipseContext(resolutionInput([ref]))).toThrow(
@@ -395,6 +466,17 @@ describe("SynAIpse universal context plane", () => {
 		expect(() =>
 			resolveSynaipseContext(resolutionInput([opaqueTraversal])),
 		).toThrow("must not");
+	});
+
+	it("rejects duplicate catalog context IDs with differing metadata", () => {
+		const duplicate = contextRef({
+			kind: "implementation_plan",
+			digest:
+				"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+		});
+		expect(() =>
+			resolveSynaipseContext(resolutionInput([contextRef(), duplicate])),
+		).toThrow("must not duplicate");
 	});
 
 	it("keeps prohibited-destination schema and runtime cardinality aligned", () => {
@@ -435,7 +517,8 @@ describe("SynAIpse universal context plane", () => {
 	});
 
 	it("freezes an Admit snapshot bound to selected context digests", () => {
-		const snapshot = createSynaipseTaskContext(taskContext());
+		const input = taskContext();
+		const snapshot = createSynaipseTaskContext(input);
 
 		expect(snapshot.schemaVersion).toBe("synaipse-task-context/v1");
 		expect(snapshot.selectedRefs).toEqual([
@@ -447,6 +530,30 @@ describe("SynAIpse universal context plane", () => {
 		]);
 		expect(Object.isFrozen(snapshot)).toBe(true);
 		expect(Object.isFrozen(snapshot.selectedRefs)).toBe(true);
+		expect(Object.isFrozen(snapshot.selectedRefs[0])).toBe(true);
+		(input.selectedRefs as Array<Record<string, unknown>>)[0]!.digest =
+			"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+		expect(snapshot.selectedRefs[0]!.digest).toBe(
+			"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		);
+	});
+
+	it("rejects selected refs that repeat a context ID with a different digest", () => {
+		const duplicate = taskContext([
+			{
+				contextId: SPEC_ID,
+				digest:
+					"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			},
+			{
+				contextId: SPEC_ID,
+				digest:
+					"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+			},
+		]);
+		expect(() => createSynaipseTaskContext(duplicate)).toThrow(
+			"must not duplicate",
+		);
 	});
 
 	it("rejects invalid base SHAs and duplicate refresh triggers", () => {

@@ -69,6 +69,18 @@ describe("validateSynaipseState", () => {
 			"freshness.observedAt",
 		],
 		[
+			"invalid context unknown reason",
+			{
+				contextUnknowns: [
+					{
+						contextId: "ch_context_7K4M2P9QX3DR",
+						reason: "unknown_reason",
+					},
+				],
+			},
+			"contextUnknowns[0].reason",
+		],
+		[
 			"February 30 overflow",
 			{ generatedAt: "2026-02-30T23:00:00Z" },
 			"generatedAt",
@@ -93,6 +105,41 @@ describe("validateSynaipseState", () => {
 		const result = validateSynaipseState({ ...validState, ...override });
 		expect(result.valid).toBe(false);
 		expect(result.errors.some((error) => error.path === path)).toBe(true);
+	});
+
+	it("rejects duplicate context IDs even when projection values differ", () => {
+		const result = validateSynaipseState({
+			...validState,
+			contextRefs: [
+				...validState.contextRefs,
+				{
+					contextId: "ch_context_7K4M2P9QX3DR",
+					digest: `sha256:${"b".repeat(64)}`,
+				},
+			],
+			contextUnknowns: [
+				{
+					contextId: "ch_context_7K4M2P9QX3DR",
+					reason: "missing_context",
+				},
+				{
+					contextId: "ch_context_7K4M2P9QX3DR",
+					reason: "provider_unavailable",
+				},
+			],
+		});
+
+		expect(result.valid).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ path: "contextRefs[1].contextId" }),
+				expect.objectContaining({ path: "contextUnknowns[1].contextId" }),
+				expect.objectContaining({
+					path: "contextUnknowns[0].contextId",
+					message: "must not duplicate a context ID from contextRefs",
+				}),
+			]),
+		);
 	});
 
 	it.each([

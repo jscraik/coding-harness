@@ -74,7 +74,6 @@
 		"src/lib/delivery-truth/delivery-truth-freshness-policy.test.ts",
 		"src/lib/external-state/external-state.test.ts",
 		"src/lib/pr-closeout.test.ts",
-		"src/lib/synaipse/context-plane.test.ts",
 		"scripts/check-codestyle-parity.sh",
 		"scripts/check-git-common-config.sh",
 		"scripts/check-semgrep-changed.sh",

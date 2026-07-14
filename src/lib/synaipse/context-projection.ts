@@ -1,4 +1,5 @@
 import {
+	CONTEXT_UNKNOWN_REASONS,
 	SynaipseContextContractError,
 	contractObject,
 	digest,
@@ -7,11 +8,10 @@ import {
 	contractEnum,
 } from "./context-contract.js";
 
-const CONTEXT_UNKNOWN_REASONS = [
-	"missing_context",
-	"provider_unavailable",
-	"unresolved_host_path",
-] as const;
+export { CONTEXT_UNKNOWN_REASONS } from "./context-contract.js";
+
+/** Reason vocabulary for context entries that could not be resolved. */
+export type ContextUnknownReason = (typeof CONTEXT_UNKNOWN_REASONS)[number];
 
 /** Parse one logical context ID and digest projected into cockpit state. */
 export function parseSynaipseContextProjection(
@@ -68,14 +68,18 @@ export function validateSynaipseContextProjections(
 	const seenContextIds = new Set<string>();
 	for (const [index, contextRef] of value.entries()) {
 		try {
-			const parsed = parseSynaipseContextProjection(contextRef, `contextRefs[${index}]`);
+			const parsed = parseSynaipseContextProjection(
+				contextRef,
+				`contextRefs[${index}]`,
+			);
 			if (seenContextIds.has(parsed.contextId)) {
 				errors.push({
 					path: `contextRefs[${index}].contextId`,
-					message: "must not duplicate an earlier contextId",
+					message: "must not duplicate an earlier context ID",
 				});
+			} else {
+				seenContextIds.add(parsed.contextId);
 			}
-			seenContextIds.add(parsed.contextId);
 		} catch (error) {
 			if (error instanceof SynaipseContextContractError)
 				errors.push({ path: error.path, message: error.detail });
@@ -96,14 +100,18 @@ export function validateSynaipseContextUnknowns(
 	const seenContextIds = new Set<string>();
 	for (const [index, contextUnknown] of value.entries()) {
 		try {
-			const parsed = parseSynaipseContextUnknown(contextUnknown, `contextUnknowns[${index}]`);
+			const parsed = parseSynaipseContextUnknown(
+				contextUnknown,
+				`contextUnknowns[${index}]`,
+			);
 			if (seenContextIds.has(parsed.contextId)) {
 				errors.push({
 					path: `contextUnknowns[${index}].contextId`,
-					message: "must not duplicate an earlier contextId",
+					message: "must not duplicate an earlier context ID",
 				});
+			} else {
+				seenContextIds.add(parsed.contextId);
 			}
-			seenContextIds.add(parsed.contextId);
 		} catch (error) {
 			if (error instanceof SynaipseContextContractError)
 				errors.push({ path: error.path, message: error.detail });

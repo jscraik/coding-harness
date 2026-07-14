@@ -74,6 +74,8 @@
 		},
 		"contextRefs": {
 			"type": "array",
+			"uniqueItems": true,
+			"description": "Entries are keyed by contextId. Runtime validation rejects repeated contextId values and cross-collection collisions with contextUnknowns; uniqueItems also rejects exact duplicate objects.",
 			"items": {
 				"type": "object",
 				"additionalProperties": false,
@@ -92,6 +94,8 @@
 		},
 		"contextUnknowns": {
 			"type": "array",
+			"uniqueItems": true,
+			"description": "Entries are keyed by contextId. Runtime validation rejects repeated contextId values and cross-collection collisions with contextRefs; uniqueItems also rejects exact duplicate objects.",
 			"items": {
 				"type": "object",
 				"additionalProperties": false,

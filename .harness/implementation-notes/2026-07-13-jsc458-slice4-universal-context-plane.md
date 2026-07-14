@@ -18,8 +18,8 @@ created: 2026-07-13
 last_reviewed: 2026-07-13
 review_cadence: event-driven
 validated_by:
-  - pnpm vitest run src/lib/synaipse/context-plane.test.ts src/lib/synaipse/state.test.ts src/commands/next.test.ts --reporter=dot  # Expected: pass (all tests green)
-  - pnpm check  # Expected: pass (type-check, lint clean)
+  - pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/context-plane.test.ts src/lib/synaipse/state.test.ts src/commands/next.test.ts --reporter=dot # expected outcome: pass
+  - pnpm check # expected outcome: known blocker (pre-existing Local Memory helper test mismatch)
 depends_on:
   - docs/specs/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-spec.md
   - JSC-458
@@ -118,6 +118,7 @@ snapshots, canonical repository binding, hosted-CI and public-PR privacy,
 reasoned unknown projection, production entrypoint ordering, and state
 projection. Canonical
 repository gates and independent adversarial review remain separate proof
-lanes. This note does not claim provider integration, Jamie Brain catalog
-admission, hosted CI, review convergence, merge readiness, product adoption, or
-SynAIpse v1 closure.
+lanes. The tests exercise hosted-CI privacy decisions, but this does not claim
+hosted-CI integration or deployment. This note also does not claim review
+convergence, merge readiness, product adoption, Jamie Brain catalog admission,
+or SynAIpse v1 closure.

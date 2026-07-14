@@ -158,6 +158,32 @@ function validateStateArrays(
 	}
 }
 
+/** Reject a logical context ID from appearing in both projection collections. */
+function validateContextProjectionPartition(
+	value: Record<string, unknown>,
+	errors: ValidationErrors,
+): void {
+	const contextRefIds = new Set<string>();
+	if (Array.isArray(value.contextRefs)) {
+		for (const contextRef of value.contextRefs) {
+			if (isRecord(contextRef) && typeof contextRef.contextId === "string")
+				contextRefIds.add(contextRef.contextId);
+		}
+	}
+	if (!Array.isArray(value.contextUnknowns)) return;
+	for (const [index, contextUnknown] of value.contextUnknowns.entries()) {
+		if (
+			isRecord(contextUnknown) &&
+			typeof contextUnknown.contextId === "string" &&
+			contextRefIds.has(contextUnknown.contextId)
+		)
+			errors.push({
+				path: `contextUnknowns[${index}].contextId`,
+				message: "must not duplicate a context ID from contextRefs",
+			});
+	}
+}
+
 /** Enforce the pure-read effect declaration for the current cockpit producer. */
 function validateInvocationEffects(
 	value: unknown,
@@ -272,6 +298,7 @@ export function validateSynaipseState(
 		...validateSynaipseContextProjections(value.contextRefs),
 		...validateSynaipseContextUnknowns(value.contextUnknowns),
 	);
+	validateContextProjectionPartition(value, errors);
 	requireString(value.nextAction, "nextAction", errors);
 	validateInvocationEffects(value.invocationEffects, errors);
 	validateFreshness(value.freshness, errors);

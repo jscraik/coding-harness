@@ -1,6 +1,7 @@
 import {
 	PRIVACY,
 	REFRESH_TRIGGERS,
+	SYNAIPSE_TASK_CONTEXT_SCHEMA_VERSION,
 	SynaipseContextContractError,
 	contractArray,
 	contractEnum,
@@ -66,14 +67,14 @@ function parseTaskContext(value: unknown) {
 		],
 		"taskContext",
 	);
-	if (snapshot.schemaVersion !== "synaipse-task-context/v1")
+	if (snapshot.schemaVersion !== SYNAIPSE_TASK_CONTEXT_SCHEMA_VERSION)
 		throw new SynaipseContextContractError(
 			"taskContext.schemaVersion",
-			"must be synaipse-task-context/v1",
+			`must be ${SYNAIPSE_TASK_CONTEXT_SCHEMA_VERSION}`,
 		);
 	const selectedRefs = parseSelectedRefs(snapshot.selectedRefs);
 	return Object.freeze({
-		schemaVersion: "synaipse-task-context/v1" as const,
+		schemaVersion: SYNAIPSE_TASK_CONTEXT_SCHEMA_VERSION,
 		taskContextId: harnessId(
 			snapshot.taskContextId,
 			"ch_taskctx",
@@ -115,7 +116,7 @@ function parseTaskContext(value: unknown) {
 }
 
 /** Parse an immutable task snapshot for use by context resolution. */
-export function parseSynaipseTaskContext(value: unknown) {
+export function parseSynaipseTaskContext(value: unknown): SynaipseTaskContext {
 	return parseTaskContext(value);
 }
 
