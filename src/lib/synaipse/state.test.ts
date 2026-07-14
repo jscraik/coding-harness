@@ -272,7 +272,7 @@ describe("validateSynaipseState", () => {
 		expect(result.errors).toContainEqual(
 			expect.objectContaining({
 				path: "contextRefs[1].contextId",
-				message: "must not duplicate an earlier contextId",
+				message: "must not duplicate an earlier context ID",
 			}),
 		);
 	});
@@ -296,7 +296,7 @@ describe("validateSynaipseState", () => {
 		expect(result.errors).toContainEqual(
 			expect.objectContaining({
 				path: "contextUnknowns[1].contextId",
-				message: "must not duplicate an earlier contextId",
+				message: "must not duplicate an earlier context ID",
 			}),
 		);
 	});
