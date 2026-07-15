@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-15T12:18:14Z
+Generated: 2026-07-15T13:20:44Z
 
 ## Table of Contents
 
@@ -43,6 +43,7 @@ Generated: 2026-07-15T12:18:14Z
 - `src/commands/next-runner-inputs.ts`
 - `src/commands/next-runner.ts`
 - `src/commands/next-synaipse-context.ts`
+- `src/lib/agent-readiness/safe-json-artifact-reader.ts`
 - `src/lib/cli/command-registry.ts`
 - `src/lib/cli/registry/command-capabilities.ts`
 - `src/lib/cli/registry/command-capability-rules.ts`
@@ -1752,6 +1753,7 @@ graph LR
   ext_node_url_d0cb3ad7["node:url"] --> node_run_e2e_39efe696_fb07ee74
   ext_node_url_d0cb3ad7["node:url"] --> node_run_harness_evals_77704768_ba42904d
   ext_node_url_d0cb3ad7["node:url"] --> node_run_local_memory_preflight_36e92808_9841c57a
+  ext_node_url_d0cb3ad7["node:url"] --> node_safe_json_artifact_reader_9114b83f_bcca77c5
   ext_node_url_d0cb3ad7["node:url"] --> node_scaffold_ci_template_utils_1035b61c_0513532b
   ext_node_url_d0cb3ad7["node:url"] --> node_scaffold_governance_templates_5c949d24_3d624d65
   ext_node_url_d0cb3ad7["node:url"] --> node_scaffold_root_templates_61731280_c6c59378
