@@ -70,13 +70,9 @@ function summarizeBlockers(blockers: PrCloseoutBlocker[]): Array<{
 	}));
 }
 
-/** Remove sensitive path and token-like evidence before exposing stack metadata. */
-function sanitizeOptionalStackText(
-	value: string | null | undefined,
-): string | null | undefined {
-	return value === null || value === undefined
-		? value
-		: sanitizeEvidenceText(value);
+/** Remove sensitive path and token-like evidence from a present stack field. */
+function sanitizeStackText(value: string | null): string | null {
+	return value === null ? null : sanitizeEvidenceText(value);
 }
 
 /** Remove sensitive path and token-like evidence before exposing stack metadata. */
@@ -84,16 +80,28 @@ function sanitizeStackState(
 	stackState: PrCloseoutReport["stackState"],
 ): PrCloseoutReport["stackState"] {
 	if (stackState === undefined || stackState === null) return null;
-	return {
+	const sanitized: NonNullable<PrCloseoutReport["stackState"]> = {
 		status: stackState.status,
-		required: stackState.required,
-		evidenceRefs: stackState.evidenceRefs?.map(sanitizeEvidenceText),
-		blockerRefs: stackState.blockerRefs?.map(sanitizeEvidenceText),
-		reason: sanitizeOptionalStackText(stackState.reason),
-		parentPr: stackState.parentPr,
-		lowerPrs: stackState.lowerPrs ? [...stackState.lowerPrs] : undefined,
-		baseSha: sanitizeOptionalStackText(stackState.baseSha),
 	};
+	if (stackState.required !== undefined)
+		sanitized.required = stackState.required;
+	if (stackState.evidenceRefs !== undefined) {
+		sanitized.evidenceRefs = stackState.evidenceRefs.map(sanitizeEvidenceText);
+	}
+	if (stackState.blockerRefs !== undefined) {
+		sanitized.blockerRefs = stackState.blockerRefs.map(sanitizeEvidenceText);
+	}
+	if (stackState.reason !== undefined) {
+		sanitized.reason = sanitizeStackText(stackState.reason);
+	}
+	if (stackState.parentPr !== undefined)
+		sanitized.parentPr = stackState.parentPr;
+	if (stackState.lowerPrs !== undefined)
+		sanitized.lowerPrs = [...stackState.lowerPrs];
+	if (stackState.baseSha !== undefined) {
+		sanitized.baseSha = sanitizeStackText(stackState.baseSha);
+	}
+	return sanitized;
 }
 
 /** Project validated closeout evidence into compact harness-next metadata. */
