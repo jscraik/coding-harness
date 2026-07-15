@@ -7,6 +7,11 @@ import {
 } from "./enforcement-status.js";
 import { type LearningFileMatch, matchLearningToFile } from "./fuzzy-match.js";
 import { loadLearningArtifact } from "./gate.js";
+import {
+	buildReviewLearningCloseout,
+	buildUnavailableReviewLearningCloseout,
+	type ReviewLearningCloseout,
+} from "./review-learning-closeout.js";
 import type { LearningItem } from "./types.js";
 import {
 	type ValidationPlanResult,
@@ -35,6 +40,10 @@ export interface ReviewContextLearning {
 	evidenceRef: string[];
 	/** Highest-confidence match metadata for measurement. */
 	match: LearningFileMatch;
+	/** Concrete implementation or test paths enforcing this learning. */
+	enforcedBy?: string[];
+	/** Decision rationale from the enforcement ledger, when recorded. */
+	promotionReason?: string;
 }
 
 /** Result emitted by `harness review-context --json`. */
@@ -48,6 +57,8 @@ export interface ReviewContextResult {
 	changedFiles: string[];
 	applicableLearnings: ReviewContextLearning[];
 	validationPlan: ValidationPlanResult["commands"];
+	/** Advisory historical-learning and promotion closeout artifact. */
+	closeout: ReviewLearningCloseout;
 	networkRequired: ValidationPlanResult["networkRequired"];
 	reviewerLikelyConcerns: string[];
 	mustMentionInPr: string[];
@@ -105,6 +116,12 @@ export function buildReviewContext(
 			changedFiles,
 			applicableLearnings: [],
 			validationPlan: [],
+			closeout: buildUnavailableReviewLearningCloseout({
+				source,
+				repo: "unknown",
+				changedFiles,
+				reason: `n.a.: ${loaded.message}`,
+			}),
 			networkRequired: [],
 			...emptyReviewHandoff(),
 			summary: {
@@ -132,6 +149,12 @@ export function buildReviewContext(
 			changedFiles,
 			applicableLearnings: [],
 			validationPlan: [],
+			closeout: buildUnavailableReviewLearningCloseout({
+				source,
+				repo: loaded.artifact.repository,
+				changedFiles,
+				reason: `n.a.: ${enforcementStatus.message}`,
+			}),
 			networkRequired: [],
 			...emptyReviewHandoff(),
 			summary: {
@@ -150,6 +173,12 @@ export function buildReviewContext(
 		loaded.artifact.items,
 		enforcementStatus.ledger,
 	);
+	const promotionReasons = new Map(
+		enforcementStatus.ledger.items.map((item) => [
+			item.learningId,
+			item.reason,
+		]),
+	);
 
 	const validationPlan = buildValidationPlan({
 		source,
@@ -162,12 +191,28 @@ export function buildReviewContext(
 			repo: loaded.artifact.repository,
 			changedFiles,
 			validationPlan,
+			closeout: buildReviewLearningCloseout({
+				source,
+				sourceFingerprint: loaded.artifact.inputFingerprint,
+				repo: loaded.artifact.repository,
+				changedFiles,
+				matchingLearnings: [],
+			}),
 		});
 	}
 	const applicableLearnings = learningItems
-		.map((item) => buildReviewContextLearning(item, changedFiles))
+		.map((item) =>
+			buildReviewContextLearning(item, changedFiles, promotionReasons),
+		)
 		.filter((item): item is ReviewContextLearning => item !== undefined)
 		.sort((a, b) => b.usage - a.usage || a.id.localeCompare(b.id));
+	const closeout = buildReviewLearningCloseout({
+		source,
+		sourceFingerprint: loaded.artifact.inputFingerprint,
+		repo: loaded.artifact.repository,
+		changedFiles,
+		matchingLearnings: applicableLearnings,
+	});
 	const reviewHandoff = buildReviewHandoff(applicableLearnings, validationPlan);
 
 	const result: ReviewContextResult = {
@@ -180,6 +225,7 @@ export function buildReviewContext(
 		changedFiles,
 		applicableLearnings,
 		validationPlan: validationPlan.commands,
+		closeout,
 		networkRequired: validationPlan.networkRequired,
 		...reviewHandoff,
 		summary: {
@@ -272,11 +318,18 @@ function findNearestExistingAncestor(path: string): string | undefined {
 	}
 }
 
+/**
+ * Build an error review-context result while preserving the advisory learning closeout.
+ *
+ * @param input - Source, repository, changed files, validation-plan failure, and closeout evidence to preserve
+ * @returns A review-context error result with the validation failure and advisory closeout attached
+ */
 function buildValidationPlanErrorResult(input: {
 	source: string;
 	repo: string;
 	changedFiles: string[];
 	validationPlan: ValidationPlanResult;
+	closeout: ReviewLearningCloseout;
 }): ReviewContextResult {
 	return {
 		schemaVersion: "review-context/v1",
@@ -286,6 +339,7 @@ function buildValidationPlanErrorResult(input: {
 		changedFiles: input.changedFiles,
 		applicableLearnings: [],
 		validationPlan: [],
+		closeout: input.closeout,
 		networkRequired: [],
 		...emptyReviewHandoff(),
 		summary: {
@@ -317,6 +371,7 @@ function buildValidationPlanErrorResult(input: {
 function buildReviewContextLearning(
 	item: LearningItem,
 	changedFiles: string[],
+	promotionReasons: ReadonlyMap<string, string | undefined>,
 ): ReviewContextLearning | undefined {
 	const matches = changedFiles
 		.map((file) => ({ file, match: matchLearningToFile(item, file) }))
@@ -330,6 +385,7 @@ function buildReviewContextLearning(
 		.map((entry) => entry.match)
 		.sort((a, b) => b.confidence - a.confidence)[0];
 	if (!strongestMatch) return undefined;
+	const promotionReason = promotionReasons.get(item.id);
 	return {
 		id: item.id,
 		usage: item.usage,
@@ -341,6 +397,8 @@ function buildReviewContextLearning(
 		fix: buildFix(item),
 		evidenceRef: buildEvidenceRefs(item),
 		match: strongestMatch,
+		...(item.enforcedBy ? { enforcedBy: [...item.enforcedBy] } : {}),
+		...(promotionReason !== undefined ? { promotionReason } : {}),
 	};
 }
 

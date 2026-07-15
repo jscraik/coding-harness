@@ -16,6 +16,12 @@ import { runReviewContextCLI } from "./review-context.js";
 const contextCsv = `Repository,File,Pull Request,URL,Usage,Learning,Created By,Last Used,Created At,Updated At
 coding-harness,docs/ai-assistant-security-policy.md,148,,516,"YAML frontmatter fields are machine-readable metadata.",jscraik,Never,created,updated
 coding-harness,,201,,47,"Applies to docs/**: Use pnpm test:ci for CircleCI parity when policy docs change.",jscraik,Never,created,updated
+coding-harness,src/review-learning.md,202,,12,"Review learning closeout evidence remains advisory.",jscraik,Never,created,updated
+`;
+
+const closeoutCsv = `Repository,File,Pull Request,URL,Usage,Learning,Created By,Last Used,Created At,Updated At
+coding-harness,docs/ai-assistant-security-policy.md,148,,516,"YAML frontmatter fields are machine-readable metadata.",jscraik,Never,created,updated
+coding-harness,src/review-learning.md,202,,12,"Review learning closeout evidence remains advisory.",jscraik,Never,created,updated
 `;
 
 describe("runReviewContextCLI", () => {
@@ -24,6 +30,112 @@ describe("runReviewContextCLI", () => {
 		for (const path of cleanup.splice(0))
 			rmSync(path, { recursive: true, force: true });
 		vi.restoreAllMocks();
+	});
+
+	it("records exact, advisory fuzzy, promoted, and skipped learning evidence", () => {
+		const dir = mkdtempSync(join(tmpdir(), "review-context-closeout-"));
+		cleanup.push(dir);
+		const sourcePath = join(dir, "learnings.csv");
+		const outputPath = join(dir, ".harness/learnings/coderabbit.local.json");
+		const enforcementStatusPath = join(
+			dir,
+			".harness/learnings/enforcement-status.json",
+		);
+		writeFileSync(sourcePath, closeoutCsv, "utf-8");
+		mkdirSync(join(dir, ".harness/learnings"), { recursive: true });
+		expect(
+			runLearningsCLI([
+				"import",
+				"--provider",
+				"coderabbit-csv",
+				"--source",
+				sourcePath,
+				"--repo",
+				"coding-harness",
+				"--output",
+				outputPath,
+				"--json",
+			]),
+		).toBe(0);
+		writeFileSync(
+			enforcementStatusPath,
+			JSON.stringify(
+				{
+					schemaVersion: "learning-enforcement-status/v1",
+					items: [
+						{
+							learningId:
+								"coderabbit.coding-harness.docs-frontmatter-machine-readable",
+							promotionStatus: "enforced",
+							enforcedBy: ["src/lib/docs-surface/frontmatter-metadata-gate.ts"],
+							reason: "Promoted to validator.",
+						},
+						{
+							learningId:
+								"coderabbit.coding-harness.src-review-learning-closeout-evidence",
+							promotionStatus: "deferred",
+							reason: "Need a measured false-positive sample first.",
+						},
+					],
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+		const infoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		expect(
+			runReviewContextCLI([
+				"--source",
+				outputPath,
+				"--repo-root",
+				dir,
+				"--enforcement-status",
+				".harness/learnings/enforcement-status.json",
+				"--files",
+				"docs/ai-assistant-security-policy.md",
+				"src/review-learning.ts",
+				"--json",
+			]),
+		).toBe(0);
+
+		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(result.closeout).toMatchObject({
+			schemaVersion: "review-learning-closeout/v1",
+			status: "available",
+			summary: {
+				matchingLearnings: 2,
+				exactFileMatches: 1,
+				advisoryFuzzyMatches: 1,
+				promotedGuardrails: 1,
+				skippedPromotions: 1,
+			},
+		});
+		expect(result.closeout.promotedGuardrails).toEqual([
+			expect.objectContaining({
+				id: "coderabbit.coding-harness.docs-frontmatter-machine-readable",
+				enforcedBy: ["src/lib/docs-surface/frontmatter-metadata-gate.ts"],
+			}),
+		]);
+		expect(result.closeout.skippedPromotions).toEqual([
+			expect.objectContaining({
+				id: "coderabbit.coding-harness.src-review-learning-closeout-evidence",
+				reason: "deferred: Need a measured false-positive sample first.",
+			}),
+		]);
+		const fuzzyLearning = result.closeout.matchingLearnings.find(
+			(learning: { id: string }) =>
+				learning.id ===
+				"coderabbit.coding-harness.src-review-learning-closeout-evidence",
+		);
+		expect(fuzzyLearning.match).toMatchObject({
+			kind: "keyword",
+			advisoryOnly: true,
+			falsePositiveCandidate: true,
+		});
 	});
 
 	it("emits applicable learnings with validation-plan entries and writes output", () => {
@@ -418,5 +530,13 @@ describe("runReviewContextCLI", () => {
 		const result = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
 		expect(result.status).toBe("error");
 		expect(result.validationPlan).toEqual([]);
+		expect(result.closeout).toMatchObject({
+			schemaVersion: "review-learning-closeout/v1",
+			status: "not_applicable",
+			reviewContextEvidence: {
+				status: "n.a.",
+				reason: expect.stringContaining("n.a."),
+			},
+		});
 	});
 });

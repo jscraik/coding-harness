@@ -7,6 +7,7 @@ export * from "./normalise.js";
 export * from "./overrides.js";
 export * from "./promote.js";
 export * from "./review-context.js";
+export * from "./review-learning-closeout.js";
 export * from "./sensitive-text.js";
 export * from "./types.js";
 export * from "./validation-plan.js";
