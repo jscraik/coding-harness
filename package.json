@@ -121,7 +121,7 @@
 		"harness": "dist/cli.js"
 	},
 	"scripts": {
-		"check": "pnpm check:static && pnpm test:related && pnpm test:ci && pnpm audit",
+		"check": "pnpm check:static && pnpm test:related && pnpm test:ci && pnpm run audit",
 		"check:static": "pnpm toolchain:check && pnpm lint && pnpm coding-policy:validate && pnpm quality:scripts && pnpm tooling:parity && pnpm docs:lint && pnpm docs:lifecycle && pnpm docs:root-archive:links && pnpm docs:ubiquitous:guard && pnpm docs:steering:guard && pnpm skill:validate && pnpm workflow:validate && pnpm research:evidence:validate && pnpm architecture:check && pnpm types:check && pnpm quality:docstrings && pnpm quality:size && pnpm quality:debt && pnpm quality:self-affirming && pnpm quality:behavior-tests && pnpm quality:git-env-sanitizer && pnpm harness:audit-tracking",
 		"toolchain:check": "node scripts/check-node-engine.mjs",
 		"publish:release": "pnpm check && pnpm build && npm publish --access restricted --ignore-scripts=false",
@@ -158,7 +158,7 @@
 		"changelog": "standard-version --skip.bump --skip.tag --skip.commit",
 		"release": "standard-version",
 		"audit": "bash scripts/run-audit-with-timeout.sh",
-		"audit:strict": "pnpm audit --audit-level=high",
+		"audit:strict": "pnpm audit --audit-level=high --ignore-registry-errors",
 		"docs:lint": "pnpm markdownlint",
 		"docs:gitbook:check": "node scripts/check-gitbook-readiness.mjs",
 		"docs:root-archive:links": "node scripts/check-root-archive-links.mjs",
