@@ -7,6 +7,7 @@ import {
 	realpathSync,
 } from "node:fs";
 import { isAbsolute, relative, sep } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const MAX_ARTIFACT_BYTES = 1_000_000;
 type KnownJsonArtifact = {
@@ -74,7 +75,7 @@ function containedArtifactFile(
 function readValidatedArtifactFile(file: ContainedJsonArtifact): string {
 	let fileDescriptor: number | null = null;
 	try {
-		fileDescriptor = openReportReadOnly(file.absolutePath, "r");
+		fileDescriptor = openReportReadOnly(pathToFileURL(file.absolutePath), "r");
 		const stat = fstatSync(fileDescriptor);
 		if (!isReadableArtifactFile(stat)) return "";
 		const buffer = Buffer.alloc(stat.size);
