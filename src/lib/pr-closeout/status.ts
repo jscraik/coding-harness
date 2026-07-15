@@ -11,6 +11,15 @@ function isBranchOrWorktreeStateBlocker(blocker: PrCloseoutBlocker): boolean {
 	);
 }
 
+/** Identify stack-state blockers that require operator-owned recovery. */
+function isStackStateBlocker(blocker: PrCloseoutBlocker): boolean {
+	return (
+		isBranchOrWorktreeStateBlocker(blocker) &&
+		blocker.ref?.startsWith("stack:") === true
+	);
+}
+
+/** Identify branch or worktree blockers that represent a merge conflict. */
 function hasMergeConflict(blocker: PrCloseoutBlocker): boolean {
 	return isBranchOrWorktreeStateBlocker(blocker) && blocker.conflict === true;
 }
@@ -40,6 +49,13 @@ export function deriveNextAction(blockers: readonly PrCloseoutBlocker[]): {
 		return {
 			status: "blocked",
 			nextAction: "resolve_conflicts",
+			mergeable: false,
+		};
+	}
+	if (blockers.some(isStackStateBlocker)) {
+		return {
+			status: "needs_jamie",
+			nextAction: "needs_jamie_decision",
 			mergeable: false,
 		};
 	}

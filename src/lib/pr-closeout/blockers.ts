@@ -113,8 +113,9 @@ export function collectStackBlockers(
 	stack: PrCloseoutStackState | undefined,
 	blockers: PrCloseoutBlocker[],
 ): void {
-	if (!stack || stack.required === false) return;
+	if (!stack) return;
 	if (stack.status === "stable" || stack.status === "not_applicable") return;
+	if (stack.required === false && stack.status === "unknown") return;
 	const unstable = stack.status === "unstable";
 	const refs = [
 		...(stack.blockerRefs ?? []),
@@ -130,7 +131,7 @@ export function collectStackBlockers(
 				? "Stack state is unstable; reconcile lower-layer, parent, and base PR evidence before closeout."
 				: "Stack state is unknown; provide current parent/lower-layer and base evidence before closeout."),
 		fixableByCodex: false,
-		...(refs ? { ref: refs } : {}),
+		ref: refs || "stack:state",
 	});
 }
 

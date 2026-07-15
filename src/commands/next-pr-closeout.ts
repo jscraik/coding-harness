@@ -70,6 +70,32 @@ function summarizeBlockers(blockers: PrCloseoutBlocker[]): Array<{
 	}));
 }
 
+/** Remove sensitive path and token-like evidence before exposing stack metadata. */
+function sanitizeOptionalStackText(
+	value: string | null | undefined,
+): string | null | undefined {
+	return value === null || value === undefined
+		? value
+		: sanitizeEvidenceText(value);
+}
+
+/** Remove sensitive path and token-like evidence before exposing stack metadata. */
+function sanitizeStackState(
+	stackState: PrCloseoutReport["stackState"],
+): PrCloseoutReport["stackState"] {
+	if (stackState === undefined || stackState === null) return null;
+	return {
+		status: stackState.status,
+		required: stackState.required,
+		evidenceRefs: stackState.evidenceRefs?.map(sanitizeEvidenceText),
+		blockerRefs: stackState.blockerRefs?.map(sanitizeEvidenceText),
+		reason: sanitizeOptionalStackText(stackState.reason),
+		parentPr: stackState.parentPr,
+		lowerPrs: stackState.lowerPrs ? [...stackState.lowerPrs] : undefined,
+		baseSha: sanitizeOptionalStackText(stackState.baseSha),
+	};
+}
+
 /** Project validated closeout evidence into compact harness-next metadata. */
 function prCloseoutMeta(
 	evidence: HarnessNextPrCloseoutEvidence,
@@ -87,7 +113,7 @@ function prCloseoutMeta(
 			blockers: summarizeBlockers(report.blockers),
 			reviewThreads: report.reviewThreads,
 			checks: report.checks,
-			stackState: report.stackState ?? null,
+			stackState: sanitizeStackState(report.stackState),
 		},
 	};
 }

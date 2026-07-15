@@ -58,6 +58,33 @@ describe("stack-aware PR closeout evidence", () => {
 		);
 	});
 
+	it("routes optional unstable stack state to the operator path", () => {
+		const report = buildPrCloseoutReport({
+			pullRequest: {
+				number: 463,
+				state: "OPEN",
+				body: "Refs JSC-463",
+			},
+			stackState: {
+				status: "unstable",
+				required: false,
+				reason: "Lower stack layer is conflicted.",
+			},
+		});
+
+		expect(report.status).toBe("needs_jamie");
+		expect(report.nextAction).toBe("needs_jamie_decision");
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "branch",
+					ref: "stack:state",
+					fixableByCodex: false,
+				}),
+			]),
+		);
+	});
+
 	it("accepts explicitly stable stack evidence without adding a stack blocker", () => {
 		const report = buildPrCloseoutReport({
 			pullRequest: {
@@ -109,6 +136,8 @@ describe("stack-aware PR closeout evidence", () => {
 	it("rejects malformed stack metadata, references, and identifiers", () => {
 		const malformedStates: unknown[] = [
 			{},
+			{ status: "stable" },
+			{ status: "stable", required: false },
 			{ status: "stable", required: "yes" },
 			{ status: "stable", evidenceRefs: [123] },
 			{ status: "stable", blockerRefs: [""] },

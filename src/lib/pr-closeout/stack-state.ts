@@ -63,6 +63,16 @@ function hasValidOptionalStackFields(stack: Record<string, unknown>): boolean {
 	);
 }
 
+/** Require concrete parent, lower-layer, base, or evidence references for stable state. */
+function hasConcreteStableEvidence(stack: Record<string, unknown>): boolean {
+	return (
+		(Array.isArray(stack.evidenceRefs) && stack.evidenceRefs.length > 0) ||
+		(stack.parentPr !== undefined && stack.parentPr !== null) ||
+		(Array.isArray(stack.lowerPrs) && stack.lowerPrs.length > 0) ||
+		(typeof stack.baseSha === "string" && stack.baseSha.trim().length > 0)
+	);
+}
+
 /** Validate optional stacked-PR evidence before it enters the closeout model. */
 export function isPrCloseoutStackState(
 	value: unknown,
@@ -74,7 +84,8 @@ export function isPrCloseoutStackState(
 	return (
 		typeof stack.status === "string" &&
 		STACK_STATUSES.has(stack.status) &&
-		hasValidOptionalStackFields(stack)
+		hasValidOptionalStackFields(stack) &&
+		(stack.status !== "stable" || hasConcreteStableEvidence(stack))
 	);
 }
 
