@@ -105,4 +105,28 @@ describe("stack-aware PR closeout evidence", () => {
 		).toThrow("fixture stackState must be a valid stack state object");
 		expect(isPrCloseoutStackState({ status: "maybe" })).toBe(false);
 	});
+
+	it("rejects malformed stack metadata, references, and identifiers", () => {
+		const malformedStates: unknown[] = [
+			{},
+			{ status: "stable", required: "yes" },
+			{ status: "stable", evidenceRefs: [123] },
+			{ status: "stable", blockerRefs: [""] },
+			{ status: "stable", parentPr: 0 },
+			{ status: "stable", lowerPrs: [0] },
+		];
+
+		for (const stackState of malformedStates) {
+			expect(() =>
+				parseInput(
+					JSON.stringify({
+						pullRequest: { number: 463 },
+						stackState,
+					}),
+					"fixture",
+				),
+			).toThrow("fixture stackState must be a valid stack state object");
+			expect(isPrCloseoutStackState(stackState)).toBe(false);
+		}
+	});
 });
