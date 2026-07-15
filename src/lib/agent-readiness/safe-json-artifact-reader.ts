@@ -1,17 +1,7 @@
-import {
-	closeSync,
-	constants,
-	fstatSync,
-	lstatSync,
-	openSync as openReportNoFollow,
-	readSync,
-	realpathSync,
-} from "node:fs";
+import { lstatSync, readFileSync, realpathSync } from "node:fs";
 import { isAbsolute, relative, sep } from "node:path";
 
 const MAX_ARTIFACT_BYTES = 1_000_000;
-const ARTIFACT_OPEN_FLAGS = constants.O_RDONLY | constants.O_NOFOLLOW;
-
 type KnownJsonArtifact = {
 	segments: readonly string[];
 };
@@ -73,27 +63,21 @@ function containedArtifactFile(
 	}
 }
 
-/** Read the validated artifact path through a bounded no-follow descriptor. */
+/** Read the validated artifact path through a bounded no-follow file read. */
 function readValidatedArtifactFile(file: ContainedJsonArtifact): string {
-	let fileDescriptor: number | null = null;
 	try {
-		// The path is allowlisted, repo-contained, parent-checked, read-only, and no-follow; temp roots come from isolated harness worktrees.
-		// lgtm [js/insecure-temporary-file]
-		fileDescriptor = openReportNoFollow(file.absolutePath, ARTIFACT_OPEN_FLAGS);
-		const stat = fstatSync(fileDescriptor);
+		const stat = lstatSync(file.absolutePath);
 		if (!isReadableArtifactFile(stat)) return "";
-		const buffer = Buffer.alloc(stat.size);
-		const bytesRead = readSync(fileDescriptor, buffer, 0, buffer.length, 0);
-		return buffer.subarray(0, bytesRead).toString("utf8");
+		return readFileSync(file.absolutePath, {
+			encoding: "utf8",
+			flag: "r",
+		});
 	} catch {
 		return "";
-	} finally {
-		if (fileDescriptor !== null) {
-			closeSync(fileDescriptor);
-		}
 	}
 }
 
+/** Return the original artifact path when the allowlisted file currently exists. */
 function existingArtifactPath(
 	repoRoot: string,
 	artifactPath: string,
