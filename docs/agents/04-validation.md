@@ -154,7 +154,11 @@ hosted CI, review threads, tracker state, and merge readiness remain
 `not_checked`.
 
 Use `harness run --command node --json -- --version` for a bounded synchronous
-smoke check. For a queued validation, submit and reconnect explicitly:
+smoke check. Treat the smoke check as passed only when it exits with status 0
+and includes Node version output; a non-zero exit or timeout is failed
+validation that must be investigated and reported to the harness maintainer or
+the owning escalation path. For a queued validation, submit and reconnect
+explicitly:
 
 ```bash
 harness job submit --command pnpm --request-key related-tests --lane validation --json -- test:related

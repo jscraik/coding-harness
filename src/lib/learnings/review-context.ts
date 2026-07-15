@@ -191,12 +191,11 @@ export function buildReviewContext(
 			repo: loaded.artifact.repository,
 			changedFiles,
 			validationPlan,
-			closeout: buildReviewLearningCloseout({
+			closeout: buildUnavailableReviewLearningCloseout({
 				source,
-				sourceFingerprint: loaded.artifact.inputFingerprint,
 				repo: loaded.artifact.repository,
 				changedFiles,
-				matchingLearnings: [],
+				reason: `n.a.: ${validationPlan.error?.message ?? "validation plan generation failed."}`,
 			}),
 		});
 	}

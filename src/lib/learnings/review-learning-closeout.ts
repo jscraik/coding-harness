@@ -114,7 +114,11 @@ export function buildReviewLearningCloseout(
 			...(learning.promotionReason ? { reason: learning.promotionReason } : {}),
 		}));
 	const skippedPromotions = options.matchingLearnings
-		.filter((learning) => learning.promotionStatus !== "enforced")
+		.filter(
+			(learning) =>
+				learning.promotionStatus !== "enforced" ||
+				(learning.enforcedBy?.length ?? 0) === 0,
+		)
 		.map((learning) => ({
 			id: learning.id,
 			usage: learning.usage,
