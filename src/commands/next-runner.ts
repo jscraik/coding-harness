@@ -4,7 +4,7 @@ import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
 import type { DecisionSource } from "../lib/decision/sources.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
 import type { HarnessNextPrCloseoutEvidence } from "./next-pr-closeout.js";
-import { operatorLocalOnlyDecision } from "./next-recommendation-decisions.js";
+import { operatorLocalOnlyDecision } from "./next-operator-local-decision.js";
 import type {
 	HarnessNextWorktreeRole,
 	HarnessNextEvidenceMode,

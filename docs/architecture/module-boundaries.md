@@ -772,6 +772,8 @@ Harness next is a command facade plus decision producer:
 - `src/commands/next-recommendation-decisions.ts`
   - Recommendation builders for no-change, changed-file, and fleet-matrix
     decisions.
+- `src/commands/next-operator-local-decision.ts`
+  - Recommendation builder for changed files excluded from default validation.
 - `src/commands/next-usage-errors.ts`
   - Usage-error decision seam that translates parser failures into blocked
     `HarnessDecision` values.
@@ -780,7 +782,8 @@ The `runHarnessNext` decision path should stay separate from token parsing.
 Agents can evolve CLI flags inside `next-args.ts`, source orchestration inside
 `next-runner.ts`, decision metadata inside `next-decision-meta.ts`, blocked
 decision copy inside `next-blocked-decisions.ts`, recommendations inside
-`next-recommendation-decisions.ts`, and usage-error copy inside
+`next-recommendation-decisions.ts`, operator-local guidance inside
+`next-operator-local-decision.ts`, and usage-error copy inside
 `next-usage-errors.ts` while the runtime decision surface remains locked
 through `runHarnessNext`, `runNextCLI`, and next tests. Future splits should
 prefer evidence-loading seams before adding more branches to

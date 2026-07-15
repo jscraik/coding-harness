@@ -21,6 +21,12 @@ import {
 	RETRYABILITY_BY_NAME,
 	SAFE_FIRST_ALTERNATIVES_BY_NAME,
 	WRITE_COMMANDS,
+	getCommandExecutionCapability,
+	type CommandExecutionCapability,
+} from "./command-capability-rules.js";
+export type {
+	CommandExecutionCapability,
+	CommandResourceLane,
 } from "./command-capability-rules.js";
 export const COMMAND_CATALOG_SCHEMA_VERSION = "harness-command-catalog/v4";
 /** High-level grouping used by command help and machine-readable catalogs. */
@@ -105,6 +111,7 @@ export interface CommandCapability {
 	orchestratedBy: CommandOrchestrator[];
 	agentMode: CommandAgentMode;
 	visibility: CommandVisibility;
+	execution: CommandExecutionCapability;
 }
 /** Versioned command capability catalog emitted by `harness commands --json`. */
 export interface CommandCapabilityCatalogDocument {
@@ -138,7 +145,6 @@ export function parseAgentCatalogMode(
 }
 /**
  * Determine if a command belongs on first-contact agent surfaces.
- *
  * @param name - Command name to test
  * @returns `true` if the command is considered a first-contact command, `false` otherwise.
  */
@@ -233,7 +239,6 @@ function getCommandAgentMode(
 	if (mutability === "write") return "admin";
 	return "orient";
 }
-
 /** Resolves the default discovery layer for a command capability. */
 function getCommandVisibility(
 	name: string,
@@ -248,7 +253,6 @@ function getCommandVisibility(
 	if (primaryAudience === "agent") return "agent";
 	return "advanced";
 }
-
 /** Translates a spec into catalog metadata and derives mutability from effects. */
 export function toCommandCapability(spec: CommandSpec): CommandCapability {
 	const legacyMutability: CommandMutability = WRITE_COMMANDS.has(spec.name)
@@ -294,9 +298,9 @@ export function toCommandCapability(spec: CommandSpec): CommandCapability {
 			orchestratedBy,
 		),
 		visibility: getCommandVisibility(spec.name, tier, primaryAudience),
+		execution: getCommandExecutionCapability(invocationEffects, mutability),
 	};
 }
-
 /**
  * Produce the agent-facing subset of command capabilities limited to first-contact commands and sorted deterministically.
  *
@@ -321,7 +325,6 @@ export function filterAgentCommandCapabilities(
 			return left.name.localeCompare(right.name);
 		});
 }
-
 /** Build the JSON document used by the command capability catalog. */
 export function buildCommandCapabilityCatalogDocument(
 	commands: CommandCapability[],
@@ -333,21 +336,18 @@ export function buildCommandCapabilityCatalogDocument(
 		commands,
 	};
 }
-
 /** Return capability metadata for every registered command spec. */
 export function getCommandCapabilities(
 	specs: CommandSpec[],
 ): CommandCapability[] {
 	return specs.map((spec) => toCommandCapability(spec));
 }
-
 /** Build the full capability catalog document from command specs. */
 export function getCommandCapabilityCatalogDocument(
 	specs: CommandSpec[],
 ): CommandCapabilityCatalogDocument {
 	return buildCommandCapabilityCatalogDocument(getCommandCapabilities(specs));
 }
-
 /** Build the agent-facing capability catalog document from command specs. */
 export function getAgentCommandCapabilityCatalogDocument(
 	specs: CommandSpec[],

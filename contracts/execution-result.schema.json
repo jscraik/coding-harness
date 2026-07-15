@@ -1,0 +1,115 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/execution-result.schema.json",
+	"title": "Harness Local Execution Result",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"runId",
+		"status",
+		"failureClass",
+		"command",
+		"cwd",
+		"requestKey",
+		"fingerprint",
+		"resourceLanes",
+		"parallelSafe",
+		"conflictsWith",
+		"timeoutSeconds",
+		"attempt",
+		"retryDecision",
+		"queueWaitMs",
+		"durationMs",
+		"exitCode",
+		"signal",
+		"artifacts",
+		"artifactError",
+		"nextAction",
+		"claimsBoundary",
+		"replayed"
+	],
+	"properties": {
+		"schemaVersion": { "const": "harness-execution-result/v1" },
+		"runId": { "type": "string", "minLength": 1 },
+		"status": { "enum": ["pass", "fail", "blocked", "timeout", "canceled"] },
+		"failureClass": {
+			"type": ["string", "null"],
+			"enum": [
+				"command_failure",
+				"timeout",
+				"canceled",
+				"blocked_conflict",
+				"request_key_conflict",
+				"environment_failure",
+				"artifact_failure",
+				null
+			]
+		},
+		"command": {
+			"type": "array",
+			"minItems": 1,
+			"items": { "type": "string", "minLength": 1 }
+		},
+		"cwd": { "type": "string", "minLength": 1 },
+		"requestKey": { "type": "string", "minLength": 1 },
+		"fingerprint": { "type": "string", "minLength": 1 },
+		"resourceLanes": { "$ref": "#/definitions/resourceLanes" },
+		"parallelSafe": { "type": "boolean" },
+		"conflictsWith": { "$ref": "#/definitions/resourceLanes" },
+		"timeoutSeconds": { "type": "integer", "minimum": 1 },
+		"attempt": { "type": "integer", "minimum": 1 },
+		"retryDecision": { "enum": ["safe", "conditional", "manual"] },
+		"queueWaitMs": { "type": "integer", "minimum": 0 },
+		"durationMs": { "type": "integer", "minimum": 0 },
+		"exitCode": { "type": ["integer", "null"] },
+		"signal": { "type": ["string", "null"] },
+		"artifacts": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["resultPath", "stdoutPath", "stderrPath"],
+			"properties": {
+				"resultPath": { "type": "string", "minLength": 1 },
+				"stdoutPath": { "type": "string", "minLength": 1 },
+				"stderrPath": { "type": "string", "minLength": 1 }
+			}
+		},
+		"artifactError": { "type": ["string", "null"] },
+		"nextAction": { "type": "string", "minLength": 1 },
+		"claimsBoundary": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"localExecution",
+				"hostedCi",
+				"reviewState",
+				"mergeReadiness"
+			],
+			"properties": {
+				"localExecution": { "enum": ["proven", "not_checked"] },
+				"hostedCi": { "enum": ["proven", "not_checked"] },
+				"reviewState": { "enum": ["proven", "not_checked"] },
+				"mergeReadiness": { "enum": ["proven", "not_checked"] }
+			}
+		},
+		"replayed": { "type": "boolean" }
+	},
+	"definitions": {
+		"resourceLanes": {
+			"type": "array",
+			"uniqueItems": true,
+			"items": {
+				"enum": [
+					"repo-read",
+					"repo-write",
+					"validation",
+					"style",
+					"artifacts",
+					"runtime",
+					"git",
+					"external"
+				]
+			}
+		}
+	}
+}

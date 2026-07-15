@@ -14,6 +14,7 @@ last_validated: 2026-06-19
 - [Validation by change type](#validation-by-change-type)
 - [Docs-only edits](#docs-only-edits)
 - [Code + command behavior edits](#code--command-behavior-edits)
+- [Local execution coordinator](#local-execution-coordinator)
 - [North-star learning loop closeout](#north-star-learning-loop-closeout)
 - [Steering feedback closeout](#steering-feedback-closeout)
 - [Process/agent instruction edits](#processagent-instruction-edits)
@@ -142,6 +143,35 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 - For PR closeout thread truth, use the GitHub GraphQL `reviewThreads` connection or an adapter that preserves `isResolved`, `isOutdated`, path, line, author, and comment URL. Flat comments, check summaries, CodeRabbit summaries, and review decision fields are not sufficient proof that all Codex, CodeRabbit, or human review threads are resolved.
 - For this repository, keep `## Testing` in the PR body structured with `verification_commands`, `verification_outcomes`, and `blocked_steps_reason` so CodeRabbit can evaluate validation evidence deterministically.
 - For pull-requested source-checkout work with changed files that can be evaluated against imported CodeRabbit learning evidence, treat the north-star learning loop as a closeout check: run or explicitly mark `n.a.` for `bash scripts/run-harness-gate.sh learnings gate`, `bash scripts/run-harness-gate.sh review-context`, and `bash scripts/run-harness-gate.sh north-star-feedback` in the PR template evidence.
+
+### Local execution coordinator
+
+The local execution surface has two deliberately separate entrypoints. Use
+`harness run` for one synchronous process and `harness job` for a durable,
+reconnectable local ticket. Both use `shell:false`, persist a validated
+`harness-execution-result/v1` result, and report only local process truth;
+hosted CI, review threads, tracker state, and merge readiness remain
+`not_checked`.
+
+Use `harness run --command node --json -- --version` for a bounded synchronous
+smoke check. For a queueable validation, submit and reconnect explicitly:
+
+```bash
+harness job submit --command pnpm --request-key related-tests --lane validation --json -- test:related
+harness job wait --ticket <ticket> --timeout-seconds 900 --json
+```
+
+All `harness job ... --json` operations use the
+`harness-execution-job-response/v1` envelope. Consumers should branch on its
+`operation`, `outcome`, `timedOut`, `job`, and `jobs` fields; a `wait_timeout`
+outcome means the polling deadline elapsed and does not classify the process
+as an execution timeout.
+
+`harness job` writes a durable `harness-execution-job/v1` record, serializes
+conflicting resource lanes, allows parallel-safe reads to overlap, and records
+cancel requests and stale-worker recovery. It does not claim cockpit,
+runtime-card, hosted-review, tracker, or external mutation state; those remain
+separate follow-up integration lanes.
 - When running `harness linear*` commands (locally or in CI), set
   `LINEAR_API_KEY` in the runtime environment or pass `--token`.
   If secrets are stored in `~/.codex/.env`, inspect that path without

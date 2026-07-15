@@ -1,0 +1,34 @@
+{
+	"schemaVersion": "harness-execution-result/v1",
+	"runId": "00000000-0000-4000-8000-000000000000",
+	"status": "pass",
+	"failureClass": null,
+	"command": ["node", "--version"],
+	"cwd": ".",
+	"requestKey": "example-node-version",
+	"fingerprint": "example-fingerprint",
+	"resourceLanes": ["repo-read"],
+	"parallelSafe": true,
+	"conflictsWith": [],
+	"timeoutSeconds": 300,
+	"attempt": 1,
+	"retryDecision": "safe",
+	"queueWaitMs": 0,
+	"durationMs": 12,
+	"exitCode": 0,
+	"signal": null,
+	"artifacts": {
+		"resultPath": "00000000-0000-4000-8000-000000000000/execution-result.json",
+		"stdoutPath": "00000000-0000-4000-8000-000000000000/stdout.log",
+		"stderrPath": "00000000-0000-4000-8000-000000000000/stderr.log"
+	},
+	"artifactError": null,
+	"nextAction": "No local retry required.",
+	"claimsBoundary": {
+		"localExecution": "proven",
+		"hostedCi": "not_checked",
+		"reviewState": "not_checked",
+		"mergeReadiness": "not_checked"
+	},
+	"replayed": false
+}

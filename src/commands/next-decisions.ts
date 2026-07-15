@@ -13,3 +13,4 @@ export {
 	fleetMatrixArtifactDecision,
 	noChangedFilesDecision,
 } from "./next-recommendation-decisions.js";
+export { operatorLocalOnlyDecision } from "./next-operator-local-decision.js";

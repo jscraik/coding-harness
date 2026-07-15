@@ -16,6 +16,7 @@ last_validated: 2026-05-18
 - [review-gate north-star evidence](#review-gate-north-star-evidence)
 - [Linear and workflow operations](#linear-and-workflow-operations)
 - [Pilot, remediation, and automation](#pilot-remediation-and-automation)
+- [Local execution](#local-execution)
 - [Drift, search, and evidence](#drift-search-and-evidence)
 
 ## Purpose
@@ -159,6 +160,7 @@ Taxonomy note: section headings in this document represent command families. The
 | `agent-rework`      | Emit an `agent-rework/v1` packet from local rework evidence (`--json`)                                                                                                                                                                                                                                                                                                                       |
 | `orient`            | Emit a compact cold-start `harness-orient/v1` packet with next, session-context, agent-readiness context health, preflight receipt status, architecture refs, Project Brain refs, and truth-lane warnings (`--json`, optional `--repo-root`)                                                                                                                                            |
 | `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`)                                                                                                                                                                                                                    |
+| `job`               | Submit, reconnect, wait for, list, or cancel durable local execution tickets (`job submit\|status\|wait\|list\|cancel`, `--json`)                                                                                                                                                                                                         |
 | `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)                                                                                                                                                                                                                           |
 | `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                                                                                                                                                                                                                                   |
 | `next`              | Read-only agent cockpit entrypoint that recommends the next safe existing command (`--json`, optional `--files`, optional `--phase-exit`, optional `--runtime-card`, optional `--pr-closeout`, optional `--fitness-report`, optional `--mode local\|pr\|ci`)                                                                                                                                 |
@@ -271,6 +273,60 @@ Compatibility:
 | `gap-case`       | Manage production gap cases                              |
 | `remediate`      | Plan and run deterministic remediation for findings      |
 | `replay`         | Re-run policy checks from saved snapshots                |
+
+## Local execution
+
+`harness run` is the first local-only execution-coordinator slice. It runs one
+explicit command without a shell, records stdout and stderr under
+`artifacts/agent-runs/<runId>/`, and emits `harness-execution-result/v1` when
+`--json` is supplied.
+
+```bash
+harness run --command node --json -- --version
+harness run --command pnpm --lane validation --timeout-seconds 120 --json -- test:related
+```
+
+Use `--request-key` to make reconnects explicit, `--parallel-safe` only for a
+read-only command that is safe to overlap, and repeat `--lane` to characterize
+resource ownership. The result proves only local process execution;
+hosted-CI, review-thread, tracker, and merge-readiness claims remain
+`not_checked`.
+
+`harness job` adds the persistent local Conductor slice. Submission writes a
+`harness-execution-job/v1` ticket beneath the same artifact root and launches a
+detached local worker. A later process can reconnect by ticket or request key;
+the scheduler persists queue ownership, resource conflicts, cancellation
+requests, worker identity, terminal status, and the linked execution result.
+
+```bash
+harness job submit --command pnpm --request-key related-tests --lane validation --json -- test:related
+harness job status --ticket <ticket> --json
+harness job wait --ticket <ticket> --timeout-seconds 900 --json
+harness job list --json
+harness job cancel --ticket <ticket> --json
+```
+
+Every `harness job ... --json` invocation returns the
+`harness-execution-job-response/v1` envelope with `operation`, `outcome`,
+`timedOut`, `job`, and `jobs`. A `wait` deadline reports `outcome:
+"wait_timeout"` while the ticket remains non-terminal; that signal describes
+the polling deadline, not a process execution timeout.
+
+The default policy is FIFO for conflicting local resource lanes. Parallel-safe
+read jobs can overlap; a reused request key with a changed fingerprint fails
+closed. Stale workers are classified as local `environment_failure` so a
+reconnected operator can decide whether to retry. Job and result claims remain
+local-only: hosted CI, review threads, tracker state, and merge readiness stay
+`not_checked`.
+
+| Command | Purpose |
+| ------- | ------- |
+| `run` | Execute one local process with resource-lane conflict and artifact result tracking |
+| `job submit` | Queue a durable local execution ticket and return its request-key identity |
+| `job list` | List durable local tickets after stale-worker recovery |
+| `job status` | Read one ticket without losing its persisted result or claims boundary |
+| `job wait` | Reconnect and wait for one ticket to become terminal |
+| `job cancel` | Cancel a queued ticket or request cancellation from its running worker |
 
 ## Drift, search, and evidence
 

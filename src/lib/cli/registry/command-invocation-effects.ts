@@ -1,5 +1,6 @@
 import { UI_FAST_EFFECTS } from "./command-invocation-effects-ui.js";
-
+import { EXECUTION_EFFECTS } from "./command-invocation-effects-execution.js";
+import { JOB_EFFECTS } from "./command-invocation-effects-job.js";
 /** The effect classes used to declare command invocation side effects. */
 export type CommandEffectClass =
 	| "pure_read"
@@ -19,7 +20,6 @@ export interface CommandInvocationEffect {
 	rollback: string;
 	expectedEvidence: string[];
 }
-
 /** Derive coarse command mutability from the declared invocation effects. */
 export function getInvocationMutability(
 	effects: readonly CommandInvocationEffect[],
@@ -42,7 +42,6 @@ function effect(
 ): CommandInvocationEffect {
 	return { invocation, ...input };
 }
-
 const PURE_LOCAL: EffectInput = {
 	effectClasses: ["pure_read"],
 	targets: ["repository working tree"],
@@ -235,6 +234,7 @@ const CHARACTERIZED_EFFECTS_BY_NAME: Readonly<
 		}),
 	],
 	"ui:fast": UI_FAST_EFFECTS,
+	job: JOB_EFFECTS,
 	"ui:verify": [
 		effect("ui:verify --mode prepare --json", {
 			effectClasses: ["writes_artifact"],
@@ -352,8 +352,8 @@ const CHARACTERIZED_EFFECTS_BY_NAME: Readonly<
 			expectedEvidence: ["linear-gate JSON result"],
 		}),
 	],
+	run: EXECUTION_EFFECTS,
 };
-
 /** Whether a catalog effect projection is source-characterized by this slice. */
 export function getCommandEffectCharacterization(
 	name: string,

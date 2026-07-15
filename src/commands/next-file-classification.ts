@@ -161,3 +161,16 @@ export function classifyChangedFiles(
 		exclusionReasons,
 	};
 }
+
+/** Project changed-file classification into compact decision metadata. */
+export function changedFileClassificationMeta(
+	classification: ChangedFileClassification | undefined,
+): Record<string, unknown> {
+	if (!classification) return {};
+	return {
+		changedFileClassification: classification.byCategory,
+		validationFileCount: classification.validationFiles.length,
+		excludedChangedFiles: classification.excludedFiles,
+		exclusionReasons: classification.exclusionReasons,
+	};
+}

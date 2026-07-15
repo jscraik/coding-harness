@@ -16,4 +16,8 @@ export const EXPECTED_ARTIFACTS_BY_NAME: Partial<Record<string, string[]>> = {
 	"pattern-scope": ["artifacts/pattern-scope/pattern-scope.json"],
 	"pr-closeout": ["artifacts/pr-closeout/pr-closeout.json"],
 	"feedback-loop-audit": [".harness/feedback-loops/index.json"],
+	job: [
+		"artifacts/agent-runs/<ticket>/job.json",
+		"artifacts/agent-runs/<ticket>/execution-result.json",
+	],
 };
