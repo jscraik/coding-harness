@@ -3,6 +3,7 @@ import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { DEFAULT_CODERABBIT_LOCAL_ARTIFACT } from "./artifact-io.js";
 import {
 	applyLearningEnforcementStatus,
+	DEFAULT_LEARNING_ENFORCEMENT_STATUS_LEDGER,
 	loadLearningEnforcementStatusLedger,
 } from "./enforcement-status.js";
 import { type LearningFileMatch, matchLearningToFile } from "./fuzzy-match.js";
@@ -213,11 +214,12 @@ export function buildReviewContext(
 					source,
 					repo: loaded.artifact.repository,
 					changedFiles,
-					reason: `n.a.: learning enforcement-status ledger is unavailable at ${enforcementStatus.path}.`,
+					reason: `n.a.: learning enforcement-status ledger is unavailable at ${portableLedgerPath(options.enforcementStatusPath)}; generate it with harness learnings promote --write-enforcement-status.`,
 				})
 			: buildReviewLearningCloseout({
 					source,
 					sourceFingerprint: loaded.artifact.inputFingerprint,
+					enforcementFingerprint: enforcementStatus.fingerprint,
 					repo: loaded.artifact.repository,
 					changedFiles,
 					matchingLearnings: applicableLearnings,
@@ -251,6 +253,14 @@ export function buildReviewContext(
 	return result;
 }
 
+/** Keep closeout evidence portable when a caller supplied an absolute ledger path. */
+function portableLedgerPath(ledgerPath: string | undefined): string {
+	return ledgerPath && !isAbsolute(ledgerPath)
+		? ledgerPath
+		: DEFAULT_LEARNING_ENFORCEMENT_STATUS_LEDGER;
+}
+
+/** Write a review-context result while enforcing the repository output boundary. */
 function writeReviewContextResult(
 	result: ReviewContextResult,
 	options: ReviewContextOptions,
@@ -290,6 +300,7 @@ function writeReviewContextResult(
 	}
 }
 
+/** Check that an output path resolves beneath the repository's real root. */
 function isContainedByRealRepoRoot(
 	repoRoot: string,
 	outputPath: string,

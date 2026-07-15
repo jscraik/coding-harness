@@ -107,6 +107,23 @@ describe("buildReviewLearningCloseout", () => {
 		);
 	});
 
+	it("preserves candidate reasons when usage is below the threshold", () => {
+		const candidate = learning("candidate");
+		candidate.usage = 2;
+		candidate.promotionReason = "Awaiting owner review.";
+
+		const result = buildReviewLearningCloseout({
+			source: ".harness/learnings/coderabbit.local.json",
+			repo: "coding-harness",
+			changedFiles: ["src/example.ts"],
+			matchingLearnings: [candidate],
+		});
+
+		expect(result.skippedPromotions[0]?.reason).toBe(
+			"candidate_not_enforced: Awaiting owner review.; below_usage_threshold: 2 uses is below the 25-use promotion threshold.",
+		);
+	});
+
 	it("does not treat malformed enforcement paths as promoted guardrails", () => {
 		const malformed = learning("enforced");
 		(malformed as unknown as { enforcedBy: unknown }).enforcedBy =

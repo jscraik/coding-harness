@@ -106,6 +106,7 @@ describe("runReviewContextCLI", () => {
 		expect(result.closeout).toMatchObject({
 			schemaVersion: "review-learning-closeout/v1",
 			status: "available",
+			enforcementFingerprint: expect.any(String),
 			summary: {
 				matchingLearnings: 2,
 				exactFileMatches: 1,
@@ -180,9 +181,12 @@ describe("runReviewContextCLI", () => {
 			status: "not_applicable",
 			reviewContextEvidence: {
 				status: "n.a.",
-				reason: expect.stringContaining("enforcement-status ledger"),
+				reason: expect.stringContaining(
+					".harness/learnings/enforcement-status.json",
+				),
 			},
 		});
+		expect(result.closeout.reviewContextEvidence.reason).not.toContain(dir);
 	});
 
 	it("emits applicable learnings with validation-plan entries and writes output", () => {

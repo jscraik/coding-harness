@@ -41,6 +41,8 @@ export interface ReviewLearningEvidenceStatus {
 	source: string;
 	/** Fingerprint of the imported source when available. */
 	sourceFingerprint?: string;
+	/** Fingerprint of the enforcement ledger used for promotion decisions. */
+	enforcementFingerprint?: string;
 	/** Concrete reason when the evidence is not applicable or unavailable. */
 	reason?: string;
 }
@@ -55,6 +57,8 @@ export interface ReviewLearningCloseout {
 	source: string;
 	/** Fingerprint of the imported learning artifact when available. */
 	sourceFingerprint?: string;
+	/** Fingerprint of the enforcement ledger used for promotion decisions. */
+	enforcementFingerprint?: string;
 	/** Repository identified by the imported learning artifact. */
 	repo: string;
 	/** Changed files used for matching. */
@@ -85,6 +89,8 @@ export interface ReviewLearningCloseoutOptions {
 	source: string;
 	/** Fingerprint of the imported learning artifact. */
 	sourceFingerprint?: string;
+	/** Fingerprint of the enforcement ledger used for promotion decisions. */
+	enforcementFingerprint?: string;
 	/** Repository identified by the imported learning artifact. */
 	repo: string;
 	/** Changed files used for matching. */
@@ -145,6 +151,9 @@ export function buildReviewLearningCloseout(
 		...(options.sourceFingerprint
 			? { sourceFingerprint: options.sourceFingerprint }
 			: {}),
+		...(options.enforcementFingerprint
+			? { enforcementFingerprint: options.enforcementFingerprint }
+			: {}),
 		repo: options.repo,
 		changedFiles: [...options.changedFiles],
 		reviewContextEvidence: {
@@ -152,6 +161,9 @@ export function buildReviewLearningCloseout(
 			source: options.source,
 			...(options.sourceFingerprint
 				? { sourceFingerprint: options.sourceFingerprint }
+				: {}),
+			...(options.enforcementFingerprint
+				? { enforcementFingerprint: options.enforcementFingerprint }
 				: {}),
 		},
 		matchingLearnings: options.matchingLearnings,
@@ -237,17 +249,27 @@ function promotionSkipReason(
 	if (learning.promotionStatus === "non_goal") {
 		return `non_goal: ${learning.promotionReason ?? "the enforcement ledger records this learning as outside the promotion goal."}`;
 	}
-	if (learning.usage < minUsage) {
-		return `below_usage_threshold: ${learning.usage} uses is below the ${minUsage}-use promotion threshold.`;
-	}
 	if (learning.promotionStatus === "unreviewed") {
 		return "unreviewed: no promotion decision has been recorded in the enforcement ledger.";
 	}
 	if (learning.promotionStatus === "candidate") {
-		return `candidate_not_enforced: ${learning.promotionReason ?? "usage qualifies for promotion review, but no concrete enforced guardrail is recorded."}`;
+		return `candidate_not_enforced: ${learning.promotionReason ?? "usage qualifies for promotion review, but no concrete enforced guardrail is recorded."}${belowUsageSuffix(learning, minUsage)}`;
 	}
 	if (learning.promotionStatus === "accepted") {
-		return `accepted_not_enforced: ${learning.promotionReason ?? "the learning is accepted for promotion, but no concrete enforced guardrail is recorded."}`;
+		return `accepted_not_enforced: ${learning.promotionReason ?? "the learning is accepted for promotion, but no concrete enforced guardrail is recorded."}${belowUsageSuffix(learning, minUsage)}`;
+	}
+	if (learning.usage < minUsage) {
+		return `below_usage_threshold: ${learning.usage} uses is below the ${minUsage}-use promotion threshold.`;
 	}
 	return `not_enforced: promotion status ${learning.promotionStatus} has no concrete enforced guardrail.`;
+}
+
+/** Include the usage threshold context without discarding a recorded ledger reason. */
+function belowUsageSuffix(
+	learning: ReviewContextLearning,
+	minUsage: number,
+): string {
+	return learning.usage < minUsage
+		? `; below_usage_threshold: ${learning.usage} uses is below the ${minUsage}-use promotion threshold.`
+		: "";
 }
