@@ -75,4 +75,19 @@ describe("jsonArtifactEvidence", () => {
 
 		expect(readJsonArtifact(repoRoot, reportPath, [reportPath])).toBe("");
 	});
+
+	it("does not read an allowlisted JSON artifact when the file is a symlink", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "safe-json-artifact-"));
+		const outsideRoot = mkdtempSync(join(tmpdir(), "safe-json-outside-"));
+		tempDirs.push(repoRoot, outsideRoot);
+		const reportPath = "artifacts/report.json";
+		mkdirSync(join(repoRoot, "artifacts"), { recursive: true });
+		writeFileSync(join(outsideRoot, "report.json"), '{"status":"pass"}');
+		symlinkSync(
+			join(outsideRoot, "report.json"),
+			join(repoRoot, "artifacts", "report.json"),
+		);
+
+		expect(readJsonArtifact(repoRoot, reportPath, [reportPath])).toBe("");
+	});
 });

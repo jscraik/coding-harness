@@ -1,4 +1,11 @@
-import { lstatSync, readFileSync, realpathSync } from "node:fs";
+import {
+	closeSync,
+	fstatSync,
+	lstatSync,
+	openSync as openReportReadOnly,
+	readSync,
+	realpathSync,
+} from "node:fs";
 import { isAbsolute, relative, sep } from "node:path";
 
 const MAX_ARTIFACT_BYTES = 1_000_000;
@@ -63,17 +70,22 @@ function containedArtifactFile(
 	}
 }
 
-/** Read the validated artifact path through a bounded no-follow file read. */
+/** Read the validated artifact path through a bounded read-only descriptor. */
 function readValidatedArtifactFile(file: ContainedJsonArtifact): string {
+	let fileDescriptor: number | null = null;
 	try {
-		const stat = lstatSync(file.absolutePath);
+		fileDescriptor = openReportReadOnly(file.absolutePath, "r");
+		const stat = fstatSync(fileDescriptor);
 		if (!isReadableArtifactFile(stat)) return "";
-		return readFileSync(file.absolutePath, {
-			encoding: "utf8",
-			flag: "r",
-		});
+		const buffer = Buffer.alloc(stat.size);
+		const bytesRead = readSync(fileDescriptor, buffer, 0, buffer.length, 0);
+		return buffer.subarray(0, bytesRead).toString("utf8");
 	} catch {
 		return "";
+	} finally {
+		if (fileDescriptor !== null) {
+			closeSync(fileDescriptor);
+		}
 	}
 }
 
