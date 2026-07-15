@@ -17,7 +17,7 @@ type KnownJsonArtifact = {
 };
 
 type ContainedJsonArtifact = {
-	realPath: string;
+	absolutePath: string;
 };
 
 /** Return discovered JSON artifact paths within the repo boundary. */
@@ -41,6 +41,7 @@ export function readJsonArtifact(
 	return file === null ? "" : readValidatedArtifactFile(file);
 }
 
+/** Resolve an allowlisted artifact path only after repo containment checks pass. */
 function containedArtifactFile(
 	repoRoot: string,
 	artifactPath: string,
@@ -56,23 +57,27 @@ function containedArtifactFile(
 		if (absolutePath === null || escapesRepoRoot(realRepoRoot, absolutePath)) {
 			return null;
 		}
+		const artifact = knownArtifact(artifactPath, allowedPaths);
+		if (artifact === null || !hasSafeArtifactParents(realRepoRoot, artifact)) {
+			return null;
+		}
 		const stat = lstatSync(absolutePath);
 		if (!isReadableArtifactFile(stat)) return null;
 		const realPath = realpathSync(absolutePath);
 		if (escapesRepoRoot(realRepoRoot, realPath)) return null;
-		if (knownArtifact(artifactPath, allowedPaths) === null) return null;
 		return {
-			realPath,
+			absolutePath,
 		};
 	} catch {
 		return null;
 	}
 }
 
+/** Read the validated artifact path through a bounded no-follow descriptor. */
 function readValidatedArtifactFile(file: ContainedJsonArtifact): string {
 	let fileDescriptor: number | null = null;
 	try {
-		fileDescriptor = openReportNoFollow(file.realPath, ARTIFACT_OPEN_FLAGS);
+		fileDescriptor = openReportNoFollow(file.absolutePath, ARTIFACT_OPEN_FLAGS);
 		const stat = fstatSync(fileDescriptor);
 		if (!isReadableArtifactFile(stat)) return "";
 		const buffer = Buffer.alloc(stat.size);
