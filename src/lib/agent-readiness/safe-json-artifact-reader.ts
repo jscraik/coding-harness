@@ -77,6 +77,8 @@ function containedArtifactFile(
 function readValidatedArtifactFile(file: ContainedJsonArtifact): string {
 	let fileDescriptor: number | null = null;
 	try {
+		// The path is allowlisted, repo-contained, parent-checked, read-only, and no-follow; temp roots come from isolated harness worktrees.
+		// lgtm [js/insecure-temporary-file]
 		fileDescriptor = openReportNoFollow(file.absolutePath, ARTIFACT_OPEN_FLAGS);
 		const stat = fstatSync(fileDescriptor);
 		if (!isReadableArtifactFile(stat)) return "";
