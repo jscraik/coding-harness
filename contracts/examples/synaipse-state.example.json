@@ -1,0 +1,37 @@
+{
+	"schemaVersion": "synaipse-state/v1",
+	"generatedAt": "2026-07-11T23:00:00Z",
+	"repository": {
+		"name": "jscraik/coding-harness",
+		"branch": "codex/jsc-443-synaipse-slice2-routine-cockpit",
+		"baseRef": "origin/main",
+		"headSha": "8288bf2263873a93dd3697a0758610430b1d8c95",
+		"baseSha": "8288bf2263873a93dd3697a0758610430b1d8c95",
+		"clean": true
+	},
+	"stage": "handoff",
+	"task": {
+		"status": "pass",
+		"objective": "Confirm the repository is ready when no changed files are detected."
+	},
+	"authority": {
+		"owner": "codex",
+		"humanRequired": false
+	},
+	"truthLaneBlockers": [],
+	"admittedCapabilities": ["harness next"],
+	"evidenceRefs": ["git:status"],
+	"nextAction": "Run harness check --json to confirm repo readiness.",
+	"invocationEffects": {
+		"effectClasses": ["pure_read"],
+		"targets": ["repository metadata and local evidence"],
+		"writesFiles": false,
+		"mutatesGit": false,
+		"mutatesExternal": false
+	},
+	"freshness": {
+		"status": "current",
+		"observedAt": "2026-07-11T23:00:00Z"
+	},
+	"claimBoundary": "Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure."
+}

@@ -1,0 +1,26 @@
+{
+	"schemaVersion": "synaipse-improvement-case/v1",
+	"caseId": "ch_case_7K4M2P9QX3DR",
+	"observedAt": "2026-07-13T14:00:00Z",
+	"observation": "Repeated stale collector evidence required manual steering.",
+	"classification": "systemic",
+	"siblingInventory": ["admission guardrail", "phase heartbeat"],
+	"candidates": [
+		{
+			"mechanism": "validator",
+			"disposition": "selected",
+			"rationale": "Fail closed before routing."
+		},
+		{
+			"mechanism": "prompt reminder",
+			"disposition": "rejected",
+			"rationale": "Does not prevent recurrence."
+		}
+	],
+	"selectedMechanism": "validator",
+	"canary": "Run Slice 3 admission with stale collector fixture.",
+	"measurement": "Zero implementation routes when collector evidence is stale.",
+	"disposition": "change",
+	"owner": "SynAIpse",
+	"retirementCondition": "Remove after two clean release cycles with no recurrence."
+}

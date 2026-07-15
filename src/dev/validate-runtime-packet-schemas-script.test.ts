@@ -115,11 +115,10 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(report).toMatchObject({
 			schemaVersion: "runtime-packet-schema-validation/v1",
 			status: "pass",
-			packetCount: 25,
+			packetCount: 28,
 			errors: [],
 		});
 	});
-
 	it("rejects harness-native ratchets that claim Codex or delivery truth", () => {
 		const root = createTempRoot("agent-native-boundary-claims-");
 		const packet = readJson(
@@ -162,7 +161,6 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 			]),
 		);
 	});
-
 	it("rejects non-harness authority in harness-native advisory packets", () => {
 		const root = createTempRoot("session-distill-native-authority-");
 		const packet = readJson(
@@ -194,7 +192,6 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 			]),
 		);
 	});
-
 	it("rejects top-level packet sourceKind values that contradict the packet kind", () => {
 		const root = createTempRoot("session-distill-source-kind-");
 		const packet = readJson(
@@ -222,7 +219,6 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 			]),
 		);
 	});
-
 	it("rejects ratchet sourceKind values that contradict the ratchet id", () => {
 		const root = createTempRoot("agent-native-ratchet-source-kind-");
 		const packet = readJson(
@@ -256,7 +252,6 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 			]),
 		);
 	});
-
 	it("rejects unknown agent-native claim tokens at the schema boundary", () => {
 		const root = createTempRoot("agent-native-unknown-claim-");
 		const packet = readJson(
@@ -288,7 +283,6 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 			"mayClaim[1] must be one of schema enum values",
 		);
 	});
-
 	it("keeps ReplayPacket/v1 examples aligned with the TypeScript validator", () => {
 		const packet = readJson("contracts/examples/replay-packet.example.json");
 
@@ -297,7 +291,6 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 			errors: [],
 		});
 	});
-
 	it("keeps ReplayPacket/v1 semantic validators aligned on replay kind failures", () => {
 		const root = createTempRoot("replay-packet-invalid-kind-");
 		const packet = {
@@ -320,7 +313,6 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		expect(scriptResult.status).toBe(1);
 		expect(scriptResult.stdout).toContain("replayKind");
 	});
-
 	it("keeps ReplayPacket/v1 schema validation aligned on hook provenance ref kinds", () => {
 		const root = createTempRoot("replay-packet-invalid-hook-ref-kind-");
 		const packet = readJson(
@@ -364,7 +356,6 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 			]),
 		);
 	});
-
 	it("keeps ReplayPacket/v1 semantic validators aligned on produced artifact ref kinds", () => {
 		const root = createTempRoot("replay-packet-invalid-produced-artifact-ref-");
 		const packet = readJson(
@@ -407,7 +398,6 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 			"hookProvenance[0].producedArtifactRefs[0].refKind",
 		);
 	});
-
 	it("keeps ReplayPacket/v1 semantic validators aligned on stale orientation contradictions", () => {
 		const root = createTempRoot("replay-packet-stale-orientation-");
 		const packet = {
@@ -725,6 +715,40 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 				expect.stringContaining("uses unsupported JSON Schema keyword oneOf"),
 			]),
 		);
+	});
+
+	it.each([
+		"if",
+		"then",
+		"contains",
+	])("fails when an unsupported keyword is nested under %s", (branch) => {
+		const badSchema = {
+			...(readJson("contracts/evidence-receipt.schema.json") as Record<
+				string,
+				unknown
+			>),
+			[branch]: { oneOf: [{ type: "object" }] },
+		};
+		const badSchemaPath = join(
+			createTempRoot(`runtime-packet-schema-nested-${branch}-keyword-`),
+			`evidence-receipt-nested-${branch}-keyword.schema.json`,
+		);
+		writeFileSync(badSchemaPath, JSON.stringify(badSchema, null, 2));
+		const result = runValidator([
+			"--manifest",
+			manifestWithEntryPatch("evidence-receipt/v1", (entry) => ({
+				...entry,
+				schemaPath: badSchemaPath,
+			})),
+		]);
+		expect(result.status).toBe(1);
+		expect(JSON.parse(result.stdout)).toMatchObject({
+			errors: [
+				expect.stringContaining(
+					`.${branch} uses unsupported JSON Schema keyword oneOf`,
+				),
+			],
+		});
 	});
 
 	it("rejects decision-request examples with whitespace-only evidence refs", () => {

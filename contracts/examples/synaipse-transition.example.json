@@ -1,0 +1,27 @@
+{
+	"schemaVersion": "synaipse-transition/v1",
+	"transitionId": "ch_transition_7K4M2P9QX3DR",
+	"fromStage": "build",
+	"toStage": "prove",
+	"repositorySha": "63be2371437239c657d80b0a1b2709923bbb262d",
+	"evidence": {
+		"currentSha": "63be2371437239c657d80b0a1b2709923bbb262d",
+		"refs": ["github:refs/heads/main", "collector:current"],
+		"observedAt": "2026-07-13T14:00:00Z",
+		"hostedMain": {
+			"remote": "https://github.com/jscraik/coding-harness.git",
+			"ref": "refs/heads/main",
+			"sha": "63be2371437239c657d80b0a1b2709923bbb262d",
+			"observedAt": "2026-07-13T14:00:00Z"
+		}
+	},
+	"authority": {
+		"owner": "codex",
+		"standing": true,
+		"capabilities": ["transition:build->prove"]
+	},
+	"vitalDecision": { "required": false, "question": null },
+	"waiver": null,
+	"recovery": null,
+	"decidedAt": "2026-07-13T14:00:00Z"
+}

@@ -102,6 +102,10 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   read/write label from those effects; leave commands that are not yet characterized on the
   conservative legacy projection, and require an explicit flag before a
   diagnostic command writes an artifact by default.
+- Local execution coordinator changes are local process-truth surfaces. Keep
+  `harness run`/`harness job` docs, generated architecture context, contracts,
+  and agent-governance guidance synchronized without treating local job proof
+  as hosted CI, review, tracker, or merge-readiness truth.
 - Required status checks and code scanning are separate merge lanes: this repo's
   status checks are `pr-pipeline`, `security-scan`, and `CodeRabbit`;
   public code scanning is the `CodeQL` ruleset backed by
@@ -165,6 +169,21 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   tests, generated architecture context, and operator docs; `orient`, `prove`,
   `repair`, `review`, and `handoff` must route operator work without collapsing
   CI, review-thread, tracker, external-readiness, or merge-readiness claims.
+- SynAIpse routine cockpit state is an additive `synaipse-state/v1` projection:
+  `next` owns routine orientation while `orient` remains a compatibility/admin
+  surface. Keep its schema, runtime-packet manifest, validators, focused tests,
+  and operator docs synchronized; the projection is orientation evidence, not
+  CI, review-thread, tracker, external-readiness, delivery-truth, or
+  merge-readiness proof.
+- SynAIpse context-plane changes must keep `synaipse-context-catalog/v1`,
+  `synaipse-context-ref/v1`, `synaipse-task-context/v1`, and
+  `synaipse-state/v1` synchronized across schemas, runtime validators, package
+  exports, state projection, `next`, focused tests, generated architecture
+  context, and operator docs. Resolve task-selected read-only metadata before
+  changed-file inspection and fail closed on invalid required context; optional
+  failures remain reasoned unknowns. Persist logical references and digests, not
+  provider bodies, and do not project private Jamie Brain content into hosted CI
+  or public PRs.
 - North-star contract fields are executable workflow authority, not prose-only
   branding. Keep `northStar.mantra` and `northStar.personalStandards`
   synchronized across `harness.contract.json`, schema/type validators, scaffold

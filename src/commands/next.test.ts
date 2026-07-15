@@ -32,6 +32,7 @@ import {
 	type RuntimeCard,
 	validateRuntimeCard,
 } from "../lib/runtime/runtime-card.js";
+import { validateSynaipseState } from "../lib/synaipse/state.js";
 import { parseGitStatusShort, runHarnessNext, runNextCLI } from "./next.js";
 import {
 	classifyChangedFile,
@@ -98,6 +99,66 @@ function createGitRepoWithCommit(): string {
 		},
 	);
 	return repoRoot;
+}
+
+function nextContextInput(): Record<string, unknown> {
+	const digest = `sha256:${"a".repeat(64)}`;
+	const contextId = "ch_context_7K4M2P9QX3DR";
+	return {
+		catalog: {
+			schemaVersion: "synaipse-context-catalog/v1",
+			catalogId: "ch_catalog_N8RT5V2K6WQJ",
+			projectId: "ch_project_M4X9D7CP2HKT",
+			repository: "jscraik/coding-harness",
+			refs: [
+				{
+					schemaVersion: "synaipse-context-ref/v1",
+					contextId,
+					kind: "specification",
+					authority: "repository_authority",
+					privacy: {
+						classification: "internal",
+						allowedConsumers: ["local_agent"],
+						prohibitedDestinations: ["public_pr"],
+					},
+					lifecycle: { status: "current", supersededBy: null },
+					stages: ["build"],
+					requirement: "required",
+					provider: { kind: "repository", reference: "docs/spec.md" },
+					digest,
+					freshness: {
+						observedAt: "2026-07-13T22:00:00Z",
+						expiresAt: "2026-07-14T22:00:00Z",
+					},
+				},
+			],
+		},
+		taskContext: {
+			schemaVersion: "synaipse-task-context/v1",
+			taskContextId: "ch_taskctx_2F7K9MT4RXQD",
+			projectId: "ch_project_M4X9D7CP2HKT",
+			taskId: "JSC-458",
+			baseSha: "dbcef1a8d831b9388160d8941437a50e2549d847",
+			outcome: "Resolve task-admitted context.",
+			nonGoals: ["Read private bodies"],
+			selectedRefs: [{ contextId, digest }],
+			proofRefs: ["linear:JSC-458"],
+			privacy: "internal",
+			vitalDecisions: [],
+			refreshTriggers: ["context_digest_changed"],
+			admittedAt: "2026-07-13T22:00:00Z",
+		},
+		acceptedAuthorities: ["repository_authority"],
+		stage: "build",
+		consumer: "local_agent",
+		destination: "local_task",
+		observedAt: "2026-07-13T22:00:00Z",
+		observations: [{ contextId, status: "available", digest }],
+	};
+}
+
+function matchingRepositoryIdentity() {
+	return "jscraik/coding-harness";
 }
 
 function hePayloadFor(gateId: HeGateId): HeGatePayload {
@@ -355,6 +416,268 @@ describe("classifyChangedFiles", () => {
 });
 
 describe("runHarnessNext", () => {
+	it("resolves task-admitted context before changed-file inspection", () => {
+		const inspectChangedFiles = vi.fn(() => []);
+		const decision = runHarnessNext({
+			synaipseContext: nextContextInput(),
+			readRepositoryName: matchingRepositoryIdentity,
+			inspectChangedFiles,
+			agentReadinessContext: passingAgentReadinessContext(),
+		});
+		const state = decision.meta?.synaipseState as
+			| { contextRefs?: unknown[] }
+			| undefined;
+
+		expect(inspectChangedFiles).toHaveBeenCalledOnce();
+		expect(state?.contextRefs).toEqual([
+			{
+				contextId: "ch_context_7K4M2P9QX3DR",
+				digest: `sha256:${"a".repeat(64)}`,
+			},
+		]);
+	});
+
+	it("blocks invalid live context before changed-file inspection", () => {
+		const inspectChangedFiles = vi.fn(() => []);
+		const input = nextContextInput();
+		input.acceptedAuthorities = ["accepted_task_contract"];
+
+		const decision = runHarnessNext({
+			synaipseContext: input,
+			readRepositoryName: matchingRepositoryIdentity,
+			inspectChangedFiles,
+		});
+
+		expect(inspectChangedFiles).not.toHaveBeenCalled();
+		expect(decision).toMatchObject({
+			status: "blocked",
+			failureClass: "access_denied",
+		});
+	});
+
+	it("blocks missing task-admitted context before changed-file inspection", () => {
+		const inspectChangedFiles = vi.fn(() => []);
+		const input = nextContextInput();
+		const catalog = input.catalog as {
+			refs: Array<{ contextId: string }>;
+		};
+		catalog.refs[0]!.contextId = "ch_context_Q6PV8R3N5ZWA";
+
+		const decision = runHarnessNext({
+			synaipseContext: input,
+			readRepositoryName: matchingRepositoryIdentity,
+			inspectChangedFiles,
+		});
+
+		expect(inspectChangedFiles).not.toHaveBeenCalled();
+		expect(decision).toMatchObject({
+			status: "blocked",
+			failureClass: "missing_context",
+		});
+	});
+
+	it("projects optional context unknowns into cockpit state", () => {
+		const input = nextContextInput();
+		const catalog = input.catalog as {
+			refs: Array<{ requirement: string }>;
+		};
+		catalog.refs[0]!.requirement = "optional";
+		input.observations = [
+			{
+				contextId: "ch_context_7K4M2P9QX3DR",
+				status: "provider_unavailable",
+			},
+		];
+		const decision = runHarnessNext({
+			synaipseContext: input,
+			readRepositoryName: matchingRepositoryIdentity,
+			inspectChangedFiles: () => [],
+			agentReadinessContext: passingAgentReadinessContext(),
+		});
+		const state = decision.meta?.synaipseState as
+			| { contextUnknowns?: unknown[] }
+			| undefined;
+		expect(state?.contextUnknowns).toEqual([
+			{
+				contextId: "ch_context_7K4M2P9QX3DR",
+				reason: "provider_unavailable",
+			},
+		]);
+	});
+
+	it("preserves optional unknowns when required context blocks", () => {
+		const input = nextContextInput();
+		const catalog = input.catalog as {
+			refs: Array<Record<string, unknown>>;
+		};
+		const taskContext = input.taskContext as {
+			selectedRefs: Array<Record<string, unknown>>;
+		};
+		const optionalId = "ch_context_Q6PV8R3N5ZWA";
+		catalog.refs.push({
+			...structuredClone(catalog.refs[0]),
+			contextId: optionalId,
+			requirement: "optional",
+		});
+		taskContext.selectedRefs.push({
+			contextId: optionalId,
+			digest: `sha256:${"a".repeat(64)}`,
+		});
+		input.observations = [
+			{ contextId: "ch_context_7K4M2P9QX3DR", status: "unavailable" },
+			{ contextId: optionalId, status: "provider_unavailable" },
+		];
+
+		const decision = runHarnessNext({
+			synaipseContext: input,
+			readRepositoryName: matchingRepositoryIdentity,
+			inspectChangedFiles: () => {
+				throw new Error("changed files must not be inspected");
+			},
+		});
+		const state = decision.meta?.synaipseState as
+			| { contextUnknowns?: unknown[] }
+			| undefined;
+		expect(decision.failureClass).toBe("missing_context");
+		expect(state?.contextUnknowns).toEqual([
+			{ contextId: optionalId, reason: "provider_unavailable" },
+		]);
+	});
+
+	it("blocks context bound to a different repository", () => {
+		const inspectChangedFiles = vi.fn(() => []);
+		const input = nextContextInput();
+		(input.catalog as Record<string, unknown>).repository = "other/project";
+		const decision = runHarnessNext({
+			synaipseContext: input,
+			readRepositoryName: matchingRepositoryIdentity,
+			inspectChangedFiles,
+		});
+		expect(inspectChangedFiles).not.toHaveBeenCalled();
+		expect(decision).toMatchObject({
+			status: "blocked",
+			failureClass: "context_project_mismatch",
+		});
+	});
+
+	it("uses the injected repository identity adapter for matching context", () => {
+		const inspectChangedFiles = vi.fn(() => []);
+		const readRepositoryName = vi.fn(() => "jscraik/coding-harness");
+		const decision = runHarnessNext({
+			synaipseContext: nextContextInput(),
+			readRepositoryName,
+			inspectChangedFiles,
+			agentReadinessContext: passingAgentReadinessContext(),
+		});
+
+		expect(readRepositoryName).toHaveBeenCalledOnce();
+		expect(inspectChangedFiles).toHaveBeenCalledOnce();
+		expect(decision.status).toBe("pass");
+	});
+
+	it("blocks before changed-file inspection when the identity adapter mismatches", () => {
+		const inspectChangedFiles = vi.fn(() => []);
+		const readRepositoryName = vi.fn(() => "other/repository");
+		const decision = runHarnessNext({
+			synaipseContext: nextContextInput(),
+			readRepositoryName,
+			inspectChangedFiles,
+		});
+
+		expect(readRepositoryName).toHaveBeenCalledOnce();
+		expect(inspectChangedFiles).not.toHaveBeenCalled();
+		expect(decision).toMatchObject({
+			status: "blocked",
+			failureClass: "context_project_mismatch",
+		});
+	});
+
+	it("fails closed when repository identity is unavailable", () => {
+		const inspectChangedFiles = vi.fn(() => []);
+		const decision = runHarnessNext({
+			synaipseContext: nextContextInput(),
+			readRepositoryName: () => null,
+			inspectChangedFiles,
+		});
+
+		expect(inspectChangedFiles).not.toHaveBeenCalled();
+		expect(decision).toMatchObject({
+			status: "blocked",
+			failureClass: "context_repository_identity_unavailable",
+		});
+	});
+
+	it("does not relabel unexpected repository adapter failures as malformed context", () => {
+		const inspectChangedFiles = vi.fn(() => []);
+		const adapterError = new Error("identity adapter failed");
+
+		expect(() =>
+			runHarnessNext({
+				synaipseContext: nextContextInput(),
+				readRepositoryName: () => {
+					throw adapterError;
+				},
+				inspectChangedFiles,
+			}),
+		).toThrow(adapterError);
+		expect(inspectChangedFiles).not.toHaveBeenCalled();
+	});
+
+	it("fails closed on malformed context before changed-file inspection", () => {
+		const inspectChangedFiles = vi.fn(() => []);
+		const decision = runHarnessNext({
+			synaipseContext: {},
+			readRepositoryName: matchingRepositoryIdentity,
+			inspectChangedFiles,
+		});
+
+		expect(inspectChangedFiles).not.toHaveBeenCalled();
+		expect(decision).toMatchObject({
+			status: "blocked",
+			failureClass: "malformed_context",
+		});
+	});
+
+	it("emits a validated synaipse-state/v1 cockpit projection", () => {
+		const repoRoot = createGitRepoWithCommit();
+		try {
+			const decision = runHarnessNext({
+				repoRoot,
+				inspectChangedFiles: () => [],
+				agentReadinessContext: passingAgentReadinessContext(),
+			});
+			const state = (decision.meta as { synaipseState?: unknown } | undefined)
+				?.synaipseState;
+
+			expect(state).toMatchObject({
+				schemaVersion: "synaipse-state/v1",
+				stage: "handoff",
+				task: {
+					status: "pass",
+					objective:
+						"Confirm the repository is ready when no changed files are detected.",
+				},
+				truthLaneBlockers: [],
+				admittedCapabilities: ["harness next"],
+				evidenceRefs: ["git:status"],
+				nextAction: "Run harness check --json to confirm repo readiness.",
+				invocationEffects: {
+					effectClasses: ["pure_read"],
+					writesFiles: false,
+				},
+				freshness: { status: "current" },
+				claimBoundary: expect.stringContaining("does not prove"),
+				repository: {
+					branch: expect.any(String),
+					headSha: expect.any(String),
+				},
+			});
+			expect(validateSynaipseState(state)).toEqual({ valid: true, errors: [] });
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
 	it("recommends a safe validation command from changed files", () => {
 		const decision = runHarnessNext({
 			files: ["src/commands/next.ts"],
@@ -1674,7 +1997,19 @@ describe("runNextCLI", () => {
 			"Use --mode local, --mode pr, or --mode ci.",
 		);
 		expect(decision.retry).toBe("manual");
-		expect(decision).toEqual(directDecision);
+		expect(directDecision.status).toBe("blocked");
+		expect(directDecision.failureClass).toBe("invalid_mode");
+		expect(
+			(decision.meta as { synaipseState?: unknown }).synaipseState,
+		).toBeDefined();
+		expect(
+			(directDecision.meta as { synaipseState?: unknown }).synaipseState,
+		).toBeDefined();
+		expect(
+			validateSynaipseState(
+				(decision.meta as { synaipseState: unknown }).synaipseState,
+			),
+		).toEqual({ valid: true, errors: [] });
 	});
 
 	it("emits a usage decision for empty --files values", () => {

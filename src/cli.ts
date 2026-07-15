@@ -48,11 +48,13 @@ function printUsage(options: { includeExpertCommands?: boolean } = {}): void {
 
 	console.info("Usage: harness <command> [options]");
 	console.info("");
-	console.info("Start here: harness orient --json");
+	console.info("Start here: harness next --json");
 	console.info("");
 	console.info("Agent memory rule:");
-	console.info("  Run harness orient --json first for cold-start context.");
-	console.info("  Use harness next --json when you only need the next action.");
+	console.info(
+		"  Run harness next --json first for compact route and orientation.",
+	);
+	console.info("  Use harness orient --json only for legacy compatibility.");
 	console.info("");
 	const helpRows = getRegistryCommandHelpRows({
 		includeExpert: includeExpertCommands,

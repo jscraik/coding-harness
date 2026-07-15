@@ -1,0 +1,74 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/synaipse-improvement-case.schema.json",
+	"title": "SynAIpse Improvement Case",
+	"$comment": "Semantic validation is required to bind selectedMechanism to the one selected candidate; use validateSynaipseImprovementCase from src/lib/synaipse/improvement-case.ts.",
+	"type": "object",
+	"additionalProperties": false,
+	"$defs": {
+		"nonBlankString": {
+			"type": "string",
+			"minLength": 1,
+			"pattern": "\\S"
+		}
+	},
+	"required": [
+		"schemaVersion",
+		"caseId",
+		"observedAt",
+		"observation",
+		"classification",
+		"siblingInventory",
+		"candidates",
+		"selectedMechanism",
+		"canary",
+		"measurement",
+		"disposition",
+		"owner",
+		"retirementCondition"
+	],
+	"properties": {
+		"schemaVersion": { "const": "synaipse-improvement-case/v1" },
+		"caseId": { "$ref": "#/$defs/nonBlankString" },
+		"observedAt": {
+			"type": "string",
+			"format": "date-time",
+			"pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$"
+		},
+		"observation": { "$ref": "#/$defs/nonBlankString" },
+		"classification": { "enum": ["local", "systemic"] },
+		"siblingInventory": {
+			"type": "array",
+			"minItems": 1,
+			"items": { "$ref": "#/$defs/nonBlankString" }
+		},
+		"candidates": {
+			"type": "array",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["mechanism", "disposition", "rationale"],
+				"properties": {
+					"mechanism": { "$ref": "#/$defs/nonBlankString" },
+					"disposition": { "enum": ["selected", "rejected"] },
+					"rationale": { "$ref": "#/$defs/nonBlankString" }
+				}
+			},
+			"contains": {
+				"type": "object",
+				"properties": { "disposition": { "const": "selected" } }
+			},
+			"minContains": 1,
+			"maxContains": 1
+		},
+		"selectedMechanism": { "$ref": "#/$defs/nonBlankString" },
+		"canary": { "$ref": "#/$defs/nonBlankString" },
+		"measurement": { "$ref": "#/$defs/nonBlankString" },
+		"disposition": {
+			"enum": ["retain", "change", "consolidate", "delete", "block"]
+		},
+		"owner": { "$ref": "#/$defs/nonBlankString" },
+		"retirementCondition": { "$ref": "#/$defs/nonBlankString" }
+	}
+}

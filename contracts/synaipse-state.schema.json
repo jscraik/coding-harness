@@ -1,0 +1,154 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/synaipse-state.schema.json",
+	"title": "SynAIpse State",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"generatedAt",
+		"repository",
+		"stage",
+		"task",
+		"authority",
+		"truthLaneBlockers",
+		"admittedCapabilities",
+		"evidenceRefs",
+		"nextAction",
+		"invocationEffects",
+		"freshness",
+		"claimBoundary"
+	],
+	"properties": {
+		"schemaVersion": { "const": "synaipse-state/v1" },
+		"generatedAt": { "type": "string", "format": "date-time" },
+		"repository": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["name", "branch", "baseRef", "headSha", "baseSha", "clean"],
+			"properties": {
+				"name": { "type": ["string", "null"], "minLength": 1 },
+				"branch": { "type": ["string", "null"], "minLength": 1 },
+				"baseRef": { "type": ["string", "null"], "minLength": 1 },
+				"headSha": { "type": ["string", "null"], "minLength": 1 },
+				"baseSha": { "type": ["string", "null"], "minLength": 1 },
+				"clean": { "type": ["boolean", "null"] }
+			}
+		},
+		"stage": {
+			"enum": ["orient", "verify", "review", "repair", "handoff"]
+		},
+		"task": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["status", "objective"],
+			"properties": {
+				"status": {
+					"enum": ["pass", "fail", "blocked", "action_required"]
+				},
+				"objective": { "type": "string", "minLength": 1 }
+			}
+		},
+		"authority": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["owner", "humanRequired"],
+			"properties": {
+				"owner": { "enum": ["codex", "operator"] },
+				"humanRequired": { "type": "boolean" }
+			}
+		},
+		"truthLaneBlockers": {
+			"type": "array",
+			"items": { "type": "string", "minLength": 1, "pattern": "\\S" }
+		},
+		"admittedCapabilities": {
+			"type": "array",
+			"minItems": 1,
+			"items": { "type": "string", "minLength": 1, "pattern": "\\S" }
+		},
+		"evidenceRefs": {
+			"type": "array",
+			"minItems": 1,
+			"items": { "type": "string", "minLength": 1, "pattern": "\\S" }
+		},
+		"contextRefs": {
+			"type": "array",
+			"uniqueItems": true,
+			"description": "Entries are keyed by contextId. Runtime validation rejects repeated contextId values and cross-collection collisions with contextUnknowns; uniqueItems also rejects exact duplicate objects.",
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["contextId", "digest"],
+				"properties": {
+					"contextId": {
+						"type": "string",
+						"pattern": "^ch_context_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
+					},
+					"digest": {
+						"type": "string",
+						"pattern": "^sha256:[0-9a-f]{64}$"
+					}
+				}
+			}
+		},
+		"contextUnknowns": {
+			"type": "array",
+			"uniqueItems": true,
+			"description": "Entries are keyed by contextId. Runtime validation rejects repeated contextId values and cross-collection collisions with contextRefs; uniqueItems also rejects exact duplicate objects.",
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["contextId", "reason"],
+				"properties": {
+					"contextId": {
+						"type": "string",
+						"pattern": "^ch_context_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
+					},
+					"reason": {
+						"enum": [
+							"missing_context",
+							"provider_unavailable",
+							"unresolved_host_path"
+						]
+					}
+				}
+			}
+		},
+		"nextAction": { "type": "string", "minLength": 1 },
+		"invocationEffects": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"effectClasses",
+				"targets",
+				"writesFiles",
+				"mutatesGit",
+				"mutatesExternal"
+			],
+			"properties": {
+				"effectClasses": {
+					"const": ["pure_read"]
+				},
+				"targets": {
+					"type": "array",
+					"minItems": 1,
+					"items": { "type": "string", "minLength": 1, "pattern": "\\S" }
+				},
+				"writesFiles": { "const": false },
+				"mutatesGit": { "const": false },
+				"mutatesExternal": { "const": false }
+			}
+		},
+		"freshness": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["status", "observedAt"],
+			"properties": {
+				"status": { "enum": ["current", "unknown"] },
+				"observedAt": { "type": "string", "format": "date-time" }
+			}
+		},
+		"claimBoundary": { "type": "string", "minLength": 1 }
+	}
+}

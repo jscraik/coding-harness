@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-24
+last_validated: 2026-07-14
 ---
 
 # Agent governance
@@ -72,6 +72,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   share one repo-scoped uv runtime boundary.
 - preflight or Local Memory enforcement changes should keep `AGENTS.md`, `README.md`, `docs/agents/02-tooling-policy.md`, `docs/agents/03-local-memory.md`, `docs/agents/06-security-and-governance.md`, and this guide synchronized; legacy positional `scripts/codex-preflight.sh` invocations must default to required Local Memory mode unless `off` or `optional` is explicitly supplied
 - architecture-context refresh changes should update `docs/agents/00-architecture-bootstrap.md`; Flow Ops closure-evidence, E2E runner, or eval artifact changes that trigger that refresh should keep `AGENTS.md` and this guide synchronized when docs-gate reports the agent-governance category
+- local execution coordinator changes that add or alter `harness run`,
+  `harness job`, local job persistence, or execution-result contracts should
+  keep `AGENTS.md`, generated architecture context, contracts, CLI docs, and
+  this guide synchronized while preserving the boundary between local process
+  proof and hosted CI, review, tracker, or merge-readiness truth
 - observed eval telemetry from CircleCI, session, or OpenTelemetry exports remains
   bounded and redacted input evidence until a validated consumer promotes it;
   keep `AGENTS.md`, the architecture bootstrap guide, this guide, and generated
@@ -154,6 +159,21 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   (`orient`, `prove`, `repair`, `review`, `handoff`) is guidance for the next
   operator question and must not become CI, review-thread, tracker,
   external-readiness, delivery-truth, or merge-readiness proof.
+- SynAIpse routine cockpit changes should keep the additive `synaipse-state/v1`
+  projection synchronized across its schema, runtime-packet manifest,
+  validators, focused tests, generated architecture context, `AGENTS.md`, and
+  `docs/agents/00-architecture-bootstrap.md`; `next` owns routine orientation
+  and `orient` remains a compatibility/admin surface. This state projection is
+  orientation evidence only and must not become CI, review-thread, tracker,
+  external-readiness, delivery-truth, or merge-readiness proof.
+- SynAIpse context-plane changes should keep `synaipse-context-catalog/v1`,
+  `synaipse-context-ref/v1`, `synaipse-task-context/v1`, and
+  `synaipse-state/v1` synchronized across schemas, runtime validators, package
+  exports, state projection, `next`, focused tests, generated architecture
+  context, `AGENTS.md`, and the architecture bootstrap. Resolution is read-only
+  and precedes changed-file inspection; required context fails closed, optional
+  failures remain reasoned unknowns, and only logical references plus digests may
+  cross hosted or public boundaries.
 - runtime-card trace-out changes should keep trace persistence in
   `src/lib/runtime-trace/`, reuse canonical run-record append/manifest
   helpers, constrain `--trace-out` to

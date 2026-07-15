@@ -1,7 +1,6 @@
 import type { CommandAgentCatalogMode } from "./command-capabilities.js";
 
 const AGENT_ORIENT_COMMAND_NAMES = [
-	"orient",
 	"next",
 	"agent-readiness",
 	"agent-native-ratchets",
@@ -53,4 +52,4 @@ export const AGENT_CATALOG_COMMAND_NAMES: Readonly<
 	handoff: AGENT_HANDOFF_COMMAND_NAMES,
 };
 
-export const FIRST_CONTACT_COMMAND_NAMES = new Set<string>(["orient", "next"]);
+export const FIRST_CONTACT_COMMAND_NAMES = new Set<string>(["next"]);

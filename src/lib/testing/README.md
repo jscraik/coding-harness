@@ -18,6 +18,11 @@ context and expected behavior, not only the mismatched value.
 at least one behavior assertion. Add new trust-boundary evidence suites to
 the manifest when their failures affect closeout, delivery-truth, external
 state, runtime-card, Local Memory, browser evidence, or policy-gate decisions.
+SynAIpse context selection belongs in this manifest because privacy, authority,
+freshness, and required-context failures can block an admitted task. Assign an
+explicit suite owner and proving command to every context-plane entry; the
+required command is `pnpm run quality:behavior-tests`, which must exit
+successfully. A failure blocks closeout until it is repaired and rerun.
 
 Each manifest entry includes:
 

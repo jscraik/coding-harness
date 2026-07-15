@@ -34,8 +34,8 @@ function inferRiskTier(files: string[]): HarnessDecision["riskTier"] {
 		? "medium"
 		: "low";
 }
-
 type NextRecommendationCandidate = RecommendationCandidate & { argv: string[] };
+/** Build a candidate command recommendation for changed-file validation. */
 function createRecommendationCandidate(args: {
 	mode: HarnessNextMode;
 	files: string[];

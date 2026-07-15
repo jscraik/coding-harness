@@ -3,6 +3,10 @@ import type { HarnessDecision } from "../lib/decision/harness-decision.js";
 import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
 import type { DecisionSource } from "../lib/decision/sources.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
+import {
+	readSynaipseRepositoryName,
+	withSynaipseState,
+} from "../lib/synaipse/state.js";
 import type { HarnessNextPrCloseoutEvidence } from "./next-pr-closeout.js";
 import { operatorLocalOnlyDecision } from "./next-operator-local-decision.js";
 import type {
@@ -18,6 +22,7 @@ import {
 	resolveHarnessNextState,
 	type HarnessNextReadyState,
 } from "./next-runner-state.js";
+import { resolveOptionalNextContext } from "./next-synaipse-context.js";
 
 /** Options for the read-only harness next decision producer. */
 export interface HarnessNextOptions {
@@ -43,6 +48,10 @@ export interface HarnessNextOptions {
 	evidenceMode?: HarnessNextEvidenceMode;
 	/** Worktree posture requested for next recommendations. */
 	worktreeRole?: HarnessNextWorktreeRole;
+	/** Optional caller-supplied catalog, task snapshot, policy, and observations. */
+	synaipseContext?: unknown;
+	/** Test seam for the read-only repository identity adapter. */
+	readRepositoryName?: (repoRoot: string) => string | null;
 }
 
 /** Build shared evidence metadata for recommendation decisions. */
@@ -123,10 +132,29 @@ function changedFilesRecommendation(
 export function runHarnessNext(
 	options: HarnessNextOptions = {},
 ): HarnessDecision {
+	const repoRoot = options.repoRoot ?? process.cwd();
+	const context = resolveOptionalNextContext(
+		options.synaipseContext,
+		repoRoot,
+		options.readRepositoryName ?? readSynaipseRepositoryName,
+	);
+	if (context.decision)
+		return withSynaipseState(
+			context.decision,
+			repoRoot,
+			context.refs,
+			context.unknowns,
+		);
 	const resolution = resolveHarnessNextState(options);
-	if (resolution.kind === "decision") return resolution.decision;
-	if (hasOnlyExcludedChangedFiles(resolution)) {
-		return operatorLocalOnlyNextDecision(resolution);
-	}
-	return changedFilesRecommendation(resolution);
+	if (resolution.kind === "decision")
+		return withSynaipseState(
+			resolution.decision,
+			repoRoot,
+			context.refs,
+			context.unknowns,
+		);
+	const decision = hasOnlyExcludedChangedFiles(resolution)
+		? operatorLocalOnlyNextDecision(resolution)
+		: changedFilesRecommendation(resolution);
+	return withSynaipseState(decision, repoRoot, context.refs, context.unknowns);
 }

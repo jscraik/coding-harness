@@ -1,0 +1,31 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/synaipse-context-catalog.schema.json",
+	"title": "SynAIpse Context Catalog",
+	"description": "Project-scoped context metadata. Document bodies are intentionally excluded.",
+	"type": "object",
+	"additionalProperties": false,
+	"required": ["schemaVersion", "catalogId", "projectId", "repository", "refs"],
+	"properties": {
+		"schemaVersion": { "const": "synaipse-context-catalog/v1" },
+		"catalogId": {
+			"type": "string",
+			"pattern": "^ch_catalog_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
+		},
+		"projectId": {
+			"type": "string",
+			"pattern": "^ch_project_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
+		},
+		"repository": {
+			"type": "string",
+			"pattern": "^[0-9A-Za-z._-]+/[0-9A-Za-z._-]+$"
+		},
+		"refs": {
+			"type": "array",
+			"minItems": 1,
+			"uniqueItems": true,
+			"description": "Entries are keyed by contextId. The runtime parser rejects repeated contextId values even when metadata differs; uniqueItems also rejects exact duplicate objects.",
+			"items": { "$ref": "./synaipse-context-ref.schema.json" }
+		}
+	}
+}
