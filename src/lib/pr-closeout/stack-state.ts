@@ -25,11 +25,6 @@ function isStringArray(value: unknown): value is string[] {
 	);
 }
 
-/** Return whether a value is a non-array object record. */
-function isObjectRecord(value: unknown): value is Record<string, unknown> {
-	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
 /** Validate optional stack evidence-reference arrays. */
 function hasValidStackReferences(stack: Record<string, unknown>): boolean {
 	return (
@@ -72,11 +67,14 @@ function hasValidOptionalStackFields(stack: Record<string, unknown>): boolean {
 export function isPrCloseoutStackState(
 	value: unknown,
 ): value is PrCloseoutStackState {
-	if (!isObjectRecord(value)) return false;
+	if (value === null || typeof value !== "object" || Array.isArray(value)) {
+		return false;
+	}
+	const stack = value as Record<string, unknown>;
 	return (
-		typeof value.status === "string" &&
-		STACK_STATUSES.has(value.status) &&
-		hasValidOptionalStackFields(value)
+		typeof stack.status === "string" &&
+		STACK_STATUSES.has(stack.status) &&
+		hasValidOptionalStackFields(stack)
 	);
 }
 
