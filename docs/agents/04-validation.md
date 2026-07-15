@@ -148,13 +148,17 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 
 The local execution surface has two deliberately separate entrypoints. Use
 `harness run` for one synchronous process and `harness job` for a durable,
-reconnectable local ticket. Both use `shell:false`, persist a validated
+persistent local ticket. Both use `shell:false`, persist a validated
 `harness-execution-result/v1` result, and report only local process truth;
 hosted CI, review threads, tracker state, and merge readiness remain
 `not_checked`.
 
 Use `harness run --command node --json -- --version` for a bounded synchronous
-smoke check. For a queueable validation, submit and reconnect explicitly:
+smoke check. Treat the smoke check as passed only when it exits with status 0
+and includes Node version output; a non-zero exit or timeout is failed
+validation that must be investigated and reported to the harness maintainer or
+the owning escalation path. For a queued validation, submit and reconnect
+explicitly:
 
 ```bash
 harness job submit --command pnpm --request-key related-tests --lane validation --json -- test:related
@@ -200,6 +204,22 @@ Required evidence:
 3. In this source checkout, run `bash scripts/run-harness-gate.sh north-star-feedback --source .harness/learnings/coderabbit.local.json --json`, or mark `n.a.` when no learning artifact exists.
 4. Promote any high-usage repeated learning only when the finding has a concrete enforcement destination: validator, gate, scaffold regression, generated-artifact rule, review-context fact, or explicit exception.
 5. Promote the durable distilled rule, decision, or explicit skip reason into Project Brain when the learning affects future planning or agent behavior; keep the imported learning artifact as operational evidence rather than copying every row into Project Brain.
+
+`harness review-context --files <changed-files> --json` also emits an advisory
+`review-learning-closeout/v1` projection. It records the changed files,
+matching historical learnings, exact-file versus advisory keyword matches,
+guardrails with concrete `enforcedBy` paths, and every matched learning that
+was skipped with an explicit promotion reason. When the imported artifact or
+enforcement ledger is unavailable, the projection remains present with
+`status: not_applicable` and a concrete `n.a.` reason; it does not silently
+turn missing evidence into a clean result. Keyword-only fuzzy matches remain
+advisory measurement data and never become a blocking promotion claim from
+this artifact alone.
+
+The closeout is evidence for learning and rework triage only. Its claim
+boundary explicitly excludes validation, review approval, hosted CI,
+acceptance, release, and merge readiness. Keep those truth lanes separate in
+the PR body and final handoff.
 
 The `--files` value accepts comma-separated paths or multiple following path tokens.
 Use plain `harness ...` for downstream or installed-package contexts, not for source-checkout PR closeout evidence.
