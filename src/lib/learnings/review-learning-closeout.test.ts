@@ -91,6 +91,20 @@ describe("buildReviewLearningCloseout", () => {
 		});
 	});
 
+	it("counts exact matches across every changed file", () => {
+		const exactLearning = learning("candidate");
+		exactLearning.matches = [exactLearning.match, { ...exactLearning.match }];
+
+		const result = buildReviewLearningCloseout({
+			source: ".harness/learnings/coderabbit.local.json",
+			repo: "coding-harness",
+			changedFiles: ["src/example.ts", "src/other.ts"],
+			matchingLearnings: [exactLearning],
+		});
+
+		expect(result.summary.exactFileMatches).toBe(2);
+	});
+
 	it("keeps recorded candidate reasons in skipped promotions", () => {
 		const candidate = learning("candidate");
 		candidate.promotionReason = "Needs a measured false-positive sample.";

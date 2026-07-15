@@ -1,4 +1,5 @@
 import type { ReviewContextLearning } from "./review-context.js";
+import type { LearningFileMatch } from "./fuzzy-match.js";
 import type { LearningPromotionStatus } from "./types.js";
 
 /** Schema version for the advisory review/rework learning closeout projection. */
@@ -132,16 +133,13 @@ export function buildReviewLearningCloseout(
 			matchedFiles: [...learning.matchedFiles],
 			reason: promotionSkipReason(learning, minUsage),
 		}));
-	const exactFileMatches = options.matchingLearnings.filter(
-		(learning) => learning.match.kind === "exact_file",
-	).length;
-	const advisoryFuzzyMatches = options.matchingLearnings.reduce(
-		(count, learning) =>
-			count +
-			(learning.matches ?? [learning.match]).filter(
-				(match) => match.advisoryOnly,
-			).length,
-		0,
+	const exactFileMatches = countMatches(
+		options.matchingLearnings,
+		(match) => match.kind === "exact_file",
+	);
+	const advisoryFuzzyMatches = countMatches(
+		options.matchingLearnings,
+		(match) => match.advisoryOnly,
 	);
 
 	return {
@@ -179,6 +177,18 @@ export function buildReviewLearningCloseout(
 		claimBoundary:
 			"Advisory historical-learning evidence only; it does not prove validation, review approval, CI, acceptance, release, or merge readiness.",
 	};
+}
+
+/** Count per-file matches that satisfy a closeout summary predicate. */
+function countMatches(
+	learnings: ReviewContextLearning[],
+	predicate: (match: LearningFileMatch) => boolean,
+): number {
+	return learnings.reduce(
+		(count, learning) =>
+			count + (learning.matches ?? [learning.match]).filter(predicate).length,
+		0,
+	);
 }
 
 /**
