@@ -72,6 +72,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   share one repo-scoped uv runtime boundary.
 - preflight or Local Memory enforcement changes should keep `AGENTS.md`, `README.md`, `docs/agents/02-tooling-policy.md`, `docs/agents/03-local-memory.md`, `docs/agents/06-security-and-governance.md`, and this guide synchronized; legacy positional `scripts/codex-preflight.sh` invocations must default to required Local Memory mode unless `off` or `optional` is explicitly supplied
 - architecture-context refresh changes should update `docs/agents/00-architecture-bootstrap.md`; Flow Ops closure-evidence, E2E runner, or eval artifact changes that trigger that refresh should keep `AGENTS.md` and this guide synchronized when docs-gate reports the agent-governance category
+- local execution coordinator changes that add or alter `harness run`,
+  `harness job`, local job persistence, or execution-result contracts should
+  keep `AGENTS.md`, generated architecture context, contracts, CLI docs, and
+  this guide synchronized while preserving the boundary between local process
+  proof and hosted CI, review, tracker, or merge-readiness truth
 - observed eval telemetry from CircleCI, session, or OpenTelemetry exports remains
   bounded and redacted input evidence until a validated consumer promotes it;
   keep `AGENTS.md`, the architecture bootstrap guide, this guide, and generated

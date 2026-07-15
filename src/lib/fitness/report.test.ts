@@ -35,7 +35,7 @@ describe("buildFitnessReport", () => {
 		expect(report.schemaVersion).toBe("harness-fitness/v1");
 		expect(report.status).toBe("needs_evidence");
 		expect(report.summary).toEqual({
-			lanes: 6,
+			lanes: 10,
 			findings: 0,
 			failures: 0,
 			warnings: 0,
@@ -48,6 +48,10 @@ describe("buildFitnessReport", () => {
 			"pnpm run fitness:lint-artifact",
 			"pnpm run quality:behavior-tests",
 			"pnpm run harness:audit-tracking",
+			"pnpm run coding-policy:route",
+			"pnpm run docs:lifecycle",
+			"pnpm run quality:self-affirming",
+			"pnpm run quality:debt",
 		]);
 		expect(report.coverage).toEqual(
 			expect.arrayContaining([
@@ -127,6 +131,119 @@ describe("buildFitnessReport", () => {
 		expect(report.topDeterministicFinding).toEqual(
 			expect.objectContaining({
 				recommendedCommand: "pnpm architecture:check",
+			}),
+		);
+	});
+
+	it("admits optional capability lanes only when their artifacts are supplied", () => {
+		const dir = mkdtempSync(join(tmpdir(), "fitness-optional-lanes-"));
+		cleanup.push(dir);
+		writeFileSync(
+			join(dir, "agent-routing.json"),
+			JSON.stringify({
+				schemaVersion: "coding-policy-route/v1",
+				policyModules: [],
+				requiredGates: [],
+			}),
+			"utf8",
+		);
+		writeFileSync(
+			join(dir, "documentation-lifecycle.json"),
+			JSON.stringify({
+				status: "fail",
+				violations: [{ path: "docs/README.md", message: "missing metadata" }],
+			}),
+			"utf8",
+		);
+		writeFileSync(
+			join(dir, "test-confidence.json"),
+			JSON.stringify({
+				status: "fail",
+				findings: [
+					{ path: "src/example.test.ts", line: 4, message: "same oracle" },
+				],
+			}),
+			"utf8",
+		);
+		writeFileSync(
+			join(dir, "program-design.json"),
+			JSON.stringify({
+				status: "fail",
+				newDebt: [
+					{ path: "src/legacy.ts", line: 12, detail: "duplicate block" },
+				],
+			}),
+			"utf8",
+		);
+
+		const report = buildFitnessReport({ artifactsDir: dir });
+
+		expect(report.lanes).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					id: "agent-routing",
+					applicability: "admitted",
+					status: "pass",
+				}),
+				expect.objectContaining({
+					id: "documentation-lifecycle",
+					applicability: "admitted",
+					status: "fail",
+				}),
+				expect.objectContaining({
+					id: "test-confidence",
+					applicability: "admitted",
+					status: "fail",
+				}),
+				expect.objectContaining({
+					id: "program-design",
+					applicability: "admitted",
+					status: "fail",
+				}),
+			]),
+		);
+	});
+
+	it("fails closed when an admitted capability artifact is malformed", () => {
+		const dir = mkdtempSync(join(tmpdir(), "fitness-optional-malformed-"));
+		cleanup.push(dir);
+		writeFileSync(join(dir, "agent-routing.json"), "{not-json", "utf8");
+
+		const report = buildFitnessReport({ artifactsDir: dir });
+		const lane = report.lanes.find((entry) => entry.id === "agent-routing");
+
+		expect(lane).toEqual(
+			expect.objectContaining({ applicability: "admitted", status: "fail" }),
+		);
+		expect(lane?.findings[0]).toEqual(
+			expect.objectContaining({ id: "agent-routing:artifact:malformed" }),
+		);
+	});
+
+	it("keeps a quality-debt burn-down warning distinct from malformed evidence", () => {
+		const dir = mkdtempSync(join(tmpdir(), "fitness-program-design-burndown-"));
+		cleanup.push(dir);
+		writeFileSync(
+			join(dir, "program-design.json"),
+			JSON.stringify({
+				status: "warn",
+				newDebt: [],
+				resolvedDebt: [{ id: "old-debt" }],
+			}),
+			"utf8",
+		);
+
+		const report = buildFitnessReport({ artifactsDir: dir });
+		const lane = report.lanes.find((entry) => entry.id === "program-design");
+
+		expect(lane).toEqual(
+			expect.objectContaining({ applicability: "admitted", status: "warn" }),
+		);
+		expect(lane?.findings[0]).toEqual(
+			expect.objectContaining({
+				id: "program-design:burn-down",
+				title: "Program design debt burn-down",
+				severity: "warning",
 			}),
 		);
 	});
@@ -310,6 +427,10 @@ describe("buildFitnessReport", () => {
 			"fail",
 			"fail",
 			"fail",
+			"not_run",
+			"not_run",
+			"not_run",
+			"not_run",
 		]);
 		expect(report.topDeterministicFinding).toEqual(
 			expect.objectContaining({

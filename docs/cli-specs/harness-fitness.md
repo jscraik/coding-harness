@@ -56,13 +56,18 @@ Artifact flags accept explicit JSON artifact paths:
 | `--lint-report <path>` | `pnpm run fitness:lint-artifact` |
 | `--behavior-tests-report <path>` | `pnpm run quality:behavior-tests` |
 | `--audit-tracking-report <path>` | `pnpm run harness:audit-tracking` |
+| `--agent-routing-report <path>` | `pnpm run coding-policy:route` |
+| `--documentation-lifecycle-report <path>` | `pnpm run docs:lifecycle` |
+| `--test-confidence-report <path>` | `pnpm run quality:self-affirming` |
+| `--program-design-report <path>` | `pnpm run quality:debt` |
 | `--advisory-review-report <path>` | `pnpm run autoreview` |
 | `--trend-baseline <path>` | previous `harness-fitness/v1` report |
 
 `--from-existing-artifacts <dir>` discovers conventional artifact names in one
 directory: `architecture.json`, `quality-size.json`, `typecheck.json`,
 `lint.json`, `behavior-tests.json`, `harness-audit-tracking.json`, and optional
-`autoreview.json`.
+`agent-routing.json`, `documentation-lifecycle.json`, `test-confidence.json`,
+`program-design.json`, and `autoreview.json`.
 
 ## Outputs
 
@@ -71,13 +76,35 @@ When `--json` succeeds, stdout emits `harness-fitness/v1`, validated by
 The report includes:
 
 - `lanes`: current local evidence status for deterministic gate artifacts.
+- Each lane may carry additive `capability` and `applicability` metadata.
+  `required` and `admitted` lanes contribute missing-evidence debt; a
+  `blocked` lane remains visible and unresolved; `not_applicable` is explicit
+  absence, never an implicit pass. Older v1 reports without these fields remain
+  valid and retain the required six-lane behavior.
 - `coverage`: anti-pattern and engineering-judgement routing metadata that
  maps TypeScript, Python, config, architecture, API, security, testing,
- observability, CI/CD, accessibility, and AI-agent review concerns to fitness
-  lanes or adjacent required commands. New reports emit this field; consumers
-  still accept older `harness-fitness/v1` artifacts that do not include it.
+ observability, CI/CD, accessibility, expressive intent, boundary correctness,
+ and AI-agent review concerns to fitness lanes or adjacent required commands.
+ New reports emit this field; consumers still accept older `harness-fitness/v1`
+ artifacts that do not include it.
 - `topDeterministicFinding`: the highest-priority non-advisory finding when
   deterministic evidence exists.
+
+The `program-design` lane is the low-level counterpart to architecture
+fitness. It consumes the existing quality-debt ratchet for oversized methods,
+complexity, duplicate blocks, and related structural debt; it does not pretend
+that a Mermaid diagram or a passing typecheck proves clean factoring, narrow
+interfaces, non-leaky abstractions, or maintainable data flow.
+
+The `expressive-intent` and `boundary-correctness` coverage categories are
+explicit routing metadata, not new blocking lanes. Expressive intent routes
+docstring, CODESTYLE, and independent review evidence. Boundary correctness
+routes behavior tests, architecture checks, CODESTYLE, and independent review
+for input/output, integration, error, and corner-case behavior. Fitness does
+not create a speculative dead-code or unused-public-surface producer: the
+repository currently has TypeScript `noUnusedLocals` and `noUnusedParameters`
+checks, but no deterministic unused-export or public-surface artifact admitted
+to `harness-fitness/v1`.
 
 When `--json` hits a usage or runtime error, stdout emits
 `harness-cli-error/v1`, validated by
@@ -108,6 +135,12 @@ validated artifact for that command is present.
 `harness next --fitness-report <path>` may consume validated
 `harness-fitness/v1` reports for route guidance. Trusted deterministic
 recommended commands are centralized in `src/lib/fitness/commands.ts`.
+
+Shift/session closeout consumers may attach a fitness report as
+`localFitness` evidence. That field is deliberately typed as `local_fitness` and
+must state a local-only claim boundary. It cannot establish hosted CI, review,
+tracker, branch, or merge truth. Trend snapshots are advisory history only; they
+never change lane applicability or become authority by themselves.
 
 ## Validation
 

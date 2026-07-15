@@ -1,0 +1,164 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/execution-job-response.schema.json",
+	"title": "Harness Durable Local Execution Job CLI Response",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"operation",
+		"outcome",
+		"timedOut",
+		"job",
+		"jobs"
+	],
+	"properties": {
+		"schemaVersion": { "const": "harness-execution-job-response/v1" },
+		"operation": { "enum": ["submit", "list", "status", "wait", "cancel"] },
+		"outcome": {
+			"enum": [
+				"queued",
+				"running",
+				"pass",
+				"fail",
+				"blocked",
+				"timeout",
+				"canceled",
+				"submitted",
+				"replayed",
+				"request_key_conflict",
+				"listed",
+				"not_found",
+				"wait_timeout"
+			]
+		},
+		"timedOut": { "type": "boolean" },
+		"job": { "anyOf": [{ "$ref": "#/$defs/job" }, { "type": "null" }] },
+		"jobs": {
+			"type": "array",
+			"items": { "$ref": "#/$defs/job" }
+		}
+	},
+	"$defs": {
+		"resourceLanes": {
+			"type": "array",
+			"uniqueItems": true,
+			"items": {
+				"enum": [
+					"repo-read",
+					"repo-write",
+					"validation",
+					"style",
+					"artifacts",
+					"runtime",
+					"git",
+					"external"
+				]
+			}
+		},
+		"claimsBoundary": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"localExecution",
+				"hostedCi",
+				"reviewState",
+				"mergeReadiness"
+			],
+			"properties": {
+				"localExecution": { "enum": ["proven", "not_checked"] },
+				"hostedCi": { "enum": ["proven", "not_checked"] },
+				"reviewState": { "enum": ["proven", "not_checked"] },
+				"mergeReadiness": { "enum": ["proven", "not_checked"] }
+			}
+		},
+		"job": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"schemaVersion",
+				"ticket",
+				"requestKey",
+				"fingerprint",
+				"command",
+				"cwd",
+				"artifactsDir",
+				"resourceLanes",
+				"parallelSafe",
+				"conflictsWith",
+				"timeoutSeconds",
+				"attempt",
+				"retryDecision",
+				"status",
+				"createdAt",
+				"startedAt",
+				"completedAt",
+				"queueWaitMs",
+				"durationMs",
+				"cancelRequested",
+				"pid",
+				"workerPid",
+				"processToken",
+				"resultPath",
+				"failureClass",
+				"nextAction",
+				"claimsBoundary"
+			],
+			"properties": {
+				"schemaVersion": { "const": "harness-execution-job/v1" },
+				"ticket": { "type": "string", "minLength": 1 },
+				"requestKey": { "type": "string", "minLength": 1 },
+				"fingerprint": { "type": "string", "minLength": 1 },
+				"command": {
+					"type": "array",
+					"minItems": 1,
+					"items": { "type": "string", "minLength": 1 }
+				},
+				"cwd": { "type": "string", "minLength": 1 },
+				"artifactsDir": { "type": "string", "minLength": 1 },
+				"resourceLanes": { "$ref": "#/$defs/resourceLanes" },
+				"parallelSafe": { "type": "boolean" },
+				"conflictsWith": { "$ref": "#/$defs/resourceLanes" },
+				"timeoutSeconds": { "type": "integer", "minimum": 1 },
+				"attempt": { "type": "integer", "minimum": 1 },
+				"retryDecision": { "enum": ["safe", "conditional", "manual"] },
+				"status": {
+					"enum": [
+						"queued",
+						"running",
+						"pass",
+						"fail",
+						"blocked",
+						"timeout",
+						"canceled"
+					]
+				},
+				"createdAt": { "type": "string", "format": "date-time" },
+				"startedAt": { "type": ["string", "null"], "format": "date-time" },
+				"completedAt": { "type": ["string", "null"], "format": "date-time" },
+				"queueWaitMs": { "type": "integer", "minimum": 0 },
+				"durationMs": { "type": "integer", "minimum": 0 },
+				"cancelRequested": { "type": "boolean" },
+				"pid": { "type": ["integer", "null"], "minimum": 1 },
+				"workerPid": { "type": ["integer", "null"], "minimum": 1 },
+				"processToken": { "type": ["string", "null"], "minLength": 1 },
+				"resultPath": { "type": ["string", "null"], "minLength": 1 },
+				"failureClass": {
+					"type": ["string", "null"],
+					"enum": [
+						"command_failure",
+						"timeout",
+						"canceled",
+						"blocked_conflict",
+						"request_key_conflict",
+						"environment_failure",
+						"artifact_failure",
+						null
+					]
+				},
+				"nextAction": { "type": "string", "minLength": 1 },
+				"claimsBoundary": { "$ref": "#/$defs/claimsBoundary" }
+			}
+		}
+	}
+}

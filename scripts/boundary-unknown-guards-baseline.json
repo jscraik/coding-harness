@@ -259,14 +259,6 @@
 			"message": "Do not add isRecord here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
 		},
 		{
-			"pattern": "boundary-no-late-unknown:asRecords",
-			"file": "src/lib/fitness/artifact-normalizers.ts",
-			"line": 45,
-			"language": "typescript",
-			"snippet": "function asRecords(value: unknown): Record<string, unknown>[] {",
-			"message": "Do not add asRecords here. This code should not still have unknown or dynamic data at this layer. Fix the upstream parser, schema, API adapter, DTO, config loader, CLI parser, storage decoder, migration importer, or test fixture boundary first, then pass a typed value into this module."
-		},
-		{
 			"pattern": "boundary-no-late-unknown:isRecord",
 			"file": "src/lib/flow-ops/outcome-closeout.ts",
 			"line": 202,

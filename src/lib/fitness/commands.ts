@@ -5,6 +5,10 @@ export const FITNESS_COMMANDS = {
 	LINT_ARTIFACT: "pnpm run fitness:lint-artifact",
 	BEHAVIOR_TESTS: "pnpm run quality:behavior-tests",
 	AUDIT_TRACKING: "pnpm run harness:audit-tracking",
+	AGENT_ROUTING: "pnpm run coding-policy:route",
+	DOCUMENTATION_LIFECYCLE: "pnpm run docs:lifecycle",
+	TEST_CONFIDENCE: "pnpm run quality:self-affirming",
+	PROGRAM_DESIGN: "pnpm run quality:debt",
 	AUTOREVIEW: "pnpm run autoreview",
 } as const;
 
@@ -19,6 +23,10 @@ export const TRUSTED_FITNESS_COMMANDS = new Set<FitnessCommand>([
 	FITNESS_COMMANDS.LINT_ARTIFACT,
 	FITNESS_COMMANDS.BEHAVIOR_TESTS,
 	FITNESS_COMMANDS.AUDIT_TRACKING,
+	FITNESS_COMMANDS.AGENT_ROUTING,
+	FITNESS_COMMANDS.DOCUMENTATION_LIFECYCLE,
+	FITNESS_COMMANDS.TEST_CONFIDENCE,
+	FITNESS_COMMANDS.PROGRAM_DESIGN,
 	FITNESS_COMMANDS.AUTOREVIEW,
 ]);
 

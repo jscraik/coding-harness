@@ -1,23 +1,21 @@
 import {
 	closeSync,
-	constants,
 	fstatSync,
 	lstatSync,
-	openSync as openReportNoFollow,
+	openSync as openReportReadOnly,
 	readSync,
 	realpathSync,
 } from "node:fs";
 import { isAbsolute, relative, sep } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const MAX_ARTIFACT_BYTES = 1_000_000;
-const ARTIFACT_OPEN_FLAGS = constants.O_RDONLY | constants.O_NOFOLLOW;
-
 type KnownJsonArtifact = {
 	segments: readonly string[];
 };
 
 type ContainedJsonArtifact = {
-	realPath: string;
+	absolutePath: string;
 };
 
 /** Return discovered JSON artifact paths within the repo boundary. */
@@ -41,6 +39,7 @@ export function readJsonArtifact(
 	return file === null ? "" : readValidatedArtifactFile(file);
 }
 
+/** Resolve an allowlisted artifact path only after repo containment checks pass. */
 function containedArtifactFile(
 	repoRoot: string,
 	artifactPath: string,
@@ -56,23 +55,27 @@ function containedArtifactFile(
 		if (absolutePath === null || escapesRepoRoot(realRepoRoot, absolutePath)) {
 			return null;
 		}
+		const artifact = knownArtifact(artifactPath, allowedPaths);
+		if (artifact === null || !hasSafeArtifactParents(realRepoRoot, artifact)) {
+			return null;
+		}
 		const stat = lstatSync(absolutePath);
 		if (!isReadableArtifactFile(stat)) return null;
 		const realPath = realpathSync(absolutePath);
 		if (escapesRepoRoot(realRepoRoot, realPath)) return null;
-		if (knownArtifact(artifactPath, allowedPaths) === null) return null;
 		return {
-			realPath,
+			absolutePath,
 		};
 	} catch {
 		return null;
 	}
 }
 
+/** Read the validated artifact path through a bounded read-only descriptor. */
 function readValidatedArtifactFile(file: ContainedJsonArtifact): string {
 	let fileDescriptor: number | null = null;
 	try {
-		fileDescriptor = openReportNoFollow(file.realPath, ARTIFACT_OPEN_FLAGS);
+		fileDescriptor = openReportReadOnly(pathToFileURL(file.absolutePath), "r");
 		const stat = fstatSync(fileDescriptor);
 		if (!isReadableArtifactFile(stat)) return "";
 		const buffer = Buffer.alloc(stat.size);
@@ -87,6 +90,7 @@ function readValidatedArtifactFile(file: ContainedJsonArtifact): string {
 	}
 }
 
+/** Return the original artifact path when the allowlisted file currently exists. */
 function existingArtifactPath(
 	repoRoot: string,
 	artifactPath: string,

@@ -38,7 +38,8 @@
 					"primaryAudience",
 					"orchestratedBy",
 					"agentMode",
-					"visibility"
+					"visibility",
+					"execution"
 				],
 				"properties": {
 					"name": {
@@ -232,6 +233,58 @@
 							"hidden",
 							"legacy"
 						]
+					},
+					"execution": {
+						"type": "object",
+						"additionalProperties": false,
+						"required": [
+							"resourceLanes",
+							"parallelSafe",
+							"conflictsWith",
+							"timeoutSeconds",
+							"cancellable"
+						],
+						"properties": {
+							"resourceLanes": {
+								"type": "array",
+								"minItems": 1,
+								"uniqueItems": true,
+								"items": {
+									"enum": [
+										"repo-read",
+										"repo-write",
+										"validation",
+										"style",
+										"artifacts",
+										"runtime",
+										"git",
+										"external"
+									]
+								}
+							},
+							"parallelSafe": { "type": "boolean" },
+							"conflictsWith": {
+								"type": "array",
+								"uniqueItems": true,
+								"items": {
+									"enum": [
+										"repo-read",
+										"repo-write",
+										"validation",
+										"style",
+										"artifacts",
+										"runtime",
+										"git",
+										"external"
+									]
+								}
+							},
+							"timeoutSeconds": {
+								"type": "integer",
+								"minimum": 1
+							},
+							"cancellable": { "type": "boolean" }
+						}
 					}
 				}
 			}

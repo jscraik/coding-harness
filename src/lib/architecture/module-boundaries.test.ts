@@ -1587,6 +1587,7 @@ const NEXT_CLI_EVIDENCE_SUBMODULES = [
 ] as const;
 const NEXT_DECISION_SUBMODULES = [
 	"./next-blocked-decisions.js",
+	"./next-operator-local-decision.js",
 	"./next-recommendation-decisions.js",
 ] as const;
 const REPLAY_COMMAND_SUBMODULES = [

@@ -41,7 +41,13 @@
 						}
 					},
 					"expectedSchemaVersion": {
-						"enum": ["harness-command-catalog/v4", "harness-decision/v1"]
+						"enum": [
+							"harness-command-catalog/v4",
+							"harness-decision/v1",
+							"harness-cli-error/v1",
+							"harness-execution-result/v1",
+							"harness-execution-job-response/v1"
+						]
 					},
 					"schemaPath": {
 						"type": "string",

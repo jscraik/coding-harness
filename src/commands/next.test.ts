@@ -34,6 +34,10 @@ import {
 } from "../lib/runtime/runtime-card.js";
 import { validateSynaipseState } from "../lib/synaipse/state.js";
 import { parseGitStatusShort, runHarnessNext, runNextCLI } from "./next.js";
+import {
+	classifyChangedFile,
+	classifyChangedFiles,
+} from "./next-file-classification.js";
 
 function captureNextCLI(
 	args: string[],
@@ -370,6 +374,44 @@ describe("parseGitStatusShort", () => {
 		expect(parseGitStatusShort(' M "caf\\303\\251.txt"\n')).toEqual([
 			"café.txt",
 		]);
+	});
+});
+
+describe("classifyChangedFiles", () => {
+	it("keeps operator-local and private-memory paths out of default validation", () => {
+		const result = classifyChangedFiles([
+			".pr463-body.tmp.md",
+			".tessl/memory/index.md",
+			"artifacts/evals/result.json",
+			"src/commands/next.ts",
+		]);
+
+		expect(result.validationFiles).toEqual(["src/commands/next.ts"]);
+		expect(result.excludedFiles).toEqual([
+			".pr463-body.tmp.md",
+			".tessl/memory/index.md",
+			"artifacts/evals/result.json",
+		]);
+		expect(result.exclusionReasons).toEqual({
+			".pr463-body.tmp.md": "operator_local",
+			".tessl/memory/index.md": "private_memory",
+			"artifacts/evals/result.json": "generated",
+		});
+	});
+
+	it("treats explicit file overrides as intentional validation inputs", () => {
+		const result = classifyChangedFiles([".tessl/memory/index.md"], {
+			explicitInclude: true,
+		});
+
+		expect(result.validationFiles).toEqual([".tessl/memory/index.md"]);
+		expect(result.excludedFiles).toEqual([]);
+	});
+
+	it("classifies the tracked durable memory surface separately", () => {
+		expect(classifyChangedFile(".harness/memory/LEARNINGS.md")).toBe(
+			"private_memory",
+		);
 	});
 });
 
@@ -794,6 +836,40 @@ describe("runHarnessNext", () => {
 					writesFiles: false,
 				},
 			},
+		});
+	});
+
+	it("reports excluded operator-local paths without creating an empty file plan", () => {
+		const decision = runHarnessNext({
+			files: [".tessl/memory/index.md"],
+			mode: "local",
+			worktreeRole: "dirty-with-justification",
+		});
+
+		expect(decision.status).toBe("action_required");
+		expect(decision.nextCommand).toBe(
+			"harness validation-plan --files .tessl/memory/index.md --json",
+		);
+		expect(decision.meta).toMatchObject({
+			validationFileCount: 1,
+			excludedChangedFiles: [],
+		});
+	});
+
+	it("provides cleanup guidance when git only reports private-memory paths", () => {
+		const decision = runHarnessNext({
+			inspectChangedFiles: () => [".tessl/memory/index.md"],
+			repoRoot: "/tmp/repo",
+			worktreeRole: "dirty-with-justification",
+		});
+
+		expect(decision.status).toBe("action_required");
+		expect(decision.nextCommand).toBe("harness check --json");
+		expect(decision.nextAction).toContain("explicit --files override");
+		expect(decision.meta).toMatchObject({
+			validationFileCount: 0,
+			excludedChangedFiles: [".tessl/memory/index.md"],
+			exclusionReasons: { ".tessl/memory/index.md": "private_memory" },
 		});
 	});
 

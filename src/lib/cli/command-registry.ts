@@ -4,6 +4,8 @@ import {
 	type CommandAgentMode,
 	type CommandCapability,
 	type CommandCapabilityCatalogDocument,
+	type CommandExecutionCapability,
+	type CommandResourceLane,
 	type CommandCategory,
 	type CommandMutability,
 	type CommandOrchestrator,
@@ -35,6 +37,8 @@ import type { CommandSpec, RegistryDispatchResult } from "./registry/types.js";
 export type {
 	CommandCapability,
 	CommandCapabilityCatalogDocument,
+	CommandExecutionCapability,
+	CommandResourceLane,
 	CommandAgentCatalogMode,
 	CommandAgentMode,
 	CommandCategory,

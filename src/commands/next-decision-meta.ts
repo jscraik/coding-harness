@@ -14,7 +14,8 @@ import type { AgentReadinessContextHealth } from "../lib/agent-readiness/types.j
 import { orientationMeta } from "./next-orientation-meta.js";
 import { decisionMeta, sourceMetaExtra } from "./next-support.js";
 import type { HarnessNextMode } from "./next-decision-types.js";
-
+import { changedFileClassificationMeta } from "./next-file-classification-meta.js";
+import type { ChangedFileClassification } from "./next-file-classification.js";
 type DecisionMetaArgs = Parameters<typeof decisionMeta>[0];
 /** Build a standardized decision scoped to the harness next CLI. */
 export function createNextDecision(
@@ -29,14 +30,12 @@ function phaseExitMeta(
 	if (!phaseExit) return undefined;
 	return { hePhaseExit: normaliseHePhaseExitResult(phaseExit) };
 }
-
+/** Normalize runtime-card evidence when present. */
 function runtimeCardMeta(
 	runtimeCard: RuntimeCard | undefined,
 ): Record<string, unknown> | undefined {
 	if (!runtimeCard) return undefined;
-	return {
-		runtimeCard: normaliseRuntimeCard(runtimeCard),
-	};
+	return { runtimeCard: normaliseRuntimeCard(runtimeCard) };
 }
 
 function agentReadinessContextMeta(
@@ -79,6 +78,7 @@ export function nextDecisionOperationalMeta(args: {
 	mode: HarnessNextMode;
 	filesSource?: "override" | "git";
 	changedFileCount?: number;
+	changedFileClassification?: ChangedFileClassification | undefined;
 	nextCommandArgv?: string[];
 	frictionClass?: Parameters<typeof decisionMeta>[0]["frictionClass"];
 	delayClass?: Parameters<typeof decisionMeta>[0]["delayClass"];
@@ -101,6 +101,7 @@ export function nextDecisionOperationalMeta(args: {
 			...phaseExitMeta(args.phaseExit),
 			...runtimeCardMeta(args.runtimeCard),
 			...agentReadinessContextMeta(args.agentReadinessContext),
+			...changedFileClassificationMeta(args.changedFileClassification),
 			...orientationMeta(),
 		},
 	};

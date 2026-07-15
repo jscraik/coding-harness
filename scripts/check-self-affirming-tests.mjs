@@ -19,6 +19,7 @@ const args = new Set(process.argv.slice(2));
 const repoRoot = resolve(process.cwd());
 const modeAll = args.has("--all");
 const modeStaged = args.has("--staged");
+const modeJson = args.has("--json");
 
 function isTestSource(path) {
 	return (
@@ -242,12 +243,34 @@ const files = collectChangedPaths({ repoRoot, modeAll, modeStaged })
 	.sort((a, b) => a.localeCompare(b));
 
 if (files.length === 0) {
+	if (modeJson) {
+		console.info(
+			JSON.stringify({
+				schemaVersion: "test-confidence/v1",
+				status: "pass",
+				checkedFiles: 0,
+				findings: [],
+			}),
+		);
+		process.exit(0);
+	}
 	console.info("[check-self-affirming-tests] no test files to scan.");
 	process.exit(0);
 }
 
 const findings = files.flatMap(checkFile);
 if (findings.length > 0) {
+	if (modeJson) {
+		console.info(
+			JSON.stringify({
+				schemaVersion: "test-confidence/v1",
+				status: "fail",
+				checkedFiles: files.length,
+				findings,
+			}),
+		);
+		process.exit(1);
+	}
 	console.error(
 		"[check-self-affirming-tests] self-affirming test assertions found:",
 	);
@@ -260,6 +283,18 @@ if (findings.length > 0) {
 		"Use a requirement-derived expected value, fixture, schema, snapshot, or explicit property test instead of the implementation under test as its own oracle.",
 	);
 	process.exit(1);
+}
+
+if (modeJson) {
+	console.info(
+		JSON.stringify({
+			schemaVersion: "test-confidence/v1",
+			status: "pass",
+			checkedFiles: files.length,
+			findings: [],
+		}),
+	);
+	process.exit(0);
 }
 
 console.info(

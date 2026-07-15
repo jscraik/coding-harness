@@ -1,4 +1,5 @@
 import type { HarnessDecisionFrictionClass } from "../decision/harness-decision.js";
+import type { FitnessReport, FitnessStatus } from "../fitness/types.js";
 
 /** Schema version for the first session closeout contract. */
 export const SESSION_CLOSEOUT_SCHEMA_VERSION = "session-closeout/v1" as const;
@@ -38,6 +39,32 @@ export interface SessionCloseoutPullRequestRef {
 	branch?: string;
 }
 
+/** Local fitness evidence attached to a shift/session closeout. */
+export interface SessionCloseoutLocalFitnessEvidence {
+	/** Repository-relative or receipt-relative fitness report reference. */
+	reportRef: string;
+	/** Fitness status observed in the referenced local report. */
+	status: FitnessStatus;
+	/** Mechanical class preventing this evidence from becoming hosted truth. */
+	evidenceClass: "local_fitness";
+	/** Explicit local-only boundary carried with the receipt. */
+	claimBoundary: string;
+}
+
+/** Adapt a validated fitness status into closeout-safe local evidence. */
+export function buildLocalFitnessEvidence(
+	reportRef: string,
+	report: Pick<FitnessReport, "status">,
+): SessionCloseoutLocalFitnessEvidence {
+	return {
+		reportRef,
+		status: report.status,
+		evidenceClass: "local_fitness",
+		claimBoundary:
+			"Local fitness evidence only; it does not prove CI, review, tracker, branch, or merge state.",
+	};
+}
+
 /** Versioned session closeout payload for reporting outcomes and friction. */
 export interface SessionCloseout {
 	/** Schema version for the closeout payload. */
@@ -54,6 +81,8 @@ export interface SessionCloseout {
 	primaryFriction: HarnessDecisionFrictionClass;
 	/** Validation commands and outcomes used as closeout evidence. */
 	validationEvidence: SessionCloseoutValidationEvidence[];
+	/** Optional local fitness report; never a PR, CI, review, tracker, branch, or merge claim. */
+	localFitness?: SessionCloseoutLocalFitnessEvidence;
 	/** Explicit reason when validation evidence is intentionally absent. */
 	noValidationReason?: string;
 	/** Commit SHAs or refs produced by the session. */
@@ -226,6 +255,38 @@ function validatePullRequestRef(
 	}
 }
 
+/** Validate local fitness evidence without accepting hosted truth claims. */
+function validateLocalFitnessEvidence(
+	value: unknown,
+	field: string,
+	errors: string[],
+): void {
+	if (!isRecord(value)) {
+		errors.push(`${field} must be an object`);
+		return;
+	}
+	validateString(value.reportRef, `${field}.reportRef`, errors);
+	validateEnum(
+		value.status,
+		`${field}.status`,
+		["pass", "warn", "fail", "needs_evidence"],
+		errors,
+	);
+	validateEnum(
+		value.evidenceClass,
+		`${field}.evidenceClass`,
+		["local_fitness"],
+		errors,
+	);
+	validateString(value.claimBoundary, `${field}.claimBoundary`, errors);
+	if (
+		typeof value.claimBoundary === "string" &&
+		!/\blocal\b/i.test(value.claimBoundary)
+	) {
+		errors.push(`${field}.claimBoundary must state the local-only boundary`);
+	}
+}
+
 /**
  * Validate an unknown value against the `session-closeout/v1` contract.
  */
@@ -251,6 +312,9 @@ export function validateSessionCloseout(
 		errors,
 	);
 	validateValidationEvidence(value.validationEvidence, errors);
+	if (value.localFitness !== undefined) {
+		validateLocalFitnessEvidence(value.localFitness, "localFitness", errors);
+	}
 	validateOptionalString(
 		value.noValidationReason,
 		"noValidationReason",

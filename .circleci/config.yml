@@ -429,7 +429,7 @@ workflows:
       - run-governance-check:
           name: audit
           check_name: audit
-          command: pnpm audit
+          command: pnpm run audit
           filters:
             tags:
               ignore: /.*/

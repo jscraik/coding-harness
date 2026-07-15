@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-07-14
+last_validated: 2026-07-15
 ---
 
 # Architecture bootstrap
@@ -12,6 +12,7 @@ last_validated: 2026-07-14
 - [Exact behavior evidence](#exact-behavior-evidence)
 - [Refresh workflow](#refresh-workflow)
 - [Deterministic Fingerprints](#deterministic-fingerprints)
+- [Local execution coordinator](#local-execution-coordinator)
 - [Stop conditions](#stop-conditions)
 
 ## Purpose
@@ -83,6 +84,18 @@ registry adapters describe catalog shape, and option parsing, policy, behavior,
 and presentation live in the named owner module. Update the registry and
 `src/lib/architecture/module-boundaries.test.ts` when a new family adopts this
 split, then refresh generated architecture context when docs-gate requires it.
+
+## Local execution coordinator
+
+The local execution architecture has two command facades: `harness run` for a
+single synchronous process and `harness job` for a durable resume ticket.
+The runtime owner is `src/lib/execution/`; checked-in contracts under
+`contracts/execution-*.schema.json` define the persisted job, result, and JSON
+response boundaries. Resource lanes, worker identity, cancellation, and stale
+recovery remain local scheduler concerns. These surfaces prove local process
+truth only; hosted CI, review state, tracker state, and merge readiness must be
+represented by their separate evidence owners.
+
 For north-star contract/scaffold updates that affect workflow authority, update
 this guide and `docs/agents/07b-agent-governance.md` together in the same PR.
 The executable north-star contract includes the compact mantra and personal

@@ -10,6 +10,8 @@ import { runContextCLI } from "../../../commands/context.js";
 import { runContractCLI } from "../../../commands/contract.js";
 import { runDiffBudgetCLI } from "../../../commands/diff-budget.js";
 import { runEjectCLI } from "../../../commands/eject.js";
+import { runExecutionCLI } from "../../../commands/execution-run.js";
+import { runExecutionJobCLI } from "../../../commands/execution-job.js";
 import { runFitnessCLI } from "../../../commands/fitness.js";
 import { runIndexContextCLI } from "../../../commands/index-context.js";
 import { runLearningsCLI } from "../../../commands/learnings.js";
@@ -323,6 +325,21 @@ export const COMMAND_SPECS: CommandSpec[] = [
 				json: jsonFlag,
 			});
 		},
+	},
+	{
+		name: "run",
+		summary:
+			"Run one local command through the conflict-aware execution coordinator",
+		example: "run --command node --json -- --version",
+		errorLabel: "Execution Run Error",
+		execute: (args) => runExecutionCLI(args),
+	},
+	{
+		name: "job",
+		summary: "Submit and reconnect to durable local execution tickets",
+		example: "job submit --command node --json -- --version",
+		errorLabel: "Execution Job Error",
+		execute: (args) => runExecutionJobCLI(args),
 	},
 	createObservabilityGateCommandSpec(),
 	createGapCaseCommandSpec(),

@@ -3649,6 +3649,11 @@ function runRequiredCheckNameParityFixture(scenario, fixturePath) {
 			owner: "CodeQL",
 			lane: "security",
 		},
+		{
+			name: "Semgrep Cloud",
+			owner: "Semgrep Cloud",
+			lane: "external_security",
+		},
 	];
 	const observedChecks = [
 		...contractChecks,
@@ -3680,6 +3685,10 @@ function runRequiredCheckNameParityFixture(scenario, fixturePath) {
 			parity.securityLane === "CodeQL",
 		),
 		assertion(
+			"Semgrep Cloud remains independent external security check",
+			parity.externalSecurityLane === "Semgrep Cloud",
+		),
+		assertion(
 			"GitHub Actions fallback is not promoted into required gates",
 			parity.fallbackPromoted === false,
 		),
@@ -3698,6 +3707,7 @@ function evaluateRequiredCheckParity(contractChecks, observedChecks) {
 		primaryGate: byLane.get("primary_ci"),
 		independentReview: byLane.get("independent_review"),
 		securityLane: byLane.get("security"),
+		externalSecurityLane: byLane.get("external_security"),
 		fallbackPromoted: contractChecks.some((item) => item.owner === "GitHub"),
 	};
 }

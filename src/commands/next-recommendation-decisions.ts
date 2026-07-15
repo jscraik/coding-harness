@@ -19,25 +19,23 @@ import type { HarnessNextMode } from "./next-decision-types.js";
 import * as agentNativeRatchets from "./next-agent-native-ratchets.js";
 import { promptContextDriftDecision } from "./next-prompt-context-drift.js";
 import { chooseNextCommandParts, shellQuote } from "./next-support.js";
-
+import {
+	changedFileClassificationMeta,
+	type ChangedFileClassification,
+} from "./next-file-classification.js";
+/** Infer the broadest risk tier implied by the changed-file set. */
 function inferRiskTier(files: string[]): HarnessDecision["riskTier"] {
-	if (files.length === 0) return "low";
-	if (
+	return files.length > 0 &&
 		files.some((file) =>
 			/^(src\/|scripts\/|package\.json$|pnpm-lock\.yaml$|harness\.contract\.json$|\.github\/)/.test(
 				file,
 			),
 		)
-	) {
-		return "medium";
-	}
-	return "low";
+		? "medium"
+		: "low";
 }
-
-interface NextRecommendationCandidate extends RecommendationCandidate {
-	argv: string[];
-}
-
+type NextRecommendationCandidate = RecommendationCandidate & { argv: string[] };
+/** Build a candidate command recommendation for changed-file validation. */
 function createRecommendationCandidate(args: {
 	mode: HarnessNextMode;
 	files: string[];
@@ -129,6 +127,7 @@ export function fleetMatrixArtifactDecision(args: {
 export function noChangedFilesDecision(args: {
 	mode: HarnessNextMode;
 	filesSource: "override" | "git";
+	classification?: ChangedFileClassification;
 	sourceErrors: readonly DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
@@ -169,7 +168,10 @@ export function noChangedFilesDecision(args: {
 			sourceErrors: args.sourceErrors,
 			phaseExit: args.phaseExit,
 			runtimeCard: args.runtimeCard,
-			extra: prCloseoutDecisionMeta(args.prCloseout),
+			extra: {
+				...prCloseoutDecisionMeta(args.prCloseout),
+				...changedFileClassificationMeta(args.classification),
+			},
 			agentReadinessContext: args.agentReadinessContext,
 		}),
 	});
@@ -185,6 +187,7 @@ export function changedFilesDecision(args: {
 	mode: HarnessNextMode;
 	files: string[];
 	filesSource: "override" | "git";
+	classification: ChangedFileClassification;
 	sourceErrors: readonly DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
@@ -248,6 +251,7 @@ export function changedFilesDecision(args: {
 			extra: {
 				...prCloseoutDecisionMeta(args.prCloseout),
 				...agentNativeRatchets.agentNativeRatchetMeta(),
+				...changedFileClassificationMeta(args.classification),
 			},
 			agentReadinessContext: args.agentReadinessContext,
 		}),

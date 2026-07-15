@@ -102,6 +102,10 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   read/write label from those effects; leave commands that are not yet characterized on the
   conservative legacy projection, and require an explicit flag before a
   diagnostic command writes an artifact by default.
+- Local execution coordinator changes are local process-truth surfaces. Keep
+  `harness run`/`harness job` docs, generated architecture context, contracts,
+  and agent-governance guidance synchronized without treating local job proof
+  as hosted CI, review, tracker, or merge-readiness truth.
 - Required status checks and code scanning are separate merge lanes: this repo's
   status checks are `pr-pipeline`, `security-scan`, and `CodeRabbit`;
   public code scanning is the `CodeQL` ruleset backed by

@@ -11,6 +11,11 @@ import {
 	AGENT_NATIVE_PACKET_COMMAND_NAMES,
 	mapCommands,
 } from "./command-agent-native-capability-rules.js";
+export {
+	getCommandExecutionCapability,
+	type CommandExecutionCapability,
+	type CommandResourceLane,
+} from "./command-execution-rules.js";
 
 export { EXPECTED_ARTIFACTS_BY_NAME } from "./command-expected-artifacts.js";
 export { REQUIRED_FLAGS_BY_NAME } from "./command-required-flags.js";
@@ -77,6 +82,8 @@ export const COMMAND_CATEGORY_BY_NAME: Partial<
 	"pilot-rollback": "pilot-remediation",
 	simulate: "pilot-remediation",
 	"automation-run": "pilot-remediation",
+	run: "pilot-remediation",
+	job: "pilot-remediation",
 	"gap-case": "pilot-remediation",
 	remediate: "pilot-remediation",
 	replay: "pilot-remediation",
@@ -112,6 +119,8 @@ export const WRITE_COMMANDS = new Set<string>([
 	"linear",
 	"linear-gate",
 	"automation-run",
+	"run",
+	"job",
 	"gap-case",
 	"remediate",
 	"pilot-rollback",
@@ -149,6 +158,8 @@ export const RETRYABILITY_BY_NAME: Partial<
 	"source-outline": "safe",
 	"index-context": "conditional",
 	"automation-run": "manual",
+	run: "conditional",
+	job: "manual",
 	"pilot-rollback": "manual",
 	"branch-protect": "manual",
 };
@@ -165,6 +176,8 @@ export const SAFE_FIRST_ALTERNATIVES_BY_NAME: Partial<
 	"branch-protect": ["check-authz --json"],
 	"pilot-rollback": ["pilot-evaluate --artifacts <PATH> --json"],
 	"automation-run": ["check --json"],
+	run: ["check --json"],
+	job: ["check --json"],
 };
 
 export const COMMAND_TIER_BY_NAME: Partial<Record<string, CommandTier>> = {
@@ -177,6 +190,8 @@ export const COMMAND_TIER_BY_NAME: Partial<Record<string, CommandTier>> = {
 	"decision-request": "domain",
 	"agent-readiness": "domain",
 	"fleet-plan": "domain",
+	run: "domain",
+	job: "domain",
 
 	init: "domain",
 	contract: "domain",

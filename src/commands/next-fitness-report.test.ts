@@ -275,6 +275,50 @@ describe("harness next fitness report evidence", () => {
 		}
 	});
 
+	it("does not route a not-applicable capability lane as missing evidence", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-fitness-"));
+		try {
+			writeFileSync(
+				join(repoRoot, "fitness.json"),
+				JSON.stringify(
+					fitnessReport({
+						status: "pass",
+						lanes: [
+							{
+								id: "agent-routing",
+								label: "Agent routing",
+								command: "pnpm run coding-policy:route",
+								capability: "agent_routing",
+								applicability: "not_applicable",
+								principle: "preserve_static_contracts",
+								enforcement: "static_analysis",
+								status: "not_run",
+								evidenceSource: "not admitted",
+								findings: [],
+							},
+						],
+						summary: {
+							lanes: 7,
+							findings: 0,
+							failures: 0,
+							warnings: 0,
+							lanesNeedingEvidence: 0,
+						},
+					}),
+				),
+			);
+
+			const { exitCode } = captureNextCLI(
+				["--json", "--fitness-report", "fitness.json"],
+				{ repoRoot, inspectChangedFiles: () => [] },
+			);
+
+			expect(exitCode).toBe(0);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
 	it("routes the top deterministic fitness finding as the next action", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-fitness-"));
 		try {

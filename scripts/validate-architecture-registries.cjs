@@ -51,11 +51,12 @@ function hasText(value) {
 
 function aggregatePnpmCommands(commandText) {
 	const commands = new Set();
-	for (const command of String(commandText)
+	for (const commandTextEntry of String(commandText)
 		.split(/\s+&&\s+/)
 		.map((item) => item.trim())
-		.filter((item) => /^pnpm\s+[^\s]+$/.test(item))) {
-		commands.add(command);
+		.filter((item) => item !== "")) {
+		const match = /^pnpm\s+(?:(?:run)\s+)?([^\s]+)$/.exec(commandTextEntry);
+		if (match) commands.add(`pnpm ${match[1]}`);
 	}
 	return commands;
 }

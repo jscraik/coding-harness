@@ -4,29 +4,25 @@ import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
 import type { DecisionSource } from "../lib/decision/sources.js";
 import type { RuntimeCard } from "../lib/runtime/runtime-card.js";
 import {
-	SynaipseContextContractError,
-	resolveSynaipseContext,
-} from "../lib/synaipse/context-plane.js";
-import type {
-	SynaipseContextProjection,
-	SynaipseContextUnknown,
-} from "../lib/synaipse/context-projection.js";
-import {
 	readSynaipseRepositoryName,
 	withSynaipseState,
 } from "../lib/synaipse/state.js";
 import type { HarnessNextPrCloseoutEvidence } from "./next-pr-closeout.js";
+import { operatorLocalOnlyDecision } from "./next-operator-local-decision.js";
 import type {
 	HarnessNextWorktreeRole,
 	HarnessNextEvidenceMode,
 } from "./next-args.js";
 import {
 	changedFilesDecision,
-	blockedDecision,
 	noChangedFilesDecision,
 	type HarnessNextMode,
 } from "./next-decisions.js";
-import { resolveHarnessNextState } from "./next-runner-state.js";
+import {
+	resolveHarnessNextState,
+	type HarnessNextReadyState,
+} from "./next-runner-state.js";
+import { resolveOptionalNextContext } from "./next-synaipse-context.js";
 
 /** Options for the read-only harness next decision producer. */
 export interface HarnessNextOptions {
@@ -58,92 +54,73 @@ export interface HarnessNextOptions {
 	readRepositoryName?: (repoRoot: string) => string | null;
 }
 
-/** Resolve supplied task-admitted context before repository inspection begins. */
-function resolveNextContext(
-	value: unknown,
-	repoRoot: string,
-	readRepositoryName: (
-		repoRoot: string,
-	) => string | null = readSynaipseRepositoryName,
-): {
-	decision: HarnessDecision | null;
-	refs: SynaipseContextProjection[];
-	unknowns: SynaipseContextUnknown[];
-} {
-	try {
-		const resolution = resolveSynaipseContext(value);
-		const targetRepository = readRepositoryName(repoRoot);
-		if (targetRepository === null)
-			return {
-				decision: blockedDecision({
-					summary: "SynAIpse context repository identity is unavailable.",
-					nextAction:
-						"Restore repository identity discovery, then rerun harness next --json.",
-					failureClass: "context_repository_identity_unavailable",
-					evidenceRef: ["repository:identity"],
-				}),
-				refs: [],
-				unknowns: [],
-			};
-		if (targetRepository !== resolution.catalogRepository)
-			return {
-				decision: blockedDecision({
-					summary: "SynAIpse context targets a different repository.",
-					nextAction: "Rebuild the task context for the target repository.",
-					failureClass: "context_project_mismatch",
-					evidenceRef: [`repository:${resolution.catalogRepository}`],
-				}),
-				refs: [],
-				unknowns: [],
-			};
-		if (resolution.status === "resolved")
-			return {
-				decision: null,
-				refs: resolution.selectedRefs,
-				unknowns: resolution.unknowns,
-			};
-		const blocker = resolution.blockers[0];
-		return {
-			decision: blockedDecision({
-				summary: "Required SynAIpse context could not be resolved.",
-				nextAction: blocker?.recovery ?? "repair_context_contract",
-				failureClass: blocker?.code ?? "context_resolution_blocked",
-				evidenceRef: blocker ? [`context:${blocker.contextId}`] : [],
-			}),
-			refs: resolution.selectedRefs,
-			unknowns: resolution.unknowns,
-		};
-	} catch (error) {
-		if (!(error instanceof SynaipseContextContractError)) throw error;
-		const detail = `${error.path}: ${error.detail}`;
-		return {
-			decision: blockedDecision({
-				summary: `SynAIpse context contract is malformed: ${detail}.`,
-				nextAction:
-					"Repair the context packet, then rerun harness next --json.",
-				failureClass: "malformed_context",
-				evidenceRef: ["context:input"],
-			}),
-			refs: [],
-			unknowns: [],
-		};
-	}
+/** Build shared evidence metadata for recommendation decisions. */
+function decisionContext(resolution: HarnessNextReadyState) {
+	return {
+		mode: resolution.mode,
+		sourceErrors: resolution.sourceErrors,
+		...(resolution.phaseExit ? { phaseExit: resolution.phaseExit } : {}),
+		...(resolution.runtimeCard ? { runtimeCard: resolution.runtimeCard } : {}),
+		...(resolution.prCloseout ? { prCloseout: resolution.prCloseout } : {}),
+		agentReadinessContext: resolution.agentReadinessContext,
+	};
 }
 
-/** Resolve optional context while preserving the no-context compatibility path. */
-/** Resolve optional context input, skipping resolution when the caller omits it. */
-function resolveOptionalNextContext(
-	value: unknown,
-	repoRoot: string,
-	readRepositoryName: (repoRoot: string) => string | null,
-) {
-	return value === undefined
-		? {
-				decision: null,
-				refs: [] as SynaipseContextProjection[],
-				unknowns: [] as SynaipseContextUnknown[],
-			}
-		: resolveNextContext(value, repoRoot, readRepositoryName);
+/** Produce the recommendation for changes excluded as operator-local state. */
+function operatorLocalOnlyNextDecision(
+	resolution: HarnessNextReadyState,
+): HarnessDecision {
+	return operatorLocalOnlyDecision({
+		...decisionContext(resolution),
+		files: resolution.changedFiles.files,
+		filesSource: resolution.changedFiles.filesSource,
+		classification: resolution.changedFiles.classification,
+	});
+}
+
+/** Produce the recommendation for validation-relevant changed files. */
+function changedFilesNextDecision(
+	resolution: HarnessNextReadyState,
+): HarnessDecision {
+	const { changedFiles } = resolution;
+	return changedFilesDecision({
+		...decisionContext(resolution),
+		files: changedFiles.classification.validationFiles,
+		filesSource: changedFiles.filesSource,
+		classification: changedFiles.classification,
+	});
+}
+
+/** Produce the recommendation for a clean repository with no changed files. */
+function noChangedFilesNextDecision(
+	resolution: HarnessNextReadyState,
+): HarnessDecision {
+	const { changedFiles } = resolution;
+	return noChangedFilesDecision({
+		...decisionContext(resolution),
+		filesSource: changedFiles.filesSource,
+		classification: changedFiles.classification,
+	});
+}
+
+/** Return whether every observed change is excluded from default validation. */
+function hasOnlyExcludedChangedFiles(
+	resolution: HarnessNextReadyState,
+): boolean {
+	const { changedFiles } = resolution;
+	return (
+		changedFiles.files.length > 0 &&
+		changedFiles.classification.validationFiles.length === 0
+	);
+}
+
+/** Select the empty or validation-relevant changed-file recommendation. */
+function changedFilesRecommendation(
+	resolution: HarnessNextReadyState,
+): HarnessDecision {
+	return resolution.changedFiles.files.length === 0
+		? noChangedFilesNextDecision(resolution)
+		: changedFilesNextDecision(resolution);
 }
 
 /**
@@ -176,34 +153,8 @@ export function runHarnessNext(
 			context.refs,
 			context.unknowns,
 		);
-	const { changedFiles } = resolution;
-	const decision =
-		changedFiles.files.length === 0
-			? noChangedFilesDecision({
-					mode: resolution.mode,
-					sourceErrors: resolution.sourceErrors,
-					...changedFiles,
-					...(resolution.phaseExit ? { phaseExit: resolution.phaseExit } : {}),
-					...(resolution.runtimeCard
-						? { runtimeCard: resolution.runtimeCard }
-						: {}),
-					...(resolution.prCloseout
-						? { prCloseout: resolution.prCloseout }
-						: {}),
-					agentReadinessContext: resolution.agentReadinessContext,
-				})
-			: changedFilesDecision({
-					mode: resolution.mode,
-					sourceErrors: resolution.sourceErrors,
-					...changedFiles,
-					...(resolution.phaseExit ? { phaseExit: resolution.phaseExit } : {}),
-					...(resolution.runtimeCard
-						? { runtimeCard: resolution.runtimeCard }
-						: {}),
-					...(resolution.prCloseout
-						? { prCloseout: resolution.prCloseout }
-						: {}),
-					agentReadinessContext: resolution.agentReadinessContext,
-				});
+	const decision = hasOnlyExcludedChangedFiles(resolution)
+		? operatorLocalOnlyNextDecision(resolution)
+		: changedFilesRecommendation(resolution);
 	return withSynaipseState(decision, repoRoot, context.refs, context.unknowns);
 }

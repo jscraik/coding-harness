@@ -115,6 +115,40 @@ class CommandInvocationEffect(BaseModel):
         return self
 
 
+class CommandExecutionCapability(BaseModel):
+    """Typed scheduling metadata for one command capability."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    resourceLanes: list[
+        Literal[
+            "repo-read",
+            "repo-write",
+            "validation",
+            "style",
+            "artifacts",
+            "runtime",
+            "git",
+            "external",
+        ]
+    ]
+    parallelSafe: bool
+    conflictsWith: list[
+        Literal[
+            "repo-read",
+            "repo-write",
+            "validation",
+            "style",
+            "artifacts",
+            "runtime",
+            "git",
+            "external",
+        ]
+    ]
+    timeoutSeconds: int
+    cancellable: bool
+
+
 class CommandCapability(BaseModel):
     """Typed contract for one command catalog entry."""
 
@@ -154,6 +188,7 @@ class CommandCapability(BaseModel):
         "admin",
     ]
     visibility: Literal["default", "agent", "advanced", "plumbing", "hidden", "legacy"]
+    execution: CommandExecutionCapability
 
     @field_validator("name", "summary", "example")
     @classmethod
@@ -183,6 +218,115 @@ class CommandCapability(BaseModel):
         if not value:
             raise ValueError("must contain at least one invocation effect")
         return value
+
+
+class ExecutionResult(BaseModel):
+    """Typed contract for harness-execution-result/v1 output."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schemaVersion: Literal["harness-execution-result/v1"]
+    runId: str
+    status: Literal["pass", "fail", "blocked", "timeout", "canceled"]
+    failureClass: Literal[
+        "command_failure",
+        "timeout",
+        "canceled",
+        "blocked_conflict",
+        "request_key_conflict",
+        "environment_failure",
+        "artifact_failure",
+        None,
+    ]
+    command: list[str]
+    cwd: str
+    requestKey: str
+    fingerprint: str
+    resourceLanes: list[str]
+    parallelSafe: bool
+    conflictsWith: list[str]
+    timeoutSeconds: int
+    attempt: int
+    retryDecision: Literal["safe", "conditional", "manual"]
+    queueWaitMs: int
+    durationMs: int
+    exitCode: int | None
+    signal: str | None
+    artifacts: dict[str, str]
+    artifactError: str | None
+    nextAction: str
+    claimsBoundary: dict[str, str]
+    replayed: bool
+
+
+class ExecutionJob(BaseModel):
+    """Typed contract for harness-execution-job/v1 durable ticket state."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schemaVersion: Literal["harness-execution-job/v1"]
+    ticket: str
+    requestKey: str
+    fingerprint: str
+    command: list[str]
+    cwd: str
+    artifactsDir: str
+    resourceLanes: list[str]
+    parallelSafe: bool
+    conflictsWith: list[str]
+    timeoutSeconds: int
+    attempt: int
+    retryDecision: Literal["safe", "conditional", "manual"]
+    status: Literal["queued", "running", "pass", "fail", "blocked", "timeout", "canceled"]
+    createdAt: str
+    startedAt: str | None
+    completedAt: str | None
+    queueWaitMs: int
+    durationMs: int
+    cancelRequested: bool
+    pid: int | None
+    workerPid: int | None
+    processToken: str | None
+    resultPath: str | None
+    failureClass: Literal[
+        "command_failure",
+        "timeout",
+        "canceled",
+        "blocked_conflict",
+        "request_key_conflict",
+        "environment_failure",
+        "artifact_failure",
+        None,
+    ]
+    nextAction: str
+    claimsBoundary: dict[str, Literal["proven", "not_checked"]]
+
+
+class ExecutionJobResponse(BaseModel):
+    """Typed contract for harness-execution-job-response/v1 CLI output."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schemaVersion: Literal["harness-execution-job-response/v1"]
+    operation: Literal["submit", "list", "status", "wait", "cancel"]
+    outcome: Literal[
+        "queued",
+        "running",
+        "pass",
+        "fail",
+        "blocked",
+        "timeout",
+        "canceled",
+        "submitted",
+        "replayed",
+        "request_key_conflict",
+        "listed",
+        "not_found",
+        "wait_timeout",
+    ]
+    timedOut: bool
+    job: ExecutionJob | None
+    jobs: list[ExecutionJob]
 
 
 class CommandCatalog(BaseModel):
@@ -298,6 +442,8 @@ class CliJsonContract(BaseModel):
         "harness-command-catalog/v4",
         "harness-decision/v1",
         "harness-cli-error/v1",
+        "harness-execution-result/v1",
+        "harness-execution-job-response/v1",
     ]
     schemaPath: str
     examplePath: str
@@ -1285,6 +1431,8 @@ def validate_json_file(path: Path, errors: list[str]) -> None:
             errors,
             f"{path}: machine contract JSON must include schema/version metadata",
         )
+    if path.as_posix() == "contracts/examples/execution-job.example.json":
+        validate_pydantic_value(ExecutionJob, data, path.as_posix(), errors)
 
 
 def is_versioned_machine_json(path: Path) -> bool:
@@ -1449,6 +1597,12 @@ def validate_cli_json_value(
         validate_harness_decision_value(value, label, errors)
         return 0
     if contract.expectedSchemaVersion == "harness-cli-error/v1":
+        return 0
+    if contract.expectedSchemaVersion == "harness-execution-result/v1":
+        validate_pydantic_value(ExecutionResult, value, label, errors)
+        return 0
+    if contract.expectedSchemaVersion == "harness-execution-job-response/v1":
+        validate_pydantic_value(ExecutionJobResponse, value, label, errors)
         return 0
     errors.append(f"{label}: unsupported CLI JSON schemaVersion {contract.expectedSchemaVersion}")
     return 0

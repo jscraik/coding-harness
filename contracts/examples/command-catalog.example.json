@@ -31,7 +31,14 @@
 			"primaryAudience": "agent",
 			"orchestratedBy": [],
 			"agentMode": "orient",
-			"visibility": "advanced"
+			"visibility": "advanced",
+			"execution": {
+				"resourceLanes": ["repo-read"],
+				"parallelSafe": true,
+				"conflictsWith": [],
+				"timeoutSeconds": 300,
+				"cancellable": true
+			}
 		}
 	]
 }

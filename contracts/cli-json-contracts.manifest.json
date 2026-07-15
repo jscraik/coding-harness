@@ -54,6 +54,49 @@
 				"stdoutJson": true,
 				"reason": "harness fitness returns 2 for usage errors while still emitting a schema-backed JSON error envelope."
 			}
+		},
+		{
+			"name": "harness-execution-result",
+			"command": [
+				"node",
+				"--import",
+				"tsx",
+				"src/cli.ts",
+				"run",
+				"--command",
+				"node",
+				"--json",
+				"--",
+				"--version"
+			],
+			"expectedSchemaVersion": "harness-execution-result/v1",
+			"schemaPath": "contracts/execution-result.schema.json",
+			"examplePath": "contracts/examples/execution-result.example.json",
+			"liveValidation": {
+				"enabled": true,
+				"allowedExitCodes": [0],
+				"stdoutJson": true
+			}
+		},
+		{
+			"name": "harness-execution-job-response",
+			"command": [
+				"node",
+				"--import",
+				"tsx",
+				"src/cli.ts",
+				"job",
+				"list",
+				"--json"
+			],
+			"expectedSchemaVersion": "harness-execution-job-response/v1",
+			"schemaPath": "contracts/execution-job-response.schema.json",
+			"examplePath": "contracts/examples/execution-job-response.example.json",
+			"liveValidation": {
+				"enabled": true,
+				"allowedExitCodes": [0],
+				"stdoutJson": true
+			}
 		}
 	]
 }

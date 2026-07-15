@@ -5,6 +5,13 @@ export type FitnessStatus = "pass" | "warn" | "fail" | "needs_evidence";
 export type FitnessLaneStatus = "pass" | "warn" | "fail" | "not_run";
 
 /** Public API export. */
+export type FitnessApplicability =
+	| "required"
+	| "admitted"
+	| "not_applicable"
+	| "blocked";
+
+/** Public API export. */
 export type FitnessSeverity = "critical" | "error" | "warning" | "info";
 
 /** Public API export. */
@@ -68,6 +75,10 @@ export interface FitnessLane {
 	id: string;
 	label: string;
 	command: string;
+	/** Stable capability family used for project-specific routing. */
+	capability?: string;
+	/** Additive applicability metadata; omitted in legacy v1 reports. */
+	applicability?: FitnessApplicability;
 	principle: FitnessPrinciple;
 	enforcement: FitnessEnforcement;
 	status: FitnessLaneStatus;
