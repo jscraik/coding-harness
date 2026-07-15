@@ -70,6 +70,7 @@ function summarizeBlockers(blockers: PrCloseoutBlocker[]): Array<{
 	}));
 }
 
+/** Project validated closeout evidence into compact harness-next metadata. */
 function prCloseoutMeta(
 	evidence: HarnessNextPrCloseoutEvidence,
 ): Record<string, unknown> {
@@ -86,6 +87,7 @@ function prCloseoutMeta(
 			blockers: summarizeBlockers(report.blockers),
 			reviewThreads: report.reviewThreads,
 			checks: report.checks,
+			stackState: report.stackState ?? null,
 		},
 	};
 }
