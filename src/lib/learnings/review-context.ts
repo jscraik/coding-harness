@@ -3,10 +3,16 @@ import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { DEFAULT_CODERABBIT_LOCAL_ARTIFACT } from "./artifact-io.js";
 import {
 	applyLearningEnforcementStatus,
+	DEFAULT_LEARNING_ENFORCEMENT_STATUS_LEDGER,
 	loadLearningEnforcementStatusLedger,
 } from "./enforcement-status.js";
 import { type LearningFileMatch, matchLearningToFile } from "./fuzzy-match.js";
 import { loadLearningArtifact } from "./gate.js";
+import {
+	buildReviewLearningCloseout,
+	buildUnavailableReviewLearningCloseout,
+	type ReviewLearningCloseout,
+} from "./review-learning-closeout.js";
 import type { LearningItem } from "./types.js";
 import {
 	type ValidationPlanResult,
@@ -35,6 +41,12 @@ export interface ReviewContextLearning {
 	evidenceRef: string[];
 	/** Highest-confidence match metadata for measurement. */
 	match: LearningFileMatch;
+	/** Per-file match metadata used to preserve mixed exact and fuzzy counts. */
+	matches?: LearningFileMatch[];
+	/** Concrete implementation or test paths enforcing this learning. */
+	enforcedBy?: string[];
+	/** Decision rationale from the enforcement ledger, when recorded. */
+	promotionReason?: string;
 }
 
 /** Result emitted by `harness review-context --json`. */
@@ -48,6 +60,8 @@ export interface ReviewContextResult {
 	changedFiles: string[];
 	applicableLearnings: ReviewContextLearning[];
 	validationPlan: ValidationPlanResult["commands"];
+	/** Advisory historical-learning and promotion closeout artifact. */
+	closeout: ReviewLearningCloseout;
 	networkRequired: ValidationPlanResult["networkRequired"];
 	reviewerLikelyConcerns: string[];
 	mustMentionInPr: string[];
@@ -105,6 +119,12 @@ export function buildReviewContext(
 			changedFiles,
 			applicableLearnings: [],
 			validationPlan: [],
+			closeout: buildUnavailableReviewLearningCloseout({
+				source,
+				repo: "unknown",
+				changedFiles,
+				reason: `n.a.: ${loaded.message}`,
+			}),
 			networkRequired: [],
 			...emptyReviewHandoff(),
 			summary: {
@@ -132,6 +152,12 @@ export function buildReviewContext(
 			changedFiles,
 			applicableLearnings: [],
 			validationPlan: [],
+			closeout: buildUnavailableReviewLearningCloseout({
+				source,
+				repo: loaded.artifact.repository,
+				changedFiles,
+				reason: `n.a.: ${enforcementStatus.message}`,
+			}),
 			networkRequired: [],
 			...emptyReviewHandoff(),
 			summary: {
@@ -150,6 +176,12 @@ export function buildReviewContext(
 		loaded.artifact.items,
 		enforcementStatus.ledger,
 	);
+	const promotionReasons = new Map(
+		enforcementStatus.ledger.items.map((item) => [
+			item.learningId,
+			item.reason,
+		]),
+	);
 
 	const validationPlan = buildValidationPlan({
 		source,
@@ -162,12 +194,36 @@ export function buildReviewContext(
 			repo: loaded.artifact.repository,
 			changedFiles,
 			validationPlan,
+			closeout: buildUnavailableReviewLearningCloseout({
+				source,
+				repo: loaded.artifact.repository,
+				changedFiles,
+				reason: `n.a.: ${validationPlan.error?.message ?? "validation plan generation failed."}`,
+			}),
 		});
 	}
 	const applicableLearnings = learningItems
-		.map((item) => buildReviewContextLearning(item, changedFiles))
+		.map((item) =>
+			buildReviewContextLearning(item, changedFiles, promotionReasons),
+		)
 		.filter((item): item is ReviewContextLearning => item !== undefined)
 		.sort((a, b) => b.usage - a.usage || a.id.localeCompare(b.id));
+	const closeout =
+		enforcementStatus.fingerprint === ""
+			? buildUnavailableReviewLearningCloseout({
+					source,
+					repo: loaded.artifact.repository,
+					changedFiles,
+					reason: `n.a.: learning enforcement-status ledger is unavailable at ${portableLedgerPath(options.enforcementStatusPath)}; generate it with harness learnings promote --write-enforcement-status.`,
+				})
+			: buildReviewLearningCloseout({
+					source,
+					sourceFingerprint: loaded.artifact.inputFingerprint,
+					enforcementFingerprint: enforcementStatus.fingerprint,
+					repo: loaded.artifact.repository,
+					changedFiles,
+					matchingLearnings: applicableLearnings,
+				});
 	const reviewHandoff = buildReviewHandoff(applicableLearnings, validationPlan);
 
 	const result: ReviewContextResult = {
@@ -180,6 +236,7 @@ export function buildReviewContext(
 		changedFiles,
 		applicableLearnings,
 		validationPlan: validationPlan.commands,
+		closeout,
 		networkRequired: validationPlan.networkRequired,
 		...reviewHandoff,
 		summary: {
@@ -196,6 +253,14 @@ export function buildReviewContext(
 	return result;
 }
 
+/** Keep closeout evidence portable when a caller supplied an absolute ledger path. */
+function portableLedgerPath(ledgerPath: string | undefined): string {
+	return ledgerPath && !isAbsolute(ledgerPath)
+		? ledgerPath
+		: DEFAULT_LEARNING_ENFORCEMENT_STATUS_LEDGER;
+}
+
+/** Write a review-context result while enforcing the repository output boundary. */
 function writeReviewContextResult(
 	result: ReviewContextResult,
 	options: ReviewContextOptions,
@@ -235,6 +300,7 @@ function writeReviewContextResult(
 	}
 }
 
+/** Check that an output path resolves beneath the repository's real root. */
 function isContainedByRealRepoRoot(
 	repoRoot: string,
 	outputPath: string,
@@ -258,6 +324,12 @@ function isContainedByRealRepoRoot(
 	}
 }
 
+/**
+ * Find the nearest existing filesystem ancestor for a candidate path.
+ *
+ * @param path - Absolute or repository-relative path to inspect
+ * @returns The nearest existing ancestor path, or `undefined` when none exists
+ */
 function findNearestExistingAncestor(path: string): string | undefined {
 	let current = path;
 	for (;;) {
@@ -272,11 +344,18 @@ function findNearestExistingAncestor(path: string): string | undefined {
 	}
 }
 
+/**
+ * Build an error review-context result while preserving the advisory learning closeout.
+ *
+ * @param input - Source, repository, changed files, validation-plan failure, and closeout evidence to preserve
+ * @returns A review-context error result with the validation failure and advisory closeout attached
+ */
 function buildValidationPlanErrorResult(input: {
 	source: string;
 	repo: string;
 	changedFiles: string[];
 	validationPlan: ValidationPlanResult;
+	closeout: ReviewLearningCloseout;
 }): ReviewContextResult {
 	return {
 		schemaVersion: "review-context/v1",
@@ -286,6 +365,7 @@ function buildValidationPlanErrorResult(input: {
 		changedFiles: input.changedFiles,
 		applicableLearnings: [],
 		validationPlan: [],
+		closeout: input.closeout,
 		networkRequired: [],
 		...emptyReviewHandoff(),
 		summary: {
@@ -317,6 +397,7 @@ function buildValidationPlanErrorResult(input: {
 function buildReviewContextLearning(
 	item: LearningItem,
 	changedFiles: string[],
+	promotionReasons: ReadonlyMap<string, string | undefined>,
 ): ReviewContextLearning | undefined {
 	const matches = changedFiles
 		.map((file) => ({ file, match: matchLearningToFile(item, file) }))
@@ -330,6 +411,8 @@ function buildReviewContextLearning(
 		.map((entry) => entry.match)
 		.sort((a, b) => b.confidence - a.confidence)[0];
 	if (!strongestMatch) return undefined;
+	const promotionReason = promotionReasons.get(item.id);
+	const enforcedBy = normalizeEnforcedBy(item.enforcedBy);
 	return {
 		id: item.id,
 		usage: item.usage,
@@ -341,7 +424,27 @@ function buildReviewContextLearning(
 		fix: buildFix(item),
 		evidenceRef: buildEvidenceRefs(item),
 		match: strongestMatch,
+		matches: matches.map((entry) => entry.match),
+		...(enforcedBy ? { enforcedBy } : {}),
+		...(promotionReason !== undefined ? { promotionReason } : {}),
 	};
+}
+
+/**
+ * Accept only concrete non-empty enforcement paths from untrusted learning artifacts.
+ *
+ * @param value - Runtime value supplied by an imported learning artifact
+ * @returns A deduplicated path list, or `undefined` when the value is malformed or empty
+ */
+function normalizeEnforcedBy(value: unknown): string[] | undefined {
+	if (
+		!Array.isArray(value) ||
+		value.length === 0 ||
+		value.some((path) => typeof path !== "string" || path.trim().length === 0)
+	) {
+		return undefined;
+	}
+	return [...new Set(value as string[])];
 }
 
 function emptyReviewHandoff(): Pick<

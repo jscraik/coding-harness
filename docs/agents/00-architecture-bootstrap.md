@@ -538,6 +538,14 @@ When PR evidence-template changes admit repeated steering feedback as a
 stop-the-line system signal, keep the generated scaffold, validator tests,
 steering guard, Project Brain/memory destination, and architecture context pack
 aligned so the proof survives beyond the current chat turn.
+For review-learning closeout changes, keep the advisory
+`review-learning-closeout/v1` projection behind the `review-context` boundary.
+It may report exact-file matches, fuzzy advisory matches, promoted guardrails,
+and explicit skipped-promotion reasons, but it must not become authority for
+validation, review approval, hosted CI, acceptance, release, or merge
+readiness. Preserve a concrete `n.a.` reason when the imported learning
+artifact or enforcement ledger is unavailable, and refresh the generated
+architecture context when this boundary changes.
 For PR closeout evidence changes, treat `pr-closeout/v1` and
 `harness pr-closeout` as read-only architecture-adjacent handoff surfaces.
 `harness next --pr-closeout <path>` may consume only validated

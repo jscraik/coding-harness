@@ -1,5 +1,6 @@
 import { inspectFlagList, inspectFlagValue } from "../lib/cli/parse-utils.js";
 import { buildReviewContext } from "../lib/learnings/review-context.js";
+import { buildUnavailableReviewLearningCloseout } from "../lib/learnings/review-learning-closeout.js";
 
 const EXIT_CODES = {
 	SUCCESS: 0,
@@ -166,6 +167,12 @@ function emitError(options: {
 					changedFiles: [],
 					applicableLearnings: [],
 					validationPlan: [],
+					closeout: buildUnavailableReviewLearningCloseout({
+						source: "",
+						repo: "unknown",
+						changedFiles: [],
+						reason: `n.a.: ${options.message}`,
+					}),
 					networkRequired: [],
 					reviewerLikelyConcerns: [],
 					mustMentionInPr: [],
