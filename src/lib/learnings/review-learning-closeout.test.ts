@@ -106,4 +106,20 @@ describe("buildReviewLearningCloseout", () => {
 			"candidate_not_enforced: Needs a measured false-positive sample.",
 		);
 	});
+
+	it("does not treat malformed enforcement paths as promoted guardrails", () => {
+		const malformed = learning("enforced");
+		(malformed as unknown as { enforcedBy: unknown }).enforcedBy =
+			"src/guardrail.ts";
+
+		const result = buildReviewLearningCloseout({
+			source: ".harness/learnings/coderabbit.local.json",
+			repo: "coding-harness",
+			changedFiles: ["src/example.ts"],
+			matchingLearnings: [malformed],
+		});
+
+		expect(result.promotedGuardrails).toEqual([]);
+		expect(result.skippedPromotions[0]?.reason).toContain("not_enforced");
+	});
 });

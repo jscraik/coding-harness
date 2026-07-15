@@ -401,6 +401,7 @@ function buildReviewContextLearning(
 		.sort((a, b) => b.confidence - a.confidence)[0];
 	if (!strongestMatch) return undefined;
 	const promotionReason = promotionReasons.get(item.id);
+	const enforcedBy = normalizeEnforcedBy(item.enforcedBy);
 	return {
 		id: item.id,
 		usage: item.usage,
@@ -413,9 +414,26 @@ function buildReviewContextLearning(
 		evidenceRef: buildEvidenceRefs(item),
 		match: strongestMatch,
 		matches: matches.map((entry) => entry.match),
-		...(item.enforcedBy ? { enforcedBy: [...item.enforcedBy] } : {}),
+		...(enforcedBy ? { enforcedBy } : {}),
 		...(promotionReason !== undefined ? { promotionReason } : {}),
 	};
+}
+
+/**
+ * Accept only concrete non-empty enforcement paths from untrusted learning artifacts.
+ *
+ * @param value - Runtime value supplied by an imported learning artifact
+ * @returns A deduplicated path list, or `undefined` when the value is malformed or empty
+ */
+function normalizeEnforcedBy(value: unknown): string[] | undefined {
+	if (
+		!Array.isArray(value) ||
+		value.length === 0 ||
+		value.some((path) => typeof path !== "string" || path.trim().length === 0)
+	) {
+		return undefined;
+	}
+	return [...new Set(value as string[])];
 }
 
 function emptyReviewHandoff(): Pick<

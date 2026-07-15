@@ -104,7 +104,7 @@ export function buildReviewLearningCloseout(
 		.filter(
 			(learning) =>
 				learning.promotionStatus === "enforced" &&
-				(learning.enforcedBy?.length ?? 0) > 0,
+				hasConcreteEnforcedBy(learning.enforcedBy),
 		)
 		.map((learning) => ({
 			id: learning.id,
@@ -117,7 +117,7 @@ export function buildReviewLearningCloseout(
 		.filter(
 			(learning) =>
 				learning.promotionStatus !== "enforced" ||
-				(learning.enforcedBy?.length ?? 0) === 0,
+				!hasConcreteEnforcedBy(learning.enforcedBy),
 		)
 		.map((learning) => ({
 			id: learning.id,
@@ -167,6 +167,20 @@ export function buildReviewLearningCloseout(
 		claimBoundary:
 			"Advisory historical-learning evidence only; it does not prove validation, review approval, CI, acceptance, release, or merge readiness.",
 	};
+}
+
+/**
+ * Check whether a runtime enforcement-path value is a non-empty string array.
+ *
+ * @param value - Runtime value copied from an imported learning artifact
+ * @returns `true` only when every path is a non-empty string
+ */
+function hasConcreteEnforcedBy(value: unknown): value is string[] {
+	return (
+		Array.isArray(value) &&
+		value.length > 0 &&
+		value.every((path) => typeof path === "string" && path.trim().length > 0)
+	);
 }
 
 /** Build a concrete n.a. closeout when imported learning evidence is unavailable. */
