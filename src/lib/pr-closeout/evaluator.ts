@@ -8,6 +8,7 @@ import {
 	collectReviewArtifactBlockers,
 	collectReviewBlockers,
 	collectReleaseReadinessBlockers,
+	collectStackBlockers,
 	collectToolBlockers,
 	collectTraceabilityBlocker,
 	collectWorktreeBlockers,
@@ -45,7 +46,7 @@ export interface PrCloseoutReportOptions {
 	now?: Date;
 	deriveDeliveryTruthFromStatePackets?: PrCloseoutDeliveryTruthDerivationOptions;
 }
-
+/** Derive the read-only closeout report from normalized evidence. */
 function buildPrCloseoutReportValue(
 	input: PrCloseoutInput,
 	options: PrCloseoutReportOptions = {},
@@ -71,6 +72,7 @@ function buildPrCloseoutReportValue(
 		options.deriveDeliveryTruthFromStatePackets,
 	);
 	collectWorktreeBlockers(input, dirtyPathsExcluded, blockers);
+	collectStackBlockers(input.stackState, blockers);
 	collectPullRequestBlockers(pr, blockers);
 	collectCheckBlockers(checks, blockers);
 	collectCiTelemetryBlockers(input, checks, blockers);
@@ -144,6 +146,7 @@ function buildPrCloseoutReportValue(
 		attemptLedger,
 		recoveryEvent,
 		snapshot,
+		stackState: input.stackState ?? null,
 	};
 }
 

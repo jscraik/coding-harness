@@ -8,6 +8,7 @@ import {
 	validateHePhaseExit,
 } from "../lib/decision/he-phase-exit.js";
 import type { PrCloseoutInput } from "../lib/pr-closeout.js";
+import { assertPrCloseoutStackState } from "../lib/pr-closeout/stack-state.js";
 
 const ACCEPTED_CLOSEOUT_GATES_SCHEMA_VERSIONS = [
 	HARNESS_CLOSEOUT_GATES_SCHEMA_VERSION,
@@ -63,6 +64,7 @@ export function parseInput(value: string, source: string): PrCloseoutInput {
 	return parsed;
 }
 
+/** Validate the normalized PR closeout input envelope before evaluation. */
 function assertPrCloseoutInputShape(
 	parsed: Record<string, unknown>,
 	source: string,
@@ -92,6 +94,7 @@ function assertPrCloseoutInputShape(
 	assertOptionalArray(parsed.checks, `${source} checks`);
 	assertOptionalArray(parsed.ciTelemetry, `${source} ciTelemetry`);
 	assertOptionalObject(parsed.reviewThreads, `${source} reviewThreads`);
+	assertPrCloseoutStackState(parsed.stackState, `${source} stackState`);
 	assertOptionalObject(parsed.traceability, `${source} traceability`);
 	assertOptionalArray(parsed.dirtyPaths, `${source} dirtyPaths`);
 	assertOptionalArray(parsed.tools, `${source} tools`);

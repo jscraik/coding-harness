@@ -75,6 +75,11 @@ artifact exists. When supplied, `harness next` normalizes the report into
 the `pr-closeout/v1` validation contract, including rejection of shallow,
 stale, incomplete, or false-ready closeout artifacts.
 
+Stacked-PR reports may include `stackState`. Stable or explicitly
+not-applicable stack evidence can continue; unstable or required unknown stack
+state remains a branch blocker until parent, lower-layer, and base evidence is
+current.
+
 `--runtime-card` accepts a local `runtime-card/v1` JSON artifact that summarizes
 the current branch, PR, tracker, artifact, and phase-exit lifecycle state. When
 supplied, `harness next` normalizes the card into `meta.runtimeCard` and blocks

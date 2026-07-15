@@ -16,6 +16,7 @@ import type {
 	PrCloseoutReviewArtifactInput,
 	PrCloseoutReviewerArtifactProof,
 	PrCloseoutReviewThreadsInput,
+	PrCloseoutStackState,
 	PrCloseoutToolInput,
 } from "./types.js";
 import {
@@ -105,6 +106,39 @@ export function collectWorktreeBlockers(
 			fixableByCodex: true,
 		});
 	}
+}
+
+/** Keep stack evidence identifiable without double-prefixing canonical stack refs. */
+function stackBlockerRef(refs: string | undefined): string {
+	if (!refs) return "stack:state";
+	return refs.startsWith("stack:") ? refs : `stack:${refs}`;
+}
+
+/** Add blockers when supplied parent/base stack evidence is unstable or unknown. */
+export function collectStackBlockers(
+	stack: PrCloseoutStackState | undefined,
+	blockers: PrCloseoutBlocker[],
+): void {
+	if (!stack) return;
+	if (stack.status === "stable" || stack.status === "not_applicable") return;
+	if (stack.required === false && stack.status === "unknown") return;
+	const unstable = stack.status === "unstable";
+	const refs = [
+		...(stack.blockerRefs ?? []),
+		...(stack.evidenceRefs ?? []),
+	].join(",");
+	blockers.push({
+		surface: "branch",
+		classification: unstable ? "introduced" : "unknown",
+		kind: "state",
+		reason:
+			stack.reason ??
+			(unstable
+				? "Stack state is unstable; reconcile lower-layer, parent, and base PR evidence before closeout."
+				: "Stack state is unknown; provide current parent/lower-layer and base evidence before closeout."),
+		fixableByCodex: false,
+		ref: stackBlockerRef(refs),
+	});
 }
 
 /** Add blockers for pull request state and metadata closeout evidence. */

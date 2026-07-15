@@ -25,6 +25,7 @@ import {
 } from "./pr-closeout/input-validation.js";
 import { buildLivePrCloseoutInput } from "./pr-closeout/live.js";
 import type { CommandRunner } from "./pr-closeout/types.js";
+import { assertPrCloseoutStackState } from "../lib/pr-closeout/stack-state.js";
 
 export type { PrCloseoutCLIOptions } from "./pr-closeout/args.js";
 export type { CommandRunner } from "./pr-closeout/types.js";
@@ -59,6 +60,7 @@ function parseJsonObject(
 	return parsed as Record<string, unknown>;
 }
 
+/** Parse and validate one normalized PR closeout input document. */
 function parseInput(value: string, source: string): PrCloseoutInput {
 	const parsed = parseJsonObject(value, source);
 	assertPrCloseoutInputShape(parsed, source);
@@ -86,6 +88,7 @@ function parseInput(value: string, source: string): PrCloseoutInput {
 			`${source} runtimeEvidence`,
 		);
 	}
+	assertPrCloseoutStackState(parsed.stackState, `${source} stackState`);
 	return parsed;
 }
 

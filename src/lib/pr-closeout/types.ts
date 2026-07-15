@@ -207,6 +207,18 @@ export interface PrCloseoutReviewThreadsInput {
 	ownerCounts?: Record<string, number>;
 }
 
+/** Optional parent/lower-layer stack evidence for stacked pull requests. */
+export interface PrCloseoutStackState {
+	status: "stable" | "unstable" | "unknown" | "not_applicable";
+	required?: boolean;
+	evidenceRefs?: string[];
+	blockerRefs?: string[];
+	reason?: string | null;
+	parentPr?: number | null;
+	lowerPrs?: number[];
+	baseSha?: string | null;
+}
+
 /** Session and trace references expected in professional PR handoff evidence. */
 export interface PrCloseoutTraceabilityInput {
 	sessionIds?: string[];
@@ -331,6 +343,7 @@ export interface PrCloseoutInput {
 	checks?: PrCloseoutCheckInput[];
 	ciTelemetry?: PrCloseoutCiTelemetryInput[];
 	reviewThreads?: PrCloseoutReviewThreadsInput;
+	stackState?: PrCloseoutStackState;
 	traceability?: PrCloseoutTraceabilityInput;
 	rollback?: PrCloseoutRollbackInput;
 	/** First-class Coding Harness closeout-gates evidence. Preferred for PR closeout. */
@@ -525,6 +538,8 @@ export interface PrCloseoutReport {
 	attemptLedger: PrCloseoutAttemptLedger;
 	recoveryEvent: PrCloseoutRecoveryEvent | null;
 	snapshot?: PrCloseoutConstraintSnapshot;
+	/** Optional for backwards-compatible report consumers; evaluators emit it. */
+	stackState?: PrCloseoutStackState | null;
 }
 
 /** Lane-level stale-class labels used by compact delivery-lifecycle snapshots. */

@@ -5,15 +5,18 @@ import { describe, expect, it, vi } from "vitest";
 import {
 	PR_CLOSEOUT_SCHEMA_VERSION,
 	type PrCloseoutBlocker,
-	type PrCloseoutClaim,
 	type PrCloseoutReport,
 } from "../lib/pr-closeout.js";
 import { passingAgentReadinessContext } from "../lib/agent-readiness/test-fixtures.js";
-import { HARNESS_CLOSEOUT_GATE_IDS } from "../lib/decision/he-phase-exit.js";
 import { validateHarnessDecision } from "../lib/decision/harness-decision.js";
-import type { HarnessAssuranceEntry } from "../lib/harness-assurance.js";
 import { runHarnessNext, runNextCLI } from "./next.js";
 import { DEFAULT_PR_CLOSEOUT_ARTIFACT } from "./next-pr-closeout.js";
+import {
+	prCloseoutReport,
+	readyAssuranceEntries,
+	readyClaims,
+	readyHarnessGates,
+} from "./next-pr-closeout.test-support.js";
 
 function captureNextCLI(
 	args: string[],
@@ -45,179 +48,6 @@ function reviewBlocker(): PrCloseoutBlocker {
 		reason: "PR #437 has one unresolved review thread.",
 		fixableByCodex: false,
 		ref: "review-thread:CR-1",
-	};
-}
-
-function readyClaim(claim: PrCloseoutClaim["claim"]): PrCloseoutClaim {
-	return {
-		claim,
-		status: "pass",
-		evidenceRef: `claim:${claim}`,
-		source: "harness_gates",
-		headSha: "abc123",
-		freshness: "current",
-		blockerClass: null,
-		missingContext: null,
-		verifiedAt: "2026-06-19T00:00:00.000Z",
-	};
-}
-
-function readyClaims(): PrCloseoutClaim[] {
-	const claims: PrCloseoutClaim["claim"][] = [
-		"tests_passed",
-		"ci_green",
-		"review_threads_resolved",
-		"pr_metadata_ready",
-		"branch_current_with_base",
-		"linear_tracker_state_aligned",
-		"independent_review_status_known",
-		"required_checks_match_current_head",
-		"rollback_path_named_or_not_applicable",
-	];
-	return claims.map(readyClaim);
-}
-
-function readyHarnessGates(): PrCloseoutReport["harnessGates"]["gates"] {
-	return HARNESS_CLOSEOUT_GATE_IDS.map((gateId) => ({
-		gateId,
-		required:
-			gateId !== "he_fix_bugs" &&
-			gateId !== "autofix" &&
-			gateId !== "ubiquitous_language",
-		status:
-			gateId === "he_fix_bugs" || gateId === "autofix"
-				? "not_applicable"
-				: "pass",
-		evidenceRefs: ["artifact:closeout-gates.json"],
-		requiresHuman: false,
-		blocker: null,
-	}));
-}
-
-function readyAssuranceEntries(): HarnessAssuranceEntry[] {
-	const evidence = ["artifact:assurance.json"];
-	return [
-		{ layer: "unit", status: "pass", evidence },
-		{ layer: "boundary", status: "pass", evidence },
-		{ layer: "mock_integration", status: "pass", evidence },
-		{ layer: "e2e", status: "pass", evidence },
-		{ layer: "security", status: "pass", evidence },
-		{
-			layer: "load_stress",
-			status: "n.a.",
-			evidence,
-			reason: "Fixture does not exercise a load-sensitive production path.",
-		},
-		{
-			layer: "lifecycle_closeout",
-			status: "n.a.",
-			evidence,
-			reason: "Fixture covers consumer validation, not hosted closeout state.",
-		},
-	];
-}
-
-function prCloseoutReport(
-	overrides: Partial<PrCloseoutReport> = {},
-): PrCloseoutReport {
-	return {
-		schemaVersion: PR_CLOSEOUT_SCHEMA_VERSION,
-		generatedAt: "2026-06-19T00:00:00.000Z",
-		pr: 437,
-		url: "https://github.com/jscraik/coding-harness/pull/437",
-		status: "ready",
-		mergeable: true,
-		nextAction: "ready_to_merge",
-		blockers: [],
-		claims: readyClaims(),
-		checks: {
-			total: 3,
-			failed: 0,
-			pending: 0,
-			passed: 3,
-			unknown: 0,
-		},
-		ciTelemetry: [],
-		reviewThreads: {
-			unresolved: 0,
-			needsHuman: 0,
-			autofixable: 0,
-		},
-		traceability: {
-			sessionIds: ["codex-session:next-pr-closeout"],
-			traceIds: ["trace:pr-closeout"],
-			aiSessionTraceability: "Codex session captured closeout evidence.",
-			complete: true,
-		},
-		harnessGates: {
-			evidenceSource: "closeout_gates",
-			closeoutGatesPresent: true,
-			phaseExitPresent: false,
-			recommendation: "continue",
-			commitAllowed: true,
-			exitAllowed: true,
-			gates: readyHarnessGates(),
-		},
-		assurance: {
-			present: true,
-			valid: true,
-			entries: readyAssuranceEntries(),
-			findings: [],
-		},
-		runtimeEvidence: {
-			present: false,
-			valid: false,
-			verifierStatus: null,
-			outcome: null,
-			exitClassification: null,
-			findings: [],
-		},
-		deliveryTruth: {
-			present: false,
-			verdicts: [],
-			blockingVerdicts: [],
-			mergeReady: null,
-		},
-		lifecycleSnapshot: {
-			schemaVersion: "delivery-lifecycle-snapshot/v1",
-			generatedAt: "2026-06-19T00:00:00.000Z",
-			worktreeRole: "implementation",
-			linearMutation: "unknown",
-			releaseReadinessImpact: "none",
-			staleEvidenceClasses: [],
-			handoffRequiredEvidence: [],
-			lanes: [],
-			latestValidationBlocker: null,
-			reviewArtifacts: {
-				expected: 0,
-				missing: 0,
-				empty: 0,
-				ignoredRuntimePath: 0,
-				unknown: 0,
-				artifacts: [],
-			},
-			continuation: {
-				nextSafeAction: "ready_to_merge",
-				waitingOwner: "unknown",
-				blocker: null,
-			},
-		},
-		tools: [],
-		dirtyPathsExcluded: [],
-		attemptLedger: {
-			schemaVersion: "attempt-ledger/v1",
-			command: "pr-closeout",
-			attempt: 1,
-			maxAttempts: 1,
-			firstFailure: null,
-			retryDecision: "none",
-			owner: "codex",
-			stopReason: null,
-			nextAction: "ready_to_merge",
-			evidenceRefs: [],
-		},
-		recoveryEvent: null,
-		...overrides,
 	};
 }
 
@@ -669,6 +499,33 @@ describe("harness next pr-closeout evidence", () => {
 			expect(decision.status).toBe("blocked");
 			expect(decision.failureClass).toBe("pr_closeout_artifact_invalid");
 			expect(decision.evidenceRef).toEqual(["artifact:pr-closeout.json"]);
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects ready artifacts with optional unstable stack state", () => {
+		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-pr-closeout-"));
+		try {
+			writeDefaultPrCloseoutArtifact(
+				repoRoot,
+				prCloseoutReport({
+					stackState: { status: "unstable", required: false },
+				}),
+			);
+
+			const { exitCode, output } = captureNextCLI(
+				["--json", "--pr-closeout", DEFAULT_PR_CLOSEOUT_ARTIFACT],
+				{
+					repoRoot,
+					inspectChangedFiles: () => [],
+				},
+			);
+
+			expect(exitCode).toBe(1);
+			expect(parseDecision(output).failureClass).toBe(
+				"pr_closeout_artifact_invalid",
+			);
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });
 		}

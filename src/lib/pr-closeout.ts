@@ -38,6 +38,7 @@ export {
 	type PrCloseoutReviewThreadsInput,
 	type PrCloseoutRollbackInput,
 	type PrCloseoutRuntimeEvidenceSummary,
+	type PrCloseoutStackState,
 	type PrCloseoutStatus,
 	type PrCloseoutConstraintSnapshot,
 	type PrCloseoutStaleEvidenceClass,

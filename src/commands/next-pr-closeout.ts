@@ -70,6 +70,41 @@ function summarizeBlockers(blockers: PrCloseoutBlocker[]): Array<{
 	}));
 }
 
+/** Remove sensitive path and token-like evidence from a present stack field. */
+function sanitizeStackText(value: string | null): string | null {
+	return value === null ? null : sanitizeEvidenceText(value);
+}
+
+/** Remove sensitive path and token-like evidence before exposing stack metadata. */
+function sanitizeStackState(
+	stackState: PrCloseoutReport["stackState"],
+): PrCloseoutReport["stackState"] {
+	if (stackState === undefined || stackState === null) return null;
+	const sanitized: NonNullable<PrCloseoutReport["stackState"]> = {
+		status: stackState.status,
+	};
+	if (stackState.required !== undefined)
+		sanitized.required = stackState.required;
+	if (stackState.evidenceRefs !== undefined) {
+		sanitized.evidenceRefs = stackState.evidenceRefs.map(sanitizeEvidenceText);
+	}
+	if (stackState.blockerRefs !== undefined) {
+		sanitized.blockerRefs = stackState.blockerRefs.map(sanitizeEvidenceText);
+	}
+	if (stackState.reason !== undefined) {
+		sanitized.reason = sanitizeStackText(stackState.reason);
+	}
+	if (stackState.parentPr !== undefined)
+		sanitized.parentPr = stackState.parentPr;
+	if (stackState.lowerPrs !== undefined)
+		sanitized.lowerPrs = [...stackState.lowerPrs];
+	if (stackState.baseSha !== undefined) {
+		sanitized.baseSha = sanitizeStackText(stackState.baseSha);
+	}
+	return sanitized;
+}
+
+/** Project validated closeout evidence into compact harness-next metadata. */
 function prCloseoutMeta(
 	evidence: HarnessNextPrCloseoutEvidence,
 ): Record<string, unknown> {
@@ -86,6 +121,7 @@ function prCloseoutMeta(
 			blockers: summarizeBlockers(report.blockers),
 			reviewThreads: report.reviewThreads,
 			checks: report.checks,
+			stackState: sanitizeStackState(report.stackState),
 		},
 	};
 }

@@ -4,6 +4,7 @@ import {
 	type PrCloseoutReport,
 } from "../lib/pr-closeout.js";
 import { HARNESS_CLOSEOUT_GATE_IDS } from "../lib/decision/he-phase-exit.js";
+import { isPrCloseoutStackState } from "../lib/pr-closeout/stack-state.js";
 import { hasValidReadyPrCloseoutAssuranceEntries } from "./next-pr-closeout-assurance.js";
 
 const PR_CLOSEOUT_STATUSES = new Set([
@@ -195,6 +196,7 @@ function hasPrCloseoutArrayFields(report: Partial<PrCloseoutReport>): boolean {
 	);
 }
 
+/** Validate the structured object fields carried by a closeout report. */
 function hasPrCloseoutObjectFields(report: Partial<PrCloseoutReport>): boolean {
 	return (
 		isObjectRecord(report.assurance) &&
@@ -202,7 +204,10 @@ function hasPrCloseoutObjectFields(report: Partial<PrCloseoutReport>): boolean {
 		isObjectRecord(report.deliveryTruth) &&
 		isObjectRecord(report.lifecycleSnapshot) &&
 		isObjectRecord(report.attemptLedger) &&
-		(report.recoveryEvent === null || isObjectRecord(report.recoveryEvent))
+		(report.recoveryEvent === null || isObjectRecord(report.recoveryEvent)) &&
+		(report.stackState === undefined ||
+			report.stackState === null ||
+			isPrCloseoutStackState(report.stackState))
 	);
 }
 
@@ -323,6 +328,19 @@ function hasReadyPrCloseoutReviewCounts(
 	);
 }
 
+/** Require stable or explicitly optional stack evidence for ready artifacts. */
+function hasReadyPrCloseoutStackState(
+	report: Partial<PrCloseoutReport>,
+): boolean {
+	const stack = report.stackState;
+	if (stack === undefined || stack === null) return true;
+	if (!isPrCloseoutStackState(stack)) return false;
+	if (stack.status === "unstable") return false;
+	if (stack.required === false) return true;
+	return stack.status === "stable" || stack.status === "not_applicable";
+}
+
+/** Validate independent assurance evidence before accepting ready closeout. */
 function hasReadyPrCloseoutAssurance(
 	report: Partial<PrCloseoutReport>,
 ): boolean {
@@ -337,17 +355,33 @@ function hasReadyPrCloseoutAssurance(
 	);
 }
 
+/** Reject ready artifacts whose claims and evidence collections disagree. */
 function hasReadyPrCloseoutConsistency(
 	report: Partial<PrCloseoutReport>,
 ): boolean {
 	if (report.status !== "ready") return true;
-	if (!report.mergeable || report.nextAction !== "ready_to_merge") return false;
-	if ((report.blockers?.length ?? 0) > 0) return false;
-	if (!hasReadyPrCloseoutClaims(report)) return false;
-	if (report.traceability?.complete !== true) return false;
-	if (!hasReadyPrCloseoutHarnessGates(report)) return false;
-	if (!hasReadyPrCloseoutAssurance(report)) return false;
+	return hasReadyPrCloseoutCore(report) && hasReadyPrCloseoutEvidence(report);
+}
+
+/** Validate the top-level readiness posture of a closeout report. */
+function hasReadyPrCloseoutCore(report: Partial<PrCloseoutReport>): boolean {
 	return (
+		report.mergeable === true &&
+		report.nextAction === "ready_to_merge" &&
+		(report.blockers?.length ?? 0) === 0
+	);
+}
+
+/** Validate the claim, gate, assurance, stack, and count evidence for readiness. */
+function hasReadyPrCloseoutEvidence(
+	report: Partial<PrCloseoutReport>,
+): boolean {
+	return (
+		hasReadyPrCloseoutClaims(report) &&
+		report.traceability?.complete === true &&
+		hasReadyPrCloseoutHarnessGates(report) &&
+		hasReadyPrCloseoutAssurance(report) &&
+		hasReadyPrCloseoutStackState(report) &&
 		hasReadyPrCloseoutCheckCounts(report) &&
 		hasReadyPrCloseoutReviewCounts(report)
 	);
