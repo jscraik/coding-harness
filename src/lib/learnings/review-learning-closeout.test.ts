@@ -6,6 +6,13 @@ function learning(
 	promotionStatus: ReviewContextLearning["promotionStatus"],
 	enforcedBy?: string[],
 ): ReviewContextLearning {
+	const exactMatch = {
+		kind: "exact_file" as const,
+		confidence: 1,
+		reason: "Exact file match.",
+		advisoryOnly: false,
+		falsePositiveCandidate: false,
+	};
 	return {
 		id: "learning.enforced-without-path",
 		usage: 42,
@@ -16,13 +23,8 @@ function learning(
 		matchedFiles: ["src/example.ts"],
 		fix: "Add the durable guardrail.",
 		evidenceRef: ["review:1"],
-		match: {
-			kind: "exact_file",
-			confidence: 1,
-			reason: "Exact file match.",
-			advisoryOnly: false,
-			falsePositiveCandidate: false,
-		},
+		match: exactMatch,
+		matches: [exactMatch],
 		...(enforcedBy ? { enforcedBy } : {}),
 	};
 }
@@ -61,5 +63,47 @@ describe("buildReviewLearningCloseout", () => {
 			}),
 		]);
 		expect(result.skippedPromotions).toEqual([]);
+	});
+
+	it("counts advisory matches across every changed file", () => {
+		const mixedLearning = learning("candidate");
+		mixedLearning.matches = [
+			mixedLearning.match,
+			{
+				kind: "keyword",
+				confidence: 0.5,
+				reason: "Keyword-only match.",
+				advisoryOnly: true,
+				falsePositiveCandidate: true,
+			},
+		];
+
+		const result = buildReviewLearningCloseout({
+			source: ".harness/learnings/coderabbit.local.json",
+			repo: "coding-harness",
+			changedFiles: ["src/example.ts", "src/other.ts"],
+			matchingLearnings: [mixedLearning],
+		});
+
+		expect(result.summary).toMatchObject({
+			exactFileMatches: 1,
+			advisoryFuzzyMatches: 1,
+		});
+	});
+
+	it("keeps recorded candidate reasons in skipped promotions", () => {
+		const candidate = learning("candidate");
+		candidate.promotionReason = "Needs a measured false-positive sample.";
+
+		const result = buildReviewLearningCloseout({
+			source: ".harness/learnings/coderabbit.local.json",
+			repo: "coding-harness",
+			changedFiles: ["src/example.ts"],
+			matchingLearnings: [candidate],
+		});
+
+		expect(result.skippedPromotions[0]?.reason).toBe(
+			"candidate_not_enforced: Needs a measured false-positive sample.",
+		);
 	});
 });

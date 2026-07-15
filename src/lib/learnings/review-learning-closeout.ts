@@ -129,9 +129,14 @@ export function buildReviewLearningCloseout(
 	const exactFileMatches = options.matchingLearnings.filter(
 		(learning) => learning.match.kind === "exact_file",
 	).length;
-	const advisoryFuzzyMatches = options.matchingLearnings.filter(
-		(learning) => learning.match.advisoryOnly,
-	).length;
+	const advisoryFuzzyMatches = options.matchingLearnings.reduce(
+		(count, learning) =>
+			count +
+			(learning.matches ?? [learning.match]).filter(
+				(match) => match.advisoryOnly,
+			).length,
+		0,
+	);
 
 	return {
 		schemaVersion: REVIEW_LEARNING_CLOSEOUT_SCHEMA_VERSION,
@@ -225,10 +230,10 @@ function promotionSkipReason(
 		return "unreviewed: no promotion decision has been recorded in the enforcement ledger.";
 	}
 	if (learning.promotionStatus === "candidate") {
-		return "candidate_not_enforced: usage qualifies for promotion review, but no concrete enforced guardrail is recorded.";
+		return `candidate_not_enforced: ${learning.promotionReason ?? "usage qualifies for promotion review, but no concrete enforced guardrail is recorded."}`;
 	}
 	if (learning.promotionStatus === "accepted") {
-		return "accepted_not_enforced: the learning is accepted for promotion, but no concrete enforced guardrail is recorded.";
+		return `accepted_not_enforced: ${learning.promotionReason ?? "the learning is accepted for promotion, but no concrete enforced guardrail is recorded."}`;
 	}
 	return `not_enforced: promotion status ${learning.promotionStatus} has no concrete enforced guardrail.`;
 }

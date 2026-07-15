@@ -40,6 +40,8 @@ export interface ReviewContextLearning {
 	evidenceRef: string[];
 	/** Highest-confidence match metadata for measurement. */
 	match: LearningFileMatch;
+	/** Per-file match metadata used to preserve mixed exact and fuzzy counts. */
+	matches?: LearningFileMatch[];
 	/** Concrete implementation or test paths enforcing this learning. */
 	enforcedBy?: string[];
 	/** Decision rationale from the enforcement ledger, when recorded. */
@@ -205,13 +207,21 @@ export function buildReviewContext(
 		)
 		.filter((item): item is ReviewContextLearning => item !== undefined)
 		.sort((a, b) => b.usage - a.usage || a.id.localeCompare(b.id));
-	const closeout = buildReviewLearningCloseout({
-		source,
-		sourceFingerprint: loaded.artifact.inputFingerprint,
-		repo: loaded.artifact.repository,
-		changedFiles,
-		matchingLearnings: applicableLearnings,
-	});
+	const closeout =
+		enforcementStatus.fingerprint === ""
+			? buildUnavailableReviewLearningCloseout({
+					source,
+					repo: loaded.artifact.repository,
+					changedFiles,
+					reason: `n.a.: learning enforcement-status ledger is unavailable at ${enforcementStatus.path}.`,
+				})
+			: buildReviewLearningCloseout({
+					source,
+					sourceFingerprint: loaded.artifact.inputFingerprint,
+					repo: loaded.artifact.repository,
+					changedFiles,
+					matchingLearnings: applicableLearnings,
+				});
 	const reviewHandoff = buildReviewHandoff(applicableLearnings, validationPlan);
 
 	const result: ReviewContextResult = {
@@ -303,6 +313,12 @@ function isContainedByRealRepoRoot(
 	}
 }
 
+/**
+ * Find the nearest existing filesystem ancestor for a candidate path.
+ *
+ * @param path - Absolute or repository-relative path to inspect
+ * @returns The nearest existing ancestor path, or `undefined` when none exists
+ */
 function findNearestExistingAncestor(path: string): string | undefined {
 	let current = path;
 	for (;;) {
@@ -396,6 +412,7 @@ function buildReviewContextLearning(
 		fix: buildFix(item),
 		evidenceRef: buildEvidenceRefs(item),
 		match: strongestMatch,
+		matches: matches.map((entry) => entry.match),
 		...(item.enforcedBy ? { enforcedBy: [...item.enforcedBy] } : {}),
 		...(promotionReason !== undefined ? { promotionReason } : {}),
 	};

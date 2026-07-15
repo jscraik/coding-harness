@@ -138,6 +138,53 @@ describe("runReviewContextCLI", () => {
 		});
 	});
 
+	it("marks closeout evidence n.a. when the enforcement ledger is absent", () => {
+		const dir = mkdtempSync(join(tmpdir(), "review-context-no-ledger-"));
+		cleanup.push(dir);
+		const sourcePath = join(dir, "learnings.csv");
+		const outputPath = join(dir, ".harness/learnings/coderabbit.local.json");
+		writeFileSync(sourcePath, contextCsv, "utf-8");
+		mkdirSync(join(dir, ".harness/learnings"), { recursive: true });
+		expect(
+			runLearningsCLI([
+				"import",
+				"--provider",
+				"coderabbit-csv",
+				"--source",
+				sourcePath,
+				"--repo",
+				"coding-harness",
+				"--output",
+				outputPath,
+				"--json",
+			]),
+		).toBe(0);
+		const infoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		expect(
+			runReviewContextCLI([
+				"--source",
+				outputPath,
+				"--repo-root",
+				dir,
+				"--files",
+				"docs/ai-assistant-security-policy.md",
+				"--json",
+			]),
+		).toBe(0);
+
+		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
+		expect(result.closeout).toMatchObject({
+			status: "not_applicable",
+			reviewContextEvidence: {
+				status: "n.a.",
+				reason: expect.stringContaining("enforcement-status ledger"),
+			},
+		});
+	});
+
 	it("emits applicable learnings with validation-plan entries and writes output", () => {
 		const dir = mkdtempSync(join(tmpdir(), "review-context-"));
 		cleanup.push(dir);
