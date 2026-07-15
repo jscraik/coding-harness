@@ -122,7 +122,7 @@
 	},
 	"scripts": {
 		"check": "pnpm check:static && pnpm test:related && pnpm test:ci && pnpm run audit",
-		"check:static": "pnpm toolchain:check && pnpm lint && pnpm coding-policy:validate && pnpm quality:scripts && pnpm tooling:parity && pnpm docs:lint && pnpm docs:lifecycle && pnpm docs:root-archive:links && pnpm docs:ubiquitous:guard && pnpm docs:steering:guard && pnpm skill:validate && pnpm workflow:validate && pnpm research:evidence:validate && pnpm architecture:check && pnpm types:check && pnpm quality:docstrings && pnpm quality:size && pnpm quality:debt && pnpm quality:self-affirming && pnpm quality:behavior-tests && pnpm quality:git-env-sanitizer && pnpm harness:audit-tracking",
+		"check:static": "pnpm toolchain:check && pnpm lint && pnpm coding-policy:validate && pnpm quality:scripts && pnpm tooling:parity && pnpm docs:lint && pnpm docs:lifecycle && pnpm docs:layer-budgets && pnpm docs:root-archive:links && pnpm docs:ubiquitous:guard && pnpm docs:steering:guard && pnpm skill:validate && pnpm workflow:validate && pnpm research:evidence:validate && pnpm architecture:check && pnpm types:check && pnpm quality:docstrings && pnpm quality:size && pnpm quality:debt && pnpm quality:self-affirming && pnpm quality:behavior-tests && pnpm quality:git-env-sanitizer && pnpm harness:audit-tracking",
 		"toolchain:check": "node scripts/check-node-engine.mjs",
 		"publish:release": "pnpm check && pnpm build && npm publish --access restricted --ignore-scripts=false",
 		"lint": "pnpm codestyle:parity && pnpm codex-preflight:check && pnpm codex:agents:guard && biome check . && pnpm boundary:unknown-guards && pnpm typescript:policy",
@@ -165,6 +165,7 @@
 		"docs:ubiquitous:guard": "bash scripts/check-ubiquitous-language-link.sh",
 		"docs:steering:guard": "node scripts/check-steering-feedback-contract.cjs",
 		"docs:lifecycle": "node --import tsx scripts/check-doc-lifecycle.ts",
+		"docs:layer-budgets": "node scripts/check-documentation-layer-budgets.mjs --json",
 		"docs:archive-candidates": "node --disable-warning=DEP0205 --import tsx scripts/check-docs-archive-candidates.ts",
 		"docs:task-eval": "tsx scripts/check-docs-task-eval.ts",
 		"docs:style:changed": "bash scripts/check-doc-style.sh",

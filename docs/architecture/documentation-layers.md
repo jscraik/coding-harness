@@ -11,7 +11,7 @@ audience:
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-06-04
+last_reviewed: 2026-07-15
 review_cadence: quarterly
 maintenance_trigger:
   - documentation-architecture-change
@@ -58,6 +58,8 @@ This document defines the progressive-disclosure model for Coding Harness docume
 
 - Layer 0 is auto-discovered by Codex and must stay under 130 lines.
 - Layer 1 is the first opened doc for task execution and must stay under 80 lines.
+- Run `pnpm docs:layer-budgets` after changing either surface; the JSON result
+  reports the line count and preserves the claim boundary for this check.
 - No doc appears in more than one layer.
 - Cross-layer links always point downward (0→1→2→3); never require loading a higher layer to execute a lower-layer task.
 - Plans, specs, and ADRs are Layer 3.

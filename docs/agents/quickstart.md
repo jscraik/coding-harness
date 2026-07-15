@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-26
+last_validated: 2026-07-15
 ---
 
 # Quickstart
@@ -8,42 +8,30 @@ last_validated: 2026-04-26
 
 - [Prerequisites](#prerequisites)
 - [Agent-native loop](#agent-native-loop)
-- [Local verification](#local-verification)
+- [Validate](#validate)
 - [Create a PR](#create-a-pr)
-- [Command reference](#command-reference)
-- [Where to go next](#where-to-go-next)
+- [Route deeper](#route-deeper)
 
 ## Prerequisites
 
 ```bash
-node -v   # >= 26.3.0; .mise.toml pins 26.3.0 for this repo
+node -v   # >= 26.3.0; see .mise.toml
 pnpm -v   # 10.33.0
 ```
 
 ## Agent-native loop
 
-Use `harness next --json` as the first read-only entrypoint when an agent needs
-to decide what to do in the current checkout.
+Start with the read-only cockpit entrypoint:
 
 ```bash
 harness next --json
 ```
 
-Read `nextCommand` from the JSON response, check `safeToRun`, then run the
-recommended command when it is safe. Use that command's evidence to continue,
-fix the reported issue, or escalate to a human. Run `harness next --json` again
-after repo state changes.
+Read `nextCommand` and `safeToRun`, run the recommendation when safe, and
+repeat after repository state changes. Use the [CLI reference](../cli-reference.md)
+for the full command contract.
 
-```bash
-harness next --json
-# run the returned nextCommand when safeToRun is true
-harness next --json
-```
-
-For the full command contract, see
-[CLI reference: agent cockpit entrypoint](../cli-reference.md#agent-cockpit-entrypoint).
-
-## Local verification
+## Validate
 
 ```bash
 pnpm install
@@ -52,43 +40,25 @@ pnpm check
 bash scripts/verify-work.sh --fast
 ```
 
-Run the codestyle wrapper before aggregate checks when hook-exported `GIT_*`
-values may be present; it sanitizes those values before nested `pnpm run`
-commands.
+The codestyle wrapper sanitizes hook-exported `GIT_*` values before nested
+`pnpm` commands.
 
 ## Create a PR
 
 ```bash
 git checkout -b codex/JSC-XXX-short-description
-# ... make changes ...
+# make changes, validate, then commit
 bash scripts/validate-codestyle.sh
-git add -A && git commit
 git push -u origin HEAD
 ```
 
-Run the full gate suite before handoff when behavior or policy surfaces changed:
+Open a PR for every merge and keep independent review evidence separate from
+local validation. Use the repository PR template and record exact commands and
+outcomes.
 
-```bash
-bash scripts/verify-work.sh
-```
+## Route deeper
 
-## Command reference
-
-
-| Command                                                    | Purpose                                                                                  |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `pnpm check`                                               | Aggregate governance gate for docs, skills, workflows, architecture, types, quality, tests, local CI-equivalent checks, and audit |
-| `pnpm lint`                                                | Biome check                                                                              |
-| `pnpm typecheck`                                           | TypeScript compiler no-emit check                                                        |
-| `pnpm test`                                                | Vitest run                                                                               |
-| `pnpm build`                                               | Compile to dist/                                                                         |
-| `harness next --json`                                      | Inspect current state and recommend the next safe existing harness command               |
-| `bash scripts/harness-cli.sh source-outline <path> --json` | Inspect TypeScript-family comments and signatures before raw file reads in this checkout |
-
-
-## Where to go next
-
-- Tooling details: [02-tooling-policy.md](./02-tooling-policy.md)
-- Validation gates: [04-validation.md](./04-validation.md)
-- Linear workflow: [13-linear-production-workflow.md](./13-linear-production-workflow.md)
-- Full instruction map: [01-instruction-map.md](./01-instruction-map.md)
+- tooling: [02-tooling-policy](02-tooling-policy.md)
+- validation: [04-validation](04-validation.md)
+- Linear: [13-linear-production-workflow](13-linear-production-workflow.md)
+- full map: [01-instruction-map](01-instruction-map.md)
