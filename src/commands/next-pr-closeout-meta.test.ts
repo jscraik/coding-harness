@@ -1,23 +1,16 @@
 import { describe, expect, it } from "vitest";
-import type { PrCloseoutReport } from "../lib/pr-closeout.js";
 import {
 	DEFAULT_PR_CLOSEOUT_ARTIFACT,
 	prCloseoutDecisionMeta,
 } from "./next-pr-closeout.js";
+import { prCloseoutReport } from "./next-pr-closeout.test-support.js";
 
 describe("harness next pr-closeout metadata", () => {
 	it("sanitizes stack evidence before projecting metadata", () => {
-		const report = {
-			schemaVersion: "pr-closeout/v1",
-			pr: 437,
-			status: "ready",
-			mergeable: true,
-			nextAction: "ready_to_merge",
-			blockers: [],
-			reviewThreads: { unresolved: 0, needsHuman: 0, autofixable: 0 },
-			checks: { total: 0, failed: 0, pending: 0, passed: 0, unknown: 0 },
+		const report = prCloseoutReport({
 			stackState: {
 				status: "unknown",
+				required: false,
 				reason: "Inspect /Users/jamie/private?token=secret",
 				evidenceRefs: ["/Users/jamie/private?token=secret"],
 				blockerRefs: ["/home/jamie/private?api_key=secret"],
@@ -25,7 +18,7 @@ describe("harness next pr-closeout metadata", () => {
 				lowerPrs: [435],
 				baseSha: "abc123",
 			},
-		} as unknown as PrCloseoutReport;
+		});
 		const metadata = prCloseoutDecisionMeta({
 			report,
 			artifactPath: DEFAULT_PR_CLOSEOUT_ARTIFACT,
@@ -35,6 +28,10 @@ describe("harness next pr-closeout metadata", () => {
 			prCloseout: {
 				stackState: {
 					status: "unknown",
+					required: false,
+					reason: expect.stringContaining("[HOME]"),
+					evidenceRefs: [expect.stringContaining("[REDACTED]")],
+					blockerRefs: [expect.stringContaining("[REDACTED]")],
 					parentPr: 436,
 					lowerPrs: [435],
 					baseSha: "abc123",

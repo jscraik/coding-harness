@@ -335,6 +335,7 @@ function hasReadyPrCloseoutStackState(
 	const stack = report.stackState;
 	if (stack === undefined || stack === null) return true;
 	if (!isPrCloseoutStackState(stack)) return false;
+	if (stack.status === "unstable") return false;
 	if (stack.required === false) return true;
 	return stack.status === "stable" || stack.status === "not_applicable";
 }

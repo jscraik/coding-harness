@@ -68,6 +68,7 @@ describe("stack-aware PR closeout evidence", () => {
 			stackState: {
 				status: "unstable",
 				required: false,
+				blockerRefs: ["artifact:stack.json"],
 				reason: "Lower stack layer is conflicted.",
 			},
 		});
@@ -78,7 +79,7 @@ describe("stack-aware PR closeout evidence", () => {
 			expect.arrayContaining([
 				expect.objectContaining({
 					surface: "branch",
-					ref: "stack:state",
+					ref: "stack:artifact:stack.json",
 					fixableByCodex: false,
 				}),
 			]),
