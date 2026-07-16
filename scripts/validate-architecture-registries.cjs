@@ -3,6 +3,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const { findDirectPnpmAudit } = require("./lib/direct-pnpm-audit.cjs");
 
 const root = process.cwd();
 const registries = [
@@ -55,8 +56,10 @@ function aggregatePnpmCommands(commandText) {
 		.split(/\s+&&\s+/)
 		.map((item) => item.trim())
 		.filter((item) => item !== "")) {
-		const match = /^pnpm\s+(?:(?:run)\s+)?([^\s]+)$/.exec(commandTextEntry);
-		if (match) commands.add(`pnpm ${match[1]}`);
+		const match = /^pnpm\s+(?:(run)\s+)?([^\s]+)$/.exec(commandTextEntry);
+		if (match) {
+			commands.add(match[1] ? `pnpm run ${match[2]}` : `pnpm ${match[2]}`);
+		}
 	}
 	return commands;
 }
@@ -77,7 +80,7 @@ function aggregatePnpmCommandsWithOneLevel(commandText, packageScripts = {}) {
 }
 
 function scriptNameForPnpmCommand(command) {
-	const match = /^pnpm\s+([^\s]+)$/.exec(String(command));
+	const match = /^pnpm\s+(?:run\s+)?([^\s]+)$/.exec(String(command));
 	return match?.[1] ?? null;
 }
 
@@ -89,7 +92,73 @@ function sameStringSet(left, right) {
 	return true;
 }
 
+function markdownFilesUnder(relativeDirectory) {
+	const directory = path.join(root, relativeDirectory);
+	if (!fs.existsSync(directory)) return [];
+	return fs
+		.readdirSync(directory, { recursive: true, withFileTypes: true })
+		.filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+		.map((entry) =>
+			path.relative(root, path.join(entry.parentPath, entry.name)),
+		);
+}
+
+function auditGuidancePaths() {
+	return [
+		"AGENTS.md",
+		"CODESTYLE.md",
+		"README.md",
+		"SECURITY.md",
+		"src/templates/CODESTYLE.md",
+		"docs/ai-assistant-security-policy.md",
+		"docs/examples/trust-artifacts/run-record.example.json",
+		...markdownFilesUnder("codestyle"),
+		...markdownFilesUnder("src/templates/codestyle"),
+		...markdownFilesUnder("docs/agents"),
+		...markdownFilesUnder("docs/automations"),
+		...markdownFilesUnder("docs/security"),
+	];
+}
+
+function validateNoDirectPnpmAudit(relativePath, text, violations) {
+	if (findDirectPnpmAudit(text).length === 0) return;
+	violations.push({
+		file: relativePath,
+		message: "audit guidance must use pnpm run audit",
+	});
+}
+
+function validateAuditCommandSurfaces(violations) {
+	const makefile = fs.readFileSync(path.join(root, "Makefile"), "utf8");
+	const auditTarget =
+		/^audit:[^\n]*\n((?:\t[^\n]*\n)+)/m.exec(makefile)?.[1] ?? "";
+	if (!/^\tpnpm run audit\s*$/m.test(auditTarget)) {
+		violations.push({
+			file: "Makefile",
+			message: "audit target must delegate to pnpm run audit",
+		});
+	}
+
+	const codingPolicy = parseJson("coding-policy.json", violations);
+	for (const module of codingPolicy?.policyModules ?? []) {
+		for (const command of module.requiredGates ?? []) {
+			if (findDirectPnpmAudit(command).length > 0) {
+				violations.push({
+					file: "coding-policy.json",
+					message: `${module.id}.requiredGates must use pnpm run audit`,
+				});
+			}
+		}
+	}
+
+	for (const relativePath of new Set(auditGuidancePaths())) {
+		const text = fs.readFileSync(path.join(root, relativePath), "utf8");
+		validateNoDirectPnpmAudit(relativePath, text, violations);
+	}
+}
+
 const violations = [];
+validateAuditCommandSurfaces(violations);
 for (const registry of registries) {
 	const parsed = parseJson(registry.path, violations);
 	if (!parsed) continue;

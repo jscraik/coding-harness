@@ -108,7 +108,7 @@ check: ## Run all required quality gates
 # === Security ===
 
 audit: ## Run security audit
-	pnpm audit
+	pnpm run audit
 
 secrets: ## Scan for secrets with gitleaks
 	@gitleaks detect --source . --verbose || (echo "Install gitleaks: brew install gitleaks" && exit 1)

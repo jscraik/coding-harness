@@ -8,7 +8,7 @@ describe("scaffold CircleCI config template", () => {
 		lintCommand: "pnpm lint",
 		typecheckCommand: "pnpm typecheck",
 		testCommand: "pnpm test:ci",
-		auditCommand: "pnpm audit",
+		auditCommand: "pnpm run audit",
 		checkCommand: "pnpm check",
 		dependencyAuditCommand: "pnpm audit:strict",
 		memoryValidateCommand: "pnpm memory:validate",
@@ -45,7 +45,7 @@ describe("scaffold CircleCI config template", () => {
 		expect(config).toContain("command: pnpm lint");
 		expect(config).toContain("command: pnpm typecheck");
 		expect(config).toContain("command: pnpm test:ci");
-		expect(config).toContain("command: pnpm audit");
+		expect(config).toContain("command: pnpm run audit");
 		expect(config).toContain("command: pnpm check");
 		expect(config).toContain("command: pnpm memory:validate");
 		expect(config).toContain("name: Configure pnpm store");

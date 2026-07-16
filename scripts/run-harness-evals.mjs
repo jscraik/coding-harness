@@ -1185,8 +1185,8 @@ async function runValidationPlanFixture(scenario, fixturePath) {
 			commands.has("bash scripts/validate-codestyle.sh --fast"),
 		),
 		assertion(
-			"pnpm audit is classified as networkRequired",
-			networkRequired.has("pnpm audit"),
+			"pnpm run audit is classified as networkRequired",
+			networkRequired.has("pnpm run audit"),
 		),
 		assertion(
 			"changed files match fixture input",

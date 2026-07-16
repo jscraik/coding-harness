@@ -48,7 +48,7 @@ This status sheet tracks repository-level controls and evidence for OSPS Baselin
 | OSPS-AC-03 | Review independence and merge gating are enforced | `harness.contract.json` (`reviewPolicy.enforceReviewerIndependence`), PR template checklist | Met |
 | OSPS-AC-04 | Access and auth expectations for mutative automation are documented | `docs/agents/06-security-and-governance.md`, `docs/ai-assistant-security-policy.md` | Met |
 | OSPS-BR-06 | Security policy is present and maintained with review cadence | `docs/ai-assistant-security-policy.md` | Met |
-| OSPS-DO-02 | Dependency and vulnerability checks are run in CI | `.github/workflows/secret-scan.yml`, `pnpm audit` contract in `package.json` | Partial |
+| OSPS-DO-02 | Dependency and vulnerability checks are run in CI | `.github/workflows/secret-scan.yml`, `pnpm run audit` contract in `package.json` | Partial |
 | OSPS-QA-01 | Defined verification gate sequence exists and is auditable | `scripts/validate-codestyle.sh`, `scripts/verify-work.sh`, `docs/agents/04-validation.md` | Met |
 | OSPS-GV-01 | Security governance ownership and escalation paths are explicit | `docs/agents/06-security-and-governance.md`, `AGENTS.md` | Met |
 | OSPS-GV-03 | Scorecard-based posture tracking and regression handling is active | `.github/workflows/openssf-scorecard.yml`, `security/openssf-scorecard-policy.json`, `scripts/check-scorecard-regressions.mjs` | In Progress |

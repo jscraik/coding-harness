@@ -82,7 +82,7 @@ truth.
 ## Validation
 
 - Baseline: `pnpm codestyle:parity`, `pnpm codex:agents:guard`,
-  `pnpm check:static`, `pnpm check`, `bash scripts/validate-codestyle.sh`,
+  `pnpm check:static`, `pnpm run audit`, `pnpm check`, `bash scripts/validate-codestyle.sh`,
   and `bash scripts/verify-work.sh`.
 - Fast lanes: `pnpm run quality:scripts`, `pnpm run tooling:parity`, and
   `bash scripts/validate-codestyle.sh --fast`.

@@ -84,7 +84,7 @@ run_check "lint" "pnpm lint"
 run_check "docs:lint" "pnpm docs:lint"
 run_check "typecheck" "pnpm typecheck"
 run_check "test" "pnpm test"
-run_check "audit" "pnpm audit"
+run_check "audit" "pnpm run audit"
 
 echo ""
 echo "=========================================="

@@ -115,7 +115,7 @@
 				"pnpm-lock.yaml"
 			],
 			"sourceRules": ["dependency-management"],
-			"requiredGates": ["pnpm install --frozen-lockfile", "pnpm audit"]
+			"requiredGates": ["pnpm install --frozen-lockfile", "pnpm run audit"]
 		},
 		{
 			"id": "git-workflow",
@@ -146,7 +146,7 @@
 				"src/**/secret*"
 			],
 			"sourceRules": ["no-secrets"],
-			"requiredGates": ["pnpm audit"]
+			"requiredGates": ["pnpm run audit"]
 		},
 		{
 			"id": "testing",

@@ -41,7 +41,7 @@ correctness or delivery readiness.
 - `pnpm lint`
 - `pnpm typecheck`
 - `pnpm test`
-- `pnpm audit`
+- `pnpm run audit`
 - `pnpm check`
 - `bash scripts/validate-codestyle.sh`
 - `docs-gate` (CI check for documentation parity)

@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-04
+last_validated: 2026-07-16
 doc_schema: coding-harness-doc/v1
 doc_type: lifecycle
 authority: canon
@@ -289,7 +289,7 @@ Operational notes:
 Before a coding-harness issue is ready for review:
 
 - the linked branch/PR exists,
-- required validation commands have been run (`pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check`),
+- required validation commands have been run (`pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm run audit`, `pnpm check`),
 - CI gates pass including `docs-gate` for documentation parity,
 - evidence is attached or summarized,
 - blockers and risks are explicit,
