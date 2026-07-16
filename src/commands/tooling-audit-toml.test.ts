@@ -70,7 +70,7 @@ function createCompliantRepo(root: string): void {
 	writeRepoFile(
 		root,
 		"prek.toml",
-		`default_install_hook_types = ["pre-commit", "pre-push"]\n\n[[repos]]\nrepo = "local"\n\n[[repos.hooks]]\nid = "pre-commit"\nname = "${REQUIRED_PREK_HOOKS["pre-commit"].name}"\nentry = "${REQUIRED_PREK_HOOKS["pre-commit"].entry}"\nlanguage = "${REQUIRED_PREK_HOOKS["pre-commit"].language}"\npass_filenames = false\n\n[[repos.hooks]]\nid = "pre-push"\nname = "${REQUIRED_PREK_HOOKS["pre-push"].name}"\nentry = "${REQUIRED_PREK_HOOKS["pre-push"].entry}"\nlanguage = "${REQUIRED_PREK_HOOKS["pre-push"].language}"\npass_filenames = false\nstages = ["pre-push"]\n`,
+		`default_install_hook_types = ["pre-commit", "pre-push"]\n\n[[repos]]\nrepo = "local"\n\n[[repos.hooks]]\nid = "pre-commit"\nname = "${REQUIRED_PREK_HOOKS["pre-commit"].name}"\nentry = "${REQUIRED_PREK_HOOKS["pre-commit"].entry}"\nlanguage = "${REQUIRED_PREK_HOOKS["pre-commit"].language}"\npass_filenames = false\nstages = ["pre-commit"]\n\n[[repos.hooks]]\nid = "pre-push"\nname = "${REQUIRED_PREK_HOOKS["pre-push"].name}"\nentry = "${REQUIRED_PREK_HOOKS["pre-push"].entry}"\nlanguage = "${REQUIRED_PREK_HOOKS["pre-push"].language}"\npass_filenames = false\nstages = ["pre-push"]\n`,
 	);
 }
 
@@ -157,6 +157,22 @@ describe("tooling-audit TOML compatibility", () => {
 					EXIT_CODES.SUCCESS,
 				],
 				[
+					basePrek.replace(
+						'entry = "bash scripts/hook-pre-commit.sh"',
+						'entry =\n"bash scripts/hook-pre-commit.sh"',
+					),
+					baseReadiness,
+					EXIT_CODES.DRIFT_DETECTED,
+				],
+				[
+					basePrek.replace(
+						'entry = "bash scripts/hook-pre-commit.sh"',
+						'entry = "bash scripts/hook-pre-\\\ncommit.sh"',
+					),
+					baseReadiness,
+					EXIT_CODES.DRIFT_DETECTED,
+				],
+				[
 					basePrek.replaceAll("[[repos.hooks]]", "[[ repos.hooks ]]"),
 					baseReadiness,
 					EXIT_CODES.SUCCESS,
@@ -215,6 +231,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd -P)"
 exec bash "$SCRIPT_DIR/../check-environment_impl.sh" "$@"
 `,
+			`#!/usr/bin/env bash
+SCRIPT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd -P)"
+set -euo pipefail
+exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
+`,
 		];
 		try {
 			for (const wrapper of wrappers) {
@@ -226,6 +247,80 @@ exec bash "$SCRIPT_DIR/../check-environment_impl.sh" "$@"
 				expect(result.ok).toBe(true);
 				if (result.ok)
 					expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("treats omitted hook stages as the configured Prek defaults", async () => {
+		const tempRoot = mkdtempSync(
+			join(tmpdir(), "tooling-audit-prek-default-stages-"),
+		);
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir);
+		const prekPath = join(repoDir, "prek.toml");
+		writeFileSync(
+			prekPath,
+			readFileSync(prekPath, "utf-8").replace(
+				'pass_filenames = false\nstages = ["pre-commit"]',
+				"pass_filenames = false",
+			),
+			"utf-8",
+		);
+
+		try {
+			const result = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+				expect(
+					result.value.result.results[0]?.findings.some((finding) =>
+						finding.description.includes("unsupported effective stage"),
+					),
+				).toBe(true);
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("requires the configured approved leaf command file to exist", async () => {
+		const tempRoot = mkdtempSync(
+			join(tmpdir(), "tooling-audit-prek-leaf-file-"),
+		);
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir);
+		const prekPath = join(repoDir, "prek.toml");
+		writeFileSync(
+			prekPath,
+			readFileSync(prekPath, "utf-8").replace(
+				"bash scripts/hook-pre-push.sh",
+				"bash scripts/hooks/pre-push.sh",
+			),
+			"utf-8",
+		);
+
+		try {
+			const result = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+				expect(
+					result.value.result.results[0]?.findings.some(
+						(finding) =>
+							finding.path === "scripts/hooks/pre-push.sh" &&
+							finding.description.includes("missing approved leaf command"),
+					),
+				).toBe(true);
 			}
 		} finally {
 			rmSync(tempRoot, { recursive: true, force: true });

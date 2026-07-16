@@ -97,6 +97,20 @@ const FORBIDDEN_PREK_HOOK_ENTRY_PATTERNS = [
 
 const MAX_READINESS_FORWARDING_DEPTH = 4;
 
+const PREK_ALL_STAGES = [
+	"manual",
+	"commit-msg",
+	"post-checkout",
+	"post-commit",
+	"post-merge",
+	"post-rewrite",
+	"pre-commit",
+	"pre-merge-commit",
+	"pre-push",
+	"pre-rebase",
+	"prepare-commit-msg",
+] as const;
+
 interface ParsedPrekHook {
 	id: string | undefined;
 	entry: string | undefined;
@@ -304,6 +318,7 @@ function validateReadinessForwardingShape(
 	forwardingExecPattern: RegExp,
 ): string | null {
 	if (lines[0] !== "#!/usr/bin/env bash") return "invalid shebang";
+	const commandLines = lines.filter((line) => !line.startsWith("#"));
 	const strictModeCount = lines.filter(
 		(line) => stripShellTrailingComment(line) === "set -euo pipefail",
 	).length;
@@ -312,6 +327,13 @@ function validateReadinessForwardingShape(
 		isCanonicalScriptDirAssignment(line),
 	).length;
 	if (scriptDirCount !== 1) return "invalid SCRIPT_DIR assignment";
+	if (
+		stripShellTrailingComment(commandLines[0] ?? "") !== "set -euo pipefail" ||
+		!isCanonicalScriptDirAssignment(commandLines[1] ?? "") ||
+		!forwardingExecPattern.test(commandLines[2] ?? "")
+	) {
+		return "strict mode, SCRIPT_DIR assignment, and exec must appear in order";
+	}
 	return (
 		lines.find(
 			(line) =>
@@ -704,7 +726,7 @@ function readTomlKey(
  */
 function parseTomlValue(block: string, start: number): TomlValueResult {
 	let cursor = start;
-	while (cursor < block.length && /[ \t\r\n]/.test(block[cursor] ?? "")) {
+	while (cursor < block.length && /[ \t]/.test(block[cursor] ?? "")) {
 		cursor += 1;
 	}
 	return parseTomlValueAtCursor(block, cursor);
@@ -818,6 +840,9 @@ function findTomlQuote(
 		cursor < block.length;
 		cursor += 1
 	) {
+		if (!multiline && (block[cursor] === "\n" || block[cursor] === "\r")) {
+			return -1;
+		}
 		if (
 			block.slice(cursor, cursor + delimiter.length) === delimiter &&
 			(quote === "'" || !isTomlEscaped(block, cursor))
@@ -855,10 +880,12 @@ function isTomlEscaped(block: string, offset: number): boolean {
  * @returns Decoded string.
  */
 function decodeTomlBasicString(raw: string, multiline: boolean): string {
-	const normalized = normalizeTomlMultilineString(raw, multiline).replace(
-		/\\(?:\r\n|\n)[ \t\r\n]*/g,
-		"",
-	);
+	const normalized = multiline
+		? normalizeTomlMultilineString(raw, true).replace(
+				/\\(?:\r\n|\n)[ \t\r\n]*/g,
+				"",
+			)
+		: raw;
 	return normalized.replace(/\\(["\\bfnrt])/g, (_match, escapeCode: string) => {
 		const escapes: Record<string, string> = {
 			'"': '"',
@@ -1139,31 +1166,35 @@ function consumeTomlTrailing(
  * @returns Parsed hook entries and their effective stages.
  */
 function parsePrekHooks(content: string): ParsedPrekHook[] {
-	return content
-		.split(/^\s*\[\[\s*repos\s*\.\s*hooks\s*\]\](?:\s*#.*)?\s*$/m)
-		.slice(1)
-		.map((block) => {
-			const id = parseQuotedTomlValue(block, "id");
-			const entry = parseQuotedTomlValue(block, "entry");
-			const language = parseQuotedTomlValue(block, "language");
-			const passFilenames = parseBooleanTomlValue(block, "pass_filenames");
-			const declaredStages = parseStringArrayTomlValue(block, "stages");
-			return {
+	const hookBlocks = content.split(
+		/^\s*\[\[\s*repos\s*\.\s*hooks\s*\]\](?:\s*#.*)?\s*$/m,
+	);
+	const defaultStages = parseStringArrayTomlValue(
+		hookBlocks[0] ?? "",
+		"default_stages",
+	) ?? [...PREK_ALL_STAGES];
+	return hookBlocks.slice(1).map((block) => {
+		const id = parseQuotedTomlValue(block, "id");
+		const entry = parseQuotedTomlValue(block, "entry");
+		const language = parseQuotedTomlValue(block, "language");
+		const passFilenames = parseBooleanTomlValue(block, "pass_filenames");
+		const declaredStages = parseStringArrayTomlValue(block, "stages");
+		return {
+			id,
+			entry,
+			language,
+			passFilenames,
+			stages: declaredStages ?? defaultStages,
+			duplicateKeys: collectDuplicateTomlKeys(block),
+			invalidKeys: collectInvalidTomlKeys(block, {
 				id,
 				entry,
 				language,
-				passFilenames,
-				stages: declaredStages ?? ["pre-commit"],
-				duplicateKeys: collectDuplicateTomlKeys(block),
-				invalidKeys: collectInvalidTomlKeys(block, {
-					id,
-					entry,
-					language,
-					pass_filenames: passFilenames,
-					stages: declaredStages,
-				}),
-			};
-		});
+				pass_filenames: passFilenames,
+				stages: declaredStages,
+			}),
+		};
+	});
 }
 
 /**
@@ -1311,6 +1342,7 @@ function isForbiddenPrekHookEntry(entry: string): boolean {
 function auditPrekHookLeafEntries(
 	findings: ToolingAuditFinding[],
 	parsedHooks: ParsedPrekHook[],
+	repoPath: string,
 ): void {
 	for (const hook of parsedHooks) {
 		const entry = hook.entry;
@@ -1342,7 +1374,38 @@ function auditPrekHookLeafEntries(
 				});
 			}
 		}
+		auditPrekHookCommandFile(findings, hook, repoPath);
 	}
+}
+
+/**
+ * Require the script referenced by an approved Prek leaf command.
+ *
+ * @param findings - Finding list to append missing-command violations to.
+ * @param hook - Parsed hook whose entry may name an approved script.
+ * @param repoPath - Repository root used to resolve the command path.
+ */
+function auditPrekHookCommandFile(
+	findings: ToolingAuditFinding[],
+	hook: ParsedPrekHook,
+	repoPath: string,
+): void {
+	const entry = hook.entry;
+	if (entry === undefined) return;
+	const approved = Object.values(APPROVED_PREK_LEAF_ENTRIES).some((entries) =>
+		(entries as readonly string[]).includes(entry),
+	);
+	if (!approved) return;
+	const commandPath = entry.match(/^bash\s+(scripts\/[A-Za-z0-9._/-]+)$/)?.[1];
+	if (commandPath === undefined || existsSync(join(repoPath, commandPath)))
+		return;
+	findings.push({
+		path: commandPath,
+		severity: "critical",
+		description: `Prek hook '${hook.id ?? "unknown"}' references a missing approved leaf command`,
+		expected: "Configured approved leaf command exists in the repository",
+		actual: commandPath,
+	});
 }
 
 /**
@@ -1971,7 +2034,7 @@ function auditLocalHooks(
 			}
 		}
 		auditPrekHookEntryBoundaries(findings, prekContent);
-		auditPrekHookLeafEntries(findings, parsedHooks);
+		auditPrekHookLeafEntries(findings, parsedHooks, repoPath);
 	}
 
 	const packagePath = join(repoPath, TOOLING_PACKAGE_JSON_PATH);

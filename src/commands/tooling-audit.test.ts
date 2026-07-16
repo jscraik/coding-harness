@@ -120,6 +120,7 @@ name = "${REQUIRED_PREK_HOOKS["pre-commit"].name}"
 entry = "${REQUIRED_PREK_HOOKS["pre-commit"].entry}"
 language = "${REQUIRED_PREK_HOOKS["pre-commit"].language}"
 pass_filenames = ${String(REQUIRED_PREK_HOOKS["pre-commit"].pass_filenames)}
+stages = ["pre-commit"]
 
 [[repos.hooks]]
 id = "pre-push"
@@ -276,6 +277,11 @@ exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@" # approved forwarding com
 			repoDir,
 			"scripts/check-environment_impl.sh",
 			effectiveReadiness,
+		);
+		writeRepoFile(
+			repoDir,
+			"scripts/hooks/commit-msg.sh",
+			"#!/usr/bin/env bash\nexit 0\n",
 		);
 		writeRepoFile(
 			repoDir,
