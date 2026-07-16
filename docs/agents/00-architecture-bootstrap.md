@@ -169,6 +169,9 @@ Codex preflight changes are architecture-adjacent when they alter Local Memory,
 Project Brain, or runtime-readiness enforcement. Legacy positional
 `scripts/codex-preflight.sh` invocations must preserve the required Local
 Memory default unless the caller explicitly selects `off` or `optional`.
+Keep the runtime and scaffold-template preflight mirrors synchronized. Any
+test-only runner-isolation control must require explicit test authorization and
+exit non-zero whenever CI is present, even under optional Local Memory mode.
 When that parser or its generated template changes, refresh the architecture
 context pack and keep this guide synchronized with `AGENTS.md` and
 `docs/agents/07b-agent-governance.md` so future agents can trace the
