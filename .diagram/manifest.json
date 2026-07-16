@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-07-16T15:01:13.359Z",
+	"generatedAt": "2026-07-16T20:26:11.900Z",
 	"schemaVersion": "1.0",
 	"rootPath": ".",
 	"diagramDir": ".diagram",
@@ -87,7 +87,7 @@
 			"file": "events.mmd",
 			"outputPath": ".diagram/events.mmd",
 			"lines": 36,
-			"bytes": 2611,
+			"bytes": 2668,
 			"isPlaceholder": false
 		},
 		{

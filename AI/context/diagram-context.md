@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-16T15:01:13Z
+Generated: 2026-07-16T20:25:43Z
 
 ## Table of Contents
 
@@ -31,8 +31,14 @@ Generated: 2026-07-16T15:01:13Z
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
 - `package.json`
 - `src/commands/next-agent-native-ratchets.ts`
+- `src/commands/review-gate-core.ts`
 - `src/lib/cli/registry/agent-native-packet-command-specs.ts`
 - `src/lib/cli/registry/command-agent-catalog-rules.ts`
+- `src/lib/contract/json-schema-core.ts`
+- `src/lib/contract/types-core.ts`
+- `src/lib/contract/validator-core.ts`
+- `src/lib/init/README.md`
+- `src/lib/init/types.ts`
 - `src/lib/synaipse/improvement-case.ts`
 - `src/lib/synaipse/packet-caller-inventory.ts`
 - `src/lib/synaipse/packet-candidate-identity.ts`
@@ -1863,6 +1869,7 @@ flowchart TD
     ci_migrate_merge_queue_window_0070bd6d{{"ci-migrate-merge-queue-window"}}
     ci_migrate_promotion_evidence_1a2dc527{{"ci-migrate-promotion-evidence"}}
     ownership_gate_workflow_triggers_b60d2eab{{"ownership-gate-workflow-triggers"}}
+    agent_native_packet_command_specs_5e921752{{"agent-native-packet-command-specs"}}
     docs_gate_command_spec_16795187{{"docs-gate-command-spec"}}
     harness_run_c0761792{{"harness-run"}}
     json_schema_core_96d7e328{{"json-schema-core"}}
@@ -1875,10 +1882,9 @@ flowchart TD
     job_store_4ca3b42f{{"job-store"}}
     outcome_closeout_ba497ec2{{"outcome-closeout"}}
     client_948fe603{{"client"}}
-    mutation_queue_ce5a530e{{"mutation-queue"}}
   end
   classDef eventNode fill:#db2777,color:#fff
-  class validate_action_review_receipt_fa2f06c3,validate_review_lifecycle_0b410d1e,validate_steering_queue_4bc0cc94,ci_migrate_core_7005b5af,context_health_80bb7da9,pilot_rollback_00c1f82c,replay_output_993eda9e,replay_run_record_9a08cce2,runtime_card_args_2b3d4b28,runtime_card_artifacts_143b799c,runtime_card_options_c9156ad5,runtime_card_e06b53e1,validation_98c41dcd,cli_args_1_6144b055,ci_migrate_merge_queue_window_0070bd6d,ci_migrate_promotion_evidence_1a2dc527,ownership_gate_workflow_triggers_b60d2eab,docs_gate_command_spec_16795187,harness_run_c0761792,json_schema_core_96d7e328,policy_validators_core_714a3fe7,run_record_emitter_core_688049d5,run_records_core_89286dfa,judge_pm_audit_ccd20b35,types_11_4be3ee64,observed_skill_usage_ed7d5930,job_store_4ca3b42f,outcome_closeout_ba497ec2,client_948fe603,mutation_queue_ce5a530e eventNode
+  class validate_action_review_receipt_fa2f06c3,validate_review_lifecycle_0b410d1e,validate_steering_queue_4bc0cc94,ci_migrate_core_7005b5af,context_health_80bb7da9,pilot_rollback_00c1f82c,replay_output_993eda9e,replay_run_record_9a08cce2,runtime_card_args_2b3d4b28,runtime_card_artifacts_143b799c,runtime_card_options_c9156ad5,runtime_card_e06b53e1,validation_98c41dcd,cli_args_1_6144b055,ci_migrate_merge_queue_window_0070bd6d,ci_migrate_promotion_evidence_1a2dc527,ownership_gate_workflow_triggers_b60d2eab,agent_native_packet_command_specs_5e921752,docs_gate_command_spec_16795187,harness_run_c0761792,json_schema_core_96d7e328,policy_validators_core_714a3fe7,run_record_emitter_core_688049d5,run_records_core_89286dfa,judge_pm_audit_ccd20b35,types_11_4be3ee64,observed_skill_usage_ed7d5930,job_store_4ca3b42f,outcome_closeout_ba497ec2,client_948fe603 eventNode
 
 ```
 
