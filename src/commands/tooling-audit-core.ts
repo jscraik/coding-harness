@@ -113,6 +113,7 @@ const PREK_ALL_STAGES = [
 
 interface ParsedPrekHook {
 	id: string | undefined;
+	name: string | undefined;
 	entry: string | undefined;
 	language: string | undefined;
 	passFilenames: boolean | undefined;
@@ -210,7 +211,11 @@ function readTextFile(path: string): string | null {
 	if (!existsSync(path)) {
 		return null;
 	}
-	return readFileSync(path, "utf-8");
+	try {
+		return readFileSync(path, "utf-8");
+	} catch {
+		return null;
+	}
 }
 
 /**
@@ -238,19 +243,20 @@ function parseReadinessForwardingTarget(
 	const scriptDirMarkerPattern =
 		/^\s*SCRIPT_DIR=.*(?:BASH_SOURCE|\$\{?BASH_SOURCE)/;
 	const lines = content.split(/\r?\n/);
-	const hasScriptDirExec =
-		/^\s*exec\b.*(?:\$\{SCRIPT_DIR\}|\$SCRIPT_DIR)\//m.test(content);
+	const hasForwardingExec =
+		/^\s*exec\s+(?:(?:bash|sh)\s+)?(?:"[^"\r\n]+\.sh"|\S+\.sh)/m.test(content);
 	const scriptDirLines = lines.filter((line) =>
 		scriptDirMarkerPattern.test(line),
 	);
+	if (!hasForwardingExec) {
+		return { target: null, error: null };
+	}
 	if (scriptDirLines.length === 0) {
-		return hasScriptDirExec
-			? {
-					target: null,
-					error:
-						"Readiness forwarding must use the canonical SCRIPT_DIR assignment",
-				}
-			: { target: null, error: null };
+		return {
+			target: null,
+			error:
+				"Readiness forwarding must use the canonical SCRIPT_DIR assignment",
+		};
 	}
 	const invalidScriptDirLine = scriptDirLines.find(
 		(line) => !isCanonicalScriptDirAssignment(line),
@@ -262,12 +268,8 @@ function parseReadinessForwardingTarget(
 		};
 	}
 
-	if (!hasScriptDirExec) {
-		return { target: null, error: null };
-	}
-
 	const forwardingExecPattern =
-		/^\s*exec\s+(?:bash|sh)\s+(?:"(?:\$\{SCRIPT_DIR\}|\$SCRIPT_DIR)\/([A-Za-z0-9._/-]+)"|(?:\$\{SCRIPT_DIR\}|\$SCRIPT_DIR)\/([A-Za-z0-9._/-]+))\s+"\$@"(?:\s+#.*)?\s*$/;
+		/^\s*exec\s+bash\s+(?:"(?:\$\{SCRIPT_DIR\}|\$SCRIPT_DIR)\/([A-Za-z0-9._/-]+)"|(?:\$\{SCRIPT_DIR\}|\$SCRIPT_DIR)\/([A-Za-z0-9._/-]+))\s+"\$@"(?:\s+#.*)?\s*$/;
 	const forwardingMatches = lines
 		.map((line) => line.trim())
 		.filter((line) => line.length > 0 && forwardingExecPattern.test(line));
@@ -275,7 +277,7 @@ function parseReadinessForwardingTarget(
 		return {
 			target: null,
 			error:
-				"Readiness forwarding must use exactly one bash/sh exec with the original arguments",
+				"Readiness forwarding must use exactly one bash exec with the original arguments",
 		};
 	}
 
@@ -375,7 +377,7 @@ function stripShellTrailingComment(line: string): string {
  * @returns Whether the line ends at the assignment value without extra commands.
  */
 function isCanonicalScriptDirAssignment(line: string): boolean {
-	return /^\s*SCRIPT_DIR="\$\(cd(?: --)? "\$\(dirname(?: --)? "\$\{BASH_SOURCE\[0\]\}"\)" && pwd(?: -P)?\)"(?:\s+#.*)?$/.test(
+	return /^\s*SCRIPT_DIR="\$\(cd -- "\$\(dirname -- "\$\{BASH_SOURCE\[0\]\}"\)" && pwd -P\)"(?:\s+#.*)?$/.test(
 		line,
 	);
 }
@@ -886,18 +888,31 @@ function decodeTomlBasicString(raw: string, multiline: boolean): string {
 				"",
 			)
 		: raw;
-	return normalized.replace(/\\(["\\bfnrt])/g, (_match, escapeCode: string) => {
-		const escapes: Record<string, string> = {
-			'"': '"',
-			"\\": "\\",
-			b: "\b",
-			f: "\f",
-			n: "\n",
-			r: "\r",
-			t: "\t",
-		};
-		return escapes[escapeCode] ?? escapeCode;
-	});
+	const unicodeDecoded = normalized.replace(
+		/\\(?:u([0-9A-Fa-f]{4})|U([0-9A-Fa-f]{8}))/g,
+		(match, short: string | undefined, long: string | undefined) => {
+			const codePoint = Number.parseInt(short ?? long ?? "", 16);
+			return codePoint <= 0x10ffff &&
+				!(codePoint >= 0xd800 && codePoint <= 0xdfff)
+				? String.fromCodePoint(codePoint)
+				: match;
+		},
+	);
+	return unicodeDecoded.replace(
+		/\\(["\\bfnrt])/g,
+		(_match, escapeCode: string) => {
+			const escapes: Record<string, string> = {
+				'"': '"',
+				"\\": "\\",
+				b: "\b",
+				f: "\f",
+				n: "\n",
+				r: "\r",
+				t: "\t",
+			};
+			return escapes[escapeCode] ?? escapeCode;
+		},
+	);
 }
 
 /**
@@ -1165,29 +1180,122 @@ function consumeTomlTrailing(
  * @param content - Prek TOML configuration.
  * @returns Parsed hook entries and their effective stages.
  */
+type TomlMultilineState = "normal" | "basic" | "literal";
+
+/** Find a multiline TOML delimiter after a scan offset. */
+function findTomlMultilineEnd(
+	line: string,
+	start: number,
+	delimiter: '"""' | "'''",
+): number {
+	let cursor = line.indexOf(delimiter, start);
+	while (delimiter === '"""' && cursor !== -1 && isTomlEscaped(line, cursor))
+		cursor = line.indexOf(delimiter, cursor + delimiter.length);
+	return cursor;
+}
+
+/** Skip one single-line TOML quoted string. */
+function skipTomlQuotedString(
+	line: string,
+	start: number,
+	quote: '"' | "'",
+): number {
+	let cursor = start + 1;
+	while (cursor < line.length) {
+		if (
+			line[cursor] === quote &&
+			(quote === "'" || !isTomlEscaped(line, cursor))
+		)
+			return cursor;
+		cursor += 1;
+	}
+	return line.length;
+}
+
+/** Advance multiline TOML string state across one physical line. */
+function tomlStateAfterLine(
+	line: string,
+	initial: TomlMultilineState,
+): TomlMultilineState {
+	let state = initial;
+	for (let cursor = 0; cursor < line.length; cursor += 1) {
+		if (state !== "normal") {
+			const delimiter = state === "basic" ? '"""' : "'''";
+			const end = findTomlMultilineEnd(line, cursor, delimiter);
+			if (end === -1) return state;
+			state = "normal";
+			cursor = end + delimiter.length - 1;
+			continue;
+		}
+		if (line[cursor] === "#") break;
+		if (line.slice(cursor, cursor + 3) === '"""') {
+			state = "basic";
+			cursor += 2;
+			continue;
+		}
+		if (line.slice(cursor, cursor + 3) === "'''") {
+			state = "literal";
+			cursor += 2;
+			continue;
+		}
+		if (line[cursor] === '"') cursor = skipTomlQuotedString(line, cursor, '"');
+		else if (line[cursor] === "'")
+			cursor = skipTomlQuotedString(line, cursor, "'");
+	}
+	return state;
+}
+
+/** Split real hook tables while ignoring header-shaped text inside strings. */
+function splitPrekHookBlocks(content: string): string[] {
+	const headers: Array<{ start: number; end: number }> = [];
+	const headerPattern = /^\s*\[\[\s*repos\s*\.\s*hooks\s*\]\](?:\s*#.*)?\s*$/;
+	let state: TomlMultilineState = "normal";
+	let offset = 0;
+	while (offset < content.length) {
+		const newline = content.indexOf("\n", offset);
+		const end = newline === -1 ? content.length : newline + 1;
+		const line = content.slice(offset, newline === -1 ? end : newline);
+		if (state === "normal" && headerPattern.test(line))
+			headers.push({ start: offset, end });
+		state = tomlStateAfterLine(line, state);
+		offset = end;
+	}
+	if (headers.length === 0) return [content];
+	return [
+		content.slice(0, headers[0]?.start ?? 0),
+		...headers.map((header, index) =>
+			content.slice(header.end, headers[index + 1]?.start ?? content.length),
+		),
+	];
+}
+
 function parsePrekHooks(content: string): ParsedPrekHook[] {
-	const hookBlocks = content.split(
-		/^\s*\[\[\s*repos\s*\.\s*hooks\s*\]\](?:\s*#.*)?\s*$/m,
-	);
+	const hookBlocks = splitPrekHookBlocks(content);
 	const defaultStages = parseStringArrayTomlValue(
 		hookBlocks[0] ?? "",
 		"default_stages",
 	) ?? [...PREK_ALL_STAGES];
 	return hookBlocks.slice(1).map((block) => {
 		const id = parseQuotedTomlValue(block, "id");
+		const name = parseQuotedTomlValue(block, "name");
 		const entry = parseQuotedTomlValue(block, "entry");
 		const language = parseQuotedTomlValue(block, "language");
 		const passFilenames = parseBooleanTomlValue(block, "pass_filenames");
 		const declaredStages = parseStringArrayTomlValue(block, "stages");
+		const hasStagesAssignment = parseTomlAssignments(block).some(
+			(assignment) => assignment.key === "stages",
+		);
 		return {
 			id,
+			name,
 			entry,
 			language,
 			passFilenames,
-			stages: declaredStages ?? defaultStages,
+			stages: declaredStages ?? (hasStagesAssignment ? [] : defaultStages),
 			duplicateKeys: collectDuplicateTomlKeys(block),
 			invalidKeys: collectInvalidTomlKeys(block, {
 				id,
+				name,
 				entry,
 				language,
 				pass_filenames: passFilenames,
@@ -1197,6 +1305,33 @@ function parsePrekHooks(content: string): ParsedPrekHook[] {
 	});
 }
 
+/** Require every configured approved hook stage to be installed by Prek. */
+function auditPrekInstallCoverage(
+	findings: ToolingAuditFinding[],
+	content: string,
+	hooks: ParsedPrekHook[],
+): void {
+	const preamble = splitPrekHookBlocks(content)[0] ?? "";
+	const installTypes =
+		parseStringArrayTomlValue(preamble, "default_install_hook_types") ?? [];
+	for (const stage of Object.keys(APPROVED_PREK_LEAF_ENTRIES)) {
+		const configured = hooks.some(
+			(hook) =>
+				hook.stages.includes(stage) &&
+				isApprovedPrekLeafEntry(stage, hook.entry),
+		);
+		if (configured && !installTypes.includes(stage)) {
+			findings.push({
+				path: TOOLING_PREK_CONFIG_PATH,
+				severity: "critical",
+				description: `Prek hook for effective stage '${stage}' is not included in default_install_hook_types`,
+				expected: stage,
+				actual: installTypes,
+			});
+		}
+	}
+}
+
 /**
  * Identify repeated policy-relevant keys inside one Prek hook block.
  *
@@ -1204,7 +1339,7 @@ function parsePrekHooks(content: string): ParsedPrekHook[] {
  * @returns Keys declared more than once in the block.
  */
 function collectDuplicateTomlKeys(block: string): string[] {
-	const keys = ["id", "entry", "language", "pass_filenames", "stages"];
+	const keys = ["id", "name", "entry", "language", "pass_filenames", "stages"];
 	const assignments = parseTomlAssignments(block);
 	return keys.filter(
 		(key) =>
@@ -1224,10 +1359,15 @@ function collectInvalidTomlKeys(
 	parsedValues: Record<string, unknown>,
 ): string[] {
 	const assignments = parseTomlAssignments(block);
-	const policyKeys = Object.keys(parsedValues).filter((key) => {
-		const assignment = assignments.find((candidate) => candidate.key === key);
-		return assignment !== undefined && !assignment.valid;
-	});
+	const policyKeys = Object.entries(parsedValues).flatMap(
+		([key, parsedValue]) => {
+			const assignment = assignments.find((candidate) => candidate.key === key);
+			return assignment !== undefined &&
+				(!assignment.valid || parsedValue === undefined)
+				? [key]
+				: [];
+		},
+	);
 	const malformed = assignments
 		.filter((assignment) => !assignment.valid)
 		.map((assignment) => assignment.key);
@@ -1345,6 +1485,17 @@ function auditPrekHookLeafEntries(
 	repoPath: string,
 ): void {
 	for (const hook of parsedHooks) {
+		for (const field of ["id", "name"] as const) {
+			if (hook[field] === undefined) {
+				findings.push({
+					path: TOOLING_PREK_CONFIG_PATH,
+					severity: "critical",
+					description: `Prek hook '${hook.id ?? "unknown"}' is missing required field '${field}'`,
+					expected: "Every local hook declares id, name, entry, and language",
+					actual: hook,
+				});
+			}
+		}
 		const entry = hook.entry;
 		if (entry !== undefined && isForbiddenPrekHookEntry(entry)) {
 			continue;
@@ -1397,13 +1548,24 @@ function auditPrekHookCommandFile(
 	);
 	if (!approved) return;
 	const commandPath = entry.match(/^bash\s+(scripts\/[A-Za-z0-9._/-]+)$/)?.[1];
-	if (commandPath === undefined || existsSync(join(repoPath, commandPath)))
-		return;
+	if (commandPath === undefined) return;
+	try {
+		const repoRealPath = realpathSync(repoPath);
+		const commandRealPath = realpathSync(join(repoPath, commandPath));
+		if (
+			isContainedPath(repoRealPath, commandRealPath) &&
+			statSync(commandRealPath).isFile()
+		)
+			return;
+	} catch {
+		// Fall through to one fail-closed audit finding.
+	}
 	findings.push({
 		path: commandPath,
 		severity: "critical",
-		description: `Prek hook '${hook.id ?? "unknown"}' references a missing approved leaf command`,
-		expected: "Configured approved leaf command exists in the repository",
+		description: `Prek hook '${hook.id ?? "unknown"}' references an invalid approved leaf command`,
+		expected:
+			"Configured approved leaf command resolves to a regular file inside the repository",
 		actual: commandPath,
 	});
 }
@@ -1984,6 +2146,7 @@ function auditLocalHooks(
 		addMissingFileFinding(findings, TOOLING_PREK_CONFIG_PATH, "prek config");
 	} else {
 		const parsedHooks = parsePrekHooks(prekContent);
+		auditPrekInstallCoverage(findings, prekContent, parsedHooks);
 		for (const hook of parsedHooks) {
 			for (const key of hook.duplicateKeys) {
 				findings.push({
@@ -2011,6 +2174,8 @@ function auditLocalHooks(
 					: hookName;
 			const hasEffectiveLeafHook = parsedHooks.some(
 				(hook) =>
+					hook.id !== undefined &&
+					hook.name !== undefined &&
 					hook.stages.includes(requiredStage) &&
 					isApprovedPrekLeafEntry(requiredStage, hook.entry) &&
 					hook.language === hookConfig.language &&

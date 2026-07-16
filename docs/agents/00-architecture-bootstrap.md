@@ -169,6 +169,12 @@ Tooling-audit parser or governed-wrapper changes are architecture-adjacent when
 they alter effective hook or readiness-entrypoint classification. Run
 `bash scripts/run-harness-gate.sh tooling-audit --path . --json` and
 `bash scripts/check-diagram-freshness.sh`; both must exit successfully. If the
+tooling audit exits nonzero, the tooling-policy owner must inspect the leaf
+adapter and wrapper contract in `docs/agents/02-tooling-policy.md`, repair the
+governed script, template, or `prek.toml` surface, then rerun
+`bash scripts/run-harness-gate.sh tooling-audit --path . --json` and
+`bash scripts/check-diagram-freshness.sh`; both commands must exit zero before
+promotion. If the
 diagram check reports stale artifacts, run
 `bash scripts/refresh-diagram-context.sh --force`, commit the generated context
 with this guide, and rerun the two checks before promotion.

@@ -482,7 +482,7 @@ exec "$SCRIPT_DIR/check-environment_impl.sh" "$@"
 				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
 				expect(
 					result.value.result.results[0]?.findings.some((finding) =>
-						finding.description.includes("exactly one bash/sh exec"),
+						finding.description.includes("exactly one bash exec"),
 					),
 				).toBe(true);
 			}
@@ -651,7 +651,7 @@ exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"#unexpected
 				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
 				expect(
 					result.value.result.results[0]?.findings.some((finding) =>
-						finding.description.includes("exactly one bash/sh exec"),
+						finding.description.includes("exactly one bash exec"),
 					),
 				).toBe(true);
 			}
@@ -744,7 +744,9 @@ pass_filenames = false
 				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
 				expect(
 					result.value.result.results[0]?.findings.some((finding) =>
-						finding.description.includes("effective stage 'pre-commit'"),
+						finding.description.includes(
+							"uses an unapproved leaf command for effective stage 'pre-push'",
+						),
 					),
 				).toBe(true);
 			}
@@ -797,7 +799,7 @@ pass_filenames = false
 				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
 				expect(
 					result.value.result.results[0]?.findings.some((finding) =>
-						finding.description.includes("effective stage 'pre-commit'"),
+						finding.description.includes("invokes nested hook orchestration"),
 					),
 				).toBe(true);
 			}

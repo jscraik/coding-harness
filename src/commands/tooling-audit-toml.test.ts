@@ -87,6 +87,12 @@ describe("tooling-audit TOML compatibility", () => {
 			join(repoDir, policy.readinessScriptPath),
 			"utf-8",
 		);
+		writeRepoFile(repoDir, "scripts/check-environment_impl.sh", baseReadiness);
+		const approvedWrapper = `#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd -P)"
+exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
+`;
 		const run = async (
 			prek: string,
 			readiness = baseReadiness,
@@ -178,8 +184,31 @@ describe("tooling-audit TOML compatibility", () => {
 					EXIT_CODES.SUCCESS,
 				],
 				[
+					basePrek.replace(
+						'entry = "bash scripts/hook-pre-commit.sh"',
+						String.raw`entry = "bash scripts/hook-pre-\u0063ommit.sh"`,
+					),
+					baseReadiness,
+					EXIT_CODES.SUCCESS,
+				],
+				[
+					basePrek.replace(
+						`name = "${REQUIRED_PREK_HOOKS["pre-commit"].name}"`,
+						`name = """${REQUIRED_PREK_HOOKS["pre-commit"].name}
+[[repos.hooks]]
+marker text"""`,
+					),
+					baseReadiness,
+					EXIT_CODES.SUCCESS,
+				],
+				[
+					basePrek.replace('stages = ["pre-commit"]', "stages = [1]"),
+					baseReadiness,
+					EXIT_CODES.DRIFT_DETECTED,
+				],
+				[
 					basePrek,
-					baseReadiness.replace(
+					approvedWrapper.replace(
 						"set -euo pipefail",
 						"set -euo pipefail # valid shell comment",
 					),
@@ -212,6 +241,20 @@ describe("tooling-audit TOML compatibility", () => {
 			effectiveReadiness,
 		);
 		const wrappers = [
+			`#!/usr/bin/env bash
+set -euo pipefail
+exec bash scripts/check-environment_impl.sh "$@"
+`,
+			`#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd -P)"
+exec sh "$SCRIPT_DIR/check-environment_impl.sh" "$@"
+`,
+			`#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
+`,
 			`#!/usr/bin/env bash
 SCRIPT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd -P)"
 exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
@@ -248,6 +291,179 @@ exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
 				if (result.ok)
 					expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
 			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects missing hook identity and malformed declared stages directly", async () => {
+		const tempRoot = mkdtempSync(join(tmpdir(), "tooling-audit-hook-shape-"));
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir);
+		const prekPath = join(repoDir, "prek.toml");
+		const basePrek = readFileSync(prekPath, "utf-8");
+		const cases = [
+			{
+				content: basePrek.replace('id = "pre-commit"\n', ""),
+				expected: "missing required field 'id'",
+			},
+			{
+				content: basePrek.replace(
+					`name = "${REQUIRED_PREK_HOOKS["pre-commit"].name}"\n`,
+					"",
+				),
+				expected: "missing required field 'name'",
+			},
+			{
+				content: basePrek.replace('stages = ["pre-commit"]', "stages = [1]"),
+				expected: "invalid value for policy key 'stages'",
+			},
+		];
+		try {
+			for (const fixture of cases) {
+				writeFileSync(prekPath, fixture.content, "utf-8");
+				const result = await runToolingAudit({
+					path: tempRoot,
+					format: "json",
+				});
+				expect(result.ok).toBe(true);
+				if (result.ok) {
+					expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+					expect(
+						result.value.result.results[0]?.findings.some((finding) =>
+							finding.description.includes(fixture.expected),
+						),
+					).toBe(true);
+				}
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("does not mistake terminal readiness code for a forwarding wrapper", async () => {
+		const tempRoot = mkdtempSync(
+			join(tmpdir(), "tooling-audit-terminal-readiness-"),
+		);
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir);
+		const policy = DEFAULT_CONTRACT.toolingPolicy;
+		if (!policy) throw new Error("Expected default tooling policy");
+		const readinessPath = join(repoDir, policy.readinessScriptPath);
+		const effectiveReadiness = readFileSync(readinessPath, "utf-8");
+		writeFileSync(
+			readinessPath,
+			`#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd)"
+if [[ -x "/opt/homebrew/bin/bash" ]]; then
+	exec "/opt/homebrew/bin/bash" "$0" "$@"
+fi
+${effectiveReadiness}`,
+			"utf-8",
+		);
+
+		try {
+			const result = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.exitCode).toBe(EXIT_CODES.SUCCESS);
+				expect(result.value.result.findings.total).toBe(0);
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("requires configured commit-msg hooks to be installed", async () => {
+		const tempRoot = mkdtempSync(join(tmpdir(), "tooling-audit-hook-install-"));
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir);
+		writeRepoFile(repoDir, "scripts/hooks/commit-msg.sh", "exit 0\n");
+		const prekPath = join(repoDir, "prek.toml");
+		writeFileSync(
+			prekPath,
+			`${readFileSync(prekPath, "utf-8")}
+[[repos.hooks]]
+id = "commit-msg"
+name = "Validate commit message"
+entry = "bash scripts/hooks/commit-msg.sh"
+language = "system"
+pass_filenames = false
+stages = ["commit-msg"]
+`,
+			"utf-8",
+		);
+		try {
+			const result = await runToolingAudit({ path: tempRoot, format: "json" });
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+				expect(
+					result.value.result.results[0]?.findings.some((finding) =>
+						finding.description.includes(
+							"is not included in default_install_hook_types",
+						),
+					),
+				).toBe(true);
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("fails closed for unreadable readiness paths and non-file leaf commands", async () => {
+		const tempRoot = mkdtempSync(join(tmpdir(), "tooling-audit-file-shape-"));
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir);
+		const prekPath = join(repoDir, "prek.toml");
+		writeFileSync(
+			prekPath,
+			readFileSync(prekPath, "utf-8").replace(
+				"bash scripts/hook-pre-push.sh",
+				"bash scripts/hooks/pre-push.sh",
+			),
+			"utf-8",
+		);
+		mkdirSync(join(repoDir, "scripts/hooks/pre-push.sh"), {
+			recursive: true,
+		});
+		try {
+			const invalidLeaf = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+			expect(invalidLeaf.ok).toBe(true);
+			if (invalidLeaf.ok) {
+				expect(invalidLeaf.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+				expect(
+					invalidLeaf.value.result.results[0]?.findings.some((finding) =>
+						finding.description.includes("invalid approved leaf command"),
+					),
+				).toBe(true);
+			}
+
+			const policy = DEFAULT_CONTRACT.toolingPolicy;
+			if (!policy) throw new Error("Expected default tooling policy");
+			const readinessPath = join(repoDir, policy.readinessScriptPath);
+			rmSync(readinessPath);
+			mkdirSync(readinessPath);
+			const unreadableReadiness = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+			expect(unreadableReadiness.ok).toBe(true);
+			if (unreadableReadiness.ok)
+				expect(unreadableReadiness.value.exitCode).toBe(
+					EXIT_CODES.DRIFT_DETECTED,
+				);
 		} finally {
 			rmSync(tempRoot, { recursive: true, force: true });
 		}
@@ -318,7 +534,7 @@ exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
 					result.value.result.results[0]?.findings.some(
 						(finding) =>
 							finding.path === "scripts/hooks/pre-push.sh" &&
-							finding.description.includes("missing approved leaf command"),
+							finding.description.includes("invalid approved leaf command"),
 					),
 				).toBe(true);
 			}
