@@ -165,6 +165,13 @@ tracker-sensitive, unknown, or network-dependent mutation remains HILT-governed.
 This policy must not turn target commands into execution authority or support
 delivery-truth, merge-readiness, Judge/PM, or goal-completion claims.
 Generated Codex environment action changes that add validation script actions or branch-attachment behavior are architecture-adjacent when they refresh `AI/context/diagram-context.md`; commit the refreshed context pack and this guide with the required docs-gate governance surfaces when docs-gate reports the architecture-context surface.
+Tooling-audit parser or governed-wrapper changes are architecture-adjacent when
+they alter effective hook or readiness-entrypoint classification. Run
+`bash scripts/run-harness-gate.sh tooling-audit --path . --json` and
+`bash scripts/check-diagram-freshness.sh`; both must exit successfully. If the
+diagram check reports stale artifacts, run
+`bash scripts/refresh-diagram-context.sh --force`, commit the generated context
+with this guide, and rerun the two checks before promotion.
 Codex preflight changes are architecture-adjacent when they alter Local Memory,
 Project Brain, or runtime-readiness enforcement. Legacy positional
 `scripts/codex-preflight.sh` invocations must preserve the required Local
