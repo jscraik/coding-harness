@@ -107,7 +107,7 @@ At the end of each phase, run these in order over the phase diff:
    surfaces changed.
 3. Codex Security scan: run the repo security surface through the Codex Security
    review workflow and capture its finding summary. For local CLI evidence, run
-   `pnpm audit` and, after push, confirm external security checks with
+   `pnpm run audit` and, after push, confirm external security checks with
    `gh pr checks --json name,state,link --jq '.[] | select(.name=="security-scan" or .name=="semgrep-cloud-platform/scan")'`.
 
 Apply only behavior-preserving simplifications and verified fixes. Re-run the

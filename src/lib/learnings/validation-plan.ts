@@ -335,8 +335,8 @@ function buildNetworkRequired(
 ): NetworkRequiredCommand[] {
 	const commands = new Map<string, NetworkRequiredCommand>();
 	if (files.some(isPackageSurfaceFile)) {
-		commands.set("pnpm audit", {
-			command: "pnpm audit",
+		commands.set("pnpm run audit", {
+			command: "pnpm run audit",
 			reason:
 				"Dependencies or lockfile changed; run security audit with registry/network access.",
 		});
@@ -344,7 +344,7 @@ function buildNetworkRequired(
 	for (const item of matchedLearnings) {
 		const lower = item.learning.toLowerCase();
 		if (!lower.includes("audit")) continue;
-		const command = "pnpm audit";
+		const command = "pnpm run audit";
 		const existing = commands.get(command);
 		if (existing) {
 			existing.learningIds = uniqueStrings([

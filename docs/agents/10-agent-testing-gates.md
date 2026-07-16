@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-11
+last_validated: 2026-07-16
 ---
 
 # Agent testing gates
@@ -26,7 +26,7 @@ For any behavior-affecting change:
 1. `pnpm lint`
 2. `pnpm typecheck`
 3. `pnpm test`
-4. `pnpm audit`
+4. `pnpm run audit`
 5. `pnpm check`
 
 ## Optional gates
@@ -144,7 +144,7 @@ Ensures type contracts remain valid after edits.
 
 Validates behavioral invariants and regression coverage.
 
-### `pnpm audit`
+### `pnpm run audit`
 
 Detects dependency risk before merge.
 
@@ -157,7 +157,13 @@ rerunning the dedicated `pnpm test:ci` lane.
 
 Aggregates the repo baseline contract for release-quality confidence:
 `pnpm check:static`, `pnpm run test:related`, `pnpm test:ci`, and
-`pnpm audit`.
+`pnpm run audit`. The repository-owned wrapper submits the exact versions from
+`pnpm-lock.yaml` to npm's bulk advisory endpoint and fails closed when the
+registry response is unavailable or malformed. Scoped dependencies must also be
+admitted by `scripts/npm-audit-public-scopes.json`; unknown scopes and packages
+resolved from another registry origin stop before any request is sent. For
+integrity-only lockfile entries, the reviewed package manifest must explicitly
+bind the approved registry origin as provenance evidence.
 
 ## Failure policy
 

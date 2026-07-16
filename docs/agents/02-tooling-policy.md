@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-20
+last_validated: 2026-07-16
 ---
 
 # Tooling policy
@@ -247,7 +247,7 @@ Branch name consumers should treat this pattern as an agent worktree-readiness b
 | Tests                          | `pnpm test`                                                                                         | `vitest run`                                                                                                                                                                            |
 | Tests (CircleCI hardened lane) | `pnpm test:ci`                                                                                      | Runs standard suites plus isolated `ci-migrate` run with targeted Vitest worker-timeout mitigation behind the `test-ci` validation lock                                                 |
 | Validation lock check          | `pnpm run validation:locks`                                                                         | Fails fast when a repo-scoped local validation lane is already active and removes dead validation lock directories                                                                      |
-| Audit                          | `pnpm audit`                                                                                        | dependency risk check                                                                                                                                                                   |
+| Audit                          | `pnpm run audit`                                                                                    | fail-closed dependency risk check through npm's bulk advisory endpoint and the immutable pnpm lockfile                                                                                  |
 | Build                          | `pnpm build`                                                                                        | compile TypeScript and generate `dist/cli.js`                                                                                                                                           |
 | CodeRabbit learnings import    | `harness learnings import --provider coderabbit-csv --source <csv> --repo <repo> --json`            | Import local CodeRabbit CSV evidence into `.harness/learnings/coderabbit.local.json`                                                                                                    |
 | CodeRabbit learnings gate      | `harness learnings gate --source .harness/learnings/coderabbit.local.json --files <files> --json`   | Match imported learning evidence to exact files and explicit path-prefix targets before review                                                                                          |

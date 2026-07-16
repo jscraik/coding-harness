@@ -19,7 +19,7 @@ TIMEOUT_CMD="$(resolve_timeout_cmd)"
 
 if [[ -n "${TIMEOUT_CMD}" ]]; then
 	set +e
-	"${TIMEOUT_CMD}" "${TIMEOUT_SECONDS}" pnpm audit --audit-level=moderate --ignore-registry-errors
+	"${TIMEOUT_CMD}" "${TIMEOUT_SECONDS}" node scripts/audit-pnpm-lock.mjs "$@"
 	AUDIT_EXIT=$?
 	set -e
 
@@ -32,4 +32,4 @@ if [[ -n "${TIMEOUT_CMD}" ]]; then
 fi
 
 echo "No timeout command found; running audit without timeout guard." >&2
-pnpm audit --audit-level=moderate --ignore-registry-errors
+node scripts/audit-pnpm-lock.mjs "$@"

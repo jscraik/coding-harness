@@ -405,7 +405,7 @@ describe("runReviewContextCLI", () => {
 		const result = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0]));
 		expect(result.applicableLearnings).toEqual([]);
 		expect(result.networkRequired).toEqual([
-			expect.objectContaining({ command: "pnpm audit" }),
+			expect.objectContaining({ command: "pnpm run audit" }),
 		]);
 		expect(result.mustMentionInPr).toEqual(
 			expect.arrayContaining([
@@ -413,7 +413,7 @@ describe("runReviewContextCLI", () => {
 			]),
 		);
 		expect(result.evidenceRequired).toEqual(
-			expect.arrayContaining([expect.stringContaining("pnpm audit")]),
+			expect.arrayContaining([expect.stringContaining("pnpm run audit")]),
 		);
 		expect(result.doNotClaim).toEqual(
 			expect.arrayContaining([

@@ -70,7 +70,7 @@ attacks).
   **must not** auto-merge dependency-adding PRs.
 - Prefer packages with provenance attestation (npm provenance, SLSA Build L2
   or higher) when feasible options exist.
-- Run `pnpm audit` (or equivalent) after adding or upgrading any dependency.
+- Run `pnpm run audit` (or equivalent) after adding or upgrading any dependency.
   Findings at `high` or above block merge by default.
 - Avoid adding packages that have no recent activity, no published maintainer,
   or no open-source license compatible with this repository's license.

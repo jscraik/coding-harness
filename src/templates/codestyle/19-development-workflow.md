@@ -59,7 +59,7 @@
   - `pnpm test:deep` when runtime behavior or generated artifacts change
 
   - `pnpm test`
-  - `pnpm audit`
+  - `pnpm run audit`
   - `pnpm check`
   - `bash scripts/validate-codestyle.sh`
   - `bash scripts/verify-work.sh --fast`
