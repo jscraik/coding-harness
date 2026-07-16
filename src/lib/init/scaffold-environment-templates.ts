@@ -677,13 +677,11 @@ function renderPackageScriptSpecs(): string {
 	);
 }
 
+/** Render canonical hook metadata for generated readiness checks. */
 function renderPrekHookSpecs(): string {
 	return renderShellArray(
 		Object.entries(REQUIRED_PREK_HOOKS).map(([hook, config]) => {
-			const hookStages =
-				hook === "pre-push"
-					? REQUIRED_PREK_HOOKS["pre-push"].stages.join(",")
-					: "";
+			const hookStages = config.stages.join(",");
 			return `${hook}|${config.name}|${config.entry}|${config.language}|${String(config.pass_filenames)}|${hookStages}`;
 		}),
 	);

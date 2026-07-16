@@ -347,6 +347,7 @@ name = "${REQUIRED_PREK_HOOKS["pre-commit"].name}"
 entry = "${REQUIRED_PREK_HOOKS["pre-commit"].entry}"
 language = "${REQUIRED_PREK_HOOKS["pre-commit"].language}"
 pass_filenames = ${String(REQUIRED_PREK_HOOKS["pre-commit"].pass_filenames)}
+stages = ${JSON.stringify(REQUIRED_PREK_HOOKS["pre-commit"].stages)}
 
 [[repos.hooks]]
 id = "pre-push"

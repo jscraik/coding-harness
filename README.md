@@ -159,6 +159,11 @@ harness contract validate
 harness health --json
 ```
 
+The generated `prek.toml` declares explicit `pre-commit` and `pre-push` stages.
+This keeps fresh scaffolds aligned with the required `tooling-audit` policy,
+while approved optional `commit-msg` hooks may call the generated
+`scripts/validate-commit-msg.js` leaf directly.
+
 **Expected:** `harness init --track` creates `harness.contract.json`, the
 `.harness/` control plane, a logical project-context reference, and a
 GitBook-compatible `docs/public/` surface. `contract validate` reports zero

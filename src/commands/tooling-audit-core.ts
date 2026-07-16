@@ -243,8 +243,9 @@ function parseReadinessForwardingTarget(
 	const scriptDirMarkerPattern =
 		/^\s*SCRIPT_DIR=.*(?:BASH_SOURCE|\$\{?BASH_SOURCE)/;
 	const lines = content.split(/\r?\n/);
-	const hasForwardingExec =
-		/^\s*exec\s+(?:(?:bash|sh)\s+)?(?:"[^"\r\n]+\.sh"|\S+\.sh)/m.test(content);
+	const hasForwardingExec = lines.some((line) =>
+		/^\s*exec\b[^\r\n]*\.sh(?:["'\s]|$)/.test(line),
+	);
 	const scriptDirLines = lines.filter((line) =>
 		scriptDirMarkerPattern.test(line),
 	);
@@ -818,7 +819,11 @@ function parseTomlQuotedValue(
 		quote === '"'
 			? decodeTomlBasicString(raw, multiline)
 			: normalizeTomlMultilineString(raw, multiline);
-	return { value, end: end + delimiterLength, valid: true };
+	return {
+		value: value ?? undefined,
+		end: end + delimiterLength,
+		valid: value !== null,
+	};
 }
 
 /**
@@ -881,38 +886,63 @@ function isTomlEscaped(block: string, offset: number): boolean {
  * @param multiline - Whether the source was triple-quoted.
  * @returns Decoded string.
  */
-function decodeTomlBasicString(raw: string, multiline: boolean): string {
+function decodeTomlBasicString(raw: string, multiline: boolean): string | null {
 	const normalized = multiline
 		? normalizeTomlMultilineString(raw, true).replace(
 				/\\(?:\r\n|\n)[ \t\r\n]*/g,
 				"",
 			)
 		: raw;
-	const unicodeDecoded = normalized.replace(
-		/\\(?:u([0-9A-Fa-f]{4})|U([0-9A-Fa-f]{8}))/g,
-		(match, short: string | undefined, long: string | undefined) => {
-			const codePoint = Number.parseInt(short ?? long ?? "", 16);
-			return codePoint <= 0x10ffff &&
-				!(codePoint >= 0xd800 && codePoint <= 0xdfff)
-				? String.fromCodePoint(codePoint)
-				: match;
-		},
-	);
-	return unicodeDecoded.replace(
-		/\\(["\\bfnrt])/g,
-		(_match, escapeCode: string) => {
-			const escapes: Record<string, string> = {
-				'"': '"',
-				"\\": "\\",
-				b: "\b",
-				f: "\f",
-				n: "\n",
-				r: "\r",
-				t: "\t",
-			};
-			return escapes[escapeCode] ?? escapeCode;
-		},
-	);
+	const escapes: Record<string, string> = {
+		'"': '"',
+		"\\": "\\",
+		b: "\b",
+		f: "\f",
+		n: "\n",
+		r: "\r",
+		t: "\t",
+	};
+	let decoded = "";
+	for (let cursor = 0; cursor < normalized.length; cursor += 1) {
+		const character = normalized[cursor];
+		if (character !== "\\") {
+			decoded += character;
+			continue;
+		}
+		const decodedEscape = decodeTomlBasicEscape(normalized, cursor, escapes);
+		if (decodedEscape === null) return null;
+		decoded += decodedEscape.value;
+		cursor = decodedEscape.end;
+	}
+	return decoded;
+}
+
+/** Decode one TOML basic-string escape and report its consumed source offset. */
+function decodeTomlBasicEscape(
+	source: string,
+	start: number,
+	escapes: Record<string, string>,
+): { value: string; end: number } | null {
+	const escapeCode = source[start + 1];
+	if (escapeCode === "u" || escapeCode === "U")
+		return decodeTomlUnicodeEscape(source, start, escapeCode);
+	const value = escapeCode === undefined ? undefined : escapes[escapeCode];
+	return value === undefined ? null : { value, end: start + 1 };
+}
+
+/** Decode one TOML Unicode escape while rejecting invalid scalar values. */
+function decodeTomlUnicodeEscape(
+	source: string,
+	start: number,
+	escapeCode: "u" | "U",
+): { value: string; end: number } | null {
+	const width = escapeCode === "u" ? 4 : 8;
+	const digits = source.slice(start + 2, start + 2 + width);
+	if (digits.length !== width || !/^[0-9A-Fa-f]+$/.test(digits)) return null;
+	const codePoint = Number.parseInt(digits, 16);
+	if (codePoint > 0x10ffff || (codePoint >= 0xd800 && codePoint <= 0xdfff))
+		return null;
+	return { value: String.fromCodePoint(codePoint), end: start + width + 1 };
 }
 
 /**
@@ -1311,9 +1341,13 @@ function auditPrekInstallCoverage(
 	content: string,
 	hooks: ParsedPrekHook[],
 ): void {
-	const preamble = splitPrekHookBlocks(content)[0] ?? "";
+	const lines = content.split(/\r?\n/);
+	const firstTableIndex = lines.findIndex((line) => /^\s*\[/.test(line));
+	const rootPreamble = lines
+		.slice(0, firstTableIndex === -1 ? lines.length : firstTableIndex)
+		.join("\n");
 	const installTypes =
-		parseStringArrayTomlValue(preamble, "default_install_hook_types") ?? [];
+		parseStringArrayTomlValue(rootPreamble, "default_install_hook_types") ?? [];
 	for (const stage of Object.keys(APPROVED_PREK_LEAF_ENTRIES)) {
 		const configured = hooks.some(
 			(hook) =>
@@ -1405,10 +1439,8 @@ function isApprovedPrekLeafEntry(
  * @returns Parsed package metadata, or `null` when the file is absent.
  */
 function readPackageManifest(path: string): PackageManifest | null {
-	const content = readTextFile(path);
-	if (content === null) {
-		return null;
-	}
+	if (!existsSync(path)) return null;
+	const content = readFileSync(path, "utf-8");
 	const parsed = JSON.parse(content) as unknown;
 	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
 		throw new Error("package.json root must be an object");
@@ -1424,10 +1456,8 @@ function readPackageManifest(path: string): PackageManifest | null {
  * @returns Parsed object, or `null` when the file is absent.
  */
 function readJsonObject(path: string): Record<string, unknown> | null {
-	const content = readTextFile(path);
-	if (content === null) {
-		return null;
-	}
+	if (!existsSync(path)) return null;
+	const content = readFileSync(path, "utf-8");
 	const parsed = JSON.parse(content) as unknown;
 	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
 		throw new Error("JSON root must be an object");
@@ -1485,7 +1515,7 @@ function auditPrekHookLeafEntries(
 	repoPath: string,
 ): void {
 	for (const hook of parsedHooks) {
-		for (const field of ["id", "name"] as const) {
+		for (const field of ["id", "name", "language"] as const) {
 			if (hook[field] === undefined) {
 				findings.push({
 					path: TOOLING_PREK_CONFIG_PATH,
@@ -1547,7 +1577,9 @@ function auditPrekHookCommandFile(
 		(entries as readonly string[]).includes(entry),
 	);
 	if (!approved) return;
-	const commandPath = entry.match(/^bash\s+(scripts\/[A-Za-z0-9._/-]+)$/)?.[1];
+	const commandPath = entry.match(
+		/^(?:bash|node)\s+(scripts\/[A-Za-z0-9._/-]+)$/,
+	)?.[1];
 	if (commandPath === undefined) return;
 	try {
 		const repoRealPath = realpathSync(repoPath);

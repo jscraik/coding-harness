@@ -179,6 +179,16 @@ exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
 					EXIT_CODES.DRIFT_DETECTED,
 				],
 				[
+					basePrek.replace('name = "Pre-commit"', 'name = "Pre-\\qcommit"'),
+					baseReadiness,
+					EXIT_CODES.DRIFT_DETECTED,
+				],
+				[
+					basePrek.replace('name = "Pre-commit"', 'name = "Pre-\\uD800commit"'),
+					baseReadiness,
+					EXIT_CODES.DRIFT_DETECTED,
+				],
+				[
 					basePrek.replaceAll("[[repos.hooks]]", "[[ repos.hooks ]]"),
 					baseReadiness,
 					EXIT_CODES.SUCCESS,
@@ -252,6 +262,11 @@ exec sh "$SCRIPT_DIR/check-environment_impl.sh" "$@"
 `,
 			`#!/usr/bin/env bash
 set -euo pipefail
+SCRIPT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd -P)"
+exec env bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
+`,
+			`#!/usr/bin/env bash
+set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
 exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
 `,
@@ -314,6 +329,10 @@ exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
 					"",
 				),
 				expected: "missing required field 'name'",
+			},
+			{
+				content: basePrek.replace('language = "system"\n', ""),
+				expected: "missing required field 'language'",
 			},
 			{
 				content: basePrek.replace('stages = ["pre-commit"]', "stages = [1]"),
@@ -410,6 +429,102 @@ stages = ["commit-msg"]
 						finding.description.includes(
 							"is not included in default_install_hook_types",
 						),
+					),
+				).toBe(true);
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("reads install hook types only from the TOML root", async () => {
+		const tempRoot = mkdtempSync(join(tmpdir(), "tooling-audit-root-install-"));
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir);
+		const prekPath = join(repoDir, "prek.toml");
+		const content = readFileSync(prekPath, "utf-8")
+			.replace('default_install_hook_types = ["pre-commit", "pre-push"]\n', "")
+			.replace(
+				'repo = "local"',
+				'repo = "local"\ndefault_install_hook_types = ["pre-commit", "pre-push"]',
+			);
+		writeFileSync(prekPath, content, "utf-8");
+		try {
+			const result = await runToolingAudit({ path: tempRoot, format: "json" });
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+				expect(
+					result.value.result.results[0]?.findings.some((finding) =>
+						finding.description.includes(
+							"is not included in default_install_hook_types",
+						),
+					),
+				).toBe(true);
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("accepts the scaffolded commit-message validator as an approved leaf", async () => {
+		const tempRoot = mkdtempSync(
+			join(tmpdir(), "tooling-audit-commit-msg-leaf-"),
+		);
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir);
+		writeRepoFile(
+			repoDir,
+			"scripts/validate-commit-msg.js",
+			"process.exit(0);\n",
+		);
+		const prekPath = join(repoDir, "prek.toml");
+		const content = readFileSync(prekPath, "utf-8")
+			.replace(
+				'["pre-commit", "pre-push"]',
+				'["pre-commit", "pre-push", "commit-msg"]',
+			)
+			.concat(`
+[[repos.hooks]]
+id = "commit-msg"
+name = "Validate commit message"
+entry = "node scripts/validate-commit-msg.js"
+language = "system"
+pass_filenames = true
+stages = ["commit-msg"]
+`);
+		writeFileSync(prekPath, content, "utf-8");
+		try {
+			const result = await runToolingAudit({ path: tempRoot, format: "json" });
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.exitCode).toBe(EXIT_CODES.SUCCESS);
+				expect(result.value.result.findings.total).toBe(0);
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("fails closed when package.json is not a readable file", async () => {
+		const tempRoot = mkdtempSync(
+			join(tmpdir(), "tooling-audit-package-shape-"),
+		);
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir);
+		rmSync(join(repoDir, "package.json"));
+		mkdirSync(join(repoDir, "package.json"));
+		try {
+			const result = await runToolingAudit({ path: tempRoot, format: "json" });
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+				expect(
+					result.value.result.results[0]?.findings.some((finding) =>
+						finding.description.includes("Failed to parse package manifest"),
 					),
 				).toBe(true);
 			}

@@ -20,6 +20,7 @@ export const REQUIRED_PREK_HOOKS = {
 		entry: "bash scripts/hook-pre-commit.sh",
 		language: "system",
 		pass_filenames: false,
+		stages: ["pre-commit"],
 	},
 	"pre-push": {
 		name: "Pre-push",
@@ -42,6 +43,7 @@ export const APPROVED_PREK_LEAF_ENTRIES = {
 	"commit-msg": [
 		"bash scripts/hook-commit-msg.sh",
 		"bash scripts/hooks/commit-msg.sh",
+		"node scripts/validate-commit-msg.js",
 	],
 } as const;
 
