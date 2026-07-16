@@ -25,6 +25,13 @@ shape. When a change adds or materially refreshes the root architecture map,
 keep this guide in the same branch so agents know which architecture surface is
 canonical and which surfaces are generated evidence.
 
+Instruction routing is part of that architecture boundary: `AGENTS.md` is the
+compact Layer 0 router, `docs/agents/quickstart.md` is the Layer 1 entrypoint,
+and deeper operational policy stays in the routed Layer 2/3 documents. Keep
+their size and read-availability contract enforced with
+`pnpm docs:layer-budgets`; that guard proves only those structural properties,
+not policy quality or delivery readiness.
+
 ## One-task-at-a-time intake
 
 1. Confirm architecture artifacts exist:

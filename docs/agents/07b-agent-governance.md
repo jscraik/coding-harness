@@ -32,6 +32,12 @@ artifacts, validation, ownership, and review expectations.
 
 ## Mandatory gates (when behavior changes)
 
+Root instruction routing is a bounded governance surface. Keep `AGENTS.md` as
+the Layer 0 router within 130 lines and `docs/agents/quickstart.md` as the
+Layer 1 entrypoint within 80 lines, then run `pnpm docs:layer-budgets`. The
+guard proves size and read availability only; it does not prove policy
+correctness or delivery readiness.
+
 - `pnpm lint`
 - `pnpm typecheck`
 - `pnpm test`
@@ -61,7 +67,6 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   domain document the map points to.
 - agent-readiness or `harness next` context-health changes should keep `harness.contract.json`, `AGENTS.md`, `README.md`, `.harness/core/agent-readiness-contract.md`, and this guide synchronized. Shared-state action authority belongs in `toolingPolicy.sharedStateActions`; context-health warnings are orientation evidence only unless a separate validated consumer promotes them.
 - tooling/runtime changes should update `docs/agents/02-tooling-policy.md` and `docs/agents/06-security-and-governance.md`
-- tooling-audit changes that classify `prek` hooks or readiness wrappers must inspect effective parsed TOML assignments and exact forwarding behavior. Accept supported TOML quoting, multi-line values, continuations, and valid shell comments while failing closed on duplicate or malformed policy assignments, recursive hooks, wrapper suffixes, traversal, extra commands, and injection.
 - runtime-pin learning updates that affect `harness check-environment` should
   keep consumer `harness.contract.json` `toolingPolicy.requiredMiseTools` pins
   authoritative over harness package fallback pins, and synchronize `AGENTS.md`,
