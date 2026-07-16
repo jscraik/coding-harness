@@ -34,5 +34,15 @@ describe("architecture registry validator", () => {
 		);
 		expect(requiredGates).toContain("pnpm run audit");
 		expect(requiredGates).not.toContain("pnpm audit");
+		for (const path of [
+			"SECURITY.md",
+			"docs/ai-assistant-security-policy.md",
+			"docs/automations/jsc-249-phased-friction-evidence-work.md",
+			"docs/examples/trust-artifacts/run-record.example.json",
+		]) {
+			expect(readFileSync(path, "utf8")).not.toMatch(
+				/(^|[^\w])pnpm\s+audit(?:\s|$)/m,
+			);
+		}
 	});
 });

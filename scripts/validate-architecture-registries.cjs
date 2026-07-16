@@ -113,6 +113,21 @@ function validateAuditCommandSurfaces(violations) {
 			}
 		}
 	}
+
+	for (const relativePath of [
+		"SECURITY.md",
+		"docs/ai-assistant-security-policy.md",
+		"docs/automations/jsc-249-phased-friction-evidence-work.md",
+		"docs/examples/trust-artifacts/run-record.example.json",
+	]) {
+		const text = fs.readFileSync(path.join(root, relativePath), "utf8");
+		if (/(^|[^\w])pnpm\s+audit(?:\s|$)/m.test(text)) {
+			violations.push({
+				file: relativePath,
+				message: "audit guidance must use pnpm run audit",
+			});
+		}
+	}
 }
 
 const violations = [];

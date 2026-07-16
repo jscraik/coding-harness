@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 
 import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import process from "node:process";
 import { parse } from "yaml";
 
 const DEFAULT_REGISTRY = "https://registry.npmjs.org/";
 const DEFAULT_SCOPE_POLICY = "scripts/npm-audit-public-scopes.json";
+const DEFAULT_PACKAGE_MANIFEST =
+	"scripts/npm-audit-public-package-manifest.json";
 const SEVERITY_ORDER = new Map([
 	["info", 0],
 	["low", 1],
@@ -14,18 +17,18 @@ const SEVERITY_ORDER = new Map([
 	["high", 3],
 	["critical", 4],
 ]);
-const PACKAGE_NAME = /^(?:@[^/@\s]+\/[^/@\s]+|[^/@\s]+)$/;
+const PACKAGE_NAME =
+	/^(?:@[A-Za-z0-9][A-Za-z0-9._-]*\/)?[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const LOCAL_PACKAGE_KEY = /^(?:file|link|workspace):/;
 const REMOTE_PACKAGE_KEY = /^(?:git|github|https?):/;
 const UNSAFE_TEXT_CHARACTER = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u;
-const SENSITIVE_QUERY_NAME =
-	/^(?:(?:(?:access|api|refresh|session)[_-]?)?token|auth(?:entication|orization)?|credential|api[_-]?key|key|pass(?:word|wd)?|secret|signature|sig)$/i;
 
 function parseArguments(argv) {
 	let auditLevel = "moderate";
 	let lockfile = "pnpm-lock.yaml";
 	let scopePolicy = DEFAULT_SCOPE_POLICY;
+	let packageManifest = DEFAULT_PACKAGE_MANIFEST;
 	for (let index = 0; index < argv.length; index += 1) {
 		const argument = argv[index];
 		if (argument === "--audit-level") {
@@ -36,6 +39,9 @@ function parseArguments(argv) {
 			index += 1;
 		} else if (argument === "--scope-policy") {
 			scopePolicy = argv[index + 1] ?? "";
+			index += 1;
+		} else if (argument === "--package-manifest") {
+			packageManifest = argv[index + 1] ?? "";
 			index += 1;
 		} else {
 			throw new Error(`Unknown argument: ${argument}`);
@@ -48,7 +54,10 @@ function parseArguments(argv) {
 	if (scopePolicy.length === 0) {
 		throw new Error("--scope-policy requires a path");
 	}
-	return { auditLevel, lockfile, scopePolicy };
+	if (packageManifest.length === 0) {
+		throw new Error("--package-manifest requires a path");
+	}
+	return { auditLevel, lockfile, packageManifest, scopePolicy };
 }
 
 function packageIdentity(lockfileKey) {
@@ -165,7 +174,7 @@ function classifiedIdentity(lockfileKey, metadata, approvedScopes, registry) {
 
 export function buildBulkPayload(
 	lockfileText,
-	{ allowedScopes = [], registry = DEFAULT_REGISTRY } = {},
+	{ allowedScopes = [], packageManifest, registry = DEFAULT_REGISTRY } = {},
 ) {
 	const approvedScopes = new Set(allowedScopes);
 	const approvedRegistry = registryUrl(registry);
@@ -187,11 +196,46 @@ export function buildBulkPayload(
 	if (versionsByName.size === 0) {
 		throw new Error("pnpm lockfile packages mapping has no auditable versions");
 	}
+	assertPackageManifest(versionsByName.keys(), packageManifest);
 	return Object.fromEntries(
 		[...versionsByName.entries()]
 			.sort(([left], [right]) => left.localeCompare(right))
 			.map(([name, versions]) => [name, [...versions].sort()]),
 	);
+}
+
+function hasPackageManifestShape(manifest) {
+	return (
+		manifest !== null &&
+		typeof manifest === "object" &&
+		!Array.isArray(manifest) &&
+		manifest.algorithm === "sha256"
+	);
+}
+
+function hasPackageManifestMetadata(manifest) {
+	return (
+		Number.isSafeInteger(manifest.package_count) &&
+		manifest.package_count >= 1 &&
+		typeof manifest.digest === "string" &&
+		/^sha256:[0-9a-f]{64}$/.test(manifest.digest)
+	);
+}
+
+function assertPackageManifest(packageNames, manifest) {
+	if (
+		!hasPackageManifestShape(manifest) ||
+		!hasPackageManifestMetadata(manifest)
+	) {
+		throw new Error("audit package manifest is malformed");
+	}
+	const names = [...packageNames].sort();
+	const digest = `sha256:${createHash("sha256").update(names.join("\n")).digest("hex")}`;
+	if (manifest.package_count !== names.length || manifest.digest !== digest) {
+		throw new Error(
+			"audit package identities do not match the approved manifest",
+		);
+	}
 }
 
 function auditEndpoint(registryValue) {
@@ -221,22 +265,8 @@ function safeAdvisoryUrl(value) {
 	if (url.protocol !== "https:" || url.username || url.password) {
 		throw new Error("bulk advisory URL must be credential-free HTTPS");
 	}
-	if (
-		[...url.searchParams.keys()].some((name) => SENSITIVE_QUERY_NAME.test(name))
-	) {
-		throw new Error(
-			"bulk advisory URL must not contain credential query parameters",
-		);
-	}
-	const fragmentParameters = new URLSearchParams(url.hash.slice(1));
-	if (
-		[...fragmentParameters.keys()].some((name) =>
-			SENSITIVE_QUERY_NAME.test(name),
-		)
-	) {
-		throw new Error(
-			"bulk advisory URL must not contain credential fragment parameters",
-		);
+	if (url.search !== "" || url.hash !== "") {
+		throw new Error("bulk advisory URL must not contain query or fragment");
 	}
 	return url.toString();
 }
@@ -327,12 +357,13 @@ async function loadAllowedScopes(path) {
 }
 
 async function main() {
-	const { auditLevel, lockfile, scopePolicy } = parseArguments(
+	const { auditLevel, lockfile, packageManifest, scopePolicy } = parseArguments(
 		process.argv.slice(2),
 	);
 	const registry = process.env.npm_config_registry ?? DEFAULT_REGISTRY;
 	const payload = buildBulkPayload(await readFile(lockfile, "utf8"), {
 		allowedScopes: await loadAllowedScopes(scopePolicy),
+		packageManifest: JSON.parse(await readFile(packageManifest, "utf8")),
 		registry,
 	});
 	const advisories = await fetchBulkAdvisories(payload, { registry });

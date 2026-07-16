@@ -1,5 +1,5 @@
 {
-	"generatedAt": "2026-07-16T12:06:19.812Z",
+	"generatedAt": "2026-07-16T12:44:43.454Z",
 	"schemaVersion": "1.0",
 	"rootPath": ".",
 	"diagramDir": ".diagram",
@@ -22,8 +22,8 @@
 			"type": "agent",
 			"file": "agent.mmd",
 			"outputPath": ".diagram/agent.mmd",
-			"lines": 435,
-			"bytes": 64947,
+			"lines": 436,
+			"bytes": 65076,
 			"isPlaceholder": false
 		},
 		{
@@ -70,8 +70,8 @@
 			"type": "dependency",
 			"file": "dependency.mmd",
 			"outputPath": ".diagram/dependency.mmd",
-			"lines": 1110,
-			"bytes": 88850,
+			"lines": 1111,
+			"bytes": 88935,
 			"isPlaceholder": false
 		},
 		{

@@ -9,6 +9,11 @@ export function buildBulkPayload(
 	lockfileText: string,
 	options?: {
 		allowedScopes?: string[];
+		packageManifest: {
+			algorithm: "sha256";
+			package_count: number;
+			digest: `sha256:${string}`;
+		};
 		registry?: string;
 	},
 ): Record<string, string[]>;

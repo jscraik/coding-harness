@@ -26,9 +26,21 @@ snapshots:
   '@scope/pkg@2.0.0(peer@1.0.0)': {}
 `;
 
+const TEST_PACKAGE_MANIFEST = {
+	algorithm: "sha256" as const,
+	package_count: 3,
+	digest:
+		"sha256:ee1919357fbcec135d7618f9c33bca4387e5e9d3b9f7bb0e0f15049fc935d29a" as const,
+};
+
+const TEST_OPTIONS = {
+	allowedScopes: ["@scope"],
+	packageManifest: TEST_PACKAGE_MANIFEST,
+};
+
 describe("pnpm bulk audit script", () => {
 	it("structurally submits every exact pnpm v9 lockfile version", async () => {
-		const payload = buildBulkPayload(LOCKFILE, { allowedScopes: ["@scope"] });
+		const payload = buildBulkPayload(LOCKFILE, TEST_OPTIONS);
 		const fetchImplementation = vi.fn<typeof fetch>(
 			async () =>
 				new Response("{}", {
@@ -61,10 +73,16 @@ describe("pnpm bulk audit script", () => {
 		const policy = JSON.parse(
 			readFileSync("scripts/npm-audit-public-scopes.json", "utf8"),
 		) as string[];
+		const packageManifest = JSON.parse(
+			readFileSync("scripts/npm-audit-public-package-manifest.json", "utf8"),
+		) as typeof TEST_PACKAGE_MANIFEST;
 		const document = parse(lockfileText) as {
 			packages: Record<string, unknown>;
 		};
-		const payload = buildBulkPayload(lockfileText, { allowedScopes: policy });
+		const payload = buildBulkPayload(lockfileText, {
+			allowedScopes: policy,
+			packageManifest,
+		});
 		const submittedVersions = Object.values(payload).reduce(
 			(count, versions) => count + versions.length,
 			0,
@@ -79,14 +97,41 @@ describe("pnpm bulk audit script", () => {
 		);
 	});
 
+	it("fails closed when lockfile package identities drift from the reviewed manifest", () => {
+		const privateLockfile = LOCKFILE.replace(
+			"plain@1.2.3",
+			"private-internal@1.2.3",
+		);
+		expect(() => buildBulkPayload(privateLockfile, TEST_OPTIONS)).toThrow(
+			"package identities do not match the approved manifest",
+		);
+	});
+
+	it("rejects malformed package names before manifest or network construction", () => {
+		for (const name of [
+			"plain\u001bescape",
+			"plain\u202Eoverride",
+			"plain:alias",
+			"plain\\alias",
+		]) {
+			const lockfile = LOCKFILE.replace("plain@1.2.3", `${name}@1.2.3`);
+			expect(() => buildBulkPayload(lockfile, TEST_OPTIONS)).toThrow(
+				"unclassifiable pnpm lockfile package key",
+			);
+		}
+	});
+
 	it("rejects packages resolved from another registry origin", () => {
 		const privateLockfile = `lockfileVersion: '9.0'
 packages:
   '@private/internal@4.0.0':
     resolution: {tarball: 'https://registry.private.test/@private/internal.tgz'}
-`;
+		`;
 		expect(() =>
-			buildBulkPayload(privateLockfile, { allowedScopes: ["@private"] }),
+			buildBulkPayload(privateLockfile, {
+				allowedScopes: ["@private"],
+				packageManifest: TEST_PACKAGE_MANIFEST,
+			}),
 		).toThrow("audit registry origin is not approved");
 	});
 
@@ -94,6 +139,7 @@ packages:
 		expect(() =>
 			buildBulkPayload(LOCKFILE, {
 				allowedScopes: ["@scope"],
+				packageManifest: TEST_PACKAGE_MANIFEST,
 				registry: "https://registry.example.test/",
 			}),
 		).toThrow("audit registry origin is not approved");
@@ -180,7 +226,7 @@ packages:
 					},
 				],
 			}),
-		).toThrow("credential query parameters");
+		).toThrow("query or fragment");
 		for (const url of [
 			"https://example.test/advisory?token=secret",
 			"https://example.test/advisory?api_token=secret",
@@ -190,7 +236,33 @@ packages:
 				validateResponse({
 					plain: [{ severity: "high", title: "unsafe package", url }],
 				}),
-			).toThrow(/credential (?:query|fragment) parameters/);
+			).toThrow("query or fragment");
+		}
+		for (const suffix of [
+			"?client_secret=value",
+			"?x-api-key=value",
+			"?x_api_key=value",
+			"?authorization_token=value",
+			"?auth_token=value",
+			"?bearer_token=value",
+			"?jwt=value",
+			"?accessKeyId=value",
+			"?X-Amz-Credential=value",
+			"?GoogleAccessId=value",
+			"?page=1",
+			"#section",
+		]) {
+			expect(() =>
+				validateResponse({
+					plain: [
+						{
+							severity: "high",
+							title: "unsafe package",
+							url: `https://example.test/advisory${suffix}`,
+						},
+					],
+				}),
+			).toThrow("query or fragment");
 		}
 		for (const title of ["unsafe\u0085line", "unsafe\u202Eoverride"]) {
 			expect(() =>
@@ -213,10 +285,9 @@ packages:
 			throw new TypeError("fetch failed: redirect mode is error");
 		});
 		await expect(
-			fetchBulkAdvisories(
-				buildBulkPayload(LOCKFILE, { allowedScopes: ["@scope"] }),
-				{ fetchImplementation },
-			),
+			fetchBulkAdvisories(buildBulkPayload(LOCKFILE, TEST_OPTIONS), {
+				fetchImplementation,
+			}),
 		).rejects.toThrow("redirect mode is error");
 	});
 
@@ -226,18 +297,36 @@ packages:
 		);
 	});
 
+	it("rejects malformed package names returned by the registry", () => {
+		for (const name of [
+			"plain\u001bescape",
+			"plain\u202Eoverride",
+			"plain:alias",
+			"plain\\alias",
+		]) {
+			expect(() =>
+				validateResponse({
+					[name]: [
+						{
+							severity: "high",
+							title: "unsafe package",
+							url: "https://example.test/advisory",
+						},
+					],
+				}),
+			).toThrow(`bulk advisory entry for ${name} is malformed`);
+		}
+	});
+
 	it("fails closed when the bulk endpoint is unavailable", async () => {
 		const fetchImplementation = vi.fn<typeof fetch>(
 			async () => new Response('{"error":"retired"}', { status: 410 }),
 		);
 		await expect(
-			fetchBulkAdvisories(
-				buildBulkPayload(LOCKFILE, { allowedScopes: ["@scope"] }),
-				{
-					fetchImplementation,
-					registry: "https://registry.npmjs.org/",
-				},
-			),
+			fetchBulkAdvisories(buildBulkPayload(LOCKFILE, TEST_OPTIONS), {
+				fetchImplementation,
+				registry: "https://registry.npmjs.org/",
+			}),
 		).rejects.toThrow("bulk advisory endpoint returned HTTP 410");
 	});
 });
