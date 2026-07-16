@@ -873,7 +873,7 @@ exec bash "$SCRIPT_DIR/../../outside-check-environment.sh" "$@"
 				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
 				expect(
 					result.value.result.results[0]?.findings.some((finding) =>
-						finding.description.includes("escapes the repository"),
+						finding.description.includes("path traversal"),
 					),
 				).toBe(true);
 			}

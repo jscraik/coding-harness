@@ -149,6 +149,19 @@ describe("tooling-audit TOML compatibility", () => {
 					EXIT_CODES.SUCCESS,
 				],
 				[
+					basePrek.replace(
+						'entry = "bash scripts/hook-pre-commit.sh"',
+						'entry = """bash scripts/hook-pre-commit.sh\\\n\n    """',
+					),
+					baseReadiness,
+					EXIT_CODES.SUCCESS,
+				],
+				[
+					basePrek.replaceAll("[[repos.hooks]]", "[[ repos.hooks ]]"),
+					baseReadiness,
+					EXIT_CODES.SUCCESS,
+				],
+				[
 					basePrek,
 					baseReadiness.replace(
 						"set -euo pipefail",
@@ -159,6 +172,61 @@ describe("tooling-audit TOML compatibility", () => {
 			];
 			for (const [prek, readiness, expected] of cases)
 				expect(await run(prek, readiness)).toBe(expected);
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("rejects incomplete, noncanonical, and traversal readiness forwarders", async () => {
+		const tempRoot = mkdtempSync(
+			join(tmpdir(), "tooling-audit-forwarding-guardrails-"),
+		);
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir);
+		const policy = DEFAULT_CONTRACT.toolingPolicy;
+		if (!policy) throw new Error("Expected default tooling policy");
+		const effectiveReadiness = readFileSync(
+			join(repoDir, policy.readinessScriptPath),
+			"utf-8",
+		);
+		writeRepoFile(
+			repoDir,
+			"scripts/check-environment_impl.sh",
+			effectiveReadiness,
+		);
+		const wrappers = [
+			`#!/usr/bin/env bash
+SCRIPT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd -P)"
+exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
+`,
+			`#!/bin/sh
+set -euo pipefail
+SCRIPT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd -P)"
+exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
+`,
+			`#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$PWD/scripts"
+exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
+${effectiveReadiness}`,
+			`#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd -P)"
+exec bash "$SCRIPT_DIR/../check-environment_impl.sh" "$@"
+`,
+		];
+		try {
+			for (const wrapper of wrappers) {
+				writeRepoFile(repoDir, policy.readinessScriptPath, wrapper);
+				const result = await runToolingAudit({
+					path: tempRoot,
+					format: "json",
+				});
+				expect(result.ok).toBe(true);
+				if (result.ok)
+					expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+			}
 		} finally {
 			rmSync(tempRoot, { recursive: true, force: true });
 		}

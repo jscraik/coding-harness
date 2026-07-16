@@ -224,11 +224,19 @@ function parseReadinessForwardingTarget(
 	const scriptDirMarkerPattern =
 		/^\s*SCRIPT_DIR=.*(?:BASH_SOURCE|\$\{?BASH_SOURCE)/;
 	const lines = content.split(/\r?\n/);
+	const hasScriptDirExec =
+		/^\s*exec\b.*(?:\$\{SCRIPT_DIR\}|\$SCRIPT_DIR)\//m.test(content);
 	const scriptDirLines = lines.filter((line) =>
 		scriptDirMarkerPattern.test(line),
 	);
 	if (scriptDirLines.length === 0) {
-		return { target: null, error: null };
+		return hasScriptDirExec
+			? {
+					target: null,
+					error:
+						"Readiness forwarding must use the canonical SCRIPT_DIR assignment",
+				}
+			: { target: null, error: null };
 	}
 	const invalidScriptDirLine = scriptDirLines.find(
 		(line) => !isCanonicalScriptDirAssignment(line),
@@ -240,8 +248,6 @@ function parseReadinessForwardingTarget(
 		};
 	}
 
-	const hasScriptDirExec =
-		/^\s*exec\b.*(?:\$\{SCRIPT_DIR\}|\$SCRIPT_DIR)\//m.test(content);
 	if (!hasScriptDirExec) {
 		return { target: null, error: null };
 	}
@@ -262,27 +268,72 @@ function parseReadinessForwardingTarget(
 	const allowedLines = lines
 		.map((line) => line.trim())
 		.filter((line) => line.length > 0);
-	const hasScriptDirAssignment = allowedLines.filter((line) =>
-		isCanonicalScriptDirAssignment(line),
-	).length;
-	const unsupportedLine = allowedLines.find(
-		(line) =>
-			!line.startsWith("#") &&
-			stripShellTrailingComment(line) !== "set -euo pipefail" &&
-			!isCanonicalScriptDirAssignment(line) &&
-			!forwardingExecPattern.test(line),
+	const shapeError = validateReadinessForwardingShape(
+		allowedLines,
+		forwardingExecPattern,
 	);
-	if (hasScriptDirAssignment !== 1 || unsupportedLine !== undefined) {
+	if (shapeError !== null) {
 		return {
 			target: null,
-			error: `Readiness forwarding contains an unsupported command: ${unsupportedLine ?? "invalid SCRIPT_DIR assignment"}`,
+			error: `Readiness forwarding contains an unsupported command: ${shapeError}`,
 		};
 	}
 
 	const match = forwardingExecPattern.exec(
 		allowedLines.find((line) => forwardingExecPattern.test(line)) ?? "",
 	);
-	return { target: match?.[1] ?? match?.[2] ?? null, error: null };
+	const target = match?.[1] ?? match?.[2] ?? null;
+	if (target !== null && hasPathTraversalSegment(target)) {
+		return {
+			target: null,
+			error: `Readiness forwarding target contains path traversal: ${target}`,
+		};
+	}
+	return { target, error: null };
+}
+
+/**
+ * Validate the required commands in an approved readiness forwarding wrapper.
+ *
+ * @param lines - Normalized non-empty shell source lines.
+ * @param forwardingExecPattern - Exact forwarding command grammar.
+ * @returns The invalid component, or `null` when the wrapper shape is valid.
+ */
+function validateReadinessForwardingShape(
+	lines: string[],
+	forwardingExecPattern: RegExp,
+): string | null {
+	if (lines[0] !== "#!/usr/bin/env bash") return "invalid shebang";
+	const strictModeCount = lines.filter(
+		(line) => stripShellTrailingComment(line) === "set -euo pipefail",
+	).length;
+	if (strictModeCount !== 1) return "invalid strict-mode declaration";
+	const scriptDirCount = lines.filter((line) =>
+		isCanonicalScriptDirAssignment(line),
+	).length;
+	if (scriptDirCount !== 1) return "invalid SCRIPT_DIR assignment";
+	return (
+		lines.find(
+			(line) =>
+				line !== "#!/usr/bin/env bash" &&
+				!line.startsWith("#") &&
+				stripShellTrailingComment(line) !== "set -euo pipefail" &&
+				!isCanonicalScriptDirAssignment(line) &&
+				!forwardingExecPattern.test(line),
+		) ?? null
+	);
+}
+
+/**
+ * Detect explicit current-directory or parent-directory path segments.
+ *
+ * @param target - Repository-relative forwarding target.
+ * @returns Whether the target contains a traversal segment.
+ */
+function hasPathTraversalSegment(target: string): boolean {
+	return target
+		.split("/")
+		.some((segment) => segment === "." || segment === "..");
 }
 
 /**
@@ -805,7 +856,7 @@ function isTomlEscaped(block: string, offset: number): boolean {
  */
 function decodeTomlBasicString(raw: string, multiline: boolean): string {
 	const normalized = normalizeTomlMultilineString(raw, multiline).replace(
-		/\\\r?\n[ \t]*/g,
+		/\\(?:\r\n|\n)[ \t\r\n]*/g,
 		"",
 	);
 	return normalized.replace(/\\(["\\bfnrt])/g, (_match, escapeCode: string) => {
@@ -1089,7 +1140,7 @@ function consumeTomlTrailing(
  */
 function parsePrekHooks(content: string): ParsedPrekHook[] {
 	return content
-		.split(/^\s*\[\[repos\.hooks\]\](?:\s*#.*)?\s*$/m)
+		.split(/^\s*\[\[\s*repos\s*\.\s*hooks\s*\]\](?:\s*#.*)?\s*$/m)
 		.slice(1)
 		.map((block) => {
 			const id = parseQuotedTomlValue(block, "id");
