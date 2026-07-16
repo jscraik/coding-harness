@@ -599,6 +599,18 @@ run_local_memory_preflight_with_runner() {
 # run_local_memory_preflight_via_harness attempts to run the local-memory preflight using available harness runners in preferred order (repo source via pnpm+tsx, repo dist CLI via node, repo wrapper script, then global `harness`), returning the executed runner's exit status or `3` if no runner is available.
 run_local_memory_preflight_via_harness() {
 	local status=3
+	if [[ "${CODEX_PREFLIGHT_TEST_SKIP_HARNESS_RUNNERS:-}" == '1' ]]; then
+		if [[ "${CODEX_PREFLIGHT_ENABLE_TEST_OVERRIDES:-}" != '1' ]]; then
+			log_err 'CODEX_PREFLIGHT_TEST_SKIP_HARNESS_RUNNERS requires CODEX_PREFLIGHT_ENABLE_TEST_OVERRIDES=1'
+			return 1
+		fi
+		if [[ -n "${CI:-}" ]]; then
+			log_err 'CODEX_PREFLIGHT_TEST_SKIP_HARNESS_RUNNERS is not allowed in CI'
+			return 1
+		fi
+		log_warn 'skipping Harness Local Memory runners for deterministic fallback validation'
+		return 3
+	fi
 
 	if [[ -f "${WORKSPACE_ROOT}/src/dev/run-local-memory-preflight.ts" ]] && command -v pnpm >/dev/null 2>&1; then
 		if command -v tsx >/dev/null 2>&1 || [[ -x "${WORKSPACE_ROOT}/node_modules/.bin/tsx" ]]; then
