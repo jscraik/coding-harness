@@ -162,7 +162,10 @@ contracts but must not become competing authorities. Preserve candidate SHA
 and traceability checks through transition validation, keep retirement
 decisions evidence-backed and reversible, and synchronize schemas, examples,
 runtime validators, package exports, eval baselines, focused tests, README
-guidance, and generated architecture context in the same PR. Use the
+guidance, and any generated architecture context admitted by the task scope in
+the same PR. When diagram or context-generation work is explicitly excluded,
+preserve the existing generated artifacts and prove the packet boundary through
+the scoped code, contract, and documentation gates. Use the
 [packet-consolidation operational gate route](../plans/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-plan.md#packet-consolidation-operational-gate-route)
 as the executable validation SOP; harness engineering owns its local PC1-PC6
 commands and the PR coordinator owns the hosted PC7 closeout. These artifacts

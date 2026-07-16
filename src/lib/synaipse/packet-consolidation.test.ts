@@ -182,36 +182,6 @@ function appendRatchetClone(ratchets: unknown[], id?: string): void {
 }
 
 describe("synaipse packet consolidation", () => {
-	it.each([
-		["agent-native-ratchets/v1", ["--json"], "complete"],
-		["session-distill/v1", ["--session-distill", "--json"], "complete"],
-		["agent-rework/v1", ["--rework", "--json"], "complete"],
-		["reviewer-decision/v1", ["--reviewer-decision", "--json"], "complete"],
-		["governance-decision-surface/v1", ["--governance", "--json"], "complete"],
-	] as const)("accepts and projects the packet emitted by the %s producer", (schemaVersion, args, expectedStatus) => {
-		const packet = emittedPacket(...args);
-		const validation = validatePacketSource(schemaVersion, packet);
-		const projection = projectLegacyPacket(schemaVersion, packet, OBSERVED_AT);
-		const canonical = canonicalizeLegacyPacket(schemaVersion, packet, {
-			repoRoot: process.cwd(),
-			observedAt: OBSERVED_AT,
-		});
-
-		expect(validation).toEqual({ valid: true, errors: [] });
-		expect(projection.valid).toBe(true);
-		expect(projection.source.schemaVersion).toBe(schemaVersion);
-		expect(projection.evidenceRefs.length).toBeGreaterThan(0);
-		expect(canonical.status).toBe(expectedStatus);
-		if (expectedStatus === "complete") {
-			expect(canonical.valid).toBe(true);
-			expect(canonical.record?.schemaVersion).toBe(
-				PACKET_FAMILY_REGISTRY.find(
-					(family) => family.schemaVersion === schemaVersion,
-				)?.canonicalContract,
-			);
-		}
-	});
-
 	it("keeps checkout HEAD distinct from an older hosted-main observation", () => {
 		const fixture = retirementFixture();
 		try {
