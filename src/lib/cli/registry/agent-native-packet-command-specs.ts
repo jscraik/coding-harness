@@ -45,10 +45,16 @@ function runPacketScript(
 		observedAt: new Date().toISOString(),
 	});
 	if (canonical.status === "invalid") {
-		console.error(
-			`${commandName}: canonical projection failed: ${canonical.errors.join("; ")}`,
+		process.stdout.write(result.stdout);
+		process.stderr.write(
+			`${JSON.stringify({
+				diagnostic: "canonical_projection_invalid",
+				sourceSchemaVersion: canonical.sourceSchemaVersion,
+				targetSchemaVersion: canonical.targetSchemaVersion,
+				reasons: canonical.errors,
+			})}\n`,
 		);
-		return 1;
+		return result.status ?? 0;
 	}
 	if (canonical.status === "unavailable") {
 		process.stdout.write(result.stdout);

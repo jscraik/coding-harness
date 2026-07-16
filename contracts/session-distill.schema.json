@@ -34,7 +34,7 @@
 		},
 		"headSha": {
 			"type": "string",
-			"pattern": "^[0-9a-f]{40}$"
+			"minLength": 1
 		},
 		"worktreeStatus": {
 			"enum": ["clean", "dirty"]

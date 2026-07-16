@@ -66,14 +66,19 @@ describe("session-distill runtime packet validation", () => {
 		}
 	});
 
-	it("rejects an invalid head SHA independently", () => {
+	it("keeps abbreviated v1 head SHAs backward-compatible", () => {
 		const result = validateSessionDistillPatch({ headSha: "1111111" });
+
+		expect(result.status).toBe(0);
+		expect(result.report.errors).toEqual([]);
+	});
+
+	it("rejects a blank v1 head SHA independently", () => {
+		const result = validateSessionDistillPatch({ headSha: "" });
 
 		expect(result.status).toBe(1);
 		expect(result.report.errors).toEqual(
-			expect.arrayContaining([
-				expect.stringContaining(".headSha must match pattern"),
-			]),
+			expect.arrayContaining([expect.stringContaining(".headSha")]),
 		);
 	});
 

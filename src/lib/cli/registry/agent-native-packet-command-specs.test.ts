@@ -1,5 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { canonicalizeLegacyPacket } from "../../synaipse/packet-canonicalization.js";
 import { createAgentNativePacketCommandSpecs } from "./agent-native-packet-command-specs.js";
+
+vi.mock("../../synaipse/packet-canonicalization.js", async (importOriginal) => {
+	const actual =
+		await importOriginal<
+			typeof import("../../synaipse/packet-canonicalization.js")
+		>();
+	return {
+		...actual,
+		canonicalizeLegacyPacket: vi.fn(actual.canonicalizeLegacyPacket),
+	};
+});
 
 afterEach(() => {
 	vi.restoreAllMocks();
@@ -43,5 +55,34 @@ describe("agent-native packet command specs", () => {
 			decision: "needs_evidence",
 		});
 		expect(stderr).not.toHaveBeenCalled();
+	});
+
+	it("preserves legacy JSON and exit when canonical projection is invalid", () => {
+		vi.mocked(canonicalizeLegacyPacket).mockReturnValueOnce({
+			status: "invalid",
+			valid: false,
+			errors: ["coverageReceipt.evidenceRefs must not be empty"],
+			sourceSchemaVersion: "reviewer-decision/v1",
+			targetSchemaVersion: "synaipse-transition/v1",
+			record: null,
+		});
+		const stdout = vi.spyOn(process.stdout, "write").mockReturnValue(true);
+		const stderr = vi.spyOn(process.stderr, "write").mockReturnValue(true);
+		const spec = createAgentNativePacketCommandSpecs().find(
+			(candidate) => candidate.name === "reviewer-decision",
+		);
+
+		expect(spec?.execute(["reviewer-decision"])).toBe(0);
+		expect(
+			JSON.parse(stdout.mock.calls.map(([chunk]) => String(chunk)).join("")),
+		).toMatchObject({ schemaVersion: "reviewer-decision/v1" });
+		expect(
+			JSON.parse(stderr.mock.calls.map(([chunk]) => String(chunk)).join("")),
+		).toEqual({
+			diagnostic: "canonical_projection_invalid",
+			sourceSchemaVersion: "reviewer-decision/v1",
+			targetSchemaVersion: "synaipse-transition/v1",
+			reasons: ["coverageReceipt.evidenceRefs must not be empty"],
+		});
 	});
 });

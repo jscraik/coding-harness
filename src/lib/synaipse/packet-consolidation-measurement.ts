@@ -1,4 +1,7 @@
-import { getRegistryAgentCommandCatalogDocument } from "../cli/command-registry.js";
+import {
+	getRegistryAgentCommandCatalogDocument,
+	getRegistryCommandCatalogDocument,
+} from "../cli/command-registry.js";
 import type { CommandCapabilityCatalogDocument } from "../cli/registry/command-capabilities.js";
 import {
 	observePacketCandidateIdentity,
@@ -42,6 +45,7 @@ export interface PacketConsolidationMeasurement {
 		before: string[];
 		afterDefault: string[];
 		compatibilityRetained: string[];
+		compatibilityMissing: string[];
 	};
 	packetVisibility: {
 		before: string[];
@@ -67,6 +71,7 @@ interface PacketConsolidationMeasurementInput {
 	candidateIdentity: PacketCandidateIdentity;
 	baseline: PacketConsolidationBaseline;
 	catalog: CommandCapabilityCatalogDocument;
+	registryCatalog: CommandCapabilityCatalogDocument;
 }
 
 /** Load the checked-in baseline and live catalog inside the measurement owner. */
@@ -78,7 +83,29 @@ export function measureCurrentPacketConsolidation(
 		candidateIdentity: observePacketCandidateIdentity(repoRoot),
 		baseline: readPacketConsolidationBaseline(repoRoot),
 		catalog: getRegistryAgentCommandCatalogDocument(),
+		registryCatalog: getRegistryCommandCatalogDocument(),
 	});
+}
+
+/** Measure compatibility commands from the full live registry catalog. */
+export function measureRetainedPacketCommands(
+	catalog: CommandCapabilityCatalogDocument,
+): { retained: string[]; missing: string[] } {
+	const registeredNames = new Set(
+		catalog.commands.map((command) => command.name),
+	);
+	const rows = PACKET_FAMILY_REGISTRY.map((family) => ({
+		family,
+		name: family.command.split(" ")[1] ?? "",
+	}));
+	return {
+		retained: rows
+			.filter(({ name }) => registeredNames.has(name))
+			.map(({ family }) => family.command),
+		missing: rows
+			.filter(({ name }) => !registeredNames.has(name))
+			.map(({ family }) => family.command),
+	};
 }
 
 /** Measure the default surface without treating retained compatibility as gone. */
@@ -116,15 +143,15 @@ function measurePacketConsolidation(
 			summary: command.summary,
 		})),
 	);
+	const compatibility = measureRetainedPacketCommands(input.registryCatalog);
 	return {
 		schemaVersion: "packet-consolidation-measurement/v1",
 		sources: measurementSources(input, inventory),
 		commandVisibility: {
 			before: beforeCommands,
 			afterDefault: afterCommands,
-			compatibilityRetained: PACKET_FAMILY_REGISTRY.map(
-				(family) => family.command,
-			),
+			compatibilityRetained: compatibility.retained,
+			compatibilityMissing: compatibility.missing,
 		},
 		packetVisibility: {
 			before: beforePackets,

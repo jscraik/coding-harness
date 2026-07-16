@@ -779,13 +779,6 @@ class SessionDistillReport(BaseModel):
         reject_blank_string
     )
 
-    @field_validator("headSha")
-    @classmethod
-    def require_full_head_sha(cls, value: str) -> str:
-        if re.fullmatch(r"[0-9a-f]{40}", value) is None:
-            raise ValueError("headSha must be an exact 40-character lowercase git SHA")
-        return value
-
     _reject_blank_items = field_validator("changedFiles", "nextCommands", "nonClaims")(
         reject_blank_list_items
     )

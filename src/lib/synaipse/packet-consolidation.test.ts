@@ -693,6 +693,7 @@ describe("synaipse packet consolidation", () => {
 			"harness session-distill --json",
 		]);
 		expect(measurement.commandVisibility.compatibilityRetained).toHaveLength(5);
+		expect(measurement.commandVisibility.compatibilityMissing).toEqual([]);
 		expect(measurement.packetVisibility).toMatchObject({
 			before: [
 				"agent-native-ratchets/v1",
