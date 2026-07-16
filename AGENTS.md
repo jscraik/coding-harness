@@ -9,7 +9,7 @@ audience: [codex-agent, coding-harness-maintainer]
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-07-15
+last_reviewed: 2026-07-16
 review_cadence: on-change
 maintenance_trigger: [agent-operating-policy-change, validation-contract-change, workflow-governance-change]
 semver_impact: minor
@@ -81,7 +81,7 @@ truth.
 ## Validation
 
 - Baseline: `pnpm codestyle:parity`, `pnpm codex:agents:guard`,
-  `pnpm check:static`, `pnpm check`, `bash scripts/validate-codestyle.sh`,
+  `pnpm check:static`, `pnpm run audit`, `pnpm check`, `bash scripts/validate-codestyle.sh`,
   and `bash scripts/verify-work.sh`.
 - Fast lanes: `pnpm run quality:scripts`, `pnpm run tooling:parity`, and
   `bash scripts/validate-codestyle.sh --fast`.

@@ -12,9 +12,9 @@ flowchart TD
   env_b77349bf --> resource_tracker_d95b6649
   vitest_e2e_config_4e2a61bc["vitest.e2e.config"]
   resource_tracker_d95b6649 --> vitest_e2e_config_4e2a61bc
+  audit_pnpm_lock_3bdddae2["audit-pnpm-lock"]
+  vitest_e2e_config_4e2a61bc --> audit_pnpm_lock_3bdddae2
   check_architecture_rules_6b7347fd["check-architecture-rules"]
-  vitest_e2e_config_4e2a61bc --> check_architecture_rules_6b7347fd
-  check_behavior_tests_2577f6be["check-behavior-tests"]
-  check_architecture_rules_6b7347fd --> check_behavior_tests_2577f6be
+  audit_pnpm_lock_3bdddae2 --> check_architecture_rules_6b7347fd
   End(["End"])
-  check_behavior_tests_2577f6be --> End
+  check_architecture_rules_6b7347fd --> End

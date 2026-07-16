@@ -22,6 +22,8 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Fixed
 
+- Replaced the retired pnpm quick-audit transport with a fail-closed bulk
+  advisory check derived directly from `pnpm-lock.yaml`.
 - Made CircleCI `pr-template` and `linear-gate` metadata lookup fall back to
   public GitHub pull metadata when stale or invalid GitHub CLI credentials are
   present in public-repository jobs.

@@ -47,7 +47,7 @@
   - `pnpm lint`
   - `pnpm typecheck`
   - `pnpm test`
-  - `pnpm audit`
+  - `pnpm run audit`
   - `pnpm check`
   - `bash scripts/validate-codestyle.sh`
   - `bash scripts/verify-work.sh --fast`
