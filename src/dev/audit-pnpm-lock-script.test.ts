@@ -87,7 +87,29 @@ packages:
 `;
 		expect(() =>
 			buildBulkPayload(privateLockfile, { allowedScopes: ["@private"] }),
-		).toThrow("belongs to an unapproved registry origin");
+		).toThrow("audit registry origin is not approved");
+	});
+
+	it("rejects undeclared registry origins before constructing a request", () => {
+		expect(() =>
+			buildBulkPayload(LOCKFILE, {
+				allowedScopes: ["@scope"],
+				registry: "https://registry.example.test/",
+			}),
+		).toThrow("audit registry origin is not approved");
+	});
+
+	it("fails closed rather than omitting direct remote dependencies", () => {
+		const remoteLockfile = `lockfileVersion: '9.0'
+packages:
+  https://example.test/archive.tgz:
+    resolution: {tarball: 'https://example.test/archive.tgz'}
+  plain@1.2.3:
+    resolution: {integrity: sha512-example}
+`;
+		expect(() => buildBulkPayload(remoteLockfile)).toThrow(
+			"remote pnpm lockfile package is not auditable",
+		);
 	});
 
 	it("fails closed on unclassifiable package entries", () => {
@@ -137,6 +159,41 @@ packages:
 				],
 			}),
 		).toThrow("credential-free HTTPS");
+		expect(() =>
+			validateResponse({
+				plain: [
+					{
+						severity: "high",
+						title: "unsafe\u2028forged-line",
+						url: "https://example.test/advisory",
+					},
+				],
+			}),
+		).toThrow("title is unsafe");
+		expect(() =>
+			validateResponse({
+				plain: [
+					{
+						severity: "high",
+						title: "unsafe package",
+						url: "https://example.test/advisory?access_token=secret",
+					},
+				],
+			}),
+		).toThrow("credential query parameters");
+	});
+
+	it("rejects redirects so the dependency payload cannot cross origins", async () => {
+		const fetchImplementation = vi.fn<typeof fetch>(async (_url, init) => {
+			expect(init).toEqual(expect.objectContaining({ redirect: "error" }));
+			throw new TypeError("fetch failed: redirect mode is error");
+		});
+		await expect(
+			fetchBulkAdvisories(
+				buildBulkPayload(LOCKFILE, { allowedScopes: ["@scope"] }),
+				{ fetchImplementation },
+			),
+		).rejects.toThrow("redirect mode is error");
 	});
 
 	it("rejects response packages absent from the submitted payload", () => {

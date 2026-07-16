@@ -16,7 +16,11 @@ const SEVERITY_ORDER = new Map([
 ]);
 const PACKAGE_NAME = /^(?:@[^/@\s]+\/[^/@\s]+|[^/@\s]+)$/;
 const VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
-const LOCAL_PACKAGE_KEY = /^(?:file|link|workspace|git|github|https?):/;
+const LOCAL_PACKAGE_KEY = /^(?:file|link|workspace):/;
+const REMOTE_PACKAGE_KEY = /^(?:git|github|https?):/;
+const UNSAFE_LINE_CODE_POINTS = new Set([0x2028, 0x2029]);
+const SENSITIVE_QUERY_NAME =
+	/(?:access[_-]?token|auth|credential|key|pass(?:word|wd)?|secret|signature|sig)/i;
 
 function parseArguments(argv) {
 	let auditLevel = "moderate";
@@ -63,14 +67,18 @@ function packageIdentity(lockfileKey) {
 
 function registryUrl(value) {
 	const registry = new URL(value);
+	const defaultRegistry = new URL(DEFAULT_REGISTRY);
+	const loopbackTestEndpoint =
+		process.env.HARNESS_AUDIT_ALLOW_HTTP_FOR_TESTS === "1" &&
+		(registry.hostname === "127.0.0.1" || registry.hostname === "localhost");
 	if (registry.protocol !== "https:") {
-		const loopbackTestEndpoint =
-			process.env.HARNESS_AUDIT_ALLOW_HTTP_FOR_TESTS === "1" &&
-			(registry.hostname === "127.0.0.1" || registry.hostname === "localhost");
 		if (!loopbackTestEndpoint) throw new Error("audit registry must use HTTPS");
 	}
 	if (registry.username || registry.password) {
 		throw new Error("audit registry URL must not contain credentials");
+	}
+	if (!loopbackTestEndpoint && registry.origin !== defaultRegistry.origin) {
+		throw new Error("audit registry origin is not approved");
 	}
 	return registry;
 }
@@ -138,6 +146,11 @@ function classifiedIdentity(lockfileKey, metadata, approvedScopes, registry) {
 	const identity = packageIdentity(lockfileKey);
 	if (!identity) {
 		if (LOCAL_PACKAGE_KEY.test(lockfileKey)) return null;
+		if (REMOTE_PACKAGE_KEY.test(lockfileKey)) {
+			throw new Error(
+				`remote pnpm lockfile package is not auditable: ${lockfileKey}`,
+			);
+		}
 		throw new Error(`unclassifiable pnpm lockfile package key: ${lockfileKey}`);
 	}
 	const scope = packageScope(identity.name);
@@ -193,7 +206,12 @@ function safeSingleLine(value, field) {
 		typeof value === "string" &&
 		[...value].some((character) => {
 			const codePoint = character.codePointAt(0);
-			return codePoint !== undefined && (codePoint <= 31 || codePoint === 127);
+			return (
+				codePoint !== undefined &&
+				(codePoint <= 31 ||
+					codePoint === 127 ||
+					UNSAFE_LINE_CODE_POINTS.has(codePoint))
+			);
 		});
 	if (
 		typeof value !== "string" ||
@@ -211,6 +229,13 @@ function safeAdvisoryUrl(value) {
 	const url = new URL(text);
 	if (url.protocol !== "https:" || url.username || url.password) {
 		throw new Error("bulk advisory URL must be credential-free HTTPS");
+	}
+	if (
+		[...url.searchParams.keys()].some((name) => SENSITIVE_QUERY_NAME.test(name))
+	) {
+		throw new Error(
+			"bulk advisory URL must not contain credential query parameters",
+		);
 	}
 	return url.toString();
 }
@@ -264,6 +289,7 @@ export async function fetchBulkAdvisories(
 ) {
 	const response = await fetchImplementation(auditEndpoint(registry), {
 		method: "POST",
+		redirect: "error",
 		headers: { accept: "application/json", "content-type": "application/json" },
 		body: JSON.stringify(payload),
 		signal: AbortSignal.timeout(

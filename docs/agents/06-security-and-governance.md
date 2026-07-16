@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-20
+last_validated: 2026-07-16
 ---
 
 # Security and governance
@@ -28,6 +28,10 @@ This repository follows conservative defaults:
 - Minimal command surface in docs and scripts.
 - Explicitly avoid ad hoc global installs and hidden mutation.
 - Preserve existing dependency and execution boundaries (`pnpm` + lockfile-driven installs).
+- Route dependency vulnerability checks through `pnpm run audit`. The governed
+  bulk-advisory wrapper must structurally account for every lockfile package,
+  reject unapproved registry origins and redirects before sending package
+  identities, and sanitize remote advisory fields before logging them.
 - Codex environment setup should use non-destructive tool resolution (`pnpm` direct, Homebrew path fallback, then `corepack`) and fail closed on missing baseline tools instead of mutating global installs implicitly.
 - Treat the repo-root `CODESTYLE.md` path plus `scripts/validate-codestyle.sh` as governed contract surfaces: if either drifts, readiness and closeout claims must fail closed.
 - Treat `scripts/check-codestyle-parity.sh` as the required code-style integrity gate for `codestyle/` and `codestyle/CHECKSUMS.sha256`; parity drift must block readiness.

@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-16T11:45:20Z
+Generated: 2026-07-16T12:06:19Z
 
 ## Table of Contents
 
@@ -30,6 +30,9 @@ Generated: 2026-07-16T11:45:20Z
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
 - `package.json`
+- `src/lib/init/README.md`
+- `src/lib/init/scaffold-root-command-templates.ts`
+- `src/lib/learnings/validation-plan.ts`
 - `src/templates/CODESTYLE.md`
 - `src/templates/codestyle/05-quality-security-ops.md`
 - `src/templates/codestyle/08-typescript.md`

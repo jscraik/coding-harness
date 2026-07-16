@@ -91,7 +91,32 @@ function sameStringSet(left, right) {
 	return true;
 }
 
+function validateAuditCommandSurfaces(violations) {
+	const makefile = fs.readFileSync(path.join(root, "Makefile"), "utf8");
+	const auditTarget =
+		/^audit:[^\n]*\n((?:\t[^\n]*\n)+)/m.exec(makefile)?.[1] ?? "";
+	if (!/^\tpnpm run audit\s*$/m.test(auditTarget)) {
+		violations.push({
+			file: "Makefile",
+			message: "audit target must delegate to pnpm run audit",
+		});
+	}
+
+	const codingPolicy = parseJson("coding-policy.json", violations);
+	for (const module of codingPolicy?.policyModules ?? []) {
+		for (const command of module.requiredGates ?? []) {
+			if (command === "pnpm audit") {
+				violations.push({
+					file: "coding-policy.json",
+					message: `${module.id}.requiredGates must use pnpm run audit`,
+				});
+			}
+		}
+	}
+}
+
 const violations = [];
+validateAuditCommandSurfaces(violations);
 for (const registry of registries) {
 	const parsed = parseJson(registry.path, violations);
 	if (!parsed) continue;
