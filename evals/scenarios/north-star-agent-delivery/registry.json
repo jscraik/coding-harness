@@ -1172,6 +1172,7 @@
 					"canary command stdout is parseable JSON",
 					"canary outputs do not leak source checkout command paths",
 					"missing optional evidence degrades structurally",
+					"canonical transition unavailability preserves legacy exit compatibility",
 					"agent-native ratchet packet commands are public harness commands",
 					"harness init dry-run does not write unexpected files",
 					"canary runs without external credentials"

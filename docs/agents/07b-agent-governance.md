@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-07-14
+last_validated: 2026-07-16
 ---
 
 # Agent governance
@@ -175,6 +175,16 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   and precedes changed-file inspection; required context fails closed, optional
   failures remain reasoned unknowns, and only logical references plus digests may
   cross hosted or public boundaries.
+- SynAIpse packet-consolidation changes should keep candidate identity,
+  canonical packet construction, caller inventory, transition projection and validation,
+  measurement, and retirement policy owned by `src/lib/synaipse/`. Registry and
+  CLI adapters may expose the canonical contract but must not define parallel
+  packet authority. Require deterministic stale-SHA and missing-traceability
+  diagnostics, keep retirement evidence-backed and reversible, synchronize
+  schemas, examples, validators, package exports, eval baselines, focused tests,
+  generated architecture context, `AGENTS.md`, and the architecture bootstrap,
+  and report local packet proof separately from hosted checks, review-thread
+  state, independent acceptance, merge, and release truth.
 - runtime-card trace-out changes should keep trace persistence in
   `src/lib/runtime-trace/`, reuse canonical run-record append/manifest
   helpers, constrain `--trace-out` to

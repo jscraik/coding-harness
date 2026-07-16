@@ -255,24 +255,17 @@ function validateShaBindings(
 	errors: Errors,
 ): void {
 	const evidence = isRecord(value.evidence) ? value.evidence : null;
-	const hostedMain =
-		evidence && isRecord(evidence.hostedMain) ? evidence.hostedMain : null;
-	if (hostedMain) {
-		if (value.repositorySha !== hostedMain.sha)
+	if (evidence) {
+		if (value.repositorySha !== evidence.currentSha)
 			errors.push({
 				path: "repositorySha",
-				message: "must match evidence.hostedMain.sha",
-			});
-		if (evidence?.currentSha !== hostedMain.sha)
-			errors.push({
-				path: "evidence.currentSha",
-				message: "must match evidence.hostedMain.sha",
+				message: "must match evidence.currentSha",
 			});
 		const recovery = isRecord(value.recovery) ? value.recovery : null;
-		if (recovery && recovery.refreshedSha !== hostedMain.sha)
+		if (recovery && recovery.refreshedSha !== evidence.currentSha)
 			errors.push({
 				path: "recovery.refreshedSha",
-				message: "must match evidence.hostedMain.sha",
+				message: "must match evidence.currentSha",
 			});
 	}
 }

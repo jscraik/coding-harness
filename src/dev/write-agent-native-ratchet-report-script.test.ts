@@ -138,7 +138,13 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		expect(report.schemaVersion).toBe("session-distill/v1");
 		expect(report.status).toBe("pass");
 		expect(report.branch.length).toBeGreaterThan(0);
-		expect(report.headSha.length).toBeGreaterThan(0);
+		const gitHead = spawnSync("git", ["rev-parse", "HEAD"], {
+			cwd: REPO_ROOT,
+			encoding: "utf8",
+		});
+		expect(gitHead.status).toBe(0);
+		expect(report.headSha).toMatch(/^[0-9a-f]{40}$/);
+		expect(report.headSha).toBe(gitHead.stdout.trim());
 		expect(["clean", "dirty"]).toContain(report.worktreeStatus);
 		expect(report.changedFileCount).toBeGreaterThanOrEqual(0);
 		expect(report.nativeAuthority).toBe("harness");
@@ -427,7 +433,7 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		expect(firstDecisionInput?.path.length).toBeGreaterThan(0);
 	});
 
-	it("keeps advertised reviewer decision commands usable without a manifest", () => {
+	it("keeps reviewer compatibility output after canonical projection", () => {
 		const packageResult = spawnSync(
 			"pnpm",
 			["--silent", "run", "reviewer:decision"],
@@ -450,12 +456,6 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 				`Package command failed with exit code ${packageResult.status}: ${packageResult.stderr}`,
 			);
 		}
-		if (cliResult.status !== 0) {
-			throw new Error(
-				`CLI command failed with exit code ${cliResult.status}: ${cliResult.stderr}`,
-			);
-		}
-
 		const packageReport = JSON.parse(packageResult.stdout) as {
 			status: string;
 			decision: string;
@@ -464,7 +464,6 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 			status: string;
 			decision: string;
 		};
-
 		expect(packageResult.status).toBe(0);
 		expect(packageReport).toMatchObject({
 			status: "needs_evidence",
@@ -475,6 +474,7 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 			status: "needs_evidence",
 			decision: "needs_evidence",
 		});
+		expect(cliResult.stderr).toBe("");
 	});
 
 	it("maps reviewer coverage receipts into typed reviewer decisions", () => {

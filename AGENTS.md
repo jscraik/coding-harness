@@ -11,7 +11,7 @@ audience:
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-07-11
+last_reviewed: 2026-07-16
 review_cadence: on-change
 maintenance_trigger:
   - agent-operating-policy-change
@@ -185,6 +185,11 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
   failures remain reasoned unknowns. Persist logical references and digests, not
   provider bodies, and do not project private Jamie Brain content into hosted CI
   or public PRs.
+- SynAIpse packet consolidation keeps one canonical packet authority under
+  `src/lib/synaipse/`; registry, CLI, transition, and retirement projections
+  must preserve candidate identity and traceability without becoming competing
+  delivery-truth authorities. Keep local packet proof separate from hosted
+  checks, review, acceptance, merge, and release truth.
 - North-star contract fields are executable workflow authority, not prose-only
   branding. Keep `northStar.mantra` and `northStar.personalStandards`
   synchronized across `harness.contract.json`, schema/type validators, scaffold

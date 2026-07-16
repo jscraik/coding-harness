@@ -4,10 +4,7 @@ const AGENT_ORIENT_COMMAND_NAMES = [
 	"next",
 	"agent-readiness",
 	"agent-native-ratchets",
-	"agent-rework",
-	"governance-decision-surface",
 	"runtime-card",
-	"reviewer-decision",
 	"session-context",
 	"session-distill",
 	"commands",
@@ -25,7 +22,6 @@ const AGENT_REVIEW_COMMAND_NAMES = [
 	"runtime-card",
 	"review-gate",
 	"review-context",
-	"reviewer-decision",
 ] as const;
 const AGENT_HANDOFF_COMMAND_NAMES = [
 	"next",

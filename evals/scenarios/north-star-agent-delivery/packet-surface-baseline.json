@@ -1,0 +1,12 @@
+{
+	"observedAt": "2026-07-14T00:00:00Z",
+	"sourceCommit": "4b9c2abe870d38bfadd5b8836c73cf7ea8af2abe",
+	"sourceCommand": "harness commands --json --for-agent",
+	"sourceCatalogSchemaVersion": "harness-command-catalog/v4",
+	"sourceCommandCount": 18,
+	"sourceCatalogNormalizedBytes": 17627,
+	"sourceCatalogSha256": "sha256:1cdc209083ef5600c9c41f8757145665122566bd47c02224a131e5c5639730b8",
+	"extractionRule": "select the five managed packet command names from commands in catalog order and retain exact name, summary, and example fields",
+	"rawPacketSubset": "[{\"name\":\"agent-native-ratchets\",\"summary\":\"Emit an agent-native-ratchets/v1 packet for ratchet discovery\",\"example\":\"agent-native-ratchets --json\"},{\"name\":\"governance-decision-surface\",\"summary\":\"Emit a governance-decision-surface/v1 packet\",\"example\":\"governance-decision-surface --json\"},{\"name\":\"session-distill\",\"summary\":\"Emit a session-distill/v1 packet for resumed agents\",\"example\":\"session-distill --json\"},{\"name\":\"reviewer-decision\",\"summary\":\"Emit a reviewer-decision/v1 packet from review coverage evidence\",\"example\":\"reviewer-decision --json\"},{\"name\":\"agent-rework\",\"summary\":\"Emit an agent-rework/v1 packet from local rework evidence\",\"example\":\"agent-rework --json\"}]",
+	"rawPacketSubsetSha256": "sha256:0eabb6e08bb849254d46c77c4d33e616154e05a009c879f3ecc42f49d450fa7d"
+}

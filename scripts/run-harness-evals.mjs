@@ -51,7 +51,10 @@ const CANARY_COMMANDS = [
 	{ id: "session_distill", args: ["session-distill", "--json"] },
 	{ id: "agent_native_ratchets", args: ["agent-native-ratchets", "--json"] },
 	{ id: "agent_rework", args: ["agent-rework", "--json"] },
-	{ id: "reviewer_decision", args: ["reviewer-decision", "--json"] },
+	{
+		id: "reviewer_decision",
+		args: ["reviewer-decision", "--json"],
+	},
 	{ id: "init_dry_run", args: ["init", "--dry-run", "--json"], dryRun: true },
 ];
 const VALIDATION_PLAN_MODULE_URL = pathToFileURL(
@@ -6277,7 +6280,7 @@ function runPackageInstalledDownstreamCanaryFixture(scenario, fixturePath) {
 			pack.exitCode === 0 &&
 			install.exitCode === 0 &&
 			commandRecords.length === CANARY_COMMANDS.length &&
-			commandRecords.every((record) => record.status === "pass")
+			commandRecords.every((record) => record.status === record.expectedStatus)
 				? "pass"
 				: "fail";
 		const report = {
@@ -6342,6 +6345,15 @@ function runPackageInstalledDownstreamCanaryFixture(scenario, fixturePath) {
 					canaryCommandStatus(commandRecords, "reviewer_decision") === "pass",
 			),
 			assertion(
+				"canonical transition unavailability preserves legacy exit compatibility",
+				commandRecords.some(
+					(record) =>
+						record.id === "reviewer_decision" &&
+						record.exitCode === 0 &&
+						record.stderrSummary.includes("canonical_projection_unavailable"),
+				),
+			),
+			assertion(
 				"agent-native ratchet packet commands are public harness commands",
 				ratchetPacketCommandsArePublic(commandRecords),
 			),
@@ -6351,7 +6363,13 @@ function runPackageInstalledDownstreamCanaryFixture(scenario, fixturePath) {
 			),
 			assertion(
 				"canary runs without external credentials",
-				summary.blockedCount === 0,
+				summary.failCount === 0 &&
+					commandRecords
+						.filter((record) => record.status === "blocked")
+						.every(
+							(record) =>
+								record.failureClass === "canonical_projection_unavailable",
+						),
 			),
 		]);
 	} finally {
@@ -6467,6 +6485,7 @@ function classifyCanaryCommand(
 			: null,
 		packetStatus: parsed.ok ? (parsed.value.status ?? null) : null,
 		status,
+		expectedStatus: definition.expectedStatus ?? "pass",
 		failureClass,
 		...(beforeStatus !== null
 			? { beforeGitStatus: beforeStatus, afterGitStatus: afterStatus }

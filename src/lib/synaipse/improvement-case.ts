@@ -19,6 +19,48 @@ const DISPOSITIONS = [
 	"delete",
 	"block",
 ] as const;
+
+/** Candidate mechanism carried by a complete improvement case. */
+export interface SynaipseImprovementCandidate {
+	mechanism: string;
+	disposition: "selected" | "rejected";
+	rationale: string;
+}
+
+/** Complete canonical improvement observation. */
+export interface SynaipseImprovementCase {
+	schemaVersion: typeof SYNAIPSE_IMPROVEMENT_CASE_SCHEMA_VERSION;
+	caseId: string;
+	observedAt: string;
+	observation: string;
+	classification: (typeof CLASSIFICATIONS)[number];
+	siblingInventory: string[];
+	candidates: SynaipseImprovementCandidate[];
+	selectedMechanism: string;
+	canary: string;
+	measurement: string;
+	disposition: (typeof DISPOSITIONS)[number];
+	owner: string;
+	retirementCondition: string;
+}
+
+/** Builder input for one complete canonical improvement observation. */
+export type BuildSynaipseImprovementCaseInput = Omit<
+	SynaipseImprovementCase,
+	"schemaVersion"
+>;
+
+/** Build a complete improvement record without sharing mutable caller arrays. */
+export function buildSynaipseImprovementCase(
+	input: BuildSynaipseImprovementCaseInput,
+): SynaipseImprovementCase {
+	return {
+		schemaVersion: SYNAIPSE_IMPROVEMENT_CASE_SCHEMA_VERSION,
+		...input,
+		siblingInventory: [...input.siblingInventory],
+		candidates: input.candidates.map((candidate) => ({ ...candidate })),
+	};
+}
 const CANDIDATE_SELECTION = {
 	NOT_SELECTED: "not_selected",
 	SELECTED_MISMATCH: "selected_mismatch",

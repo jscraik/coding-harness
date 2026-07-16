@@ -194,6 +194,22 @@ class TestSessionDistillReport:
         with pytest.raises(ValidationError, match="must not overlap"):
             SessionDistillReport.model_validate(payload)
 
+    @pytest.mark.parametrize(
+        "head_sha",
+        [
+            "1111111",
+            "A" * 40,
+            "g" * 40,
+            "1" * 41,
+        ],
+    )
+    def test_rejects_noncanonical_head_sha(self, head_sha: str) -> None:
+        payload = deepcopy(_load_example("session-distill.example.json"))
+        payload["headSha"] = head_sha
+
+        with pytest.raises(ValidationError, match="headSha"):
+            SessionDistillReport.model_validate(payload)
+
 
 class TestAgentReworkReport:
     def test_accepts_canonical_report_example(self) -> None:

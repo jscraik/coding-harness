@@ -52,5 +52,11 @@
 		"owner": "synaipse-context-plane",
 		"rationale": "Context selection is a privacy, authority, freshness, and provider-evidence trust boundary for admitted tasks.",
 		"provingCommand": "pnpm vitest run src/lib/synaipse/context-plane.test.ts"
+	},
+	{
+		"path": "src/lib/synaipse/packet-consolidation.test.ts",
+		"owner": "synaipse-packet-consolidation",
+		"rationale": "Packet retirement and canonical projection decide whether compatibility surfaces may be removed from current-SHA evidence.",
+		"provingCommand": "pnpm vitest run src/lib/synaipse/packet-consolidation.test.ts"
 	}
 ]

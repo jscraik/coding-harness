@@ -1,3 +1,5 @@
+import { PACKET_FAMILY_REGISTRY } from "../lib/synaipse/packet-consolidation.js";
+
 /** Command that emits the aggregate agent-native ratchet report. */
 export const AGENT_NATIVE_RATCHET_COMMAND =
 	"harness agent-native-ratchets --json";
@@ -17,13 +19,7 @@ export function agentNativeRatchetMeta(): Record<string, unknown> {
 		agentNativeRatchets: {
 			schemaVersion: "agent-native-ratchet-discovery/v1",
 			commands: [SESSION_DISTILL_COMMAND, AGENT_NATIVE_RATCHET_COMMAND],
-			packets: [
-				"session-distill/v1",
-				"agent-native-ratchets/v1",
-				"agent-rework/v1",
-				"reviewer-decision/v1",
-				"governance-decision-surface/v1",
-			],
+			packets: PACKET_FAMILY_REGISTRY.map((family) => family.schemaVersion),
 			claimBoundary:
 				"Ratchet packets orient agents and do not prove validation, review, CI, tracker, or merge readiness.",
 		},

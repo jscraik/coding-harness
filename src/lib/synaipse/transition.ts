@@ -2,8 +2,10 @@ import { isRecord } from "../decision/validators.js";
 import { isRfc3339DateTime } from "./date-time.js";
 import {
 	BLOCKERS,
+	SYNAIPSE_TRANSITION_SCHEMA_VERSION,
 	type STAGES,
 	type Blocker,
+	type Stage,
 	type SynaipseTransitionInput,
 } from "./transition-contract.js";
 import { validateSynaipseTransition } from "./transition-validation.js";
@@ -33,6 +35,57 @@ const ALLOWED_TRANSITIONS: Readonly<
 	integrate: ["improve"],
 	improve: ["shape"],
 };
+
+/** Inputs owned by the canonical transition builder. */
+export interface BuildSynaipseTransitionInput {
+	transitionId: string;
+	fromStage: Stage;
+	toStage: Stage;
+	repositorySha: string;
+	hostedMainSha: string;
+	evidenceRefs: string[];
+	observedAt: string;
+	authority: SynaipseTransitionInput["authority"];
+	vitalDecision: SynaipseTransitionInput["vitalDecision"];
+}
+
+/**
+ * Build one complete transition record from distinct checkout and hosted SHAs.
+ *
+ * The caller owns both observations and their evidence references; this builder
+ * keeps candidate identity separate from hosted-main provenance.
+ */
+export function buildSynaipseTransition(
+	input: BuildSynaipseTransitionInput,
+): SynaipseTransitionInput {
+	return {
+		schemaVersion: SYNAIPSE_TRANSITION_SCHEMA_VERSION,
+		transitionId: input.transitionId,
+		fromStage: input.fromStage,
+		toStage: input.toStage,
+		repositorySha: input.repositorySha,
+		evidence: {
+			currentSha: input.repositorySha,
+			refs: [...input.evidenceRefs],
+			observedAt: input.observedAt,
+			hostedMain: {
+				remote: "https://github.com/jscraik/coding-harness.git",
+				ref: "refs/heads/main",
+				sha: input.hostedMainSha,
+				observedAt: input.observedAt,
+			},
+		},
+		authority: {
+			owner: input.authority.owner,
+			standing: input.authority.standing,
+			capabilities: [...input.authority.capabilities],
+		},
+		vitalDecision: { ...input.vitalDecision },
+		waiver: null,
+		recovery: null,
+		decidedAt: input.observedAt,
+	};
+}
 
 /** Decide whether a transition can proceed without a new operator decision. */
 export function decideSynaipseTransition(
@@ -83,7 +136,7 @@ function blocked(
 	return { status: "blocked", blockers: [blocker], recovery };
 }
 
-/** Return whether all SHA observations match the independently supplied SHA. */
+/** Return whether checkout observations match the independently supplied SHA. */
 function hasStaleSha(
 	input: SynaipseTransitionInput,
 	expectedSha: string,
@@ -91,7 +144,6 @@ function hasStaleSha(
 	return (
 		input.repositorySha !== expectedSha ||
 		input.evidence.currentSha !== expectedSha ||
-		input.evidence.hostedMain.sha !== expectedSha ||
 		(input.recovery?.refreshedSha !== undefined &&
 			input.recovery.refreshedSha !== expectedSha)
 	);
@@ -135,12 +187,10 @@ function stringRefs(value: unknown): string[] {
 		: [];
 }
 
-/** Read the independently observed hosted-main SHA when present. */
-function hostedMainSha(input: SynaipseTransitionInput): unknown {
+/** Read the independently observed checkout SHA when present. */
+function currentEvidenceSha(input: SynaipseTransitionInput): unknown {
 	const evidence = isRecord(input.evidence) ? input.evidence : null;
-	const hostedMain =
-		evidence && isRecord(evidence.hostedMain) ? evidence.hostedMain : null;
-	return hostedMain?.sha;
+	return evidence?.currentSha;
 }
 
 /** Return whether an operator-owned recovery lacks its decision receipt. */
@@ -165,7 +215,7 @@ function hasInvalidRecovery(input: SynaipseTransitionInput): boolean {
 	const recoveryRefs = stringRefs(recovery.evidenceRefs);
 	return [
 		!BLOCKERS.includes(recovery.fromBlocker as Blocker),
-		recovery.refreshedSha !== hostedMainSha(input),
+		recovery.refreshedSha !== currentEvidenceSha(input),
 		!recoveryRefs.includes(`recovery:${recovery.fromBlocker}`),
 		invalidOperatorRecovery(recovery, authority, recoveryRefs),
 	].some(Boolean);

@@ -383,9 +383,7 @@ function currentBranch() {
 }
 
 function currentHeadSha() {
-	return String(
-		requiredGitOutput(["rev-parse", "--short", "HEAD"], "HEAD sha"),
-	).trim();
+	return String(requiredGitOutput(["rev-parse", "HEAD"], "HEAD sha")).trim();
 }
 
 function sessionEvidenceLanes(files, status) {

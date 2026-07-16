@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	buildSynaipseTransition,
 	decideSynaipseTransition,
 	validateSynaipseTransition,
 	type SynaipseTransitionInput,
@@ -45,6 +46,37 @@ function transitionWith(
 }
 
 describe("synaipse-transition/v1", () => {
+	it("transports explicit authority and Vital Decision inputs without defaults", () => {
+		const record = buildSynaipseTransition({
+			transitionId: "ch_transition_explicit_authority",
+			fromStage: "build",
+			toStage: "prove",
+			repositorySha: SHA,
+			hostedMainSha: SHA,
+			evidenceRefs: ["authority:validated"],
+			observedAt: NOW,
+			authority: {
+				owner: "operator",
+				standing: false,
+				capabilities: ["read"],
+			},
+			vitalDecision: {
+				required: true,
+				question: "May this transition proceed?",
+			},
+		});
+
+		expect(record.authority).toEqual({
+			owner: "operator",
+			standing: false,
+			capabilities: ["read"],
+		});
+		expect(record.vitalDecision).toEqual({
+			required: true,
+			question: "May this transition proceed?",
+		});
+	});
+
 	it("accepts a current-SHA transition with standing authority", () => {
 		const input = validTransition();
 		expect(validateSynaipseTransition(input)).toEqual({
@@ -209,7 +241,20 @@ describe("synaipse-transition/v1", () => {
 		});
 	});
 
-	it("rejects recovery with a refreshed SHA different from hosted main", () => {
+	it("accepts a checkout SHA that is newer than the observed hosted main", () => {
+		const input = validTransition();
+		input.evidence.hostedMain.sha = "4b9c2abe870d38bfadd5b8836c73cf7ea8af2abe";
+
+		expect(validateSynaipseTransition(input)).toEqual({
+			valid: true,
+			errors: [],
+		});
+		expect(
+			decideSynaipseTransition(input, { expectedSha: SHA, now: NOW }),
+		).toMatchObject({ status: "admitted", blockers: [] });
+	});
+
+	it("rejects recovery with a refreshed SHA different from checkout HEAD", () => {
 		const input = transitionWith({
 			recovery: {
 				fromBlocker: "stale_sha",
@@ -222,7 +267,7 @@ describe("synaipse-transition/v1", () => {
 		expect(result.valid).toBe(false);
 		expect(result.errors).toContainEqual({
 			path: "recovery.refreshedSha",
-			message: "must match evidence.hostedMain.sha",
+			message: "must match evidence.currentSha",
 		});
 	});
 

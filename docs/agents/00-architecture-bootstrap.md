@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-07-15
+last_validated: 2026-07-16
 ---
 
 # Architecture bootstrap
@@ -147,6 +147,17 @@ context produces a reasoned unknown. Persist logical references and digests
 rather than provider bodies, and do not project private Jamie Brain content into
 hosted CI or public pull requests. Before promotion, run the canonical focused
 proof `pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/context-plane.test.ts src/lib/synaipse/state.test.ts src/commands/next.test.ts --reporter=dot` and `pnpm check`; both must exit successfully, and any failure stops refresh or routing until repaired and rerun.
+SynAIpse packet-consolidation changes are architecture-adjacent contract
+changes. Keep canonical packet identity, canonical packet construction, transition
+projection, caller inventory, measurement, and retirement policy behind the
+`src/lib/synaipse/` owner boundary; registry and CLI adapters may project those
+contracts but must not become competing authorities. Preserve candidate SHA
+and traceability checks through transition validation, keep retirement
+decisions evidence-backed and reversible, and synchronize schemas, examples,
+runtime validators, package exports, eval baselines, focused tests, README
+guidance, and generated architecture context in the same PR. These artifacts
+prove local contract behavior only; hosted checks, review conversations,
+independent acceptance, merge, and release remain separate closeout lanes.
 RouteDecision lifecycle metadata belongs to this cockpit architecture-adjacent lane: keep `route-decision/v1` contract changes additive to `harness-decision/v1`, refresh `AI/context/diagram-context.md`, and commit this guide with the required docs-gate governance surfaces when `docs-gate` reports the architecture-context surface.
 Risk-tiered RouteDecision mutation authority is still advisory route metadata:
 only low-risk repo-local mutation routes with current evidence, validator
