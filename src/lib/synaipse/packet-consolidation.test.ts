@@ -218,7 +218,7 @@ describe("synaipse packet consolidation", () => {
 					"remote",
 					"add",
 					"origin",
-					"https://github.com/jscraik/coding-harness.git",
+					"git@github.com:jscraik/coding-harness.git",
 				],
 				{ cwd: fixture.repoRoot },
 			);
@@ -266,6 +266,44 @@ describe("synaipse packet consolidation", () => {
 			expect(validateSynaipseTransition(canonical.record)).toEqual({
 				valid: true,
 				errors: [],
+			});
+		} finally {
+			fixture.cleanup();
+		}
+	});
+
+	it("rejects a same-path origin hosted outside canonical GitHub", () => {
+		const fixture = retirementFixture();
+		try {
+			execFileSync(
+				"git",
+				[
+					"remote",
+					"add",
+					"origin",
+					"git@example.com:jscraik/coding-harness.git",
+				],
+				{ cwd: fixture.repoRoot },
+			);
+			execFileSync(
+				"git",
+				["update-ref", "refs/remotes/origin/main", fixture.candidateSha],
+				{ cwd: fixture.repoRoot },
+			);
+
+			const canonical = canonicalizeLegacyPacket(
+				"governance-decision-surface/v1",
+				emittedPacket("--governance", "--json"),
+				{ repoRoot: fixture.repoRoot, observedAt: OBSERVED_AT },
+			);
+
+			expect(canonical).toEqual({
+				status: "unavailable",
+				valid: false,
+				errors: ["canonical coding-harness origin is unavailable"],
+				sourceSchemaVersion: "governance-decision-surface/v1",
+				targetSchemaVersion: "synaipse-transition/v1",
+				record: null,
 			});
 		} finally {
 			fixture.cleanup();

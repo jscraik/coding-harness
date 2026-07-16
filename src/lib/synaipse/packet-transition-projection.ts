@@ -6,7 +6,12 @@ import {
 	type SynaipseTransitionInput,
 } from "./transition.js";
 
-const CANONICAL_REMOTE = "https://github.com/jscraik/coding-harness.git";
+const CANONICAL_REMOTES = new Set([
+	"https://github.com/jscraik/coding-harness",
+	"https://github.com/jscraik/coding-harness.git",
+	"git@github.com:jscraik/coding-harness.git",
+	"ssh://git@github.com/jscraik/coding-harness.git",
+]);
 const FULL_SHA = /^[0-9a-f]{40}$/;
 
 interface TransitionRoute {
@@ -58,7 +63,7 @@ export function observePacketTransitionSource(
 	repoRoot: string,
 ): PacketTransitionProjectionSource {
 	const remote = readGit(repoRoot, ["remote", "get-url", "origin"]);
-	if (remote !== CANONICAL_REMOTE)
+	if (!remote || !CANONICAL_REMOTES.has(remote))
 		return {
 			status: "unavailable",
 			reason: "canonical coding-harness origin is unavailable",
