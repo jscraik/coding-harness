@@ -33,6 +33,8 @@
 		"contracts/examples/synaipse-transition.example.json",
 		"contracts/examples/synaipse-improvement-case.example.json",
 		"scripts/write-fitness-gate-artifact.mjs",
+		"AGENTS.md",
+		"docs/agents/quickstart.md",
 		"scripts/write-agent-native-ratchet-report.cjs",
 		"scripts/validate-reviewer-coverage.cjs",
 		"scripts/write-prompt-context-drift-report.cjs",
