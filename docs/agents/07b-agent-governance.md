@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-07-14
+last_validated: 2026-07-16
 ---
 
 # Agent governance
@@ -61,6 +61,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   domain document the map points to.
 - agent-readiness or `harness next` context-health changes should keep `harness.contract.json`, `AGENTS.md`, `README.md`, `.harness/core/agent-readiness-contract.md`, and this guide synchronized. Shared-state action authority belongs in `toolingPolicy.sharedStateActions`; context-health warnings are orientation evidence only unless a separate validated consumer promotes them.
 - tooling/runtime changes should update `docs/agents/02-tooling-policy.md` and `docs/agents/06-security-and-governance.md`
+- tooling-audit changes that classify `prek` hooks or readiness wrappers must inspect effective parsed TOML assignments and exact forwarding behavior. Accept supported TOML quoting, multi-line values, continuations, and valid shell comments while failing closed on duplicate or malformed policy assignments, recursive hooks, wrapper suffixes, traversal, extra commands, and injection.
 - runtime-pin learning updates that affect `harness check-environment` should
   keep consumer `harness.contract.json` `toolingPolicy.requiredMiseTools` pins
   authoritative over harness package fallback pins, and synchronize `AGENTS.md`,

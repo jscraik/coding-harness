@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-06-20
+last_validated: 2026-07-16
 ---
 
 # Security and governance
@@ -265,6 +265,8 @@ The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` when pre
 `hooks-commit-msg` remains a required Makefile wrapper even though `prek.toml` only installs `pre-commit` and `pre-push`; use that wrapper for deterministic commit-policy verification and cross-repo governance checks.
 `scripts/run-prek.sh` is the supported direct `prek` entrypoint because it defaults `PREK_HOME` to the worktree-local `.cache/prek` directory before invoking `prek`. `scripts/setup-git-hooks.js` must run `scripts/run-prek.sh install --overwrite`, resolve the installed hook directory with `git rev-parse --git-path hooks`, and patch generated `prek` shims to derive `WORKTREE_ROOT` with `git rev-parse --show-toplevel` before setting `PREK_HOME="${PREK_HOME:-$WORKTREE_ROOT/.cache/prek}"` so hook logs/cache writes stay local to the active worktree under sandboxed executions and linked worktrees do not write through the shared git directory.
 Hook entrypoints must not invoke hook orchestration commands such as `make hooks-pre-commit`, `make hooks-pre-push`, `.git/hooks/*`, `pre-commit run`, or recursive `prek` hook paths. They may orchestrate leaf validators and scripts only.
+`tooling-audit` enforces that boundary against the parsed `prek` configuration and the effective leaf command. Its TOML assignment parser supports valid quoted and multi-line values while rejecting duplicate policy keys, malformed or unclosed arrays, invalid bare values, and trailing tokens, so formatting cannot hide a recursive hook path.
+Approved readiness forwarding wrappers are limited to the governed bash shape documented in the tooling policy: strict mode, canonical script-directory resolution, and one exact `exec` forward with `"$@"`. Valid shell comments do not weaken the rule; wrapper suffixes, relative-path tricks, extra commands, and injected shell syntax fail closed.
 `scripts/check-environment.sh` must treat installed generated `pre-commit`, `pre-push`, and `commit-msg` shims without that worktree-local `PREK_HOME` patch as hook drift. It must also fail `prek.toml` drift when `pre-commit` is not restricted to `stages = ["pre-commit"]` or `pre-push` is not restricted to `stages = ["pre-push"]`, with `node scripts/setup-git-hooks.js` or `make hooks` as the repair path.
 
 `validation-locks` is the first pre-push guard so repeated local CI-equivalent

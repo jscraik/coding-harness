@@ -30,6 +30,21 @@ export const REQUIRED_PREK_HOOKS = {
 	},
 } as const;
 
+export const APPROVED_PREK_LEAF_ENTRIES = {
+	"pre-commit": [
+		"bash scripts/hook-pre-commit.sh",
+		"bash scripts/hooks/pre-commit.sh",
+	],
+	"pre-push": [
+		"bash scripts/hook-pre-push.sh",
+		"bash scripts/hooks/pre-push.sh",
+	],
+	"commit-msg": [
+		"bash scripts/hook-commit-msg.sh",
+		"bash scripts/hooks/commit-msg.sh",
+	],
+} as const;
+
 export const REQUIRED_PACKAGE_SCRIPTS = {
 	"codestyle:parity": "bash scripts/check-codestyle-parity.sh",
 	"codestyle:validate": "bash scripts/validate-codestyle.sh",
