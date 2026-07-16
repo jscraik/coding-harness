@@ -87,7 +87,7 @@ function measurePacketConsolidation(
 ): PacketConsolidationMeasurement {
 	const inventory = discoverPacketCallerInventory(
 		input.repoRoot,
-		input.candidateIdentity.checkoutHeadSha,
+		input.candidateIdentity,
 	);
 	const packetFamilyByName = new Map(
 		PACKET_FAMILY_REGISTRY.map((family) => [

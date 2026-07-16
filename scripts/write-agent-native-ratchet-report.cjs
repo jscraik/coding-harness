@@ -621,20 +621,22 @@ function buildReviewerDecisionReport(options) {
 			"blocked_external",
 			"accepted_risk",
 		],
-		coverageReceipt: receipt
+		...(receipt
 			? {
-					schemaVersion: receipt.schemaVersion,
-					status: receipt.status,
-					blockerClass: receipt.blockerClass,
-					reason: receipt.reason,
-					requestedRoles: receipt.requestedRoles?.length ?? 0,
-					completedRoles: receipt.completedRoles?.length ?? 0,
-					blockedRoles: receipt.blockedRoles?.length ?? 0,
-					missingArtifacts: receipt.missingArtifacts?.length ?? 0,
-					synthesisStatus: receipt.synthesisStatus,
-					evidenceRefs: receipt.evidenceRefs ?? [],
+					coverageReceipt: {
+						schemaVersion: receipt.schemaVersion,
+						status: receipt.status,
+						blockerClass: receipt.blockerClass,
+						reason: receipt.reason,
+						requestedRoles: receipt.requestedRoles?.length ?? 0,
+						completedRoles: receipt.completedRoles?.length ?? 0,
+						blockedRoles: receipt.blockedRoles?.length ?? 0,
+						missingArtifacts: receipt.missingArtifacts?.length ?? 0,
+						synthesisStatus: receipt.synthesisStatus,
+						evidenceRefs: receipt.evidenceRefs ?? [],
+					},
 				}
-			: null,
+			: {}),
 		nextMove: decision.nextMove,
 		claimBoundary:
 			"reviewer-decision/v1 is review-lane evidence and must be composed by PR closeout before merge claims.",

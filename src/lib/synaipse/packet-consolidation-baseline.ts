@@ -7,6 +7,7 @@ export const PACKET_CONSOLIDATION_BASELINE_PATH =
 	"evals/scenarios/north-star-agent-delivery/packet-surface-baseline.json";
 
 const BASELINE_SOURCE_COMMAND = "harness commands --json --for-agent";
+const BASELINE_OBSERVED_AT = "2026-07-14T00:00:00Z";
 const BASELINE_SOURCE_COMMIT = "4b9c2abe870d38bfadd5b8836c73cf7ea8af2abe";
 const BASELINE_CATALOG_SCHEMA_VERSION = "harness-command-catalog/v4";
 const BASELINE_SOURCE_COMMAND_COUNT = 18;
@@ -147,6 +148,7 @@ function baselineMetadataValid(
 	payloadDigest: string,
 ): boolean {
 	const immutableFieldsMatch = [
+		[document.observedAt, BASELINE_OBSERVED_AT],
 		[document.sourceCommit, BASELINE_SOURCE_COMMIT],
 		[document.sourceCommand, BASELINE_SOURCE_COMMAND],
 		[document.sourceCatalogSchemaVersion, BASELINE_CATALOG_SCHEMA_VERSION],

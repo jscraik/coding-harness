@@ -1,7 +1,10 @@
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { validateSynaipseImprovementCase } from "./improvement-case.js";
+import {
+	buildSynaipseImprovementCase,
+	validateSynaipseImprovementCase,
+} from "./improvement-case.js";
 
 const VALID_CASE = {
 	schemaVersion: "synaipse-improvement-case/v1",
@@ -32,6 +35,18 @@ const VALID_CASE = {
 } as const;
 
 describe("synaipse-improvement-case/v1", () => {
+	it("keeps the owned schema version authoritative at the runtime boundary", () => {
+		const { schemaVersion: _schemaVersion, ...input } = VALID_CASE;
+		const forgedInput = {
+			...input,
+			schemaVersion: "caller-controlled/v9",
+		} as unknown as Parameters<typeof buildSynaipseImprovementCase>[0];
+
+		expect(buildSynaipseImprovementCase(forgedInput).schemaVersion).toBe(
+			"synaipse-improvement-case/v1",
+		);
+	});
+
 	it("accepts a complete systemic improvement case", () => {
 		expect(validateSynaipseImprovementCase(VALID_CASE)).toEqual({
 			valid: true,

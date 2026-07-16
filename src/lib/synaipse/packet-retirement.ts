@@ -9,6 +9,7 @@ import {
 } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 import { gitEnvironmentForRepoRoot } from "../runtime/git-environment.js";
+import { observePacketCandidateIdentity } from "./packet-candidate-identity.js";
 import {
 	discoverPacketCallerInventory,
 	type PacketCallerInventory,
@@ -140,7 +141,7 @@ function checkoutRetirementBlocker(input: PacketRetirementInput) {
 	}
 	const discoveredInventory = discoverPacketCallerInventory(
 		input.repoRoot,
-		input.candidateSha,
+		observePacketCandidateIdentity(input.repoRoot),
 	);
 	if (
 		JSON.stringify(discoveredInventory) !==

@@ -189,8 +189,21 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   diagnostics, keep retirement evidence-backed and reversible, synchronize
   schemas, examples, validators, package exports, eval baselines, focused tests,
   generated architecture context, `AGENTS.md`, and the architecture bootstrap,
-  and report local packet proof separately from hosted checks, review-thread
-  state, independent acceptance, merge, and release truth.
+  and use the
+  [packet-consolidation operational gate route](../plans/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-plan.md#packet-consolidation-operational-gate-route).
+  Run `pnpm exec vitest run src/lib/synaipse/packet-consolidation.test.ts
+  src/lib/synaipse/transition.test.ts --reporter=dot` for stale-SHA,
+  traceability, caller-inventory, and retirement diagnostics; run `node
+  scripts/validate-runtime-packet-schemas.cjs --all` for packet schema and
+  example boundaries; and run `pnpm run quality:behavior-tests` for the
+  installed-package retirement suite. Any non-zero exit or missing diagnostic
+  blocks promotion. Harness engineering repairs local code or fixtures and
+  reruns the exact failed command; the PR coordinator escalates only unavailable
+  credentials or independent-review access, and repository-maintainer input is
+  required for scope or authority conflicts. Do not bypass, relabel, or retire a
+  surface while one of these gates is blocked. Report local packet proof
+  separately from hosted checks, review-thread state, independent acceptance,
+  merge, and release truth.
 - runtime-card trace-out changes should keep trace persistence in
   `src/lib/runtime-trace/`, reuse canonical run-record append/manifest
   helpers, constrain `--trace-out` to

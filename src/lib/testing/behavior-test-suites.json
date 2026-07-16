@@ -56,7 +56,7 @@
 	{
 		"path": "src/lib/synaipse/packet-consolidation.test.ts",
 		"owner": "synaipse-packet-consolidation",
-		"rationale": "Packet retirement and canonical projection decide whether compatibility surfaces may be removed from current-SHA evidence.",
+		"rationale": "Installed-package behavior contract: packet retirement and canonical projection decide whether compatibility surfaces may be removed from current-SHA evidence, so package-files-quality-scripts.test.ts requires this suite in the published tarball.",
 		"provingCommand": "pnpm vitest run src/lib/synaipse/packet-consolidation.test.ts"
 	}
 ]

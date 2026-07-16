@@ -118,12 +118,14 @@ retiring compatibility:
    and unknown readers, and records missing managed consumers against the
    candidate SHA. Registry rows remain expected ownership, not the observation.
 2. `agent-native-packet-command-specs.ts` captures each real producer result,
-	 validates the JSON boundary, and routes all five routine commands through
-	 `packet-canonicalization.ts` before emitting the unchanged compatibility
-	 packet. Reviewer and governance compatibility packets cannot transport
-	 repository-validated authority, so their canonical transition projection is
-	 unavailable. The command preserves producer stdout and exit status while
-	 emitting a separate machine-readable diagnostic on stderr.
+	validates the JSON boundary, and routes all five routine commands through
+	`packet-canonicalization.ts` before emitting the unchanged compatibility
+	packet. Reviewer and governance packets now build and validate complete
+	canonical transitions from repository-observed provenance while fixing
+	authority to non-standing, observe-only Codex authority. Caller-authored
+	acceptance or receipt fields cannot authorize either transition. The command
+	preserves producer stdout and exit status and emits no diagnostic stderr on a
+	successful compatibility path.
 3. Complete state and improvement projections use their owning builders and
 	 validators. `buildSynaipseTransition` requires explicit authority and Vital
 	 Decision inputs and has no standing-owner, capability, or decision defaults;

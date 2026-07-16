@@ -14,7 +14,6 @@
 		"mustNotClaim",
 		"decision",
 		"outcomes",
-		"coverageReceipt",
 		"nextMove",
 		"claimBoundary"
 	],
@@ -70,14 +69,7 @@
 			}
 		},
 		"coverageReceipt": {
-			"anyOf": [
-				{
-					"$ref": "#/$defs/coverageReceipt"
-				},
-				{
-					"type": "null"
-				}
-			]
+			"$ref": "#/$defs/coverageReceipt"
 		},
 		"nextMove": {
 			"type": "string",

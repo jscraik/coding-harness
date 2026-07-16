@@ -252,6 +252,23 @@ class TestReviewerDecisionReport:
             expected_source_kind="repo_artifact",
         )
 
+    def test_accepts_report_without_optional_coverage_receipt(self) -> None:
+        payload = deepcopy(_load_example("reviewer-decision.example.json"))
+        del payload["coverageReceipt"]
+
+        report = ReviewerDecisionReport.model_validate(payload)
+
+        assert report.coverageReceipt is None
+
+    def test_rejects_null_coverage_receipt(self) -> None:
+        payload = deepcopy(_load_example("reviewer-decision.example.json"))
+        payload["coverageReceipt"] = None
+
+        with pytest.raises(
+            ValidationError, match="coverageReceipt must be an object when present"
+        ):
+            ReviewerDecisionReport.model_validate(payload)
+
     def test_rejects_pass_status_without_accept_decision(self) -> None:
         payload = deepcopy(_load_example("reviewer-decision.example.json"))
         payload["status"] = "pass"

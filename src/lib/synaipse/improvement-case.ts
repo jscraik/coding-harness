@@ -55,8 +55,8 @@ export function buildSynaipseImprovementCase(
 	input: BuildSynaipseImprovementCaseInput,
 ): SynaipseImprovementCase {
 	return {
-		schemaVersion: SYNAIPSE_IMPROVEMENT_CASE_SCHEMA_VERSION,
 		...input,
+		schemaVersion: SYNAIPSE_IMPROVEMENT_CASE_SCHEMA_VERSION,
 		siblingInventory: [...input.siblingInventory],
 		candidates: input.candidates.map((candidate) => ({ ...candidate })),
 	};

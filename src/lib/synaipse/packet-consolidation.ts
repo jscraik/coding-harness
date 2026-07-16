@@ -110,13 +110,7 @@ function adaptPacketSource(
 			break;
 		case "reviewer-decision/v1":
 			validateRequiredString("command", packet.command, errors);
-			evidenceRefs = isPacketRecord(packet.coverageReceipt)
-				? readEvidenceRefs(
-						packet.coverageReceipt.evidenceRefs,
-						"coverageReceipt.evidenceRefs",
-						errors,
-					)
-				: claimList([packet.command]);
+			evidenceRefs = reviewerEvidenceRefs(packet, errors);
 			break;
 		case "governance-decision-surface/v1":
 			evidenceRefs = readEvidenceRefs(
@@ -223,6 +217,25 @@ function invalidPacket(
 /** Narrow an unknown packet value to a non-array object. */
 function isPacketRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Read an optional reviewer receipt without accepting malformed fallbacks. */
+function reviewerEvidenceRefs(
+	packet: Record<string, unknown>,
+	errors: string[],
+): string[] {
+	if (!Object.hasOwn(packet, "coverageReceipt")) {
+		return claimList([packet.command]);
+	}
+	if (!isPacketRecord(packet.coverageReceipt)) {
+		errors.push("coverageReceipt must be an object when present");
+		return [];
+	}
+	return readEvidenceRefs(
+		packet.coverageReceipt.evidenceRefs,
+		"coverageReceipt.evidenceRefs",
+		errors,
+	);
 }
 
 /** Require a non-empty list of object records at a packet boundary. */

@@ -162,7 +162,10 @@ contracts but must not become competing authorities. Preserve candidate SHA
 and traceability checks through transition validation, keep retirement
 decisions evidence-backed and reversible, and synchronize schemas, examples,
 runtime validators, package exports, eval baselines, focused tests, README
-guidance, and generated architecture context in the same PR. These artifacts
+guidance, and generated architecture context in the same PR. Use the
+[packet-consolidation operational gate route](../plans/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-plan.md#packet-consolidation-operational-gate-route)
+as the executable validation SOP; harness engineering owns its local PC1-PC6
+commands and the PR coordinator owns the hosted PC7 closeout. These artifacts
 prove local contract behavior only; hosted checks, review conversations,
 independent acceptance, merge, and release remain separate closeout lanes.
 RouteDecision lifecycle metadata belongs to this cockpit architecture-adjacent lane: keep `route-decision/v1` contract changes additive to `harness-decision/v1`, refresh `AI/context/diagram-context.md`, and commit this guide with the required docs-gate governance surfaces when `docs-gate` reports the architecture-context surface.

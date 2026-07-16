@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { gitEnvironmentForRepoRoot } from "../runtime/git-environment.js";
+import type { PacketCandidateIdentity } from "./packet-candidate-identity.js";
 import {
 	MANAGED_CONSUMERS,
 	PACKET_FAMILY_REGISTRY,
@@ -173,6 +174,7 @@ export interface PacketCaller {
 /** Candidate-SHA-bound packet caller inventory derived from repository bytes. */
 export interface PacketCallerInventory {
 	candidateSha: string;
+	candidateDigest: string;
 	evidenceRef: string;
 	callers: PacketCaller[];
 	runtimeConsumers: string[];
@@ -184,6 +186,10 @@ export interface PacketCallerInventory {
 	missingManagedConsumers: string[];
 	unknownConsumers: string[];
 }
+
+const MANAGED_CONSUMER_REFERENCE_TOKENS = MANAGED_CONSUMERS.map((path) =>
+	(path.split("/").at(-1) ?? path).replace(/\.ts$/, ""),
+);
 
 /** List tracked and untracked non-ignored candidate paths in stable order. */
 function candidatePaths(repoRoot: string): string[] {
@@ -269,7 +275,7 @@ function discoverFamilyReferences(content: string): {
 function genericReferenceSignals(content: string): PacketDiscoverySignal[] {
 	return [
 		content.includes("PACKET_FAMILY_REGISTRY") ? "registry_reference" : null,
-		/packet-(?:consolidation|canonicalization)/.test(content)
+		MANAGED_CONSUMER_REFERENCE_TOKENS.some((token) => content.includes(token))
 			? "packet_module_reference"
 			: null,
 		content.includes("write-agent-native-ratchet-report")
@@ -296,7 +302,7 @@ function discoverReferences(content: string): {
 /** Discover runtime consumers and every explicit non-runtime packet surface. */
 export function discoverPacketCallerInventory(
 	repoRoot: string,
-	candidateSha: string,
+	candidateIdentity: PacketCandidateIdentity,
 ): PacketCallerInventory {
 	const callers = candidatePaths(repoRoot).flatMap((path): PacketCaller[] => {
 		let content: string;
@@ -315,8 +321,9 @@ export function discoverPacketCallerInventory(
 		.map((caller) => caller.path)
 		.sort();
 	return {
-		candidateSha,
-		evidenceRef: `git:${candidateSha}:packet-caller-inventory`,
+		candidateSha: candidateIdentity.checkoutHeadSha,
+		candidateDigest: candidateIdentity.candidateDigest,
+		evidenceRef: `git:${candidateIdentity.checkoutHeadSha}:packet-caller-inventory:${candidateIdentity.candidateDigest}`,
 		callers,
 		runtimeConsumers,
 		nonRuntimeSurfaces: callers

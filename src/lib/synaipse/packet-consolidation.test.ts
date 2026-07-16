@@ -96,7 +96,10 @@ function retirementFixture() {
 		repoRoot,
 		evidenceRoot,
 		candidateSha,
-		callerInventory: discoverPacketCallerInventory(repoRoot, candidateSha),
+		callerInventory: discoverPacketCallerInventory(
+			repoRoot,
+			observePacketCandidateIdentity(repoRoot),
+		),
 		canonicalProjectionTargets,
 		evidence,
 		cleanup: () => {
@@ -512,15 +515,15 @@ describe("synaipse packet consolidation", () => {
 	});
 
 	it("derives live runtime and generated callers from candidate repository bytes", () => {
-		const candidateSha = execFileSync("git", ["rev-parse", "HEAD"], {
-			encoding: "utf8",
-		}).trim();
+		const candidateIdentity = observePacketCandidateIdentity(process.cwd());
+		const candidateSha = candidateIdentity.checkoutHeadSha;
 		const inventory = discoverPacketCallerInventory(
 			process.cwd(),
-			candidateSha,
+			candidateIdentity,
 		);
 
 		expect(inventory.candidateSha).toBe(candidateSha);
+		expect(inventory.candidateDigest).toBe(candidateIdentity.candidateDigest);
 		expect(inventory.missingManagedConsumers).toEqual([]);
 		expect(inventory.unknownConsumers).toEqual([]);
 		expect(inventory.runtimeConsumers).toEqual([
@@ -571,7 +574,7 @@ describe("synaipse packet consolidation", () => {
 
 			const inventory = discoverPacketCallerInventory(
 				fixture.repoRoot,
-				fixture.candidateSha,
+				observePacketCandidateIdentity(fixture.repoRoot),
 			);
 
 			expect(inventory.missingManagedConsumers).toEqual([unprovedPath]);
@@ -594,8 +597,16 @@ describe("synaipse packet consolidation", () => {
 					'export { PACKET_FAMILY_REGISTRY as packetFamilies } from "./lib/synaipse/packet-consolidation.js";\n',
 				],
 				[
+					"src/command-spec-reader.ts",
+					'export { agentNativePacketCommandSpecs } from "./lib/cli/registry/agent-native-packet-command-specs.js";\n',
+				],
+				[
 					"src/constructed-command.ts",
 					'export const command = "reviewer" + "-decision";\n',
+				],
+				[
+					"src/transition-reader.ts",
+					'import { buildPacketTransition } from "./lib/synaipse/packet-transition-projection.js";\nexport { buildPacketTransition };\n',
 				],
 				[
 					"src/lib/cli/registry/command-packet-fixture.ts",
@@ -610,13 +621,15 @@ describe("synaipse packet consolidation", () => {
 
 			const inventory = discoverPacketCallerInventory(
 				fixture.repoRoot,
-				fixture.candidateSha,
+				observePacketCandidateIdentity(fixture.repoRoot),
 			);
 
 			expect(inventory.unknownConsumers).toEqual([
 				"src/alias-reader.ts",
+				"src/command-spec-reader.ts",
 				"src/constructed-command.ts",
 				"src/reexport.ts",
+				"src/transition-reader.ts",
 			]);
 			expect(inventory.nonRuntimeSurfaces).toContainEqual(
 				expect.objectContaining({
@@ -659,8 +672,15 @@ describe("synaipse packet consolidation", () => {
 			checkoutHeadSha: candidateSha,
 			candidateDigest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
 			candidatePathCount: expect.any(Number),
-			inventoryEvidenceRef: `git:${candidateSha}:packet-caller-inventory`,
+			inventoryEvidenceRef: expect.stringMatching(
+				new RegExp(
+					`^git:${candidateSha}:packet-caller-inventory:sha256:[0-9a-f]{64}$`,
+				),
+			),
 		});
+		expect(measurement.sources.inventoryEvidenceRef).toContain(
+			measurement.sources.candidateDigest,
+		);
 		expect(measurement.commandVisibility.before).toEqual([
 			"harness agent-native-ratchets --json",
 			"harness governance-decision-surface --json",
@@ -699,6 +719,7 @@ describe("synaipse packet consolidation", () => {
 	});
 
 	it.each([
+		"observed timestamp",
 		"source commit",
 		"payload digest",
 		"source catalog digest",
@@ -715,6 +736,9 @@ describe("synaipse packet consolidation", () => {
 			);
 			const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
 			switch (field) {
+				case "observed timestamp":
+					baseline.observedAt = "2026-07-15T00:00:00Z";
+					break;
 				case "source commit":
 					baseline.sourceCommit = "a".repeat(40);
 					break;
@@ -907,6 +931,25 @@ describe("synaipse packet consolidation", () => {
 			errors: expect.arrayContaining([
 				expect.stringContaining("mayClaim"),
 				expect.stringContaining("rawPayload"),
+			]),
+		});
+	});
+
+	it.each([
+		["null", null],
+		["array", []],
+		["string", "review-artifact:qa"],
+		["number", 1],
+	] as const)("rejects a malformed reviewer coverage receipt encoded as %s", (_, coverageReceipt) => {
+		const validation = validatePacketSource("reviewer-decision/v1", {
+			...basePacket("reviewer-decision/v1"),
+			coverageReceipt,
+		});
+
+		expect(validation).toEqual({
+			valid: false,
+			errors: expect.arrayContaining([
+				expect.stringContaining("coverageReceipt must be an object"),
 			]),
 		});
 	});

@@ -459,21 +459,25 @@ describe("write-agent-native-ratchet-report.cjs", () => {
 		const packageReport = JSON.parse(packageResult.stdout) as {
 			status: string;
 			decision: string;
+			coverageReceipt?: unknown;
 		};
 		const cliReport = JSON.parse(cliResult.stdout) as {
 			status: string;
 			decision: string;
+			coverageReceipt?: unknown;
 		};
 		expect(packageResult.status).toBe(0);
 		expect(packageReport).toMatchObject({
 			status: "needs_evidence",
 			decision: "needs_evidence",
 		});
+		expect(packageReport).not.toHaveProperty("coverageReceipt");
 		expect(cliResult.status).toBe(0);
 		expect(cliReport).toMatchObject({
 			status: "needs_evidence",
 			decision: "needs_evidence",
 		});
+		expect(cliReport).not.toHaveProperty("coverageReceipt");
 		expect(cliResult.stderr).toBe("");
 	});
 
