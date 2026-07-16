@@ -181,6 +181,30 @@ packages:
 				],
 			}),
 		).toThrow("credential query parameters");
+		for (const url of [
+			"https://example.test/advisory?token=secret",
+			"https://example.test/advisory?api_token=secret",
+			"https://example.test/advisory#access_token=secret",
+		]) {
+			expect(() =>
+				validateResponse({
+					plain: [{ severity: "high", title: "unsafe package", url }],
+				}),
+			).toThrow(/credential (?:query|fragment) parameters/);
+		}
+		for (const title of ["unsafe\u0085line", "unsafe\u202Eoverride"]) {
+			expect(() =>
+				validateResponse({
+					plain: [
+						{
+							severity: "high",
+							title,
+							url: "https://example.test/advisory",
+						},
+					],
+				}),
+			).toThrow("title is unsafe");
+		}
 	});
 
 	it("rejects redirects so the dependency payload cannot cross origins", async () => {

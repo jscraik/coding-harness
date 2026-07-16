@@ -18,9 +18,9 @@ const PACKAGE_NAME = /^(?:@[^/@\s]+\/[^/@\s]+|[^/@\s]+)$/;
 const VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const LOCAL_PACKAGE_KEY = /^(?:file|link|workspace):/;
 const REMOTE_PACKAGE_KEY = /^(?:git|github|https?):/;
-const UNSAFE_LINE_CODE_POINTS = new Set([0x2028, 0x2029]);
+const UNSAFE_TEXT_CHARACTER = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u;
 const SENSITIVE_QUERY_NAME =
-	/(?:access[_-]?token|auth|credential|key|pass(?:word|wd)?|secret|signature|sig)/i;
+	/^(?:(?:(?:access|api|refresh|session)[_-]?)?token|auth(?:entication|orization)?|credential|api[_-]?key|key|pass(?:word|wd)?|secret|signature|sig)$/i;
 
 function parseArguments(argv) {
 	let auditLevel = "moderate";
@@ -203,16 +203,7 @@ function auditEndpoint(registryValue) {
 
 function safeSingleLine(value, field) {
 	const hasControlCharacter =
-		typeof value === "string" &&
-		[...value].some((character) => {
-			const codePoint = character.codePointAt(0);
-			return (
-				codePoint !== undefined &&
-				(codePoint <= 31 ||
-					codePoint === 127 ||
-					UNSAFE_LINE_CODE_POINTS.has(codePoint))
-			);
-		});
+		typeof value === "string" && UNSAFE_TEXT_CHARACTER.test(value);
 	if (
 		typeof value !== "string" ||
 		value.length === 0 ||
@@ -235,6 +226,16 @@ function safeAdvisoryUrl(value) {
 	) {
 		throw new Error(
 			"bulk advisory URL must not contain credential query parameters",
+		);
+	}
+	const fragmentParameters = new URLSearchParams(url.hash.slice(1));
+	if (
+		[...fragmentParameters.keys()].some((name) =>
+			SENSITIVE_QUERY_NAME.test(name),
+		)
+	) {
+		throw new Error(
+			"bulk advisory URL must not contain credential fragment parameters",
 		);
 	}
 	return url.toString();
