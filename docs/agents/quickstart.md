@@ -34,7 +34,7 @@ for the full command contract.
 ## Validate
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 bash scripts/validate-codestyle.sh --fast
 pnpm check
 bash scripts/verify-work.sh --fast

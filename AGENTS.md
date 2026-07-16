@@ -37,8 +37,11 @@ truth.
 
 ## Startup
 
-1. Read this file, `CODESTYLE.md`, and
-   [`docs/agents/01-instruction-map.md`](docs/agents/01-instruction-map.md).
+1. Read this file, then
+   [`docs/agents/quickstart.md`](docs/agents/quickstart.md); read `CODESTYLE.md`
+   and the task route in
+   [`docs/agents/01-instruction-map.md`](docs/agents/01-instruction-map.md)
+   before making technical changes.
 2. Inspect the current repository, package manager, branch, worktrees, and
    dirty ownership before choosing a mutation.
 3. Use repository wrappers and documented commands through `zsh -lc`; prefer

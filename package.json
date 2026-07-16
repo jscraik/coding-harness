@@ -67,6 +67,7 @@
 		"scripts/check-behavior-tests.mjs",
 		"scripts/check-git-env-sanitizer.mjs",
 		"scripts/check-harness-audit-tracking.mjs",
+		"scripts/check-documentation-layer-budgets.mjs",
 		"scripts/lib",
 		"src/commands/local-memory-preflight.test.ts",
 		"src/commands/policy-gate.ts",
