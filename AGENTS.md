@@ -11,7 +11,7 @@ audience:
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-07-11
+last_reviewed: 2026-07-16
 review_cadence: on-change
 maintenance_trigger:
   - agent-operating-policy-change
@@ -197,8 +197,11 @@ Coding Harness is a TypeScript control plane for agentic development. Expected o
 ## Validation
 
 - Baseline gates: `pnpm codestyle:parity`, `pnpm codex:agents:guard`,
-  `pnpm check:static`, `pnpm check`, `bash scripts/validate-codestyle.sh`, and
-  `bash scripts/verify-work.sh`.
+  `pnpm check:static`, `pnpm run audit`, `pnpm check`,
+  `bash scripts/validate-codestyle.sh`, and `bash scripts/verify-work.sh`.
+- Dependency audit must use the repository script `pnpm run audit`; direct
+  `pnpm audit` targets retired registry endpoints in the pinned pnpm version
+  and cannot prove vulnerability status.
 - Fast-failure lanes run before broad gates: `pnpm run quality:scripts`
   catches shell syntax regressions, and `pnpm run tooling:parity` catches
   required-tool drift across `.mise.toml`, CircleCI, Codex environment actions,

@@ -158,7 +158,7 @@
 		"changelog": "standard-version --skip.bump --skip.tag --skip.commit",
 		"release": "standard-version",
 		"audit": "bash scripts/run-audit-with-timeout.sh",
-		"audit:strict": "pnpm audit --audit-level=high --ignore-registry-errors",
+		"audit:strict": "bash scripts/run-audit-with-timeout.sh --audit-level high",
 		"docs:lint": "pnpm markdownlint",
 		"docs:gitbook:check": "node scripts/check-gitbook-readiness.mjs",
 		"docs:root-archive:links": "node scripts/check-root-archive-links.mjs",

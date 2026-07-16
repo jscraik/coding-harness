@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-07-14
+last_validated: 2026-07-16
 ---
 
 # Agent governance
@@ -35,7 +35,7 @@ artifacts, validation, ownership, and review expectations.
 - `pnpm lint`
 - `pnpm typecheck`
 - `pnpm test`
-- `pnpm audit`
+- `pnpm run audit`
 - `pnpm check`
 - `bash scripts/validate-codestyle.sh`
 - `docs-gate` (CI check for documentation parity)

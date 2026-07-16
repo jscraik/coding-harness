@@ -78,7 +78,7 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
   - `pnpm lint`
   - `pnpm typecheck`
   - `pnpm test`
-  - `pnpm audit`
+  - `pnpm run audit`
   - `pnpm check`
   - `pnpm run coding-policy:validate`
   - `bash scripts/validate-codestyle.sh`
