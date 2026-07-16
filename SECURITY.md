@@ -68,4 +68,4 @@ This repository uses:
 - **BetterLeaks** (CI) / **Gitleaks** (local): Secret detection in commits
 - **Semgrep**: Static analysis for security vulnerabilities
 - **Trivy**: Dependency and container vulnerability scanning
-- **pnpm audit**: Dependency vulnerability scanning
+- **`pnpm run audit`**: Governed dependency vulnerability scanning

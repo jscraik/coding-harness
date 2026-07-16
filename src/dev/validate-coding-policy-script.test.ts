@@ -539,10 +539,11 @@ describe("validate-coding-policy.cjs", () => {
 				"pnpm typecheck",
 				"pnpm run quality:scripts",
 				"pnpm install --frozen-lockfile",
-				"pnpm audit",
+				"pnpm run audit",
 				"pnpm run quality:self-affirming",
 			]),
 		);
+		expect(route.requiredGates).not.toContain("pnpm audit");
 		expect(route.policyModules).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({

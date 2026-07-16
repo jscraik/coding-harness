@@ -1,0 +1,21 @@
+[
+	"@babel",
+	"@bcoe",
+	"@biomejs",
+	"@brainwav",
+	"@esbuild",
+	"@hutson",
+	"@inquirer",
+	"@isaacs",
+	"@jridgewell",
+	"@nodelib",
+	"@octokit",
+	"@pkgjs",
+	"@rollup",
+	"@sindresorhus",
+	"@standard-schema",
+	"@total-typescript",
+	"@types",
+	"@vitest",
+	"@vvago"
+]

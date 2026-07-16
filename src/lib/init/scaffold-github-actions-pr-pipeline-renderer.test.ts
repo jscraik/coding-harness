@@ -7,7 +7,7 @@ const pipelineInput = {
 	lintCommand: "pnpm lint",
 	typecheckCommand: "pnpm typecheck",
 	testCommand: "pnpm test:ci",
-	auditCommand: "pnpm audit",
+	auditCommand: "pnpm run audit",
 	checkCommand: "pnpm check",
 	memoryValidateCommand: "pnpm memory:validate",
 	linearTrackingEnabled: true,

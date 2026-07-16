@@ -27,7 +27,7 @@
 		},
 		{
 			"stage": "audit",
-			"command": "pnpm audit",
+			"command": "pnpm run audit",
 			"outcome": "pass",
 			"durationMs": 1200
 		},

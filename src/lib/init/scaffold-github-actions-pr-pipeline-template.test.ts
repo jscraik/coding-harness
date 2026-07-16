@@ -11,7 +11,7 @@ describe("GitHub Actions PR pipeline scaffold template", () => {
 		lintCommand: "pnpm lint",
 		typecheckCommand: "pnpm typecheck",
 		testCommand: "pnpm test:ci",
-		auditCommand: "pnpm audit",
+		auditCommand: "pnpm run audit",
 		checkCommand: "pnpm check",
 		memoryValidateCommand: "pnpm memory:validate",
 		linearTrackingEnabled: true,
@@ -49,7 +49,7 @@ describe("GitHub Actions PR pipeline scaffold template", () => {
 		expect(workflow).toContain("run: pnpm lint");
 		expect(workflow).toContain("run: pnpm typecheck");
 		expect(workflow).toContain("run: pnpm test:ci");
-		expect(workflow).toContain("run: pnpm audit");
+		expect(workflow).toContain("run: pnpm run audit");
 		expect(workflow).toContain("run: pnpm check");
 		expect(workflow).toContain("run: pnpm memory:validate");
 		expect(workflow).toContain("node --import tsx src/cli.ts linear-gate \\");
