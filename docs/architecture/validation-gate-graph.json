@@ -16,6 +16,7 @@
 				"pnpm tooling:parity",
 				"pnpm docs:lint",
 				"pnpm docs:lifecycle",
+				"pnpm docs:layer-budgets",
 				"pnpm docs:root-archive:links",
 				"pnpm docs:ubiquitous:guard",
 				"pnpm docs:steering:guard",
@@ -74,6 +75,12 @@
 			"lane": "docs-lifecycle",
 			"owner": "docs-surface",
 			"proves": "lifecycle metadata and manifest contracts pass"
+		},
+		{
+			"command": "pnpm docs:layer-budgets",
+			"lane": "docs-layer-budgets",
+			"owner": "docs-surface",
+			"proves": "Layer 0 and Layer 1 documentation surfaces stay within their line-count and read-availability budgets"
 		},
 		{
 			"command": "pnpm docs:root-archive:links",

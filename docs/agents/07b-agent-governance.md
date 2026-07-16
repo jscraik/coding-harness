@@ -32,6 +32,12 @@ artifacts, validation, ownership, and review expectations.
 
 ## Mandatory gates (when behavior changes)
 
+Root instruction routing is a bounded governance surface. Keep `AGENTS.md` as
+the Layer 0 router within 130 lines and `docs/agents/quickstart.md` as the
+Layer 1 entrypoint within 80 lines, then run `pnpm docs:layer-budgets`. The
+guard proves size and read availability only; it does not prove policy
+correctness or delivery readiness.
+
 - `pnpm lint`
 - `pnpm typecheck`
 - `pnpm test`
