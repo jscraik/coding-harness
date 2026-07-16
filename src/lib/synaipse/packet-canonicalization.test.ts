@@ -9,6 +9,10 @@ import {
 	projectLegacyPacket,
 	validatePacketSource,
 } from "./packet-consolidation.js";
+import {
+	decideSynaipseTransition,
+	validateSynaipseTransition,
+} from "./transition.js";
 
 const OBSERVED_AT = "2026-07-15T10:00:00Z";
 let canonicalRepoRoot: string;
@@ -89,5 +93,93 @@ describe("packet canonicalization", () => {
 				(family) => family.schemaVersion === schemaVersion,
 			)?.canonicalContract,
 		);
+	});
+
+	it.each([
+		["needs_evidence", "needs_evidence"],
+		["blocked", "object"],
+		["defer", "defer"],
+		["blocked", "blocked_external"],
+	] as const)("keeps reviewer %s/%s authority-safe inside a complete canonical transition", (status, decision) => {
+		const packet = emittedPacket("--reviewer-decision", "--json");
+		if (typeof packet !== "object" || packet === null)
+			throw new TypeError("expected reviewer packet object");
+		Reflect.set(packet, "status", status);
+		Reflect.set(packet, "decision", decision);
+		const canonical = canonicalizeLegacyPacket("reviewer-decision/v1", packet, {
+			repoRoot: canonicalRepoRoot,
+			observedAt: OBSERVED_AT,
+		});
+
+		expect(canonical).toMatchObject({
+			status: "complete",
+			valid: true,
+			record: {
+				schemaVersion: "synaipse-transition/v1",
+				authority: { owner: "codex", standing: false },
+				vitalDecision: { required: false, question: null },
+			},
+		});
+		if (canonical.record?.schemaVersion !== "synaipse-transition/v1")
+			throw new TypeError("expected complete canonical transition");
+		expect(validateSynaipseTransition(canonical.record)).toEqual({
+			valid: true,
+			errors: [],
+		});
+		expect(
+			decideSynaipseTransition(canonical.record, {
+				expectedSha: canonical.record.repositorySha,
+				now: OBSERVED_AT,
+			}),
+		).toMatchObject({
+			status: "blocked",
+			blockers: ["standing_authority_required"],
+		});
+	});
+
+	it.each([
+		"accept",
+		"accepted_risk",
+	] as const)("rejects reviewer %s as transition authority even with caller-authored receipt evidence", (decision) => {
+		const packet = emittedPacket("--reviewer-decision", "--json");
+		if (typeof packet !== "object" || packet === null)
+			throw new TypeError("expected reviewer packet object");
+		Reflect.set(packet, "status", "pass");
+		Reflect.set(packet, "decision", decision);
+		Reflect.set(packet, "coverageReceipt", {
+			schemaVersion: "reviewer-coverage-receipt/v1",
+			status: "pass",
+			blockerClass: null,
+			reason: "fresh reviewer coverage passed",
+			requestedRoles: 2,
+			completedRoles: 2,
+			blockedRoles: 0,
+			missingArtifacts: 0,
+			synthesisStatus: "pass",
+			evidenceRefs: ["review-artifact:qa", "review-artifact:adversarial"],
+		});
+		const canonical = canonicalizeLegacyPacket("reviewer-decision/v1", packet, {
+			repoRoot: canonicalRepoRoot,
+			observedAt: OBSERVED_AT,
+		});
+
+		expect(canonical).toMatchObject({
+			status: "complete",
+			record: {
+				authority: { owner: "codex", standing: false },
+				vitalDecision: { required: false, question: null },
+			},
+		});
+		if (canonical.record?.schemaVersion !== "synaipse-transition/v1")
+			throw new TypeError("expected complete canonical transition");
+		expect(
+			decideSynaipseTransition(canonical.record, {
+				expectedSha: canonical.record.repositorySha,
+				now: OBSERVED_AT,
+			}),
+		).toMatchObject({
+			status: "blocked",
+			blockers: ["standing_authority_required"],
+		});
 	});
 });

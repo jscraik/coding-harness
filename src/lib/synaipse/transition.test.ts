@@ -89,14 +89,15 @@ describe("synaipse-transition/v1", () => {
 	});
 
 	it("blocks a stale SHA and supplies deterministic recovery", () => {
+		const oldSha = "a".repeat(40);
 		const input = transitionWith({
-			repositorySha: "old-sha",
+			repositorySha: oldSha,
 			evidence: {
 				...validTransition().evidence,
-				currentSha: "old-sha",
+				currentSha: oldSha,
 				hostedMain: {
 					...validTransition().evidence.hostedMain,
-					sha: "old-sha",
+					sha: oldSha,
 				},
 			},
 		});
@@ -252,6 +253,21 @@ describe("synaipse-transition/v1", () => {
 		expect(
 			decideSynaipseTransition(input, { expectedSha: SHA, now: NOW }),
 		).toMatchObject({ status: "admitted", blockers: [] });
+	});
+
+	it("rejects a malformed hosted-main SHA independently from checkout HEAD", () => {
+		const input = validTransition();
+		input.evidence.hostedMain.sha = "not-a-sha";
+
+		expect(validateSynaipseTransition(input)).toMatchObject({
+			valid: false,
+			errors: [
+				{
+					path: "evidence.hostedMain.sha",
+					message: "must be a full lowercase git SHA",
+				},
+			],
+		});
 	});
 
 	it("rejects recovery with a refreshed SHA different from checkout HEAD", () => {

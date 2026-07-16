@@ -11,6 +11,7 @@ import {
 } from "./transition-contract.js";
 
 type Errors = SynaipseTransitionValidationResult["errors"];
+const FULL_GIT_SHA = /^[0-9a-f]{40}$/;
 
 /** Add a non-empty string error. */
 function requireString(value: unknown, path: string, errors: Errors): void {
@@ -75,7 +76,11 @@ function validateHostedMain(value: unknown, errors: Errors): void {
 			path: "evidence.hostedMain.ref",
 			message: "must be refs/heads/main",
 		});
-	requireString(value.sha, "evidence.hostedMain.sha", errors);
+	if (typeof value.sha !== "string" || !FULL_GIT_SHA.test(value.sha))
+		errors.push({
+			path: "evidence.hostedMain.sha",
+			message: "must be a full lowercase git SHA",
+		});
 	requireDateTime(value.observedAt, "evidence.hostedMain.observedAt", errors);
 }
 

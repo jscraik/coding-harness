@@ -129,6 +129,33 @@ function emittedPacket(...args: string[]): unknown {
 	);
 }
 
+function canonicalizeReviewerPacket(packet: unknown) {
+	const fixture = retirementFixture();
+	try {
+		execFileSync(
+			"git",
+			[
+				"remote",
+				"add",
+				"origin",
+				"https://github.com/jscraik/coding-harness.git",
+			],
+			{ cwd: fixture.repoRoot },
+		);
+		execFileSync(
+			"git",
+			["update-ref", "refs/remotes/origin/main", fixture.candidateSha],
+			{ cwd: fixture.repoRoot },
+		);
+		return canonicalizeLegacyPacket("reviewer-decision/v1", packet, {
+			repoRoot: fixture.repoRoot,
+			observedAt: OBSERVED_AT,
+		});
+	} finally {
+		fixture.cleanup();
+	}
+}
+
 function basePacket(schemaVersion: string) {
 	return {
 		schemaVersion,
@@ -350,16 +377,13 @@ describe("synaipse packet consolidation", () => {
 		["blocked", "object"],
 		["defer", "defer"],
 		["blocked", "blocked_external"],
-	] as const)("keeps reviewer %s/%s authority-safe inside a complete canonical transition", (status, decision) => {
+	] as const)("keeps reviewer %s/%s authority-safe inside a canonical fixture", (status, decision) => {
 		const packet = emittedPacket("--reviewer-decision", "--json");
 		if (typeof packet !== "object" || packet === null)
 			throw new TypeError("expected reviewer packet object");
 		Reflect.set(packet, "status", status);
 		Reflect.set(packet, "decision", decision);
-		const canonical = canonicalizeLegacyPacket("reviewer-decision/v1", packet, {
-			repoRoot: process.cwd(),
-			observedAt: OBSERVED_AT,
-		});
+		const canonical = canonicalizeReviewerPacket(packet);
 
 		expect(canonical).toMatchObject({
 			status: "complete",
@@ -390,7 +414,7 @@ describe("synaipse packet consolidation", () => {
 	it.each([
 		"accept",
 		"accepted_risk",
-	] as const)("rejects reviewer %s as transition authority even with caller-authored receipt evidence", (decision) => {
+	] as const)("rejects reviewer %s authority even with caller-authored receipt evidence", (decision) => {
 		const packet = emittedPacket("--reviewer-decision", "--json");
 		if (typeof packet !== "object" || packet === null)
 			throw new TypeError("expected reviewer packet object");
@@ -408,10 +432,7 @@ describe("synaipse packet consolidation", () => {
 			synthesisStatus: "pass",
 			evidenceRefs: ["review-artifact:qa", "review-artifact:adversarial"],
 		});
-		const canonical = canonicalizeLegacyPacket("reviewer-decision/v1", packet, {
-			repoRoot: process.cwd(),
-			observedAt: OBSERVED_AT,
-		});
+		const canonical = canonicalizeReviewerPacket(packet);
 
 		expect(canonical).toMatchObject({
 			status: "complete",

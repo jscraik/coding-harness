@@ -1,7 +1,4 @@
-import { execFileSync } from "node:child_process";
-import { lstatSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { gitEnvironmentForRepoRoot } from "../runtime/git-environment.js";
+import { packetCallerCandidateSources } from "./packet-caller-candidate-content.js";
 import type { PacketCandidateIdentity } from "./packet-candidate-identity.js";
 import {
 	MANAGED_CONSUMERS,
@@ -191,20 +188,6 @@ const MANAGED_CONSUMER_REFERENCE_TOKENS = MANAGED_CONSUMERS.map((path) =>
 	(path.split("/").at(-1) ?? path).replace(/\.ts$/, ""),
 );
 
-/** List tracked and untracked non-ignored candidate paths in stable order. */
-function candidatePaths(repoRoot: string): string[] {
-	const output = execFileSync(
-		"git",
-		["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
-		{
-			cwd: repoRoot,
-			env: gitEnvironmentForRepoRoot(),
-			encoding: "utf8",
-		},
-	);
-	return output.split("\0").filter(Boolean).sort();
-}
-
 type CallerClassification = { kind: PacketCallerKind; reason: string };
 
 /** Return exact producer, runtime, or repository-owned classification. */
@@ -304,20 +287,21 @@ export function discoverPacketCallerInventory(
 	repoRoot: string,
 	candidateIdentity: PacketCandidateIdentity,
 ): PacketCallerInventory {
-	const callers = candidatePaths(repoRoot).flatMap((path): PacketCaller[] => {
-		let content: string;
-		try {
-			const absolutePath = resolve(repoRoot, path);
-			if (lstatSync(absolutePath).isSymbolicLink()) return [];
-			content = readFileSync(absolutePath, "utf8");
-		} catch {
-			return [];
-		}
-		const reference = discoverReferences(content);
-		if (reference.signals.length === 0 || reference.families.length === 0)
-			return [];
-		return [{ path, ...callerKind(path), ...reference }];
-	});
+	const callers = packetCallerCandidateSources(repoRoot).flatMap(
+		({ path, contents }): PacketCaller[] => {
+			const families = new Set<PacketFamilySchemaVersion>();
+			const signals = new Set<PacketDiscoverySignal>();
+			for (const bytes of contents) {
+				const reference = discoverReferences(bytes.toString("utf8"));
+				for (const family of reference.families) families.add(family);
+				for (const signal of reference.signals) signals.add(signal);
+			}
+			const reference = { families: [...families], signals: [...signals] };
+			if (reference.signals.length === 0 || reference.families.length === 0)
+				return [];
+			return [{ path, ...callerKind(path), ...reference }];
+		},
+	);
 	const runtimeConsumers = callers
 		.filter((caller) => caller.kind === "runtime_consumer")
 		.map((caller) => caller.path)

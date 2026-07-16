@@ -942,6 +942,20 @@ describe("validateContract", () => {
 			expect(result.success).toBe(false);
 			expect(result.errors[0]?.path).toBe("reviewPolicy");
 		});
+
+		it("rejects automated reviewers duplicated after login normalization", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					approvalMode: "automated_review",
+					automatedReviewers: ["coderabbitai[bot]", " CodeRabbitAI[bot] "],
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("reviewPolicy");
+		});
 	});
 
 	describe("branchProtection", () => {

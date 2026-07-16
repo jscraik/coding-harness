@@ -452,3 +452,34 @@ authorize staging, commit, push, PR mutation, review-thread action, legacy
 retirement, merge, release, or Slice 6 work. The earlier recovery digests and
 review artifacts are stale relative to the controlling reconciliation and this
 current-main replay.
+
+## Hosted Review System Repair
+
+The final hosted review exposed one transferable failure class: candidate
+identity, caller discovery, transition provenance, and solo-maintainer review
+policy were each valid in isolation but did not share identical normalization
+and byte-source boundaries. That is a weak-validation and stale-state risk, not
+a collection of one-off comments.
+
+The durable repair moves byte-exact caller inputs into
+`packet-caller-candidate-content.ts`. It reads index blobs by object ID, reads
+worktree files through one `O_NOFOLLOW` descriptor, unions staged and worktree
+content bound by the candidate digest, skips symlink content, and fails closed
+when a Git path cannot be represented by the public UTF-8 inventory contract.
+Fixtures now prove staged-only packet references, external symlink stability,
+and the non-UTF-8 failure boundary on Linux. Reviewer transition fixtures use a
+temporary repository with canonical origin provenance, automated reviewer
+uniqueness uses the same trimmed lowercase login normalization as evaluation,
+and hosted-main evidence independently requires a full lowercase Git SHA.
+
+Command: `MISE_NO_CONFIG=1 pnpm exec biome check src/lib/synaipse/packet-caller-inventory.ts src/lib/synaipse/packet-candidate-identity.test.ts src/lib/synaipse/packet-canonicalization.test.ts src/lib/synaipse/packet-consolidation.test.ts src/lib/synaipse/transition-validation.ts src/lib/synaipse/transition.test.ts src/lib/contract/validator-core.ts src/lib/contract/validator.test.ts` -> pass (eight changed source and test files passed formatting and lint checks).
+Command: `MISE_NO_CONFIG=1 pnpm exec tsc --noEmit` -> pass (the split byte-source module and strengthened validation contracts type-check).
+Command: `MISE_NO_CONFIG=1 pnpm exec vitest run src/lib/synaipse/packet-candidate-identity.test.ts src/lib/synaipse/packet-canonicalization.test.ts src/lib/synaipse/packet-consolidation.test.ts src/lib/synaipse/transition.test.ts src/lib/contract/validator.test.ts --reporter=dot` -> pass (five files passed 232 tests with one platform-gated non-UTF-8 fixture skipped on macOS and retained for Linux CI).
+Command: `MISE_NO_CONFIG=1 pnpm run quality:docstrings` -> pass (21 changed production files retained public API documentation).
+Command: `MISE_NO_CONFIG=1 pnpm run quality:size` -> pass (21 production files and 13 test files stayed within size and complexity policy after the byte-source module extraction).
+Command: `MISE_NO_CONFIG=1 pnpm run test:related` -> pass (28 related files passed 991 tests with one platform-gated fixture skipped).
+
+These results prove the local candidate and regression boundaries only. Hosted
+checks, current review evidence, conversation resolution, acceptance, merge,
+release, and cleanup remain separate external-state lanes. No Slice 6 work is
+admitted while the Coding Harness PR queue remains open.

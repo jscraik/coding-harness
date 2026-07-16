@@ -725,13 +725,18 @@ function hasValidReviewEvidenceConfiguration(
 	if (policy.automatedReviewers === undefined) {
 		return policy.approvalMode !== "automated_review";
 	}
+	const normalizedReviewers = Array.isArray(policy.automatedReviewers)
+		? policy.automatedReviewers.map((reviewer) =>
+				typeof reviewer === "string" ? reviewer.trim().toLowerCase() : reviewer,
+			)
+		: [];
 	return (
 		Array.isArray(policy.automatedReviewers) &&
 		policy.automatedReviewers.length > 0 &&
 		policy.automatedReviewers.every(
 			(reviewer) => typeof reviewer === "string" && reviewer.trim().length > 0,
 		) &&
-		new Set(policy.automatedReviewers).size === policy.automatedReviewers.length
+		new Set(normalizedReviewers).size === normalizedReviewers.length
 	);
 }
 

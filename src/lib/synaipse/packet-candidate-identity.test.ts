@@ -46,19 +46,52 @@ describe("packet candidate identity", () => {
 			});
 			const clean = observePacketCandidateIdentity(fixture.repoRoot);
 
-			writeFileSync(path, "indexed bytes\n");
+			writeFileSync(path, 'export const schema = "session-distill/v1";\n');
 			execFileSync("git", ["add", "staged-only.txt"], {
 				cwd: fixture.repoRoot,
 			});
 			writeFileSync(path, "committed bytes\n");
 			const stagedOnly = observePacketCandidateIdentity(fixture.repoRoot);
+			const inventory = discoverPacketCallerInventory(
+				fixture.repoRoot,
+				stagedOnly,
+			);
 
 			expect(stagedOnly.candidatePathCount).toBe(1);
 			expect(stagedOnly.candidateDigest).not.toBe(clean.candidateDigest);
+			expect(inventory.callers).toContainEqual(
+				expect.objectContaining({
+					path: "staged-only.txt",
+					families: expect.arrayContaining(["session-distill/v1"]),
+				}),
+			);
 		} finally {
 			fixture.cleanup();
 		}
 	});
+
+	it.runIf(process.platform === "linux")(
+		"fails closed when a repository path cannot be represented as UTF-8",
+		() => {
+			const fixture = gitFixture();
+			try {
+				const rawPath = Buffer.concat([
+					Buffer.from(fixture.repoRoot),
+					Buffer.from("/non-utf8-"),
+					Buffer.from([0xff]),
+					Buffer.from(".ts"),
+				]);
+				writeFileSync(rawPath, 'export const schema = "session-distill/v1";\n');
+				const identity = observePacketCandidateIdentity(fixture.repoRoot);
+
+				expect(() =>
+					discoverPacketCallerInventory(fixture.repoRoot, identity),
+				).toThrow("cannot represent a non-UTF-8 repository path");
+			} finally {
+				fixture.cleanup();
+			}
+		},
+	);
 
 	it("excludes symlinked caller surfaces from external content discovery", () => {
 		const fixture = gitFixture();
