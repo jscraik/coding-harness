@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-15T18:13:39Z
+Generated: 2026-07-16T21:03:10Z
 
 ## Table of Contents
 
@@ -29,86 +29,7 @@ Generated: 2026-07-15T18:13:39Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `contracts/synaipse-context-catalog.schema.json`
-- `contracts/synaipse-context-ref.schema.json`
-- `contracts/synaipse-state.schema.json`
-- `contracts/synaipse-task-context.schema.json`
-- `package.json`
-- `scripts/refresh-diagram-context.sh`
-- `src/cli.ts`
-- `src/commands/doctor.ts`
-- `src/commands/execution-job.ts`
-- `src/commands/execution-run.ts`
-- `src/commands/fitness.ts`
-- `src/commands/next-decision-meta.ts`
-- `src/commands/next-decisions.ts`
-- `src/commands/next-file-classification-meta.ts`
-- `src/commands/next-file-classification.ts`
-- `src/commands/next-fitness-report.ts`
-- `src/commands/next-operator-local-decision.ts`
-- `src/commands/next-recommendation-decisions.ts`
-- `src/commands/next-runner-inputs.ts`
-- `src/commands/next-runner.ts`
-- `src/commands/next-synaipse-context.ts`
-- `src/commands/next.ts`
-- `src/commands/review-context.ts`
-- `src/lib/agent-readiness/safe-json-artifact-reader.ts`
-- `src/lib/cli/command-registry.ts`
-- `src/lib/cli/registry/builtin-command-specs.ts`
-- `src/lib/cli/registry/command-agent-catalog-rules.ts`
-- `src/lib/cli/registry/command-capabilities.ts`
-- `src/lib/cli/registry/command-capability-rules.ts`
-- `src/lib/cli/registry/command-execution-rules.ts`
-- `src/lib/cli/registry/command-expected-artifacts.ts`
-- `src/lib/cli/registry/command-invocation-effects-execution.ts`
-- `src/lib/cli/registry/command-invocation-effects-job.ts`
-- `src/lib/cli/registry/command-invocation-effects-ui.ts`
-- `src/lib/cli/registry/command-invocation-effects.ts`
-- `src/lib/cli/registry/command-specs-core.ts`
-- `src/lib/cli/registry/command-visibility-rules.ts`
-- `src/lib/execution/execution-job-decoder.ts`
-- `src/lib/execution/execution-job-schema.ts`
-- `src/lib/execution/execution-job.ts`
-- `src/lib/execution/execution-result.ts`
-- `src/lib/execution/execution-run-options.ts`
-- `src/lib/execution/job-conductor-state.ts`
-- `src/lib/execution/job-conductor.ts`
-- `src/lib/execution/job-store.ts`
-- `src/lib/execution/local-coordinator.ts`
-- `src/lib/execution/process-executor.ts`
-- `src/lib/fitness/advisory-artifact-normalizer.ts`
-- `src/lib/fitness/applicability.ts`
-- `src/lib/fitness/artifact-normalizers.ts`
-- `src/lib/fitness/base-lanes.ts`
-- `src/lib/fitness/commands.ts`
-- `src/lib/fitness/coverage.ts`
-- `src/lib/fitness/optional-artifact-normalizers.ts`
-- `src/lib/fitness/report.ts`
-- `src/lib/fitness/types.ts`
-- `src/lib/fitness/validation.ts`
-- `src/lib/learnings/index.ts`
-- `src/lib/learnings/review-context.ts`
-- `src/lib/learnings/review-learning-closeout.ts`
-- `src/lib/session/session-closeout.ts`
-- `src/lib/synaipse/context-contract.ts`
-- `src/lib/synaipse/context-observations.ts`
-- `src/lib/synaipse/context-plane.ts`
-- `src/lib/synaipse/context-privacy.ts`
-- `src/lib/synaipse/context-projection.ts`
-- `src/lib/synaipse/context-provider.ts`
-- `src/lib/synaipse/context-task.ts`
-- `src/lib/synaipse/date-time.ts`
-- `src/lib/synaipse/improvement-case.ts`
-- `src/lib/synaipse/state-contract.ts`
-- `src/lib/synaipse/state-validation.ts`
-- `src/lib/synaipse/state.ts`
-- `src/lib/synaipse/transition-contract.ts`
-- `src/lib/synaipse/transition-recovery-validation.ts`
-- `src/lib/synaipse/transition-time-validation.ts`
-- `src/lib/synaipse/transition-validation.ts`
-- `src/lib/synaipse/transition.ts`
-- `src/lib/testing/README.md`
-- `src/lib/testing/behavior-test-suites.json`
+- `src/templates/codex-preflight.sh`
 
 ## agent
 
@@ -787,6 +708,7 @@ graph LR
   node_check_code_quality_debt_cba04f67_104c73f4["check_code_quality_debt_cba04f67"]
   node_check_code_size_9c5efc3a_154124ae["check_code_size_9c5efc3a"]
   node_check_codex_agent_roles_5bb2e89b_c1a9a472["check_codex_agent_roles_5bb2e89b"]
+  node_check_documentation_layer_budgets_cf501f9f_fca339ca["check_documentation_layer_budgets_cf501f9f"]
   node_check_environment_core_2c16213f_a8a456d9["check_environment_core_2c16213f"]
   node_check_git_env_sanitizer_ae3df05c_3f70823d["check_git_env_sanitizer_ae3df05c"]
   node_check_gitbook_readiness_33bdca76_4d8c6b98["check_gitbook_readiness_33bdca76"]
@@ -1255,6 +1177,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_check_code_quality_debt_cba04f67_104c73f4
   ext_node_fs_a15b7d96["node:fs"] --> node_check_code_size_9c5efc3a_154124ae
   ext_node_fs_a15b7d96["node:fs"] --> node_check_codex_agent_roles_5bb2e89b_c1a9a472
+  ext_node_fs_a15b7d96["node:fs"] --> node_check_documentation_layer_budgets_cf501f9f_fca339ca
   ext_node_fs_a15b7d96["node:fs"] --> node_check_environment_core_2c16213f_a8a456d9
   ext_node_fs_a15b7d96["node:fs"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
   ext_node_fs_a15b7d96["node:fs"] --> node_check_gitbook_readiness_33bdca76_4d8c6b98
@@ -1541,6 +1464,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_check_code_quality_debt_cba04f67_104c73f4
   ext_node_path_78811c13["node:path"] --> node_check_code_size_9c5efc3a_154124ae
   ext_node_path_78811c13["node:path"] --> node_check_codex_agent_roles_5bb2e89b_c1a9a472
+  ext_node_path_78811c13["node:path"] --> node_check_documentation_layer_budgets_cf501f9f_fca339ca
   ext_node_path_78811c13["node:path"] --> node_check_environment_core_2c16213f_a8a456d9
   ext_node_path_78811c13["node:path"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
   ext_node_path_78811c13["node:path"] --> node_check_gitbook_readiness_33bdca76_4d8c6b98
