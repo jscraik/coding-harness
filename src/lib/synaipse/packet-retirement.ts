@@ -1,6 +1,12 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { lstatSync, readFileSync } from "node:fs";
+import {
+	closeSync,
+	constants,
+	fstatSync,
+	openSync,
+	readFileSync,
+} from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 import { gitEnvironmentForRepoRoot } from "../runtime/git-environment.js";
 import {
@@ -201,16 +207,18 @@ function readEvidenceBytes(
 	) {
 		return { valid: false, reason: "retirement_evidence_path_invalid" };
 	}
-	let bytes: Buffer;
+	let descriptor: number | undefined;
 	try {
-		if (lstatSync(artifact).isSymbolicLink()) {
+		descriptor = openSync(artifact, constants.O_RDONLY | constants.O_NOFOLLOW);
+		if (!fstatSync(descriptor).isFile()) {
 			return { valid: false, reason: "retirement_evidence_path_invalid" };
 		}
-		bytes = readFileSync(artifact);
+		return { valid: true, bytes: readFileSync(descriptor) };
 	} catch {
 		return { valid: false, reason: "retirement_evidence_path_invalid" };
+	} finally {
+		if (descriptor !== undefined) closeSync(descriptor);
 	}
-	return { valid: true, bytes };
 }
 
 /** Parse evidence JSON without allowing parser failures to escape the predicate. */

@@ -1050,6 +1050,18 @@ describe("synaipse packet consolidation", () => {
 			"retirement_evidence_digest_mismatch",
 		],
 		[
+			"symlinked evidence artifact",
+			(fixture: ReturnType<typeof retirementFixture>) => {
+				const evidence = firstRetirementEvidence(fixture);
+				const artifact = resolve(fixture.evidenceRoot, evidence.artifactPath);
+				const target = resolve(fixture.evidenceRoot, "symlink-target.json");
+				writeFileSync(target, readFileSync(artifact));
+				unlinkSync(artifact);
+				symlinkSync("symlink-target.json", artifact);
+			},
+			"retirement_evidence_path_invalid",
+		],
+		[
 			"evidence outcome is not pass",
 			(fixture: ReturnType<typeof retirementFixture>) => {
 				const evidence = firstRetirementEvidence(fixture);

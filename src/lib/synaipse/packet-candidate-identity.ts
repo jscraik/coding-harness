@@ -1,6 +1,13 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { lstatSync, readFileSync, readlinkSync } from "node:fs";
+import {
+	closeSync,
+	constants,
+	fstatSync,
+	openSync,
+	readFileSync,
+	readlinkSync,
+} from "node:fs";
 import { gitEnvironmentForRepoRoot } from "../runtime/git-environment.js";
 
 /** Internally observed checkout and dirty-candidate identity. */
@@ -52,33 +59,44 @@ function absolutePath(repoRoot: string, path: Buffer): Buffer {
 	return Buffer.concat([Buffer.from(repoRoot), Buffer.from("/"), path]);
 }
 
+/** Return the stable Node filesystem error code when one is available. */
+function fileErrorCode(error: unknown): unknown {
+	return typeof error === "object" && error !== null && "code" in error
+		? error.code
+		: undefined;
+}
+
 /** Observe current worktree mode and bytes, distinguishing deletion and symlinks. */
 function candidateEntry(
 	repoRoot: string,
 	path: Buffer,
 ): { mode: string; bytes: Buffer } {
 	const absolute = absolutePath(repoRoot, path);
-	let stats: ReturnType<typeof lstatSync>;
+	let descriptor: number;
 	try {
-		stats = lstatSync(absolute);
+		descriptor = openSync(absolute, constants.O_RDONLY | constants.O_NOFOLLOW);
 	} catch (error) {
-		if (
-			typeof error === "object" &&
-			error !== null &&
-			"code" in error &&
-			error.code === "ENOENT"
-		) {
+		const code = fileErrorCode(error);
+		if (code === "ENOENT") {
 			return { mode: "000000", bytes: Buffer.alloc(0) };
+		}
+		if (code === "ELOOP") {
+			return { mode: "120000", bytes: readlinkSync(absolute, "buffer") };
 		}
 		throw error;
 	}
-	if (stats.isSymbolicLink()) {
-		return { mode: "120000", bytes: readlinkSync(absolute, "buffer") };
+	try {
+		const stats = fstatSync(descriptor);
+		if (!stats.isFile()) {
+			throw new TypeError("packet candidate entry must be a file or symlink");
+		}
+		return {
+			mode: (stats.mode & 0o111) === 0 ? "100644" : "100755",
+			bytes: readFileSync(descriptor),
+		};
+	} finally {
+		closeSync(descriptor);
 	}
-	return {
-		mode: (stats.mode & 0o111) === 0 ? "100644" : "100755",
-		bytes: readFileSync(absolute),
-	};
 }
 
 /** Encode one unsigned length for unambiguous binary framing. */
