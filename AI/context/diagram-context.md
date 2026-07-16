@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-16T12:44:43Z
+Generated: 2026-07-16T20:47:33Z
 
 ## Table of Contents
 
@@ -724,6 +724,7 @@ graph LR
   node_check_code_quality_debt_cba04f67_104c73f4["check_code_quality_debt_cba04f67"]
   node_check_code_size_9c5efc3a_154124ae["check_code_size_9c5efc3a"]
   node_check_codex_agent_roles_5bb2e89b_c1a9a472["check_codex_agent_roles_5bb2e89b"]
+  node_check_documentation_layer_budgets_cf501f9f_fca339ca["check_documentation_layer_budgets_cf501f9f"]
   node_check_environment_core_2c16213f_a8a456d9["check_environment_core_2c16213f"]
   node_check_git_env_sanitizer_ae3df05c_3f70823d["check_git_env_sanitizer_ae3df05c"]
   node_check_gitbook_readiness_33bdca76_4d8c6b98["check_gitbook_readiness_33bdca76"]
@@ -1194,6 +1195,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_check_code_quality_debt_cba04f67_104c73f4
   ext_node_fs_a15b7d96["node:fs"] --> node_check_code_size_9c5efc3a_154124ae
   ext_node_fs_a15b7d96["node:fs"] --> node_check_codex_agent_roles_5bb2e89b_c1a9a472
+  ext_node_fs_a15b7d96["node:fs"] --> node_check_documentation_layer_budgets_cf501f9f_fca339ca
   ext_node_fs_a15b7d96["node:fs"] --> node_check_environment_core_2c16213f_a8a456d9
   ext_node_fs_a15b7d96["node:fs"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
   ext_node_fs_a15b7d96["node:fs"] --> node_check_gitbook_readiness_33bdca76_4d8c6b98
@@ -1480,6 +1482,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_check_code_quality_debt_cba04f67_104c73f4
   ext_node_path_78811c13["node:path"] --> node_check_code_size_9c5efc3a_154124ae
   ext_node_path_78811c13["node:path"] --> node_check_codex_agent_roles_5bb2e89b_c1a9a472
+  ext_node_path_78811c13["node:path"] --> node_check_documentation_layer_budgets_cf501f9f_fca339ca
   ext_node_path_78811c13["node:path"] --> node_check_environment_core_2c16213f_a8a456d9
   ext_node_path_78811c13["node:path"] --> node_check_git_env_sanitizer_ae3df05c_3f70823d
   ext_node_path_78811c13["node:path"] --> node_check_gitbook_readiness_33bdca76_4d8c6b98
