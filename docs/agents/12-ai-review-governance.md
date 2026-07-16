@@ -13,6 +13,7 @@ This repository enforces an AI-integrated review policy with CodeRabbit as the p
 - [Absolute grounding](#absolute-grounding)
 - [Current repository authority](#current-repository-authority)
 - [Independent validation and compliance](#independent-validation-and-compliance)
+- [Solo-maintainer review evidence](#solo-maintainer-review-evidence)
 - [Configuration standards and governance](#configuration-standards-and-governance)
 - [Branch protection expectations](#branch-protection-expectations)
 - [Feedback loops and calibration](#feedback-loops-and-calibration)
@@ -46,6 +47,25 @@ All automated review usage in this repository must align with this policy and li
 - For this repository, that signal is expected to come from CodeRabbit plus the existing Codex review process unless an explicit waiver is recorded.
 - Any review workflow that runs `harness linear*` commands must provide `LINEAR_API_KEY` in the runtime environment (or pass `--token` explicitly).
 - If Linear secrets are stored in `~/.codex/.env`, load them into the active shell/session before running `harness linear*` commands, and use `harness symphony-check` when validating discovery behavior.
+
+## Solo-maintainer review evidence
+
+`coding-harness` is operated by a solo maintainer. Do not convert independent
+review into an unavailable second-human approval requirement. The executable
+contract uses `reviewPolicy.approvalMode: "automated_review"` and names both
+`coderabbitai[bot]` and `chatgpt-codex-connector[bot]` as required automated
+reviewers.
+
+Automated review evidence is valid only when every configured reviewer has
+submitted a `COMMENTED` or `APPROVED` review for the exact PR head SHA, the
+configured review check and required checks pass for that SHA, and all review
+conversations are resolved. A green check from an older SHA, a review summary,
+the PR author's own comments, or an unresolved automated finding does not
+satisfy this mode.
+
+Repositories with an eligible independent human reviewer retain the default
+`reviewPolicy.approvalMode: "human_approval"`. In that mode, the current-SHA
+human approval and reviewer-independence checks still apply.
 
 ## Configuration standards and governance
 

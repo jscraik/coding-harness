@@ -725,6 +725,20 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 						description:
 							"Checks that must pass inside the review gate. Must be a subset of branchProtection.requiredChecks.",
 					},
+					approvalMode: {
+						type: "string",
+						enum: ["human_approval", "automated_review"],
+						description:
+							"Require a current-SHA human approval, or use the configured independent automated review check for solo-maintainer repositories.",
+					},
+					automatedReviewers: {
+						type: "array",
+						minItems: 1,
+						uniqueItems: true,
+						items: { type: "string", minLength: 1 },
+						description:
+							"Reviewer logins that must submit COMMENTED or APPROVED review evidence for the current SHA in automated_review mode.",
+					},
 					enforceReviewerIndependence: {
 						type: "boolean",
 						description: "Reject self-reviews.",

@@ -11,7 +11,9 @@ const scriptPath = resolve(
 	"../../../..",
 	"scripts/write-agent-native-ratchet-report.cjs",
 );
+const PACKET_PRODUCER_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
 
+/** Remove the compatibility command token before forwarding producer arguments. */
 function stripCommandName(args: string[], commandName: string): string[] {
 	return args[0] === commandName ? args.slice(1) : args;
 }
@@ -27,6 +29,7 @@ function runPacketScript(
 	const result = spawnSync(process.execPath, [...baseArgs, ...forwardedArgs], {
 		cwd: process.cwd(),
 		encoding: "utf8",
+		maxBuffer: PACKET_PRODUCER_MAX_BUFFER_BYTES,
 	});
 	if (result.stderr) process.stderr.write(result.stderr);
 	if ((result.status ?? 1) !== 0) {

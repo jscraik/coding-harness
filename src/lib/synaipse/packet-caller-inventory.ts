@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { lstatSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { gitEnvironmentForRepoRoot } from "../runtime/git-environment.js";
 import type { PacketCandidateIdentity } from "./packet-candidate-identity.js";
@@ -307,7 +307,9 @@ export function discoverPacketCallerInventory(
 	const callers = candidatePaths(repoRoot).flatMap((path): PacketCaller[] => {
 		let content: string;
 		try {
-			content = readFileSync(resolve(repoRoot, path), "utf8");
+			const absolutePath = resolve(repoRoot, path);
+			if (lstatSync(absolutePath).isSymbolicLink()) return [];
+			content = readFileSync(absolutePath, "utf8");
 		} catch {
 			return [];
 		}

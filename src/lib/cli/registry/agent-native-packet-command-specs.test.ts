@@ -1,6 +1,12 @@
+import { spawnSync } from "node:child_process";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalizeLegacyPacket } from "../../synaipse/packet-canonicalization.js";
 import { createAgentNativePacketCommandSpecs } from "./agent-native-packet-command-specs.js";
+
+vi.mock("node:child_process", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("node:child_process")>();
+	return { ...actual, spawnSync: vi.fn(actual.spawnSync) };
+});
 
 vi.mock("../../synaipse/packet-canonicalization.js", async (importOriginal) => {
 	const actual =
@@ -18,6 +24,20 @@ afterEach(() => {
 });
 
 describe("agent-native packet command specs", () => {
+	it("allocates a bounded producer buffer above Node's one-megabyte default", () => {
+		const stdout = vi.spyOn(process.stdout, "write").mockReturnValue(true);
+		const spec = createAgentNativePacketCommandSpecs().find(
+			(candidate) => candidate.name === "session-distill",
+		);
+
+		expect(spec?.execute(["session-distill"])).toBe(0);
+		const options = vi.mocked(spawnSync).mock.calls.at(-1)?.[2];
+		expect(options).toEqual(
+			expect.objectContaining({ maxBuffer: 64 * 1024 * 1024 }),
+		);
+		expect(stdout).toHaveBeenCalled();
+	});
+
 	it.each([
 		["agent-native-ratchets", "agent-native-ratchets/v1"],
 		["session-distill", "session-distill/v1"],

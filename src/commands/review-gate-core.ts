@@ -235,6 +235,11 @@ interface ApprovalResult {
 	codingActor?: string;
 }
 
+interface AutomatedReviewResult {
+	passed: boolean;
+	blockers: string[];
+}
+
 interface ReviewerIndependenceResult {
 	passed: boolean;
 	blockers: string[];
@@ -357,6 +362,48 @@ async function evaluateApprovals(
 	};
 }
 
+/** Require each configured automated reviewer to submit evidence on HEAD. */
+async function evaluateAutomatedReviews(
+	client: GitHubClient,
+	prNumber: number,
+	headSha: string,
+	requiredReviewers: string[],
+): Promise<AutomatedReviewResult> {
+	const reviews = await client.listPullRequestReviews(prNumber);
+	const observed = new Set(
+		reviews
+			.filter(
+				(review) =>
+					review.commit_id === headSha &&
+					(review.state === "COMMENTED" || review.state === "APPROVED"),
+			)
+			.map((review) => normalizeBotLogin(review.user?.login))
+			.filter((login): login is string => login !== undefined),
+	);
+	const missing = requiredReviewers
+		.map((reviewer) => normalizeBotLogin(reviewer))
+		.filter((reviewer): reviewer is string => reviewer !== undefined)
+		.filter((reviewer) => !observed.has(reviewer));
+	return missing.length === 0
+		? { passed: true, blockers: [] }
+		: {
+				passed: false,
+				blockers: [
+					`Automated review evidence missing for current HEAD SHA: ${missing.join(", ")}`,
+				],
+			};
+}
+
+/**
+ * Resolve the human coding actor responsible for the current pull-request head.
+ *
+ * @param client - GitHub client used to inspect pull-request commits when available.
+ * @param prNumber - Pull-request number whose head actor is being classified.
+ * @param headSha - Exact pull-request head SHA used to select the current commit.
+ * @param prAuthorLogin - Pull-request author fallback when commit metadata is unavailable.
+ * @param botLogins - Normalized automated actor logins excluded from human attribution.
+ * @returns The normalized human coding actor login, or `undefined` when no human actor can be proven.
+ */
 async function resolveCodingActor(
 	client: GitHubClient,
 	prNumber: number,
@@ -986,6 +1033,11 @@ export async function runReviewGate(
 			checkRunObserved = true;
 
 			if (isCheckRunPassing(checkResult)) {
+				const approvalMode =
+					reviewPolicy.approvalMode ??
+					DEFAULT_REVIEW_POLICY.approvalMode ??
+					"human_approval";
+				const requiresHumanApproval = approvalMode === "human_approval";
 				const enforceReviewerIndependence =
 					reviewPolicy.enforceReviewerIndependence ??
 					DEFAULT_REVIEW_POLICY.enforceReviewerIndependence ??
@@ -1010,29 +1062,39 @@ export async function runReviewGate(
 					(checkName) => !activeReviewGateChecks.has(checkName),
 				);
 				const botLogins = buildBotLoginSet(options.botLogin);
-				// Always enforce that at least one APPROVED review exists for the
-				// current HEAD SHA. enforceReviewerIndependence only controls
-				// whether the approver must be different from the PR author —
-				// it cannot skip the approval requirement itself.
-				const codingActor = await resolveCodingActor(
-					client,
-					options.prNumber,
-					pullRequestHeadSha,
-					pullRequest.user?.login?.trim(),
-					botLogins,
-				);
-				const approvals = await evaluateApprovals(
-					client,
-					options.prNumber,
-					pullRequestHeadSha,
-					codingActor,
-					botLogins,
-					{
-						requireCodingActor: enforceReviewerIndependence,
-					},
-				);
+				const codingActor = requiresHumanApproval
+					? await resolveCodingActor(
+							client,
+							options.prNumber,
+							pullRequestHeadSha,
+							pullRequest.user?.login?.trim(),
+							botLogins,
+						)
+					: undefined;
+				const approvals: ApprovalResult = requiresHumanApproval
+					? await evaluateApprovals(
+							client,
+							options.prNumber,
+							pullRequestHeadSha,
+							codingActor,
+							botLogins,
+							{
+								requireCodingActor: enforceReviewerIndependence,
+							},
+						)
+					: { passed: true, blockers: [], approvers: [] };
+				const automatedReviews = requiresHumanApproval
+					? { passed: true, blockers: [] }
+					: await evaluateAutomatedReviews(
+							client,
+							options.prNumber,
+							pullRequestHeadSha,
+							reviewPolicy.automatedReviewers ?? [],
+						);
 				const independence =
-					enforceReviewerIndependence && approvals.passed
+					requiresHumanApproval &&
+					enforceReviewerIndependence &&
+					approvals.passed
 						? approvals.codingActor
 							? evaluateReviewerIndependence({
 									approvers: approvals.approvers,
@@ -1062,6 +1124,7 @@ export async function runReviewGate(
 				);
 				const additionalBlockers = [
 					...approvals.blockers,
+					...automatedReviews.blockers,
 					...independence.blockers,
 					...threadReadiness.blockers,
 					...requiredCheckBlockers,
@@ -1076,6 +1139,7 @@ export async function runReviewGate(
 							verified:
 								additionalBlockers.length === 0 &&
 								approvals.passed &&
+								automatedReviews.passed &&
 								independence.passed &&
 								threadReadiness.passed,
 							headSha: pullRequestHeadSha,

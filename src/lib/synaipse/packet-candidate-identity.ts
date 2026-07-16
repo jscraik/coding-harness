@@ -17,12 +17,15 @@ export interface PacketCandidateIdentity {
 	candidatePathCount: number;
 }
 
+const GIT_OBSERVATION_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
+
 /** Run one bounded Git observation while preserving raw output bytes. */
 function gitBytes(repoRoot: string, args: string[]): Buffer {
 	return execFileSync("git", args, {
 		cwd: repoRoot,
 		env: gitEnvironmentForRepoRoot(),
 		encoding: "buffer",
+		maxBuffer: GIT_OBSERVATION_MAX_BUFFER_BYTES,
 		stdio: ["ignore", "pipe", "ignore"],
 		timeout: 10_000,
 	});
@@ -40,18 +43,43 @@ function splitNul(output: Buffer): Buffer[] {
 	return paths;
 }
 
-/** Return the sorted, byte-exact changed and untracked candidate path set. */
+/** Return the sorted, byte-exact staged, unstaged, and untracked path set. */
 function candidatePaths(repoRoot: string): Buffer[] {
-	const changed = splitNul(
-		gitBytes(repoRoot, ["diff", "--name-only", "--no-renames", "-z", "HEAD"]),
+	const unstaged = splitNul(
+		gitBytes(repoRoot, ["diff", "--name-only", "--no-renames", "-z"]),
+	);
+	const staged = splitNul(
+		gitBytes(repoRoot, [
+			"diff",
+			"--cached",
+			"--name-only",
+			"--no-renames",
+			"-z",
+			"HEAD",
+		]),
 	);
 	const untracked = splitNul(
 		gitBytes(repoRoot, ["ls-files", "--others", "--exclude-standard", "-z"]),
 	);
 	const unique = new Map(
-		[...changed, ...untracked].map((path) => [path.toString("hex"), path]),
+		[...unstaged, ...staged, ...untracked].map((path) => [
+			path.toString("hex"),
+			path,
+		]),
 	);
 	return [...unique.values()].sort(Buffer.compare);
+}
+
+/** Return the exact staged patch so index-only bytes and modes are bound. */
+function stagedPatch(repoRoot: string): Buffer {
+	return gitBytes(repoRoot, [
+		"diff",
+		"--cached",
+		"--binary",
+		"--full-index",
+		"--no-renames",
+		"HEAD",
+	]);
 }
 
 /** Join a repository root and Git path without decoding the path bytes. */
@@ -119,9 +147,12 @@ export function observePacketCandidateIdentity(
 		);
 	}
 	const paths = candidatePaths(repoRoot);
+	const indexPatch = stagedPatch(repoRoot);
 	const digest = createHash("sha256")
-		.update("packet-candidate-identity/v2\0")
-		.update(Buffer.from(checkoutHeadSha, "ascii"));
+		.update("packet-candidate-identity/v3\0")
+		.update(Buffer.from(checkoutHeadSha, "ascii"))
+		.update(lengthFrame(indexPatch.length))
+		.update(indexPatch);
 	for (const path of paths) {
 		const entry = candidateEntry(repoRoot, path);
 		digest

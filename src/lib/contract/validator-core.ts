@@ -711,6 +711,30 @@ function isValidToolingPolicy(value: unknown): value is ToolingPolicy {
 	);
 }
 
+/** Validate the approval mode and its optional automated reviewer set. */
+function hasValidReviewEvidenceConfiguration(
+	policy: Record<string, unknown>,
+): boolean {
+	if (
+		policy.approvalMode !== undefined &&
+		policy.approvalMode !== "human_approval" &&
+		policy.approvalMode !== "automated_review"
+	) {
+		return false;
+	}
+	if (policy.automatedReviewers === undefined) {
+		return policy.approvalMode !== "automated_review";
+	}
+	return (
+		Array.isArray(policy.automatedReviewers) &&
+		policy.automatedReviewers.length > 0 &&
+		policy.automatedReviewers.every(
+			(reviewer) => typeof reviewer === "string" && reviewer.trim().length > 0,
+		) &&
+		new Set(policy.automatedReviewers).size === policy.automatedReviewers.length
+	);
+}
+
 /**
  * Determines whether a value conforms to the expected ReviewPolicy shape.
  *
@@ -729,6 +753,8 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 				"timeoutSeconds",
 				"timeoutAction",
 				"requiredChecks",
+				"approvalMode",
+				"automatedReviewers",
 				"enforceReviewerIndependence",
 				"requireReviewContext",
 				"reviewContextPath",
@@ -757,6 +783,9 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 		if (!isValidRequiredChecks(policy.requiredChecks)) {
 			return false;
 		}
+	}
+	if (!hasValidReviewEvidenceConfiguration(policy)) {
+		return false;
 	}
 
 	// Validate enforceReviewerIndependence (optional)
@@ -2307,9 +2336,9 @@ export function validateContract(
 				code: ValidationErrorCode.INVALID_VALUE,
 				path: "reviewPolicy",
 				message:
-					"reviewPolicy must have timeoutSeconds (positive integer), timeoutAction ('fail' | 'warn'), optional requiredChecks (string array), and optional enforceReviewerIndependence (boolean)",
+					"reviewPolicy must have timeoutSeconds (positive integer), timeoutAction ('fail' | 'warn'), optional requiredChecks (string array), optional approvalMode ('human_approval' | 'automated_review'), automatedReviewers when automated review is selected, and optional enforceReviewerIndependence (boolean)",
 				expected:
-					"{ timeoutSeconds: 600, timeoutAction: 'fail' | 'warn', requiredChecks?: string[], enforceReviewerIndependence?: boolean }",
+					"{ timeoutSeconds: 600, timeoutAction: 'fail' | 'warn', requiredChecks?: string[], approvalMode?: 'human_approval' | 'automated_review', automatedReviewers?: string[], enforceReviewerIndependence?: boolean }",
 				received: JSON.stringify(obj.reviewPolicy),
 				fix: "Ensure reviewPolicy has valid timeoutSeconds and timeoutAction",
 			});

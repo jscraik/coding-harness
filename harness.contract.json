@@ -169,6 +169,8 @@
 		"timeoutSeconds": 600,
 		"timeoutAction": "fail",
 		"requiredChecks": ["security-scan"],
+		"approvalMode": "automated_review",
+		"automatedReviewers": ["coderabbitai[bot]", "chatgpt-codex-connector[bot]"],
 		"enforceReviewerIndependence": true,
 		"requireReviewContext": false,
 		"reviewContextPath": "artifacts/review-context/pr-context.json",

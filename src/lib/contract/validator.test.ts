@@ -875,6 +875,22 @@ describe("validateContract", () => {
 			expect(result.success).toBe(true);
 		});
 
+		it("accepts automated review evidence for solo-maintainer repositories", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					approvalMode: "automated_review",
+					automatedReviewers: [
+						"coderabbitai[bot]",
+						"chatgpt-codex-connector[bot]",
+					],
+				},
+			});
+			expect(result.success).toBe(true);
+		});
+
 		it("rejects reviewPolicy when requiredChecks is not an array", () => {
 			const result = validateContract({
 				version: "1.0",
@@ -895,6 +911,32 @@ describe("validateContract", () => {
 					timeoutSeconds: 600,
 					timeoutAction: "fail",
 					enforceReviewerIndependence: "no",
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("reviewPolicy");
+		});
+
+		it("rejects an unknown review approval mode", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					approvalMode: "solo_bypass",
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("reviewPolicy");
+		});
+
+		it("rejects automated review mode without named reviewers", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					approvalMode: "automated_review",
 				},
 			});
 			expect(result.success).toBe(false);
