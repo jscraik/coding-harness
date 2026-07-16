@@ -196,6 +196,25 @@ describe("codex-preflight Local Memory legacy routing", () => {
 		});
 	});
 
+	it("rejects Harness runner isolation in CI under optional mode", () => {
+		const result = runPreflight(["--stack", "auto", "--mode", "optional"], "", {
+			ci: true,
+			skipHarnessRunners: true,
+		});
+
+		expectBehavior({
+			given: "Harness runner isolation under CI with optional Local Memory",
+			should: "fail before optional-mode normalization can hide the bypass",
+			actual: {
+				status: result.status,
+				outputIncludesAuthorizationError: combinedOutput(result).includes(
+					"is not allowed in CI",
+				),
+			},
+			expected: { status: 2, outputIncludesAuthorizationError: true },
+		});
+	});
+
 	it("fails closed for legacy positional mode by default", () => {
 		const result = runPreflight(
 			[repoRootName, "git,bash", "CODESTYLE.md"],

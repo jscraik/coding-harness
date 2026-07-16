@@ -941,6 +941,17 @@ main() {
 	echo "git branch: ${branch_name:-HEAD}"
 	echo "clean?: $(workspace_git status --porcelain -- . | wc -l | tr -d ' ') changes"
 
+	if [[ "${CODEX_PREFLIGHT_TEST_SKIP_HARNESS_RUNNERS:-}" == '1' ]]; then
+		if [[ "${CODEX_PREFLIGHT_ENABLE_TEST_OVERRIDES:-}" != '1' ]]; then
+			log_err 'CODEX_PREFLIGHT_TEST_SKIP_HARNESS_RUNNERS requires CODEX_PREFLIGHT_ENABLE_TEST_OVERRIDES=1'
+			exit 2
+		fi
+		if [[ -n "${CI:-}" ]]; then
+			log_err 'CODEX_PREFLIGHT_TEST_SKIP_HARNESS_RUNNERS is not allowed in CI'
+			exit 2
+		fi
+	fi
+
 	if [[ "${local_memory_mode}" != 'off' ]]; then
 		if ! preflight_local_memory_gold; then
 			if [[ "${local_memory_mode}" == 'required' ]]; then
