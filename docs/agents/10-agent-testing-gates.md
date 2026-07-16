@@ -161,7 +161,9 @@ Aggregates the repo baseline contract for release-quality confidence:
 `pnpm-lock.yaml` to npm's bulk advisory endpoint and fails closed when the
 registry response is unavailable or malformed. Scoped dependencies must also be
 admitted by `scripts/npm-audit-public-scopes.json`; unknown scopes and packages
-resolved from another registry origin stop before any request is sent.
+resolved from another registry origin stop before any request is sent. For
+integrity-only lockfile entries, the reviewed package manifest must explicitly
+bind the approved registry origin as provenance evidence.
 
 ## Failure policy
 

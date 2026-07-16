@@ -30,8 +30,9 @@ This repository follows conservative defaults:
 - Preserve existing dependency and execution boundaries (`pnpm` + lockfile-driven installs).
 - Route dependency vulnerability checks through `pnpm run audit`. The governed
   bulk-advisory wrapper must structurally account for every lockfile package,
-  reject unapproved registry origins and redirects before sending package
-  identities, and sanitize remote advisory fields before logging them.
+  validate the approved request origin before sending package identities,
+  refuse redirects without following them, and sanitize remote advisory fields
+  before logging them.
 - Codex environment setup should use non-destructive tool resolution (`pnpm` direct, Homebrew path fallback, then `corepack`) and fail closed on missing baseline tools instead of mutating global installs implicitly.
 - Treat the repo-root `CODESTYLE.md` path plus `scripts/validate-codestyle.sh` as governed contract surfaces: if either drifts, readiness and closeout claims must fail closed.
 - Treat `scripts/check-codestyle-parity.sh` as the required code-style integrity gate for `codestyle/` and `codestyle/CHECKSUMS.sha256`; parity drift must block readiness.

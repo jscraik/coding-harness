@@ -4,9 +4,16 @@ import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import process from "node:process";
-import { parse } from "yaml";
+import {
+	assertPackageManifestRegistry,
+	classifiedIdentity,
+	DEFAULT_REGISTRY,
+	hasPackageManifestShape,
+	packagesMapping,
+	registryUrl,
+} from "./lib/audit-pnpm-lock-policy.mjs";
+export { packageIdentity } from "./lib/audit-pnpm-lock-policy.mjs";
 
-const DEFAULT_REGISTRY = "https://registry.npmjs.org/";
 const DEFAULT_SCOPE_POLICY = "scripts/npm-audit-public-scopes.json";
 const DEFAULT_PACKAGE_MANIFEST =
 	"scripts/npm-audit-public-package-manifest.json";
@@ -19,9 +26,6 @@ const SEVERITY_ORDER = new Map([
 ]);
 const PACKAGE_NAME =
 	/^(?:@[A-Za-z0-9][A-Za-z0-9._-]*\/)?[A-Za-z0-9][A-Za-z0-9._-]*$/;
-const VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
-const LOCAL_PACKAGE_KEY = /^(?:file|link|workspace):/;
-const REMOTE_PACKAGE_KEY = /^(?:git|github|https?):/;
 const UNSAFE_TEXT_CHARACTER = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u;
 
 function parseArguments(argv) {
@@ -60,124 +64,16 @@ function parseArguments(argv) {
 	return { auditLevel, lockfile, packageManifest, scopePolicy };
 }
 
-function packageIdentity(lockfileKey) {
-	const peerContextIndex = lockfileKey.indexOf("(");
-	const identity =
-		peerContextIndex === -1
-			? lockfileKey
-			: lockfileKey.slice(0, peerContextIndex);
-	const separator = identity.lastIndexOf("@");
-	if (separator <= 0) return null;
-	const name = identity.slice(0, separator);
-	const version = identity.slice(separator + 1);
-	if (!PACKAGE_NAME.test(name) || !VERSION.test(version)) return null;
-	return { name, version };
-}
-
-function registryUrl(value) {
-	const registry = new URL(value);
-	const defaultRegistry = new URL(DEFAULT_REGISTRY);
-	const loopbackTestEndpoint =
-		process.env.HARNESS_AUDIT_ALLOW_HTTP_FOR_TESTS === "1" &&
-		(registry.hostname === "127.0.0.1" || registry.hostname === "localhost");
-	if (registry.protocol !== "https:") {
-		if (!loopbackTestEndpoint) throw new Error("audit registry must use HTTPS");
-	}
-	if (registry.username || registry.password) {
-		throw new Error("audit registry URL must not contain credentials");
-	}
-	if (!loopbackTestEndpoint && registry.origin !== defaultRegistry.origin) {
-		throw new Error("audit registry origin is not approved");
-	}
-	return registry;
-}
-
-function packageResolution(packageName, metadata) {
-	if (
-		metadata === null ||
-		typeof metadata !== "object" ||
-		Array.isArray(metadata)
-	) {
-		throw new Error(`lockfile metadata for ${packageName} must be an object`);
-	}
-	const resolution = metadata.resolution;
-	if (
-		resolution === null ||
-		typeof resolution !== "object" ||
-		Array.isArray(resolution)
-	) {
-		throw new Error(`lockfile resolution for ${packageName} is missing`);
-	}
-	return resolution;
-}
-
-function assertRegistryProvenance(packageName, metadata, registry) {
-	const resolution = packageResolution(packageName, metadata);
-	if (typeof resolution.tarball === "string") {
-		const tarball = registryUrl(resolution.tarball);
-		if (tarball.origin !== registry.origin) {
-			throw new Error(
-				`lockfile package ${packageName} belongs to an unapproved registry origin`,
-			);
-		}
-		return;
-	}
-	if (
-		typeof resolution.integrity !== "string" ||
-		resolution.integrity.length === 0
-	) {
-		throw new Error(
-			`lockfile package ${packageName} has no registry provenance evidence`,
-		);
-	}
-}
-
-function packageScope(packageName) {
-	return packageName.startsWith("@") ? packageName.split("/")[0] : null;
-}
-
-function packagesMapping(lockfileText) {
-	const document = parse(lockfileText);
-	if (
-		document === null ||
-		typeof document !== "object" ||
-		Array.isArray(document) ||
-		document.packages === null ||
-		typeof document.packages !== "object" ||
-		Array.isArray(document.packages)
-	) {
-		throw new Error("pnpm lockfile has no packages mapping");
-	}
-	return document.packages;
-}
-
-function classifiedIdentity(lockfileKey, metadata, approvedScopes, registry) {
-	const identity = packageIdentity(lockfileKey);
-	if (!identity) {
-		if (LOCAL_PACKAGE_KEY.test(lockfileKey)) return null;
-		if (REMOTE_PACKAGE_KEY.test(lockfileKey)) {
-			throw new Error(
-				`remote pnpm lockfile package is not auditable: ${lockfileKey}`,
-			);
-		}
-		throw new Error(`unclassifiable pnpm lockfile package key: ${lockfileKey}`);
-	}
-	const scope = packageScope(identity.name);
-	if (scope && !approvedScopes.has(scope)) {
-		throw new Error(
-			`scoped package ${identity.name} is not approved for the audit registry`,
-		);
-	}
-	assertRegistryProvenance(identity.name, metadata, registry);
-	return identity;
-}
-
 export function buildBulkPayload(
 	lockfileText,
 	{ allowedScopes = [], packageManifest, registry = DEFAULT_REGISTRY } = {},
 ) {
 	const approvedScopes = new Set(allowedScopes);
 	const approvedRegistry = registryUrl(registry);
+	const manifestRegistryApproved = assertPackageManifestRegistry(
+		packageManifest,
+		approvedRegistry,
+	);
 	const versionsByName = new Map();
 	for (const [lockfileKey, metadata] of Object.entries(
 		packagesMapping(lockfileText),
@@ -187,6 +83,7 @@ export function buildBulkPayload(
 			metadata,
 			approvedScopes,
 			approvedRegistry,
+			manifestRegistryApproved,
 		);
 		if (!identity) continue;
 		const versions = versionsByName.get(identity.name) ?? new Set();
@@ -201,15 +98,6 @@ export function buildBulkPayload(
 		[...versionsByName.entries()]
 			.sort(([left], [right]) => left.localeCompare(right))
 			.map(([name, versions]) => [name, [...versions].sort()]),
-	);
-}
-
-function hasPackageManifestShape(manifest) {
-	return (
-		manifest !== null &&
-		typeof manifest === "object" &&
-		!Array.isArray(manifest) &&
-		manifest.algorithm === "sha256"
 	);
 }
 

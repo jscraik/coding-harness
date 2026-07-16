@@ -27,7 +27,7 @@ export function renderScriptCommand(
 		return `npm run ${script}`;
 	}
 	if (packageManager === "pnpm" && script === "audit") {
-		return "pnpm run audit";
+		return `node -e 'const p=require("./package.json");if(typeof p.scripts?.audit!=="string"){throw new Error("package.json scripts.audit is required")}' && pnpm run audit`;
 	}
 	return `${packageManager} ${script}`;
 }

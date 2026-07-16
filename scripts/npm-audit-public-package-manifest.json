@@ -1,5 +1,6 @@
 {
 	"algorithm": "sha256",
+	"registry_origin": "https://registry.npmjs.org",
 	"package_count": 468,
 	"digest": "sha256:23730dfff6a8f213bbcafc5031c2197fa983b686dc4dcfa3ca2fb01bffd68461"
 }

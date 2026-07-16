@@ -5,15 +5,22 @@ export interface BulkAdvisory {
 	url: string;
 }
 
+export interface AuditPackageManifest {
+	algorithm: "sha256";
+	package_count: number;
+	digest: `sha256:${string}`;
+	registry_origin: string;
+}
+
+export function packageIdentity(
+	lockfileKey: string,
+): { name: string; version: string } | null;
+
 export function buildBulkPayload(
 	lockfileText: string,
 	options?: {
 		allowedScopes?: string[];
-		packageManifest: {
-			algorithm: "sha256";
-			package_count: number;
-			digest: `sha256:${string}`;
-		};
+		packageManifest: unknown;
 		registry?: string;
 	},
 ): Record<string, string[]>;

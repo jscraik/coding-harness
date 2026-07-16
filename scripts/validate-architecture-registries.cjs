@@ -3,6 +3,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const { findDirectPnpmAudit } = require("./lib/direct-pnpm-audit.cjs");
 
 const root = process.cwd();
 const registries = [
@@ -91,6 +92,42 @@ function sameStringSet(left, right) {
 	return true;
 }
 
+function markdownFilesUnder(relativeDirectory) {
+	const directory = path.join(root, relativeDirectory);
+	if (!fs.existsSync(directory)) return [];
+	return fs
+		.readdirSync(directory, { recursive: true, withFileTypes: true })
+		.filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+		.map((entry) =>
+			path.relative(root, path.join(entry.parentPath, entry.name)),
+		);
+}
+
+function auditGuidancePaths() {
+	return [
+		"AGENTS.md",
+		"CODESTYLE.md",
+		"README.md",
+		"SECURITY.md",
+		"src/templates/CODESTYLE.md",
+		"docs/ai-assistant-security-policy.md",
+		"docs/examples/trust-artifacts/run-record.example.json",
+		...markdownFilesUnder("codestyle"),
+		...markdownFilesUnder("src/templates/codestyle"),
+		...markdownFilesUnder("docs/agents"),
+		...markdownFilesUnder("docs/automations"),
+		...markdownFilesUnder("docs/security"),
+	];
+}
+
+function validateNoDirectPnpmAudit(relativePath, text, violations) {
+	if (findDirectPnpmAudit(text).length === 0) return;
+	violations.push({
+		file: relativePath,
+		message: "audit guidance must use pnpm run audit",
+	});
+}
+
 function validateAuditCommandSurfaces(violations) {
 	const makefile = fs.readFileSync(path.join(root, "Makefile"), "utf8");
 	const auditTarget =
@@ -105,7 +142,7 @@ function validateAuditCommandSurfaces(violations) {
 	const codingPolicy = parseJson("coding-policy.json", violations);
 	for (const module of codingPolicy?.policyModules ?? []) {
 		for (const command of module.requiredGates ?? []) {
-			if (command === "pnpm audit") {
+			if (findDirectPnpmAudit(command).length > 0) {
 				violations.push({
 					file: "coding-policy.json",
 					message: `${module.id}.requiredGates must use pnpm run audit`,
@@ -114,19 +151,9 @@ function validateAuditCommandSurfaces(violations) {
 		}
 	}
 
-	for (const relativePath of [
-		"SECURITY.md",
-		"docs/ai-assistant-security-policy.md",
-		"docs/automations/jsc-249-phased-friction-evidence-work.md",
-		"docs/examples/trust-artifacts/run-record.example.json",
-	]) {
+	for (const relativePath of new Set(auditGuidancePaths())) {
 		const text = fs.readFileSync(path.join(root, relativePath), "utf8");
-		if (/(^|[^\w])pnpm\s+audit(?:\s|$)/m.test(text)) {
-			violations.push({
-				file: relativePath,
-				message: "audit guidance must use pnpm run audit",
-			});
-		}
+		validateNoDirectPnpmAudit(relativePath, text, violations);
 	}
 }
 

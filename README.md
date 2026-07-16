@@ -398,7 +398,9 @@ Dependency validation uses `pnpm run audit`, which derives exact package
 versions from `pnpm-lock.yaml` and queries npm's bulk advisory endpoint. The
 checked-in `scripts/npm-audit-public-scopes.json` policy must explicitly admit
 each scoped dependency before its identity can be sent to the public registry.
-The gate fails closed when the registry response is unavailable or malformed.
+The reviewed package manifest also binds integrity-only lockfile entries to the
+approved npm registry origin. The gate fails closed when the registry response
+is unavailable or malformed.
 
 PR throughput changes should keep expensive and static validation lanes
 separate without weakening the proof contract: `pnpm test:ci` owns the full

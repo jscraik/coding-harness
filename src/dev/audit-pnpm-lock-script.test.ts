@@ -5,9 +5,13 @@ import {
 	blockingAdvisories,
 	buildBulkPayload,
 	fetchBulkAdvisories,
+	packageIdentity,
 	validateResponse,
 } from "../../scripts/audit-pnpm-lock.mjs";
-import type { BulkAdvisory } from "../../scripts/audit-pnpm-lock.mjs";
+import type {
+	AuditPackageManifest,
+	BulkAdvisory,
+} from "../../scripts/audit-pnpm-lock.mjs";
 
 const LOCKFILE = `lockfileVersion: '9.0'
 
@@ -28,10 +32,55 @@ snapshots:
 
 const TEST_PACKAGE_MANIFEST = {
 	algorithm: "sha256" as const,
+	registry_origin: "https://registry.npmjs.org",
 	package_count: 3,
 	digest:
 		"sha256:ee1919357fbcec135d7618f9c33bca4387e5e9d3b9f7bb0e0f15049fc935d29a" as const,
 };
+
+function parseStringArray(value: unknown, label: string): string[] {
+	if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
+		throw new Error(`${label} must be a string array`);
+	}
+	return value;
+}
+
+function isAuditPackageManifest(value: unknown): value is AuditPackageManifest {
+	return (
+		value !== null &&
+		typeof value === "object" &&
+		"algorithm" in value &&
+		value.algorithm === "sha256" &&
+		"registry_origin" in value &&
+		typeof value.registry_origin === "string" &&
+		"package_count" in value &&
+		Number.isSafeInteger(value.package_count) &&
+		"digest" in value &&
+		typeof value.digest === "string" &&
+		/^sha256:[0-9a-f]{64}$/.test(value.digest)
+	);
+}
+
+function parseAuditPackageManifest(value: unknown): AuditPackageManifest {
+	if (!isAuditPackageManifest(value)) {
+		throw new Error("test audit package manifest is malformed");
+	}
+	return value;
+}
+
+function packagesMappingFromDocument(value: unknown): Record<string, unknown> {
+	if (
+		value === null ||
+		typeof value !== "object" ||
+		!("packages" in value) ||
+		value.packages === null ||
+		typeof value.packages !== "object" ||
+		Array.isArray(value.packages)
+	) {
+		throw new Error("test lockfile has no packages mapping");
+	}
+	return Object.fromEntries(Object.entries(value.packages));
+}
 
 const TEST_OPTIONS = {
 	allowedScopes: ["@scope"],
@@ -70,15 +119,16 @@ describe("pnpm bulk audit script", () => {
 
 	it("classifies every package entry in the repository lockfile", () => {
 		const lockfileText = readFileSync("pnpm-lock.yaml", "utf8");
-		const policy = JSON.parse(
-			readFileSync("scripts/npm-audit-public-scopes.json", "utf8"),
-		) as string[];
-		const packageManifest = JSON.parse(
-			readFileSync("scripts/npm-audit-public-package-manifest.json", "utf8"),
-		) as typeof TEST_PACKAGE_MANIFEST;
-		const document = parse(lockfileText) as {
-			packages: Record<string, unknown>;
-		};
+		const policy = parseStringArray(
+			JSON.parse(readFileSync("scripts/npm-audit-public-scopes.json", "utf8")),
+			"audit scope policy",
+		);
+		const packageManifest = parseAuditPackageManifest(
+			JSON.parse(
+				readFileSync("scripts/npm-audit-public-package-manifest.json", "utf8"),
+			),
+		);
+		const packages = packagesMappingFromDocument(parse(lockfileText));
 		const payload = buildBulkPayload(lockfileText, {
 			allowedScopes: policy,
 			packageManifest,
@@ -87,14 +137,55 @@ describe("pnpm bulk audit script", () => {
 			(count, versions) => count + versions.length,
 			0,
 		);
+		const canonicalIdentities = new Set(
+			Object.keys(packages)
+				.map((lockfileKey) => packageIdentity(lockfileKey))
+				.filter((identity) => identity !== null)
+				.map((identity) => `${identity.name}@${identity.version}`),
+		);
 
-		expect(submittedVersions).toBe(Object.keys(document.packages).length);
+		expect(submittedVersions).toBe(canonicalIdentities.size);
+	});
+
+	it("deduplicates peer-context lockfile keys by package name and version", () => {
+		const lockfile = `lockfileVersion: '9.0'
+packages:
+  plain@1.2.3(peer-a@1.0.0):
+    resolution: {integrity: sha512-example}
+  plain@1.2.3(peer-b@2.0.0):
+    resolution: {integrity: sha512-example}
+`;
+		const packageManifest: AuditPackageManifest = {
+			algorithm: "sha256",
+			registry_origin: "https://registry.npmjs.org",
+			package_count: 1,
+			digest:
+				"sha256:a116c9ed46d6207734a43317d30fd88f52ac8634c37d904bbf4e41d865f90475",
+		};
+
+		expect(buildBulkPayload(lockfile, { packageManifest })).toEqual({
+			plain: ["1.2.3"],
+		});
+	});
+
+	it("requires an explicit manifest registry signal for integrity-only entries", () => {
+		const legacyManifest = {
+			algorithm: "sha256",
+			package_count: 3,
+			digest: TEST_PACKAGE_MANIFEST.digest,
+		};
+		expect(() =>
+			buildBulkPayload(LOCKFILE, {
+				allowedScopes: ["@scope"],
+				packageManifest: legacyManifest,
+			}),
+		).toThrow("audit package manifest is malformed");
 	});
 
 	it("fails closed on unknown scoped packages before network construction", () => {
-		expect(() => buildBulkPayload(LOCKFILE)).toThrow(
-			"scoped package @scope/pkg is not approved",
-		);
+		expect(() =>
+			buildBulkPayload(LOCKFILE, { packageManifest: TEST_PACKAGE_MANIFEST }),
+		).toThrow("scoped package @scope/pkg is not approved");
 	});
 
 	it("fails closed when lockfile package identities drift from the reviewed manifest", () => {
@@ -153,9 +244,11 @@ packages:
   plain@1.2.3:
     resolution: {integrity: sha512-example}
 `;
-		expect(() => buildBulkPayload(remoteLockfile)).toThrow(
-			"remote pnpm lockfile package is not auditable",
-		);
+		expect(() =>
+			buildBulkPayload(remoteLockfile, {
+				packageManifest: TEST_PACKAGE_MANIFEST,
+			}),
+		).toThrow("remote pnpm lockfile package is not auditable");
 	});
 
 	it("fails closed on unclassifiable package entries", () => {
@@ -164,9 +257,11 @@ packages:
   malformed-entry:
     resolution: {integrity: sha512-example}
 `;
-		expect(() => buildBulkPayload(malformedLockfile)).toThrow(
-			"unclassifiable pnpm lockfile package key",
-		);
+		expect(() =>
+			buildBulkPayload(malformedLockfile, {
+				packageManifest: TEST_PACKAGE_MANIFEST,
+			}),
+		).toThrow("unclassifiable pnpm lockfile package key");
 	});
 
 	it("blocks returned advisories at the configured severity", () => {

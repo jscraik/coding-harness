@@ -54,7 +54,9 @@ thin and delegate into this deep module.
   examples remain runnable after `harness init`.
 - Generated pnpm audit commands must call `pnpm run audit`, preserving the
   repository-owned transport and scope-policy guard instead of dispatching the
-  pnpm built-in audit client directly.
+  pnpm built-in audit client directly. Generated commands first require a
+  declared `package.json > scripts.audit` entry and fail with an actionable
+  error when that repository-owned transport is absent.
 - Generated environment checks must stay aligned with the repo runtime contract:
   Python and uv remain preflight dependencies, while Ralph is not required for
   `coding-harness` or downstream scaffold execution.
