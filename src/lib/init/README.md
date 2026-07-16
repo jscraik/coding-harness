@@ -52,6 +52,9 @@ thin and delegate into this deep module.
   `coding-policy:validate`. Generated docs should point cold agents at these
   package scripts instead of raw validator internals so downstream command
   examples remain runnable after `harness init`.
+- Generated pnpm audit commands must call `pnpm run audit`, preserving the
+  repository-owned transport and scope-policy guard instead of dispatching the
+  pnpm built-in audit client directly.
 - Generated environment checks must stay aligned with the repo runtime contract:
   Python and uv remain preflight dependencies, while Ralph is not required for
   `coding-harness` or downstream scaffold execution.

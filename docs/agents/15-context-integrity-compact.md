@@ -336,7 +336,7 @@ for each checkpoint transition row:
 ## Validation Closure Checklist
 
 ```bash
-pnpm lint && pnpm typecheck && pnpm test && pnpm audit && pnpm check
+pnpm lint && pnpm typecheck && pnpm test && pnpm run audit && pnpm check
 pnpm test:deep
 ```
 

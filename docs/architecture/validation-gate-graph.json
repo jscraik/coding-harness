@@ -183,7 +183,7 @@
 			"proves": "CI-equivalent local test lane passes"
 		},
 		{
-			"command": "pnpm audit",
+			"command": "pnpm run audit",
 			"lane": "dependencies",
 			"owner": "package-manager",
 			"proves": "package-manager dependency audit command completes"

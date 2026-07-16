@@ -26,6 +26,9 @@ export function renderScriptCommand(
 	if (packageManager === "npm") {
 		return `npm run ${script}`;
 	}
+	if (packageManager === "pnpm" && script === "audit") {
+		return "pnpm run audit";
+	}
 	return `${packageManager} ${script}`;
 }
 

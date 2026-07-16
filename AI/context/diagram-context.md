@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-15T18:13:39Z
+Generated: 2026-07-16T11:45:20Z
 
 ## Table of Contents
 
@@ -29,86 +29,18 @@ Generated: 2026-07-15T18:13:39Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `contracts/synaipse-context-catalog.schema.json`
-- `contracts/synaipse-context-ref.schema.json`
-- `contracts/synaipse-state.schema.json`
-- `contracts/synaipse-task-context.schema.json`
 - `package.json`
-- `scripts/refresh-diagram-context.sh`
-- `src/cli.ts`
-- `src/commands/doctor.ts`
-- `src/commands/execution-job.ts`
-- `src/commands/execution-run.ts`
-- `src/commands/fitness.ts`
-- `src/commands/next-decision-meta.ts`
-- `src/commands/next-decisions.ts`
-- `src/commands/next-file-classification-meta.ts`
-- `src/commands/next-file-classification.ts`
-- `src/commands/next-fitness-report.ts`
-- `src/commands/next-operator-local-decision.ts`
-- `src/commands/next-recommendation-decisions.ts`
-- `src/commands/next-runner-inputs.ts`
-- `src/commands/next-runner.ts`
-- `src/commands/next-synaipse-context.ts`
-- `src/commands/next.ts`
-- `src/commands/review-context.ts`
-- `src/lib/agent-readiness/safe-json-artifact-reader.ts`
-- `src/lib/cli/command-registry.ts`
-- `src/lib/cli/registry/builtin-command-specs.ts`
-- `src/lib/cli/registry/command-agent-catalog-rules.ts`
-- `src/lib/cli/registry/command-capabilities.ts`
-- `src/lib/cli/registry/command-capability-rules.ts`
-- `src/lib/cli/registry/command-execution-rules.ts`
-- `src/lib/cli/registry/command-expected-artifacts.ts`
-- `src/lib/cli/registry/command-invocation-effects-execution.ts`
-- `src/lib/cli/registry/command-invocation-effects-job.ts`
-- `src/lib/cli/registry/command-invocation-effects-ui.ts`
-- `src/lib/cli/registry/command-invocation-effects.ts`
-- `src/lib/cli/registry/command-specs-core.ts`
-- `src/lib/cli/registry/command-visibility-rules.ts`
-- `src/lib/execution/execution-job-decoder.ts`
-- `src/lib/execution/execution-job-schema.ts`
-- `src/lib/execution/execution-job.ts`
-- `src/lib/execution/execution-result.ts`
-- `src/lib/execution/execution-run-options.ts`
-- `src/lib/execution/job-conductor-state.ts`
-- `src/lib/execution/job-conductor.ts`
-- `src/lib/execution/job-store.ts`
-- `src/lib/execution/local-coordinator.ts`
-- `src/lib/execution/process-executor.ts`
-- `src/lib/fitness/advisory-artifact-normalizer.ts`
-- `src/lib/fitness/applicability.ts`
-- `src/lib/fitness/artifact-normalizers.ts`
-- `src/lib/fitness/base-lanes.ts`
-- `src/lib/fitness/commands.ts`
-- `src/lib/fitness/coverage.ts`
-- `src/lib/fitness/optional-artifact-normalizers.ts`
-- `src/lib/fitness/report.ts`
-- `src/lib/fitness/types.ts`
-- `src/lib/fitness/validation.ts`
-- `src/lib/learnings/index.ts`
-- `src/lib/learnings/review-context.ts`
-- `src/lib/learnings/review-learning-closeout.ts`
-- `src/lib/session/session-closeout.ts`
-- `src/lib/synaipse/context-contract.ts`
-- `src/lib/synaipse/context-observations.ts`
-- `src/lib/synaipse/context-plane.ts`
-- `src/lib/synaipse/context-privacy.ts`
-- `src/lib/synaipse/context-projection.ts`
-- `src/lib/synaipse/context-provider.ts`
-- `src/lib/synaipse/context-task.ts`
-- `src/lib/synaipse/date-time.ts`
-- `src/lib/synaipse/improvement-case.ts`
-- `src/lib/synaipse/state-contract.ts`
-- `src/lib/synaipse/state-validation.ts`
-- `src/lib/synaipse/state.ts`
-- `src/lib/synaipse/transition-contract.ts`
-- `src/lib/synaipse/transition-recovery-validation.ts`
-- `src/lib/synaipse/transition-time-validation.ts`
-- `src/lib/synaipse/transition-validation.ts`
-- `src/lib/synaipse/transition.ts`
-- `src/lib/testing/README.md`
-- `src/lib/testing/behavior-test-suites.json`
+- `src/templates/CODESTYLE.md`
+- `src/templates/codestyle/05-quality-security-ops.md`
+- `src/templates/codestyle/08-typescript.md`
+- `src/templates/codestyle/09-web.md`
+- `src/templates/codestyle/10-shell-bash-zsh.md`
+- `src/templates/codestyle/11-package-managers-pnpm-npm.md`
+- `src/templates/codestyle/12-swift.md`
+- `src/templates/codestyle/13-git-workflow.md`
+- `src/templates/codestyle/17-testing.md`
+- `src/templates/codestyle/19-development-workflow.md`
+- `src/templates/codestyle/CHECKSUMS.sha256`
 
 ## agent
 
@@ -770,6 +702,7 @@ graph LR
   node_artifact_normalizers_cc0daa9f_95587db6["artifact_normalizers_cc0daa9f"]
   node_artifact_provenance_03b81cbf_d3038614["artifact_provenance_03b81cbf"]
   node_audit_b81f37a0_398f4d93["audit_b81f37a0"]
+  node_audit_pnpm_lock_3bdddae2_660ed5e1["audit_pnpm_lock_3bdddae2"]
   node_authz_core_f714650a_ee0f2e9d["authz_core_f714650a"]
   node_automation_run_22331800_346133c3["automation_run_22331800"]
   node_automation_run_records_e3246015_a281ec3e["automation_run_records_e3246015"]
@@ -1241,6 +1174,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_artifact_normalizers_cc0daa9f_95587db6
   ext_node_fs_a15b7d96["node:fs"] --> node_artifact_provenance_03b81cbf_d3038614
   ext_node_fs_a15b7d96["node:fs"] --> node_audit_b81f37a0_398f4d93
+  ext_node_fs_a15b7d96["node:fs"] --> node_audit_pnpm_lock_3bdddae2_660ed5e1
   ext_node_fs_a15b7d96["node:fs"] --> node_authz_core_f714650a_ee0f2e9d
   ext_node_fs_a15b7d96["node:fs"] --> node_automation_run_records_e3246015_a281ec3e
   ext_node_fs_a15b7d96["node:fs"] --> node_brain_validator_be251832_2e2228e2
@@ -1760,6 +1694,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_write_prompt_context_drift_report_71a4e149_cf46c973
   ext_node_perf_hooks_906292ff["node:perf_hooks"] --> node_performance_overload_c685bfcf_291ef65a
   ext_node_process_00cdf119["node:process"] --> node_args_090772cf_1bac9202
+  ext_node_process_00cdf119["node:process"] --> node_audit_pnpm_lock_3bdddae2_660ed5e1
   ext_node_process_00cdf119["node:process"] --> node_check_20f65c28_48d25399
   ext_node_process_00cdf119["node:process"] --> node_check_boundary_unknown_guards_f66586e1_cce34324
   ext_node_process_00cdf119["node:process"] --> node_check_types_policy_cfbecf01_fb84cd04
@@ -1775,6 +1710,7 @@ graph LR
   ext_node_process_00cdf119["node:process"] --> node_runtime_card_args_2b3d4b28_5cfe029c
   ext_node_readline_bb6096cc["node:readline"] --> node_eject_1_d0ecd4d1_ba72accc
   ext_node_url_d0cb3ad7["node:url"] --> node_agent_native_packet_command_specs_5e921752_9038a743
+  ext_node_url_d0cb3ad7["node:url"] --> node_audit_pnpm_lock_3bdddae2_660ed5e1
   ext_node_url_d0cb3ad7["node:url"] --> node_builtin_command_specs_ac7d392e_b8fd99a0
   ext_node_url_d0cb3ad7["node:url"] --> node_check_node_engine_217689bf_3e5964b2
   ext_node_url_d0cb3ad7["node:url"] --> node_cli_99bb8840_659774ba
@@ -1830,6 +1766,7 @@ graph LR
   ext_typescript_fb9da861["typescript"] --> node_source_outline_1_54a631fa_8582fb07
   ext_vitest_4c9cfa13["vitest"] --> node_expect_behavior_26b3f69f_5d713658
   ext_vitest_4c9cfa13["vitest"] --> node_vitest_e2e_config_4e2a61bc_3efa3f07
+  ext_yaml_c94c088e["yaml"] --> node_audit_pnpm_lock_3bdddae2_660ed5e1
   style ext_better_sqlite3_d7ed8f1a fill:#f59e0b,color:#fff
   style ext_child_process_4845fa97 fill:#f59e0b,color:#fff
   style ext_diff_75a0ee1b fill:#f59e0b,color:#fff
@@ -1859,6 +1796,7 @@ graph LR
   style ext_sqlite_vec_bae73cf2 fill:#f59e0b,color:#fff
   style ext_typescript_fb9da861 fill:#f59e0b,color:#fff
   style ext_vitest_4c9cfa13 fill:#f59e0b,color:#fff
+  style ext_yaml_c94c088e fill:#f59e0b,color:#fff
 
 ```
 
@@ -1930,12 +1868,12 @@ flowchart TD
   env_b77349bf --> resource_tracker_d95b6649
   vitest_e2e_config_4e2a61bc["vitest.e2e.config"]
   resource_tracker_d95b6649 --> vitest_e2e_config_4e2a61bc
+  audit_pnpm_lock_3bdddae2["audit-pnpm-lock"]
+  vitest_e2e_config_4e2a61bc --> audit_pnpm_lock_3bdddae2
   check_architecture_rules_6b7347fd["check-architecture-rules"]
-  vitest_e2e_config_4e2a61bc --> check_architecture_rules_6b7347fd
-  check_behavior_tests_2577f6be["check-behavior-tests"]
-  check_architecture_rules_6b7347fd --> check_behavior_tests_2577f6be
+  audit_pnpm_lock_3bdddae2 --> check_architecture_rules_6b7347fd
   End(["End"])
-  check_behavior_tests_2577f6be --> End
+  check_architecture_rules_6b7347fd --> End
 
 ```
 
@@ -2253,6 +2191,8 @@ flowchart LR
 ```mermaid
 flowchart TD
   Untrusted["Untrusted input"]
+  audit_pnpm_lock_3bdddae2["audit-pnpm-lock"]
+  Untrusted --> audit_pnpm_lock_3bdddae2
   check_harness_audit_tracking_33e6a72e["check-harness-audit-tracking"]
   Untrusted --> check_harness_audit_tracking_33e6a72e
   check_types_policy_cfbecf01["check-types-policy"]
@@ -2331,10 +2271,8 @@ flowchart TD
   Untrusted --> normalise_policy_gate_90229693
   cardinality_ebef8aff["cardinality"]
   Untrusted --> cardinality_ebef8aff
-  diff_budget_1_9f85eb1c["diff-budget"]
-  Untrusted --> diff_budget_1_9f85eb1c
   classDef securityNode fill:#dc2626,color:#fff
-  class check_harness_audit_tracking_33e6a72e,check_types_policy_cfbecf01,validate_audit_references_811f872a,validate_coding_policy_29976175,validate_goal_completion_audit_receipt_100d252c,audit_b81f37a0,evidence_verify_3b73c290,feedback_loop_audit_0ac0ec9d,linear_gate_branch_policy_13c4707c,org_audit_d739e44b,policy_gate_213f7313,tooling_audit_core_328d6a41,tooling_audit_8a8239ff,verify_coderabbit_490b4e71,verify_work_df70ecac,shared_state_policy_edc9c4db,audit_command_spec_5acf0149,evidence_verify_command_spec_e1cbfea2,evidence_verify_options_3505c520,feedback_loop_audit_command_spec_27e599c4,org_audit_command_spec_1a570341,policy_gate_command_spec_71e8726a,tooling_audit_command_spec_e0e57863,verify_coderabbit_command_spec_68cc9ec5,verify_work_command_spec_d6c94ac8,context_compact_policy_3dcaf95d,policy_validators_core_714a3fe7,policy_validators_6682e192,he_gate_trust_policy_b1126dfd,goal_completion_audit_receipt_validation_9d0f4891,goal_completion_audit_receipt_5e4939c3,judge_pm_audit_authority_c311b050,judge_pm_audit_ccd20b35,policy_823412d1,feedback_loop_audit_cli_fd8f38dc,feedback_loop_audit_1_c7be4304,scaffold_security_scan_template_55bc7465,normalise_policy_gate_90229693,cardinality_ebef8aff,diff_budget_1_9f85eb1c securityNode
+  class audit_pnpm_lock_3bdddae2,check_harness_audit_tracking_33e6a72e,check_types_policy_cfbecf01,validate_audit_references_811f872a,validate_coding_policy_29976175,validate_goal_completion_audit_receipt_100d252c,audit_b81f37a0,evidence_verify_3b73c290,feedback_loop_audit_0ac0ec9d,linear_gate_branch_policy_13c4707c,org_audit_d739e44b,policy_gate_213f7313,tooling_audit_core_328d6a41,tooling_audit_8a8239ff,verify_coderabbit_490b4e71,verify_work_df70ecac,shared_state_policy_edc9c4db,audit_command_spec_5acf0149,evidence_verify_command_spec_e1cbfea2,evidence_verify_options_3505c520,feedback_loop_audit_command_spec_27e599c4,org_audit_command_spec_1a570341,policy_gate_command_spec_71e8726a,tooling_audit_command_spec_e0e57863,verify_coderabbit_command_spec_68cc9ec5,verify_work_command_spec_d6c94ac8,context_compact_policy_3dcaf95d,policy_validators_core_714a3fe7,policy_validators_6682e192,he_gate_trust_policy_b1126dfd,goal_completion_audit_receipt_validation_9d0f4891,goal_completion_audit_receipt_5e4939c3,judge_pm_audit_authority_c311b050,judge_pm_audit_ccd20b35,policy_823412d1,feedback_loop_audit_cli_fd8f38dc,feedback_loop_audit_1_c7be4304,scaffold_security_scan_template_55bc7465,normalise_policy_gate_90229693,cardinality_ebef8aff securityNode
 
 ```
 

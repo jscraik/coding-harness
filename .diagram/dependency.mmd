@@ -12,6 +12,7 @@ graph LR
   node_artifact_normalizers_cc0daa9f_95587db6["artifact_normalizers_cc0daa9f"]
   node_artifact_provenance_03b81cbf_d3038614["artifact_provenance_03b81cbf"]
   node_audit_b81f37a0_398f4d93["audit_b81f37a0"]
+  node_audit_pnpm_lock_3bdddae2_660ed5e1["audit_pnpm_lock_3bdddae2"]
   node_authz_core_f714650a_ee0f2e9d["authz_core_f714650a"]
   node_automation_run_22331800_346133c3["automation_run_22331800"]
   node_automation_run_records_e3246015_a281ec3e["automation_run_records_e3246015"]
@@ -483,6 +484,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_artifact_normalizers_cc0daa9f_95587db6
   ext_node_fs_a15b7d96["node:fs"] --> node_artifact_provenance_03b81cbf_d3038614
   ext_node_fs_a15b7d96["node:fs"] --> node_audit_b81f37a0_398f4d93
+  ext_node_fs_a15b7d96["node:fs"] --> node_audit_pnpm_lock_3bdddae2_660ed5e1
   ext_node_fs_a15b7d96["node:fs"] --> node_authz_core_f714650a_ee0f2e9d
   ext_node_fs_a15b7d96["node:fs"] --> node_automation_run_records_e3246015_a281ec3e
   ext_node_fs_a15b7d96["node:fs"] --> node_brain_validator_be251832_2e2228e2
@@ -1002,6 +1004,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_write_prompt_context_drift_report_71a4e149_cf46c973
   ext_node_perf_hooks_906292ff["node:perf_hooks"] --> node_performance_overload_c685bfcf_291ef65a
   ext_node_process_00cdf119["node:process"] --> node_args_090772cf_1bac9202
+  ext_node_process_00cdf119["node:process"] --> node_audit_pnpm_lock_3bdddae2_660ed5e1
   ext_node_process_00cdf119["node:process"] --> node_check_20f65c28_48d25399
   ext_node_process_00cdf119["node:process"] --> node_check_boundary_unknown_guards_f66586e1_cce34324
   ext_node_process_00cdf119["node:process"] --> node_check_types_policy_cfbecf01_fb84cd04
@@ -1017,6 +1020,7 @@ graph LR
   ext_node_process_00cdf119["node:process"] --> node_runtime_card_args_2b3d4b28_5cfe029c
   ext_node_readline_bb6096cc["node:readline"] --> node_eject_1_d0ecd4d1_ba72accc
   ext_node_url_d0cb3ad7["node:url"] --> node_agent_native_packet_command_specs_5e921752_9038a743
+  ext_node_url_d0cb3ad7["node:url"] --> node_audit_pnpm_lock_3bdddae2_660ed5e1
   ext_node_url_d0cb3ad7["node:url"] --> node_builtin_command_specs_ac7d392e_b8fd99a0
   ext_node_url_d0cb3ad7["node:url"] --> node_check_node_engine_217689bf_3e5964b2
   ext_node_url_d0cb3ad7["node:url"] --> node_cli_99bb8840_659774ba
@@ -1072,6 +1076,7 @@ graph LR
   ext_typescript_fb9da861["typescript"] --> node_source_outline_1_54a631fa_8582fb07
   ext_vitest_4c9cfa13["vitest"] --> node_expect_behavior_26b3f69f_5d713658
   ext_vitest_4c9cfa13["vitest"] --> node_vitest_e2e_config_4e2a61bc_3efa3f07
+  ext_yaml_c94c088e["yaml"] --> node_audit_pnpm_lock_3bdddae2_660ed5e1
   style ext_better_sqlite3_d7ed8f1a fill:#f59e0b,color:#fff
   style ext_child_process_4845fa97 fill:#f59e0b,color:#fff
   style ext_diff_75a0ee1b fill:#f59e0b,color:#fff
@@ -1101,3 +1106,4 @@ graph LR
   style ext_sqlite_vec_bae73cf2 fill:#f59e0b,color:#fff
   style ext_typescript_fb9da861 fill:#f59e0b,color:#fff
   style ext_vitest_4c9cfa13 fill:#f59e0b,color:#fff
+  style ext_yaml_c94c088e fill:#f59e0b,color:#fff

@@ -128,6 +128,9 @@ importers:
       vitest:
         specifier: ^4.1.5
         version: 4.1.10(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(tsx@4.23.0)(yaml@2.9.0)
+      yaml:
+        specifier: ^2.9.0
+        version: 2.9.0
 
   tools/source-harness-bin: {}
 

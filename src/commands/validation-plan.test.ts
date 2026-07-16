@@ -103,7 +103,7 @@ describe("runValidationPlanCLI", () => {
 		);
 		expect(result.networkRequired).toEqual([
 			expect.objectContaining({
-				command: "pnpm audit",
+				command: "pnpm run audit",
 				learningIds: expect.arrayContaining([
 					"coderabbit.coding-harness.learning-run-pnpm-audit-when",
 				]),
@@ -158,7 +158,7 @@ describe("runValidationPlanCLI", () => {
 			result.commands.map((entry: { command: string }) => entry.command),
 		).toContain("pnpm test:ci");
 		expect(result.networkRequired).toEqual([
-			expect.objectContaining({ command: "pnpm audit" }),
+			expect.objectContaining({ command: "pnpm run audit" }),
 		]);
 	});
 
@@ -290,7 +290,7 @@ describe("runValidationPlanCLI", () => {
 		);
 	});
 
-	it("redacts learning text in validation reasons and keeps pnpm audit canonical", () => {
+	it("redacts learning text in validation reasons and keeps the audit wrapper canonical", () => {
 		const dir = mkdtempSync(join(tmpdir(), "validation-plan-sensitive-"));
 		cleanup.push(dir);
 		const sourcePath = join(dir, "learnings.csv");
@@ -328,7 +328,7 @@ describe("runValidationPlanCLI", () => {
 		expect(JSON.stringify(result)).not.toContain("supersecret123");
 		expect(JSON.stringify(result)).toContain("[REDACTED]");
 		expect(result.networkRequired).toEqual([
-			expect.objectContaining({ command: "pnpm audit" }),
+			expect.objectContaining({ command: "pnpm run audit" }),
 		]);
 	});
 });

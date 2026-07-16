@@ -12,6 +12,7 @@ describe("scaffold root command templates", () => {
 	it("renders package-manager script commands", () => {
 		expect(renderScriptCommand("npm", "check")).toBe("npm run check");
 		expect(renderScriptCommand("pnpm", "check")).toBe("pnpm check");
+		expect(renderScriptCommand("pnpm", "audit")).toBe("pnpm run audit");
 	});
 
 	it("renders workflow bootstrap install commands", () => {

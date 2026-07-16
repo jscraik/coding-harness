@@ -55,8 +55,10 @@ function aggregatePnpmCommands(commandText) {
 		.split(/\s+&&\s+/)
 		.map((item) => item.trim())
 		.filter((item) => item !== "")) {
-		const match = /^pnpm\s+(?:(?:run)\s+)?([^\s]+)$/.exec(commandTextEntry);
-		if (match) commands.add(`pnpm ${match[1]}`);
+		const match = /^pnpm\s+(?:(run)\s+)?([^\s]+)$/.exec(commandTextEntry);
+		if (match) {
+			commands.add(match[1] ? `pnpm run ${match[2]}` : `pnpm ${match[2]}`);
+		}
 	}
 	return commands;
 }
@@ -77,7 +79,7 @@ function aggregatePnpmCommandsWithOneLevel(commandText, packageScripts = {}) {
 }
 
 function scriptNameForPnpmCommand(command) {
-	const match = /^pnpm\s+([^\s]+)$/.exec(String(command));
+	const match = /^pnpm\s+(?:run\s+)?([^\s]+)$/.exec(String(command));
 	return match?.[1] ?? null;
 }
 

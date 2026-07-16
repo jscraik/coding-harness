@@ -7,9 +7,16 @@ export interface BulkAdvisory {
 
 export function buildBulkPayload(
 	lockfileText: string,
+	options?: {
+		allowedScopes?: string[];
+		registry?: string;
+	},
 ): Record<string, string[]>;
 
-export function validateResponse(value: unknown): BulkAdvisory[];
+export function validateResponse(
+	value: unknown,
+	expectedPackages?: string[] | null,
+): BulkAdvisory[];
 
 export function fetchBulkAdvisories(
 	payload: Record<string, string[]>,
