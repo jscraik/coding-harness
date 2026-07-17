@@ -48,8 +48,12 @@ The TOML boundary now reads defaults only before the first table, rejects
 duplicate or malformed governed root assignments, decodes quoted basic keys
 before duplicate detection, requires complete array-element consumption, and
 parses every inline-table key/value entry. Readiness forwarding detection is
-suffix-independent for `SCRIPT_DIR` targets. Every local hook requires an
-`entry`, and approved `commit-msg` validators must keep `pass_filenames = true`.
+suffix-independent for `SCRIPT_DIR` targets and requires the canonical quoted
+path form so repository paths containing spaces remain safe. Every local hook
+requires an `entry`. Approved `commit-msg` validators may omit
+`pass_filenames`, inheriting Prek's default `true`, but an explicit `false`
+fails closed. Inline tables reject TOML-forbidden trailing commas while arrays
+retain their separate TOML trailing-comma behavior.
 
 Each correction has an assertion-shaped fixture that starts from a compliant
 repository, introduces one invalid configuration, and requires a specific

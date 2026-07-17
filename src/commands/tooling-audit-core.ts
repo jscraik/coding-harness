@@ -272,7 +272,7 @@ function parseReadinessForwardingTarget(
 	}
 
 	const forwardingExecPattern =
-		/^\s*exec\s+bash\s+(?:"(?:\$\{SCRIPT_DIR\}|\$SCRIPT_DIR)\/([A-Za-z0-9._/-]+)"|(?:\$\{SCRIPT_DIR\}|\$SCRIPT_DIR)\/([A-Za-z0-9._/-]+))\s+"\$@"(?:\s+#.*)?\s*$/;
+		/^\s*exec\s+bash\s+"(?:\$\{SCRIPT_DIR\}|\$SCRIPT_DIR)\/([A-Za-z0-9._/-]+)"\s+"\$@"(?:\s+#.*)?\s*$/;
 	const forwardingMatches = lines
 		.map((line) => line.trim())
 		.filter((line) => line.length > 0 && forwardingExecPattern.test(line));
@@ -301,7 +301,7 @@ function parseReadinessForwardingTarget(
 	const match = forwardingExecPattern.exec(
 		allowedLines.find((line) => forwardingExecPattern.test(line)) ?? "",
 	);
-	const target = match?.[1] ?? match?.[2] ?? null;
+	const target = match?.[1] ?? null;
 	if (target !== null && hasPathTraversalSegment(target)) {
 		return {
 			target: null,
@@ -1135,6 +1135,7 @@ function parseTomlInlineValue(source: string): TomlValueResult {
 
 /** Validate every key/value entry in a TOML inline table. */
 function isValidTomlInlineTableBody(source: string): boolean {
+	if (source.trimEnd().endsWith(",")) return false;
 	const entries = splitTomlArrayElements(source);
 	if (entries === null) return false;
 	const keys = new Set<string>();
@@ -1650,7 +1651,7 @@ function auditPrekCommitMsgRuntimeShape(
 	if (
 		!hook.stages.includes("commit-msg") ||
 		!isApprovedPrekLeafEntry("commit-msg", hook.entry) ||
-		hook.passFilenames === true
+		hook.passFilenames !== false
 	)
 		return;
 	findings.push({

@@ -290,6 +290,11 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd -P)"
 exec bash "$SCRIPT_DIR/../check-environment_impl.sh" "$@"
 `,
 			`#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd -P)"
+exec bash $SCRIPT_DIR/check-environment_impl.sh "$@"
+`,
+			`#!/usr/bin/env bash
 SCRIPT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd -P)"
 set -euo pipefail
 exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
@@ -417,6 +422,14 @@ ${effectiveReadiness}`,
 				expected: "invalid value for policy key 'unknown'",
 			},
 			{
+				given: "an inline table with a forbidden trailing comma",
+				content: basePrek.replace(
+					'[[repos.hooks]]\nid = "pre-commit"',
+					'[[repos.hooks]]\nunknown = { mode = true, }\nid = "pre-commit"',
+				),
+				expected: "invalid value for policy key 'unknown'",
+			},
+			{
 				given: "a duplicate policy key encoded with a quoted Unicode escape",
 				content: basePrek.replace(
 					'entry = "bash scripts/hook-pre-commit.sh"',
@@ -471,6 +484,40 @@ stages = ["commit-msg"]
 						fixture.given,
 					).toBe(true);
 				}
+			}
+
+			writeFileSync(
+				prekPath,
+				basePrek
+					.replace(
+						'["pre-commit", "pre-push"]',
+						'["pre-commit", "pre-push", "commit-msg"]',
+					)
+					.concat(`
+[[repos.hooks]]
+id = "commit-msg"
+name = "Validate commit message"
+entry = "node scripts/validate-commit-msg.js"
+language = "system"
+stages = ["commit-msg"]
+`),
+				"utf-8",
+			);
+			const defaultFilenameResult = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+			expect(defaultFilenameResult.ok).toBe(true);
+			if (defaultFilenameResult.ok) {
+				expect(defaultFilenameResult.value.exitCode).toBe(EXIT_CODES.SUCCESS);
+				expect(
+					defaultFilenameResult.value.result.results[0]?.findings.some(
+						(finding) =>
+							finding.description.includes(
+								"disables the commit-msg filename input",
+							),
+					),
+				).toBe(false);
 			}
 		} finally {
 			rmSync(tempRoot, { recursive: true, force: true });
