@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-17T01:33:33Z
+Generated: 2026-07-17T03:24:02Z
 
 ## Table of Contents
 
@@ -29,32 +29,11 @@ Generated: 2026-07-17T01:33:33Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `package.json`
-- `src/commands/next-agent-native-ratchets.ts`
-- `src/commands/review-gate-core.ts`
-- `src/lib/cli/registry/agent-native-packet-command-specs.ts`
-- `src/lib/cli/registry/command-agent-catalog-rules.ts`
-- `src/lib/contract/json-schema-core.ts`
-- `src/lib/contract/types-core.ts`
-- `src/lib/contract/validator-core.ts`
+- `src/commands/tooling-audit-core.ts`
 - `src/lib/init/README.md`
-- `src/lib/init/types.ts`
-- `src/lib/synaipse/improvement-case.ts`
-- `src/lib/synaipse/packet-caller-candidate-content.ts`
-- `src/lib/synaipse/packet-caller-inventory.ts`
-- `src/lib/synaipse/packet-candidate-identity.ts`
-- `src/lib/synaipse/packet-canonicalization.ts`
-- `src/lib/synaipse/packet-consolidation-baseline.ts`
-- `src/lib/synaipse/packet-consolidation-contract.ts`
-- `src/lib/synaipse/packet-consolidation-measurement.ts`
-- `src/lib/synaipse/packet-consolidation.ts`
-- `src/lib/synaipse/packet-retirement.ts`
-- `src/lib/synaipse/packet-transition-projection.ts`
-- `src/lib/synaipse/safe-file-ancestors.ts`
-- `src/lib/synaipse/transition-validation.ts`
-- `src/lib/synaipse/transition.ts`
-- `src/lib/testing/README.md`
-- `src/lib/testing/behavior-test-suites.json`
+- `src/lib/init/scaffold-doc-templates.ts`
+- `src/lib/init/scaffold-environment-templates.ts`
+- `src/lib/policy/tooling-baseline.ts`
 
 ## agent
 

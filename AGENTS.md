@@ -84,7 +84,8 @@ truth.
 - Baseline: `pnpm codestyle:parity`, `pnpm codex:agents:guard`,
   `pnpm check:static`, `pnpm run audit`, `pnpm check`, `bash scripts/validate-codestyle.sh`,
   and `bash scripts/verify-work.sh`.
-- Fast lanes: `pnpm run quality:scripts`, `pnpm run tooling:parity`, and
+- Fast lanes: `pnpm run quality:scripts`, `pnpm run tooling:parity`,
+  `bash scripts/run-harness-gate.sh tooling-audit --path . --json`, and
   `bash scripts/validate-codestyle.sh --fast`.
 - Changed production source also requires `pnpm run quality:docstrings`,
   `pnpm run quality:size`, and `pnpm run test:related`; changed tests require

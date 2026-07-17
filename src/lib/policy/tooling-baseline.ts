@@ -20,6 +20,7 @@ export const REQUIRED_PREK_HOOKS = {
 		entry: "bash scripts/hook-pre-commit.sh",
 		language: "system",
 		pass_filenames: false,
+		stages: ["pre-commit"],
 	},
 	"pre-push": {
 		name: "Pre-push",
@@ -28,6 +29,22 @@ export const REQUIRED_PREK_HOOKS = {
 		pass_filenames: false,
 		stages: ["pre-push"],
 	},
+} as const;
+
+export const APPROVED_PREK_LEAF_ENTRIES = {
+	"pre-commit": [
+		"bash scripts/hook-pre-commit.sh",
+		"bash scripts/hooks/pre-commit.sh",
+	],
+	"pre-push": [
+		"bash scripts/hook-pre-push.sh",
+		"bash scripts/hooks/pre-push.sh",
+	],
+	"commit-msg": [
+		"bash scripts/hook-commit-msg.sh",
+		"bash scripts/hooks/commit-msg.sh",
+		"node scripts/validate-commit-msg.js",
+	],
 } as const;
 
 export const REQUIRED_PACKAGE_SCRIPTS = {

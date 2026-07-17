@@ -514,6 +514,9 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   command, or validation weakness in the active surface, it should fix the
   blocker in the same pass unless authority, credentials, destructive scope, or
   an explicitly tracked exception prevents the fix
+- tooling-policy parser or governed-wrapper review findings must update the
+  smallest fail-closed validator and fixture, then rerun `tooling-audit` before
+  the review conversation is resolved
 - artifact-routine and pattern-scope command output should be treated as
   closeout evidence only when it is produced from the current repo state and the
   active Project Brain artifact still points at current Linear/spec/plan input

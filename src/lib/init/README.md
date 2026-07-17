@@ -108,6 +108,12 @@ thin and delegate into this deep module.
   Make targets stay as manual wrappers around those adapters. This prevents
   recursive hook orchestration and keeps installed hooks, scaffold fixtures, and
   environment drift checks aligned.
+- Generated Prek hooks must declare their effective stage explicitly. The
+  scaffold emits `pre-commit` and `pre-push` stages, and the tooling audit also
+  recognizes the generated `node scripts/validate-commit-msg.js` validator as
+  an approved optional `commit-msg` leaf. Every configured hook still requires
+  `id`, `name`, `entry`, and `language`, and install types must be declared at
+  the TOML root.
 - Generated pre-commit adapters must run
   `bash ./scripts/validate-codestyle.sh --fast` after codestyle parity and
   before lint/typecheck so fast local commits cannot skip the codestyle

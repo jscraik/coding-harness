@@ -410,6 +410,7 @@ describe("document scaffold templates", () => {
 		expect(config).toContain('id = "pre-commit"');
 		expect(config).toContain('id = "pre-push"');
 		expect(config).toContain("pass_filenames = false");
+		expect(config).toContain('stages = ["pre-commit"]');
 		expect(config).toContain('stages = ["pre-push"]');
 	});
 });
