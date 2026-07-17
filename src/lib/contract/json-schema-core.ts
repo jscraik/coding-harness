@@ -15,6 +15,7 @@
  */
 
 import {
+	AUTOMATED_REVIEWER_LOGIN_PATTERN_SOURCE,
 	NORTH_STAR_DECISION_QUESTION_SPECS,
 	NORTH_STAR_PRIMARY_BOTTLENECK,
 	NORTH_STAR_PRIMARY_METRIC,
@@ -34,6 +35,16 @@ export {
 export const SCHEMA_VERSION = "1.6.0" as const;
 export const SCHEMA_ID =
 	`https://schema.brainwav.io/coding-harness/contract/v${SCHEMA_VERSION}.json` as const;
+
+/** Build a JSON Schema conditional without exposing a promise-like object literal. */
+function conditionalSchema(
+	condition: Record<string, unknown>,
+	consequence: Record<string, unknown>,
+): Record<string, unknown> {
+	const schema: Record<string, unknown> = { if: condition };
+	Reflect.set(schema, "then", consequence);
+	return schema;
+}
 
 // ─── Shared enum arrays ───────────────────────────────────────────────────────
 
@@ -706,6 +717,17 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 				description: "Controls PR review gate behaviour and timeouts.",
 				required: ["timeoutSeconds", "timeoutAction"],
 				additionalProperties: false,
+				allOf: [
+					conditionalSchema(
+						{
+							properties: {
+								approvalMode: { const: "automated_review" },
+							},
+							required: ["approvalMode"],
+						},
+						{ required: ["automatedReviewers"] },
+					),
+				],
 				properties: {
 					timeoutSeconds: {
 						type: "integer",
@@ -724,6 +746,24 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 						items: { type: "string" },
 						description:
 							"Checks that must pass inside the review gate. Must be a subset of branchProtection.requiredChecks.",
+					},
+					approvalMode: {
+						type: "string",
+						enum: ["human_approval", "automated_review"],
+						description:
+							"Require a current-SHA human approval, or use the configured independent automated review check for solo-maintainer repositories.",
+					},
+					automatedReviewers: {
+						type: "array",
+						minItems: 1,
+						uniqueItems: true,
+						items: {
+							type: "string",
+							minLength: 1,
+							pattern: AUTOMATED_REVIEWER_LOGIN_PATTERN_SOURCE,
+						},
+						description:
+							"Reviewer logins that must submit COMMENTED or APPROVED review evidence for the current SHA in automated_review mode.",
 					},
 					enforceReviewerIndependence: {
 						type: "boolean",

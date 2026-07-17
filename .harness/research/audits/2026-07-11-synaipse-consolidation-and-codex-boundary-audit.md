@@ -13,7 +13,7 @@ lifecycle_status: reviewed
 canonical_destination: docs/specs/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-spec.md
 owner: coding-harness-maintainers
 created: 2026-07-11
-last_reviewed: 2026-07-11
+last_reviewed: 2026-07-16
 review_cadence: on-change
 validated_by:
   - pnpm docs:lint
@@ -40,6 +40,7 @@ tracking_issue: JSC-441
 - [Non-Command Surface Dispositions](#non-command-surface-dispositions)
 - [Deletion Queue](#deletion-queue)
 - [Implementation Sequence](#implementation-sequence)
+- [2026-07-16 Implementation Reconciliation](#2026-07-16-implementation-reconciliation)
 - [Decision Gates](#decision-gates)
 - [Claims Boundary](#claims-boundary)
 
@@ -517,6 +518,26 @@ unit begins only after that route exists.
   rework, evidence quality, rollback, and provider overlap.
 - Record retain, change, consolidate, delete, or explicit non-adoption for every
   canonical project.
+
+## 2026-07-16 Implementation Reconciliation
+
+The active JSC-464 Slice 5 candidate confirms that the five packet families can
+share one registry and fail-closed source validation. It also exposes the next
+depth requirement: a registry row or target-contract label is migration
+metadata, not proof that a real producer now reaches a complete canonical
+consumer.
+
+The review found three residual implementation gaps: registry strings do not
+prove executable consumer migration; caller-supplied success values do not
+prove current-SHA retirement evidence; and adjacent validation-backend repairs
+need separate scope and proof so they cannot stand in for packet-consolidation
+outcomes. The canonical contract invariant is recorded in the linked
+specification, and the complete executable gates remain in its implementation
+plan.
+
+This reconciliation tightens the proof required by the original audit. It does
+not authorize deletion, prescribe a new public interface, or change the
+accepted Codex ownership boundary.
 
 ## Decision Gates
 

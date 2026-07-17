@@ -194,6 +194,21 @@ class TestSessionDistillReport:
         with pytest.raises(ValidationError, match="must not overlap"):
             SessionDistillReport.model_validate(payload)
 
+    def test_accepts_abbreviated_v1_head_sha_for_compatibility(self) -> None:
+        payload = deepcopy(_load_example("session-distill.example.json"))
+        payload["headSha"] = "1111111"
+
+        report = SessionDistillReport.model_validate(payload)
+
+        assert report.headSha == "1111111"
+
+    def test_rejects_non_hexadecimal_session_head_sha(self) -> None:
+        payload = deepcopy(_load_example("session-distill.example.json"))
+        payload["headSha"] = "not-a-sha"
+
+        with pytest.raises(ValidationError, match="7-40 character lowercase Git SHA"):
+            SessionDistillReport.model_validate(payload)
+
 
 class TestAgentReworkReport:
     def test_accepts_canonical_report_example(self) -> None:
@@ -236,11 +251,41 @@ class TestReviewerDecisionReport:
             expected_source_kind="repo_artifact",
         )
 
+    def test_accepts_report_without_optional_coverage_receipt(self) -> None:
+        payload = deepcopy(_load_example("reviewer-decision.example.json"))
+        del payload["coverageReceipt"]
+
+        report = ReviewerDecisionReport.model_validate(payload)
+
+        assert report.coverageReceipt is None
+
+    def test_rejects_null_coverage_receipt(self) -> None:
+        payload = deepcopy(_load_example("reviewer-decision.example.json"))
+        payload["coverageReceipt"] = None
+
+        with pytest.raises(
+            ValidationError, match="coverageReceipt must be an object when present"
+        ):
+            ReviewerDecisionReport.model_validate(payload)
+
     def test_rejects_pass_status_without_accept_decision(self) -> None:
         payload = deepcopy(_load_example("reviewer-decision.example.json"))
         payload["status"] = "pass"
 
         with pytest.raises(ValidationError, match="passing reviewer decisions"):
+            ReviewerDecisionReport.model_validate(payload)
+
+    def test_rejects_passing_report_without_coverage_receipt(self) -> None:
+        payload = deepcopy(_load_example("reviewer-decision.example.json"))
+        payload["status"] = "pass"
+        payload["decision"] = "accept"
+        payload["outcomes"] = ["accept"]
+        del payload["coverageReceipt"]
+
+        with pytest.raises(
+            ValidationError,
+            match="coverageReceipt is required for passing reviewer decisions",
+        ):
             ReviewerDecisionReport.model_validate(payload)
 
 

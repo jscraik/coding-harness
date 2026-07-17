@@ -52,6 +52,10 @@ function combinedOutput(result: ReturnType<typeof runPreflight>): string {
 }
 
 function resolveTool(tool: string): string {
+	if (tool === "node") {
+		// A managed-runtime shim can repopulate PATH and make local-memory visible.
+		return process.execPath;
+	}
 	const result = spawnSync("bash", ["-lc", `command -v ${tool}`], {
 		cwd: repoRoot,
 		encoding: "utf-8",
@@ -64,6 +68,8 @@ function resolveTool(tool: string): string {
 
 function pathWithoutLocalMemory(): string {
 	const binDir = mkdtempSync(join(tmpdir(), "codex-preflight-bin-"));
+	// Omit pnpm and tsx so the source helper cannot re-enter the managed runtime
+	// and recover the local-memory binary this fixture deliberately removes.
 	for (const tool of [
 		"bash",
 		"git",
@@ -73,8 +79,6 @@ function pathWithoutLocalMemory(): string {
 		"curl",
 		"python3",
 		"node",
-		"tsx",
-		"pnpm",
 	]) {
 		mkdirSync(binDir, { recursive: true });
 		symlinkSync(resolveTool(tool), join(binDir, tool));
@@ -279,7 +283,6 @@ describe("codex-preflight Local Memory legacy routing", () => {
 				},
 			},
 		);
-
 		expectBehavior({
 			given:
 				"legacy positional required preflight with the helper available but local-memory missing from PATH",

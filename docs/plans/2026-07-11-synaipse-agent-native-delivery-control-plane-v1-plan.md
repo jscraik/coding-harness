@@ -11,7 +11,7 @@ audience:
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-07-11
-last_reviewed: 2026-07-11
+last_reviewed: 2026-07-16
 review_cadence: on-change
 maintenance_trigger:
   - synaipse-implementation-sequence-change
@@ -73,6 +73,8 @@ issue tree.
 - Do not mutate downstream repositories from a source-repository slice.
 - Do not let the builder be the only grader.
 - Stop at the first failed safety or contract gate and classify ownership.
+- Refer to this plan's units as `S0` through `S9` in execution reporting so
+  separately numbered brainstorm candidates cannot be mistaken for plan slices.
 
 ## Slices
 
@@ -166,12 +168,120 @@ developer/CI independence, and code/native/knowledge/minimal/private canaries.
 ### 5. Packet consolidation
 
 Map producers and consumers of the five agent-native packet families, project
-useful fields into the canonical contracts, add compatibility adapters, and
-remove standalone packet commands from the agent rail.
+useful fields through compatibility adapters into complete canonical records,
+and remove standalone packet commands from the agent rail only after executable
+consumer migration.
 
-Proof: schema/type validation, source/package behavior, downstream canary, and
-outcome-based evals. Delete legacy schemas/generator branches only after caller,
-canary, rollback, and independent-QA evidence.
+Execution gates:
+
+1. **Inventory:** derive source and generated callers deterministically; registry
+   strings are orientation metadata and cannot prove live consumption alone.
+2. **Runtime path:** connect at least one routine producer path to each owning
+   canonical builder needed by the five families. A target-contract label or
+   test-only adapter call does not satisfy this gate.
+3. **Canonical validity:** validate every completed `synaipse-state/v1`,
+   `synaipse-transition/v1`, or `synaipse-improvement-case/v1` record with its
+   owning validator. Internal projection fragments must not claim to be full
+   canonical records.
+4. **Surface discipline:** reuse existing evidence and improvement contracts;
+   do not add a public `synaipse-*` consolidation receipt without separate
+   admission and a proved external consumer.
+5. **Retirement evidence:** bind caller inventory, source/schema/type checks,
+   package and downstream canaries, evals, rollback, and independent QA to the
+   current candidate SHA and immutable evidence refs. Caller-supplied booleans
+   cannot authorize deletion.
+6. **Outcome measurement:** record before/after command and packet visibility,
+	 migrated-consumer coverage, packet-catalog context bytes, and packet-command
+	 choice. Reproduce the historical catalog at its exact source commit and bind
+	 its schema version, command count, normalized byte length, full-catalog
+	 SHA-256 digest, extraction rule, exact raw subset, and subset SHA-256 digest.
+	 A caller-authored replacement remains invalid even when its self-declared
+	 digest matches its substituted bytes.
+7. **Scope locality:** give validation-backend repairs and other adjacent
+   blockers separately named scope, proof, rollback, and review conclusions;
+   their success cannot substitute for packet-consolidation proof.
+8. **Fresh review:** obtain independent QA against the final candidate digest
+   after the last implementation repair.
+9. **Completion signal:** emit one terminal Slice 5 artifact naming branch,
+   HEAD, candidate digest, exact command outcomes, migrated and remaining
+   surfaces, review freshness, rollback, and claims boundary. Progress messages
+	 and green focused tests are progress evidence, not slice completion.
+
+#### Packet-consolidation operational gate route
+
+Use these repository-owned commands from the candidate worktree. A non-zero
+exit blocks promotion. Harness engineering owns PC1-PC6 and repairs ordinary
+implementation or fixture failures before rerunning the failed command. The PR
+coordinator owns PC7 and must escalate only missing credentials, reviewer
+access, scope, or authority to the repository maintainer; no owner may waive a
+red or unavailable gate by prose.
+
+- **PC1, focused contract proof:** `pnpm exec vitest run
+  src/lib/synaipse/packet-consolidation.test.ts
+  src/lib/synaipse/transition.test.ts
+  src/lib/synaipse/improvement-case.test.ts
+  src/lib/cli/registry/agent-native-packet-command-specs.test.ts
+  src/dev/validate-runtime-packet-schemas-script.test.ts
+  src/dev/write-agent-native-ratchet-report-script.test.ts --reporter=dot`.
+  Pass means every selected test passes; any failing assertion is a local
+  implementation blocker.
+- **PC2, schema boundary:** `node
+  scripts/validate-runtime-packet-schemas.cjs --all`. Pass means the validator
+  reports no schema or example errors; any error blocks canonical validity.
+- **PC3, installed-package behavior:** `pnpm run quality:behavior-tests`.
+  Pass means every registered behavior suite, including packet consolidation,
+  is present in the packed artifact and passes its proving command.
+- **PC4, generated architecture:** `bash
+  scripts/check-diagram-freshness.sh`. Pass means the committed diagrams and
+  architecture context match the candidate; stale output must be refreshed and
+  rechecked.
+- **PC5, governed documentation:** `bash scripts/run-harness-gate.sh docs-gate
+  --mode required --json`. Pass means the required documentation surfaces and
+  lifecycle metadata are current; a reported surface remains blocking until
+  repaired.
+- **PC6, repository integration:** `pnpm check`. Pass means the repository's
+  static, related-test, full-test, and audit contract succeeds on the same
+  candidate.
+- **PC7, hosted closeout:** run the following commands in one closeout window,
+  replacing `<pr-number>` with the open PR number:
+
+  ```bash
+  gh pr view <pr-number> --repo jscraik/coding-harness --json state,isDraft,headRefOid,mergeable,mergeStateStatus,reviewDecision,reviews
+  gh pr checks <pr-number> --repo jscraik/coding-harness --watch=false
+  gh api graphql -f owner=jscraik -f name=coding-harness -F number=<pr-number> -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{isResolved isOutdated path line}}}}}'
+  ```
+
+  Pass requires the reported head to equal the final candidate SHA, every
+  required check to pass, zero current unresolved threads, and an independent
+  approval whose review commit equals that SHA. Pending checks, stale approval,
+  missing reviewer access, authentication failure, or unresolved threads block
+  the merge decision and retain their separate ownership classification.
+
+Gate mapping:
+
+1. Inventory: PC1.
+2. Runtime path: PC1 and PC2.
+3. Canonical validity: PC1 and PC2.
+4. Surface discipline: PC1 and PC3.
+5. Retirement evidence: PC1, PC3, and PC6, plus immutable evidence references
+   verified by the retirement fixtures.
+6. Outcome measurement: PC1 and PC4.
+7. Scope locality: PC5 and PC6, with adjacent blockers reported as separate
+   lanes rather than substituted proof.
+8. Fresh review: PC7 against the final candidate SHA.
+9. Completion signal: PC5 and PC7, followed by the terminal Slice 5 artifact;
+   that artifact records the command outcomes but cannot replace them.
+
+Proof: producer-to-complete-canonical-consumer fixtures, owning contract
+validators, deterministic caller-discovery negatives, source/package behavior,
+current-SHA retirement evidence, downstream canary, outcome-based evals,
+before/after surface measurements, rollback, and digest-bound independent QA.
+Delete legacy schemas, generator branches, readers, or commands only after all
+applicable gates pass.
+
+Rollback: retain the legacy producers, readers, and command compatibility while
+disconnecting the canonical projection path; no rollback may require discarding
+repository-native authority or evidence.
 
 ### 6. Route and context reduction
 

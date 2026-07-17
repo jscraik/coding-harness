@@ -479,6 +479,10 @@ export interface DiffBudgetOverride {
 	timestamp: string;
 }
 
+/** Canonical lowercase GitHub login grammar used by automated review policy. */
+export const AUTOMATED_REVIEWER_LOGIN_PATTERN_SOURCE =
+	"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\[bot\\])?$";
+
 /** Review Policy. */
 export interface ReviewPolicy {
 	timeoutSeconds: number;
@@ -490,6 +494,15 @@ export interface ReviewPolicy {
 	 * via `.harness/ci-required-checks.json`.
 	 */
 	requiredChecks?: string[] | undefined;
+	/**
+	 * Evidence mode used after the independent review check passes.
+	 * `human_approval` requires a current-SHA APPROVED review. Repositories
+	 * operated by a solo maintainer may use `automated_review` when their
+	 * configured review check is the independent reviewer.
+	 */
+	approvalMode?: "human_approval" | "automated_review" | undefined;
+	/** Automated reviewer logins that must submit a review on the current SHA. */
+	automatedReviewers?: string[] | undefined;
 	enforceReviewerIndependence?: boolean | undefined;
 	requireReviewContext?: boolean | undefined;
 	reviewContextPath?: string | undefined;
@@ -938,6 +951,7 @@ export const DEFAULT_REVIEW_POLICY: ReviewPolicy = {
 	timeoutSeconds: 600, // 10 minutes
 	timeoutAction: "fail",
 	requiredChecks: [...REVIEW_POLICY_REQUIRED_CHECKS],
+	approvalMode: "human_approval",
 	enforceReviewerIndependence: true,
 	requireReviewContext: false,
 };

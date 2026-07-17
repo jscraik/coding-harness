@@ -28,7 +28,6 @@ const AGENT_COMMAND_RAIL_NAMES = [
 	"agent-readiness",
 	"agent-native-ratchets",
 	"commands",
-	"governance-decision-surface",
 	"runtime-card",
 	"session-context",
 	"session-distill",
@@ -36,8 +35,6 @@ const AGENT_COMMAND_RAIL_NAMES = [
 	"fitness",
 	"validation-plan",
 	"review-context",
-	"reviewer-decision",
-	"agent-rework",
 	"decision-request",
 	"pr-closeout",
 	"evidence-verify",
@@ -48,12 +45,9 @@ const AGENT_ORIENT_COMMAND_RAIL_NAMES = [
 	"agent-readiness",
 	"agent-native-ratchets",
 	"commands",
-	"governance-decision-surface",
 	"runtime-card",
 	"session-context",
 	"session-distill",
-	"reviewer-decision",
-	"agent-rework",
 ] as const;
 const AGENT_VERIFY_COMMAND_RAIL_NAMES = [
 	"next",
@@ -67,7 +61,6 @@ const AGENT_REVIEW_COMMAND_RAIL_NAMES = [
 	"next",
 	"runtime-card",
 	"review-context",
-	"reviewer-decision",
 	"review-gate",
 ] as const;
 const AGENT_HANDOFF_COMMAND_RAIL_NAMES = [

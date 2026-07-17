@@ -223,7 +223,7 @@
 					"local commands include pnpm check",
 					"local commands include pnpm test:deep",
 					"local commands include bash scripts/validate-codestyle.sh --fast",
-					"pnpm audit is classified as networkRequired"
+					"pnpm run audit is classified as networkRequired"
 				],
 				"stopConditions": [
 					"Do not claim network-only audit execution from a restricted sandbox."
@@ -667,7 +667,7 @@
 					"artifacts/evals/live-fixtures/cold-agent-orientation-rail/cold-agent-orientation.json"
 				],
 				"assertions": [
-					"cold agent discovers orient and next from the command catalog",
+					"cold agent discovers next and context commands from the command catalog",
 					"orient packet points to session-context and agent-readiness",
 					"architecture context is lazy and has a freshness check",
 					"missing preflight receipt stays explicit with recovery command",
@@ -1172,6 +1172,7 @@
 					"canary command stdout is parseable JSON",
 					"canary outputs do not leak source checkout command paths",
 					"missing optional evidence degrades structurally",
+					"canonical transition unavailability preserves legacy exit compatibility",
 					"agent-native ratchet packet commands are public harness commands",
 					"harness init dry-run does not write unexpected files",
 					"canary runs without external credentials"

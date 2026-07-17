@@ -18,6 +18,8 @@ flowchart TD
   Boundary --> types_36_674380ec
   session_closeout_f3efb270["session-closeout"]
   Boundary --> session_closeout_f3efb270
+  packet_candidate_identity_170576d1["packet-candidate-identity"]
+  Boundary --> packet_candidate_identity_170576d1
   overload_guard_2748c559["overload-guard"]
   Boundary --> overload_guard_2748c559
   ext_node_crypto_879f6cbe[("node:crypto")]
@@ -32,6 +34,9 @@ flowchart TD
   collector_1_bc604d2a --> ext_node_child_process_cb73900b
   collector_1_bc604d2a --> ext_node_fs_df6b52af
   collector_1_bc604d2a --> ext_node_path_0e7d56ab
+  packet_candidate_identity_170576d1 --> ext_node_child_process_cb73900b
+  packet_candidate_identity_170576d1 --> ext_node_crypto_879f6cbe
+  packet_candidate_identity_170576d1 --> ext_node_fs_df6b52af
   overload_guard_2748c559 --> ext_node_os_e9717731
   classDef authNode fill:#7c3aed,color:#fff
-  class session_context_e5ec72c0,session_context_command_spec_973afbb1,scaffold_security_scan_template_55bc7465,repository_identity_9dc13d37,cli_13_ae2ba749,collector_1_bc604d2a,types_36_674380ec,session_closeout_f3efb270,overload_guard_2748c559 authNode
+  class session_context_e5ec72c0,session_context_command_spec_973afbb1,scaffold_security_scan_template_55bc7465,repository_identity_9dc13d37,cli_13_ae2ba749,collector_1_bc604d2a,types_36_674380ec,session_closeout_f3efb270,packet_candidate_identity_170576d1,overload_guard_2748c559 authNode
