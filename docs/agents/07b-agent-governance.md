@@ -116,6 +116,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   them. Live-canary composition must preserve target HEAD and status, retain
   each underlying probe outcome, and keep local drift evidence separate from
   hosted CI, review, acceptance, merge, and release authority.
+- Live-canary runner boundaries are part of the same governance surface: resolve
+  relative CLI paths before target-cwd execution, reject output paths inside
+  audited repositories, sanitize inherited `GIT_*` state with the centralized
+  strict policy, and URL-encode public CircleCI PR fallback filters.
 - validation-throughput changes that split `pnpm check`, `pnpm test:ci`,
   `pnpm test:related`, or `pnpm check:static` must keep CI commands,
   package scripts, PR-template evidence, and docs-gate-required surfaces

@@ -36,6 +36,17 @@ const requiredRuntimeInputs = [
 	"evals/scenarios/north-star-agent-delivery/packet-surface-baseline.json",
 ] as const;
 
+const requiredPackagedCanaryScripts = {
+	"test:harness-canary": {
+		command: "node scripts/run-harness-canary-audit.mjs",
+		scriptPath: "scripts/run-harness-canary-audit.mjs",
+	},
+	"test:harness-upgrade-matrix": {
+		command: "node scripts/test-harness-upgrade-matrix.mjs",
+		scriptPath: "scripts/test-harness-upgrade-matrix.mjs",
+	},
+} as const;
+
 function run(command: string, args: string[]) {
 	const result = spawnSync(command, args, {
 		cwd: process.cwd(),
@@ -81,6 +92,13 @@ describe("package files for quality scripts", () => {
 
 			for (const [scriptName, script] of Object.entries(
 				requiredPackagedQualityScripts,
+			)) {
+				expect(packageScripts[scriptName]).toBe(script.command);
+				expect(tarballFiles.has(packagePath(script.scriptPath))).toBe(true);
+			}
+
+			for (const [scriptName, script] of Object.entries(
+				requiredPackagedCanaryScripts,
 			)) {
 				expect(packageScripts[scriptName]).toBe(script.command);
 				expect(tarballFiles.has(packagePath(script.scriptPath))).toBe(true);

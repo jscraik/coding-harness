@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-07-16
+last_validated: 2026-07-17
 ---
 
 # Architecture bootstrap
@@ -148,6 +148,14 @@ diagrams synchronized with the runner, prove target HEAD and status are
 unchanged, and preserve orient, next, upgrade-matrix, and fitness results as
 separate probe outcomes. A local canary report may expose drift, but it does not
 establish hosted CI, review, acceptance, merge, or release truth.
+Resolve relative CLI inputs from the invoking process before entering a target
+repository, reject output paths contained by any audited target before probes
+run, and execute child probes with the strict centralized Git-environment
+sanitizer so inherited `GIT_*` state cannot redirect repository discovery or
+object access. Public CircleCI PR fallback queries must pass branch and state
+filters as encoded data rather than interpolated URL text, and packaged canary
+entrypoints must remain present in the npm `files` allowlist with tarball
+coverage.
 SynAIpse context-plane changes are architecture-adjacent contract changes. Keep
 `synaipse-context-catalog/v1`, `synaipse-context-ref/v1`,
 `synaipse-task-context/v1`, and `synaipse-state/v1` synchronized across their
