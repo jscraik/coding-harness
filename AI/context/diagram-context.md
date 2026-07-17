@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-17T03:24:02Z
+Generated: 2026-07-17T16:45:56Z
 
 ## Table of Contents
 
@@ -29,11 +29,7 @@ Generated: 2026-07-17T03:24:02Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `src/commands/tooling-audit-core.ts`
-- `src/lib/init/README.md`
-- `src/lib/init/scaffold-doc-templates.ts`
-- `src/lib/init/scaffold-environment-templates.ts`
-- `src/lib/policy/tooling-baseline.ts`
+- `package.json`
 
 ## agent
 
@@ -942,6 +938,7 @@ graph LR
   node_rollback_manifest_validation_d8f5147c_e2e46585["rollback_manifest_validation_d8f5147c"]
   node_rule_lifecycle_3130e11b_d296efac["rule_lifecycle_3130e11b"]
   node_run_e2e_39efe696_fb07ee74["run_e2e_39efe696"]
+  node_run_harness_canary_audit_c1ed705c_228e0cad["run_harness_canary_audit_c1ed705c"]
   node_run_harness_evals_77704768_ba42904d["run_harness_evals_77704768"]
   node_run_local_memory_preflight_36e92808_9841c57a["run_local_memory_preflight_36e92808"]
   node_run_record_emitter_core_688049d5_2036fd6f["run_record_emitter_core_688049d5"]
@@ -1097,6 +1094,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_remediate_git_58c6f6f4_3c7e755f
   ext_node_child_process_f62b7d19["node:child_process"] --> node_repository_identity_9dc13d37_eaffcd1e
   ext_node_child_process_f62b7d19["node:child_process"] --> node_run_e2e_39efe696_fb07ee74
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_run_harness_canary_audit_c1ed705c_228e0cad
   ext_node_child_process_f62b7d19["node:child_process"] --> node_run_harness_evals_77704768_ba42904d
   ext_node_child_process_f62b7d19["node:child_process"] --> node_runner_1_6f281bf8_36f20bbb
   ext_node_child_process_f62b7d19["node:child_process"] --> node_scaffold_hook_templates_8c74ab50_572d99d9
@@ -1379,6 +1377,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_rollback_manifest_validation_d8f5147c_e2e46585
   ext_node_fs_a15b7d96["node:fs"] --> node_rule_lifecycle_3130e11b_d296efac
   ext_node_fs_a15b7d96["node:fs"] --> node_run_e2e_39efe696_fb07ee74
+  ext_node_fs_a15b7d96["node:fs"] --> node_run_harness_canary_audit_c1ed705c_228e0cad
   ext_node_fs_a15b7d96["node:fs"] --> node_run_harness_evals_77704768_ba42904d
   ext_node_fs_a15b7d96["node:fs"] --> node_run_record_emitter_core_688049d5_2036fd6f
   ext_node_fs_a15b7d96["node:fs"] --> node_run_records_core_89286dfa_4ce958f7
@@ -1469,6 +1468,7 @@ graph LR
   ext_node_os_d93fe73a["node:os"] --> node_overload_guard_2748c559_3eff560b
   ext_node_os_d93fe73a["node:os"] --> node_performance_overload_c685bfcf_291ef65a
   ext_node_os_d93fe73a["node:os"] --> node_pr_closeout_env_9bfcd9ef_f476024a
+  ext_node_os_d93fe73a["node:os"] --> node_run_harness_canary_audit_c1ed705c_228e0cad
   ext_node_os_d93fe73a["node:os"] --> node_run_harness_evals_77704768_ba42904d
   ext_node_os_d93fe73a["node:os"] --> node_runner_1_6f281bf8_36f20bbb
   ext_node_os_d93fe73a["node:os"] --> node_test_harness_6e520b98_6b3d1d32
@@ -1656,6 +1656,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_rollback_manifest_validation_d8f5147c_e2e46585
   ext_node_path_78811c13["node:path"] --> node_rule_lifecycle_3130e11b_d296efac
   ext_node_path_78811c13["node:path"] --> node_run_e2e_39efe696_fb07ee74
+  ext_node_path_78811c13["node:path"] --> node_run_harness_canary_audit_c1ed705c_228e0cad
   ext_node_path_78811c13["node:path"] --> node_run_harness_evals_77704768_ba42904d
   ext_node_path_78811c13["node:path"] --> node_run_local_memory_preflight_36e92808_9841c57a
   ext_node_path_78811c13["node:path"] --> node_run_record_emitter_core_688049d5_2036fd6f
@@ -1753,6 +1754,7 @@ graph LR
   ext_node_url_d0cb3ad7["node:url"] --> node_prompt_context_drift_builder_a451c7dd_702c1ffe
   ext_node_url_d0cb3ad7["node:url"] --> node_repo_bound_paths_e218b5b3_216d0eb0
   ext_node_url_d0cb3ad7["node:url"] --> node_run_e2e_39efe696_fb07ee74
+  ext_node_url_d0cb3ad7["node:url"] --> node_run_harness_canary_audit_c1ed705c_228e0cad
   ext_node_url_d0cb3ad7["node:url"] --> node_run_harness_evals_77704768_ba42904d
   ext_node_url_d0cb3ad7["node:url"] --> node_run_local_memory_preflight_36e92808_9841c57a
   ext_node_url_d0cb3ad7["node:url"] --> node_safe_json_artifact_reader_9114b83f_bcca77c5
@@ -2234,6 +2236,8 @@ flowchart TD
   Untrusted --> audit_pnpm_lock_policy_25297ce6
   direct_pnpm_audit_9a9a9ed4["direct-pnpm-audit"]
   Untrusted --> direct_pnpm_audit_9a9a9ed4
+  run_harness_canary_audit_c1ed705c["run-harness-canary-audit"]
+  Untrusted --> run_harness_canary_audit_c1ed705c
   validate_audit_references_811f872a["validate-audit-references"]
   Untrusted --> validate_audit_references_811f872a
   validate_coding_policy_29976175["validate-coding-policy"]
@@ -2302,11 +2306,9 @@ flowchart TD
   Untrusted --> feedback_loop_audit_cli_fd8f38dc
   feedback_loop_audit_1_c7be4304["feedback-loop-audit"]
   Untrusted --> feedback_loop_audit_1_c7be4304
-  scaffold_security_scan_template_55bc7465["scaffold-security-scan-template"]
-  Untrusted --> scaffold_security_scan_template_55bc7465
   audit_pnpm_lock_3bdddae2 --> audit_pnpm_lock_policy_25297ce6
   classDef securityNode fill:#dc2626,color:#fff
-  class audit_pnpm_lock_3bdddae2,check_harness_audit_tracking_33e6a72e,check_types_policy_cfbecf01,audit_pnpm_lock_policy_25297ce6,direct_pnpm_audit_9a9a9ed4,validate_audit_references_811f872a,validate_coding_policy_29976175,validate_goal_completion_audit_receipt_100d252c,audit_b81f37a0,evidence_verify_3b73c290,feedback_loop_audit_0ac0ec9d,linear_gate_branch_policy_13c4707c,org_audit_d739e44b,policy_gate_213f7313,tooling_audit_core_328d6a41,tooling_audit_8a8239ff,verify_coderabbit_490b4e71,verify_work_df70ecac,shared_state_policy_edc9c4db,audit_command_spec_5acf0149,evidence_verify_command_spec_e1cbfea2,evidence_verify_options_3505c520,feedback_loop_audit_command_spec_27e599c4,org_audit_command_spec_1a570341,policy_gate_command_spec_71e8726a,tooling_audit_command_spec_e0e57863,verify_coderabbit_command_spec_68cc9ec5,verify_work_command_spec_d6c94ac8,context_compact_policy_3dcaf95d,policy_validators_core_714a3fe7,policy_validators_6682e192,he_gate_trust_policy_b1126dfd,goal_completion_audit_receipt_validation_9d0f4891,goal_completion_audit_receipt_5e4939c3,judge_pm_audit_authority_c311b050,judge_pm_audit_ccd20b35,policy_823412d1,feedback_loop_audit_cli_fd8f38dc,feedback_loop_audit_1_c7be4304,scaffold_security_scan_template_55bc7465 securityNode
+  class audit_pnpm_lock_3bdddae2,check_harness_audit_tracking_33e6a72e,check_types_policy_cfbecf01,audit_pnpm_lock_policy_25297ce6,direct_pnpm_audit_9a9a9ed4,run_harness_canary_audit_c1ed705c,validate_audit_references_811f872a,validate_coding_policy_29976175,validate_goal_completion_audit_receipt_100d252c,audit_b81f37a0,evidence_verify_3b73c290,feedback_loop_audit_0ac0ec9d,linear_gate_branch_policy_13c4707c,org_audit_d739e44b,policy_gate_213f7313,tooling_audit_core_328d6a41,tooling_audit_8a8239ff,verify_coderabbit_490b4e71,verify_work_df70ecac,shared_state_policy_edc9c4db,audit_command_spec_5acf0149,evidence_verify_command_spec_e1cbfea2,evidence_verify_options_3505c520,feedback_loop_audit_command_spec_27e599c4,org_audit_command_spec_1a570341,policy_gate_command_spec_71e8726a,tooling_audit_command_spec_e0e57863,verify_coderabbit_command_spec_68cc9ec5,verify_work_command_spec_d6c94ac8,context_compact_policy_3dcaf95d,policy_validators_core_714a3fe7,policy_validators_6682e192,he_gate_trust_policy_b1126dfd,goal_completion_audit_receipt_validation_9d0f4891,goal_completion_audit_receipt_5e4939c3,judge_pm_audit_authority_c311b050,judge_pm_audit_ccd20b35,policy_823412d1,feedback_loop_audit_cli_fd8f38dc,feedback_loop_audit_1_c7be4304 securityNode
 
 ```
 
