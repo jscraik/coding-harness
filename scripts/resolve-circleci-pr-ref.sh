@@ -64,6 +64,12 @@ resolve_direct_pr_ref() {
 	return 1
 }
 
+is_valid_pr_ref() {
+	local ref="${1%%[?#]*}"
+	ref="${ref%/}"
+	[[ "$ref" =~ ^https://github[.]com/[^/]+/[^/]+/pull/[0-9]+$ || "$ref" =~ ^[0-9]+$ ]]
+}
+
 resolve_github_pr_ref() {
 	local repo_slug="$1"
 	local resolved=""
@@ -80,19 +86,37 @@ resolve_github_pr_ref() {
 	if [[ -z "$resolved" && -n "${CIRCLE_SHA1:-}" && -n "$repo_slug" ]]; then
 		resolved="$("$GH_BIN" api -H "Accept: application/vnd.github+json" "/repos/${repo_slug}/commits/${CIRCLE_SHA1}/pulls" --jq '[.[] | select(.state == "open")] | .[0].html_url // ""' 2>/dev/null || true)"
 	fi
-	printf '%s' "$resolved"
+	if is_valid_pr_ref "$resolved"; then
+		printf '%s' "$resolved"
+	fi
+}
+
+resolve_public_pr_ref() {
+	local repo_slug="$1"
+	local response=""
+	if [[ -z "$repo_slug" || -z "${CIRCLE_BRANCH:-}" ]] ||
+		! command -v curl >/dev/null 2>&1 ||
+		! command -v jq >/dev/null 2>&1; then
+		return 0
+	fi
+	response="$(curl -fsSL -H "Accept: application/vnd.github+json" \
+		"https://api.github.com/repos/${repo_slug}/pulls?state=open&head=${CIRCLE_PROJECT_USERNAME:-}:${CIRCLE_BRANCH}" 2>/dev/null || true)"
+	jq -r '.[0].html_url // ""' <<<"$response" 2>/dev/null || true
 }
 
 repo_slug="$(resolve_repo_slug)"
 
 attempt=1
 while [[ "$attempt" -le "$max_attempts" ]]; do
-	if pr_ref="$(resolve_direct_pr_ref)"; then
+	if pr_ref="$(resolve_direct_pr_ref)" && is_valid_pr_ref "$pr_ref"; then
 		printf '%s' "$pr_ref"
 		exit 0
 	fi
 
 	pr_ref="$(resolve_github_pr_ref "$repo_slug")"
+	if [[ -z "$pr_ref" ]]; then
+		pr_ref="$(resolve_public_pr_ref "$repo_slug")"
+	fi
 	if [[ -n "$pr_ref" ]]; then
 		printf '%s' "$pr_ref"
 		exit 0

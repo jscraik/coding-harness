@@ -173,6 +173,47 @@ describe("resolve-circleci-pr-ref.sh", () => {
 		expect(result.stderr).toContain("unable to resolve pull request context");
 	});
 
+	it("falls back to public PR lookup when GitHub emits a JSON auth error", () => {
+		const root = createTempRoot();
+		writeExecutable(
+			root,
+			"bin/gh",
+			[
+				"#!/usr/bin/env bash",
+				"set -euo pipefail",
+				'if [[ "$1" == "api" ]]; then',
+				'  printf "%s" \'{"message":"Bad credentials","status":"401"}\'',
+				"fi",
+			].join("\n"),
+		);
+		writeExecutable(
+			root,
+			"bin/curl",
+			[
+				"#!/usr/bin/env bash",
+				"set -euo pipefail",
+				'if [[ "$*" != *"/repos/acme/demo/pulls?state=open&head=acme:codex/bad-token"* ]]; then',
+				'  echo "unexpected curl args: $*" >&2',
+				"  exit 8",
+				"fi",
+				'printf "%s" \'[{"html_url":"https://github.com/acme/demo/pull/78"}]\'',
+			].join("\n"),
+		);
+
+		const result = runScript(root, {
+			CIRCLE_BRANCH: "codex/bad-token",
+			CIRCLE_PROJECT_REPONAME: "demo",
+			CIRCLE_PROJECT_USERNAME: "acme",
+			CIRCLE_SHA1: "abc123",
+			HARNESS_CIRCLECI_PR_REF_MAX_ATTEMPTS: "1",
+			HARNESS_CIRCLECI_PR_REF_SLEEP_SECONDS: "0",
+		});
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toBe("https://github.com/acme/demo/pull/78");
+		expect(result.stderr).toBe("");
+	});
+
 	it("fails closed with a branch-only diagnostic when no PR can be resolved", () => {
 		const root = createTempRoot();
 		writeExecutable(

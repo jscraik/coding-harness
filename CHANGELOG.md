@@ -8,6 +8,9 @@ All notable changes to this project will be documented in this file. See [standa
 
 - Added source-checkout public `pnpm exec harness ...` support and a
   `harness orient --json` cold-start rail for agent context discovery.
+- Added a read-only local canary audit that combines orientation, next-action,
+  upgrade-matrix, and available fitness evidence without changing target Git
+  state.
 
 ### Changed
 

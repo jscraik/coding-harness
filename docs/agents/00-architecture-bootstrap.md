@@ -142,6 +142,12 @@ architecture-context or governance surfaces. The report remains advisory-only;
 archive, move, delete, demotion, metadata rewrite, manifest, active-artifact,
 or archive-index repair work requires a separate reviewed decision.
 For agent-native cockpit work, treat decision-envelope, generated environment action, hook setup, runtime-card evidence, and diagram-context changes as architecture-adjacent surfaces. Run `bash scripts/check-diagram-freshness.sh` explicitly for those changes, and use `bash scripts/refresh-diagram-context.sh --force` when the check reports stale or missing artifacts. Keep this guide synchronized with `AGENTS.md` and `docs/agents/07b-agent-governance.md` when `docs-gate` asks for architecture-context evidence. SynAIpse routine cockpit changes should keep the `synaipse-state/v1` contract additive, route routine orientation through `next`, and preserve `orient` as a compatibility/admin surface; validate the state schema and runtime-packet manifest with `node scripts/validate-runtime-packet-schemas.cjs --all` (must report successful validation with no errors; non-zero exit blocks promotion) before promotion, owned by the harness engineering team with fail-closed validation behavior.
+SynAIpse live-canary composition is architecture-adjacent when it adds a
+script-level dependency surface. Keep the generated dependency and security
+diagrams synchronized with the runner, prove target HEAD and status are
+unchanged, and preserve orient, next, upgrade-matrix, and fitness results as
+separate probe outcomes. A local canary report may expose drift, but it does not
+establish hosted CI, review, acceptance, merge, or release truth.
 SynAIpse context-plane changes are architecture-adjacent contract changes. Keep
 `synaipse-context-catalog/v1`, `synaipse-context-ref/v1`,
 `synaipse-task-context/v1`, and `synaipse-state/v1` synchronized across their

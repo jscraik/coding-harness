@@ -113,7 +113,9 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   `docs/agents/00-architecture-bootstrap.md`, and this guide synchronized;
   deterministic lanes remain the blocking authority while AI-assisted review and
   trend snapshots remain advisory unless a future explicit contract promotes
-  them.
+  them. Live-canary composition must preserve target HEAD and status, retain
+  each underlying probe outcome, and keep local drift evidence separate from
+  hosted CI, review, acceptance, merge, and release authority.
 - validation-throughput changes that split `pnpm check`, `pnpm test:ci`,
   `pnpm test:related`, or `pnpm check:static` must keep CI commands,
   package scripts, PR-template evidence, and docs-gate-required surfaces
