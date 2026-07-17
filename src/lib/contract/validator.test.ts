@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildContractJsonSchema } from "./json-schema-core.js";
 import { NORTH_STAR_DECISION_QUESTION_SPECS } from "./types.js";
 import { ValidationErrorCode, validateContract } from "./validator.js";
 
@@ -78,6 +79,36 @@ function withCanonicalNorthStarSurfaces(
 		...contract,
 	};
 }
+
+describe("generated contract schema parity", () => {
+	it("requires named automated reviewers when automated review mode is selected", () => {
+		const schema = buildContractJsonSchema();
+		const properties = schema.properties as Record<
+			string,
+			Record<string, unknown>
+		>;
+		const conditions = properties.reviewPolicy?.allOf as Record<
+			string,
+			unknown
+		>[];
+		expect(conditions).toHaveLength(1);
+		expect(conditions[0]?.if).toEqual({
+			properties: { approvalMode: { const: "automated_review" } },
+			required: ["approvalMode"],
+		});
+		expect(Reflect.get(conditions[0] ?? {}, "then")).toEqual({
+			required: ["automatedReviewers"],
+		});
+		const reviewProperties = properties.reviewPolicy?.properties as Record<
+			string,
+			Record<string, unknown>
+		>;
+		expect(reviewProperties.automatedReviewers?.items).toMatchObject({
+			type: "string",
+			pattern: "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\[bot\\])?$",
+		});
+	});
+});
 
 function validToolingPolicy(
 	overrides: Record<string, unknown> = {},
@@ -875,6 +906,22 @@ describe("validateContract", () => {
 			expect(result.success).toBe(true);
 		});
 
+		it("accepts automated review evidence for solo-maintainer repositories", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					approvalMode: "automated_review",
+					automatedReviewers: [
+						"coderabbitai[bot]",
+						"chatgpt-codex-connector[bot]",
+					],
+				},
+			});
+			expect(result.success).toBe(true);
+		});
+
 		it("rejects reviewPolicy when requiredChecks is not an array", () => {
 			const result = validateContract({
 				version: "1.0",
@@ -895,6 +942,46 @@ describe("validateContract", () => {
 					timeoutSeconds: 600,
 					timeoutAction: "fail",
 					enforceReviewerIndependence: "no",
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("reviewPolicy");
+		});
+
+		it("rejects an unknown review approval mode", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					approvalMode: "solo_bypass",
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("reviewPolicy");
+		});
+
+		it("rejects automated review mode without named reviewers", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					approvalMode: "automated_review",
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("reviewPolicy");
+		});
+
+		it("rejects automated reviewers duplicated after login normalization", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					approvalMode: "automated_review",
+					automatedReviewers: ["coderabbitai[bot]", " CodeRabbitAI[bot] "],
 				},
 			});
 			expect(result.success).toBe(false);

@@ -2,7 +2,7 @@
 	"schemaVersion": "session-distill/v1",
 	"status": "pass",
 	"branch": "codex/agent-native-ratchets",
-	"headSha": "1111111",
+	"headSha": "1111111111111111111111111111111111111111",
 	"worktreeStatus": "dirty",
 	"changedFiles": ["package.json"],
 	"changedFileCount": 1,

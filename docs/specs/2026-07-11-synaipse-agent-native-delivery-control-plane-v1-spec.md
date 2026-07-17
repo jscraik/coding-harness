@@ -11,7 +11,7 @@ audience:
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-07-11
-last_reviewed: 2026-07-11
+last_reviewed: 2026-07-16
 review_cadence: on-change
 maintenance_trigger:
   - synaipse-architecture-change
@@ -223,6 +223,14 @@ absent source-specific policy, a SHA change invalidates code/review evidence
 and external evidence must be refreshed in the same transition window.
 
 ## Canonical Contracts
+
+A compatibility adapter may emit an internal fragment for a canonical builder,
+but a target-contract label does not make that fragment a canonical record.
+Every emitted canonical record must contain the full owning contract and pass
+its owning validator. Internal fragments do not use a new public
+`synaipse-*` schema version unless a separately admitted external consumer,
+ownership decision, migration, verifier, canary, rollback, and retirement path
+justify that contract.
 
 ### `synaipse-state/v1`
 
@@ -458,7 +466,7 @@ product and authority contract.
 | `check`, `doctor`, `health`, `audit` | Route behind `next`; retain bounded diagnostics | Effect contract and characterization. |
 | Command-level mutability | Invocation-level effects | Write tracer and negative tests. |
 | `pr-ready`, `fix-review`, `learn` metadata | Lifecycle-stage ownership | Registry consumers and compatibility test. |
-| Five agent-native packet families | Project into state/transition/improvement | Consumer map, adapter, package/downstream canaries. |
+| Five agent-native packet families | Project into complete state/transition/improvement records | Deterministic source/generated-consumer map, production adapter path, owning canonical validator, package/downstream canaries, and before/after surface measurement. |
 | Harness context/search family | Quarantine against Codex-native capability | Proved distinct repository outcome. |
 | Interactive Linear CLI overlap | Prefer plugin; retain CI linkage gate | Provider parity and CI/offline proof. |
 | Snyk | Replace with Trivy/Aikido ownership | No lost admitted finding class. |
@@ -467,8 +475,10 @@ product and authority contract.
 
 Deletion requires owner, public surface, caller/generated-consumer search,
 replacement, migration, verifier, downstream canary, rollback, and independent
-QA. Unknown callers, public compatibility, raw sources, durable private
-knowledge, or external state block deletion.
+QA. The decision consumes current-SHA-bound evidence references for those lanes;
+unverified caller assertions or success booleans are not deletion proof.
+Unknown callers, public compatibility, raw sources, durable private knowledge,
+or external state block deletion.
 
 ## Acceptance
 
@@ -476,6 +486,8 @@ knowledge, or external state block deletion.
   fail deterministic tests.
 - Cold and resumed Codex obtain one safe action from `next`.
 - Every stage transition is schema-valid and current-SHA bound.
+- Legacy packet migration proves a real producer-to-canonical-consumer path;
+  registry declarations and target labels alone are insufficient.
 - Ordinary implementation proceeds without Jamie; Vital Decisions stop with
   one bounded request and recommendation.
 - CodeRabbit and independent QA remain separate from builder assertions.
@@ -484,6 +496,13 @@ knowledge, or external state block deletion.
   sync.
 - Each improvement records retain, change, consolidate, delete, or a blocker
   with revisit condition.
+- Consolidation records before/after command and packet visibility,
+	  migrated-consumer coverage, packet-catalog context bytes, and packet-command
+	  choice without introducing an unadmitted replacement packet. Historical
+	  values are extracted from the exact source catalog and bind its source
+	  commit and command, schema version, command count, normalized byte length,
+	  full-catalog digest, extraction rule, exact raw subset, and subset digest;
+	  self-consistent caller-authored replacement evidence is rejected.
 - A minimal repository adopts the universal core without copying this repo.
 - Codex source and installed runtime evidence remain separate; private Codex
   implementation paths are not dependencies.

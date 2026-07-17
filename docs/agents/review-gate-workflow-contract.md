@@ -31,6 +31,7 @@ last_validated: 2026-04-18
 | PR_LOADED | security.verify | ¬G_shaMatches | A_logShaMismatch | FAILED_SHA_MISMATCH |
 | PR_LOADED | security.verify | G_shaMatches | A_startTimer, A_listCheckRuns | CHECK_POLLING |
 | CHECK_POLLING | check.poll | G_checkNotFound | A_logCheckMissing | CHECK_MISSING |
+| CHECK_POLLING | check.poll | G_checkPassing ∧ G_automatedReviewMode | A_evalAutomatedReviews | AUTOMATED_REVIEW_EVALUATION |
 | CHECK_POLLING | check.poll | G_checkPassing | A_evalApprovals | APPROVAL_EVALUATION |
 | CHECK_POLLING | check.poll | G_checkCompleted ∧ ¬G_checkPassing | A_logCheckFailed | CHECK_FAILED |
 | CHECK_POLLING | check.poll | G_checkInProgress ∧ G_timeRemaining | A_waitPollInterval | CHECK_POLLING |
@@ -40,6 +41,8 @@ last_validated: 2026-04-18
 | APPROVAL_EVALUATION | approval.eval | G_noApprovers | A_logNoApproval | APPROVAL_FAILED |
 | APPROVAL_EVALUATION | approval.eval | G_hasApprovals | A_evalReviewerIndependence | INDEPENDENCE_EVALUATION |
 | APPROVAL_FAILED | finalize | G_success | A_buildOutput | COMPLETE_NOT_VERIFIED |
+| AUTOMATED_REVIEW_EVALUATION | automated_review.eval | ¬G_allAutomatedReviewsCurrent | A_logMissingAutomatedReview | COMPLETE_NOT_VERIFIED |
+| AUTOMATED_REVIEW_EVALUATION | automated_review.eval | G_allAutomatedReviewsCurrent | A_evalRequiredChecks | REQUIRED_CHECKS_EVALUATION |
 | INDEPENDENCE_EVALUATION | independence.eval | ¬G_independentReviewers | A_logIndependenceFail | INDEPENDENCE_FAILED |
 | INDEPENDENCE_EVALUATION | independence.eval | G_independentReviewers | A_evalRequiredChecks | REQUIRED_CHECKS_EVALUATION |
 | INDEPENDENCE_FAILED | finalize | G_success | A_buildOutput | COMPLETE_NOT_VERIFIED |
@@ -100,6 +103,7 @@ Compatibility and rollout:
 | CHECK_FAILED | terminal | Check run completed but not passing |
 | APPROVAL_EVALUATION | transitional | Evaluating PR approvals for HEAD SHA |
 | APPROVAL_FAILED | terminal | No approvals found for current HEAD SHA |
+| AUTOMATED_REVIEW_EVALUATION | transitional | Verifying every configured automated reviewer submitted review evidence for HEAD SHA |
 | INDEPENDENCE_EVALUATION | transitional | Verifying reviewer independence from coding actor |
 | INDEPENDENCE_FAILED | terminal | Coding actor is sole approver |
 | REQUIRED_CHECKS_EVALUATION | transitional | Verifying additional required checks |
@@ -129,6 +133,7 @@ Compatibility and rollout:
 | security.verify | `{ expectedSha: string, actualSha: string }` | SHA comparison check |
 | check.poll | `{ checkRuns: CheckRun[], checkName: string }` | Check run polling event |
 | approval.eval | `{ reviews: PullRequestReview[], headSha: string }` | Approval evaluation |
+| automated_review.eval | `{ reviews: PullRequestReview[], headSha: string, automatedReviewers: string[] }` | Solo-maintainer automated review evaluation |
 | independence.eval | `{ approvers: string[], codingActor: string }` | Reviewer independence check |
 | checks.eval | `{ checkRuns: CheckRun[], requiredChecks: string[] }` | Required checks evaluation |
 | threads.eval | `{ threads: ReviewThread[], botLogins: Set<string> }` | Thread resolution check |
@@ -152,6 +157,8 @@ Compatibility and rollout:
 | G_timeRemaining | `Date.now() - startTime < timeoutMs` |
 | G_noApprovers | `approvers.length === 0` |
 | G_hasApprovals | `approvers.length > 0` |
+| G_automatedReviewMode | `reviewPolicy.approvalMode === "automated_review"` |
+| G_allAutomatedReviewsCurrent | Every configured automated reviewer has a `COMMENTED` or `APPROVED` review with `commitId === headSha` |
 | G_independentReviewers | `independentApprovers.length > 0` (at least one non-coding-actor) |
 | G_requiredChecksFailing | `requiredCheckBlockers.length > 0` |
 | G_requiredChecksPassing | `requiredCheckBlockers.length === 0` |
@@ -185,6 +192,8 @@ Compatibility and rollout:
 | A_handleTimeout | Determine timeout action (fail vs warn) | ✓ |
 | A_evalApprovals | List PR reviews, resolve current approvers for SHA | ✓ |
 | A_logNoApproval | Build output with "no approvals" blocker | ✓ |
+| A_evalAutomatedReviews | Match configured automated reviewer logins to current-SHA review evidence | ✓ |
+| A_logMissingAutomatedReview | Build output naming configured reviewers missing current-SHA evidence | ✓ |
 | A_evalReviewerIndependence | Filter approvers excluding coding actor | ✓ |
 | A_logIndependenceFail | Build output with independence failure blocker | ✓ |
 | A_evalRequiredChecks | Verify all required checks are passing | ✓ |
@@ -234,8 +243,8 @@ Compatibility and rollout:
 | INV-1 | SHA must be validated before use | `validateSha()` at function entry |
 | INV-2 | Provided SHA must match PR HEAD | Explicit comparison before polling |
 | INV-3 | Polling must respect timeout | `Date.now() - startTime < timeoutMs` check each iteration |
-| INV-4 | Approvals must be for current HEAD SHA | `commitId === headSha` filter in `resolveCurrentApprovers` |
-| INV-5 | Reviewer independence requires at least one non-coding-actor approver | `independentApprovers.length > 0` check |
+| INV-4 | Human approvals and automated review evidence must be for current HEAD SHA | `commitId === headSha` filters in the configured approval-mode evaluator |
+| INV-5 | Human reviewer independence requires at least one non-coding-actor approver; automated mode requires every named reviewer | Approval-mode-specific evaluator |
 | INV-6 | Required checks must be complete and passing | Status `completed` + conclusion `success` |
 | INV-7 | Unresolved human threads block verification | Bot-only threads may be auto-resolved |
 | INV-8 | Confidence score 5 requires all gates passing | `policy_gate_status === "pass" && plan_traceability_status === "pass" && actionableCount === 0` |

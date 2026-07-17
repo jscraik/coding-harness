@@ -125,6 +125,11 @@ thin and delegate into this deep module.
   remain inside the CircleCI-owned security lane, but it must not be emitted as
   a separate required GitHub status context unless the required-check authority
   model is intentionally changed.
+- Contract migration types preserve `reviewPolicy.approvalMode` and
+  `automatedReviewers`. Existing and newly scaffolded repositories default to
+  `human_approval`; a solo-maintainer repository may explicitly select
+  `automated_review`, which must name every automated reviewer required to
+  submit evidence for the exact PR head SHA.
 - Generated CircleCI scaffolds must include
   `scripts/resolve-circleci-pr-ref.sh` whenever `pr-template` or
   `linear-gate` jobs are emitted. Those jobs should call the shared helper

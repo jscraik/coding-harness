@@ -62,10 +62,11 @@ truth.
 - Branch from `main`, open a PR for every merge, and keep CodeRabbit or human
   review independent from code authorship. Required status checks are
   `pr-pipeline`, `security-scan`, and `CodeRabbit`; CodeQL remains separate.
-- `review-learning-closeout/v1`, fitness, runtime, rework, and governance
-  packets are advisory evidence. Missing evidence is `n.a.` with a concrete
-  reason; these packets never prove validation, approval, CI, acceptance,
-  release, or merge readiness.
+- `review-learning-closeout/v1`, fitness, runtime, rework, governance, and
+  SynAIpse packet projections are advisory evidence. SynAIpse preserves one
+  `src/lib/synaipse/` authority, candidate identity, and traceability. Missing
+  evidence is `n.a.` with a concrete reason; these packets never prove
+  validation, approval, CI, acceptance, release, or merge readiness.
 - Treat repeated steering, review feedback, workflow misses, and recurring
   failures as system evidence. Route the durable correction to the smallest
   validator, schema, fixture, wrapper, instruction, or skill. Steering that

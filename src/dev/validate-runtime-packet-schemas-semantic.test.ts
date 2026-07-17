@@ -82,6 +82,23 @@ describe("validate-runtime-packet-schemas semantic branches", () => {
 		);
 	});
 
+	it("requires reviewer coverage evidence for a passing decision", () => {
+		const result = runValidator(
+			makeFixture(
+				"reviewer-decision/v1",
+				"contracts/examples/reviewer-decision.example.json",
+				(example) => {
+					example.status = "pass";
+					example.decision = "accept";
+					example.outcomes = ["accept"];
+					delete example.coverageReceipt;
+				},
+			),
+		);
+		expect(result.status).toBe(1);
+		expect(result.stdout).toContain("must match at least one anyOf schema");
+	});
+
 	it("rejects contradictory current-SHA evidence through the manifest", () => {
 		const result = runValidator(
 			makeFixture(
@@ -89,8 +106,6 @@ describe("validate-runtime-packet-schemas semantic branches", () => {
 				"contracts/examples/synaipse-transition.example.json",
 				(example) => {
 					example.repositorySha = "different-repository-sha";
-					const evidence = example.evidence as Record<string, unknown>;
-					evidence.currentSha = "different-current-sha";
 				},
 			),
 		);
@@ -98,12 +113,7 @@ describe("validate-runtime-packet-schemas semantic branches", () => {
 		const output = JSON.parse(result.stdout) as { errors: string[] };
 		expect(output.errors).toContainEqual(
 			expect.stringContaining(
-				'"path":"repositorySha","message":"must match evidence.hostedMain.sha"',
-			),
-		);
-		expect(output.errors).toContainEqual(
-			expect.stringContaining(
-				'"path":"evidence.currentSha","message":"must match evidence.hostedMain.sha"',
+				'"path":"repositorySha","message":"must match evidence.currentSha"',
 			),
 		);
 	});

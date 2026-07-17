@@ -11,6 +11,9 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Changed
 
+- Consolidated the default agent-native packet catalog from five choices to
+  two canonical commands while retaining all five legacy commands as callable
+  compatibility surfaces.
 - Aligned public product language and package metadata on SynAIpse as the AI
   Delivery Harness while keeping the coding-harness repository and package
   identifiers unchanged.

@@ -11,11 +11,18 @@ import {
 } from "./transition-contract.js";
 
 type Errors = SynaipseTransitionValidationResult["errors"];
+const FULL_GIT_SHA = /^[0-9a-f]{40}$/;
 
 /** Add a non-empty string error. */
 function requireString(value: unknown, path: string, errors: Errors): void {
 	if (typeof value !== "string" || value.trim() === "")
 		errors.push({ path, message: "must be a non-empty string" });
+}
+
+/** Add a full lowercase Git SHA validation error. */
+function requireFullGitSha(value: unknown, path: string, errors: Errors): void {
+	if (typeof value !== "string" || !FULL_GIT_SHA.test(value))
+		errors.push({ path, message: "must be a full lowercase git SHA" });
 }
 
 /** Add an RFC3339 date-time error. */
@@ -75,7 +82,7 @@ function validateHostedMain(value: unknown, errors: Errors): void {
 			path: "evidence.hostedMain.ref",
 			message: "must be refs/heads/main",
 		});
-	requireString(value.sha, "evidence.hostedMain.sha", errors);
+	requireFullGitSha(value.sha, "evidence.hostedMain.sha", errors);
 	requireDateTime(value.observedAt, "evidence.hostedMain.observedAt", errors);
 }
 
@@ -91,7 +98,7 @@ function validateEvidence(value: unknown, errors: Errors): void {
 		"evidence",
 		errors,
 	);
-	requireString(value.currentSha, "evidence.currentSha", errors);
+	requireFullGitSha(value.currentSha, "evidence.currentSha", errors);
 	requireStringArray(value.refs, "evidence.refs", errors);
 	requireDateTime(value.observedAt, "evidence.observedAt", errors);
 	validateHostedMain(value.hostedMain, errors);
@@ -193,7 +200,7 @@ function validateRecovery(value: unknown, errors: Errors): void {
 		"recovery",
 		errors,
 	);
-	requireString(value.refreshedSha, "recovery.refreshedSha", errors);
+	requireFullGitSha(value.refreshedSha, "recovery.refreshedSha", errors);
 	requireStringArray(value.evidenceRefs, "recovery.evidenceRefs", errors);
 	if (!BLOCKERS.includes(value.fromBlocker as Blocker))
 		errors.push({
@@ -230,8 +237,8 @@ function validateEnvelope(
 			path: "schemaVersion",
 			message: "must be synaipse-transition/v1",
 		});
-	for (const field of ["transitionId", "repositorySha"] as const)
-		requireString(value[field], field, errors);
+	requireString(value.transitionId, "transitionId", errors);
+	requireFullGitSha(value.repositorySha, "repositorySha", errors);
 	if (!STAGES.includes(value.fromStage as (typeof STAGES)[number]))
 		errors.push({
 			path: "fromStage",
@@ -255,24 +262,17 @@ function validateShaBindings(
 	errors: Errors,
 ): void {
 	const evidence = isRecord(value.evidence) ? value.evidence : null;
-	const hostedMain =
-		evidence && isRecord(evidence.hostedMain) ? evidence.hostedMain : null;
-	if (hostedMain) {
-		if (value.repositorySha !== hostedMain.sha)
+	if (evidence) {
+		if (value.repositorySha !== evidence.currentSha)
 			errors.push({
 				path: "repositorySha",
-				message: "must match evidence.hostedMain.sha",
-			});
-		if (evidence?.currentSha !== hostedMain.sha)
-			errors.push({
-				path: "evidence.currentSha",
-				message: "must match evidence.hostedMain.sha",
+				message: "must match evidence.currentSha",
 			});
 		const recovery = isRecord(value.recovery) ? value.recovery : null;
-		if (recovery && recovery.refreshedSha !== hostedMain.sha)
+		if (recovery && recovery.refreshedSha !== evidence.currentSha)
 			errors.push({
 				path: "recovery.refreshedSha",
-				message: "must match evidence.hostedMain.sha",
+				message: "must match evidence.currentSha",
 			});
 	}
 }

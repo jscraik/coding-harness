@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	buildSynaipseTransition,
 	decideSynaipseTransition,
 	validateSynaipseTransition,
 	type SynaipseTransitionInput,
@@ -45,6 +46,37 @@ function transitionWith(
 }
 
 describe("synaipse-transition/v1", () => {
+	it("transports explicit authority and Vital Decision inputs without defaults", () => {
+		const record = buildSynaipseTransition({
+			transitionId: "ch_transition_explicit_authority",
+			fromStage: "build",
+			toStage: "prove",
+			repositorySha: SHA,
+			hostedMainSha: SHA,
+			evidenceRefs: ["authority:validated"],
+			observedAt: NOW,
+			authority: {
+				owner: "operator",
+				standing: false,
+				capabilities: ["read"],
+			},
+			vitalDecision: {
+				required: true,
+				question: "May this transition proceed?",
+			},
+		});
+
+		expect(record.authority).toEqual({
+			owner: "operator",
+			standing: false,
+			capabilities: ["read"],
+		});
+		expect(record.vitalDecision).toEqual({
+			required: true,
+			question: "May this transition proceed?",
+		});
+	});
+
 	it("accepts a current-SHA transition with standing authority", () => {
 		const input = validTransition();
 		expect(validateSynaipseTransition(input)).toEqual({
@@ -57,14 +89,15 @@ describe("synaipse-transition/v1", () => {
 	});
 
 	it("blocks a stale SHA and supplies deterministic recovery", () => {
+		const oldSha = "a".repeat(40);
 		const input = transitionWith({
-			repositorySha: "old-sha",
+			repositorySha: oldSha,
 			evidence: {
 				...validTransition().evidence,
-				currentSha: "old-sha",
+				currentSha: oldSha,
 				hostedMain: {
 					...validTransition().evidence.hostedMain,
-					sha: "old-sha",
+					sha: oldSha,
 				},
 			},
 		});
@@ -209,7 +242,61 @@ describe("synaipse-transition/v1", () => {
 		});
 	});
 
-	it("rejects recovery with a refreshed SHA different from hosted main", () => {
+	it("accepts a checkout SHA that is newer than the observed hosted main", () => {
+		const input = validTransition();
+		input.evidence.hostedMain.sha = "4b9c2abe870d38bfadd5b8836c73cf7ea8af2abe";
+
+		expect(validateSynaipseTransition(input)).toEqual({
+			valid: true,
+			errors: [],
+		});
+		expect(
+			decideSynaipseTransition(input, { expectedSha: SHA, now: NOW }),
+		).toMatchObject({ status: "admitted", blockers: [] });
+	});
+
+	it("rejects a malformed hosted-main SHA independently from checkout HEAD", () => {
+		const input = validTransition();
+		input.evidence.hostedMain.sha = "not-a-sha";
+
+		expect(validateSynaipseTransition(input)).toMatchObject({
+			valid: false,
+			errors: [
+				{
+					path: "evidence.hostedMain.sha",
+					message: "must be a full lowercase git SHA",
+				},
+			],
+		});
+	});
+
+	it("rejects malformed checkout and recovery SHA identities", () => {
+		const input = transitionWith({
+			recovery: {
+				fromBlocker: "stale_sha",
+				refreshedSha: "not-a-sha",
+				evidenceRefs: ["recovery:stale_sha"],
+			},
+		});
+		input.repositorySha = "not-a-sha";
+		input.evidence.currentSha = "not-a-sha";
+		input.evidence.refs.push("recovery:stale_sha");
+
+		const result = validateSynaipseTransition(input);
+
+		expect(result.valid).toBe(false);
+		for (const path of [
+			"repositorySha",
+			"evidence.currentSha",
+			"recovery.refreshedSha",
+		])
+			expect(result.errors).toContainEqual({
+				path,
+				message: "must be a full lowercase git SHA",
+			});
+	});
+
+	it("rejects recovery with a refreshed SHA different from checkout HEAD", () => {
 		const input = transitionWith({
 			recovery: {
 				fromBlocker: "stale_sha",
@@ -222,7 +309,7 @@ describe("synaipse-transition/v1", () => {
 		expect(result.valid).toBe(false);
 		expect(result.errors).toContainEqual({
 			path: "recovery.refreshedSha",
-			message: "must match evidence.hostedMain.sha",
+			message: "must match evidence.currentSha",
 		});
 	});
 

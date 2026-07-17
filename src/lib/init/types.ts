@@ -163,6 +163,8 @@ export interface ContractSchema {
 				timeoutSeconds: number;
 				timeoutAction: "fail" | "warn";
 				requiredChecks?: string[];
+				approvalMode?: "human_approval" | "automated_review";
+				automatedReviewers?: string[];
 				enforceReviewerIndependence?: boolean;
 		  }
 		| undefined;
