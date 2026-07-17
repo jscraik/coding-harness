@@ -1322,17 +1322,66 @@ function tomlStateAfterLine(
 	return state;
 }
 
+/** Skip horizontal whitespace inside one TOML table header. */
+function skipTomlHeaderWhitespace(line: string, start: number): number {
+	let cursor = start;
+	while (/[ \t]/.test(line[cursor] ?? "")) cursor += 1;
+	return cursor;
+}
+
+/** Read one bare or quoted TOML table-header key segment. */
+function readTomlHeaderKey(
+	line: string,
+	start: number,
+): { value: string; end: number } | null {
+	const cursor = skipTomlHeaderWhitespace(line, start);
+	const quote = line[cursor];
+	if (quote === '"' || quote === "'")
+		return readQuotedTomlKey(line, cursor, line.length, quote);
+	const match = line.slice(cursor).match(/^[A-Za-z0-9_-]+/);
+	return match === null
+		? null
+		: { value: match[0], end: cursor + match[0].length };
+}
+
+/** Parse an array-of-table header into its canonical TOML key path. */
+function parseTomlArrayTablePath(line: string): string[] | null {
+	let cursor = skipTomlHeaderWhitespace(line, 0);
+	if (line.slice(cursor, cursor + 2) !== "[[") return null;
+	cursor += 2;
+	const path: string[] = [];
+	while (cursor < line.length) {
+		const key = readTomlHeaderKey(line, cursor);
+		if (key === null) return null;
+		path.push(key.value);
+		cursor = skipTomlHeaderWhitespace(line, key.end);
+		if (line[cursor] === ".") {
+			cursor += 1;
+			continue;
+		}
+		if (line.slice(cursor, cursor + 2) !== "]]") return null;
+		cursor = skipTomlHeaderWhitespace(line, cursor + 2);
+		return cursor === line.length || line[cursor] === "#" ? path : null;
+	}
+	return null;
+}
+
+/** Return whether one TOML header denotes the Prek hook table path. */
+function isPrekHookTableHeader(line: string): boolean {
+	const path = parseTomlArrayTablePath(line);
+	return path?.length === 2 && path[0] === "repos" && path[1] === "hooks";
+}
+
 /** Split real hook tables while ignoring header-shaped text inside strings. */
 function splitPrekHookBlocks(content: string): string[] {
 	const headers: Array<{ start: number; end: number }> = [];
-	const headerPattern = /^\s*\[\[\s*repos\s*\.\s*hooks\s*\]\](?:\s*#.*)?\s*$/;
 	let state: TomlMultilineState = "normal";
 	let offset = 0;
 	while (offset < content.length) {
 		const newline = content.indexOf("\n", offset);
 		const end = newline === -1 ? content.length : newline + 1;
 		const line = content.slice(offset, newline === -1 ? end : newline);
-		if (state === "normal" && headerPattern.test(line))
+		if (state === "normal" && isPrekHookTableHeader(line))
 			headers.push({ start: offset, end });
 		state = tomlStateAfterLine(line, state);
 		offset = end;

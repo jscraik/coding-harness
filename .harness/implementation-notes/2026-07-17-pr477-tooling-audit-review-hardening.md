@@ -55,6 +55,14 @@ requires an `entry`. Approved `commit-msg` validators may omit
 fails closed. Inline tables reject TOML-forbidden trailing commas while arrays
 retain their separate TOML trailing-comma behavior.
 
+The hook-table splitter now parses TOML array-table key segments instead of
+matching only the bare `[[repos.hooks]]` spelling. Equivalent bare, quoted,
+mixed, and escaped key paths resolve to the same `repos.hooks` identity while
+header-shaped content inside multiline strings remains inert. The unreadable
+readiness fixture also restores the earlier Prek leaf mutation before its
+second audit and asserts the readiness path itself, so that regression cannot
+pass because an unrelated drift finding survived from the first assertion.
+
 Each correction has an assertion-shaped fixture that starts from a compliant
 repository, introduces one invalid configuration, and requires a specific
 critical diagnostic. This moves the reviewed behavior from conversational
@@ -66,6 +74,10 @@ The sibling sweep covered every policy-relevant Prek field and both root-level
 default arrays in `src/commands/tooling-audit-core.ts`, plus readiness wrappers
 that use direct, shell-suffixed, or extensionless targets. General-purpose TOML
 support outside the Prek policy surface remains intentionally unchanged.
+
+Command: `MISE_NO_CONFIG=1 pnpm exec vitest run src/commands/tooling-audit-toml.test.ts --reporter=dot` -> pass (12 focused TOML compatibility tests, including equivalent quoted hook-table paths and isolated readiness diagnostics).
+Command: `MISE_NO_CONFIG=1 pnpm run test:related` -> pass (5 related files and 51 tests).
+Command: `MISE_NO_CONFIG=1 pnpm check:static` -> pass (the full static, contract, architecture, type, documentation, size, self-affirming, and behavior-test gate passed).
 
 Focused and repository-wide commands prove local parser, audit, static, and
 test behavior. Hosted checks, final automated-review convergence, acceptance,

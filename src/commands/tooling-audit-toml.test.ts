@@ -104,6 +104,14 @@ exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
 			return result.value.exitCode;
 		};
 		try {
+			expect(
+				await run(
+					basePrek.replaceAll(
+						"[[repos.hooks]]",
+						"[[\"repos\" . 'hooks']] # equivalent quoted TOML path",
+					),
+				),
+			).toBe(EXIT_CODES.SUCCESS);
 			const hook = '[[repos.hooks]]\nid = "pre-commit"';
 			const cases: Array<[string, string, number]> = [
 				[
@@ -730,6 +738,18 @@ stages = ["commit-msg"]
 
 			const policy = DEFAULT_CONTRACT.toolingPolicy;
 			if (!policy) throw new Error("Expected default tooling policy");
+			rmSync(join(repoDir, "scripts/hooks/pre-push.sh"), {
+				recursive: true,
+				force: true,
+			});
+			writeFileSync(
+				prekPath,
+				readFileSync(prekPath, "utf-8").replace(
+					"bash scripts/hooks/pre-push.sh",
+					"bash scripts/hook-pre-push.sh",
+				),
+				"utf-8",
+			);
 			const readinessPath = join(repoDir, policy.readinessScriptPath);
 			rmSync(readinessPath);
 			mkdirSync(readinessPath);
@@ -738,10 +758,16 @@ stages = ["commit-msg"]
 				format: "json",
 			});
 			expect(unreadableReadiness.ok).toBe(true);
-			if (unreadableReadiness.ok)
+			if (unreadableReadiness.ok) {
 				expect(unreadableReadiness.value.exitCode).toBe(
 					EXIT_CODES.DRIFT_DETECTED,
 				);
+				expect(
+					unreadableReadiness.value.result.results[0]?.findings.some(
+						(finding) => finding.path === policy.readinessScriptPath,
+					),
+				).toBe(true);
+			}
 		} finally {
 			rmSync(tempRoot, { recursive: true, force: true });
 		}
