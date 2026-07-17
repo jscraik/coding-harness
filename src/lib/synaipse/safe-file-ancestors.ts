@@ -14,7 +14,14 @@ function pathComponents(path: string | Buffer): Buffer[] {
 	return components;
 }
 
-/** Reject symlinked, missing, or non-directory ancestors below a trusted root. */
+/**
+ * Reject symlinked, missing, or non-directory ancestors below a trusted root.
+ *
+ * This is a pathname preflight for a trusted local checkout, paired by callers
+ * with `O_NOFOLLOW` on the final component. Node has no portable descriptor-
+ * relative `openat`, so this helper does not claim atomic containment against
+ * concurrent adversarial directory replacement.
+ */
 export function hasUnsafeFileAncestor(
 	rootPath: string,
 	relativePath: string | Buffer,

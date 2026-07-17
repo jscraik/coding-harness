@@ -383,10 +383,19 @@ async function evaluateAutomatedReviews(
 		if (review.commit_id !== headSha) continue;
 		const login = normalizeBotLogin(review.user?.login);
 		if (!login) continue;
-		latestStateByReviewer.set(
-			login,
-			review.state === "COMMENTED" || review.state === "APPROVED",
-		);
+		if (review.state === "APPROVED") {
+			latestStateByReviewer.set(login, true);
+		} else if (
+			review.state === "CHANGES_REQUESTED" ||
+			review.state === "DISMISSED"
+		) {
+			latestStateByReviewer.set(login, false);
+		} else if (
+			review.state === "COMMENTED" &&
+			!latestStateByReviewer.has(login)
+		) {
+			latestStateByReviewer.set(login, true);
+		}
 	}
 	const missing = requiredReviewers
 		.map((reviewer) => normalizeBotLogin(reviewer))

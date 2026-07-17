@@ -3036,9 +3036,10 @@ describe("runReviewGate", () => {
 	});
 
 	it.each([
-		"CHANGES_REQUESTED",
-		"DISMISSED",
-	] as const)("blocks automated review when the latest current-head state is %s", async (latestState) => {
+		["COMMENTED then CHANGES_REQUESTED", ["COMMENTED", "CHANGES_REQUESTED"]],
+		["COMMENTED then DISMISSED", ["COMMENTED", "DISMISSED"]],
+		["CHANGES_REQUESTED then COMMENTED", ["CHANGES_REQUESTED", "COMMENTED"]],
+	] as const)("blocks automated review for %s", async (_, reviewStates) => {
 		mockLoadContract.mockReturnValue({
 			version: "1.0",
 			riskTierRules: {},
@@ -3068,20 +3069,14 @@ describe("runReviewGate", () => {
 					user: { login: "solo-maintainer" },
 					head: { sha: validSha, ref: "feature/test" },
 				}),
-				listPullRequestReviews: vi.fn().mockResolvedValue([
-					{
-						state: "COMMENTED",
+				listPullRequestReviews: vi.fn().mockResolvedValue(
+					reviewStates.map((state, index) => ({
+						state,
 						commit_id: validSha,
-						submitted_at: "2026-07-17T10:00:00Z",
+						submitted_at: `2026-07-17T10:0${index}:00Z`,
 						user: { login: "coderabbitai[bot]" },
-					},
-					{
-						state: latestState,
-						commit_id: validSha,
-						submitted_at: "2026-07-17T10:01:00Z",
-						user: { login: "coderabbitai[bot]" },
-					},
-				]),
+					})),
+				),
 			}),
 		);
 

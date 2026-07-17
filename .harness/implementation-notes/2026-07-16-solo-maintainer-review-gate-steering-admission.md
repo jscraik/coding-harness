@@ -87,8 +87,11 @@ review-gate execution, review-gate tests, AI review governance, workflow
 contract, root repository contract, and the review log. Siblings changed are
 those that define or consume the approval mode. Presets are intentionally left
 unchanged so existing and newly scaffolded repositories retain the conservative
-`human_approval` default. No broader branch-protection or reviewer-access change
-is included.
+`human_approval` default. The repository's branch-protection contract now sets
+`requiredApprovingReviewCount` to zero so hosted policy does not contradict the
+selected automated-review mode; required checks and conversation resolution
+remain blocking. This bounded repository-specific alignment and the associated
+governance paths were explicitly authorized by Jamie for PR #480.
 
 ## Executable Guard
 
@@ -109,11 +112,14 @@ one configured reviewer has no review on the current SHA.
 Final-head review exposed one remaining stale-state gap: an earlier passing
 automated review could mask a later `CHANGES_REQUESTED` or `DISMISSED` event by
 the same reviewer. Review acceptance now evaluates the latest current-head
-review for each configured automated reviewer. Only a latest `COMMENTED` or
-`APPROVED` state satisfies the automated-review lane, and unresolved
-conversations remain independently blocking. A parameterized regression proves
-both later blocking states. This preserves practical solo-maintainer review
-while preventing stale automated approval from being treated as current truth.
+review for each configured automated reviewer. An initial `COMMENTED` review
+satisfies the evidence lane, but it cannot clear an existing
+`CHANGES_REQUESTED` or `DISMISSED` state; only a later `APPROVED` review can do
+that. Unresolved conversations remain independently blocking. A parameterized
+regression proves both later blocking states and the reverse-order
+`CHANGES_REQUESTED` then `COMMENTED` case. This preserves practical
+solo-maintainer review while preventing later commentary from erasing a
+blocking decision.
 
 ## Forbidden Recurrence Behavior
 
@@ -126,6 +132,9 @@ evidence.
 
 ## Validation
 
+- Command: `MISE_NO_CONFIG=1 pnpm exec vitest run src/lib/synaipse/packet-consolidation.test.ts src/lib/synaipse/packet-consolidation-reviewer-coverage.test.ts src/commands/review-gate.test.ts --reporter=dot` -> pass (3 files and 164 tests, including reverse-order blocking-review state and reviewer decision compatibility cases)
+- Command: `MISE_NO_CONFIG=1 pnpm check:static` -> pass (the first run exposed and the repair removed a complexity-11 helper and a 1,225-line test file; the rerun passed all static gates)
+- Command: `MISE_NO_CONFIG=1 pnpm check` -> pass (related tests passed 1,015 tests with 1 skip, standard CI passed 6,162 tests with 1 skip, the isolated ci-migrate suite passed 108 tests, and dependency audit found 0 advisories)
 - Command: `pnpm exec vitest run src/lib/contract/validator.test.ts src/commands/review-gate.test.ts --reporter=dot` -> pass (2 files and 217 tests, including current-SHA automated-review success and missing-reviewer fail-closed cases)
 - Command: `pnpm run docs:steering:guard` -> pass (`steering-feedback-contract: pass`)
 - Command: `bash scripts/run-harness-gate.sh docs-gate --mode required --json` -> pass (zero errors; one advisory stale-document warning)

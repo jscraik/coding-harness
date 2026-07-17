@@ -14,6 +14,27 @@ const reviewerExample = JSON.parse(
 
 describe("reviewer decision coverage boundary", () => {
 	it.each([
+		["pass", "needs_evidence"],
+		["needs_evidence", "accept"],
+		["blocked", "defer"],
+		["defer", "object"],
+	] as const)("rejects incompatible reviewer status %s and decision %s", (status, decision) => {
+		const packet = structuredClone(reviewerExample);
+		Reflect.set(packet, "status", status);
+		Reflect.set(packet, "decision", decision);
+		Reflect.set(packet, "outcomes", [decision]);
+
+		const validation = validatePacketSource("reviewer-decision/v1", packet);
+
+		expect(validation).toEqual({
+			valid: false,
+			errors: expect.arrayContaining([
+				expect.stringContaining("decision must be compatible with status"),
+			]),
+		});
+	});
+
+	it.each([
 		"accept",
 		"accepted_risk",
 	] as const)("requires a coverage receipt for a passing reviewer %s decision", (decision) => {

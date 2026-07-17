@@ -518,9 +518,9 @@ at the narrow owning boundaries instead of relying on closeout reminders:
 - transition records require full lowercase Git SHAs for repository and hosted
   evidence, while only the legacy `session-distill/v1` Pydantic input accepts a
   7-40 character lowercase hexadecimal prefix;
-- automated reviewer acceptance evaluates each configured reviewer's latest
-  current-head state, so a later `CHANGES_REQUESTED` or `DISMISSED` review
-  cannot be masked by an earlier passing event;
+- automated reviewer acceptance preserves a current-head
+  `CHANGES_REQUESTED` or `DISMISSED` state across later commentary until a
+  later `APPROVED` review explicitly clears it;
 - fixture Git subprocesses use the repository-owned sanitized environment, and
   command-wrapper tests use explicit canonical validation results rather than
   inheriting the developer checkout's remote configuration.
@@ -534,11 +534,23 @@ changed. Broader filesystem callers were intentionally left unchanged because
 they do not read these candidate-bound artifacts; any future sibling requiring
 the same trust boundary should import the shared ancestor guard.
 
+The ancestor guard is a fail-closed pathname preflight paired with
+`O_NOFOLLOW` on the final component. Node's portable filesystem API does not
+expose descriptor-relative `openat`, so this code does not claim atomic defense
+against an adversary concurrently replacing already-validated directories. The
+trusted local-checkout threat model and this portability boundary are explicit;
+an atomic containment claim requires a future native primitive rather than a
+stronger comment or another pathname recheck. Reviewer packet projection now
+also enforces the runtime schema's status/decision/outcome compatibility before
+canonicalization, preventing malformed review evidence from being promoted.
+
 Command: `pnpm exec biome check scripts/check_artifact_type_contracts.py scripts/tests/test_agent_native_artifact_contracts.py src/commands/review-gate-core.ts src/commands/review-gate.test.ts src/lib/cli/registry/agent-native-packet-command-specs.test.ts src/lib/cli/registry/agent-native-packet-command-specs.ts src/lib/contract/json-schema-core.ts src/lib/contract/types-core.ts src/lib/contract/validator-core.ts src/lib/contract/validator.test.ts src/lib/synaipse/packet-caller-candidate-content.ts src/lib/synaipse/packet-caller-inventory.ts src/lib/synaipse/packet-candidate-identity.test.ts src/lib/synaipse/packet-candidate-identity.ts src/lib/synaipse/packet-canonicalization.test.ts src/lib/synaipse/packet-consolidation.test.ts src/lib/synaipse/packet-retirement.ts src/lib/synaipse/safe-file-ancestors.ts src/lib/synaipse/transition-validation.ts src/lib/synaipse/transition.test.ts` -> pass (18 changed TypeScript files passed formatting and lint checks; Python files were outside Biome's configured file set).
 Command: `pnpm exec tsc --noEmit` -> pass (the final review repair type-checks).
 Command: `pnpm exec vitest run src/lib/cli/registry/agent-native-packet-command-specs.test.ts src/lib/contract/validator.test.ts src/lib/synaipse/packet-candidate-identity.test.ts src/lib/synaipse/packet-consolidation.test.ts src/lib/synaipse/packet-canonicalization.test.ts src/lib/synaipse/transition.test.ts src/commands/review-gate.test.ts --reporter=dot` -> pass (7 files passed 345 tests with 1 platform-gated skip).
 Command: `uv run pytest -q scripts/tests/test_agent_native_artifact_contracts.py` -> pass (24 Python contract tests passed, including legacy abbreviated-SHA compatibility and non-hex rejection).
 Command: `pnpm check` -> pass (the aggregate static, related-test, full-test, and dependency-audit contract passed; related tests passed 1,007 tests with 1 skip, standard CI passed 6,154 tests with 1 skip, the isolated ci-migrate suite passed 108 tests, and the dependency audit found 0 advisories at or above moderate).
+Command: `MISE_NO_CONFIG=1 pnpm exec vitest run src/lib/synaipse/packet-consolidation.test.ts src/lib/synaipse/packet-consolidation-reviewer-coverage.test.ts src/commands/review-gate.test.ts --reporter=dot` -> pass (3 files and 164 tests after the final status/decision and automated-review state repair).
+Command: `MISE_NO_CONFIG=1 pnpm check` -> pass (the repaired final candidate passed static gates, 1,015 related tests with 1 skip, 6,162 standard CI tests with 1 skip, 108 isolated ci-migrate tests, and a dependency audit with 0 advisories).
 
 These results prove the local candidate and regression boundaries only. Hosted
 checks, current review evidence, conversation resolution, acceptance, merge,

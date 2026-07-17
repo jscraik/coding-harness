@@ -110,6 +110,7 @@ function adaptPacketSource(
 			break;
 		case "reviewer-decision/v1":
 			validateRequiredString("command", packet.command, errors);
+			validateReviewerDecisionFields(packet, errors);
 			evidenceRefs = reviewerEvidenceRefs(packet, errors);
 			break;
 		case "governance-decision-surface/v1":
@@ -246,6 +247,62 @@ function reviewerEvidenceRefs(
 		"coverageReceipt.evidenceRefs",
 		errors,
 	);
+}
+
+/** Return the decisions permitted by one reviewer status. */
+function reviewerDecisionsForStatus(status: string): readonly string[] | null {
+	switch (status) {
+		case "pass":
+			return ["accept", "accepted_risk"];
+		case "needs_evidence":
+			return ["needs_evidence"];
+		case "blocked":
+			return ["blocked_external", "object"];
+		case "defer":
+			return ["defer"];
+		default:
+			return null;
+	}
+}
+
+/** Reject reviewer status, decision, and outcome combinations the runtime schema rejects. */
+function validateReviewerDecisionFields(
+	packet: Record<string, unknown>,
+	errors: string[],
+): void {
+	const status = stringOrNull(packet.status);
+	const decision = stringOrNull(packet.decision);
+	const compatibleDecisions = status
+		? reviewerDecisionsForStatus(status)
+		: null;
+	if (compatibleDecisions === null)
+		errors.push("status must be a supported reviewer status");
+	if (decision === null)
+		errors.push("decision must be a supported reviewer decision");
+	else if (
+		compatibleDecisions !== null &&
+		!compatibleDecisions.includes(decision)
+	)
+		errors.push("decision must be compatible with status");
+	validateReviewerOutcomes(packet.outcomes, decision, errors);
+}
+
+/** Require reviewer outcomes to be strings and include the selected decision. */
+function validateReviewerOutcomes(
+	value: unknown,
+	decision: string | null,
+	errors: string[],
+): void {
+	const outcomes = claimList(value);
+	if (
+		!Array.isArray(value) ||
+		outcomes.length === 0 ||
+		outcomes.length !== value.length
+	) {
+		errors.push("outcomes must be a non-empty array of reviewer decisions");
+	} else if (decision !== null && !outcomes.includes(decision)) {
+		errors.push("decision must be included in outcomes");
+	}
 }
 
 /** Require a non-empty list of object records at a packet boundary. */
