@@ -12,7 +12,11 @@ const repoRootName = basename(repoRoot);
 function runPreflight(
 	args: string[],
 	forcedStatus: string,
-	options: { ci?: boolean; enableTestOverrides?: boolean } = {},
+	options: {
+		ci?: boolean;
+		enableTestOverrides?: boolean;
+		skipHarnessRunners?: boolean;
+	} = {},
 ) {
 	const env = { ...process.env };
 	delete env.BASH_ENV;
@@ -36,6 +40,9 @@ function runPreflight(
 				options.enableTestOverrides === false ? "" : "1",
 			CODEX_PREFLIGHT_REQUIRE_PROJECT_BRAIN: "never",
 			CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS: forcedStatus,
+			CODEX_PREFLIGHT_TEST_SKIP_HARNESS_RUNNERS: options.skipHarnessRunners
+				? "1"
+				: "",
 		},
 	});
 }
@@ -149,6 +156,69 @@ describe("codex-preflight Local Memory legacy routing", () => {
 		});
 	});
 
+	it("rejects Harness runner isolation unless test overrides are enabled", () => {
+		const result = runPreflight(["--stack", "auto", "--mode", "required"], "", {
+			enableTestOverrides: false,
+			skipHarnessRunners: true,
+		});
+
+		expectBehavior({
+			given: "Harness runner isolation without the explicit test override gate",
+			should: "fail required preflight instead of bypassing available runners",
+			actual: {
+				status: result.status,
+				outputIncludesGateError: combinedOutput(result).includes(
+					"requires CODEX_PREFLIGHT_ENABLE_TEST_OVERRIDES=1",
+				),
+			},
+			expected: {
+				status: 2,
+				outputIncludesGateError: true,
+			},
+		});
+	});
+
+	it("rejects Harness runner isolation in CI", () => {
+		const result = runPreflight(["--stack", "auto", "--mode", "required"], "", {
+			ci: true,
+			skipHarnessRunners: true,
+		});
+
+		expectBehavior({
+			given: "Harness runner isolation under CI",
+			should: "fail required preflight instead of allowing a CI bypass",
+			actual: {
+				status: result.status,
+				outputIncludesCiError: combinedOutput(result).includes(
+					"is not allowed in CI",
+				),
+			},
+			expected: {
+				status: 2,
+				outputIncludesCiError: true,
+			},
+		});
+	});
+
+	it("rejects Harness runner isolation in CI under optional mode", () => {
+		const result = runPreflight(["--stack", "auto", "--mode", "optional"], "", {
+			ci: true,
+			skipHarnessRunners: true,
+		});
+
+		expectBehavior({
+			given: "Harness runner isolation under CI with optional Local Memory",
+			should: "fail before optional-mode normalization can hide the bypass",
+			actual: {
+				status: result.status,
+				outputIncludesAuthorizationError: combinedOutput(result).includes(
+					"is not allowed in CI",
+				),
+			},
+			expected: { status: 2, outputIncludesAuthorizationError: true },
+		});
+	});
+
 	it("fails closed for legacy positional mode by default", () => {
 		const result = runPreflight(
 			[repoRootName, "git,bash", "CODESTYLE.md"],
@@ -207,6 +277,8 @@ describe("codex-preflight Local Memory legacy routing", () => {
 					CI: "",
 					CODEX_PREFLIGHT_REQUIRE_PROJECT_BRAIN: "never",
 					CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS: "",
+					CODEX_PREFLIGHT_ENABLE_TEST_OVERRIDES: "1",
+					CODEX_PREFLIGHT_TEST_SKIP_HARNESS_RUNNERS: "1",
 					PATH: pathWithoutLocalMemory(),
 				},
 			},
