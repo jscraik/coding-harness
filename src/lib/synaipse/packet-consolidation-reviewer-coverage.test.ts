@@ -54,4 +54,27 @@ describe("reviewer decision coverage boundary", () => {
 			]),
 		});
 	});
+
+	it.each([
+		"accept",
+		"accepted_risk",
+	] as const)("requires evidence references for a passing reviewer %s decision", (decision) => {
+		const packet = structuredClone(reviewerExample);
+		Reflect.set(packet, "status", "pass");
+		Reflect.set(packet, "decision", decision);
+		Reflect.set(packet, "outcomes", [decision]);
+		const coverageReceipt = packet.coverageReceipt as Record<string, unknown>;
+		coverageReceipt.evidenceRefs = [];
+
+		const validation = validatePacketSource("reviewer-decision/v1", packet);
+
+		expect(validation).toEqual({
+			valid: false,
+			errors: expect.arrayContaining([
+				expect.stringContaining(
+					"coverageReceipt.evidenceRefs must be a non-empty array",
+				),
+			]),
+		});
+	});
 });

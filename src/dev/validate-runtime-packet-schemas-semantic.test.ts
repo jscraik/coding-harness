@@ -99,6 +99,24 @@ describe("validate-runtime-packet-schemas semantic branches", () => {
 		expect(result.stdout).toContain("must match at least one anyOf schema");
 	});
 
+	it("requires reviewer coverage evidence references for a passing decision", () => {
+		const result = runValidator(
+			makeFixture(
+				"reviewer-decision/v1",
+				"contracts/examples/reviewer-decision.example.json",
+				(example) => {
+					example.status = "pass";
+					example.decision = "accept";
+					example.outcomes = ["accept"];
+					const receipt = example.coverageReceipt as Record<string, unknown>;
+					receipt.evidenceRefs = [];
+				},
+			),
+		);
+		expect(result.status).toBe(1);
+		expect(result.stdout).toContain("must match at least one anyOf schema");
+	});
+
 	it("rejects contradictory current-SHA evidence through the manifest", () => {
 		const result = runValidator(
 			makeFixture(

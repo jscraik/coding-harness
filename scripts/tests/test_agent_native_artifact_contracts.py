@@ -288,6 +288,19 @@ class TestReviewerDecisionReport:
         ):
             ReviewerDecisionReport.model_validate(payload)
 
+    def test_rejects_passing_report_without_coverage_evidence_refs(self) -> None:
+        payload = deepcopy(_load_example("reviewer-decision.example.json"))
+        payload["status"] = "pass"
+        payload["decision"] = "accept"
+        payload["outcomes"] = ["accept"]
+        payload["coverageReceipt"]["evidenceRefs"] = []
+
+        with pytest.raises(
+            ValidationError,
+            match="coverageReceipt.evidenceRefs must not be empty",
+        ):
+            ReviewerDecisionReport.model_validate(payload)
+
 
 class TestGovernanceDecisionSurfaceReport:
     def test_accepts_canonical_report_example(self) -> None:

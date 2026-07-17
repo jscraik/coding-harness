@@ -398,9 +398,16 @@ async function evaluateAutomatedReviews(
 		}
 	}
 	const missing = requiredReviewers
-		.map((reviewer) => normalizeBotLogin(reviewer))
-		.filter((reviewer): reviewer is string => reviewer !== undefined)
-		.filter((reviewer) => latestStateByReviewer.get(reviewer) !== true);
+		.map((reviewer) => ({
+			display: reviewer.trim().toLowerCase(),
+			identity: normalizeBotLogin(reviewer),
+		}))
+		.filter(
+			(reviewer): reviewer is { display: string; identity: string } =>
+				reviewer.identity !== undefined,
+		)
+		.filter((reviewer) => latestStateByReviewer.get(reviewer.identity) !== true)
+		.map((reviewer) => reviewer.display);
 	return missing.length === 0
 		? { passed: true, blockers: [] }
 		: {
@@ -1372,9 +1379,19 @@ interface AuthzPreflightResult {
 	message?: string;
 }
 
+/**
+ * Canonicalize a GitHub bot login for identity comparison.
+ *
+ * GitHub surfaces the same app identity with and without a trailing `[bot]`
+ * suffix across reviews and review-thread comments. The suffix is removed so
+ * those transport aliases cannot bypass required-reviewer checks.
+ */
 function normalizeBotLogin(login: string | undefined): string | undefined {
 	const trimmed = login?.trim().toLowerCase();
-	return trimmed && trimmed.length > 0 ? trimmed : undefined;
+	if (!trimmed) return undefined;
+	return trimmed.endsWith("[bot]")
+		? trimmed.slice(0, -"[bot]".length)
+		: trimmed;
 }
 
 function isAutomatedActorLogin(

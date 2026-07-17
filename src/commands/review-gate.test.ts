@@ -3125,14 +3125,14 @@ describe("runReviewGate", () => {
 					{
 						state: "COMMENTED",
 						commit_id: validSha,
-						user: { login: "coderabbitai[bot]" },
+						user: { login: "coderabbitai" },
 					},
 				]),
 				listPullRequestReviewThreads: vi.fn().mockResolvedValue([
 					{
 						id: "required-reviewer-thread",
 						isResolved: false,
-						comments: [{ author: { login: "coderabbitai[bot]" } }],
+						comments: [{ author: { login: "coderabbitai" } }],
 					},
 				]),
 			}),
