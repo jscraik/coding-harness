@@ -33,6 +33,7 @@ const requiredRuntimeInputs = [
 	"scripts/lib/safe-git-env.mjs",
 	"src/lib/testing/behavior-test-suites.json",
 	"src/lib/testing/expect-behavior.ts",
+	"evals/scenarios/north-star-agent-delivery/packet-surface-baseline.json",
 ] as const;
 
 function run(command: string, args: string[]) {

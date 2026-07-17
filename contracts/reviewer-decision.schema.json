@@ -89,6 +89,13 @@
 				},
 				"decision": {
 					"enum": ["accept", "accepted_risk"]
+				},
+				"coverageReceipt": {
+					"properties": {
+						"evidenceRefs": {
+							"minItems": 1
+						}
+					}
 				}
 			}
 		},
@@ -190,7 +197,8 @@
 					"type": "array",
 					"items": {
 						"type": "string",
-						"minLength": 1
+						"minLength": 1,
+						"pattern": "\\S"
 					}
 				}
 			}

@@ -85,6 +85,7 @@
 		"src/lib/pr-closeout.test.ts",
 		"src/lib/synaipse/context-plane.test.ts",
 		"src/lib/synaipse/packet-consolidation.test.ts",
+		"evals/scenarios/north-star-agent-delivery/packet-surface-baseline.json",
 		"scripts/check-codestyle-parity.sh",
 		"scripts/check-git-common-config.sh",
 		"scripts/check-semgrep-changed.sh",

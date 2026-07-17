@@ -986,6 +986,14 @@ class ReviewerDecisionReport(BaseModel):
             raise ValueError(
                 "coverageReceipt is required for passing reviewer decisions"
             )
+        if (
+            self.status == "pass"
+            and self.coverageReceipt is not None
+            and not self.coverageReceipt.evidenceRefs
+        ):
+            raise ValueError(
+                "coverageReceipt.evidenceRefs must not be empty for passing reviewer decisions"
+            )
         validate_native_claim_boundary(self.mayClaim, self.mustNotClaim)
         if self.status == "pass" and self.decision not in {"accept", "accepted_risk"}:
             raise ValueError("passing reviewer decisions must accept or accept risk")
