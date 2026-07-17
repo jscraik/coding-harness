@@ -479,6 +479,10 @@ export interface DiffBudgetOverride {
 	timestamp: string;
 }
 
+/** Canonical lowercase GitHub login grammar used by automated review policy. */
+export const AUTOMATED_REVIEWER_LOGIN_PATTERN_SOURCE =
+	"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\[bot\\])?$";
+
 /** Review Policy. */
 export interface ReviewPolicy {
 	timeoutSeconds: number;

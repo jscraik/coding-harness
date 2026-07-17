@@ -3035,6 +3035,67 @@ describe("runReviewGate", () => {
 		expect(listPullRequestReviews).toHaveBeenCalledOnce();
 	});
 
+	it.each([
+		"CHANGES_REQUESTED",
+		"DISMISSED",
+	] as const)("blocks automated review when the latest current-head state is %s", async (latestState) => {
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				approvalMode: "automated_review",
+				automatedReviewers: ["coderabbitai[bot]"],
+			},
+		});
+		mockGitHubClientImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue([
+					{
+						id: 1,
+						name: "review-check",
+						status: "completed",
+						conclusion: "success",
+						head_sha: validSha,
+					},
+				]),
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "solo-maintainer" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "COMMENTED",
+						commit_id: validSha,
+						submitted_at: "2026-07-17T10:00:00Z",
+						user: { login: "coderabbitai[bot]" },
+					},
+					{
+						state: latestState,
+						commit_id: validSha,
+						submitted_at: "2026-07-17T10:01:00Z",
+						user: { login: "coderabbitai[bot]" },
+					},
+				]),
+			}),
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"Automated review evidence missing for current HEAD SHA",
+			);
+		}
+	});
+
 	it("blocks automated review mode while a required reviewer thread is unresolved", async () => {
 		mockLoadContract.mockReturnValue({
 			version: "1.0",

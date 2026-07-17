@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-16T22:40:45Z
+Generated: 2026-07-17T01:26:56Z
 
 ## Table of Contents
 
@@ -50,6 +50,7 @@ Generated: 2026-07-16T22:40:45Z
 - `src/lib/synaipse/packet-consolidation.ts`
 - `src/lib/synaipse/packet-retirement.ts`
 - `src/lib/synaipse/packet-transition-projection.ts`
+- `src/lib/synaipse/safe-file-ancestors.ts`
 - `src/lib/synaipse/transition-validation.ts`
 - `src/lib/synaipse/transition.ts`
 - `src/lib/testing/README.md`
@@ -973,6 +974,7 @@ graph LR
   node_runtime_card_args_2b3d4b28_5cfe029c["runtime_card_args_2b3d4b28"]
   node_runtime_card_handoff_1c8c4766_687facef["runtime_card_handoff_1c8c4766"]
   node_runtime_card_trace_64a5ca95_a26c03d1["runtime_card_trace_64a5ca95"]
+  node_safe_file_ancestors_7a5a04dd_a311e554["safe_file_ancestors_7a5a04dd"]
   node_safe_json_artifact_reader_9114b83f_bcca77c5["safe_json_artifact_reader_9114b83f"]
   node_satisfiability_6c08de4b_de8c902a["satisfiability_6c08de4b"]
   node_scaffold_ci_template_utils_1035b61c_0513532b["scaffold_ci_template_utils_1035b61c"]
@@ -1406,6 +1408,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_runtime_budget_dfce83ae_5cbd79a2
   ext_node_fs_a15b7d96["node:fs"] --> node_runtime_card_handoff_1c8c4766_687facef
   ext_node_fs_a15b7d96["node:fs"] --> node_runtime_card_trace_64a5ca95_a26c03d1
+  ext_node_fs_a15b7d96["node:fs"] --> node_safe_file_ancestors_7a5a04dd_a311e554
   ext_node_fs_a15b7d96["node:fs"] --> node_safe_json_artifact_reader_9114b83f_bcca77c5
   ext_node_fs_a15b7d96["node:fs"] --> node_satisfiability_6c08de4b_de8c902a
   ext_node_fs_a15b7d96["node:fs"] --> node_scaffold_ci_template_utils_1035b61c_0513532b
@@ -1682,6 +1685,7 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_runner_1_6f281bf8_36f20bbb
   ext_node_path_78811c13["node:path"] --> node_runtime_card_args_2b3d4b28_5cfe029c
   ext_node_path_78811c13["node:path"] --> node_runtime_card_trace_64a5ca95_a26c03d1
+  ext_node_path_78811c13["node:path"] --> node_safe_file_ancestors_7a5a04dd_a311e554
   ext_node_path_78811c13["node:path"] --> node_safe_json_artifact_reader_9114b83f_bcca77c5
   ext_node_path_78811c13["node:path"] --> node_satisfiability_6c08de4b_de8c902a
   ext_node_path_78811c13["node:path"] --> node_scaffold_ci_template_utils_1035b61c_0513532b

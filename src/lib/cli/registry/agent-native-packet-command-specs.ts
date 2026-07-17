@@ -18,7 +18,13 @@ function stripCommandName(args: string[], commandName: string): string[] {
 	return args[0] === commandName ? args.slice(1) : args;
 }
 
-/** Execute one legacy producer and prove its canonical projection before output. */
+/**
+ * Execute one legacy producer with bounded buffering and canonical diagnostics.
+ * Successful producers must emit JSON on stdout; their exact compatibility
+ * payload and exit code are preserved when canonicalization is unavailable or
+ * invalid, with a structured diagnostic added to stderr. Producer stderr and
+ * non-zero exits pass through unchanged, while malformed JSON returns exit 1.
+ */
 function runPacketScript(
 	commandName: string,
 	schemaVersion: PacketFamilySchemaVersion,

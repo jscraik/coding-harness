@@ -270,6 +270,32 @@ describe("synaipse-transition/v1", () => {
 		});
 	});
 
+	it("rejects malformed checkout and recovery SHA identities", () => {
+		const input = transitionWith({
+			recovery: {
+				fromBlocker: "stale_sha",
+				refreshedSha: "not-a-sha",
+				evidenceRefs: ["recovery:stale_sha"],
+			},
+		});
+		input.repositorySha = "not-a-sha";
+		input.evidence.currentSha = "not-a-sha";
+		input.evidence.refs.push("recovery:stale_sha");
+
+		const result = validateSynaipseTransition(input);
+
+		expect(result.valid).toBe(false);
+		for (const path of [
+			"repositorySha",
+			"evidence.currentSha",
+			"recovery.refreshedSha",
+		])
+			expect(result.errors).toContainEqual({
+				path,
+				message: "must be a full lowercase git SHA",
+			});
+	});
+
 	it("rejects recovery with a refreshed SHA different from checkout HEAD", () => {
 		const input = transitionWith({
 			recovery: {

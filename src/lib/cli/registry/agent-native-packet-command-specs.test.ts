@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { canonicalizeLegacyPacket } from "../../synaipse/packet-canonicalization.js";
 import { createAgentNativePacketCommandSpecs } from "./agent-native-packet-command-specs.js";
 
@@ -17,6 +17,21 @@ vi.mock("../../synaipse/packet-canonicalization.js", async (importOriginal) => {
 		...actual,
 		canonicalizeLegacyPacket: vi.fn(actual.canonicalizeLegacyPacket),
 	};
+});
+
+beforeEach(() => {
+	vi.mocked(canonicalizeLegacyPacket).mockImplementation((schemaVersion) => ({
+		status: "complete",
+		valid: true,
+		errors: [],
+		sourceSchemaVersion: schemaVersion,
+		targetSchemaVersion:
+			schemaVersion === "agent-native-ratchets/v1" ||
+			schemaVersion === "session-distill/v1"
+				? "synaipse-state/v1"
+				: "synaipse-transition/v1",
+		record: {} as never,
+	}));
 });
 
 afterEach(() => {

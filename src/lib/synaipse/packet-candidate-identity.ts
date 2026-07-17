@@ -9,6 +9,7 @@ import {
 	readlinkSync,
 } from "node:fs";
 import { gitEnvironmentForRepoRoot } from "../runtime/git-environment.js";
+import { hasUnsafeFileAncestor } from "./safe-file-ancestors.js";
 
 /** Internally observed checkout and dirty-candidate identity. */
 export interface PacketCandidateIdentity {
@@ -99,6 +100,10 @@ function candidateEntry(
 	repoRoot: string,
 	path: Buffer,
 ): { mode: string; bytes: Buffer } {
+	if (hasUnsafeFileAncestor(repoRoot, path))
+		throw new TypeError(
+			"packet candidate path has a symlinked or invalid ancestor",
+		);
 	const absolute = absolutePath(repoRoot, path);
 	let descriptor: number;
 	try {

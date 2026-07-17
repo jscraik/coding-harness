@@ -202,6 +202,13 @@ class TestSessionDistillReport:
 
         assert report.headSha == "1111111"
 
+    def test_rejects_non_hexadecimal_session_head_sha(self) -> None:
+        payload = deepcopy(_load_example("session-distill.example.json"))
+        payload["headSha"] = "not-a-sha"
+
+        with pytest.raises(ValidationError, match="7-40 character lowercase Git SHA"):
+            SessionDistillReport.model_validate(payload)
+
 
 class TestAgentReworkReport:
     def test_accepts_canonical_report_example(self) -> None:

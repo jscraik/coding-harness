@@ -276,31 +276,14 @@ function extractFindingIdFromBlocker(blocker: string): string | undefined {
 	return match?.[1];
 }
 
+/** Resolve human reviewers whose latest current-head state remains approved. */
 function resolveCurrentApprovers(
 	reviews: PullRequestReview[],
 	headSha: string,
 	botLogins: Set<string>,
 ): string[] {
 	const approvalStateByReviewer = new Map<string, boolean>();
-	const reviewsInChronologicalOrder = reviews
-		.map((review, index) => {
-			const submittedAt = review.submitted_at
-				? Date.parse(review.submitted_at)
-				: Number.MIN_SAFE_INTEGER;
-			return {
-				review,
-				order: index,
-				submittedAt: Number.isNaN(submittedAt)
-					? Number.MIN_SAFE_INTEGER
-					: submittedAt,
-			};
-		})
-		.sort(
-			(left, right) =>
-				left.submittedAt - right.submittedAt || left.order - right.order,
-		);
-
-	for (const { review } of reviewsInChronologicalOrder) {
+	for (const review of chronologicalReviews(reviews)) {
 		const login = normalizeBotLogin(review.user?.login);
 		if (!login || isAutomatedActorLogin(login, botLogins)) {
 			continue;
@@ -323,6 +306,31 @@ function resolveCurrentApprovers(
 		.map(([login]) => login);
 }
 
+/** Return GitHub reviews in stable submission order. */
+function chronologicalReviews(
+	reviews: PullRequestReview[],
+): PullRequestReview[] {
+	return reviews
+		.map((review, index) => {
+			const submittedAt = review.submitted_at
+				? Date.parse(review.submitted_at)
+				: Number.MIN_SAFE_INTEGER;
+			return {
+				review,
+				order: index,
+				submittedAt: Number.isNaN(submittedAt)
+					? Number.MIN_SAFE_INTEGER
+					: submittedAt,
+			};
+		})
+		.sort(
+			(left, right) =>
+				left.submittedAt - right.submittedAt || left.order - right.order,
+		)
+		.map(({ review }) => review);
+}
+
+/** Evaluate current-head human approval and coding-actor independence. */
 async function evaluateApprovals(
 	client: GitHubClient,
 	prNumber: number,
@@ -370,20 +378,20 @@ async function evaluateAutomatedReviews(
 	requiredReviewers: string[],
 ): Promise<AutomatedReviewResult> {
 	const reviews = await client.listPullRequestReviews(prNumber);
-	const observed = new Set(
-		reviews
-			.filter(
-				(review) =>
-					review.commit_id === headSha &&
-					(review.state === "COMMENTED" || review.state === "APPROVED"),
-			)
-			.map((review) => normalizeBotLogin(review.user?.login))
-			.filter((login): login is string => login !== undefined),
-	);
+	const latestStateByReviewer = new Map<string, boolean>();
+	for (const review of chronologicalReviews(reviews)) {
+		if (review.commit_id !== headSha) continue;
+		const login = normalizeBotLogin(review.user?.login);
+		if (!login) continue;
+		latestStateByReviewer.set(
+			login,
+			review.state === "COMMENTED" || review.state === "APPROVED",
+		);
+	}
 	const missing = requiredReviewers
 		.map((reviewer) => normalizeBotLogin(reviewer))
 		.filter((reviewer): reviewer is string => reviewer !== undefined)
-		.filter((reviewer) => !observed.has(reviewer));
+		.filter((reviewer) => latestStateByReviewer.get(reviewer) !== true);
 	return missing.length === 0
 		? { passed: true, blockers: [] }
 		: {

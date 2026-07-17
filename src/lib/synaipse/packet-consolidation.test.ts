@@ -14,6 +14,7 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { expectBehavior } from "../testing/expect-behavior.js";
+import { gitEnvironmentForRepoRoot } from "../runtime/git-environment.js";
 import { discoverPacketCallerInventory } from "./packet-caller-inventory.js";
 import { observePacketCandidateIdentity } from "./packet-candidate-identity.js";
 import { canonicalizeLegacyPacket } from "./packet-canonicalization.js";
@@ -108,7 +109,6 @@ function retirementFixture() {
 		},
 	};
 }
-
 function firstRetirementEvidence(fixture: {
 	evidence: RetirementEvidenceRef[];
 }): RetirementEvidenceRef {
@@ -116,7 +116,6 @@ function firstRetirementEvidence(fixture: {
 	if (!evidence) throw new TypeError("expected retirement evidence fixture");
 	return evidence;
 }
-
 function emittedPacket(...args: string[]): unknown {
 	return JSON.parse(
 		execFileSync(
@@ -140,12 +139,12 @@ function canonicalizeReviewerPacket(packet: unknown) {
 				"origin",
 				"https://github.com/jscraik/coding-harness.git",
 			],
-			{ cwd: fixture.repoRoot },
+			{ cwd: fixture.repoRoot, env: gitEnvironmentForRepoRoot() },
 		);
 		execFileSync(
 			"git",
 			["update-ref", "refs/remotes/origin/main", fixture.candidateSha],
-			{ cwd: fixture.repoRoot },
+			{ cwd: fixture.repoRoot, env: gitEnvironmentForRepoRoot() },
 		);
 		return canonicalizeLegacyPacket("reviewer-decision/v1", packet, {
 			repoRoot: fixture.repoRoot,
@@ -1130,6 +1129,20 @@ describe("synaipse packet consolidation", () => {
 				writeFileSync(target, readFileSync(artifact));
 				unlinkSync(artifact);
 				symlinkSync("symlink-target.json", artifact);
+			},
+			"retirement_evidence_path_invalid",
+		],
+		[
+			"symlinked evidence directory ancestor",
+			(fixture: ReturnType<typeof retirementFixture>) => {
+				const evidence = firstRetirementEvidence(fixture);
+				const root = fixture.evidenceRoot;
+				const bytes = readFileSync(resolve(root, evidence.artifactPath));
+				const target = resolve(root, "external");
+				mkdirSync(target, { recursive: true });
+				writeFileSync(resolve(target, "proof.json"), bytes);
+				symlinkSync("external", resolve(root, "linked-dir"));
+				evidence.artifactPath = "linked-dir/proof.json";
 			},
 			"retirement_evidence_path_invalid",
 		],

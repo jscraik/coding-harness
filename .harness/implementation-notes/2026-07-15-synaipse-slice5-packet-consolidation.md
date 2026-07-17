@@ -491,8 +491,10 @@ when a Git path cannot be represented by the public UTF-8 inventory contract.
 Fixtures now prove staged-only packet references, external symlink stability,
 and the non-UTF-8 failure boundary on Linux. Reviewer transition fixtures use a
 temporary repository with canonical origin provenance, automated reviewer
-uniqueness uses the same trimmed lowercase login normalization as evaluation,
-and hosted-main evidence independently requires a full lowercase Git SHA.
+uniqueness uses one exact lowercase GitHub-login contract shared by the runtime
+validator and generated JSON Schema, and hosted-main evidence independently
+requires a full lowercase Git SHA. Invalid whitespace or case is rejected at
+the contract boundary instead of being normalized into an ambiguous duplicate.
 
 Command: `MISE_NO_CONFIG=1 pnpm exec biome check src/lib/synaipse/packet-caller-inventory.ts src/lib/synaipse/packet-candidate-identity.test.ts src/lib/synaipse/packet-canonicalization.test.ts src/lib/synaipse/packet-consolidation.test.ts src/lib/synaipse/transition-validation.ts src/lib/synaipse/transition.test.ts src/lib/contract/validator-core.ts src/lib/contract/validator.test.ts` -> pass (eight changed source and test files passed formatting and lint checks).
 Command: `MISE_NO_CONFIG=1 pnpm exec tsc --noEmit` -> pass (the split byte-source module and strengthened validation contracts type-check).
@@ -500,6 +502,43 @@ Command: `MISE_NO_CONFIG=1 pnpm exec vitest run src/lib/synaipse/packet-candidat
 Command: `MISE_NO_CONFIG=1 pnpm run quality:docstrings` -> pass (21 changed production files retained public API documentation).
 Command: `MISE_NO_CONFIG=1 pnpm run quality:size` -> pass (21 production files and 13 test files stayed within size and complexity policy after the byte-source module extraction).
 Command: `MISE_NO_CONFIG=1 pnpm run test:related` -> pass (28 related files passed 991 tests with one platform-gated fixture skipped).
+
+## Final Hosted Review Hardening
+
+The final-head Codex review identified a transferable seam failure across path
+safety, identity freshness, review-state freshness, and compatibility input.
+The root categories were weak validation, stale state, hidden filesystem
+assumptions, and test-environment leakage. The durable response is implemented
+at the narrow owning boundaries instead of relying on closeout reminders:
+
+- one byte-safe ancestor guard now rejects missing, non-directory, or symlinked
+  ancestors for candidate reads, candidate identity, and retirement evidence;
+- caller discovery re-observes candidate identity after reading sources and
+  rejects SHA, digest, or path-count drift before publishing an inventory;
+- transition records require full lowercase Git SHAs for repository and hosted
+  evidence, while only the legacy `session-distill/v1` Pydantic input accepts a
+  7-40 character lowercase hexadecimal prefix;
+- automated reviewer acceptance evaluates each configured reviewer's latest
+  current-head state, so a later `CHANGES_REQUESTED` or `DISMISSED` review
+  cannot be masked by an earlier passing event;
+- fixture Git subprocesses use the repository-owned sanitized environment, and
+  command-wrapper tests use explicit canonical validation results rather than
+  inheriting the developer checkout's remote configuration.
+
+Pattern scope inventory: candidate content, candidate identity, caller
+inventory, retirement evidence, transition validation, contract types,
+contract JSON Schema, runtime contract validation, Python artifact validation,
+review-gate evaluation, command-wrapper tests, and Git-backed test fixtures
+were searched. The shared validator, consumers, and regression fixtures were
+changed. Broader filesystem callers were intentionally left unchanged because
+they do not read these candidate-bound artifacts; any future sibling requiring
+the same trust boundary should import the shared ancestor guard.
+
+Command: `pnpm exec biome check scripts/check_artifact_type_contracts.py scripts/tests/test_agent_native_artifact_contracts.py src/commands/review-gate-core.ts src/commands/review-gate.test.ts src/lib/cli/registry/agent-native-packet-command-specs.test.ts src/lib/cli/registry/agent-native-packet-command-specs.ts src/lib/contract/json-schema-core.ts src/lib/contract/types-core.ts src/lib/contract/validator-core.ts src/lib/contract/validator.test.ts src/lib/synaipse/packet-caller-candidate-content.ts src/lib/synaipse/packet-caller-inventory.ts src/lib/synaipse/packet-candidate-identity.test.ts src/lib/synaipse/packet-candidate-identity.ts src/lib/synaipse/packet-canonicalization.test.ts src/lib/synaipse/packet-consolidation.test.ts src/lib/synaipse/packet-retirement.ts src/lib/synaipse/safe-file-ancestors.ts src/lib/synaipse/transition-validation.ts src/lib/synaipse/transition.test.ts` -> pass (18 changed TypeScript files passed formatting and lint checks; Python files were outside Biome's configured file set).
+Command: `pnpm exec tsc --noEmit` -> pass (the final review repair type-checks).
+Command: `pnpm exec vitest run src/lib/cli/registry/agent-native-packet-command-specs.test.ts src/lib/contract/validator.test.ts src/lib/synaipse/packet-candidate-identity.test.ts src/lib/synaipse/packet-consolidation.test.ts src/lib/synaipse/packet-canonicalization.test.ts src/lib/synaipse/transition.test.ts src/commands/review-gate.test.ts --reporter=dot` -> pass (7 files passed 345 tests with 1 platform-gated skip).
+Command: `uv run pytest -q scripts/tests/test_agent_native_artifact_contracts.py` -> pass (24 Python contract tests passed, including legacy abbreviated-SHA compatibility and non-hex rejection).
+Command: `pnpm check` -> pass (the aggregate static, related-test, full-test, and dependency-audit contract passed; related tests passed 1,007 tests with 1 skip, standard CI passed 6,154 tests with 1 skip, the isolated ci-migrate suite passed 108 tests, and the dependency audit found 0 advisories at or above moderate).
 
 These results prove the local candidate and regression boundaries only. Hosted
 checks, current review evidence, conversation resolution, acceptance, merge,

@@ -8,6 +8,7 @@ import {
 } from "node:fs";
 import { TextDecoder } from "node:util";
 import { gitEnvironmentForRepoRoot } from "../runtime/git-environment.js";
+import { hasUnsafeFileAncestor } from "./safe-file-ancestors.js";
 
 const GIT_OBSERVATION_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
 const UTF8_PATH_DECODER = new TextDecoder("utf-8", { fatal: true });
@@ -96,6 +97,7 @@ function absolutePath(repoRoot: string, path: Buffer): Buffer {
 
 /** Read a regular worktree file through one no-follow descriptor. */
 function worktreeBytes(repoRoot: string, path: Buffer): Buffer | null {
+	if (hasUnsafeFileAncestor(repoRoot, path)) return null;
 	let descriptor: number;
 	try {
 		descriptor = openSync(

@@ -135,4 +135,51 @@ describe("packet candidate identity", () => {
 			rmSync(externalRoot, { recursive: true, force: true });
 		}
 	});
+
+	it("rejects caller inventory when the supplied candidate identity is stale", () => {
+		const fixture = gitFixture();
+		try {
+			const identity = observePacketCandidateIdentity(fixture.repoRoot);
+			writeFileSync(
+				resolve(fixture.repoRoot, "changed.ts"),
+				'export const schema = "session-distill/v1";\n',
+			);
+
+			expect(() =>
+				discoverPacketCallerInventory(fixture.repoRoot, identity),
+			).toThrow("candidate changed during discovery");
+		} finally {
+			fixture.cleanup();
+		}
+	});
+
+	it("rejects caller bytes reached through a symlinked directory ancestor", () => {
+		const fixture = gitFixture();
+		const externalRoot = mkdtempSync(
+			resolve(tmpdir(), "packet-external-ancestor-"),
+		);
+		try {
+			const trackedDirectory = resolve(fixture.repoRoot, "src");
+			mkdirSync(trackedDirectory, { recursive: true });
+			writeFileSync(resolve(trackedDirectory, "caller.ts"), "tracked bytes\n");
+			execFileSync("git", ["add", "src/caller.ts"], { cwd: fixture.repoRoot });
+			execFileSync("git", ["commit", "--quiet", "-m", "tracked caller"], {
+				cwd: fixture.repoRoot,
+			});
+			const identity = observePacketCandidateIdentity(fixture.repoRoot);
+			rmSync(trackedDirectory, { recursive: true, force: true });
+			writeFileSync(
+				resolve(externalRoot, "caller.ts"),
+				'export const schema = "session-distill/v1";\n',
+			);
+			symlinkSync(externalRoot, trackedDirectory);
+
+			expect(() =>
+				discoverPacketCallerInventory(fixture.repoRoot, identity),
+			).toThrow("symlinked or invalid ancestor");
+		} finally {
+			fixture.cleanup();
+			rmSync(externalRoot, { recursive: true, force: true });
+		}
+	});
 });

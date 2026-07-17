@@ -83,6 +83,7 @@ import type {
 	UILoopSLO,
 } from "./types.js";
 import {
+	AUTOMATED_REVIEWER_LOGIN_PATTERN_SOURCE,
 	DEFAULT_NORTH_STAR_CONTRACT,
 	PREFLIGHT_POST_HOOK_IDS,
 	PREFLIGHT_PRE_HOOK_IDS,
@@ -725,18 +726,14 @@ function hasValidReviewEvidenceConfiguration(
 	if (policy.automatedReviewers === undefined) {
 		return policy.approvalMode !== "automated_review";
 	}
-	const normalizedReviewers = Array.isArray(policy.automatedReviewers)
-		? policy.automatedReviewers.map((reviewer) =>
-				typeof reviewer === "string" ? reviewer.trim().toLowerCase() : reviewer,
-			)
-		: [];
+	const loginPattern = new RegExp(AUTOMATED_REVIEWER_LOGIN_PATTERN_SOURCE);
 	return (
 		Array.isArray(policy.automatedReviewers) &&
 		policy.automatedReviewers.length > 0 &&
 		policy.automatedReviewers.every(
-			(reviewer) => typeof reviewer === "string" && reviewer.trim().length > 0,
+			(reviewer) => typeof reviewer === "string" && loginPattern.test(reviewer),
 		) &&
-		new Set(normalizedReviewers).size === normalizedReviewers.length
+		new Set(policy.automatedReviewers).size === policy.automatedReviewers.length
 	);
 }
 

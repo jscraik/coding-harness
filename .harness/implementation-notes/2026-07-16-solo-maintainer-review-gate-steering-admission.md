@@ -15,7 +15,7 @@ lifecycle_status: execution-input
 canonical_destination: reviewPolicy approval mode, review-gate runtime, and AI review governance
 owner: coding-harness-maintainers
 created: 2026-07-16
-last_reviewed: 2026-07-16
+last_reviewed: 2026-07-17
 review_cadence: event-driven
 validated_by:
   - pnpm exec vitest run src/lib/contract/validator.test.ts src/commands/review-gate.test.ts
@@ -103,6 +103,17 @@ bash scripts/run-harness-gate.sh docs-gate --mode required --json
 The contract validator rejects unknown approval modes and rejects
 `automated_review` without named reviewers. The runtime test fails closed when
 one configured reviewer has no review on the current SHA.
+
+## Latest-State Ratchet
+
+Final-head review exposed one remaining stale-state gap: an earlier passing
+automated review could mask a later `CHANGES_REQUESTED` or `DISMISSED` event by
+the same reviewer. Review acceptance now evaluates the latest current-head
+review for each configured automated reviewer. Only a latest `COMMENTED` or
+`APPROVED` state satisfies the automated-review lane, and unresolved
+conversations remain independently blocking. A parameterized regression proves
+both later blocking states. This preserves practical solo-maintainer review
+while preventing stale automated approval from being treated as current truth.
 
 ## Forbidden Recurrence Behavior
 

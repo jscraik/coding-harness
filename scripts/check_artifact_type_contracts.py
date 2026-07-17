@@ -23,6 +23,7 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+LEGACY_GIT_SHA_PATTERN = re.compile(r"^[0-9a-f]{7,40}$")
 JSON_SCHEMA_DRAFTS = {
     "https://json-schema.org/draft/2020-12/schema",
     "http://json-schema.org/draft-07/schema#",
@@ -69,6 +70,13 @@ def reject_empty_or_blank_list(value: list[str]) -> list[str]:
 def reject_negative_int(value: int) -> int:
     if value < 0:
         raise ValueError("must be non-negative")
+    return value
+
+
+def reject_legacy_git_sha(value: str) -> str:
+    """Accept only lowercase 7-40 character Git SHA identities at the legacy boundary."""
+    if not LEGACY_GIT_SHA_PATTERN.fullmatch(value):
+        raise ValueError("must be a 7-40 character lowercase Git SHA")
     return value
 
 
@@ -775,9 +783,10 @@ class SessionDistillReport(BaseModel):
     nonClaims: list[str]
     claimBoundary: str
 
-    _reject_blank_strings = field_validator("branch", "headSha", "claimBoundary")(
+    _reject_blank_strings = field_validator("branch", "claimBoundary")(
         reject_blank_string
     )
+    _reject_head_sha = field_validator("headSha")(reject_legacy_git_sha)
 
     _reject_blank_items = field_validator("changedFiles", "nextCommands", "nonClaims")(
         reject_blank_list_items

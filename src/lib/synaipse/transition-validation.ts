@@ -19,6 +19,12 @@ function requireString(value: unknown, path: string, errors: Errors): void {
 		errors.push({ path, message: "must be a non-empty string" });
 }
 
+/** Add a full lowercase Git SHA validation error. */
+function requireFullGitSha(value: unknown, path: string, errors: Errors): void {
+	if (typeof value !== "string" || !FULL_GIT_SHA.test(value))
+		errors.push({ path, message: "must be a full lowercase git SHA" });
+}
+
 /** Add an RFC3339 date-time error. */
 function requireDateTime(value: unknown, path: string, errors: Errors): void {
 	if (!isRfc3339DateTime(value))
@@ -76,11 +82,7 @@ function validateHostedMain(value: unknown, errors: Errors): void {
 			path: "evidence.hostedMain.ref",
 			message: "must be refs/heads/main",
 		});
-	if (typeof value.sha !== "string" || !FULL_GIT_SHA.test(value.sha))
-		errors.push({
-			path: "evidence.hostedMain.sha",
-			message: "must be a full lowercase git SHA",
-		});
+	requireFullGitSha(value.sha, "evidence.hostedMain.sha", errors);
 	requireDateTime(value.observedAt, "evidence.hostedMain.observedAt", errors);
 }
 
@@ -96,7 +98,7 @@ function validateEvidence(value: unknown, errors: Errors): void {
 		"evidence",
 		errors,
 	);
-	requireString(value.currentSha, "evidence.currentSha", errors);
+	requireFullGitSha(value.currentSha, "evidence.currentSha", errors);
 	requireStringArray(value.refs, "evidence.refs", errors);
 	requireDateTime(value.observedAt, "evidence.observedAt", errors);
 	validateHostedMain(value.hostedMain, errors);
@@ -198,7 +200,7 @@ function validateRecovery(value: unknown, errors: Errors): void {
 		"recovery",
 		errors,
 	);
-	requireString(value.refreshedSha, "recovery.refreshedSha", errors);
+	requireFullGitSha(value.refreshedSha, "recovery.refreshedSha", errors);
 	requireStringArray(value.evidenceRefs, "recovery.evidenceRefs", errors);
 	if (!BLOCKERS.includes(value.fromBlocker as Blocker))
 		errors.push({
@@ -235,8 +237,8 @@ function validateEnvelope(
 			path: "schemaVersion",
 			message: "must be synaipse-transition/v1",
 		});
-	for (const field of ["transitionId", "repositorySha"] as const)
-		requireString(value[field], field, errors);
+	requireString(value.transitionId, "transitionId", errors);
+	requireFullGitSha(value.repositorySha, "repositorySha", errors);
 	if (!STAGES.includes(value.fromStage as (typeof STAGES)[number]))
 		errors.push({
 			path: "fromStage",

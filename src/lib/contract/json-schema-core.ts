@@ -15,6 +15,7 @@
  */
 
 import {
+	AUTOMATED_REVIEWER_LOGIN_PATTERN_SOURCE,
 	NORTH_STAR_DECISION_QUESTION_SPECS,
 	NORTH_STAR_PRIMARY_BOTTLENECK,
 	NORTH_STAR_PRIMARY_METRIC,
@@ -756,7 +757,11 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 						type: "array",
 						minItems: 1,
 						uniqueItems: true,
-						items: { type: "string", minLength: 1 },
+						items: {
+							type: "string",
+							minLength: 1,
+							pattern: AUTOMATED_REVIEWER_LOGIN_PATTERN_SOURCE,
+						},
 						description:
 							"Reviewer logins that must submit COMMENTED or APPROVED review evidence for the current SHA in automated_review mode.",
 					},

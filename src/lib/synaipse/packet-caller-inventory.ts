@@ -1,5 +1,8 @@
 import { packetCallerCandidateSources } from "./packet-caller-candidate-content.js";
-import type { PacketCandidateIdentity } from "./packet-candidate-identity.js";
+import {
+	observePacketCandidateIdentity,
+	type PacketCandidateIdentity,
+} from "./packet-candidate-identity.js";
 import {
 	MANAGED_CONSUMERS,
 	PACKET_FAMILY_REGISTRY,
@@ -287,21 +290,30 @@ export function discoverPacketCallerInventory(
 	repoRoot: string,
 	candidateIdentity: PacketCandidateIdentity,
 ): PacketCallerInventory {
-	const callers = packetCallerCandidateSources(repoRoot).flatMap(
-		({ path, contents }): PacketCaller[] => {
-			const families = new Set<PacketFamilySchemaVersion>();
-			const signals = new Set<PacketDiscoverySignal>();
-			for (const bytes of contents) {
-				const reference = discoverReferences(bytes.toString("utf8"));
-				for (const family of reference.families) families.add(family);
-				for (const signal of reference.signals) signals.add(signal);
-			}
-			const reference = { families: [...families], signals: [...signals] };
-			if (reference.signals.length === 0 || reference.families.length === 0)
-				return [];
-			return [{ path, ...callerKind(path), ...reference }];
-		},
-	);
+	const sources = packetCallerCandidateSources(repoRoot);
+	const confirmedIdentity = observePacketCandidateIdentity(repoRoot);
+	if (
+		confirmedIdentity.checkoutHeadSha !== candidateIdentity.checkoutHeadSha ||
+		confirmedIdentity.candidateDigest !== candidateIdentity.candidateDigest ||
+		confirmedIdentity.candidatePathCount !==
+			candidateIdentity.candidatePathCount
+	)
+		throw new TypeError(
+			"packet caller inventory candidate changed during discovery",
+		);
+	const callers = sources.flatMap(({ path, contents }): PacketCaller[] => {
+		const families = new Set<PacketFamilySchemaVersion>();
+		const signals = new Set<PacketDiscoverySignal>();
+		for (const bytes of contents) {
+			const reference = discoverReferences(bytes.toString("utf8"));
+			for (const family of reference.families) families.add(family);
+			for (const signal of reference.signals) signals.add(signal);
+		}
+		const reference = { families: [...families], signals: [...signals] };
+		if (reference.signals.length === 0 || reference.families.length === 0)
+			return [];
+		return [{ path, ...callerKind(path), ...reference }];
+	});
 	const runtimeConsumers = callers
 		.filter((caller) => caller.kind === "runtime_consumer")
 		.map((caller) => caller.path)

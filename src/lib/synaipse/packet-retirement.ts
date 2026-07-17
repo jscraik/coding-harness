@@ -18,6 +18,7 @@ import {
 	MANAGED_CONSUMERS,
 	MANAGED_PROJECTION_TARGETS,
 } from "./packet-consolidation-contract.js";
+import { hasUnsafeFileAncestor } from "./safe-file-ancestors.js";
 
 /** Evidence classes required before compatibility deletion can be authorized. */
 export const RETIREMENT_EVIDENCE_KINDS = [
@@ -204,7 +205,8 @@ function readEvidenceBytes(
 	if (
 		relativePath.length === 0 ||
 		relativePath.startsWith("..") ||
-		isAbsolute(relativePath)
+		isAbsolute(relativePath) ||
+		hasUnsafeFileAncestor(root, relativePath)
 	) {
 		return { valid: false, reason: "retirement_evidence_path_invalid" };
 	}

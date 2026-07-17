@@ -99,6 +99,14 @@ describe("generated contract schema parity", () => {
 		expect(Reflect.get(conditions[0] ?? {}, "then")).toEqual({
 			required: ["automatedReviewers"],
 		});
+		const reviewProperties = properties.reviewPolicy?.properties as Record<
+			string,
+			Record<string, unknown>
+		>;
+		expect(reviewProperties.automatedReviewers?.items).toMatchObject({
+			type: "string",
+			pattern: "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\[bot\\])?$",
+		});
 	});
 });
 
