@@ -294,6 +294,11 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd -P)"
 set -euo pipefail
 exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
 `,
+			`#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd -P)"
+exec bash "$SCRIPT_DIR/check-environment_impl" "$@"
+${effectiveReadiness}`,
 		];
 		try {
 			for (const wrapper of wrappers) {
@@ -335,6 +340,12 @@ exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
 				expected: "missing required field 'language'",
 			},
 			{
+				content: basePrek
+					.replace('entry = "bash scripts/hook-pre-commit.sh"\n', "")
+					.replace('stages = ["pre-commit"]', "stages = []"),
+				expected: "missing required field 'entry'",
+			},
+			{
 				content: basePrek.replace('stages = ["pre-commit"]', "stages = [1]"),
 				expected: "invalid value for policy key 'stages'",
 			},
@@ -353,6 +364,111 @@ exec bash "$SCRIPT_DIR/check-environment_impl.sh" "$@"
 						result.value.result.results[0]?.findings.some((finding) =>
 							finding.description.includes(fixture.expected),
 						),
+					).toBe(true);
+				}
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("fails closed for parser and hook runtime ambiguity", async () => {
+		const tempRoot = mkdtempSync(
+			join(tmpdir(), "tooling-audit-parser-ambiguity-"),
+		);
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir);
+		writeRepoFile(
+			repoDir,
+			"scripts/validate-commit-msg.js",
+			"process.exit(0);\n",
+		);
+		const prekPath = join(repoDir, "prek.toml");
+		const basePrek = readFileSync(prekPath, "utf-8");
+		const cases = [
+			{
+				given: "default_stages scoped beneath [[repos]]",
+				content: basePrek
+					.replace(
+						'pass_filenames = false\nstages = ["pre-commit"]',
+						"pass_filenames = false",
+					)
+					.replace(
+						'repo = "local"',
+						'repo = "local"\ndefault_stages = ["pre-commit"]',
+					),
+				expected: "unsupported effective stage",
+			},
+			{
+				given: "duplicate root default_install_hook_types assignments",
+				content: basePrek.replace(
+					'default_install_hook_types = ["pre-commit", "pre-push"]',
+					'default_install_hook_types = ["pre-commit", "pre-push"]\ndefault_install_hook_types = ["pre-commit", "pre-push"]',
+				),
+				expected: "Prek root repeats policy key 'default_install_hook_types'",
+			},
+			{
+				given: "an invalid bare scalar nested in an inline table",
+				content: basePrek.replace(
+					'[[repos.hooks]]\nid = "pre-commit"',
+					'[[repos.hooks]]\nunknown = { mode = nope }\nid = "pre-commit"',
+				),
+				expected: "invalid value for policy key 'unknown'",
+			},
+			{
+				given: "a duplicate policy key encoded with a quoted Unicode escape",
+				content: basePrek.replace(
+					'entry = "bash scripts/hook-pre-commit.sh"',
+					String.raw`entry = "bash scripts/hook-pre-commit.sh"
+"\u0065ntry" = "echo bad"`,
+				),
+				expected: "repeats policy key 'entry'",
+			},
+			{
+				given: "an array whose physical lines omit a comma",
+				content: basePrek.replace(
+					'stages = ["pre-commit"]',
+					'stages = [\n"pre-commit"\n"pre-push"\n]',
+				),
+				expected: "invalid value for policy key 'stages'",
+			},
+			{
+				given: "an approved commit-msg hook with filename passing disabled",
+				content: basePrek
+					.replace(
+						'["pre-commit", "pre-push"]',
+						'["pre-commit", "pre-push", "commit-msg"]',
+					)
+					.concat(`
+[[repos.hooks]]
+id = "commit-msg"
+name = "Validate commit message"
+entry = "node scripts/validate-commit-msg.js"
+language = "system"
+pass_filenames = false
+stages = ["commit-msg"]
+`),
+				expected: "disables the commit-msg filename input",
+			},
+		];
+		try {
+			for (const fixture of cases) {
+				writeFileSync(prekPath, fixture.content, "utf-8");
+				const result = await runToolingAudit({
+					path: tempRoot,
+					format: "json",
+				});
+				expect(result.ok, fixture.given).toBe(true);
+				if (result.ok) {
+					expect(result.value.exitCode, fixture.given).toBe(
+						EXIT_CODES.DRIFT_DETECTED,
+					);
+					expect(
+						result.value.result.results[0]?.findings.some((finding) =>
+							finding.description.includes(fixture.expected),
+						),
+						fixture.given,
 					).toBe(true);
 				}
 			}

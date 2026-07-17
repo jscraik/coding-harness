@@ -244,7 +244,9 @@ function parseReadinessForwardingTarget(
 		/^\s*SCRIPT_DIR=.*(?:BASH_SOURCE|\$\{?BASH_SOURCE)/;
 	const lines = content.split(/\r?\n/);
 	const hasForwardingExec = lines.some((line) =>
-		/^\s*exec\b[^\r\n]*\.sh(?:["'\s]|$)/.test(line),
+		/^\s*exec\b[^\r\n]*(?:\$\{SCRIPT_DIR\}|\$SCRIPT_DIR)\/[A-Za-z0-9._/-]+/.test(
+			line,
+		),
 	);
 	const scriptDirLines = lines.filter((line) =>
 		scriptDirMarkerPattern.test(line),
@@ -708,16 +710,26 @@ function readTomlKey(
 		return null;
 	}
 	const quote = block[cursor];
-	if (quote === '"' || quote === "'") {
-		const end = findTomlQuote(block, cursor, quote, false);
-		return end === -1 || end >= lineEnd
-			? null
-			: { value: block.slice(cursor + 1, end), end: end + 1 };
-	}
+	if (quote === '"' || quote === "'")
+		return readQuotedTomlKey(block, cursor, lineEnd, quote);
 	const match = block.slice(cursor, lineEnd).match(/^[A-Za-z0-9_.-]+/);
 	return match === null
 		? null
 		: { value: match[0], end: cursor + match[0].length };
+}
+
+/** Decode one quoted TOML key into its canonical key identity. */
+function readQuotedTomlKey(
+	block: string,
+	start: number,
+	lineEnd: number,
+	quote: '"' | "'",
+): { value: string; end: number } | null {
+	const end = findTomlQuote(block, start, quote, false);
+	if (end === -1 || end >= lineEnd) return null;
+	const raw = block.slice(start + 1, end);
+	const value = quote === '"' ? decodeTomlBasicString(raw, false) : raw;
+	return value === null ? null : { value, end: end + 1 };
 }
 
 /**
@@ -1117,8 +1129,38 @@ function parseTomlInlineValue(source: string): TomlValueResult {
 	return {
 		value: parsed.value,
 		end: trailing.end,
-		valid: parsed.valid && trailing.valid,
+		valid: parsed.valid && trailing.valid && trailing.end === source.length,
 	};
+}
+
+/** Validate every key/value entry in a TOML inline table. */
+function isValidTomlInlineTableBody(source: string): boolean {
+	const entries = splitTomlArrayElements(source);
+	if (entries === null) return false;
+	const keys = new Set<string>();
+	for (const rawEntry of entries) {
+		const key = parseTomlInlineTableEntry(rawEntry);
+		if (key === null || keys.has(key)) return false;
+		keys.add(key);
+	}
+	return true;
+}
+
+/** Parse one complete inline-table entry and return its canonical key. */
+function parseTomlInlineTableEntry(rawEntry: string): string | null {
+	const entry = rawEntry.trim();
+	if (entry === "") return null;
+	const key = readTomlKey(entry, 0, entry.length);
+	if (key === null) return null;
+	let valueStart = key.end;
+	while (valueStart < entry.length && /[ \t]/.test(entry[valueStart] ?? ""))
+		valueStart += 1;
+	if (entry[valueStart] !== "=") return null;
+	const parsed = parseTomlValue(entry, valueStart + 1);
+	const trailing = consumeTomlTrailing(entry, parsed.end);
+	return parsed.valid && trailing.valid && trailing.end === entry.length
+		? key.value
+		: null;
 }
 
 /**
@@ -1129,30 +1171,34 @@ function parseTomlInlineValue(source: string): TomlValueResult {
  * @returns Balanced table result.
  */
 function parseTomlInlineTable(block: string, start: number): TomlValueResult {
+	const end = findTomlInlineTableEnd(block, start);
+	if (end === -1) return { value: undefined, end: block.length, valid: false };
+	const trailing = consumeTomlTrailing(block, end + 1);
+	return {
+		value: block.slice(start, end + 1),
+		end: trailing.end,
+		valid:
+			trailing.valid && isValidTomlInlineTableBody(block.slice(start + 1, end)),
+	};
+}
+
+/** Find the balanced closing brace for one TOML inline table. */
+function findTomlInlineTableEnd(block: string, start: number): number {
 	let depth = 1;
 	let cursor = start + 1;
-	let quote: '"' | "'" | undefined;
 	while (cursor < block.length) {
-		const character = block[cursor];
-		if (quote !== undefined) {
-			if (character === quote && !isTomlEscaped(block, cursor))
-				quote = undefined;
-			cursor += 1;
+		const quotedEnd = skipTomlQuotedValue(block, cursor);
+		if (quotedEnd !== null) {
+			if (quotedEnd === -1) return -1;
+			cursor = quotedEnd;
 			continue;
 		}
-		if (character === '"' || character === "'") quote = character;
-		else if (character === "{") depth += 1;
-		else if (character === "}" && --depth === 0) {
-			const trailing = consumeTomlTrailing(block, cursor + 1);
-			return {
-				value: block.slice(start, cursor + 1),
-				end: trailing.end,
-				valid: trailing.valid,
-			};
-		}
+		const character = block[cursor];
+		if (character === "{") depth += 1;
+		if (character === "}" && --depth === 0) return cursor;
 		cursor += 1;
 	}
-	return { value: undefined, end: block.length, valid: false };
+	return -1;
 }
 
 /**
@@ -1299,10 +1345,19 @@ function splitPrekHookBlocks(content: string): string[] {
 	];
 }
 
+/** Return only TOML assignments that occur before the first table header. */
+function getTomlRootPreamble(content: string): string {
+	const lines = content.split(/\r?\n/);
+	const firstTableIndex = lines.findIndex((line) => /^\s*\[/.test(line));
+	return lines
+		.slice(0, firstTableIndex === -1 ? lines.length : firstTableIndex)
+		.join("\n");
+}
+
 function parsePrekHooks(content: string): ParsedPrekHook[] {
 	const hookBlocks = splitPrekHookBlocks(content);
 	const defaultStages = parseStringArrayTomlValue(
-		hookBlocks[0] ?? "",
+		getTomlRootPreamble(content),
 		"default_stages",
 	) ?? [...PREK_ALL_STAGES];
 	return hookBlocks.slice(1).map((block) => {
@@ -1335,17 +1390,44 @@ function parsePrekHooks(content: string): ParsedPrekHook[] {
 	});
 }
 
+/** Reject duplicate or malformed policy assignments in the TOML root. */
+function auditPrekRootAssignments(
+	findings: ToolingAuditFinding[],
+	rootPreamble: string,
+): void {
+	const assignments = parseTomlAssignments(rootPreamble);
+	for (const key of ["default_install_hook_types", "default_stages"] as const) {
+		const matches = assignments.filter((assignment) => assignment.key === key);
+		if (matches.length > 1) {
+			findings.push({
+				path: TOOLING_PREK_CONFIG_PATH,
+				severity: "critical",
+				description: `Prek root repeats policy key '${key}'`,
+				expected: "Each root policy key appears at most once",
+				actual: matches.length,
+			});
+		}
+		const parsed = parseStringArrayTomlValue(rootPreamble, key);
+		if (matches.length > 0 && parsed === undefined) {
+			findings.push({
+				path: TOOLING_PREK_CONFIG_PATH,
+				severity: "critical",
+				description: `Prek root has an invalid value for policy key '${key}'`,
+				expected: "A valid TOML string array",
+				actual: key,
+			});
+		}
+	}
+}
+
 /** Require every configured approved hook stage to be installed by Prek. */
 function auditPrekInstallCoverage(
 	findings: ToolingAuditFinding[],
 	content: string,
 	hooks: ParsedPrekHook[],
 ): void {
-	const lines = content.split(/\r?\n/);
-	const firstTableIndex = lines.findIndex((line) => /^\s*\[/.test(line));
-	const rootPreamble = lines
-		.slice(0, firstTableIndex === -1 ? lines.length : firstTableIndex)
-		.join("\n");
+	const rootPreamble = getTomlRootPreamble(content);
+	auditPrekRootAssignments(findings, rootPreamble);
 	const installTypes =
 		parseStringArrayTomlValue(rootPreamble, "default_install_hook_types") ?? [];
 	for (const stage of Object.keys(APPROVED_PREK_LEAF_ENTRIES)) {
@@ -1515,7 +1597,7 @@ function auditPrekHookLeafEntries(
 	repoPath: string,
 ): void {
 	for (const hook of parsedHooks) {
-		for (const field of ["id", "name", "language"] as const) {
+		for (const field of ["id", "name", "entry", "language"] as const) {
 			if (hook[field] === undefined) {
 				findings.push({
 					path: TOOLING_PREK_CONFIG_PATH,
@@ -1526,6 +1608,7 @@ function auditPrekHookLeafEntries(
 				});
 			}
 		}
+		auditPrekCommitMsgRuntimeShape(findings, hook);
 		const entry = hook.entry;
 		if (entry !== undefined && isForbiddenPrekHookEntry(entry)) {
 			continue;
@@ -1557,6 +1640,26 @@ function auditPrekHookLeafEntries(
 		}
 		auditPrekHookCommandFile(findings, hook, repoPath);
 	}
+}
+
+/** Require approved commit-message validators to receive Git's filename input. */
+function auditPrekCommitMsgRuntimeShape(
+	findings: ToolingAuditFinding[],
+	hook: ParsedPrekHook,
+): void {
+	if (
+		!hook.stages.includes("commit-msg") ||
+		!isApprovedPrekLeafEntry("commit-msg", hook.entry) ||
+		hook.passFilenames === true
+	)
+		return;
+	findings.push({
+		path: TOOLING_PREK_CONFIG_PATH,
+		severity: "critical",
+		description: `Prek hook '${hook.id ?? "unknown"}' disables the commit-msg filename input`,
+		expected: "Approved commit-msg hooks set pass_filenames = true",
+		actual: hook.passFilenames,
+	});
 }
 
 /**
