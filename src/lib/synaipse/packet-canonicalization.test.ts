@@ -95,6 +95,37 @@ describe("packet canonicalization", () => {
 		);
 	});
 
+	it("accepts an abbreviated legacy session SHA while canonical state uses live full SHA identity", () => {
+		const packet = emittedPacket("--session-distill", "--json");
+		if (typeof packet !== "object" || packet === null)
+			throw new TypeError("expected session distill packet object");
+		Reflect.set(packet, "headSha", "1111111");
+		const liveHeadSha = execFileSync("git", ["rev-parse", "HEAD"], {
+			cwd: canonicalRepoRoot,
+			encoding: "utf8",
+		}).trim();
+
+		expect(validatePacketSource("session-distill/v1", packet)).toEqual({
+			valid: true,
+			errors: [],
+		});
+		const canonical = canonicalizeLegacyPacket("session-distill/v1", packet, {
+			repoRoot: canonicalRepoRoot,
+			observedAt: OBSERVED_AT,
+		});
+
+		expect(canonical).toMatchObject({
+			status: "complete",
+			valid: true,
+			record: {
+				schemaVersion: "synaipse-state/v1",
+				repository: { headSha: liveHeadSha },
+			},
+		});
+		expect(liveHeadSha).toHaveLength(40);
+		expect(liveHeadSha).not.toBe("1111111");
+	});
+
 	it.each([
 		["needs_evidence", "needs_evidence"],
 		["blocked", "object"],

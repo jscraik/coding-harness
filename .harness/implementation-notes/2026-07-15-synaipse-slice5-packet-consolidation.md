@@ -14,7 +14,7 @@ lifecycle_status: execution-input
 canonical_destination: src/lib/synaipse
 owner: coding-harness-maintainers
 created: 2026-07-15
-last_reviewed: 2026-07-16
+last_reviewed: 2026-07-17
 review_cadence: on-change
 linear_issue: JSC-464
 depends_on:
@@ -41,7 +41,8 @@ validated_by:
 - [Current-Main Gate Implementation](#current-main-gate-implementation)
 - [Current Local Evidence](#current-local-evidence)
 - [Fresh QA Disproof and Repair](#fresh-qa-disproof-and-repair)
-- [Full-SHA Contract Repair](#full-sha-contract-repair)
+- [Final Review Contract Repair](#final-review-contract-repair)
+- [Legacy SHA Compatibility Repair](#legacy-sha-compatibility-repair)
 - [Validation Contract](#validation-contract)
 - [Claims Boundary](#claims-boundary)
 
@@ -419,19 +420,40 @@ with SHA-256
 Command: `env HOME=/private/tmp/codex-preflight-isolated-home MISE_DISABLED=1 PATH=/Users/jamiecraik/.local/share/mise/installs/node/26.3.0/bin:/Users/jamiecraik/.local/share/mise/installs/pnpm/10.33.0:/Users/jamiecraik/.local/share/mise/installs/uv/0.11.7/uv-aarch64-apple-darwin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin LOCAL_MEMORY_CONFIG_PATH=/Users/jamiecraik/.local-memory/config.yaml /Users/jamiecraik/.local/share/mise/installs/pnpm/10.33.0/pnpm exec vitest run src/lib/synaipse/packet-consolidation.test.ts src/lib/cli/registry/agent-native-packet-command-specs.test.ts src/lib/synaipse/transition.test.ts src/dev/validate-runtime-packet-schemas-semantic.test.ts --reporter=dot` -> pass (4 files and 107 tests passed, including the hostile inherited-Git-environment regression).
 Command: `env HOME=/private/tmp/codex-preflight-isolated-home MISE_DISABLED=1 PATH=/Users/jamiecraik/.local/share/mise/installs/node/26.3.0/bin:/Users/jamiecraik/.local/share/mise/installs/pnpm/10.33.0:/Users/jamiecraik/.local/share/mise/installs/uv/0.11.7/uv-aarch64-apple-darwin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin LOCAL_MEMORY_CONFIG_PATH=/Users/jamiecraik/.local-memory/config.yaml /Users/jamiecraik/.local/share/mise/installs/pnpm/10.33.0/pnpm typecheck` -> pass (the centralized sanitizer integration type-checks).
 
-## Full-SHA Contract Repair
+## Final Review Contract Repair
 
-Earlier review found contradictory meanings for `headSha`: the producer and
-schema allowed an abbreviated identifier while canonical projection required
-an exact commit identity. The retained repair makes the producer emit
-`git rev-parse HEAD`, requires exactly forty lowercase hexadecimal characters
-in schema and validators, updates the example, and rejects abbreviated values
-before projection.
+Final hosted review exposed three additional fail-closed contract gaps. In
+solo-maintainer `automated_review` mode, unresolved threads from either
+configured automated reviewer now block review acceptance. Passing or accepted
+reviewer decisions require a coverage receipt, and the generated contract
+schema requires `automatedReviewers` whenever `approvalMode` is
+`automated_review`. Focused tests bind all three behaviors to their owning
+runtime or schema boundary.
 
-The historical recovery candidate proved this boundary with focused producer,
-semantic-validator, schema, and Python-validator tests. Those historical
-results must be rerun on this current-main replay before they are used as
-current evidence.
+The final eval replay also found two stale registry assertions. The validation
+plan fixture named `pnpm audit` after production had standardized on
+`pnpm run audit`, and the cold-start fixture expected a hidden `orient` command
+instead of the executable `next`, `session-context`, and `agent-readiness`
+rail. Both fixtures now assert current command truth. The package-installed
+canary's first dependency installation failed transiently; its isolated retry
+passed all eleven assertions, and the complete 33-scenario eval replay then
+passed.
+
+## Legacy SHA Compatibility Repair
+
+Earlier review found contradictory meanings for `headSha`: the v1 packet had
+historically accepted abbreviated Git identifiers, while canonical state needs
+an exact commit identity. The repaired seam preserves `session-distill/v1`
+compatibility by accepting 7-40 lowercase hexadecimal characters only at the
+legacy input boundary. The current producer still emits `git rev-parse HEAD`,
+and canonicalization ignores the legacy fragment's identity when it builds
+`synaipse-state/v1`; the canonical record derives the full SHA from live Git
+observations in the declared repository.
+
+Regression coverage proves both sides together: the legacy schema and adapter
+accept a seven-character prefix, while the resulting canonical state records
+the live repository's forty-character SHA. This prevents compatibility from
+weakening the canonical identity boundary.
 
 ## Validation Contract
 

@@ -563,6 +563,7 @@ function buildBotLoginSet(botLogin?: string): Set<string> {
 function evaluateUnresolvedReviewThreads(
 	threads: Awaited<ReturnType<GitHubClient["listPullRequestReviewThreads"]>>,
 	botLogins: Set<string>,
+	blockingBotLogins: Set<string> = new Set(),
 ): ThreadReadinessResult {
 	const unresolvedThreads = threads.filter((thread) => !thread.isResolved);
 	if (unresolvedThreads.length === 0) {
@@ -578,7 +579,9 @@ function evaluateUnresolvedReviewThreads(
 			return true;
 		}
 
-		return commentAuthors.some((login) => !botLogins.has(login));
+		return commentAuthors.some(
+			(login) => !botLogins.has(login) || blockingBotLogins.has(login),
+		);
 	});
 
 	if (unresolvedHumanThreads.length === 0) {
@@ -588,7 +591,7 @@ function evaluateUnresolvedReviewThreads(
 	return {
 		passed: false,
 		blockers: [
-			`Unresolved review thread comments remain (${unresolvedHumanThreads.length}); resolve all non-bot threads before merge`,
+			`Unresolved review thread comments remain (${unresolvedHumanThreads.length}); resolve all human and required automated-reviewer threads before merge`,
 		],
 	};
 }
@@ -1115,6 +1118,13 @@ export async function runReviewGate(
 				const threadReadiness = evaluateUnresolvedReviewThreads(
 					threads,
 					botLogins,
+					requiresHumanApproval
+						? new Set()
+						: new Set(
+								(reviewPolicy.automatedReviewers ?? [])
+									.map((login) => normalizeBotLogin(login))
+									.filter((login): login is string => login !== undefined),
+							),
 				);
 				const requiredCheckBlockers = evaluateRequiredChecks(
 					checkRuns,

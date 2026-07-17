@@ -5732,8 +5732,10 @@ function writeColdAgentOrientationEvidence({
 function coldAgentOrientationAssertions({ commandNames, orient, reportPath }) {
 	return [
 		assertion(
-			"cold agent discovers orient and next from the command catalog",
-			commandNames.includes("orient") && commandNames.includes("next"),
+			"cold agent discovers next and context commands from the command catalog",
+			commandNames.includes("next") &&
+				commandNames.includes("session-context") &&
+				commandNames.includes("agent-readiness"),
 		),
 		assertion(
 			"orient packet points to session-context and agent-readiness",

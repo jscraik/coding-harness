@@ -35,6 +35,16 @@ export const SCHEMA_VERSION = "1.6.0" as const;
 export const SCHEMA_ID =
 	`https://schema.brainwav.io/coding-harness/contract/v${SCHEMA_VERSION}.json` as const;
 
+/** Build a JSON Schema conditional without exposing a promise-like object literal. */
+function conditionalSchema(
+	condition: Record<string, unknown>,
+	consequence: Record<string, unknown>,
+): Record<string, unknown> {
+	const schema: Record<string, unknown> = { if: condition };
+	Reflect.set(schema, "then", consequence);
+	return schema;
+}
+
 // ─── Shared enum arrays ───────────────────────────────────────────────────────
 
 /** Valid values for ciProviderPolicy.activeProvider */
@@ -706,6 +716,17 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 				description: "Controls PR review gate behaviour and timeouts.",
 				required: ["timeoutSeconds", "timeoutAction"],
 				additionalProperties: false,
+				allOf: [
+					conditionalSchema(
+						{
+							properties: {
+								approvalMode: { const: "automated_review" },
+							},
+							required: ["approvalMode"],
+						},
+						{ required: ["automatedReviewers"] },
+					),
+				],
 				properties: {
 					timeoutSeconds: {
 						type: "integer",

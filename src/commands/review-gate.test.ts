@@ -3035,6 +3035,64 @@ describe("runReviewGate", () => {
 		expect(listPullRequestReviews).toHaveBeenCalledOnce();
 	});
 
+	it("blocks automated review mode while a required reviewer thread is unresolved", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				approvalMode: "automated_review",
+				automatedReviewers: ["coderabbitai[bot]"],
+			},
+		});
+		mockGitHubClientImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue([
+					{
+						id: 1,
+						name: "review-check",
+						status: "completed",
+						conclusion: "success",
+						head_sha: validSha,
+					},
+				]),
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "solo-maintainer" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "COMMENTED",
+						commit_id: validSha,
+						user: { login: "coderabbitai[bot]" },
+					},
+				]),
+				listPullRequestReviewThreads: vi.fn().mockResolvedValue([
+					{
+						id: "required-reviewer-thread",
+						isResolved: false,
+						comments: [{ author: { login: "coderabbitai[bot]" } }],
+					},
+				]),
+			}),
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"required automated-reviewer threads",
+			);
+		}
+	});
+
 	it("blocks automated review mode when a named reviewer has not reviewed HEAD", async () => {
 		mockLoadContract.mockReturnValue({
 			version: "1.0",

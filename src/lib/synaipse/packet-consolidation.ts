@@ -225,6 +225,16 @@ function reviewerEvidenceRefs(
 	errors: string[],
 ): string[] {
 	if (!Object.hasOwn(packet, "coverageReceipt")) {
+		if (
+			packet.status === "pass" ||
+			packet.decision === "accept" ||
+			packet.decision === "accepted_risk"
+		) {
+			errors.push(
+				"coverageReceipt is required for passing or accepted reviewer decisions",
+			);
+			return [];
+		}
 		return claimList([packet.command]);
 	}
 	if (!isPacketRecord(packet.coverageReceipt)) {
@@ -265,8 +275,8 @@ function validateRequiredString(
 }
 
 function validateHeadSha(value: unknown, errors: string[]): void {
-	if (typeof value !== "string" || !isFullGitSha(value))
-		errors.push("headSha must be an exact 40-character lowercase git SHA");
+	if (typeof value !== "string" || !isLegacySessionGitSha(value))
+		errors.push("headSha must be a 7-40 character lowercase git SHA");
 }
 
 /** Require and return non-empty evidence references. */
@@ -314,10 +324,11 @@ function stringOrNull(value: unknown): string | null {
 	return typeof value === "string" && value.trim() !== "" ? value : null;
 }
 
-/** Validate the full lowercase SHA required at the canonical boundary. */
-function isFullGitSha(value: string): boolean {
+/** Preserve abbreviated v1 session input while canonical state uses live full SHA identity. */
+function isLegacySessionGitSha(value: string): boolean {
 	return (
-		value.length === 40 &&
+		value.length >= 7 &&
+		value.length <= 40 &&
 		[...value].every((char) => "0123456789abcdef".includes(char))
 	);
 }

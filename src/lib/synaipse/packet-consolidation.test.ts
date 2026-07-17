@@ -995,7 +995,6 @@ describe("synaipse packet consolidation", () => {
 		["blank branch", { branch: "" }, "branch"],
 		["missing current SHA", { headSha: undefined }, "headSha"],
 		["invalid current SHA", { headSha: "abc123" }, "headSha"],
-		["abbreviated current SHA", { headSha: FULL_SHA.slice(0, 7) }, "headSha"],
 		[
 			"missing evidence references",
 			{ evidenceLanes: undefined },

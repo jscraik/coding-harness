@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildContractJsonSchema } from "./json-schema-core.js";
 import { NORTH_STAR_DECISION_QUESTION_SPECS } from "./types.js";
 import { ValidationErrorCode, validateContract } from "./validator.js";
 
@@ -78,6 +79,28 @@ function withCanonicalNorthStarSurfaces(
 		...contract,
 	};
 }
+
+describe("generated contract schema parity", () => {
+	it("requires named automated reviewers when automated review mode is selected", () => {
+		const schema = buildContractJsonSchema();
+		const properties = schema.properties as Record<
+			string,
+			Record<string, unknown>
+		>;
+		const conditions = properties.reviewPolicy?.allOf as Record<
+			string,
+			unknown
+		>[];
+		expect(conditions).toHaveLength(1);
+		expect(conditions[0]?.if).toEqual({
+			properties: { approvalMode: { const: "automated_review" } },
+			required: ["approvalMode"],
+		});
+		expect(Reflect.get(conditions[0] ?? {}, "then")).toEqual({
+			required: ["automatedReviewers"],
+		});
+	});
+});
 
 function validToolingPolicy(
 	overrides: Record<string, unknown> = {},
