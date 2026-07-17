@@ -70,7 +70,7 @@ truth.
   failures as system evidence. Route the durable correction to the smallest
   validator, schema, fixture, wrapper, instruction, or skill. Steering that
   forbids implementation requires an admission record before work resumes.
-- Keep types, schemas, generated mirrors, command effects, and external input
+- Keep types, schemas, preflight runtime/template mirrors, command effects, and external input
   behind their declared boundaries. Detailed governance and reviewer-role
   routing live in [`docs/agents/07b-agent-governance.md`](docs/agents/07b-agent-governance.md).
 - Harness Reviewer Roles First and Harness Tool Builder are first-choice subagents: use `spawn_agent(agent_type="harness-product-code-reviewer")` for covered review and `spawn_agent(agent_type="harness-toolsmith")` for recurring tooling friction; treat `unknown agent_type` as runtime-freshness blocked. Agent engineering proof: expected outcome is a software engineer, not a code generator; every durable repo/system change needs a concrete repo path, maintainability, traceability, and handoff quality.

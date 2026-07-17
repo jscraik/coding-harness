@@ -329,6 +329,9 @@ running governance gates. Generated validation scaffolds include
 `scripts/check-node-engine.mjs`; when an ambient shell uses an older Node than
 the repository requires, the checker retries through the repo-pinned mise Node
 before failing closed.
+Generated Codex preflight scripts preserve the source-runtime test-only
+runner-isolation guard; it requires explicit test authorization and always
+fails closed when CI is present, including optional Local Memory mode.
 
 ### Start Work On An Issue
 

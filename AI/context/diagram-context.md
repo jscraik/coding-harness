@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-16T22:40:45Z
+Generated: 2026-07-17T02:28:49Z
 
 ## Table of Contents
 
@@ -30,6 +30,9 @@ Generated: 2026-07-16T22:40:45Z
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
 - `src/commands/tooling-audit-core.ts`
+- `src/lib/init/README.md`
+- `src/lib/init/scaffold-doc-templates.ts`
+- `src/lib/init/scaffold-environment-templates.ts`
 - `src/lib/policy/tooling-baseline.ts`
 
 ## agent
