@@ -44,29 +44,40 @@ state risk, and insufficient deterministic enforcement.
 
 ## Durable correction
 
-`scripts/pr-queue-admission.sh` now reads every open PR, current check results,
-and GraphQL review-thread resolution state in one read-only snapshot. It emits
+`scripts/pr-queue-admission.sh` now reads every open PR, required check results,
+and paginated GraphQL review-thread state in one read-only snapshot. It emits
 `pr-queue-admission/v1`, classifies the next action as failing, pending,
 unavailable, review-blocked, merge-blocked, draft-authorization-blocked, or
-ready, and supports
-`--require-ready` for a mutation boundary. An empty queue is an admitted clean
-surface. A failed review-thread read is blocked rather than treated as zero
-threads, and a clean draft remains blocked until ready authorization. The
-package command `pnpm run pr:queue -- --json --require-ready`
-provides a repeatable pre-PR and pre-merge gate without claiming acceptance,
-release, or merge authority.
+ready, and supports `--require-ready` for a mutation boundary. An empty queue
+is an admitted clean surface. A failed review-thread read is blocked rather
+than treated as zero threads, and a clean draft remains blocked until ready
+authorization. The optional `--require-review-artifact` flag adds a stricter
+provider-evidence boundary: substantive CodeRabbit or Codex review output is
+`observed`, a provider rate-limit response is `rate_limited`, action-only
+signals are `action_only`, and absent provider output is `missing`. The default
+solo-maintainer path remains permissive and reports those statuses without
+blocking. The package command
+`pnpm run pr:queue -- --json --require-ready` provides a repeatable pre-PR and
+pre-merge gate without claiming acceptance, release, or merge authority.
 
 ## Validation and behavior change
 
-The focused fixture covers an empty queue, a blocked PR with failing checks,
+The focused fixtures cover an empty queue, a blocked PR with failing checks,
 unresolved review threads, requested changes, and a dirty merge state, plus a
-clean draft; the assertions require the failing-check action and draft
-authorization stop to win deterministically.
+clean draft, provider rate-limit and missing-artifact signals, substantive
+provider evidence, required-review decisions, and valid check rows returned
+with a non-zero `gh pr checks` status. The assertions require the failing-check,
+review-artifact, required-review, and draft-authorization stops to win
+deterministically while the default solo path remains permissive.
 
-Command: `pnpm vitest run src/commands/pr-queue-admission-script.test.ts --reporter=dot` -> pass (3 tests).
-Command: `op run --env-file ~/.codex/.env -- pnpm run pr:queue -- --json --require-ready` -> pass (initial empty queue; `overall=empty`).
+Command: `pnpm vitest run src/commands/pr-queue-admission-script.test.ts --reporter=dot` -> pass (8 tests).
+Command: `op run --env-file ~/.codex/.env -- pnpm run pr:queue -- --json --require-ready` -> fail (current hosted queue is blocked by 7 unresolved review threads on PR #483; required checks were observed with zero failures and provider signals were `coderabbit=rate_limited`, `codex=action_only`).
+Command: `pnpm test:deep` -> blocked (427 artifact test files and 6,322 tests passed before E2E environment validation stopped on `blocked_env_fifo_timeout`: `~/.codex/.env` is a FIFO/no-writer surface in this session; credentials were not read or printed).
 
 The guard proves current queue classification and prevents a new mutation when
-an open queue is blocked. It does not prove hosted checks, independent review,
+an open queue is blocked. Provider statuses are evidence classifications, not
+green-check aliases: a passing review check alone does not satisfy the opt-in
+requirement, and a rate-limit response remains visible as unavailable provider
+evidence. The guard does not prove hosted checks, independent review,
 acceptance, release, or merge readiness for a specific future PR; those remain
 separate closeout lanes.

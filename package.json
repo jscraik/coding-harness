@@ -3,6 +3,7 @@
 	"version": "0.15.1",
 	"files": [
 		"dist",
+		"src/templates",
 		"coding-policy.json",
 		"contracts/coding-policy.schema.json",
 		"contracts/code-quality-debt-baseline.json",

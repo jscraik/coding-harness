@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-17T18:44:11Z
+Generated: 2026-07-17T21:12:56Z
 
 ## Table of Contents
 
@@ -1200,6 +1200,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_branch_enforcer_acb749cd_10e89517
   ext_node_fs_a15b7d96["node:fs"] --> node_branch_protect_core_a8feb0fd_38c1f12a
   ext_node_fs_a15b7d96["node:fs"] --> node_branch_protect_sync_570adb18_cc4751e4
+  ext_node_fs_a15b7d96["node:fs"] --> node_canary_audit_boundaries_771c27d2_a52bfb1c
   ext_node_fs_a15b7d96["node:fs"] --> node_check_20f65c28_48d25399
   ext_node_fs_a15b7d96["node:fs"] --> node_check_architecture_rules_6b7347fd_dc8f2cf3
   ext_node_fs_a15b7d96["node:fs"] --> node_check_behavior_tests_2577f6be_58dc87b2

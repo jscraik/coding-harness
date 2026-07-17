@@ -1,6 +1,12 @@
 import { createRequire } from "node:module";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	mkdtempSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -150,6 +156,28 @@ describe("run-harness-canary-audit CLI", () => {
 		const report = runCanaryAudit({
 			repos: [repo],
 			cli: join(repo, "missing-cli.js"),
+			output,
+		});
+
+		expect(report.status).toBe("fail");
+		expect(report.outputPathAllowed).toBe(false);
+		expect(report.repositories).toHaveLength(0);
+		expect(report.errors?.[0]).toContain(
+			"--output must not be inside audited repository",
+		);
+		expect(existsSync(output)).toBe(false);
+	});
+
+	it("rejects output paths that cross an audited repository symlink", () => {
+		const repo = createGitFixture();
+		const linkRoot = mkdtempSync(join(tmpdir(), "harness-canary-link-"));
+		tempRoots.push(linkRoot);
+		const linkedRepo = join(linkRoot, "repo-link");
+		symlinkSync(repo, linkedRepo, "dir");
+		const output = join(linkedRepo, "artifacts", "canary.json");
+		const report = runCanaryAudit({
+			repos: [linkedRepo],
+			cli: join(linkedRepo, "missing-cli.js"),
 			output,
 		});
 

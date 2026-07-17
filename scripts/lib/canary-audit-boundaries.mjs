@@ -1,4 +1,12 @@
-import { isAbsolute, relative, resolve } from "node:path";
+import { existsSync, realpathSync } from "node:fs";
+import {
+	basename,
+	dirname,
+	isAbsolute,
+	join,
+	relative,
+	resolve,
+} from "node:path";
 
 export function resolveCliPath(cli) {
 	return resolve(cli);
@@ -12,12 +20,29 @@ function isPathInside(root, candidate) {
 	);
 }
 
+function canonicalizePath(value) {
+	const unresolved = resolve(value);
+	const suffix = [];
+	let existing = unresolved;
+	while (!existsSync(existing)) {
+		suffix.unshift(basename(existing));
+		const parent = dirname(existing);
+		if (parent === existing) return unresolved;
+		existing = parent;
+	}
+	try {
+		return join(realpathSync(existing), ...suffix);
+	} catch {
+		return unresolved;
+	}
+}
+
 export function validateOutputPath(output, repos) {
 	if (!output) return { ok: true };
 
-	const outputPath = resolve(output);
+	const outputPath = canonicalizePath(output);
 	const owner = repos
-		.map((repo) => resolve(repo))
+		.map((repo) => canonicalizePath(repo))
 		.find((repo) => isPathInside(repo, outputPath));
 	if (owner) {
 		return {
