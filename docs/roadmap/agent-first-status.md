@@ -407,7 +407,7 @@ scores, and residual risk.
 
 | Slice                              | Status     | Outcome                                                                                                                                |
 | ---------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Live repo installability matrix    | 📋 Planned | Read-only audit across the four canary repos.                                                                                          |
+| Live repo installability matrix    | 🔶 Partial | Local/manual `harness-canary-audit/v1` runner now preserves target HEAD and status while combining orient, next, upgrade-matrix, and available fitness evidence; four-repo evidence and scheduled automation remain pending. |
 | Minimal greenfield fixture         | 📋 Planned | Deterministic proof that fresh install creates only the thin operator surface.                                                         |
 | Brownfield old-harness fixture     | 📋 Planned | Regression proof for managed and locally owned surface detection and rollback.                                                         |
 | Runtime-card partial-adoption eval | 🔶 Partial | `harness next` remains useful when Linear, CI, Project Brain, or session evidence is unavailable.                                      |
