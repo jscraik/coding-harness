@@ -82,6 +82,7 @@
 	},
 	"anyOf": [
 		{
+			"required": ["coverageReceipt"],
 			"properties": {
 				"status": {
 					"const": "pass"

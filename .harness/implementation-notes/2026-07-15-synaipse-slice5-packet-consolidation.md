@@ -543,6 +543,9 @@ an atomic containment claim requires a future native primitive rather than a
 stronger comment or another pathname recheck. Reviewer packet projection now
 also enforces the runtime schema's status/decision/outcome compatibility before
 canonicalization, preventing malformed review evidence from being promoted.
+The reviewer decision JSON Schema and typed artifact validator also require a
+`coverageReceipt` whenever `status` is `pass`, matching the canonicalization
+boundary and preventing schema-valid acceptance without reviewer evidence.
 
 Command: `pnpm exec biome check scripts/check_artifact_type_contracts.py scripts/tests/test_agent_native_artifact_contracts.py src/commands/review-gate-core.ts src/commands/review-gate.test.ts src/lib/cli/registry/agent-native-packet-command-specs.test.ts src/lib/cli/registry/agent-native-packet-command-specs.ts src/lib/contract/json-schema-core.ts src/lib/contract/types-core.ts src/lib/contract/validator-core.ts src/lib/contract/validator.test.ts src/lib/synaipse/packet-caller-candidate-content.ts src/lib/synaipse/packet-caller-inventory.ts src/lib/synaipse/packet-candidate-identity.test.ts src/lib/synaipse/packet-candidate-identity.ts src/lib/synaipse/packet-canonicalization.test.ts src/lib/synaipse/packet-consolidation.test.ts src/lib/synaipse/packet-retirement.ts src/lib/synaipse/safe-file-ancestors.ts src/lib/synaipse/transition-validation.ts src/lib/synaipse/transition.test.ts` -> pass (18 changed TypeScript files passed formatting and lint checks; Python files were outside Biome's configured file set).
 Command: `pnpm exec tsc --noEmit` -> pass (the final review repair type-checks).
@@ -551,6 +554,11 @@ Command: `uv run pytest -q scripts/tests/test_agent_native_artifact_contracts.py
 Command: `pnpm check` -> pass (the aggregate static, related-test, full-test, and dependency-audit contract passed; related tests passed 1,007 tests with 1 skip, standard CI passed 6,154 tests with 1 skip, the isolated ci-migrate suite passed 108 tests, and the dependency audit found 0 advisories at or above moderate).
 Command: `MISE_NO_CONFIG=1 pnpm exec vitest run src/lib/synaipse/packet-consolidation.test.ts src/lib/synaipse/packet-consolidation-reviewer-coverage.test.ts src/commands/review-gate.test.ts --reporter=dot` -> pass (3 files and 164 tests after the final status/decision and automated-review state repair).
 Command: `MISE_NO_CONFIG=1 pnpm check` -> pass (the repaired final candidate passed static gates, 1,015 related tests with 1 skip, 6,162 standard CI tests with 1 skip, 108 isolated ci-migrate tests, and a dependency audit with 0 advisories).
+Command: `MISE_NO_CONFIG=1 node scripts/validate-runtime-packet-schemas.cjs --all` -> pass (28 runtime packet schemas and examples validated after making reviewer coverage conditional on passing status).
+Command: `MISE_NO_CONFIG=1 bash scripts/run-uv-python.sh -m pytest -q scripts/tests/test_agent_native_artifact_contracts.py` -> pass (25 typed artifact contract tests, including rejection of passing reviewer decisions without coverage evidence).
+Command: `MISE_NO_CONFIG=1 pnpm exec vitest run src/dev/validate-runtime-packet-schemas-semantic.test.ts src/lib/synaipse/packet-consolidation-reviewer-coverage.test.ts --reporter=dot` -> pass (2 files and 13 semantic/runtime boundary tests after aligning the assertion with the validator's fail-closed `anyOf` diagnostic).
+Command: `MISE_NO_CONFIG=1 pnpm run test:related` -> pass (29 related files passed 1,016 tests with 1 platform-gated skip).
+Command: `MISE_NO_CONFIG=1 pnpm check:static` -> pass (the first run found only JSON formatting drift; Biome formatted the changed schema and the complete static gate then passed).
 
 These results prove the local candidate and regression boundaries only. Hosted
 checks, current review evidence, conversation resolution, acceptance, merge,

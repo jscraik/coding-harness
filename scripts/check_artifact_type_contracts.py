@@ -982,6 +982,10 @@ class ReviewerDecisionReport(BaseModel):
     def require_reviewer_decision_consistency(self) -> ReviewerDecisionReport:
         if "coverageReceipt" in self.model_fields_set and self.coverageReceipt is None:
             raise ValueError("coverageReceipt must be an object when present")
+        if self.status == "pass" and self.coverageReceipt is None:
+            raise ValueError(
+                "coverageReceipt is required for passing reviewer decisions"
+            )
         validate_native_claim_boundary(self.mayClaim, self.mustNotClaim)
         if self.status == "pass" and self.decision not in {"accept", "accepted_risk"}:
             raise ValueError("passing reviewer decisions must accept or accept risk")

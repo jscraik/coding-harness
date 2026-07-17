@@ -275,6 +275,19 @@ class TestReviewerDecisionReport:
         with pytest.raises(ValidationError, match="passing reviewer decisions"):
             ReviewerDecisionReport.model_validate(payload)
 
+    def test_rejects_passing_report_without_coverage_receipt(self) -> None:
+        payload = deepcopy(_load_example("reviewer-decision.example.json"))
+        payload["status"] = "pass"
+        payload["decision"] = "accept"
+        payload["outcomes"] = ["accept"]
+        del payload["coverageReceipt"]
+
+        with pytest.raises(
+            ValidationError,
+            match="coverageReceipt is required for passing reviewer decisions",
+        ):
+            ReviewerDecisionReport.model_validate(payload)
+
 
 class TestGovernanceDecisionSurfaceReport:
     def test_accepts_canonical_report_example(self) -> None:
