@@ -32,6 +32,7 @@ depends_on:
 - [Selection decision](#selection-decision)
 - [Port boundary](#port-boundary)
 - [Defects converted into safeguards](#defects-converted-into-safeguards)
+- [Hosted PR metadata recovery](#hosted-pr-metadata-recovery)
 - [Behavior proof and residual gaps](#behavior-proof-and-residual-gaps)
 
 ## Selection decision
@@ -72,6 +73,20 @@ and contributes a warning unless another required probe fails.
 The preserved candidate used `git commit --no-verify` while creating an isolated
 fixture even though the new repository has no inherited hooks. The bypass was
 removed; fixture setup now uses an ordinary commit.
+
+## Hosted PR metadata recovery
+
+PR #482 exposed a separate CircleCI metadata failure: an invalid GitHub token
+caused `gh api` to emit a JSON 401 payload on stdout, and the PR-reference
+resolver accepted any non-empty stdout as a pull-request reference. The
+downstream template job therefore failed before validating the PR body.
+
+The resolver now admits only numeric PR references or canonical GitHub pull
+URLs. When authenticated lookup produces no valid reference, public-repository
+CI falls back to an unauthenticated open-PR lookup by owner and branch. A
+fixture reproduces JSON auth-error stdout and proves the public lookup returns
+the valid PR URL instead. This changes metadata recovery only; the PR template
+schema and validation rules remain unchanged.
 
 ## Behavior proof and residual gaps
 
