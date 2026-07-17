@@ -8,6 +8,7 @@ import {
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { spawnSync } from "node:child_process";
+import { validatePacketSource } from "../lib/synaipse/packet-consolidation.js";
 
 const repoRoot = process.cwd();
 const validatorPath = join(
@@ -60,6 +61,30 @@ function runValidator(manifest: string) {
 	});
 }
 
+/** Mutate evidence references only after proving the canonical fixture boundary. */
+function setValidatedReviewerEvidenceRefs(
+	packet: Record<string, unknown>,
+	evidenceRefs: string[],
+): void {
+	const validation = validatePacketSource("reviewer-decision/v1", packet);
+	if (!validation.valid) {
+		throw new TypeError(
+			`Invalid reviewer-decision fixture: ${validation.errors.join("; ")}`,
+		);
+	}
+	const receipt = Reflect.get(packet, "coverageReceipt");
+	if (
+		typeof receipt !== "object" ||
+		receipt === null ||
+		Array.isArray(receipt)
+	) {
+		throw new TypeError(
+			"Reviewer-decision fixture requires a coverage receipt",
+		);
+	}
+	Reflect.set(receipt, "evidenceRefs", evidenceRefs);
+}
+
 describe("validate-runtime-packet-schemas semantic branches", () => {
 	afterEach(() => {
 		for (const root of tempRoots.splice(0))
@@ -99,7 +124,11 @@ describe("validate-runtime-packet-schemas semantic branches", () => {
 		expect(result.stdout).toContain("must match at least one anyOf schema");
 	});
 
-	it("requires reviewer coverage evidence references for a passing decision", () => {
+	it.each([
+		["an empty list", []],
+		["an empty item", [""]],
+		["a whitespace-only item", ["   "]],
+	] as const)("rejects %s in passing reviewer evidence references", (_label, evidenceRefs) => {
 		const result = runValidator(
 			makeFixture(
 				"reviewer-decision/v1",
@@ -108,13 +137,16 @@ describe("validate-runtime-packet-schemas semantic branches", () => {
 					example.status = "pass";
 					example.decision = "accept";
 					example.outcomes = ["accept"];
-					const receipt = example.coverageReceipt as Record<string, unknown>;
-					receipt.evidenceRefs = [];
+					setValidatedReviewerEvidenceRefs(example, [...evidenceRefs]);
 				},
 			),
 		);
 		expect(result.status).toBe(1);
-		expect(result.stdout).toContain("must match at least one anyOf schema");
+		expect(result.stdout).toContain(
+			evidenceRefs.length === 0
+				? "must match at least one anyOf schema"
+				: "must match pattern \\\\S",
+		);
 	});
 
 	it("rejects contradictory current-SHA evidence through the manifest", () => {

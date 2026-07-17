@@ -12,6 +12,30 @@ const reviewerExample = JSON.parse(
 	),
 ) as Record<string, unknown>;
 
+/** Mutate evidence references only after proving the canonical fixture boundary. */
+function setValidatedReviewerEvidenceRefs(
+	packet: Record<string, unknown>,
+	evidenceRefs: string[],
+): void {
+	const validation = validatePacketSource("reviewer-decision/v1", packet);
+	if (!validation.valid) {
+		throw new TypeError(
+			`Invalid reviewer-decision fixture: ${validation.errors.join("; ")}`,
+		);
+	}
+	const receipt = Reflect.get(packet, "coverageReceipt");
+	if (
+		typeof receipt !== "object" ||
+		receipt === null ||
+		Array.isArray(receipt)
+	) {
+		throw new TypeError(
+			"Reviewer-decision fixture requires a coverage receipt",
+		);
+	}
+	Reflect.set(receipt, "evidenceRefs", evidenceRefs);
+}
+
 describe("reviewer decision coverage boundary", () => {
 	it.each([
 		["pass", "needs_evidence"],
@@ -63,8 +87,7 @@ describe("reviewer decision coverage boundary", () => {
 		Reflect.set(packet, "status", "pass");
 		Reflect.set(packet, "decision", decision);
 		Reflect.set(packet, "outcomes", [decision]);
-		const coverageReceipt = packet.coverageReceipt as Record<string, unknown>;
-		coverageReceipt.evidenceRefs = [];
+		setValidatedReviewerEvidenceRefs(packet, []);
 
 		const validation = validatePacketSource("reviewer-decision/v1", packet);
 

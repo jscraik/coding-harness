@@ -2975,6 +2975,98 @@ describe("runReviewGate", () => {
 		}
 	});
 
+	it.each([
+		"dependabot[bot]",
+		"renovate[bot]",
+	])("does not treat unconfigured app approval from %s as human review", async (botLogin) => {
+		mockGitHubClientImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue([
+					{
+						id: 1,
+						name: "review-check",
+						status: "completed",
+						conclusion: "success",
+						head_sha: validSha,
+					},
+				]),
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: botLogin },
+					},
+				]),
+			}),
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers).toContain(
+				"No APPROVED reviews found for the current HEAD SHA",
+			);
+		}
+	});
+
+	it("does not treat an unconfigured app commit actor as a human coder", async () => {
+		mockGitHubClientImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue([
+					{
+						id: 1,
+						name: "review-check",
+						status: "completed",
+						conclusion: "success",
+						head_sha: validSha,
+					},
+				]),
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "solo-maintainer" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestCommits: vi.fn().mockResolvedValue([
+					{
+						sha: validSha,
+						author: { login: "renovate[bot]" },
+						committer: { login: "github-actions[bot]" },
+					},
+				]),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "solo-maintainer" },
+					},
+				]),
+			}),
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"Reviewer independence failed",
+			);
+		}
+	});
+
 	it("uses the independent automated review check without requiring an impossible solo-maintainer approval", async () => {
 		mockLoadContract.mockReturnValue({
 			version: "1.0",

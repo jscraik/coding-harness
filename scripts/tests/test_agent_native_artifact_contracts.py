@@ -301,6 +301,19 @@ class TestReviewerDecisionReport:
         ):
             ReviewerDecisionReport.model_validate(payload)
 
+    @pytest.mark.parametrize("evidence_ref", ["", "   "])
+    def test_rejects_passing_report_with_blank_coverage_evidence_ref(
+        self, evidence_ref: str
+    ) -> None:
+        payload = deepcopy(_load_example("reviewer-decision.example.json"))
+        payload["status"] = "pass"
+        payload["decision"] = "accept"
+        payload["outcomes"] = ["accept"]
+        payload["coverageReceipt"]["evidenceRefs"] = [evidence_ref]
+
+        with pytest.raises(ValidationError, match="must not contain blank items"):
+            ReviewerDecisionReport.model_validate(payload)
+
 
 class TestGovernanceDecisionSurfaceReport:
     def test_accepts_canonical_report_example(self) -> None:

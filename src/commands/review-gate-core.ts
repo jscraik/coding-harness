@@ -284,10 +284,12 @@ function resolveCurrentApprovers(
 ): string[] {
 	const approvalStateByReviewer = new Map<string, boolean>();
 	for (const review of chronologicalReviews(reviews)) {
-		const login = normalizeBotLogin(review.user?.login);
-		if (!login || isAutomatedActorLogin(login, botLogins)) {
+		const rawLogin = review.user?.login;
+		if (isAutomatedActorLogin(rawLogin, botLogins)) {
 			continue;
 		}
+		const login = normalizeBotLogin(rawLogin);
+		if (!login) continue;
 		if (review.state === "CHANGES_REQUESTED" || review.state === "DISMISSED") {
 			approvalStateByReviewer.set(login, false);
 			continue;
@@ -435,33 +437,27 @@ async function resolveCodingActor(
 	prAuthorLogin: string | undefined,
 	botLogins: Set<string>,
 ): Promise<string | undefined> {
-	const normalizedPrAuthor = normalizeBotLogin(prAuthorLogin);
+	const normalizedPrAuthor = humanActorLogin(prAuthorLogin, botLogins);
 	if (
 		typeof (client as Partial<GitHubClient>).listPullRequestCommits !==
 		"function"
 	) {
-		return isAutomatedActorLogin(normalizedPrAuthor, botLogins)
-			? undefined
-			: normalizedPrAuthor;
+		return normalizedPrAuthor;
 	}
 
 	try {
 		const commits = await client.listPullRequestCommits(prNumber);
 		const headCommit = commits.find((commit) => commit.sha === headSha);
 		if (!headCommit) {
-			return isAutomatedActorLogin(normalizedPrAuthor, botLogins)
-				? undefined
-				: normalizedPrAuthor;
+			return normalizedPrAuthor;
 		}
 
 		const commitActorCandidates = [
-			normalizeBotLogin(headCommit.author?.login) ??
-				normalizeBotLogin(headCommit.committer?.login),
-			normalizeBotLogin(headCommit.committer?.login),
+			humanActorLogin(headCommit.author?.login, botLogins) ??
+				humanActorLogin(headCommit.committer?.login, botLogins),
+			humanActorLogin(headCommit.committer?.login, botLogins),
 		].filter((login): login is string => login !== undefined);
-		const headCommitHumanActor = commitActorCandidates.find(
-			(login) => !isAutomatedActorLogin(login, botLogins),
-		);
+		const headCommitHumanActor = commitActorCandidates[0];
 		if (headCommitHumanActor) {
 			return headCommitHumanActor;
 		}
@@ -470,22 +466,18 @@ async function resolveCodingActor(
 			.reverse()
 			.map(
 				(commit) =>
-					normalizeBotLogin(commit.author?.login) ??
-					normalizeBotLogin(commit.committer?.login),
+					humanActorLogin(commit.author?.login, botLogins) ??
+					humanActorLogin(commit.committer?.login, botLogins),
 			)
 			.filter((login): login is string => login !== undefined)
-			.find((login) => !isAutomatedActorLogin(login, botLogins));
+			.at(0);
 		if (latestHumanCommitActor) {
 			return latestHumanCommitActor;
 		}
 
-		return isAutomatedActorLogin(normalizedPrAuthor, botLogins)
-			? undefined
-			: normalizedPrAuthor;
+		return normalizedPrAuthor;
 	} catch {
-		return isAutomatedActorLogin(normalizedPrAuthor, botLogins)
-			? undefined
-			: normalizedPrAuthor;
+		return normalizedPrAuthor;
 	}
 }
 
@@ -596,15 +588,23 @@ function evaluateUnresolvedReviewThreads(
 
 	const unresolvedHumanThreads = unresolvedThreads.filter((thread) => {
 		const commentAuthors = thread.comments
-			.map((comment) => normalizeBotLogin(comment.author?.login))
-			.filter((login): login is string => login !== undefined);
+			.map((comment) => ({
+				identity: normalizeBotLogin(comment.author?.login),
+				rawLogin: comment.author?.login,
+			}))
+			.filter(
+				(author): author is { identity: string; rawLogin: string } =>
+					author.identity !== undefined && author.rawLogin !== undefined,
+			);
 
 		if (commentAuthors.length === 0) {
 			return true;
 		}
 
 		return commentAuthors.some(
-			(login) => !botLogins.has(login) || blockingBotLogins.has(login),
+			(author) =>
+				!isAutomatedActorLogin(author.rawLogin, botLogins) ||
+				blockingBotLogins.has(author.identity),
 		);
 	});
 
@@ -1394,14 +1394,28 @@ function normalizeBotLogin(login: string | undefined): string | undefined {
 		: trimmed;
 }
 
+/** Return a human identity only after classifying the unmodified GitHub login. */
+function humanActorLogin(
+	login: string | undefined,
+	botLogins: Set<string>,
+): string | undefined {
+	if (isAutomatedActorLogin(login, botLogins)) return undefined;
+	return normalizeBotLogin(login);
+}
+
 function isAutomatedActorLogin(
 	login: string | undefined,
 	botLogins: Set<string>,
 ): boolean {
-	if (!login) {
+	const rawLogin = login?.trim().toLowerCase();
+	if (!rawLogin) {
 		return true;
 	}
-	return botLogins.has(login) || /\[bot\]$/u.test(login);
+	const identity = normalizeBotLogin(rawLogin);
+	return (
+		/\[bot\]$/u.test(rawLogin) ||
+		(identity !== undefined && botLogins.has(identity))
+	);
 }
 
 async function resolveBotOnlyThreads(
