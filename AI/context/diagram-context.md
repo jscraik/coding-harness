@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-16T21:45:20Z
+Generated: 2026-07-16T22:40:45Z
 
 ## Table of Contents
 
@@ -29,21 +29,7 @@ Generated: 2026-07-16T21:45:20Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `package.json`
-- `src/lib/init/README.md`
-- `src/lib/init/scaffold-root-command-templates.ts`
-- `src/lib/learnings/validation-plan.ts`
-- `src/templates/CODESTYLE.md`
-- `src/templates/codestyle/05-quality-security-ops.md`
-- `src/templates/codestyle/08-typescript.md`
-- `src/templates/codestyle/09-web.md`
-- `src/templates/codestyle/10-shell-bash-zsh.md`
-- `src/templates/codestyle/11-package-managers-pnpm-npm.md`
-- `src/templates/codestyle/12-swift.md`
-- `src/templates/codestyle/13-git-workflow.md`
-- `src/templates/codestyle/17-testing.md`
-- `src/templates/codestyle/19-development-workflow.md`
-- `src/templates/codestyle/CHECKSUMS.sha256`
+- `src/templates/codex-preflight.sh`
 
 ## agent
 
