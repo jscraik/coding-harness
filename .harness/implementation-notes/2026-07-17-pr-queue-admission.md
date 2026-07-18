@@ -81,3 +81,16 @@ requirement, and a rate-limit response remains visible as unavailable provider
 evidence. The guard does not prove hosted checks, independent review,
 acceptance, release, or merge readiness for a specific future PR; those remain
 separate closeout lanes.
+
+## 2026-07-18 provider-review follow-up
+
+The current-head Codex review found two deterministic gaps in the optional
+provider-artifact gate: comments and reviews were capped at their first 100
+items, and a rate-limit notice could win over a later substantive review. The
+queue validator now paginates the comments and reviews connections separately,
+merges their pages before classification, and gives substantive evidence
+precedence over rate-limit and action-only signals. The default solo-maintainer
+path remains permissive; only the explicit artifact requirement uses this
+stricter evidence lane.
+
+Command: `pnpm vitest run src/commands/pr-queue-admission-script.test.ts --reporter=dot` -> pass (10 tests, including rate-limit precedence and multi-page provider fixtures).

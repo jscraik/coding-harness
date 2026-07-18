@@ -64,24 +64,40 @@ while IFS= read -r pr; do
 		printf 'null\n' >"$checks_file"
 	fi
 	threads_file="$tmp_dir/threads-$number.json"
-	query='query($owner:String!,$repo:String!,$number:Int!,$endCursor:String){repository(owner:$owner,name:$repo){pullRequest(number:$number){reviewThreads(first:100,after:$endCursor){nodes{isResolved isOutdated}pageInfo{hasNextPage,endCursor}} comments(first:100){nodes{author{login} body createdAt url}} reviews(first:100){nodes{author{login} state body submittedAt}}}}}'
+	comments_file="$tmp_dir/comments-$number.json"
+	reviews_file="$tmp_dir/reviews-$number.json"
+	threads_query='query($owner:String!,$repo:String!,$number:Int!,$endCursor:String){repository(owner:$owner,name:$repo){pullRequest(number:$number){reviewThreads(first:100,after:$endCursor){nodes{isResolved isOutdated}pageInfo{hasNextPage,endCursor}}}}}'
+	comments_query='query($owner:String!,$repo:String!,$number:Int!,$endCursor:String){repository(owner:$owner,name:$repo){pullRequest(number:$number){comments(first:100,after:$endCursor){nodes{author{login} body createdAt url}pageInfo{hasNextPage,endCursor}}}}}'
+	reviews_query='query($owner:String!,$repo:String!,$number:Int!,$endCursor:String){repository(owner:$owner,name:$repo){pullRequest(number:$number){reviews(first:100,after:$endCursor){nodes{author{login} state body submittedAt}pageInfo{hasNextPage,endCursor}}}}}'
 	set +e
-	gh api graphql --paginate --slurp -f query="$query" -f owner="$owner" -f repo="$name" -F number="$number" >"$threads_file" 2>/dev/null
+	gh api graphql --paginate --slurp -f query="$threads_query" -f owner="$owner" -f repo="$name" -F number="$number" >"$threads_file" 2>/dev/null
 	threads_status="$?"
+	gh api graphql --paginate --slurp -f query="$comments_query" -f owner="$owner" -f repo="$name" -F number="$number" >"$comments_file" 2>/dev/null
+	comments_status="$?"
+	gh api graphql --paginate --slurp -f query="$reviews_query" -f owner="$owner" -f repo="$name" -F number="$number" >"$reviews_file" 2>/dev/null
+	reviews_status="$?"
 	set -e
 	if [[ "$threads_status" -ne 0 ]]; then
 		printf '{"status":"blocked","unresolved":null}\n' >"$threads_file"
-	else
+	elif [[ "$comments_status" -ne 0 || "$reviews_status" -ne 0 ]]; then
 		jq '
 			def threads: [.[].data.repository.pullRequest.reviewThreads.nodes[]?];
+			{status:"observed",
+			 unresolved:([threads[] | select(.isResolved != true and .isOutdated != true)] | length),
+			 reviewArtifacts:{status:"blocked",substantiveCount:0,coderabbit:"unknown",codex:"unknown"}}' "$threads_file" >"$threads_file.normalized"
+		mv "$threads_file.normalized" "$threads_file"
+	else
+		jq --slurpfile comments "$comments_file" --slurpfile reviews "$reviews_file" '
+			def threads: [.[].data.repository.pullRequest.reviewThreads.nodes[]?];
 			def provider_signals($provider):
-				([.[].data.repository.pullRequest.comments.nodes[]?,
-					.[].data.repository.pullRequest.reviews.nodes[]?]
-					| map(select((.author.login // "" | ascii_downcase | contains($provider)))));
+				([$comments[][]?.data.repository.pullRequest.comments.nodes[]?,
+					$reviews[][]?.data.repository.pullRequest.reviews.nodes[]?]
+					| map(select((.author.login // "" | ascii_downcase | contains($provider))))
+					| sort_by((.createdAt // .submittedAt // "")));
 			def provider_signal($root; $provider):
 				($root | provider_signals($provider)) as $signals
-				| if any($signals[]?; (.body | test("review limit reached|rate limit"; "i"))) then "rate_limited"
-				  elif any($signals[]?; (.body | test("## summary|## findings|no actionable findings|review completed"; "i"))) then "substantive"
+				| if any($signals[]?; ((.body // "") | test("## summary|## findings|no actionable findings|review completed"; "i"))) then "substantive"
+				  elif any($signals[]?; ((.body // "") | test("review limit reached|rate limit"; "i"))) then "rate_limited"
 				  elif ($signals | length) > 0 then "action_only"
 				  else "missing" end;
 			. as $root |
