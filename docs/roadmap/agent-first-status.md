@@ -1,10 +1,10 @@
 ---
-last_validated: 2026-07-11
+last_validated: 2026-07-18
 ---
 
 # Agent-First Status Matrix
 
-> Last updated: 2026-07-11
+> Last updated: 2026-07-18
 > Owner: Jamie Craik
 > Review cadence: Weekly
 
