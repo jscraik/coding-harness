@@ -51,6 +51,6 @@
 			"remediation": "Issue a schema-valid replacement packet with the full baseline SHA and artifact-probe binding, then obtain a fresh review against its immutable target."
 		}
 	],
-	"claims_boundary": "Blocked only by immutable packet-target drift. No assessment of the repaired validator, malformed-envelope rejection, additive compatibility, QA acceptance, hosted CI, external review, acceptance, PR state, merge, release, or readiness is claimed.",
+	"claims_boundary": "Blocked by (a) immutable packet-target drift (HEAD mismatch vs expected_target_sha) and (b) malformed packet/validator failure (missing artifact_probe and short baseline SHA). No assessment of the repaired validator, malformed-envelope rejection, additive compatibility, QA acceptance, hosted CI, external review, acceptance, PR state, merge, release, or readiness is claimed.",
 	"final_status_line": "WROTE: .harness/review/synaipse-cc1/repair-adversarial-review.md"
 }

@@ -18,7 +18,7 @@
 			"QA verifies outer meta and legacy operational permission-plan compatibility are not narrowed by the repair."
 		],
 		"dependencies": [
-			"Adversarial finding preserved in commit 3e9e5f52.",
+			"Adversarial finding preserved in commit 3e9e5f52bed1e91caddcb210830fb8e0dfb104a0.",
 			"Repair commit cb50e6e2705bde993105c55d7c5690fba14fddcd."
 		],
 		"risk_or_learning_target": "Closed versioned projections must reject unknown authority fields without changing deliberately additive legacy metadata.",
@@ -32,7 +32,7 @@
 		"repo_path": "/Users/jamiecraik/dev/coding-harness",
 		"worktree_path": "/private/tmp/coding-harness-synaipse-cc1-effects",
 		"branch": "codex/synaipse-cc1-effects",
-		"baseline_sha": "bfe275b09244cd44c63ae4cbb641b3630056d04f",
+		"baseline_sha": "3e9e5f52bed1e91caddcb210830fb8e0dfb104a0",
 		"expected_target_sha": "cb50e6e2705bde993105c55d7c5690fba14fddcd",
 		"preserved_output_ref": "git:cb50e6e2705bde993105c55d7c5690fba14fddcd",
 		"fresh_context_required": true
@@ -56,7 +56,7 @@
 		"validation_entrypoints": [
 			"pnpm exec vitest run src/lib/decision/harness-decision.test.ts src/commands/next-decision-meta.test.ts src/commands/next-fitness-report.test.ts --reporter=dot",
 			"pnpm exec tsc --noEmit",
-			"git diff --check 3e9e5f52..cb50e6e2705bde993105c55d7c5690fba14fddcd"
+			"git diff --check 3e9e5f52bed1e91caddcb210830fb8e0dfb104a0..cb50e6e2705bde993105c55d7c5690fba14fddcd"
 		],
 		"child_attestation_required": true,
 		"conflict_policy": "stop_and_report_blocked_instruction_context"

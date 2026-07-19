@@ -18,7 +18,7 @@
 			"Result either contains assertion-shaped finding(s) or an explicit no-finding verdict and binds the target SHA."
 		],
 		"dependencies": [
-			"P2 finding artifact in commit 3e9e5f52.",
+			"P2 finding artifact in commit 3e9e5f52bed1e91caddcb210830fb8e0dfb104a0.",
 			"Repair commit cb50e6e2705bde993105c55d7c5690fba14fddcd.",
 			"Fallback evidence commit 63188bcda5855424b2db48f075397e0b938bb73b."
 		],
@@ -33,7 +33,7 @@
 		"repo_path": "/Users/jamiecraik/dev/coding-harness",
 		"worktree_path": "/private/tmp/coding-harness-synaipse-cc1-effects",
 		"branch": "codex/synaipse-cc1-effects",
-		"baseline_sha": "3e9e5f52",
+		"baseline_sha": "3e9e5f52bed1e91caddcb210830fb8e0dfb104a0",
 		"expected_target_sha": "63188bcda5855424b2db48f075397e0b938bb73b",
 		"preserved_output_ref": "git:63188bcda5855424b2db48f075397e0b938bb73b",
 		"fresh_context_required": true
@@ -57,7 +57,7 @@
 		"validation_entrypoints": [
 			"pnpm exec vitest run src/lib/decision/harness-decision.test.ts src/commands/next-decision-meta.test.ts src/commands/next-fitness-report.test.ts --reporter=dot",
 			"pnpm exec tsc --noEmit",
-			"git diff --check 3e9e5f52..63188bcda5855424b2db48f075397e0b938bb73b"
+			"git diff --check 3e9e5f52bed1e91caddcb210830fb8e0dfb104a0..63188bcda5855424b2db48f075397e0b938bb73b"
 		],
 		"child_attestation_required": true,
 		"conflict_policy": "stop_and_report_blocked_instruction_context"

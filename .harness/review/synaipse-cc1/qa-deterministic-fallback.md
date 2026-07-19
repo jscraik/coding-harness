@@ -12,6 +12,7 @@ reusing either stale QA result as acceptance evidence.
 
 ## Deterministic Result
 
+- Command: `git rev-parse HEAD` -> pass (returned 8e7e7251c299d8f7844cf633cf885bedeab2752d, confirming checkout matches the claimed commit).
 - Command: `pnpm exec vitest run src/commands/next-fitness-report.test.ts src/commands/next-agent-parity.test.ts src/commands/next-decision-meta.test.ts src/commands/next.test.ts src/lib/decision/harness-decision.test.ts src/lib/synaipse/state.test.ts --reporter=dot` -> pass (6 files, 132 tests).
 - Command: `pnpm exec tsc --noEmit` -> pass (no diagnostics).
 - Command: `git diff --check bfe275b09244cd44c63ae4cbb641b3630056d04f..8e7e7251c299d8f7844cf633cf885bedeab2752d` -> pass (no whitespace errors).
