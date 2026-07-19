@@ -1,0 +1,52 @@
+{
+	"schema_version": "pm-child-result/v1",
+	"packet_id": "pkt_synaipsecc1qa01",
+	"packet_sha256": "214486782e70b173cdc3e14ae5f5328590e7255bd9c2ec6379c3e7d32ea0cf8f",
+	"dispatch_id": "ch_synaipsecc1qa01",
+	"turn_id": "turn_synaipsecc1qa01",
+	"project_id": "coding-harness",
+	"job_id": "job_synaipsecc1qa01",
+	"role": "QA Disproof",
+	"declared_artifact": ".harness/review/synaipse-cc1/qa-disproof.md",
+	"artifact_sha256": "759c2570f53100ddddaa9994ed678abcecb888801db70efe305e94116c160f30",
+	"baseline_sha": "bfe275b09244cd44c63ae4cbb641b3630056d04f",
+	"target_sha": "8e7e7251c299d8f7844cf633cf885bedeab2752d",
+	"status": "blocked_validation",
+	"commands": [
+		{
+			"command": "git -C /private/tmp/coding-harness-synaipse-cc1-effects rev-parse HEAD",
+			"outcome": "pass",
+			"evidence": "Observed immutable target 8e7e7251c299d8f7844cf633cf885bedeab2752d."
+		},
+		{
+			"command": "pnpm exec vitest run src/commands/next-fitness-report.test.ts src/commands/next-agent-parity.test.ts src/commands/next-decision-meta.test.ts src/commands/next.test.ts src/lib/decision/harness-decision.test.ts src/lib/synaipse/state.test.ts --reporter=dot",
+			"outcome": "blocked",
+			"evidence": "The packet-required artifact probe expired before result write, so the packet stop condition prevented execution."
+		},
+		{
+			"command": "pnpm exec tsc --noEmit",
+			"outcome": "blocked",
+			"evidence": "The packet-required artifact probe expired before result write, so the packet stop condition prevented execution."
+		},
+		{
+			"command": "git diff --check bfe275b09244cd44c63ae4cbb641b3630056d04f..8e7e7251c299d8f7844cf633cf885bedeab2752d",
+			"outcome": "blocked",
+			"evidence": "The packet-required artifact probe expired before result write, so the packet stop condition prevented execution."
+		}
+	],
+	"findings": [
+		{
+			"finding_id": "CC1-QA-ARTIFACT-PROBE-EXPIRED",
+			"severity": "P1",
+			"summary": "The packet's 300-second QA artifact-probe window elapsed before the result could be written.",
+			"evidence_refs": [
+				".harness/intent/2026-07-19-synaipse-cc1-qa-packet.json",
+				".harness/review/synaipse-cc1/qa-artifact-probe.json",
+				".harness/review/synaipse-cc1/qa-disproof.md"
+			],
+			"remediation": "Issue a fresh QA packet and fresh artifact probe bound to the same immutable target before a new QA disproof runs."
+		}
+	],
+	"claims_boundary": "This is packet-bound evidence of a target-SHA observation and freshness blocker only. It does not establish CC1 producer-reader compatibility, malformed-envelope rejection, invocation-effects separation, fitness-report behavior, local validation, adversarial review, hosted CI, review, acceptance, merge, release, or readiness.",
+	"final_status_line": "WROTE: .harness/review/synaipse-cc1/qa-disproof.md"
+}

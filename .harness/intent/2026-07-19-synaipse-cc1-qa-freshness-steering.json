@@ -1,0 +1,27 @@
+{
+	"schema_version": "steering-feedback/v1",
+	"feedback_signal": "Two fresh QA Disproof agents produced packet-bound blocked_validation records because the five-minute artifact-probe freshness window elapsed before their final evidence artifact could be written, even though the second agent observed all required local validations passing.",
+	"repeated": true,
+	"occurrence_count": 2,
+	"root_operational_failure": "The child packet treated a short-lived artifact-writability probe as the freshness authority for an entire QA run. That makes normal instruction loading, independent analysis, and result preservation race a five-minute clock, and it repeatedly converts otherwise useful QA evidence into stale control artifacts.",
+	"failure_category": "poor_workflow_design",
+	"durable_improvement": {
+		"kind": "workflow_rule",
+		"path": "docs/agents/07b-agent-governance.md",
+		"action": "Define artifact-probe freshness as a dispatch-time writability check and bind result freshness to the child attestation timestamp plus immutable target SHA; require a deterministic fallback runner after two probe-expiry failures instead of another agent retry.",
+		"prevents": "Independent QA does not repeatedly fail because its artifact probe expires before normal bounded validation and final evidence write complete."
+	},
+	"destination": "workflow_rule",
+	"proof": {
+		"commands": [
+			{
+				"command": "PYTHONPATH=/Users/jamiecraik/dev/jamie-brain uv run --project /Users/jamiecraik/dev/jamie-brain python -c '<validate both CC1 QA packet/result bindings>'",
+				"outcome": "pass",
+				"evidence": "Both QA blocked_validation results are packet-bound, non-empty, and preserved; they identify the same probe-expiry failure rather than a source defect."
+			}
+		],
+		"future_behavior": "After two expired QA probes at one immutable target, the OC stops spawning replacement agents and uses the governed deterministic QA fallback with separately recorded non-independence and artifact freshness."
+	},
+	"implementation_note": ".harness/review/synaipse-cc1/qa-disproof.md",
+	"status": "proposed"
+}
