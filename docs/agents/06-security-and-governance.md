@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-07-16
+last_validated: 2026-07-19
 ---
 
 # Security and governance
@@ -47,8 +47,10 @@ This repository follows conservative defaults:
 - Harness runtime checks must compare `uv` against the consumer contract's `toolingPolicy.requiredMiseTools` pin when present, not the harness package's own fallback pin.
 - uv-backed Python validation helpers must route through
   `scripts/run-uv-python.sh` so worktree-scoped uv cache and virtual
-  environment settings stay centralized and do not drift across package scripts,
-  hook governance helpers, or generated init scaffolds.
+  environment settings and `UV_MALWARE_CHECK=1` stay centralized and do not
+  drift across package scripts, hook governance helpers, or generated init
+  scaffolds. Keep the pinned `uv` version at `0.11.16` or newer; an older pin or
+  a wrapper that omits the malware-check environment is a tooling-parity failure.
 - Node engine drift is a governance blocker, not a package-manager warning: `scripts/check-node-engine.mjs` should recover by re-executing through the `.mise.toml`-pinned Node when available, must fail when the pinned runtime cannot be resolved, and governed validation wrappers should run it before broader gates that would otherwise produce stale or misleading evidence.
 - Generated Codex environment setup may add known user/Homebrew/system tool directories to `PATH` and may trust `.mise.toml` in the active worktree (via `mise trust --yes` when both file and CLI are present), but it must preserve caller-provided `PATH` precedence when `PATH` is already set, and it must not perform unbounded global installs or silently bypass the repository readiness gates.
 - Agent documentation CLIs such as `ctx7` must be pinned through mise and represented in `.mise.toml`, `scripts/check-environment.sh`, `harness.contract.json`, and `.codex/environments/environment.toml` before they become required readiness tools.

@@ -132,7 +132,7 @@ run_pytest() {
   local name="$1"
   local base_cmd=""
   if command -v uv >/dev/null 2>&1 && [[ -f uv.lock ]]; then
-    base_cmd="uv run pytest"
+    base_cmd="UV_MALWARE_CHECK=1 uv run pytest"
   else
     base_cmd="python3 -m pytest"
   fi

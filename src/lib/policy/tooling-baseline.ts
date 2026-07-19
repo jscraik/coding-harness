@@ -133,7 +133,7 @@ export const PROJECT_MISE_REQUIRED_TOOLS = [
 	["node", "26.3.0"],
 	["pnpm", "10.33.0"],
 	["python", "3.12"],
-	["uv", "0.11.3"],
+	["uv", "0.11.16"],
 	["cargo:prek", "0.3.4"],
 	["npm:@brainwav/diagram", "1.1.0"],
 	["npm:@argos-ci/cli", "4.1.1"],

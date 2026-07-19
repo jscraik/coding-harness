@@ -7,8 +7,10 @@ const activeSurfacePaths = [
 	".mise.toml",
 	"package.json",
 	"scripts/check-environment.sh",
+	"scripts/run-uv-python.sh",
 	"src/lib/policy/tooling-baseline.ts",
 	"src/lib/policy/tooling-paths.ts",
+	"src/lib/init/scaffold-config-templates.ts",
 	"src/lib/init/scaffold-environment-templates.ts",
 ];
 
@@ -27,6 +29,10 @@ const removedToolTerms = [
 
 const envPath = ".codex/environments/environment.toml";
 const baselinePath = "src/lib/policy/tooling-baseline.ts";
+const misePath = ".mise.toml";
+const uvWrapperPath = "scripts/run-uv-python.sh";
+const scaffoldMiseTemplatePath = "src/lib/init/scaffold-config-templates.ts";
+const minimumMalwareCheckUvVersion = [0, 11, 16];
 
 const violations = [];
 
@@ -61,6 +67,19 @@ const readText = (path) => {
 	}
 };
 
+const parseVersionTuple = (value) => {
+	const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(value);
+	return match ? match.slice(1).map(Number) : null;
+};
+
+const isVersionAtLeast = (actual, minimum) => {
+	for (let index = 0; index < minimum.length; index += 1) {
+		if (actual[index] > minimum[index]) return true;
+		if (actual[index] < minimum[index]) return false;
+	}
+	return true;
+};
+
 for (const path of activeSurfacePaths) {
 	const content = readText(path);
 	for (const { term, reason } of removedToolTerms) {
@@ -76,6 +95,50 @@ for (const path of activeSurfacePaths) {
 			});
 		}
 	}
+}
+
+const mise = readText(misePath);
+const uvPinMatch = /^"?uv"?\s*=\s*"([^"]+)"$/m.exec(mise);
+const uvPin = uvPinMatch?.[1];
+const uvVersionTuple = uvPin ? parseVersionTuple(uvPin) : null;
+if (
+	!uvVersionTuple ||
+	!isVersionAtLeast(uvVersionTuple, minimumMalwareCheckUvVersion)
+) {
+	violations.push({
+		path: misePath,
+		term: "uv_malware_check_version",
+		reason:
+			"Pin uv to version 0.11.16 or newer so UV_MALWARE_CHECK=1 is recognized.",
+	});
+}
+if (!/^UV_MALWARE_CHECK\s*=\s*"1"$/m.test(mise)) {
+	violations.push({
+		path: misePath,
+		term: "UV_MALWARE_CHECK",
+		reason:
+			'Repository mise environments must default UV_MALWARE_CHECK to "1".',
+	});
+}
+
+const uvWrapper = readText(uvWrapperPath);
+if (!/^export UV_MALWARE_CHECK=1$/m.test(uvWrapper)) {
+	violations.push({
+		path: uvWrapperPath,
+		term: "UV_MALWARE_CHECK",
+		reason:
+			"The canonical uv wrapper must force UV_MALWARE_CHECK=1 before uv can install locked remote-registry packages.",
+	});
+}
+
+const scaffoldMiseTemplate = readText(scaffoldMiseTemplatePath);
+if (!/UV_MALWARE_CHECK = "1"/.test(scaffoldMiseTemplate)) {
+	violations.push({
+		path: scaffoldMiseTemplatePath,
+		term: "UV_MALWARE_CHECK",
+		reason:
+			'Repository scaffolds must default UV_MALWARE_CHECK to "1" in generated .mise.toml files.',
+	});
 }
 
 const baseline = readText(baselinePath);
@@ -118,6 +181,13 @@ const result = {
 	status: violations.length === 0 ? "pass" : "fail",
 	checkedSurfaces: activeSurfacePaths,
 	removedToolTerms: removedToolTerms.map(({ term }) => term),
+	uvMalwareCheck: {
+		minimumUvVersion: minimumMalwareCheckUvVersion.join("."),
+		pinnedUvVersion: uvPin ?? null,
+		environmentDefault: /^UV_MALWARE_CHECK\s*=\s*"1"$/m.test(mise),
+		wrapperEnforced: /^export UV_MALWARE_CHECK=1$/m.test(uvWrapper),
+		scaffoldDefault: /UV_MALWARE_CHECK = "1"/.test(scaffoldMiseTemplate),
+	},
 	requiredActionCount: requiredActionNames.length,
 	environmentActionCount: environmentActionNames.length,
 	violations,

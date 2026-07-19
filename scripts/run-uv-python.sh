@@ -16,5 +16,6 @@ fi
 
 export UV_CACHE_DIR="${UV_CACHE_DIR:-$REPO_ROOT/.cache/uv-python-types-cache}"
 export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-$REPO_ROOT/.cache/uv-python-types}"
+export UV_MALWARE_CHECK=1
 
 exec uv run --python 3.12 --group dev "$@"

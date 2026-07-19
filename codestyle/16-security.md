@@ -6,6 +6,7 @@
 - [Secret handling](#secret-handling)
 - [Evidence and trace redaction](#evidence-and-trace-redaction)
 - [Secure coding defaults](#secure-coding-defaults)
+- [Python registry malware screening](#python-registry-malware-screening)
 - [Provider and rate-limit safety](#provider-and-rate-limit-safety)
 - [Incident response workflow](#incident-response-workflow)
 - [Enforcement](#enforcement)
@@ -57,6 +58,19 @@
 - Prefer deny-by-default permissions for desktop, browser, CI, GitHub, MCP, and agent-tool integrations; new egress or write scopes require reviewable rationale.
 - Avoid shell interpolation for untrusted input; pass arguments as structured argv arrays or validated command contracts.
 - Generated examples and scaffolds MUST be safe-by-default and must not include placeholder credentials, broad token scopes, or writable host paths.
+
+## Python registry malware screening
+- Repositories MUST pin `uv` at `0.11.16` or newer and commands that can install
+  locked packages from a remote registry MUST run with `UV_MALWARE_CHECK=1` so
+  uv checks the lockfile against OSV malicious-package advisories before
+  installation.
+- Repositories MUST prove the active binary
+  recognizes the malware-check feature before claiming this control is enabled.
+  An unsupported version, unavailable OSV lookup, or unverified environment
+  setting is `blocked` or `unknown`, not a pass.
+- This control detects packages reported as malware; it does not replace the
+  repository's general vulnerability audit, lockfile validation, provenance,
+  SBOM, or signature checks.
 
 ## Provider and rate-limit safety
 - Tests or diagnostics for provider rate limits MUST use mocks, recorded

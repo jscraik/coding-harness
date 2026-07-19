@@ -49,5 +49,6 @@ describe("config scaffold templates", () => {
 		expect(config).toContain('"node" = ');
 		expect(config).toContain('"pnpm" = ');
 		expect(config).toContain('CLAUDE_APPROVAL_POSTURE = "require"');
+		expect(config).toContain('UV_MALWARE_CHECK = "1"');
 	});
 });

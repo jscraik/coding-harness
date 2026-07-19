@@ -154,7 +154,8 @@ thin and delegate into this deep module.
   PR-scoped tokens do not break public aqua/GitHub release downloads.
 - Generated Python validation scaffolds must include `scripts/run-uv-python.sh`
   whenever uv-backed type, artifact, or governance helpers are emitted. The
-  wrapper owns repo-scoped `UV_CACHE_DIR` and `UV_PROJECT_ENVIRONMENT` defaults
+  wrapper owns repo-scoped `UV_CACHE_DIR`, `UV_PROJECT_ENVIRONMENT`, and the
+  enforced `UV_MALWARE_CHECK=1` setting
   so downstream validation paths do not copy uv setup across package scripts or
   hook helpers.
 - Generated hook adapters must render package-script commands from the detected
