@@ -1,0 +1,137 @@
+{
+	"schema_version": "pm-child-task-packet/v1",
+	"packet_id": "pkt_synaipsecc1wrk",
+	"dispatch_id": "ch_synaipsecc1wrk",
+	"turn_id": "turn_synaipsecc1wrk",
+	"dispatched_at": "2026-07-19T17:00:11Z",
+	"project_id": "coding-harness",
+	"job_id": "job_synaipsecc1wrk",
+	"human_task_name": "SynAIpse CC1: separate recommendation effects from next invocation",
+	"role": "Worker",
+	"objective": "Implement the smallest typed, validated, additive harness-decision recommendation-effects projection so harness next exposes later-command effects separately while its Synaipse invocation projection remains pure read.",
+	"decision_frame": {
+		"value": "Make the earliest cold-agent ambiguity mechanically distinguishable at its existing decision/effect owner.",
+		"why_now": "CC0 confirmed that legacy top-level decision flags and meta.execution describe the recommended action while synaipseState.invocationEffects describes the already-completed read-only next invocation.",
+		"acceptance_criteria": [
+			"Every harness next decision carries one named versioned recommendation-effects projection derived from its existing recommendation fields and execution permission plan.",
+			"The projection carries recommendation authority, rollback posture, required evidence, and retry semantics without changing the existing top-level or meta.execution meanings.",
+			"Focused deterministic tests cover CC-EFFECT-001 through CC-EFFECT-004, including a read-only next invocation with a write-capable recommendation and a consumer/validator rejecting malformed recommendation-effects metadata.",
+			"The existing synaipse-state/v1 invocationEffects stays exactly pure-read and no recommended command is invoked by next."
+		],
+		"dependencies": [
+			"CC0 compatibility brief at .harness/implementation-notes/2026-07-19-synaipse-cc0-confirmed-brief.md.",
+			"Pre-dispatch clean-worktree proof for harness next and focused tests at baseline SHA bfe275b09244cd44c63ae4cbb641b3630056d04f.",
+			"Only declared CC1 control artifacts make the worktree dirty before this Worker starts."
+		],
+		"risk_or_learning_target": "Prevent a consumer from reading a later recommended write, Git mutation, or external mutation as an effect of the already-completed next invocation.",
+		"smallest_increment": "One additive typed-and-validated meta.recommendationEffects projection at the existing harness-decision/next owner plus characterization and negative tests."
+	},
+	"non_goals": [
+		"Do not change top-level HarnessDecision fields or their legacy recommendation semantics.",
+		"Do not change synaipse-state/v1, contextUnknowns, context resolution, provider behavior, commands, routes, package exports, generated artifacts, or hosted state.",
+		"Do not execute any recommendation or introduce a command, search, index, memory system, persistence layer, or competing SynAIpse effect schema.",
+		"Do not commit, push, merge, rebase, reset, stash, clean, delete worktrees, or mutate external services."
+	],
+	"target": {
+		"repo_path": "/Users/jamiecraik/dev/coding-harness",
+		"worktree_path": "/private/tmp/coding-harness-synaipse-cc1-effects",
+		"branch": "codex/synaipse-cc1-effects",
+		"baseline_sha": "bfe275b09244cd44c63ae4cbb641b3630056d04f",
+		"expected_target_sha": "bfe275b09244cd44c63ae4cbb641b3630056d04f",
+		"preserved_output_ref": null,
+		"fresh_context_required": true
+	},
+	"instruction_provenance": {
+		"policy": "target_repo_instruction_chain_required",
+		"applicable_agents_md": [
+			"/private/tmp/coding-harness-synaipse-cc1-effects/AGENTS.md",
+			"/private/tmp/coding-harness-synaipse-cc1-effects/src/AGENTS.md",
+			"/private/tmp/coding-harness-synaipse-cc1-effects/contracts/AGENTS.md"
+		],
+		"codestyle_front_door": "/private/tmp/coding-harness-synaipse-cc1-effects/CODESTYLE.md",
+		"triggered_skills": [
+			"coding-harness",
+			"improve-agent-native",
+			"improve-codebase-architecture",
+			"testing",
+			"evals-router",
+			"simplify"
+		],
+		"validation_entrypoints": [
+			"pnpm exec vitest run src/commands/next-agent-parity.test.ts src/commands/next-decision-meta.test.ts src/commands/next.test.ts src/lib/decision/harness-decision.test.ts src/lib/synaipse/state.test.ts --reporter=dot",
+			"pnpm exec tsc --noEmit"
+		],
+		"child_attestation_required": true,
+		"conflict_policy": "stop_and_report_blocked_instruction_context"
+	},
+	"authority": {
+		"accountable_owner": "project_pm",
+		"delegated_decision_rights": [
+			"Implement the smallest additive recommendation-effects representation at the existing decision/next owner.",
+			"Add focused deterministic accepted and rejected tests inside the declared CC1 surfaces.",
+			"Write only the declared Worker evidence artifacts."
+		],
+		"allowed_write_paths": [
+			"src/lib/decision/harness-decision-types.ts",
+			"src/lib/decision/harness-decision-validation.ts",
+			"src/lib/decision/harness-decision.test.ts",
+			"src/commands/next-decision-meta.ts",
+			"src/commands/next-decision-meta.test.ts",
+			"src/commands/next-agent-parity.test.ts",
+			"src/commands/next.test.ts",
+			".harness/review/synaipse-cc1/worker-handoff.md",
+			".harness/review/synaipse-cc1/worker-result.json"
+		],
+		"forbidden_actions": [
+			"push",
+			"merge",
+			"commit",
+			"rebase",
+			"reset",
+			"stash",
+			"cleanup",
+			"hosted mutation",
+			"command invocation with side effects",
+			"unrelated refactor"
+		],
+		"network_policy": "forbidden",
+		"external_mutation_allowed": false
+	},
+	"execution": {
+		"heartbeat_policy": "event_driven_material_change_only",
+		"progress_reporting_policy": "material_change_blocker_scope_risk_or_completion",
+		"control_measure_policy": "minimum_controls_for_risk_and_evidence",
+		"retry_budget": 1,
+		"decision_policy": "evidence_first_smallest_durable_fix",
+		"ambiguity_policy": "ask_project_pm_before_scope_expansion",
+		"drift_policy": "stop_preserve_evidence_report_project_pm",
+		"attestation_max_age_seconds": 900,
+		"future_skew_seconds": 60,
+		"stop_conditions": [
+			"scope expansion",
+			"instruction conflict",
+			"validation blocker",
+			"authority blocker",
+			"target SHA drift",
+			"a required edit falls outside allowed_write_paths"
+		]
+	},
+	"evidence": {
+		"expected_artifacts": [".harness/review/synaipse-cc1/worker-handoff.md"],
+		"instruction_attestation_artifact": ".harness/review/synaipse-cc1/worker-handoff.md",
+		"artifact_probe": {
+			"receipt_path": ".harness/review/synaipse-cc1/worker-artifact-probe.json",
+			"receipt_sha256": "72f7ef1c9d384be65ea86754e89a5ce3e529df8b810732fc179abbb4632e5889",
+			"max_age_seconds": 300
+		},
+		"result_schema": "operating-system/schemas/pm-child-result.v1.schema.json",
+		"verdict_consistency_required": true,
+		"durable_preservation_required": true,
+		"final_status_line": "WROTE: <declared artifact path>"
+	},
+	"escalation": {
+		"first_owner": "project_pm",
+		"chief_condition": "project_pm_cannot_resolve_within_recorded_authority",
+		"operator_condition": "value_scope_taste_privacy_cost_or_irreversible_decision_required"
+	}
+}

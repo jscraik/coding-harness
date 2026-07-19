@@ -98,6 +98,46 @@ export interface HarnessDecisionExecutionMetadata {
 	permissionPlan: HarnessDecisionPermissionPlan;
 }
 
+/** Schema version for recommendation effects that have not yet been invoked. */
+export const HARNESS_DECISION_RECOMMENDATION_EFFECTS_SCHEMA_VERSION =
+	"harness-recommendation-effects/v1" as const;
+
+/** Authority needed to invoke a recommendation after `harness next` returns it. */
+export interface HarnessDecisionRecommendationAuthority {
+	/** Whether the later recommendation is safe to invoke without extra approval. */
+	safeToRun: boolean;
+	/** Whether the later recommendation requires human judgment or approval. */
+	requiresHuman: boolean;
+	/** Whether the later recommendation requires network access. */
+	requiresNetwork: boolean;
+	/** Whether the later recommendation changes Git state. */
+	requiresGitWrite: boolean;
+}
+
+/** Additive plan for a recommendation that `harness next` has not invoked. */
+export interface HarnessDecisionRecommendationEffects {
+	/** Versioned shape so consumers can ignore the projection until they adopt it. */
+	schemaVersion: typeof HARNESS_DECISION_RECOMMENDATION_EFFECTS_SCHEMA_VERSION;
+	/** Authority required for the later recommendation, not the current invocation. */
+	authority: HarnessDecisionRecommendationAuthority;
+	/** Recommendation effects are only planned; no rollback is needed before invocation. */
+	rollbackPosture: "not_started";
+	/** Evidence the later recommendation requires before closeout. */
+	requiredEvidence: string[];
+	/** Retry posture for the later recommendation. */
+	retry: HarnessDecisionRetry;
+	/** Permission plan for the later recommendation. */
+	permissionPlan: HarnessDecisionPermissionPlan;
+}
+
+/** Metadata that `harness next` may add without changing the v1 envelope. */
+export interface HarnessDecisionMeta extends Record<string, unknown> {
+	/** Existing operational metadata for the later recommended action. */
+	execution?: HarnessDecisionExecutionMetadata;
+	/** Additive effects of the later recommended action. */
+	recommendationEffects?: HarnessDecisionRecommendationEffects;
+}
+
 /** Optional operational metadata carried in `HarnessDecision.meta`. */
 export interface HarnessDecisionOperationalMeta
 	extends Record<string, unknown> {
@@ -161,7 +201,7 @@ export interface HarnessDecision {
 	/** Coarse risk tier. */
 	riskTier: HarnessDecisionRiskTier;
 	/** Optional producer-specific metadata. */
-	meta?: Record<string, unknown>;
+	meta?: HarnessDecisionMeta;
 }
 
 /** Producer input for constructing a complete agent-readable decision envelope. */
@@ -207,7 +247,7 @@ export interface HarnessDecisionInput {
 	/** Coarse risk tier. */
 	riskTier: HarnessDecisionRiskTier;
 	/** Optional producer-specific metadata. */
-	meta?: Record<string, unknown>;
+	meta?: HarnessDecisionMeta;
 }
 
 /** Validation result for a candidate {@link HarnessDecision}. */

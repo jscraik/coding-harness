@@ -1,0 +1,30 @@
+{
+	"schema_version": "pm-child-result/v1",
+	"packet_id": "pkt_synaipsecc1r1",
+	"packet_sha256": "52e4ad83b78dd22d6eea84ad72abab5d884d8088d57180ceac868dda4f75fb6d",
+	"dispatch_id": "ch_synaipsecc1r1",
+	"turn_id": "turn_synaipsecc1r1",
+	"project_id": "coding-harness",
+	"job_id": "job_synaipsecc1r1",
+	"role": "Worker",
+	"declared_artifact": ".harness/review/synaipse-cc1/recovery-worker-handoff.md",
+	"artifact_sha256": "ea2802e8ffe84ea9027c28a9c045532bde81fe6ef55b1af9bb8def76699b42ad",
+	"baseline_sha": "bfe275b09244cd44c63ae4cbb641b3630056d04f",
+	"target_sha": "bfe275b09244cd44c63ae4cbb641b3630056d04f",
+	"status": "accepted",
+	"commands": [
+		{
+			"command": "pnpm exec vitest run src/commands/next-agent-parity.test.ts src/commands/next-decision-meta.test.ts src/commands/next.test.ts src/lib/decision/harness-decision.test.ts src/lib/synaipse/state.test.ts --reporter=dot",
+			"outcome": "pass",
+			"evidence": "5 files and 124 tests passed against the recovered draft."
+		},
+		{
+			"command": "pnpm exec tsc --noEmit",
+			"outcome": "pass",
+			"evidence": "Completed with no diagnostics against the recovered draft."
+		}
+	],
+	"findings": [],
+	"claims_boundary": "Accepted only as fresh local Worker evidence for the preserved CC1 draft. It does not establish independent QA, adversarial review, hosted CI, external review, PR, merge, release, runtime-model attestation, or invocation of any recommendation.",
+	"final_status_line": "WROTE: .harness/review/synaipse-cc1/recovery-worker-handoff.md"
+}
