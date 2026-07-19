@@ -66,4 +66,46 @@ describe("nextDecisionOperationalMeta", () => {
 			errors: [],
 		});
 	});
+
+	it("rejects undeclared fields inside versioned recommendation effects", () => {
+		const decision = createNextDecision({
+			status: "action_required",
+			summary: "A later Git mutation needs authorization.",
+			nextAction: "Apply the authorized Git mutation.",
+			nextCommand: "git commit -m approved-change",
+			safeToRun: true,
+			requiresHuman: false,
+			requiresNetwork: false,
+			writesFiles: false,
+			evidenceRef: ["git:status"],
+			failureClass: null,
+			retry: "manual",
+			riskTier: "high",
+			meta: nextDecisionOperationalMeta({
+				mode: "local",
+				commands: ["git commit -m approved-change"],
+				requiresGitWrite: true,
+			}),
+		});
+		const candidate = {
+			...decision,
+			meta: {
+				...decision.meta,
+				recommendationEffects: {
+					...decision.meta?.recommendationEffects,
+					permissionPlan: {
+						...decision.meta?.recommendationEffects?.permissionPlan,
+						mutatesExternal: true,
+					},
+				},
+			},
+		};
+
+		const result = validateHarnessDecision(candidate);
+
+		expect(result.valid).toBe(false);
+		expect(result.errors.map((error) => error.code)).toContain(
+			"meta.recommendationEffects.permissionPlan.mutatesExternal is not allowed",
+		);
+	});
 });

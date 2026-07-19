@@ -18,15 +18,59 @@ type PermissionFlag =
 	| "writesFiles"
 	| "requiresGitWrite";
 
+const RECOMMENDATION_EFFECTS_FIELDS = [
+	"schemaVersion",
+	"authority",
+	"rollbackPosture",
+	"requiredEvidence",
+	"retry",
+	"permissionPlan",
+] as const;
+const RECOMMENDATION_AUTHORITY_FIELDS = [
+	"safeToRun",
+	"requiresHuman",
+	"requiresNetwork",
+	"requiresGitWrite",
+] as const;
+const PERMISSION_PLAN_FIELDS = [
+	"requiresHuman",
+	"requiresNetwork",
+	"writesFiles",
+	"requiresGitWrite",
+	"filesystemWrite",
+	"commands",
+	"secrets",
+] as const;
+
+/** Reject undeclared fields only where the versioned recommendation schema is closed. */
+function validateClosedFields(
+	value: DecisionRecord,
+	field: string,
+	allowedFields: readonly string[],
+	errors: HeValidationError[],
+): void {
+	for (const key of Object.keys(value)) {
+		if (!allowedFields.includes(key)) {
+			errors.push(
+				toValidationError(`${field}.${key} is not allowed`, `${field}.${key}`),
+			);
+		}
+	}
+}
+
 /** Validate the shared permission-plan shape used by operational and recommendation metadata. */
 export function validatePermissionPlan(
 	value: unknown,
 	field: string,
 	errors: HeValidationError[],
+	allowedFields?: readonly string[],
 ): void {
 	if (!isRecord(value)) {
 		errors.push(toValidationError(`${field} must be an object`, field));
 		return;
+	}
+	if (allowedFields !== undefined) {
+		validateClosedFields(value, field, allowedFields, errors);
 	}
 	validateBoolean(value.requiresHuman, `${field}.requiresHuman`, errors);
 	validateBoolean(value.requiresNetwork, `${field}.requiresNetwork`, errors);
@@ -106,6 +150,12 @@ function validateRecommendationAuthority(
 		);
 		return;
 	}
+	validateClosedFields(
+		value.authority,
+		"meta.recommendationEffects.authority",
+		RECOMMENDATION_AUTHORITY_FIELDS,
+		errors,
+	);
 	for (const field of [
 		"safeToRun",
 		"requiresHuman",
@@ -239,6 +289,7 @@ function validateRecommendationPermissionPlan(
 		value.permissionPlan,
 		"meta.recommendationEffects.permissionPlan",
 		errors,
+		PERMISSION_PLAN_FIELDS,
 	);
 	if (!isRecord(value.permissionPlan)) return;
 	for (const field of [
@@ -294,6 +345,12 @@ export function validateRecommendationEffects(
 		);
 		return;
 	}
+	validateClosedFields(
+		value,
+		"meta.recommendationEffects",
+		RECOMMENDATION_EFFECTS_FIELDS,
+		errors,
+	);
 	validateRecommendationAuthority(value, decision, errors);
 	validateRecommendationLifecycle(value, decision, errors);
 	validateRecommendationPermissionPlan(
