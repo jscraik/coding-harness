@@ -1,0 +1,123 @@
+{
+	"schema_version": "pm-child-task-packet/v1",
+	"packet_id": "pkt_synaipsecc0r1",
+	"dispatch_id": "ch_synaipsecc0r1",
+	"turn_id": "turn_synaipsecc0r1",
+	"dispatched_at": "2026-07-19T16:03:03Z",
+	"project_id": "coding-harness",
+	"job_id": "job_synaipsecc0r1",
+	"human_task_name": "SynAIpse CC0: independently confirm the compatibility boundary",
+	"role": "Worker",
+	"objective": "Independently verify or correct the preserved CC0 Worker draft, then write a confirmed compatibility brief without changing runtime behavior.",
+	"decision_frame": {
+		"value": "Produce the first packet-valid CC0 evidence for the current immutable preservation commit.",
+		"why_now": "The prior Worker result was correctly blocked because its packet required a clean worktree after uncommitted control artifacts existed.",
+		"acceptance_criteria": [
+			"A confirmed brief maps all relevant producers and readers and selects one versioned failure-envelope representation.",
+			"The selected representation preserves contextUnknowns as optional identified ch_context failures only.",
+			"The Worker handoff attests instructions and the result validates against this immutable packet."
+		],
+		"dependencies": [
+			"Preserved blocked-attempt evidence at git:6a022f6d805139bebb18d16776b6a041445c1522.",
+			"Only declared CC0 control artifacts may make the worktree dirty."
+		],
+		"risk_or_learning_target": "Prevent a control artifact from silently changing a command's worktree authority while preserving its failure evidence.",
+		"smallest_increment": "One confirmed CC0 brief and packet-valid Worker handoff."
+	},
+	"non_goals": [
+		"Do not modify runtime TypeScript, schemas, tests, generated artifacts, commands, packages, or hosted state.",
+		"Do not begin CC1 or CC2.",
+		"Do not add search, index, memory, persistence, or an alternative command surface.",
+		"Do not commit, push, merge, rebase, reset, stash, clean, or alter any other worktree."
+	],
+	"target": {
+		"repo_path": "/Users/jamiecraik/dev/coding-harness",
+		"worktree_path": "/private/tmp/coding-harness-synaipse-cc0-contract-boundary",
+		"branch": "codex/synaipse-cc0-contract-boundary",
+		"baseline_sha": "638dc77d470a23199b40c130d327a6aa5583b6d6",
+		"expected_target_sha": "6a022f6d805139bebb18d16776b6a041445c1522",
+		"preserved_output_ref": null,
+		"fresh_context_required": true
+	},
+	"instruction_provenance": {
+		"policy": "target_repo_instruction_chain_required",
+		"applicable_agents_md": [
+			"/private/tmp/coding-harness-synaipse-cc0-contract-boundary/AGENTS.md",
+			"/private/tmp/coding-harness-synaipse-cc0-contract-boundary/src/AGENTS.md",
+			"/private/tmp/coding-harness-synaipse-cc0-contract-boundary/contracts/AGENTS.md"
+		],
+		"codestyle_front_door": "/private/tmp/coding-harness-synaipse-cc0-contract-boundary/CODESTYLE.md",
+		"triggered_skills": ["coding-harness"],
+		"validation_entrypoints": [
+			"pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/state.test.ts src/commands/next.test.ts --reporter=dot",
+			"node --import tsx src/cli.ts next --json --worktree-role dirty-with-justification"
+		],
+		"child_attestation_required": true,
+		"conflict_policy": "stop_and_report_blocked_instruction_context"
+	},
+	"authority": {
+		"accountable_owner": "project_pm",
+		"delegated_decision_rights": [
+			"Choose bounded read-only investigation order inside CC0.",
+			"Write only declared recovery evidence artifacts.",
+			"Recommend but do not implement the first CC1 patch."
+		],
+		"allowed_write_paths": [
+			".harness/implementation-notes/2026-07-19-synaipse-cc0-confirmed-brief.md",
+			".harness/review/synaipse-cc0/recovery-worker-handoff.md",
+			".harness/review/synaipse-cc0/recovery-worker-result.json"
+		],
+		"forbidden_actions": [
+			"push",
+			"merge",
+			"commit",
+			"rebase",
+			"reset",
+			"stash",
+			"cleanup",
+			"hosted mutation",
+			"runtime implementation",
+			"unrelated refactor"
+		],
+		"network_policy": "forbidden",
+		"external_mutation_allowed": false
+	},
+	"execution": {
+		"heartbeat_policy": "event_driven_material_change_only",
+		"progress_reporting_policy": "material_change_blocker_scope_risk_or_completion",
+		"control_measure_policy": "minimum_controls_for_risk_and_evidence",
+		"retry_budget": 1,
+		"decision_policy": "evidence_first_smallest_durable_fix",
+		"ambiguity_policy": "ask_project_pm_before_scope_expansion",
+		"drift_policy": "stop_preserve_evidence_report_project_pm",
+		"attestation_max_age_seconds": 900,
+		"future_skew_seconds": 60,
+		"stop_conditions": [
+			"scope expansion",
+			"instruction conflict",
+			"validation blocker",
+			"authority blocker",
+			"target SHA drift"
+		]
+	},
+	"evidence": {
+		"expected_artifacts": [
+			".harness/review/synaipse-cc0/recovery-worker-handoff.md"
+		],
+		"instruction_attestation_artifact": ".harness/review/synaipse-cc0/recovery-worker-handoff.md",
+		"artifact_probe": {
+			"receipt_path": ".harness/review/synaipse-cc0/recovery-worker-artifact-probe.json",
+			"receipt_sha256": "8a76e10169a290f390cc54c887bda4d43a938f2eece90d18c8ffe019215dc5a1",
+			"max_age_seconds": 300
+		},
+		"result_schema": "operating-system/schemas/pm-child-result.v1.schema.json",
+		"verdict_consistency_required": true,
+		"durable_preservation_required": true,
+		"final_status_line": "WROTE: <declared artifact path>"
+	},
+	"escalation": {
+		"first_owner": "project_pm",
+		"chief_condition": "project_pm_cannot_resolve_within_recorded_authority",
+		"operator_condition": "value_scope_taste_privacy_cost_or_irreversible_decision_required"
+	}
+}
