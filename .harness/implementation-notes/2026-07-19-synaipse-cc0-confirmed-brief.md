@@ -91,3 +91,18 @@ the mutation of its later recommended command. Do not implement this in CC0.
 - `pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/state.test.ts src/commands/next.test.ts --reporter=dot` passed: 3 files and 96 tests.
 - `node --import tsx src/cli.ts next --json --worktree-role dirty-with-justification` passed: emitted a v1 decision with `writesFiles: false`, an execution permission plan with `writesFiles: false`, and nested state invocation effects all false.
 - The second result proves only this local command’s current dirty-role path and the shape observed at target SHA. It does not prove runtime compatibility after CC1/CC2, package compatibility, canary behaviour, hosted CI, review, acceptance, merge, release, or readiness.
+
+## Operational admission correction
+
+CC0 is a direct-PM architecture decision, not a runtime implementation lane.
+The attempted child-review transport was stopped because its platform lifecycle
+required undeclared artifacts and therefore could not independently assess the
+decision. That transport result is not CC0 QA evidence.
+
+For a future non-trivial implementation packet, run every packet-required
+command against the intended worktree role before creating in-tree packet or
+probe artifacts. A command that requires a clean worktree must be proven before
+those control artifacts exist, or the packet must explicitly declare its
+controlled dirty role and every required platform artifact path. CC1 and CC2
+are the first slices where Worker, fresh QA Disproof, and fresh Adversarial
+Review are required; their admission must include this pre-dispatch check.
