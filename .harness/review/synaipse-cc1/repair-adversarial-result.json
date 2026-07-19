@@ -1,0 +1,56 @@
+{
+	"schema_version": "pm-child-result/v1",
+	"packet_id": "pkt_synaipsecc1repairadv01",
+	"packet_sha256": "e46fe3bf3f713f72ffbe52f7ae4972eb044aad6fc3153b00a1335dc08e66b1be",
+	"dispatch_id": "ch_synaipsecc1repairadv01",
+	"turn_id": "turn_synaipsecc1repairadv01",
+	"project_id": "coding-harness",
+	"job_id": "job_synaipsecc1repairadv01",
+	"role": "Adversarial Review",
+	"declared_artifact": ".harness/review/synaipse-cc1/repair-adversarial-review.md",
+	"artifact_sha256": "76baf1b658648bfca7ed55e400018f5bc0df080df1226d25b90913e386d70cea",
+	"baseline_sha": "3e9e5f52bed1e91caddcb210830fb8e0dfb104a0",
+	"target_sha": "63188bcda5855424b2db48f075397e0b938bb73b",
+	"status": "blocked_validation",
+	"commands": [
+		{
+			"command": "git rev-parse HEAD",
+			"outcome": "fail",
+			"evidence": "Returned 63188bcde2aa2ae68a6fede7790dfa76e7d0a6a4 instead of the packet target 63188bcda5855424b2db48f075397e0b938bb73b."
+		},
+		{
+			"command": "git rev-parse --verify 63188bcda5855424b2db48f075397e0b938bb73b",
+			"outcome": "pass",
+			"evidence": "The packet target object exists but is not checked out."
+		},
+		{
+			"command": "PYTHONPATH=/Users/jamiecraik/dev/jamie-brain uv run --project /Users/jamiecraik/dev/jamie-brain python -c '...validate_child_result(...)...'",
+			"outcome": "fail",
+			"evidence": "The control-plane validator reports missing required artifact_probe and short baseline SHA in the packet; a result cannot both satisfy the result schema and bind to that malformed baseline."
+		}
+	],
+	"findings": [
+		{
+			"finding_id": "cc1-repair-adversarial-target-sha-mismatch",
+			"severity": "P1",
+			"summary": "The worktree HEAD differs from the immutable SHA required by the repair adversarial-review packet, so any behavioral review would be bound to the wrong target.",
+			"evidence_refs": [
+				".harness/intent/2026-07-19-synaipse-cc1-repair-adversarial-packet.json",
+				".harness/review/synaipse-cc1/repair-adversarial-review.md"
+			],
+			"remediation": "Reconcile the intended final SHA, issue a corrected packet if necessary, and obtain a fresh packet-bound adversarial review before using adversarial evidence for the CC1 admission decision."
+		},
+		{
+			"finding_id": "cc1-repair-adversarial-malformed-packet",
+			"severity": "P1",
+			"summary": "The packet omits required evidence.artifact_probe and uses an eight-character baseline SHA, so no strict pm-child-result/v1 can bind to it.",
+			"evidence_refs": [
+				".harness/intent/2026-07-19-synaipse-cc1-repair-adversarial-packet.json",
+				".harness/review/synaipse-cc1/repair-adversarial-review.md"
+			],
+			"remediation": "Issue a schema-valid replacement packet with the full baseline SHA and artifact-probe binding, then obtain a fresh review against its immutable target."
+		}
+	],
+	"claims_boundary": "Blocked only by immutable packet-target drift. No assessment of the repaired validator, malformed-envelope rejection, additive compatibility, QA acceptance, hosted CI, external review, acceptance, PR state, merge, release, or readiness is claimed.",
+	"final_status_line": "WROTE: .harness/review/synaipse-cc1/repair-adversarial-review.md"
+}

@@ -1,0 +1,27 @@
+{
+	"schema_version": "steering-feedback/v1",
+	"feedback_signal": "The CC1 repair QA and adversarial packets were manually authored without the schema-required artifact_probe; the adversarial packet also used truncated SHA values and bound a review to a non-current commit.",
+	"repeated": true,
+	"occurrence_count": 2,
+	"root_operational_failure": "The coordinator dispatched handcrafted child packets without a deterministic pre-dispatch validation of the packet schema, artifact-probe binding, and exact checked-out full SHA.",
+	"failure_category": "insufficient_deterministic_enforcement",
+	"durable_improvement": {
+		"kind": "workflow_rule",
+		"path": "docs/agents/07b-agent-governance.md",
+		"action": "Before every PM child dispatch, generate the probe receipt, then run the controller packet-schema and probe-binding preflight together with `git rev-parse HEAD`; refuse dispatch unless the packet's full expected_target_sha equals HEAD and all preflight checks pass.",
+		"prevents": "A reviewer cannot be sent a packet with a missing required probe, truncated SHA, or stale immutable target."
+	},
+	"destination": "workflow_rule",
+	"proof": {
+		"commands": [
+			{
+				"command": "PYTHONPATH=/Users/jamiecraik/dev/jamie-brain uv run --project /Users/jamiecraik/dev/jamie-brain python -c '<CHILD_PACKET_VALIDATOR plus _validate_child_artifact_probe>'",
+				"outcome": "blocked",
+				"evidence": "The malformed packet has not yet been replaced; dispatch remains blocked until the replacement packet passes this local schema, probe-binding, and immutable-target preflight."
+			}
+		],
+		"future_behavior": "Packet creation uses full `git rev-parse HEAD` output and a packet/probe preflight immediately before every child dispatch."
+	},
+	"implementation_note": ".harness/review/synaipse-cc1/repair-adversarial-review.md",
+	"status": "proposed"
+}
