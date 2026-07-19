@@ -105,6 +105,9 @@ describe("scaffold script template registry", () => {
 		expect(uvPython?.render("pnpm", renderContext)).toContain(
 			"uv run --python 3.12 --group dev",
 		);
+		expect(uvPython?.render("pnpm", renderContext)).toContain(
+			"export UV_MALWARE_CHECK=1",
+		);
 	});
 
 	it("renders hook adapters from deterministic templates", () => {

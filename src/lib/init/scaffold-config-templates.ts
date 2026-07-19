@@ -115,5 +115,6 @@ ${PROJECT_MISE_REQUIRED_TOOLS.map(([tool, version]) => `"${tool}" = "${version}"
 
 [env]
 CLAUDE_APPROVAL_POSTURE = "require"
+UV_MALWARE_CHECK = "1"
 `;
 }

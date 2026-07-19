@@ -75,7 +75,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - uv-backed Python helper changes should keep `scripts/run-uv-python.sh`,
   scaffold inventories, tooling baseline parity, `AGENTS.md`, tooling policy,
   and security governance synchronized so generated hooks and package scripts
-  share one repo-scoped uv runtime boundary.
+  share one repo-scoped uv runtime boundary. When malware screening is enabled,
+  pin a uv release that recognizes `UV_MALWARE_CHECK=1`, enforce it in the
+  canonical wrapper and generated scaffold, and retain a deterministic parity
+  check; an unavailable OSV lookup or unsupported runtime remains blocked or
+  unknown rather than validation proof.
 - preflight or Local Memory enforcement changes should keep `AGENTS.md`, `README.md`, `docs/agents/02-tooling-policy.md`, `docs/agents/03-local-memory.md`, `docs/agents/06-security-and-governance.md`, and this guide synchronized; legacy positional `scripts/codex-preflight.sh` invocations must default to required Local Memory mode unless `off` or `optional` is explicitly supplied, the runtime/template mirrors must stay aligned, and test-only runner isolation must fail closed whenever CI is present
 - architecture-context refresh changes should update `docs/agents/00-architecture-bootstrap.md`; Flow Ops closure-evidence, E2E runner, or eval artifact changes that trigger that refresh should keep `AGENTS.md` and this guide synchronized when docs-gate reports the agent-governance category
 - review-learning closeout changes should keep `review-learning-closeout/v1`, the `review-context` boundary, `AGENTS.md`, the architecture bootstrap guide, and this guide synchronized. The artifact is advisory learning/rework evidence: exact-file matches, fuzzy matches, promotions, and explicit skips must remain separate from validation, review approval, hosted CI, acceptance, release, and merge-readiness authority, with concrete `n.a.` reasons when source evidence is unavailable.
