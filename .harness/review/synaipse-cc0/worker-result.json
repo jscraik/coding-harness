@@ -1,0 +1,64 @@
+{
+	"schema_version": "pm-child-result/v1",
+	"packet_id": "pkt_synaipsecc0wrk",
+	"packet_sha256": "989590cd1db6ade5afe976a5047d387357a8de2637fd2742b0f5fff90a9bbc19",
+	"dispatch_id": "ch_synaipsecc0",
+	"turn_id": "turn_synaipsecc0",
+	"project_id": "coding-harness",
+	"job_id": "job_synaipsecc0",
+	"role": "Worker",
+	"declared_artifact": ".harness/review/synaipse-cc0/worker-handoff.md",
+	"artifact_sha256": "7619c4cda04c64c3f2d693502b34917ed620a0c74158ca61531a67ef222328b7",
+	"baseline_sha": "638dc77d470a23199b40c130d327a6aa5583b6d6",
+	"target_sha": "638dc77d470a23199b40c130d327a6aa5583b6d6",
+	"status": "blocked_validation",
+	"commands": [
+		{
+			"command": "pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/state.test.ts src/commands/next.test.ts --reporter=dot",
+			"outcome": "pass",
+			"evidence": "Vitest reported 3 passed files and 96 passed tests."
+		},
+		{
+			"command": "node --import tsx src/cli.ts next --json",
+			"outcome": "blocked",
+			"evidence": "The immutable packet and artifact-probe files are untracked control artifacts; the default clean worktree role returned failureClass worktree_state_blocked."
+		},
+		{
+			"command": "node --import tsx src/cli.ts --help",
+			"outcome": "pass",
+			"evidence": "Help names harness next --json as the start route."
+		},
+		{
+			"command": "node --import tsx src/cli.ts next --json --worktree-role dirty-with-justification",
+			"outcome": "pass",
+			"evidence": "The read-only fallback emitted a valid action-required decision with synaipseState.invocationEffects.writesFiles false."
+		}
+	],
+	"findings": [
+		{
+			"finding_id": "CC0-FAILURE-ENVELOPE-OWNER",
+			"severity": "P1",
+			"summary": "Use meta.synaipseContextFailures with schemaVersion synaipse-context-failure-envelope/v1 as the canonical versioned failure representation.",
+			"evidence_refs": [
+				"src/lib/synaipse/state-validation.ts",
+				"contracts/synaipse-state.schema.json",
+				"contracts/harness-decision.schema.json",
+				".harness/implementation-notes/2026-07-19-synaipse-cc0-contract-boundary.md"
+			],
+			"remediation": "Admit CC2 separately and add one parsed decision-meta envelope while preserving strict state-v1 contextUnknowns compatibility."
+		},
+		{
+			"finding_id": "CC0-PACKET-SELF-BLOCKS-NEXT",
+			"severity": "P2",
+			"summary": "The required clean-worktree next command is blocked by the packet and probe artifacts required before the Worker can start.",
+			"evidence_refs": [
+				".harness/intent/2026-07-19-synaipse-cc0-worker-packet.json",
+				".harness/review/synaipse-cc0/worker-artifact-probe.json",
+				".harness/review/synaipse-cc0/worker-handoff.md"
+			],
+			"remediation": "For a future packet, run clean-worktree orientation before creating control artifacts or make the immutable required command explicitly request dirty-with-justification."
+		}
+	],
+	"claims_boundary": "Current source mapping and focused local test proof only. No new runtime, schema/package compatibility, canary, hosted CI, review, acceptance, merge, release, or readiness claim is made. The result is blocked_validation solely because an immutable packet-required command self-blocked after its required control artifacts were created.",
+	"final_status_line": "WROTE: .harness/review/synaipse-cc0/worker-handoff.md"
+}
