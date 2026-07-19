@@ -1,0 +1,27 @@
+{
+	"schema_version": "steering-feedback/v1",
+	"feedback_signal": "PR #483 received two unresolved provider-review findings: provider comments and reviews were capped at 100 items, and an earlier rate-limit signal could mask a later substantive review.",
+	"repeated": true,
+	"occurrence_count": 2,
+	"root_operational_failure": "The optional provider-review admission path treated a bounded, precedence-ambiguous snapshot as complete evidence instead of using paginated provider connections and a deterministic substantive-evidence precedence rule.",
+	"failure_category": "insufficient_deterministic_enforcement",
+	"durable_improvement": {
+		"kind": "validator",
+		"path": "scripts/pr-queue-admission.sh",
+		"action": "Paginate provider comments and reviews independently and classify substantive evidence before rate-limit or action-only signals.",
+		"prevents": "A required provider-review artifact is not misclassified because evidence is beyond the first page or because a stale rate-limit notice appears before a substantive review."
+	},
+	"destination": "validator",
+	"proof": {
+		"commands": [
+			{
+				"command": "pnpm vitest run src/commands/pr-queue-admission-script.test.ts --reporter=dot",
+				"outcome": "pass",
+				"evidence": "10 focused tests passed, including rate-limit precedence and multi-page provider fixtures."
+			}
+		],
+		"future_behavior": "Optional provider-review admission remains permissive by default but fails closed when explicitly required and provider evidence cannot be observed completely."
+	},
+	"implementation_note": ".harness/implementation-notes/2026-07-17-pr-queue-admission.md",
+	"status": "implemented"
+}

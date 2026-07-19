@@ -99,8 +99,10 @@ resolve_public_pr_ref() {
 		! command -v jq >/dev/null 2>&1; then
 		return 0
 	fi
-	response="$(curl -fsSL -H "Accept: application/vnd.github+json" \
-		"https://api.github.com/repos/${repo_slug}/pulls?state=open&head=${CIRCLE_PROJECT_USERNAME:-}:${CIRCLE_BRANCH}" 2>/dev/null || true)"
+	response="$(curl -fsSL -H "Accept: application/vnd.github+json" --get \
+		--data-urlencode "state=open" \
+		--data-urlencode "head=${CIRCLE_PROJECT_USERNAME:-}:${CIRCLE_BRANCH}" \
+		"https://api.github.com/repos/${repo_slug}/pulls" 2>/dev/null || true)"
 	jq -r '.[0].html_url // ""' <<<"$response" 2>/dev/null || true
 }
 

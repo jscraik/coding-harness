@@ -12,6 +12,13 @@ import { basename, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
+import {
+	outputPathFailureReport,
+	resolveCliPath,
+	validateOutputPath,
+} from "./lib/canary-audit-boundaries.mjs";
+import { sanitizeGitEnvironment } from "./lib/safe-git-env.mjs";
+
 const SCRIPT_ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)), "..");
 const MATRIX_SCRIPT = resolve(
 	SCRIPT_ROOT,
@@ -69,11 +76,14 @@ function consumeCanaryArg(state, arg, nextArg) {
 function run(command, args, cwd) {
 	return spawnSync(command, args, {
 		cwd,
+		env: sanitizeGitEnvironment(process.env, { policy: "strict" }),
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
 		maxBuffer: 20 * 1024 * 1024,
 	});
 }
+export { run };
+export { resolveCliPath, validateOutputPath };
 
 function parseJson(stdout) {
 	try {
@@ -329,7 +339,18 @@ function collectProbeMessages(probes, status) {
 }
 
 export function runCanaryAudit(options) {
-	const repos = options.repos.map((repo) => auditRepo(repo, options));
+	const outputValidation = validateOutputPath(options.output, options.repos);
+	if (!outputValidation.ok) {
+		return outputPathFailureReport(
+			options.repos.length,
+			outputValidation.error,
+		);
+	}
+
+	const resolvedCli = resolveCliPath(options.cli);
+	const repos = options.repos.map((repo) =>
+		auditRepo(repo, { ...options, cli: resolvedCli }),
+	);
 	const status = repos.some((repo) => repo.status === "fail")
 		? "fail"
 		: repos.some((repo) => repo.status === "warn")
@@ -340,6 +361,7 @@ export function runCanaryAudit(options) {
 		status,
 		generatedAt: new Date().toISOString(),
 		readOnly: true,
+		outputPathAllowed: true,
 		repositories: repos,
 		summary: {
 			total: repos.length,
@@ -362,7 +384,7 @@ function main() {
 		return;
 	}
 	const report = runCanaryAudit(parsed);
-	if (parsed.output)
+	if (parsed.output && report.outputPathAllowed !== false)
 		writeFileSync(
 			resolve(parsed.output),
 			`${JSON.stringify(report, null, 2)}\n`,

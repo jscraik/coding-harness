@@ -49,6 +49,8 @@ The coding-harness repository remains the current package, CLI, and governance
 contract implementation boundary.
 The weekly reviewed status surface for that contract is
 [docs/roadmap/agent-first-status.md](./docs/roadmap/agent-first-status.md).
+Its `last_validated` date mirrors the `agent-first-status-matrix` contract
+review date; `drift-gate` enforces that weekly cadence.
 
 ## Table of Contents
 
