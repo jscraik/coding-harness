@@ -1,3 +1,32 @@
+---
+schema_version: 1
+lifecycle_schema: harness-document-lifecycle/v1
+artifact_id: synaipse-cc0-confirmed-contract-boundary
+artifact_type: implementation-note
+canonical_slug: synaipse-cc0-confirmed-contract-boundary
+title: SynAIpse CC0 Confirmed Contract Boundary
+harness_stage: implementation-notes
+origin: SynAIpse CC0 compatibility decision and CC1 admission
+source_type: implementation-note
+authority: execution-input
+lifecycle_status: execution-input
+canonical_destination: src/lib/decision
+owner: coding-harness-maintainers
+date: 2026-07-19
+created: 2026-07-19
+last_reviewed: 2026-07-19
+review_cadence: event-driven
+related_plan: docs/plans/2026-07-19-synaipse-clinical-delivery-convergence-plan.md
+related_spec: docs/specs/2026-07-19-synaipse-clinical-delivery-convergence-spec.md
+status: active
+validated_by:
+  - pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/state.test.ts src/commands/next.test.ts --reporter=dot # expected outcome: pass
+  - bash scripts/run-harness-gate.sh docs-gate --mode required --json # expected outcome: pass
+depends_on:
+  - docs/specs/2026-07-19-synaipse-clinical-delivery-convergence-spec.md
+  - docs/plans/2026-07-19-synaipse-clinical-delivery-convergence-plan.md
+---
+
 # SynAIpse CC0 — Confirmed Contract Boundary
 
 **Status:** Worker-confirmed compatibility decision; CC1 and CC2 remain
