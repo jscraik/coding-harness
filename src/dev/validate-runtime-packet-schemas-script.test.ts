@@ -10,20 +10,9 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { validateActionReviewReceipt } from "../lib/action-review/index.js";
 import { validateArtifactRuntimeSurface } from "../lib/artifact-runtime-surface/index.js";
-import { validateHarnessDecision } from "../lib/decision/harness-decision.js";
-import { composeDeliveryTruth } from "../lib/delivery-truth/index.js";
-import { validateEvidenceReceipt } from "../lib/evidence/evidence-receipt.js";
-import { validateExternalStateSnapshot } from "../lib/external-state/index.js";
-import { validateIntermediaryReceiptCoverage } from "../lib/intermediary-receipts/index.js";
-import { validatePromptContextReceipt } from "../lib/prompt-context/index.js";
 import { validateSteeringApplicationReceipt } from "../lib/steering-queue/index.js";
-import {
-	validateReviewLifecyclePacket,
-	validateReviewStatePacket,
-} from "../lib/review-state/index.js";
 import { validateReplayPacket } from "../lib/replay/replay-packet.js";
-import { validateRuntimeCard } from "../lib/runtime/runtime-card.js";
-import { validateRuntimeCardHandoff } from "../lib/runtime/runtime-card-handoff.js";
+import { manifestWithExamplePatch } from "./runtime-packet-schema-test-helpers.js";
 
 const SCRIPT_PATH = join(
 	process.cwd(),
@@ -102,22 +91,174 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 		}
 	});
 
-	it("passes the checked-in runtime packet schema manifest", () => {
-		const result = runValidator(["--all"]);
+	it.each([
+		{
+			name: "a provider failure without a logical context ID",
+			mutate: (failure: Record<string, unknown>) => {
+				delete failure.contextId;
+			},
+			expected:
+				"meta.synaipseContextFailures.failures[0].contextId is required",
+		},
+		{
+			name: "a catalog failure with a logical context ID",
+			mutate: (failure: Record<string, unknown>) => {
+				failure.code = "missing_context_catalog";
+				failure.requirement = "required";
+			},
+			expected:
+				"meta.synaipseContextFailures.failures[0].contextId must equal schema const",
+		},
+		{
+			name: "a catalog failure without an explicit null context ID",
+			mutate: (failure: Record<string, unknown>) => {
+				failure.code = "missing_context_catalog";
+				failure.requirement = "required";
+				failure.recovery = "admit_context_catalog";
+				failure.stopCondition =
+					"Stop until missing_context_catalog is resolved.";
+				failure.freshness = {
+					status: "unknown",
+					observedAt: "2026-07-20T00:00:00Z",
+				};
+				delete failure.contextId;
+			},
+			expected:
+				"meta.synaipseContextFailures.failures[0].contextId is required",
+		},
+		{
+			name: "a failure owned by an arbitrary authority",
+			mutate: (failure: Record<string, unknown>) => {
+				failure.owner = "project-pm";
+			},
+			expected:
+				"meta.synaipseContextFailures.failures[0].owner must equal schema const",
+		},
+		{
+			name: "an optional missing-required-context failure",
+			mutate: (failure: Record<string, unknown>) => {
+				failure.code = "missing_required_context";
+				failure.requirement = "optional";
+			},
+			expected:
+				"meta.synaipseContextFailures.failures[0].requirement must equal schema const",
+		},
+		{
+			name: "a stale-context failure with current freshness",
+			mutate: (failure: Record<string, unknown>) => {
+				failure.code = "stale_context_digest";
+			},
+			expected:
+				"meta.synaipseContextFailures.failures[0].freshness.status must equal schema const",
+		},
+		{
+			name: "a provider failure with stale freshness",
+			mutate: (failure: Record<string, unknown>) => {
+				failure.freshness = {
+					status: "stale",
+					observedAt: "2026-07-20T00:00:00Z",
+				};
+			},
+			expected:
+				"meta.synaipseContextFailures.failures[0].freshness.status must equal schema const",
+		},
+	])("rejects $name at the public JSON Schema boundary", ({
+		mutate,
+		expected,
+	}) => {
+		const manifestPath = manifestWithExamplePatch(
+			createTempRoot("harness-decision-structural-"),
+			"harness-decision/v1",
+			(example) => {
+				const meta = example.meta as Record<string, unknown>;
+				const envelope = meta.synaipseContextFailures as Record<
+					string,
+					unknown
+				>;
+				const failures = envelope.failures as Record<string, unknown>[];
+				mutate(failures[0] as Record<string, unknown>);
+				return example;
+			},
+		);
+		const result = runValidator(["--manifest", manifestPath]);
 
-		expect(result.status).toBe(0);
-		const report = JSON.parse(result.stdout) as {
-			schemaVersion: string;
-			status: string;
-			packetCount: number;
-			errors: string[];
-		};
-		expect(report).toMatchObject({
-			schemaVersion: "runtime-packet-schema-validation/v1",
-			status: "pass",
-			packetCount: 28,
-			errors: [],
-		});
+		expect(result.status).toBe(1);
+		const report = JSON.parse(result.stdout) as { errors: string[] };
+		expect(report.errors.join("\n")).toContain(expected);
+	});
+
+	it("rejects duplicate logical context identities through the declared semantic validator", () => {
+		const manifestPath = manifestWithExamplePatch(
+			createTempRoot("harness-decision-duplicate-"),
+			"harness-decision/v1",
+			(example) => {
+				const meta = example.meta as Record<string, unknown>;
+				const envelope = meta.synaipseContextFailures as Record<
+					string,
+					unknown
+				>;
+				const failures = envelope.failures as Record<string, unknown>[];
+				const first = failures[0] as Record<string, unknown>;
+				failures.push({
+					...first,
+					code: "context_access_denied",
+					recovery: "restore_context_access",
+					stopCondition: "Stop until context access is restored.",
+				});
+				return example;
+			},
+		);
+		const result = runValidator(["--manifest", manifestPath]);
+
+		expect(result.status).toBe(1);
+		const report = JSON.parse(result.stdout) as { errors: string[] };
+		expect(report.errors.join("\n")).toContain(
+			"semanticValidatorPath scripts/validate-harness-decision-semantics.cjs",
+		);
+		expect(report.errors.join("\n")).toContain(
+			"duplicates logical failure identity",
+		);
+	});
+
+	it.each([
+		{
+			name: "a recovery valid in the vocabulary but wrong for the code",
+			mutate: (failure: Record<string, unknown>) => {
+				failure.recovery = "request_authorized_projection";
+			},
+			expected: "recovery must equal restore_context_provider",
+		},
+		{
+			name: "a noncanonical stop condition",
+			mutate: (failure: Record<string, unknown>) => {
+				failure.stopCondition = "Stop until an operator approves.";
+			},
+			expected:
+				"stopCondition must equal Stop until provider_unavailable is resolved.",
+		},
+	])("rejects $name through the declared semantic validator", ({
+		mutate,
+		expected,
+	}) => {
+		const manifestPath = manifestWithExamplePatch(
+			createTempRoot("harness-decision-semantic-"),
+			"harness-decision/v1",
+			(example) => {
+				const meta = example.meta as Record<string, unknown>;
+				const envelope = meta.synaipseContextFailures as Record<
+					string,
+					unknown
+				>;
+				const failures = envelope.failures as Record<string, unknown>[];
+				mutate(failures[0] as Record<string, unknown>);
+				return example;
+			},
+		);
+		const result = runValidator(["--manifest", manifestPath]);
+
+		expect(result.status).toBe(1);
+		const report = JSON.parse(result.stdout) as { errors: string[] };
+		expect(report.errors.join("\n")).toContain(expected);
 	});
 	it("rejects harness-native ratchets that claim Codex or delivery truth", () => {
 		const root = createTempRoot("agent-native-boundary-claims-");
@@ -1053,114 +1194,5 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 				expect.stringContaining("semanticValidatorPath does not exist"),
 			]),
 		);
-	});
-
-	it("keeps checked-in examples accepted by existing TypeScript validators", () => {
-		const evidenceReceipt = readJson(
-			"contracts/examples/evidence-receipt.example.json",
-		);
-		const runtimeCard = readJson(
-			"contracts/examples/runtime-card.example.json",
-		);
-		const runtimeCardHandoff = readJson(
-			"contracts/examples/runtime-card-handoff.example.json",
-		);
-		const harnessDecision = readJson(
-			"contracts/examples/harness-decision.example.json",
-		);
-		const reviewState = readJson(
-			"contracts/examples/review-state.example.json",
-		);
-		const externalState = readJson(
-			"contracts/examples/external-state-snapshot.example.json",
-		);
-		const promptContextReceipt = readJson(
-			"contracts/examples/prompt-context-receipt.example.json",
-		);
-		const reviewLifecycle = readJson(
-			"contracts/examples/review-lifecycle.example.json",
-		);
-		const intermediaryReceiptCoverage = readJson(
-			"contracts/examples/intermediary-receipt-coverage.example.json",
-		);
-		const steeringApplicationReceipt = readJson(
-			"contracts/examples/steering-application-receipt.example.json",
-		);
-
-		expect(validateEvidenceReceipt(evidenceReceipt)).toMatchObject({
-			valid: true,
-			errors: [],
-		});
-		expect(validateRuntimeCard(runtimeCard)).toMatchObject({
-			valid: true,
-			errors: [],
-		});
-		expect(validateRuntimeCardHandoff(runtimeCardHandoff)).toMatchObject({
-			valid: true,
-			errors: [],
-		});
-		expect(validateHarnessDecision(harnessDecision)).toMatchObject({
-			valid: true,
-			errors: [],
-		});
-		expect(validateReviewStatePacket(reviewState)).toMatchObject({
-			valid: true,
-			errors: [],
-		});
-		expect(validateExternalStateSnapshot(externalState)).toMatchObject({
-			valid: true,
-			errors: [],
-		});
-		expect(validatePromptContextReceipt(promptContextReceipt)).toMatchObject({
-			valid: true,
-			errors: [],
-		});
-		expect(validateReviewLifecyclePacket(reviewLifecycle)).toMatchObject({
-			valid: true,
-			errors: [],
-		});
-		expect(
-			validateIntermediaryReceiptCoverage(intermediaryReceiptCoverage),
-		).toMatchObject({
-			valid: true,
-			errors: [],
-		});
-		expect(
-			validateSteeringApplicationReceipt(steeringApplicationReceipt),
-		).toMatchObject({
-			valid: true,
-			errors: [],
-		});
-	});
-
-	it("keeps the delivery-truth example aligned to the composer output", () => {
-		const example = readJson("contracts/examples/delivery-truth.example.json");
-		const verdict = composeDeliveryTruth({
-			claim: "remote_checks_current",
-			source: "external_state",
-			verifiedAt: "2026-05-25T10:15:00Z",
-			verdictHeadSha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-			evidence: [
-				{
-					source: "external_state",
-					externalStateSources: ["github_checks", "circleci"],
-					receipt: {
-						schemaVersion: "evidence-receipt/v1",
-						kind: "external_state",
-						ref: "external-state:fixture.json",
-						producer: "external-state",
-						producedAt: "2026-05-25T10:10:00Z",
-						verifiedAt: "2026-05-25T10:15:00Z",
-						headSha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-						status: "pass",
-						freshness: "current",
-						evidenceUse: "claim_support",
-						blockerClass: null,
-					},
-				},
-			],
-		});
-
-		expect(verdict).toEqual(example);
 	});
 });

@@ -23,6 +23,24 @@
 	"riskTier": "medium",
 	"meta": {
 		"changedFiles": ["src/commands/review-gate.ts"],
-		"alternatives": ["bash scripts/validate-codestyle.sh --fast"]
+		"alternatives": ["bash scripts/validate-codestyle.sh --fast"],
+		"synaipseContextFailures": {
+			"schemaVersion": "synaipse-context-failure-envelope/v1",
+			"failures": [
+				{
+					"code": "provider_unavailable",
+					"requirement": "optional",
+					"contextId": "ch_context_7K4M2P9QX3DR",
+					"recovery": "restore_context_provider",
+					"owner": "synaipse-context-plane",
+					"stopCondition": "Continue with explicit context unknown until provider_unavailable is resolved.",
+					"evidenceRefs": ["context:ch_context_7K4M2P9QX3DR"],
+					"freshness": {
+						"status": "current",
+						"observedAt": "2026-07-20T00:00:00Z"
+					}
+				}
+			]
+		}
 	}
 }

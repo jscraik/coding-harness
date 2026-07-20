@@ -452,6 +452,18 @@ describe("runHarnessNext", () => {
 		expect(decision).toMatchObject({
 			status: "blocked",
 			failureClass: "access_denied",
+			meta: {
+				synaipseContextFailures: {
+					schemaVersion: "synaipse-context-failure-envelope/v1",
+					failures: [
+						{
+							code: "context_access_denied",
+							contextId: "ch_context_7K4M2P9QX3DR",
+							recovery: "request_authorized_projection",
+						},
+					],
+				},
+			},
 		});
 	});
 
@@ -503,6 +515,88 @@ describe("runHarnessNext", () => {
 				reason: "provider_unavailable",
 			},
 		]);
+		expect(decision.meta?.synaipseContextFailures).toMatchObject({
+			schemaVersion: "synaipse-context-failure-envelope/v1",
+			failures: [
+				{
+					code: "provider_unavailable",
+					requirement: "optional",
+					contextId: "ch_context_7K4M2P9QX3DR",
+					recovery: "restore_context_provider",
+				},
+			],
+		});
+		expect(validateHarnessDecision(decision)).toEqual({
+			valid: true,
+			errors: [],
+		});
+	});
+
+	it("emits both canonical and state-v1 projections for optional missing context", () => {
+		const optionalInput = nextContextInput();
+		const optionalCatalog = optionalInput.catalog as {
+			refs: Array<{ requirement: string }>;
+		};
+		optionalCatalog.refs[0]!.requirement = "optional";
+		optionalInput.observations = [
+			{
+				contextId: "ch_context_7K4M2P9QX3DR",
+				status: "unavailable",
+			},
+		];
+		const optionalDecision = runHarnessNext({
+			synaipseContext: optionalInput,
+			readRepositoryName: matchingRepositoryIdentity,
+			inspectChangedFiles: () => [],
+			agentReadinessContext: passingAgentReadinessContext(),
+		});
+		const optionalState = optionalDecision.meta?.synaipseState as
+			| { contextUnknowns?: unknown[] }
+			| undefined;
+		expect(optionalState?.contextUnknowns).toEqual([
+			{
+				contextId: "ch_context_7K4M2P9QX3DR",
+				reason: "missing_context",
+			},
+		]);
+		expect(optionalDecision.meta?.synaipseContextFailures).toMatchObject({
+			schemaVersion: "synaipse-context-failure-envelope/v1",
+			failures: [
+				{
+					code: "missing_optional_context",
+					requirement: "optional",
+					contextId: "ch_context_7K4M2P9QX3DR",
+					recovery: "supply_optional_context",
+				},
+			],
+		});
+
+		const requiredInput = nextContextInput();
+		requiredInput.observations = [
+			{
+				contextId: "ch_context_7K4M2P9QX3DR",
+				status: "unavailable",
+			},
+		];
+		const requiredDecision = runHarnessNext({
+			synaipseContext: requiredInput,
+			readRepositoryName: matchingRepositoryIdentity,
+			inspectChangedFiles: () => [],
+		});
+		expect(requiredDecision).toMatchObject({
+			status: "blocked",
+			failureClass: "missing_context",
+			meta: {
+				synaipseContextFailures: {
+					failures: [
+						{
+							code: "missing_required_context",
+							requirement: "required",
+						},
+					],
+				},
+			},
+		});
 	});
 
 	it("preserves optional unknowns when required context blocks", () => {
@@ -557,6 +651,17 @@ describe("runHarnessNext", () => {
 		expect(decision).toMatchObject({
 			status: "blocked",
 			failureClass: "context_project_mismatch",
+			meta: {
+				synaipseContextFailures: {
+					failures: [
+						{
+							code: "missing_context_catalog",
+							recovery: "admit_context_catalog",
+							contextId: null,
+						},
+					],
+				},
+			},
 		});
 	});
 
@@ -589,6 +694,17 @@ describe("runHarnessNext", () => {
 		expect(decision).toMatchObject({
 			status: "blocked",
 			failureClass: "context_project_mismatch",
+			meta: {
+				synaipseContextFailures: {
+					failures: [
+						{
+							code: "missing_context_catalog",
+							recovery: "admit_context_catalog",
+							contextId: null,
+						},
+					],
+				},
+			},
 		});
 	});
 
@@ -604,6 +720,30 @@ describe("runHarnessNext", () => {
 		expect(decision).toMatchObject({
 			status: "blocked",
 			failureClass: "context_repository_identity_unavailable",
+			meta: {
+				synaipseContextFailures: {
+					schemaVersion: "synaipse-context-failure-envelope/v1",
+					failures: [
+						{
+							code: "missing_project_identity",
+							requirement: "required",
+							contextId: null,
+							recovery: "establish_project_identity",
+							owner: "synaipse-context-plane",
+							stopCondition: "Stop until missing_project_identity is resolved.",
+							evidenceRefs: ["repository:identity"],
+							freshness: {
+								status: "unknown",
+								observedAt: expect.any(String),
+							},
+						},
+					],
+				},
+			},
+		});
+		expect(validateHarnessDecision(decision)).toEqual({
+			valid: true,
+			errors: [],
 		});
 	});
 
@@ -623,18 +763,79 @@ describe("runHarnessNext", () => {
 		expect(inspectChangedFiles).not.toHaveBeenCalled();
 	});
 
-	it("fails closed on malformed context before changed-file inspection", () => {
+	it("maps absent and malformed catalogs to distinct failure codes", () => {
 		const inspectChangedFiles = vi.fn(() => []);
-		const decision = runHarnessNext({
+		const missingCatalogDecision = runHarnessNext({
 			synaipseContext: {},
 			readRepositoryName: matchingRepositoryIdentity,
 			inspectChangedFiles,
 		});
 
 		expect(inspectChangedFiles).not.toHaveBeenCalled();
-		expect(decision).toMatchObject({
+		expect(missingCatalogDecision).toMatchObject({
 			status: "blocked",
 			failureClass: "malformed_context",
+			meta: {
+				synaipseContextFailures: {
+					schemaVersion: "synaipse-context-failure-envelope/v1",
+					failures: [
+						{
+							code: "missing_context_catalog",
+							requirement: "required",
+							contextId: null,
+							recovery: "admit_context_catalog",
+							owner: "synaipse-context-plane",
+							stopCondition: "Stop until missing_context_catalog is resolved.",
+							evidenceRefs: ["context:input"],
+							freshness: {
+								status: "unknown",
+								observedAt: expect.any(String),
+							},
+						},
+					],
+				},
+			},
+		});
+		expect(validateHarnessDecision(missingCatalogDecision)).toEqual({
+			valid: true,
+			errors: [],
+		});
+
+		const malformedCatalogDecision = runHarnessNext({
+			synaipseContext: { catalog: { schemaVersion: "invalid" } },
+			readRepositoryName: matchingRepositoryIdentity,
+			inspectChangedFiles,
+		});
+
+		expect(inspectChangedFiles).not.toHaveBeenCalled();
+		expect(malformedCatalogDecision).toMatchObject({
+			status: "blocked",
+			failureClass: "malformed_context",
+			meta: {
+				synaipseContextFailures: {
+					schemaVersion: "synaipse-context-failure-envelope/v1",
+					failures: [
+						{
+							code: "malformed_context_catalog",
+							requirement: "required",
+							contextId: null,
+							recovery: "repair_context_catalog",
+							owner: "synaipse-context-plane",
+							stopCondition:
+								"Stop until malformed_context_catalog is resolved.",
+							evidenceRefs: ["context:input"],
+							freshness: {
+								status: "unknown",
+								observedAt: expect.any(String),
+							},
+						},
+					],
+				},
+			},
+		});
+		expect(validateHarnessDecision(malformedCatalogDecision)).toEqual({
+			valid: true,
+			errors: [],
 		});
 	});
 

@@ -30,7 +30,10 @@ import {
 	validateString,
 	validateStringArray,
 } from "./validators.js";
+import { parseSynaipseContextFailureEnvelope } from "../synaipse/context-failures.js";
+import { SynaipseContextContractError } from "../synaipse/context-contract.js";
 
+/** Check whether an unknown value is a non-empty string array. */
 function isStringArray(value: unknown): value is string[] {
 	return (
 		Array.isArray(value) &&
@@ -295,6 +298,17 @@ function validateDecisionMeta(
 			getOperationalPermissionPlan(value.meta),
 			errors,
 		);
+	}
+	if ("synaipseContextFailures" in value.meta) {
+		try {
+			parseSynaipseContextFailureEnvelope(value.meta.synaipseContextFailures);
+		} catch (error) {
+			if (error instanceof SynaipseContextContractError) {
+				errors.push(toValidationError(error.detail, error.path));
+			} else {
+				throw error;
+			}
+		}
 	}
 }
 

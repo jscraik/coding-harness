@@ -7,6 +7,7 @@ import {
 	validateHarnessDecision,
 	validateHarnessDecisionOperationalMeta,
 } from "./harness-decision.js";
+import type { SynaipseContextFailureEnvelope } from "../synaipse/context-failures.js";
 
 function errorCodes(result: { errors: { code: string }[] }): string[] {
 	return result.errors.map((error) => error.code);
@@ -69,6 +70,50 @@ describe("validateHarnessDecision", () => {
 		const result = validateHarnessDecision(legacyDecision);
 
 		expect(result).toEqual({ valid: true, errors: [] });
+	});
+
+	it("keeps context failure diagnostics additive across producer and reader versions", () => {
+		const legacyProducer = validDecision();
+		expect(validateHarnessDecision(legacyProducer)).toEqual({
+			valid: true,
+			errors: [],
+		});
+
+		const envelope: SynaipseContextFailureEnvelope = {
+			schemaVersion: "synaipse-context-failure-envelope/v1",
+			failures: [
+				{
+					code: "provider_unavailable",
+					requirement: "optional",
+					contextId: "ch_context_7K4M2P9QX3DR",
+					recovery: "restore_context_provider",
+					owner: "synaipse-context-plane",
+					stopCondition:
+						"Continue with explicit context unknown until provider_unavailable is resolved.",
+					evidenceRefs: ["context:ch_context_7K4M2P9QX3DR"],
+					freshness: {
+						status: "current",
+						observedAt: "2026-07-20T00:00:00Z",
+					},
+				},
+			],
+		};
+		const newProducer = validDecision({
+			meta: { ...legacyProducer.meta, synaipseContextFailures: envelope },
+		});
+		expect(validateHarnessDecision(newProducer)).toEqual({
+			valid: true,
+			errors: [],
+		});
+
+		const oldReaderView = {
+			...newProducer,
+			meta: { changedFiles: ["src/commands/review-gate.ts"] },
+		};
+		expect(validateHarnessDecision(oldReaderView)).toEqual({
+			valid: true,
+			errors: [],
+		});
 	});
 
 	it("narrows valid decisions with the type guard", () => {

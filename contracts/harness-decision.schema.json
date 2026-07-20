@@ -123,7 +123,208 @@
 			"enum": ["low", "medium", "high", "critical", "unknown"]
 		},
 		"meta": {
-			"type": "object"
+			"type": "object",
+			"properties": {
+				"synaipseContextFailures": {
+					"type": "object",
+					"$comment": "Code-bound recovery, stop-condition, freshness, and logical identity uniqueness require scripts/validate-harness-decision-semantics.cjs in addition to structural JSON Schema validation.",
+					"additionalProperties": false,
+					"required": ["schemaVersion", "failures"],
+					"properties": {
+						"schemaVersion": {
+							"const": "synaipse-context-failure-envelope/v1"
+						},
+						"failures": {
+							"type": "array",
+							"minItems": 1,
+							"uniqueItems": true,
+							"items": {
+								"type": "object",
+								"additionalProperties": false,
+								"required": [
+									"code",
+									"requirement",
+									"contextId",
+									"recovery",
+									"owner",
+									"stopCondition",
+									"evidenceRefs",
+									"freshness"
+								],
+								"properties": {
+									"code": {
+										"enum": [
+											"missing_project_identity",
+											"missing_context_catalog",
+											"missing_required_context",
+											"missing_optional_context",
+											"context_access_denied",
+											"stale_context_digest",
+											"superseded_context",
+											"malformed_context_catalog",
+											"provider_unavailable",
+											"unresolved_host_path"
+										]
+									},
+									"requirement": { "enum": ["required", "optional"] },
+									"contextId": {
+										"type": ["string", "null"],
+										"pattern": "^ch_context_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
+									},
+									"recovery": {
+										"enum": [
+											"establish_project_identity",
+											"admit_context_catalog",
+										"supply_required_context",
+										"supply_optional_context",
+											"request_authorized_projection",
+											"refresh_context_digest",
+										"select_current_context",
+											"repair_context_catalog",
+											"restore_context_provider",
+											"resolve_context_host_path"
+										]
+									},
+									"owner": { "const": "synaipse-context-plane" },
+									"stopCondition": { "type": "string", "minLength": 1 },
+									"evidenceRefs": {
+										"type": "array",
+										"minItems": 1,
+										"uniqueItems": true,
+										"items": { "type": "string", "minLength": 1 }
+									},
+									"freshness": {
+										"type": "object",
+										"additionalProperties": false,
+										"required": ["status", "observedAt"],
+										"properties": {
+											"status": {
+												"enum": ["current", "stale", "unknown"]
+											},
+											"observedAt": {
+												"type": "string",
+												"format": "date-time"
+											}
+										}
+									}
+								},
+								"allOf": [
+									{
+										"if": {
+											"properties": {
+												"code": {
+													"enum": [
+														"missing_project_identity",
+														"missing_context_catalog",
+														"malformed_context_catalog"
+													]
+												}
+											},
+											"required": ["code"]
+										},
+										"then": {
+											"properties": {
+												"requirement": { "const": "required" },
+												"contextId": { "const": null },
+												"freshness": {
+													"properties": { "status": { "const": "unknown" } }
+												}
+											}
+										}
+									},
+									{
+										"if": {
+											"properties": {
+												"code": {
+													"enum": [
+																"missing_required_context",
+																"missing_optional_context",
+														"context_access_denied",
+														"stale_context_digest",
+														"superseded_context",
+														"provider_unavailable",
+														"unresolved_host_path"
+													]
+												}
+											},
+											"required": ["code"]
+										},
+										"then": {
+											"properties": {
+												"contextId": {
+													"type": "string",
+													"pattern": "^ch_context_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
+												}
+											}
+										}
+									},
+									{
+										"if": {
+											"properties": {
+												"code": { "const": "missing_required_context" }
+											},
+											"required": ["code"]
+										},
+										"then": {
+											"properties": { "requirement": { "const": "required" } }
+										}
+									},
+									{
+										"if": {
+											"properties": {
+												"code": { "const": "missing_optional_context" }
+											},
+											"required": ["code"]
+										},
+										"then": {
+											"properties": { "requirement": { "const": "optional" } }
+										}
+									},
+									{
+										"if": {
+											"properties": {
+												"code": {
+													"enum": [
+																"missing_required_context",
+																"missing_optional_context",
+														"context_access_denied",
+														"superseded_context",
+														"provider_unavailable",
+														"unresolved_host_path"
+													]
+												}
+											},
+											"required": ["code"]
+										},
+										"then": {
+											"properties": {
+												"freshness": {
+													"properties": { "status": { "const": "current" } }
+												}
+											}
+										}
+									},
+									{
+										"if": {
+											"properties": {
+												"code": { "const": "stale_context_digest" }
+											},
+											"required": ["code"]
+										},
+										"then": {
+											"properties": {
+												"freshness": {
+													"properties": { "status": { "const": "stale" } }
+												}
+											}
+										}
+									}
+								]
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 }

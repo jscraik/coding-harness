@@ -8,6 +8,7 @@ import {
 	gitSha,
 	repositorySlug,
 } from "./context-contract.js";
+import { parseSynaipseContextFailureEnvelope } from "./context-failures.js";
 import { resolveSynaipseContext } from "./context-plane.js";
 
 type Schema = {
@@ -32,6 +33,222 @@ function accepts(parser: (value: string) => unknown, value: string): boolean {
 }
 
 describe("SynAIpse context format parity", () => {
+	it("accepts the versioned failure envelope and rejects ambiguous new output", () => {
+		const envelope = {
+			schemaVersion: "synaipse-context-failure-envelope/v1",
+			failures: [
+				{
+					code: "missing_required_context",
+					requirement: "required",
+					contextId: "ch_context_7K4M2P9QX3DR",
+					recovery: "supply_required_context",
+					owner: "synaipse-context-plane",
+					stopCondition: "Stop until missing_required_context is resolved.",
+					evidenceRefs: ["context:ch_context_7K4M2P9QX3DR"],
+					freshness: {
+						status: "current",
+						observedAt: "2026-07-13T22:00:00Z",
+					},
+				},
+			],
+		};
+
+		expect(parseSynaipseContextFailureEnvelope(envelope)).toEqual(envelope);
+		expect(() =>
+			parseSynaipseContextFailureEnvelope({
+				...envelope,
+				schemaVersion: "synaipse-context-failure-envelope/v2",
+			}),
+		).toThrow("must be synaipse-context-failure-envelope/v1");
+		expect(() =>
+			parseSynaipseContextFailureEnvelope({
+				...envelope,
+				failures: [
+					{
+						...envelope.failures[0],
+						unexpected: true,
+					},
+				],
+			}),
+		).toThrow("must not contain unknown properties");
+	});
+
+	it("rejects missing-required failures that claim optional context", () => {
+		expect(() =>
+			parseSynaipseContextFailureEnvelope({
+				schemaVersion: "synaipse-context-failure-envelope/v1",
+				failures: [
+					{
+						code: "missing_required_context",
+						requirement: "optional",
+						contextId: "ch_context_7K4M2P9QX3DR",
+						recovery: "supply_required_context",
+						owner: "synaipse-context-plane",
+						stopCondition: "Stop until missing_required_context is resolved.",
+						evidenceRefs: ["context:ch_context_7K4M2P9QX3DR"],
+						freshness: {
+							status: "current",
+							observedAt: "2026-07-13T22:00:00Z",
+						},
+					},
+				],
+			}),
+		).toThrow("missing_required_context must be required");
+	});
+
+	it("accepts only optional requirement for missing optional context", () => {
+		const failure = {
+			code: "missing_optional_context",
+			requirement: "optional",
+			contextId: "ch_context_7K4M2P9QX3DR",
+			recovery: "supply_optional_context",
+			owner: "synaipse-context-plane",
+			stopCondition:
+				"Continue with explicit context unknown until missing_optional_context is resolved.",
+			evidenceRefs: ["context:ch_context_7K4M2P9QX3DR"],
+			freshness: {
+				status: "current",
+				observedAt: "2026-07-13T22:00:00Z",
+			},
+		};
+		const envelope = {
+			schemaVersion: "synaipse-context-failure-envelope/v1",
+			failures: [failure],
+		};
+
+		expect(parseSynaipseContextFailureEnvelope(envelope)).toEqual(envelope);
+		expect(() =>
+			parseSynaipseContextFailureEnvelope({
+				...envelope,
+				failures: [{ ...failure, requirement: "required" }],
+			}),
+		).toThrow("missing_optional_context must be optional");
+	});
+
+	it("rejects contradictory failures for one logical context", () => {
+		const contextId = "ch_context_7K4M2P9QX3DR";
+		const failure = {
+			requirement: "required" as const,
+			contextId,
+			recovery: "supply_required_context",
+			owner: "synaipse-context-plane",
+			stopCondition: "Stop until missing_required_context is resolved.",
+			evidenceRefs: [`context:${contextId}`],
+			freshness: {
+				status: "current" as const,
+				observedAt: "2026-07-13T22:00:00Z",
+			},
+		};
+		expect(() =>
+			parseSynaipseContextFailureEnvelope({
+				schemaVersion: "synaipse-context-failure-envelope/v1",
+				failures: [
+					{ ...failure, code: "missing_required_context" },
+					{
+						...failure,
+						code: "provider_unavailable",
+						requirement: "optional",
+						recovery: "restore_context_provider",
+						stopCondition:
+							"Continue with explicit context unknown until provider_unavailable is resolved.",
+					},
+				],
+			}),
+		).toThrow("must not duplicate an earlier item");
+	});
+
+	it.each([
+		{
+			name: "an omitted contextId",
+			mutate: (failure: Record<string, unknown>) => delete failure.contextId,
+			expected: "must be explicitly present",
+		},
+		{
+			name: "an arbitrary recovery",
+			mutate: (failure: Record<string, unknown>) => {
+				failure.recovery = "request_operator_approval";
+			},
+			expected: "must use recovery restore_context_provider",
+		},
+		{
+			name: "an arbitrary owner",
+			mutate: (failure: Record<string, unknown>) => {
+				failure.owner = "project-pm";
+			},
+			expected: "must be synaipse-context-plane",
+		},
+		{
+			name: "an arbitrary stop condition",
+			mutate: (failure: Record<string, unknown>) => {
+				failure.stopCondition = "Stop when an operator approves.";
+			},
+			expected:
+				"must use stop condition Continue with explicit context unknown until provider_unavailable is resolved.",
+		},
+		{
+			name: "stale freshness for a current failure",
+			mutate: (failure: Record<string, unknown>) => {
+				failure.freshness = {
+					status: "stale",
+					observedAt: "2026-07-13T22:00:00Z",
+				};
+			},
+			expected: "provider_unavailable must carry current freshness",
+		},
+	] as const)("rejects $name at the public parser boundary", ({
+		mutate,
+		expected,
+	}) => {
+		const failure: Record<string, unknown> = {
+			code: "provider_unavailable",
+			requirement: "optional",
+			contextId: "ch_context_7K4M2P9QX3DR",
+			recovery: "restore_context_provider",
+			owner: "synaipse-context-plane",
+			stopCondition:
+				"Continue with explicit context unknown until provider_unavailable is resolved.",
+			evidenceRefs: ["context:ch_context_7K4M2P9QX3DR"],
+			freshness: {
+				status: "current",
+				observedAt: "2026-07-13T22:00:00Z",
+			},
+		};
+		mutate(failure);
+		expect(() =>
+			parseSynaipseContextFailureEnvelope({
+				schemaVersion: "synaipse-context-failure-envelope/v1",
+				failures: [failure],
+			}),
+		).toThrow(expected);
+	});
+
+	it.each([
+		"missing_project_identity",
+		"missing_context_catalog",
+		"malformed_context_catalog",
+	] as const)("rejects catalog failure %s with a context ID", (code) => {
+		expect(() =>
+			parseSynaipseContextFailureEnvelope({
+				schemaVersion: "synaipse-context-failure-envelope/v1",
+				failures: [
+					{
+						code,
+						requirement: "required",
+						contextId: "ch_context_7K4M2P9QX3DR",
+						recovery: "repair_context_contract",
+						owner: "synaipse-context-plane",
+						stopCondition: `Stop until ${code} is resolved.`,
+						evidenceRefs: ["context:catalog"],
+						freshness: {
+							status: "unknown",
+							observedAt: "2026-07-13T22:00:00Z",
+						},
+					},
+				],
+			}),
+		).toThrow(`${code} must not identify a logical context`);
+	});
+
 	it("validates complete documents through the schema gate and public parser", () => {
 		const schemaGate = JSON.parse(
 			execFileSync(
