@@ -10,17 +10,23 @@ export type {
 	HarnessDecisionExecutionProfile,
 	HarnessDecisionFrictionClass,
 	HarnessDecisionInput,
+	HarnessDecisionMeta,
 	HarnessDecisionOperationalMeta,
 	HarnessDecisionPermissionPlan,
 	HarnessDecisionPhase,
 	HarnessDecisionProducer,
+	HarnessDecisionRecommendationAuthority,
+	HarnessDecisionRecommendationEffects,
 	HarnessDecisionRetry,
 	HarnessDecisionRiskTier,
 	HarnessDecisionStartupCost,
 	HarnessDecisionStatus,
 	HarnessDecisionValidationResult,
 } from "./harness-decision-types.js";
-export { HARNESS_DECISION_SCHEMA_VERSION } from "./harness-decision-types.js";
+export {
+	HARNESS_DECISION_RECOMMENDATION_EFFECTS_SCHEMA_VERSION,
+	HARNESS_DECISION_SCHEMA_VERSION,
+} from "./harness-decision-types.js";
 export {
 	validateHarnessDecision,
 	validateHarnessDecisionOperationalMeta,

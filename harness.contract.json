@@ -112,7 +112,7 @@
 					"src/commands/preflight-gate.ts",
 					"src/commands/preflight-gate.test.ts"
 				],
-				"lastReviewedAt": "2026-06-20"
+				"lastReviewedAt": "2026-07-20"
 			},
 			{
 				"surfaceId": "north-star-roadmap-doc",

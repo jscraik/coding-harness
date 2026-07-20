@@ -15,6 +15,12 @@ import {
 	type HarnessDecisionValidationResult,
 } from "./harness-decision-types.js";
 import {
+	getOperationalPermissionPlan,
+	validateOperationalMetaConsistency,
+	validatePermissionPlan,
+	validateRecommendationEffects,
+} from "./harness-decision-recommendation-effects-validation.js";
+import {
 	type HeValidationError,
 	isRecord,
 	toValidationError,
@@ -32,103 +38,15 @@ function isStringArray(value: unknown): value is string[] {
 	);
 }
 
-function validatePermissionPlan(
-	value: unknown,
-	field: string,
-	errors: HeValidationError[],
-): void {
-	if (!isRecord(value)) {
-		errors.push(toValidationError(`${field} must be an object`, field));
-		return;
-	}
-	validateBoolean(value.requiresHuman, `${field}.requiresHuman`, errors);
-	validateBoolean(value.requiresNetwork, `${field}.requiresNetwork`, errors);
-	validateBoolean(value.writesFiles, `${field}.writesFiles`, errors);
-	validateBoolean(value.requiresGitWrite, `${field}.requiresGitWrite`, errors);
-	validateStringArray(
-		value.filesystemWrite,
-		`${field}.filesystemWrite`,
-		errors,
-	);
-	validateStringArray(value.commands, `${field}.commands`, errors);
-	validateStringArray(value.secrets, `${field}.secrets`, errors);
-}
-
+/** Detect the existing operational metadata shape without requiring unrelated additive fields. */
 function hasOperationalMetaShape(value: Record<string, unknown>): boolean {
 	return (
 		"frictionClass" in value || "delayClass" in value || "execution" in value
 	);
 }
 
-function getOperationalPermissionPlan(
-	value: Record<string, unknown>,
-): Record<string, unknown> | null {
-	const execution = value.execution;
-	if (!isRecord(execution)) return null;
-	const permissionPlan = execution.permissionPlan;
-	return isRecord(permissionPlan) ? permissionPlan : null;
-}
-
-function validateFlagConsistency(
-	args: {
-		field: "requiresHuman" | "requiresNetwork" | "writesFiles";
-		message: string;
-	},
-	decision: Record<string, unknown>,
-	permissionPlan: Record<string, unknown>,
-	errors: HeValidationError[],
-): void {
-	const decisionValue = decision[args.field];
-	const permissionValue = permissionPlan[args.field];
-	if (
-		typeof decisionValue === "boolean" &&
-		typeof permissionValue === "boolean" &&
-		decisionValue !== permissionValue
-	) {
-		errors.push(toValidationError(args.message, args.field));
-	}
-}
-
-function validateOperationalMetaConsistency(
-	decision: Record<string, unknown>,
-	meta: Record<string, unknown>,
-	errors: HeValidationError[],
-): void {
-	const permissionPlan = getOperationalPermissionPlan(meta);
-	if (!permissionPlan) return;
-	validateFlagConsistency(
-		{
-			field: "requiresHuman",
-			message:
-				"requiresHuman must match meta.execution.permissionPlan.requiresHuman",
-		},
-		decision,
-		permissionPlan,
-		errors,
-	);
-	validateFlagConsistency(
-		{
-			field: "requiresNetwork",
-			message:
-				"requiresNetwork must match meta.execution.permissionPlan.requiresNetwork",
-		},
-		decision,
-		permissionPlan,
-		errors,
-	);
-	validateFlagConsistency(
-		{
-			field: "writesFiles",
-			message:
-				"writesFiles must match meta.execution.permissionPlan.writesFiles",
-		},
-		decision,
-		permissionPlan,
-		errors,
-	);
-}
-
-function validateFailureClassForStatus(
+/** Require a failure classification for terminal blocked and failed decisions. */
+function validateTerminalFailureClass(
 	value: Record<string, unknown>,
 	errors: HeValidationError[],
 ): void {
@@ -145,7 +63,8 @@ function validateFailureClassForStatus(
 	}
 }
 
-function validateSafeToRunForCommand(
+/** Keep command availability aligned with the recommendation safe-to-run flag. */
+function validateCommandSafety(
 	value: Record<string, unknown>,
 	errors: HeValidationError[],
 ): void {
@@ -167,7 +86,8 @@ function validateSafeToRunForCommand(
 	}
 }
 
-function validateStopGuidanceForMissingCommand(
+/** Require stop guidance whenever a decision has no executable next command. */
+function validateMissingCommandGuidance(
 	value: Record<string, unknown>,
 	errors: HeValidationError[],
 ): void {
@@ -186,13 +106,14 @@ function validateStopGuidanceForMissingCommand(
 	}
 }
 
+/** Validate decision fields whose meanings depend on status or next-command presence. */
 function validateDecisionRoutingConsistency(
 	value: Record<string, unknown>,
 	errors: HeValidationError[],
 ): void {
-	validateFailureClassForStatus(value, errors);
-	validateSafeToRunForCommand(value, errors);
-	validateStopGuidanceForMissingCommand(value, errors);
+	validateTerminalFailureClass(value, errors);
+	validateCommandSafety(value, errors);
+	validateMissingCommandGuidance(value, errors);
 }
 
 /** Validate optional operational metadata on a HarnessDecision. */
@@ -218,37 +139,31 @@ export function validateHarnessDecisionOperationalMeta(
 		VALID_HARNESS_DECISION_DELAY_CLASSES,
 		errors,
 	);
-	validateExecutionMetadata(value.execution, errors);
+	if (!isRecord(value.execution)) {
+		errors.push(toValidationError("execution must be an object", "execution"));
+	} else {
+		validateEnum(
+			value.execution.profile,
+			"execution.profile",
+			VALID_HARNESS_DECISION_EXECUTION_PROFILES,
+			errors,
+		);
+		validateEnum(
+			value.execution.startupCost,
+			"execution.startupCost",
+			VALID_HARNESS_DECISION_STARTUP_COSTS,
+			errors,
+		);
+		validatePermissionPlan(
+			value.execution.permissionPlan,
+			"execution.permissionPlan",
+			errors,
+		);
+	}
 	return { valid: errors.length === 0, errors };
 }
 
-function validateExecutionMetadata(
-	value: unknown,
-	errors: HeValidationError[],
-): void {
-	if (!isRecord(value)) {
-		errors.push(toValidationError("execution must be an object", "execution"));
-		return;
-	}
-	validateEnum(
-		value.profile,
-		"execution.profile",
-		VALID_HARNESS_DECISION_EXECUTION_PROFILES,
-		errors,
-	);
-	validateEnum(
-		value.startupCost,
-		"execution.startupCost",
-		VALID_HARNESS_DECISION_STARTUP_COSTS,
-		errors,
-	);
-	validatePermissionPlan(
-		value.permissionPlan,
-		"execution.permissionPlan",
-		errors,
-	);
-}
-
+/** Validate the immutable decision-envelope identity fields. */
 function validateDecisionIdentity(
 	value: Record<string, unknown>,
 	errors: HeValidationError[],
@@ -276,6 +191,7 @@ function validateDecisionIdentity(
 	}
 }
 
+/** Validate scalar routing and human-facing decision fields. */
 function validateDecisionFields(
 	value: Record<string, unknown>,
 	errors: HeValidationError[],
@@ -297,6 +213,7 @@ function validateDecisionFields(
 	validateNullableString(value.failureClass, "failureClass", errors);
 }
 
+/** Validate the evidence and command collections carried by a decision. */
 function validateDecisionCollections(
 	value: Record<string, unknown>,
 	errors: HeValidationError[],
@@ -315,7 +232,8 @@ function validateDecisionCollections(
 	}
 }
 
-function validateDecisionFlags(
+/** Validate top-level effect flags and closed retry/risk vocabularies. */
+function validateDecisionFlagsAndEnums(
 	value: Record<string, unknown>,
 	errors: HeValidationError[],
 ): void {
@@ -323,12 +241,6 @@ function validateDecisionFlags(
 	validateBoolean(value.requiresHuman, "requiresHuman", errors);
 	validateBoolean(value.requiresNetwork, "requiresNetwork", errors);
 	validateBoolean(value.writesFiles, "writesFiles", errors);
-}
-
-function validateDecisionEnums(
-	value: Record<string, unknown>,
-	errors: HeValidationError[],
-): void {
 	if (
 		!VALID_HARNESS_DECISION_RETRIES.includes(
 			value.retry as HarnessDecisionRetry,
@@ -352,6 +264,7 @@ function validateDecisionEnums(
 	}
 }
 
+/** Validate known additive metadata projections while preserving unrelated compatibility metadata. */
 function validateDecisionMeta(
 	value: Record<string, unknown>,
 	errors: HeValidationError[],
@@ -362,17 +275,27 @@ function validateDecisionMeta(
 		);
 		return;
 	}
-	if (!isRecord(value.meta) || !hasOperationalMetaShape(value.meta)) return;
-	const metaValidation = validateHarnessDecisionOperationalMeta(value.meta);
-	if (!metaValidation.valid) {
-		errors.push(
-			...metaValidation.errors.map((error) =>
-				toValidationError(`meta.${error.code}`, `meta.${error.path ?? ""}`),
-			),
-		);
-		return;
+	if (!isRecord(value.meta)) return;
+	if (hasOperationalMetaShape(value.meta)) {
+		const metaValidation = validateHarnessDecisionOperationalMeta(value.meta);
+		if (!metaValidation.valid) {
+			errors.push(
+				...metaValidation.errors.map((error) =>
+					toValidationError(`meta.${error.code}`, `meta.${error.path ?? ""}`),
+				),
+			);
+		} else {
+			validateOperationalMetaConsistency(value, value.meta, errors);
+		}
 	}
-	validateOperationalMetaConsistency(value, value.meta, errors);
+	if ("recommendationEffects" in value.meta) {
+		validateRecommendationEffects(
+			value.meta.recommendationEffects,
+			value,
+			getOperationalPermissionPlan(value.meta),
+			errors,
+		);
+	}
 }
 
 /** Validate an unknown value against harness-decision/v1. */
@@ -389,8 +312,7 @@ export function validateHarnessDecision(
 	validateDecisionIdentity(value, errors);
 	validateDecisionFields(value, errors);
 	validateDecisionCollections(value, errors);
-	validateDecisionFlags(value, errors);
-	validateDecisionEnums(value, errors);
+	validateDecisionFlagsAndEnums(value, errors);
 	validateDecisionRoutingConsistency(value, errors);
 	validateDecisionMeta(value, errors);
 	return { valid: errors.length === 0, errors };

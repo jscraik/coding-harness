@@ -1,0 +1,57 @@
+{
+	"schema_version": "pm-child-result/v1",
+	"packet_id": "pkt_synaipsecc1adv01",
+	"packet_sha256": "37a1f4f4eb3d91a9d0e99404020c162db8baa2801e6a000cd3f8d07aa38c7725",
+	"dispatch_id": "ch_synaipsecc1adv01",
+	"turn_id": "turn_synaipsecc1adv01",
+	"project_id": "coding-harness",
+	"job_id": "job_synaipsecc1adv01",
+	"role": "Adversarial Review",
+	"declared_artifact": ".harness/review/synaipse-cc1/adversarial-review.md",
+	"artifact_sha256": "d4b7219da59098fe419fabbd3d675b75a1d0f3428170b475a3cde25cf83b4da2",
+	"baseline_sha": "bfe275b09244cd44c63ae4cbb641b3630056d04f",
+	"target_sha": "f2de738ff0cef0c036b2f48ab3ba06f3a5157208",
+	"status": "rejected",
+	"commands": [
+		{
+			"command": "pnpm exec vitest run src/commands/next-fitness-report.test.ts src/commands/next-agent-parity.test.ts src/commands/next-decision-meta.test.ts src/commands/next.test.ts src/lib/decision/harness-decision.test.ts src/lib/synaipse/state.test.ts --reporter=dot",
+			"outcome": "pass",
+			"evidence": "Vitest reported 6 passing files and 132 passing tests."
+		},
+		{
+			"command": "pnpm exec tsc --noEmit",
+			"outcome": "pass",
+			"evidence": "Completed with no diagnostics."
+		},
+		{
+			"command": "git diff --check bfe275b09244cd44c63ae4cbb641b3630056d04f..f2de738ff0cef0c036b2f48ab3ba06f3a5157208",
+			"outcome": "pass",
+			"evidence": "Completed with no whitespace errors."
+		},
+		{
+			"command": "node --import tsx --input-type=module",
+			"outcome": "pass",
+			"evidence": "Direct constructor and validator probe rejected known malformed fields, proved copied mutable arrays did not alias, and reproduced an undeclared permissionPlan.mutatesExternal field accepted with valid true and no errors."
+		},
+		{
+			"command": "git rev-parse HEAD",
+			"outcome": "pass",
+			"evidence": "Returned f2de738ff0cef0c036b2f48ab3ba06f3a5157208, matching the immutable target."
+		}
+	],
+	"findings": [
+		{
+			"finding_id": "cc1-recommendation-effects-unknown-permission-key",
+			"severity": "P2",
+			"summary": "validateHarnessDecision accepts an undeclared recommendationEffects.permissionPlan.mutatesExternal field, so a malformed v1 permission plan is marked valid.",
+			"evidence_refs": [
+				".harness/review/synaipse-cc1/adversarial-review.md",
+				"src/lib/decision/harness-decision-recommendation-effects-validation.ts:25-42",
+				"src/lib/synaipse/state-validation.ts:196-208"
+			],
+			"remediation": "Reject unknown keys at the recommendationEffects, authority, and permissionPlan levels while retaining additive outer meta compatibility; add a known-bad regression fixture."
+		}
+	],
+	"claims_boundary": "Rejected only because the fresh local adversarial review found one P2 malformed-envelope contract gap. The passing local commands prove their listed source, type, and diff lanes only; they do not prove a repair, fresh QA acceptance, hosted CI, external review, acceptance, PR state, merge, release, or readiness.",
+	"final_status_line": "WROTE: .harness/review/synaipse-cc1/adversarial-review.md"
+}

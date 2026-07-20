@@ -205,9 +205,35 @@ describe("harness next agent-facing parity", () => {
 			execution: {
 				permissionPlan: { commands: [PROMPT_CONTEXT_DRIFT_COMMAND] },
 			},
+			recommendationEffects: {
+				schemaVersion: "harness-recommendation-effects/v1",
+				authority: {
+					safeToRun: true,
+					requiresHuman: false,
+					requiresNetwork: false,
+					requiresGitWrite: false,
+				},
+				rollbackPosture: "not_started",
+				requiredEvidence: [
+					"git:status",
+					"artifacts/context-integrity/prompt-context-drift-report.json",
+				],
+				retry: "safe",
+				permissionPlan: {
+					writesFiles: true,
+					commands: [PROMPT_CONTEXT_DRIFT_COMMAND],
+				},
+			},
 			agentReadinessContext: {
 				status: "warn",
 				degradedSurfaceCount: 1,
+			},
+			synaipseState: {
+				invocationEffects: {
+					writesFiles: false,
+					mutatesGit: false,
+					mutatesExternal: false,
+				},
 			},
 		});
 	});

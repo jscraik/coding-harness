@@ -314,6 +314,57 @@ describe("validateHarnessDecision", () => {
 			"requiresNetwork must match meta.execution.permissionPlan.requiresNetwork",
 		);
 	});
+
+	it("rejects malformed recommendation-effects metadata", () => {
+		const candidate = {
+			...validDecision(),
+			meta: {
+				frictionClass: "none",
+				delayClass: "normal",
+				execution: {
+					profile: "read_only",
+					startupCost: "low",
+					permissionPlan: {
+						requiresHuman: false,
+						requiresNetwork: false,
+						writesFiles: false,
+						requiresGitWrite: false,
+						filesystemWrite: [],
+						commands: ["harness next --json"],
+						secrets: [],
+					},
+				},
+				recommendationEffects: {
+					schemaVersion: "harness-recommendation-effects/v0",
+					authority: {
+						safeToRun: false,
+						requiresHuman: false,
+						requiresNetwork: false,
+						requiresGitWrite: "no",
+					},
+					rollbackPosture: "started",
+					requiredEvidence: ["other:evidence"],
+					retry: "later",
+					permissionPlan: {},
+				},
+			},
+		};
+		const result = validateHarnessDecision(candidate);
+
+		expect(result.valid).toBe(false);
+		expect(errorCodes(result)).toEqual(
+			expect.arrayContaining([
+				"meta.recommendationEffects.schemaVersion must be harness-recommendation-effects/v1",
+				"safeToRun must match meta.recommendationEffects.authority.safeToRun",
+				"meta.recommendationEffects.authority.requiresGitWrite must be a boolean",
+				"meta.recommendationEffects.rollbackPosture must be not_started",
+				"meta.recommendationEffects.requiredEvidence must match requiredEvidence",
+				"meta.recommendationEffects.retry must be safe, conditional, or manual",
+				"meta.recommendationEffects.retry must match retry",
+				"meta.recommendationEffects.permissionPlan.requiresHuman must be a boolean",
+			]),
+		);
+	});
 });
 
 describe("buildHarnessDecision", () => {

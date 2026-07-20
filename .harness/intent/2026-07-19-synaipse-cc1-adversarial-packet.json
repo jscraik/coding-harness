@@ -1,0 +1,131 @@
+{
+	"schema_version": "pm-child-task-packet/v1",
+	"packet_id": "pkt_synaipsecc1adv01",
+	"dispatch_id": "ch_synaipsecc1adv01",
+	"turn_id": "turn_synaipsecc1adv01",
+	"dispatched_at": "2026-07-19T18:55:41Z",
+	"project_id": "coding-harness",
+	"job_id": "job_synaipsecc1adv01",
+	"human_task_name": "SynAIpse CC1: adversarial review of recommendation effects",
+	"role": "Adversarial Review",
+	"objective": "Find a concrete production or compatibility defect in the final CC1 recommendation-effects implementation and its preserved QA evidence, or record a fresh packet-bound no-finding review.",
+	"decision_frame": {
+		"value": "Challenge the CC1 boundary after Worker evidence and a governed deterministic QA fallback, before CC2 may be admitted.",
+		"why_now": "Source and QA-control evidence are preserved in immutable target f2de738ff0cef0c036b2f48ab3ba06f3a5157208; the remaining ordered review stage is adversarial scrutiny.",
+		"acceptance_criteria": [
+			"Review distinguishes current `harness next` invocation effects from later recommendation effects.",
+			"Review looks for legacy producer compatibility, malformed-envelope bypasses, mutable-array aliasing, and incorrect authority propagation.",
+			"Result binds the reviewed immutable SHA and records either assertion-shaped findings or an explicit no-finding verdict."
+		],
+		"dependencies": [
+			"Source implementation commit 8e7e7251c299d8f7844cf633cf885bedeab2752d.",
+			"Evidence-preservation commit f2de738ff0cef0c036b2f48ab3ba06f3a5157208.",
+			"Worker result .harness/review/synaipse-cc1/recovery-worker-result.json.",
+			"QA fallback .harness/review/synaipse-cc1/qa-deterministic-fallback.md."
+		],
+		"risk_or_learning_target": "A versioned additive projection can appear internally valid while silently changing old producer or consumer semantics.",
+		"smallest_increment": "One independent adversarial review artifact and packet-bound result."
+	},
+	"non_goals": [
+		"Do not edit source, tests, prior review artifacts, the commit, branch, or worktree.",
+		"Do not invoke recommended side-effecting commands, use network, or mutate hosted state.",
+		"Do not push, merge, rebase, reset, stash, clean, or delete anything."
+	],
+	"target": {
+		"repo_path": "/Users/jamiecraik/dev/coding-harness",
+		"worktree_path": "/private/tmp/coding-harness-synaipse-cc1-effects",
+		"branch": "codex/synaipse-cc1-effects",
+		"baseline_sha": "bfe275b09244cd44c63ae4cbb641b3630056d04f",
+		"expected_target_sha": "f2de738ff0cef0c036b2f48ab3ba06f3a5157208",
+		"preserved_output_ref": "git:f2de738ff0cef0c036b2f48ab3ba06f3a5157208",
+		"fresh_context_required": true
+	},
+	"instruction_provenance": {
+		"policy": "target_repo_instruction_chain_required",
+		"applicable_agents_md": [
+			"/private/tmp/coding-harness-synaipse-cc1-effects/AGENTS.md",
+			"/private/tmp/coding-harness-synaipse-cc1-effects/src/AGENTS.md",
+			"/private/tmp/coding-harness-synaipse-cc1-effects/contracts/AGENTS.md"
+		],
+		"codestyle_front_door": "/private/tmp/coding-harness-synaipse-cc1-effects/CODESTYLE.md",
+		"triggered_skills": [
+			"coding-harness",
+			"improve-agent-native",
+			"improve-codebase-architecture",
+			"testing",
+			"evals-router",
+			"simplify"
+		],
+		"validation_entrypoints": [
+			"pnpm exec vitest run src/commands/next-fitness-report.test.ts src/commands/next-agent-parity.test.ts src/commands/next-decision-meta.test.ts src/commands/next.test.ts src/lib/decision/harness-decision.test.ts src/lib/synaipse/state.test.ts --reporter=dot",
+			"pnpm exec tsc --noEmit",
+			"git diff --check bfe275b09244cd44c63ae4cbb641b3630056d04f..f2de738ff0cef0c036b2f48ab3ba06f3a5157208"
+		],
+		"child_attestation_required": true,
+		"conflict_policy": "stop_and_report_blocked_instruction_context"
+	},
+	"authority": {
+		"accountable_owner": "project_pm",
+		"delegated_decision_rights": [
+			"Read and test the immutable target only.",
+			"Write the declared adversarial artifact/result or report a packet-bound blocker."
+		],
+		"allowed_write_paths": [
+			".harness/review/synaipse-cc1/adversarial-review.md",
+			".harness/review/synaipse-cc1/adversarial-result.json"
+		],
+		"forbidden_actions": [
+			"source edit",
+			"test edit",
+			"commit",
+			"push",
+			"merge",
+			"rebase",
+			"reset",
+			"stash",
+			"cleanup",
+			"hosted mutation",
+			"command invocation with side effects"
+		],
+		"network_policy": "forbidden",
+		"external_mutation_allowed": false
+	},
+	"execution": {
+		"heartbeat_policy": "event_driven_material_change_only",
+		"progress_reporting_policy": "material_change_blocker_scope_risk_or_completion",
+		"control_measure_policy": "minimum_controls_for_risk_and_evidence",
+		"retry_budget": 0,
+		"decision_policy": "evidence_first_smallest_durable_fix",
+		"ambiguity_policy": "ask_project_pm_before_scope_expansion",
+		"drift_policy": "stop_preserve_evidence_report_project_pm",
+		"attestation_max_age_seconds": 900,
+		"future_skew_seconds": 60,
+		"stop_conditions": [
+			"target SHA drift",
+			"source or test mutation request",
+			"instruction conflict",
+			"validation blocker"
+		]
+	},
+	"evidence": {
+		"expected_artifacts": [
+			".harness/review/synaipse-cc1/adversarial-review.md",
+			".harness/review/synaipse-cc1/adversarial-result.json"
+		],
+		"instruction_attestation_artifact": ".harness/review/synaipse-cc1/adversarial-review.md",
+		"artifact_probe": {
+			"receipt_path": ".harness/review/synaipse-cc1/adversarial-artifact-probe.json",
+			"receipt_sha256": "cbb6f7fea8ae0ca7bbb712fe0100668846f7a77a720ba99b2e5f21f274d08af9",
+			"max_age_seconds": 300
+		},
+		"result_schema": "operating-system/schemas/pm-child-result.v1.schema.json",
+		"verdict_consistency_required": true,
+		"durable_preservation_required": true,
+		"final_status_line": "WROTE: <declared artifact path>"
+	},
+	"escalation": {
+		"first_owner": "project_pm",
+		"chief_condition": "project_pm_cannot_resolve_within_recorded_authority",
+		"operator_condition": "value_scope_taste_privacy_cost_or_irreversible_decision_required"
+	}
+}

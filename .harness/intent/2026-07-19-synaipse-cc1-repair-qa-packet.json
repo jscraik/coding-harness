@@ -1,0 +1,123 @@
+{
+	"schema_version": "pm-child-task-packet/v1",
+	"packet_id": "pkt_synaipsecc1repairqa01",
+	"dispatch_id": "ch_synaipsecc1repairqa01",
+	"turn_id": "turn_synaipsecc1repairqa01",
+	"dispatched_at": "2026-07-19T20:18:00Z",
+	"project_id": "coding-harness",
+	"job_id": "job_synaipsecc1repairqa01",
+	"human_task_name": "SynAIpse CC1: QA disproof of closed recommendation effects",
+	"role": "QA Disproof",
+	"objective": "Independently try to disprove the repaired CC1 recommendation-effects validator at immutable target cb50e6e2705bde993105c55d7c5690fba14fddcd, with special attention to unknown nested fields and legacy additive operational metadata.",
+	"decision_frame": {
+		"value": "Confirm that the P2 adversarial finding is repaired before the final adversarial re-review and any CC2 admission decision.",
+		"why_now": "The source repair is committed and its focused local proof is available at immutable target cb50e6e2705bde993105c55d7c5690fba14fddcd.",
+		"acceptance_criteria": [
+			"Result binds to the immutable target and records a fresh independent QA verdict.",
+			"QA proves or disproves rejection of undeclared keys within recommendationEffects, authority, and permissionPlan.",
+			"QA verifies outer meta and legacy operational permission-plan compatibility are not narrowed by the repair."
+		],
+		"dependencies": [
+			"Adversarial finding preserved in commit 3e9e5f52bed1e91caddcb210830fb8e0dfb104a0.",
+			"Repair commit cb50e6e2705bde993105c55d7c5690fba14fddcd."
+		],
+		"risk_or_learning_target": "Closed versioned projections must reject unknown authority fields without changing deliberately additive legacy metadata.",
+		"smallest_increment": "One fresh artifact-bound QA disproof report and strict child result."
+	},
+	"non_goals": [
+		"Do not edit source, tests, packets, prior review artifacts, commit, branch, or worktree.",
+		"Do not use network, mutate hosted state, push, merge, rebase, reset, stash, clean, or delete anything."
+	],
+	"target": {
+		"repo_path": "/Users/jamiecraik/dev/coding-harness",
+		"worktree_path": "/private/tmp/coding-harness-synaipse-cc1-effects",
+		"branch": "codex/synaipse-cc1-effects",
+		"baseline_sha": "3e9e5f52bed1e91caddcb210830fb8e0dfb104a0",
+		"expected_target_sha": "cb50e6e2705bde993105c55d7c5690fba14fddcd",
+		"preserved_output_ref": "git:cb50e6e2705bde993105c55d7c5690fba14fddcd",
+		"fresh_context_required": true
+	},
+	"instruction_provenance": {
+		"policy": "target_repo_instruction_chain_required",
+		"applicable_agents_md": [
+			"/private/tmp/coding-harness-synaipse-cc1-effects/AGENTS.md",
+			"/private/tmp/coding-harness-synaipse-cc1-effects/src/AGENTS.md",
+			"/private/tmp/coding-harness-synaipse-cc1-effects/contracts/AGENTS.md"
+		],
+		"codestyle_front_door": "/private/tmp/coding-harness-synaipse-cc1-effects/CODESTYLE.md",
+		"triggered_skills": [
+			"coding-harness",
+			"improve-agent-native",
+			"improve-codebase-architecture",
+			"testing",
+			"evals-router",
+			"simplify"
+		],
+		"validation_entrypoints": [
+			"pnpm exec vitest run src/lib/decision/harness-decision.test.ts src/commands/next-decision-meta.test.ts src/commands/next-fitness-report.test.ts --reporter=dot",
+			"pnpm exec tsc --noEmit",
+			"git diff --check 3e9e5f52bed1e91caddcb210830fb8e0dfb104a0..cb50e6e2705bde993105c55d7c5690fba14fddcd"
+		],
+		"child_attestation_required": true,
+		"conflict_policy": "stop_and_report_blocked_instruction_context"
+	},
+	"authority": {
+		"accountable_owner": "project_pm",
+		"delegated_decision_rights": [
+			"Read and test the immutable target only.",
+			"Write only the declared QA artifact and result, or report a packet-bound blocker."
+		],
+		"allowed_write_paths": [
+			".harness/review/synaipse-cc1/repair-qa-disproof.md",
+			".harness/review/synaipse-cc1/repair-qa-result.json"
+		],
+		"forbidden_actions": [
+			"source edit",
+			"test edit",
+			"commit",
+			"push",
+			"merge",
+			"rebase",
+			"reset",
+			"stash",
+			"cleanup",
+			"hosted mutation",
+			"command invocation with side effects"
+		],
+		"network_policy": "forbidden",
+		"external_mutation_allowed": false
+	},
+	"execution": {
+		"heartbeat_policy": "event_driven_material_change_only",
+		"progress_reporting_policy": "material_change_blocker_scope_risk_or_completion",
+		"control_measure_policy": "minimum_controls_for_risk_and_evidence",
+		"retry_budget": 1,
+		"decision_policy": "evidence_first_smallest_durable_fix",
+		"ambiguity_policy": "ask_project_pm_before_scope_expansion",
+		"drift_policy": "stop_preserve_evidence_report_project_pm",
+		"attestation_max_age_seconds": 900,
+		"future_skew_seconds": 60,
+		"stop_conditions": [
+			"target SHA drift",
+			"source or test mutation request",
+			"instruction conflict",
+			"validation blocker"
+		]
+	},
+	"evidence": {
+		"expected_artifacts": [
+			".harness/review/synaipse-cc1/repair-qa-disproof.md",
+			".harness/review/synaipse-cc1/repair-qa-result.json"
+		],
+		"instruction_attestation_artifact": ".harness/review/synaipse-cc1/repair-qa-disproof.md",
+		"result_schema": "operating-system/schemas/pm-child-result.v1.schema.json",
+		"verdict_consistency_required": true,
+		"durable_preservation_required": true,
+		"final_status_line": "WROTE: <declared artifact path>"
+	},
+	"escalation": {
+		"first_owner": "project_pm",
+		"chief_condition": "project_pm_cannot_resolve_within_recorded_authority",
+		"operator_condition": "value_scope_taste_privacy_cost_or_irreversible_decision_required"
+	}
+}

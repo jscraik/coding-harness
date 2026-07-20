@@ -1,0 +1,15 @@
+{
+	"schema_version": "pm-child-artifact-probe/v1",
+	"probe_id": "prb_synaipsecc1adv01",
+	"dispatch_id": "ch_synaipsecc1adv01",
+	"turn_id": "turn_synaipsecc1adv01",
+	"project_id": "coding-harness",
+	"job_id": "job_synaipsecc1adv01",
+	"role": "Adversarial Review",
+	"worktree_path": "/private/tmp/coding-harness-synaipse-cc1-effects",
+	"target_sha": "f2de738ff0cef0c036b2f48ab3ba06f3a5157208",
+	"declared_artifact": ".harness/review/synaipse-cc1/adversarial-review.md",
+	"observed_at": "2026-07-19T18:55:41Z",
+	"write_status": "passed",
+	"cleanup_status": "removed"
+}

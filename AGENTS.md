@@ -62,6 +62,7 @@ truth.
 - Branch from `main`, open a PR for every merge, and keep CodeRabbit or human
   review independent from code authorship. Required status checks are
   `pr-pipeline`, `security-scan`, and `CodeRabbit`; CodeQL remains separate.
+- Keep each cadence-governed non-core `harness.contract.json` surface's `lastReviewedAt` within cadence; verify with `bash scripts/run-harness-gate.sh drift-gate --mode health --json`.
 - `review-learning-closeout/v1`, fitness, live-canary, runtime, rework,
   governance, and SynAIpse packet projections are advisory evidence. Live canaries
   must resolve CLI before target cwd, reject target-contained outputs, sanitize

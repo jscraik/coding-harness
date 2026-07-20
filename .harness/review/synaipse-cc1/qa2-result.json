@@ -1,0 +1,46 @@
+{
+	"schema_version": "pm-child-result/v1",
+	"packet_id": "pkt_synaipsecc1qa02",
+	"packet_sha256": "f9b95defff7a0f3d733b0fd3c0216e16ea799eb92ea66dcc8a5febb44966f38a",
+	"dispatch_id": "ch_synaipsecc1qa02",
+	"turn_id": "turn_synaipsecc1qa02",
+	"project_id": "coding-harness",
+	"job_id": "job_synaipsecc1qa02",
+	"role": "QA Disproof",
+	"declared_artifact": ".harness/review/synaipse-cc1/qa2-disproof.md",
+	"artifact_sha256": "a00767d1dc50d6ff09e2161b5cc706d22b38b504a8cf3e662edc7cb9cded2cc0",
+	"baseline_sha": "bfe275b09244cd44c63ae4cbb641b3630056d04f",
+	"target_sha": "8e7e7251c299d8f7844cf633cf885bedeab2752d",
+	"status": "blocked_validation",
+	"commands": [
+		{
+			"command": "pnpm exec vitest run src/commands/next-fitness-report.test.ts src/commands/next-agent-parity.test.ts src/commands/next-decision-meta.test.ts src/commands/next.test.ts src/lib/decision/harness-decision.test.ts src/lib/synaipse/state.test.ts --reporter=dot",
+			"outcome": "pass",
+			"evidence": "6 files and 132 tests passed before the probe expiry."
+		},
+		{
+			"command": "pnpm exec tsc --noEmit",
+			"outcome": "pass",
+			"evidence": "Completed with no diagnostics before the probe expiry."
+		},
+		{
+			"command": "git diff --check bfe275b09244cd44c63ae4cbb641b3630056d04f..8e7e7251c299d8f7844cf633cf885bedeab2752d",
+			"outcome": "pass",
+			"evidence": "Completed with no whitespace errors before the probe expiry."
+		}
+	],
+	"findings": [
+		{
+			"finding_id": "qa2-freshness-expired",
+			"severity": "P1",
+			"summary": "The declared QA artifact was persisted at 2026-07-19T18:32:04Z, nine seconds after the 2026-07-19T18:31:55Z probe deadline; local command observations cannot be accepted as fresh QA.",
+			"evidence_refs": [
+				".harness/review/synaipse-cc1/qa2-artifact-probe.json",
+				".harness/review/synaipse-cc1/qa2-disproof.md"
+			],
+			"remediation": "Issue a new recovery QA packet and fresh artifact probe, then run its declared commands and persist both QA artifacts before the new deadline."
+		}
+	],
+	"claims_boundary": "Blocked validation result only. The recorded local command observations do not establish accepted independent QA, source acceptance, hosted CI, provider review, PR readiness, mergeability, release, or runtime-canary behavior.",
+	"final_status_line": "WROTE: .harness/review/synaipse-cc1/qa2-disproof.md"
+}

@@ -10,9 +10,10 @@ import {
 } from "../lib/fitness/commands.js";
 import { sanitizeEvidenceText } from "../lib/input/sanitize.js";
 import { createNextDecision } from "./next-decision-meta.js";
-import { blockedDecision, type HarnessNextMode } from "./next-decisions.js";
+import type { HarnessNextMode } from "./next-decisions.js";
 import { decisionMeta } from "./next-support.js";
 
+/** Build a blocked decision whose recommendation metadata matches its final authority fields. */
 function fitnessReportDecision(args: {
 	artifactPath: string;
 	mode: HarnessNextMode;
@@ -27,30 +28,31 @@ function fitnessReportDecision(args: {
 }): HarnessDecision {
 	const safeToRun = args.safeToRun ?? false;
 	const requiresHuman = args.requiresHuman ?? !safeToRun;
-	return {
-		...blockedDecision({
-			summary: args.summary,
-			nextAction: args.nextAction,
-			failureClass: args.failureClass,
-			evidenceRef: [`artifact:${args.artifactPath}`],
-			meta: decisionMeta({
-				mode: args.mode,
-				frictionClass: args.frictionClass,
-				delayClass: "normal",
-				requiresHuman,
-				commands: args.nextCommand ? [args.nextCommand] : [],
-				extra: {
-					artifactPath: args.artifactPath,
-					...(args.fitnessFinding
-						? { fitnessFinding: args.fitnessFinding }
-						: {}),
-				},
-			}),
-		}),
+	return createNextDecision({
+		status: "blocked",
+		summary: args.summary,
+		nextAction: args.nextAction,
 		nextCommand: args.nextCommand,
 		safeToRun,
 		requiresHuman,
-	};
+		requiresNetwork: false,
+		writesFiles: false,
+		evidenceRef: [`artifact:${args.artifactPath}`],
+		failureClass: args.failureClass,
+		retry: "manual",
+		riskTier: "unknown",
+		meta: decisionMeta({
+			mode: args.mode,
+			frictionClass: args.frictionClass,
+			delayClass: "normal",
+			requiresHuman,
+			commands: args.nextCommand ? [args.nextCommand] : [],
+			extra: {
+				artifactPath: args.artifactPath,
+				...(args.fitnessFinding ? { fitnessFinding: args.fitnessFinding } : {}),
+			},
+		}),
+	});
 }
 
 function parseFitnessReportArtifact(rawArtifact: string): unknown {

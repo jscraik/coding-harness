@@ -1,8 +1,3 @@
-import {
-	buildHarnessDecision,
-	type HarnessDecision,
-	type HarnessDecisionInput,
-} from "../lib/decision/harness-decision.js";
 import type { HePhaseExit } from "../lib/decision/he-phase-exit.js";
 import type { DecisionSource } from "../lib/decision/sources.js";
 import { normaliseHePhaseExitResult } from "../lib/output/normalise.js";
@@ -16,13 +11,8 @@ import { decisionMeta, sourceMetaExtra } from "./next-support.js";
 import type { HarnessNextMode } from "./next-decision-types.js";
 import { changedFileClassificationMeta } from "./next-file-classification-meta.js";
 import type { ChangedFileClassification } from "./next-file-classification.js";
+export { createNextDecision } from "./next-recommendation-effects.js";
 type DecisionMetaArgs = Parameters<typeof decisionMeta>[0];
-/** Build a standardized decision scoped to the harness next CLI. */
-export function createNextDecision(
-	decision: HarnessDecisionInput,
-): HarnessDecision {
-	return buildHarnessDecision("harness next", decision);
-}
 /** Normalize HE phase-exit evidence when present. */
 function phaseExitMeta(
 	phaseExit: HePhaseExit | undefined,
@@ -87,6 +77,9 @@ export function nextDecisionOperationalMeta(args: {
 	requiresHuman?: boolean;
 	requiresNetwork?: boolean;
 	writesFiles?: boolean;
+	requiresGitWrite?: boolean;
+	filesystemWrite?: string[];
+	secrets?: string[];
 	sourceErrors?: readonly DecisionSource[];
 	phaseExit?: HePhaseExit | undefined;
 	runtimeCard?: RuntimeCard | undefined;
@@ -115,5 +108,8 @@ export function nextDecisionOperationalMeta(args: {
 	addDefinedMetaArg(metaArgs, "requiresHuman", args.requiresHuman);
 	addDefinedMetaArg(metaArgs, "requiresNetwork", args.requiresNetwork);
 	addDefinedMetaArg(metaArgs, "writesFiles", args.writesFiles);
+	addDefinedMetaArg(metaArgs, "requiresGitWrite", args.requiresGitWrite);
+	addDefinedMetaArg(metaArgs, "filesystemWrite", args.filesystemWrite);
+	addDefinedMetaArg(metaArgs, "secrets", args.secrets);
 	return decisionMeta(metaArgs);
 }

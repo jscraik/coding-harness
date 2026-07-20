@@ -1,0 +1,52 @@
+{
+	"schema_version": "pm-child-result/v1",
+	"packet_id": "pkt_synaipsecc1wrk",
+	"packet_sha256": "a0b63bbcef55e6a7176d0e5563eae870f44cc5ddac2b8a6e45fa0f6855ea1584",
+	"dispatch_id": "ch_synaipsecc1wrk",
+	"turn_id": "turn_synaipsecc1wrk",
+	"project_id": "coding-harness",
+	"job_id": "job_synaipsecc1wrk",
+	"role": "Worker",
+	"declared_artifact": ".harness/review/synaipse-cc1/worker-handoff.md",
+	"artifact_sha256": "e8da41513a9c34d013bdc67834f556ca4e12cb98e62bf0f9f3ca0dacd24737fd",
+	"baseline_sha": "bfe275b09244cd44c63ae4cbb641b3630056d04f",
+	"target_sha": "bfe275b09244cd44c63ae4cbb641b3630056d04f",
+	"status": "blocked_validation",
+	"commands": [
+		{
+			"command": "pnpm exec vitest run src/commands/next-agent-parity.test.ts src/commands/next-decision-meta.test.ts src/commands/next.test.ts src/lib/decision/harness-decision.test.ts src/lib/synaipse/state.test.ts --reporter=dot",
+			"outcome": "pass",
+			"evidence": "5 files and 124 tests passed."
+		},
+		{
+			"command": "pnpm exec tsc --noEmit",
+			"outcome": "pass",
+			"evidence": "Completed with no diagnostics."
+		},
+		{
+			"command": "git diff --check",
+			"outcome": "pass",
+			"evidence": "Completed with no whitespace diagnostics."
+		},
+		{
+			"command": "pnpm exec biome check src/lib/decision/harness-decision-types.ts src/lib/decision/harness-decision.ts src/lib/decision/harness-decision-validation.ts src/commands/next-decision-meta.ts src/lib/decision/harness-decision.test.ts src/commands/next-decision-meta.test.ts src/commands/next-agent-parity.test.ts",
+			"outcome": "pass",
+			"evidence": "Checked 7 files with no fixes applied."
+		}
+	],
+	"findings": [
+		{
+			"finding_id": "cc1-stale-worker-attestation",
+			"severity": "P2",
+			"summary": "The target SHA remains current, but the Worker artifact probe and attestation exceed the packet freshness limits.",
+			"evidence_refs": [
+				".harness/intent/2026-07-19-synaipse-cc1-worker-packet.json",
+				".harness/review/synaipse-cc1/worker-artifact-probe.json",
+				".harness/review/synaipse-cc1/worker-handoff.md"
+			],
+			"remediation": "Project PM should refresh the packet/probe or reconcile the stale attestation before accepting the preserved implementation."
+		}
+	],
+	"claims_boundary": "Focused local proof passes, but the stale packet freshness contract prevents an accepted Worker result. No independent QA, adversarial review, hosted CI, review, PR, merge, release, or runtime model attestation is claimed.",
+	"final_status_line": "WROTE: .harness/review/synaipse-cc1/worker-handoff.md"
+}
