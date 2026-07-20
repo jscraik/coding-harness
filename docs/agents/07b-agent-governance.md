@@ -60,6 +60,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   `docs/roadmap/agent-first-status.md` with `harness.contract.json` and keep
   `README.md`, `AGENTS.md`, and this guide synchronized when drift-gate reports
   an agent-first-status-matrix cadence breach
+- per-release product-surface cadence repairs should refresh the affected
+  `harness.contract.json` `lastReviewedAt` entry and keep `README.md`,
+  `AGENTS.md`, and this guide synchronized; verify the repair with
+  `bash scripts/run-harness-gate.sh drift-gate --mode health --json`
 - language-context routing changes should keep `UBIQUITOUS-MAP.md` as the
   fast navigation surface and `UBIQUITOUS_LANGUAGE.md` as the authoritative
   terminology source. Agents may use the map to find relevant concepts quickly,

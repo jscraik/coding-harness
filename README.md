@@ -51,6 +51,9 @@ The weekly reviewed status surface for that contract is
 [docs/roadmap/agent-first-status.md](./docs/roadmap/agent-first-status.md).
 Its `last_validated` date mirrors the `agent-first-status-matrix` contract
 review date; `drift-gate` enforces that weekly cadence.
+Contract-registered surfaces with a `per_release` review cadence likewise keep
+their `lastReviewedAt` date current; `drift-gate --mode health` blocks when a
+registered surface has fallen outside that review window.
 
 ## Table of Contents
 
