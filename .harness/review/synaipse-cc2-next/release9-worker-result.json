@@ -1,0 +1,60 @@
+{
+  "schema_version": "pm-child-result/v1",
+  "packet_id": "pkt_cc2release9worker",
+  "packet_sha256": "db0d5d97249846bb81f4178f28be28f84d36902cf4af4208b95cda4edb21d3fd",
+  "dispatch_id": "ch_cc2release9worker",
+  "turn_id": "turn_cc2release9worker98d650c6",
+  "project_id": "coding-harness",
+  "job_id": "job_cc2release998d650c6",
+  "role": "Worker",
+  "declared_artifact": ".harness/review/synaipse-cc2-next/release9-worker-handoff.md",
+  "artifact_sha256": "4e95844dbbcfe9638391857fd3d2d3a62e1d4bde562a246eb136c5a83904f5c7",
+  "baseline_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+  "target_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+  "status": "accepted",
+  "commands": [
+    {
+      "command": "git diff --cached --binary | shasum -a 256",
+      "outcome": "pass",
+      "evidence": "Staged patch digest matched 98d650c6c407143f4386396ac675cdd3f000849c373630319e9e1efb28b5c801."
+    },
+    {
+      "command": "pnpm exec vitest run src/lib/synaipse/context-plane.test.ts src/commands/next.test.ts src/dev/validate-harness-decision-failures.test.ts",
+      "outcome": "pass",
+      "evidence": "Three files and 120 tests passed."
+    },
+    {
+      "command": "node scripts/validate-runtime-packet-schemas.cjs --all",
+      "outcome": "pass",
+      "evidence": "All 28 runtime packet schema/example/semantic entries passed with zero errors."
+    },
+    {
+      "command": "pnpm boundary:unknown-guards",
+      "outcome": "pass",
+      "evidence": "52 baselined boundary guards and no new entries."
+    },
+    {
+      "command": "pnpm exec tsc --noEmit",
+      "outcome": "pass",
+      "evidence": "TypeScript emitted no diagnostics."
+    },
+    {
+      "command": "node --import tsx /private/tmp/cc2-release9-matrix.mts",
+      "outcome": "pass",
+      "evidence": "All nine required optional/required disposition cases matched resolver state, failure code, stop or continue condition, and unknown or blocker projection."
+    },
+    {
+      "command": "pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/context-plane.test.ts src/lib/decision/harness-decision.test.ts src/commands/next.test.ts src/dev/validate-harness-decision-failures.test.ts src/dev/runtime-packet-example-parity.test.ts --maxWorkers=1 --reporter=dot",
+      "outcome": "pass",
+      "evidence": "Six files and 164 parser, producer, decision, schema-semantic, and example-parity tests passed."
+    },
+    {
+      "command": "git diff --cached --check",
+      "outcome": "pass",
+      "evidence": "No staged whitespace errors."
+    }
+  ],
+  "findings": [],
+  "claims_boundary": "Accepted Worker verification is bound only to target 8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8 and staged patch 98d650c6c407143f4386396ac675cdd3f000849c373630319e9e1efb28b5c801. It does not prove QA Disproof, Adversarial Review, finding fan-in, commit authorization, hosted checks, hosted review, acceptance, merge, release, deployment, or production readiness.",
+  "final_status_line": "WROTE: .harness/review/synaipse-cc2-next/release9-worker-handoff.md"
+}

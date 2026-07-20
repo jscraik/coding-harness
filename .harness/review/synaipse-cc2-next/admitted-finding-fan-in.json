@@ -1,0 +1,96 @@
+{
+  "schema_version": "pm-finding-fan-in/v1",
+  "project_id": "coding-harness",
+  "job_id": "job_cc2release998d650c6",
+  "target_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+  "required_roles": ["Worker", "QA Disproof", "Adversarial Review"],
+  "source_results": [
+    {
+      "role": "Worker",
+      "result_path": ".harness/review/synaipse-cc2-next/release9-worker-result.json",
+      "result_sha256": "b8fc909fe6d23c97853d91a559baf31c53edfb5c438f9f864944c4e5edf70536",
+      "packet_id": "pkt_cc2release9worker",
+      "packet_sha256": "db0d5d97249846bb81f4178f28be28f84d36902cf4af4208b95cda4edb21d3fd",
+      "declared_artifact": ".harness/review/synaipse-cc2-next/release9-worker-handoff.md",
+      "artifact_sha256": "4e95844dbbcfe9638391857fd3d2d3a62e1d4bde562a246eb136c5a83904f5c7",
+      "status": "accepted",
+      "evidence_mode": "child_result"
+    },
+    {
+      "role": "QA Disproof",
+      "result_path": ".harness/review/synaipse-cc2-next/release10-qa-result.json",
+      "result_sha256": "8e3aacd44ee40c01b1c3a5ea4b21f3628c306275c7649fd6d875d5e3e051ce2b",
+      "packet_id": "pkt_cc2release10qa",
+      "packet_sha256": "aaabfa71b84575313b750e3980a5766621e4eea76c376cae3df940cf0622e958",
+      "declared_artifact": ".harness/review/synaipse-cc2-next/release10-qa-handoff.md",
+      "artifact_sha256": "597f70f65c65eed62510fad3b72e0d85e6364abc503cac2e9758904f9338dc4b",
+      "status": "accepted",
+      "evidence_mode": "child_result"
+    },
+    {
+      "role": "Adversarial Review",
+      "result_path": ".harness/review/synaipse-cc2-next/release10-adv-result.json",
+      "result_sha256": "a18f8f07a689d611163825d1892c4bad968fb6854d0d132a031b9b55fc033495",
+      "packet_id": "pkt_cc2release10adv",
+      "packet_sha256": "4978dabda2dc8b964538695e9275f8679d12efc45f7c449210ff2d1b57c7cd40",
+      "declared_artifact": ".harness/review/synaipse-cc2-next/release10-adv-handoff.md",
+      "artifact_sha256": "87ceea8318d4232aec66ca5a0379e23194060b95f28f5b6c2fda4fc7e009dcb3",
+      "status": "blocked_runtime",
+      "evidence_mode": "deterministic_fallback",
+      "fallback_authority": "project_pm",
+      "fallback_reason": "child transport produced no artifact after one artifact-only recovery",
+      "patch_sha256": "98d650c6c407143f4386396ac675cdd3f000849c373630319e9e1efb28b5c801",
+      "artifact_probe_path": ".harness/review/synaipse-cc2-next/release10-adv-artifact-probe.json",
+      "artifact_probe_sha256": "ad6a08d941c4f13a2e40c285c86564d5754e8eb47545e95d6daa4968730dcca1",
+      "fallback_artifact_path": ".harness/review/synaipse-cc2-next/release10-adv-handoff.md",
+      "fallback_artifact_sha256": "87ceea8318d4232aec66ca5a0379e23194060b95f28f5b6c2fda4fc7e009dcb3",
+      "independent_child_verdict": false,
+      "recovery": {
+        "artifact_only_attempted": true,
+        "attempt_count": 1,
+        "outcome": "no_child_artifact",
+        "observed_at": "2026-07-20T23:49:47Z",
+        "evidence_path": ".harness/review/synaipse-cc2-next/release10-adv-handoff.md",
+        "evidence_sha256": "87ceea8318d4232aec66ca5a0379e23194060b95f28f5b6c2fda4fc7e009dcb3"
+      },
+      "fallback_eligibility": {
+        "failure_class": "child_transport",
+        "source_failure": false,
+        "rejected_findings": false,
+        "missing_authority": false,
+        "privacy_decision": false,
+        "scope_ambiguity": false
+      }
+    }
+  ],
+  "findings": [
+    {
+      "finding_id": "fd_cc2_rel10_adv_transport",
+      "signature": "cc2-rel10-adv-transport",
+      "source_refs": [
+        {"role": "Adversarial Review", "finding_id": "CC2-REL10-ADV-TRANSPORT"}
+      ],
+      "source_roles": ["Adversarial Review"],
+      "severity": "P1",
+      "classification": "environment_or_tooling",
+      "summary": "The Adversarial Review child transport emitted no artifact after the one permitted recovery.",
+      "evidence_refs": [
+        ".harness/review/synaipse-cc2-next/release10-adv-handoff.md",
+        ".harness/review/synaipse-cc2-next/release10-adv-artifact-probe.json"
+      ],
+      "reproduce_command": "ls -la /private/tmp/coding-harness-synaipse-cc2-release10-adv/.harness/review/synaipse-cc2-next",
+      "disposition": {
+        "kind": "defer",
+        "rationale": "The fallback is transport evidence only; preserve the blocker for the shared contract and keep hosted review and human acceptance separate.",
+        "owner": "Project PM",
+        "follow_up_boundary": "shared pm-finding-fan-in/v1 contract validation",
+        "commit": null,
+        "regression_proof": null,
+        "counter_evidence": null
+      }
+    }
+  ],
+  "outcome": "accepted_with_transport_fallback",
+  "claims_boundary": "This fan-in is local lifecycle evidence for target 8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8 and staged patch 98d650c6c407143f4386396ac675cdd3f000849c373630319e9e1efb28b5c801. Worker and QA have accepted child results; Adversarial Review is represented only by deterministic transport fallback and has no independent child verdict. The artifact does not prove hosted checks, hosted review, human acceptance, merge, release, deployment, cleanup, or production readiness.",
+  "final_status_line": "WROTE: .harness/review/synaipse-cc2-next/admitted-finding-fan-in.json"
+}

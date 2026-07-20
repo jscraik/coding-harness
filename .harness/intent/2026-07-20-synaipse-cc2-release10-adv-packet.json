@@ -1,0 +1,122 @@
+{
+  "schema_version": "pm-child-task-packet/v1",
+  "packet_id": "pkt_cc2release10adv",
+  "dispatch_id": "ch_cc2release10adv",
+  "turn_id": "turn_cc2release10adv98d650c6",
+  "dispatched_at": "2026-07-20T23:36:08Z",
+  "project_id": "coding-harness",
+  "job_id": "job_cc2release998d650c6",
+  "human_task_name": "SynAIpse CC2 release-9 Adversarial Review",
+  "role": "Adversarial Review",
+  "objective": "Adversarially challenge the accepted Worker and QA results for staged patch 98d650c6, seeking compatibility, boundary, projection, and decision-semantics counterexamples that could survive the nine-case QA matrix.",
+  "decision_frame": {
+    "value": "Find consequential hidden defects in the versioned context-failure contract, its old-reader projection, and decision stop semantics before fan-in.",
+    "why_now": "The consequential review plan requires a fresh adversarial pass after accepted Worker and QA evidence; the patch changes public failure-envelope and compatibility behavior.",
+    "acceptance_criteria": [
+      "Verify target and patch bindings plus Worker packet SHA aaabfa71b84575313b750e3980a5766621e4eea76c376cae3df940cf0622e958, Worker result SHA b8fc909fe6d23c97853d91a559baf31c53edfb5c438f9f864944c4e5edf70536, and QA result SHA 8e3aacd44ee40c01b1c3a5ea4b21f3628c306275c7649fd6d875d5e3e051ce2b.",
+      "Challenge optional versus required classification, lifecycle and stale-integrity blockers, repository mismatch, legacy contextUnknowns, public decision envelopes, and exact stop or continue conditions with counterexamples.",
+      "Check that schema validation, semantic validation, and compatibility readers cannot silently accept contradictory status, blocker, unknown, code, recovery, or nextAction combinations.",
+      "Return accepted only if no reproducible source or contract defect remains; otherwise reject with severity-ranked assertion-shaped evidence."
+    ],
+    "dependencies": [
+      "Accepted Worker result release9-worker-result.json SHA-256 b8fc909fe6d23c97853d91a559baf31c53edfb5c438f9f864944c4e5edf70536.",
+      "Accepted QA result release10-qa-result.json SHA-256 8e3aacd44ee40c01b1c3a5ea4b21f3628c306275c7649fd6d875d5e3e051ce2b.",
+      "Ratification note .harness/implementation-notes/2026-07-20-synaipse-cc2-optional-missing-contract-ratification.md."
+    ],
+    "risk_or_learning_target": "Expose compatibility boundary drift and invalid combinations that ordinary happy-path tests or a finite disposition matrix might miss.",
+    "smallest_increment": "One fresh read-only Adversarial Review lane."
+  },
+  "review_plan": {
+    "risk_level": "consequential",
+    "required_roles": ["Worker", "QA Disproof", "Adversarial Review"],
+    "adversarial_review_rationale": "Public versioned decision behavior and a compatibility migration require an independent adversarial pass after QA.",
+    "finding_fan_in": {
+      "required": true,
+      "artifact_path": ".harness/review/synaipse-cc2-next/admitted-finding-fan-in.json",
+      "schema": "operating-system/schemas/pm-finding-fan-in.v1.schema.json"
+    }
+  },
+  "non_goals": [
+    "Do not edit source, stage, commit, push, mutate hosted state, or infer later-lane readiness.",
+    "Do not treat Worker, QA, or Adversarial evidence as hosted review, acceptance, merge, release, or production readiness."
+  ],
+  "target": {
+    "repo_path": "/Users/jamiecraik/dev/coding-harness",
+    "worktree_path": "/private/tmp/coding-harness-synaipse-cc2-release10-adv",
+    "branch": "codex/synaipse-cc2",
+    "baseline_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+    "expected_target_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+    "preserved_output_ref": "patch:98d650c6c407143f4386396ac675cdd3f000849c373630319e9e1efb28b5c801",
+    "fresh_context_required": true
+  },
+  "instruction_provenance": {
+    "policy": "target_repo_instruction_chain_required",
+    "applicable_agents_md": [
+      "/private/tmp/coding-harness-synaipse-cc2-release10-adv/AGENTS.md",
+      "/private/tmp/coding-harness-synaipse-cc2-release10-adv/src/AGENTS.md"
+    ],
+    "codestyle_front_door": "/private/tmp/coding-harness-synaipse-cc2-release10-adv/CODESTYLE.md",
+    "triggered_skills": ["coding-harness"],
+    "validation_entrypoints": [
+      "pnpm boundary:unknown-guards",
+      "pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/context-plane.test.ts src/lib/decision/harness-decision.test.ts src/commands/next.test.ts src/dev/validate-harness-decision-failures.test.ts src/dev/runtime-packet-example-parity.test.ts --maxWorkers=1 --reporter=dot",
+      "node scripts/validate-runtime-packet-schemas.cjs --all",
+      "pnpm exec tsc --noEmit",
+      "pnpm run quality:self-affirming",
+      "pnpm run quality:size",
+      "git diff --cached --binary"
+    ],
+    "child_attestation_required": true,
+    "conflict_policy": "stop_and_report_blocked_instruction_context"
+  },
+  "authority": {
+    "accountable_owner": "project_pm",
+    "delegated_decision_rights": ["Run read-only Adversarial Review and write only declared review artifacts."],
+    "allowed_write_paths": [
+      ".harness/review/synaipse-cc2-next/release10-adv-handoff.md",
+      ".harness/review/synaipse-cc2-next/release10-adv-result.json"
+    ],
+    "forbidden_actions": ["source edits", "staging", "commit", "push", "PR mutation", "cleanup"],
+    "network_policy": "forbidden",
+    "external_mutation_allowed": false
+  },
+  "execution": {
+    "heartbeat_policy": "event_driven_material_change_only",
+    "progress_reporting_policy": "material_change_blocker_scope_risk_or_completion",
+    "control_measure_policy": "minimum_controls_for_risk_and_evidence",
+    "retry_budget": 1,
+    "decision_policy": "evidence_first_smallest_durable_fix",
+    "ambiguity_policy": "ask_project_pm_before_scope_expansion",
+    "drift_policy": "stop_preserve_evidence_report_project_pm",
+    "attestation_max_age_seconds": 900,
+    "future_skew_seconds": 60,
+    "stop_conditions": ["source mutation", "target SHA drift", "patch fingerprint drift", "Worker binding mismatch", "QA binding mismatch", "instruction conflict"]
+  },
+  "evidence": {
+    "expected_artifacts": [
+      ".harness/review/synaipse-cc2-next/release10-adv-handoff.md",
+      ".harness/review/synaipse-cc2-next/release10-adv-result.json"
+    ],
+    "instruction_attestation_artifact": ".harness/review/synaipse-cc2-next/release10-adv-handoff.md",
+    "artifact_probe": {
+      "receipt_path": ".harness/review/synaipse-cc2-next/release10-adv-artifact-probe.json",
+      "receipt_sha256": "ad6a08d941c4f13a2e40c285c86564d5754e8eb47545e95d6daa4968730dcca1",
+      "max_age_seconds": 300
+    },
+    "worktree_authority_preflight": {
+      "receipt_path": "/private/tmp/coding-harness-synaipse-cc2-next/.harness/review/synaipse-cc2-next/release10-adv-worktree-preflight.json",
+      "receipt_sha256": "bfa1bbae21594ca1d252a12b7dc1dc3c735bd9b887fbd570ccf834719c23ee1e",
+      "max_age_seconds": 900
+    },
+    "worktree_closeout": null,
+    "result_schema": "operating-system/schemas/pm-child-result.v1.schema.json",
+    "verdict_consistency_required": true,
+    "durable_preservation_required": true,
+    "final_status_line": "WROTE: <declared artifact path>"
+  },
+  "escalation": {
+    "first_owner": "project_pm",
+    "chief_condition": "project_pm_cannot_resolve_within_recorded_authority",
+    "operator_condition": "value_scope_taste_privacy_cost_or_irreversible_decision_required"
+  }
+}

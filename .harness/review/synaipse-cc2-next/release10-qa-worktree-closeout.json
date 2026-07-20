@@ -1,0 +1,18 @@
+{
+  "closeout_id": "wtc_88314e119ef54568bc6917a1cee5bc35",
+  "diagnostic": null,
+  "dispatch_id": "ch_cc2release10qa",
+  "git_registration_present": false,
+  "job_id": "job_cc2release998d650c6",
+  "observed_at": "2026-07-20T23:35:50.516244+00:00",
+  "project_id": "coding-harness",
+  "repo_path": "/Users/jamiecraik/dev/coding-harness",
+  "retain_until": null,
+  "retention_reason": null,
+  "schema_version": "pm-worktree-closeout/v1",
+  "status": "removed",
+  "target_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+  "turn_id": "turn_cc2release10qa98d650c6",
+  "worktree_path": "/private/tmp/coding-harness-synaipse-cc2-release10-qa",
+  "worktree_present": false
+}
