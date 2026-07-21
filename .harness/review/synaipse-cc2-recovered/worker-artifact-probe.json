@@ -1,0 +1,15 @@
+{
+	"schema_version": "pm-child-artifact-probe/v1",
+	"probe_id": "prb_cc2reco1",
+	"dispatch_id": "ch_cc2reco1",
+	"turn_id": "turn_cc2reco1",
+	"project_id": "coding-harness",
+	"job_id": "job_cc2reco1",
+	"role": "Worker",
+	"worktree_path": "/private/tmp/coding-harness-jsc-cc2-recovered",
+	"target_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+	"declared_artifact": ".harness/review/synaipse-cc2-recovered/worker-handoff.md",
+	"observed_at": "2026-07-21T13:59:31Z",
+	"write_status": "passed",
+	"cleanup_status": "retained"
+}

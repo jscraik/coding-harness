@@ -1,0 +1,19 @@
+{
+	"cleanup_status": "retained",
+	"diagnostic": null,
+	"dispatch_id": "ch_cc2reco1",
+	"git_metadata_path": "/Users/jamiecraik/dev/coding-harness/.git/worktrees",
+	"job_id": "job_cc2reco1",
+	"observed_at": "2026-07-21T13:59:31Z",
+	"preflight_id": "wtp_cc2reco1",
+	"probe_worktree_path": "/private/tmp/coding-harness-jsc-cc2-recovered",
+	"project_id": "coding-harness",
+	"repo_path": "/Users/jamiecraik/dev/coding-harness",
+	"role": "Worker",
+	"runtime_observed_at": "2026-07-21T13:59:31Z",
+	"schema_version": "pm-worktree-authority-preflight/v1",
+	"target_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+	"turn_id": "turn_cc2reco1",
+	"worktree_creation_status": "passed",
+	"worktree_path": "/private/tmp/coding-harness-jsc-cc2-recovered"
+}
