@@ -24,5 +24,9 @@
 	"src/lib/synaipse/context-failures.ts",
 	"src/lib/synaipse/context-plane.test.ts",
 	"src/lib/synaipse/context-plane.ts",
-	"src/lib/synaipse/context-resolution-input.ts"
+	"src/lib/synaipse/context-resolution-input.ts",
+	".diagram/agent.mmd",
+	".diagram/manifest.json",
+	".diagram/rag.mmd",
+	"AI/context/diagram-context.md"
 ]
