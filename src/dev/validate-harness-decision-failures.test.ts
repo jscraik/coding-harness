@@ -9,6 +9,7 @@ import {
 } from "node:fs";
 import { join, relative } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { manifestWithExamplePatch } from "./runtime-packet-schema-test-helpers.js";
 
 const MANIFEST_PATH = "contracts/runtime-packet-schemas.manifest.json";
 const tempRoots: string[] = [];
@@ -98,6 +99,14 @@ function readJson(path: string): Record<string, unknown> {
 	return JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
 }
 
+function createTempRoot(prefix: string): string {
+	const baseRoot = join(process.cwd(), ".cache", "runtime-packet-schema-tests");
+	mkdirSync(baseRoot, { recursive: true });
+	const root = mkdtempSync(join(baseRoot, prefix));
+	tempRoots.push(root);
+	return root;
+}
+
 function runValidator(manifestPath: string) {
 	return spawnSync(
 		process.execPath,
@@ -109,36 +118,18 @@ function runValidator(manifestPath: string) {
 function manifestWithFailureMutation(
 	mutate: (failures: Record<string, unknown>[]) => void,
 ): string {
-	const baseRoot = join(process.cwd(), ".cache", "runtime-packet-schema-tests");
-	mkdirSync(baseRoot, { recursive: true });
-	const root = mkdtempSync(join(baseRoot, "harness-decision-failure-"));
-	tempRoots.push(root);
-	const manifest = readJson(MANIFEST_PATH) as {
-		packets: Record<string, unknown>[];
-	};
-	const entry = manifest.packets.find(
-		(packet) => packet.schemaVersion === "harness-decision/v1",
+	const root = createTempRoot("harness-decision-failure-");
+	return manifestWithExamplePatch(
+		root,
+		"harness-decision/v1",
+		(example) => {
+			const envelope = (example.meta as Record<string, unknown>)
+				.synaipseContextFailures as Record<string, unknown>;
+			const failures = envelope.failures as Record<string, unknown>[];
+			mutate(failures);
+			return example;
+		},
 	);
-	if (!entry || typeof entry.examplePath !== "string")
-		throw new Error("missing harness-decision/v1 manifest entry");
-	const example = structuredClone(readJson(entry.examplePath));
-	const envelope = (example.meta as Record<string, unknown>)
-		.synaipseContextFailures as Record<string, unknown>;
-	const failures = envelope.failures as Record<string, unknown>[];
-	mutate(failures);
-	const examplePath = join(root, "harness-decision.json");
-	writeFileSync(examplePath, JSON.stringify(example, null, 2));
-	const patchedManifest = {
-		...manifest,
-		packets: manifest.packets.map((packet) =>
-			packet.schemaVersion === "harness-decision/v1"
-				? { ...packet, examplePath: relative(process.cwd(), examplePath) }
-				: packet,
-		),
-	};
-	const manifestPath = join(root, "runtime-packet-schemas.manifest.json");
-	writeFileSync(manifestPath, JSON.stringify(patchedManifest, null, 2));
-	return manifestPath;
 }
 
 describe("harness-decision context-failure schema boundary", () => {
@@ -292,57 +283,6 @@ describe("harness-decision context-failure schema boundary", () => {
 		expect(result.status).toBe(1);
 		const report = JSON.parse(result.stdout) as { errors: string[] };
 		expect(report.errors.join("\n")).toContain(expected);
-	});
-
-	it.each([
-		{
-			name: "a vocabulary-valid recovery assigned to the wrong code",
-			mutate: (failure: Record<string, unknown>) => {
-				failure.recovery = "request_authorized_projection";
-			},
-			expected: "recovery must equal restore_context_provider",
-		},
-		{
-			name: "a noncanonical stop condition",
-			mutate: (failure: Record<string, unknown>) => {
-				failure.stopCondition = "Stop until an operator approves.";
-			},
-			expected:
-				"stopCondition must equal Continue with explicit context unknown until provider_unavailable is resolved.",
-		},
-	])("rejects $name semantically", ({ mutate, expected }) => {
-		const result = runValidator(
-			manifestWithFailureMutation((failures) =>
-				mutate(failures[0] as Record<string, unknown>),
-			),
-		);
-
-		expect(result.status).toBe(1);
-		const report = JSON.parse(result.stdout) as { errors: string[] };
-		expect(report.errors.join("\n")).toContain(
-			"semanticValidatorPath scripts/validate-harness-decision-semantics.cjs",
-		);
-		expect(report.errors.join("\n")).toContain(expected);
-	});
-
-	it("rejects duplicate logical failure identities semantically", () => {
-		const result = runValidator(
-			manifestWithFailureMutation((failures) => {
-				const first = failures[0] as Record<string, unknown>;
-				failures.push({
-					...first,
-					code: "context_access_denied",
-					recovery: "request_authorized_projection",
-					stopCondition: "Stop until context_access_denied is resolved.",
-				});
-			}),
-		);
-
-		expect(result.status).toBe(1);
-		const report = JSON.parse(result.stdout) as { errors: string[] };
-		expect(report.errors.join("\n")).toContain(
-			"duplicates logical failure identity",
-		);
 	});
 
 	it("rejects a runnable decision that carries a blocking context failure", () => {

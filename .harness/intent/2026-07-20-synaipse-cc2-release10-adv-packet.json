@@ -13,7 +13,7 @@
 		"value": "Find consequential hidden defects in the versioned context-failure contract, its old-reader projection, and decision stop semantics before fan-in.",
 		"why_now": "The consequential review plan requires a fresh adversarial pass after accepted Worker and QA evidence; the patch changes public failure-envelope and compatibility behavior.",
 		"acceptance_criteria": [
-			"Verify target and patch bindings plus Worker packet SHA a3f3a62e384611207aa7216757b76969e32c3b190bae4a4c92937fc3ed0d3b79, Worker result SHA 15adb3eef736a82ed7d0c0cdea9fd24b8a1d34959ff71ea689b99ba817ab0564, and QA result SHA 9980b17282a7e006cc2a692d524f8a47c1aa194952deb3e442c1c13d65327bef.",
+			"Verify target and patch bindings plus Worker packet SHA b273ca14c8861b4278564554f4e201ff226fcb637bd7306f5b1797c9c4d2ce79, Worker result SHA 15adb3eef736a82ed7d0c0cdea9fd24b8a1d34959ff71ea689b99ba817ab0564, and QA result SHA 9980b17282a7e006cc2a692d524f8a47c1aa194952deb3e442c1c13d65327bef.",
 			"Challenge optional versus required classification, lifecycle and stale-integrity blockers, repository mismatch, legacy contextUnknowns, public decision envelopes, and exact stop or continue conditions with counterexamples.",
 			"Check that schema validation, semantic validation, and compatibility readers cannot silently accept contradictory status, blocker, unknown, code, recovery, or nextAction combinations.",
 			"Return accepted only if no reproducible source or contract defect remains; otherwise reject with severity-ranked assertion-shaped evidence."

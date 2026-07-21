@@ -6,13 +6,13 @@
 	"job_id": "job_cc2release998d650c6",
 	"observed_at": "2026-07-20T23:16:47.092246+00:00",
 	"project_id": "coding-harness",
-	"repo_path": "/Users/jamiecraik/dev/coding-harness",
+	"repo_path": "${REPO_PATH}",
 	"retain_until": null,
 	"retention_reason": null,
 	"schema_version": "pm-worktree-closeout/v1",
 	"status": "removed",
 	"target_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
 	"turn_id": "turn_cc2release9worker98d650c6",
-	"worktree_path": "/private/tmp/coding-harness-synaipse-cc2-release9-worker",
+	"worktree_path": "${WORKTREE_PATH}",
 	"worktree_present": false
 }

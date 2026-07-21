@@ -20,7 +20,7 @@ related_plan: docs/plans/2026-07-19-synaipse-clinical-delivery-convergence-plan.
 related_spec: docs/specs/2026-07-19-synaipse-clinical-delivery-convergence-spec.md
 status: active
 validated_by:
-  - pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/context-plane.test.ts src/commands/next.test.ts src/dev/validate-harness-decision-failures.test.ts --maxWorkers=1 --reporter=dot
+  - pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/context-plane.test.ts src/commands/next.test.ts src/dev/validate-harness-decision-failures.test.ts --maxWorkers=1 --reporter=dot -> pass
 depends_on:
   - .harness/implementation-notes/2026-07-19-synaipse-cc0-confirmed-brief.md
 ---

@@ -170,7 +170,7 @@ hosted CI or public pull requests. Before promotion, run the canonical focused
 proof `pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/context-plane.test.ts src/lib/synaipse/state.test.ts src/commands/next.test.ts --reporter=dot` and `pnpm check`; both must exit successfully, and any failure stops refresh or routing until repaired and rerun.
 The context-plane failure envelope is additive and versioned: optional
 provider, missing, or unresolved-host observations may remain explicit
-`contextUnknowns`, while lifecycle, access, stale-digest, and catalog failures
+`contextUnknowns`, while missing-required-context, lifecycle, access, stale-digest, and catalog failures
 remain blocking with canonical recovery and stop semantics. Keep that producer,
 parser, decision, legacy-reader, and runtime-packet compatibility matrix in the
 same contract lane so a public `next` result cannot describe a blocker as a

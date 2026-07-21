@@ -14,9 +14,9 @@
 	"status": "blocked_runtime",
 	"commands": [
 		{
-			"command": "test -f .harness/review/synaipse-cc2-next/release10-adv-handoff.md && test -f .harness/review/synaipse-cc2-next/release10-adv-result.json",
+			"command": "artifact probe and directory listing confirming no child handoff or result artifacts",
 			"outcome": "blocked",
-			"evidence": "Fresh Adversarial Review transport emitted no declared artifact after one artifact-only recovery; Project PM recorded deterministic fallback evidence."
+			"evidence": "Artifact probe .harness/review/synaipse-cc2-next/release10-adv-artifact-probe.json (SHA f3e79663252adaba53be17e119cedaf6c1ccd81998127d615dbf3eca5a98b2e3) confirmed child worktree creation but no declared artifacts after one artifact-only recovery; Project PM recorded deterministic fallback evidence."
 		},
 		{
 			"command": "shasum -a 256 /private/tmp/coding-harness-synaipse-cc2-next/.harness/intent/2026-07-20-synaipse-cc2-release10-adv-packet.json",

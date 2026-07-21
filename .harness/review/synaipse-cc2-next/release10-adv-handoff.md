@@ -17,7 +17,7 @@ an independent Adversarial Review verdict.
 
 ## Exact evidence
 
-- Command: `test -f .harness/review/synaipse-cc2-next/release10-adv-handoff.md && test -f .harness/review/synaipse-cc2-next/release10-adv-result.json` -> blocked (no child artifacts after initial dispatch and one artifact-only recovery)
+- Command: artifact probe and directory listing confirming no child handoff or result artifacts -> blocked (artifact probe release10-adv-artifact-probe.json shows write_status:passed but no declared artifacts were found in child worktree after initial dispatch and one artifact-only recovery)
 - Command: `shasum -a 256 /private/tmp/coding-harness-synaipse-cc2-next/.harness/intent/2026-07-20-synaipse-cc2-release10-adv-packet.json` -> pass (4d54d647b30b8ffb87167fe4e4545109ddf53955b129e064aa4327fa04c992bb)
 - Command: `shasum -a 256 /private/tmp/coding-harness-synaipse-cc2-next/.harness/review/synaipse-cc2-next/release10-adv-artifact-probe.json` -> pass (f3e79663252adaba53be17e119cedaf6c1ccd81998127d615dbf3eca5a98b2e3)
 - Command: `git rev-parse HEAD` -> pass (8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8)

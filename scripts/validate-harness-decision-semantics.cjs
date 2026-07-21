@@ -42,6 +42,13 @@ function validateFailureShape(failure, path) {
 }
 
 function isNonBlockingOptional(failure) {
+	if (
+		failure == null ||
+		typeof failure !== "object" ||
+		Array.isArray(failure)
+	) {
+		return false;
+	}
 	return (
 		failure.requirement === "optional" &&
 		new Set([
