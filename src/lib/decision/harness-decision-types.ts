@@ -1,4 +1,5 @@
 import type { HeValidationError } from "./validators.js";
+import type { SynaipseContextFailureEnvelope } from "../synaipse/context-failures.js";
 
 /** Schema version for the first agent-native decision envelope. */
 export const HARNESS_DECISION_SCHEMA_VERSION = "harness-decision/v1" as const;
@@ -136,6 +137,8 @@ export interface HarnessDecisionMeta extends Record<string, unknown> {
 	execution?: HarnessDecisionExecutionMetadata;
 	/** Additive effects of the later recommended action. */
 	recommendationEffects?: HarnessDecisionRecommendationEffects;
+	/** Additive, versioned context-resolution failures; absent for legacy input. */
+	synaipseContextFailures?: SynaipseContextFailureEnvelope;
 }
 
 /** Optional operational metadata carried in `HarnessDecision.meta`. */

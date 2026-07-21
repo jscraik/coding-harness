@@ -123,7 +123,80 @@
 			"enum": ["low", "medium", "high", "critical", "unknown"]
 		},
 		"meta": {
-			"type": "object"
+			"type": "object",
+			"properties": {
+				"synaipseContextFailures": {
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["schemaVersion", "failures"],
+					"properties": {
+						"schemaVersion": {
+							"const": "synaipse-context-failure-envelope/v1"
+						},
+						"failures": {
+							"type": "array",
+							"minItems": 1,
+							"uniqueItems": true,
+							"items": {
+								"type": "object",
+								"additionalProperties": false,
+								"required": [
+									"code",
+									"requirement",
+									"recovery",
+									"owner",
+									"stopCondition",
+									"evidenceRefs",
+									"freshness"
+								],
+								"properties": {
+									"code": {
+										"enum": [
+											"missing_project_identity",
+											"missing_context_catalog",
+											"missing_required_context",
+											"context_access_denied",
+											"stale_context_digest",
+											"superseded_context",
+											"malformed_context_catalog",
+											"provider_unavailable",
+											"unresolved_host_path"
+										]
+									},
+									"requirement": { "enum": ["required", "optional"] },
+									"contextId": {
+										"type": ["string", "null"],
+										"pattern": "^ch_context_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
+									},
+									"recovery": { "type": "string", "minLength": 1 },
+									"owner": { "type": "string", "minLength": 1 },
+									"stopCondition": { "type": "string", "minLength": 1 },
+									"evidenceRefs": {
+										"type": "array",
+										"minItems": 1,
+										"uniqueItems": true,
+										"items": { "type": "string", "minLength": 1 }
+									},
+									"freshness": {
+										"type": "object",
+										"additionalProperties": false,
+										"required": ["status", "observedAt"],
+										"properties": {
+											"status": {
+												"enum": ["current", "stale", "unknown"]
+											},
+											"observedAt": {
+												"type": "string",
+												"format": "date-time"
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 }

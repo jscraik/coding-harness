@@ -182,6 +182,40 @@ describe("SynAIpse universal context plane", () => {
 		});
 	});
 
+	it("keeps optional omission legacy-only while requiring a canonical required failure", () => {
+		const optional = resolveSynaipseContext(
+			resolutionInput([contextRef({ requirement: "optional" })], []),
+		);
+		expect(optional).toMatchObject({
+			status: "resolved",
+			unknownContextIds: [SPEC_ID],
+			unknowns: [{ contextId: SPEC_ID, reason: "missing_context" }],
+			blockers: [],
+		});
+		expect(optional.contextFailures).toBeUndefined();
+
+		const required = resolveSynaipseContext(
+			resolutionInput([contextRef()], []),
+		);
+		expect(required).toMatchObject({
+			status: "blocked",
+			unknownContextIds: [],
+			unknowns: [],
+			blockers: [{ code: "missing_context", contextId: SPEC_ID }],
+			contextFailures: {
+				schemaVersion: "synaipse-context-failure-envelope/v1",
+				failures: [
+					{
+						code: "missing_required_context",
+						requirement: "required",
+						contextId: SPEC_ID,
+						recovery: "supply_required_context",
+					},
+				],
+			},
+		});
+	});
+
 	it("blocks optional context when its admitted digest is stale", () => {
 		const input = resolutionInput(
 			[contextRef({ requirement: "optional" })],
@@ -349,6 +383,89 @@ describe("SynAIpse universal context plane", () => {
 				blockers: [],
 			});
 		}
+	});
+
+	it.each([
+		{
+			name: "missing required context",
+			input: () => resolutionInput([contextRef()], []),
+			code: "missing_required_context",
+		},
+		{
+			name: "access denial",
+			input: () => {
+				const input = resolutionInput();
+				input.acceptedAuthorities = ["accepted_task_contract"];
+				return input;
+			},
+			code: "context_access_denied",
+		},
+		{
+			name: "stale digest",
+			input: () => {
+				const input = resolutionInput();
+				input.observations = [
+					{
+						contextId: SPEC_ID,
+						status: "available",
+						digest: `sha256:${"b".repeat(64)}`,
+					},
+				];
+				return input;
+			},
+			code: "stale_context_digest",
+		},
+		{
+			name: "superseded context",
+			input: () =>
+				resolutionInput([
+					contextRef({
+						lifecycle: {
+							status: "superseded",
+							supersededBy: "ch_context_Q6PV8R3N5ZWA",
+						},
+					}),
+				]),
+			code: "superseded_context",
+		},
+		{
+			name: "provider unavailable",
+			input: () =>
+				resolutionInput(
+					[contextRef()],
+					[{ contextId: SPEC_ID, status: "provider_unavailable" }],
+				),
+			code: "provider_unavailable",
+		},
+		{
+			name: "unresolved host path",
+			input: () =>
+				resolutionInput(
+					[contextRef()],
+					[{ contextId: SPEC_ID, status: "unresolved_host_path" }],
+				),
+			code: "unresolved_host_path",
+		},
+	] as const)("emits the canonical envelope for $name", ({ input, code }) => {
+		const result = resolveSynaipseContext(input());
+
+		expect(result.contextFailures).toMatchObject({
+			schemaVersion: "synaipse-context-failure-envelope/v1",
+			failures: [
+				{
+					code,
+					contextId: SPEC_ID,
+					recovery: expect.any(String),
+					owner: "synaipse-context-plane",
+					stopCondition: expect.any(String),
+					evidenceRefs: [`context:${SPEC_ID}`],
+					freshness: {
+						status: expect.any(String),
+						observedAt: NOW,
+					},
+				},
+			],
+		});
 	});
 
 	it("blocks task-admitted context that is absent from the catalog", () => {
