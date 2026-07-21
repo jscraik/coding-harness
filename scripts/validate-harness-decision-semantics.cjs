@@ -101,6 +101,27 @@ function validateContextFailureIdentities(candidate) {
 	return errors;
 }
 
+function validateContextFailureDecisionCoupling(candidate) {
+	const failures = candidate?.meta?.synaipseContextFailures?.failures;
+	if (!Array.isArray(failures)) return [];
+	const hasBlockingFailure = failures.some(
+		(failure) => !isNonBlockingOptional(failure),
+	);
+	const hasRunnableNextCommand =
+		typeof candidate?.nextCommand === "string" &&
+		candidate.nextCommand.trim().length > 0;
+	const isTerminalDecision =
+		candidate?.status === "blocked" ||
+		candidate?.status === "fail" ||
+		!hasRunnableNextCommand;
+	if (hasBlockingFailure && !isTerminalDecision) {
+		return [
+			"meta.synaipseContextFailures blocking failures require terminal decision status or no runnable next command",
+		];
+	}
+	return [];
+}
+
 function main() {
 	const inputPath = process.argv[2];
 	if (!inputPath) {
@@ -120,7 +141,10 @@ function main() {
 		process.exitCode = 2;
 		return;
 	}
-	const errors = validateContextFailureIdentities(candidate);
+	const errors = [
+		...validateContextFailureIdentities(candidate),
+		...validateContextFailureDecisionCoupling(candidate),
+	];
 	process.stdout.write(
 		`${JSON.stringify({ schemaVersion: "harness-decision-semantic-validation/v1", status: errors.length === 0 ? "pass" : "fail", errors }, null, 2)}\n`,
 	);
@@ -129,4 +153,7 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { validateContextFailureIdentities };
+module.exports = {
+	validateContextFailureDecisionCoupling,
+	validateContextFailureIdentities,
+};

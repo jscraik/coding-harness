@@ -33,6 +33,12 @@ import {
 import { parseSynaipseContextFailureEnvelope } from "../synaipse/context-failures.js";
 import { SynaipseContextContractError } from "../synaipse/context-contract.js";
 
+const NON_BLOCKING_OPTIONAL_CONTEXT_FAILURE_CODES = new Set([
+	"missing_optional_context",
+	"provider_unavailable",
+	"unresolved_host_path",
+]);
+
 /** Check whether an unknown value is a non-empty string array. */
 function isStringArray(value: unknown): value is string[] {
 	return (
@@ -117,6 +123,41 @@ function validateDecisionRoutingConsistency(
 	validateTerminalFailureClass(value, errors);
 	validateCommandSafety(value, errors);
 	validateMissingCommandGuidance(value, errors);
+	validateContextFailureDecisionCoupling(value, errors);
+}
+
+/** Prevent blocking context failures from being downgraded to runnable decisions. */
+function validateContextFailureDecisionCoupling(
+	value: Record<string, unknown>,
+	errors: HeValidationError[],
+): void {
+	if (!isRecord(value.meta) || !isRecord(value.meta.synaipseContextFailures))
+		return;
+	const failures = value.meta.synaipseContextFailures.failures;
+	if (!Array.isArray(failures)) return;
+	const hasBlockingFailure = failures.some((failure) => {
+		if (!isRecord(failure)) return true;
+		return !(
+			failure.requirement === "optional" &&
+			typeof failure.code === "string" &&
+			NON_BLOCKING_OPTIONAL_CONTEXT_FAILURE_CODES.has(failure.code)
+		);
+	});
+	const hasRunnableNextCommand =
+		typeof value.nextCommand === "string" &&
+		value.nextCommand.trim().length > 0;
+	const isTerminalDecision =
+		value.status === "blocked" ||
+		value.status === "fail" ||
+		!hasRunnableNextCommand;
+	if (hasBlockingFailure && !isTerminalDecision) {
+		errors.push(
+			toValidationError(
+				"blocking context failures require terminal decision status or no runnable next command",
+				"meta.synaipseContextFailures",
+			),
+		);
+	}
 }
 
 /** Validate optional operational metadata on a HarnessDecision. */

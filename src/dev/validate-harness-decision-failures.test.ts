@@ -13,10 +13,13 @@ import { afterEach, describe, expect, it } from "vitest";
 const MANIFEST_PATH = "contracts/runtime-packet-schemas.manifest.json";
 const tempRoots: string[] = [];
 const require = createRequire(import.meta.url);
-const { validateContextFailureIdentities } =
-	require("../../scripts/validate-harness-decision-semantics.cjs") as {
-		validateContextFailureIdentities: (candidate: unknown) => string[];
-	};
+const {
+	validateContextFailureDecisionCoupling,
+	validateContextFailureIdentities,
+} = require("../../scripts/validate-harness-decision-semantics.cjs") as {
+	validateContextFailureIdentities: (candidate: unknown) => string[];
+	validateContextFailureDecisionCoupling: (candidate: unknown) => string[];
+};
 
 const FAILURE_MAPPING_FIXTURES = [
 	[
@@ -339,6 +342,28 @@ describe("harness-decision context-failure schema boundary", () => {
 		const report = JSON.parse(result.stdout) as { errors: string[] };
 		expect(report.errors.join("\n")).toContain(
 			"duplicates logical failure identity",
+		);
+	});
+
+	it("rejects a runnable decision that carries a blocking context failure", () => {
+		const failure = {
+			code: "missing_required_context",
+			requirement: "required",
+			contextId: "ch_context_7K4M2P9QX3DR",
+			recovery: "supply_required_context",
+			owner: "synaipse-context-plane",
+			stopCondition: "Stop until missing_required_context is resolved.",
+			evidenceRefs: ["context:fixture"],
+			freshness: { status: "current", observedAt: "2026-07-20T00:00:00Z" },
+		};
+		const errors = validateContextFailureDecisionCoupling({
+			status: "action_required",
+			nextCommand: "harness check --json",
+			meta: { synaipseContextFailures: { failures: [failure] } },
+		});
+
+		expect(errors).toContain(
+			"meta.synaipseContextFailures blocking failures require terminal decision status or no runnable next command",
 		);
 	});
 });
