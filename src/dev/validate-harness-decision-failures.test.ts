@@ -3,7 +3,6 @@ import { createRequire } from "node:module";
 import {
 	mkdirSync,
 	mkdtempSync,
-	readFileSync,
 	rmSync,
 } from "node:fs";
 import { join } from "node:path";
