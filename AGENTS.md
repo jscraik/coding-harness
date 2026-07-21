@@ -68,6 +68,11 @@ truth.
   must resolve CLI before target cwd, reject target-contained outputs, sanitize
   inherited Git state, preserve target Git/per-probe outcomes; none prove
   validation, approval, CI, acceptance, release, or merge readiness.
+- SynAIpse context resolution uses the additive
+  `synaipse-context-failure-envelope/v1` for identified failures. Keep
+  `contextUnknowns` limited to optional `ch_context` failures until an explicit
+  versioned migration; unknown envelope versions and undeclared fields fail
+  closed.
 - Treat repeated steering, review feedback, workflow misses, and recurring
   failures as system evidence. Route the durable correction to the smallest
   validator, schema, fixture, wrapper, instruction, or skill. Steering that
