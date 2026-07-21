@@ -1,0 +1,82 @@
+{
+  "schema_version": "pm-child-task-packet/v1",
+  "packet_id": "pkt_cc2qa001",
+  "dispatch_id": "ch_cc2qa001",
+  "turn_id": "turn_cc2qa001",
+  "dispatched_at": "2026-07-21T15:18:00Z",
+  "project_id": "coding-harness",
+  "job_id": "job_cc2qa001",
+  "human_task_name": "SynAIpse CC2 exact admitted patch QA disproof",
+  "role": "QA Disproof",
+  "objective": "Independently disprove the exact admitted CC2 source patch for producer-reader compatibility, failure-envelope semantics, and decision-stop behavior without editing source or Git.",
+  "decision_frame": {
+    "value": "Obtain fresh independent QA Disproof evidence against the exact target and staged patch pair.",
+    "why_now": "The Worker accepted the reconstructed exact admitted patch; the consequential review plan requires a fresh independent disproof lane before fan-in.",
+    "acceptance_criteria": [
+      "HEAD remains 8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8 and the staged patch digest remains 1d4ed517e6cdf2cdee3065c812049cfa91befc60d3e172dbbb3442aed4665afe.",
+      "Run focused disproof tests and inspect the public schema, canonical producers, readers, parser, semantic validator, and legacy compatibility.",
+      "Return accepted only when no reproducible source or contract defect remains; otherwise return rejected with assertion-shaped findings.",
+      "Write the declared pm-child-result/v1 artifact and handoff, binding the Worker result SHA 479de4531c6eedf6139aaedb1ae649e64d7c43246b8235d12dd1987afe9309e0."
+    ],
+    "dependencies": ["Worker result SHA 479de4531c6eedf6139aaedb1ae649e64d7c43246b8235d12dd1987afe9309e0."],
+    "risk_or_learning_target": "Prevent a same-agent or stale-head review from being counted as independent disproof.",
+    "smallest_increment": "One fresh read-only QA disproof review against the exact target/staged-patch pair."
+  },
+  "review_plan": {
+    "risk_level": "consequential",
+    "required_roles": ["Worker", "QA Disproof", "Adversarial Review"],
+    "adversarial_review_rationale": "CC2 changes a public versioned failure envelope and compatibility readers, so independent disproof and adversarial review are required before any source commit.",
+    "finding_fan_in": {"required": true, "artifact_path": ".harness/review/synaipse-cc2-recovered/finding-fan-in.json", "schema": "operating-system/schemas/pm-finding-fan-in.v1.schema.json"}
+  },
+  "non_goals": ["Do not edit source, tests, contracts, packets, or existing evidence.", "Do not stage, commit, push, create or update a PR, mutate hosted state, or clean any worktree.", "Do not claim Worker acceptance, Adversarial Review, fan-in, hosted checks, hosted review, human acceptance, merge, release, or production readiness."],
+  "target": {
+    "repo_path": "/Users/jamiecraik/dev/coding-harness",
+    "worktree_path": "/private/tmp/coding-harness-jsc-cc2-recovered-qa",
+    "branch": "codex/synaipse-cc2-recovered-qa",
+    "baseline_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+    "expected_target_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+    "preserved_output_ref": "patch:1d4ed517e6cdf2cdee3065c812049cfa91befc60d3e172dbbb3442aed4665afe",
+    "fresh_context_required": true
+  },
+  "instruction_provenance": {
+    "policy": "target_repo_instruction_chain_required",
+    "applicable_agents_md": ["/private/tmp/coding-harness-jsc-cc2-recovered-qa/AGENTS.md", "/private/tmp/coding-harness-jsc-cc2-recovered-qa/contracts/AGENTS.md", "/private/tmp/coding-harness-jsc-cc2-recovered-qa/src/AGENTS.md"],
+    "codestyle_front_door": "/private/tmp/coding-harness-jsc-cc2-recovered-qa/CODESTYLE.md",
+    "triggered_skills": ["coding-harness"],
+    "validation_entrypoints": ["MISE_NO_CONFIG=1 pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/context-plane.test.ts src/lib/decision/harness-decision.test.ts src/commands/next.test.ts --maxWorkers=1 --reporter=dot", "MISE_NO_CONFIG=1 node scripts/validate-runtime-packet-schemas.cjs --all", "MISE_NO_CONFIG=1 pnpm boundary:unknown-guards", "MISE_NO_CONFIG=1 pnpm exec tsc --noEmit", "MISE_NO_CONFIG=1 pnpm run quality:docstrings", "MISE_NO_CONFIG=1 pnpm run quality:size", "git diff --cached --binary | shasum -a 256"],
+    "child_attestation_required": true,
+    "conflict_policy": "stop_and_report_blocked_instruction_context"
+  },
+  "authority": {
+    "accountable_owner": "project_pm",
+    "delegated_decision_rights": ["Run read-only review commands and write only the declared QA artifacts."],
+    "allowed_write_paths": [".harness/review/synaipse-cc2-recovered-qa/qa-handoff.md", ".harness/review/synaipse-cc2-recovered-qa/qa-result.json"],
+    "forbidden_actions": ["source mutation", "staging", "commit", "push", "PR mutation", "hosted mutation", "cleanup"],
+    "network_policy": "forbidden",
+    "external_mutation_allowed": false
+  },
+  "execution": {
+    "heartbeat_policy": "event_driven_material_change_only",
+    "progress_reporting_policy": "material_change_blocker_scope_risk_or_completion",
+    "control_measure_policy": "minimum_controls_for_risk_and_evidence",
+    "retry_budget": 1,
+    "decision_policy": "evidence_first_smallest_durable_fix",
+    "ambiguity_policy": "ask_project_pm_before_scope_expansion",
+    "drift_policy": "stop_preserve_evidence_report_project_pm",
+    "attestation_max_age_seconds": 900,
+    "future_skew_seconds": 60,
+    "stop_conditions": ["source mutation", "target SHA drift", "patch fingerprint drift", "instruction conflict", "validation blocker"]
+  },
+  "evidence": {
+    "expected_artifacts": [".harness/review/synaipse-cc2-recovered-qa/qa-handoff.md", ".harness/review/synaipse-cc2-recovered-qa/qa-result.json"],
+    "instruction_attestation_artifact": ".harness/review/synaipse-cc2-recovered-qa/qa-handoff.md",
+    "artifact_probe": {"receipt_path": ".harness/review/synaipse-cc2-recovered-qa/worker-artifact-probe.json", "receipt_sha256": "307871071109f30abc3a2701bf38a64c472c9fe82dbe788b6b8b9d55eb5fe7ad", "max_age_seconds": 300},
+    "worktree_authority_preflight": {"receipt_path": ".harness/review/synaipse-cc2-recovered-qa/qa-worktree-preflight.json", "receipt_sha256": "4aa5d48c2302e7fdb74687433ba0080003df975b03df528bd9e650de794a130e", "max_age_seconds": 900},
+    "worktree_closeout": null,
+    "result_schema": "operating-system/schemas/pm-child-result.v1.schema.json",
+    "verdict_consistency_required": true,
+    "durable_preservation_required": true,
+    "final_status_line": "WROTE: <declared artifact path>"
+  },
+  "escalation": {"first_owner": "project_pm", "chief_condition": "project_pm_cannot_resolve_within_recorded_authority", "operator_condition": "value_scope_taste_privacy_cost_or_irreversible_decision_required"}
+}

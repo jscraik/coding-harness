@@ -8,6 +8,7 @@ import {
 	gitSha,
 	repositorySlug,
 } from "./context-contract.js";
+import { parseSynaipseContextFailureEnvelope } from "./context-failures.js";
 import { resolveSynaipseContext } from "./context-plane.js";
 
 type Schema = {
@@ -32,6 +33,126 @@ function accepts(parser: (value: string) => unknown, value: string): boolean {
 }
 
 describe("SynAIpse context format parity", () => {
+	it("accepts the versioned failure envelope and rejects ambiguous new output", () => {
+		const envelope = {
+			schemaVersion: "synaipse-context-failure-envelope/v1",
+			failures: [
+				{
+					code: "missing_required_context",
+					requirement: "required",
+					contextId: "ch_context_7K4M2P9QX3DR",
+					recovery: "supply_required_context",
+					owner: "synaipse-context-plane",
+					stopCondition: "Stop until missing_required_context is resolved.",
+					evidenceRefs: ["context:ch_context_7K4M2P9QX3DR"],
+					freshness: {
+						status: "current",
+						observedAt: "2026-07-13T22:00:00Z",
+					},
+				},
+			],
+		};
+
+		expect(parseSynaipseContextFailureEnvelope(envelope)).toEqual(envelope);
+		expect(() =>
+			parseSynaipseContextFailureEnvelope({
+				...envelope,
+				schemaVersion: "synaipse-context-failure-envelope/v2",
+			}),
+		).toThrow("must be synaipse-context-failure-envelope/v1");
+		expect(() =>
+			parseSynaipseContextFailureEnvelope({
+				...envelope,
+				failures: [
+					{
+						...envelope.failures[0],
+						unexpected: true,
+					},
+				],
+			}),
+		).toThrow("must not contain unknown properties");
+	});
+
+	it("rejects missing-required failures that claim optional context", () => {
+		expect(() =>
+			parseSynaipseContextFailureEnvelope({
+				schemaVersion: "synaipse-context-failure-envelope/v1",
+				failures: [
+					{
+						code: "missing_required_context",
+						requirement: "optional",
+						contextId: "ch_context_7K4M2P9QX3DR",
+						recovery: "supply_required_context",
+						owner: "synaipse-context-plane",
+						stopCondition: "Stop until missing_required_context is resolved.",
+						evidenceRefs: ["context:ch_context_7K4M2P9QX3DR"],
+						freshness: {
+							status: "current",
+							observedAt: "2026-07-13T22:00:00Z",
+						},
+					},
+				],
+			}),
+		).toThrow("missing_required_context must be required");
+	});
+
+	it("rejects contradictory failures for one logical context", () => {
+		const contextId = "ch_context_7K4M2P9QX3DR";
+		const failure = {
+			requirement: "required" as const,
+			contextId,
+			recovery: "supply_required_context",
+			owner: "synaipse-context-plane",
+			stopCondition: "Stop until the context failure is resolved.",
+			evidenceRefs: [`context:${contextId}`],
+			freshness: {
+				status: "current" as const,
+				observedAt: "2026-07-13T22:00:00Z",
+			},
+		};
+		expect(() =>
+			parseSynaipseContextFailureEnvelope({
+				schemaVersion: "synaipse-context-failure-envelope/v1",
+				failures: [
+					{ ...failure, code: "missing_required_context" },
+					{
+						...failure,
+						code: "provider_unavailable",
+						requirement: "optional",
+						recovery: "restore_context_provider",
+					},
+				],
+			}),
+		).toThrow("must not duplicate an earlier item");
+	});
+
+	it.each([
+		"missing_project_identity",
+		"missing_context_catalog",
+		"malformed_context_catalog",
+	] as const)("rejects catalog failure %s with a context ID", (code) => {
+		expect(() =>
+			parseSynaipseContextFailureEnvelope({
+				schemaVersion: "synaipse-context-failure-envelope/v1",
+				failures: [
+					{
+						code,
+						requirement: "required",
+						contextId: "ch_context_7K4M2P9QX3DR",
+						recovery: "repair_context_contract",
+						owner: "synaipse-context-plane",
+						stopCondition: `Stop until ${code} is resolved.`,
+						evidenceRefs: ["context:catalog"],
+						freshness: {
+							status: "unknown",
+							observedAt: "2026-07-13T22:00:00Z",
+						},
+					},
+				],
+			}),
+		).toThrow(`${code} must not identify a logical context`);
+	});
+
 	it("validates complete documents through the schema gate and public parser", () => {
 		const schemaGate = JSON.parse(
 			execFileSync(

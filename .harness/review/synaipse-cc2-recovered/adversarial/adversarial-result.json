@@ -1,0 +1,80 @@
+{
+	"schema_version": "pm-child-result/v1",
+	"packet_id": "pkt_cc2adv001",
+	"packet_sha256": "8b9b1d20160c5580424634107b8551ff0628b2bd0ddf7fe6dca93c55d47f235b",
+	"dispatch_id": "ch_cc2adv001",
+	"turn_id": "turn_cc2adv001",
+	"project_id": "coding-harness",
+	"job_id": "job_cc2adv001",
+	"role": "Adversarial Review",
+	"declared_artifact": ".harness/review/synaipse-cc2-recovered-adv/adversarial-handoff.md",
+	"artifact_sha256": "e45e493cde375da1b585c40c7b388dedc446ddef8741fcac4d2e6376f0357e97",
+	"baseline_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+	"target_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+	"status": "accepted",
+	"commands": [
+		{
+			"command": "MISE_NO_CONFIG=1 pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/context-plane.test.ts src/lib/decision/harness-decision.test.ts src/commands/next.test.ts --maxWorkers=1 --reporter=dot",
+			"outcome": "pass",
+			"evidence": "4 files and 134 tests passed."
+		},
+		{
+			"command": "MISE_NO_CONFIG=1 node scripts/validate-runtime-packet-schemas.cjs --all",
+			"outcome": "pass",
+			"evidence": "28 runtime packet schemas passed with no errors."
+		},
+		{
+			"command": "MISE_NO_CONFIG=1 pnpm boundary:unknown-guards",
+			"outcome": "pass",
+			"evidence": "52 baselined boundary unknown guards; no new entries."
+		},
+		{
+			"command": "MISE_NO_CONFIG=1 pnpm exec tsc --noEmit",
+			"outcome": "pass",
+			"evidence": "Completed with no diagnostics."
+		},
+		{
+			"command": "MISE_NO_CONFIG=1 pnpm run quality:docstrings",
+			"outcome": "pass",
+			"evidence": "8 production/public API files checked; documentation present."
+		},
+		{
+			"command": "MISE_NO_CONFIG=1 pnpm run quality:size",
+			"outcome": "pass",
+			"evidence": "8 production files and 3 test files checked; limits passed."
+		},
+		{
+			"command": "MISE_NO_CONFIG=1 pnpm exec tsx -e 'import {parseSynaipseContextFailureEnvelope} from \"./src/lib/synaipse/context-failures.ts\"; import {validateHarnessDecision} from \"./src/lib/decision/harness-decision.ts\"; const f={code:\"missing_required_context\",requirement:\"required\",contextId:\"ch_context_7K4M2P9QX3DR\",recovery:\"supply_required_context\",owner:\"synaipse-context-plane\",stopCondition:\"Stop until missing_required_context is resolved.\",evidenceRefs:[\"context:ch_context_7K4M2P9QX3DR\"],freshness:{status:\"current\",observedAt:\"2026-07-13T22:00:00Z\"}}; const envelope={schemaVersion:\"synaipse-context-failure-envelope/v1\",failures:[f]}; if (parseSynaipseContextFailureEnvelope(envelope).failures.length!==1) throw new Error(\"valid envelope was not accepted\"); for (const bad of [{...envelope,schemaVersion:\"synaipse-context-failure-envelope/v2\"},{...envelope,failures:[{...f,unexpected:true}]},{...envelope,failures:[{...f,requirement:\"optional\"}]}]) { let rejected=false; try {parseSynaipseContextFailureEnvelope(bad)} catch {rejected=true}; if(!rejected) throw new Error(\"malformed envelope was accepted\"); } const legacy={schemaVersion:\"harness-decision/v1\",producer:\"next\",status:\"pass\",summary:\"legacy\",nextAction:\"none\",nextCommand:null,phase:\"handoff\",objective:\"legacy\",requiredEvidence:[\"git:status\"],stopConditions:[\"none\"],humanEscalation:null,followUpCommands:[],hiddenPlumbing:[],safeToRun:false,requiresHuman:false,requiresNetwork:false,writesFiles:false,evidenceRef:[\"git:status\"],failureClass:null,retry:\"safe\",riskTier:\"low\",meta:{}}; if(!validateHarnessDecision(legacy).valid) throw new Error(\"legacy decision rejected\"); const malformed={...legacy,meta:{synaipseContextFailures:{...envelope,schemaVersion:\"v2\"}}}; if(validateHarnessDecision(malformed).valid) throw new Error(\"malformed additive envelope accepted\"); console.log(\"adversarial parser/reader checks pass\");'",
+			"outcome": "pass",
+			"evidence": "Valid envelope accepted; unsupported version, unknown property, contradictory requirement, and malformed additive envelope rejected; legacy decision accepted."
+		},
+		{
+			"command": "MISE_NO_CONFIG=1 /opt/homebrew/bin/python3 - <<'PY'\nimport json\nfrom pathlib import Path\nfrom jsonschema import Draft202012Validator\npacket_path=Path('.harness/intent/2026-07-21-synaipse-cc2-recovered-adv-packet.json')\nschema_path=Path('/Users/jamiecraik/dev/jamie-brain/operating-system/schemas/pm-child-task-packet.v1.schema.json')\npacket=json.loads(packet_path.read_text()); schema=json.loads(schema_path.read_text())\nerrors=sorted(Draft202012Validator(schema).iter_errors(packet), key=lambda e:list(e.path))\nif errors:\n    print('FAIL'); [print(list(e.path),e.message) for e in errors]; raise SystemExit(1)\nprint('PASS pm-child-task-packet/v1 valid')\nPY",
+			"outcome": "pass",
+			"evidence": "Adversarial packet is schema-valid."
+		},
+		{
+			"command": "git diff --cached --binary | shasum -a 256",
+			"outcome": "pass",
+			"evidence": "1d4ed517e6cdf2cdee3065c812049cfa91befc60d3e172dbbb3442aed4665afe."
+		},
+		{
+			"command": "git rev-parse HEAD",
+			"outcome": "pass",
+			"evidence": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8."
+		},
+		{
+			"command": "git diff --cached --check",
+			"outcome": "pass",
+			"evidence": "No whitespace diagnostics."
+		},
+		{
+			"command": "git status --short --branch",
+			"outcome": "pass",
+			"evidence": "Target and staged patch remained unchanged; only declared packet and review artifacts are untracked."
+		}
+	],
+	"findings": [],
+	"claims_boundary": "Fresh independent Adversarial Review local proof for the exact target/staged-patch pair only. No Worker or QA acceptance, finding-fan-in acceptance, source or evidence commit, hosted checks, hosted review, human acceptance, PR readiness, mergeability, merge, release, deployment, or production readiness is claimed.",
+	"final_status_line": "WROTE: .harness/review/synaipse-cc2-recovered-adv/adversarial-result.json"
+}

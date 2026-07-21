@@ -1,0 +1,75 @@
+{
+	"schema_version": "pm-child-result/v1",
+	"packet_id": "pkt_cc2reco1",
+	"packet_sha256": "c8c512bfd905bb91f4b6204d1ebf61c1433dd8dc4d620c8af4eefe4a4ebcb7c7",
+	"dispatch_id": "ch_cc2reco1",
+	"turn_id": "turn_cc2reco1",
+	"project_id": "coding-harness",
+	"job_id": "job_cc2reco1",
+	"role": "Worker",
+	"declared_artifact": ".harness/review/synaipse-cc2-recovered/worker-handoff.md",
+	"artifact_sha256": "d95452e10179a3fe77a6caf174525263fba949715f201ec2e55ea3e21ac7dc2f",
+	"baseline_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+	"target_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+	"status": "accepted",
+	"commands": [
+		{
+			"command": "MISE_NO_CONFIG=1 pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/context-plane.test.ts src/lib/decision/harness-decision.test.ts src/commands/next.test.ts --maxWorkers=1 --reporter=dot",
+			"outcome": "pass",
+			"evidence": "4 files and 134 tests passed."
+		},
+		{
+			"command": "MISE_NO_CONFIG=1 node scripts/validate-runtime-packet-schemas.cjs --all",
+			"outcome": "pass",
+			"evidence": "28 runtime packet schemas passed with no errors."
+		},
+		{
+			"command": "MISE_NO_CONFIG=1 pnpm boundary:unknown-guards",
+			"outcome": "pass",
+			"evidence": "52 baselined boundary unknown guards; no new entries."
+		},
+		{
+			"command": "MISE_NO_CONFIG=1 pnpm exec tsc --noEmit",
+			"outcome": "pass",
+			"evidence": "Completed with no diagnostics."
+		},
+		{
+			"command": "MISE_NO_CONFIG=1 pnpm run quality:docstrings",
+			"outcome": "pass",
+			"evidence": "8 changed public-API files checked; documentation present."
+		},
+		{
+			"command": "MISE_NO_CONFIG=1 pnpm run quality:size",
+			"outcome": "pass",
+			"evidence": "8 production files and 3 test files checked; limits passed."
+		},
+		{
+			"command": "git diff --cached --binary | shasum -a 256",
+			"outcome": "pass",
+			"evidence": "1d4ed517e6cdf2cdee3065c812049cfa91befc60d3e172dbbb3442aed4665afe."
+		},
+		{
+			"command": "git diff --cached --check",
+			"outcome": "pass",
+			"evidence": "No whitespace diagnostics."
+		},
+		{
+			"command": "uv run --python 3.12 python - <<'PY'",
+			"outcome": "pass",
+			"evidence": "Draft202012Validator accepted the result against pm-child-result.v1.schema.json (schema-valid)."
+		},
+		{
+			"command": "git rev-parse HEAD",
+			"outcome": "pass",
+			"evidence": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8."
+		},
+		{
+			"command": "git status --short --branch",
+			"outcome": "pass",
+			"evidence": "Target and staged patch remained unchanged during review."
+		}
+	],
+	"findings": [],
+	"claims_boundary": "Fresh Worker local proof for the exact target/staged-patch pair only. No QA Disproof, Adversarial Review, finding-fan-in acceptance, hosted checks, hosted review, human acceptance, PR readiness, mergeability, release, deployment, or production readiness is claimed.",
+	"final_status_line": "WROTE: .harness/review/synaipse-cc2-recovered/worker-handoff.md"
+}

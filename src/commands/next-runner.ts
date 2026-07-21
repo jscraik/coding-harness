@@ -7,6 +7,7 @@ import {
 	readSynaipseRepositoryName,
 	withSynaipseState,
 } from "../lib/synaipse/state.js";
+import type { SynaipseContextFailureEnvelope } from "../lib/synaipse/context-failures.js";
 import type { HarnessNextPrCloseoutEvidence } from "./next-pr-closeout.js";
 import { operatorLocalOnlyDecision } from "./next-operator-local-decision.js";
 import type {
@@ -123,6 +124,21 @@ function changedFilesRecommendation(
 		: changedFilesNextDecision(resolution);
 }
 
+/** Carry optional context failures into the decision owner without widening state-v1. */
+function attachContextFailures(
+	decision: HarnessDecision,
+	contextFailures: SynaipseContextFailureEnvelope | undefined,
+): HarnessDecision {
+	if (!contextFailures) return decision;
+	return {
+		...decision,
+		meta: {
+			...(decision.meta ?? {}),
+			synaipseContextFailures: contextFailures,
+		},
+	};
+}
+
 /**
  * Produce a HarnessDecision recommending the next Harness command or explaining why no safe action can be taken.
  *
@@ -148,7 +164,7 @@ export function runHarnessNext(
 	const resolution = resolveHarnessNextState(options);
 	if (resolution.kind === "decision")
 		return withSynaipseState(
-			resolution.decision,
+			attachContextFailures(resolution.decision, context.contextFailures),
 			repoRoot,
 			context.refs,
 			context.unknowns,
@@ -156,5 +172,10 @@ export function runHarnessNext(
 	const decision = hasOnlyExcludedChangedFiles(resolution)
 		? operatorLocalOnlyNextDecision(resolution)
 		: changedFilesRecommendation(resolution);
-	return withSynaipseState(decision, repoRoot, context.refs, context.unknowns);
+	return withSynaipseState(
+		attachContextFailures(decision, context.contextFailures),
+		repoRoot,
+		context.refs,
+		context.unknowns,
+	);
 }
