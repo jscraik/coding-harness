@@ -10,7 +10,6 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { manifestWithExamplePatch } from "./runtime-packet-schema-test-helpers.js";
 
-const MANIFEST_PATH = "contracts/runtime-packet-schemas.manifest.json";
 const tempRoots: string[] = [];
 const require = createRequire(import.meta.url);
 const {
