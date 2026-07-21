@@ -93,10 +93,6 @@ const FAILURE_MAPPING_FIXTURES = [
 	],
 ] as const;
 
-function readJson(path: string): Record<string, unknown> {
-	return JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
-}
-
 function createTempRoot(prefix: string): string {
 	const baseRoot = join(process.cwd(), ".cache", "runtime-packet-schema-tests");
 	mkdirSync(baseRoot, { recursive: true });
