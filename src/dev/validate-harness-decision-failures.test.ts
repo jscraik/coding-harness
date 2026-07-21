@@ -6,7 +6,7 @@ import {
 	readFileSync,
 	rmSync,
 } from "node:fs";
-import { join, relative } from "node:path";
+import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { manifestWithExamplePatch } from "./runtime-packet-schema-test-helpers.js";
 
