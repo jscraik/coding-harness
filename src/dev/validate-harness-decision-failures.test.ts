@@ -363,7 +363,7 @@ describe("harness-decision context-failure schema boundary", () => {
 		});
 
 		expect(errors).toContain(
-			"meta.synaipseContextFailures blocking failures require terminal decision status or no runnable next command",
+			"meta.synaipseContextFailures blocking failures require no runnable next command",
 		);
 	});
 });

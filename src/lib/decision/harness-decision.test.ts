@@ -116,10 +116,19 @@ describe("validateHarnessDecision", () => {
 		});
 	});
 
-	it("rejects runnable decisions with blocking context failures", () => {
+	it.each([
+		"pass",
+		"action_required",
+		"blocked",
+		"fail",
+	] as const)("rejects %s decisions with blocking context failures and a runnable command", (status) => {
 		const result = validateHarnessDecision(
 			validDecision({
-				status: "pass",
+				status,
+				failureClass:
+					status === "blocked" || status === "fail"
+						? "context_unavailable"
+						: null,
 				meta: {
 					synaipseContextFailures: {
 						schemaVersion: "synaipse-context-failure-envelope/v1",
@@ -146,7 +155,7 @@ describe("validateHarnessDecision", () => {
 
 		expect(result.valid).toBe(false);
 		expect(errorCodes(result)).toContain(
-			"blocking context failures require terminal decision status or no runnable next command",
+			"blocking context failures require no runnable next command",
 		);
 	});
 

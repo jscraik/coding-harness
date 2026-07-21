@@ -110,13 +110,9 @@ function validateContextFailureDecisionCoupling(candidate) {
 	const hasRunnableNextCommand =
 		typeof candidate?.nextCommand === "string" &&
 		candidate.nextCommand.trim().length > 0;
-	const isTerminalDecision =
-		candidate?.status === "blocked" ||
-		candidate?.status === "fail" ||
-		!hasRunnableNextCommand;
-	if (hasBlockingFailure && !isTerminalDecision) {
+	if (hasBlockingFailure && hasRunnableNextCommand) {
 		return [
-			"meta.synaipseContextFailures blocking failures require terminal decision status or no runnable next command",
+			"meta.synaipseContextFailures blocking failures require no runnable next command",
 		];
 	}
 	return [];
