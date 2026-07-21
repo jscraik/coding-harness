@@ -1,4 +1,5 @@
 [
+	".harness/intent/2026-07-21-synaipse-cc2-recovered-pr-scope.json",
 	".harness/intent/2026-07-21-synaipse-cc2-recovered-worker-packet.json",
 	".harness/intent/adversarial/packet.json",
 	".harness/intent/qa/packet.json",
@@ -28,5 +29,8 @@
 	".diagram/agent.mmd",
 	".diagram/manifest.json",
 	".diagram/rag.mmd",
-	"AI/context/diagram-context.md"
+	"AI/context/diagram-context.md",
+	"AGENTS.md",
+	"docs/agents/00-architecture-bootstrap.md",
+	"docs/agents/07b-agent-governance.md"
 ]
