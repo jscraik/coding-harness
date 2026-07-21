@@ -25,6 +25,61 @@ function expectedFreshness(code) {
 	return code === "stale_context_digest" ? "stale" : "current";
 }
 
+function failurePath(index) {
+	return `meta.synaipseContextFailures.failures[${index}]`;
+}
+
+function validateFailureShape(failure, path) {
+	const errors = [];
+	if (!Object.hasOwn(failure, "contextId"))
+		errors.push(`${path}.contextId must be explicitly present`);
+	const recovery = RECOVERIES[failure.code];
+	if (recovery !== undefined && failure.recovery !== recovery)
+		errors.push(`${path}.recovery must equal ${recovery} for ${failure.code}`);
+	if (failure.owner !== "synaipse-context-plane")
+		errors.push(`${path}.owner must equal synaipse-context-plane`);
+	return errors;
+}
+
+function isNonBlockingOptional(failure) {
+	return (
+		failure.requirement === "optional" &&
+		new Set([
+			"missing_optional_context",
+			"provider_unavailable",
+			"unresolved_host_path",
+		]).has(failure.code)
+	);
+}
+
+function validateFailureSemantics(failure, path) {
+	const errors = validateFailureShape(failure, path);
+	const stopPrefix = isNonBlockingOptional(failure)
+		? "Continue with explicit context unknown"
+		: "Stop";
+	const stopCondition = `${stopPrefix} until ${failure.code} is resolved.`;
+	if (failure.stopCondition !== stopCondition)
+		errors.push(`${path}.stopCondition must equal ${stopCondition}`);
+	const freshness = expectedFreshness(failure.code);
+	if (failure.freshness?.status !== freshness)
+		errors.push(
+			`${path}.freshness.status must equal ${freshness} for ${failure.code}`,
+		);
+	return errors;
+}
+
+function recordFailureIdentity(seen, failure, index) {
+	const identity =
+		typeof failure.contextId === "string"
+			? `contextId:${failure.contextId}`
+			: `catalogCode:${failure.code}`;
+	const firstIndex = seen.get(identity);
+	if (firstIndex !== undefined)
+		return `meta.synaipseContextFailures.failures[${index}] duplicates logical failure identity from failures[${firstIndex}]: ${identity}`;
+	seen.set(identity, index);
+	return null;
+}
+
 function validateContextFailureIdentities(candidate) {
 	const failures = candidate?.meta?.synaipseContextFailures?.failures;
 	if (!Array.isArray(failures)) return [];
@@ -38,46 +93,10 @@ function validateContextFailureIdentities(candidate) {
 			typeof failure.code !== "string"
 		)
 			continue;
-		const path = `meta.synaipseContextFailures.failures[${index}]`;
-		if (!Object.hasOwn(failure, "contextId"))
-			errors.push(`${path}.contextId must be explicitly present`);
-		const recovery = RECOVERIES[failure.code];
-		if (recovery !== undefined && failure.recovery !== recovery)
-			errors.push(
-				`${path}.recovery must equal ${recovery} for ${failure.code}`,
-			);
-		if (failure.owner !== "synaipse-context-plane")
-			errors.push(`${path}.owner must equal synaipse-context-plane`);
-		const isNonBlockingOptional =
-			failure.requirement === "optional" &&
-			[
-				"missing_optional_context",
-				"provider_unavailable",
-				"unresolved_host_path",
-			].includes(failure.code);
-		const stopCondition =
-			isNonBlockingOptional
-				? `Continue with explicit context unknown until ${failure.code} is resolved.`
-				: `Stop until ${failure.code} is resolved.`;
-		if (failure.stopCondition !== stopCondition)
-			errors.push(`${path}.stopCondition must equal ${stopCondition}`);
-		const freshness = expectedFreshness(failure.code);
-		if (failure.freshness?.status !== freshness)
-			errors.push(
-				`${path}.freshness.status must equal ${freshness} for ${failure.code}`,
-			);
-		const identity =
-			typeof failure.contextId === "string"
-				? `contextId:${failure.contextId}`
-				: `catalogCode:${failure.code}`;
-		const firstIndex = seen.get(identity);
-		if (firstIndex !== undefined) {
-			errors.push(
-				`meta.synaipseContextFailures.failures[${index}] duplicates logical failure identity from failures[${firstIndex}]: ${identity}`,
-			);
-		} else {
-			seen.set(identity, index);
-		}
+		const path = failurePath(index);
+		errors.push(...validateFailureSemantics(failure, path));
+		const identityError = recordFailureIdentity(seen, failure, index);
+		if (identityError) errors.push(identityError);
 	}
 	return errors;
 }

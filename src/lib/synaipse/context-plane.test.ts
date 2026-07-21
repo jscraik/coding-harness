@@ -323,22 +323,24 @@ describe("SynAIpse universal context plane", () => {
 			lifecycle: { status: "historical", supersededBy: null },
 		});
 
-		expect(resolveSynaipseContext(resolutionInput([historical]))).toMatchObject({
-			status: "blocked",
-			selectedContextIds: [],
-			unknowns: [],
-			blockers: [{ code: "historical_context", contextId: SPEC_ID }],
-			contextFailures: {
-				failures: [
-					{
-						code: "superseded_context",
-						requirement: "optional",
-						recovery: "select_current_context",
-						stopCondition: "Stop until superseded_context is resolved.",
-					},
-				],
+		expect(resolveSynaipseContext(resolutionInput([historical]))).toMatchObject(
+			{
+				status: "blocked",
+				selectedContextIds: [],
+				unknowns: [],
+				blockers: [{ code: "historical_context", contextId: SPEC_ID }],
+				contextFailures: {
+					failures: [
+						{
+							code: "superseded_context",
+							requirement: "optional",
+							recovery: "select_current_context",
+							stopCondition: "Stop until superseded_context is resolved.",
+						},
+					],
+				},
 			},
-		});
+		);
 	});
 
 	it("selects only task-admitted refs with an accepted authority", () => {

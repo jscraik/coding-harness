@@ -5,9 +5,9 @@ STATUS: blocked_runtime
 The fresh Adversarial Review packet was dispatched before fallback and bound to
 target `8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8`, staged patch
 `98d650c6c407143f4386396ac675cdd3f000849c373630319e9e1efb28b5c801`, packet
-SHA-256 `4978dabda2dc8b964538695e9275f8679d12efc45f7c449210ff2d1b57c7cd40`,
+SHA-256 `4d54d647b30b8ffb87167fe4e4545109ddf53955b129e064aa4327fa04c992bb`,
 and artifact probe SHA-256
-`ad6a08d941c4f13a2e40c285c86564d5754e8eb47545e95d6daa4968730dcca1`.
+`f3e79663252adaba53be17e119cedaf6c1ccd81998127d615dbf3eca5a98b2e3`.
 
 The child transport produced no declared handoff or result artifact. One
 artifact-only recovery was attempted through the existing review-agent
@@ -18,8 +18,8 @@ an independent Adversarial Review verdict.
 ## Exact evidence
 
 - Command: `test -f .harness/review/synaipse-cc2-next/release10-adv-handoff.md && test -f .harness/review/synaipse-cc2-next/release10-adv-result.json` -> blocked (no child artifacts after initial dispatch and one artifact-only recovery)
-- Command: `shasum -a 256 /private/tmp/coding-harness-synaipse-cc2-next/.harness/intent/2026-07-20-synaipse-cc2-release10-adv-packet.json` -> pass (4978dabda2dc8b964538695e9275f8679d12efc45f7c449210ff2d1b57c7cd40)
-- Command: `shasum -a 256 /private/tmp/coding-harness-synaipse-cc2-next/.harness/review/synaipse-cc2-next/release10-adv-artifact-probe.json` -> pass (ad6a08d941c4f13a2e40c285c86564d5754e8eb47545e95d6daa4968730dcca1)
+- Command: `shasum -a 256 /private/tmp/coding-harness-synaipse-cc2-next/.harness/intent/2026-07-20-synaipse-cc2-release10-adv-packet.json` -> pass (4d54d647b30b8ffb87167fe4e4545109ddf53955b129e064aa4327fa04c992bb)
+- Command: `shasum -a 256 /private/tmp/coding-harness-synaipse-cc2-next/.harness/review/synaipse-cc2-next/release10-adv-artifact-probe.json` -> pass (f3e79663252adaba53be17e119cedaf6c1ccd81998127d615dbf3eca5a98b2e3)
 - Command: `git rev-parse HEAD` -> pass (8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8)
 - Command: `git diff --cached --binary | shasum -a 256` -> pass (98d650c6c407143f4386396ac675cdd3f000849c373630319e9e1efb28b5c801)
 - Command: `pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/context-plane.test.ts src/lib/decision/harness-decision.test.ts src/commands/next.test.ts src/dev/validate-harness-decision-failures.test.ts src/dev/runtime-packet-example-parity.test.ts --maxWorkers=1 --reporter=dot` -> pass (local deterministic fallback gate: 6 files, 164 tests)

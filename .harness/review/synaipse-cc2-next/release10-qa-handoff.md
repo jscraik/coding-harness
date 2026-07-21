@@ -5,10 +5,10 @@
 - Role: QA Disproof
 - Packet: `pkt_cc2release10qa`
 - Dispatch: `ch_cc2release10qa`
-- Packet SHA-256: `aaabfa71b84575313b750e3980a5766621e4eea76c376cae3df940cf0622e958`
+- Packet SHA-256: `a3f3a62e384611207aa7216757b76969e32c3b190bae4a4c92937fc3ed0d3b79`
 - Target SHA: `8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8`
 - Staged patch SHA-256: `98d650c6c407143f4386396ac675cdd3f000849c373630319e9e1efb28b5c801`
-- Accepted Worker result SHA-256: `b8fc909fe6d23c97853d91a559baf31c53edfb5c438f9f864944c4e5edf70536`
+- Accepted Worker result SHA-256: `15adb3eef736a82ed7d0c0cdea9fd24b8a1d34959ff71ea689b99ba817ab0564`
 - Source, staging, commit, push, hosted state, and cleanup were not mutated.
 
 ## Verdict
@@ -35,8 +35,8 @@ The matrix exercised the public `runHarnessNext` adapter as well as the resolver
 
 - Command: `git rev-parse HEAD` -> pass (`8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8`)
 - Command: `git diff --cached --binary | shasum -a 256` -> pass (`98d650c6c407143f4386396ac675cdd3f000849c373630319e9e1efb28b5c801`)
-- Command: `shasum -a 256 /private/tmp/coding-harness-synaipse-cc2-next/.harness/intent/2026-07-20-synaipse-cc2-release10-qa-packet.json` -> pass (`aaabfa71b84575313b750e3980a5766621e4eea76c376cae3df940cf0622e958`)
-- Command: `shasum -a 256 /private/tmp/coding-harness-synaipse-cc2-next/.harness/review/synaipse-cc2-next/release9-worker-result.json` -> pass (`b8fc909fe6d23c97853d91a559baf31c53edfb5c438f9f864944c4e5edf70536`)
+- Command: `shasum -a 256 /private/tmp/coding-harness-synaipse-cc2-next/.harness/intent/2026-07-20-synaipse-cc2-release10-qa-packet.json` -> pass (`a3f3a62e384611207aa7216757b76969e32c3b190bae4a4c92937fc3ed0d3b79`)
+- Command: `shasum -a 256 /private/tmp/coding-harness-synaipse-cc2-next/.harness/review/synaipse-cc2-next/release9-worker-result.json` -> pass (`15adb3eef736a82ed7d0c0cdea9fd24b8a1d34959ff71ea689b99ba817ab0564`)
 - Command: `pnpm boundary:unknown-guards` -> pass (52 baselined boundary guards; no new entries)
 - Command: `pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/context-plane.test.ts src/lib/decision/harness-decision.test.ts src/commands/next.test.ts src/dev/validate-harness-decision-failures.test.ts src/dev/runtime-packet-example-parity.test.ts --maxWorkers=1 --reporter=dot` -> pass (6 files, 164 tests)
 - Command: `node scripts/validate-runtime-packet-schemas.cjs --all` -> pass (28 packets; zero errors)

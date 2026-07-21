@@ -234,7 +234,7 @@ describe("validate-runtime-packet-schemas.cjs", () => {
 				failure.stopCondition = "Stop until an operator approves.";
 			},
 			expected:
-				"stopCondition must equal Stop until provider_unavailable is resolved.",
+				"stopCondition must equal Continue with explicit context unknown until provider_unavailable is resolved.",
 		},
 	])("rejects $name through the declared semantic validator", ({
 		mutate,

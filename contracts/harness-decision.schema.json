@@ -175,11 +175,11 @@
 										"enum": [
 											"establish_project_identity",
 											"admit_context_catalog",
-										"supply_required_context",
-										"supply_optional_context",
+											"supply_required_context",
+											"supply_optional_context",
 											"request_authorized_projection",
 											"refresh_context_digest",
-										"select_current_context",
+											"select_current_context",
 											"repair_context_catalog",
 											"restore_context_provider",
 											"resolve_context_host_path"
@@ -237,8 +237,8 @@
 											"properties": {
 												"code": {
 													"enum": [
-																"missing_required_context",
-																"missing_optional_context",
+														"missing_required_context",
+														"missing_optional_context",
 														"context_access_denied",
 														"stale_context_digest",
 														"superseded_context",
@@ -285,8 +285,8 @@
 											"properties": {
 												"code": {
 													"enum": [
-																"missing_required_context",
-																"missing_optional_context",
+														"missing_required_context",
+														"missing_optional_context",
 														"context_access_denied",
 														"superseded_context",
 														"provider_unavailable",

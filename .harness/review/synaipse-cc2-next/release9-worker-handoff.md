@@ -7,7 +7,7 @@
 - Dispatch: `ch_cc2release9worker`
 - Target SHA: `8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8`
 - Staged patch SHA-256: `98d650c6c407143f4386396ac675cdd3f000849c373630319e9e1efb28b5c801`
-- Packet SHA-256: `db0d5d97249846bb81f4178f28be28f84d36902cf4af4208b95cda4edb21d3fd`
+- Packet SHA-256: `b273ca14c8861b4278564554f4e201ff226fcb637bd7306f5b1797c9c4d2ce79`
 - Instruction chain read: root `AGENTS.md`; `src/AGENTS.md`; `CODESTYLE.md`; `docs/agents/quickstart.md`; `docs/agents/01-instruction-map.md`; `.agents/skills/coding-harness/SKILL.md`; optional-missing contract ratification.
 - Source and Git state were not edited. The staged patch was reviewed read-only in the detached declared worktree.
 

@@ -1,15 +1,15 @@
 {
-  "schema_version": "pm-child-artifact-probe/v1",
-  "probe_id": "prb_cc2release9worker",
-  "dispatch_id": "ch_cc2release9worker",
-  "turn_id": "turn_cc2release9worker98d650c6",
-  "project_id": "coding-harness",
-  "job_id": "job_cc2release998d650c6",
-  "role": "Worker",
-  "worktree_path": "/private/tmp/coding-harness-synaipse-cc2-release9-worker",
-  "target_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
-  "declared_artifact": ".harness/review/synaipse-cc2-next/release9-worker-handoff.md",
-  "observed_at": "2026-07-20T23:04:42Z",
-  "write_status": "passed",
-  "cleanup_status": "removed"
+	"schema_version": "pm-child-artifact-probe/v1",
+	"probe_id": "prb_cc2release9worker",
+	"dispatch_id": "ch_cc2release9worker",
+	"turn_id": "turn_cc2release9worker98d650c6",
+	"project_id": "coding-harness",
+	"job_id": "job_cc2release998d650c6",
+	"role": "Worker",
+	"worktree_path": "/private/tmp/coding-harness-synaipse-cc2-release9-worker",
+	"target_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+	"declared_artifact": ".harness/review/synaipse-cc2-next/release9-worker-handoff.md",
+	"observed_at": "2026-07-20T23:04:42Z",
+	"write_status": "passed",
+	"cleanup_status": "removed"
 }

@@ -19,9 +19,27 @@ const { validateContextFailureIdentities } =
 	};
 
 const FAILURE_MAPPING_FIXTURES = [
-	["missing_project_identity", "establish_project_identity", null, "unknown", "required"],
-	["missing_context_catalog", "admit_context_catalog", null, "unknown", "required"],
-	["missing_required_context", "supply_required_context", "context", "current", "required"],
+	[
+		"missing_project_identity",
+		"establish_project_identity",
+		null,
+		"unknown",
+		"required",
+	],
+	[
+		"missing_context_catalog",
+		"admit_context_catalog",
+		null,
+		"unknown",
+		"required",
+	],
+	[
+		"missing_required_context",
+		"supply_required_context",
+		"context",
+		"current",
+		"required",
+	],
 	[
 		"missing_optional_context",
 		"supply_optional_context",
@@ -36,11 +54,41 @@ const FAILURE_MAPPING_FIXTURES = [
 		"current",
 		"required",
 	],
-	["stale_context_digest", "refresh_context_digest", "context", "stale", "required"],
-	["superseded_context", "select_current_context", "context", "current", "required"],
-	["malformed_context_catalog", "repair_context_catalog", null, "unknown", "required"],
-	["provider_unavailable", "restore_context_provider", "context", "current", "required"],
-	["unresolved_host_path", "resolve_context_host_path", "context", "current", "required"],
+	[
+		"stale_context_digest",
+		"refresh_context_digest",
+		"context",
+		"stale",
+		"required",
+	],
+	[
+		"superseded_context",
+		"select_current_context",
+		"context",
+		"current",
+		"required",
+	],
+	[
+		"malformed_context_catalog",
+		"repair_context_catalog",
+		null,
+		"unknown",
+		"required",
+	],
+	[
+		"provider_unavailable",
+		"restore_context_provider",
+		"context",
+		"current",
+		"required",
+	],
+	[
+		"unresolved_host_path",
+		"resolve_context_host_path",
+		"context",
+		"current",
+		"required",
+	],
 ] as const;
 
 function readJson(path: string): Record<string, unknown> {

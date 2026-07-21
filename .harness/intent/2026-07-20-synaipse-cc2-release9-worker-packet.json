@@ -1,81 +1,135 @@
 {
-  "schema_version": "pm-child-task-packet/v1",
-  "packet_id": "pkt_cc2release9worker",
-  "dispatch_id": "ch_cc2release9worker",
-  "turn_id": "turn_cc2release9worker98d650c6",
-  "dispatched_at": "2026-07-20T23:04:42Z",
-  "project_id": "coding-harness",
-  "job_id": "job_cc2release998d650c6",
-  "human_task_name": "SynAIpse CC2 disposition-aware stop Worker verification",
-  "role": "Worker",
-  "objective": "Verify patch 98d650c6 after restricting non-blocking stop semantics to optional outcomes actually projected into contextUnknowns without changing source or Git state.",
-  "decision_frame": {
-    "value": "Keep the nine-code v1 context-failure taxonomy semantically truthful while preserving optional contextUnknowns compatibility.",
-    "why_now": "Fresh Worker review rejected 8b0a2dca because lifecycle, access, and stale failures marked optional still block but were given continuation conditions.",
-    "acceptance_criteria": [
-      "HEAD is 8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8 and staged patch SHA-256 is 98d650c6c407143f4386396ac675cdd3f000849c373630319e9e1efb28b5c801.",
-      "Only optional missing, provider-unavailable, and unresolved-host-path outcomes continue as explicit unknowns; lifecycle, access, and stale outcomes remain blocking.",
-      "Focused tests, schema validation, boundary guard, and TypeScript pass; release-5 through release-8 findings are explicitly dispositioned."
-    ],
-    "dependencies": ["Rejected Worker result release8-worker-result.json SHA-256 2bced9ce0fd13a7cc705f2aa02753bb0e6d344b1ab37a1dc0b8938b7e61d8e10 and /private/tmp/coding-harness-synaipse-cc2-next/.harness/implementation-notes/2026-07-20-synaipse-cc2-optional-missing-contract-ratification.md."],
-    "risk_or_learning_target": "Prevent semantically false recovery instructions at the public decision boundary.",
-    "smallest_increment": "One read-only Worker verification of the exact staged patch."
-  },
-  "review_plan": {
-    "risk_level": "consequential",
-    "required_roles": ["Worker", "QA Disproof", "Adversarial Review"],
-    "adversarial_review_rationale": "The patch changes a public versioned decision envelope and compatibility behavior.",
-    "finding_fan_in": {"required": true, "artifact_path": ".harness/review/synaipse-cc2-next/admitted-finding-fan-in.json", "schema": "operating-system/schemas/pm-finding-fan-in.v1.schema.json"}
-  },
-  "non_goals": ["Do not edit source, stage, commit, push, mutate a PR, or make hosted/readiness claims."],
-  "target": {
-    "repo_path": "/Users/jamiecraik/dev/coding-harness",
-    "worktree_path": "/private/tmp/coding-harness-synaipse-cc2-release9-worker",
-    "branch": "codex/synaipse-cc2",
-    "baseline_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
-    "expected_target_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
-    "preserved_output_ref": "patch:98d650c6c407143f4386396ac675cdd3f000849c373630319e9e1efb28b5c801",
-    "fresh_context_required": true
-  },
-  "instruction_provenance": {
-    "policy": "target_repo_instruction_chain_required",
-    "applicable_agents_md": ["/private/tmp/coding-harness-synaipse-cc2-release9-worker/AGENTS.md", "/private/tmp/coding-harness-synaipse-cc2-release9-worker/src/AGENTS.md"],
-    "codestyle_front_door": "/private/tmp/coding-harness-synaipse-cc2-release9-worker/CODESTYLE.md",
-    "triggered_skills": ["coding-harness"],
-    "validation_entrypoints": ["pnpm exec vitest run src/lib/synaipse/context-plane.test.ts src/commands/next.test.ts src/dev/validate-harness-decision-failures.test.ts", "node scripts/validate-runtime-packet-schemas.cjs --all", "pnpm boundary:unknown-guards", "pnpm exec tsc --noEmit", "git diff --cached --binary"],
-    "child_attestation_required": true,
-    "conflict_policy": "stop_and_report_blocked_instruction_context"
-  },
-  "authority": {
-    "accountable_owner": "project_pm",
-    "delegated_decision_rights": ["Run read-only verification and write only declared Worker artifacts."],
-    "allowed_write_paths": [".harness/review/synaipse-cc2-next/release9-worker-handoff.md", ".harness/review/synaipse-cc2-next/release9-worker-result.json"],
-    "forbidden_actions": ["source edits", "staging", "commit", "push", "PR mutation", "cleanup"],
-    "network_policy": "forbidden",
-    "external_mutation_allowed": false
-  },
-  "execution": {
-    "heartbeat_policy": "event_driven_material_change_only",
-    "progress_reporting_policy": "material_change_blocker_scope_risk_or_completion",
-    "control_measure_policy": "minimum_controls_for_risk_and_evidence",
-    "retry_budget": 1,
-    "decision_policy": "evidence_first_smallest_durable_fix",
-    "ambiguity_policy": "ask_project_pm_before_scope_expansion",
-    "drift_policy": "stop_preserve_evidence_report_project_pm",
-    "attestation_max_age_seconds": 900,
-    "future_skew_seconds": 60,
-    "stop_conditions": ["source mutation", "target SHA drift", "patch fingerprint drift", "instruction conflict", "validation blocker"]
-  },
-  "evidence": {
-    "expected_artifacts": [".harness/review/synaipse-cc2-next/release9-worker-handoff.md", ".harness/review/synaipse-cc2-next/release9-worker-result.json"],
-    "instruction_attestation_artifact": ".harness/review/synaipse-cc2-next/release9-worker-handoff.md",
-    "artifact_probe": {"receipt_path": ".harness/review/synaipse-cc2-next/release9-worker-artifact-probe.json", "receipt_sha256": "fd3366ce96b746063a9484d547604415716850d31774f8d71a01dd4a5adbebf1", "max_age_seconds": 300},
-    "worktree_authority_preflight": {"receipt_path": "/private/tmp/coding-harness-synaipse-cc2-next/.harness/review/synaipse-cc2-next/release9-worker-worktree-preflight.json", "receipt_sha256": "273ae60ac26a6ed1cf88d69d2e262571b884a019897e68581c3d986754441942", "max_age_seconds": 900},
-    "worktree_closeout": {"receipt_path": ".harness/review/synaipse-cc2-next/release9-worker-worktree-closeout.json", "schema": "operating-system/schemas/pm-worktree-closeout.v1.schema.json", "max_retention_seconds": 604800},
-    "result_schema": "operating-system/schemas/pm-child-result.v1.schema.json",
-    "verdict_consistency_required": true,
-    "durable_preservation_required": true,
-    "final_status_line": "WROTE: <declared artifact path>"
-  },
-  "escalation": {"first_owner": "project_pm", "chief_condition": "project_pm_cannot_resolve_within_recorded_authority", "operator_condition": "value_scope_taste_privacy_cost_or_irreversible_decision_required"}
+	"schema_version": "pm-child-task-packet/v1",
+	"packet_id": "pkt_cc2release9worker",
+	"dispatch_id": "ch_cc2release9worker",
+	"turn_id": "turn_cc2release9worker98d650c6",
+	"dispatched_at": "2026-07-20T23:04:42Z",
+	"project_id": "coding-harness",
+	"job_id": "job_cc2release998d650c6",
+	"human_task_name": "SynAIpse CC2 disposition-aware stop Worker verification",
+	"role": "Worker",
+	"objective": "Verify patch 98d650c6 after restricting non-blocking stop semantics to optional outcomes actually projected into contextUnknowns without changing source or Git state.",
+	"decision_frame": {
+		"value": "Keep the nine-code v1 context-failure taxonomy semantically truthful while preserving optional contextUnknowns compatibility.",
+		"why_now": "Fresh Worker review rejected 8b0a2dca because lifecycle, access, and stale failures marked optional still block but were given continuation conditions.",
+		"acceptance_criteria": [
+			"HEAD is 8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8 and staged patch SHA-256 is 98d650c6c407143f4386396ac675cdd3f000849c373630319e9e1efb28b5c801.",
+			"Only optional missing, provider-unavailable, and unresolved-host-path outcomes continue as explicit unknowns; lifecycle, access, and stale outcomes remain blocking.",
+			"Focused tests, schema validation, boundary guard, and TypeScript pass; release-5 through release-8 findings are explicitly dispositioned."
+		],
+		"dependencies": [
+			"Rejected Worker result release8-worker-result.json SHA-256 2bced9ce0fd13a7cc705f2aa02753bb0e6d344b1ab37a1dc0b8938b7e61d8e10 and /private/tmp/coding-harness-synaipse-cc2-next/.harness/implementation-notes/2026-07-20-synaipse-cc2-optional-missing-contract-ratification.md."
+		],
+		"risk_or_learning_target": "Prevent semantically false recovery instructions at the public decision boundary.",
+		"smallest_increment": "One read-only Worker verification of the exact staged patch."
+	},
+	"review_plan": {
+		"risk_level": "consequential",
+		"required_roles": ["Worker", "QA Disproof", "Adversarial Review"],
+		"adversarial_review_rationale": "The patch changes a public versioned decision envelope and compatibility behavior.",
+		"finding_fan_in": {
+			"required": true,
+			"artifact_path": ".harness/review/synaipse-cc2-next/admitted-finding-fan-in.json",
+			"schema": "operating-system/schemas/pm-finding-fan-in.v1.schema.json"
+		}
+	},
+	"non_goals": [
+		"Do not edit source, stage, commit, push, mutate a PR, or make hosted/readiness claims."
+	],
+	"target": {
+		"repo_path": "/Users/jamiecraik/dev/coding-harness",
+		"worktree_path": "/private/tmp/coding-harness-synaipse-cc2-release9-worker",
+		"branch": "codex/synaipse-cc2",
+		"baseline_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+		"expected_target_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+		"preserved_output_ref": "patch:98d650c6c407143f4386396ac675cdd3f000849c373630319e9e1efb28b5c801",
+		"fresh_context_required": true
+	},
+	"instruction_provenance": {
+		"policy": "target_repo_instruction_chain_required",
+		"applicable_agents_md": [
+			"/private/tmp/coding-harness-synaipse-cc2-release9-worker/AGENTS.md",
+			"/private/tmp/coding-harness-synaipse-cc2-release9-worker/src/AGENTS.md"
+		],
+		"codestyle_front_door": "/private/tmp/coding-harness-synaipse-cc2-release9-worker/CODESTYLE.md",
+		"triggered_skills": ["coding-harness"],
+		"validation_entrypoints": [
+			"pnpm exec vitest run src/lib/synaipse/context-plane.test.ts src/commands/next.test.ts src/dev/validate-harness-decision-failures.test.ts",
+			"node scripts/validate-runtime-packet-schemas.cjs --all",
+			"pnpm boundary:unknown-guards",
+			"pnpm exec tsc --noEmit",
+			"git diff --cached --binary"
+		],
+		"child_attestation_required": true,
+		"conflict_policy": "stop_and_report_blocked_instruction_context"
+	},
+	"authority": {
+		"accountable_owner": "project_pm",
+		"delegated_decision_rights": [
+			"Run read-only verification and write only declared Worker artifacts."
+		],
+		"allowed_write_paths": [
+			".harness/review/synaipse-cc2-next/release9-worker-handoff.md",
+			".harness/review/synaipse-cc2-next/release9-worker-result.json"
+		],
+		"forbidden_actions": [
+			"source edits",
+			"staging",
+			"commit",
+			"push",
+			"PR mutation",
+			"cleanup"
+		],
+		"network_policy": "forbidden",
+		"external_mutation_allowed": false
+	},
+	"execution": {
+		"heartbeat_policy": "event_driven_material_change_only",
+		"progress_reporting_policy": "material_change_blocker_scope_risk_or_completion",
+		"control_measure_policy": "minimum_controls_for_risk_and_evidence",
+		"retry_budget": 1,
+		"decision_policy": "evidence_first_smallest_durable_fix",
+		"ambiguity_policy": "ask_project_pm_before_scope_expansion",
+		"drift_policy": "stop_preserve_evidence_report_project_pm",
+		"attestation_max_age_seconds": 900,
+		"future_skew_seconds": 60,
+		"stop_conditions": [
+			"source mutation",
+			"target SHA drift",
+			"patch fingerprint drift",
+			"instruction conflict",
+			"validation blocker"
+		]
+	},
+	"evidence": {
+		"expected_artifacts": [
+			".harness/review/synaipse-cc2-next/release9-worker-handoff.md",
+			".harness/review/synaipse-cc2-next/release9-worker-result.json"
+		],
+		"instruction_attestation_artifact": ".harness/review/synaipse-cc2-next/release9-worker-handoff.md",
+		"artifact_probe": {
+			"receipt_path": ".harness/review/synaipse-cc2-next/release9-worker-artifact-probe.json",
+			"receipt_sha256": "d7f33a3f9f20427b6a9a50e9021c28ab3527ed0c3437a9b2ee9894b0ea1c44a9",
+			"max_age_seconds": 300
+		},
+		"worktree_authority_preflight": {
+			"receipt_path": "/private/tmp/coding-harness-synaipse-cc2-next/.harness/review/synaipse-cc2-next/release9-worker-worktree-preflight.json",
+			"receipt_sha256": "53df4f6147fe0eb6fd53ea875afe39d8a0b6da51dfc86d094ec0f37f801314f8",
+			"max_age_seconds": 900
+		},
+		"worktree_closeout": {
+			"receipt_path": ".harness/review/synaipse-cc2-next/release9-worker-worktree-closeout.json",
+			"schema": "operating-system/schemas/pm-worktree-closeout.v1.schema.json",
+			"max_retention_seconds": 604800
+		},
+		"result_schema": "operating-system/schemas/pm-child-result.v1.schema.json",
+		"verdict_consistency_required": true,
+		"durable_preservation_required": true,
+		"final_status_line": "WROTE: <declared artifact path>"
+	},
+	"escalation": {
+		"first_owner": "project_pm",
+		"chief_condition": "project_pm_cannot_resolve_within_recorded_authority",
+		"operator_condition": "value_scope_taste_privacy_cost_or_irreversible_decision_required"
+	}
 }
