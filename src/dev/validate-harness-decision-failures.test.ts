@@ -1,10 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
-import {
-	mkdirSync,
-	mkdtempSync,
-	rmSync,
-} from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { manifestWithExamplePatch } from "./runtime-packet-schema-test-helpers.js";
@@ -112,17 +108,13 @@ function manifestWithFailureMutation(
 	mutate: (failures: Record<string, unknown>[]) => void,
 ): string {
 	const root = createTempRoot("harness-decision-failure-");
-	return manifestWithExamplePatch(
-		root,
-		"harness-decision/v1",
-		(example) => {
-			const envelope = (example.meta as Record<string, unknown>)
-				.synaipseContextFailures as Record<string, unknown>;
-			const failures = envelope.failures as Record<string, unknown>[];
-			mutate(failures);
-			return example;
-		},
-	);
+	return manifestWithExamplePatch(root, "harness-decision/v1", (example) => {
+		const envelope = (example.meta as Record<string, unknown>)
+			.synaipseContextFailures as Record<string, unknown>;
+		const failures = envelope.failures as Record<string, unknown>[];
+		mutate(failures);
+		return example;
+	});
 }
 
 describe("harness-decision context-failure schema boundary", () => {
