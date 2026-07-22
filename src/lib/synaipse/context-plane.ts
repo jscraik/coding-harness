@@ -72,7 +72,7 @@ function contextBlocker(code: ContextBlockerCode, contextId: string) {
 			missing_context: "refresh_context_provider",
 			provider_unavailable: "restore_context_provider",
 			stale_digest: "refresh_context_digest",
-			superseded_context: "select_replacement_context",
+			superseded_context: "select_current_context",
 			unresolved_host_path: "resolve_context_host_path",
 		}[code],
 	};
@@ -128,8 +128,6 @@ function contextFailureIssue(
 			observedAt,
 		};
 	if (resolution.kind !== "unknown") return null;
-	if (resolution.reason === "missing_context" && ref.requirement === "optional")
-		return null;
 	return {
 		code: resolution.reason,
 		contextId: ref.contextId,

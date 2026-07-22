@@ -33,7 +33,7 @@
 					"contextId": "ch_context_7K4M2P9QX3DR",
 					"recovery": "restore_context_provider",
 					"owner": "synaipse-context-plane",
-					"stopCondition": "Stop until provider_unavailable is resolved.",
+					"stopCondition": "Continue with explicit context unknown until provider_unavailable is resolved.",
 					"evidenceRefs": ["context:ch_context_7K4M2P9QX3DR"],
 					"freshness": {
 						"status": "current",

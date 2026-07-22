@@ -4,6 +4,9 @@ flowchart TD
   fleet_plan_repo_ecdc6499["fleet-plan-repo"]
   UserRequest --> fleet_plan_repo_ecdc6499
   fleet_plan_repo_ecdc6499 --> fleet_plan_repo_ecdc6499_result["result"]
+  runtime_packet_schema_test_helpers_893d3bed["runtime-packet-schema-test-helpers"]
+  UserRequest --> runtime_packet_schema_test_helpers_893d3bed
+  runtime_packet_schema_test_helpers_893d3bed --> runtime_packet_schema_test_helpers_893d3bed_result["result"]
   repo_evidence_38bb1de5["repo-evidence"]
   UserRequest --> repo_evidence_38bb1de5
   repo_evidence_38bb1de5 --> repo_evidence_38bb1de5_result["result"]
@@ -54,6 +57,6 @@ flowchart TD
   UserRequest --> repo_runtime_artifact_139c0fbd
   repo_runtime_artifact_139c0fbd --> repo_runtime_artifact_139c0fbd_result["result"]
   classDef dbNode fill:#0ea5e9,color:#fff
-  class fleet_plan_repo_ecdc6499,repo_evidence_38bb1de5,repo_bound_paths_e218b5b3,json_schema_core_96d7e328,json_schema_74a768d7,execution_job_schema_f68c4ffd,repo_scanner_core_8e9f7646,repo_scanner_a8b2579e,migration_8a6cead4,schema_migrate_c0646635,query_cli_b95be64d,query_presenter_02e6077c,repository_identity_9dc13d37,repo_runtime_artifact_139c0fbd dbNode
+  class fleet_plan_repo_ecdc6499,runtime_packet_schema_test_helpers_893d3bed,repo_evidence_38bb1de5,repo_bound_paths_e218b5b3,json_schema_core_96d7e328,json_schema_74a768d7,execution_job_schema_f68c4ffd,repo_scanner_core_8e9f7646,repo_scanner_a8b2579e,migration_8a6cead4,schema_migrate_c0646635,query_cli_b95be64d,query_presenter_02e6077c,repository_identity_9dc13d37,repo_runtime_artifact_139c0fbd dbNode
   classDef decisionNode fill:#0284c7,color:#fff
   class Decision decisionNode

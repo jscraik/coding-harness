@@ -1,0 +1,19 @@
+{
+	"cleanup_status": "removed",
+	"diagnostic": null,
+	"dispatch_id": "ch_cc2release9worker",
+	"git_metadata_path": "${REPO_PATH}/.git/worktrees",
+	"job_id": "job_cc2release998d650c6",
+	"observed_at": "2026-07-20T23:05:00.328225+00:00",
+	"preflight_id": "wtp_2b715e8a241d499e9edc107da7b9feac",
+	"probe_worktree_path": "${PROBE_WORKTREE_PATH}",
+	"project_id": "coding-harness",
+	"repo_path": "${REPO_PATH}",
+	"role": "Worker",
+	"runtime_observed_at": "2026-07-20T23:04:42Z",
+	"schema_version": "pm-worktree-authority-preflight/v1",
+	"target_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+	"turn_id": "turn_cc2release9worker98d650c6",
+	"worktree_creation_status": "passed",
+	"worktree_path": "${WORKTREE_PATH}"
+}

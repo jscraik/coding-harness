@@ -67,7 +67,7 @@ truth.
   governance, and SynAIpse packet projections are advisory evidence. Live canaries
   must resolve CLI before target cwd, reject target-contained outputs, sanitize
   inherited Git state, preserve target Git/per-probe outcomes; none prove
-  validation, approval, CI, acceptance, release, or merge readiness; SynAIpse context failures use additive v1, keep `contextUnknowns` optional-only, and fail closed on unknown versions or undeclared fields.
+  validation, approval, CI, acceptance, release, or merge readiness; SynAIpse context failures use additive v1, keep `contextUnknowns` optional-only, block runnable decisions on blocking failures, and fail closed on unknown versions or undeclared fields.
 - Treat repeated steering, review feedback, workflow misses, and recurring
   failures as system evidence. Route the durable correction to the smallest
   validator, schema, fixture, wrapper, instruction, or skill. Steering that

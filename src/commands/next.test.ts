@@ -532,7 +532,7 @@ describe("runHarnessNext", () => {
 		});
 	});
 
-	it("keeps optional missing context in state-v1 and emits required omission diagnostics", () => {
+	it("emits both canonical and state-v1 projections for optional missing context", () => {
 		const optionalInput = nextContextInput();
 		const optionalCatalog = optionalInput.catalog as {
 			refs: Array<{ requirement: string }>;
@@ -559,7 +559,17 @@ describe("runHarnessNext", () => {
 				reason: "missing_context",
 			},
 		]);
-		expect(optionalDecision.meta?.synaipseContextFailures).toBeUndefined();
+		expect(optionalDecision.meta?.synaipseContextFailures).toMatchObject({
+			schemaVersion: "synaipse-context-failure-envelope/v1",
+			failures: [
+				{
+					code: "missing_optional_context",
+					requirement: "optional",
+					contextId: "ch_context_7K4M2P9QX3DR",
+					recovery: "supply_optional_context",
+				},
+			],
+		});
 
 		const requiredInput = nextContextInput();
 		requiredInput.observations = [
@@ -641,6 +651,17 @@ describe("runHarnessNext", () => {
 		expect(decision).toMatchObject({
 			status: "blocked",
 			failureClass: "context_project_mismatch",
+			meta: {
+				synaipseContextFailures: {
+					failures: [
+						{
+							code: "missing_context_catalog",
+							recovery: "admit_context_catalog",
+							contextId: null,
+						},
+					],
+				},
+			},
 		});
 	});
 
@@ -673,6 +694,17 @@ describe("runHarnessNext", () => {
 		expect(decision).toMatchObject({
 			status: "blocked",
 			failureClass: "context_project_mismatch",
+			meta: {
+				synaipseContextFailures: {
+					failures: [
+						{
+							code: "missing_context_catalog",
+							recovery: "admit_context_catalog",
+							contextId: null,
+						},
+					],
+				},
+			},
 		});
 	});
 
@@ -698,9 +730,7 @@ describe("runHarnessNext", () => {
 							contextId: null,
 							recovery: "establish_project_identity",
 							owner: "synaipse-context-plane",
-							stopCondition: expect.stringContaining(
-								"missing_project_identity",
-							),
+							stopCondition: "Stop until missing_project_identity is resolved.",
 							evidenceRefs: ["repository:identity"],
 							freshness: {
 								status: "unknown",
@@ -755,7 +785,7 @@ describe("runHarnessNext", () => {
 							contextId: null,
 							recovery: "admit_context_catalog",
 							owner: "synaipse-context-plane",
-							stopCondition: expect.stringContaining("missing_context_catalog"),
+							stopCondition: "Stop until missing_context_catalog is resolved.",
 							evidenceRefs: ["context:input"],
 							freshness: {
 								status: "unknown",
@@ -791,9 +821,8 @@ describe("runHarnessNext", () => {
 							contextId: null,
 							recovery: "repair_context_catalog",
 							owner: "synaipse-context-plane",
-							stopCondition: expect.stringContaining(
-								"malformed_context_catalog",
-							),
+							stopCondition:
+								"Stop until malformed_context_catalog is resolved.",
 							evidenceRefs: ["context:input"],
 							freshness: {
 								status: "unknown",

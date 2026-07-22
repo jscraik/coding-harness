@@ -197,11 +197,13 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   context, `AGENTS.md`, and the architecture bootstrap. Resolution is read-only
   and precedes changed-file inspection; required context fails closed, optional
   failures remain reasoned unknowns, and only logical references plus digests may
-  cross hosted or public boundaries. The additive
-  `synaipse-context-failure-envelope/v1` is the canonical identified-failure
-  representation; `contextUnknowns` remains limited to optional `ch_context`
-  failures until an explicit versioned migration. Unknown envelope versions and
-  undeclared fields fail closed.
+  cross hosted or public boundaries. The additive versioned failure envelope is
+  the canonical producer/parser/decision/legacy-reader/runtime boundary:
+  optional provider, missing, or unresolved-host observations may project as
+  `contextUnknowns`, while lifecycle, access, stale-digest, catalog, and
+  required-transition failures remain blocking and retain their recovery and
+  stop semantics. Keep the compatibility matrix and semantic fixtures aligned
+  with that distinction.
 - SynAIpse packet-consolidation changes should keep candidate identity,
   canonical packet construction, caller inventory, transition projection and validation,
   measurement, and retirement policy owned by `src/lib/synaipse/`. Registry and

@@ -168,7 +168,13 @@ context produces a reasoned unknown. Persist logical references and digests
 rather than provider bodies, and do not project private Jamie Brain content into
 hosted CI or public pull requests. Before promotion, run the canonical focused
 proof `pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/context-plane.test.ts src/lib/synaipse/state.test.ts src/commands/next.test.ts --reporter=dot` and `pnpm check`; both must exit successfully, and any failure stops refresh or routing until repaired and rerun.
-SynAIpse context resolution emits the additive `synaipse-context-failure-envelope/v1` for identified context failures. Keep `contextUnknowns` limited to optional `ch_context` failures; project, catalog, and required-transition failures remain explicit envelope outcomes until a versioned migration expands that boundary. Producers and readers must reject unknown envelope versions or undeclared fields, preserve canonical repository and privacy metadata, and keep failure evidence separate from hosted review, acceptance, merge, and release claims.
+The context-plane failure envelope is additive and versioned: optional
+provider, missing, or unresolved-host observations may remain explicit
+`contextUnknowns`, while missing-required-context, lifecycle, access, stale-digest, and catalog failures
+remain blocking with canonical recovery and stop semantics. Keep that producer,
+parser, decision, legacy-reader, and runtime-packet compatibility matrix in the
+same contract lane so a public `next` result cannot describe a blocker as a
+continuable unknown.
 SynAIpse packet-consolidation changes are architecture-adjacent contract
 changes. Keep canonical packet identity, canonical packet construction, transition
 projection, caller inventory, measurement, and retirement policy behind the

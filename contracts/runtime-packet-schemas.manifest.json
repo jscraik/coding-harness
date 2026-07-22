@@ -36,6 +36,7 @@
 			"typeSourcePath": "src/lib/decision/harness-decision.ts",
 			"runtimeStatus": "emitted",
 			"parityValidator": "harness-decision",
+			"semanticValidatorPath": "scripts/validate-harness-decision-semantics.cjs",
 			"ownerGap": "GAP-003"
 		},
 		{

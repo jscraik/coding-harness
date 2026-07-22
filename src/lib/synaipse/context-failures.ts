@@ -19,6 +19,7 @@ export const SYNAIPSE_CONTEXT_FAILURE_CODES = [
 	"missing_project_identity",
 	"missing_context_catalog",
 	"missing_required_context",
+	"missing_optional_context",
 	"context_access_denied",
 	"stale_context_digest",
 	"superseded_context",
@@ -41,6 +42,26 @@ export type SynaipseContextFailureCode =
 /** Freshness classification for one context-resolution failure. */
 export type SynaipseContextFailureFreshness =
 	(typeof SYNAIPSE_CONTEXT_FAILURE_FRESHNESS)[number];
+
+/** Canonical owner for every v1 context failure. */
+export const SYNAIPSE_CONTEXT_FAILURE_OWNER = "synaipse-context-plane" as const;
+
+/** Canonical code-to-recovery mapping for the v1 failure envelope. */
+export const SYNAIPSE_CONTEXT_FAILURE_RECOVERIES: Record<
+	SynaipseContextFailureCode,
+	string
+> = {
+	missing_project_identity: "establish_project_identity",
+	missing_context_catalog: "admit_context_catalog",
+	missing_required_context: "supply_required_context",
+	missing_optional_context: "supply_optional_context",
+	context_access_denied: "request_authorized_projection",
+	stale_context_digest: "refresh_context_digest",
+	superseded_context: "select_current_context",
+	malformed_context_catalog: "repair_context_catalog",
+	provider_unavailable: "restore_context_provider",
+	unresolved_host_path: "resolve_context_host_path",
+};
 
 /** One canonical, deterministic context-resolution failure record. */
 export interface SynaipseContextFailure {
@@ -72,13 +93,35 @@ function isCatalogFailure(code: SynaipseContextFailureCode): boolean {
 	);
 }
 
-/** Enforce requirement, identity, and freshness invariants for one failure. */
-function validateFailureSemantics(
+/** Return the only freshness classification allowed for a v1 failure code. */
+export function canonicalContextFailureFreshness(
+	code: SynaipseContextFailureCode,
+): SynaipseContextFailureFreshness {
+	if (isCatalogFailure(code)) return "unknown";
+	return code === "stale_context_digest" ? "stale" : "current";
+}
+
+/** Return the only stop condition allowed for a v1 failure code. */
+export function canonicalContextFailureStopCondition(
+	code: SynaipseContextFailureCode,
+	requirement: (typeof REQUIREMENTS)[number],
+): string {
+	if (
+		requirement === "optional" &&
+		(code === "missing_optional_context" ||
+			code === "provider_unavailable" ||
+			code === "unresolved_host_path")
+	)
+		return `Continue with explicit context unknown until ${code} is resolved.`;
+	return `Stop until ${code} is resolved.`;
+}
+
+/** Enforce requirement and identity invariants for one failure. */
+function validateFailureIdentity(
 	path: string,
 	code: SynaipseContextFailureCode,
 	requirement: (typeof REQUIREMENTS)[number],
 	contextId: string | null,
-	freshnessStatus: SynaipseContextFailureFreshness,
 ): void {
 	if (isCatalogFailure(code)) {
 		if (requirement !== "required")
@@ -99,19 +142,93 @@ function validateFailureSemantics(
 					"missing_required_context must be required",
 				);
 		}
+		if (code === "missing_optional_context" && requirement !== "optional")
+			throw new SynaipseContextContractError(
+				`${path}.requirement`,
+				"missing_optional_context must be optional",
+			);
 		if (contextId === null)
 			throw new SynaipseContextContractError(
 				`${path}.contextId`,
 				`${code} must identify a logical context`,
 			);
 	}
-	if (code === "stale_context_digest") {
-		if (freshnessStatus !== "stale")
-			throw new SynaipseContextContractError(
-				`${path}.freshness.status`,
-				"stale_context_digest must carry stale freshness",
-			);
-	}
+}
+
+/** Enforce code-derived recovery, ownership, stop, and freshness metadata. */
+function validateFailureMetadata(
+	path: string,
+	code: SynaipseContextFailureCode,
+	requirement: (typeof REQUIREMENTS)[number],
+	recovery: string,
+	owner: string,
+	stopCondition: string,
+	freshnessStatus: SynaipseContextFailureFreshness,
+): void {
+	const expectedRecovery = SYNAIPSE_CONTEXT_FAILURE_RECOVERIES[code];
+	if (recovery !== expectedRecovery)
+		throw new SynaipseContextContractError(
+			`${path}.recovery`,
+			`${code} must use recovery ${expectedRecovery}`,
+		);
+	if (owner !== SYNAIPSE_CONTEXT_FAILURE_OWNER)
+		throw new SynaipseContextContractError(
+			`${path}.owner`,
+			`must be ${SYNAIPSE_CONTEXT_FAILURE_OWNER}`,
+		);
+	const expectedStopCondition = canonicalContextFailureStopCondition(
+		code,
+		requirement,
+	);
+	if (stopCondition !== expectedStopCondition)
+		throw new SynaipseContextContractError(
+			`${path}.stopCondition`,
+			`${code} must use stop condition ${expectedStopCondition}`,
+		);
+	const expectedFreshness = canonicalContextFailureFreshness(code);
+	if (freshnessStatus !== expectedFreshness)
+		throw new SynaipseContextContractError(
+			`${path}.freshness.status`,
+			`${code} must carry ${expectedFreshness} freshness`,
+		);
+}
+
+/** Parse and validate code-derived metadata for one failure record. */
+function parseFailureMetadata(
+	failure: Record<string, unknown>,
+	path: string,
+	code: SynaipseContextFailureCode,
+	requirement: (typeof REQUIREMENTS)[number],
+) {
+	const freshness = contractObject(failure.freshness, `${path}.freshness`);
+	rejectUnknown(freshness, ["status", "observedAt"], `${path}.freshness`);
+	const recovery = contractString(failure.recovery, `${path}.recovery`);
+	const owner = contractString(failure.owner, `${path}.owner`);
+	const stopCondition = contractString(
+		failure.stopCondition,
+		`${path}.stopCondition`,
+	);
+	const freshnessStatus = contractEnum(
+		freshness.status,
+		SYNAIPSE_CONTEXT_FAILURE_FRESHNESS,
+		`${path}.freshness.status`,
+	);
+	validateFailureMetadata(
+		path,
+		code,
+		requirement,
+		recovery,
+		owner,
+		stopCondition,
+		freshnessStatus,
+	);
+	return {
+		recovery,
+		owner,
+		stopCondition,
+		freshnessStatus,
+		observedAt: dateTime(freshness.observedAt, `${path}.freshness.observedAt`),
+	};
 }
 
 /** Parse one canonical context failure record at the decision boundary. */
@@ -134,12 +251,15 @@ function parseContextFailure(
 		],
 		path,
 	);
+	if (!Object.hasOwn(failure, "contextId"))
+		throw new SynaipseContextContractError(
+			`${path}.contextId`,
+			"must be explicitly present (null for catalog failures)",
+		);
 	const contextId =
-		failure.contextId === undefined || failure.contextId === null
+		failure.contextId === null
 			? null
 			: harnessId(failure.contextId, "ch_context", `${path}.contextId`);
-	const freshness = contractObject(failure.freshness, `${path}.freshness`);
-	rejectUnknown(freshness, ["status", "observedAt"], `${path}.freshness`);
 	const code = contractEnum(
 		failure.code,
 		SYNAIPSE_CONTEXT_FAILURE_CODES,
@@ -150,22 +270,16 @@ function parseContextFailure(
 		REQUIREMENTS,
 		`${path}.requirement`,
 	);
-	const freshnessStatus = contractEnum(
-		freshness.status,
-		SYNAIPSE_CONTEXT_FAILURE_FRESHNESS,
-		`${path}.freshness.status`,
-	);
-	validateFailureSemantics(path, code, requirement, contextId, freshnessStatus);
+	validateFailureIdentity(path, code, requirement, contextId);
+	const { recovery, owner, stopCondition, freshnessStatus, observedAt } =
+		parseFailureMetadata(failure, path, code, requirement);
 	return {
 		code,
 		requirement,
 		contextId,
-		recovery: contractString(failure.recovery, `${path}.recovery`),
-		owner: contractString(failure.owner, `${path}.owner`),
-		stopCondition: contractString(
-			failure.stopCondition,
-			`${path}.stopCondition`,
-		),
+		recovery,
+		owner,
+		stopCondition,
 		evidenceRefs: contractUniqueArray(
 			failure.evidenceRefs,
 			`${path}.evidenceRefs`,
@@ -173,10 +287,7 @@ function parseContextFailure(
 		),
 		freshness: {
 			status: freshnessStatus,
-			observedAt: dateTime(
-				freshness.observedAt,
-				`${path}.freshness.observedAt`,
-			),
+			observedAt,
 		},
 	};
 }
@@ -212,39 +323,42 @@ export function createSynaipseContextFailure(args: {
 	code: SynaipseContextFailureCode;
 	requirement: (typeof REQUIREMENTS)[number];
 	contextId?: string | null;
-	recovery: string;
-	owner?: string;
-	stopCondition?: string;
 	evidenceRefs: string[];
-	freshness?: SynaipseContextFailureFreshness;
 	observedAt: string;
 }): SynaipseContextFailure {
 	const contextId = args.contextId ?? null;
 	if (contextId !== null) harnessId(contextId, "ch_context", "contextId");
-	validateFailureSemantics(
+	const recovery = SYNAIPSE_CONTEXT_FAILURE_RECOVERIES[args.code];
+	const owner = SYNAIPSE_CONTEXT_FAILURE_OWNER;
+	const stopCondition = canonicalContextFailureStopCondition(
+		args.code,
+		args.requirement,
+	);
+	const freshness = canonicalContextFailureFreshness(args.code);
+	validateFailureIdentity("failure", args.code, args.requirement, contextId);
+	validateFailureMetadata(
 		"failure",
 		args.code,
 		args.requirement,
-		contextId,
-		args.freshness ?? "unknown",
+		recovery,
+		owner,
+		stopCondition,
+		freshness,
 	);
 	return {
 		code: args.code,
 		requirement: args.requirement,
 		contextId,
-		recovery: contractString(args.recovery, "recovery"),
-		owner: contractString(args.owner ?? "synaipse-context-plane", "owner"),
-		stopCondition: contractString(
-			args.stopCondition ?? `Stop until ${args.code} is resolved.`,
-			"stopCondition",
-		),
+		recovery,
+		owner,
+		stopCondition,
 		evidenceRefs: contractUniqueArray(
 			args.evidenceRefs,
 			"evidenceRefs",
 			(item, path) => contractString(item, path),
 		),
 		freshness: {
-			status: args.freshness ?? "unknown",
+			status: freshness,
 			observedAt: dateTime(args.observedAt, "freshness.observedAt"),
 		},
 	};

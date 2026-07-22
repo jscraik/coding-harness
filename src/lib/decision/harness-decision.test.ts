@@ -88,7 +88,8 @@ describe("validateHarnessDecision", () => {
 					contextId: "ch_context_7K4M2P9QX3DR",
 					recovery: "restore_context_provider",
 					owner: "synaipse-context-plane",
-					stopCondition: "Stop until provider_unavailable is resolved.",
+					stopCondition:
+						"Continue with explicit context unknown until provider_unavailable is resolved.",
 					evidenceRefs: ["context:ch_context_7K4M2P9QX3DR"],
 					freshness: {
 						status: "current",
@@ -113,6 +114,49 @@ describe("validateHarnessDecision", () => {
 			valid: true,
 			errors: [],
 		});
+	});
+
+	it.each([
+		"pass",
+		"action_required",
+		"blocked",
+		"fail",
+	] as const)("rejects %s decisions with blocking context failures and a runnable command", (status) => {
+		const result = validateHarnessDecision(
+			validDecision({
+				status,
+				failureClass:
+					status === "blocked" || status === "fail"
+						? "context_unavailable"
+						: null,
+				meta: {
+					synaipseContextFailures: {
+						schemaVersion: "synaipse-context-failure-envelope/v1",
+						failures: [
+							{
+								code: "missing_required_context",
+								requirement: "required",
+								contextId: "ch_context_7K4M2P9QX3DR",
+								recovery: "supply_required_context",
+								owner: "synaipse-context-plane",
+								stopCondition:
+									"Stop until missing_required_context is resolved.",
+								evidenceRefs: ["context:ch_context_7K4M2P9QX3DR"],
+								freshness: {
+									status: "current",
+									observedAt: "2026-07-20T00:00:00Z",
+								},
+							},
+						],
+					},
+				},
+			}),
+		);
+
+		expect(result.valid).toBe(false);
+		expect(errorCodes(result)).toContain(
+			"blocking context failures require no runnable next command",
+		);
 	});
 
 	it("narrows valid decisions with the type guard", () => {

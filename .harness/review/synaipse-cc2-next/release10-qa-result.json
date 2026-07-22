@@ -1,0 +1,90 @@
+{
+	"schema_version": "pm-child-result/v1",
+	"packet_id": "pkt_cc2release10qa",
+	"packet_sha256": "a3f3a62e384611207aa7216757b76969e32c3b190bae4a4c92937fc3ed0d3b79",
+	"dispatch_id": "ch_cc2release10qa",
+	"turn_id": "turn_cc2release10qa98d650c6",
+	"project_id": "coding-harness",
+	"job_id": "job_cc2release998d650c6",
+	"role": "QA Disproof",
+	"declared_artifact": ".harness/review/synaipse-cc2-next/release10-qa-handoff.md",
+	"artifact_sha256": "2839d7ecae982bc00af6ea260ead145035c9dc3bfd689b9319134a36cd5ad07f",
+	"baseline_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+	"target_sha": "8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8",
+	"status": "accepted",
+	"commands": [
+		{
+			"command": "git rev-parse HEAD",
+			"outcome": "pass",
+			"evidence": "Target HEAD matched 8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8."
+		},
+		{
+			"command": "git diff --cached --binary | shasum -a 256",
+			"outcome": "pass",
+			"evidence": "Staged patch digest matched 98d650c6c407143f4386396ac675cdd3f000849c373630319e9e1efb28b5c801."
+		},
+		{
+			"command": "shasum -a 256 /private/tmp/coding-harness-synaipse-cc2-next/.harness/intent/2026-07-20-synaipse-cc2-release10-qa-packet.json",
+			"outcome": "pass",
+			"evidence": "Packet SHA-256 matched a3f3a62e384611207aa7216757b76969e32c3b190bae4a4c92937fc3ed0d3b79."
+		},
+		{
+			"command": "shasum -a 256 /private/tmp/coding-harness-synaipse-cc2-next/.harness/review/synaipse-cc2-next/release9-worker-result.json",
+			"outcome": "pass",
+			"evidence": "Accepted Worker result SHA-256 matched 15adb3eef736a82ed7d0c0cdea9fd24b8a1d34959ff71ea689b99ba817ab0564."
+		},
+		{
+			"command": "pnpm boundary:unknown-guards",
+			"outcome": "pass",
+			"evidence": "52 baselined boundary guards; no new entries."
+		},
+		{
+			"command": "pnpm exec vitest run src/lib/synaipse/context-contract.test.ts src/lib/synaipse/context-plane.test.ts src/lib/decision/harness-decision.test.ts src/commands/next.test.ts src/dev/validate-harness-decision-failures.test.ts src/dev/runtime-packet-example-parity.test.ts --maxWorkers=1 --reporter=dot",
+			"outcome": "pass",
+			"evidence": "Six files and 164 tests passed."
+		},
+		{
+			"command": "node scripts/validate-runtime-packet-schemas.cjs --all",
+			"outcome": "pass",
+			"evidence": "All 28 runtime packet schema/example/semantic entries passed with zero errors."
+		},
+		{
+			"command": "pnpm exec tsc --noEmit",
+			"outcome": "pass",
+			"evidence": "TypeScript emitted no diagnostics."
+		},
+		{
+			"command": "pnpm run quality:self-affirming",
+			"outcome": "pass",
+			"evidence": "435 test files checked; assertion oracles passed."
+		},
+		{
+			"command": "pnpm run quality:size",
+			"outcome": "pass",
+			"evidence": "Nine production files and six test files checked; size and complexity limits passed."
+		},
+		{
+			"command": "node --import tsx /private/tmp/cc2-release10-qa-matrix.mts",
+			"outcome": "pass",
+			"evidence": "Fresh public-adapter matrix passed all nine required cases, exact canonical codes, stop/continue conditions, blocker/unknown projections, decision validation, semantic validation, and legacy state-v1 validation."
+		},
+		{
+			"command": "pnpm exec vitest run src/lib/synaipse/state.test.ts src/commands/next-agent-parity.test.ts src/lib/decision/harness-decision.test.ts --maxWorkers=1 --reporter=dot",
+			"outcome": "pass",
+			"evidence": "Three compatibility-focused files and 58 tests passed."
+		},
+		{
+			"command": "uv run --python 3.12 python -c 'import json,jsonschema; schema=json.load(open(\"/Users/jamiecraik/dev/jamie-brain/operating-system/schemas/pm-child-result.v1.schema.json\")); value=json.load(open(\".harness/review/synaipse-cc2-next/release10-qa-result.json\")); jsonschema.Draft202012Validator(schema).validate(value); print(\"pm-child-result/v1 schema: pass\")'",
+			"outcome": "pass",
+			"evidence": "Result artifact validated against the authoritative pm-child-result/v1 schema."
+		},
+		{
+			"command": "git diff --cached --check",
+			"outcome": "pass",
+			"evidence": "No staged whitespace errors."
+		}
+	],
+	"findings": [],
+	"claims_boundary": "This accepted QA result proves only fresh read-only local QA against target 8aa5e406f49c84ba04fa39e628d9d8f5a3ea35c8 and staged patch 98d650c6c407143f4386396ac675cdd3f000849c373630319e9e1efb28b5c801, with accepted Worker binding packet SHA a3f3a62e384611207aa7216757b76969e32c3b190bae4a4c92937fc3ed0d3b79 and Worker result SHA 15adb3eef736a82ed7d0c0cdea9fd24b8a1d34959ff71ea689b99ba817ab0564. It does not prove Adversarial Review, finding fan-in, commit authorization, hosted checks, hosted review, acceptance, merge, release, deployment, or production readiness.",
+	"final_status_line": "WROTE: .harness/review/synaipse-cc2-next/release10-qa-result.json"
+}

@@ -182,7 +182,7 @@ describe("SynAIpse universal context plane", () => {
 		});
 	});
 
-	it("keeps optional omission legacy-only while requiring a canonical required failure", () => {
+	it("emits canonical and legacy projections for optional omission", () => {
 		const optional = resolveSynaipseContext(
 			resolutionInput([contextRef({ requirement: "optional" })], []),
 		);
@@ -192,7 +192,16 @@ describe("SynAIpse universal context plane", () => {
 			unknowns: [{ contextId: SPEC_ID, reason: "missing_context" }],
 			blockers: [],
 		});
-		expect(optional.contextFailures).toBeUndefined();
+		expect(optional.contextFailures).toMatchObject({
+			failures: [
+				{
+					code: "missing_optional_context",
+					requirement: "optional",
+					contextId: SPEC_ID,
+					recovery: "supply_optional_context",
+				},
+			],
+		});
 
 		const required = resolveSynaipseContext(
 			resolutionInput([contextRef()], []),
@@ -232,6 +241,15 @@ describe("SynAIpse universal context plane", () => {
 		expect(resolveSynaipseContext(input)).toMatchObject({
 			status: "blocked",
 			blockers: [{ code: "stale_digest", contextId: SPEC_ID }],
+			contextFailures: {
+				failures: [
+					{
+						code: "stale_context_digest",
+						requirement: "optional",
+						stopCondition: "Stop until stale_context_digest is resolved.",
+					},
+				],
+			},
 		});
 	});
 
@@ -287,6 +305,40 @@ describe("SynAIpse universal context plane", () => {
 			{
 				status: "blocked",
 				blockers: [{ code: "historical_context", contextId: SPEC_ID }],
+				contextFailures: {
+					failures: [
+						{
+							code: "superseded_context",
+							recovery: "select_current_context",
+						},
+					],
+				},
+			},
+		);
+	});
+
+	it("blocks optional historical context without fabricating an unknown", () => {
+		const historical = contextRef({
+			requirement: "optional",
+			lifecycle: { status: "historical", supersededBy: null },
+		});
+
+		expect(resolveSynaipseContext(resolutionInput([historical]))).toMatchObject(
+			{
+				status: "blocked",
+				selectedContextIds: [],
+				unknowns: [],
+				blockers: [{ code: "historical_context", contextId: SPEC_ID }],
+				contextFailures: {
+					failures: [
+						{
+							code: "superseded_context",
+							requirement: "optional",
+							recovery: "select_current_context",
+							stopCondition: "Stop until superseded_context is resolved.",
+						},
+					],
+				},
 			},
 		);
 	});
@@ -377,10 +429,24 @@ describe("SynAIpse universal context plane", () => {
 				[contextRef({ requirement: "optional" })],
 				[{ contextId: SPEC_ID, status }],
 			);
+			const recovery =
+				status === "provider_unavailable"
+					? "restore_context_provider"
+					: "resolve_context_host_path";
 			expect(resolveSynaipseContext(input)).toMatchObject({
 				status: "resolved",
 				unknowns: [{ contextId: SPEC_ID, reason: status }],
 				blockers: [],
+				contextFailures: {
+					failures: [
+						{
+							code: status,
+							requirement: "optional",
+							recovery,
+							stopCondition: `Continue with explicit context unknown until ${status} is resolved.`,
+						},
+					],
+				},
 			});
 		}
 	});
@@ -390,6 +456,8 @@ describe("SynAIpse universal context plane", () => {
 			name: "missing required context",
 			input: () => resolutionInput([contextRef()], []),
 			code: "missing_required_context",
+			recovery: "supply_required_context",
+			freshness: "current",
 		},
 		{
 			name: "access denial",
@@ -399,6 +467,8 @@ describe("SynAIpse universal context plane", () => {
 				return input;
 			},
 			code: "context_access_denied",
+			recovery: "request_authorized_projection",
+			freshness: "current",
 		},
 		{
 			name: "stale digest",
@@ -414,6 +484,8 @@ describe("SynAIpse universal context plane", () => {
 				return input;
 			},
 			code: "stale_context_digest",
+			recovery: "refresh_context_digest",
+			freshness: "stale",
 		},
 		{
 			name: "superseded context",
@@ -427,6 +499,8 @@ describe("SynAIpse universal context plane", () => {
 					}),
 				]),
 			code: "superseded_context",
+			recovery: "select_current_context",
+			freshness: "current",
 		},
 		{
 			name: "provider unavailable",
@@ -436,6 +510,8 @@ describe("SynAIpse universal context plane", () => {
 					[{ contextId: SPEC_ID, status: "provider_unavailable" }],
 				),
 			code: "provider_unavailable",
+			recovery: "restore_context_provider",
+			freshness: "current",
 		},
 		{
 			name: "unresolved host path",
@@ -445,8 +521,15 @@ describe("SynAIpse universal context plane", () => {
 					[{ contextId: SPEC_ID, status: "unresolved_host_path" }],
 				),
 			code: "unresolved_host_path",
+			recovery: "resolve_context_host_path",
+			freshness: "current",
 		},
-	] as const)("emits the canonical envelope for $name", ({ input, code }) => {
+	] as const)("emits the canonical envelope for $name", ({
+		input,
+		code,
+		recovery,
+		freshness,
+	}) => {
 		const result = resolveSynaipseContext(input());
 
 		expect(result.contextFailures).toMatchObject({
@@ -455,12 +538,12 @@ describe("SynAIpse universal context plane", () => {
 				{
 					code,
 					contextId: SPEC_ID,
-					recovery: expect.any(String),
+					recovery,
 					owner: "synaipse-context-plane",
-					stopCondition: expect.any(String),
+					stopCondition: `Stop until ${code} is resolved.`,
 					evidenceRefs: [`context:${SPEC_ID}`],
 					freshness: {
-						status: expect.any(String),
+						status: freshness,
 						observedAt: NOW,
 					},
 				},

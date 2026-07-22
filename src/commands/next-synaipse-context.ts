@@ -37,13 +37,7 @@ function failureEnvelope(
 				code,
 				requirement: "required",
 				contextId: null,
-				recovery: {
-					missing_project_identity: "establish_project_identity",
-					missing_context_catalog: "admit_context_catalog",
-					malformed_context_catalog: "repair_context_catalog",
-				}[code],
 				evidenceRefs: [evidenceRef],
-				freshness: "unknown",
 				observedAt,
 			}),
 		],
@@ -84,12 +78,13 @@ function mismatchedRepositoryContext(repository: string): OptionalNextContext {
 	return {
 		decision: blockedDecision({
 			summary: "SynAIpse context targets a different repository.",
-			nextAction: "Rebuild the task context for the target repository.",
+			nextAction:
+				"Admit the governed context catalog for the target repository, then rebuild the task context.",
 			failureClass: "context_project_mismatch",
 			evidenceRef: [`repository:${repository}`],
 			meta: {
 				synaipseContextFailures: failureEnvelope(
-					"missing_project_identity",
+					"missing_context_catalog",
 					`repository:${repository}`,
 				),
 			},

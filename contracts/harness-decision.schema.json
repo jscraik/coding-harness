@@ -127,6 +127,7 @@
 			"properties": {
 				"synaipseContextFailures": {
 					"type": "object",
+					"$comment": "Code-bound recovery, stop-condition, freshness, and logical identity uniqueness require scripts/validate-harness-decision-semantics.cjs in addition to structural JSON Schema validation.",
 					"additionalProperties": false,
 					"required": ["schemaVersion", "failures"],
 					"properties": {
@@ -143,6 +144,7 @@
 								"required": [
 									"code",
 									"requirement",
+									"contextId",
 									"recovery",
 									"owner",
 									"stopCondition",
@@ -155,6 +157,7 @@
 											"missing_project_identity",
 											"missing_context_catalog",
 											"missing_required_context",
+											"missing_optional_context",
 											"context_access_denied",
 											"stale_context_digest",
 											"superseded_context",
@@ -168,8 +171,21 @@
 										"type": ["string", "null"],
 										"pattern": "^ch_context_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
 									},
-									"recovery": { "type": "string", "minLength": 1 },
-									"owner": { "type": "string", "minLength": 1 },
+									"recovery": {
+										"enum": [
+											"establish_project_identity",
+											"admit_context_catalog",
+											"supply_required_context",
+											"supply_optional_context",
+											"request_authorized_projection",
+											"refresh_context_digest",
+											"select_current_context",
+											"repair_context_catalog",
+											"restore_context_provider",
+											"resolve_context_host_path"
+										]
+									},
+									"owner": { "const": "synaipse-context-plane" },
 									"stopCondition": { "type": "string", "minLength": 1 },
 									"evidenceRefs": {
 										"type": "array",
@@ -191,7 +207,119 @@
 											}
 										}
 									}
-								}
+								},
+								"allOf": [
+									{
+										"if": {
+											"properties": {
+												"code": {
+													"enum": [
+														"missing_project_identity",
+														"missing_context_catalog",
+														"malformed_context_catalog"
+													]
+												}
+											},
+											"required": ["code"]
+										},
+										"then": {
+											"properties": {
+												"requirement": { "const": "required" },
+												"contextId": { "const": null },
+												"freshness": {
+													"properties": { "status": { "const": "unknown" } }
+												}
+											}
+										}
+									},
+									{
+										"if": {
+											"properties": {
+												"code": {
+													"enum": [
+														"missing_required_context",
+														"missing_optional_context",
+														"context_access_denied",
+														"stale_context_digest",
+														"superseded_context",
+														"provider_unavailable",
+														"unresolved_host_path"
+													]
+												}
+											},
+											"required": ["code"]
+										},
+										"then": {
+											"properties": {
+												"contextId": {
+													"type": "string",
+													"pattern": "^ch_context_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
+												}
+											}
+										}
+									},
+									{
+										"if": {
+											"properties": {
+												"code": { "const": "missing_required_context" }
+											},
+											"required": ["code"]
+										},
+										"then": {
+											"properties": { "requirement": { "const": "required" } }
+										}
+									},
+									{
+										"if": {
+											"properties": {
+												"code": { "const": "missing_optional_context" }
+											},
+											"required": ["code"]
+										},
+										"then": {
+											"properties": { "requirement": { "const": "optional" } }
+										}
+									},
+									{
+										"if": {
+											"properties": {
+												"code": {
+													"enum": [
+														"missing_required_context",
+														"missing_optional_context",
+														"context_access_denied",
+														"superseded_context",
+														"provider_unavailable",
+														"unresolved_host_path"
+													]
+												}
+											},
+											"required": ["code"]
+										},
+										"then": {
+											"properties": {
+												"freshness": {
+													"properties": { "status": { "const": "current" } }
+												}
+											}
+										}
+									},
+									{
+										"if": {
+											"properties": {
+												"code": { "const": "stale_context_digest" }
+											},
+											"required": ["code"]
+										},
+										"then": {
+											"properties": {
+												"freshness": {
+													"properties": { "status": { "const": "stale" } }
+												}
+											}
+										}
+									}
+								]
 							}
 						}
 					}
