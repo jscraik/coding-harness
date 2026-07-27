@@ -1,4 +1,5 @@
 import {
+	compactHarnessDecision,
 	type HarnessDecision,
 	validateHarnessDecision,
 } from "../lib/decision/harness-decision.js";
@@ -33,9 +34,34 @@ function decisionExitCode(
 	return decision.status === "blocked" || decision.status === "fail" ? 1 : 0;
 }
 
-function printDecision(decision: HarnessDecision, json: boolean): void {
+/** Keep explicit evidence and diagnostic routes on the complete envelope. */
+function usesExplicitExpertEvidence(
+	parsed: ReturnType<typeof parseNextArgs>,
+): boolean {
+	return (
+		parsed.phaseExitPath !== undefined ||
+		parsed.runtimeCardPath !== undefined ||
+		parsed.prCloseoutPath !== undefined ||
+		parsed.fitnessReportPath !== undefined ||
+		parsed.evidenceMode !== undefined ||
+		parsed.files !== undefined
+	);
+}
+
+/** Render either the routine projection or the complete expert decision payload. */
+function printDecision(
+	decision: HarnessDecision,
+	json: boolean,
+	compact = false,
+): void {
 	if (json) {
-		console.info(JSON.stringify(decision, null, 2));
+		console.info(
+			JSON.stringify(
+				compact ? compactHarnessDecision(decision) : decision,
+				null,
+				2,
+			),
+		);
 		return;
 	}
 	console.info(decision.summary);
@@ -120,6 +146,12 @@ export function runNextCLI(
 		console.error(`Invalid HarnessDecision: ${validation.errors.join("; ")}`);
 		return 1;
 	}
-	printDecision(decision, parsed.json);
+	printDecision(
+		decision,
+		parsed.json,
+		parsed.error === undefined &&
+			Object.keys(options).length === 0 &&
+			!usesExplicitExpertEvidence(parsed),
+	);
 	return decisionExitCode(decision, usageError);
 }

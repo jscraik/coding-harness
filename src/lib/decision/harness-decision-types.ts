@@ -207,6 +207,89 @@ export interface HarnessDecision {
 	meta?: HarnessDecisionMeta;
 }
 
+/** Compact, task-first projection of a full decision at the routine CLI boundary. */
+export interface CompactHarnessDecision {
+	/** Existing contract identity; this is a projection, not a new decision version. */
+	schemaVersion: typeof HARNESS_DECISION_SCHEMA_VERSION;
+	/** Current local routing status. */
+	status: HarnessDecisionStatus;
+	/** Concise local state summary. */
+	summary: string;
+	/** One useful immediate action. */
+	nextAction: string;
+	/** Exact command for the immediate action, when safe. */
+	nextCommand: string | null;
+	/** Advisory context or truth-lane degradation that does not replace the action. */
+	warnings: string[];
+	/** Material permissions and mutation boundary for the named next action. */
+	executionBoundary: Pick<
+		HarnessDecision,
+		"safeToRun" | "requiresHuman" | "requiresNetwork" | "writesFiles"
+	>;
+	/** Lanes this local recommendation cannot prove. */
+	claimsBoundary: string;
+}
+
+/** Retain only non-blank warning strings from optional metadata. */
+function compactStringArray(value: unknown): string[] {
+	return Array.isArray(value)
+		? value.filter(
+				(entry): entry is string =>
+					typeof entry === "string" && entry.trim().length > 0,
+			)
+		: [];
+}
+
+/** Narrow unknown metadata to a record before reading optional projection fields. */
+function compactRecord(value: unknown): value is Record<string, unknown> {
+	return value !== null && typeof value === "object";
+}
+
+/** Remove internal orchestration detail from an ordinary `harness next --json` response. */
+export function compactHarnessDecision(
+	decision: HarnessDecision,
+): CompactHarnessDecision {
+	const meta = decision.meta ?? {};
+	const readiness = meta.agentReadinessContext;
+	const readinessWarnings = compactRecord(readiness)
+		? Array.isArray(readiness.degradedSurfaces)
+			? readiness.degradedSurfaces.flatMap((surface) =>
+					compactRecord(surface)
+						? compactStringArray(surface.staleReasons)
+						: [],
+				)
+			: []
+		: [];
+	const synaipseState = meta.synaipseState;
+	const claimsBoundary =
+		compactRecord(synaipseState) &&
+		typeof synaipseState.claimBoundary === "string" &&
+		synaipseState.claimBoundary.trim().length > 0
+			? synaipseState.claimBoundary
+			: "Local task routing only; does not prove PR, CI, review, merge, release, or production readiness.";
+
+	return {
+		schemaVersion: decision.schemaVersion,
+		status: decision.status,
+		summary: decision.summary,
+		nextAction: decision.nextAction,
+		nextCommand: decision.nextCommand,
+		warnings: [
+			...new Set([
+				...compactStringArray(meta.truthLaneWarnings),
+				...readinessWarnings,
+			]),
+		],
+		executionBoundary: {
+			safeToRun: decision.safeToRun,
+			requiresHuman: decision.requiresHuman,
+			requiresNetwork: decision.requiresNetwork,
+			writesFiles: decision.writesFiles,
+		},
+		claimsBoundary,
+	};
+}
+
 /** Producer input for constructing a complete agent-readable decision envelope. */
 export interface HarnessDecisionInput {
 	/** Decision state. */

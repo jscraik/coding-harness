@@ -4,6 +4,7 @@ import { validateHarnessDecision } from "./harness-decision-validation.js";
 
 export type {
 	HarnessDecision,
+	CompactHarnessDecision,
 	HarnessDecisionCockpitLane,
 	HarnessDecisionDelayClass,
 	HarnessDecisionExecutionMetadata,
@@ -24,6 +25,7 @@ export type {
 	HarnessDecisionValidationResult,
 } from "./harness-decision-types.js";
 export {
+	compactHarnessDecision,
 	HARNESS_DECISION_RECOMMENDATION_EFFECTS_SCHEMA_VERSION,
 	HARNESS_DECISION_SCHEMA_VERSION,
 } from "./harness-decision-types.js";
