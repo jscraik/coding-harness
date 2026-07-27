@@ -1040,6 +1040,54 @@ describe("runHarnessNext", () => {
 		});
 	});
 
+	it("keeps stale optional prompt-context orientation advisory", () => {
+		const decision = runHarnessNext({
+			inspectChangedFiles: () => [],
+			repoRoot: "/tmp/repo",
+			agentReadinessContext: {
+				schemaVersion: "agent-readiness-context-health/v1",
+				status: "warn",
+				evidenceUse: "orientation",
+				canonicalReport: {
+					schemaVersion: "context-health-report/v1",
+					command: "node --import tsx src/cli.ts context-health --json",
+					available: true,
+					prerequisiteStatus: "pass",
+					prerequisiteEvidence: ["harness.contract.json"],
+				},
+				surfaces: [
+					{
+						id: "prompt_context_drift",
+						status: "warn",
+						evidenceUse: "orientation",
+						evidence: [
+							"missing:artifacts/context-integrity/prompt-context-drift-report.json",
+						],
+						staleReasons: ["No prompt-context report was provided."],
+						suggestedRefreshCommands: ["harness prompt-context-drift:write"],
+					},
+				],
+				suggestedRefreshCommands: ["harness prompt-context-drift:write"],
+			},
+		});
+
+		expect(decision.status).toBe("pass");
+		expect(decision.nextCommand).toBe("harness check --json");
+		expect(decision.writesFiles).toBe(false);
+		expect(decision.meta).toMatchObject({
+			agentReadinessContext: {
+				status: "warn",
+				degradedSurfaceCount: 1,
+				degradedSurfaces: [
+					{
+						id: "prompt_context_drift",
+						status: "warn",
+					},
+				],
+			},
+		});
+	});
+
 	it("reports excluded operator-local paths without creating an empty file plan", () => {
 		const decision = runHarnessNext({
 			files: [".tessl/memory/index.md"],
