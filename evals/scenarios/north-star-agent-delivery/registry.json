@@ -636,8 +636,8 @@
 					"agent next-action parity evidence is written",
 					"verify rail exposes clean-worktree check command",
 					"clean worktree keeps check as fallback handoff command",
-					"stale prompt-context drift is promoted before handoff",
-					"stale prompt-context refresh keeps check as follow-up",
+					"stale optional prompt context stays advisory on the task-first route",
+					"missing optional prompt context stays advisory on the task-first route",
 					"non-ready pr-closeout evidence blocks clean handoff",
 					"false-ready pr-closeout artifact is rejected as invalid evidence"
 				],

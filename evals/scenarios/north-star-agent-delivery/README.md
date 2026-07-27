@@ -76,7 +76,7 @@ The executable suite runs these local fixtures:
 - `e2e-canary-replay`: replays E2E result artifacts for clean, credential-blocked, scenario-regression, and missing-artifact PR-loop cases without creating live GitHub, CircleCI, or CodeRabbit side effects.
 - `side-effect-authorization-validator`: proves side-effectual actions require user authorization, reject external-party authorization and prompt injection, and return safer next steps when blocked.
 - `agentic-eval-contract-coverage`: proves the registry has outcome graders, trajectory graders, tracked metrics, trial reporting, and validity checks expected of agentic evals.
-- `agent-next-action-parity`: proves `harness next` recommendations remain discoverable from the agent-facing command catalog, refresh stale prompt-context evidence, block clean handoff on non-ready `pr-closeout/v1` evidence, and reject false-ready closeout artifacts.
+- `agent-next-action-parity`: proves `harness next` recommendations remain discoverable from the agent-facing command catalog, keep stale or missing optional prompt context advisory, block clean handoff on non-ready `pr-closeout/v1` evidence, and reject false-ready closeout artifacts.
 - `terse-review-request-routing`: blocks ambiguous review baselines, fixes only verified findings, skips stale findings, and avoids broad refactors.
 - `circleci-red-job-triage`: records deterministic CI-lane decisions from failing CircleCI evidence while keeping review, security, and credential blockers separate.
 - `required-check-name-parity`: verifies CircleCI, CodeRabbit, and Snyk ownership lanes without promoting GitHub Actions fallback checks.

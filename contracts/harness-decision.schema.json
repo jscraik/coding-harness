@@ -7,40 +7,50 @@
 	"required": ["schemaVersion"],
 	"anyOf": [
 		{
-			"required": [
-				"schemaVersion",
-				"producer",
-				"status",
-				"summary",
-				"nextAction",
-				"nextCommand",
-				"phase",
-				"objective",
-				"requiredEvidence",
-				"stopConditions",
-				"humanEscalation",
-				"followUpCommands",
-				"hiddenPlumbing",
-				"safeToRun",
-				"requiresHuman",
-				"requiresNetwork",
-				"writesFiles",
-				"evidenceRef",
-				"failureClass",
-				"retry",
-				"riskTier"
+			"allOf": [
+				{
+					"required": [
+						"schemaVersion",
+						"producer",
+						"status",
+						"summary",
+						"nextAction",
+						"nextCommand",
+						"phase",
+						"objective",
+						"requiredEvidence",
+						"stopConditions",
+						"humanEscalation",
+						"followUpCommands",
+						"hiddenPlumbing",
+						"safeToRun",
+						"requiresHuman",
+						"requiresNetwork",
+						"writesFiles",
+						"evidenceRef",
+						"failureClass",
+						"retry",
+						"riskTier"
+					]
+				},
+				{ "not": { "required": ["executionBoundary"] } }
 			]
 		},
 		{
-			"required": [
-				"schemaVersion",
-				"status",
-				"summary",
-				"nextAction",
-				"nextCommand",
-				"warnings",
-				"executionBoundary",
-				"claimsBoundary"
+			"allOf": [
+				{
+					"required": [
+						"schemaVersion",
+						"status",
+						"summary",
+						"nextAction",
+						"nextCommand",
+						"warnings",
+						"executionBoundary",
+						"claimsBoundary"
+					]
+				},
+				{ "not": { "required": ["producer"] } }
 			]
 		}
 	],

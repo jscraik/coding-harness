@@ -4,6 +4,14 @@ last_validated: 2026-07-27
 
 # Agent-First Status
 
+## Table of Contents
+
+- [Current Status](#current-status)
+- [North-Star Boundary](#north-star-boundary)
+- [What Is Known](#what-is-known)
+- [Recovery Order](#recovery-order)
+- [Historical Reporting](#historical-reporting)
+
 ## Current Status
 
 **Status:** 🔶 Partial
@@ -43,14 +51,33 @@ rather than refreshed cosmetically.
 
 ## Recovery Order
 
-1. Make `harness next --json` task-first.
-2. Make `harness init --minimal --dry-run --json` genuinely small.
-3. Reduce exposed commands to current-consumer capability.
+Each step is owned by Coding Harness maintainers. Start a step only after the
+previous recovery PR is merged or explicitly rejected; use the
+[validation route](../agents/04-validation.md) to report a failure and keep the
+previous slice active rather than widening scope.
+
+1. Make `harness next --json` task-first. **Success:** stale optional context is
+   a warning and the routine output names one useful action. **Failure:** retain
+   this slice and correct the focused command contract and tests.
+2. Make `harness init --minimal --dry-run --json` genuinely small. **Success:**
+   representative previews plan fewer than ten files. **Failure:** retain the
+   installer slice and remove unselected scaffold outputs before promotion.
+3. Reduce exposed commands to current-consumer capability. **Success:** each
+   retained stable or expert command has a named consumer and behavioral proof.
+   **Failure:** retain the command-reduction slice and restore any proven
+   consumer before deleting a command.
 4. Collapse duplicated contracts, scaffolding, and active documentation.
+   **Success:** the retained route is compact and source-of-truth references are
+   singular. **Failure:** retain this slice and remove duplication instead of
+   adding another compatibility layer.
 5. Collect direct, reproducible effectiveness observations; do not infer them
-   from internal status documents.
+   from internal status documents. **Success:** five real tasks across at least
+   three repositories have raw observations. **Failure:** leave effectiveness
+   unknown.
 6. Reconcile release and repository hygiene only after the reduced journey is
-   proved from its delivered package.
+   proved from its delivered package. **Success:** source, package, and
+   installed CLI version truth agree. **Failure:** retain the release slice and
+   do not publish or clean branches/worktrees.
 
 ## Historical Reporting
 

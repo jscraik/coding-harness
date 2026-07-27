@@ -54,6 +54,7 @@ const SUPPORTED_SCHEMA_KEYWORDS = new Set([
 	"minContains",
 	"minLength",
 	"minimum",
+	"not",
 	"pattern",
 	"prefixItems",
 	"contains",
@@ -364,6 +365,15 @@ function validateSupportedSchemaKeywords(
 			);
 		}
 	}
+	if (isObject(schema.not)) {
+		validateSupportedSchemaKeywords(
+			schema.not,
+			schemaPath,
+			errors,
+			`${schemaNodePath}.not`,
+			visitedRefs,
+		);
+	}
 }
 
 function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
@@ -405,6 +415,19 @@ function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
 	if (Array.isArray(schema.allOf)) {
 		for (const candidate of schema.allOf) {
 			validateExampleValue(candidate, value, valuePath, errors, schemaPath);
+		}
+	}
+	if (isObject(schema.not)) {
+		const forbiddenErrors = [];
+		validateExampleValue(
+			schema.not,
+			value,
+			valuePath,
+			forbiddenErrors,
+			schemaPath,
+		);
+		if (forbiddenErrors.length === 0) {
+			errors.push(`${valuePath} must not match schema`);
 		}
 	}
 	if (isObject(schema.if)) {

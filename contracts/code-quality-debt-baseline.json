@@ -7917,16 +7917,6 @@
 			"detail": "checkLinks has 99 lines; max is 80"
 		},
 		{
-			"id": "oversized_function:src/lib/gardener/pr-creator.ts:createMaintenancePR",
-			"category": "oversized_function",
-			"path": "src/lib/gardener/pr-creator.ts",
-			"line": 130,
-			"symbol": "createMaintenancePR",
-			"actual": 118,
-			"max": 80,
-			"detail": "createMaintenancePR has 118 lines; max is 80"
-		},
-		{
 			"id": "oversized_function:src/lib/github/client.ts:listPullRequestReviewThreads",
 			"category": "oversized_function",
 			"path": "src/lib/github/client.ts",

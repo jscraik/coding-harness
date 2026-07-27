@@ -76,23 +76,6 @@ const FIX_GUIDANCE: Record<string, DriftFixGuidance> = {
 		manual: "Align todo filename status segment with frontmatter status.",
 		suppressible: false,
 	},
-	"quality.score.missing": {
-		manual: "Create docs/QUALITY_SCORE.md with required structure.",
-		suppressible: true,
-	},
-	"quality.score.structure.invalid": {
-		manual:
-			"Add frontmatter with last_updated and a **Score:** x/100 line to docs/QUALITY_SCORE.md.",
-		suppressible: false,
-	},
-	"quality.score.last_updated.invalid": {
-		manual: "Fix the last_updated date format in docs/QUALITY_SCORE.md.",
-		suppressible: false,
-	},
-	"quality.score.stale": {
-		manual: "Update docs/QUALITY_SCORE.md last_updated date.",
-		suppressible: false,
-	},
 	"status.matrix.missing": {
 		manual: "Create docs/roadmap/agent-first-status.md with a status matrix.",
 		suppressible: true,
@@ -423,88 +406,7 @@ function evaluateTodoLifecycle(
 	}
 }
 
-function evaluateQualityScore(
-	findings: DriftFinding[],
-	repoRoot: string,
-	baselineFingerprints: Set<string>,
-): void {
-	const qualityPath = join(repoRoot, "docs/QUALITY_SCORE.md");
-	const qualitySource = readTextFile(qualityPath);
-	if (!qualitySource) {
-		push(
-			findings,
-			{
-				rule_id: "quality.score.missing",
-				surface: "quality-score",
-				rule_result: "fail",
-				severity: "warning",
-				message: "Quality score document is missing.",
-				path: "docs/QUALITY_SCORE.md",
-			},
-			baselineFingerprints,
-		);
-		return;
-	}
-
-	const hasScore = /\*\*Score:\*\*\s+\d+\/100/.test(qualitySource);
-	const frontmatterDate = qualitySource
-		.match(/^---[\s\S]*?last_updated:\s*([^\n]+)[\s\S]*?---/m)?.[1]
-		?.trim();
-	if (!hasScore || !frontmatterDate) {
-		push(
-			findings,
-			{
-				rule_id: "quality.score.structure.invalid",
-				surface: "quality-score",
-				rule_result: "fail",
-				severity: "warning",
-				message:
-					"QUALITY_SCORE.md is missing required structure (frontmatter last_updated and/or **Score:** x/100).",
-				path: "docs/QUALITY_SCORE.md",
-			},
-			baselineFingerprints,
-		);
-		return;
-	}
-
-	const parsedDate = Number.isNaN(Date.parse(frontmatterDate))
-		? undefined
-		: new Date(frontmatterDate);
-	if (!parsedDate) {
-		push(
-			findings,
-			{
-				rule_id: "quality.score.last_updated.invalid",
-				surface: "quality-score",
-				rule_result: "fail",
-				severity: "warning",
-				message: `QUALITY_SCORE.md has invalid last_updated date: ${frontmatterDate}`,
-				path: "docs/QUALITY_SCORE.md",
-			},
-			baselineFingerprints,
-		);
-		return;
-	}
-
-	const ageDays = Math.floor(
-		(Date.now() - parsedDate.getTime()) / (24 * 60 * 60 * 1000),
-	);
-	if (ageDays > 30) {
-		push(
-			findings,
-			{
-				rule_id: "quality.score.stale",
-				surface: "quality-score",
-				rule_result: "fail",
-				severity: "warning",
-				message: `QUALITY_SCORE.md is stale (${ageDays} days since last_updated).`,
-				path: "docs/QUALITY_SCORE.md",
-			},
-			baselineFingerprints,
-		);
-	}
-}
-
+/** Check the retained status narrative against active todo lifecycle evidence. */
 function evaluateStatusNarrative(
 	findings: DriftFinding[],
 	repoRoot: string,
@@ -632,8 +534,8 @@ function evaluateProductSurface(
 }
 
 /**
- * Performs checks across command surface parity, todo lifecycle, quality score,
- * status narrative coherence, and—when a harness contract with a northStar is
+ * Performs checks across command surface parity, todo lifecycle, status
+ * narrative coherence, and—when a harness contract with a northStar is
  * provided—north star document parity.
  *
  * @param repoRoot - Repository root path
@@ -650,7 +552,6 @@ export function evaluate(
 
 	evaluateCommandSurface(findings, repoRoot, baselineFingerprints);
 	evaluateTodoLifecycle(findings, repoRoot, baselineFingerprints);
-	evaluateQualityScore(findings, repoRoot, baselineFingerprints);
 	evaluateStatusNarrative(findings, repoRoot, baselineFingerprints);
 
 	if (contract?.northStar) {

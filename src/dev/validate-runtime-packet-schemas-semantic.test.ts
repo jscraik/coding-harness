@@ -24,14 +24,19 @@ function readJson(path: string): Record<string, unknown> {
 	>;
 }
 
+function createTempRoot(prefix: string): string {
+	mkdirSync(join(repoRoot, ".cache"), { recursive: true });
+	const root = mkdtempSync(join(repoRoot, `.cache/${prefix}`));
+	tempRoots.push(root);
+	return root;
+}
+
 function makeFixture(
 	schemaVersion: string,
 	examplePath: string,
 	mutate: (example: Record<string, unknown>) => void,
 ): string {
-	mkdirSync(join(repoRoot, ".cache"), { recursive: true });
-	const root = mkdtempSync(join(repoRoot, ".cache/runtime-packet-semantic-"));
-	tempRoots.push(root);
+	const root = createTempRoot("runtime-packet-semantic-");
 	const example = readJson(examplePath);
 	mutate(example);
 	const fixturePath = join(root, "invalid.example.json");
@@ -105,6 +110,39 @@ describe("validate-runtime-packet-schemas semantic branches", () => {
 		expect(result.stdout).toContain(
 			"vitalDecision.question must be type string",
 		);
+	});
+
+	it("enforces supported not schemas for public packet examples", () => {
+		const root = createTempRoot("runtime-packet-schema-not-");
+		const schema = {
+			...readJson("contracts/evidence-receipt.schema.json"),
+			not: { required: ["schemaVersion"] },
+		};
+		const schemaPath = join(root, "evidence-receipt-not.schema.json");
+		writeFileSync(schemaPath, JSON.stringify(schema, null, 2));
+		const manifest = readJson(
+			"contracts/runtime-packet-schemas.manifest.json",
+		) as { packets: Record<string, unknown>[] };
+		const manifestPath = join(root, "manifest.json");
+		writeFileSync(
+			manifestPath,
+			JSON.stringify(
+				{
+					...manifest,
+					packets: manifest.packets.map((entry) =>
+						entry.schemaVersion === "evidence-receipt/v1"
+							? { ...entry, schemaPath }
+							: entry,
+					),
+				},
+				null,
+				2,
+			),
+		);
+
+		const result = runValidator(manifestPath);
+		expect(result.status).toBe(1);
+		expect(result.stdout).toContain("must not match schema");
 	});
 
 	it("requires reviewer coverage evidence for a passing decision", () => {

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
 	HARNESS_DECISION_SCHEMA_VERSION,
 	buildHarnessDecision,
+	compactHarnessDecision,
+	type CompactHarnessDecision,
 	type HarnessDecision,
 	isHarnessDecision,
 	validateHarnessDecision,
@@ -47,6 +49,27 @@ function validDecision(
 	};
 }
 
+function validCompactDecision(
+	overrides: Partial<CompactHarnessDecision> = {},
+): CompactHarnessDecision {
+	return {
+		schemaVersion: HARNESS_DECISION_SCHEMA_VERSION,
+		status: "pass",
+		summary: "The working tree is clean and ready for the next task.",
+		nextAction: "Inspect the available repository checks.",
+		nextCommand: "harness check --json",
+		warnings: [],
+		executionBoundary: {
+			safeToRun: true,
+			requiresHuman: false,
+			requiresNetwork: false,
+			writesFiles: false,
+		},
+		claimsBoundary: "Local task routing only.",
+		...overrides,
+	};
+}
+
 describe("validateHarnessDecision", () => {
 	it("rejects non-object candidates", () => {
 		const nullResult = validateHarnessDecision(null);
@@ -62,6 +85,64 @@ describe("validateHarnessDecision", () => {
 		const result = validateHarnessDecision(validDecision());
 
 		expect(result).toEqual({ valid: true, errors: [] });
+	});
+
+	it("accepts the compact v1 projection from the routine CLI route", () => {
+		const candidate: unknown = validCompactDecision();
+
+		expect(validateHarnessDecision(candidate)).toEqual({
+			valid: true,
+			errors: [],
+		});
+		expect(isHarnessDecision(candidate)).toBe(true);
+	});
+
+	it("rejects a compact projection that overlaps the full envelope", () => {
+		const result = validateHarnessDecision({
+			...validCompactDecision(),
+			producer: "next",
+		});
+
+		expect(result.valid).toBe(false);
+		expect(errorCodes(result)).toContain(
+			"full decisions must not include executionBoundary",
+		);
+	});
+
+	it("rejects non-boolean compact execution boundaries", () => {
+		const result = validateHarnessDecision({
+			...validCompactDecision(),
+			executionBoundary: {
+				...validCompactDecision().executionBoundary,
+				requiresHuman: "false",
+			},
+		});
+
+		expect(result.valid).toBe(false);
+		expect(errorCodes(result)).toContain(
+			"executionBoundary.requiresHuman must be a boolean",
+		);
+	});
+
+	it("keeps blocked source evidence visible in compact warnings", () => {
+		const compact = compactHarnessDecision(
+			validDecision({
+				meta: {
+					sourceErrors: [
+						{
+							kind: "pr",
+							status: "blocked",
+							failureClass: "network_unavailable",
+							ref: "network:github",
+						},
+					],
+				},
+			}),
+		);
+
+		expect(compact.warnings).toContain(
+			"Source pr is blocked: network_unavailable (network:github).",
+		);
 	});
 
 	it("accepts legacy harness-decision/v1 packets without cockpitLane", () => {
