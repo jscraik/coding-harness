@@ -8,6 +8,7 @@ import {
 	getGitHubAppE2EEnvStatus,
 	hasGitHubAuthForE2E,
 	loadCodexEnvForE2E,
+	loadE2EEnv,
 	loadGitHubAppE2EEnv,
 } from "./env.js";
 
@@ -24,6 +25,9 @@ const managedEnvKeys = [
 	"GITHUB_APP_PRIVATE_KEY",
 	"E2E_GITHUB_APP_PRIVATE_KEY_PATH",
 	"GITHUB_APP_PRIVATE_KEY_PATH",
+	"GITHUB_TEST_OWNER",
+	"GITHUB_TEST_REPO",
+	"LINEAR_TEST_TEAM",
 ] as const;
 
 const originalEnv = new Map(
@@ -116,6 +120,18 @@ describe("E2E GitHub App env loading", () => {
 		await expect(ensureGitHubTokenForE2E()).resolves.toBe(
 			"GITHUB_PERSONAL_ACCESS_TOKEN",
 		);
+	});
+
+	it("uses documented target defaults when optional selectors are unset", () => {
+		clearManagedEnv();
+		process.env.GITHUB_PERSONAL_ACCESS_TOKEN = "ghp_fixturetoken";
+		process.env.LINEAR_API_KEY = "lin_api_fixture";
+
+		expect(loadE2EEnv()).toMatchObject({
+			githubOwner: "jscraik",
+			githubTestRepo: "coding-harness-e2e-test",
+			linearTestTeam: "JSC",
+		});
 	});
 
 	it("loads missing E2E credentials from a regular Codex env file without exposing values", () => {

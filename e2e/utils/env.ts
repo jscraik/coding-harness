@@ -615,12 +615,13 @@ export function loadE2EEnv(): E2EEnv {
 	return {
 		// GitHub
 		githubToken: getEnvVar("GITHUB_PERSONAL_ACCESS_TOKEN")!,
-		githubOwner: getEnvVar("GITHUB_TEST_OWNER") || "jscraik",
-		githubTestRepo: getEnvVar("GITHUB_TEST_REPO") || "coding-harness-e2e-test",
+		githubOwner: getEnvVar("GITHUB_TEST_OWNER", false) || "jscraik",
+		githubTestRepo:
+			getEnvVar("GITHUB_TEST_REPO", false) || "coding-harness-e2e-test",
 
 		// Linear
 		linearToken: getEnvVar("LINEAR_API_KEY")!,
-		linearTestTeam: getEnvVar("LINEAR_TEST_TEAM") || "JSC",
+		linearTestTeam: getEnvVar("LINEAR_TEST_TEAM", false) || "JSC",
 
 		// E2E Options
 		e2eMode: process.env.E2E_MODE === "true",
