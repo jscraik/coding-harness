@@ -33,7 +33,9 @@
 						"riskTier"
 					]
 				},
-				{ "not": { "required": ["executionBoundary"] } }
+				{ "not": { "required": ["warnings"] } },
+				{ "not": { "required": ["executionBoundary"] } },
+				{ "not": { "required": ["claimsBoundary"] } }
 			]
 		},
 		{
@@ -50,7 +52,22 @@
 						"claimsBoundary"
 					]
 				},
-				{ "not": { "required": ["producer"] } }
+				{ "not": { "required": ["producer"] } },
+				{ "not": { "required": ["phase"] } },
+				{ "not": { "required": ["objective"] } },
+				{ "not": { "required": ["requiredEvidence"] } },
+				{ "not": { "required": ["stopConditions"] } },
+				{ "not": { "required": ["humanEscalation"] } },
+				{ "not": { "required": ["followUpCommands"] } },
+				{ "not": { "required": ["hiddenPlumbing"] } },
+				{ "not": { "required": ["safeToRun"] } },
+				{ "not": { "required": ["requiresHuman"] } },
+				{ "not": { "required": ["requiresNetwork"] } },
+				{ "not": { "required": ["writesFiles"] } },
+				{ "not": { "required": ["evidenceRef"] } },
+				{ "not": { "required": ["failureClass"] } },
+				{ "not": { "required": ["retry"] } },
+				{ "not": { "required": ["riskTier"] } }
 			]
 		}
 	],

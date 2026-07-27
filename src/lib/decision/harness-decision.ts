@@ -78,16 +78,11 @@ function compactStringArray(value: unknown): string[] {
 		: [];
 }
 
-/** Narrow unknown metadata to a record before reading optional projection fields. */
-function compactRecord(value: unknown): value is Record<string, unknown> {
-	return value !== null && typeof value === "object";
-}
-
 /** Render unavailable decision sources into compact, machine-readable warnings. */
 function compactSourceErrorWarnings(value: unknown): string[] {
 	if (!Array.isArray(value)) return [];
 	return value.flatMap((entry) => {
-		if (!compactRecord(entry) || entry.status === "usable") return [];
+		if (!isRecord(entry) || entry.status === "usable") return [];
 		const kind = typeof entry.kind === "string" ? entry.kind : "unknown";
 		const status = typeof entry.status === "string" ? entry.status : "unknown";
 		const failureClass =
@@ -105,10 +100,10 @@ export function compactHarnessDecision(
 ): CompactHarnessDecisionValue {
 	const meta = decision.meta ?? {};
 	const readiness = meta.agentReadinessContext;
-	const readinessWarnings = compactRecord(readiness)
+	const readinessWarnings = isRecord(readiness)
 		? Array.isArray(readiness.degradedSurfaces)
 			? readiness.degradedSurfaces.flatMap((surface) =>
-					compactRecord(surface)
+					isRecord(surface)
 						? compactStringArray(surface.staleReasons)
 						: [],
 				)
@@ -116,7 +111,7 @@ export function compactHarnessDecision(
 		: [];
 	const synaipseState = meta.synaipseState;
 	const claimsBoundary =
-		compactRecord(synaipseState) &&
+		isRecord(synaipseState) &&
 		typeof synaipseState.claimBoundary === "string" &&
 		synaipseState.claimBoundary.trim().length > 0
 			? synaipseState.claimBoundary

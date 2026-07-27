@@ -151,10 +151,13 @@ function renderGardenerCompletion(
 	output: GardenerOutput,
 	dryRun: boolean,
 ): void {
-	if (dryRun) {
-		console.info("\n[DRY-RUN] No PR would be created");
-	} else if (output.needsPR) {
+	if (output.needsPR) {
 		console.info("\n✅ Documentation scan completed");
+		if (!dryRun) {
+			console.info(
+				"   Issues detected. Manual review and fixes may be required.",
+			);
+		}
 	}
 }
 
