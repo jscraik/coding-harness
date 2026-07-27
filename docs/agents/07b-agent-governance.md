@@ -179,7 +179,9 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - `harness-decision/v1` cockpit-lane changes should keep `harness next --json`
   route metadata synchronized across schema, TypeScript types, Python artifact
   contracts, focused next tests, generated architecture context, `AGENTS.md`,
-  and `docs/agents/00-architecture-bootstrap.md`. The lane vocabulary
+  and `docs/agents/00-architecture-bootstrap.md`. Ordinary no-argument output
+  is task-first; optional maintenance remains a warning, while detailed
+  readiness and diagnostic data require an explicit route. The lane vocabulary
   (`orient`, `prove`, `repair`, `review`, `handoff`) is guidance for the next
   operator question and must not become CI, review-thread, tracker,
   external-readiness, delivery-truth, or merge-readiness proof.

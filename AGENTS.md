@@ -46,8 +46,8 @@ truth.
    dirty ownership before choosing a mutation.
 3. Use repository wrappers and documented commands through `zsh -lc`; prefer
    `rg`, `fd`, and `jq`, and use `pnpm@10.33.0` with Node `>=26.3.0`.
-4. Use `harness next --json` for cold-agent routing, then run the narrowest
-   proving check before widening validation.
+4. Use `harness next --json` for cold-agent routing; optional maintenance stays
+   a warning and default output gives one task-first action before wider proof.
 
 ## Operating contract
 
