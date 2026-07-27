@@ -103,9 +103,7 @@ export function compactHarnessDecision(
 	const readinessWarnings = isRecord(readiness)
 		? Array.isArray(readiness.degradedSurfaces)
 			? readiness.degradedSurfaces.flatMap((surface) =>
-					isRecord(surface)
-						? compactStringArray(surface.staleReasons)
-						: [],
+					isRecord(surface) ? compactStringArray(surface.staleReasons) : [],
 				)
 			: []
 		: [];

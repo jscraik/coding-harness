@@ -66,6 +66,44 @@ function runValidator(manifest: string) {
 	});
 }
 
+function compactHarnessDecision(
+	example: Record<string, unknown>,
+): Record<string, unknown> {
+	for (const field of [
+		"producer",
+		"phase",
+		"cockpitLane",
+		"objective",
+		"requiredEvidence",
+		"stopConditions",
+		"humanEscalation",
+		"followUpCommands",
+		"hiddenPlumbing",
+		"safeToRun",
+		"requiresHuman",
+		"requiresNetwork",
+		"writesFiles",
+		"evidenceRef",
+		"failureClass",
+		"retry",
+		"riskTier",
+		"meta",
+	]) {
+		delete example[field];
+	}
+	return {
+		...example,
+		warnings: [],
+		executionBoundary: {
+			safeToRun: true,
+			requiresHuman: false,
+			requiresNetwork: false,
+			writesFiles: false,
+		},
+		claimsBoundary: "Local routing only.",
+	};
+}
+
 /** Mutate evidence references only after proving the canonical fixture boundary. */
 function setValidatedReviewerEvidenceRefs(
 	packet: Record<string, unknown>,
@@ -143,6 +181,77 @@ describe("validate-runtime-packet-schemas semantic branches", () => {
 		const result = runValidator(manifestPath);
 		expect(result.status).toBe(1);
 		expect(result.stdout).toContain("must not match schema");
+	});
+
+	it("accepts a compact projection at the harness-decision schema boundary", () => {
+		const result = runValidator(
+			makeFixture(
+				"harness-decision/v1",
+				"contracts/examples/harness-decision.example.json",
+				(example) => Object.assign(example, compactHarnessDecision(example)),
+			),
+		);
+		expect(result.status).toBe(0);
+	});
+
+	it.each([
+		["producer", "next"],
+		["phase", "orient"],
+		["cockpitLane", "orient"],
+		["objective", "Complete the next task."],
+		["requiredEvidence", []],
+		["stopConditions", []],
+		["humanEscalation", null],
+		["followUpCommands", []],
+		["hiddenPlumbing", []],
+		["safeToRun", true],
+		["requiresHuman", false],
+		["requiresNetwork", false],
+		["writesFiles", false],
+		["evidenceRef", ["git status --short"]],
+		["failureClass", null],
+		["retry", "safe"],
+		["riskTier", "low"],
+		["meta", {}],
+	] as const)("rejects compact projections with full-envelope field %s", (field, value) => {
+		const result = runValidator(
+			makeFixture(
+				"harness-decision/v1",
+				"contracts/examples/harness-decision.example.json",
+				(example) => {
+					Object.assign(example, compactHarnessDecision(example));
+					example[field] = value;
+				},
+			),
+		);
+		expect(result.status).toBe(1);
+		expect(result.stdout).toContain("must match at least one anyOf schema");
+	});
+
+	it.each([
+		["warnings", []],
+		[
+			"executionBoundary",
+			{
+				safeToRun: true,
+				requiresHuman: false,
+				requiresNetwork: false,
+				writesFiles: false,
+			},
+		],
+		["claimsBoundary", "Local routing only."],
+	] as const)("rejects full envelopes with compact-only field %s", (field, value) => {
+		const result = runValidator(
+			makeFixture(
+				"harness-decision/v1",
+				"contracts/examples/harness-decision.example.json",
+				(example) => {
+					example[field] = value;
+				},
+			),
+		);
+		expect(result.status).toBe(1);
+		expect(result.stdout).toContain("must match at least one anyOf schema");
 	});
 
 	it("requires reviewer coverage evidence for a passing decision", () => {
