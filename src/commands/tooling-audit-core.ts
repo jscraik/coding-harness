@@ -2704,6 +2704,16 @@ function auditConfiguredTooling(
 	}
 }
 
+/** Audits an explicit hook surface without requiring minimal scaffolding to create one. */
+function auditMinimalHookSurface(
+	findings: ToolingAuditFinding[],
+	repoPath: string,
+): void {
+	if (existsSync(join(repoPath, TOOLING_PREK_CONFIG_PATH))) {
+		auditLocalHooks(findings, repoPath);
+	}
+}
+
 /**
  * Audit a repository for tooling policy compliance.
  *
@@ -2772,6 +2782,8 @@ async function auditRepository(
 
 	if (!compactMinimal) {
 		auditConfiguredTooling(findings, repoPath, contract, baseContract);
+	} else {
+		auditMinimalHookSurface(findings, repoPath);
 	}
 
 	return {
