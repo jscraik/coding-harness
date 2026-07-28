@@ -36,9 +36,10 @@ function writeDiagramFixture(root: string) {
 
 function writeArchitectureFixture(root: string, baseline = "") {
 	mkdirSync(join(root, "src", "commands"), { recursive: true });
+	mkdirSync(join(root, "src", "lib", "ci"), { recursive: true });
 	mkdirSync(join(root, "scripts"), { recursive: true });
 	writeFileSync(
-		join(root, "src", "commands", "ci-migrate.ts"),
+		join(root, "src", "commands", "ci-migrate-core.ts"),
 		"export const runCiMigrate = () => true;\n",
 	);
 	writeFileSync(
@@ -47,6 +48,17 @@ function writeArchitectureFixture(root: string, baseline = "") {
 	);
 	writeFileSync(join(root, ".architecture-baseline.txt"), baseline);
 	writeDiagramFixture(root);
+}
+
+function writeDelegatedSigningSeam(root: string) {
+	writeFileSync(
+		join(root, "src", "commands", "ci-migrate-core.ts"),
+		'import { signContent } from "../lib/ci/ci-migrate-signing.js";\nexport const runCiMigrate = () => signContent("payload", "key");\n',
+	);
+	writeFileSync(
+		join(root, "src", "lib", "ci", "ci-migrate-signing.ts"),
+		'import { createHmac } from "node:crypto";\nexport const signContent = (value: string, key: string) => createHmac("sha256", key).update(value).digest("hex");\n',
+	);
 }
 
 function runArchitectureCheck(
@@ -101,7 +113,7 @@ describe("check-architecture-rules.cjs warning ownership", () => {
 		expect(report.violations).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
-					file: "src/commands/ci-migrate.ts",
+					file: "src/commands/ci-migrate-core.ts",
 					rule: "auth-commands-use-crypto",
 					severity: "warning",
 				}),
@@ -120,12 +132,29 @@ describe("check-architecture-rules.cjs warning ownership", () => {
 		expect(result.stderr).toContain("[architecture] fail:");
 	});
 
+	it("accepts a signing implementation that delegates directly to node crypto", () => {
+		const root = createTempRoot("architecture-warning-delegated-signing-");
+		writeArchitectureFixture(root);
+		writeDelegatedSigningSeam(root);
+
+		const result = runArchitectureCheck(root);
+		const report = parseJsonReport(result);
+
+		expect(result.status).toBe(0);
+		expect(report.status).toBe("pass");
+		expect(report.summary).toMatchObject({
+			errors: 0,
+			warnings: 0,
+			baselined: 0,
+		});
+	});
+
 	it("allows exact owned baselines with ticket and non-expired expiry metadata", () => {
 		const root = createTempRoot("architecture-warning-owned-");
 		writeArchitectureFixture(
 			root,
 			[
-				"auth-commands-use-crypto|src/commands/ci-migrate.ts|owner=runtime-evidence-cockpit|reason=delegated auth facade tracked for follow-up|date=2026-05-27|ticket=JSC-363|expires=2099-12-31",
+				"auth-commands-use-crypto|src/commands/ci-migrate-core.ts|owner=runtime-evidence-cockpit|reason=delegated signing implementation tracked for follow-up|date=2026-05-27|ticket=JSC-363|expires=2099-12-31",
 				"",
 			].join("\n"),
 		);
@@ -143,7 +172,7 @@ describe("check-architecture-rules.cjs warning ownership", () => {
 		expect(report.violations).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
-					file: "src/commands/ci-migrate.ts",
+					file: "src/commands/ci-migrate-core.ts",
 					rule: "auth-commands-use-crypto",
 					severity: "baseline",
 				}),
@@ -156,7 +185,7 @@ describe("check-architecture-rules.cjs warning ownership", () => {
 		writeArchitectureFixture(
 			root,
 			[
-				"auth-commands-use-crypto|src/commands/ci-migrate.ts|owner=runtime-evidence-cockpit|reason=delegated auth facade tracked for follow-up|date=2026-05-27|ticket=JSC-363|expires=2099-12-31",
+				"auth-commands-use-crypto|src/commands/ci-migrate-core.ts|owner=runtime-evidence-cockpit|reason=delegated signing implementation tracked for follow-up|date=2026-05-27|ticket=JSC-363|expires=2099-12-31",
 				"",
 			].join("\n"),
 		);
@@ -191,7 +220,7 @@ describe("check-architecture-rules.cjs warning ownership", () => {
 		writeArchitectureFixture(
 			root,
 			[
-				"auth-commands-use-crypto|src/commands/ci-migrate.ts|owner=runtime-evidence-cockpit|reason=delegated auth facade tracked for follow-up|date=2026-05-27|ticket=JSC-363|expires=2000-01-01",
+				"auth-commands-use-crypto|src/commands/ci-migrate-core.ts|owner=runtime-evidence-cockpit|reason=delegated signing implementation tracked for follow-up|date=2026-05-27|ticket=JSC-363|expires=2000-01-01",
 				"",
 			].join("\n"),
 		);
@@ -218,7 +247,7 @@ describe("check-architecture-rules.cjs warning ownership", () => {
 		writeArchitectureFixture(
 			root,
 			[
-				"auth-commands-use-crypto|src/commands/ci-migrate.ts|owner=runtime-evidence-cockpit|reason=delegated auth facade tracked for follow-up|date=2026-05-27|expires=2099-12-31",
+				"auth-commands-use-crypto|src/commands/ci-migrate-core.ts|owner=runtime-evidence-cockpit|reason=delegated signing implementation tracked for follow-up|date=2026-05-27|expires=2099-12-31",
 				"",
 			].join("\n"),
 		);
@@ -245,7 +274,7 @@ describe("check-architecture-rules.cjs warning ownership", () => {
 		writeArchitectureFixture(
 			root,
 			[
-				"auth-commands-use-crypto|src/commands/ci-migrate.ts|owner=runtime-evidence-cockpit|reason=delegated auth facade tracked for follow-up|date=2026-05-27|ticket=NOT-JSC|expires=2099-12-31",
+				"auth-commands-use-crypto|src/commands/ci-migrate-core.ts|owner=runtime-evidence-cockpit|reason=delegated signing implementation tracked for follow-up|date=2026-05-27|ticket=NOT-JSC|expires=2099-12-31",
 				"",
 			].join("\n"),
 		);
@@ -272,7 +301,7 @@ describe("check-architecture-rules.cjs warning ownership", () => {
 		writeArchitectureFixture(
 			root,
 			[
-				"auth-commands-use-crypto|src/commands/ci-migrate.ts|owner=runtime-evidence-cockpit|reason=delegated auth facade tracked for follow-up|date=2026-05-27|ticket=JSC-363|expires=2026-99-99",
+				"auth-commands-use-crypto|src/commands/ci-migrate-core.ts|owner=runtime-evidence-cockpit|reason=delegated signing implementation tracked for follow-up|date=2026-05-27|ticket=JSC-363|expires=2026-99-99",
 				"",
 			].join("\n"),
 		);
@@ -299,7 +328,7 @@ describe("check-architecture-rules.cjs warning ownership", () => {
 		writeArchitectureFixture(
 			root,
 			[
-				"auth-commands-use-crypto|src/commands/ci-migrate.ts|owner=runtime-evidence-cockpit|reason=delegated auth facade tracked for follow-up|date=2026-02-31|ticket=JSC-363|expires=2099-12-31",
+				"auth-commands-use-crypto|src/commands/ci-migrate-core.ts|owner=runtime-evidence-cockpit|reason=delegated signing implementation tracked for follow-up|date=2026-02-31|ticket=JSC-363|expires=2099-12-31",
 				"",
 			].join("\n"),
 		);
