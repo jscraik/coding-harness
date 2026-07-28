@@ -229,6 +229,31 @@ describe("scaffold templates resolution", () => {
 		expect(rendered.issueTrackingPolicy).toBeUndefined();
 	});
 
+	it("omits unbacked CI requirements from the minimal contract", () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "harness-scaffold-test-"));
+		tempDirs.push(tempDir);
+		const context = createTemplateRenderContext(
+			tempDir,
+			"circleci",
+			undefined,
+			{
+				dryRun: false,
+				force: false,
+				minimal: true,
+			},
+		);
+		const contractTemplate = TEMPLATES.find(
+			(template) => template.path === "harness.contract.json",
+		);
+
+		expect(contractTemplate).toBeDefined();
+		const rendered = JSON.parse(contractTemplate!.render("pnpm", context));
+
+		expect(rendered.branchProtection.requiredChecks).toEqual([]);
+		expect(rendered.branchProtection.requiredApprovingReviewCount).toBe(0);
+		expect(rendered.ciProviderPolicy).toBeUndefined();
+	});
+
 	it("keeps linear issue tracking policy by default", () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "harness-scaffold-test-"));
 		tempDirs.push(tempDir);

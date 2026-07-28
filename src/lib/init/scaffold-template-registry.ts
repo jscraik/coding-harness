@@ -109,7 +109,7 @@ export const TEMPLATES: Template[] = [
 				agentBranchPrefix: AGENT_BRANCH_PREFIX,
 				context,
 				packageManager: pm,
-				requiredChecks: githubFacingChecks,
+				requiredChecks: context.minimal ? [] : githubFacingChecks,
 			});
 		},
 	},

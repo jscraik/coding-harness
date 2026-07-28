@@ -361,10 +361,9 @@ describe("runInit", () => {
 					expect(result.output.created, fixture.name).toEqual([
 						"harness.contract.json",
 					]);
-					expect(
-						result.output.dryRunPlan?.plannedCreates,
-						fixture.name,
-					).toBeLessThan(10);
+					expect(result.output.dryRunPlan?.plannedCreates, fixture.name).toBe(
+						1,
+					);
 				}
 			}
 		});
@@ -1930,7 +1929,7 @@ describe("runInit", () => {
 				"Co-authored-by: Codex <noreply@openai.com>",
 			);
 			expect(setupHooks).toContain("Installing prek git hooks");
-			expect(setupHooks).toContain("function getRepoRoot(): string");
+			expect(setupHooks).toContain("function getRepoRoot()");
 			expect(setupHooks).toContain(
 				'return execFileSync("git", ["rev-parse", "--show-toplevel"]',
 			);
@@ -3860,6 +3859,15 @@ describe("--track flag", () => {
 		);
 		expect(manifest.issueTracker).toBe("github");
 		expect(manifest.minimal).toBe(true);
+		const contract = JSON.parse(
+			require("node:fs").readFileSync(
+				join(tempDir, "harness.contract.json"),
+				"utf-8",
+			),
+		);
+		expect(contract.branchProtection.requiredChecks).toEqual([]);
+		expect(contract.branchProtection.requiredApprovingReviewCount).toBe(0);
+		expect(contract.ciProviderPolicy).toBeUndefined();
 
 		manifest.harnessVersion = "0.0.1";
 		require("node:fs").writeFileSync(

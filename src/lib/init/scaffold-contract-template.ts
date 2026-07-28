@@ -130,6 +130,13 @@ function renderIssueTrackingPolicy(
 	};
 }
 
+/**
+ * Renders the scaffold contract, omitting policy that minimal installation does
+ * not materialize.
+ *
+ * @param options - Contract policy inputs discovered by the scaffold registry.
+ * @returns The contract written by the selected scaffold template.
+ */
 function renderScaffoldContract(
 	options: ScaffoldContractTemplateOptions,
 ): HarnessContract {
@@ -139,6 +146,7 @@ function renderScaffoldContract(
 		context,
 		agentBranchPrefix,
 	);
+	const isMinimal = context.minimal === true;
 	return {
 		version: CURRENT_SCHEMA_VERSION,
 		riskTierRules: {
@@ -156,7 +164,7 @@ function renderScaffoldContract(
 		branchProtection: {
 			...(DEFAULT_CONTRACT.branchProtection ?? {}),
 			requiredChecks: [...requiredChecks],
-			requiredApprovingReviewCount: 1,
+			...(isMinimal ? {} : { requiredApprovingReviewCount: 1 }),
 		},
 		toolingPolicy: DEFAULT_CONTRACT.toolingPolicy,
 		...(issueTrackingPolicy ? { issueTrackingPolicy } : {}),
@@ -237,11 +245,15 @@ function renderScaffoldContract(
 		pilotRollbackPolicy: DEFAULT_CONTRACT.pilotRollbackPolicy,
 		pilotAuthzPolicy: DEFAULT_CONTRACT.pilotAuthzPolicy,
 		controlPlanePolicy: DEFAULT_CONTRACT.controlPlanePolicy,
-		ciProviderPolicy: {
-			...DEFAULT_CI_PROVIDER_POLICY,
-			activeProvider:
-				context.ciProvider ?? DEFAULT_CI_PROVIDER_POLICY.activeProvider,
-		},
+		...(isMinimal
+			? {}
+			: {
+					ciProviderPolicy: {
+						...DEFAULT_CI_PROVIDER_POLICY,
+						activeProvider:
+							context.ciProvider ?? DEFAULT_CI_PROVIDER_POLICY.activeProvider,
+					},
+				}),
 		contextIntegrityPolicy: DEFAULT_CONTRACT.contextIntegrityPolicy,
 		...(context.projectType !== undefined
 			? { projectType: context.projectType }

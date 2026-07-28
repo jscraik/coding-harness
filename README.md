@@ -194,7 +194,7 @@ harness contract validate
 harness check --json
 ```
 
-**Expected:** `init --minimal --track` creates only `harness.contract.json` and preserves existing repository files; `contract init --preset lite --force` overwrites the contract with the lite preset (note: `--force` skips confirmation and replaces the existing contract); `contract validate` passes with zero errors; `check --json` output contains readiness status.
+**Expected:** `init --minimal --track` preserves existing repository files and creates `harness.contract.json` as its only scaffold template. Tracking additionally creates `.harness/backups/` and a restore manifest; `contract init --preset lite --force` overwrites the contract with the lite preset (note: `--force` skips confirmation and replaces the existing contract); `contract validate` passes with zero errors; `check --json` output contains readiness status.
 **On failure:** Common causes include conflicting existing contracts (remove or back up first), permission issues (check file ownership), or validation errors (inspect output and fix contract schema); developer owns remediation.
 
 Upgrade from lite to the standard policy set when the team is ready:
