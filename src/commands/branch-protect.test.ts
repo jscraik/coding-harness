@@ -621,6 +621,100 @@ describe("runBranchProtect", () => {
 		});
 	});
 
+	it("honors explicit empty branchProtection checks without inheriting defaults", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			branchProtection: {
+				requiredChecks: [],
+				requiredApprovingReviewCount: 0,
+			},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				requiredChecks: ["dependency-scan"],
+			},
+		});
+
+		const listRulesets = vi.fn(
+			async () =>
+				[
+					{
+						id: 58,
+						name: "protect",
+						target: "branch",
+						enforcement: "active",
+						conditions: {
+							ref_name: {
+								include: ["refs/heads/main"],
+								exclude: [],
+							},
+						},
+					},
+				] as RulesetSummary[],
+		);
+		const getRuleset = vi.fn(
+			async () =>
+				({
+					id: 58,
+					name: "protect",
+					target: "branch",
+					enforcement: "active",
+					bypass_actors: [],
+					conditions: {
+						ref_name: {
+							include: ["refs/heads/main"],
+							exclude: [],
+						},
+					},
+					rules: [
+						{
+							type: "required_status_checks",
+							parameters: {
+								required_status_checks: [{ context: "security-scan" }],
+							},
+						},
+					],
+				}) as Ruleset,
+		);
+		const updateRuleset = vi.fn(
+			async (_id: number, payload: RulesetPayload) =>
+				({
+					id: 58,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+
+		mockGitHubClientImplementation(() =>
+			mockBranchProtectClient({
+				listRulesets,
+				getRuleset,
+				updateRuleset,
+			}),
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+		});
+
+		expect(result).toMatchObject({
+			ok: true,
+			output: { requiredChecks: [] },
+		});
+		expect(
+			updateRuleset.mock.calls[0]?.[1].rules.some(
+				(rule) => rule.type === "required_status_checks",
+			),
+		).toBe(false);
+	});
+
 	it("falls back to harness baseline checks when the contract file is absent", async () => {
 		mockLoadContract.mockImplementation(() => {
 			const error = new Error("no such file or directory");
