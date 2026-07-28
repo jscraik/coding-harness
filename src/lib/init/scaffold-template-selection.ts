@@ -10,11 +10,14 @@
 import { isTemplateEnabledForProvider } from "./scaffold-ci-template-selection.js";
 import type { CIProvider, InitOptions, Template } from "./types.js";
 
-const MINIMAL_MODE_OMITTED_TEMPLATE_PATHS = new Set([
-	".github/CODEOWNERS",
-	"docs/PRODUCT-PLAN.md",
-	".harness/ci-required-checks.json",
-]);
+/**
+ * Files that belong to the deliberately small `init --minimal` contract.
+ *
+ * Minimal setup must not infer CI, review, memory, hook, documentation, or
+ * governance choices for a repository. Tracked rollback adds its own manifest
+ * after selection, so it is intentionally not part of this template list.
+ */
+const MINIMAL_MODE_TEMPLATE_PATHS = new Set(["harness.contract.json"]);
 
 /**
  * Determines whether a template should be rendered for the selected init mode.
@@ -33,18 +36,11 @@ export function shouldEmitTemplateForInit(
 		return false;
 	}
 
-	if (
-		options?.minimal &&
-		MINIMAL_MODE_OMITTED_TEMPLATE_PATHS.has(templatePath)
-	) {
-		return false;
+	if (options?.minimal) {
+		return MINIMAL_MODE_TEMPLATE_PATHS.has(templatePath);
 	}
 
-	if (
-		options?.minimal ||
-		options?.issueTracker === "none" ||
-		options?.issueTracker === "github"
-	) {
+	if (options?.issueTracker === "none" || options?.issueTracker === "github") {
 		if (templatePath.startsWith(".linear/")) {
 			return false;
 		}

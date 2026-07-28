@@ -163,26 +163,15 @@ describe("scaffold templates resolution", () => {
 		expect(legacyTemplates.length).toBe(0);
 	});
 
-	it("omits non-essential templates when minimal mode is enabled", () => {
+	it("selects only the compact contract when minimal mode is enabled", () => {
 		const templates = getTemplatesForProvider("circleci", {
 			dryRun: false,
 			force: false,
 			minimal: true,
 		});
-		const legacyTemplates = templates.filter((t) =>
-			t.path.includes(".greptile"),
-		);
-		const codeownersTemplates = templates.filter((t) =>
-			t.path.includes("CODEOWNERS"),
-		);
-
-		expect(legacyTemplates.length).toBe(0);
-		expect(codeownersTemplates.length).toBe(0);
-
-		// Minimal mode keeps provider workflows but still reduces the managed set.
-		expect(templates.length).toBeLessThan(
-			getTemplatesForProvider("circleci").length,
-		);
+		expect(templates.map((template) => template.path)).toEqual([
+			"harness.contract.json",
+		]);
 	});
 
 	it("includes issue tracker templates when explicitly set to github", () => {

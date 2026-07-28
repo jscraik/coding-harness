@@ -41,7 +41,7 @@ export interface InitOptions {
 	projectType?: ProjectType; // Explicit override from --project-type flag; undefined = auto-detect
 	json?: boolean; // Emit structured JSON output instead of human-readable
 	explainOwnership?: boolean; // Show ownership decisions for schema-aware update paths
-	minimal?: boolean; // Opt-out of strict enterprise governance layers
+	minimal?: boolean; // Select only the compact contract scaffold.
 	issueTracker?: IssueTracker;
 }
 

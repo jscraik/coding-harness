@@ -41,7 +41,7 @@ describe("scaffold template registry", () => {
 		expect(githubActionsPaths).toContain(".github/workflows/pr-pipeline.yml");
 		expect(githubActionsPaths).toContain(".github/workflows/secret-scan.yml");
 		expect(githubActionsPaths).not.toContain(".circleci/config.yml");
-		expect(minimalPaths).not.toContain(".harness/ci-required-checks.json");
+		expect(minimalPaths).toEqual(["harness.contract.json"]);
 		expect(noIssueTrackerPaths).not.toContain(
 			".github/ISSUE_TEMPLATE/config.yml",
 		);

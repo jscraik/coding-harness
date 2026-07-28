@@ -316,6 +316,58 @@ describe("runInit", () => {
 				);
 			}
 		});
+
+		it("keeps minimal previews below ten files for representative repositories", () => {
+			const fixtures = [
+				{ name: "empty", files: [] },
+				{
+					name: "typescript",
+					files: [
+						["package.json", '{"name":"typescript-fixture"}'],
+						["tsconfig.json", "{}"],
+					],
+				},
+				{
+					name: "python",
+					files: [["pyproject.toml", '[project]\nname = "python-fixture"\n']],
+				},
+				{
+					name: "brownfield",
+					files: [
+						["package.json", '{"name":"brownfield-fixture"}'],
+						[".github/workflows/ci.yml", "name: existing-ci\n"],
+						["AGENTS.md", "# Existing instructions\n"],
+					],
+				},
+			] as const;
+
+			for (const fixture of fixtures) {
+				const fixtureDir = join(tempDir, fixture.name);
+				mkdirSync(fixtureDir, { recursive: true });
+				for (const [path, content] of fixture.files) {
+					const filePath = join(fixtureDir, path);
+					mkdirSync(dirname(filePath), { recursive: true });
+					writeFileSync(filePath, content);
+				}
+
+				const result = runInit(fixtureDir, {
+					dryRun: true,
+					force: false,
+					minimal: true,
+				});
+
+				expect(result.ok, fixture.name).toBe(true);
+				if (result.ok) {
+					expect(result.output.created, fixture.name).toEqual([
+						"harness.contract.json",
+					]);
+					expect(
+						result.output.dryRunPlan?.plannedCreates,
+						fixture.name,
+					).toBeLessThan(10);
+				}
+			}
+		});
 	});
 
 	describe("normal mode", () => {
@@ -3931,6 +3983,33 @@ describe("--rollback flag", () => {
 		expect(existsSync(join(tempDir, ".harness/restore-manifest.json"))).toBe(
 			false,
 		);
+	});
+
+	it("rolls back a tracked minimal install without removing brownfield files", () => {
+		const existingWorkflow = join(tempDir, ".github", "workflows", "ci.yml");
+		mkdirSync(dirname(existingWorkflow), { recursive: true });
+		writeFileSync(existingWorkflow, "name: existing-ci\n");
+
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: true,
+			track: true,
+			minimal: true,
+		});
+		expect(installResult.ok).toBe(true);
+		expect(installResult.ok && installResult.output.created).toEqual([
+			"harness.contract.json",
+		]);
+		expect(existsSync(existingWorkflow)).toBe(true);
+
+		const rollbackResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			rollback: true,
+		});
+		expect(rollbackResult.ok).toBe(true);
+		expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(false);
+		expect(existsSync(existingWorkflow)).toBe(true);
 	});
 
 	// Regression: rollback must not follow symlinks and overwrite files outside workspace

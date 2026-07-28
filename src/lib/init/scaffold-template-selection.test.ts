@@ -61,12 +61,10 @@ describe("scaffold template selection", () => {
 		).toBe(true);
 	});
 
-	it("omits enterprise governance templates in minimal mode", () => {
+	it("selects only the compact contract in minimal mode", () => {
 		const paths = selectedPaths({ dryRun: false, force: false, minimal: true });
 
-		expect(paths).not.toContain(".github/CODEOWNERS");
-		expect(paths).not.toContain(".harness/ci-required-checks.json");
-		expect(paths).toContain("harness.contract.json");
+		expect(paths).toEqual(["harness.contract.json"]);
 	});
 
 	it("omits Linear templates when issue tracking is not Linear-backed", () => {

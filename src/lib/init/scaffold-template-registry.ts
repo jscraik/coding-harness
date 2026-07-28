@@ -353,7 +353,7 @@ export const TEMPLATES: Template[] = [
  *
  * Filters the global template list by:
  * - excluding templates not supported by the chosen CI provider;
- * - when `options.minimal` is true, omitting enterprise governance templates (`.github/CODEOWNERS`, `docs/PRODUCT-PLAN.md`, `.harness/ci-required-checks.json`);
+ * - when `options.minimal` is true, selecting only the compact contract template;
  * - skipping all `.linear/` templates when `options.minimal` is true or `options.issueTracker` is `"none"` or `"github"`;
  * - skipping any template whose path contains `ISSUE_TEMPLATE` when `options.issueTracker` is `"none"`.
  *
