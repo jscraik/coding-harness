@@ -152,6 +152,10 @@ Recommended policy:
 - Prefer invoking production functions, classes, CLI commands, shell scripts, validators, or routes directly. If no existing test covers the path, create a temporary reproduction harness under `codex-scripts/` and keep that directory gitignored.
 - If the exact path cannot run because of unavailable credentials, external services, unsafe side effects, or missing generated state, record the blocker clearly, run the nearest meaningful validation, and do not describe production behavior as verified unless the touched path actually ran.
 - Keep docs-gate required documentation surfaces updated together when validation, required-check, tooling/runtime, or architecture-context behavior changes.
+- Treat a compact contract from `harness init --minimal` as intentionally
+  self-contained: it does not scaffold CI workflows or required checks, and an
+  explicit empty `branchProtection.requiredChecks` removes rather than inherits
+  a GitHub required-status-check rule when branch protection is later applied.
 - When required-check behavior moves into a deeper module, keep the command
   facade thin, document the new seam in `docs/architecture/module-boundaries.md`,
   and prove the branch-protection identity set still matches
