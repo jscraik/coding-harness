@@ -259,9 +259,15 @@ describe("scaffold templates resolution", () => {
 			"riskTierRules",
 			"version",
 		]);
-		expect(rendered.branchProtection).toEqual({
+		expect(rendered.branchProtection).toMatchObject({
 			requiredChecks: [],
 			requiredApprovingReviewCount: 0,
+			restrictDeletions: true,
+			blockForcePushes: true,
+			requirePullRequest: true,
+			requireConversationResolution: true,
+			codeQuality: { required: true },
+			publicCodeScanning: { required: true },
 		});
 		mkdirSync(join(tempDir, ".git"));
 		writeFileSync(

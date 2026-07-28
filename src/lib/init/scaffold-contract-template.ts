@@ -153,12 +153,16 @@ function renderScaffoldContract(
 				"**/*.test.ts": "low",
 			},
 			branchProtection: {
+				...(DEFAULT_CONTRACT.branchProtection ?? {}),
 				requiredChecks: [],
 				requiredApprovingReviewCount: 0,
 			},
 			northStar: renderScaffoldNorthStar(context),
 			productSurface: renderScaffoldProductSurface(),
 			overrideReviewerRegistry: renderScaffoldOverrideReviewerRegistry(context),
+			...(context.projectType !== undefined
+				? { projectType: context.projectType }
+				: {}),
 		};
 	}
 	const issueTrackingPolicy = isMinimal

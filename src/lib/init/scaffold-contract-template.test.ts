@@ -71,6 +71,26 @@ describe("contract scaffold template", () => {
 		expect(contract.issueTrackingPolicy).toBeUndefined();
 	});
 
+	it("preserves detected project type and explicitly records minimal branch policy", () => {
+		const contract = renderContract({
+			...baseContext,
+			minimal: true,
+			projectType: "web",
+		});
+
+		expect(contract.projectType).toBe("web");
+		expect(contract.branchProtection).toMatchObject({
+			requiredChecks: [],
+			requiredApprovingReviewCount: 0,
+			restrictDeletions: true,
+			blockForcePushes: true,
+			requirePullRequest: true,
+			requireConversationResolution: true,
+			codeQuality: { required: true },
+			publicCodeScanning: { required: true },
+		});
+	});
+
 	it("uses npm run for generated package script commands", () => {
 		const contract = JSON.parse(
 			renderHarnessContractTemplate({

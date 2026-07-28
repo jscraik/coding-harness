@@ -96,6 +96,46 @@ const FORBIDDEN_PREK_HOOK_ENTRY_PATTERNS = [
 ] as const;
 
 const MAX_READINESS_FORWARDING_DEPTH = 4;
+const COMPACT_MINIMAL_CONTRACT_KEYS = [
+	"version",
+	"riskTierRules",
+	"branchProtection",
+	"northStar",
+	"productSurface",
+	"overrideReviewerRegistry",
+] as const;
+
+/** Checks whether a raw contract has only the keys emitted by minimal scaffolding. */
+function hasExactCompactMinimalTopLevelShape(
+	contract: Record<string, unknown>,
+): boolean {
+	const allowedKeys = new Set<string>(COMPACT_MINIMAL_CONTRACT_KEYS);
+	if (Object.hasOwn(contract, "projectType")) allowedKeys.add("projectType");
+	const keys = Object.keys(contract);
+	if (keys.length !== allowedKeys.size) return false;
+	if (
+		!COMPACT_MINIMAL_CONTRACT_KEYS.every((key) => Object.hasOwn(contract, key))
+	) {
+		return false;
+	}
+	return keys.every((key) => allowedKeys.has(key));
+}
+
+/** Checks whether a raw branch policy keeps the minimal no-required-check posture. */
+function hasCompactMinimalBranchProtection(
+	contract: Record<string, unknown>,
+): boolean {
+	const branchProtection = contract.branchProtection;
+	if (branchProtection === null || typeof branchProtection !== "object") {
+		return false;
+	}
+	const policy = branchProtection as Record<string, unknown>;
+	return (
+		Array.isArray(policy.requiredChecks) &&
+		policy.requiredChecks.length === 0 &&
+		policy.requiredApprovingReviewCount === 0
+	);
+}
 
 /**
  * Identifies the compact contract emitted by `harness init --minimal`.
@@ -107,18 +147,9 @@ const MAX_READINESS_FORWARDING_DEPTH = 4;
 function isCompactMinimalRawContract(
 	contract: Record<string, unknown>,
 ): boolean {
-	const branchProtection = contract.branchProtection;
-	if (branchProtection === null || typeof branchProtection !== "object") {
-		return false;
-	}
-	const policy = branchProtection as Record<string, unknown>;
 	return (
-		!Object.hasOwn(contract, "toolingPolicy") &&
-		!Object.hasOwn(contract, "ciProviderPolicy") &&
-		!Object.hasOwn(contract, "issueTrackingPolicy") &&
-		Array.isArray(policy.requiredChecks) &&
-		policy.requiredChecks.length === 0 &&
-		policy.requiredApprovingReviewCount === 0
+		hasExactCompactMinimalTopLevelShape(contract) &&
+		hasCompactMinimalBranchProtection(contract)
 	);
 }
 
@@ -2121,7 +2152,7 @@ function auditReadinessScript(
 		}
 	}
 }
-
+/** Audits the declared Mise file for the exact required tool pins. */
 function auditMise(
 	findings: ToolingAuditFinding[],
 	repoPath: string,
@@ -2491,6 +2522,7 @@ function auditLocalHooks(
 	}
 }
 
+/** Compares the current tooling policy with the supplied base-policy requirements. */
 function auditBaseDrift(
 	findings: ToolingAuditFinding[],
 	contract: HarnessContract,
