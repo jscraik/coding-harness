@@ -43,11 +43,13 @@ describe("run-uv-python.sh", () => {
 	it("isolates uv state from inherited user-global paths", () => {
 		const root = createFixture();
 		const physicalRoot = realpathSync(root);
+		const { BASH_ENV: _inheritedBashEnv, ...environmentWithoutBashEnv } =
+			process.env;
 		const result = spawnSync("bash", ["scripts/run-uv-python.sh", "python"], {
 			cwd: root,
 			encoding: "utf8",
 			env: {
-				...process.env,
+				...environmentWithoutBashEnv,
 				PATH: `${join(root, "bin")}${delimiter}${process.env.PATH ?? ""}`,
 				UV_CACHE_DIR: "/user-global/uv-cache",
 				UV_PROJECT_ENVIRONMENT: "/user-global/uv-environment",

@@ -43,9 +43,13 @@ const GIT_HOOKS_DIR = resolve(
 // values commonly point at a user-global cache that is unavailable in sandboxed
 // or linked-worktree invocations.
 const PREK_HOME = resolve(REPO_ROOT, ".cache/prek");
+function renderShellDefaultAssignment(name, fallback) {
+	return `${name}="${"$"}{${name}:-${fallback}}"`;
+}
+
 const LEGACY_PREK_HOOK_PATCH = [
 	"# Keep prek cache/logs in repo-local .git to avoid home-dir sandbox write failures",
-	'PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"',
+	renderShellDefaultAssignment("PREK_HOME", "$HERE/../.cache/prek"),
 	'mkdir -p "$PREK_HOME" 2>/dev/null || true',
 	"export PREK_HOME",
 	"",
@@ -53,7 +57,7 @@ const LEGACY_PREK_HOOK_PATCH = [
 const PREK_HOME_PATCH_SENTINEL =
 	'WORKTREE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"';
 const INHERITED_PREK_HOME_HOOK_LINE =
-	'PREK_HOME="${PREK_HOME:-$WORKTREE_ROOT/.cache/prek}"';
+	renderShellDefaultAssignment("PREK_HOME", "$WORKTREE_ROOT/.cache/prek");
 const WORKTREE_PREK_HOME_HOOK_LINE =
 	'PREK_HOME="$WORKTREE_ROOT/.cache/prek"';
 const PREK_HOOK_PATCH = [
