@@ -3760,10 +3760,7 @@ describe("--track flag", () => {
 		// Backups directory is created but may be empty for new files
 		expect(existsSync(join(tempDir, ".harness/backups"))).toBe(true);
 		const manifest = JSON.parse(
-			require("node:fs").readFileSync(
-				join(tempDir, ".harness/restore-manifest.json"),
-				"utf-8",
-			),
+			readFileSync(join(tempDir, ".harness/restore-manifest.json"), "utf-8"),
 		);
 		expect(manifest.ciProvider).toBe("circleci");
 	});
@@ -3860,17 +3857,14 @@ describe("--track flag", () => {
 		expect(manifest.issueTracker).toBe("github");
 		expect(manifest.minimal).toBe(true);
 		const contract = JSON.parse(
-			require("node:fs").readFileSync(
-				join(tempDir, "harness.contract.json"),
-				"utf-8",
-			),
+			readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
 		);
 		expect(contract.branchProtection.requiredChecks).toEqual([]);
 		expect(contract.branchProtection.requiredApprovingReviewCount).toBe(0);
 		expect(contract.ciProviderPolicy).toBeUndefined();
 
 		manifest.harnessVersion = "0.0.1";
-		require("node:fs").writeFileSync(
+		writeFileSync(
 			join(tempDir, ".harness/restore-manifest.json"),
 			JSON.stringify(manifest),
 		);

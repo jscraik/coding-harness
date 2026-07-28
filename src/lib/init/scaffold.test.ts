@@ -1,5 +1,6 @@
 import {
 	existsSync,
+	mkdirSync,
 	mkdtempSync,
 	readFileSync,
 	rmSync,
@@ -9,6 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
+import { EXIT_CODES, runToolingAudit } from "../../commands/tooling-audit.js";
 import {
 	CODESTYLE_PACK_TEMPLATE_FILES,
 	TEMPLATES,
@@ -229,7 +231,7 @@ describe("scaffold templates resolution", () => {
 		expect(rendered.issueTrackingPolicy).toBeUndefined();
 	});
 
-	it("omits unbacked CI requirements from the minimal contract", () => {
+	it("omits unbacked policy from the minimal contract", async () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "harness-scaffold-test-"));
 		tempDirs.push(tempDir);
 		const context = createTemplateRenderContext(
@@ -249,10 +251,29 @@ describe("scaffold templates resolution", () => {
 		expect(contractTemplate).toBeDefined();
 		const rendered = JSON.parse(contractTemplate!.render("pnpm", context));
 
-		expect(rendered.branchProtection.requiredChecks).toEqual([]);
-		expect(rendered.branchProtection.requiredApprovingReviewCount).toBe(0);
-		expect(rendered.ciProviderPolicy).toBeUndefined();
-		expect(rendered.issueTrackingPolicy).toBeUndefined();
+		expect(Object.keys(rendered).sort()).toEqual([
+			"branchProtection",
+			"northStar",
+			"overrideReviewerRegistry",
+			"productSurface",
+			"riskTierRules",
+			"version",
+		]);
+		expect(rendered.branchProtection).toEqual({
+			requiredChecks: [],
+			requiredApprovingReviewCount: 0,
+		});
+		mkdirSync(join(tempDir, ".git"));
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify(rendered, null, 2),
+		);
+		const audit = await runToolingAudit({ path: tempDir, format: "json" });
+		expect(audit.ok).toBe(true);
+		if (audit.ok) {
+			expect(audit.value.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(audit.value.result.findings.total).toBe(0);
+		}
 	});
 
 	it("keeps linear issue tracking policy by default", () => {

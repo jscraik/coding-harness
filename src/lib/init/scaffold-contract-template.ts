@@ -143,6 +143,24 @@ function renderScaffoldContract(
 	const { agentBranchPrefix, context, packageManager, requiredChecks } =
 		options;
 	const isMinimal = context.minimal === true;
+	if (isMinimal) {
+		return {
+			version: CURRENT_SCHEMA_VERSION,
+			riskTierRules: {
+				"src/auth/**": "high",
+				"src/api/**": "high",
+				"src/lib/**": "medium",
+				"**/*.test.ts": "low",
+			},
+			branchProtection: {
+				requiredChecks: [],
+				requiredApprovingReviewCount: 0,
+			},
+			northStar: renderScaffoldNorthStar(context),
+			productSurface: renderScaffoldProductSurface(),
+			overrideReviewerRegistry: renderScaffoldOverrideReviewerRegistry(context),
+		};
+	}
 	const issueTrackingPolicy = isMinimal
 		? undefined
 		: renderIssueTrackingPolicy(context, agentBranchPrefix);
@@ -244,15 +262,11 @@ function renderScaffoldContract(
 		pilotRollbackPolicy: DEFAULT_CONTRACT.pilotRollbackPolicy,
 		pilotAuthzPolicy: DEFAULT_CONTRACT.pilotAuthzPolicy,
 		controlPlanePolicy: DEFAULT_CONTRACT.controlPlanePolicy,
-		...(isMinimal
-			? {}
-			: {
-					ciProviderPolicy: {
-						...DEFAULT_CI_PROVIDER_POLICY,
-						activeProvider:
-							context.ciProvider ?? DEFAULT_CI_PROVIDER_POLICY.activeProvider,
-					},
-				}),
+		ciProviderPolicy: {
+			...DEFAULT_CI_PROVIDER_POLICY,
+			activeProvider:
+				context.ciProvider ?? DEFAULT_CI_PROVIDER_POLICY.activeProvider,
+		},
 		contextIntegrityPolicy: DEFAULT_CONTRACT.contextIntegrityPolicy,
 		...(context.projectType !== undefined
 			? { projectType: context.projectType }

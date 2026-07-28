@@ -97,6 +97,41 @@ const FORBIDDEN_PREK_HOOK_ENTRY_PATTERNS = [
 
 const MAX_READINESS_FORWARDING_DEPTH = 4;
 
+/**
+ * Identifies the compact contract emitted by `harness init --minimal`.
+ *
+ * A compact contract deliberately omits the tooling surface because minimal
+ * scaffolding does not create its files. Older contracts without this explicit
+ * compact shape retain the default tooling-policy fallback.
+ */
+function isCompactMinimalRawContract(
+	contract: Record<string, unknown>,
+): boolean {
+	const branchProtection = contract.branchProtection;
+	if (branchProtection === null || typeof branchProtection !== "object") {
+		return false;
+	}
+	const policy = branchProtection as Record<string, unknown>;
+	return (
+		!Object.hasOwn(contract, "toolingPolicy") &&
+		!Object.hasOwn(contract, "ciProviderPolicy") &&
+		!Object.hasOwn(contract, "issueTrackingPolicy") &&
+		Array.isArray(policy.requiredChecks) &&
+		policy.requiredChecks.length === 0 &&
+		policy.requiredApprovingReviewCount === 0
+	);
+}
+
+/** Resolve explicit tooling policy while preserving legacy fallback behavior. */
+function resolveToolingPolicy(
+	contract: HarnessContract,
+): HarnessContract["toolingPolicy"] {
+	if (contract.toolingPolicy !== undefined) {
+		return contract.toolingPolicy;
+	}
+	return DEFAULT_CONTRACT.toolingPolicy;
+}
+
 const PREK_ALL_STAGES = [
 	"manual",
 	"commit-msg",
@@ -1923,8 +1958,7 @@ function auditReadinessScript(
 	repoPath: string,
 	contract: HarnessContract,
 ): void {
-	const toolingPolicy =
-		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	const toolingPolicy = resolveToolingPolicy(contract);
 	if (!toolingPolicy) {
 		return;
 	}
@@ -2093,8 +2127,7 @@ function auditMise(
 	repoPath: string,
 	contract: HarnessContract,
 ): void {
-	const toolingPolicy =
-		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	const toolingPolicy = resolveToolingPolicy(contract);
 	if (!toolingPolicy) {
 		return;
 	}
@@ -2141,8 +2174,7 @@ function auditCodexEnvironment(
 	repoPath: string,
 	contract: HarnessContract,
 ): void {
-	const toolingPolicy =
-		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	const toolingPolicy = resolveToolingPolicy(contract);
 	if (!toolingPolicy) {
 		return;
 	}
@@ -2183,8 +2215,7 @@ function auditMakefile(
 	repoPath: string,
 	contract: HarnessContract,
 ): void {
-	const toolingPolicy =
-		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	const toolingPolicy = resolveToolingPolicy(contract);
 	if (!toolingPolicy) {
 		return;
 	}
@@ -2220,8 +2251,7 @@ function auditProjectBrainMemoryExtension(
 	repoPath: string,
 	contract: HarnessContract,
 ): void {
-	const toolingPolicy =
-		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	const toolingPolicy = resolveToolingPolicy(contract);
 	if (!toolingPolicy?.projectBrainMemoryExtension?.enabled) {
 		return;
 	}
@@ -2251,8 +2281,7 @@ function auditPackagePolicy(
 	repoPath: string,
 	contract: HarnessContract,
 ): void {
-	const toolingPolicy =
-		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	const toolingPolicy = resolveToolingPolicy(contract);
 	if (!toolingPolicy) {
 		return;
 	}
@@ -2624,6 +2653,25 @@ function summarizeFindings(
 	};
 }
 
+/** Audit the concrete tooling surface declared by a non-compact contract. */
+function auditConfiguredTooling(
+	findings: ToolingAuditFinding[],
+	repoPath: string,
+	contract: HarnessContract,
+	baseContract?: HarnessContract,
+): void {
+	auditReadinessScript(findings, repoPath, contract);
+	auditMise(findings, repoPath, contract);
+	auditCodexEnvironment(findings, repoPath, contract);
+	auditMakefile(findings, repoPath, contract);
+	auditProjectBrainMemoryExtension(findings, repoPath, contract);
+	auditPackagePolicy(findings, repoPath, contract);
+	auditLocalHooks(findings, repoPath);
+	if (baseContract) {
+		auditBaseDrift(findings, contract, baseContract);
+	}
+}
+
 /**
  * Audit a repository for tooling policy compliance.
  *
@@ -2680,7 +2728,8 @@ async function auditRepository(
 	}
 
 	const findings: ToolingAuditFinding[] = [];
-	if (!Object.hasOwn(rawContract, "toolingPolicy")) {
+	const compactMinimal = isCompactMinimalRawContract(rawContract);
+	if (!compactMinimal && !Object.hasOwn(rawContract, "toolingPolicy")) {
 		findings.push({
 			path: "toolingPolicy",
 			severity: "warning",
@@ -2689,15 +2738,8 @@ async function auditRepository(
 		});
 	}
 
-	auditReadinessScript(findings, repoPath, contract);
-	auditMise(findings, repoPath, contract);
-	auditCodexEnvironment(findings, repoPath, contract);
-	auditMakefile(findings, repoPath, contract);
-	auditProjectBrainMemoryExtension(findings, repoPath, contract);
-	auditPackagePolicy(findings, repoPath, contract);
-	auditLocalHooks(findings, repoPath);
-	if (baseContract) {
-		auditBaseDrift(findings, contract, baseContract);
+	if (!compactMinimal) {
+		auditConfiguredTooling(findings, repoPath, contract, baseContract);
 	}
 
 	return {
