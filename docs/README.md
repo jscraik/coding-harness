@@ -75,7 +75,6 @@ depends_on:
 ## Layer 3 — Extended governance reference
 
 - [Instruction map](./agents/01-instruction-map.md) — full task routing and deep links
-- [Quality score](./QUALITY_SCORE.md)
 - [Agent testing gates](./agents/10-agent-testing-gates.md) + [ops spec](./agents/agent-testing-gates-operational-spec.md)
 - [Flaky test artifacts](./agents/11-flaky-test-artifacts.md)
 - [Docs-gate rollout](./agents/14-docs-gate-rollout.md) + [ops spec](./agents/docs-gate-rollout-operational-spec.md)

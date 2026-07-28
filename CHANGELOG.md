@@ -14,6 +14,9 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Changed
 
+- Made the routine `harness next --json` response task-first and compact;
+  stale optional context is now an advisory warning rather than the primary
+  action.
 - Consolidated the default agent-native packet catalog from five choices to
   two canonical commands while retaining all five legacy commands as callable
   compatibility surfaces.

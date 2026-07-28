@@ -132,13 +132,13 @@
 				"surfaceType": "document",
 				"class": "adjacent",
 				"owner": "workflow",
-				"northStarContribution": "Tracks north-star outcomes with throughput-path and guardrail effectiveness metrics.",
-				"manualGlueReductionClaim": "Reduces manual interpretation overhead during readiness and release checks.",
-				"reliabilityContribution": "Keeps status reporting constrained to canonical outcome metrics.",
+				"northStarContribution": "Keeps a compact, truth-bounded status surface aligned to the canonical metric and bottleneck.",
+				"manualGlueReductionClaim": "Avoids repeated interpretation by separating current evidence from unmeasured outcomes.",
+				"reliabilityContribution": "Prevents status reporting from presenting unsupported numerical claims as current evidence.",
 				"evidenceReference": "docs/roadmap/agent-first-status.md",
 				"reviewCadence": "weekly",
 				"ownedPaths": ["docs/roadmap/agent-first-status.md"],
-				"lastReviewedAt": "2026-07-18"
+				"lastReviewedAt": "2026-07-27"
 			}
 		]
 	},

@@ -62,6 +62,38 @@ function parseDecision(output: string): ReturnType<typeof runHarnessNext> {
 	return parsed;
 }
 
+function parseCompactDecision(output: string): {
+	schemaVersion: string;
+	status: string;
+	summary: string;
+	nextAction: string;
+	nextCommand: string | null;
+	warnings: string[];
+	executionBoundary: {
+		safeToRun: boolean;
+		requiresHuman: boolean;
+		requiresNetwork: boolean;
+		writesFiles: boolean;
+	};
+	claimsBoundary: string;
+} {
+	return JSON.parse(output) as {
+		schemaVersion: string;
+		status: string;
+		summary: string;
+		nextAction: string;
+		nextCommand: string | null;
+		warnings: string[];
+		executionBoundary: {
+			safeToRun: boolean;
+			requiresHuman: boolean;
+			requiresNetwork: boolean;
+			writesFiles: boolean;
+		};
+		claimsBoundary: string;
+	};
+}
+
 function createGitRepoWithCommit(): string {
 	const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-worktree-"));
 	const gitEnv = {
@@ -1040,6 +1072,54 @@ describe("runHarnessNext", () => {
 		});
 	});
 
+	it("keeps stale optional prompt-context orientation advisory", () => {
+		const decision = runHarnessNext({
+			inspectChangedFiles: () => [],
+			repoRoot: "/tmp/repo",
+			agentReadinessContext: {
+				schemaVersion: "agent-readiness-context-health/v1",
+				status: "warn",
+				evidenceUse: "orientation",
+				canonicalReport: {
+					schemaVersion: "context-health-report/v1",
+					command: "node --import tsx src/cli.ts context-health --json",
+					available: true,
+					prerequisiteStatus: "pass",
+					prerequisiteEvidence: ["harness.contract.json"],
+				},
+				surfaces: [
+					{
+						id: "prompt_context_drift",
+						status: "warn",
+						evidenceUse: "orientation",
+						evidence: [
+							"missing:artifacts/context-integrity/prompt-context-drift-report.json",
+						],
+						staleReasons: ["No prompt-context report was provided."],
+						suggestedRefreshCommands: ["harness prompt-context-drift:write"],
+					},
+				],
+				suggestedRefreshCommands: ["harness prompt-context-drift:write"],
+			},
+		});
+
+		expect(decision.status).toBe("pass");
+		expect(decision.nextCommand).toBe("harness check --json");
+		expect(decision.writesFiles).toBe(false);
+		expect(decision.meta).toMatchObject({
+			agentReadinessContext: {
+				status: "warn",
+				degradedSurfaceCount: 1,
+				degradedSurfaces: [
+					{
+						id: "prompt_context_drift",
+						status: "warn",
+					},
+				],
+			},
+		});
+	});
+
 	it("reports excluded operator-local paths without creating an empty file plan", () => {
 		const decision = runHarnessNext({
 			files: [".tessl/memory/index.md"],
@@ -1794,6 +1874,39 @@ describe("runHarnessNext", () => {
 });
 
 describe("runNextCLI", () => {
+	it("projects the ordinary JSON route onto the compact task-first contract", () => {
+		const repoRoot = createGitRepoWithCommit();
+		const originalCwd = process.cwd();
+		try {
+			process.chdir(repoRoot);
+			const { exitCode, output } = captureNextCLI(["--json"], {});
+
+			expect(exitCode).toBe(0);
+			const decision = parseCompactDecision(output);
+			expect(Object.keys(decision).sort()).toEqual([
+				"claimsBoundary",
+				"executionBoundary",
+				"nextAction",
+				"nextCommand",
+				"schemaVersion",
+				"status",
+				"summary",
+				"warnings",
+			]);
+			expect(decision.schemaVersion).toBe("harness-decision/v1");
+			for (const value of Object.values(decision.executionBoundary)) {
+				expect(typeof value).toBe("boolean");
+			}
+			expect(decision.warnings).toContain(
+				"No prompt-context-drift report was provided for agent-readable orientation.",
+			);
+			expect(decision.claimsBoundary).toContain("does not prove");
+		} finally {
+			process.chdir(originalCwd);
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
 	it("emits a valid JSON HarnessDecision for --json without required context flags", () => {
 		const { exitCode, output } = captureNextCLI(["--json"], {
 			inspectChangedFiles: () => ["docs/spec.md"],

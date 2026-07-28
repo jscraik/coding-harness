@@ -61,9 +61,6 @@ function daysBetween(date1: Date, date2: Date): number {
 	return Math.max(0, Math.floor(diffTime / msPerDay));
 }
 
-// Generated files to skip during stale detection
-const SKIP_FILES = new Set(["QUALITY_SCORE.md"]);
-
 /**
  * Recursively find all markdown files in a directory
  */
@@ -86,10 +83,6 @@ function findMarkdownFiles(dir: string, baseDir: string): string[] {
 			}
 			files.push(...findMarkdownFiles(fullPath, baseDir));
 		} else if (entry.isFile() && entry.name.endsWith(".md")) {
-			// Skip generated files
-			if (SKIP_FILES.has(entry.name)) {
-				continue;
-			}
 			// Return relative path from base directory
 			const relativePath = fullPath.slice(baseDir.length + 1);
 			files.push(relativePath);

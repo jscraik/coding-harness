@@ -48,30 +48,12 @@ export interface BrokenLink {
 	error?: string;
 }
 
-/** Quality score breakdown */
-export interface QualityScore {
-	/** Overall quality score (0-100) */
-	score: number;
-	/** ISO date string of calculation */
-	calculatedAt: string;
-	/** Number of stale documents */
-	staleDocCount: number;
-	/** Number of broken links */
-	brokenLinkCount: number;
-	/** Deduction for stale docs (count * 5) */
-	staleDeduction: number;
-	/** Deduction for broken links (count * 10) */
-	brokenLinkDeduction: number;
-}
-
 /** Output from the gardener analysis */
 export interface GardenerOutput {
 	/** Documents that need validation */
 	staleDocs: StaleDoc[];
 	/** Broken links found */
 	brokenLinks: BrokenLink[];
-	/** Current quality score (null if not calculated) */
-	qualityScore: QualityScore | null;
 	/** Whether a maintenance PR should be created */
 	needsPR: boolean;
 }
@@ -88,17 +70,8 @@ export interface GardenerErrorOutput {
 
 /** Discriminated union result type for type-safe error handling */
 export type GardenerResult =
-	| { ok: true; output: GardenerOutput; updateWarning?: string }
+	| { ok: true; output: GardenerOutput }
 	| { ok: false; error: GardenerErrorOutput };
 
 /** Default number of days before doc is considered stale */
 export const DEFAULT_STALE_DAYS = 30;
-
-/** Deduction per stale document */
-export const STALE_DOC_DEDUCTION = 5;
-
-/** Deduction per broken link */
-export const BROKEN_LINK_DEDUCTION = 10;
-
-/** Maximum quality score */
-export const MAX_QUALITY_SCORE = 100;

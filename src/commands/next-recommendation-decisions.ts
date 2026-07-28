@@ -17,7 +17,6 @@ import {
 } from "./next-decision-meta.js";
 import type { HarnessNextMode } from "./next-decision-types.js";
 import * as agentNativeRatchets from "./next-agent-native-ratchets.js";
-import { promptContextDriftDecision } from "./next-prompt-context-drift.js";
 import { chooseNextCommandParts, shellQuote } from "./next-support.js";
 import {
 	changedFileClassificationMeta,
@@ -134,8 +133,6 @@ export function noChangedFilesDecision(args: {
 	prCloseout?: HarnessNextPrCloseoutEvidence | undefined;
 	agentReadinessContext?: AgentReadinessContextHealth | undefined;
 }): HarnessDecision {
-	const driftDecision = promptContextDriftDecision(args);
-	if (driftDecision) return driftDecision;
 	return createNextDecision({
 		status: "pass",
 		summary: "No changed files detected.",

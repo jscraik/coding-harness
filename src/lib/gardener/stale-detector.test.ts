@@ -36,7 +36,7 @@ describe("detectStaleDocs", () => {
 		expect(stale).toEqual([]);
 	});
 
-	it("ignores generated QUALITY_SCORE.md for stale detection and counts", () => {
+	it("counts every markdown document after legacy score retirement", () => {
 		mkdirSync("artifacts", { recursive: true });
 		const root = mkdtempSync(join(process.cwd(), "artifacts/stale-detector-"));
 		tempDirs.push(root);
@@ -52,11 +52,11 @@ describe("detectStaleDocs", () => {
 		);
 		writeFileSync(
 			join(docsDir, "QUALITY_SCORE.md"),
-			"---\nlast_updated: 2026-02-25\ncalculated_by: harness-gardener\n---\n",
+			`---\nlast_validated: ${today}\n---\n\n# Retired score\n`,
 			"utf-8",
 		);
 
 		expect(detectStaleDocs(docsDir, 30)).toEqual([]);
-		expect(countMarkdownFiles(docsDir)).toBe(1);
+		expect(countMarkdownFiles(docsDir)).toBe(2);
 	});
 });

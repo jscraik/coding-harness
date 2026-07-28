@@ -5567,13 +5567,15 @@ async function runAgentNextActionParityFixture(scenario, fixturePath) {
 			status: staleDecision.status,
 			nextCommand: staleDecision.nextCommand,
 			phase: staleDecision.phase,
-			followUpCommands: staleDecision.followUpCommands,
+			degradedContextCount:
+				staleDecision.meta?.agentReadinessContext?.degradedSurfaceCount,
 		},
 		missingDecision: {
 			status: missingDecision.status,
 			nextCommand: missingDecision.nextCommand,
 			phase: missingDecision.phase,
-			requiredEvidence: missingDecision.requiredEvidence,
+			degradedContextCount:
+				missingDecision.meta?.agentReadinessContext?.degradedSurfaceCount,
 		},
 		prCloseoutDecision: {
 			status: prCloseoutDecision.status,
@@ -5608,21 +5610,16 @@ async function runAgentNextActionParityFixture(scenario, fixturePath) {
 				cleanDecision.nextCommand === "harness check --json",
 		),
 		assertion(
-			"stale prompt-context drift is promoted before handoff",
-			staleDecision.status === "action_required" &&
-				staleDecision.nextCommand === stalePromptCommand,
+			"stale optional prompt context stays advisory on the task-first route",
+			staleDecision.status === "pass" &&
+				staleDecision.nextCommand === "harness check --json" &&
+				staleDecision.meta?.agentReadinessContext?.degradedSurfaceCount === 1,
 		),
 		assertion(
-			"missing prompt-context drift is promoted before handoff",
-			missingDecision.status === "action_required" &&
-				missingDecision.nextCommand === stalePromptCommand &&
-				missingDecision.requiredEvidence.includes(
-					`missing:${promptDriftReportRef}`,
-				),
-		),
-		assertion(
-			"stale prompt-context refresh keeps check as follow-up",
-			staleDecision.followUpCommands.includes("harness check --json"),
+			"missing optional prompt context stays advisory on the task-first route",
+			missingDecision.status === "pass" &&
+				missingDecision.nextCommand === "harness check --json" &&
+				missingDecision.meta?.agentReadinessContext?.degradedSurfaceCount === 1,
 		),
 		assertion(
 			"non-ready pr-closeout evidence blocks clean handoff",

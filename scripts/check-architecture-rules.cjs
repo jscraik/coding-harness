@@ -11,7 +11,8 @@
  *   - no-circular-deps       : no import cycles in src/
  *   - commands-no-cross-import: command facade files must not import other
  *                              command facades
- *   - auth-commands-use-crypto: auth-boundary commands must import node:crypto
+ *   - auth-commands-use-crypto: auth-boundary signing implementations must
+ *                              reach node:crypto through their signing seam
  *   - github-lib-no-fs       : src/lib/github/* must not import node:fs/fs
  *   - diagram-freshness      : .diagram/manifest.json must contain required
  *                              types with no placeholders
@@ -139,12 +140,7 @@ const REQUIRED_DIAGRAM_TYPES = [
 	"auth",
 ];
 
-const AUTH_BOUNDARY_COMMANDS = [
-	"ci-migrate.ts",
-	"check-authz.ts",
-	"branch-protect.ts",
-	"evidence-verify.ts",
-];
+const AUTH_BOUNDARY_SIGNING_IMPLEMENTATIONS = ["ci-migrate-core.ts"];
 
 // ── Utilities ────────────────────────────────────────────────────────────────
 
@@ -360,21 +356,38 @@ function checkCommandsNoCrossImport() {
 
 // ── Rule: auth-commands-use-crypto ──────────────────────────────────────────
 
+function importsCryptoThroughSigningSeam(
+	filePath,
+	remainingDepth,
+	visited = new Set(),
+) {
+	if (visited.has(filePath)) return false;
+	visited.add(filePath);
+
+	for (const imp of extractImports(filePath)) {
+		if (imp === "node:crypto" || imp === "crypto") return true;
+		if (remainingDepth <= 0) continue;
+		const resolved = resolveImport(filePath, imp);
+		if (
+			resolved !== null &&
+			importsCryptoThroughSigningSeam(resolved, remainingDepth - 1, visited)
+		) {
+			return true;
+		}
+	}
+	return false;
+}
+
 function checkAuthCommandsUseCrypto() {
-	for (const filename of AUTH_BOUNDARY_COMMANDS) {
+	for (const filename of AUTH_BOUNDARY_SIGNING_IMPLEMENTATIONS) {
 		const filePath = path.join(COMMANDS_DIR, filename);
 		if (!fs.existsSync(filePath)) continue;
-		const imports = extractImports(filePath);
-		const usesCrypto = imports.some(
-			(imp) => imp === "node:crypto" || imp === "crypto",
-		);
-		if (!usesCrypto) {
-			// Also check if it's imported via a lib module (indirect — warn only)
+		if (!importsCryptoThroughSigningSeam(filePath, 1)) {
 			fail(
 				"auth-commands-use-crypto",
 				"warning",
 				filePath,
-				"Auth-boundary command does not directly import node:crypto. Verify signing is delegated to a lib module that does.",
+				"Auth-boundary signing implementation does not import node:crypto or a direct signing seam that does.",
 			);
 		}
 	}

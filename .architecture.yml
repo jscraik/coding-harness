@@ -30,19 +30,17 @@ rules:
     forbidden:
       - src/commands/
 
-  # ── Auth-boundary commands must use node:crypto for signing ──────────────
+  # ── Auth-boundary signing implementation must use node:crypto ───────────
   - id: auth-commands-use-crypto
     description: >
-      Commands that cross the auth boundary (ci-migrate, check-authz,
-      branch-protect, evidence-verify) must import node:crypto directly
-      rather than delegating signing to ad-hoc string manipulation.
+      The ci-migrate signing implementation must import node:crypto directly
+      rather than delegating signing to ad-hoc string manipulation. The active
+      local architecture check also proves that ci-migrate-core reaches this
+      implementation through its direct signing seam.
     rule: required-import
     severity: warning
     paths:
-      - src/commands/ci-migrate.ts
-      - src/commands/check-authz.ts
-      - src/commands/branch-protect.ts
-      - src/commands/evidence-verify.ts
+      - src/lib/ci/ci-migrate-signing.ts
     required:
       - node:crypto
 

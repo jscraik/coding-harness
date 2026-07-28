@@ -27,9 +27,9 @@ Start with the read-only cockpit entrypoint:
 harness next --json
 ```
 
-Read `nextCommand` and `safeToRun`, run the recommendation when safe, and
-repeat after repository state changes. Use the [CLI reference](../cli-reference.md)
-for the full command contract.
+Read `nextCommand` and `executionBoundary.safeToRun`, run the recommendation
+when safe, and repeat after repository state changes. Use the [CLI
+reference](../cli-reference.md) for the full command contract.
 
 ## Validate
 

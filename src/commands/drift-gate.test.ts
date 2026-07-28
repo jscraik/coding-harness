@@ -47,19 +47,6 @@ function createRepoFixture(root: string): void {
 		].join("\n"),
 	);
 	write(
-		join(root, "docs/QUALITY_SCORE.md"),
-		[
-			"---",
-			"last_updated: 2026-04-21",
-			"calculated_by: harness-gardener",
-			"---",
-			"",
-			"# Documentation Quality Score",
-			"",
-			"**Score:** 90/100",
-		].join("\n"),
-	);
-	write(
 		join(root, "docs/roadmap/agent-first-status.md"),
 		[
 			"# Matrix",
@@ -110,19 +97,6 @@ describe("drift-gate command", () => {
 		roots.push(root);
 		createRepoFixture(root);
 		rmSync(join(root, "todos"), { recursive: true, force: true });
-		write(
-			join(root, "docs/QUALITY_SCORE.md"),
-			[
-				"---",
-				"last_updated: 2099-01-01",
-				"calculated_by: harness-gardener",
-				"---",
-				"",
-				"# Documentation Quality Score",
-				"",
-				"**Score:** 90/100",
-			].join("\n"),
-		);
 
 		const result = runDriftGate({
 			repoRoot: root,
@@ -219,52 +193,21 @@ describe("drift-gate command", () => {
 		});
 	});
 
-	it("treats stale findings as preexisting when baseline omits dynamic message text", () => {
+	it("does not require a retired quality-score document", () => {
 		const root = join(process.cwd(), "artifacts", "drift-gate-test-4");
 		roots.push(root);
 		createRepoFixture(root);
-
-		write(
-			join(root, "docs/QUALITY_SCORE.md"),
-			[
-				"---",
-				"last_updated: 2026-01-01",
-				"calculated_by: harness-gardener",
-				"---",
-				"",
-				"# Documentation Quality Score",
-				"",
-				"**Score:** 90/100",
-			].join("\n"),
-		);
-
-		write(
-			join(root, "artifacts/consistency-gate/consistency-baseline-latest.json"),
-			JSON.stringify(
-				{
-					schemaVersion: "1.0.0",
-					findings: [
-						{
-							rule_id: "quality.score.stale",
-							surface: "quality-score",
-							path: "docs/QUALITY_SCORE.md",
-						},
-					],
-				},
-				null,
-				2,
-			),
-		);
 
 		const result = runDriftGate({
 			repoRoot: root,
 			mode: "advisory",
 		});
 
-		const staleFinding = result.report.findings.find(
-			(f) => f.rule_id === "quality.score.stale",
-		);
-		expect(staleFinding?.baseline_state).toBe("preexisting");
+		expect(
+			result.report.findings.some((finding) =>
+				finding.rule_id.startsWith("quality.score."),
+			),
+		).toBe(false);
 	});
 
 	it("ignores help option rows when detecting command duplicates", () => {
@@ -853,7 +796,7 @@ describe("drift-gate command", () => {
 				findings: unknown[];
 			};
 			expect(payload.gate).toBe("drift-gate");
-			expect(payload.status).toBe("warn");
+			expect(payload.status).toBe("pass");
 			expect(Array.isArray(payload.findings)).toBe(true);
 		} finally {
 			stdoutSpy.mockRestore();

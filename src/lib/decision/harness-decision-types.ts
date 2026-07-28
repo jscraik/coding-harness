@@ -207,6 +207,29 @@ export interface HarnessDecision {
 	meta?: HarnessDecisionMeta;
 }
 
+/** Compact, task-first projection of a full decision at the routine CLI boundary. */
+export interface CompactHarnessDecision {
+	/** Existing contract identity; this is a projection, not a new decision version. */
+	schemaVersion: typeof HARNESS_DECISION_SCHEMA_VERSION;
+	/** Current local routing status. */
+	status: HarnessDecisionStatus;
+	/** Concise local state summary. */
+	summary: string;
+	/** One useful immediate action. */
+	nextAction: string;
+	/** Exact command for the immediate action, when safe. */
+	nextCommand: string | null;
+	/** Advisory context or truth-lane degradation that does not replace the action. */
+	warnings: string[];
+	/** Material permissions and mutation boundary for the named next action. */
+	executionBoundary: Pick<
+		HarnessDecision,
+		"safeToRun" | "requiresHuman" | "requiresNetwork" | "writesFiles"
+	>;
+	/** Lanes this local recommendation cannot prove. */
+	claimsBoundary: string;
+}
+
 /** Producer input for constructing a complete agent-readable decision envelope. */
 export interface HarnessDecisionInput {
 	/** Decision state. */

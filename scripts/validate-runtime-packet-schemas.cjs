@@ -54,6 +54,7 @@ const SUPPORTED_SCHEMA_KEYWORDS = new Set([
 	"minContains",
 	"minLength",
 	"minimum",
+	"not",
 	"pattern",
 	"prefixItems",
 	"contains",
@@ -364,6 +365,21 @@ function validateSupportedSchemaKeywords(
 			);
 		}
 	}
+	if (Object.hasOwn(schema, "not")) {
+		if (isObject(schema.not)) {
+			validateSupportedSchemaKeywords(
+				schema.not,
+				schemaPath,
+				errors,
+				`${schemaNodePath}.not`,
+				visitedRefs,
+			);
+		} else if (typeof schema.not !== "boolean") {
+			errors.push(
+				`${schemaPath}${schemaNodePath}.not must be boolean or object`,
+			);
+		}
+	}
 }
 
 function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
@@ -405,6 +421,29 @@ function validateExampleValue(schema, value, valuePath, errors, schemaPath) {
 	if (Array.isArray(schema.allOf)) {
 		for (const candidate of schema.allOf) {
 			validateExampleValue(candidate, value, valuePath, errors, schemaPath);
+		}
+	}
+	if (Object.hasOwn(schema, "not")) {
+		if (schema.not === true) {
+			errors.push(`${valuePath} must not match schema (not: true)`);
+		} else if (schema.not === false) {
+			// not: false means always pass, no validation needed
+		} else if (isObject(schema.not)) {
+			const forbiddenErrors = [];
+			validateExampleValue(
+				schema.not,
+				value,
+				valuePath,
+				forbiddenErrors,
+				schemaPath,
+			);
+			if (forbiddenErrors.length === 0) {
+				errors.push(`${valuePath} must not match schema`);
+			}
+		} else {
+			errors.push(
+				`${valuePath} has invalid schema.not: must be boolean or object`,
+			);
 		}
 	}
 	if (isObject(schema.if)) {

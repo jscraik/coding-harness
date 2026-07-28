@@ -64,6 +64,11 @@ For command-registry deep-module splits, keep the public command spec small,
 move action-specific option builders behind named internal adapter seams,
 refresh `AI/context/diagram-context.md`, and update README command-surface
 guidance when docs-gate reports a CLI-surface requirement.
+For the routine `harness next --json` route, keep the default projection
+task-first and compact: it names the current status, summary, one next action
+or command, warnings, the execution boundary, and the claims boundary. Missing
+or stale optional context remains a warning; detailed decision, readiness, and
+maintenance data belongs only to an explicit diagnostic or evidence route.
 For truthful invocation-effect catalog changes, keep the public capability
 projection separate from the source-characterized effect declarations. Each
 declared invocation must identify its effect classes, targets, provider class,

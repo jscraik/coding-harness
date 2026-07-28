@@ -17,7 +17,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from check_artifact_type_contracts import (
     AgentNativeRatchetsReport,
     AgentReworkReport,
+    CompactHarnessDecision,
     GovernanceDecisionSurfaceReport,
+    HarnessDecision,
     ReviewerDecisionReport,
     SessionDistillReport,
 )
@@ -34,6 +36,44 @@ FORBIDDEN_HARNESS_CLAIMS = {
     "tracker_closed",
     "merge_ready",
 }
+
+
+def _compact_harness_decision() -> dict[str, Any]:
+    payload = deepcopy(_load_example("harness-decision.example.json"))
+    for field in (
+        "producer",
+        "phase",
+        "cockpitLane",
+        "objective",
+        "requiredEvidence",
+        "stopConditions",
+        "humanEscalation",
+        "followUpCommands",
+        "hiddenPlumbing",
+        "safeToRun",
+        "requiresHuman",
+        "requiresNetwork",
+        "writesFiles",
+        "evidenceRef",
+        "failureClass",
+        "retry",
+        "riskTier",
+        "meta",
+    ):
+        del payload[field]
+    payload.update(
+        {
+            "warnings": [],
+            "executionBoundary": {
+                "safeToRun": True,
+                "requiresHuman": False,
+                "requiresNetwork": False,
+                "writesFiles": False,
+            },
+            "claimsBoundary": "Local routing only.",
+        }
+    )
+    return payload
 
 
 def _load_example(name: str) -> dict[str, Any]:
@@ -54,6 +94,53 @@ def _assert_harness_boundary(
     assert may_claim
     assert FORBIDDEN_HARNESS_CLAIMS.issubset(must_not_claim)
     assert set(may_claim).isdisjoint(must_not_claim)
+
+
+class TestHarnessDecisionShapes:
+    def test_rejects_full_decisions_with_compact_only_fields(self) -> None:
+        compact_only_fields: tuple[tuple[str, Any], ...] = (
+            ("warnings", []),
+            (
+                "executionBoundary",
+                {
+                    "safeToRun": True,
+                    "requiresHuman": False,
+                    "requiresNetwork": False,
+                    "writesFiles": False,
+                },
+            ),
+            ("claimsBoundary", "Local routing only."),
+        )
+        for field, value in compact_only_fields:
+            payload = _load_example("harness-decision.example.json")
+            payload[field] = value
+
+            with pytest.raises(ValidationError, match="full harness decisions"):
+                HarnessDecision.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("next_command", "safe_to_run", "expected"),
+        [
+            ("harness check --json", False, "must be true"),
+            (None, True, "must be false"),
+        ],
+    )
+    def test_rejects_compact_decision_with_contradictory_command_safety(
+        self, next_command: str | None, safe_to_run: bool, expected: str
+    ) -> None:
+        payload = _compact_harness_decision()
+        payload["nextCommand"] = next_command
+        payload["executionBoundary"]["safeToRun"] = safe_to_run
+
+        with pytest.raises(ValidationError, match=expected):
+            CompactHarnessDecision.model_validate(payload)
+
+    def test_rejects_whitespace_only_compact_claims_boundary(self) -> None:
+        payload = _compact_harness_decision()
+        payload["claimsBoundary"] = "   "
+
+        with pytest.raises(ValidationError, match="must not be blank"):
+            CompactHarnessDecision.model_validate(payload)
 
 
 class TestAgentNativeRatchetsReport:

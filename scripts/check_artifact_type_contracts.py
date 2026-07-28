@@ -17,7 +17,7 @@ from typing import Literal, cast
 
 from jsonschema import Draft7Validator, Draft202012Validator, validate as validate_json_schema
 from jsonschema.exceptions import SchemaError, ValidationError as JsonSchemaValidationError
-from pydantic import BaseModel, ConfigDict, ValidationError, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, StrictBool, ValidationError, field_validator, model_validator
 import yaml
 
 
@@ -410,6 +410,81 @@ class HarnessDecision(BaseModel):
         if any(not item.strip() for item in value):
             raise ValueError("must not contain blank items")
         return value
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_compact_projection_fields(cls, value: object) -> object:
+        if isinstance(value, dict):
+            compact_fields = [
+                field
+                for field in ("warnings", "executionBoundary", "claimsBoundary")
+                if field in value
+            ]
+            if compact_fields:
+                raise ValueError(
+                    "full harness decisions must not include "
+                    + ", ".join(compact_fields)
+                )
+        return cast(object, value)
+
+
+class CompactExecutionBoundary(BaseModel):
+    """The material permission boundary exposed by routine `harness next` output."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    safeToRun: StrictBool
+    requiresHuman: StrictBool
+    requiresNetwork: StrictBool
+    writesFiles: StrictBool
+
+
+class CompactHarnessDecision(BaseModel):
+    """Typed contract for the routine task-first harness-decision/v1 projection."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schemaVersion: Literal["harness-decision/v1"]
+    status: Literal["pass", "fail", "blocked", "action_required"]
+    summary: str
+    nextAction: str
+    nextCommand: str | None
+    warnings: list[str]
+    executionBoundary: CompactExecutionBoundary
+    claimsBoundary: str
+
+    @field_validator("summary", "nextAction", "nextCommand", "claimsBoundary")
+    @classmethod
+    def reject_blank_compact_string(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("must not be blank")
+        return value
+
+    @field_validator("warnings")
+    @classmethod
+    def reject_blank_warning_items(cls, value: list[str]) -> list[str]:
+        if any(not item.strip() for item in value):
+            raise ValueError("must not contain blank items")
+        return value
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_full_envelope_fields(cls, value: object) -> object:
+        if isinstance(value, dict) and "producer" in value:
+            raise ValueError("compact harness decisions must not include producer")
+        return cast(object, value)
+
+    @model_validator(mode="after")
+    def validate_command_safety(self) -> CompactHarnessDecision:
+        if self.nextCommand is None and self.executionBoundary.safeToRun:
+            raise ValueError(
+                "executionBoundary.safeToRun must be false when nextCommand is null"
+            )
+        if self.nextCommand is not None and not self.executionBoundary.safeToRun:
+            raise ValueError(
+                "executionBoundary.safeToRun must be true when nextCommand is set"
+            )
+        return self
 
 
 class CliJsonLiveValidation(BaseModel):
@@ -1516,7 +1591,10 @@ def validate_command_catalog_value(value: object, label: str, errors: list[str])
 
 def validate_harness_decision_value(value: object, label: str, errors: list[str]) -> None:
     try:
-        HarnessDecision.model_validate(value)
+        if isinstance(value, dict) and "producer" not in value:
+            CompactHarnessDecision.model_validate(value)
+        else:
+            HarnessDecision.model_validate(value)
     except ValidationError as exc:
         details = "; ".join(
             f"{'.'.join(str(part) for part in error['loc'])}: {error['msg']}"

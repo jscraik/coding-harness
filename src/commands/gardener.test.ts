@@ -19,7 +19,7 @@ describe("runGardener", () => {
 		tempDirs.length = 0;
 	});
 
-	it("does not write QUALITY_SCORE.md in dry-run mode", () => {
+	it("does not create a legacy quality-score report", () => {
 		mkdirSync("artifacts", { recursive: true });
 		const root = mkdtempSync(join(process.cwd(), "artifacts/gardener-"));
 		tempDirs.push(root);
@@ -28,7 +28,7 @@ describe("runGardener", () => {
 		mkdirSync(docsDir, { recursive: true });
 		writeFileSync(join(docsDir, "README.md"), "# docs", "utf-8");
 
-		const result = runGardener({ docsPath: docsDir, dryRun: true });
+		const result = runGardener({ docsPath: docsDir });
 
 		expect(result.ok).toBe(true);
 		expect(existsSync(join(docsDir, "QUALITY_SCORE.md"))).toBe(false);

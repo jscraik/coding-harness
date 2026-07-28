@@ -1,16 +1,12 @@
 /**
  * Gardener CLI Command
  *
- * Detects stale docs, broken links, and updates quality scores.
+ * Detects stale docs and broken links without publishing a circular score.
  */
 
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { checkLinks } from "../lib/gardener/link-checker.js";
-import {
-	calculateQualityScore,
-	updateQualityScoreFile,
-} from "../lib/gardener/quality-scorer.js";
 import { detectStaleDocs } from "../lib/gardener/stale-detector.js";
 import {
 	type BrokenLink,
@@ -49,34 +45,18 @@ export function runGardener(options: GardenerOptions): GardenerResult {
 		// Check for broken links
 		const brokenLinks: BrokenLink[] = checkLinks(docsPath);
 
-		// Calculate quality score
-		const qualityScore = calculateQualityScore(staleDocs, brokenLinks);
-
 		// Determine if PR is needed
 		const needsPR = staleDocs.length > 0 || brokenLinks.length > 0;
 
 		const output: GardenerOutput = {
 			staleDocs,
 			brokenLinks,
-			qualityScore,
 			needsPR,
 		};
-
-		// Update quality score file (skip in dry-run mode)
-		let updateResult: { ok: boolean; error?: string } = { ok: true };
-		if (!options.dryRun) {
-			updateResult = updateQualityScoreFile(
-				docsPath,
-				qualityScore,
-				staleDocs,
-				brokenLinks,
-			);
-		}
 
 		return {
 			ok: true,
 			output,
-			...(updateResult.ok ? {} : { updateWarning: updateResult.error }),
 		};
 	} catch (error) {
 		return {
@@ -123,6 +103,7 @@ export function runGardenerCLI(options: GardenerOptions): number {
 	return gardenerErrorExitCode(result.error.code);
 }
 
+/** Render a successful documentation scan without claiming publication work. */
 function renderGardenerSuccess(
 	result: Extract<GardenerResult, { ok: true }>,
 	options: GardenerOptions,
@@ -137,21 +118,13 @@ function renderGardenerSuccess(
 	console.info(`  Docs path: ${options.docsPath ?? "docs"}`);
 	console.info(`  Stale docs: ${output.staleDocs.length}`);
 	console.info(`  Broken links: ${output.brokenLinks.length}`);
-	renderGardenerWarning(result.updateWarning);
 	renderStaleDocs(output.staleDocs);
 	renderBrokenLinks(output.brokenLinks);
 	renderGardenerCompletion(output, Boolean(options.dryRun));
 	console.info("");
 }
 
-function renderGardenerWarning(updateWarning: string | undefined): void {
-	if (updateWarning) {
-		console.warn(
-			`Warning: Failed to update quality score file: ${updateWarning}`,
-		);
-	}
-}
-
+/** Print bounded stale-document diagnostics for interactive CLI users. */
 function renderStaleDocs(staleDocs: StaleDoc[]): void {
 	if (staleDocs.length === 0) return;
 	console.info("\n📄 Stale Documents:");
@@ -173,14 +146,18 @@ function renderBrokenLinks(brokenLinks: BrokenLink[]): void {
 	for (const line of lines) console.info(line);
 }
 
+/** Describe the scan result while preserving dry-run and follow-up boundaries. */
 function renderGardenerCompletion(
 	output: GardenerOutput,
 	dryRun: boolean,
 ): void {
-	if (dryRun) {
-		console.info("\n[DRY-RUN] No PR would be created");
-	} else if (output.needsPR) {
-		console.info("\n✅ Quality score updated");
+	if (output.needsPR) {
+		console.info("\n✅ Documentation scan completed");
+		if (!dryRun) {
+			console.info(
+				"   Issues detected. Manual review and fixes may be required.",
+			);
+		}
 	}
 }
 
@@ -208,14 +185,3 @@ export {
 	type GardenerOutput,
 	type GardenerResult,
 };
-
-// Re-export PR creation utilities for automation consumers
-export {
-	createMaintenancePR,
-	getRepoInfo,
-	hasGardenerToken,
-	getGardenerToken,
-	type PRCreatorOptions,
-	type PRCreatorResult,
-	type PRCreatorError,
-} from "../lib/gardener/pr-creator.js";

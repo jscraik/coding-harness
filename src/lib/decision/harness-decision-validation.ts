@@ -349,16 +349,21 @@ function validateDecisionMeta(
 	}
 }
 
-/** Validate an unknown value against harness-decision/v1. */
-export function validateHarnessDecision(
-	value: unknown,
+/** Validate the complete producer-facing harness-decision/v1 shape. */
+export function validateFullHarnessDecision(
+	value: Record<string, unknown>,
 ): HarnessDecisionValidationResult {
 	const errors: HeValidationError[] = [];
-	if (!isRecord(value)) {
-		return {
-			valid: false,
-			errors: [toValidationError("decision must be an object")],
-		};
+	for (const field of [
+		"warnings",
+		"executionBoundary",
+		"claimsBoundary",
+	] as const) {
+		if (field in value) {
+			errors.push(
+				toValidationError(`full decisions must not include ${field}`, field),
+			);
+		}
 	}
 	validateDecisionIdentity(value, errors);
 	validateDecisionFields(value, errors);

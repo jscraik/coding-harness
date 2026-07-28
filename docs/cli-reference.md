@@ -39,12 +39,12 @@ harness next --json
 harness orient --json # legacy compatibility only
 ```
 
-The `harness next --json` decision inspects changed files from git by
-default, emits a `HarnessDecision`, and points `nextCommand` at an
-existing command instead of inventing a new workflow. The decision includes
-`cockpitLane` so operators and agents can branch through the five product
-lanes: `orient`, `prove`, `repair`, `review`, and
-`handoff`.
+The `harness next --json` decision inspects changed files from git by default
+and emits a compact task-first projection: `status`, `summary`, `nextAction`,
+`nextCommand`, `warnings`, `executionBoundary`, and `claimsBoundary`. Read
+`executionBoundary.safeToRun` with `nextCommand`; the compact response omits
+internal producer, cockpit, evidence, and orchestration fields rather than
+asking routine callers to interpret them.
 
 Optional overrides:
 
