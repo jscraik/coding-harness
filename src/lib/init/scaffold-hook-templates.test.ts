@@ -58,9 +58,7 @@ describe("git-hook scaffold templates", () => {
 		expect(script).toContain(
 			'return execFileSync("git", ["rev-parse", "--show-toplevel"]',
 		);
-		expect(script).toContain(
-			'return process.env.PREK_HOME ?? resolve(repoRoot, ".cache/prek")',
-		);
+		expect(script).toContain('return resolve(repoRoot, ".cache/prek")');
 		expect(script).toContain(
 			'WORKTREE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"',
 		);
@@ -76,9 +74,10 @@ describe("git-hook scaffold templates", () => {
 		expect(script).toContain("patchInstalledPrekHooks");
 		expect(script).toContain("LEGACY_PREK_HOOK_PATCH");
 		expect(script).toContain('PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"');
-		expect(script).toContain(
-			'PREK_HOME="${PREK_HOME:-$WORKTREE_ROOT/.cache/prek}"',
-		);
+		expect(script).toContain('PREK_HOME="$WORKTREE_ROOT/.cache/prek"');
+		expect(script).toContain("INHERITED_PREK_HOME_HOOK_LINE");
+		expect(script).toContain("WORKTREE_PREK_HOME_HOOK_LINE");
+		expect(script).toContain('return resolve(repoRoot, ".cache/prek");');
 		expect(script).toContain("bash scripts/hook-pre-commit.sh");
 		expect(script).toContain("bash scripts/hook-pre-push.sh");
 		expect(script).toContain("make hooks-commit-msg");

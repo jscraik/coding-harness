@@ -307,6 +307,7 @@ main();
 		`;
 }
 
+/** Render the shared imports and cache-isolation helpers for hook setup. */
 function renderSetupGitHooksScriptPrelude(): string {
 	return `#!/usr/bin/env node
 /**
@@ -352,7 +353,7 @@ function getGitHooksDir(): string {
 
 function getPrekHome(): string {
 	const repoRoot = getRepoRoot();
-	return process.env.PREK_HOME ?? resolve(repoRoot, ".cache/prek");
+	return resolve(repoRoot, ".cache/prek");
 }
 const LEGACY_PREK_HOOK_PATCH = [
 	"# Keep prek cache/logs in repo-local .git to avoid home-dir sandbox write failures",
@@ -363,10 +364,14 @@ const LEGACY_PREK_HOOK_PATCH = [
 ].join("\\n");
 const PREK_HOME_PATCH_SENTINEL =
 	'WORKTREE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"';
+const INHERITED_PREK_HOME_HOOK_LINE =
+	'PREK_HOME="\${PREK_HOME:-$WORKTREE_ROOT/.cache/prek}"';
+const WORKTREE_PREK_HOME_HOOK_LINE =
+	'PREK_HOME="$WORKTREE_ROOT/.cache/prek"';
 const PREK_HOOK_PATCH = [
 	"# Keep prek cache/logs local to the active worktree instead of the shared git-dir.",
 	PREK_HOME_PATCH_SENTINEL,
-	'PREK_HOME="\${PREK_HOME:-$WORKTREE_ROOT/.cache/prek}"',
+	WORKTREE_PREK_HOME_HOOK_LINE,
 	'mkdir -p "$PREK_HOME" 2>/dev/null || true',
 	"export PREK_HOME",
 	"",
@@ -392,6 +397,14 @@ function patchInstalledPrekHooks() {
 			continue;
 		}
 		if (hookContent.includes(PREK_HOME_PATCH_SENTINEL)) {
+			const patched = hookContent.replace(
+				INHERITED_PREK_HOME_HOOK_LINE,
+				WORKTREE_PREK_HOME_HOOK_LINE,
+			);
+			if (patched !== hookContent) {
+				writeFileSync(hookPath, patched);
+				patchedCount += 1;
+			}
 			continue;
 		}
 

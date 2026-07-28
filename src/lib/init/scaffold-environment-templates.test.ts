@@ -71,9 +71,7 @@ describe("scaffold environment templates", () => {
 		expect(script).toContain(
 			'WORKTREE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"',
 		);
-		expect(script).toContain(
-			'PREK_HOME="${PREK_HOME:-$WORKTREE_ROOT/.cache/prek}"',
-		);
+		expect(script).toContain('PREK_HOME="$WORKTREE_ROOT/.cache/prek"');
 		expect(script).toContain(
 			"printf 'Fix: ensure the session activates mise first",
 		);

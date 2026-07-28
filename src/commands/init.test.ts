@@ -1934,9 +1934,7 @@ describe("runInit", () => {
 			expect(setupHooks).toContain(
 				'return execFileSync("git", ["rev-parse", "--show-toplevel"]',
 			);
-			expect(setupHooks).toContain(
-				'return process.env.PREK_HOME ?? resolve(repoRoot, ".cache/prek")',
-			);
+			expect(setupHooks).toContain('return resolve(repoRoot, ".cache/prek")');
 			expect(setupHooks).toContain(
 				'execFileSync("bash", ["scripts/run-prek.sh", "install", "--overwrite"]',
 			);
@@ -1952,9 +1950,7 @@ describe("runInit", () => {
 				join(tempDir, "scripts/check-validation-locks.sh"),
 				"utf-8",
 			);
-			expect(runPrek).toContain(
-				'PREK_HOME="${PREK_HOME:-$repo_root/.cache/prek}"',
-			);
+			expect(runPrek).toContain('PREK_HOME="$repo_root/.cache/prek"');
 			expect(runPrek).toContain('exec prek "$@"');
 			expect(withValidationLock).toContain(
 				"Usage: bash scripts/with-validation-lock.sh",
@@ -1964,9 +1960,7 @@ describe("runInit", () => {
 			expect(setupHooks).toContain(
 				'WORKTREE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"',
 			);
-			expect(setupHooks).toContain(
-				'PREK_HOME="${PREK_HOME:-$WORKTREE_ROOT/.cache/prek}"',
-			);
+			expect(setupHooks).toContain('PREK_HOME="$WORKTREE_ROOT/.cache/prek"');
 			expect(setupHooks).toContain(
 				'"Error: scripts/validate-commit-msg.js is required for commit message validation."',
 			);
