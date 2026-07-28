@@ -100,7 +100,7 @@ describe("tooling-audit compact minimal contract", () => {
 		}
 	});
 
-	it("audits an explicitly added hook surface", async () => {
+	it("does not impose Harness hook support on a brownfield Prek surface", async () => {
 		const tempRoot = mkdtempSync(
 			join(tmpdir(), "tooling-audit-minimal-hooks-"),
 		);
@@ -147,12 +147,64 @@ pass_filenames = false
 			});
 			expect(result).toMatchObject({
 				ok: true,
+				value: { exitCode: EXIT_CODES.SUCCESS },
+			});
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("audits a minimal Prek surface that invokes Harness hook adapters", async () => {
+		const tempRoot = mkdtempSync(
+			join(tmpdir(), "tooling-audit-minimal-harness-hooks-"),
+		);
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(join(repoDir, ".git"), { recursive: true });
+		writeContract(
+			repoDir,
+			JSON.parse(
+				renderHarnessContractTemplate({
+					agentBranchPrefix: "codex",
+					context: {
+						targetDir: repoDir,
+						packageScripts: [],
+						projectName: "minimal-harness-hook-fixture",
+						minimal: true,
+					},
+					packageManager: "pnpm",
+					requiredChecks: [],
+				}),
+			),
+		);
+		writeFileSync(
+			join(repoDir, "prek.toml"),
+			`[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "pre-commit"
+name = "Harness hook"
+entry = "bash scripts/hook-pre-commit.sh"
+language = "system"
+stages = ["pre-commit"]
+pass_filenames = false
+`,
+			"utf-8",
+		);
+
+		try {
+			const result = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+			expect(result).toMatchObject({
+				ok: true,
 				value: { exitCode: EXIT_CODES.DRIFT_DETECTED },
 			});
 			if (result.ok) {
 				expect(
-					result.value.result.results[0]?.findings.some((finding) =>
-						finding.description.includes("unapproved leaf command"),
+					result.value.result.results[0]?.findings.some(
+						(finding) => finding.path === "scripts/hook-pre-commit.sh",
 					),
 				).toBe(true);
 			}

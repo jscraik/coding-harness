@@ -2705,6 +2705,13 @@ function auditConfiguredTooling(
 	}
 }
 
+/** Return whether a Prek file invokes a Harness-owned hook adapter. */
+function hasHarnessOwnedPrekHook(prekContent: string): boolean {
+	return parsePrekHooks(prekContent).some((hook) =>
+		hook.stages.some((stage) => isApprovedPrekLeafEntry(stage, hook.entry)),
+	);
+}
+
 /** Audits explicit boundaries without requiring minimal scaffolding to create them. */
 function auditMinimalToolingBoundaries(
 	findings: ToolingAuditFinding[],
@@ -2712,7 +2719,8 @@ function auditMinimalToolingBoundaries(
 	contract: HarnessContract,
 	baseContract?: HarnessContract,
 ): void {
-	if (existsSync(join(repoPath, TOOLING_PREK_CONFIG_PATH))) {
+	const prekContent = readTextFile(join(repoPath, TOOLING_PREK_CONFIG_PATH));
+	if (prekContent !== null && hasHarnessOwnedPrekHook(prekContent)) {
 		auditLocalHooks(findings, repoPath);
 	}
 	if (baseContract) {
