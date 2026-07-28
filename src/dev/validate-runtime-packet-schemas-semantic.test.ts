@@ -240,6 +240,22 @@ describe("validate-runtime-packet-schemas semantic branches", () => {
 		expect(result.stdout).toContain("must match at least one anyOf schema");
 	});
 
+	it("rejects whitespace-only compact next commands at the schema boundary", () => {
+		const result = runValidator(
+			makeFixture(
+				"harness-decision/v1",
+				"contracts/examples/harness-decision.example.json",
+				(example) => {
+					Object.assign(example, compactHarnessDecision(example), {
+						nextCommand: "   ",
+					});
+				},
+			),
+		);
+		expect(result.status).toBe(1);
+		expect(result.stdout).toContain("must match pattern \\\\S");
+	});
+
 	it("rejects whitespace-only compact claims boundaries at the schema boundary", () => {
 		const result = runValidator(
 			makeFixture(

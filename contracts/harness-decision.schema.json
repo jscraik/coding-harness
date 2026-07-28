@@ -140,7 +140,8 @@
 		},
 		"nextCommand": {
 			"type": ["string", "null"],
-			"minLength": 1
+			"minLength": 1,
+			"pattern": "\\S"
 		},
 		"phase": {
 			"enum": ["orient", "verify", "review", "repair", "handoff"]
