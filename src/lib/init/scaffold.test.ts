@@ -252,6 +252,7 @@ describe("scaffold templates resolution", () => {
 		expect(rendered.branchProtection.requiredChecks).toEqual([]);
 		expect(rendered.branchProtection.requiredApprovingReviewCount).toBe(0);
 		expect(rendered.ciProviderPolicy).toBeUndefined();
+		expect(rendered.issueTrackingPolicy).toBeUndefined();
 	});
 
 	it("keeps linear issue tracking policy by default", () => {

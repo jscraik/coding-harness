@@ -142,11 +142,10 @@ function renderScaffoldContract(
 ): HarnessContract {
 	const { agentBranchPrefix, context, packageManager, requiredChecks } =
 		options;
-	const issueTrackingPolicy = renderIssueTrackingPolicy(
-		context,
-		agentBranchPrefix,
-	);
 	const isMinimal = context.minimal === true;
+	const issueTrackingPolicy = isMinimal
+		? undefined
+		: renderIssueTrackingPolicy(context, agentBranchPrefix);
 	return {
 		version: CURRENT_SCHEMA_VERSION,
 		riskTierRules: {
