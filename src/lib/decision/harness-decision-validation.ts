@@ -354,13 +354,16 @@ export function validateFullHarnessDecision(
 	value: Record<string, unknown>,
 ): HarnessDecisionValidationResult {
 	const errors: HeValidationError[] = [];
-	if ("executionBoundary" in value) {
-		errors.push(
-			toValidationError(
-				"full decisions must not include executionBoundary",
-				"executionBoundary",
-			),
-		);
+	for (const field of [
+		"warnings",
+		"executionBoundary",
+		"claimsBoundary",
+	] as const) {
+		if (field in value) {
+			errors.push(
+				toValidationError(`full decisions must not include ${field}`, field),
+			);
+		}
 	}
 	validateDecisionIdentity(value, errors);
 	validateDecisionFields(value, errors);

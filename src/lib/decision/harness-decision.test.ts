@@ -109,6 +109,22 @@ describe("validateHarnessDecision", () => {
 		);
 	});
 
+	it.each([
+		"warnings",
+		"executionBoundary",
+		"claimsBoundary",
+	] as const)("rejects full decisions with compact-only field %s", (field) => {
+		const result = validateHarnessDecision({
+			...validDecision(),
+			[field]: field === "warnings" ? [] : "Local routing only.",
+		});
+
+		expect(result.valid).toBe(false);
+		expect(errorCodes(result)).toContain(
+			`full decisions must not include ${field}`,
+		);
+	});
+
 	it("rejects non-boolean compact execution boundaries", () => {
 		const result = validateHarnessDecision({
 			...validCompactDecision(),
@@ -121,6 +137,39 @@ describe("validateHarnessDecision", () => {
 		expect(result.valid).toBe(false);
 		expect(errorCodes(result)).toContain(
 			"executionBoundary.requiresHuman must be a boolean",
+		);
+	});
+
+	it.each([
+		["a command is not safe", "harness check --json", false],
+		["a missing command is safe", null, true],
+	] as const)("rejects compact projections when %s", (_label, nextCommand, safeToRun) => {
+		const result = validateHarnessDecision({
+			...validCompactDecision(),
+			nextCommand,
+			executionBoundary: {
+				...validCompactDecision().executionBoundary,
+				safeToRun,
+			},
+		});
+
+		expect(result.valid).toBe(false);
+		expect(errorCodes(result)).toContain(
+			nextCommand === null
+				? "executionBoundary.safeToRun must be false when nextCommand is null"
+				: "executionBoundary.safeToRun must be true when nextCommand is set",
+		);
+	});
+
+	it("rejects whitespace-only compact claims boundaries", () => {
+		const result = validateHarnessDecision({
+			...validCompactDecision(),
+			claimsBoundary: "   ",
+		});
+
+		expect(result.valid).toBe(false);
+		expect(errorCodes(result)).toContain(
+			"claimsBoundary must be a non-empty string",
 		);
 	});
 

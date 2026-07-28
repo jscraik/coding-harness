@@ -16,6 +16,26 @@ const validatorPath = join(
 	"scripts/validate-runtime-packet-schemas.cjs",
 );
 const tempRoots: string[] = [];
+const FULL_ENVELOPE_COMPACT_FIELD_CASES = [
+	["producer", "next"],
+	["phase", "orient"],
+	["cockpitLane", "orient"],
+	["objective", "Complete the next task."],
+	["requiredEvidence", []],
+	["stopConditions", []],
+	["humanEscalation", null],
+	["followUpCommands", []],
+	["hiddenPlumbing", []],
+	["safeToRun", true],
+	["requiresHuman", false],
+	["requiresNetwork", false],
+	["writesFiles", false],
+	["evidenceRef", ["git status --short"]],
+	["failureClass", null],
+	["retry", "safe"],
+	["riskTier", "low"],
+	["meta", {}],
+] as const;
 
 function readJson(path: string): Record<string, unknown> {
 	return JSON.parse(readFileSync(join(repoRoot, path), "utf8")) as Record<
@@ -69,26 +89,7 @@ function runValidator(manifest: string) {
 function compactHarnessDecision(
 	example: Record<string, unknown>,
 ): Record<string, unknown> {
-	for (const field of [
-		"producer",
-		"phase",
-		"cockpitLane",
-		"objective",
-		"requiredEvidence",
-		"stopConditions",
-		"humanEscalation",
-		"followUpCommands",
-		"hiddenPlumbing",
-		"safeToRun",
-		"requiresHuman",
-		"requiresNetwork",
-		"writesFiles",
-		"evidenceRef",
-		"failureClass",
-		"retry",
-		"riskTier",
-		"meta",
-	]) {
+	for (const [field] of FULL_ENVELOPE_COMPACT_FIELD_CASES) {
 		delete example[field];
 	}
 	return {
@@ -194,26 +195,9 @@ describe("validate-runtime-packet-schemas semantic branches", () => {
 		expect(result.status).toBe(0);
 	});
 
-	it.each([
-		["producer", "next"],
-		["phase", "orient"],
-		["cockpitLane", "orient"],
-		["objective", "Complete the next task."],
-		["requiredEvidence", []],
-		["stopConditions", []],
-		["humanEscalation", null],
-		["followUpCommands", []],
-		["hiddenPlumbing", []],
-		["safeToRun", true],
-		["requiresHuman", false],
-		["requiresNetwork", false],
-		["writesFiles", false],
-		["evidenceRef", ["git status --short"]],
-		["failureClass", null],
-		["retry", "safe"],
-		["riskTier", "low"],
-		["meta", {}],
-	] as const)("rejects compact projections with full-envelope field %s", (field, value) => {
+	it.each(
+		FULL_ENVELOPE_COMPACT_FIELD_CASES,
+	)("rejects compact projections with full-envelope field %s", (field, value) => {
 		const result = runValidator(
 			makeFixture(
 				"harness-decision/v1",
@@ -226,6 +210,50 @@ describe("validate-runtime-packet-schemas semantic branches", () => {
 		);
 		expect(result.status).toBe(1);
 		expect(result.stdout).toContain("must match at least one anyOf schema");
+	});
+
+	it.each([
+		["a command is not safe", "harness check --json", false],
+		["a missing command is safe", null, true],
+	] as const)("rejects compact projections when %s", (_label, nextCommand, safeToRun) => {
+		const result = runValidator(
+			makeFixture(
+				"harness-decision/v1",
+				"contracts/examples/harness-decision.example.json",
+				(example) => {
+					const compact = compactHarnessDecision(example);
+					const executionBoundary = compact.executionBoundary as Record<
+						string,
+						unknown
+					>;
+					Object.assign(example, compact, {
+						nextCommand,
+						executionBoundary: {
+							...executionBoundary,
+							safeToRun,
+						},
+					});
+				},
+			),
+		);
+		expect(result.status).toBe(1);
+		expect(result.stdout).toContain("must match at least one anyOf schema");
+	});
+
+	it("rejects whitespace-only compact claims boundaries at the schema boundary", () => {
+		const result = runValidator(
+			makeFixture(
+				"harness-decision/v1",
+				"contracts/examples/harness-decision.example.json",
+				(example) => {
+					Object.assign(example, compactHarnessDecision(example), {
+						claimsBoundary: "   ",
+					});
+				},
+			),
+		);
+		expect(result.status).toBe(1);
+		expect(result.stdout).toContain("must match pattern \\\\S");
 	});
 
 	it.each([

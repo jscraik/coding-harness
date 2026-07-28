@@ -414,8 +414,17 @@ class HarnessDecision(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def reject_compact_projection_fields(cls, value: object) -> object:
-        if isinstance(value, dict) and "executionBoundary" in value:
-            raise ValueError("full harness decisions must not include executionBoundary")
+        if isinstance(value, dict):
+            compact_fields = [
+                field
+                for field in ("warnings", "executionBoundary", "claimsBoundary")
+                if field in value
+            ]
+            if compact_fields:
+                raise ValueError(
+                    "full harness decisions must not include "
+                    + ", ".join(compact_fields)
+                )
         return cast(object, value)
 
 
@@ -464,6 +473,18 @@ class CompactHarnessDecision(BaseModel):
         if isinstance(value, dict) and "producer" in value:
             raise ValueError("compact harness decisions must not include producer")
         return cast(object, value)
+
+    @model_validator(mode="after")
+    def validate_command_safety(self) -> CompactHarnessDecision:
+        if self.nextCommand is None and self.executionBoundary.safeToRun:
+            raise ValueError(
+                "executionBoundary.safeToRun must be false when nextCommand is null"
+            )
+        if self.nextCommand is not None and not self.executionBoundary.safeToRun:
+            raise ValueError(
+                "executionBoundary.safeToRun must be true when nextCommand is set"
+            )
+        return self
 
 
 class CliJsonLiveValidation(BaseModel):

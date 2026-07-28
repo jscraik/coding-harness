@@ -81,6 +81,40 @@
 							{ "required": ["meta"] }
 						]
 					}
+				},
+				{
+					"if": {
+						"properties": {
+							"nextCommand": { "type": "string" }
+						},
+						"required": ["nextCommand"]
+					},
+					"then": {
+						"properties": {
+							"executionBoundary": {
+								"properties": {
+									"safeToRun": { "const": true }
+								}
+							}
+						}
+					}
+				},
+				{
+					"if": {
+						"properties": {
+							"nextCommand": { "const": null }
+						},
+						"required": ["nextCommand"]
+					},
+					"then": {
+						"properties": {
+							"executionBoundary": {
+								"properties": {
+									"safeToRun": { "const": false }
+								}
+							}
+						}
+					}
 				}
 			]
 		}
@@ -205,7 +239,8 @@
 		},
 		"claimsBoundary": {
 			"type": "string",
-			"minLength": 1
+			"minLength": 1,
+			"pattern": "\\S"
 		},
 		"meta": {
 			"type": "object",
@@ -292,120 +327,120 @@
 											}
 										}
 									}
-								},
-								"allOf": [
-									{
-										"if": {
-											"properties": {
-												"code": {
-													"enum": [
-														"missing_project_identity",
-														"missing_context_catalog",
-														"malformed_context_catalog"
-													]
-												}
-											},
-											"required": ["code"]
-										},
-										"then": {
-											"properties": {
-												"requirement": { "const": "required" },
-												"contextId": { "const": null },
-												"freshness": {
-													"properties": { "status": { "const": "unknown" } }
-												}
+								}
+							},
+							"allOf": [
+								{
+									"if": {
+										"properties": {
+											"code": {
+												"enum": [
+													"missing_project_identity",
+													"missing_context_catalog",
+													"malformed_context_catalog"
+												]
 											}
-										}
-									},
-									{
-										"if": {
-											"properties": {
-												"code": {
-													"enum": [
-														"missing_required_context",
-														"missing_optional_context",
-														"context_access_denied",
-														"stale_context_digest",
-														"superseded_context",
-														"provider_unavailable",
-														"unresolved_host_path"
-													]
-												}
-											},
-											"required": ["code"]
 										},
-										"then": {
-											"properties": {
-												"contextId": {
-													"type": "string",
-													"pattern": "^ch_context_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
-												}
-											}
-										}
+										"required": ["code"]
 									},
-									{
-										"if": {
-											"properties": {
-												"code": { "const": "missing_required_context" }
-											},
-											"required": ["code"]
-										},
-										"then": {
-											"properties": { "requirement": { "const": "required" } }
-										}
-									},
-									{
-										"if": {
-											"properties": {
-												"code": { "const": "missing_optional_context" }
-											},
-											"required": ["code"]
-										},
-										"then": {
-											"properties": { "requirement": { "const": "optional" } }
-										}
-									},
-									{
-										"if": {
-											"properties": {
-												"code": {
-													"enum": [
-														"missing_required_context",
-														"missing_optional_context",
-														"context_access_denied",
-														"superseded_context",
-														"provider_unavailable",
-														"unresolved_host_path"
-													]
-												}
-											},
-											"required": ["code"]
-										},
-										"then": {
-											"properties": {
-												"freshness": {
-													"properties": { "status": { "const": "current" } }
-												}
-											}
-										}
-									},
-									{
-										"if": {
-											"properties": {
-												"code": { "const": "stale_context_digest" }
-											},
-											"required": ["code"]
-										},
-										"then": {
-											"properties": {
-												"freshness": {
-													"properties": { "status": { "const": "stale" } }
-												}
+									"then": {
+										"properties": {
+											"requirement": { "const": "required" },
+											"contextId": { "const": null },
+											"freshness": {
+												"properties": { "status": { "const": "unknown" } }
 											}
 										}
 									}
-								]
-							}
+								},
+								{
+									"if": {
+										"properties": {
+											"code": {
+												"enum": [
+													"missing_required_context",
+													"missing_optional_context",
+													"context_access_denied",
+													"stale_context_digest",
+													"superseded_context",
+													"provider_unavailable",
+													"unresolved_host_path"
+												]
+											}
+										},
+										"required": ["code"]
+									},
+									"then": {
+										"properties": {
+											"contextId": {
+												"type": "string",
+												"pattern": "^ch_context_[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{12}$"
+											}
+										}
+									}
+								},
+								{
+									"if": {
+										"properties": {
+											"code": { "const": "missing_required_context" }
+										},
+										"required": ["code"]
+									},
+									"then": {
+										"properties": { "requirement": { "const": "required" } }
+									}
+								},
+								{
+									"if": {
+										"properties": {
+											"code": { "const": "missing_optional_context" }
+										},
+										"required": ["code"]
+									},
+									"then": {
+										"properties": { "requirement": { "const": "optional" } }
+									}
+								},
+								{
+									"if": {
+										"properties": {
+											"code": {
+												"enum": [
+													"missing_required_context",
+													"missing_optional_context",
+													"context_access_denied",
+													"superseded_context",
+													"provider_unavailable",
+													"unresolved_host_path"
+												]
+											}
+										},
+										"required": ["code"]
+									},
+									"then": {
+										"properties": {
+											"freshness": {
+												"properties": { "status": { "const": "current" } }
+											}
+										}
+									}
+								},
+								{
+									"if": {
+										"properties": {
+											"code": { "const": "stale_context_digest" }
+										},
+										"required": ["code"]
+									},
+									"then": {
+										"properties": {
+											"freshness": {
+												"properties": { "status": { "const": "stale" } }
+											}
+										}
+									}
+								}
+							]
 						}
 					}
 				}
