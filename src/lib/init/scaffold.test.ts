@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { EXIT_CODES, runToolingAudit } from "../../commands/tooling-audit.js";
+import { loadContract } from "../contract/loader.js";
 import {
 	CODESTYLE_PACK_TEMPLATE_FILES,
 	TEMPLATES,
@@ -256,9 +257,15 @@ describe("scaffold templates resolution", () => {
 			"northStar",
 			"overrideReviewerRegistry",
 			"productSurface",
+			"reviewPolicy",
 			"riskTierRules",
 			"version",
 		]);
+		expect(rendered.reviewPolicy).toMatchObject({
+			requiredChecks: [],
+			approvalMode: "human_approval",
+			enforceReviewerIndependence: true,
+		});
 		expect(rendered.branchProtection).toMatchObject({
 			requiredChecks: [],
 			requiredApprovingReviewCount: 0,
@@ -274,6 +281,10 @@ describe("scaffold templates resolution", () => {
 			join(tempDir, "harness.contract.json"),
 			JSON.stringify(rendered, null, 2),
 		);
+		expect(
+			loadContract(join(tempDir, "harness.contract.json"), tempDir).reviewPolicy
+				?.requiredChecks,
+		).toEqual([]);
 		const audit = await runToolingAudit({ path: tempDir, format: "json" });
 		expect(audit.ok).toBe(true);
 		if (audit.ok) {

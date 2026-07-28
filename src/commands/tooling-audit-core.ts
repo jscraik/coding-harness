@@ -100,6 +100,7 @@ const COMPACT_MINIMAL_CONTRACT_KEYS = [
 	"version",
 	"riskTierRules",
 	"branchProtection",
+	"reviewPolicy",
 	"northStar",
 	"productSurface",
 	"overrideReviewerRegistry",
@@ -2704,13 +2705,18 @@ function auditConfiguredTooling(
 	}
 }
 
-/** Audits an explicit hook surface without requiring minimal scaffolding to create one. */
-function auditMinimalHookSurface(
+/** Audits explicit boundaries without requiring minimal scaffolding to create them. */
+function auditMinimalToolingBoundaries(
 	findings: ToolingAuditFinding[],
 	repoPath: string,
+	contract: HarnessContract,
+	baseContract?: HarnessContract,
 ): void {
 	if (existsSync(join(repoPath, TOOLING_PREK_CONFIG_PATH))) {
 		auditLocalHooks(findings, repoPath);
+	}
+	if (baseContract) {
+		auditBaseDrift(findings, contract, baseContract);
 	}
 }
 
@@ -2783,7 +2789,7 @@ async function auditRepository(
 	if (!compactMinimal) {
 		auditConfiguredTooling(findings, repoPath, contract, baseContract);
 	} else {
-		auditMinimalHookSurface(findings, repoPath);
+		auditMinimalToolingBoundaries(findings, repoPath, contract, baseContract);
 	}
 
 	return {

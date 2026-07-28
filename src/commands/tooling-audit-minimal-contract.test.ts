@@ -49,8 +49,6 @@ describe("tooling-audit compact minimal contract", () => {
 				value: { exitCode: EXIT_CODES.SUCCESS },
 			});
 
-			compactContract.docsDriftRules = {};
-			writeContract(repoDir, compactContract);
 			const defaultToolingPolicy = DEFAULT_CONTRACT.toolingPolicy;
 			if (!defaultToolingPolicy) {
 				throw new Error("Expected default tooling policy");
@@ -62,6 +60,25 @@ describe("tooling-audit compact minimal contract", () => {
 					requiredDocumentationTerms: ["base-contract-only"],
 				},
 			};
+			const baseDriftResult = await runToolingAudit({
+				path: tempRoot,
+				baseContract,
+				format: "json",
+			});
+			expect(baseDriftResult).toMatchObject({
+				ok: true,
+				value: { exitCode: EXIT_CODES.DRIFT_DETECTED },
+			});
+			if (baseDriftResult.ok) {
+				expect(
+					baseDriftResult.value.result.results[0]?.findings.some((finding) =>
+						finding.description.includes("base-contract-only"),
+					),
+				).toBe(true);
+			}
+
+			compactContract.docsDriftRules = {};
+			writeContract(repoDir, compactContract);
 			const lookalikeResult = await runToolingAudit({
 				path: tempRoot,
 				baseContract,

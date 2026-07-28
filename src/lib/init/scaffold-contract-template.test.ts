@@ -79,6 +79,14 @@ describe("contract scaffold template", () => {
 		});
 
 		expect(contract.projectType).toBe("web");
+		expect(contract.reviewPolicy).toEqual({
+			timeoutSeconds: 600,
+			timeoutAction: "fail",
+			requiredChecks: [],
+			approvalMode: "human_approval",
+			enforceReviewerIndependence: true,
+			requireReviewContext: false,
+		});
 		expect(contract.branchProtection).toMatchObject({
 			requiredChecks: [],
 			requiredApprovingReviewCount: 0,
