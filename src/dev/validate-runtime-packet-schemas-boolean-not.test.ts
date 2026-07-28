@@ -1,5 +1,11 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { join, relative } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -12,6 +18,7 @@ const tempRoots: string[] = [];
 
 function createTempRoot() {
 	const cacheRoot = join(repoRoot, ".cache", "runtime-packet-schema-tests");
+	mkdirSync(cacheRoot, { recursive: true });
 	const root = mkdtempSync(join(cacheRoot, "boolean-not-"));
 	tempRoots.push(root);
 	return root;
