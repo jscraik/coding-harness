@@ -112,10 +112,45 @@ function isCompactMinimalRawContract(
 		return false;
 	}
 	const policy = branchProtection as Record<string, unknown>;
+
+	// Verify the exact canonical --minimal contract shape:
+	// Must have only the expected top-level keys and no extra policy fields
+	const allowedKeys = new Set([
+		"version",
+		"riskTierRules",
+		"branchProtection",
+		"northStar",
+		"productSurface",
+		"overrideReviewerRegistry",
+	]);
+	const contractKeys = Object.keys(contract);
+	const hasOnlyAllowedKeys = contractKeys.every((key) => allowedKeys.has(key));
+
 	return (
+		hasOnlyAllowedKeys &&
 		!Object.hasOwn(contract, "toolingPolicy") &&
 		!Object.hasOwn(contract, "ciProviderPolicy") &&
 		!Object.hasOwn(contract, "issueTrackingPolicy") &&
+		!Object.hasOwn(contract, "mergePolicy") &&
+		!Object.hasOwn(contract, "docsDriftRules") &&
+		!Object.hasOwn(contract, "evidencePolicy") &&
+		!Object.hasOwn(contract, "diffBudget") &&
+		!Object.hasOwn(contract, "uiLoopPolicy") &&
+		!Object.hasOwn(contract, "runtimePolicy") &&
+		!Object.hasOwn(contract, "memoryPolicy") &&
+		!Object.hasOwn(contract, "memoryMaintenancePolicy") &&
+		!Object.hasOwn(contract, "memoryEvalPolicy") &&
+		!Object.hasOwn(contract, "observabilityPolicy") &&
+		!Object.hasOwn(contract, "packageManagerPolicy") &&
+		!Object.hasOwn(contract, "remediationPolicy") &&
+		!Object.hasOwn(contract, "loopStageContracts") &&
+		!Object.hasOwn(contract, "docsGatePolicy") &&
+		!Object.hasOwn(contract, "pilotGapCasePolicy") &&
+		!Object.hasOwn(contract, "pilotRollbackPolicy") &&
+		!Object.hasOwn(contract, "pilotAuthzPolicy") &&
+		!Object.hasOwn(contract, "controlPlanePolicy") &&
+		!Object.hasOwn(contract, "contextIntegrityPolicy") &&
+		!Object.hasOwn(contract, "projectType") &&
 		Array.isArray(policy.requiredChecks) &&
 		policy.requiredChecks.length === 0 &&
 		policy.requiredApprovingReviewCount === 0
@@ -2740,6 +2775,12 @@ async function auditRepository(
 
 	if (!compactMinimal) {
 		auditConfiguredTooling(findings, repoPath, contract, baseContract);
+	} else {
+		// Even for minimal contracts, audit local hooks and base drift if present
+		auditLocalHooks(findings, repoPath);
+		if (baseContract) {
+			auditBaseDrift(findings, contract, baseContract);
+		}
 	}
 
 	return {
