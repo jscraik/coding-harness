@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -27,7 +27,7 @@ describe("semgrep bootstrap", () => {
 			"bash",
 			[
 				"-lc",
-				'source "$SEMGREP_BOOTSTRAP_SCRIPT"; ensure_semgrep_cache_paths; test -d "$SEMGREP_STATE_ROOT"; test -d "$SEMGREP_RUNTIME_CACHE_ROOT"; test -d "$SEMGREP_RUNTIME_USER_HOME"; test -d "$(dirname "$SEMGREP_RUNTIME_LOG_FILE")"',
+				'unset SEMGREP_CACHE_PATHS_READY && source "$SEMGREP_BOOTSTRAP_SCRIPT" && ensure_semgrep_cache_paths && test -d "$SEMGREP_STATE_ROOT" && test -d "$SEMGREP_RUNTIME_CACHE_ROOT" && test -d "$SEMGREP_RUNTIME_USER_HOME" && test -d "$(dirname "$SEMGREP_RUNTIME_LOG_FILE")"',
 			],
 			{
 				cwd: resolve(import.meta.dirname, "../.."),
@@ -45,5 +45,34 @@ describe("semgrep bootstrap", () => {
 		);
 
 		expect(result.status, result.stderr).toBe(0);
+	});
+
+	it("fails when an isolated runtime path cannot become a directory", () => {
+		const directory = createTemporaryDirectory();
+		const stateRoot = join(directory, "state-file");
+		writeFileSync(stateRoot, "not a directory");
+
+		const result = spawnSync(
+			"bash",
+			[
+				"-lc",
+				'unset SEMGREP_CACHE_PATHS_READY && source "$SEMGREP_BOOTSTRAP_SCRIPT" && ensure_semgrep_cache_paths',
+			],
+			{
+				cwd: resolve(import.meta.dirname, "../.."),
+				encoding: "utf8",
+				env: {
+					...process.env,
+					SEMGREP_BOOTSTRAP_PYTHON: "/usr/bin/python3",
+					SEMGREP_BOOTSTRAP_SCRIPT: resolve(
+						import.meta.dirname,
+						"../../scripts/semgrep-bootstrap.sh",
+					),
+					SEMGREP_STATE_ROOT: stateRoot,
+				},
+			},
+		);
+
+		expect(result.status).not.toBe(0);
 	});
 });
