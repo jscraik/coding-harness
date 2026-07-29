@@ -70,9 +70,13 @@ chooses that broader policy.
 
 ## Verify and close out
 
-Use the repository's own focused checks first. `verify-work --fast` reports
-local validation only. It does not establish a pull request's CI, review,
-approval, merge, release, or deployment state.
+Use the repository's own focused checks first. `verify-work --fast` keeps
+Local Memory out of routine execution: optional mode does not invoke its helper
+or daemon and does not block repository proof. Use
+`bash scripts/codex-preflight.sh --stack auto --mode required` only for an
+explicit Local Memory diagnostic or acceptance lane. `verify-work --fast`
+reports local validation only. It does not establish a pull request's CI,
+review, approval, merge, release, or deployment state.
 
 After a PR exists, `pr-closeout` reports those external lanes separately. It
 does not approve, merge, publish, or release a change.

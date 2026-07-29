@@ -74,17 +74,18 @@ Format: `**YYYY-MM-DD [Agent]:** <problem> → <fix>`
 
 ### Preflight enforcement
 
-Repo-local required preflight must exercise Local Memory instead of relying on
-conversation memory or a legacy shell shortcut. The canonical invocation is:
+Routine repo-local preflight does not invoke Local Memory, so a stopped daemon,
+unavailable helper, or personal database cannot affect ordinary work. The canonical routine invocation is:
 
 ```bash
-bash scripts/codex-preflight.sh --stack auto --mode required
+bash scripts/codex-preflight.sh --stack auto --mode optional
 ```
 
-Compatibility invocations keep the same fail-closed posture. A legacy positional
+An explicit diagnostic or acceptance lane remains fail-closed with
+`bash scripts/codex-preflight.sh --stack auto --mode required`.
+Compatibility invocations remain non-mutating by default. A legacy positional
 call such as `bash scripts/codex-preflight.sh coding-harness git,bash CODESTYLE.md`
-defaults to required Local Memory mode, and `off` or `optional` must be passed
-explicitly when a softer check is intentional. The older stack/mode shorthand
+defaults to optional Local Memory mode. The older stack/mode shorthand
 `bash scripts/codex-preflight.sh auto required` is also accepted and must block
 when Local Memory is unavailable, stale, or unclassified.
 

@@ -149,8 +149,8 @@ install: ## Install dependencies
 
 setup: install hooks ## Full setup: install deps and configure git hooks
 
-preflight: ## Run repository preflight checks (required local-memory gate by default)
-	@bash ./scripts/codex-preflight.sh
+preflight: ## Run repository preflight checks without invoking Local Memory by default
+	@bash ./scripts/codex-preflight.sh --stack auto --mode optional
 
 worktree-ready: ## Bootstrap a fresh git worktree before first push
 	@bash ./scripts/prepare-worktree.sh

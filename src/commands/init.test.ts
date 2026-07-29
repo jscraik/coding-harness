@@ -2031,9 +2031,11 @@ describe("runInit", () => {
 			expect(makefile).toContain("check: ## Run all required quality gates");
 			expect(makefile).toContain("\tnpm run check");
 			expect(makefile).toContain(
-				"preflight: ## Run repository preflight checks (required local-memory gate by default)",
+				"preflight: ## Run repository preflight checks without invoking Local Memory by default",
 			);
-			expect(makefile).toContain("\t@bash ./scripts/codex-preflight.sh");
+			expect(makefile).toContain(
+				"\t@bash ./scripts/codex-preflight.sh --stack auto --mode optional",
+			);
 			expect(makefile).toContain(
 				"verify-work: ## Run canonical repo-local verification wrapper",
 			);
@@ -2195,7 +2197,7 @@ describe("runInit", () => {
 				"Error: unable to install Semgrep ${SEMGREP_VERSION} or newer.",
 			);
 			expect(verifyWork).toContain("Canonical repo-local verification runner.");
-			expect(verifyWork).toContain("--mode required");
+			expect(verifyWork).toContain("--mode optional");
 			expect(verifyWork).toContain("scripts/verify-work.sh");
 			expect(verifyWork).toContain("==> codex-preflight");
 			expect(verifyWork).toContain("==> validate-codestyle");
@@ -2495,13 +2497,16 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"preflight"');
 			expect(environmentCheck).toContain('"worktree-ready"');
 			expect(codexPreflight).toContain(
-				"--mode <off|optional|required>    Local Memory mode. Default: required",
+				"--mode <off|optional|required>    Local Memory mode. Default: optional",
 			);
 			expect(codexPreflight).toContain(
 				'PREFLIGHT_OVERRIDES_FILE="${WORKSPACE_ROOT}/.harness/memory/codex-preflight-overrides.env"',
 			);
 			expect(codexPreflight).toContain("Legacy compatibility:");
-			expect(codexPreflight).toContain("local local_memory_mode='required'");
+			expect(codexPreflight).toContain("DEFAULT_LOCAL_MEMORY_MODE='optional'");
+			expect(codexPreflight).toContain(
+				'local local_memory_mode="${DEFAULT_LOCAL_MEMORY_MODE}"',
+			);
 			expect(codexPreflight).toContain("preflight_local_memory_gold()");
 			expect(codexPreflight).toContain(
 				'LOCAL_MEMORY_FALLBACK_SCRIPT="${SCRIPT_DIR}/codex-preflight-local-memory-legacy.sh"',

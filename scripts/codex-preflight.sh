@@ -3,8 +3,8 @@
 print_do_not_source_message() {
 	printf '%s\n' \
 		'Do not source scripts/codex-preflight.sh.' \
-		'Run: bash scripts/codex-preflight.sh --stack auto --mode required' \
-		'Optional mode: bash scripts/codex-preflight.sh --mode optional' >&2
+		'Run: bash scripts/codex-preflight.sh --stack auto --mode optional' \
+		'Strict diagnostic: bash scripts/codex-preflight.sh --mode required' >&2
 }
 
 is_sourced_invocation=0
@@ -61,6 +61,7 @@ PREFLIGHT_RECEIPT_PATH="${WORKSPACE_ROOT}/.harness/runtime/codex-preflight-statu
 LOCAL_MEMORY_FALLBACK_SCRIPT="${SCRIPT_DIR}/codex-preflight-local-memory-legacy.sh"
 GIT_COMMON_CONFIG_GUARD_SCRIPT="${SCRIPT_DIR}/check-git-common-config.sh"
 PROJECT_BRAIN_REQUIRED_PATHS='.harness/README.md,.harness/memory/LEARNINGS.md,.harness/knowledge/INDEX.md,.harness/knowledge/cli/knowledge.md,.harness/knowledge/cli/hypotheses.md,.harness/knowledge/cli/rules.md,.harness/knowledge/ci/knowledge.md,.harness/knowledge/ci/hypotheses.md,.harness/knowledge/ci/rules.md,.harness/knowledge/governance/knowledge.md,.harness/knowledge/governance/hypotheses.md,.harness/knowledge/governance/rules.md,.harness/knowledge/tooling/knowledge.md,.harness/knowledge/tooling/hypotheses.md,.harness/knowledge/tooling/rules.md,.harness/knowledge/tooling/codex-learn-summary.md,.harness/decisions,.harness/quality/criteria.md,.harness/review-log.md'
+DEFAULT_LOCAL_MEMORY_MODE='optional'
 WORKSPACE_GIT_USE_WORKTREE_OVERRIDE=0
 WORKSPACE_GIT_ROOT=''
 
@@ -72,7 +73,7 @@ Usage:
 
 Options:
   --stack <auto|repo|js|py|rust>    Stack mode. Default: auto
-  --mode <off|optional|required>    Local Memory mode. Default: required
+  --mode <off|optional|required>    Local Memory mode. Default: optional
   --repo-fragment <text>            Require repo root to contain this fragment
   --bins <csv>                      Override required binaries
   --paths <csv>                     Override required paths
@@ -88,7 +89,7 @@ Legacy compatibility:
   ./scripts/codex-preflight.sh <repo-fragment> [bins-csv] [paths-csv] [off|optional|required]
   ./scripts/codex-preflight.sh <auto|js|py|rust> <off|optional|required>
   This preserves the older positional interface used by parent-repo checks and
-  defaults to required Local Memory preflight unless optional/off is explicit.
+  defaults to optional Local Memory diagnostics unless strict required mode is explicit.
 USAGE
 }
 
@@ -137,11 +138,11 @@ clear_preflight_receipt() {
 	fi
 }
 
-PREFLIGHT_EXIT_RECEIPT_MODE='required'
+PREFLIGHT_EXIT_RECEIPT_MODE="${DEFAULT_LOCAL_MEMORY_MODE}"
 write_preflight_failure_receipt_on_exit() {
 	local exit_code="$?"
 	if (( exit_code != 0 )); then
-		write_preflight_receipt 'fail' "${PREFLIGHT_EXIT_RECEIPT_MODE:-required}"
+		write_preflight_receipt 'fail' "${PREFLIGHT_EXIT_RECEIPT_MODE:-${DEFAULT_LOCAL_MEMORY_MODE}}"
 	fi
 }
 
@@ -730,13 +731,13 @@ preflight_local_memory_gold() {
 	preflight_local_memory_shell_fallback
 }
 
-# run_preflight_profile constructs argument flags for the given stack, optional expected repo fragment, bins CSV, paths CSV, and local memory mode (defaults to "required"), then invokes main with those flags.
+# run_preflight_profile constructs argument flags for the given stack, optional expected repo fragment, bins CSV, paths CSV, and Local Memory diagnostics mode (defaults to optional), then invokes main with those flags.
 run_preflight_profile() {
 	local stack="$1"
 	local expected_repo="${2:-}"
 	local bins_csv="${3:-}"
 	local paths_csv="${4:-}"
-	local local_memory_mode="${5:-required}"
+	local local_memory_mode="${5:-${DEFAULT_LOCAL_MEMORY_MODE}}"
 	local -a args=(
 		--stack "${stack}"
 		--mode "${local_memory_mode}"
@@ -760,14 +761,14 @@ run_preflight_profile() {
 # - expected_repo_fragment: optional substring to validate against the repository root (default: none).
 # - bins_csv: comma-separated required executables (default: git,bash,sed,rg,jq,curl,python3).
 # - paths_csv: comma-separated required repository files/paths (default: stack-specific baseline plus Project Brain scaffold paths).
-# - local_memory_mode: one of off|optional|required (default: required).
+# - local_memory_mode: one of off|optional|required (default: optional).
 preflight_repo() {
 	run_preflight_profile \
 		repo \
 		"${1:-}" \
 		"${2:-git,bash,sed,rg,jq,curl,python3}" \
 		"${3:-$(stack_paths_csv repo)}" \
-		"${4:-required}"
+		"${4:-${DEFAULT_LOCAL_MEMORY_MODE}}"
 }
 
 # preflight_js runs the preflight profile for the JavaScript (js) stack using defaults for expected repo fragment, required binaries, required repository paths, and local memory mode; positional arguments (expected_repo, bins_csv, paths_csv, local_memory_mode) override those defaults.
@@ -777,17 +778,17 @@ preflight_js() {
 		"${1:-}" \
 		"${2:-git,bash,sed,rg,jq,curl,node,npm,python3}" \
 		"${3:-$(stack_paths_csv js)}" \
-		"${4:-required}"
+		"${4:-${DEFAULT_LOCAL_MEMORY_MODE}}"
 }
 
-# preflight_py runs the Codex preflight using the Python stack defaults; accepts optional arguments to override (1) expected repository fragment, (2) comma-separated binaries (default "git,bash,sed,rg,jq,curl,python3"), (3) comma-separated repository paths (default: stack-specific baseline plus Project Brain scaffold paths), and (4) local memory mode (`off`|`optional`|`required`, default `required`).
+# preflight_py runs the Codex preflight using the Python stack defaults; accepts optional arguments to override (1) expected repository fragment, (2) comma-separated binaries (default "git,bash,sed,rg,jq,curl,python3"), (3) comma-separated repository paths (default: stack-specific baseline plus Project Brain scaffold paths), and (4) Local Memory mode (`off`|`optional`|`required`, default `optional`).
 preflight_py() {
 	run_preflight_profile \
 		py \
 		"${1:-}" \
 		"${2:-git,bash,sed,rg,jq,curl,python3}" \
 		"${3:-$(stack_paths_csv py)}" \
-		"${4:-required}"
+		"${4:-${DEFAULT_LOCAL_MEMORY_MODE}}"
 }
 
 # preflight_rust runs the preflight profile for the Rust stack using sensible defaults for binaries, paths, and local-memory mode.
@@ -796,14 +797,14 @@ preflight_py() {
 #   $1 - optional repository fragment to validate the workspace root contains (default: none).
 #   $2 - optional comma-separated list of required binaries (default: "git,bash,sed,rg,jq,curl,python3,cargo").
 #   $3 - optional comma-separated list of required repository paths/globs (default: stack-specific baseline plus Project Brain scaffold paths).
-#   $4 - local memory mode: one of "off", "optional", or "required" (default: "required").
+#   $4 - Local Memory mode: one of "off", "optional", or "required" (default: "optional").
 preflight_rust() {
 	run_preflight_profile \
 		rust \
 		"${1:-}" \
 		"${2:-git,bash,sed,rg,jq,curl,python3,cargo}" \
 		"${3:-$(stack_paths_csv rust)}" \
-		"${4:-required}"
+		"${4:-${DEFAULT_LOCAL_MEMORY_MODE}}"
 }
 
 # preflight_repo_local_memory runs a repository preflight configured for the `repo` stack with Local Memory set to required, using sensible default binaries and path lists; optional positional arguments override `expected_repo`, `bins_csv`, and `paths_csv`.
@@ -814,7 +815,7 @@ preflight_repo_local_memory() {
 # main orchestrates the Codex preflight checks: it parses CLI arguments (legacy positional or flags), determines the repo stack and required binaries/paths (including overrides), verifies git and workspace expectations, runs binary and path validations, invokes the Local Memory preflight according to --mode (off|optional|required), and exits non‑zero on validation failures.
 main() {
 	local stack='auto'
-	local local_memory_mode='required'
+	local local_memory_mode="${DEFAULT_LOCAL_MEMORY_MODE}"
 	local expected_repo=''
 	local bins_csv=''
 	local paths_csv=''
@@ -831,7 +832,7 @@ main() {
 			expected_repo="${1:-}"
 			bins_csv="${2:-}"
 			paths_csv="${3:-}"
-			local_memory_mode="${4:-required}"
+			local_memory_mode="${4:-${DEFAULT_LOCAL_MEMORY_MODE}}"
 			set --
 		else
 			log_err "legacy positional mode accepts at most 4 arguments"
@@ -951,14 +952,29 @@ main() {
 			exit 2
 		fi
 	fi
+	if [[ -n "${CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS:-}" ]]; then
+		if [[ "${CODEX_PREFLIGHT_ENABLE_TEST_OVERRIDES:-}" != '1' ]]; then
+			log_err 'CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS requires CODEX_PREFLIGHT_ENABLE_TEST_OVERRIDES=1'
+			exit 2
+		fi
+		if [[ -n "${CI:-}" ]]; then
+			log_err 'CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS is not allowed in CI'
+			exit 2
+		fi
+	fi
 
-	if [[ "${local_memory_mode}" != 'off' ]]; then
+	if [[ "${local_memory_mode}" == 'required' ]]; then
 		if ! preflight_local_memory_gold; then
-			if [[ "${local_memory_mode}" == 'required' ]]; then
-				log_err 'local-memory preflight failed (required mode)'
-				exit 2
+			log_err 'local-memory preflight failed (required mode)'
+			exit 2
+		fi
+	elif [[ "${local_memory_mode}" == 'optional' ]]; then
+		if [[ -n "${CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS:-}" ]]; then
+			if ! preflight_local_memory_gold; then
+				log_warn 'local-memory preflight failed (optional mode)'
 			fi
-			log_warn 'local-memory preflight failed (optional mode)'
+		else
+			log_warn 'local-memory diagnostics skipped in optional mode; run --mode required for an explicit diagnostic'
 		fi
 	fi
 

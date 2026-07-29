@@ -91,6 +91,13 @@ describe("validation gate specs", () => {
 		]);
 	});
 
+	it("describes routine preflight as optional Local Memory diagnostics", () => {
+		const preflight = getValidationGateSpec("preflight");
+
+		expect(preflight?.commandSurface).toContain("--mode optional");
+		expect(preflight?.commandSurface).not.toContain("--mode required");
+	});
+
 	it("returns ordered specs without mutating the canonical mirror", () => {
 		const fastSpecs = getValidationGateSpecsForMode("fast");
 

@@ -94,7 +94,10 @@ proof, and hand work back truthfully. Keep the routine path small.
   `pnpm test:deep`.
 - Use `bash scripts/run-harness-gate.sh docs-gate --mode required --json` for
   governed docs, `pnpm check:static` for static policy, and
-  `bash scripts/verify-work.sh --fast` for the fast integrated route.
+  `bash scripts/verify-work.sh --fast` for the fast integrated route. The
+  routine preflight does not invoke Local Memory; use
+  `bash scripts/codex-preflight.sh --stack auto --mode required` only for an
+  explicit Local Memory diagnostic or acceptance lane.
 - Before a PR create or update, run
   `python3 ~/.codex/scripts/pr-readiness.py --phase create|update --scope-file <file> --write-receipt`.
 - Report `Command: <exact command> -> pass|fail|blocked (<reason>)`. Do not

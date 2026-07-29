@@ -142,7 +142,7 @@ Recommended policy:
 - Treat `CODESTYLE.md` and `scripts/validate-codestyle.sh` as required repo-local contract files.
 - Keep `CODESTYLE.md` as a real repo-local file in generated repositories even when the harness authoring source is maintained globally.
 - Scaffold `scripts/codex-enforced` and `scripts/codex-learn` together with preflight so repo-local wrappers own repo-local state.
-- Keep `bash scripts/codex-preflight.sh --stack auto --mode required` as the default preflight command; only relax mode (`optional` or `off`) when the project documents why.
+- Keep `bash scripts/codex-preflight.sh --stack auto --mode optional` as the default preflight command. It does not invoke Local Memory. Use `--mode required` only for an explicit Local Memory diagnostic or acceptance lane.
 - Adjust preflight binary/path lists per project scope instead of deleting the script.
 - Keep repo-scoped telemetry and learned overrides under `.harness/memory/`, and global telemetry under `~/.codex/`.
 - Treat `scripts/verify-work.sh` as the canonical repo-facing verification command and keep it wired to repo-local preflight defaults.
@@ -184,7 +184,7 @@ Recommended policy:
 ## Repo-local verification wrapper
 
 - `harness init` scaffolds `scripts/verify-work.sh` as the canonical repo-local verification entrypoint.
-- The wrapper always runs `scripts/codex-preflight.sh` in `required` Local Memory mode with scaffold-safe path and binary expectations.
+- The wrapper runs `scripts/codex-preflight.sh` with a non-mutating Local Memory boundary and scaffold-safe path and binary expectations. An explicit `--mode required` remains available for diagnostic or acceptance lanes.
 - `scripts/validate-codestyle.sh` is the canonical fail-closed code style gate and is reused by `verify-work`, local hooks, and downstream repo docs.
 - `scripts/new-task.sh` is the canonical task bootstrap helper. Use it to create one task = one worktree = one branch = one agent thread inside the project itself.
 - `scripts/check-git-common-config.sh` guards the shared Git config before preflight, verification, and worktree bootstrap. Shared non-bare `.git/config` must not contain `core.worktree`; worktree-local values must use per-worktree config.

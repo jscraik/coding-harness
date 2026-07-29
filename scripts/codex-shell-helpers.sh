@@ -39,7 +39,7 @@ _codex_run_preflight() {
   local expected_repo="${2:-}"
   local bins_csv="${3:-}"
   local paths_csv="${4:-}"
-  local mode="${5:-required}"
+  local mode="${5:-optional}"
 
   local script
   script="$(_codex_preflight_script)" || return 1
@@ -67,7 +67,7 @@ preflight_repo() {
     "${1:-}" \
     "${2:-git,bash,sed,rg,fd,jq,curl,python3}" \
     "${3:-AGENTS.md,docs,docs/plans}" \
-    "${4:-required}"
+    "${4:-optional}"
 }
 
 preflight_js() {
@@ -76,7 +76,7 @@ preflight_js() {
     "${1:-}" \
     "${2:-git,bash,sed,rg,fd,jq,curl,node,npm,python3}" \
     "${3:-AGENTS.md,package.json,docs,docs/plans}" \
-    "${4:-required}"
+    "${4:-optional}"
 }
 
 preflight_py() {
@@ -85,7 +85,7 @@ preflight_py() {
     "${1:-}" \
     "${2:-git,bash,sed,rg,fd,jq,curl,python3}" \
     "${3:-AGENTS.md,pyproject.toml,docs,docs/plans}" \
-    "${4:-required}"
+    "${4:-optional}"
 }
 
 preflight_rust() {
@@ -94,7 +94,7 @@ preflight_rust() {
     "${1:-}" \
     "${2:-git,bash,sed,rg,fd,jq,curl,python3,cargo}" \
     "${3:-AGENTS.md,Cargo.toml,docs,docs/plans}" \
-    "${4:-required}"
+    "${4:-optional}"
 }
 
 preflight_repo_local_memory() {
@@ -113,7 +113,7 @@ codex_d() {
   root="$(_codex_git_root)" || return 1
 
   local default_prompt
-  default_prompt='Read AGENTS.md, run bash scripts/codex-preflight.sh --stack auto --mode required, then summarize the repo structure and any blockers before making changes.'
+  default_prompt='Read AGENTS.md, run bash scripts/codex-preflight.sh --stack auto --mode optional, then summarize the repo structure and any blockers before making changes.'
 
   local prompt="$default_prompt"
   if [[ $# -gt 0 ]]; then

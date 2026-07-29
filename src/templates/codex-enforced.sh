@@ -155,7 +155,7 @@ ensure_task_worktree() {
 		echo -e "${YELLOW}WARNING: Skipping preflight before worktree creation (not recommended)${NC}"
 	elif [[ -x "${PREFLIGHT_SCRIPT}" ]]; then
 		echo "Running preflight checks before worktree creation..."
-		if ! "${PREFLIGHT_SCRIPT}" --stack auto --mode required; then
+		if ! "${PREFLIGHT_SCRIPT}" --stack auto --mode optional; then
 			echo -e "${RED}ERROR: Preflight checks failed before worktree creation${NC}"
 			exit 1
 		fi
