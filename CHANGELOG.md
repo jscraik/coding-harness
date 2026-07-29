@@ -6,8 +6,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Added
 
-- Added source-checkout public `pnpm exec harness ...` support and a
-  `harness orient --json` cold-start rail for agent context discovery.
+- Added source-checkout public `pnpm exec harness ...` support.
 - Added a read-only local canary audit that combines orientation, next-action,
   upgrade-matrix, and available fitness evidence without changing target Git
   state.
@@ -17,6 +16,8 @@ All notable changes to this project will be documented in this file. See [standa
 - Made the routine `harness next --json` response task-first and compact;
   stale optional context is now an advisory warning rather than the primary
   action.
+- Retired the legacy `harness orient --json` cold-start command; `harness next
+  --json` is the sole routine cold-agent route.
 - Consolidated the default agent-native packet catalog from five choices to
   two canonical commands while retaining all five legacy commands as callable
   compatibility surfaces.

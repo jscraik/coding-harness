@@ -29,14 +29,10 @@ For repo-facing onboarding and common workflows, start at [`README.md`](../READM
 
 Use `harness next --json` as the sole routine first-contact entrypoint. It
 emits the compact next-action decision and SynAIpse cockpit state for the
-current repository. Use `harness orient --json` only for legacy cold-start
-compatibility when a caller explicitly needs the older `harness-orient/v1`
-packet, which wraps the read-only context surfaces and local truth-lane
-caveats.
+current repository.
 
 ```bash
 harness next --json
-harness orient --json # legacy compatibility only
 ```
 
 The `harness next --json` decision inspects changed files from git by default
@@ -163,7 +159,6 @@ Taxonomy note: section headings in this document represent command families. The
 | `agent-readiness`   | Audit agent-readable instructions, artifacts, capabilities, approval gates, traceability, and context freshness (`--json`, optional path, optional `--repo-root`)                                                                                                                                                                                                                            |
 | `agent-native-ratchets` | Emit an `agent-native-ratchets/v1` packet for ratchet discovery (`--json`)                                                                                                                                                                                                                                                                                                                   |
 | `agent-rework`      | Emit an `agent-rework/v1` packet from local rework evidence (`--json`)                                                                                                                                                                                                                                                                                                                       |
-| `orient`            | Emit a compact cold-start `harness-orient/v1` packet with next, session-context, agent-readiness context health, preflight receipt status, architecture refs, Project Brain refs, and truth-lane warnings (`--json`, optional `--repo-root`)                                                                                                                                            |
 | `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`)                                                                                                                                                                                                                    |
 | `job`               | Submit, reconnect, wait for, list, or cancel durable local execution tickets (`job submit\|status\|wait\|list\|cancel`, `--json`)                                                                                                                                                                                                         |
 | `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)                                                                                                                                                                                                                           |

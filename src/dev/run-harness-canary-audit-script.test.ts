@@ -145,7 +145,7 @@ describe("run-harness-canary-audit CLI", () => {
 			cli: relative(process.cwd(), missingCli),
 		});
 
-		expect(report.repositories[0]?.probes?.orient?.command ?? "").toContain(
+		expect(report.repositories[0]?.probes?.next?.command ?? "").toContain(
 			resolve(missingCli),
 		);
 	});

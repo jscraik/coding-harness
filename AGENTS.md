@@ -46,8 +46,8 @@ truth.
    dirty ownership before choosing a mutation.
 3. Use repository wrappers and documented commands through `zsh -lc`; prefer
    `rg`, `fd`, and `jq`, and use `pnpm@10.33.0` with Node `>=26.3.0`.
-4. Use `harness next --json` for cold-agent routing; optional maintenance stays
-   a warning, while `harness init --minimal` creates only its compact contract.
+4. Use `harness next --json` as the sole cold-agent route; optional
+   maintenance stays a warning; `harness init --minimal` creates only its compact contract.
 
 ## Operating contract
 

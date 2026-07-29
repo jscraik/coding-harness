@@ -54,7 +54,6 @@ function printUsage(options: { includeExpertCommands?: boolean } = {}): void {
 	console.info(
 		"  Run harness next --json first for compact route and orientation.",
 	);
-	console.info("  Use harness orient --json only for legacy compatibility.");
 	console.info("");
 	const helpRows = getRegistryCommandHelpRows({
 		includeExpert: includeExpertCommands,

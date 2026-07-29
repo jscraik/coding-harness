@@ -278,7 +278,6 @@ function auditMaterializedRepo(repoInput, materialized, options) {
 	const repo = materialized.repo;
 	const before = gitSnapshot(repo);
 	const probes = {
-		orient: cliProbe(repo, options.cli, ["orient", "--json"]),
 		next: cliProbe(repo, options.cli, [
 			"next",
 			"--worktree-role",

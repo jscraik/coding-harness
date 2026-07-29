@@ -994,7 +994,6 @@ describe("runHarnessNext", () => {
 				".harness/active-artifacts.md",
 			]),
 			contextCommands: expect.arrayContaining([
-				"orient --json",
 				"session-context --json --repo-root .",
 				"agent-readiness . --json",
 				"commands --json --for-agent --mode orient",
@@ -1006,7 +1005,7 @@ describe("runHarnessNext", () => {
 				}),
 			]),
 			truthLaneWarnings: expect.arrayContaining([
-				"Local next/orient output does not prove PR, CI, review-thread, tracker, or merge-readiness truth.",
+				"Local next output does not prove PR, CI, review-thread, tracker, or merge-readiness truth.",
 			]),
 			execution: {
 				profile: "read_only",

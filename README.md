@@ -93,9 +93,6 @@ pnpm build
 pnpm exec harness next --json
 ```
 
-Use `harness orient --json` only for legacy cold-start compatibility when a
-caller explicitly needs the older orientation packet.
-
 For current-tree development probes before a build, the TypeScript entrypoint
 also accepts a leading `harness` token so displayed recommendations can be
 replayed without manual rewriting:
@@ -110,7 +107,7 @@ SynAIpse is the AI Delivery Harness around AI coding agents. It is not the agent
 
 It helps a repository answer five practical questions:
 
-- **What should the agent read and do next?** `harness next --json` is the routine first-contact route and turns local state into a safe next-command recommendation. `harness orient --json` remains available only for legacy cold-start compatibility.
+- **What should the agent read and do next?** `harness next --json` is the routine first-contact route and turns local state into a safe next-command recommendation.
 - **Is this repo ready for agent work?** `agent-readiness`, `init`, `check`, `doctor`, `health`, and `contract validate` expose setup gaps, stale orientation context, and missing machine-readable policy. `doctor` is read-only by default; request `--write-artifact` only when its north-star sidecar is needed.
 - **What must pass before handoff?** `verify-work`, `docs-gate`, `review-gate`, `plan-gate`, and related gates make proof explicit.
 - **Can we change CI or policy without guessing?** `ci-migrate`, branch-protection sync, rollback metadata, and parity checks keep migration reversible.
@@ -215,8 +212,7 @@ This index names every callable top-level command. Use
 [docs/cli-reference.md](./docs/cli-reference.md) for flags, examples, and
 machine-readable command metadata.
 
-Agents should start with `harness next --json` for the routine route and use
-`harness orient --json` only for legacy cold-start compatibility. Use
+Agents should start with `harness next --json` for the routine route. Use
 `harness commands --json` for command discovery. The full index
 below is an expert reference, not the first surface an agent needs to understand.
 
@@ -277,7 +273,6 @@ merge-readiness proof.
 | `north-star-feedback`           | [CLI reference](./docs/cli-reference.md)            |
 | `observability-gate`            | [CLI reference](./docs/cli-reference.md)            |
 | `org-audit`                     | [CLI reference](./docs/cli-reference.md)            |
-| `orient`                        | [CLI reference](./docs/cli-reference.md)            |
 | `pattern-scope`                 | [CLI reference](./docs/cli-reference.md)            |
 | `pilot-evaluate`                | [CLI reference](./docs/cli-reference.md)            |
 | `pilot-rollback`                | [CLI reference](./docs/cli-reference.md)            |
