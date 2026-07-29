@@ -91,19 +91,46 @@ resolve_github_pr_ref() {
 	fi
 }
 
+resolve_commit_sha() {
+	if [[ -n "${CIRCLE_SHA1:-}" ]]; then
+		printf '%s' "$CIRCLE_SHA1"
+		return 0
+	fi
+
+	git rev-parse --verify HEAD 2>/dev/null || true
+}
+
 resolve_public_pr_ref() {
 	local repo_slug="$1"
 	local response=""
-	if [[ -z "$repo_slug" || -z "${CIRCLE_BRANCH:-}" ]] ||
+	local repo_owner="${repo_slug%%/*}"
+	local head_owner="${CIRCLE_PROJECT_USERNAME:-$repo_owner}"
+	local commit_sha=""
+	if [[ -z "$repo_slug" ]] ||
 		! command -v curl >/dev/null 2>&1 ||
 		! command -v jq >/dev/null 2>&1; then
 		return 0
 	fi
-	response="$(curl -fsSL -H "Accept: application/vnd.github+json" --get \
-		--data-urlencode "state=open" \
-		--data-urlencode "head=${CIRCLE_PROJECT_USERNAME:-}:${CIRCLE_BRANCH}" \
-		"https://api.github.com/repos/${repo_slug}/pulls" 2>/dev/null || true)"
-	jq -r '.[0].html_url // ""' <<<"$response" 2>/dev/null || true
+	if [[ -n "${CIRCLE_BRANCH:-}" ]]; then
+		response="$(curl -fsSL -H "Accept: application/vnd.github+json" --get \
+			--data-urlencode "state=open" \
+			--data-urlencode "head=${head_owner}:${CIRCLE_BRANCH}" \
+			"https://api.github.com/repos/${repo_slug}/pulls" 2>/dev/null || true)"
+		local branch_ref=""
+		branch_ref="$(jq -r '.[0].html_url // ""' <<<"$response" 2>/dev/null || true)"
+		if is_valid_pr_ref "$branch_ref"; then
+			printf '%s' "$branch_ref"
+			return 0
+		fi
+	fi
+
+	commit_sha="$(resolve_commit_sha)"
+	if [[ ! "$commit_sha" =~ ^[0-9a-fA-F]{7,64}$ ]]; then
+		return 0
+	fi
+	response="$(curl -fsSL -H "Accept: application/vnd.github+json" \
+		"https://api.github.com/repos/${repo_slug}/commits/${commit_sha}/pulls" 2>/dev/null || true)"
+	jq -r '[.[] | select(.state == "open")] | .[0].html_url // ""' <<<"$response" 2>/dev/null || true
 }
 
 repo_slug="$(resolve_repo_slug)"
