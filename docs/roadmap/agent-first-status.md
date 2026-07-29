@@ -26,8 +26,9 @@ made routine `harness next --json` task-first, [#489](https://github.com/jscraik
 reduced the minimal installer, [#490](https://github.com/jscraik/coding-harness/pull/490)
 reduced the command surface, and [#491](https://github.com/jscraik/coding-harness/pull/491)
 collapsed the compact contract and active documentation. The prerequisite
-[#494](https://github.com/jscraik/coding-harness/pull/494) makes Local Memory
-an explicit diagnostic rather than a routine admission dependency. Optional
+[#494](https://github.com/jscraik/coding-harness/pull/494) is also merged to
+`main` and makes Local Memory an explicit diagnostic rather than a routine
+admission dependency. Optional
 context maintenance is advisory; it is not the primary action for ordinary work.
 
 The active slice is direct effectiveness observation. It has no current outcome
