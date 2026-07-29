@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderHarnessContractTemplate } from "../lib/init/scaffold-contract-template.js";
 import { runCIOwnershipGateCLI } from "./ci-ownership-gate.js";
@@ -45,6 +45,25 @@ describe("ci-ownership-gate command", () => {
 		expect(exitCode).toBe(0);
 		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
 		expect(payload.status).toBe("pass");
+		expect(payload.summary.errors).toBe(0);
+	});
+
+	it("accepts an in-repository contract through a relative repository root", () => {
+		const repoRoot = writeContract({
+			ciProviderPolicy: { activeProvider: "circleci" },
+			branchProtection: {
+				requiredChecks: ["pr-pipeline", "security-scan", "CodeRabbit"],
+			},
+		});
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({
+			repoRoot: relative(process.cwd(), repoRoot),
+			json: true,
+		});
+
+		expect(exitCode).toBe(0);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
 		expect(payload.summary.errors).toBe(0);
 	});
 

@@ -69,7 +69,7 @@ const CODERABBIT_REQUIRED_CHECK = "CodeRabbit";
 export function runCIOwnershipGate(
 	options: RunCIOwnershipGateOptions = {},
 ): CIOwnershipGateResult {
-	const repoRoot = options.repoRoot ?? process.cwd();
+	const repoRoot = resolve(options.repoRoot ?? process.cwd());
 	const contractPath = options.contractPath ?? DEFAULT_CONTRACT_PATH;
 	const expectedPrimaryProvider = options.expectedPrimaryProvider ?? "circleci";
 	const findings: CIOwnershipGateFinding[] = [];
