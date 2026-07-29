@@ -1662,48 +1662,82 @@ function auditPrekHookLeafEntries(
 	repoPath: string,
 ): void {
 	for (const hook of parsedHooks) {
-		for (const field of ["id", "name", "entry", "language"] as const) {
-			if (hook[field] === undefined) {
-				findings.push({
-					path: TOOLING_PREK_CONFIG_PATH,
-					severity: "critical",
-					description: `Prek hook '${hook.id ?? "unknown"}' is missing required field '${field}'`,
-					expected: "Every local hook declares id, name, entry, and language",
-					actual: hook,
-				});
-			}
+		auditPrekHookLeafEntry(findings, hook, repoPath);
+	}
+}
+
+/** Audit one Prek hook's required fields, effective stages, and leaf command. */
+function auditPrekHookLeafEntry(
+	findings: ToolingAuditFinding[],
+	hook: ParsedPrekHook,
+	repoPath: string,
+): void {
+	for (const field of ["id", "name", "entry", "language"] as const) {
+		if (hook[field] === undefined) {
+			findings.push({
+				path: TOOLING_PREK_CONFIG_PATH,
+				severity: "critical",
+				description: `Prek hook '${hook.id ?? "unknown"}' is missing required field '${field}'`,
+				expected: "Every local hook declares id, name, entry, and language",
+				actual: hook,
+			});
 		}
-		auditPrekCommitMsgRuntimeShape(findings, hook);
-		const entry = hook.entry;
-		if (entry !== undefined && isForbiddenPrekHookEntry(entry)) {
+	}
+	auditPrekCommitMsgRuntimeShape(findings, hook);
+	const entry = hook.entry;
+	if (entry !== undefined && isForbiddenPrekHookEntry(entry)) {
+		return;
+	}
+	for (const stage of hook.stages) {
+		const approvedEntries: readonly string[] | undefined =
+			APPROVED_PREK_LEAF_ENTRIES[
+				stage as keyof typeof APPROVED_PREK_LEAF_ENTRIES
+			];
+		if (approvedEntries === undefined) {
+			findings.push({
+				path: TOOLING_PREK_CONFIG_PATH,
+				severity: "critical",
+				description: `Prek hook '${hook.id ?? "unknown"}' uses unsupported effective stage '${stage}'`,
+				expected: Object.keys(APPROVED_PREK_LEAF_ENTRIES),
+				actual: hook,
+			});
 			continue;
 		}
-		for (const stage of hook.stages) {
-			const approvedEntries: readonly string[] | undefined =
-				APPROVED_PREK_LEAF_ENTRIES[
-					stage as keyof typeof APPROVED_PREK_LEAF_ENTRIES
-				];
-			if (approvedEntries === undefined) {
-				findings.push({
-					path: TOOLING_PREK_CONFIG_PATH,
-					severity: "critical",
-					description: `Prek hook '${hook.id ?? "unknown"}' uses unsupported effective stage '${stage}'`,
-					expected: Object.keys(APPROVED_PREK_LEAF_ENTRIES),
-					actual: hook,
-				});
-				continue;
-			}
-			if (entry === undefined || !approvedEntries.includes(entry)) {
-				findings.push({
-					path: TOOLING_PREK_CONFIG_PATH,
-					severity: "critical",
-					description: `Prek hook '${hook.id ?? "unknown"}' uses an unapproved leaf command for effective stage '${stage}'`,
-					expected: approvedEntries,
-					actual: hook,
-				});
-			}
+		if (entry === undefined || !approvedEntries.includes(entry)) {
+			findings.push({
+				path: TOOLING_PREK_CONFIG_PATH,
+				severity: "critical",
+				description: `Prek hook '${hook.id ?? "unknown"}' uses an unapproved leaf command for effective stage '${stage}'`,
+				expected: approvedEntries,
+				actual: hook,
+			});
 		}
-		auditPrekHookCommandFile(findings, hook, repoPath);
+	}
+	auditPrekHookCommandFile(findings, hook, repoPath);
+}
+
+/** Require Harness-owned Prek adapters to preserve their runtime invocation shape. */
+function auditHarnessOwnedPrekHookRuntimeShape(
+	findings: ToolingAuditFinding[],
+	hook: ParsedPrekHook,
+): void {
+	if (hook.language !== "system") {
+		findings.push({
+			path: TOOLING_PREK_CONFIG_PATH,
+			severity: "critical",
+			description: `Harness-owned Prek hook '${hook.id ?? "unknown"}' must use language = 'system'`,
+			expected: "system",
+			actual: hook.language,
+		});
+	}
+	if (hook.passFilenames !== false) {
+		findings.push({
+			path: TOOLING_PREK_CONFIG_PATH,
+			severity: "critical",
+			description: `Harness-owned Prek hook '${hook.id ?? "unknown"}' must set pass_filenames = false`,
+			expected: false,
+			actual: hook.passFilenames,
+		});
 	}
 }
 
@@ -2653,13 +2687,6 @@ function auditConfiguredTooling(
 	}
 }
 
-/** Return whether a Prek file invokes a Harness-owned hook adapter. */
-function hasHarnessOwnedPrekHook(prekContent: string): boolean {
-	return parsePrekHooks(prekContent).some((hook) =>
-		isHarnessOwnedPrekEntry(hook.entry),
-	);
-}
-
 /** Return whether an entry names any Harness-owned Prek adapter. */
 function isHarnessOwnedPrekEntry(entry: string | undefined): boolean {
 	return entry !== undefined && HARNESS_OWNED_PREK_ENTRIES.has(entry);
@@ -2673,8 +2700,16 @@ function auditMinimalToolingBoundaries(
 	baseContract?: HarnessContract,
 ): void {
 	const prekContent = readTextFile(join(repoPath, TOOLING_PREK_CONFIG_PATH));
-	if (prekContent !== null && hasHarnessOwnedPrekHook(prekContent)) {
-		auditMinimalHarnessPrekAdapters(findings, prekContent, repoPath);
+	if (prekContent !== null) {
+		const parsedHooks = parsePrekHooks(prekContent);
+		if (parsedHooks.some((hook) => isHarnessOwnedPrekEntry(hook.entry))) {
+			auditMinimalHarnessPrekAdapters(
+				findings,
+				prekContent,
+				parsedHooks,
+				repoPath,
+			);
+		}
 	}
 	if (baseContract) {
 		auditBaseDrift(findings, contract, baseContract);
@@ -2685,9 +2720,11 @@ function auditMinimalToolingBoundaries(
 function auditMinimalHarnessPrekAdapters(
 	findings: ToolingAuditFinding[],
 	prekContent: string,
+	parsedHooks: ParsedPrekHook[],
 	repoPath: string,
 ): void {
-	for (const hook of parsePrekHooks(prekContent)) {
+	auditPrekHookEntryBoundaries(findings, prekContent);
+	for (const hook of parsedHooks) {
 		if (!isHarnessOwnedPrekEntry(hook.entry)) continue;
 		for (const key of hook.duplicateKeys) {
 			findings.push({
@@ -2707,8 +2744,8 @@ function auditMinimalHarnessPrekAdapters(
 				actual: key,
 			});
 		}
-		auditPrekHookEntryBoundaries(findings, prekContent);
-		auditPrekHookCommandFile(findings, hook, repoPath);
+		auditPrekHookLeafEntry(findings, hook, repoPath);
+		auditHarnessOwnedPrekHookRuntimeShape(findings, hook);
 	}
 }
 

@@ -262,6 +262,49 @@ pass_filenames = false
 				ok: true,
 				value: { exitCode: EXIT_CODES.SUCCESS },
 			});
+
+			writeFileSync(
+				join(repoDir, "prek.toml"),
+				`[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "pre-commit"
+name = "Existing adapter"
+entry = "bash scripts/hook-pre-commit.sh"
+language = "node"
+stages = ["pre-push"]
+pass_filenames = true
+`,
+				"utf-8",
+			);
+
+			const invalidShape = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+			expect(invalidShape).toMatchObject({
+				ok: true,
+				value: { exitCode: EXIT_CODES.DRIFT_DETECTED },
+			});
+			if (invalidShape.ok) {
+				const findings = invalidShape.value.result.results[0]?.findings ?? [];
+				expect(
+					findings.some((finding) =>
+						finding.description.includes("unapproved leaf command"),
+					),
+				).toBe(true);
+				expect(
+					findings.some((finding) =>
+						finding.description.includes("must use language = 'system'"),
+					),
+				).toBe(true);
+				expect(
+					findings.some((finding) =>
+						finding.description.includes("must set pass_filenames = false"),
+					),
+				).toBe(true);
+			}
 		} finally {
 			rmSync(tempRoot, { recursive: true, force: true });
 		}

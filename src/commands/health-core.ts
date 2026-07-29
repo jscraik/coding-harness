@@ -151,6 +151,13 @@ function hasCompactMinimalContract(dir: string): boolean {
 	}
 }
 
+/** Return whether a contract has the optional surfaces required by full health gates. */
+function hasFullContractSurface(dir: string): boolean {
+	return (
+		hasFile(dir, "harness.contract.json") && !hasCompactMinimalContract(dir)
+	);
+}
+
 const GATE_SPECS: GateSpec[] = [
 	{
 		gate: "drift-gate",
@@ -168,7 +175,7 @@ const GATE_SPECS: GateSpec[] = [
 		gate: "context-health",
 		displayName: "Context Health",
 		buildArgs: (dir) => ["--contract", resolve(dir, "harness.contract.json")],
-		isApplicable: (dir) => hasFile(dir, "harness.contract.json"),
+		isApplicable: hasFullContractSurface,
 		interpretExitCode: (code) => {
 			if (code === 0)
 				return { status: "ok", summary: "coverage above threshold" };
@@ -200,7 +207,7 @@ const GATE_SPECS: GateSpec[] = [
 		gate: "gardener",
 		displayName: "Gardener",
 		buildArgs: (dir) => ["--contract", resolve(dir, "harness.contract.json")],
-		isApplicable: (dir) => hasFile(dir, "harness.contract.json"),
+		isApplicable: hasFullContractSurface,
 		interpretExitCode: (code) => {
 			if (code === 0) return { status: "ok", summary: "docs healthy" };
 			if (code === 1)
@@ -212,7 +219,7 @@ const GATE_SPECS: GateSpec[] = [
 		gate: "ci-migrate",
 		displayName: "CI Migration",
 		buildArgs: () => ["verify"],
-		isApplicable: (dir) => hasFile(dir, "harness.contract.json"),
+		isApplicable: hasFullContractSurface,
 		interpretExitCode: (code) => {
 			if (code === 0) return { status: "ok", summary: "migration verified" };
 			if (code === 1) return { status: "warning", summary: "verify warnings" };
@@ -238,8 +245,7 @@ const GATE_SPECS: GateSpec[] = [
 		gate: "plan-gate",
 		displayName: "Plan Gate",
 		buildArgs: (dir) => ["--contract", resolve(dir, "harness.contract.json")],
-		isApplicable: (dir) =>
-			hasFile(dir, "harness.contract.json") && !hasCompactMinimalContract(dir),
+		isApplicable: hasFullContractSurface,
 		interpretExitCode: (code) => {
 			if (code === 0) return { status: "ok", summary: "plan gate satisfied" };
 			if (code === 2)

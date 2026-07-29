@@ -166,17 +166,24 @@ describe("runHealth", () => {
 		expect(planResult?.status).toBe("error");
 	});
 
-	it("skips plan-gate for the self-contained compact minimal contract", () => {
+	it("skips gates whose prerequisites minimal intentionally omits", () => {
 		writeCompactMinimalContract(dir);
 
-		const report = runHealth({ dir, gates: ["plan-gate"] });
+		const report = runHealth({
+			dir,
+			gates: ["context-health", "gardener", "ci-migrate", "plan-gate"],
+		});
 
 		expect(report.overall).toBe("green");
-		expect(report.counts.skipped).toBe(1);
-		expect(report.gates[0]).toMatchObject({
-			gate: "plan-gate",
-			status: "skipped",
-		});
+		expect(report.counts.skipped).toBe(4);
+		expect(report.gates).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ gate: "context-health", status: "skipped" }),
+				expect.objectContaining({ gate: "gardener", status: "skipped" }),
+				expect.objectContaining({ gate: "ci-migrate", status: "skipped" }),
+				expect.objectContaining({ gate: "plan-gate", status: "skipped" }),
+			]),
+		);
 		expect(mockSpawnSync).not.toHaveBeenCalled();
 	});
 
