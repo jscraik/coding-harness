@@ -1149,7 +1149,7 @@ describe("runReviewGate", () => {
 		}
 	});
 
-	it("does not enforce north-star decision questions for legacy contract versions", async () => {
+	it("does not enforce north-star decision questions when the contract omits them", async () => {
 		mockLoadContract.mockReturnValue({
 			version: "1.0",
 			riskTierRules: {},
@@ -1158,25 +1158,6 @@ describe("runReviewGate", () => {
 				timeoutAction: "fail",
 				enforceReviewerIndependence: true,
 			},
-			northStar: mockNorthStar({
-				mission:
-					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
-				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
-				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
-				autonomyBoundary:
-					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
-				safetyFloor: [
-					"deterministic evidence over intuition",
-					"strict current-head SHA discipline",
-				],
-				nonGoals: ["governance surface area as a proxy for progress"],
-				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
-					(question) => ({
-						id: question.id,
-						prompt: question.prompt,
-					}),
-				),
-			}),
 		});
 
 		const mockCheckRuns: CheckRun[] = [

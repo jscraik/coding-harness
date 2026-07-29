@@ -103,7 +103,6 @@ import {
 	isValidRequiredChecks,
 	isValidRiskTierRules,
 	isValidTimeoutAction,
-	requiresCanonicalNorthStarSurfaces,
 } from "./validator-helpers.js";
 
 const VALID_BLAST_RADIUS_RULES_MODES = ["merge", "replace"] as const;
@@ -2014,25 +2013,8 @@ export function validateContract(
 			? (obj.extends as HarnessContractWithPreset["extends"])
 			: undefined;
 
-	const northStarSurfacesRequired = requiresCanonicalNorthStarSurfaces(
-		obj.version,
-	);
-
 	let northStar: NorthStarContract | undefined;
-	if (!("northStar" in obj) || obj.northStar === undefined) {
-		if (northStarSurfacesRequired) {
-			errors.push({
-				code: ValidationErrorCode.MISSING_REQUIRED_FIELD,
-				path: "northStar",
-				message:
-					"northStar is required for contract versions 1.6+ to keep north-star governance load-bearing",
-				expected:
-					"{ mission: string, mantra: string[], personalStandards: string[], primaryMetric: 'pr_lead_time', primaryBottleneck: 'review_rework_loop', autonomyBoundary: string, safetyFloor: string[], nonGoals: string[], decisionQuestions: [{ id, prompt }] }",
-				received: "undefined",
-				fix: "Add a canonical northStar block to harness.contract.json",
-			});
-		}
-	} else {
+	if ("northStar" in obj && obj.northStar !== undefined) {
 		const normalizedNorthStar = withLegacyNorthStarDefaults(obj.northStar);
 		if (!isValidNorthStarContract(normalizedNorthStar)) {
 			errors.push({
@@ -2051,20 +2033,7 @@ export function validateContract(
 	}
 
 	let productSurface: ProductSurfaceRegistry | undefined;
-	if (!("productSurface" in obj) || obj.productSurface === undefined) {
-		if (northStarSurfacesRequired) {
-			errors.push({
-				code: ValidationErrorCode.MISSING_REQUIRED_FIELD,
-				path: "productSurface",
-				message:
-					"productSurface is required for contract versions 1.6+ so governed surfaces remain explicit",
-				expected:
-					"{ surfaces: [{ surfaceId, surfaceType, class, owner, northStarContribution, manualGlueReductionClaim, reliabilityContribution, evidenceReference, reviewCadence?, ownedPaths, lastReviewedAt }] }",
-				received: "undefined",
-				fix: "Add productSurface.surfaces entries for canonical command/document surfaces",
-			});
-		}
-	} else {
+	if ("productSurface" in obj && obj.productSurface !== undefined) {
 		if (!isValidProductSurfaceRegistry(obj.productSurface)) {
 			errors.push({
 				code: ValidationErrorCode.INVALID_VALUE,
@@ -2083,22 +2052,9 @@ export function validateContract(
 
 	let overrideReviewerRegistry: OverrideReviewerRegistry | undefined;
 	if (
-		!("overrideReviewerRegistry" in obj) ||
-		obj.overrideReviewerRegistry === undefined
+		"overrideReviewerRegistry" in obj &&
+		obj.overrideReviewerRegistry !== undefined
 	) {
-		if (northStarSurfacesRequired) {
-			errors.push({
-				code: ValidationErrorCode.MISSING_REQUIRED_FIELD,
-				path: "overrideReviewerRegistry",
-				message:
-					"overrideReviewerRegistry is required for contract versions 1.6+",
-				expected:
-					"{ trustedReviewers: [{ reviewerId, reviewerType: 'user'|'team'|'service', signatureRef, displayName, status: 'active'|'revoked' }] }",
-				received: "undefined",
-				fix: "Declare at least one active trusted reviewer in overrideReviewerRegistry",
-			});
-		}
-	} else {
 		if (!isValidOverrideReviewerRegistry(obj.overrideReviewerRegistry)) {
 			errors.push({
 				code: ValidationErrorCode.INVALID_VALUE,

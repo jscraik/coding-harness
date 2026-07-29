@@ -9,7 +9,7 @@ audience: [codex-agent, coding-harness-maintainer]
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-07-16
+last_reviewed: 2026-07-29
 review_cadence: on-change
 maintenance_trigger: [agent-operating-policy-change, validation-contract-change, workflow-governance-change]
 semver_impact: minor
@@ -19,112 +19,96 @@ depends_on: [CODESTYLE.md, UBIQUITOUS_LANGUAGE.md, docs/README.md]
 
 # Coding Harness - AGENTS.md
 
-## Table of Contents
+Coding Harness helps a developer orient, make a bounded change, run local
+proof, and hand work back truthfully. Keep the routine path small.
 
-- [Mission](#mission)
-- [Startup](#startup)
-- [Operating contract](#operating-contract)
-- [Validation](#validation)
-- [Routing](#routing)
-- [Workflow and memory](#workflow-and-memory)
+## Start
 
-## Mission
+1. Read this file, [CODESTYLE.md](CODESTYLE.md),
+   [quickstart](docs/agents/quickstart.md), and the smallest route in
+   [the instruction map](docs/agents/01-instruction-map.md).
+2. Inspect branch, worktrees, package manager, and dirty ownership. Preserve
+   owned or unknown changes. Never reset, stash, clean, force-push, or delete
+   a branch or worktree without explicit authority.
+3. Use `harness next --json` for cold-agent routing. Optional maintenance is a
+   warning, never the primary action. Use documented wrappers through `zsh -lc`
+   with Node `>=26.3.0` and pnpm `10.33.0`.
 
-Coding Harness is a TypeScript control plane for evidence-backed agentic
-delivery. Orient first, use executable guardrails, preserve durable memory, and
-keep local proof separate from hosted, review, tracker, artifact, and readiness
-truth.
+## Delivery rules
 
-## Startup
+- Current source, schemas, lockfiles, generated artifacts, and runtime output
+  outrank copied summaries. Resolve instruction conflicts before editing.
+- Name one outcome and keep paths bounded. Direct local work may proceed with
+  focused proof; use delegation only when explicitly requested or risk needs it.
+- Keep local tests, runtime state, PR/CI, review threads, acceptance, merge,
+  release, and cleanup as separate evidence lanes.
+- Branch from `main` and use a PR for merges. Required hosted checks are
+  `pr-pipeline`, `security-scan`, and `CodeRabbit`; CodeQL is a separate lane.
+- Treat repeated steering or review feedback as a local fix unless the current
+  contract is contradictory, a safety boundary is crossed, or the same failure
+  recurs across independent work. Prefer an existing validator, fixture,
+  wrapper, or instruction over a new system surface.
+- Agent engineering proof: the expected outcome is a software engineer, not a
+  code generator; every durable repo/system change names its concrete repo path,
+  maintainability, traceability, and handoff quality.
+- Repeat-feedback admission: repeated steering or the same steering twice stops
+  ordinary feature work until a current-session steering admission record names
+  feedback class, inferred principle, searched surfaces, durable destination,
+  and forbidden recurrence behavior. Planning-only means do not implement and
+  make no file edits. Repeated-error research uses 3-5 numbered Candidate/Fix/
+  Option choices; fix observed fixable blockers in the same pass, then rerun the
+  narrowest proving command.
+- A Principle Signal from example-based feedback, named-function feedback, or a
+  specific line-level correction is systemic until proven isolated: synthesize
+  the principle, sibling patterns, OODA horizons, and durable destination; use
+  pattern-generalization with a pattern scope inventory of sibling
+  implementations searched, siblings changed, siblings left unchanged, and
+  deferred follow-ups. If the same judgment is needed twice or a failure mode
+  recurs across slices, promote the smallest durable validator, guard script,
+  CLI helper, workflow hook, fixture, or scoped skill. Keep one-off
+  implementation notes separate from a reusable routed workflow with inputs,
+  artifacts, validation, and ownership.
+- Use Env-Backed Validation Recovery with `op run --env-file ~/.codex/.env --
+  <command>` before a missing-credential blocker. For wider context, inspect
+  horizontal and vertical OODA horizons, single-turn and stacked trajectories,
+  adjacent PR and organizational activity, plus reflected context, resumed
+  target context, session-collector, agent reflection, unobserved horizon,
+  compaction, and environment boundaries. Workflow skill proof needs a
+  capture-the-flag win condition, flag captured, skill workout, and
+  self-reflection. Closeout completion: green checks are not complete or
+  validation evidence.
+- Harness Reviewer Roles First and Harness Tool Builder are first-choice subagents
+  when review or reusable tooling is explicitly selected: use
+  `spawn_agent(agent_type="harness-product-code-reviewer")` or
+  `spawn_agent(agent_type="harness-toolsmith")`; classify `unknown agent_type`
+  as a runtime-freshness blocker.
+- Generated instruction packs must preserve outcome-first local correction,
+  must not require systemic generalisation before routine closeout, and must
+  preserve project-local technical authority.
 
-1. Read this file, then
-   [`docs/agents/quickstart.md`](docs/agents/quickstart.md); read `CODESTYLE.md`
-   and the task route in
-   [`docs/agents/01-instruction-map.md`](docs/agents/01-instruction-map.md)
-   before making technical changes.
-2. Inspect the current repository, package manager, branch, worktrees, and
-   dirty ownership before choosing a mutation.
-3. Use repository wrappers and documented commands through `zsh -lc`; prefer
-   `rg`, `fd`, and `jq`, and use `pnpm@10.33.0` with Node `>=26.3.0`.
-4. Use `harness next --json` as the sole cold-agent route; optional
-   maintenance stays a warning; `harness init --minimal` creates only its compact contract.
+## Validation and handoff
 
-## Operating contract
-
-- Canonical repository evidence, lockfiles, schemas, generated artifacts, and
-  runtime output outrank copied assumptions. Resolve instruction conflicts
-  before editing.
-- Preserve owned or unknown dirty state. Never reset, stash, discard, clean,
-  force-push, delete worktrees, or bypass a gate without explicit authority.
-- Keep local code/test truth, PR and CI truth, review-thread truth, tracker
-  state, artifact freshness, acceptance, release, and merge readiness as
-  separate claims. Do not infer one lane from another.
-- Branch from `main`, open a PR for every merge, and keep CodeRabbit or human
-  review independent from code authorship. Required status checks are
-  `pr-pipeline`, `security-scan`, and `CodeRabbit`; CodeQL remains separate.
-- Keep each cadence-governed non-core `harness.contract.json` surface's `lastReviewedAt` within cadence; verify with `bash scripts/run-harness-gate.sh drift-gate --mode health --json`.
-- `review-learning-closeout/v1`, fitness, live-canary, runtime, rework,
-  governance, and SynAIpse packet projections are advisory evidence. Live canaries
-  must resolve CLI before target cwd, reject target-contained outputs, sanitize
-  inherited Git state, preserve target Git/per-probe outcomes; none prove
-  validation, approval, CI, acceptance, release, or merge readiness; SynAIpse context failures use additive v1, keep `contextUnknowns` optional-only, block runnable decisions on blocking failures, and fail closed on unknown versions or undeclared fields.
-- Treat repeated steering, review feedback, workflow misses, and recurring
-  failures as system evidence. Route the durable correction to the smallest
-  validator, schema, fixture, wrapper, instruction, or skill. Steering that
-  forbids implementation requires an admission record before work resumes.
-- Keep types, schemas, preflight runtime/template mirrors, command effects, and external input
-  behind their declared boundaries; uv-backed Python helpers must keep the pinned runtime, `UV_MALWARE_CHECK=1` wrapper default, generated scaffold, and tooling-parity guard synchronized. Detailed governance and reviewer-role routing live in [`docs/agents/07b-agent-governance.md`](docs/agents/07b-agent-governance.md).
-- Harness Reviewer Roles First and Harness Tool Builder are first-choice subagents: use `spawn_agent(agent_type="harness-product-code-reviewer")` for covered review and `spawn_agent(agent_type="harness-toolsmith")` for recurring tooling friction; treat `unknown agent_type` as runtime-freshness blocked. Agent engineering proof: expected outcome is a software engineer, not a code generator; every durable repo/system change needs a concrete repo path, maintainability, traceability, and handoff quality.
-- Repeated steering and the same feedback twice require a current-session steering admission record with feedback class, inferred principle, searched surfaces, durable destination, and forbidden recurrence behavior; planning-only or no file edits stops before implementation. Repeated-error research uses 3-5 numbered Candidate/Fix/Option entries and fixes observed fixable blockers in the same pass before rerunning the narrowest proving command.
-- A Principle Signal, example-based feedback, named-function feedback, or line-level correction is systemic until proven isolated: synthesize the principle, sibling patterns, OODA horizons, and durable destination; apply pattern-generalization with a pattern scope inventory naming sibling implementations searched, siblings changed, siblings left unchanged, and deferred follow-ups. If the same judgment is needed twice or a failure mode can recur across slices, promote it into the smallest durable validator, guard script, CLI helper, workflow hook, fixture, or scoped skill, while keeping one-off implementation notes separate from a reusable routed workflow with inputs, artifacts, validation, and ownership.
-- Use Env-Backed Validation Recovery with `~/.codex/.env` and `op run --env-file ~/.codex/.env -- <command>` before missing-credential blockers. Check horizontal and vertical OODA horizons, single-turn and stacked trajectories, adjacent PR and adjacent organizational activity, plus reflected context, resumed target context, session-collector, agent reflection, unobserved horizon, compaction, and environment boundaries. Software engineering proof includes maintainability, traceability, and handoff quality; workflow skill proof needs a capture-the-flag win condition, flag captured, skill workout, and self-reflection; closeout completion is not green checks or validation evidence.
-
-## Validation
-
-- Baseline: `pnpm codestyle:parity`, `pnpm codex:agents:guard`,
-  `pnpm check:static`, `pnpm run audit`, `pnpm check`, `bash scripts/validate-codestyle.sh`,
-  and `bash scripts/verify-work.sh`.
-- Fast lanes: `pnpm run quality:scripts`, `pnpm run tooling:parity`,
-  `bash scripts/run-harness-gate.sh tooling-audit --path . --json`, and
-  `bash scripts/validate-codestyle.sh --fast`.
-- Changed production source also requires `pnpm run quality:docstrings`,
+- Start narrow. Changed production code requires `pnpm run quality:docstrings`,
   `pnpm run quality:size`, and `pnpm run test:related`; changed tests require
-  `pnpm run quality:self-affirming`; runtime or artifact behavior requires
+  `pnpm run quality:self-affirming`. Runtime or artifact changes require
   `pnpm test:deep`.
-- Governance-doc changes require
-  `bash scripts/run-harness-gate.sh docs-gate --mode required --json` and
-  `pnpm docs:layer-budgets` when a Layer 0 or Layer 1 surface changes.
-- Report every validation command exactly as
-  `Command: <exact command> -> pass|fail|blocked (<reason>)`.
-- Hosted checks, review threads, acceptance, release, and merge state must be
-  refreshed from their authoritative surfaces in the same closeout window.
+- Use `bash scripts/run-harness-gate.sh docs-gate --mode required --json` for
+  governed docs, `pnpm check:static` for static policy, and
+  `bash scripts/verify-work.sh --fast` for the fast integrated route.
+- Before a PR create or update, run
+  `python3 ~/.codex/scripts/pr-readiness.py --phase create|update --scope-file <file> --write-receipt`.
+- Report `Command: <exact command> -> pass|fail|blocked (<reason>)`. Do not
+  infer hosted approval, mergeability, release, or cleanup from local proof.
 
-## Routing
+## References
 
-Use [`docs/agents/quickstart.md`](docs/agents/quickstart.md) for the first
-execution path, then route to the smallest authority:
+- [Language map](UBIQUITOUS-MAP.md) and [authoritative language](UBIQUITOUS_LANGUAGE.md)
+- [Validation and closeout](docs/agents/04-validation.md)
+- [Security and governance](docs/agents/06-security-and-governance.md)
+- [Release](docs/agents/08-release-and-change-control.md)
+- [Required checks](docs/agents/17-ci-required-checks.md)
+- [CLI reference](docs/cli-reference.md)
 
-- tooling: [`02-tooling-policy.md`](docs/agents/02-tooling-policy.md)
-- validation and closeout: [`04-validation.md`](docs/agents/04-validation.md)
-- architecture: [`00-architecture-bootstrap.md`](docs/agents/00-architecture-bootstrap.md)
-- security: [`06-security-and-governance.md`](docs/agents/06-security-and-governance.md)
-- agent governance: [`07b-agent-governance.md`](docs/agents/07b-agent-governance.md)
-- release: [`08-release-and-change-control.md`](docs/agents/08-release-and-change-control.md)
-- Linear: [`13-linear-production-workflow.md`](docs/agents/13-linear-production-workflow.md)
-- required checks: [`17-ci-required-checks.md`](docs/agents/17-ci-required-checks.md)
-
-## Workflow and memory
-
-- Keep PR bodies truthful and structured: plan IDs, session/trace references,
-  affected surfaces, documentation impact, validation commands and outcomes,
-  review artifacts, closeout state, and deferred work. Never paste secrets,
-  raw transcripts, or bulky telemetry.
-- At session start read `~/.codex/instructions/Learnings.md` and
-  `.harness/memory/LEARNINGS.md` when present. Treat `.harness/knowledge/**`,
-  `.harness/decisions/**`, `.harness/review-log.md`, and `codex/FORJAMIE.md`
-  as operational memory surfaces; keep caches, databases, backups, and runs
-  separate.
-- Use `UBIQUITOUS-MAP.md` for fast language routing and
-  `UBIQUITOUS_LANGUAGE.md` for authoritative terms. Keep the weekly
-  [`agent-first-status.md`](docs/roadmap/agent-first-status.md) surface aligned
-  with the contract when its freshness gate reports drift.
+Keep `.harness` durable knowledge separate from private runtime data, caches,
+and raw sessions. PR bodies may cite concise evidence but must not include
+secrets or raw telemetry.

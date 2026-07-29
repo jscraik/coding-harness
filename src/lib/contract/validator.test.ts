@@ -220,38 +220,24 @@ describe("validateContract", () => {
 	});
 
 	describe("north-star contract surfaces", () => {
-		it("requires canonical north-star surfaces for contract versions 1.6+", () => {
+		it("allows policy surfaces to remain unselected at every version", () => {
 			const result = validateContract({ version: "1.6.0" });
 
-			expect(result.success).toBe(false);
-			expect(result.errors.map((error) => error.path)).toEqual(
-				expect.arrayContaining([
-					"northStar",
-					"productSurface",
-					"overrideReviewerRegistry",
-				]),
-			);
+			expect(result.success).toBe(true);
 		});
 
 		it.each([
-			{ version: "1.4.9", expectsRequired: false },
-			{ version: "1.5", expectsRequired: false },
-			{ version: "1.5.0", expectsRequired: false },
-			{ version: "1.6", expectsRequired: true },
-			{ version: "1.6.0", expectsRequired: true },
-			{ version: "2.0.0", expectsRequired: true },
-		])("enforces canonical north-star surfaces only from version boundary ($version)", ({
-			version,
-			expectsRequired,
-		}) => {
+			"1.4.9",
+			"1.5",
+			"1.5.0",
+			"1.6",
+			"1.6.0",
+			"2.0.0",
+		])("keeps north-star surfaces optional at every version boundary (%s)", (version) => {
 			const result = validateContract({ version });
 			const hasNorthStarRequiredError = result.errors.some(
 				(error) => error.path === "northStar",
 			);
-			if (expectsRequired) {
-				expect(hasNorthStarRequiredError).toBe(true);
-				return;
-			}
 			expect(hasNorthStarRequiredError).toBe(false);
 		});
 

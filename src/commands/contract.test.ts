@@ -158,39 +158,11 @@ describe("buildContractJsonSchema", () => {
 		expect(schema.properties).toHaveProperty("version");
 	});
 
-	it("requires canonical north-star surfaces for contract versions 1.6+", () => {
+	it("keeps north-star surfaces optional in the generated schema", () => {
 		const schema = buildContractJsonSchema() as {
-			anyOf: Array<{
-				properties?: {
-					version?: { pattern?: string };
-				};
-				allOf?: Array<{
-					required?: string[];
-					properties?: {
-						version?: { pattern?: string };
-					};
-				}>;
-			}>;
+			required: string[];
 		};
-		expect(Array.isArray(schema.anyOf)).toBe(true);
-		const canonicalBranch = schema.anyOf.find(
-			(branch) =>
-				Array.isArray(branch.allOf) &&
-				branch.allOf.some((entry) => entry.required?.includes("northStar")),
-		);
-		expect(canonicalBranch).toBeDefined();
-		const requiredKeys = new Set(
-			canonicalBranch?.allOf?.flatMap((entry) => entry.required ?? []) ?? [],
-		);
-		expect(requiredKeys.has("northStar")).toBe(true);
-		expect(requiredKeys.has("productSurface")).toBe(true);
-		expect(requiredKeys.has("overrideReviewerRegistry")).toBe(true);
-
-		const canonicalVersionPattern = canonicalBranch?.allOf
-			?.map((entry) => entry.properties?.version?.pattern)
-			.find((pattern): pattern is string => typeof pattern === "string");
-		expect(canonicalVersionPattern).toContain("1\\.(?:[6-9]");
-		expect(canonicalVersionPattern).toContain("[2-9][0-9]*");
+		expect(schema.required).toEqual(["version"]);
 	});
 
 	it("allows legacy 1.6 northStar blocks to omit backfilled orientation fields in schema consumers", () => {
@@ -217,44 +189,11 @@ describe("buildContractJsonSchema", () => {
 		);
 	});
 
-	it("keeps version schema patterns aligned with runtime version semantics", () => {
+	it("leaves numeric version semantics to the runtime validator", () => {
 		const schema = buildContractJsonSchema() as {
-			anyOf: Array<{
-				properties?: {
-					version?: { pattern?: string };
-				};
-				allOf?: Array<{
-					properties?: {
-						version?: { pattern?: string };
-					};
-				}>;
-			}>;
+			properties: { version: { type: string } };
 		};
-		const preCanonicalPattern = schema.anyOf
-			.map((entry) => entry.properties?.version?.pattern)
-			.find((pattern): pattern is string => typeof pattern === "string");
-		const canonicalPattern = schema.anyOf
-			.flatMap((entry) =>
-				(entry.allOf ?? []).map(
-					(nested) => nested.properties?.version?.pattern,
-				),
-			)
-			.find((pattern): pattern is string => typeof pattern === "string");
-		expect(typeof preCanonicalPattern).toBe("string");
-		expect(typeof canonicalPattern).toBe("string");
-
-		const preCanonicalRegex = new RegExp(preCanonicalPattern ?? "");
-		const canonicalRegex = new RegExp(canonicalPattern ?? "");
-		expect(preCanonicalRegex.test("0.13.0")).toBe(true);
-		expect(preCanonicalRegex.test("1.4.9")).toBe(true);
-		expect(preCanonicalRegex.test("1.5")).toBe(true);
-		expect(preCanonicalRegex.test("1.5.0")).toBe(true);
-		expect(preCanonicalRegex.test("1.6.0")).toBe(false);
-		expect(canonicalRegex.test("1.5")).toBe(false);
-		expect(canonicalRegex.test("1.6")).toBe(true);
-		expect(canonicalRegex.test("1.6.0")).toBe(true);
-		expect(canonicalRegex.test("2.0.0")).toBe(true);
-		expect(canonicalRegex.test("2")).toBe(false);
+		expect(schema.properties.version.type).toBe("string");
 	});
 
 	it("ciProviderPolicy.mode enum contains all CI_PROVIDER_MODES", () => {
@@ -1182,16 +1121,13 @@ describe("runContractCLI dispatch", () => {
 // ─── buildContractPreset ──────────────────────────────────────────────────────
 
 describe("buildContractPreset", () => {
-	it("minimal preset includes canonical north-star contract surfaces", () => {
+	it("minimal preset declares only explicit CI and review opt-outs", () => {
 		const contract = buildContractPreset("minimal");
-		expect(contract).toHaveProperty("version");
-		expect(contract).toHaveProperty("riskTierRules");
-		expect(contract).toHaveProperty("mergePolicy");
-		expect(contract).toHaveProperty("branchProtection");
-		expect(contract).toHaveProperty("northStar");
-		expect(contract).toHaveProperty("productSurface");
-		expect(contract).toHaveProperty("overrideReviewerRegistry");
-		expect(Object.keys(contract)).toHaveLength(7);
+		expect(Object.keys(contract).sort()).toEqual([
+			"branchProtection",
+			"reviewPolicy",
+			"version",
+		]);
 	});
 
 	it("standard preset adds diff budget, docs-drift, and evidence policy", () => {
@@ -1229,13 +1165,8 @@ describe("buildContractPreset", () => {
 		}
 	});
 
-	it("minimal preset mergePolicy has high/medium/low keys", () => {
-		const { mergePolicy } = buildContractPreset("minimal") as {
-			mergePolicy: Record<string, unknown>;
-		};
-		expect(mergePolicy).toHaveProperty("high");
-		expect(mergePolicy).toHaveProperty("medium");
-		expect(mergePolicy).toHaveProperty("low");
+	it("minimal preset does not select a merge policy", () => {
+		expect(buildContractPreset("minimal")).not.toHaveProperty("mergePolicy");
 	});
 
 	it("PRESET_DESCRIPTIONS covers all presets", () => {
@@ -1298,10 +1229,11 @@ describe("runContractInitCLI", () => {
 		const code = runContractInitCLI({ preset: "minimal", output });
 		expect(code).toBe(0);
 		const parsed = JSON.parse(readFileSync(output, "utf-8"));
-		expect(parsed).toHaveProperty("northStar");
-		expect(parsed).toHaveProperty("productSurface");
-		expect(parsed).toHaveProperty("overrideReviewerRegistry");
-		expect(Object.keys(parsed)).toHaveLength(7);
+		expect(Object.keys(parsed).sort()).toEqual([
+			"branchProtection",
+			"reviewPolicy",
+			"version",
+		]);
 	});
 
 	it("creates lite contract aliasing minimal", () => {

@@ -3,8 +3,7 @@
  *
  * Three tiers of contract complexity:
  *
- * - `minimal`  — 7 sections (~2.5 KB). Solo-dev or first-time setup.
- *                Includes canonical north-star governance surfaces.
+ * - `minimal`  — explicit no-CI/no-review policy (~0.3 KB). Solo-dev or first-time setup.
  *
  * - `standard` — 11 sections (~4 KB). Small team or CI-integrated project.
  *                Adds diff budget, docs-drift rules, and evidence policy.
@@ -129,24 +128,22 @@ function buildCanonicalNorthStarSurfaces(): Record<string, unknown> {
 
 // ─── Preset builders ──────────────────────────────────────────────────────────
 
-/**
- * `minimal` preset — canonical core sections.
- *
- * Enough for gates to dispatch correctly and preserve canonical north-star
- * contract surfaces. Suitable for first-time setup or solo-dev repos that
- * don't yet need broader governance overhead.
- */
+/** Minimal preset for a repository that has not selected CI or review policy. */
 function buildMinimalPreset(): Record<string, unknown> {
 	return {
 		version: SCHEMA_VERSION,
-		...buildCanonicalNorthStarSurfaces(),
-		riskTierRules: { ...STANDARD_RISK_TIER_RULES },
-		mergePolicy: {
-			high: ["review-gate"],
-			medium: [],
-			low: [],
+		branchProtection: {
+			requiredChecks: [],
+			requiredApprovingReviewCount: 0,
 		},
-		branchProtection: { ...MINIMAL_BRANCH_PROTECTION },
+		reviewPolicy: {
+			timeoutSeconds: 600,
+			timeoutAction: "fail",
+			requiredChecks: [],
+			approvalMode: "human_approval",
+			enforceReviewerIndependence: true,
+			requireReviewContext: false,
+		},
 	};
 }
 

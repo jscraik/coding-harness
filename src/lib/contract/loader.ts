@@ -7,7 +7,6 @@ import type {
 	MergePolicyValue,
 } from "./types.js";
 import { DEFAULT_CONTRACT } from "./types.js";
-import { requiresCanonicalNorthStarSurfaces } from "./validator-helpers.js";
 import {
 	type ValidationError,
 	ValidationErrorCode,
@@ -128,9 +127,8 @@ function safeParseJson(content: string): unknown {
  * Merge validated contract data with defaults and normalize version-dependent fields.
  *
  * Preserves only explicitly provided fields from `data`, fills missing values from defaults,
- * resolves the effective `version`, and when the resolved version does not require canonical
- * NorthStar surfaces, ensures `northStar`, `productSurface`, and `overrideReviewerRegistry`
- * are `undefined` unless they were explicitly present in the input.
+ * resolves the effective `version`, and keeps optional policy surfaces absent unless
+ * the input explicitly selects them.
  *
  * @param data - Validated contract data, or `undefined` to use defaults
  * @returns The merged HarnessContract with defaults applied and version-dependent fields normalized
@@ -148,29 +146,19 @@ function mergeContractDefaults(
 		overrideReviewerRegistry: _defaultOverrideReviewerRegistry,
 		...legacyCompatibleDefaults
 	} = DEFAULT_CONTRACT;
-	const resolvedVersion =
-		normalizedData.version ??
-		legacyCompatibleDefaults.version ??
-		DEFAULT_CONTRACT.version;
-	const mergeDefaults = requiresCanonicalNorthStarSurfaces(resolvedVersion)
-		? DEFAULT_CONTRACT
-		: legacyCompatibleDefaults;
+	const mergeDefaults = legacyCompatibleDefaults;
 	const contract: HarnessContract = {
 		...mergeDefaults,
 		...normalizedData,
 	};
-	const canonicalNorthStarRequired =
-		requiresCanonicalNorthStarSurfaces(resolvedVersion);
-	if (!canonicalNorthStarRequired) {
-		if (!Object.hasOwn(normalizedData, "northStar")) {
-			contract.northStar = undefined;
-		}
-		if (!Object.hasOwn(normalizedData, "productSurface")) {
-			contract.productSurface = undefined;
-		}
-		if (!Object.hasOwn(normalizedData, "overrideReviewerRegistry")) {
-			contract.overrideReviewerRegistry = undefined;
-		}
+	if (!Object.hasOwn(normalizedData, "northStar")) {
+		contract.northStar = undefined;
+	}
+	if (!Object.hasOwn(normalizedData, "productSurface")) {
+		contract.productSurface = undefined;
+	}
+	if (!Object.hasOwn(normalizedData, "overrideReviewerRegistry")) {
+		contract.overrideReviewerRegistry = undefined;
 	}
 	return contract;
 }

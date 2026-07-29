@@ -139,21 +139,14 @@ function renderIssueTrackingPolicy(
  */
 function renderScaffoldContract(
 	options: ScaffoldContractTemplateOptions,
-): HarnessContract {
+): Pick<HarnessContract, "version"> & Partial<HarnessContract> {
 	const { agentBranchPrefix, context, packageManager, requiredChecks } =
 		options;
 	const isMinimal = context.minimal === true;
 	if (isMinimal) {
 		return {
 			version: CURRENT_SCHEMA_VERSION,
-			riskTierRules: {
-				"src/auth/**": "high",
-				"src/api/**": "high",
-				"src/lib/**": "medium",
-				"**/*.test.ts": "low",
-			},
 			branchProtection: {
-				...(DEFAULT_CONTRACT.branchProtection ?? {}),
 				requiredChecks: [],
 				requiredApprovingReviewCount: 0,
 			},
@@ -165,9 +158,6 @@ function renderScaffoldContract(
 				enforceReviewerIndependence: true,
 				requireReviewContext: false,
 			},
-			northStar: renderScaffoldNorthStar(context),
-			productSurface: renderScaffoldProductSurface(),
-			overrideReviewerRegistry: renderScaffoldOverrideReviewerRegistry(context),
 			...(context.projectType !== undefined
 				? { projectType: context.projectType }
 				: {}),

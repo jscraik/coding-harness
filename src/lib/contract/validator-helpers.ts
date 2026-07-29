@@ -12,22 +12,26 @@ export const VALID_POLICY_ACTIONS = ["allow", "block", "warn"] as const;
 export const VALID_GATE_VERDICTS = ["pass", "fail"] as const;
 export const VALID_IMAGE_FORMATS = ["png", "jpeg"] as const;
 
+/** Return whether a property name is unsafe to accept from external contract JSON. */
 export function hasForbiddenKey(value: string): boolean {
 	return FORBIDDEN_KEYS.includes(value as (typeof FORBIDDEN_KEYS)[number]);
 }
 
+/** Narrow an unknown value to a non-array object record. */
 export function isPlainObject(
 	value: unknown,
 ): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Return whether a value is one of the supported contract risk tiers. */
 export function isValidRiskTier(value: unknown): value is RiskTier {
 	return (
 		typeof value === "string" && VALID_RISK_TIERS.includes(value as RiskTier)
 	);
 }
 
+/** Validate the external risk-pattern-to-tier map. */
 export function isValidRiskTierRules(
 	value: unknown,
 ): value is Record<string, RiskTier> {
@@ -42,6 +46,7 @@ export function isValidRiskTierRules(
 	return true;
 }
 
+/** Return whether a value is a supported policy action. */
 export function isValidPolicyAction(
 	value: unknown,
 ): value is (typeof VALID_POLICY_ACTIONS)[number] {
@@ -53,6 +58,7 @@ export function isValidPolicyAction(
 	);
 }
 
+/** Return whether a value is a supported deterministic gate verdict. */
 export function isValidGateVerdict(
 	value: unknown,
 ): value is (typeof VALID_GATE_VERDICTS)[number] {
@@ -62,6 +68,7 @@ export function isValidGateVerdict(
 	);
 }
 
+/** Return whether a value is a supported timeout action. */
 export function isValidTimeoutAction(
 	value: unknown,
 ): value is (typeof VALID_TIMEOUT_ACTIONS)[number] {
@@ -73,6 +80,7 @@ export function isValidTimeoutAction(
 	);
 }
 
+/** Validate a non-blank required-check list. */
 export function isValidRequiredChecks(value: unknown): value is string[] {
 	if (!Array.isArray(value)) {
 		return false;
@@ -85,6 +93,7 @@ export function isValidRequiredChecks(value: unknown): value is string[] {
 	return true;
 }
 
+/** Validate an array whose entries are all non-blank strings. */
 export function isNonEmptyStringArray(value: unknown): value is string[] {
 	if (!Array.isArray(value)) {
 		return false;
@@ -94,6 +103,7 @@ export function isNonEmptyStringArray(value: unknown): value is string[] {
 	);
 }
 
+/** Validate a string array with an optional minimum length. */
 export function isStringArray(
 	value: unknown,
 	options: { minLength?: number } = {},
@@ -107,6 +117,7 @@ export function isStringArray(
 	return value.every((entry) => typeof entry === "string" && entry.length > 0);
 }
 
+/** Return whether a URL identifies a Linear project page. */
 export function isValidLinearProjectUrl(value: string): boolean {
 	try {
 		const url = new URL(value);
@@ -120,6 +131,7 @@ export function isValidLinearProjectUrl(value: string): boolean {
 	}
 }
 
+/** Return whether a value is a supported evidence image format. */
 export function isValidImageFormat(
 	value: unknown,
 ): value is (typeof VALID_IMAGE_FORMATS)[number] {
@@ -129,6 +141,7 @@ export function isValidImageFormat(
 	);
 }
 
+/** Validate the pattern-to-documentation-rule map. */
 export function isValidDocsDriftRules(value: unknown): value is DocsDriftRules {
 	if (!isPlainObject(value)) {
 		return false;
@@ -144,12 +157,14 @@ export function isValidDocsDriftRules(value: unknown): value is DocsDriftRules {
 	return true;
 }
 
+/** Parsed numeric parts of a contract version string. */
 export interface ParsedContractVersion {
 	major: number;
 	minor: number;
 	patch: number | undefined;
 }
 
+/** Parse a canonical numeric semver-style contract version. */
 export function parseContractVersion(
 	version: unknown,
 ): ParsedContractVersion | undefined {
@@ -173,14 +188,7 @@ export function parseContractVersion(
 	};
 }
 
+/** Return whether a value is a canonical numeric semver-style version. */
 export function isValidContractVersionString(version: unknown): boolean {
 	return parseContractVersion(version) !== undefined;
-}
-
-export function requiresCanonicalNorthStarSurfaces(version: unknown): boolean {
-	const parsed = parseContractVersion(version);
-	if (!parsed) {
-		return false;
-	}
-	return parsed.major > 1 || (parsed.major === 1 && parsed.minor >= 6);
 }

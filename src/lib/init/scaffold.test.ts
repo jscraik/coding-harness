@@ -254,28 +254,14 @@ describe("scaffold templates resolution", () => {
 
 		expect(Object.keys(rendered).sort()).toEqual([
 			"branchProtection",
-			"northStar",
-			"overrideReviewerRegistry",
-			"productSurface",
 			"reviewPolicy",
-			"riskTierRules",
 			"version",
 		]);
-		expect(rendered.reviewPolicy).toMatchObject({
-			requiredChecks: [],
-			approvalMode: "human_approval",
-			enforceReviewerIndependence: true,
-		});
-		expect(rendered.branchProtection).toMatchObject({
+		expect(rendered.branchProtection).toEqual({
 			requiredChecks: [],
 			requiredApprovingReviewCount: 0,
-			restrictDeletions: true,
-			blockForcePushes: true,
-			requirePullRequest: true,
-			requireConversationResolution: true,
-			codeQuality: { required: true },
-			publicCodeScanning: { required: true },
 		});
+		expect(rendered.reviewPolicy.requiredChecks).toEqual([]);
 		mkdirSync(join(tempDir, ".git"));
 		writeFileSync(
 			join(tempDir, "harness.contract.json"),

@@ -8,7 +8,6 @@ import {
 	type HarnessContract,
 } from "../lib/contract/types.js";
 import { validateContract } from "../lib/contract/validator.js";
-import { requiresCanonicalNorthStarSurfaces } from "../lib/contract/validator-helpers.js";
 import {
 	isCheckRunInProgress,
 	isCheckRunPassing,
@@ -997,10 +996,8 @@ export async function runReviewGate(
 		});
 		const decisionQuestionBlockers = evaluateNorthStarDecisionQuestions({
 			prBody: pullRequest.body,
-			decisionQuestions: requiresCanonicalNorthStarSurfaces(contract.version)
-				? (contract.northStar?.decisionQuestions ?? [])
-				: [],
-			requireQuestions: requiresCanonicalNorthStarSurfaces(contract.version),
+			decisionQuestions: contract.northStar?.decisionQuestions ?? [],
+			requireQuestions: contract.northStar !== undefined,
 		});
 
 		// Apply override acknowledgements for north-star decision question blockers
