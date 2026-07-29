@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { sanitizeGitEnvironment } from "../lib/git/safe-env.js";
+import { renderHarnessContractTemplate } from "../lib/init/scaffold-contract-template.js";
+import type { TemplateRenderContext } from "../lib/init/types.js";
 import { normaliseLinearGateResult } from "../lib/output/normalise.js";
 import { runLinearGate } from "./linear-gate.js";
 
@@ -39,6 +41,26 @@ function writeHarnessContract(tempDir: string): void {
 			null,
 			2,
 		),
+		"utf-8",
+	);
+}
+
+function writeCompactMinimalContract(tempDir: string): void {
+	const context: TemplateRenderContext = {
+		targetDir: tempDir,
+		ciProvider: "circleci",
+		packageScripts: [],
+		projectName: "minimal-fixture",
+		minimal: true,
+	};
+	writeFileSync(
+		join(tempDir, "harness.contract.json"),
+		renderHarnessContractTemplate({
+			agentBranchPrefix: "codex",
+			context,
+			packageManager: "pnpm",
+			requiredChecks: [],
+		}),
 		"utf-8",
 	);
 }
@@ -107,6 +129,31 @@ contact_links:
 		expect(result.output.passed).toBe(true);
 		expect(result.output.issueKeys.branch).toEqual(["JSC-42"]);
 		expect(result.output.issueKeys.pr).toEqual(["JSC-42"]);
+	});
+
+	it("does not inherit Linear defaults for an exact compact minimal contract", () => {
+		writeCompactMinimalContract(tempDir);
+
+		const result = runLinearGate({
+			repoRoot: tempDir,
+			branch: "plain-minimal-branch",
+			prTitle: "Minimal scaffold",
+			prBody: "No external issue tracker is configured.",
+		});
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			return;
+		}
+
+		expect(result.output.passed).toBe(true);
+		expect(result.output.policyApplied).toBeUndefined();
+		expect(result.output.checks).toEqual([
+			expect.objectContaining({
+				code: "linear-gate.compact-minimal.not-applicable",
+				passed: true,
+			}),
+		]);
 	});
 
 	it("accepts Closes as a closing Linear reference", () => {

@@ -1,7 +1,9 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
+import { isCompactMinimalRawContract } from "../lib/contract/compact-minimal.js";
 import { loadContract } from "../lib/contract/loader.js";
+import { validateContract } from "../lib/contract/validator.js";
 import type {
 	HarnessContract,
 	IssueTrackingPolicy,
@@ -47,7 +49,7 @@ export interface LinearGateCheck {
 /** Public API export. */
 export interface LinearGateOutput {
 	passed: boolean;
-	policyApplied: IssueTrackingPolicy;
+	policyApplied?: IssueTrackingPolicy | undefined;
 	repoRoot: string;
 	branch?: string | undefined;
 	prTitle?: string | undefined;
@@ -178,6 +180,51 @@ function resolvePolicy(
 	return contract.issueTrackingPolicy ?? DEFAULT_ISSUE_TRACKING_POLICY;
 }
 
+/** Return whether a contract file is the exact minimal scaffold shape. */
+function isCompactMinimalContractFile(contractPath: string): boolean {
+	try {
+		const rawContract = JSON.parse(
+			readFileSync(contractPath, "utf-8"),
+		) as Record<string, unknown>;
+		const validation = validateContract(rawContract);
+		return validation.success && isCompactMinimalRawContract(rawContract);
+	} catch {
+		return false;
+	}
+}
+
+/** Build the truthful success result for a minimal contract without Linear policy. */
+function compactMinimalResult(repoRoot: string): LinearGateResult {
+	return {
+		ok: true,
+		output: {
+			passed: true,
+			repoRoot,
+			checks: [
+				{
+					code: "linear-gate.compact-minimal.not-applicable",
+					passed: true,
+					message:
+						"Linear gate is not applicable because this compact minimal contract declares no issue-tracking policy.",
+				},
+			],
+			issueKeys: {
+				branch: [],
+				pr: [],
+				refs: [],
+				fixes: [],
+			},
+		},
+	};
+}
+
+/**
+ * Extract issue keys that satisfy the configured PR reference mode.
+ *
+ * @param mode - The contract's required reference mode.
+ * @param prText - Combined PR title and body to inspect.
+ * @returns Separate `refs` and closing-reference key collections.
+ */
 function resolveReferenceKeys(
 	mode: PrReferenceMode,
 	prText: string,
@@ -215,9 +262,14 @@ function addCheck(
 /** Validate repository and PR metadata against the contract's Linear policy. */
 export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
-	const contractPath = options.contractPath
-		? relative(repoRoot, resolve(repoRoot, options.contractPath))
-		: "harness.contract.json";
+	const contractFilePath = resolve(
+		repoRoot,
+		options.contractPath ?? "harness.contract.json",
+	);
+	const contractPath = relative(repoRoot, contractFilePath);
+	if (isCompactMinimalContractFile(contractFilePath)) {
+		return compactMinimalResult(repoRoot);
+	}
 	let contract: HarnessContract;
 	const previousCwd = process.cwd();
 	try {
