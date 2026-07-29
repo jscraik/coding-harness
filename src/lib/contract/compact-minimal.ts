@@ -7,15 +7,12 @@
  * contracts.
  */
 import type { HarnessContract, ReviewPolicy } from "./types.js";
+import { SCHEMA_VERSION } from "./json-schema.js";
 
 const COMPACT_MINIMAL_CONTRACT_KEYS = [
 	"version",
-	"riskTierRules",
 	"branchProtection",
 	"reviewPolicy",
-	"northStar",
-	"productSurface",
-	"overrideReviewerRegistry",
 ] as const;
 
 /** Return whether a caller-validated raw contract is the exact minimal shape. */
@@ -23,25 +20,10 @@ export function isCompactMinimalRawContract(
 	contract: Record<string, unknown>,
 ): boolean {
 	return (
+		contract.version === SCHEMA_VERSION &&
 		hasExactCompactMinimalKeys(contract) &&
 		hasMinimalNoCheckBranchProtection(contract) &&
 		hasDisabledCompactReviewPolicy(contract)
-	);
-}
-
-/** Verify that no full-scaffold policy was added to the minimal shape. */
-function hasExactCompactMinimalKeys(
-	contract: Record<string, unknown>,
-): boolean {
-	const allowedKeys = new Set<string>(COMPACT_MINIMAL_CONTRACT_KEYS);
-	if (Object.hasOwn(contract, "projectType")) allowedKeys.add("projectType");
-	const keys = Object.keys(contract);
-	return (
-		keys.length === allowedKeys.size &&
-		COMPACT_MINIMAL_CONTRACT_KEYS.every((key) =>
-			Object.hasOwn(contract, key),
-		) &&
-		keys.every((key) => allowedKeys.has(key))
 	);
 }
 
@@ -104,5 +86,21 @@ function hasNoRequiredReviewChecks(reviewPolicy: ReviewPolicy): boolean {
 	return (
 		Array.isArray(reviewPolicy.requiredChecks) &&
 		reviewPolicy.requiredChecks.length === 0
+	);
+}
+
+/** Verify that no full-scaffold policy was added to the minimal shape. */
+function hasExactCompactMinimalKeys(
+	contract: Record<string, unknown>,
+): boolean {
+	const allowedKeys = new Set<string>(COMPACT_MINIMAL_CONTRACT_KEYS);
+	if (Object.hasOwn(contract, "projectType")) allowedKeys.add("projectType");
+	const keys = Object.keys(contract);
+	return (
+		keys.length === allowedKeys.size &&
+		COMPACT_MINIMAL_CONTRACT_KEYS.every((key) =>
+			Object.hasOwn(contract, key),
+		) &&
+		keys.every((key) => allowedKeys.has(key))
 	);
 }

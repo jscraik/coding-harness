@@ -26,7 +26,7 @@ function compactContract(
 }
 
 describe("isCompactMinimalRawContract", () => {
-	it("recognizes the exact review-disabled minimal template", () => {
+	it("recognizes the exact version-only minimal template", () => {
 		const contract = compactContract();
 
 		expect(validateContract(contract).success).toBe(true);
@@ -38,6 +38,14 @@ describe("isCompactMinimalRawContract", () => {
 
 		expect(validateContract(contract).success).toBe(true);
 		expect(isCompactMinimalRawContract(contract)).toBe(true);
+	});
+
+	it("rejects an otherwise compact legacy contract version", () => {
+		const contract = compactContract();
+		contract.version = "1.0";
+
+		expect(validateContract(contract).success).toBe(true);
+		expect(isCompactMinimalRawContract(contract)).toBe(false);
 	});
 
 	it("rejects an unsupported project type", () => {
@@ -53,10 +61,14 @@ describe("isCompactMinimalRawContract", () => {
 		);
 	});
 
-	it("rejects a schema-valid minimal-shaped contract that enables review context", () => {
+	it("rejects a minimal-shaped contract that enables review context", () => {
 		const contract = compactContract();
 		contract.reviewPolicy = {
-			...(contract.reviewPolicy as Record<string, unknown>),
+			timeoutSeconds: 600,
+			timeoutAction: "fail",
+			requiredChecks: [],
+			approvalMode: "human_approval",
+			enforceReviewerIndependence: true,
 			requireReviewContext: true,
 		};
 

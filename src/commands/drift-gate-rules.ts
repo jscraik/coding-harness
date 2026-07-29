@@ -51,7 +51,7 @@ const FIX_GUIDANCE: Record<string, DriftFixGuidance> = {
 		suppressible: true,
 	},
 	"command.surface.readme.missing": {
-		manual: "Add the command to the README command index table.",
+		manual: "Add the missing stable command to the README command index table.",
 		suppressible: false,
 	},
 	"command.surface.dispatch.missing": {
@@ -173,6 +173,15 @@ const FIX_GUIDANCE: Record<string, DriftFixGuidance> = {
 	},
 };
 
+const STABLE_README_COMMANDS = new Set([
+	"next",
+	"check",
+	"init",
+	"verify-work",
+	"pr-closeout",
+]);
+
+/** Attach the configured manual remediation guidance when a finding has one. */
 function attachFixGuidance(finding: DriftFinding): void {
 	const guidance = FIX_GUIDANCE[finding.rule_id];
 	if (guidance) {
@@ -220,8 +229,10 @@ export function push(
 /**
  * Validate the repository's CLI command surface and append findings for any inconsistencies.
  *
- * Compares dispatched commands (including registry-backed specs when present) against the README command index
- * and detects missing sources and duplicate CLI help entries, emitting findings for each discrepancy.
+ * Requires the stable product commands in the README command index, rejects
+ * documented commands that no longer dispatch, and detects missing sources and
+ * duplicate CLI help entries. Internal and expert commands remain discoverable
+ * through explicit command discovery rather than the routine README path.
  *
  * @param findings - Array to which new DriftFinding items will be appended
  * @param repoRoot - Path to the repository root used to locate source files
@@ -287,7 +298,10 @@ function evaluateCommandSurface(
 	const readmeCommands = extractReadmeCommands(readmeSource);
 
 	for (const command of canonicalCommands) {
-		if (!readmeCommands.includes(command)) {
+		if (
+			STABLE_README_COMMANDS.has(command) &&
+			!readmeCommands.includes(command)
+		) {
 			push(
 				findings,
 				{
@@ -295,7 +309,7 @@ function evaluateCommandSurface(
 					surface: "command",
 					rule_result: "fail",
 					severity: "warning",
-					message: `Command is dispatched but missing from README command index: ${command}`,
+					message: `Stable command is dispatched but missing from README command index: ${command}`,
 					path: "README.md",
 				},
 				baselineFingerprints,
@@ -456,6 +470,10 @@ function evaluateStatusNarrative(
 	}
 }
 
+/**
+ * Check the dedicated north-star and status surfaces without making the product
+ * README carry the complete governance narrative.
+ */
 function evaluateNorthStarParity(
 	findings: DriftFinding[],
 	repoRoot: string,
@@ -464,17 +482,10 @@ function evaluateNorthStarParity(
 ): void {
 	const northStarPath = join(repoRoot, "docs/roadmap/north-star.md");
 	const northStarSource = readTextFile(northStarPath);
-	const readmePath = join(repoRoot, "README.md");
-	const readmeSource = readTextFile(readmePath);
 	const statusPath = join(repoRoot, "docs/roadmap/agent-first-status.md");
 	const statusSource = readTextFile(statusPath);
 
 	const parityIssues = evaluateNorthStarSurfaceParity(contract, [
-		{
-			key: "readme",
-			path: "README.md",
-			content: readmeSource,
-		},
 		{
 			key: "north_star_doc",
 			path: "docs/roadmap/north-star.md",

@@ -22,6 +22,11 @@ Agents are expected to be deterministic and auditable. Recommended execution loo
 4. Report outcomes and risks.
 5. Stop on blocked checks and request next decision.
 
+Routine Direct Work stays local: name the outcome, bound the paths, run focused
+proof, and hand back the result. Select a reviewer or tool-building subagent
+only when the work is delegated, a reusable tool is needed, or the risk requires
+independent coverage; routine work does not need a reviewer-authored artifact.
+
 Recurring judgment should become a small operating primitive. If an agent needs
 the same judgment twice, or a failure mode can recur across slices, promote it
 into the smallest durable tool that changes future behavior: validator, guard

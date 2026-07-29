@@ -173,40 +173,6 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 			"The harness.contract.json file declares governance policy for a coding-harness managed project.",
 		type: "object",
 		required: ["version"],
-		anyOf: [
-			{
-				properties: {
-					version: {
-						type: "string",
-						pattern: "^(?:(?:0\\.[0-9]+)|(?:1\\.(?:[0-5])))(?:\\.[0-9]+)?$",
-					},
-				},
-				required: ["version"],
-			},
-			{
-				allOf: [
-					{
-						required: ["version"],
-					},
-					{
-						properties: {
-							version: {
-								type: "string",
-								pattern:
-									"^(?:(?:1\\.(?:[6-9]|[1-9][0-9]))|(?:[2-9][0-9]*\\.[0-9]+))(?:\\.[0-9]+)?$",
-							},
-						},
-					},
-					{
-						required: [
-							"northStar",
-							"productSurface",
-							"overrideReviewerRegistry",
-						],
-					},
-				],
-			},
-		],
 		additionalProperties: false,
 		properties: {
 			$schema: {
@@ -263,6 +229,7 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 			},
 			version: {
 				type: "string",
+				pattern: "^(0|[1-9]\\d*)\\.\\d+(?:\\.\\d+)?$",
 				description:
 					'Contract schema version. Example: "1.6.0". Increment on breaking changes.',
 				examples: ["1.0", "1.6.0"],

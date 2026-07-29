@@ -71,7 +71,7 @@ describe("contract scaffold template", () => {
 		expect(contract.issueTrackingPolicy).toBeUndefined();
 	});
 
-	it("preserves detected project type and explicitly records minimal branch policy", () => {
+	it("preserves detected project type without selecting policy", () => {
 		const contract = renderContract({
 			...baseContext,
 			minimal: true,
@@ -79,23 +79,15 @@ describe("contract scaffold template", () => {
 		});
 
 		expect(contract.projectType).toBe("web");
-		expect(contract.reviewPolicy).toEqual({
-			timeoutSeconds: 600,
-			timeoutAction: "fail",
-			requiredChecks: [],
-			approvalMode: "human_approval",
-			enforceReviewerIndependence: true,
-			requireReviewContext: false,
-		});
-		expect(contract.branchProtection).toMatchObject({
+		expect(Object.keys(contract).sort()).toEqual([
+			"branchProtection",
+			"projectType",
+			"reviewPolicy",
+			"version",
+		]);
+		expect(contract.branchProtection).toEqual({
 			requiredChecks: [],
 			requiredApprovingReviewCount: 0,
-			restrictDeletions: true,
-			blockForcePushes: true,
-			requirePullRequest: true,
-			requireConversationResolution: true,
-			codeQuality: { required: true },
-			publicCodeScanning: { required: true },
 		});
 	});
 

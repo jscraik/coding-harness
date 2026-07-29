@@ -58,19 +58,19 @@ describe("loadContract", () => {
 		expect(contract.contextCompact).toEqual(DEFAULT_CONTEXT_COMPACT_POLICY);
 	});
 
-	it("does not backfill canonical north-star surfaces into pre-1.6 contracts", () => {
+	it("does not backfill optional north-star surfaces into a minimal contract", () => {
 		const dir = join(process.cwd(), "artifacts");
 		mkdirSync(dir, { recursive: true });
 		const path = join(
 			dir,
-			"contract-loader-pre-16-no-north-star-defaults.json",
+			"contract-loader-minimal-no-north-star-defaults.json",
 		);
 		createdFiles.push(path);
 
 		writeFileSync(
 			path,
 			JSON.stringify({
-				version: "1.5.0",
+				version: "1.6.0",
 				riskTierRules: { "src/**": "low" },
 			}),
 			"utf-8",
