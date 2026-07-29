@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { CIRCLECI_PRIMARY_CHECK } from "./branch-protect-sync.js";
+import { isCompactMinimalRawContract } from "../contract/compact-minimal.js";
+import { validateContract } from "../contract/validator.js";
 import { normalizeCIOwnership } from "./ownership-gate-normalization.js";
 import { validateCIOwnershipContract } from "./ownership-gate-validation.js";
 
@@ -77,6 +79,20 @@ export function runCIOwnershipGate(
 		findings,
 	});
 	if (!contract) return buildResult(contractPath, findings);
+	const contractValidation = validateContract(contract);
+	if (
+		contractValidation.success &&
+		isCompactMinimalRawContract(contract as Record<string, unknown>)
+	) {
+		findings.push({
+			id: "ci-ownership.compact-minimal.not-applicable",
+			severity: "info",
+			message:
+				"Compact minimal contracts do not declare a CI ownership surface.",
+			path: contractPath,
+		});
+		return buildResult(contractPath, findings);
+	}
 
 	const ciOwnership = normalizeCIOwnership(contract.ciOwnership);
 	appendDefaultedOwnershipFinding({

@@ -2,6 +2,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { deriveRequiredCheckMetadata } from "../lib/ci/required-check-metadata.js";
 import { loadContract } from "../lib/contract/loader.js";
+import { isCompactMinimalRawContract } from "../lib/contract/compact-minimal.js";
+import { validateContract } from "../lib/contract/validator.js";
 import {
 	type BranchProtectionCodeQualityPolicy,
 	type BranchProtectionCodeScanningPolicy,
@@ -204,17 +206,15 @@ function resolveContractBranchProtectionPolicy(
 ): ContractBranchProtectionResolution {
 	try {
 		const contract = loadContract(contractPath);
+		const compactMinimal = isCompactMinimalContractFile(contractPath);
 		const ciProviderPolicy = contract.ciProviderPolicy;
 		const activeProvider = ciProviderPolicy?.activeProvider;
 		const requiredCheckManifestPath =
 			ciProviderPolicy?.requiredCheckManifestPath;
-		const hasExplicitBranchProtectionChecks = Object.hasOwn(
-			contract.branchProtection ?? {},
-			"requiredChecks",
+		const legacyRequiredChecks = resolveContractRequiredChecks(
+			contract,
+			compactMinimal,
 		);
-		const legacyRequiredChecks = hasExplicitBranchProtectionChecks
-			? contract.branchProtection?.requiredChecks
-			: contract.reviewPolicy?.requiredChecks;
 		return {
 			branchProtectionPolicy: {
 				...DEFAULT_BRANCH_PROTECTION_POLICY,
@@ -256,6 +256,30 @@ function resolveContractBranchProtectionPolicy(
 		return {
 			branchProtectionPolicy: { ...DEFAULT_BRANCH_PROTECTION_POLICY },
 		};
+	}
+}
+
+/** Resolve minimal empty checks without weakening migrated full contracts. */
+function resolveContractRequiredChecks(
+	contract: ReturnType<typeof loadContract>,
+	compactMinimal: boolean,
+): string[] | undefined {
+	const configuredChecks = contract.branchProtection?.requiredChecks;
+	if (compactMinimal && configuredChecks?.length === 0) return [];
+	if (configuredChecks && configuredChecks.length > 0) return configuredChecks;
+	return contract.reviewPolicy?.requiredChecks;
+}
+
+/** Read the raw source contract to distinguish minimal opt-out from migrations. */
+function isCompactMinimalContractFile(contractPath: string): boolean {
+	try {
+		const rawContract = JSON.parse(
+			readFileSync(contractPath, "utf-8"),
+		) as Record<string, unknown>;
+		const validation = validateContract(rawContract);
+		return validation.success && isCompactMinimalRawContract(rawContract);
+	} catch {
+		return false;
 	}
 }
 

@@ -1,6 +1,8 @@
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { loadContract } from "../lib/contract/loader.js";
+import { isCompactMinimalRawContract } from "../lib/contract/compact-minimal.js";
+import { validateContract } from "../lib/contract/validator.js";
 import {
 	DEFAULT_CONTRACT,
 	type HarnessContract,
@@ -95,65 +97,11 @@ const FORBIDDEN_PREK_HOOK_ENTRY_PATTERNS = [
 	/\bscripts\/run-prek\.sh\s+hook\b/,
 ] as const;
 
+const HARNESS_OWNED_PREK_ENTRIES = new Set<string>(
+	Object.values(APPROVED_PREK_LEAF_ENTRIES).flat(),
+);
+
 const MAX_READINESS_FORWARDING_DEPTH = 4;
-const COMPACT_MINIMAL_CONTRACT_KEYS = [
-	"version",
-	"riskTierRules",
-	"branchProtection",
-	"reviewPolicy",
-	"northStar",
-	"productSurface",
-	"overrideReviewerRegistry",
-] as const;
-
-/** Checks whether a raw contract has only the keys emitted by minimal scaffolding. */
-function hasExactCompactMinimalTopLevelShape(
-	contract: Record<string, unknown>,
-): boolean {
-	const allowedKeys = new Set<string>(COMPACT_MINIMAL_CONTRACT_KEYS);
-	if (Object.hasOwn(contract, "projectType")) allowedKeys.add("projectType");
-	const keys = Object.keys(contract);
-	if (keys.length !== allowedKeys.size) return false;
-	if (
-		!COMPACT_MINIMAL_CONTRACT_KEYS.every((key) => Object.hasOwn(contract, key))
-	) {
-		return false;
-	}
-	return keys.every((key) => allowedKeys.has(key));
-}
-
-/** Checks whether a raw branch policy keeps the minimal no-required-check posture. */
-function hasCompactMinimalBranchProtection(
-	contract: Record<string, unknown>,
-): boolean {
-	const branchProtection = contract.branchProtection;
-	if (branchProtection === null || typeof branchProtection !== "object") {
-		return false;
-	}
-	const policy = branchProtection as Record<string, unknown>;
-	return (
-		Array.isArray(policy.requiredChecks) &&
-		policy.requiredChecks.length === 0 &&
-		policy.requiredApprovingReviewCount === 0
-	);
-}
-
-/**
- * Identifies the compact contract emitted by `harness init --minimal`.
- *
- * A compact contract deliberately omits the tooling surface because minimal
- * scaffolding does not create its files. Older contracts without this explicit
- * compact shape retain the default tooling-policy fallback.
- */
-function isCompactMinimalRawContract(
-	contract: Record<string, unknown>,
-): boolean {
-	return (
-		hasExactCompactMinimalTopLevelShape(contract) &&
-		hasCompactMinimalBranchProtection(contract)
-	);
-}
-
 /** Resolve explicit tooling policy while preserving legacy fallback behavior. */
 function resolveToolingPolicy(
 	contract: HarnessContract,
@@ -2708,8 +2656,13 @@ function auditConfiguredTooling(
 /** Return whether a Prek file invokes a Harness-owned hook adapter. */
 function hasHarnessOwnedPrekHook(prekContent: string): boolean {
 	return parsePrekHooks(prekContent).some((hook) =>
-		hook.stages.some((stage) => isApprovedPrekLeafEntry(stage, hook.entry)),
+		isHarnessOwnedPrekEntry(hook.entry),
 	);
+}
+
+/** Return whether an entry names any Harness-owned Prek adapter. */
+function isHarnessOwnedPrekEntry(entry: string | undefined): boolean {
+	return entry !== undefined && HARNESS_OWNED_PREK_ENTRIES.has(entry);
 }
 
 /** Audits explicit boundaries without requiring minimal scaffolding to create them. */
@@ -2726,6 +2679,33 @@ function auditMinimalToolingBoundaries(
 	if (baseContract) {
 		auditBaseDrift(findings, contract, baseContract);
 	}
+}
+
+/** Route validated raw contracts through their matching tooling boundary. */
+function auditContractTooling(
+	findings: ToolingAuditFinding[],
+	repoPath: string,
+	rawContract: Record<string, unknown>,
+	contract: HarnessContract,
+	baseContract?: HarnessContract,
+): void {
+	const compactMinimal = validateContract(rawContract).success
+		? isCompactMinimalRawContract(rawContract)
+		: false;
+	if (!compactMinimal && !Object.hasOwn(rawContract, "toolingPolicy")) {
+		findings.push({
+			path: "toolingPolicy",
+			severity: "warning",
+			description:
+				"Contract relies on implicit tooling defaults; run 'harness upgrade --dry-run' to preview a safe upgrade path, or 'harness init --update' to re-scaffold tracked files when needed",
+		});
+	}
+
+	if (compactMinimal) {
+		auditMinimalToolingBoundaries(findings, repoPath, contract, baseContract);
+		return;
+	}
+	auditConfiguredTooling(findings, repoPath, contract, baseContract);
 }
 
 /**
@@ -2784,21 +2764,7 @@ async function auditRepository(
 	}
 
 	const findings: ToolingAuditFinding[] = [];
-	const compactMinimal = isCompactMinimalRawContract(rawContract);
-	if (!compactMinimal && !Object.hasOwn(rawContract, "toolingPolicy")) {
-		findings.push({
-			path: "toolingPolicy",
-			severity: "warning",
-			description:
-				"Contract relies on implicit tooling defaults; run 'harness upgrade --dry-run' to preview a safe upgrade path, or 'harness init --update' to re-scaffold tracked files when needed",
-		});
-	}
-
-	if (!compactMinimal) {
-		auditConfiguredTooling(findings, repoPath, contract, baseContract);
-	} else {
-		auditMinimalToolingBoundaries(findings, repoPath, contract, baseContract);
-	}
+	auditContractTooling(findings, repoPath, rawContract, contract, baseContract);
 
 	return {
 		path: repoPath,

@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { renderHarnessContractTemplate } from "../lib/init/scaffold-contract-template.js";
 import { runCIOwnershipGateCLI } from "./ci-ownership-gate.js";
 
 describe("ci-ownership-gate command", () => {
@@ -45,6 +46,34 @@ describe("ci-ownership-gate command", () => {
 		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
 		expect(payload.status).toBe("pass");
 		expect(payload.summary.errors).toBe(0);
+	});
+
+	it("does not require a CI ownership surface from an exact compact minimal contract", () => {
+		const repoRoot = writeContract(
+			JSON.parse(
+				renderHarnessContractTemplate({
+					agentBranchPrefix: "codex",
+					context: {
+						targetDir: "/tmp/compact-minimal",
+						packageScripts: [],
+						projectName: "compact-minimal",
+						minimal: true,
+					},
+					packageManager: "pnpm",
+					requiredChecks: [],
+				}),
+			),
+		);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({ repoRoot, json: true });
+
+		expect(exitCode).toBe(0);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(payload.status).toBe("pass");
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).toContain("ci-ownership.compact-minimal.not-applicable");
 	});
 
 	it("fails when GitHub Actions is configured as the primary PR gate", () => {

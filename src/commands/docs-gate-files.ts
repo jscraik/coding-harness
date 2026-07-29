@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { DocsGatePolicy, HarnessContract } from "../lib/contract/types.js";
+import { isCompactMinimalRawContract } from "../lib/contract/compact-minimal.js";
 import { validateContract } from "../lib/contract/validator.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import type {
@@ -30,17 +31,22 @@ export function loadFileIfPresent(path: string): string | null {
 export function loadValidatedContract(
 	repoRoot: string,
 	contractPath: string = CONTRACT_PATH,
-): { loaded?: LoadedContract; error?: string } {
+): { loaded?: LoadedContract; compactMinimal?: boolean; error?: string } {
 	const resolvedPath = resolve(repoRoot, contractPath);
 	if (!existsSync(resolvedPath)) {
 		return { error: `Contract file not found: ${contractPath}` };
 	}
 	try {
-		const parsed = JSON.parse(readFileSync(resolvedPath, "utf-8")) as unknown;
-		const validation = validateContract(parsed);
+		const rawContract = JSON.parse(
+			readFileSync(resolvedPath, "utf-8"),
+		) as Record<string, unknown>;
+		const validation = validateContract(rawContract);
 		if (!validation.success) return validationFailure(validation.errors);
 		return validation.data
-			? { loaded: { contract: validation.data } }
+			? {
+					loaded: { contract: validation.data },
+					compactMinimal: isCompactMinimalRawContract(rawContract),
+				}
 			: { error: "Contract validation returned no data" };
 	} catch (error) {
 		return { error: `Failed to load contract: ${sanitizeError(error)}` };

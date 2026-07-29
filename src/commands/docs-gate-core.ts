@@ -91,9 +91,11 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 	const contractResult = loadValidatedContract(context.repoRoot, CONTRACT_PATH);
 	const contract = contractResult.loaded?.contract;
 	const policy = contract?.docsGatePolicy;
-	if (contractResult.error || !contract || !policy) {
+	if (contractResult.error || !contract) {
 		return bootstrapGapResult(context, contractResult.error);
 	}
+	if (!policy && contractResult.compactMinimal) return disabledResult(context);
+	if (!policy) return bootstrapGapResult(context);
 	context.executionContext = buildExecutionContext(
 		options,
 		policy,

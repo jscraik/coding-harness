@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_CONTEXT_INTEGRITY_POLICY } from "../lib/contract/types.js";
+import { renderHarnessContractTemplate } from "../lib/init/scaffold-contract-template.js";
 import {
 	isGitEnvironmentKey,
 	sanitizeGitEnvironment,
@@ -492,6 +493,39 @@ describe("docs-gate command", () => {
 		expect(result.report.outcome).toBe("ok");
 		expect(
 			result.report.findings.some((f) => f.rule_id === "docs.gate.disabled"),
+		).toBe(true);
+	});
+
+	it("treats an exact compact minimal contract as docs-gate disabled", () => {
+		const root = createTestRoot("docs-gate-compact-minimal");
+		roots.push(root);
+		write(
+			join(root, "harness.contract.json"),
+			renderHarnessContractTemplate({
+				agentBranchPrefix: "codex",
+				context: {
+					targetDir: root,
+					packageScripts: [],
+					projectName: "compact-minimal",
+					minimal: true,
+				},
+				packageManager: "pnpm",
+				requiredChecks: [],
+			}),
+		);
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["src/cli.ts"],
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.report.outcome).toBe("ok");
+		expect(
+			result.report.findings.some(
+				(finding) => finding.rule_id === "docs.gate.disabled",
+			),
 		).toBe(true);
 	});
 
