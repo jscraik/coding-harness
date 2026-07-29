@@ -59,7 +59,8 @@ Do not use for unrelated feature delivery, generic cloud deployment, or security
 - Fresh-agent first-contact entrypoint: `harness next --json`.
 - Focused first-contact help: `harness --help`.
 - Public agent rail catalog: `harness commands --json --for-agent`.
-- Full expert catalog: `harness commands --json` and `harness --help --all-commands`.
+- Supported expert catalog: `harness commands --json`; full retained plumbing:
+  `harness commands --json --all` and `harness --help --all-commands`.
 - Source-repo public-bin proof: `pnpm exec harness ...` after dependencies are installed and `dist/cli.js` exists.
 - Source-repo current-tree probes: `node --import tsx src/cli.ts ...` when validating unbuilt implementation changes.
 - Consumer-repo installs: use the installed `harness` binary, preferably via `mise install -g npm:@brainwav/coding-harness`.

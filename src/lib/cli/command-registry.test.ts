@@ -25,51 +25,19 @@ import {
 
 const AGENT_COMMAND_RAIL_NAMES = [
 	"next",
-	"agent-readiness",
-	"agent-native-ratchets",
-	"commands",
-	"runtime-card",
-	"session-context",
-	"session-distill",
+	"init",
 	"check",
-	"fitness",
-	"validation-plan",
-	"review-context",
-	"decision-request",
+	"verify-work",
 	"pr-closeout",
-	"evidence-verify",
-	"review-gate",
 ] as const;
-const AGENT_ORIENT_COMMAND_RAIL_NAMES = [
-	"next",
-	"agent-readiness",
-	"agent-native-ratchets",
-	"commands",
-	"runtime-card",
-	"session-context",
-	"session-distill",
-] as const;
+const AGENT_ORIENT_COMMAND_RAIL_NAMES = ["next"] as const;
 const AGENT_VERIFY_COMMAND_RAIL_NAMES = [
 	"next",
-	"runtime-card",
 	"check",
-	"fitness",
-	"validation-plan",
-	"evidence-verify",
+	"verify-work",
 ] as const;
-const AGENT_REVIEW_COMMAND_RAIL_NAMES = [
-	"next",
-	"runtime-card",
-	"review-context",
-	"review-gate",
-] as const;
-const AGENT_HANDOFF_COMMAND_RAIL_NAMES = [
-	"next",
-	"runtime-card",
-	"decision-request",
-	"pr-closeout",
-	"evidence-verify",
-] as const;
+const AGENT_REVIEW_COMMAND_RAIL_NAMES = ["next", "pr-closeout"] as const;
+const AGENT_HANDOFF_COMMAND_RAIL_NAMES = ["next", "pr-closeout"] as const;
 
 describe("command registry", () => {
 	it("exposes migrated command names", () => {
@@ -375,28 +343,27 @@ describe("command registry", () => {
 			expect(typeof output).toBe("string");
 			const parsed = JSON.parse(String(output));
 			expect(parsed.schemaVersion).toBe(COMMAND_CATALOG_SCHEMA_VERSION);
-			expect(parsed.commandCount).toBe(MIGRATED_COMMAND_NAMES.length);
+			expect(parsed.commandCount).toBeLessThanOrEqual(15);
 			expect(Array.isArray(parsed.commands)).toBe(true);
-
-			const policyGate = parsed.commands.find(
-				(item: { name: string }) => item.name === "policy-gate",
-			);
-			expect(policyGate).toBeDefined();
-			expect(policyGate).toMatchObject({
-				category: "review-policy",
-				mutability: "read",
-				requiredFlags: [],
-			});
-			expect(Array.isArray(policyGate.expectedArtifacts)).toBe(true);
-			expect(typeof policyGate.retryability).toBe("string");
-			expect(Array.isArray(policyGate.safeFirstAlternatives)).toBe(true);
-			expect(policyGate).toMatchObject({
-				tier: "plumbing",
-				primaryAudience: "both",
-				orchestratedBy: [],
-				agentMode: "verify",
-				visibility: "plumbing",
-			});
+			expect(
+				parsed.commands.map((item: { name: string }) => item.name),
+			).toEqual([
+				"commands",
+				"pr-closeout",
+				"check",
+				"next",
+				"doctor",
+				"verify-work",
+				"contract",
+				"init",
+				"upgrade",
+				"ci-migrate",
+			]);
+			expect(
+				parsed.commands.every((item: { visibility: string }) =>
+					["default", "agent", "advanced"].includes(item.visibility),
+				),
+			).toBe(true);
 		} finally {
 			stdoutSpy.mockRestore();
 		}
@@ -887,19 +854,19 @@ describe("getRegistryCommandCapabilities", () => {
 		});
 		expect(capabilitiesByName.get("validation-plan")).toMatchObject({
 			agentMode: "verify",
-			visibility: "advanced",
+			visibility: "plumbing",
 		});
 		expect(capabilitiesByName.get("session-context")).toMatchObject({
 			agentMode: "orient",
-			visibility: "advanced",
+			visibility: "plumbing",
 		});
 		expect(capabilitiesByName.get("decision-request")).toMatchObject({
 			agentMode: "handoff",
-			visibility: "advanced",
+			visibility: "plumbing",
 		});
 		expect(capabilitiesByName.get("review-context")).toMatchObject({
 			agentMode: "review",
-			visibility: "advanced",
+			visibility: "plumbing",
 		});
 		expect(capabilitiesByName.get("review-gate")).toMatchObject({
 			agentMode: "review",
@@ -1401,7 +1368,10 @@ describe("'commands' command execution", () => {
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 		try {
 			dispatchRegistryCommand("commands", ["commands"]);
-			const capabilities = getRegistryCommandCapabilities();
+			const capabilities = getRegistryCommandCapabilities().filter(
+				(capability) =>
+					["default", "agent", "advanced"].includes(capability.visibility),
+			);
 			// header + N capability rows + empty line + hint = N + 3
 			expect(infoSpy.mock.calls.length).toBe(capabilities.length + 3);
 		} finally {

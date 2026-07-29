@@ -678,10 +678,7 @@ describe("synaipse packet consolidation", () => {
 			"harness reviewer-decision --json",
 			"harness agent-rework --json",
 		]);
-		expect(measurement.commandVisibility.afterDefault).toEqual([
-			"harness agent-native-ratchets --json",
-			"harness session-distill --json",
-		]);
+		expect(measurement.commandVisibility.afterDefault).toEqual([]);
 		expect(measurement.commandVisibility.compatibilityRetained).toHaveLength(5);
 		expect(measurement.commandVisibility.compatibilityMissing).toEqual([]);
 		expect(measurement.packetVisibility).toMatchObject({
@@ -692,7 +689,7 @@ describe("synaipse packet consolidation", () => {
 				"reviewer-decision/v1",
 				"agent-rework/v1",
 			],
-			afterDefault: ["agent-native-ratchets/v1", "session-distill/v1"],
+			afterDefault: [],
 		});
 		expect(measurement.migratedConsumerCoverage).toEqual({
 			expected: 5,
@@ -704,8 +701,8 @@ describe("synaipse packet consolidation", () => {
 		expect(measurement.packetCatalogContextBytes.deltaBytes).toBeLessThan(0);
 		expect(measurement.packetCommandChoice).toEqual({
 			before: 5,
-			after: 2,
-			delta: -3,
+			after: 0,
+			delta: -5,
 		});
 	});
 

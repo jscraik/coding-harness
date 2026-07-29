@@ -33,6 +33,8 @@ proof, and hand work back truthfully. Keep the routine path small.
 3. Use `harness next --json` for cold-agent routing. Optional maintenance is a
    warning, never the primary action. Use documented wrappers through `zsh -lc`
    with Node `>=26.3.0` and pnpm `10.33.0`.
+4. Use the compact default `harness commands --json` catalogue for supported
+   work; query `--all` or `--plumbing` only for a named compatibility consumer.
 
 ## Delivery rules
 

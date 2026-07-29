@@ -35,8 +35,10 @@ Use the job that matches the immediate need.
 | Verify | `harness verify-work --fast` | Repository-native focused proof. |
 | Close out | `harness pr-closeout --pr <number> --json` | Separate PR, CI, review, finding, and merge truth. |
 
-`harness commands --json` is the explicit expert catalogue. `harness doctor`
-is an expert diagnostic only when `check` names a setup problem.
+`harness commands --json` lists the routine and supported expert commands.
+Use `harness commands --json --all` only when maintaining an existing internal
+integration. `harness doctor` is an expert diagnostic only when `check` names a
+setup problem.
 
 ## Install
 

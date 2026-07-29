@@ -21,7 +21,10 @@ last_validated: 2026-05-18
 
 ## Purpose
 
-This file contains the extended command catalog for Coding Harness.
+This file is the internal compatibility reference for retained command
+implementations. It is not the routine product surface: start with the five
+jobs in [`README.md`](../README.md), and use the full catalog only for a named
+existing integration.
 
 For repo-facing onboarding and common workflows, start at [`README.md`](../README.md).
 
@@ -113,7 +116,8 @@ First-slice routing is intentionally small:
 
 ## Machine-readable command catalog
 
-For agent planning and command safety routing, prefer the machine-readable capability catalog:
+For routine and supported expert command discovery, prefer the compact
+machine-readable capability catalog:
 
 ```bash
 harness commands --json
@@ -127,6 +131,9 @@ harness commands --json --for-agent
 
 Use `--mode orient`, `--mode verify`, `--mode review`, or `--mode handoff` to
 request a compact phase-specific rail.
+
+Use `harness commands --json --all` only for a named existing integration that
+still invokes internal plumbing. It is not a routine agent or operator entrypoint.
 
 ## Gate JSON Envelope
 

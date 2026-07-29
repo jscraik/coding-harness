@@ -240,18 +240,10 @@ function getCommandAgentMode(
 	return "orient";
 }
 /** Resolves the default discovery layer for a command capability. */
-function getCommandVisibility(
-	name: string,
-	tier: CommandTier,
-	primaryAudience: CommandPrimaryAudience,
-): CommandVisibility {
+function getCommandVisibility(name: string): CommandVisibility {
 	const explicit = COMMAND_VISIBILITY_BY_NAME[name];
 	if (explicit) return explicit;
-	if (tier === "cockpit") return "default";
-	if (tier === "legacy") return "legacy";
-	if (tier === "plumbing") return "plumbing";
-	if (primaryAudience === "agent") return "agent";
-	return "advanced";
+	return "plumbing";
 }
 /** Translates a spec into catalog metadata and derives mutability from effects. */
 export function toCommandCapability(spec: CommandSpec): CommandCapability {
@@ -297,7 +289,7 @@ export function toCommandCapability(spec: CommandSpec): CommandCapability {
 			mutability,
 			orchestratedBy,
 		),
-		visibility: getCommandVisibility(spec.name, tier, primaryAudience),
+		visibility: getCommandVisibility(spec.name),
 		execution: getCommandExecutionCapability(invocationEffects, mutability),
 	};
 }
@@ -348,6 +340,7 @@ export function getCommandCapabilityCatalogDocument(
 ): CommandCapabilityCatalogDocument {
 	return buildCommandCapabilityCatalogDocument(getCommandCapabilities(specs));
 }
+
 /** Build the agent-facing capability catalog document from command specs. */
 export function getAgentCommandCapabilityCatalogDocument(
 	specs: CommandSpec[],

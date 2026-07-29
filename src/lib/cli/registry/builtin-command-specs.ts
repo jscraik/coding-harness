@@ -98,20 +98,43 @@ function runCommandsCatalog(
 	return 0;
 }
 
+/**
+ * Selects the public, agent-specific, or explicit full catalog for CLI flags.
+ * @param forAgentFlag - Whether the caller requested an agent rail.
+ * @param fullCatalogFlag - Whether the caller explicitly requested plumbing.
+ * @param agentMode - Optional bounded agent lifecycle mode.
+ * @param specs - Every registered command specification.
+ * @returns The catalog document appropriate for the requested discovery scope.
+ */
 function commandCatalogForFlags(
 	forAgentFlag: boolean,
 	fullCatalogFlag: boolean,
 	agentMode: CommandAgentCatalogMode | undefined | "invalid",
 	specs: CommandSpec[],
 ): CommandCapabilityCatalogDocument {
-	return forAgentFlag && !fullCatalogFlag
-		? getAgentCommandCapabilityCatalogDocument(
-				specs,
-				agentMode !== "invalid" ? agentMode : undefined,
-			)
-		: getCommandCapabilityCatalogDocument(specs);
+	if (forAgentFlag && !fullCatalogFlag) {
+		return getAgentCommandCapabilityCatalogDocument(
+			specs,
+			agentMode !== "invalid" ? agentMode : undefined,
+		);
+	}
+	const catalog = getCommandCapabilityCatalogDocument(specs);
+	if (fullCatalogFlag) return catalog;
+	const commands = catalog.commands.filter((command) =>
+		["default", "agent", "advanced"].includes(command.visibility),
+	);
+	return {
+		...catalog,
+		commandCount: commands.length,
+		commands,
+	};
 }
 
+/**
+ * Prints a human-readable command catalog and the next narrower discovery path.
+ * @param catalog - The already filtered command capability catalog.
+ * @param forAgent - Whether the displayed catalog is an agent rail.
+ */
 function printCommandCatalog(
 	catalog: CommandCapabilityCatalogDocument,
 	forAgent: boolean,
@@ -127,7 +150,7 @@ function printCommandCatalog(
 	console.info(
 		forAgent
 			? 'Run "harness commands --json --all" for the full capability catalog.'
-			: 'Run "harness commands --json --for-agent" for the public agent rail set.',
+			: 'Run "harness commands --json --all" for internal plumbing, or "harness commands --json --for-agent" for the public agent rail set.',
 	);
 }
 
