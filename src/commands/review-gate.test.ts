@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { type PartialDeep, fromPartial } from "@total-typescript/shoehorn";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { writeNorthStarOverrideAcknowledgement } from "../lib/contract/north-star-artifact-io.js";
+import { renderHarnessContractTemplate } from "../lib/init/scaffold-contract-template.js";
+import type { TemplateRenderContext } from "../lib/init/types.js";
 import {
 	DEFAULT_NORTH_STAR_CONTRACT,
 	NORTH_STAR_DECISION_QUESTION_SPECS,
@@ -199,6 +201,51 @@ describe("runReviewGate", () => {
 		if (!result.ok) {
 			expect(result.error.code).toBe("VALIDATION_ERROR");
 			expect(result.error.message).toContain("Invalid SHA format");
+		}
+	});
+
+	it("does not poll or emit a review decision for an exact compact minimal contract", async () => {
+		const repoRoot = mkdtempSync(
+			join(tmpdir(), "review-gate-compact-minimal-"),
+		);
+		const contractPath = join(repoRoot, "harness.contract.json");
+		const context: TemplateRenderContext = {
+			targetDir: repoRoot,
+			ciProvider: "circleci",
+			packageScripts: [],
+			projectName: "minimal-fixture",
+			minimal: true,
+		};
+		writeFileSync(
+			contractPath,
+			renderHarnessContractTemplate({
+				agentBranchPrefix: "codex",
+				context,
+				packageManager: "pnpm",
+				requiredChecks: [],
+			}),
+			"utf-8",
+		);
+
+		try {
+			const result = await runReviewGate({
+				...defaultOptions,
+				contractPath,
+			});
+
+			expect(result).toMatchObject({
+				ok: true,
+				output: {
+					verified: true,
+					notApplicable: "compact-minimal-contract",
+					checkStatus: "completed",
+					blockers: [],
+				},
+			});
+			expect(mockLoadContract).not.toHaveBeenCalled();
+			expect(mockGitHubClient).not.toHaveBeenCalled();
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
 		}
 	});
 

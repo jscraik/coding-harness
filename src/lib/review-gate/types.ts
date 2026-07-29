@@ -49,6 +49,8 @@ export interface ReviewGateOptions {
 /** Machine-readable review-gate result payload emitted for readiness automation. */
 export interface ReviewGateOutput {
 	verified: boolean;
+	/** Present when the compact minimal contract declares no review surface. */
+	notApplicable?: "compact-minimal-contract" | undefined;
 	headSha: string;
 	checkStatus: "completed" | "in_progress" | "queued" | "pending" | "not_found";
 	effectiveCheckName?: string;

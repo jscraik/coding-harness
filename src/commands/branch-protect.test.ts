@@ -775,13 +775,13 @@ describe("runBranchProtect", () => {
 				output: {
 					requiredChecks: [],
 					managedPolicy: {
-						restrictDeletions: false,
-						blockForcePushes: false,
-						requireLinearHistory: false,
-						requirePullRequest: false,
-						requireConversationResolution: false,
-						codeQuality: { required: false },
-						publicCodeScanning: { required: false },
+						restrictDeletions: true,
+						blockForcePushes: true,
+						requireLinearHistory: true,
+						requirePullRequest: true,
+						requireConversationResolution: true,
+						codeQuality: { required: true },
+						publicCodeScanning: { required: true },
 					},
 				},
 			});
@@ -792,16 +792,9 @@ describe("runBranchProtect", () => {
 			).toBe(false);
 			expect(
 				createRuleset.mock.calls[0]?.[0].rules.some((rule) =>
-					[
-						"deletion",
-						"non_fast_forward",
-						"required_linear_history",
-						"pull_request",
-						"code_quality",
-						"code_scanning",
-					].includes(rule.type),
+					["deletion", "non_fast_forward", "pull_request"].includes(rule.type),
 				),
-			).toBe(false);
+			).toBe(true);
 		} finally {
 			rmSync(tempRoot, { recursive: true, force: true });
 		}

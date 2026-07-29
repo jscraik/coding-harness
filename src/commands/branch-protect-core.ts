@@ -36,29 +36,6 @@ const DEFAULT_MERGE_METHODS: BranchProtectionMergeMethods = {
 	squash: true,
 	rebase: true,
 };
-const COMPACT_MINIMAL_BRANCH_PROTECTION_POLICY: BranchProtectionPolicy = {
-	requiredChecks: [],
-	requiredApprovingReviewCount: 0,
-	restrictDeletions: false,
-	blockForcePushes: false,
-	requireLinearHistory: false,
-	requirePullRequest: false,
-	dismissStaleReviewsOnPush: false,
-	requireConversationResolution: false,
-	requireCodeOwnerReview: false,
-	requireLastPushApproval: false,
-	requireBranchesUpToDate: false,
-	allowedMergeMethods: DEFAULT_MERGE_METHODS,
-	codeQuality: { required: false, severity: "all" },
-	publicCodeScanning: {
-		required: false,
-		publicOnly: true,
-		tool: "CodeQL",
-		alertsThreshold: "errors",
-		securityAlertsThreshold: "high_or_higher",
-	},
-};
-
 export const EXIT_CODES = {
 	SUCCESS: 0,
 	VALIDATION_ERROR: 1,
@@ -228,22 +205,18 @@ function resolveContractBranchProtectionPolicy(
 ): ContractBranchProtectionResolution {
 	try {
 		const contract = loadContract(contractPath);
-		const compactMinimal = isCompactMinimalContractFile(contractPath);
-		if (compactMinimal) {
+		const compactMinimalPolicy =
+			loadCompactMinimalBranchProtectionPolicy(contractPath);
+		if (compactMinimalPolicy) {
 			return {
-				branchProtectionPolicy: {
-					...COMPACT_MINIMAL_BRANCH_PROTECTION_POLICY,
-				},
+				branchProtectionPolicy: compactMinimalPolicy,
 			};
 		}
 		const ciProviderPolicy = contract.ciProviderPolicy;
 		const activeProvider = ciProviderPolicy?.activeProvider;
 		const requiredCheckManifestPath =
 			ciProviderPolicy?.requiredCheckManifestPath;
-		const legacyRequiredChecks = resolveContractRequiredChecks(
-			contract,
-			compactMinimal,
-		);
+		const legacyRequiredChecks = resolveContractRequiredChecks(contract);
 		return {
 			branchProtectionPolicy: {
 				...DEFAULT_BRANCH_PROTECTION_POLICY,
@@ -288,27 +261,30 @@ function resolveContractBranchProtectionPolicy(
 	}
 }
 
-/** Resolve minimal empty checks without weakening migrated full contracts. */
+/** Resolve legacy checks without treating migrated empty arrays as an opt-out. */
 function resolveContractRequiredChecks(
 	contract: ReturnType<typeof loadContract>,
-	compactMinimal: boolean,
 ): string[] | undefined {
 	const configuredChecks = contract.branchProtection?.requiredChecks;
-	if (compactMinimal && configuredChecks?.length === 0) return [];
 	if (configuredChecks && configuredChecks.length > 0) return configuredChecks;
 	return contract.reviewPolicy?.requiredChecks;
 }
 
-/** Read the raw source contract to distinguish minimal opt-out from migrations. */
-function isCompactMinimalContractFile(contractPath: string): boolean {
+/** Read the exact compact policy without allowing loader defaults to replace it. */
+function loadCompactMinimalBranchProtectionPolicy(
+	contractPath: string,
+): BranchProtectionPolicy | undefined {
 	try {
 		const rawContract = JSON.parse(
 			readFileSync(contractPath, "utf-8"),
 		) as Record<string, unknown>;
 		const validation = validateContract(rawContract);
-		return validation.success && isCompactMinimalRawContract(rawContract);
+		if (!validation.success || !isCompactMinimalRawContract(rawContract)) {
+			return undefined;
+		}
+		return validation.data?.branchProtection;
 	} catch {
-		return false;
+		return undefined;
 	}
 }
 
