@@ -34,7 +34,6 @@ describe("semgrep bootstrap", () => {
 				encoding: "utf8",
 				env: {
 					...process.env,
-					SEMGREP_BOOTSTRAP_PYTHON: "/usr/bin/python3",
 					SEMGREP_BOOTSTRAP_SCRIPT: resolve(
 						import.meta.dirname,
 						"../../scripts/semgrep-bootstrap.sh",
@@ -63,7 +62,6 @@ describe("semgrep bootstrap", () => {
 				encoding: "utf8",
 				env: {
 					...process.env,
-					SEMGREP_BOOTSTRAP_PYTHON: "/usr/bin/python3",
 					SEMGREP_BOOTSTRAP_SCRIPT: resolve(
 						import.meta.dirname,
 						"../../scripts/semgrep-bootstrap.sh",
