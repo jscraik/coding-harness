@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, symlinkSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -87,6 +87,44 @@ function pathWithoutLocalMemory(): string {
 }
 
 describe("codex-preflight Local Memory legacy routing", () => {
+	it("keeps setup checks diagnostic-only and free of daemon-start side effects", () => {
+		const setupChecks = readFileSync(
+			join(repoRoot, "scripts/run-harness-setup-checks.sh"),
+			"utf-8",
+		);
+
+		expectBehavior({
+			given: "the routine harness setup checker",
+			should:
+				"run optional Local Memory diagnostics without starting a user daemon",
+			actual: {
+				usesOptionalMode: setupChecks.includes("--mode optional"),
+				startsLocalMemoryDaemon: setupChecks.includes("local-memory start"),
+			},
+			expected: {
+				usesOptionalMode: true,
+				startsLocalMemoryDaemon: false,
+			},
+		});
+	});
+
+	it("keeps unavailable Local Memory as a warning in the default routine lane", () => {
+		const result = runPreflight(["--stack", "auto"], "unavailable");
+
+		expectBehavior({
+			given: "the default routine preflight with unavailable Local Memory",
+			should:
+				"continue with a named optional diagnostic instead of blocking admission",
+			actual: {
+				status: result.status,
+				outputIncludesOptionalWarning: combinedOutput(result).includes(
+					"local-memory preflight failed (optional mode)",
+				),
+			},
+			expected: { status: 0, outputIncludesOptionalWarning: true },
+		});
+	});
+
 	it("fails closed for flag-style required mode when Local Memory is unavailable", () => {
 		const result = runPreflight(
 			["--stack", "auto", "--mode", "required"],
@@ -219,25 +257,26 @@ describe("codex-preflight Local Memory legacy routing", () => {
 		});
 	});
 
-	it("fails closed for legacy positional mode by default", () => {
+	it("keeps legacy positional mode non-blocking by default", () => {
 		const result = runPreflight(
 			[repoRootName, "git,bash", "CODESTYLE.md"],
 			"unavailable",
 		);
 
 		expectBehavior({
-			given: "legacy positional preflight without an explicit optional mode",
+			given:
+				"legacy positional preflight without an explicit Local Memory mode",
 			should:
-				"run required Local Memory preflight instead of silently disabling it",
+				"continue with an optional diagnostic while preserving the strict explicit mode",
 			actual: {
 				status: result.status,
-				outputIncludesRequiredFailure: combinedOutput(result).includes(
-					"local-memory preflight failed (required mode)",
+				outputIncludesOptionalWarning: combinedOutput(result).includes(
+					"local-memory preflight failed (optional mode)",
 				),
 			},
 			expected: {
-				status: 2,
-				outputIncludesRequiredFailure: true,
+				status: 0,
+				outputIncludesOptionalWarning: true,
 			},
 		});
 	});
@@ -264,7 +303,7 @@ describe("codex-preflight Local Memory legacy routing", () => {
 		});
 	});
 
-	it("fails closed when a real Local Memory helper reports a missing binary", () => {
+	it("keeps a missing Local Memory helper diagnostic-only in the routine legacy lane", () => {
 		const result = spawnSync(
 			"bash",
 			["scripts/codex-preflight.sh", repoRootName, "git,bash", "CODESTYLE.md"],
@@ -285,22 +324,22 @@ describe("codex-preflight Local Memory legacy routing", () => {
 		);
 		expectBehavior({
 			given:
-				"legacy positional required preflight with the helper available but local-memory missing from PATH",
+				"legacy positional routine preflight with the helper available but local-memory missing from PATH",
 			should:
-				"propagate the helper failure instead of normalizing the failed command to success",
+				"preserve the helper diagnostic without blocking routine admission",
 			actual: {
 				status: result.status,
 				outputIncludesMissingBinary: combinedOutput(result).includes(
 					"missing binary: local-memory",
 				),
-				outputIncludesRequiredFailure: combinedOutput(result).includes(
-					"local-memory preflight failed (required mode)",
+				outputIncludesOptionalWarning: combinedOutput(result).includes(
+					"local-memory preflight failed (optional mode)",
 				),
 			},
 			expected: {
-				status: 2,
+				status: 0,
 				outputIncludesMissingBinary: true,
-				outputIncludesRequiredFailure: true,
+				outputIncludesOptionalWarning: true,
 			},
 		});
 	});

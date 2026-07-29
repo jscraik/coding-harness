@@ -295,7 +295,7 @@ Before restoring `last_validated` or re-enabling enforcement, prove the affected
 
 ## Code-style parity gate
 
-`bash scripts/check-codestyle-parity.sh` is a required bootstrap verification surface under the same gate family as `bash scripts/codex-preflight.sh --stack auto --mode required` and `bash scripts/verify-work.sh`.
+`bash scripts/check-codestyle-parity.sh` is a required bootstrap verification surface under the same gate family as `bash scripts/codex-preflight.sh --stack auto --mode optional` and `bash scripts/verify-work.sh`.
 
 It verifies:
 
@@ -403,7 +403,7 @@ For fresh git worktrees before first push, run:
 3. `bash scripts/new-task.sh --bootstrap <issue-key>-<slug>` is the optional one-command lane that creates then bootstraps the worktree immediately.
 4. `./scripts/codex-enforced --worktree-slug <issue-key>-<slug> "<prompt>"` auto-creates and bootstraps a dedicated worktree when launched from `main`, then re-runs Codex inside that worktree.
 
-The helper codifies the required sequence: `bash scripts/codex-preflight.sh --stack auto --mode required`, `pnpm build`, `harness init --check-updates` (and `--update` when needed), `bash scripts/check-environment.sh` (which resolves and validates pinned `uv`), and `pnpm check`.
+The helper codifies the required sequence: `bash scripts/codex-preflight.sh --stack auto --mode optional`, `pnpm build`, `harness init --check-updates` (and `--update` when needed), `bash scripts/check-environment.sh` (which resolves and validates pinned `uv`), and `pnpm check`.
 `scripts/prepare-worktree.sh` is the lightweight bootstrap lane for new worktrees; it trusts the active worktree's repo-local `.mise.toml` when both the file and `mise` CLI are available (via `mise trust --yes .mise.toml`), then ensures dependencies are installed in the active worktree so pre-push hooks that execute `pnpm` gates do not fail from missing `node_modules/`.
 The `mise trust` step runs automatically when:
 
@@ -418,12 +418,12 @@ The `mise trust` step runs automatically when:
   Generated `.codex/environments/environment.toml` setup, `Tools` actions, and tool bootstrap actions should run `scripts/prepare-worktree.sh` when available so Codex app bootstrap follows the same branch-attach, dependency, and hook-sync contract as manual worktree setup. This preserves the Codex app pattern of disposable detached worktrees while adding a deterministic local branch only when the repo needs branch-aware validation, commits, or pushes.
   `harness init --check-updates`, `harness init --update`, and `harness upgrade` now auto-repair legacy `.harness/restore-manifest.json` files when `ciProvider` can be inferred from `harness.contract.json`, an unambiguous CI layout on disk, or the current requested/default provider.
   If provider inference is still ambiguous, treat the incomplete manifest as a repo-drift warning for the update lane, print the remediation, and continue the remaining setup gates instead of aborting the whole audit.
-  `scripts/codex-preflight.sh` is a CLI script and should be executed, not sourced. Use `bash scripts/codex-preflight.sh --stack auto --mode required` for standard checks (or `--mode optional` for softer checks). Legacy positional invocations are compatibility-only and must not silently disable Local Memory: `bash scripts/codex-preflight.sh <repo-fragment> [bins-csv] [paths-csv]` defaults to required Local Memory mode, while `off` or `optional` must be supplied explicitly as the fourth positional argument. The stack/mode shorthand `bash scripts/codex-preflight.sh auto required` is supported for older agents and has the same required-mode semantics as the flag form.
+  `scripts/codex-preflight.sh` is a CLI script and should be executed, not sourced. Use `bash scripts/codex-preflight.sh --stack auto --mode optional` for standard checks; `--mode required` is an explicit Local Memory diagnostic or acceptance lane. Legacy positional invocations are compatibility-only and default to optional Local Memory diagnostics. The stack/mode shorthand `bash scripts/codex-preflight.sh auto required` remains supported for older agents and retains required-mode semantics.
   Scaffolded CI bootstrap should install pinned `pnpm` versions through a user-writable prefix (`$HOME/.local`) and persist that bin path through `$BASH_ENV` or `$GITHUB_PATH`; do not rely on `corepack enable` mutating privileged system shims such as `/usr/local/bin/pnpm`.
   When Local Memory is enabled in required mode, `scripts/codex-preflight.sh` should validate the pinned REST host/port from `~/.local-memory/config.yaml` before trusting `local-memory status --json`, so healthy daemons on `127.0.0.1` do not trigger duplicate restart behavior from stale CLI status output.
   The legacy shell fallback at `scripts/codex-preflight-local-memory-legacy.sh` must validate `rest_api.host`, `rest_api.port`, and `rest_api.auto_port` from that same config block directly, not by matching unrelated keys elsewhere in the file.
   Local Memory REST health retries in the legacy shell fallback should use a bounded curl budget, and `run_local_memory_preflight_via_harness` should continue to the next harness candidate when a helper exits with sentinel code `3` (`unavailable`) instead of failing closed early.
-  `scripts/verify-work.sh` is the canonical repo-local verification entrypoint for harness-managed repos. Keep it repo-local, default it to `required` Local Memory mode, and scope its preflight path/binary expectations to scaffolded repo artifacts rather than codex-maintenance-only paths.
+  `scripts/verify-work.sh` is the canonical repo-local verification entrypoint for harness-managed repos. Keep it repo-local, default it to optional Local Memory diagnostics, and scope its preflight path/binary expectations to scaffolded repo artifacts rather than codex-maintenance-only paths.
   Hook-governance checks in `scripts/verify-work.sh` should default to `project-local` scope, use temporary outputs in local mode, and require an explicit `--workspace-governance` flag before reading workspace manifests or writing shared governance reports.
 
 Environment variables controlling external normalization behavior:

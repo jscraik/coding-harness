@@ -13,18 +13,9 @@ warn_legacy_manifest() {
 echo "== Harness setup checks =="
 echo "repo: $ROOT"
 
-if command -v local-memory >/dev/null 2>&1; then
-  lm_status="$(local-memory status --json 2>/dev/null || true)"
-  lm_running="$(printf '%s\n' "$lm_status" | jq -r '.data.running // .running // false' 2>/dev/null || echo false)"
-  if [[ "$lm_running" != "true" ]]; then
-    echo "starting local-memory daemon for required preflight..."
-    local-memory start >/dev/null
-  fi
-fi
-
 echo
 echo "== preflight =="
-bash scripts/codex-preflight.sh --stack auto --mode required
+bash scripts/codex-preflight.sh --stack auto --mode optional
 
 echo
 echo "== build cli =="

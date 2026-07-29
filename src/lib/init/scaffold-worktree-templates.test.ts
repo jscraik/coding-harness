@@ -108,7 +108,7 @@ describe("scaffold worktree templates", () => {
 		expect(script).toContain("make worktree-ready");
 		expect(script).toContain("bash scripts/prepare-worktree.sh");
 		expect(script).toContain(
-			'echo "  bash scripts/codex-preflight.sh --stack auto --mode required"',
+			'echo "  bash scripts/codex-preflight.sh --stack auto --mode optional"',
 		);
 	});
 });

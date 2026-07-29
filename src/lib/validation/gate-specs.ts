@@ -199,7 +199,7 @@ export const VALIDATION_GATE_SPECS = deepFreeze([
 		executionClass: "serial_guarded",
 		failureClassDefault: "contract_policy",
 		commandSurface:
-			'bash scripts/codex-preflight.sh --stack "$stack" --mode required --bins "$bins_csv" --paths "$paths_csv"',
+			'bash scripts/codex-preflight.sh --stack "$stack" --mode optional --bins "$bins_csv" --paths "$paths_csv"',
 		resumeCheckpoint: true,
 		retryPolicy: "none",
 		artifactContract: VALIDATION_ARTIFACT_CONTRACT,
