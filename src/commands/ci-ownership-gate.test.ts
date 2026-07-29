@@ -76,6 +76,39 @@ describe("ci-ownership-gate command", () => {
 		).toContain("ci-ownership.compact-minimal.not-applicable");
 	});
 
+	it("rejects an out-of-tree compact contract path before applying the exemption", () => {
+		const repoRoot = writeContract({});
+		const outsideDir = mkdtempSync(join(tmpdir(), "ci-ownership-outside-"));
+		cleanup.push(outsideDir);
+		writeFileSync(
+			join(outsideDir, "harness.contract.json"),
+			renderHarnessContractTemplate({
+				agentBranchPrefix: "codex",
+				context: {
+					targetDir: outsideDir,
+					packageScripts: [],
+					projectName: "outside-compact-minimal",
+					minimal: true,
+				},
+				packageManager: "pnpm",
+				requiredChecks: [],
+			}),
+		);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		const exitCode = runCIOwnershipGateCLI({
+			repoRoot,
+			contractPath: join(outsideDir, "harness.contract.json"),
+			json: true,
+		});
+
+		expect(exitCode).toBe(1);
+		const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));
+		expect(
+			payload.findings.map((finding: { id: string }) => finding.id),
+		).toContain("ci-ownership.contract.path-invalid");
+	});
+
 	it("fails when GitHub Actions is configured as the primary PR gate", () => {
 		const repoRoot = writeContract({
 			ciProviderPolicy: { activeProvider: "github-actions" },

@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { relative, resolve } from "node:path";
 import { CIRCLECI_PRIMARY_CHECK } from "./branch-protect-sync.js";
 import { isCompactMinimalRawContract } from "../contract/compact-minimal.js";
+import { PathTraversalError, validatePath } from "../input/validator.js";
 import { validateContract } from "../contract/validator.js";
 import { normalizeCIOwnership } from "./ownership-gate-normalization.js";
 import { validateCIOwnershipContract } from "./ownership-gate-validation.js";
@@ -71,8 +72,13 @@ export function runCIOwnershipGate(
 	const repoRoot = options.repoRoot ?? process.cwd();
 	const contractPath = options.contractPath ?? DEFAULT_CONTRACT_PATH;
 	const expectedPrimaryProvider = options.expectedPrimaryProvider ?? "circleci";
-	const resolvedContractPath = resolve(repoRoot, contractPath);
 	const findings: CIOwnershipGateFinding[] = [];
+	const resolvedContractPath = resolveContractPath({
+		repoRoot,
+		contractPath,
+		findings,
+	});
+	if (!resolvedContractPath) return buildResult(contractPath, findings);
 	const contract = readHarnessContract({
 		resolvedContractPath,
 		contractPath,
@@ -122,6 +128,30 @@ export function runCIOwnershipGate(
 	});
 
 	return buildResult(contractPath, findings);
+}
+
+/** Resolve the contract only after proving an operator-supplied path stays in the repository. */
+function resolveContractPath(input: {
+	repoRoot: string;
+	contractPath: string;
+	findings: CIOwnershipGateFinding[];
+}): string | null {
+	try {
+		const candidate = resolve(input.repoRoot, input.contractPath);
+		return validatePath(input.repoRoot, relative(input.repoRoot, candidate));
+	} catch (error) {
+		if (!(error instanceof PathTraversalError)) {
+			throw error;
+		}
+		input.findings.push({
+			id: "ci-ownership.contract.path-invalid",
+			severity: "error",
+			message: "CI ownership contract path must remain within the repository.",
+			path: input.contractPath,
+			fix: "Use a contract path inside the repository root.",
+		});
+		return null;
+	}
 }
 
 /** Read and parse the harness contract, appending a finding when it is missing or invalid. */

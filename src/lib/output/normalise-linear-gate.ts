@@ -96,6 +96,30 @@ export function classifyLinearGateFailure(
 const LINEAR_GATE_ID = "linear-gate";
 const LINEAR_GATE_INTERNAL_FINDING_ID = "linear-gate.result.internal";
 
+/** Preserve a compact-contract exemption without presenting it as tracker evidence. */
+function normaliseNotApplicableLinearGateResult(
+	output: Extract<LinearGateResult, { ok: true }>["output"],
+): GateResult {
+	return buildGateResult({
+		gate: LINEAR_GATE_ID,
+		status: "skipped",
+		findings: [],
+		meta: {
+			notApplicable: output.notApplicable,
+			repoRoot: output.repoRoot,
+		},
+		decision: {
+			reason:
+				"Linear gate is not applicable for this compact minimal contract; no tracker evidence was evaluated.",
+			actionLater: [
+				"Add an issue-tracking policy before treating this lane as Linear evidence.",
+			],
+			evidenceRef: [`linear:not-applicable:${output.notApplicable}`],
+		},
+	});
+}
+
+/** Build the optional manual remediation attached to a normalized failure finding. */
 function failureManualFix(
 	failure: LinearGateFailureClassification | null,
 ): GateFinding["fix"] {
@@ -212,6 +236,9 @@ export function normaliseLinearGateResult(
 
 	if (!result.ok) {
 		return normaliseLinearGateInternalError(result, timestamp, failure);
+	}
+	if (result.output.notApplicable) {
+		return normaliseNotApplicableLinearGateResult(result.output);
 	}
 
 	const failingChecks = result.output.checks.filter((c) => !c.passed);

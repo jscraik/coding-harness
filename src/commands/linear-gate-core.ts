@@ -49,6 +49,8 @@ export interface LinearGateCheck {
 /** Public API export. */
 export interface LinearGateOutput {
 	passed: boolean;
+	/** Reason this gate intentionally evaluated no Linear evidence. */
+	notApplicable?: "compact-minimal-contract" | undefined;
 	policyApplied?: IssueTrackingPolicy | undefined;
 	repoRoot: string;
 	branch?: string | undefined;
@@ -199,6 +201,7 @@ function compactMinimalResult(repoRoot: string): LinearGateResult {
 		ok: true,
 		output: {
 			passed: true,
+			notApplicable: "compact-minimal-contract",
 			repoRoot,
 			checks: [
 				{

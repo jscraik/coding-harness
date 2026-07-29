@@ -473,6 +473,28 @@ contact_links:
 		});
 	});
 
+	it("marks compact minimal contracts as skipped instead of Linear evidence", () => {
+		writeCompactMinimalContract(tempDir);
+
+		const gateResult = runLinearGate({ repoRoot: tempDir });
+		const normalised = normaliseLinearGateResult(gateResult);
+
+		expect(gateResult).toMatchObject({
+			ok: true,
+			output: {
+				passed: true,
+				notApplicable: "compact-minimal-contract",
+			},
+		});
+		expect(normalised.status).toBe("skipped");
+		expect(normalised.meta).toMatchObject({
+			notApplicable: "compact-minimal-contract",
+		});
+		expect(normalised.evidence_ref).toContain(
+			"linear:not-applicable:compact-minimal-contract",
+		);
+	});
+
 	it("classifies unrecognized internal errors as internal_unknown", () => {
 		const normalised = normaliseLinearGateResult({
 			ok: false,
