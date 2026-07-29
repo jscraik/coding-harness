@@ -190,7 +190,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   projection synchronized across its schema, runtime-packet manifest,
   validators, focused tests, generated architecture context, `AGENTS.md`, and
   `docs/agents/00-architecture-bootstrap.md`; `next` owns routine orientation
-  and is the sole command entrypoint. This state projection is
+  and is the sole routine cold-agent entrypoint. This state projection is
   orientation evidence only and must not become CI, review-thread, tracker,
   external-readiness, delivery-truth, or merge-readiness proof.
 - SynAIpse context-plane changes should keep `synaipse-context-catalog/v1`,
