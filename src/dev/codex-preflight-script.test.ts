@@ -1,9 +1,18 @@
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, symlinkSync } from "node:fs";
+import {
+	chmodSync,
+	existsSync,
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { expectBehavior } from "../lib/testing/expect-behavior.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -15,6 +24,7 @@ function runPreflight(
 	options: {
 		ci?: boolean;
 		enableTestOverrides?: boolean;
+		env?: NodeJS.ProcessEnv;
 		skipHarnessRunners?: boolean;
 	} = {},
 ) {
@@ -35,6 +45,7 @@ function runPreflight(
 		encoding: "utf-8",
 		env: {
 			...env,
+			...options.env,
 			CI: options.ci ? "true" : "",
 			CODEX_PREFLIGHT_ENABLE_TEST_OVERRIDES:
 				options.enableTestOverrides === false ? "" : "1",
@@ -45,6 +56,64 @@ function runPreflight(
 				: "",
 		},
 	});
+}
+
+function writeExecutable(path: string, source: string): void {
+	writeFileSync(path, source, "utf-8");
+	chmodSync(path, 0o755);
+}
+
+function createSetupChecksFixture(): {
+	binDir: string;
+	homeDir: string;
+	helperInvocationPath: string;
+	localMemoryInvocationPath: string;
+	cleanup: () => void;
+} {
+	const root = mkdtempSync(join(tmpdir(), "codex-preflight-setup-checks-"));
+	const binDir = join(root, "bin");
+	const homeDir = join(root, "home");
+	const helperInvocationPath = join(root, "helper-invocation.txt");
+	const localMemoryInvocationPath = join(root, "local-memory-invocation.txt");
+	mkdirSync(binDir, { recursive: true });
+
+	writeExecutable(
+		join(binDir, "pnpm"),
+		`#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$1" == "exec" && "$2" == "tsx" ]]; then
+  printf '%s\\n' "$*" > "${helperInvocationPath}"
+  printf '%s\\n' 'fixture source-helper failure' >&2
+  exit 1
+fi
+exit 0
+`,
+	);
+	writeExecutable(
+		join(binDir, "node"),
+		`#!/usr/bin/env bash
+set -euo pipefail
+case "$*" in
+  *"init --check-updates --json"*) printf '%s\\n' '{"updateCheck":{"updateAvailable":false}}' ;;
+  *) printf '%s\\n' '{}' ;;
+esac
+`,
+	);
+	writeExecutable(
+		join(binDir, "local-memory"),
+		`#!/usr/bin/env bash
+printf '%s\\n' "$*" > "${localMemoryInvocationPath}"
+exit 66
+`,
+	);
+
+	return {
+		binDir,
+		homeDir,
+		helperInvocationPath,
+		localMemoryInvocationPath,
+		cleanup: () => rmSync(root, { force: true, recursive: true }),
+	};
 }
 
 function combinedOutput(result: ReturnType<typeof runPreflight>): string {
@@ -87,25 +156,62 @@ function pathWithoutLocalMemory(): string {
 }
 
 describe("codex-preflight Local Memory legacy routing", () => {
-	it("keeps setup checks diagnostic-only and free of daemon-start side effects", () => {
-		const setupChecks = readFileSync(
-			join(repoRoot, "scripts/run-harness-setup-checks.sh"),
-			"utf-8",
-		);
+	it("keeps setup checks diagnostic-only when the source helper fails", () => {
+		const fixture = createSetupChecksFixture();
+		try {
+			const result = spawnSync(
+				"bash",
+				["scripts/run-harness-setup-checks.sh"],
+				{
+					cwd: repoRoot,
+					encoding: "utf-8",
+					env: {
+						...process.env,
+						BASH_ENV: "",
+						CI: "",
+						CODEX_PREFLIGHT_ENABLE_TEST_OVERRIDES: "1",
+						CODEX_PREFLIGHT_REQUIRE_PROJECT_BRAIN: "never",
+						CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS: "",
+						CODEX_PREFLIGHT_TEST_SKIP_HARNESS_RUNNERS: "",
+						HOME: fixture.homeDir,
+						PATH: `${fixture.binDir}:${process.env.PATH}`,
+					},
+				},
+			);
+			const output = (result.stdout ?? "") + (result.stderr ?? "");
+			const helperInvocation = existsSync(fixture.helperInvocationPath)
+				? readFileSync(fixture.helperInvocationPath, "utf-8").trim()
+				: null;
 
-		expectBehavior({
-			given: "the routine harness setup checker",
-			should:
-				"run optional Local Memory diagnostics without starting a user daemon",
-			actual: {
-				usesOptionalMode: setupChecks.includes("--mode optional"),
-				startsLocalMemoryDaemon: setupChecks.includes("local-memory start"),
-			},
-			expected: {
-				usesOptionalMode: true,
-				startsLocalMemoryDaemon: false,
-			},
-		});
+			expectBehavior({
+				given: "routine setup checks whose source Local Memory helper fails",
+				should:
+					"record the source-helper invocation, continue with an optional diagnostic, and never start a user daemon",
+				actual: {
+					status: result.status,
+					helperInvocation,
+					output,
+					outputIncludesOptionalWarning: output.includes(
+						"local-memory preflight failed (optional mode)",
+					),
+					localMemoryStartInvoked: readFileSync(
+						fixture.localMemoryInvocationPath,
+						{ encoding: "utf-8", flag: "a+" },
+					).includes("start"),
+				},
+				expected: {
+					status: 0,
+					helperInvocation: `exec tsx ${join(repoRoot, "src/dev/run-local-memory-preflight.ts")} --config ${join(fixture.homeDir, ".local-memory/config.yaml")}`,
+					output: expect.stringContaining(
+						"local-memory preflight failed (optional mode)",
+					),
+					outputIncludesOptionalWarning: true,
+					localMemoryStartInvoked: false,
+				},
+			});
+		} finally {
+			fixture.cleanup();
+		}
 	});
 
 	it("keeps unavailable Local Memory as a warning in the default routine lane", () => {

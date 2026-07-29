@@ -2033,7 +2033,9 @@ describe("runInit", () => {
 			expect(makefile).toContain(
 				"preflight: ## Run repository preflight checks (optional Local Memory diagnostics by default)",
 			);
-			expect(makefile).toContain("\t@bash ./scripts/codex-preflight.sh");
+			expect(makefile).toContain(
+				"\t@bash ./scripts/codex-preflight.sh --stack auto --mode optional",
+			);
 			expect(makefile).toContain(
 				"verify-work: ## Run canonical repo-local verification wrapper",
 			);
