@@ -150,7 +150,7 @@ Recommended policy:
 - Treat \`CODESTYLE.md\`, \`codestyle/\`, \`codestyle/CHECKSUMS.sha256\`, and \`scripts/validate-codestyle.sh\` as required repo-local contract files.
 - Keep the full codestyle pack as real repo-local files in generated repositories, including \`CODESTYLE.md\` plus all \`codestyle/*.md\` modules.
 - Scaffold \`scripts/codex-enforced\` and \`scripts/codex-learn\` together with preflight so repo-local wrappers own repo-local state.
-- Keep \`bash scripts/codex-preflight.sh --stack auto --mode optional\` as the default preflight command. Use \`--mode required\` only for an explicit Local Memory diagnostic or acceptance lane.
+- Keep \`bash scripts/codex-preflight.sh --stack auto --mode optional\` as the default preflight command. It does not invoke Local Memory. Use \`--mode required\` only for an explicit Local Memory diagnostic or acceptance lane.
 - Adjust preflight binary/path lists per project scope instead of deleting the script.
 - Keep repo-scoped telemetry and learned overrides under \`.harness/memory/\`, and global telemetry under \`~/.codex/\`.
 - Treat \`scripts/verify-work.sh\` as the canonical repo-facing verification command and keep it wired to repo-local preflight defaults.
@@ -203,7 +203,7 @@ function renderContributingProjectBrainAndWrappers(
 ## Repo-local verification wrapper
 
 - \`harness init\` scaffolds \`scripts/verify-work.sh\` as the canonical repo-local verification entrypoint.
-- The wrapper runs \`scripts/codex-preflight.sh\` with optional Local Memory diagnostics and scaffold-safe path and binary expectations. An explicit \`--mode required\` remains available for diagnostic or acceptance lanes.
+- The wrapper runs \`scripts/codex-preflight.sh\` with a non-mutating Local Memory boundary and scaffold-safe path and binary expectations. An explicit \`--mode required\` remains available for diagnostic or acceptance lanes.
 - \`scripts/check-codestyle-parity.sh\` is the canonical codestyle parity gate and is reused by \`verify-work\`, local hooks, and downstream repo docs.
 - \`scripts/validate-codestyle.sh\` is the canonical fail-closed codestyle validation gate and is reused by \`verify-work\`, local hooks, and downstream repo docs.
 - \`scripts/new-task.sh\` is the canonical task bootstrap helper. Use it to create one task = one worktree = one branch = one agent thread inside the project itself. Its default remote-base path is fail-closed; use \`--allow-stale-base\` only when the run explicitly accepts cached-base risk.

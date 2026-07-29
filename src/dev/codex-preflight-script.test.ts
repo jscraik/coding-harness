@@ -156,7 +156,7 @@ function pathWithoutLocalMemory(): string {
 }
 
 describe("codex-preflight Local Memory legacy routing", () => {
-	it("keeps setup checks diagnostic-only when the source helper fails", () => {
+	it("keeps setup checks non-mutating in optional mode", () => {
 		const fixture = createSetupChecksFixture();
 		try {
 			const result = spawnSync(
@@ -184,15 +184,14 @@ describe("codex-preflight Local Memory legacy routing", () => {
 				: null;
 
 			expectBehavior({
-				given: "routine setup checks whose source Local Memory helper fails",
-				should:
-					"record the source-helper invocation, continue with an optional diagnostic, and never start a user daemon",
+				given: "routine setup checks with a Local Memory helper available",
+				should: "skip Local Memory execution and never start a user daemon",
 				actual: {
 					status: result.status,
 					helperInvocation,
 					output,
-					outputIncludesOptionalWarning: output.includes(
-						"local-memory preflight failed (optional mode)",
+					outputIncludesSkippedDiagnostic: output.includes(
+						"local-memory diagnostics skipped in optional mode",
 					),
 					localMemoryStartInvoked: readFileSync(
 						fixture.localMemoryInvocationPath,
@@ -201,11 +200,11 @@ describe("codex-preflight Local Memory legacy routing", () => {
 				},
 				expected: {
 					status: 0,
-					helperInvocation: `exec tsx ${join(repoRoot, "src/dev/run-local-memory-preflight.ts")} --config ${join(fixture.homeDir, ".local-memory/config.yaml")}`,
+					helperInvocation: null,
 					output: expect.stringContaining(
-						"local-memory preflight failed (optional mode)",
+						"local-memory diagnostics skipped in optional mode",
 					),
-					outputIncludesOptionalWarning: true,
+					outputIncludesSkippedDiagnostic: true,
 					localMemoryStartInvoked: false,
 				},
 			});
@@ -297,6 +296,28 @@ describe("codex-preflight Local Memory legacy routing", () => {
 				status: 2,
 				outputIncludesCiError: true,
 			},
+		});
+	});
+
+	it("rejects deterministic Local Memory overrides in CI before optional-mode normalization", () => {
+		const result = runPreflight(
+			["--stack", "auto", "--mode", "optional"],
+			"pass",
+			{
+				ci: true,
+			},
+		);
+
+		expectBehavior({
+			given: "a forced Local Memory status under CI with optional mode",
+			should: "fail before optional-mode normalization can hide the bypass",
+			actual: {
+				status: result.status,
+				outputIncludesCiError: combinedOutput(result).includes(
+					"is not allowed in CI",
+				),
+			},
+			expected: { status: 2, outputIncludesCiError: true },
 		});
 	});
 
@@ -409,7 +430,7 @@ describe("codex-preflight Local Memory legacy routing", () => {
 		});
 	});
 
-	it("keeps a missing Local Memory helper diagnostic-only in the routine legacy lane", () => {
+	it("skips Local Memory execution in the routine legacy lane", () => {
 		const result = spawnSync(
 			"bash",
 			["scripts/codex-preflight.sh", repoRootName, "git,bash", "CODESTYLE.md"],
@@ -430,22 +451,21 @@ describe("codex-preflight Local Memory legacy routing", () => {
 		);
 		expectBehavior({
 			given:
-				"legacy positional routine preflight with the helper available but local-memory missing from PATH",
-			should:
-				"preserve the helper diagnostic without blocking routine admission",
+				"legacy positional routine preflight with local-memory missing from PATH",
+			should: "preserve routine admission without invoking Local Memory",
 			actual: {
 				status: result.status,
 				outputIncludesMissingBinary: combinedOutput(result).includes(
 					"missing binary: local-memory",
 				),
-				outputIncludesOptionalWarning: combinedOutput(result).includes(
-					"local-memory preflight failed (optional mode)",
+				outputIncludesSkippedDiagnostic: combinedOutput(result).includes(
+					"local-memory diagnostics skipped in optional mode",
 				),
 			},
 			expected: {
 				status: 0,
-				outputIncludesMissingBinary: true,
-				outputIncludesOptionalWarning: true,
+				outputIncludesMissingBinary: false,
+				outputIncludesSkippedDiagnostic: true,
 			},
 		});
 	});

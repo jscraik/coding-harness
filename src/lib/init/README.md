@@ -34,7 +34,7 @@ contract, not the minimal scaffold.
   `bash scripts/run-harness-gate.sh docs-gate --mode required --json`. It must
   pass; otherwise follow its diagnostic to correct the affected documentation
   before rerunning the gate.
-- Generated routine validation guidance must use optional Local Memory
-  diagnostics. Preserve `--mode required` only for an explicit Local Memory
+- Generated routine validation guidance must keep Local Memory out of routine
+  execution. Preserve `--mode required` only for an explicit Local Memory
   diagnostic or acceptance lane, and keep the source and template scripts in
   byte-for-byte sync.

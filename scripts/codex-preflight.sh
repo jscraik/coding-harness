@@ -952,14 +952,29 @@ main() {
 			exit 2
 		fi
 	fi
+	if [[ -n "${CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS:-}" ]]; then
+		if [[ "${CODEX_PREFLIGHT_ENABLE_TEST_OVERRIDES:-}" != '1' ]]; then
+			log_err 'CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS requires CODEX_PREFLIGHT_ENABLE_TEST_OVERRIDES=1'
+			exit 2
+		fi
+		if [[ -n "${CI:-}" ]]; then
+			log_err 'CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS is not allowed in CI'
+			exit 2
+		fi
+	fi
 
-	if [[ "${local_memory_mode}" != 'off' ]]; then
+	if [[ "${local_memory_mode}" == 'required' ]]; then
 		if ! preflight_local_memory_gold; then
-			if [[ "${local_memory_mode}" == 'required' ]]; then
-				log_err 'local-memory preflight failed (required mode)'
-				exit 2
+			log_err 'local-memory preflight failed (required mode)'
+			exit 2
+		fi
+	elif [[ "${local_memory_mode}" == 'optional' ]]; then
+		if [[ -n "${CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS:-}" ]]; then
+			if ! preflight_local_memory_gold; then
+				log_warn 'local-memory preflight failed (optional mode)'
 			fi
-			log_warn 'local-memory preflight failed (optional mode)'
+		else
+			log_warn 'local-memory diagnostics skipped in optional mode; run --mode required for an explicit diagnostic'
 		fi
 	fi
 

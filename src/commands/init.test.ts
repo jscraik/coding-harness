@@ -2031,7 +2031,7 @@ describe("runInit", () => {
 			expect(makefile).toContain("check: ## Run all required quality gates");
 			expect(makefile).toContain("\tnpm run check");
 			expect(makefile).toContain(
-				"preflight: ## Run repository preflight checks (optional Local Memory diagnostics by default)",
+				"preflight: ## Run repository preflight checks without invoking Local Memory by default",
 			);
 			expect(makefile).toContain(
 				"\t@bash ./scripts/codex-preflight.sh --stack auto --mode optional",

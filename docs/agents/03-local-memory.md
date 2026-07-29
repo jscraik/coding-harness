@@ -74,8 +74,8 @@ Format: `**YYYY-MM-DD [Agent]:** <problem> → <fix>`
 
 ### Preflight enforcement
 
-Routine repo-local preflight records Local Memory as an optional diagnostic, so
-an unavailable helper cannot block ordinary work. The canonical routine invocation is:
+Routine repo-local preflight does not invoke Local Memory, so a stopped daemon,
+unavailable helper, or personal database cannot affect ordinary work. The canonical routine invocation is:
 
 ```bash
 bash scripts/codex-preflight.sh --stack auto --mode optional
@@ -83,7 +83,7 @@ bash scripts/codex-preflight.sh --stack auto --mode optional
 
 An explicit diagnostic or acceptance lane remains fail-closed with
 `bash scripts/codex-preflight.sh --stack auto --mode required`.
-Compatibility invocations default to optional diagnostics. A legacy positional
+Compatibility invocations remain non-mutating by default. A legacy positional
 call such as `bash scripts/codex-preflight.sh coding-harness git,bash CODESTYLE.md`
 defaults to optional Local Memory mode. The older stack/mode shorthand
 `bash scripts/codex-preflight.sh auto required` is also accepted and must block
