@@ -1,11 +1,13 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, isAbsolute, resolve as resolvePath } from "node:path";
+import { isCompactMinimalRawContract } from "../lib/contract/compact-minimal.js";
 import { ContractLoadError, loadContract } from "../lib/contract/loader.js";
 import { resolveActiveOverrides } from "../lib/contract/north-star-artifact-io.js";
 import {
 	DEFAULT_REVIEW_POLICY,
 	type HarnessContract,
 } from "../lib/contract/types.js";
+import { validateContract } from "../lib/contract/validator.js";
 import { requiresCanonicalNorthStarSurfaces } from "../lib/contract/validator-helpers.js";
 import {
 	isCheckRunInProgress,
@@ -841,6 +843,46 @@ function hasReviewContextAcknowledgement(
 	);
 }
 
+/** Return whether a contract file is the exact compact scaffold shape. */
+function isCompactMinimalContractFile(contractPath: string): boolean {
+	try {
+		const rawContract = JSON.parse(
+			readFileSync(contractPath, "utf-8"),
+		) as Record<string, unknown>;
+		const validation = validateContract(rawContract);
+		return validation.success && isCompactMinimalRawContract(rawContract);
+	} catch {
+		return false;
+	}
+}
+
+/** Build a not-applicable result without inventing review evidence for minimal scope. */
+function compactMinimalReviewResult(headSha: string): ReviewGateResult {
+	return {
+		ok: true,
+		output: {
+			verified: false,
+			notApplicable: "compact-minimal-contract",
+			headSha,
+			checkStatus: "not_applicable",
+			needsRerun: false,
+			policy_gate_status: "missing",
+			plan_traceability_status: "missing",
+			plan_ids: [],
+			blockers: [],
+			actionable_count: 0,
+			informational_count: 1,
+			confidence_rubric: {
+				score: 1,
+				level: "low",
+				rationale: [
+					"Review gate is not applicable because the compact minimal contract declares no review or CI surface; no review evidence was evaluated.",
+				],
+			},
+		},
+	};
+}
+
 /**
  * Evaluate the review gate for a pull request head SHA by polling CI check runs until a passing result, a completed failing run (requires rerun), or timeout.
  *
@@ -864,7 +906,6 @@ export async function runReviewGate(
 			},
 		};
 	}
-
 	let contract: HarnessContract;
 	try {
 		contract = loadContract(options.contractPath);
@@ -879,6 +920,9 @@ export async function runReviewGate(
 			ok: false,
 			error: { code: "SYSTEM_ERROR", message: sanitizeError(e) },
 		};
+	}
+	if (isCompactMinimalContractFile(options.contractPath)) {
+		return compactMinimalReviewResult(options.headSha);
 	}
 
 	const reviewPolicy = contract.reviewPolicy ?? DEFAULT_REVIEW_POLICY;
@@ -1551,7 +1595,11 @@ export async function runReviewGateCLI(
 	};
 
 	if (result.ok) {
-		if (result.output.verified && options.autoResolveBotThreads) {
+		if (
+			result.output.verified &&
+			!result.output.notApplicable &&
+			options.autoResolveBotThreads
+		) {
 			try {
 				const client = new GitHubClient({
 					token: options.token,
@@ -1583,27 +1631,31 @@ export async function runReviewGateCLI(
 			}
 		}
 
-		const exitCode = result.output.verified
+		const exitCode = result.output.notApplicable
 			? EXIT_CODES.SUCCESS
-			: EXIT_CODES.REVIEW_NOT_VERIFIED;
+			: result.output.verified
+				? EXIT_CODES.SUCCESS
+				: EXIT_CODES.REVIEW_NOT_VERIFIED;
 		let finalExitCode: number = exitCode;
 
-		try {
-			emitReviewGateDecisionArtifacts({
-				options,
-				...(result.output.effectiveCheckName
-					? { effectiveCheckName: result.output.effectiveCheckName }
-					: {}),
-				startedAt,
-				finishedAt: new Date().toISOString(),
-				exitCode,
-				result,
-			});
-		} catch (error) {
-			console.error(
-				`Failed to emit review-gate decision artifacts: ${sanitizeError(error)}`,
-			);
-			finalExitCode = EXIT_CODES.SYSTEM_ERROR;
+		if (!result.output.notApplicable) {
+			try {
+				emitReviewGateDecisionArtifacts({
+					options,
+					...(result.output.effectiveCheckName
+						? { effectiveCheckName: result.output.effectiveCheckName }
+						: {}),
+					startedAt,
+					finishedAt: new Date().toISOString(),
+					exitCode,
+					result,
+				});
+			} catch (error) {
+				console.error(
+					`Failed to emit review-gate decision artifacts: ${sanitizeError(error)}`,
+				);
+				finalExitCode = EXIT_CODES.SYSTEM_ERROR;
+			}
 		}
 		const gateResult = normaliseReviewGateResult(result);
 

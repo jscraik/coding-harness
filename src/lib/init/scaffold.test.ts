@@ -1,5 +1,6 @@
 import {
 	existsSync,
+	mkdirSync,
 	mkdtempSync,
 	readFileSync,
 	rmSync,
@@ -9,6 +10,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
+import { EXIT_CODES, runToolingAudit } from "../../commands/tooling-audit.js";
+import { loadContract } from "../contract/loader.js";
 import {
 	CODESTYLE_PACK_TEMPLATE_FILES,
 	TEMPLATES,
@@ -163,26 +166,15 @@ describe("scaffold templates resolution", () => {
 		expect(legacyTemplates.length).toBe(0);
 	});
 
-	it("omits non-essential templates when minimal mode is enabled", () => {
+	it("selects only the compact contract when minimal mode is enabled", () => {
 		const templates = getTemplatesForProvider("circleci", {
 			dryRun: false,
 			force: false,
 			minimal: true,
 		});
-		const legacyTemplates = templates.filter((t) =>
-			t.path.includes(".greptile"),
-		);
-		const codeownersTemplates = templates.filter((t) =>
-			t.path.includes("CODEOWNERS"),
-		);
-
-		expect(legacyTemplates.length).toBe(0);
-		expect(codeownersTemplates.length).toBe(0);
-
-		// Minimal mode keeps provider workflows but still reduces the managed set.
-		expect(templates.length).toBeLessThan(
-			getTemplatesForProvider("circleci").length,
-		);
+		expect(templates.map((template) => template.path)).toEqual([
+			"harness.contract.json",
+		]);
 	});
 
 	it("includes issue tracker templates when explicitly set to github", () => {
@@ -238,6 +230,67 @@ describe("scaffold templates resolution", () => {
 		const rendered = JSON.parse(contractTemplate!.render("pnpm", context));
 
 		expect(rendered.issueTrackingPolicy).toBeUndefined();
+	});
+
+	it("omits unbacked policy from the minimal contract", async () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "harness-scaffold-test-"));
+		tempDirs.push(tempDir);
+		const context = createTemplateRenderContext(
+			tempDir,
+			"circleci",
+			undefined,
+			{
+				dryRun: false,
+				force: false,
+				minimal: true,
+			},
+		);
+		const contractTemplate = TEMPLATES.find(
+			(template) => template.path === "harness.contract.json",
+		);
+
+		expect(contractTemplate).toBeDefined();
+		const rendered = JSON.parse(contractTemplate!.render("pnpm", context));
+
+		expect(Object.keys(rendered).sort()).toEqual([
+			"branchProtection",
+			"northStar",
+			"overrideReviewerRegistry",
+			"productSurface",
+			"reviewPolicy",
+			"riskTierRules",
+			"version",
+		]);
+		expect(rendered.reviewPolicy).toMatchObject({
+			requiredChecks: [],
+			approvalMode: "human_approval",
+			enforceReviewerIndependence: true,
+		});
+		expect(rendered.branchProtection).toMatchObject({
+			requiredChecks: [],
+			requiredApprovingReviewCount: 0,
+			restrictDeletions: true,
+			blockForcePushes: true,
+			requirePullRequest: true,
+			requireConversationResolution: true,
+			codeQuality: { required: true },
+			publicCodeScanning: { required: true },
+		});
+		mkdirSync(join(tempDir, ".git"));
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify(rendered, null, 2),
+		);
+		expect(
+			loadContract(join(tempDir, "harness.contract.json"), tempDir).reviewPolicy
+				?.requiredChecks,
+		).toEqual([]);
+		const audit = await runToolingAudit({ path: tempDir, format: "json" });
+		expect(audit.ok).toBe(true);
+		if (audit.ok) {
+			expect(audit.value.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(audit.value.result.findings.total).toBe(0);
+		}
 	});
 
 	it("keeps linear issue tracking policy by default", () => {

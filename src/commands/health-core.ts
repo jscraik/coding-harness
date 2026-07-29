@@ -21,10 +21,12 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isCompactMinimalRawContract } from "../lib/contract/compact-minimal.js";
+import { validateContract } from "../lib/contract/validator.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -133,6 +135,29 @@ function hasFile(dir: string, ...parts: string[]): boolean {
 	return existsSync(resolve(dir, ...parts));
 }
 
+/** Return whether the local contract is exactly the self-contained minimal scaffold. */
+function hasCompactMinimalContract(dir: string): boolean {
+	const contractPath = resolve(dir, "harness.contract.json");
+	try {
+		const rawContract = JSON.parse(
+			readFileSync(contractPath, "utf-8"),
+		) as Record<string, unknown>;
+		return (
+			validateContract(rawContract).success &&
+			isCompactMinimalRawContract(rawContract)
+		);
+	} catch {
+		return false;
+	}
+}
+
+/** Return whether a contract has the optional surfaces required by full health gates. */
+function hasFullContractSurface(dir: string): boolean {
+	return (
+		hasFile(dir, "harness.contract.json") && !hasCompactMinimalContract(dir)
+	);
+}
+
 const GATE_SPECS: GateSpec[] = [
 	{
 		gate: "drift-gate",
@@ -150,7 +175,7 @@ const GATE_SPECS: GateSpec[] = [
 		gate: "context-health",
 		displayName: "Context Health",
 		buildArgs: (dir) => ["--contract", resolve(dir, "harness.contract.json")],
-		isApplicable: (dir) => hasFile(dir, "harness.contract.json"),
+		isApplicable: hasFullContractSurface,
 		interpretExitCode: (code) => {
 			if (code === 0)
 				return { status: "ok", summary: "coverage above threshold" };
@@ -182,7 +207,7 @@ const GATE_SPECS: GateSpec[] = [
 		gate: "gardener",
 		displayName: "Gardener",
 		buildArgs: (dir) => ["--contract", resolve(dir, "harness.contract.json")],
-		isApplicable: (dir) => hasFile(dir, "harness.contract.json"),
+		isApplicable: hasFullContractSurface,
 		interpretExitCode: (code) => {
 			if (code === 0) return { status: "ok", summary: "docs healthy" };
 			if (code === 1)
@@ -194,7 +219,7 @@ const GATE_SPECS: GateSpec[] = [
 		gate: "ci-migrate",
 		displayName: "CI Migration",
 		buildArgs: () => ["verify"],
-		isApplicable: (dir) => hasFile(dir, "harness.contract.json"),
+		isApplicable: hasFullContractSurface,
 		interpretExitCode: (code) => {
 			if (code === 0) return { status: "ok", summary: "migration verified" };
 			if (code === 1) return { status: "warning", summary: "verify warnings" };
@@ -220,7 +245,7 @@ const GATE_SPECS: GateSpec[] = [
 		gate: "plan-gate",
 		displayName: "Plan Gate",
 		buildArgs: (dir) => ["--contract", resolve(dir, "harness.contract.json")],
-		isApplicable: (dir) => hasFile(dir, "harness.contract.json"),
+		isApplicable: hasFullContractSurface,
 		interpretExitCode: (code) => {
 			if (code === 0) return { status: "ok", summary: "plan gate satisfied" };
 			if (code === 2)

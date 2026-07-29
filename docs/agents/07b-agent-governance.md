@@ -82,7 +82,8 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - uv-backed Python helper changes should keep `scripts/run-uv-python.sh`,
   scaffold inventories, tooling baseline parity, `AGENTS.md`, tooling policy,
   and security governance synchronized so generated hooks and package scripts
-  share one repo-scoped uv runtime boundary. When malware screening is enabled,
+  share one repo-scoped uv runtime boundary that does not inherit user-global
+  cache or environment locations. When malware screening is enabled,
   pin a uv release that recognizes `UV_MALWARE_CHECK=1`, enforce it in the
   canonical wrapper and generated scaffold, and retain a deterministic parity
   check; an unavailable OSV lookup or unsupported runtime remains blocked or

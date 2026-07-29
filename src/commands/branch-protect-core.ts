@@ -2,6 +2,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { deriveRequiredCheckMetadata } from "../lib/ci/required-check-metadata.js";
 import { loadContract } from "../lib/contract/loader.js";
+import { isCompactMinimalRawContract } from "../lib/contract/compact-minimal.js";
+import { validateContract } from "../lib/contract/validator.js";
 import {
 	type BranchProtectionCodeQualityPolicy,
 	type BranchProtectionCodeScanningPolicy,
@@ -34,7 +36,6 @@ const DEFAULT_MERGE_METHODS: BranchProtectionMergeMethods = {
 	squash: true,
 	rebase: true,
 };
-
 export const EXIT_CODES = {
 	SUCCESS: 0,
 	VALIDATION_ERROR: 1,
@@ -111,16 +112,22 @@ function normalizeToken(value: string | undefined): string | undefined {
 	return trimmed;
 }
 
-/**
- * Resolves required checks from ecosystem profile, explicit checks, or contract.
- * Priority: explicit --required-checks > --ecosystem > contract > defaults
- */
 type RequiredChecksResolutionSource =
 	| "explicit"
 	| "ecosystem"
 	| "contract"
 	| "default";
 
+/**
+ * Resolves required checks from explicit options, an ecosystem, a contract, or defaults.
+ *
+ * An explicitly empty contract list remains empty so minimal contracts can opt out of
+ * status-check enforcement without inheriting legacy review-policy or default checks.
+ *
+ * @param options - CLI options that can override contract-derived checks.
+ * @param contractPolicy - Resolved branch-protection policy from the repository contract.
+ * @returns The normalized checks, their source, and the selected ecosystem when applicable.
+ */
 function resolveRequiredChecks(
 	options: BranchProtectOptions,
 	contractPolicy: BranchProtectionPolicy,
@@ -151,7 +158,7 @@ function resolveRequiredChecks(
 
 	// 3. Contract
 	const contractChecks = contractPolicy.requiredChecks;
-	if (contractChecks && contractChecks.length > 0) {
+	if (contractChecks !== undefined) {
 		return { checks: normalizeChecks(contractChecks), source: "contract" };
 	}
 
@@ -184,20 +191,32 @@ interface ContractBranchProtectionResolution {
 	requiredCheckManifestPath?: string;
 }
 
+/**
+ * Loads the branch-protection policy while preserving an explicit empty check list.
+ *
+ * Legacy `reviewPolicy.requiredChecks` applies only when the branch-protection policy
+ * omits the field; a compact contract's empty array is an intentional no-check policy.
+ *
+ * @param contractPath - Repository-relative path to the Harness contract.
+ * @returns The resolved policy plus optional active-provider metadata for check mapping.
+ */
 function resolveContractBranchProtectionPolicy(
 	contractPath: string,
 ): ContractBranchProtectionResolution {
 	try {
 		const contract = loadContract(contractPath);
+		const compactMinimalPolicy =
+			loadCompactMinimalBranchProtectionPolicy(contractPath);
+		if (compactMinimalPolicy) {
+			return {
+				branchProtectionPolicy: compactMinimalPolicy,
+			};
+		}
 		const ciProviderPolicy = contract.ciProviderPolicy;
 		const activeProvider = ciProviderPolicy?.activeProvider;
 		const requiredCheckManifestPath =
 			ciProviderPolicy?.requiredCheckManifestPath;
-		const legacyRequiredChecks =
-			contract.branchProtection?.requiredChecks &&
-			contract.branchProtection.requiredChecks.length > 0
-				? contract.branchProtection.requiredChecks
-				: contract.reviewPolicy?.requiredChecks;
+		const legacyRequiredChecks = resolveContractRequiredChecks(contract);
 		return {
 			branchProtectionPolicy: {
 				...DEFAULT_BRANCH_PROTECTION_POLICY,
@@ -239,6 +258,33 @@ function resolveContractBranchProtectionPolicy(
 		return {
 			branchProtectionPolicy: { ...DEFAULT_BRANCH_PROTECTION_POLICY },
 		};
+	}
+}
+
+/** Resolve legacy checks without treating migrated empty arrays as an opt-out. */
+function resolveContractRequiredChecks(
+	contract: ReturnType<typeof loadContract>,
+): string[] | undefined {
+	const configuredChecks = contract.branchProtection?.requiredChecks;
+	if (configuredChecks && configuredChecks.length > 0) return configuredChecks;
+	return contract.reviewPolicy?.requiredChecks;
+}
+
+/** Read the exact compact policy without allowing loader defaults to replace it. */
+function loadCompactMinimalBranchProtectionPolicy(
+	contractPath: string,
+): BranchProtectionPolicy | undefined {
+	try {
+		const rawContract = JSON.parse(
+			readFileSync(contractPath, "utf-8"),
+		) as Record<string, unknown>;
+		const validation = validateContract(rawContract);
+		if (!validation.success || !isCompactMinimalRawContract(rawContract)) {
+			return undefined;
+		}
+		return validation.data?.branchProtection;
+	} catch {
+		return undefined;
 	}
 }
 
@@ -474,16 +520,6 @@ export async function runBranchProtect(
 				: {}),
 		});
 
-	if (requiredCheckContexts.length === 0) {
-		return {
-			ok: false,
-			error: {
-				code: "VALIDATION_ERROR",
-				message: "At least one required status check is required.",
-			},
-		};
-	}
-
 	const managedPolicy = resolveManagedPolicy(options, contractPolicy);
 	const requiredApprovals = managedPolicy.requiredApprovals;
 	if (!Number.isInteger(requiredApprovals) || requiredApprovals < 0) {
@@ -671,27 +707,11 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 		removeRule(baseRules, "pull_request");
 	}
 
-	const existingChecksRule = getRule(baseRules, "required_status_checks");
-	const existingChecksParameters = normalizeParameters(
-		existingChecksRule?.parameters,
+	applyRequiredStatusChecksRule(
+		baseRules,
+		input.requiredChecks,
+		input.policy.requireBranchesUpToDate,
 	);
-	const requiredContexts = normalizeChecks(input.requiredChecks);
-	const statusChecksRule: RulesetRule = {
-		type: "required_status_checks",
-		parameters: {
-			...existingChecksParameters,
-			strict_required_status_checks_policy:
-				input.policy.requireBranchesUpToDate,
-			do_not_enforce_on_create: false,
-			required_status_checks: mergeRequiredStatusChecks(
-				normalizeRequiredStatusCheckEntries(
-					existingChecksParameters.required_status_checks,
-				),
-				requiredContexts,
-			),
-		},
-	};
-	upsertRule(baseRules, statusChecksRule);
 
 	if (input.policy.codeQuality?.required) {
 		upsertRule(baseRules, {
@@ -750,6 +770,44 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 		},
 		rules: baseRules,
 	};
+}
+
+/**
+ * Updates the status-check rule and removes it when a contract explicitly selects no checks.
+ *
+ * @param rules - Mutable ruleset rule collection being assembled for the GitHub payload.
+ * @param requiredChecks - Resolved status-check contexts from the selected contract or CLI.
+ * @param requireBranchesUpToDate - Whether GitHub should require checks from the current branch head.
+ */
+function applyRequiredStatusChecksRule(
+	rules: RulesetRule[],
+	requiredChecks: string[],
+	requireBranchesUpToDate: boolean,
+): void {
+	const requiredContexts = normalizeChecks(requiredChecks);
+	if (requiredContexts.length === 0) {
+		removeRule(rules, "required_status_checks");
+		return;
+	}
+
+	const existingChecksRule = getRule(rules, "required_status_checks");
+	const existingChecksParameters = normalizeParameters(
+		existingChecksRule?.parameters,
+	);
+	upsertRule(rules, {
+		type: "required_status_checks",
+		parameters: {
+			...existingChecksParameters,
+			strict_required_status_checks_policy: requireBranchesUpToDate,
+			do_not_enforce_on_create: false,
+			required_status_checks: mergeRequiredStatusChecks(
+				normalizeRequiredStatusCheckEntries(
+					existingChecksParameters.required_status_checks,
+				),
+				requiredContexts,
+			),
+		},
+	});
 }
 
 function normalizeParameters(value: unknown): Record<string, unknown> {

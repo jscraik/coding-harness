@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { type PartialDeep, fromPartial } from "@total-typescript/shoehorn";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
@@ -18,6 +21,7 @@ vi.mock("../lib/contract/loader.js", () => ({
 
 import { loadContract } from "../lib/contract/loader.js";
 import { GitHubClient } from "../lib/github/client.js";
+import { renderHarnessContractTemplate } from "../lib/init/scaffold-contract-template.js";
 
 const mockGitHubClient = vi.mocked(GitHubClient);
 const mockLoadContract = vi.mocked(loadContract);
@@ -619,6 +623,181 @@ describe("runBranchProtect", () => {
 		expect(requiredRule?.parameters).toMatchObject({
 			required_status_checks: [{ context: "dependency-scan" }],
 		});
+	});
+
+	it("preserves legacy review checks when a migrated full contract has an empty list", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			branchProtection: {
+				requiredChecks: [],
+				requiredApprovingReviewCount: 0,
+			},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				requiredChecks: ["dependency-scan"],
+			},
+		});
+
+		const listRulesets = vi.fn(
+			async () =>
+				[
+					{
+						id: 58,
+						name: "protect",
+						target: "branch",
+						enforcement: "active",
+						conditions: {
+							ref_name: {
+								include: ["refs/heads/main"],
+								exclude: [],
+							},
+						},
+					},
+				] as RulesetSummary[],
+		);
+		const getRuleset = vi.fn(
+			async () =>
+				({
+					id: 58,
+					name: "protect",
+					target: "branch",
+					enforcement: "active",
+					bypass_actors: [],
+					conditions: {
+						ref_name: {
+							include: ["refs/heads/main"],
+							exclude: [],
+						},
+					},
+					rules: [
+						{
+							type: "required_status_checks",
+							parameters: {
+								required_status_checks: [{ context: "security-scan" }],
+							},
+						},
+					],
+				}) as Ruleset,
+		);
+		const updateRuleset = vi.fn(
+			async (_id: number, payload: RulesetPayload) =>
+				({
+					id: 58,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+
+		mockGitHubClientImplementation(() =>
+			mockBranchProtectClient({
+				listRulesets,
+				getRuleset,
+				updateRuleset,
+			}),
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+		});
+
+		expect(result).toMatchObject({
+			ok: true,
+			output: { requiredChecks: ["dependency-scan"] },
+		});
+	});
+
+	it("honors an empty check list only for the exact compact minimal contract", async () => {
+		const tempRoot = mkdtempSync(
+			join(tmpdir(), "branch-protect-compact-minimal-"),
+		);
+		const contractPath = join(tempRoot, "harness.contract.json");
+		writeFileSync(
+			contractPath,
+			renderHarnessContractTemplate({
+				agentBranchPrefix: "codex",
+				context: {
+					targetDir: tempRoot,
+					packageScripts: [],
+					projectName: "compact-minimal",
+					minimal: true,
+				},
+				packageManager: "pnpm",
+				requiredChecks: [],
+			}),
+		);
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			branchProtection: {
+				requiredChecks: [],
+				requiredApprovingReviewCount: 0,
+			},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				requiredChecks: ["dependency-scan"],
+			},
+		});
+		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+		const createRuleset = vi.fn(
+			async (payload: RulesetPayload) =>
+				({
+					id: 59,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+		mockGitHubClientImplementation(() =>
+			mockBranchProtectClient({ listRulesets, createRuleset }),
+		);
+
+		try {
+			const result = await runBranchProtect({
+				token: "token",
+				owner: "octo",
+				repo: "harness",
+				contractPath,
+			});
+			expect(result).toMatchObject({
+				ok: true,
+				output: {
+					requiredChecks: [],
+					managedPolicy: {
+						restrictDeletions: true,
+						blockForcePushes: true,
+						requireLinearHistory: true,
+						requirePullRequest: true,
+						requireConversationResolution: true,
+						codeQuality: { required: true },
+						publicCodeScanning: { required: true },
+					},
+				},
+			});
+			expect(
+				createRuleset.mock.calls[0]?.[0].rules.some(
+					(rule) => rule.type === "required_status_checks",
+				),
+			).toBe(false);
+			expect(
+				createRuleset.mock.calls[0]?.[0].rules.some((rule) =>
+					["deletion", "non_fast_forward", "pull_request"].includes(rule.type),
+				),
+			).toBe(true);
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
 	});
 
 	it("falls back to harness baseline checks when the contract file is absent", async () => {

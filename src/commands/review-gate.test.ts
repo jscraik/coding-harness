@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { type PartialDeep, fromPartial } from "@total-typescript/shoehorn";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { writeNorthStarOverrideAcknowledgement } from "../lib/contract/north-star-artifact-io.js";
+import { renderHarnessContractTemplate } from "../lib/init/scaffold-contract-template.js";
+import type { TemplateRenderContext } from "../lib/init/types.js";
 import {
 	DEFAULT_NORTH_STAR_CONTRACT,
 	NORTH_STAR_DECISION_QUESTION_SPECS,
@@ -65,7 +67,7 @@ vi.mock("../lib/review-gate/decision-packet.js", () => ({
 	emitReviewGateDecisionArtifacts: emitReviewGateDecisionArtifactsMock,
 }));
 
-import { loadContract } from "../lib/contract/loader.js";
+import { ContractLoadError, loadContract } from "../lib/contract/loader.js";
 import { GitHubClient } from "../lib/github/client.js";
 import { validateSha } from "../lib/github/sha.js";
 import { runPlanGate } from "../lib/plan-gate/detector.js";
@@ -111,6 +113,31 @@ const authzPassOutput = {
 		enforceBranchProtection: false,
 	},
 };
+
+function writeCompactMinimalContract(
+	repoRoot: string,
+	mutate?: (contract: Record<string, unknown>) => void,
+): string {
+	const contractPath = join(repoRoot, "harness.contract.json");
+	const context: TemplateRenderContext = {
+		targetDir: repoRoot,
+		ciProvider: "circleci",
+		packageScripts: [],
+		projectName: "minimal-fixture",
+		minimal: true,
+	};
+	const contract = JSON.parse(
+		renderHarnessContractTemplate({
+			agentBranchPrefix: "codex",
+			context,
+			packageManager: "pnpm",
+			requiredChecks: [],
+		}),
+	) as Record<string, unknown>;
+	mutate?.(contract);
+	writeFileSync(contractPath, JSON.stringify(contract), "utf-8");
+	return contractPath;
+}
 
 describe("runReviewGate", () => {
 	const validSha = "0123456789abcdef0123456789abcdef01234567";
@@ -199,6 +226,101 @@ describe("runReviewGate", () => {
 		if (!result.ok) {
 			expect(result.error.code).toBe("VALIDATION_ERROR");
 			expect(result.error.message).toContain("Invalid SHA format");
+		}
+	});
+
+	it("marks an exact compact minimal contract as not applicable without review evidence", async () => {
+		const repoRoot = mkdtempSync(
+			join(tmpdir(), "review-gate-compact-minimal-"),
+		);
+		const contractPath = writeCompactMinimalContract(repoRoot);
+
+		try {
+			const result = await runReviewGate({
+				...defaultOptions,
+				contractPath,
+			});
+
+			expect(result).toMatchObject({
+				ok: true,
+				output: {
+					verified: false,
+					notApplicable: "compact-minimal-contract",
+					checkStatus: "not_applicable",
+					policy_gate_status: "missing",
+					plan_traceability_status: "missing",
+					blockers: [],
+				},
+			});
+			expect(mockLoadContract).toHaveBeenCalledWith(contractPath);
+			expect(mockGitHubClient).not.toHaveBeenCalled();
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("does not skip review when a minimal-shaped contract enables review context", async () => {
+		const repoRoot = mkdtempSync(
+			join(tmpdir(), "review-gate-compact-policy-enabled-"),
+		);
+		const contractPath = writeCompactMinimalContract(repoRoot, (contract) => {
+			contract.reviewPolicy = {
+				...(contract.reviewPolicy as Record<string, unknown>),
+				requireReviewContext: true,
+			};
+		});
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 0,
+				timeoutAction: "warn",
+				requireReviewContext: true,
+			},
+		});
+
+		try {
+			const result = await runReviewGate({
+				...defaultOptions,
+				contractPath,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.notApplicable).toBeUndefined();
+			}
+			expect(mockLoadContract).toHaveBeenCalledWith(contractPath);
+			expect(mockGitHubClient).toHaveBeenCalled();
+		} finally {
+			rmSync(repoRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("validates the contract path before a compact contract can skip review", async () => {
+		const outsideRoot = mkdtempSync(
+			join(tmpdir(), "review-gate-compact-outside-root-"),
+		);
+		const contractPath = writeCompactMinimalContract(outsideRoot);
+		mockLoadContract.mockImplementationOnce(() => {
+			throw new ContractLoadError("Path traversal detected", contractPath);
+		});
+
+		try {
+			const result = await runReviewGate({
+				...defaultOptions,
+				contractPath,
+			});
+
+			expect(result).toMatchObject({
+				ok: false,
+				error: {
+					code: "VALIDATION_ERROR",
+					message: expect.stringContaining("Path traversal detected"),
+				},
+			});
+			expect(mockGitHubClient).not.toHaveBeenCalled();
+		} finally {
+			rmSync(outsideRoot, { recursive: true, force: true });
 		}
 	});
 

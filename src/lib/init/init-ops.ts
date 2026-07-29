@@ -194,14 +194,17 @@ export function executeTemplateWrites(
 }
 
 /**
- * Remove retired and legacy template files during force init.
+ * Remove retired and legacy template files during a full force init.
+ *
+ * Minimal mode only writes its selected contract and must preserve unrelated
+ * brownfield files, including previously scaffolded full-profile surfaces.
  */
 export function cleanupLegacyTemplates(
 	dir: string,
 	templates: Template[],
 	options: InitOptions,
 ): InitResult | null {
-	if (!(options.force && !options.dryRun)) {
+	if (!(options.force && !options.dryRun) || options.minimal) {
 		return null;
 	}
 

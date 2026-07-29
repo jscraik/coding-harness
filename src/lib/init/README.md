@@ -174,9 +174,9 @@ thin and delegate into this deep module.
   hang pre-push or remote security lanes.
 - Normal `harness init --dry-run --json` output includes `dryRunPlan`
   advisory metadata with the selected profile, planned create/skip counts, risk
-  score, risk level, and operator recommendation. This helps downstream canaries
-  identify broad write scopes before applying files, including cases where
-  `--minimal` still plans a high-risk number of writes.
+  score, risk level, and operator recommendation. Minimal mode plans only
+  `harness.contract.json`, so it does not infer or remove brownfield CI, review,
+  memory, hook, documentation, or governance surfaces.
 - Init path safety permits relative symlink segments that resolve inside the
   target repository, such as `scripts -> Infrastructure/scripts`, so brownfield
   repositories can preview or update repo-owned scaffold files. Absolute

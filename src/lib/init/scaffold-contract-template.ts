@@ -130,15 +130,52 @@ function renderIssueTrackingPolicy(
 	};
 }
 
+/**
+ * Renders the scaffold contract, omitting policy that minimal installation does
+ * not materialize.
+ *
+ * @param options - Contract policy inputs discovered by the scaffold registry.
+ * @returns The contract written by the selected scaffold template.
+ */
 function renderScaffoldContract(
 	options: ScaffoldContractTemplateOptions,
 ): HarnessContract {
 	const { agentBranchPrefix, context, packageManager, requiredChecks } =
 		options;
-	const issueTrackingPolicy = renderIssueTrackingPolicy(
-		context,
-		agentBranchPrefix,
-	);
+	const isMinimal = context.minimal === true;
+	if (isMinimal) {
+		return {
+			version: CURRENT_SCHEMA_VERSION,
+			riskTierRules: {
+				"src/auth/**": "high",
+				"src/api/**": "high",
+				"src/lib/**": "medium",
+				"**/*.test.ts": "low",
+			},
+			branchProtection: {
+				...(DEFAULT_CONTRACT.branchProtection ?? {}),
+				requiredChecks: [],
+				requiredApprovingReviewCount: 0,
+			},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				requiredChecks: [],
+				approvalMode: "human_approval",
+				enforceReviewerIndependence: true,
+				requireReviewContext: false,
+			},
+			northStar: renderScaffoldNorthStar(context),
+			productSurface: renderScaffoldProductSurface(),
+			overrideReviewerRegistry: renderScaffoldOverrideReviewerRegistry(context),
+			...(context.projectType !== undefined
+				? { projectType: context.projectType }
+				: {}),
+		};
+	}
+	const issueTrackingPolicy = isMinimal
+		? undefined
+		: renderIssueTrackingPolicy(context, agentBranchPrefix);
 	return {
 		version: CURRENT_SCHEMA_VERSION,
 		riskTierRules: {
@@ -156,7 +193,7 @@ function renderScaffoldContract(
 		branchProtection: {
 			...(DEFAULT_CONTRACT.branchProtection ?? {}),
 			requiredChecks: [...requiredChecks],
-			requiredApprovingReviewCount: 1,
+			...(isMinimal ? {} : { requiredApprovingReviewCount: 1 }),
 		},
 		toolingPolicy: DEFAULT_CONTRACT.toolingPolicy,
 		...(issueTrackingPolicy ? { issueTrackingPolicy } : {}),

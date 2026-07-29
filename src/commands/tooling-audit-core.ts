@@ -1,6 +1,8 @@
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { loadContract } from "../lib/contract/loader.js";
+import { isCompactMinimalRawContract } from "../lib/contract/compact-minimal.js";
+import { validateContract } from "../lib/contract/validator.js";
 import {
 	DEFAULT_CONTRACT,
 	type HarnessContract,
@@ -95,7 +97,20 @@ const FORBIDDEN_PREK_HOOK_ENTRY_PATTERNS = [
 	/\bscripts\/run-prek\.sh\s+hook\b/,
 ] as const;
 
+const HARNESS_OWNED_PREK_ENTRIES = new Set<string>(
+	Object.values(APPROVED_PREK_LEAF_ENTRIES).flat(),
+);
+
 const MAX_READINESS_FORWARDING_DEPTH = 4;
+/** Resolve explicit tooling policy while preserving legacy fallback behavior. */
+function resolveToolingPolicy(
+	contract: HarnessContract,
+): HarnessContract["toolingPolicy"] {
+	if (contract.toolingPolicy !== undefined) {
+		return contract.toolingPolicy;
+	}
+	return DEFAULT_CONTRACT.toolingPolicy;
+}
 
 const PREK_ALL_STAGES = [
 	"manual",
@@ -1647,48 +1662,82 @@ function auditPrekHookLeafEntries(
 	repoPath: string,
 ): void {
 	for (const hook of parsedHooks) {
-		for (const field of ["id", "name", "entry", "language"] as const) {
-			if (hook[field] === undefined) {
-				findings.push({
-					path: TOOLING_PREK_CONFIG_PATH,
-					severity: "critical",
-					description: `Prek hook '${hook.id ?? "unknown"}' is missing required field '${field}'`,
-					expected: "Every local hook declares id, name, entry, and language",
-					actual: hook,
-				});
-			}
+		auditPrekHookLeafEntry(findings, hook, repoPath);
+	}
+}
+
+/** Audit one Prek hook's required fields, effective stages, and leaf command. */
+function auditPrekHookLeafEntry(
+	findings: ToolingAuditFinding[],
+	hook: ParsedPrekHook,
+	repoPath: string,
+): void {
+	for (const field of ["id", "name", "entry", "language"] as const) {
+		if (hook[field] === undefined) {
+			findings.push({
+				path: TOOLING_PREK_CONFIG_PATH,
+				severity: "critical",
+				description: `Prek hook '${hook.id ?? "unknown"}' is missing required field '${field}'`,
+				expected: "Every local hook declares id, name, entry, and language",
+				actual: hook,
+			});
 		}
-		auditPrekCommitMsgRuntimeShape(findings, hook);
-		const entry = hook.entry;
-		if (entry !== undefined && isForbiddenPrekHookEntry(entry)) {
+	}
+	auditPrekCommitMsgRuntimeShape(findings, hook);
+	const entry = hook.entry;
+	if (entry !== undefined && isForbiddenPrekHookEntry(entry)) {
+		return;
+	}
+	for (const stage of hook.stages) {
+		const approvedEntries: readonly string[] | undefined =
+			APPROVED_PREK_LEAF_ENTRIES[
+				stage as keyof typeof APPROVED_PREK_LEAF_ENTRIES
+			];
+		if (approvedEntries === undefined) {
+			findings.push({
+				path: TOOLING_PREK_CONFIG_PATH,
+				severity: "critical",
+				description: `Prek hook '${hook.id ?? "unknown"}' uses unsupported effective stage '${stage}'`,
+				expected: Object.keys(APPROVED_PREK_LEAF_ENTRIES),
+				actual: hook,
+			});
 			continue;
 		}
-		for (const stage of hook.stages) {
-			const approvedEntries: readonly string[] | undefined =
-				APPROVED_PREK_LEAF_ENTRIES[
-					stage as keyof typeof APPROVED_PREK_LEAF_ENTRIES
-				];
-			if (approvedEntries === undefined) {
-				findings.push({
-					path: TOOLING_PREK_CONFIG_PATH,
-					severity: "critical",
-					description: `Prek hook '${hook.id ?? "unknown"}' uses unsupported effective stage '${stage}'`,
-					expected: Object.keys(APPROVED_PREK_LEAF_ENTRIES),
-					actual: hook,
-				});
-				continue;
-			}
-			if (entry === undefined || !approvedEntries.includes(entry)) {
-				findings.push({
-					path: TOOLING_PREK_CONFIG_PATH,
-					severity: "critical",
-					description: `Prek hook '${hook.id ?? "unknown"}' uses an unapproved leaf command for effective stage '${stage}'`,
-					expected: approvedEntries,
-					actual: hook,
-				});
-			}
+		if (entry === undefined || !approvedEntries.includes(entry)) {
+			findings.push({
+				path: TOOLING_PREK_CONFIG_PATH,
+				severity: "critical",
+				description: `Prek hook '${hook.id ?? "unknown"}' uses an unapproved leaf command for effective stage '${stage}'`,
+				expected: approvedEntries,
+				actual: hook,
+			});
 		}
-		auditPrekHookCommandFile(findings, hook, repoPath);
+	}
+	auditPrekHookCommandFile(findings, hook, repoPath);
+}
+
+/** Require Harness-owned Prek adapters to preserve their runtime invocation shape. */
+function auditHarnessOwnedPrekHookRuntimeShape(
+	findings: ToolingAuditFinding[],
+	hook: ParsedPrekHook,
+): void {
+	if (hook.language !== "system") {
+		findings.push({
+			path: TOOLING_PREK_CONFIG_PATH,
+			severity: "critical",
+			description: `Harness-owned Prek hook '${hook.id ?? "unknown"}' must use language = 'system'`,
+			expected: "system",
+			actual: hook.language,
+		});
+	}
+	if (hook.passFilenames !== false) {
+		findings.push({
+			path: TOOLING_PREK_CONFIG_PATH,
+			severity: "critical",
+			description: `Harness-owned Prek hook '${hook.id ?? "unknown"}' must set pass_filenames = false`,
+			expected: false,
+			actual: hook.passFilenames,
+		});
 	}
 }
 
@@ -1923,8 +1972,7 @@ function auditReadinessScript(
 	repoPath: string,
 	contract: HarnessContract,
 ): void {
-	const toolingPolicy =
-		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	const toolingPolicy = resolveToolingPolicy(contract);
 	if (!toolingPolicy) {
 		return;
 	}
@@ -2087,14 +2135,13 @@ function auditReadinessScript(
 		}
 	}
 }
-
+/** Audits the declared Mise file for the exact required tool pins. */
 function auditMise(
 	findings: ToolingAuditFinding[],
 	repoPath: string,
 	contract: HarnessContract,
 ): void {
-	const toolingPolicy =
-		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	const toolingPolicy = resolveToolingPolicy(contract);
 	if (!toolingPolicy) {
 		return;
 	}
@@ -2141,8 +2188,7 @@ function auditCodexEnvironment(
 	repoPath: string,
 	contract: HarnessContract,
 ): void {
-	const toolingPolicy =
-		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	const toolingPolicy = resolveToolingPolicy(contract);
 	if (!toolingPolicy) {
 		return;
 	}
@@ -2183,8 +2229,7 @@ function auditMakefile(
 	repoPath: string,
 	contract: HarnessContract,
 ): void {
-	const toolingPolicy =
-		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	const toolingPolicy = resolveToolingPolicy(contract);
 	if (!toolingPolicy) {
 		return;
 	}
@@ -2220,8 +2265,7 @@ function auditProjectBrainMemoryExtension(
 	repoPath: string,
 	contract: HarnessContract,
 ): void {
-	const toolingPolicy =
-		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	const toolingPolicy = resolveToolingPolicy(contract);
 	if (!toolingPolicy?.projectBrainMemoryExtension?.enabled) {
 		return;
 	}
@@ -2251,8 +2295,7 @@ function auditPackagePolicy(
 	repoPath: string,
 	contract: HarnessContract,
 ): void {
-	const toolingPolicy =
-		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	const toolingPolicy = resolveToolingPolicy(contract);
 	if (!toolingPolicy) {
 		return;
 	}
@@ -2462,6 +2505,7 @@ function auditLocalHooks(
 	}
 }
 
+/** Compares the current tooling policy with the supplied base-policy requirements. */
 function auditBaseDrift(
 	findings: ToolingAuditFinding[],
 	contract: HarnessContract,
@@ -2624,6 +2668,114 @@ function summarizeFindings(
 	};
 }
 
+/** Audit the concrete tooling surface declared by a non-compact contract. */
+function auditConfiguredTooling(
+	findings: ToolingAuditFinding[],
+	repoPath: string,
+	contract: HarnessContract,
+	baseContract?: HarnessContract,
+): void {
+	auditReadinessScript(findings, repoPath, contract);
+	auditMise(findings, repoPath, contract);
+	auditCodexEnvironment(findings, repoPath, contract);
+	auditMakefile(findings, repoPath, contract);
+	auditProjectBrainMemoryExtension(findings, repoPath, contract);
+	auditPackagePolicy(findings, repoPath, contract);
+	auditLocalHooks(findings, repoPath);
+	if (baseContract) {
+		auditBaseDrift(findings, contract, baseContract);
+	}
+}
+
+/** Return whether an entry names any Harness-owned Prek adapter. */
+function isHarnessOwnedPrekEntry(entry: string | undefined): boolean {
+	return entry !== undefined && HARNESS_OWNED_PREK_ENTRIES.has(entry);
+}
+
+/** Audits explicit boundaries without requiring minimal scaffolding to create them. */
+function auditMinimalToolingBoundaries(
+	findings: ToolingAuditFinding[],
+	repoPath: string,
+	contract: HarnessContract,
+	baseContract?: HarnessContract,
+): void {
+	const prekContent = readTextFile(join(repoPath, TOOLING_PREK_CONFIG_PATH));
+	if (prekContent !== null) {
+		const parsedHooks = parsePrekHooks(prekContent);
+		if (parsedHooks.some((hook) => isHarnessOwnedPrekEntry(hook.entry))) {
+			auditMinimalHarnessPrekAdapters(
+				findings,
+				prekContent,
+				parsedHooks,
+				repoPath,
+			);
+		}
+	}
+	if (baseContract) {
+		auditBaseDrift(findings, contract, baseContract);
+	}
+}
+
+/** Audit only the Harness adapter declared by a compact minimal Prek file. */
+function auditMinimalHarnessPrekAdapters(
+	findings: ToolingAuditFinding[],
+	prekContent: string,
+	parsedHooks: ParsedPrekHook[],
+	repoPath: string,
+): void {
+	auditPrekHookEntryBoundaries(findings, prekContent);
+	for (const hook of parsedHooks) {
+		if (!isHarnessOwnedPrekEntry(hook.entry)) continue;
+		for (const key of hook.duplicateKeys) {
+			findings.push({
+				path: TOOLING_PREK_CONFIG_PATH,
+				severity: "critical",
+				description: `Prek hook '${hook.id ?? "unknown"}' repeats policy key '${key}'`,
+				expected: "Each policy key appears at most once per hook block",
+				actual: key,
+			});
+		}
+		for (const key of hook.invalidKeys) {
+			findings.push({
+				path: TOOLING_PREK_CONFIG_PATH,
+				severity: "critical",
+				description: `Prek hook '${hook.id ?? "unknown"}' has an invalid value for policy key '${key}'`,
+				expected: "A supported TOML scalar or string-array value",
+				actual: key,
+			});
+		}
+		auditPrekHookLeafEntry(findings, hook, repoPath);
+		auditHarnessOwnedPrekHookRuntimeShape(findings, hook);
+	}
+}
+
+/** Route validated raw contracts through their matching tooling boundary. */
+function auditContractTooling(
+	findings: ToolingAuditFinding[],
+	repoPath: string,
+	rawContract: Record<string, unknown>,
+	contract: HarnessContract,
+	baseContract?: HarnessContract,
+): void {
+	const compactMinimal = validateContract(rawContract).success
+		? isCompactMinimalRawContract(rawContract)
+		: false;
+	if (!compactMinimal && !Object.hasOwn(rawContract, "toolingPolicy")) {
+		findings.push({
+			path: "toolingPolicy",
+			severity: "warning",
+			description:
+				"Contract relies on implicit tooling defaults; run 'harness upgrade --dry-run' to preview a safe upgrade path, or 'harness init --update' to re-scaffold tracked files when needed",
+		});
+	}
+
+	if (compactMinimal) {
+		auditMinimalToolingBoundaries(findings, repoPath, contract, baseContract);
+		return;
+	}
+	auditConfiguredTooling(findings, repoPath, contract, baseContract);
+}
+
 /**
  * Audit a repository for tooling policy compliance.
  *
@@ -2680,25 +2832,7 @@ async function auditRepository(
 	}
 
 	const findings: ToolingAuditFinding[] = [];
-	if (!Object.hasOwn(rawContract, "toolingPolicy")) {
-		findings.push({
-			path: "toolingPolicy",
-			severity: "warning",
-			description:
-				"Contract relies on implicit tooling defaults; run 'harness upgrade --dry-run' to preview a safe upgrade path, or 'harness init --update' to re-scaffold tracked files when needed",
-		});
-	}
-
-	auditReadinessScript(findings, repoPath, contract);
-	auditMise(findings, repoPath, contract);
-	auditCodexEnvironment(findings, repoPath, contract);
-	auditMakefile(findings, repoPath, contract);
-	auditProjectBrainMemoryExtension(findings, repoPath, contract);
-	auditPackagePolicy(findings, repoPath, contract);
-	auditLocalHooks(findings, repoPath);
-	if (baseContract) {
-		auditBaseDrift(findings, contract, baseContract);
-	}
+	auditContractTooling(findings, repoPath, rawContract, contract, baseContract);
 
 	return {
 		path: repoPath,

@@ -316,6 +316,57 @@ describe("runInit", () => {
 				);
 			}
 		});
+
+		it("keeps minimal previews below ten files for representative repositories", () => {
+			const fixtures = [
+				{ name: "empty", files: [] },
+				{
+					name: "typescript",
+					files: [
+						["package.json", '{"name":"typescript-fixture"}'],
+						["tsconfig.json", "{}"],
+					],
+				},
+				{
+					name: "python",
+					files: [["pyproject.toml", '[project]\nname = "python-fixture"\n']],
+				},
+				{
+					name: "brownfield",
+					files: [
+						["package.json", '{"name":"brownfield-fixture"}'],
+						[".github/workflows/ci.yml", "name: existing-ci\n"],
+						["AGENTS.md", "# Existing instructions\n"],
+					],
+				},
+			] as const;
+
+			for (const fixture of fixtures) {
+				const fixtureDir = join(tempDir, fixture.name);
+				mkdirSync(fixtureDir, { recursive: true });
+				for (const [path, content] of fixture.files) {
+					const filePath = join(fixtureDir, path);
+					mkdirSync(dirname(filePath), { recursive: true });
+					writeFileSync(filePath, content);
+				}
+
+				const result = runInit(fixtureDir, {
+					dryRun: true,
+					force: false,
+					minimal: true,
+				});
+
+				expect(result.ok, fixture.name).toBe(true);
+				if (result.ok) {
+					expect(result.output.created, fixture.name).toEqual([
+						"harness.contract.json",
+					]);
+					expect(result.output.dryRunPlan?.plannedCreates, fixture.name).toBe(
+						1,
+					);
+				}
+			}
+		});
 	});
 
 	describe("normal mode", () => {
@@ -1878,13 +1929,11 @@ describe("runInit", () => {
 				"Co-authored-by: Codex <noreply@openai.com>",
 			);
 			expect(setupHooks).toContain("Installing prek git hooks");
-			expect(setupHooks).toContain("function getRepoRoot(): string");
+			expect(setupHooks).toContain("function getRepoRoot()");
 			expect(setupHooks).toContain(
 				'return execFileSync("git", ["rev-parse", "--show-toplevel"]',
 			);
-			expect(setupHooks).toContain(
-				'return process.env.PREK_HOME ?? resolve(repoRoot, ".cache/prek")',
-			);
+			expect(setupHooks).toContain('return resolve(repoRoot, ".cache/prek")');
 			expect(setupHooks).toContain(
 				'execFileSync("bash", ["scripts/run-prek.sh", "install", "--overwrite"]',
 			);
@@ -1900,9 +1949,7 @@ describe("runInit", () => {
 				join(tempDir, "scripts/check-validation-locks.sh"),
 				"utf-8",
 			);
-			expect(runPrek).toContain(
-				'PREK_HOME="${PREK_HOME:-$repo_root/.cache/prek}"',
-			);
+			expect(runPrek).toContain('PREK_HOME="$repo_root/.cache/prek"');
 			expect(runPrek).toContain('exec prek "$@"');
 			expect(withValidationLock).toContain(
 				"Usage: bash scripts/with-validation-lock.sh",
@@ -1912,9 +1959,7 @@ describe("runInit", () => {
 			expect(setupHooks).toContain(
 				'WORKTREE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"',
 			);
-			expect(setupHooks).toContain(
-				'PREK_HOME="${PREK_HOME:-$WORKTREE_ROOT/.cache/prek}"',
-			);
+			expect(setupHooks).toContain('PREK_HOME="$WORKTREE_ROOT/.cache/prek"');
 			expect(setupHooks).toContain(
 				'"Error: scripts/validate-commit-msg.js is required for commit message validation."',
 			);
@@ -3715,10 +3760,7 @@ describe("--track flag", () => {
 		// Backups directory is created but may be empty for new files
 		expect(existsSync(join(tempDir, ".harness/backups"))).toBe(true);
 		const manifest = JSON.parse(
-			require("node:fs").readFileSync(
-				join(tempDir, ".harness/restore-manifest.json"),
-				"utf-8",
-			),
+			readFileSync(join(tempDir, ".harness/restore-manifest.json"), "utf-8"),
 		);
 		expect(manifest.ciProvider).toBe("circleci");
 	});
@@ -3814,9 +3856,15 @@ describe("--track flag", () => {
 		);
 		expect(manifest.issueTracker).toBe("github");
 		expect(manifest.minimal).toBe(true);
+		const contract = JSON.parse(
+			readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
+		);
+		expect(contract.branchProtection.requiredChecks).toEqual([]);
+		expect(contract.branchProtection.requiredApprovingReviewCount).toBe(0);
+		expect(contract.ciProviderPolicy).toBeUndefined();
 
 		manifest.harnessVersion = "0.0.1";
-		require("node:fs").writeFileSync(
+		writeFileSync(
 			join(tempDir, ".harness/restore-manifest.json"),
 			JSON.stringify(manifest),
 		);
@@ -3931,6 +3979,33 @@ describe("--rollback flag", () => {
 		expect(existsSync(join(tempDir, ".harness/restore-manifest.json"))).toBe(
 			false,
 		);
+	});
+
+	it("rolls back a tracked minimal install without removing brownfield files", () => {
+		const existingWorkflow = join(tempDir, ".github", "workflows", "ci.yml");
+		mkdirSync(dirname(existingWorkflow), { recursive: true });
+		writeFileSync(existingWorkflow, "name: existing-ci\n");
+
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: true,
+			track: true,
+			minimal: true,
+		});
+		expect(installResult.ok).toBe(true);
+		expect(installResult.ok && installResult.output.created).toEqual([
+			"harness.contract.json",
+		]);
+		expect(existsSync(existingWorkflow)).toBe(true);
+
+		const rollbackResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			rollback: true,
+		});
+		expect(rollbackResult.ok).toBe(true);
+		expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(false);
+		expect(existsSync(existingWorkflow)).toBe(true);
 	});
 
 	// Regression: rollback must not follow symlinks and overwrite files outside workspace

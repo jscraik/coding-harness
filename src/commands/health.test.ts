@@ -6,6 +6,7 @@ import { join } from "node:path";
  * Tests for harness health command (JSC-67)
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { renderHarnessContractTemplate } from "../lib/init/scaffold-contract-template.js";
 import { type HealthOptions, runAutoFix, runHealth } from "./health.js";
 
 // Mock spawnSync to control gate subprocess results
@@ -24,6 +25,23 @@ function writeContract(dir: string): void {
 	writeFileSync(
 		join(dir, "harness.contract.json"),
 		JSON.stringify({ version: "1.0.0" }),
+	);
+}
+
+function writeCompactMinimalContract(dir: string): void {
+	writeFileSync(
+		join(dir, "harness.contract.json"),
+		renderHarnessContractTemplate({
+			agentBranchPrefix: "codex",
+			context: {
+				targetDir: dir,
+				packageScripts: [],
+				projectName: "health-compact-minimal",
+				minimal: true,
+			},
+			packageManager: "pnpm",
+			requiredChecks: [],
+		}),
 	);
 }
 
@@ -146,6 +164,27 @@ describe("runHealth", () => {
 		expect(report.counts.error).toBe(1);
 		const planResult = report.gates.find((g) => g.gate === "plan-gate");
 		expect(planResult?.status).toBe("error");
+	});
+
+	it("skips gates whose prerequisites minimal intentionally omits", () => {
+		writeCompactMinimalContract(dir);
+
+		const report = runHealth({
+			dir,
+			gates: ["context-health", "gardener", "ci-migrate", "plan-gate"],
+		});
+
+		expect(report.overall).toBe("green");
+		expect(report.counts.skipped).toBe(4);
+		expect(report.gates).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ gate: "context-health", status: "skipped" }),
+				expect.objectContaining({ gate: "gardener", status: "skipped" }),
+				expect.objectContaining({ gate: "ci-migrate", status: "skipped" }),
+				expect.objectContaining({ gate: "plan-gate", status: "skipped" }),
+			]),
+		);
+		expect(mockSpawnSync).not.toHaveBeenCalled();
 	});
 
 	it("treats plan-gate traceability failures as errors", () => {
