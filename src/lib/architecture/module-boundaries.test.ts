@@ -1889,6 +1889,15 @@ describe("module boundaries", () => {
 		}
 	});
 
+	it("keeps the Linear gate adapter within its dedicated seam budget", () => {
+		const linearGateAdapter = OUTPUT_NORMALISE_SURFACE_RATCHETS.find(
+			({ path }) => path === "src/lib/output/normalise-linear-gate.ts",
+		);
+
+		expect(linearGateAdapter).toBeDefined();
+		expectRatchetsWithinBudget([linearGateAdapter!]);
+	});
+
 	it("keeps harness next surfaces split after decomposition", () => {
 		expectRatchetsWithinBudget(NEXT_SURFACE_RATCHETS);
 	});

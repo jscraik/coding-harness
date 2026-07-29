@@ -8,7 +8,7 @@ type LinearGateCheck = Extract<
 	{ ok: true }
 >["output"]["checks"][number];
 
-/** Failure class and next action derived from a linear-gate error code. */
+/** Return the required-check failure class for a Linear gate error. */
 export interface LinearGateFailureClassification {
 	failureClass: GateFailureClass;
 	nextAction: string;
@@ -29,10 +29,7 @@ const LINEAR_GATE_INTERNAL_UNKNOWN_NEXT_ACTION =
  */
 function classifyLinearGateErrorCode(errorCode: string): GateFailureClass {
 	const normalizedCode = errorCode.trim().toUpperCase();
-	if (
-		normalizedCode === "CONTRACT_ERROR" ||
-		normalizedCode === "VALIDATION_ERROR"
-	) {
+	if (["CONTRACT_ERROR", "VALIDATION_ERROR"].includes(normalizedCode)) {
 		return "contract_policy";
 	}
 	if (
@@ -50,12 +47,7 @@ function classifyLinearGateErrorCode(errorCode: string): GateFailureClass {
 	return "internal_unknown";
 }
 
-/**
- * Selects the user-facing next-action string for a linear gate failure class.
- *
- * @param failureClass - The classified failure type for a linear gate; determines the recommended next action.
- * @returns The next-action string corresponding to `failureClass`: the contract-policy guidance when `failureClass` is `"contract_policy"`, otherwise the internal-unknown guidance.
- */
+/** Return a corrective action for a Linear gate failure class. */
 function resolveLinearGateNextAction(failureClass: GateFailureClass): string {
 	switch (failureClass) {
 		case "contract_policy":
@@ -67,12 +59,7 @@ function resolveLinearGateNextAction(failureClass: GateFailureClass): string {
 	}
 }
 
-/**
- * Classify a linear-gate result into a failure category and a user-facing next action.
- *
- * @param result - The linear gate result to evaluate; used to determine whether the run passed or failed and, if failed, which error code to classify.
- * @returns A `LinearGateFailureClassification` describing the failure class and recommended next action when the result represents a failure, or `null` when the result indicates success.
- */
+/** Classify a Linear gate result for its failure guidance. */
 export function classifyLinearGateFailure(
 	result: LinearGateResult,
 ): LinearGateFailureClassification | null {
@@ -85,7 +72,6 @@ export function classifyLinearGateFailure(
 			nextAction: resolveLinearGateNextAction("contract_policy"),
 		};
 	}
-
 	const failureClass = classifyLinearGateErrorCode(result.error.code);
 	return {
 		failureClass,
@@ -129,6 +115,7 @@ function failureManualFix(
 	};
 }
 
+/** Build the normalized finding for an internal Linear gate failure. */
 function linearInternalFinding(
 	message: string,
 	failure: LinearGateFailureClassification | null,
@@ -151,13 +138,6 @@ function failureMeta(
 		: undefined;
 }
 
-function failureActionNow(
-	failure: LinearGateFailureClassification | null,
-	fallback: string,
-): string[] {
-	return failure ? [failure.nextAction] : [fallback];
-}
-
 function normaliseLinearGateInternalError(
 	result: Extract<LinearGateResult, { ok: false }>,
 	timestamp: string,
@@ -172,15 +152,15 @@ function normaliseLinearGateInternalError(
 		meta: { ...meta, errorCode: result.error.code },
 		decision: {
 			reason: result.error.message,
-			actionNow: failureActionNow(
-				failure,
-				"Inspect linear-gate internal error and rerun.",
-			),
+			actionNow: [
+				failure?.nextAction ?? "Inspect linear-gate internal error and rerun.",
+			],
 			evidenceRef: [`error:${LINEAR_GATE_INTERNAL_FINDING_ID}`],
 		},
 	});
 }
 
+/** Fail closed when a failed Linear gate result omits its failing checks. */
 function normaliseLinearGateContractViolation(
 	timestamp: string,
 	failure: LinearGateFailureClassification | null,
@@ -188,7 +168,6 @@ function normaliseLinearGateContractViolation(
 	const message =
 		"Linear gate reported passed=false but provided no failing checks; treating payload as a contract violation.";
 	const meta = failureMeta(failure);
-
 	return buildGateResult({
 		gate: LINEAR_GATE_ID,
 		timestamp,
@@ -197,10 +176,10 @@ function normaliseLinearGateContractViolation(
 		...(meta ? { meta } : {}),
 		decision: {
 			reason: "linear-gate returned passed=false with no failing checks.",
-			actionNow: failureActionNow(
-				failure,
-				"Inspect linear-gate payload contract and rerun.",
-			),
+			actionNow: [
+				failure?.nextAction ??
+					"Inspect linear-gate payload contract and rerun.",
+			],
 			evidenceRef: [`error:${LINEAR_GATE_INTERNAL_FINDING_ID}`],
 		},
 	});
@@ -220,14 +199,7 @@ function linearCheckFinding(
 	};
 }
 
-/**
- * Convert a raw LinearGateResult into the canonical GateResult with standardized findings, summary counts, status, and optional meta information.
- *
- * When the gate call failed (result.ok === false) the returned GateResult contains a single internal error finding and `meta.errorCode`. When the gate call succeeded, the returned GateResult contains one error finding for each failing check. If a failure classification is available, its `nextAction` is attached to each finding's `fix.manual` and `meta.failureClass` / `meta.nextAction` are included.
- *
- * @param result - The raw linear-gate response to normalize.
- * @returns A canonical GateResult with normalized `findings`, `summary` (errors/warnings/info/total), `status` ("pass" or "fail"), and optional `meta` fields (`failureClass`, `nextAction`, `errorCode`).
- */
+/** Convert a Linear gate result into canonical evidence. */
 export function normaliseLinearGateResult(
 	result: LinearGateResult,
 ): GateResult {
