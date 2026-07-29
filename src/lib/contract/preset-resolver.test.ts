@@ -16,6 +16,7 @@ import {
 	listBundledPresets,
 	resolvePreset,
 } from "./preset-resolver.js";
+import { SCHEMA_VERSION } from "./json-schema.js";
 
 describe("preset-resolver", () => {
 	beforeEach(() => {
@@ -111,6 +112,25 @@ describe("preset-resolver", () => {
 			expect(preset?.reviewPolicy?.requiredChecks).toContain("typecheck");
 			expect(preset?.reviewPolicy?.requiredChecks).toContain("test");
 			expect(preset?.reviewPolicy?.requiredChecks).toContain("security-scan");
+		});
+
+		it("keeps the bundled minimal preset aligned with the compact contract", () => {
+			const preset = getBundledPreset("minimal");
+			expect(preset).toEqual({
+				version: "1.6.0",
+				branchProtection: {
+					requiredChecks: [],
+					requiredApprovingReviewCount: 0,
+				},
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					requiredChecks: [],
+					approvalMode: "human_approval",
+					enforceReviewerIndependence: true,
+					requireReviewContext: false,
+				},
+			});
 		});
 
 		it("caches and returns deep copies", () => {
@@ -232,7 +252,7 @@ describe("preset-resolver", () => {
 				},
 			);
 
-			expect(result.contract.version).toBe("1.0");
+			expect(result.contract.version).toBe(SCHEMA_VERSION);
 			expect(result.sources).toContain(remoteUrl);
 		});
 

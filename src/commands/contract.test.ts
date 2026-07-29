@@ -189,11 +189,14 @@ describe("buildContractJsonSchema", () => {
 		);
 	});
 
-	it("leaves numeric version semantics to the runtime validator", () => {
+	it("matches the runtime numeric contract-version grammar", () => {
 		const schema = buildContractJsonSchema() as {
-			properties: { version: { type: string } };
+			properties: { version: { type: string; pattern: string } };
 		};
 		expect(schema.properties.version.type).toBe("string");
+		expect(schema.properties.version.pattern).toBe(
+			"^(0|[1-9]\\d*)\\.\\d+(?:\\.\\d+)?$",
+		);
 	});
 
 	it("ciProviderPolicy.mode enum contains all CI_PROVIDER_MODES", () => {
@@ -1234,6 +1237,16 @@ describe("runContractInitCLI", () => {
 			"reviewPolicy",
 			"version",
 		]);
+	});
+
+	it("gives minimal contract users only applicable next steps", () => {
+		const output = join(dir, "harness.contract.json");
+		const code = runContractInitCLI({ preset: "minimal", output });
+		expect(code).toBe(0);
+		const message = consoleSpy.mock.calls.flat().join("\n");
+		expect(message).toContain("harness contract validate");
+		expect(message).not.toContain("riskTierRules");
+		expect(message).not.toContain("Add your CI checks");
 	});
 
 	it("creates lite contract aliasing minimal", () => {

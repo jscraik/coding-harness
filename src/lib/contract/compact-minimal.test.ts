@@ -40,6 +40,14 @@ describe("isCompactMinimalRawContract", () => {
 		expect(isCompactMinimalRawContract(contract)).toBe(true);
 	});
 
+	it("rejects an otherwise compact legacy contract version", () => {
+		const contract = compactContract();
+		contract.version = "1.0";
+
+		expect(validateContract(contract).success).toBe(true);
+		expect(isCompactMinimalRawContract(contract)).toBe(false);
+	});
+
 	it("rejects an unsupported project type", () => {
 		const contract = compactContract("web");
 		contract.projectType = "service";

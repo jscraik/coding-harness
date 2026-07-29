@@ -7,6 +7,7 @@
  * contracts.
  */
 import type { HarnessContract, ReviewPolicy } from "./types.js";
+import { SCHEMA_VERSION } from "./json-schema.js";
 
 const COMPACT_MINIMAL_CONTRACT_KEYS = [
 	"version",
@@ -19,6 +20,7 @@ export function isCompactMinimalRawContract(
 	contract: Record<string, unknown>,
 ): boolean {
 	return (
+		contract.version === SCHEMA_VERSION &&
 		hasExactCompactMinimalKeys(contract) &&
 		hasMinimalNoCheckBranchProtection(contract) &&
 		hasDisabledCompactReviewPolicy(contract)

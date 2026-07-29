@@ -57,6 +57,7 @@ const DEFAULT_CONTRACT_FILE = "harness.contract.json";
 const DEFAULT_PRESET: ContractPreset = "standard";
 const DEFAULT_REQUIRED_CHECKS_MANIFEST = ".harness/ci-required-checks.json";
 
+/** Options that control `harness contract validate` output and input location. */
 export interface ContractValidateOptions {
 	/** Output in JSON format (machine-readable). */
 	json?: boolean | undefined;
@@ -64,6 +65,7 @@ export interface ContractValidateOptions {
 	contractPath?: string | undefined;
 }
 
+/** Options for selecting the required-checks manifest to normalize. */
 export interface ContractNormalizeRequiredChecksOptions {
 	manifestPath?: string | undefined;
 }
@@ -101,6 +103,7 @@ function formatPresetLabel(preset: ContractPresetInput): string {
 
 // ─── contract init ────────────────────────────────────────────────────────────
 
+/** Options for creating a preset `harness.contract.json` file. */
 export interface ContractInitOptions {
 	/** Complexity preset. Defaults to "standard". */
 	preset?: ContractPresetInput | undefined;
@@ -194,13 +197,17 @@ export function runContractInitCLI(options: ContractInitOptions): number {
 				`   Size:     ${content.length} bytes`,
 				"",
 				"Next steps:",
-				"  1. Edit the riskTierRules paths to match your repo layout.",
-				"  2. Add your CI checks to branchProtection.requiredChecks.",
-				"  3. Run: harness contract validate",
+				...(preset === "minimal"
+					? [
+							"  1. Run: harness contract validate",
+							"  2. Upgrade when ready: harness contract init --preset standard --force",
+						]
+					: [
+							"  1. Edit the riskTierRules paths to match your repo layout.",
+							"  2. Add your CI checks to branchProtection.requiredChecks.",
+							"  3. Run: harness contract validate",
+						]),
 				"",
-				preset === "minimal"
-					? "  Upgrade when ready: harness contract init --preset standard --force"
-					: "",
 			]
 				.filter((l) => l !== "")
 				.join("\n"),
@@ -331,6 +338,13 @@ export function runContractSchemaCLI(): number {
 	return 0;
 }
 
+/**
+ * Normalize a required-checks manifest and print its canonical JSON form.
+ *
+ * @param targetDir - Repository directory that contains the default manifest path.
+ * @param options - Optional explicit manifest location.
+ * @returns `0` when the manifest is valid and normalized, otherwise `1`.
+ */
 export function runContractNormalizeRequiredChecksCLI(
 	targetDir: string | undefined,
 	options: ContractNormalizeRequiredChecksOptions = {},
@@ -367,6 +381,7 @@ export function runContractNormalizeRequiredChecksCLI(
 
 // ─── Top-level dispatch ───────────────────────────────────────────────────────
 
+/** Options that select a top-level `harness contract` subcommand. */
 export interface ContractCLIOptions extends ContractValidateOptions {
 	subcommand: "init" | "validate" | "schema" | "normalize-required-checks";
 }
