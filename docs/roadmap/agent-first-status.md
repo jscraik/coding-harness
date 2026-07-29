@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-07-27
+last_validated: 2026-07-29
 ---
 
 # Agent-First Status
@@ -21,10 +21,18 @@ small practical route that helps an agent understand a task, choose one useful
 action, run repository-native proof, distinguish local proof from hosted truth,
 and hand work back clearly.
 
-The current recovery slice makes routine `harness next --json` task-first.
-Optional context maintenance is advisory; it is not the primary action for
-ordinary work. The candidate is awaiting its separate PR, CI, review, and merge
-evidence lanes.
+Recovery slices 1 through 4 are merged to `main`: [#488](https://github.com/jscraik/coding-harness/pull/488)
+made routine `harness next --json` task-first, [#489](https://github.com/jscraik/coding-harness/pull/489)
+reduced the minimal installer, [#490](https://github.com/jscraik/coding-harness/pull/490)
+reduced the command surface, and [#491](https://github.com/jscraik/coding-harness/pull/491)
+collapsed the compact contract and active documentation. The prerequisite
+[#494](https://github.com/jscraik/coding-harness/pull/494) is also merged to
+`main` and makes Local Memory an explicit diagnostic rather than a routine
+admission dependency. Optional
+context maintenance is advisory; it is not the primary action for ordinary work.
+
+The active slice is direct effectiveness observation. It has no current outcome
+claim: the required observations have not yet been collected.
 
 ## North-Star Boundary
 
@@ -42,10 +50,10 @@ rather than refreshed cosmetically.
 
 ## What Is Known
 
-- The routine CLI route has local behavioural evidence in the active recovery
-  PR.
-- Hosted CI, provider review, independent acceptance, merge, release, and
-  real-world effectiveness remain separate claims.
+- The routine CLI route and its compact installer, command, and documentation
+  contracts have merged through recovery PRs #488 through #491.
+- The merged recovery PRs do not prove hosted release, installed-package
+  behavior, independent acceptance, or real-world effectiveness.
 - Product effectiveness is unknown until five real Harness-assisted tasks
   across at least three repositories are recorded with direct observations.
 

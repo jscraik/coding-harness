@@ -111,6 +111,8 @@ proof, and hand work back truthfully. Keep the routine path small.
 - [Release](docs/agents/08-release-and-change-control.md)
 - [Required checks](docs/agents/17-ci-required-checks.md)
 - [CLI reference](docs/cli-reference.md)
+- [Recovery status](docs/roadmap/agent-first-status.md), whose validation date
+  and registered `harness.contract.json` cadence must remain aligned.
 
 Keep `.harness` durable knowledge separate from private runtime data, caches,
 and raw sessions. PR bodies may cite concise evidence but must not include
