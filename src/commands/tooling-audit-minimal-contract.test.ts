@@ -213,6 +213,60 @@ pass_filenames = false
 		}
 	});
 
+	it("does not require a full Harness hook scaffold for an existing adapter", async () => {
+		const tempRoot = mkdtempSync(
+			join(tmpdir(), "tooling-audit-minimal-existing-adapter-"),
+		);
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(join(repoDir, ".git"), { recursive: true });
+		writeContract(
+			repoDir,
+			JSON.parse(
+				renderHarnessContractTemplate({
+					agentBranchPrefix: "codex",
+					context: {
+						targetDir: repoDir,
+						packageScripts: [],
+						projectName: "minimal-existing-adapter-fixture",
+						minimal: true,
+					},
+					packageManager: "pnpm",
+					requiredChecks: [],
+				}),
+			),
+		);
+		mkdirSync(join(repoDir, "scripts"), { recursive: true });
+		writeFileSync(join(repoDir, "scripts/hook-pre-commit.sh"), "exit 0\n");
+		writeFileSync(
+			join(repoDir, "prek.toml"),
+			`[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "pre-commit"
+name = "Existing adapter"
+entry = "bash scripts/hook-pre-commit.sh"
+language = "system"
+stages = ["pre-commit"]
+pass_filenames = false
+`,
+			"utf-8",
+		);
+
+		try {
+			const result = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+			expect(result).toMatchObject({
+				ok: true,
+				value: { exitCode: EXIT_CODES.SUCCESS },
+			});
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
 	it("audits malformed stages on a Harness-owned Prek adapter", async () => {
 		const tempRoot = mkdtempSync(
 			join(tmpdir(), "tooling-audit-minimal-malformed-hooks-"),

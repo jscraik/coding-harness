@@ -2674,10 +2674,41 @@ function auditMinimalToolingBoundaries(
 ): void {
 	const prekContent = readTextFile(join(repoPath, TOOLING_PREK_CONFIG_PATH));
 	if (prekContent !== null && hasHarnessOwnedPrekHook(prekContent)) {
-		auditLocalHooks(findings, repoPath);
+		auditMinimalHarnessPrekAdapters(findings, prekContent, repoPath);
 	}
 	if (baseContract) {
 		auditBaseDrift(findings, contract, baseContract);
+	}
+}
+
+/** Audit only the Harness adapter declared by a compact minimal Prek file. */
+function auditMinimalHarnessPrekAdapters(
+	findings: ToolingAuditFinding[],
+	prekContent: string,
+	repoPath: string,
+): void {
+	for (const hook of parsePrekHooks(prekContent)) {
+		if (!isHarnessOwnedPrekEntry(hook.entry)) continue;
+		for (const key of hook.duplicateKeys) {
+			findings.push({
+				path: TOOLING_PREK_CONFIG_PATH,
+				severity: "critical",
+				description: `Prek hook '${hook.id ?? "unknown"}' repeats policy key '${key}'`,
+				expected: "Each policy key appears at most once per hook block",
+				actual: key,
+			});
+		}
+		for (const key of hook.invalidKeys) {
+			findings.push({
+				path: TOOLING_PREK_CONFIG_PATH,
+				severity: "critical",
+				description: `Prek hook '${hook.id ?? "unknown"}' has an invalid value for policy key '${key}'`,
+				expected: "A supported TOML scalar or string-array value",
+				actual: key,
+			});
+		}
+		auditPrekHookEntryBoundaries(findings, prekContent);
+		auditPrekHookCommandFile(findings, hook, repoPath);
 	}
 }
 

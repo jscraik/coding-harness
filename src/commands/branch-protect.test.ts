@@ -772,11 +772,34 @@ describe("runBranchProtect", () => {
 			});
 			expect(result).toMatchObject({
 				ok: true,
-				output: { requiredChecks: [] },
+				output: {
+					requiredChecks: [],
+					managedPolicy: {
+						restrictDeletions: false,
+						blockForcePushes: false,
+						requireLinearHistory: false,
+						requirePullRequest: false,
+						requireConversationResolution: false,
+						codeQuality: { required: false },
+						publicCodeScanning: { required: false },
+					},
+				},
 			});
 			expect(
 				createRuleset.mock.calls[0]?.[0].rules.some(
 					(rule) => rule.type === "required_status_checks",
+				),
+			).toBe(false);
+			expect(
+				createRuleset.mock.calls[0]?.[0].rules.some((rule) =>
+					[
+						"deletion",
+						"non_fast_forward",
+						"required_linear_history",
+						"pull_request",
+						"code_quality",
+						"code_scanning",
+					].includes(rule.type),
 				),
 			).toBe(false);
 		} finally {

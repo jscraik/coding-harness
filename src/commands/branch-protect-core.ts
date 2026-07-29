@@ -36,6 +36,28 @@ const DEFAULT_MERGE_METHODS: BranchProtectionMergeMethods = {
 	squash: true,
 	rebase: true,
 };
+const COMPACT_MINIMAL_BRANCH_PROTECTION_POLICY: BranchProtectionPolicy = {
+	requiredChecks: [],
+	requiredApprovingReviewCount: 0,
+	restrictDeletions: false,
+	blockForcePushes: false,
+	requireLinearHistory: false,
+	requirePullRequest: false,
+	dismissStaleReviewsOnPush: false,
+	requireConversationResolution: false,
+	requireCodeOwnerReview: false,
+	requireLastPushApproval: false,
+	requireBranchesUpToDate: false,
+	allowedMergeMethods: DEFAULT_MERGE_METHODS,
+	codeQuality: { required: false, severity: "all" },
+	publicCodeScanning: {
+		required: false,
+		publicOnly: true,
+		tool: "CodeQL",
+		alertsThreshold: "errors",
+		securityAlertsThreshold: "high_or_higher",
+	},
+};
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -207,6 +229,13 @@ function resolveContractBranchProtectionPolicy(
 	try {
 		const contract = loadContract(contractPath);
 		const compactMinimal = isCompactMinimalContractFile(contractPath);
+		if (compactMinimal) {
+			return {
+				branchProtectionPolicy: {
+					...COMPACT_MINIMAL_BRANCH_PROTECTION_POLICY,
+				},
+			};
+		}
 		const ciProviderPolicy = contract.ciProviderPolicy;
 		const activeProvider = ciProviderPolicy?.activeProvider;
 		const requiredCheckManifestPath =
