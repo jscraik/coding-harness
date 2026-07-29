@@ -114,16 +114,23 @@ export function extractHelpCommands(cliSource: string): {
 /**
  * Extracts command names listed in a README command index table.
  *
- * @param readmeSource - README text containing a Markdown table whose rows start with a first-column inline-code command (e.g., `| `command` | ...`)
- * @returns A sorted array of unique command names found in the table's first column
+ * @param readmeSource - README text containing a Markdown table with an inline-code command cell (for example, `| Job | `harness command --json` |`)
+ * @returns A sorted array of unique command names found in command cells
  */
 export function extractReadmeCommands(readmeSource: string): string[] {
 	const commands = new Set<string>();
-	const regex = /^\|\s+`([^`]+)`\s+\|/gm;
-	let match: RegExpExecArray | null = regex.exec(readmeSource);
-	while (match) {
-		if (match[1]) commands.add(match[1]);
-		match = regex.exec(readmeSource);
+	for (const line of readmeSource.split("\n")) {
+		if (!line.startsWith("|")) {
+			continue;
+		}
+		const invocation = line.match(/`([^`]+)`/)?.[1];
+		const command = invocation
+			?.trim()
+			.replace(/^harness\s+/, "")
+			.split(/\s+/, 1)[0];
+		if (command && /^[a-z][a-z0-9:-]*$/.test(command)) {
+			commands.add(command);
+		}
 	}
 	return Array.from(commands).sort();
 }

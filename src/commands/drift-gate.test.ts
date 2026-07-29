@@ -311,6 +311,123 @@ describe("drift-gate command", () => {
 		).toBe(false);
 	});
 
+	it("keeps the compact README focused on stable commands", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"drift-gate-test-stable-readme",
+		);
+		roots.push(root);
+		createRepoFixture(root);
+		write(
+			join(root, "src/cli.ts"),
+			[
+				'if (command === "next") {}',
+				'if (command === "check") {}',
+				'if (command === "init") {}',
+				'if (command === "verify-work") {}',
+				'if (command === "pr-closeout") {}',
+				'if (command === "internal-maintenance") {}',
+			].join("\n"),
+		);
+		write(
+			join(root, "README.md"),
+			[
+				"| Job | Command |",
+				"| --- | --- |",
+				"| Orient | `harness next --json` |",
+				"| Diagnose | `harness check --json` |",
+				"| Install | `harness init --minimal --dry-run --json` |",
+				"| Verify | `harness verify-work --fast` |",
+				"| Close out | `harness pr-closeout --pr <number> --json` |",
+			].join("\n"),
+		);
+
+		const result = runDriftGate({ repoRoot: root, mode: "advisory" });
+
+		expect(
+			result.report.findings.some(
+				(f) => f.rule_id === "command.surface.readme.missing",
+			),
+		).toBe(false);
+		expect(
+			result.report.findings.some(
+				(f) => f.rule_id === "command.surface.dispatch.missing",
+			),
+		).toBe(false);
+	});
+
+	it("rejects a compact README that omits a stable command", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"drift-gate-test-missing-stable-readme-command",
+		);
+		roots.push(root);
+		createRepoFixture(root);
+		write(
+			join(root, "src/cli.ts"),
+			[
+				'if (command === "next") {}',
+				'if (command === "check") {}',
+				'if (command === "init") {}',
+				'if (command === "verify-work") {}',
+				'if (command === "pr-closeout") {}',
+			].join("\n"),
+		);
+		write(
+			join(root, "README.md"),
+			[
+				"| Job | Command |",
+				"| --- | --- |",
+				"| Orient | `harness next --json` |",
+				"| Install | `harness init --minimal --dry-run --json` |",
+				"| Verify | `harness verify-work --fast` |",
+				"| Close out | `harness pr-closeout --pr <number> --json` |",
+			].join("\n"),
+		);
+
+		const result = runDriftGate({ repoRoot: root, mode: "advisory" });
+
+		expect(
+			result.report.findings.some(
+				(f) =>
+					f.rule_id === "command.surface.readme.missing" &&
+					f.message.includes("check"),
+			),
+		).toBe(true);
+	});
+
+	it("rejects README commands that no longer dispatch", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"drift-gate-test-retired-readme-command",
+		);
+		roots.push(root);
+		createRepoFixture(root);
+		write(
+			join(root, "README.md"),
+			[
+				"| Command | Purpose |",
+				"| --- | --- |",
+				"| `init` | Install harness. |",
+				"| `drift-gate` | Check consistency drift. |",
+				"| `retired-command` | This command no longer exists. |",
+			].join("\n"),
+		);
+
+		const result = runDriftGate({ repoRoot: root, mode: "advisory" });
+
+		expect(
+			result.report.findings.some(
+				(f) =>
+					f.rule_id === "command.surface.dispatch.missing" &&
+					f.message.includes("retired-command"),
+			),
+		).toBe(true);
+	});
+
 	it("blocks writes through symlinked output path", () => {
 		const root = join(process.cwd(), "artifacts", "drift-gate-test-7");
 		roots.push(root);
@@ -493,7 +610,7 @@ describe("drift-gate command", () => {
 		expect(statusFinding?.fix?.suppressible).toBe(true);
 	});
 
-	it("flags north-star surface drift when contract-backed surfaces diverge", () => {
+	it("keeps north-star parity on dedicated governance surfaces", () => {
 		const root = join(
 			process.cwd(),
 			"artifacts",
@@ -514,23 +631,16 @@ describe("drift-gate command", () => {
 		expect(
 			result.report.findings.some(
 				(f) =>
-					f.rule_id === "status.north_star.contract_parity.readme" &&
-					f.path === "README.md",
-			),
-		).toBe(true);
-		expect(
-			result.report.findings.some(
-				(f) =>
 					f.rule_id ===
 						"status.north_star.contract_parity.agent_first_status" &&
 					f.path === "docs/roadmap/agent-first-status.md",
 			),
 		).toBe(true);
-		// AC3: parity findings carry the drift_blocking failure class
-		const readmeFinding = result.report.findings.find(
-			(f) => f.rule_id === "status.north_star.contract_parity.readme",
+		const statusFinding = result.report.findings.find(
+			(f) =>
+				f.rule_id === "status.north_star.contract_parity.agent_first_status",
 		);
-		expect(readmeFinding?.failureClass).toBe("drift_blocking");
+		expect(statusFinding?.failureClass).toBe("drift_blocking");
 	});
 
 	it("flags cadence breach for stale non-core surfaces", () => {
@@ -628,14 +738,16 @@ describe("drift-gate command", () => {
 		};
 		writeFileSync(contractPath, JSON.stringify(contract, null, 2));
 
-		// Write an override that covers the README parity finding
+		// Write an override that covers the status parity finding.
 		const ack: OverrideAcknowledgement = {
 			schemaVersion: "north-star-override-acknowledgement/v1",
-			overrideId: "ovr-readme-parity",
+			overrideId: "ovr-status-parity",
 			timestampUtc: new Date().toISOString(),
 			actor: "jamie-craik",
-			reason: "Readme divergence is expected during rebranding",
-			linkedFindingIds: ["status.north_star.contract_parity.readme"],
+			reason: "Status divergence is expected during a migration",
+			linkedFindingIds: [
+				"status.north_star.contract_parity.agent_first_status",
+			],
 			approvedUntilUtc: new Date(Date.now() + 86400000).toISOString(),
 			compensatingControls: ["rebrand-tracker"],
 			signatureRef: "refs/reviewers/jamie-craik",
@@ -643,7 +755,7 @@ describe("drift-gate command", () => {
 		writeNorthStarOverrideAcknowledgement(
 			root,
 			"2026-04-27",
-			"ovr-readme-parity",
+			"ovr-status-parity",
 			ack,
 		);
 
@@ -653,20 +765,15 @@ describe("drift-gate command", () => {
 			seedBaseline: false,
 		});
 
-		// The overridden finding should be in suppressed, not findings
+		// The overridden finding should be in suppressed, not findings.
 		expect(
 			result.report.findings.some(
-				(f) => f.rule_id === "status.north_star.contract_parity.readme",
+				(f) =>
+					f.rule_id === "status.north_star.contract_parity.agent_first_status",
 			),
 		).toBe(false);
 		expect(
 			result.report.suppressed?.some(
-				(f) => f.rule_id === "status.north_star.contract_parity.readme",
-			),
-		).toBe(true);
-		// Other north-star findings should still be present
-		expect(
-			result.report.findings.some(
 				(f) =>
 					f.rule_id === "status.north_star.contract_parity.agent_first_status",
 			),
