@@ -127,8 +127,8 @@ function safeParseJson(content: string): unknown {
  * Merge validated contract data with defaults and normalize version-dependent fields.
  *
  * Preserves only explicitly provided fields from `data`, fills missing values from defaults,
- * resolves the effective `version`, and keeps optional policy surfaces absent unless
- * the input explicitly selects them.
+ * resolves the effective `version`, and keeps `northStar`, `productSurface`, and
+ * `overrideReviewerRegistry` absent unless the input explicitly selects them.
  *
  * @param data - Validated contract data, or `undefined` to use defaults
  * @returns The merged HarnessContract with defaults applied and version-dependent fields normalized

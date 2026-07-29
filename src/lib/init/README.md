@@ -24,6 +24,13 @@ contract, not the minimal scaffold.
   their focused tests aligned.
 - Preserve target path safety and rollback behavior. Relative in-repository
   symlinks are allowed; absolute or escaping links are blocked.
-- Run focused init and compact-contract tests, then
-  `bash scripts/run-harness-gate.sh docs-gate --mode required --json` when
-  operator-facing scaffold behavior changes.
+- Run `pnpm exec vitest run src/lib/init/scaffold.test.ts
+  src/lib/init/scaffold-contract-template.test.ts` for focused init behavior,
+  then `pnpm exec vitest run src/lib/contract/compact-minimal.test.ts` for the
+  compact-contract boundary. Each command must pass; otherwise the owner of the
+  changed init or contract path fixes the failing behavior and reruns that
+  command.
+- When operator-facing scaffold behavior changes, run
+  `bash scripts/run-harness-gate.sh docs-gate --mode required --json`. It must
+  pass; otherwise follow its diagnostic to correct the affected documentation
+  before rerunning the gate.

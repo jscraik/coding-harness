@@ -75,8 +75,8 @@ proof, and hand work back truthfully. Keep the routine path small.
   target context, session-collector, agent reflection, unobserved horizon,
   compaction, and environment boundaries. Workflow skill proof needs a
   capture-the-flag win condition, flag captured, skill workout, and
-  self-reflection. Closeout completion: green checks are not complete or
-  validation evidence.
+  self-reflection. Green checks provide validation evidence for their
+  individual checks, but do not alone establish closeout completion.
 - Harness Reviewer Roles First and Harness Tool Builder are first-choice subagents
   when review or reusable tooling is explicitly selected: use
   `spawn_agent(agent_type="harness-product-code-reviewer")` or
