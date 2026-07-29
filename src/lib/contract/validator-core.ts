@@ -107,6 +107,13 @@ import {
 } from "./validator-helpers.js";
 
 const VALID_BLAST_RADIUS_RULES_MODES = ["merge", "replace"] as const;
+const VALID_PROJECT_TYPES = [
+	"cli",
+	"desktop",
+	"library",
+	"web",
+	"unknown",
+] as const;
 const VALID_TOP_LEVEL_KEYS = [
 	"$schema",
 	"version",
@@ -145,6 +152,7 @@ const VALID_TOP_LEVEL_KEYS = [
 	"toolingPolicy",
 	"ciProviderPolicy",
 	"ciOwnership",
+	"projectType",
 	"extends",
 ] as const;
 const VALID_UI_LOOP_POLICY_KEYS = [
@@ -1946,6 +1954,24 @@ export function validateContract(
 
 	const obj = data as Record<string, unknown>;
 	isValidTopLevel(obj, errors);
+
+	if (
+		"projectType" in obj &&
+		obj.projectType !== undefined &&
+		(typeof obj.projectType !== "string" ||
+			!VALID_PROJECT_TYPES.includes(
+				obj.projectType as (typeof VALID_PROJECT_TYPES)[number],
+			))
+	) {
+		errors.push({
+			code: ValidationErrorCode.INVALID_VALUE,
+			path: "projectType",
+			message: `projectType must be one of: ${VALID_PROJECT_TYPES.join(", ")}`,
+			expected: VALID_PROJECT_TYPES.join(" | "),
+			received: JSON.stringify(obj.projectType),
+			fix: "Use a project type emitted by harness init or remove projectType",
+		});
+	}
 
 	// Validate version (required)
 	if (typeof obj.version !== "string") {

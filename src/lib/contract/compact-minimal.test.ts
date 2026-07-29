@@ -12,11 +12,13 @@ const compactContext: TemplateRenderContext = {
 	minimal: true,
 };
 
-function compactContract(): Record<string, unknown> {
+function compactContract(
+	projectType?: TemplateRenderContext["projectType"],
+): Record<string, unknown> {
 	return JSON.parse(
 		renderHarnessContractTemplate({
 			agentBranchPrefix: "codex",
-			context: compactContext,
+			context: { ...compactContext, ...(projectType ? { projectType } : {}) },
 			packageManager: "pnpm",
 			requiredChecks: [],
 		}),
@@ -29,6 +31,26 @@ describe("isCompactMinimalRawContract", () => {
 
 		expect(validateContract(contract).success).toBe(true);
 		expect(isCompactMinimalRawContract(contract)).toBe(true);
+	});
+
+	it("accepts the project type emitted into a detected minimal contract", () => {
+		const contract = compactContract("web");
+
+		expect(validateContract(contract).success).toBe(true);
+		expect(isCompactMinimalRawContract(contract)).toBe(true);
+	});
+
+	it("rejects an unsupported project type", () => {
+		const contract = compactContract("web");
+		contract.projectType = "service";
+
+		const result = validateContract(contract);
+		expect(result.success).toBe(false);
+		expect(result.errors).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ path: "projectType" }),
+			]),
+		);
 	});
 
 	it("rejects a schema-valid minimal-shaped contract that enables review context", () => {
