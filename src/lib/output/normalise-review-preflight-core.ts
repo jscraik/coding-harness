@@ -43,6 +43,36 @@ function reviewStatusFromOutput(
 	return "fail";
 }
 
+/** Preserve a compact-contract exemption without presenting it as review evidence. */
+function normaliseNotApplicableReviewGateResult(
+	output: ReviewGateOutput,
+): GateResult {
+	return buildGateResult({
+		gate: "review-gate",
+		status: "skipped",
+		findings: [],
+		meta: {
+			notApplicable: output.notApplicable,
+			headSha: output.headSha,
+			checkStatus: output.checkStatus,
+			policyGateStatus: output.policy_gate_status,
+			planTraceabilityStatus: output.plan_traceability_status,
+			confidenceRubric: output.confidence_rubric,
+		},
+		decision: {
+			reason: `Review gate is not applicable for SHA ${output.headSha}; no review evidence was evaluated.`,
+			actionLater: [
+				"Add a review policy before treating this lane as review evidence.",
+			],
+			evidenceRef: [
+				`sha:${output.headSha}`,
+				`review:not-applicable:${output.notApplicable}`,
+			],
+		},
+	});
+}
+
+/** Map a review-gate blocker diagnostic to its stable failure classification. */
 function classifyReviewGateBlocker(blocker: string): ReviewGateFailureClass {
 	const explicitFailureClass = blocker.match(
 		/\b(contract_invalid|admission_incomplete|admission_unjustified|review_evidence_incomplete|review_evidence_contradiction|surface_registration_gap|drift_blocking|safety_floor_violation|cadence_breach):/u,
@@ -221,48 +251,49 @@ export function normalisePreflightGateResult(
 	});
 }
 
-/**
- * Normalise review-gate output to canonical GateResult.
- */
-export function normaliseReviewGateResult(
-	result: ReviewGateResult,
+/** Normalise a structured review-gate error to canonical GateResult. */
+function normaliseReviewGateError(
+	error: Extract<ReviewGateResult, { ok: false }>["error"],
 	recoveryHint?: string,
 ): GateResult {
 	const gate = "review-gate";
+	const finding: GateFinding = {
+		id: "review-gate.result.internal",
+		severity: "error",
+		gate,
+		message: error.message,
+		baseline: false,
+		fix: {
+			...(recoveryHint ? { manual: recoveryHint } : {}),
+			suppressible: false,
+		},
+	};
+	return buildGateResult({
+		gate,
+		status: "fail",
+		findings: [finding],
+		meta: { errorCode: error.code },
+		decision: {
+			reason: error.message,
+			actionNow: recoveryHint
+				? [recoveryHint]
+				: ["Resolve review-gate error and rerun harness review-gate."],
+			evidenceRef: ["error:review-gate.result.internal"],
+		},
+	});
+}
 
-	if (!result.ok) {
-		const finding: GateFinding = {
-			id: "review-gate.result.internal",
-			severity: "error",
-			gate,
-			message: result.error.message,
-			baseline: false,
-			fix: {
-				...(recoveryHint ? { manual: recoveryHint } : {}),
-				suppressible: false,
-			},
-		};
-		return buildGateResult({
-			gate,
-			status: "fail",
-			findings: [finding],
-			meta: { errorCode: result.error.code },
-			decision: {
-				reason: result.error.message,
-				actionNow: recoveryHint
-					? [recoveryHint]
-					: ["Resolve review-gate error and rerun harness review-gate."],
-				evidenceRef: ["error:review-gate.result.internal"],
-			},
-		});
-	}
-
-	const status = reviewStatusFromOutput(result.output);
+/** Normalise an evaluated review-gate result to canonical GateResult. */
+function normaliseEvaluatedReviewGateResult(
+	output: ReviewGateOutput,
+): GateResult {
+	const gate = "review-gate";
+	const status = reviewStatusFromOutput(output);
 	const findingSeverity: GateFinding["severity"] =
 		status === "warn" ? "warning" : "error";
 	const blockerClassCounts = new Map<ReviewGateFailureClass, number>();
 	const blockerClasses: ReviewGateFailureClass[] = [];
-	const findings: GateFinding[] = result.output.blockers.map((blocker) => {
+	const findings: GateFinding[] = output.blockers.map((blocker) => {
 		const failureClass = classifyReviewGateBlocker(blocker);
 		blockerClasses.push(failureClass);
 		const occurrence = (blockerClassCounts.get(failureClass) ?? 0) + 1;
@@ -293,27 +324,27 @@ export function normaliseReviewGateResult(
 			...(blockerClasses.length > 0
 				? { blockedFailureClasses: uniqueStrings(blockerClasses) }
 				: {}),
-			headSha: result.output.headSha,
-			checkStatus: result.output.checkStatus,
-			checkConclusion: result.output.checkConclusion,
-			needsRerun: result.output.needsRerun,
-			timedOut: result.output.timedOut ?? false,
-			policyGateStatus: result.output.policy_gate_status,
-			planTraceabilityStatus: result.output.plan_traceability_status,
-			planIds: result.output.plan_ids,
-			actionableCount: result.output.actionable_count,
-			informationalCount: result.output.informational_count,
-			confidenceRubric: result.output.confidence_rubric,
+			headSha: output.headSha,
+			checkStatus: output.checkStatus,
+			checkConclusion: output.checkConclusion,
+			needsRerun: output.needsRerun,
+			timedOut: output.timedOut ?? false,
+			policyGateStatus: output.policy_gate_status,
+			planTraceabilityStatus: output.plan_traceability_status,
+			planIds: output.plan_ids,
+			actionableCount: output.actionable_count,
+			informationalCount: output.informational_count,
+			confidenceRubric: output.confidence_rubric,
 		},
 		decision: {
-			reason: result.output.verified
-				? `Review verified for SHA ${result.output.headSha}.`
-				: result.output.blockers.length > 0
-					? `Review is not merge-ready: ${result.output.blockers[0]}.`
-					: `Review is not merge-ready (status: ${result.output.checkStatus}).`,
-			...(result.output.blockers.length
-				? { actionNow: result.output.blockers }
-				: result.output.needsRerun
+			reason: output.verified
+				? `Review verified for SHA ${output.headSha}.`
+				: output.blockers.length > 0
+					? `Review is not merge-ready: ${output.blockers[0]}.`
+					: `Review is not merge-ready (status: ${output.checkStatus}).`,
+			...(output.blockers.length
+				? { actionNow: output.blockers }
+				: output.needsRerun
 					? { actionNow: ["Rerun review checks and retry review-gate."] }
 					: {}),
 			actionLater: [
@@ -321,10 +352,23 @@ export function normaliseReviewGateResult(
 				"Capture decision artifacts for merge readiness audits.",
 			],
 			evidenceRef: uniqueStrings([
-				`sha:${result.output.headSha}`,
-				...result.output.plan_ids.map((planId) => `plan:${planId}`),
+				`sha:${output.headSha}`,
+				...output.plan_ids.map((planId) => `plan:${planId}`),
 				...findings.map((finding) => `finding:${finding.id}`),
 			]),
 		},
 	});
+}
+
+/** Normalise review-gate output to canonical GateResult. */
+export function normaliseReviewGateResult(
+	result: ReviewGateResult,
+	recoveryHint?: string,
+): GateResult {
+	if (!result.ok) {
+		return normaliseReviewGateError(result.error, recoveryHint);
+	}
+	return result.output.notApplicable
+		? normaliseNotApplicableReviewGateResult(result.output)
+		: normaliseEvaluatedReviewGateResult(result.output);
 }

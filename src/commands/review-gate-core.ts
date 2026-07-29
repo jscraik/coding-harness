@@ -856,27 +856,27 @@ function isCompactMinimalContractFile(contractPath: string): boolean {
 	}
 }
 
-/** Build a successful result without inventing review evidence for minimal scope. */
+/** Build a not-applicable result without inventing review evidence for minimal scope. */
 function compactMinimalReviewResult(headSha: string): ReviewGateResult {
 	return {
 		ok: true,
 		output: {
-			verified: true,
+			verified: false,
 			notApplicable: "compact-minimal-contract",
 			headSha,
-			checkStatus: "completed",
+			checkStatus: "not_applicable",
 			needsRerun: false,
-			policy_gate_status: "pass",
-			plan_traceability_status: "pass",
+			policy_gate_status: "missing",
+			plan_traceability_status: "missing",
 			plan_ids: [],
 			blockers: [],
 			actionable_count: 0,
 			informational_count: 1,
 			confidence_rubric: {
-				score: 5,
-				level: "high",
+				score: 1,
+				level: "low",
 				rationale: [
-					"Review gate is not applicable because the compact minimal contract declares no review or CI surface.",
+					"Review gate is not applicable because the compact minimal contract declares no review or CI surface; no review evidence was evaluated.",
 				],
 			},
 		},
@@ -906,10 +906,6 @@ export async function runReviewGate(
 			},
 		};
 	}
-	if (isCompactMinimalContractFile(options.contractPath)) {
-		return compactMinimalReviewResult(options.headSha);
-	}
-
 	let contract: HarnessContract;
 	try {
 		contract = loadContract(options.contractPath);
@@ -924,6 +920,9 @@ export async function runReviewGate(
 			ok: false,
 			error: { code: "SYSTEM_ERROR", message: sanitizeError(e) },
 		};
+	}
+	if (isCompactMinimalContractFile(options.contractPath)) {
+		return compactMinimalReviewResult(options.headSha);
 	}
 
 	const reviewPolicy = contract.reviewPolicy ?? DEFAULT_REVIEW_POLICY;
@@ -1632,9 +1631,11 @@ export async function runReviewGateCLI(
 			}
 		}
 
-		const exitCode = result.output.verified
+		const exitCode = result.output.notApplicable
 			? EXIT_CODES.SUCCESS
-			: EXIT_CODES.REVIEW_NOT_VERIFIED;
+			: result.output.verified
+				? EXIT_CODES.SUCCESS
+				: EXIT_CODES.REVIEW_NOT_VERIFIED;
 		let finalExitCode: number = exitCode;
 
 		if (!result.output.notApplicable) {

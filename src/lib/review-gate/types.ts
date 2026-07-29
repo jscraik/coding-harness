@@ -52,7 +52,13 @@ export interface ReviewGateOutput {
 	/** Present when the compact minimal contract declares no review surface. */
 	notApplicable?: "compact-minimal-contract" | undefined;
 	headSha: string;
-	checkStatus: "completed" | "in_progress" | "queued" | "pending" | "not_found";
+	checkStatus:
+		| "completed"
+		| "in_progress"
+		| "queued"
+		| "pending"
+		| "not_found"
+		| "not_applicable";
 	effectiveCheckName?: string;
 	checkConclusion?: string | undefined;
 	needsRerun: boolean;

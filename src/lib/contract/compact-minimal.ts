@@ -6,7 +6,7 @@
  * an opt-out, because schema migrations may add empty arrays to older full
  * contracts.
  */
-import type { HarnessContract } from "./types.js";
+import type { HarnessContract, ReviewPolicy } from "./types.js";
 
 const COMPACT_MINIMAL_CONTRACT_KEYS = [
 	"version",
@@ -24,7 +24,8 @@ export function isCompactMinimalRawContract(
 ): boolean {
 	return (
 		hasExactCompactMinimalKeys(contract) &&
-		hasMinimalNoCheckBranchProtection(contract)
+		hasMinimalNoCheckBranchProtection(contract) &&
+		hasDisabledCompactReviewPolicy(contract)
 	);
 }
 
@@ -55,5 +56,53 @@ function hasMinimalNoCheckBranchProtection(
 		Array.isArray(branchProtection?.requiredChecks) &&
 		branchProtection.requiredChecks.length === 0 &&
 		branchProtection.requiredApprovingReviewCount === 0
+	);
+}
+
+/** Verify that review evidence remains intentionally disabled for the compact shape. */
+function hasDisabledCompactReviewPolicy(
+	contract: Record<string, unknown>,
+): boolean {
+	const reviewPolicy = contract.reviewPolicy;
+	if (!isReviewPolicyObject(reviewPolicy)) {
+		return false;
+	}
+	return [
+		hasExactCompactReviewPolicyKeys(reviewPolicy),
+		hasNoRequiredReviewChecks(reviewPolicy),
+		reviewPolicy.timeoutSeconds === 600,
+		reviewPolicy.timeoutAction === "fail",
+		reviewPolicy.approvalMode === "human_approval",
+		reviewPolicy.enforceReviewerIndependence === true,
+		reviewPolicy.requireReviewContext === false,
+	].every(Boolean);
+}
+
+/** Narrow raw review policy data before comparing it to the compact template. */
+function isReviewPolicyObject(value: unknown): value is ReviewPolicy {
+	return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+/** Verify that compact review policy has no full-policy additions. */
+function hasExactCompactReviewPolicyKeys(reviewPolicy: ReviewPolicy): boolean {
+	const expectedKeys = [
+		"timeoutSeconds",
+		"timeoutAction",
+		"requiredChecks",
+		"approvalMode",
+		"enforceReviewerIndependence",
+		"requireReviewContext",
+	];
+	return (
+		Object.keys(reviewPolicy).length === expectedKeys.length &&
+		expectedKeys.every((key) => Object.hasOwn(reviewPolicy, key))
+	);
+}
+
+/** Verify that compact review policy declares no CI review checks. */
+function hasNoRequiredReviewChecks(reviewPolicy: ReviewPolicy): boolean {
+	return (
+		Array.isArray(reviewPolicy.requiredChecks) &&
+		reviewPolicy.requiredChecks.length === 0
 	);
 }

@@ -156,6 +156,29 @@ contact_links:
 		]);
 	});
 
+	it("rejects an out-of-tree compact contract before applying the minimal skip", () => {
+		const outsideRoot = mkdtempSync(
+			join(tmpdir(), "linear-gate-outside-root-"),
+		);
+		try {
+			writeCompactMinimalContract(outsideRoot);
+			const result = runLinearGate({
+				repoRoot: tempDir,
+				contractPath: join(outsideRoot, "harness.contract.json"),
+			});
+
+			expect(result).toMatchObject({
+				ok: false,
+				error: {
+					code: "CONTRACT_ERROR",
+					message: expect.stringContaining("Path traversal detected"),
+				},
+			});
+		} finally {
+			rmSync(outsideRoot, { recursive: true, force: true });
+		}
+	});
+
 	it("accepts Closes as a closing Linear reference", () => {
 		writeFileSync(
 			join(tempDir, "package.json"),

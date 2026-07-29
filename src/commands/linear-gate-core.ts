@@ -267,9 +267,6 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 		options.contractPath ?? "harness.contract.json",
 	);
 	const contractPath = relative(repoRoot, contractFilePath);
-	if (isCompactMinimalContractFile(contractFilePath)) {
-		return compactMinimalResult(repoRoot);
-	}
 	let contract: HarnessContract;
 	const previousCwd = process.cwd();
 	try {
@@ -285,6 +282,9 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 		};
 	} finally {
 		process.chdir(previousCwd);
+	}
+	if (isCompactMinimalContractFile(contractFilePath)) {
+		return compactMinimalResult(repoRoot);
 	}
 
 	const policy = resolvePolicy(contract);
