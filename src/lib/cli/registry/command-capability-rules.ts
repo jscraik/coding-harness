@@ -25,7 +25,6 @@ export const COMMAND_CATEGORY_BY_NAME: Partial<
 	Record<string, CommandCategory>
 > = {
 	commands: "discovery",
-	orient: "bootstrap-governance",
 	"agent-readiness": "bootstrap-governance",
 	init: "bootstrap-governance",
 	"fleet-plan": "bootstrap-governance",
@@ -132,7 +131,6 @@ export const RETRYABILITY_BY_NAME: Partial<
 	Record<string, CommandRetryability>
 > = {
 	commands: "safe",
-	orient: "safe",
 	"agent-readiness": "safe",
 	check: "safe",
 	next: "safe",
@@ -183,7 +181,6 @@ export const SAFE_FIRST_ALTERNATIVES_BY_NAME: Partial<
 export const COMMAND_TIER_BY_NAME: Partial<Record<string, CommandTier>> = {
 	check: "cockpit",
 	next: "cockpit",
-	orient: "cockpit",
 	...(mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, "domain") as Partial<
 		Record<string, CommandTier>
 	>),
@@ -239,7 +236,6 @@ export const PRIMARY_AUDIENCE_BY_NAME: Partial<
 	Record<string, CommandPrimaryAudience>
 > = {
 	commands: "agent",
-	orient: "agent",
 	"agent-readiness": "agent",
 	check: "both",
 	next: "agent",
@@ -271,7 +267,6 @@ export const PRIMARY_AUDIENCE_BY_NAME: Partial<
 export const ORCHESTRATED_BY_BY_NAME: Partial<
 	Record<string, CommandOrchestrator[]>
 > = {
-	orient: [],
 	next: [],
 	"agent-readiness": ["next"],
 	...(mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, ["next"]) as Partial<
@@ -301,7 +296,6 @@ export const ORCHESTRATED_BY_BY_NAME: Partial<
 
 export const AGENT_MODE_BY_NAME: Partial<Record<string, CommandAgentMode>> = {
 	commands: "orient",
-	orient: "orient",
 	"agent-readiness": "orient",
 	check: "verify",
 	next: "orient",

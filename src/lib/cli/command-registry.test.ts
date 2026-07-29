@@ -79,7 +79,6 @@ describe("command registry", () => {
 		expect(MIGRATED_COMMAND_NAMES).toEqual(capabilityNames);
 		expect(MIGRATED_COMMAND_NAMES).toContain("commands");
 		expect(MIGRATED_COMMAND_NAMES).toContain("contract");
-		expect(MIGRATED_COMMAND_NAMES).toContain("orient");
 		expect(MIGRATED_COMMAND_NAMES).toContain("session-context");
 		expect(MIGRATED_COMMAND_NAMES).toContain("decision-request");
 		expect(MIGRATED_COMMAND_NAMES).not.toContain("repo");
@@ -120,53 +119,6 @@ describe("command registry", () => {
 			const parsed = JSON.parse(String(output));
 			expect(parsed.schemaVersion).toBe("session-context/v1");
 			expect(parsed.repoRoot).toBe(process.cwd());
-		} finally {
-			infoSpy.mockRestore();
-		}
-	});
-
-	it("dispatches orient from registry", () => {
-		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
-
-		try {
-			const result = dispatchRegistryCommand("orient", [
-				"orient",
-				"--repo-root",
-				".",
-				"--json",
-			]);
-			expect(result?.spec.name).toBe("orient");
-			expect(result?.result).toBe(0);
-
-			const output = infoSpy.mock.calls.at(-1)?.[0];
-			expect(typeof output).toBe("string");
-			const parsed = JSON.parse(String(output));
-			expect(parsed.schemaVersion).toBe("harness-orient/v1");
-			expect(parsed.evidenceUse).toBe("orientation");
-			expect(parsed.nextDecision.schemaVersion).toBe("harness-decision/v1");
-			expect(parsed.preflightReceipt.path).toBe(
-				".harness/runtime/codex-preflight-status.json",
-			);
-			expect(
-				parsed.contextCommands.map((command: { id: string }) => command.id),
-			).toEqual([
-				"next",
-				"session-context",
-				"agent-readiness",
-				"commands-orient",
-			]);
-			expect(
-				parsed.truthLaneWarnings.map(
-					(warning: { lane: string }) => warning.lane,
-				),
-			).toEqual([
-				"local_code",
-				"runtime_artifact",
-				"pr_ci",
-				"review_threads",
-				"tracker",
-				"merge_readiness",
-			]);
 		} finally {
 			infoSpy.mockRestore();
 		}
@@ -878,7 +830,7 @@ describe("getRegistryCommandCapabilities", () => {
 			.filter((capability) => capability.tier === "cockpit")
 			.map((capability) => capability.name);
 
-		expect(cockpitNames).toEqual(["check", "orient", "next"]);
+		expect(cockpitNames).toEqual(["check", "next"]);
 		expect(MIGRATED_COMMAND_NAMES).toEqual(
 			expect.arrayContaining(cockpitNames),
 		);
@@ -896,7 +848,6 @@ describe("getRegistryCommandCapabilities", () => {
 		);
 		const expected = [
 			["check", "cockpit", "both", ["next"]],
-			["orient", "cockpit", "agent", []],
 			["next", "cockpit", "agent", []],
 			["session-context", "domain", "agent", ["next"]],
 			["decision-request", "domain", "agent", ["next", "pr-ready"]],
@@ -926,10 +877,6 @@ describe("getRegistryCommandCapabilities", () => {
 			]),
 		);
 
-		expect(capabilitiesByName.get("orient")).toMatchObject({
-			agentMode: "orient",
-			visibility: "legacy",
-		});
 		expect(capabilitiesByName.get("next")).toMatchObject({
 			agentMode: "orient",
 			visibility: "default",

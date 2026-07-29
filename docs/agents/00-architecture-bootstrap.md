@@ -146,12 +146,12 @@ architecture context and keep this guide synchronized with `AGENTS.md`,
 architecture-context or governance surfaces. The report remains advisory-only;
 archive, move, delete, demotion, metadata rewrite, manifest, active-artifact,
 or archive-index repair work requires a separate reviewed decision.
-For agent-native cockpit work, treat decision-envelope, generated environment action, hook setup, runtime-card evidence, and diagram-context changes as architecture-adjacent surfaces. Run `bash scripts/check-diagram-freshness.sh` explicitly for those changes, and use `bash scripts/refresh-diagram-context.sh --force` when the check reports stale or missing artifacts. Keep this guide synchronized with `AGENTS.md` and `docs/agents/07b-agent-governance.md` when `docs-gate` asks for architecture-context evidence. SynAIpse routine cockpit changes should keep the `synaipse-state/v1` contract additive, route routine orientation through `next`, and preserve `orient` as a compatibility/admin surface; validate the state schema and runtime-packet manifest with `node scripts/validate-runtime-packet-schemas.cjs --all` (must report successful validation with no errors; non-zero exit blocks promotion) before promotion, owned by the harness engineering team with fail-closed validation behavior.
+For agent-native cockpit work, treat decision-envelope, generated environment action, hook setup, runtime-card evidence, and diagram-context changes as architecture-adjacent surfaces. Run `bash scripts/check-diagram-freshness.sh` explicitly for those changes, and use `bash scripts/refresh-diagram-context.sh --force` when the check reports stale or missing artifacts. Keep this guide synchronized with `AGENTS.md` and `docs/agents/07b-agent-governance.md` when `docs-gate` asks for architecture-context evidence. SynAIpse routine cockpit changes should keep the `synaipse-state/v1` contract additive and route routine orientation through `next`; validate the state schema and runtime-packet manifest with `node scripts/validate-runtime-packet-schemas.cjs --all` (must report successful validation with no errors; non-zero exit blocks promotion) before promotion, owned by the harness engineering team with fail-closed validation behavior.
 SynAIpse live-canary composition is architecture-adjacent when it adds a
 script-level dependency surface. Keep the generated dependency and security
 diagrams synchronized with the runner, prove target HEAD and status are
-unchanged, and preserve orient, next, upgrade-matrix, and fitness results as
-separate probe outcomes. A local canary report may expose drift, but it does not
+unchanged, and preserve next, upgrade-matrix, and fitness results as separate
+probe outcomes. A local canary report may expose drift, but it does not
 establish hosted CI, review, acceptance, merge, or release truth.
 Resolve relative CLI inputs from the invoking process before entering a target
 repository, reject output paths contained by any audited target before probes
@@ -328,14 +328,6 @@ model. Keep the runtime schema, typed artifact contract, next-command tests,
 and generated architecture context synchronized, and keep the lane advisory:
 `orient`, `prove`, `repair`, `review`, and `handoff` route operator work
 without proving CI, review-thread state, tracker state, or merge readiness.
-Cold-start orientation rail changes are architecture-adjacent when they alter
-`harness orient --json`, `harness-orient/v1`, `src/lib/orient/**`,
-`src/commands/orient.ts`, `src/lib/cli/registry/orient-command-spec.ts`,
-`src/commands/next-orientation-meta.ts`, or command-catalog orientation
-metadata. Keep generated architecture context, this guide, `AGENTS.md`,
-`README.md`, and `docs/cli-reference.md` synchronized so fresh-agent routing
-stays read-only orientation evidence and does not prove CI, review-thread
-state, tracker state, or merge readiness.
 Runtime-card evidence producer changes are architecture-artifact changes because
 they add durable evidence artifacts consumed by the agent cockpit. Refresh
 `AI/context/diagram-context.md` and keep `AGENTS.md`,

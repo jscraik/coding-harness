@@ -21,16 +21,10 @@ implementation probes; in consumer repos, use the installed `harness` binary.
 ```bash
 pwd
 git status --short --branch
-harness orient --json
+harness next --json
 harness --help
 harness commands --json --for-agent
 harness commands --json
-```
-
-After reviewing orientation, request the action-only follow-up:
-
-```bash
-harness next --json
 ```
 
 For source-checkout public-bin proof after dependencies are installed and the
@@ -38,16 +32,10 @@ checkout is built:
 
 ```bash
 pnpm build
-pnpm exec harness orient --json
+pnpm exec harness next --json
 pnpm exec harness --help
 pnpm exec harness commands --json --for-agent
 pnpm exec harness commands --json
-```
-
-After reviewing source-checkout orientation, request the action-only follow-up:
-
-```bash
-pnpm exec harness next --json
 ```
 
 If the repo owns a preflight wrapper:

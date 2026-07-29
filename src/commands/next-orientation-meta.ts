@@ -6,7 +6,6 @@ const NEXT_ORIENTATION_REFS = [
 ] as const;
 
 const NEXT_CONTEXT_COMMANDS = [
-	"orient --json",
 	"session-context --json --repo-root .",
 	"agent-readiness . --json",
 	"commands --json --for-agent --mode orient",
@@ -21,7 +20,7 @@ const NEXT_CONDITIONAL_CONTEXT = [
 ] as const;
 
 const NEXT_TRUTH_LANE_WARNINGS = [
-	"Local next/orient output does not prove PR, CI, review-thread, tracker, or merge-readiness truth.",
+	"Local next output does not prove PR, CI, review-thread, tracker, or merge-readiness truth.",
 ] as const;
 
 /** Static cold-start orientation metadata embedded in harness-next decisions. */
@@ -39,7 +38,7 @@ export interface NextOrientationMeta {
 		/** Validation command paired with the conditional context. */
 		validate: string;
 	}>;
-	/** Explicit warning that local next/orient output does not prove external lanes. */
+	/** Explicit warning that local next output does not prove external lanes. */
 	truthLaneWarnings: string[];
 }
 
