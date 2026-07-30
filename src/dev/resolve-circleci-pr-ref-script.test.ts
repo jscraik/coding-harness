@@ -290,6 +290,8 @@ describe("resolve-circleci-pr-ref.sh", () => {
 		const cases = [
 			'[{"state":"open","html_url":"not-a-pull-request"}]',
 			'[{"state":"open","html_url":"https://github.com/acme/demo/pull/83"},{"state":"open","html_url":"https://github.com/acme/demo/pull/84"}]',
+			'[{"state":"closed","html_url":"https://github.com/acme/demo/pull/85"}]',
+			'[]',
 		];
 		for (const response of cases) {
 			const root = createTempRoot();
