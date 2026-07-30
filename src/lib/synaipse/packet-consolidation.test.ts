@@ -52,12 +52,7 @@ function retirementFixture() {
 	for (const path of EXPECTED_CONSUMERS) {
 		const absolutePath = resolve(repoRoot, path);
 		mkdirSync(resolve(absolutePath, ".."), { recursive: true });
-		writeFileSync(
-			absolutePath,
-			path === "src/commands/next-agent-native-ratchets.ts"
-				? 'import { PACKET_FAMILY_REGISTRY } from "../lib/synaipse/packet-consolidation.js";\nexport const packets = PACKET_FAMILY_REGISTRY.map((family) => family.schemaVersion);\n'
-				: familyLiteral,
-		);
+		writeFileSync(absolutePath, familyLiteral);
 	}
 	execFileSync("git", ["init", "--quiet"], { cwd: repoRoot });
 	execFileSync("git", ["config", "user.email", "fixture@example.invalid"], {
@@ -517,7 +512,6 @@ describe("synaipse packet consolidation", () => {
 		expect(inventory.missingManagedConsumers).toEqual([]);
 		expect(inventory.unknownConsumers).toEqual([]);
 		expect(inventory.runtimeConsumers).toEqual([
-			"src/commands/next-agent-native-ratchets.ts",
 			"src/lib/cli/registry/agent-native-packet-command-specs.ts",
 			"src/lib/synaipse/packet-canonicalization.ts",
 			"src/lib/synaipse/packet-consolidation.ts",
@@ -545,10 +539,6 @@ describe("synaipse packet consolidation", () => {
 					path: "src/lib/synaipse/packet-consolidation.ts",
 					kind: "runtime_consumer",
 				}),
-				expect.objectContaining({
-					path: "src/commands/next-agent-native-ratchets.ts",
-					kind: "runtime_consumer",
-				}),
 			]),
 		);
 	});
@@ -556,7 +546,7 @@ describe("synaipse packet consolidation", () => {
 	it("does not count a declared consumer without repository-byte usage proof", () => {
 		const fixture = retirementFixture();
 		try {
-			const unprovedPath = "src/commands/next-agent-native-ratchets.ts";
+			const unprovedPath = "src/lib/synaipse/packet-canonicalization.ts";
 			writeFileSync(
 				resolve(fixture.repoRoot, unprovedPath),
 				"export const unrelated = true;\n",
@@ -692,8 +682,8 @@ describe("synaipse packet consolidation", () => {
 			afterDefault: [],
 		});
 		expect(measurement.migratedConsumerCoverage).toEqual({
-			expected: 5,
-			observed: 5,
+			expected: 4,
+			observed: 4,
 			percent: 100,
 			missing: [],
 			unclassified: [],
@@ -780,9 +770,9 @@ describe("synaipse packet consolidation", () => {
 			const measurement = measureCurrentPacketConsolidation(fixture.repoRoot);
 
 			expect(measurement.migratedConsumerCoverage).toEqual({
-				expected: 6,
-				observed: 5,
-				percent: 83,
+				expected: 5,
+				observed: 4,
+				percent: 80,
 				missing: [],
 				unclassified: ["src/unclassified-packet-reader.ts"],
 			});

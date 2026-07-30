@@ -235,13 +235,13 @@ describe("runCheck", () => {
 		).toBe(true);
 	});
 
-	it("nextSteps is ['harness health'] when everything passes", () => {
+	it("nextSteps uses the retained verification route when everything passes", () => {
 		writeGitDir(dir);
 		writeContract(dir);
 		writeManifest(dir);
 		const report = runCheck(dir);
 		if (!report.hasFailures && report.counts.warn === 0) {
-			expect(report.nextSteps).toEqual(["harness health"]);
+			expect(report.nextSteps).toEqual(["harness verify-work --fast"]);
 		}
 	});
 

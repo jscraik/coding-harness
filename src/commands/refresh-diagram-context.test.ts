@@ -248,6 +248,38 @@ describe("refresh-diagram-context.sh", () => {
 		expect(agentClassIds.every((id) => declaredIds.has(id))).toBe(true);
 	});
 
+	it("preserves the manifest timestamp when a forced refresh is unchanged", {
+		timeout: 30000,
+	}, () => {
+		const { root, binDir } = createRepo();
+		roots.push(root);
+		const options = {
+			cwd: root,
+			encoding: "utf-8" as const,
+			env: {
+				...sanitizeGitEnv(),
+				PATH: [binDir, STABLE_PATH].join(delimiter),
+			},
+		};
+
+		const firstResult = spawnSync(
+			"bash",
+			["scripts/refresh-diagram-context.sh", "--force", "--quiet"],
+			options,
+		);
+		expect(firstResult.status).toBe(0);
+		const manifestPath = join(root, ".diagram", "manifest.json");
+		const firstManifest = readFileSync(manifestPath, "utf-8");
+
+		const secondResult = spawnSync(
+			"bash",
+			["scripts/refresh-diagram-context.sh", "--force", "--quiet"],
+			options,
+		);
+		expect(secondResult.status).toBe(0);
+		expect(readFileSync(manifestPath, "utf-8")).toBe(firstManifest);
+	});
+
 	it("runs the diagram availability probe from the repository root", {
 		timeout: 30000,
 	}, () => {

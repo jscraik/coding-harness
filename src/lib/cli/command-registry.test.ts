@@ -474,6 +474,11 @@ describe("suggestCommands", () => {
 		const distances = suggestions.map((s) => s.distance);
 		expect(distances).toEqual([...distances].sort((a, b) => a - b));
 	});
+
+	it("does not suggest plumbing commands on the default discovery path", () => {
+		const suggestions = suggestCommands("docs-gaet");
+		expect(suggestions.map(({ spec }) => spec.name)).not.toContain("docs-gate");
+	});
 });
 
 describe("suggestCommandCapabilities", () => {

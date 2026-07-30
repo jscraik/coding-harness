@@ -71,6 +71,21 @@ for (const spec of COMMAND_SPECS) {
 	}
 }
 
+/** Whether a capability belongs on the default public discovery surface. */
+function isPublicCommandCapability(capability: CommandCapability): boolean {
+	return ["default", "agent", "advanced"].includes(capability.visibility);
+}
+
+/** Return command specifications whose capabilities are publicly discoverable. */
+function getPublicCommandSpecs(): CommandSpec[] {
+	const publicCommandNames = new Set(
+		getRegistryCommandCapabilities()
+			.filter(isPublicCommandCapability)
+			.map((capability) => capability.name),
+	);
+	return COMMAND_SPECS.filter((spec) => publicCommandNames.has(spec.name));
+}
+
 export const MIGRATED_COMMAND_NAMES = COMMAND_SPECS.map((spec) => spec.name);
 export const MIGRATED_COMMAND_AND_ALIAS_NAMES = COMMAND_SPECS.flatMap(
 	(spec) => [spec.name, ...(spec.aliases ?? [])],
@@ -168,7 +183,7 @@ export function suggestCommands(
 	name: string,
 	limit = 3,
 ): Array<{ spec: CommandSpec; distance: number }> {
-	return suggestRegistryCommands(name, COMMAND_SPECS, limit);
+	return suggestRegistryCommands(name, getPublicCommandSpecs(), limit);
 }
 
 /** Suggest likely command capabilities for an unknown command name. */
@@ -178,9 +193,7 @@ export function suggestCommandCapabilities(
 ): Array<{ capability: CommandCapability; distance: number }> {
 	return suggestCatalogCapabilities(
 		name,
-		getRegistryCommandCapabilities().filter((capability) =>
-			["default", "agent", "advanced"].includes(capability.visibility),
-		),
+		getRegistryCommandCapabilities().filter(isPublicCommandCapability),
 		limit,
 	);
 }
