@@ -178,7 +178,9 @@ export function suggestCommandCapabilities(
 ): Array<{ capability: CommandCapability; distance: number }> {
 	return suggestCatalogCapabilities(
 		name,
-		getRegistryCommandCapabilities(),
+		getRegistryCommandCapabilities().filter((capability) =>
+			["default", "agent", "advanced"].includes(capability.visibility),
+		),
 		limit,
 	);
 }
