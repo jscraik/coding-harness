@@ -149,6 +149,13 @@ describe("run", () => {
 		expect(payload.hint).toBe(
 			'Run "harness --help --all-commands" for the full expert command list.',
 		);
+		expect(
+			payload.suggestions.map(
+				(suggestion: { name: string }) => suggestion.name,
+			),
+		).not.toEqual(
+			expect.arrayContaining(["docs-gate", "context", "index-context"]),
+		);
 		expect(exitSpy).toHaveBeenCalledWith(1);
 	});
 

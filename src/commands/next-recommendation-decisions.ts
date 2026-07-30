@@ -16,7 +16,6 @@ import {
 	nextDecisionOperationalMeta,
 } from "./next-decision-meta.js";
 import type { HarnessNextMode } from "./next-decision-types.js";
-import * as agentNativeRatchets from "./next-agent-native-ratchets.js";
 import { chooseNextCommandParts, shellQuote } from "./next-support.js";
 import {
 	changedFileClassificationMeta,
@@ -196,9 +195,7 @@ export function changedFilesDecision(args: {
 		"pr",
 		args.files,
 	).command;
-	const ratchetFollowUpCommands = [
-		agentNativeRatchets.SESSION_DISTILL_COMMAND,
-		agentNativeRatchets.AGENT_NATIVE_RATCHET_COMMAND,
+	const followUpCommands = [
 		args.mode === "pr"
 			? "bash scripts/validate-codestyle.sh --fast"
 			: reviewContextFollowUp,
@@ -218,12 +215,11 @@ export function changedFilesDecision(args: {
 			`Stop if ${args.mode === "pr" ? "review-context" : "validation-plan"} cannot produce JSON for the changed files.`,
 		],
 		humanEscalation: null,
-		followUpCommands: ratchetFollowUpCommands,
+		followUpCommands,
 		hiddenPlumbing: [
 			"git:status",
 			"command-catalog",
 			"risk-tier",
-			"agent-native-ratchets",
 			...(args.phaseExit ? ["he-phase-exit"] : []),
 			...(args.runtimeCard ? ["runtime-card"] : []),
 			...(args.prCloseout ? ["pr-closeout"] : []),
@@ -247,7 +243,6 @@ export function changedFilesDecision(args: {
 			runtimeCard: args.runtimeCard,
 			extra: {
 				...prCloseoutDecisionMeta(args.prCloseout),
-				...agentNativeRatchets.agentNativeRatchetMeta(),
 				...changedFileClassificationMeta(args.classification),
 			},
 			agentReadinessContext: args.agentReadinessContext,

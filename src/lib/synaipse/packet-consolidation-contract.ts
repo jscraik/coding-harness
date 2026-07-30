@@ -4,13 +4,11 @@ const CANONICAL_ADAPTER = "src/lib/synaipse/packet-canonicalization.ts";
 const TRANSITION_PROJECTION =
 	"src/lib/synaipse/packet-transition-projection.ts";
 const COMPATIBILITY_PROJECTION = "src/lib/synaipse/packet-consolidation.ts";
-const NEXT_METADATA_ADAPTER = "src/commands/next-agent-native-ratchets.ts";
 const RUNTIME_CONSUMERS = [
 	PACKET_COMMAND_ADAPTER,
 	CANONICAL_ADAPTER,
 	TRANSITION_PROJECTION,
 	COMPATIBILITY_PROJECTION,
-	NEXT_METADATA_ADAPTER,
 ] as const;
 
 /** Canonical producer, consumer, command, and projection map for legacy packets. */

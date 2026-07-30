@@ -64,6 +64,11 @@ For command-registry deep-module splits, keep the public command spec small,
 move action-specific option builders behind named internal adapter seams,
 refresh `AI/context/diagram-context.md`, and update README command-surface
 guidance when docs-gate reports a CLI-surface requirement.
+The default `harness commands --json` projection is the supported routine and
+expert catalogue, while `--all` or `--plumbing` exposes compatibility and
+internal integration commands only on explicit request. Keep the default
+catalogue bounded; a command needs a current named consumer before it becomes
+part of the routine or expert product surface.
 For the routine `harness next --json` route, keep the default projection
 task-first and compact: it names the current status, summary, one next action
 or command, warnings, the execution boundary, and the claims boundary. Missing

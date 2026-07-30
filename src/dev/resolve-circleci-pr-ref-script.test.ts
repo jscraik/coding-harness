@@ -213,6 +213,154 @@ describe("resolve-circleci-pr-ref.sh", () => {
 		expect(result.stderr).toBe("");
 	});
 
+	it("uses the checked-out commit when branch metadata cannot identify an open PR", () => {
+		const root = createTempRoot();
+		writeExecutable(
+			root,
+			"bin/gh",
+			[
+				"#!/usr/bin/env bash",
+				"set -euo pipefail",
+				'printf "%s" \'{"message":"Bad credentials","status":"401"}\'',
+			].join("\n"),
+		);
+		writeExecutable(
+			root,
+			"bin/curl",
+			[
+				"#!/usr/bin/env bash",
+				"set -euo pipefail",
+				'if [[ "$*" == *"/commits/abc1234/pulls"* ]]; then',
+				'  printf "%s" \'[{"state":"open","html_url":"https://github.com/acme/demo/pull/80"}]\'',
+				"else",
+				'  printf "%s" "[]"',
+				"fi",
+			].join("\n"),
+		);
+
+		const result = runScript(root, {
+			CIRCLE_BRANCH: "codex/context-not-visible",
+			CIRCLE_PROJECT_REPONAME: "demo",
+			CIRCLE_PROJECT_USERNAME: "acme",
+			CIRCLE_SHA1: "abc1234",
+			HARNESS_CIRCLECI_PR_REF_MAX_ATTEMPTS: "1",
+			HARNESS_CIRCLECI_PR_REF_SLEEP_SECONDS: "0",
+		});
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toBe("https://github.com/acme/demo/pull/80");
+	});
+
+	it("uses commit fallback when CircleCI omits branch metadata", () => {
+		const root = createTempRoot();
+		writeExecutable(
+			root,
+			"bin/gh",
+			[
+				"#!/usr/bin/env bash",
+				"set -euo pipefail",
+				'printf "%s" \'{"message":"Bad credentials","status":"401"}\'',
+			].join("\n"),
+		);
+		writeExecutable(
+			root,
+			"bin/curl",
+			[
+				"#!/usr/bin/env bash",
+				"set -euo pipefail",
+				'[[ "$*" == *"/commits/abc1234/pulls"* ]] || exit 8',
+				'printf "%s" \'[{"state":"open","html_url":"https://github.com/acme/demo/pull/82"}]\'',
+			].join("\n"),
+		);
+
+		const result = runScript(root, {
+			CIRCLE_PROJECT_REPONAME: "demo",
+			CIRCLE_PROJECT_USERNAME: "acme",
+			CIRCLE_SHA1: "abc1234",
+			HARNESS_CIRCLECI_PR_REF_MAX_ATTEMPTS: "1",
+			HARNESS_CIRCLECI_PR_REF_SLEEP_SECONDS: "0",
+		});
+
+		expect(result.stderr).toBe("");
+		expect(result.status).toBe(0);
+		expect(result.stdout).toBe("https://github.com/acme/demo/pull/82");
+	});
+
+	it("fails closed when public commit lookup is malformed or ambiguous", () => {
+		const cases = [
+			'[{"state":"open","html_url":"not-a-pull-request"}]',
+			'[{"state":"open","html_url":"https://github.com/acme/demo/pull/83"},{"state":"open","html_url":"https://github.com/acme/demo/pull/84"}]',
+			'[{"state":"closed","html_url":"https://github.com/acme/demo/pull/85"}]',
+			"[]",
+		];
+		for (const response of cases) {
+			const root = createTempRoot();
+			writeExecutable(
+				root,
+				"bin/gh",
+				[
+					"#!/usr/bin/env bash",
+					"set -euo pipefail",
+					'printf "%s" \'{"message":"Bad credentials","status":"401"}\'',
+				].join("\n"),
+			);
+			writeExecutable(
+				root,
+				"bin/curl",
+				[
+					"#!/usr/bin/env bash",
+					"set -euo pipefail",
+					`printf '%s' '${response}'`,
+				].join("\n"),
+			);
+
+			const result = runScript(root, {
+				CIRCLE_PROJECT_REPONAME: "demo",
+				CIRCLE_PROJECT_USERNAME: "acme",
+				CIRCLE_SHA1: "abc1234",
+				HARNESS_CIRCLECI_PR_REF_MAX_ATTEMPTS: "1",
+				HARNESS_CIRCLECI_PR_REF_SLEEP_SECONDS: "0",
+			});
+
+			expect(result.status).toBe(1);
+			expect(result.stdout).toBe("");
+		}
+	});
+
+	it("derives the public head owner from the repository when CircleCI omits it", () => {
+		const root = createTempRoot();
+		writeExecutable(
+			root,
+			"bin/gh",
+			[
+				"#!/usr/bin/env bash",
+				"set -euo pipefail",
+				'printf "%s" \'{"message":"Bad credentials","status":"401"}\'',
+			].join("\n"),
+		);
+		writeExecutable(
+			root,
+			"bin/curl",
+			[
+				"#!/usr/bin/env bash",
+				"set -euo pipefail",
+				'[[ "$*" == *"head=acme:codex/missing-owner"* ]] || { echo "missing derived owner" >&2; exit 8; }',
+				'printf "%s" \'[{"html_url":"https://github.com/acme/demo/pull/81"}]\'',
+			].join("\n"),
+		);
+
+		const result = runScript(root, {
+			CIRCLE_BRANCH: "codex/missing-owner",
+			CIRCLE_PROJECT_REPONAME: "demo",
+			CIRCLE_REPOSITORY_URL: "https://github.com/acme/demo.git",
+			HARNESS_CIRCLECI_PR_REF_MAX_ATTEMPTS: "1",
+			HARNESS_CIRCLECI_PR_REF_SLEEP_SECONDS: "0",
+		});
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toBe("https://github.com/acme/demo/pull/81");
+	});
+
 	it("passes reserved branch names as data-urlencode arguments", () => {
 		const root = createTempRoot();
 		writeExecutable(

@@ -13,6 +13,9 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Changed
 
+- Limited the default `harness commands --json` catalogue to ten supported
+  routine or expert commands; retained the full compatibility catalogue behind
+  explicit `--all` or `--plumbing` output.
 - Made the routine `harness next --json` response task-first and compact;
   stale optional context is now an advisory warning rather than the primary
   action.

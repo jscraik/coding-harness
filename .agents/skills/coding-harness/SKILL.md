@@ -59,7 +59,8 @@ Do not use for unrelated feature delivery, generic cloud deployment, or security
 - Fresh-agent first-contact entrypoint: `harness next --json`.
 - Focused first-contact help: `harness --help`.
 - Public agent rail catalog: `harness commands --json --for-agent`.
-- Full expert catalog: `harness commands --json` and `harness --help --all-commands`.
+- Supported expert catalog: `harness commands --json`; full retained plumbing:
+  `harness commands --json --all` and `harness --help --all-commands`.
 - Source-repo public-bin proof: `pnpm exec harness ...` after dependencies are installed and `dist/cli.js` exists.
 - Source-repo current-tree probes: `node --import tsx src/cli.ts ...` when validating unbuilt implementation changes.
 - Consumer-repo installs: use the installed `harness` binary, preferably via `mise install -g npm:@brainwav/coding-harness`.
@@ -84,6 +85,7 @@ Command discovery:
 - `harness --help`
 - `harness commands --json --for-agent`
 - `harness commands --json`
+- `harness commands --json --all`
 - `harness --help --all-commands`
 
 Source-repo equivalents:
@@ -91,6 +93,7 @@ Source-repo equivalents:
 - `pnpm exec harness --help`
 - `pnpm exec harness commands --json --for-agent`
 - `pnpm exec harness commands --json`
+- `pnpm exec harness commands --json --all`
 - `pnpm exec harness --help --all-commands`
 
 Current-tree development probes:
@@ -98,6 +101,7 @@ Current-tree development probes:
 - `node --import tsx src/cli.ts --help`
 - `node --import tsx src/cli.ts commands --json --for-agent`
 - `node --import tsx src/cli.ts commands --json`
+- `node --import tsx src/cli.ts commands --json --all`
 - `node --import tsx src/cli.ts --help --all-commands`
 
 Setup and governance:

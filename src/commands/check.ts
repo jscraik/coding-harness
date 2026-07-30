@@ -278,7 +278,7 @@ function checkManifest(dir: string): CheckItem {
  * Build an ordered, de-duplicated list of recommended fix commands from check results, prioritizing failures first.
  *
  * @param checks - Array of check items to extract fix commands from.
- * @returns An array of fix command strings with fixes for failed checks first followed by fixes for warned checks; returns `["harness health"]` when no fixes are present.
+ * @returns An array of fix command strings with fixes for failed checks first followed by fixes for warned checks; returns the retained verification route when no fixes are present.
  */
 
 function deriveNextSteps(checks: CheckItem[]): string[] {
@@ -296,7 +296,7 @@ function deriveNextSteps(checks: CheckItem[]): string[] {
 	}
 
 	if (steps.length === 0) {
-		steps.push("harness health");
+		steps.push("harness verify-work --fast");
 	}
 
 	return steps;
