@@ -270,6 +270,26 @@ describe("validatePrTemplateBody", () => {
 		expect(validatePrTemplateBody(body)).toEqual([]);
 	});
 
+	it("accepts pass and fail with optional parenthetical context", () => {
+		const withNote = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command: `pnpm lint` -> pass (208 tests)",
+		);
+		expect(validatePrTemplateBody(withNote)).toEqual([]);
+
+		const withNoteAndPeriod = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command: `pnpm lint` -> pass (208 tests).",
+		);
+		expect(validatePrTemplateBody(withNoteAndPeriod)).toEqual([]);
+
+		const failWithNote = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command: `pnpm lint` -> fail (type error at line 42)",
+		);
+		expect(validatePrTemplateBody(failWithNote)).toEqual([]);
+	});
+
 	it("fails when Testing has no Command evidence lines", () => {
 		const body = VALID_BODY.replace(/^- Command: .*\n/gm, "");
 		const errors = validatePrTemplateBody(body);
