@@ -1,5 +1,3 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { cwd } from "node:process";
 import { buildContextHealthProjection } from "../lib/agent-readiness/context-health.js";
 import type { AgentReadinessContextHealth } from "../lib/agent-readiness/types.js";
@@ -23,7 +21,6 @@ import type { HarnessNextEvidenceMode } from "./next-args.js";
 import { isHarnessNextMode } from "./next-args.js";
 import {
 	blockedDecision,
-	fleetMatrixArtifactDecision,
 	gitInspectionBlockedDecision,
 	invalidModeDecision,
 	phaseExitBlockedDecision,
@@ -45,9 +42,6 @@ import {
 	sourceMetaExtra,
 } from "./next-support.js";
 import { requiredEvidenceMissingDecision } from "./next-usage-errors.js";
-
-const DEFAULT_FLEET_MATRIX_ARTIFACT =
-	"artifacts/harness-upgrade-matrix-dev.json";
 
 /** Fully resolved, non-blocked input state for selecting a harness-next recommendation. */
 export interface HarnessNextReadyState {
@@ -199,27 +193,7 @@ function worktreeBlockedDecision(args: {
 	}
 }
 
-function fleetMatrixDecision(args: {
-	repoRoot: string;
-	mode: HarnessNextMode;
-	options: HarnessNextOptions;
-	agentReadinessContext: AgentReadinessContextHealth;
-}): HarnessDecision | null {
-	if (args.options.files !== undefined || args.mode !== "ci") return null;
-	if (!existsSync(join(args.repoRoot, DEFAULT_FLEET_MATRIX_ARTIFACT)))
-		return null;
-	return fleetMatrixArtifactDecision({
-		mode: args.mode,
-		matrixArtifact: DEFAULT_FLEET_MATRIX_ARTIFACT,
-		...(args.options.phaseExit ? { phaseExit: args.options.phaseExit } : {}),
-		...(args.options.runtimeCard
-			? { runtimeCard: args.options.runtimeCard }
-			: {}),
-		...(args.options.prCloseout ? { prCloseout: args.options.prCloseout } : {}),
-		agentReadinessContext: args.agentReadinessContext,
-	});
-}
-
+/** Build a non-blocked next-routing state from the resolved local inputs. */
 function readyState(args: {
 	repoRoot: string;
 	mode: HarnessNextMode;
@@ -291,14 +265,6 @@ export function resolveHarnessNextState(
 		sourceErrors,
 	});
 	if (worktreeBlock) return directDecision(worktreeBlock);
-
-	const fleetMatrixBlock = fleetMatrixDecision({
-		repoRoot,
-		mode,
-		options,
-		agentReadinessContext,
-	});
-	if (fleetMatrixBlock) return directDecision(fleetMatrixBlock);
 
 	try {
 		return readyState({

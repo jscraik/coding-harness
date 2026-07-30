@@ -93,7 +93,6 @@ The executable suite runs these local fixtures:
 - `policy-contract-capsules`: evaluates compact risk-tiered policy capsules for autonomy mode, required evidence, and rollback requirements.
 - `registry-drift-guard`: verifies live fixture registry entries keep expected artifacts, stop conditions, and scorecard weights.
 - `harness-trace-envelope`: validates the minimal redacted trace envelope for closeout, CI, review-context, and claim-verification evidence.
-- `agent-native-ratchet-discovery`: proves `harness next` exposes agent-native packet producers and public rerunnable follow-up commands.
 - `package-installed-downstream-canary`: installs the packed harness into a downstream fixture repo and runs public `harness ... --json` commands without source-checkout package scripts.
 
 Structural and package-canary fixtures must run without GitHub, CircleCI,
