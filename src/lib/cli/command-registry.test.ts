@@ -833,9 +833,10 @@ describe("getRegistryCommandCapabilities", () => {
 		const expected = [
 			["check", "cockpit", "both", ["next"]],
 			["next", "cockpit", "agent", []],
-			["session-context", "domain", "agent", ["next"]],
+			["session-context", "domain", "agent", []],
+			["agent-native-ratchets", "domain", "agent", []],
 			["decision-request", "domain", "agent", ["next", "pr-ready"]],
-			["fleet-plan", "domain", "agent", ["next"]],
+			["fleet-plan", "domain", "agent", []],
 			["doctor", "domain", "both", ["next"]],
 			["health", "domain", "both", ["next"]],
 			["review-gate", "domain", "agent", ["next", "pr-ready"]],
@@ -850,6 +851,34 @@ describe("getRegistryCommandCapabilities", () => {
 				primaryAudience,
 				orchestratedBy,
 			});
+		}
+	});
+
+	it("does not advertise retired recovery routes as next outputs", () => {
+		const capabilitiesByName = new Map(
+			getRegistryCommandCapabilities().map((capability) => [
+				capability.name,
+				capability,
+			]),
+		);
+		const retiredNextRoutes = [
+			"agent-readiness",
+			"runtime-card",
+			"session-context",
+			"agent-native-ratchets",
+			"session-distill",
+			"agent-rework",
+			"reviewer-decision",
+			"governance-decision-surface",
+			"prompt-context-drift:write",
+			"prompt-context-drift:validate",
+			"fleet-plan",
+		] as const;
+
+		for (const name of retiredNextRoutes) {
+			expect(capabilitiesByName.get(name)?.orchestratedBy).not.toContain(
+				"next",
+			);
 		}
 	});
 
