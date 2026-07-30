@@ -356,6 +356,8 @@ describe("command registry", () => {
 				"verify-work",
 				"contract",
 				"init",
+				"review-context",
+				"validation-plan",
 				"upgrade",
 				"ci-migrate",
 			]);
@@ -854,7 +856,7 @@ describe("getRegistryCommandCapabilities", () => {
 		});
 		expect(capabilitiesByName.get("validation-plan")).toMatchObject({
 			agentMode: "verify",
-			visibility: "plumbing",
+			visibility: "advanced",
 		});
 		expect(capabilitiesByName.get("session-context")).toMatchObject({
 			agentMode: "orient",
@@ -866,7 +868,7 @@ describe("getRegistryCommandCapabilities", () => {
 		});
 		expect(capabilitiesByName.get("review-context")).toMatchObject({
 			agentMode: "review",
-			visibility: "plumbing",
+			visibility: "advanced",
 		});
 		expect(capabilitiesByName.get("review-gate")).toMatchObject({
 			agentMode: "review",
