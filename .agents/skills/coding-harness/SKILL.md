@@ -85,6 +85,7 @@ Command discovery:
 - `harness --help`
 - `harness commands --json --for-agent`
 - `harness commands --json`
+- `harness commands --json --all`
 - `harness --help --all-commands`
 
 Source-repo equivalents:
@@ -92,6 +93,7 @@ Source-repo equivalents:
 - `pnpm exec harness --help`
 - `pnpm exec harness commands --json --for-agent`
 - `pnpm exec harness commands --json`
+- `pnpm exec harness commands --json --all`
 - `pnpm exec harness --help --all-commands`
 
 Current-tree development probes:
@@ -99,6 +101,7 @@ Current-tree development probes:
 - `node --import tsx src/cli.ts --help`
 - `node --import tsx src/cli.ts commands --json --for-agent`
 - `node --import tsx src/cli.ts commands --json`
+- `node --import tsx src/cli.ts commands --json --all`
 - `node --import tsx src/cli.ts --help --all-commands`
 
 Setup and governance:
