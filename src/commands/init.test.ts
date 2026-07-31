@@ -607,7 +607,7 @@ describe("runInit", () => {
 			);
 			expect(circleConfig).toContain('docs_gate_output="$(mktemp)"');
 			expect(circleConfig).toContain(
-				'(.status == "warn") and (.summary.errors == 0)',
+				"docs-gate.docs:archive-candidates.docs.archive_candidates.advisory",
 			);
 			expect(circleConfig).toContain(
 				"Continuing docs-gate after zero-error advisory warnings.",

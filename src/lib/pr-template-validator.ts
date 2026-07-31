@@ -341,7 +341,7 @@ function collectCommandEvidenceErrors(testingBody: string): string[] {
 	}
 
 	const commandEvidencePattern =
-		/^-\s*Command:\s*(?:`[^\n`]+`|[^\n`]+?)\s*->\s*(?:`?(?:pass|fail)`?(?:\s*\([^)]+\)\.?)?|`?(?:n\.a\.|n\/a)`?(?:\s*\([^)]+\))?|`?blocked`?\s*\([^)]+\))\s*$/i;
+		/^-\s*Command:\s*(?:`[^\n`]+`|[^\n`]+?)\s*->\s*(?:(?:pass|fail|`(?:pass|fail)`)(?:\s*\([^)]+\)\.?)?|(?:n\.a\.|n\/a|`(?:n\.a\.|n\/a)`)(?:\s*\([^)]+\))?|(?:blocked|`blocked`)\s*\([^)]+\))\s*$/i;
 	for (const line of commandLines) {
 		if (!commandEvidencePattern.test(line)) {
 			errors.push(

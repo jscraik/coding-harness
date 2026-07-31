@@ -263,7 +263,9 @@ describe("git-hook scaffold templates", () => {
 		expect(preCommit).not.toContain("pre-commit run");
 		expect(prePush).toContain("check-validation-locks.sh");
 		expect(prePush).toContain("docs_gate_status=$?");
-		expect(prePush).toContain('(.status == "warn") and (.summary.errors == 0)');
+		expect(prePush).toContain(
+			"docs-gate.docs:archive-candidates.docs.archive_candidates.advisory",
+		);
 		expect(prePush).toContain(
 			"Continuing pre-push after docs-gate advisory warnings.",
 		);
@@ -280,6 +282,12 @@ describe("git-hook scaffold templates", () => {
 		const advisory = runPrePushWithDocsGate(script, 10, {
 			status: "warn",
 			summary: { errors: 0 },
+			findings: [
+				{
+					id: "docs-gate.docs:archive-candidates.docs.archive_candidates.advisory",
+					severity: "warning",
+				},
+			],
 		});
 		expect(advisory.status, advisory.stderr).toBe(0);
 		expect(advisory.stdout).toContain(
@@ -295,9 +303,40 @@ describe("git-hook scaffold templates", () => {
 			"Continuing pre-push after docs-gate advisory warnings.",
 		);
 
+		const governedWarning = runPrePushWithDocsGate(script, 10, {
+			status: "warn",
+			summary: { errors: 0 },
+			findings: [
+				{
+					id: "docs-gate.AGENTS.md.docs.surface.missing",
+					severity: "warning",
+				},
+			],
+		});
+		expect(governedWarning.status).toBe(10);
+		expect(governedWarning.stdout).not.toContain(
+			"Continuing pre-push after docs-gate advisory warnings.",
+		);
+
+		const missingWarning = runPrePushWithDocsGate(script, 10, {
+			status: "warn",
+			summary: { errors: 0 },
+			findings: [],
+		});
+		expect(missingWarning.status).toBe(10);
+		expect(missingWarning.stdout).not.toContain(
+			"Continuing pre-push after docs-gate advisory warnings.",
+		);
+
 		const runtimeError = runPrePushWithDocsGate(script, 14, {
 			status: "warn",
 			summary: { errors: 0 },
+			findings: [
+				{
+					id: "docs-gate.docs:archive-candidates.docs.archive_candidates.advisory",
+					severity: "warning",
+				},
+			],
 		});
 		expect(runtimeError.status).toBe(14);
 	});

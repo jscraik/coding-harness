@@ -307,6 +307,26 @@ describe("validatePrTemplateBody", () => {
 		);
 	});
 
+	it.each([
+		"`pass (208 tests)",
+		"pass` (208 tests)",
+		"`n.a. (not applicable)",
+		"n/a` (not applicable)",
+		"`blocked (service unavailable)",
+		"blocked` (service unavailable)",
+	])("rejects command evidence outcome %s with unbalanced backticks", (outcome) => {
+		const body = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			`- Command: \`pnpm lint\` -> ${outcome}`,
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("Command evidence must use"),
+			]),
+		);
+	});
+
 	it("fails when Testing has no Command evidence lines", () => {
 		const body = VALID_BODY.replace(/^- Command: .*\n/gm, "");
 		const errors = validatePrTemplateBody(body);

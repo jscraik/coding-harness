@@ -172,7 +172,7 @@ else
 	docs_gate_status=$?
 	cat "$docs_gate_output"
 	if [[ "$docs_gate_status" -eq 10 ]] && jq -e \\
-		'(.status == "warn") and (.summary.errors == 0)' \\
+		'(.status == "warn") and (.summary.errors == 0) and ([.findings[]? | select(.severity == "warning") | .id] | length > 0) and ([.findings[]? | select(.severity == "warning") | .id] | all(. == "docs-gate.docs:archive-candidates.docs.archive_candidates.advisory"))' \\
 		"$docs_gate_output" > /dev/null; then
 		echo "Continuing pre-push after docs-gate advisory warnings."
 	else
