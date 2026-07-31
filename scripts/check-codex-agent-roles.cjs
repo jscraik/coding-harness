@@ -6,15 +6,6 @@ const { join, relative, resolve } = require("node:path");
 const REPO_ROOT = resolve(__dirname, "..");
 const AGENTS_ROOT = resolve(REPO_ROOT, ".codex/agents");
 const README_PATH = resolve(AGENTS_ROOT, "README.md");
-const ROOT_AGENTS_PATH = resolve(REPO_ROOT, "AGENTS.md");
-const TOOLING_POLICY_PATH = resolve(
-	REPO_ROOT,
-	"docs/agents/02-tooling-policy.md",
-);
-const VALIDATION_GUIDE_PATH = resolve(
-	REPO_ROOT,
-	"docs/agents/04-validation.md",
-);
 const UNSUPPORTED_ROLES_PATH = resolve(REPO_ROOT, ".agents/roles");
 
 const EXPECTED_ROLES = [
@@ -97,57 +88,6 @@ const EXPECTED_ROLES = [
 			"tool_or_primitive_changed",
 			"created_or_changed_surfaces",
 			"validation_evidence",
-		],
-	},
-];
-
-const REQUIRED_PRINCIPLE_TEXT = [
-	{
-		path: README_PATH,
-		description: "Codex agent roles README",
-		snippets: [
-			"Harness Roles First",
-			"Harness Toolsmith",
-			"Runtime Freshness",
-			"first-choice subagents",
-			"unknown agent_type",
-			'spawn_agent(agent_type="harness-product-code-reviewer")',
-			'spawn_agent(agent_type="harness-toolsmith")',
-		],
-	},
-	{
-		path: ROOT_AGENTS_PATH,
-		description: "root agent instructions",
-		snippets: [
-			"Harness Reviewer Roles First",
-			"Harness Tool Builder",
-			"first-choice subagents",
-			"unknown agent_type",
-			'spawn_agent(agent_type="harness-product-code-reviewer")',
-			'spawn_agent(agent_type="harness-toolsmith")',
-		],
-	},
-	{
-		path: TOOLING_POLICY_PATH,
-		description: "tooling policy",
-		snippets: [
-			"project-local harness reviewer roles are",
-			"harness-toolsmith",
-			"the first-choice subagents",
-			"unknown agent_type",
-			'spawn_agent(agent_type="harness-product-code-reviewer")',
-			'spawn_agent(agent_type="harness-toolsmith")',
-		],
-	},
-	{
-		path: VALIDATION_GUIDE_PATH,
-		description: "validation guide",
-		snippets: [
-			"harness roles first principle",
-			"harness-toolsmith",
-			"unknown agent_type",
-			'spawn_agent(agent_type="<role>")',
-			"before generic/default/global reviewers",
 		],
 	},
 ];
@@ -314,20 +254,6 @@ function validateReadme(errors) {
 	}
 }
 
-function validatePrincipleDocs(errors) {
-	for (const { path, description, snippets } of REQUIRED_PRINCIPLE_TEXT) {
-		const content = readText(errors, path, description);
-		if (!content) {
-			continue;
-		}
-		for (const snippet of snippets) {
-			if (!content.includes(snippet)) {
-				errors.push(`${repoRelative(path)}: missing \`${snippet}\``);
-			}
-		}
-	}
-}
-
 function validateNoUnsupportedRoleSurface(errors) {
 	if (existsSync(UNSUPPORTED_ROLES_PATH)) {
 		const type = statSync(UNSUPPORTED_ROLES_PATH).isDirectory()
@@ -438,7 +364,6 @@ function validateRoleFiles(errors) {
 function main() {
 	const errors = [];
 	validateNoUnsupportedRoleSurface(errors);
-	validatePrincipleDocs(errors);
 	validateReadme(errors);
 	validateRoleFiles(errors);
 

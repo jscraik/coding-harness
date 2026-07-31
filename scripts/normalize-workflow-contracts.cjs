@@ -9,7 +9,6 @@ const ACTIVE_WORKFLOW_FILES = [
 	"docs/agents/13-linear-production-workflow.md",
 	"docs/agents/15-context-integrity-compact.md",
 	"docs/agents/16-linear-production-compact.md",
-	".agents/skills/coding-harness/references/setup-and-commands.md",
 	"docs/specs/workflow-contract-v1.md",
 ];
 

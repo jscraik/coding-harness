@@ -1288,7 +1288,11 @@ def tracked_files(
     result = run_command(command)
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or result.stdout.strip())
-    return [Path(line) for line in result.stdout.splitlines() if line]
+    return [
+        path
+        for line in result.stdout.splitlines()
+        if line and (path := Path(line)).exists()
+    ]
 
 
 def load_json(path: Path) -> object:

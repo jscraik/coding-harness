@@ -1,4 +1,6 @@
+import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const requireScript = createRequire(import.meta.url);
@@ -18,6 +20,18 @@ const { extractStringArrayValue, validateNicknameCandidates } = requireScript(
 };
 
 describe("check-codex-agent-roles", () => {
+	it("accepts Direct Work instructions without mandatory role-promotion prose", () => {
+		const result = spawnSync(
+			process.execPath,
+			[resolve(process.cwd(), "scripts/check-codex-agent-roles.cjs")],
+			{ encoding: "utf8" },
+		);
+
+		expect(result.status).toBe(0);
+		expect(result.stderr).toBe("");
+		expect(result.stdout).toContain("codex-agent-roles: pass");
+	});
+
 	it("keeps malformed nickname candidate entries visible to validation", () => {
 		const candidates = extractStringArrayValue(
 			'nickname_candidates = ["Harness Good", "Harness Bad" trailing]',

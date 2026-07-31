@@ -1,8 +1,8 @@
 ---
 name: coding-harness
-description: "Use when users need to install, bootstrap, upgrade, audit, diagnose, or explain @brainwav/coding-harness in a repository, including harness init/upgrade, CI migration, governance gates, command discovery, and Codex environment action sync; do not use for unrelated feature delivery."
-skill_kind: executable
-owned_workflow: harness-install-upgrade-and-governance
+description: "Use when a repository needs a small, evidence-bound Coding Harness routine: orient, diagnose, preview installation, verify local work, or distinguish pull-request truth."
+skill_kind: advisory
+owned_workflow: coding-harness-routine-jobs
 validation_command: pnpm skill:validate
 doc_schema: coding-harness-doc/v1
 doc_type: skill
@@ -15,150 +15,67 @@ audience:
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-06-04
-review_cadence: release
+last_reviewed: 2026-07-31
+review_cadence: on-change
 maintenance_trigger:
-  - packaged-skill-change
   - harness-command-change
   - downstream-install-change
 semver_impact: minor
 validated_by:
-  - pnpm docs:lifecycle
   - pnpm skill:validate
 depends_on:
-  - .agents/skills/coding-harness/references/agent-install-guide.md
   - .agents/skills/coding-harness/references/setup-and-commands.md
-  - .agents/skills/coding-harness/references/contract.yaml
 ---
 
-# Coding Harness Skill
+# Coding Harness
 
-Use this skill to operate `@brainwav/coding-harness` from live repo evidence, not stale install memory.
+Use Coding Harness to make one bounded delivery step legible. It provides local
+orientation and proof; GitHub, CI, reviews, and merge are separate sources of
+truth.
 
-## Table of Contents
-- [Use](#use)
-- [Command Truth](#command-truth)
-- [Workflow](#workflow)
-- [Validation](#validation)
-- [References](#references)
-- [Boundaries](#boundaries)
-- [Execution Boundaries](#execution-boundaries)
-- [Failure Mode](#failure-mode)
-- [Gotchas](#gotchas)
+## Routine jobs
 
-## Use
-- Install, bootstrap, update, repair, or explain `@brainwav/coding-harness`.
-- Run or interpret `harness init`, `harness upgrade`, `harness ci-migrate`, or governance gates.
-- Verify harness state with command evidence before calling a repo green.
-- Align generated `.codex/environments/environment.toml` actions with current project scripts.
-- Maintain this source repo's packaged skill, templates, command contracts, or eval fixtures.
-
-Do not use for unrelated feature delivery, generic cloud deployment, or security work that is not tied to harness setup, policy gates, or CI ownership.
-
-## Command Truth
-- Fresh-agent first-contact entrypoint: `harness next --json`.
-- Focused first-contact help: `harness --help`.
-- Public agent rail catalog: `harness commands --json --for-agent`.
-- Supported expert catalog: `harness commands --json`; full retained plumbing:
-  `harness commands --json --all` and `harness --help --all-commands`.
-- Source-repo public-bin proof: `pnpm exec harness ...` after dependencies are installed and `dist/cli.js` exists.
-- Source-repo current-tree probes: `node --import tsx src/cli.ts ...` when validating unbuilt implementation changes.
-- Consumer-repo installs: use the installed `harness` binary, preferably via `mise install -g npm:@brainwav/coding-harness`.
-- Existing-repo updates: preview with `harness upgrade --dry-run`, then apply with `harness upgrade`.
-- Scaffold transitions only: `harness init --update`, `--interactive`, `--migrate`, or `--rollback`.
-- CI migration is snapshot-backed. Use `prepare`, `verify`, `commit`, and `abort`; do not manually delete `.github/workflows/`.
-- CI ownership: CircleCI is the primary PR gate, `security-scan` is the required security status context, CodeRabbit is the independent review check, CodeQL is the separate public code-scanning lane, and GitHub Actions is release/fallback unless intentionally migrated.
+1. Orient with `harness next --json`.
+2. Preview a small installation with `harness init --minimal --dry-run --json`.
+3. Diagnose repository health with `harness check --json`.
+4. Run repository-native proof with `harness verify-work --fast`.
+5. Inspect a pull request without conflating local and hosted evidence with
+   `harness pr-closeout --pr <number> --json`.
 
 ## Workflow
-1. Confirm the mode: explanation-only or execution.
-2. Confirm repo root, dirty worktree, package manager, and available auth before mutations.
-3. Discover first-contact context with `harness next --json`; in this source repo use `pnpm exec harness next --json` for public-bin proof, or `node --import tsx src/cli.ts next --json` for current-tree development probes.
-4. For first-time bootstrap, run `harness init --dry-run`, review planned writes, then run `harness init`.
-5. For update checks, run `harness init --check-updates`; use `harness upgrade --dry-run` and `harness upgrade` for routine existing-repo updates.
-6. For CI migration, run the snapshot commands in order and preserve rollback evidence.
-7. Validate the smallest real path first, widen when runtime, artifact, CI, or governed docs changed.
-8. Report exact command outcomes, skipped auth-bound checks, residual risk, and next safe command.
+
+1. Ask the routine command that directly answers the present question.
+2. Make only the bounded repository change it identifies.
+3. Run the target repository's focused proof and report its exact boundary.
+
+Run the smallest command that answers the current question. Preview writes
+before applying them. Preserve unknown work, credentials, and provider state.
+
+## Source checkout
+
+For an unbuilt source change, run `node --import tsx src/cli.ts <command>`.
+For the published package, use the installed `harness` binary. Do not infer
+package, hosted, review, or merge truth from a source checkout.
 
 ## Validation
-Command discovery:
-- `harness next --json`
-- `harness --help`
-- `harness commands --json --for-agent`
-- `harness commands --json`
-- `harness commands --json --all`
-- `harness --help --all-commands`
 
-Source-repo equivalents:
-- `pnpm exec harness next --json`
-- `pnpm exec harness --help`
-- `pnpm exec harness commands --json --for-agent`
-- `pnpm exec harness commands --json`
-- `pnpm exec harness commands --json --all`
-- `pnpm exec harness --help --all-commands`
+Use the target repository's documented focused proof first. Report results as:
 
-Current-tree development probes:
-- `node --import tsx src/cli.ts next --json`
-- `node --import tsx src/cli.ts --help`
-- `node --import tsx src/cli.ts commands --json --for-agent`
-- `node --import tsx src/cli.ts commands --json`
-- `node --import tsx src/cli.ts commands --json --all`
-- `node --import tsx src/cli.ts --help --all-commands`
+```text
+Command: <exact command> -> pass|fail|blocked (<reason>)
+```
 
-Setup and governance:
-- `harness init --dry-run`
-- `harness init`
-- `harness init --check-updates`
-- `harness upgrade --dry-run`
-- `harness upgrade`
-- `harness ci-migrate prepare --provider circleci --dry-run`
-- `harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>`
-- `harness ci-migrate verify --snapshot <snapshot-id>`
-- `harness ci-migrate commit --snapshot <snapshot-id>`
-- `harness ci-migrate abort --snapshot <snapshot-id>`
-- `harness docs-gate --mode advisory --json`
-- `harness check-environment --contract <path> --attestation <path>`
-- `harness verify-coderabbit`
-- `harness check-authz --contract <path> --repo <owner/repo> --branch <branch>`
+`pnpm skill:validate` checks that this skill and its reference keep the same
+five-command routine. It does not prove an installation, external credentials,
+CI, review, or merge state.
 
-Source-repo baseline:
-- `pnpm skill:validate`
-- `pnpm check`
-- `pnpm test:deep` when runtime or artifact behavior changed
-- `bash scripts/validate-codestyle.sh` before handoff when code or governed docs changed
+## Reference
 
-Fail fast on the first blocking gate. Rerun the exact failed check after fixing it.
-
-## References
-- Install and repair: [`references/agent-install-guide.md`](./references/agent-install-guide.md)
-- Machine-readable install phases: [`references/agent-install.json`](./references/agent-install.json)
-- Command lifecycle and validation ladder: [`references/setup-and-commands.md`](./references/setup-and-commands.md)
-- Contract alignment: [`references/contract.yaml`](./references/contract.yaml)
-- Benchmark expectations: [`references/evals.yaml`](./references/evals.yaml)
-- Reference validator implementation: [`scripts/validate_reference_contracts.py`](./scripts/validate_reference_contracts.py)
+- [Routine command reference](./references/setup-and-commands.md)
 
 ## Boundaries
-Can scaffold governed files, run local gates, emit JSON evidence, manage snapshot-backed CI migration, and verify remote policy when credentials exist.
 
-Cannot create credentials, install GitHub Apps, bypass branch protection, turn missing auth into a pass, overwrite user-owned environment files without approval, or claim full capabilities from focused `harness --help`.
-
-## Execution Boundaries
-- Safe autonomous work stays inside the target repository and harness-managed scaffolds.
-- Preview mutating lanes first with `--dry-run` or snapshot commands before applying.
-- Do not create credentials, install GitHub Apps, weaken branch protection, or change user/global config.
-- Do not overwrite user-owned `.codex/environments/environment.toml` unless it is harness-autogenerated or explicitly approved.
-- Treat remote policy verification as blocked unless credentials, repository, and branch scope are available.
-- For cleanup before init or CI migration, use harness dry-runs and snapshot-backed migration commands.
-- If a user asks for destructive cleanup, say it is unsafe for this lane and offer the harness preview or migration-abort path instead of providing a deletion command.
-
-## Failure Mode
-- Fail closed when command truth, repo root, package manager, or canonical harness state cannot be established.
-- Stop at the first failed or blocked validation gate, report the exact command output, and rerun that same gate after a fix.
-- Mark auth-bound, network-bound, or destructive checks as blocked rather than inferred from local source.
-- If the requested task is not harness setup, governance, CI ownership, command discovery, packaged skill maintenance, or action sync, hand off instead of expanding scope.
-
-## Gotchas
-- `harness --help` is focused first-contact help, not proof of the full command catalog.
-- In this source repo, global `harness` may be stale; prefer `pnpm exec harness ...` for public-bin proof and `node --import tsx src/cli.ts ...` for unbuilt source probes.
-- `harness init --update` is a deliberate re-scaffold lane, not the routine upgrade path.
-- CI migration must preserve snapshot rollback evidence; manual workflow deletion is a drift risk.
-- A packaged-skill validation pass does not prove runtime visibility, auth-bound checks, or downstream install health.
+This skill does not create credentials, bypass branch protection, change
+provider configuration, delete user work, or turn a missing external check into
+a pass. Commands outside the five routine jobs are internal or explicitly
+scoped expert work, not default agent guidance.
