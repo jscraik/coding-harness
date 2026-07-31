@@ -26,6 +26,18 @@ run_with_timeout() {
 		timeout "$timeout_seconds" "$@"
 	elif command -v gtimeout >/dev/null 2>&1; then
 		gtimeout "$timeout_seconds" "$@"
+	elif command -v python3 >/dev/null 2>&1; then
+		python3 -c '
+import subprocess
+import sys
+
+try:
+    completed = subprocess.run(sys.argv[2:], timeout=int(sys.argv[1]))
+except subprocess.TimeoutExpired:
+    raise SystemExit(124)
+
+raise SystemExit(completed.returncode)
+' "$timeout_seconds" "$@"
 	else
 		return 124
 	fi

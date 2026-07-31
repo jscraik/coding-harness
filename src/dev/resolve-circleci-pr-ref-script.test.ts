@@ -44,6 +44,9 @@ function writeExecutable(root: string, path: string, content: string) {
 }
 
 function runScript(root: string, extraEnv: NodeJS.ProcessEnv = {}) {
+	const path =
+		extraEnv.PATH ??
+		`${join(root, "bin")}${delimiter}${process.env.PATH ?? ""}`;
 	return spawnSync("bash", [SCRIPT_PATH], {
 		cwd: root,
 		encoding: "utf8",
@@ -52,7 +55,7 @@ function runScript(root: string, extraEnv: NodeJS.ProcessEnv = {}) {
 			...process.env,
 			...scrubbedCircleCiPrEnv,
 			...extraEnv,
-			PATH: `${join(root, "bin")}${delimiter}${process.env.PATH ?? ""}`,
+			PATH: path,
 		},
 	});
 }
@@ -171,6 +174,47 @@ describe("resolve-circleci-pr-ref.sh", () => {
 
 		expect(result.status).toBe(0);
 		expect(result.stdout).toBe("https://github.com/acme/demo/pull/57");
+	});
+
+	it("uses a bounded Python fallback when timeout tools are unavailable", () => {
+		const root = createTempRoot();
+		writeExecutable(
+			root,
+			"bin/bash",
+			["#!/bin/sh", 'exec /bin/bash "$@"'].join("\n"),
+		);
+		writeExecutable(
+			root,
+			"bin/python3",
+			[
+				"#!/bin/sh",
+				": > .python-timeout-wrapper",
+				'exec /usr/bin/python3 "$@"',
+			].join("\n"),
+		);
+		writeExecutable(
+			root,
+			"bin/gh",
+			[
+				"#!/usr/bin/env bash",
+				"set -euo pipefail",
+				"[[ -f .python-timeout-wrapper ]] || exit 11",
+				'printf "%s" "https://github.com/acme/demo/pull/58"',
+			].join("\n"),
+		);
+
+		const result = runScript(root, {
+			CIRCLE_BRANCH: "codex/python-timeout",
+			CIRCLE_PROJECT_REPONAME: "demo",
+			CIRCLE_PROJECT_USERNAME: "acme",
+			HARNESS_CIRCLECI_PR_REF_MAX_ATTEMPTS: "1",
+			HARNESS_CIRCLECI_PR_REF_SLEEP_SECONDS: "0",
+			PATH: join(root, "bin"),
+		});
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toBe("https://github.com/acme/demo/pull/58");
+		expect(result.stderr).toBe("");
 	});
 
 	it("does not accept closed pull requests from commit lookup fallback", () => {
