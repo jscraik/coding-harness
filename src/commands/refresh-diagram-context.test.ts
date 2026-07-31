@@ -256,6 +256,7 @@ describe("refresh-diagram-context.sh", () => {
 		const options = {
 			cwd: root,
 			encoding: "utf-8" as const,
+			timeout: 30_000,
 			env: {
 				...sanitizeGitEnv(),
 				PATH: [binDir, STABLE_PATH].join(delimiter),
