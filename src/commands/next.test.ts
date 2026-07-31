@@ -944,21 +944,12 @@ describe("runHarnessNext", () => {
 			"Stop if validation-plan cannot produce JSON for the changed files.",
 		]);
 		expect(decision.followUpCommands).toEqual([
-			"harness session-distill --json",
-			"harness agent-native-ratchets --json",
 			"harness review-context --files src/commands/next.ts --json",
 		]);
-		const ratchetMeta = decision.meta?.agentNativeRatchets as
-			| { commands?: string[] }
-			| undefined;
-		expect(decision.followUpCommands.slice(0, 2)).toEqual(
-			ratchetMeta?.commands,
-		);
 		expect(decision.hiddenPlumbing).toEqual([
 			"git:status",
 			"command-catalog",
 			"risk-tier",
-			"agent-native-ratchets",
 		]);
 		expect(decision.safeToRun).toBe(true);
 		expect(decision.requiresNetwork).toBe(false);
@@ -972,17 +963,6 @@ describe("runHarnessNext", () => {
 		expect(decision.meta).toMatchObject({
 			frictionClass: "none",
 			delayClass: "normal",
-			agentNativeRatchets: {
-				schemaVersion: "agent-native-ratchet-discovery/v1",
-				commands: [
-					"harness session-distill --json",
-					"harness agent-native-ratchets --json",
-				],
-				packets: expect.arrayContaining([
-					"session-distill/v1",
-					"agent-native-ratchets/v1",
-				]),
-			},
 			agentReadinessContext: {
 				schemaVersion: "agent-readiness-context-health/v1",
 				evidenceUse: "orientation",
@@ -993,11 +973,7 @@ describe("runHarnessNext", () => {
 				"AI/context/diagram-context.md",
 				".harness/active-artifacts.md",
 			]),
-			contextCommands: expect.arrayContaining([
-				"session-context --json --repo-root .",
-				"agent-readiness . --json",
-				"commands --json --for-agent --mode orient",
-			]),
+			contextCommands: ["commands --json --for-agent --mode orient"],
 			conditionalContext: expect.arrayContaining([
 				expect.objectContaining({
 					read: "AI/context/diagram-context.md",
@@ -1648,16 +1624,8 @@ describe("runHarnessNext", () => {
 			"harness review-context --files docs/spec.md --json output",
 		]);
 		expect(decision.followUpCommands).toEqual([
-			"harness session-distill --json",
-			"harness agent-native-ratchets --json",
 			"bash scripts/validate-codestyle.sh --fast",
 		]);
-		const ratchetMeta = decision.meta?.agentNativeRatchets as
-			| { commands?: string[] }
-			| undefined;
-		expect(decision.followUpCommands.slice(0, 2)).toEqual(
-			ratchetMeta?.commands,
-		);
 		expect(decision.meta).toMatchObject({
 			mode: "pr",
 			sourceErrors: [
@@ -1788,7 +1756,7 @@ describe("runHarnessNext", () => {
 		});
 	});
 
-	it("recommends fleet-plan for ci mode when a matrix artifact exists", () => {
+	it("keeps an upgrade matrix advisory during routine next routing", () => {
 		const repoRoot = mkdtempSync(join(tmpdir(), "harness-next-fleet-"));
 		try {
 			mkdirSync(join(repoRoot, "artifacts"), { recursive: true });
@@ -1802,47 +1770,30 @@ describe("runHarnessNext", () => {
 				repoRoot,
 				phaseExit: passingPhaseExit(),
 				runtimeCard: runtimeCard(),
-				inspectChangedFiles: () => {
-					throw new Error("git should not be inspected");
-				},
+				inspectChangedFiles: () => [],
 			});
 
-			expect(decision.status).toBe("action_required");
-			expect(decision.nextCommand).toBe(
-				"harness fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json",
-			);
-			expect(decision.phase).toBe("orient");
-			expect(decision.cockpitLane).toBe("orient");
+			expect(decision.status).toBe("pass");
+			expect(decision.nextCommand).toBe("harness check --json");
+			expect(decision.phase).toBe("handoff");
+			expect(decision.cockpitLane).toBe("handoff");
 			expect(decision.objective).toBe(
-				"Convert the detected upgrade matrix into a safe remediation plan.",
+				"Confirm the repository is ready when no changed files are detected.",
 			);
-			expect(decision.requiredEvidence).toEqual([
+			expect(decision.requiredEvidence).not.toContain(
 				"artifact:artifacts/harness-upgrade-matrix-dev.json",
-			]);
-			expect(decision.stopConditions).toEqual([
-				"Stop if fleet-plan cannot parse the upgrade matrix artifact.",
-			]);
+			);
 			expect(decision.followUpCommands).toEqual([]);
-			expect(decision.hiddenPlumbing).toEqual([
-				"artifact-discovery",
-				"fleet-plan",
-			]);
-			expect(decision.evidenceRef).toEqual([
+			expect(decision.hiddenPlumbing).not.toContain("fleet-plan");
+			expect(decision.evidenceRef).not.toContain(
 				"artifact:artifacts/harness-upgrade-matrix-dev.json",
-			]);
+			);
 			expect(decision.meta).toMatchObject({
 				mode: "ci",
 				hePhaseExit: {
 					gate: "he-phase-exit",
 					status: "pass",
 				},
-				nextCommandArgv: [
-					"harness",
-					"fleet-plan",
-					"--from",
-					"artifacts/harness-upgrade-matrix-dev.json",
-					"--json",
-				],
 			});
 		} finally {
 			rmSync(repoRoot, { recursive: true, force: true });

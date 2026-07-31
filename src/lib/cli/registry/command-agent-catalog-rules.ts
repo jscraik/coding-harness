@@ -1,8 +1,17 @@
 import type { CommandAgentCatalogMode } from "./command-capabilities.js";
 
 const AGENT_ORIENT_COMMAND_NAMES = ["next"] as const;
-const AGENT_VERIFY_COMMAND_NAMES = ["next", "check", "verify-work"] as const;
-const AGENT_REVIEW_COMMAND_NAMES = ["next", "pr-closeout"] as const;
+const AGENT_VERIFY_COMMAND_NAMES = [
+	"next",
+	"check",
+	"verify-work",
+	"validation-plan",
+] as const;
+const AGENT_REVIEW_COMMAND_NAMES = [
+	"next",
+	"pr-closeout",
+	"review-context",
+] as const;
 const AGENT_HANDOFF_COMMAND_NAMES = ["next", "pr-closeout"] as const;
 
 export const AGENT_CATALOG_COMMAND_NAMES: Readonly<

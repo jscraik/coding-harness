@@ -268,13 +268,6 @@ export const ORCHESTRATED_BY_BY_NAME: Partial<
 	Record<string, CommandOrchestrator[]>
 > = {
 	next: [],
-	"agent-readiness": ["next"],
-	...(mapCommands(AGENT_NATIVE_PACKET_COMMAND_NAMES, ["next"]) as Partial<
-		Record<string, CommandOrchestrator[]>
-	>),
-	"prompt-context-drift:write": ["next"],
-	"prompt-context-drift:validate": ["next"],
-	"fleet-plan": ["next"],
 	check: ["next"],
 	doctor: ["next"],
 	health: ["next"],

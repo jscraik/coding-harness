@@ -45,7 +45,7 @@ non_goals:
 
 guardrails:
   - Treat runtime/source output as command truth when docs disagree.
-  - Use `harness next --json` for fresh-agent entry, focused `harness --help` for first-contact truth, `harness commands --json` for full catalog truth, and `harness commands --json --for-agent` for public agent rails.
+  - Use `harness next --json` for fresh-agent entry, focused `harness --help` for first-contact truth, `harness commands --json` for supported catalog truth, `harness commands --json --all` for full retained catalog truth, and `harness commands --json --for-agent` for public agent rails.
   - Require explicit approval before destructive or high-impact operations.
   - Redact tokens/secrets in logs and summaries.
   - Fail fast on first blocking validation gate and report exact remediation.

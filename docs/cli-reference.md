@@ -202,8 +202,6 @@ Taxonomy note: section headings in this document represent command families. The
 non-current stale-state evidence; routine uncertainty must stay in local
 investigation rather than becoming a decision-request packet.
 
-In CI mode, `harness next --mode ci --json` recommends `harness fleet-plan --from artifacts/harness-upgrade-matrix-dev.json --json` when the upgrade-matrix artifact exists.
-
 ## Review and policy gates
 
 | Command                  | Purpose                                                                                                                                                                                             |

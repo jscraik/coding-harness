@@ -10,6 +10,8 @@ export const COMMAND_VISIBILITY_BY_NAME: Partial<
 	doctor: "advanced",
 	contract: "advanced",
 	"pr-closeout": "advanced",
+	"review-context": "advanced",
+	"validation-plan": "advanced",
 	upgrade: "advanced",
 	"ci-migrate": "advanced",
 	"verify-work": "advanced",

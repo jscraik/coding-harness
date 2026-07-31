@@ -16,8 +16,7 @@ import {
 	nextDecisionOperationalMeta,
 } from "./next-decision-meta.js";
 import type { HarnessNextMode } from "./next-decision-types.js";
-import * as agentNativeRatchets from "./next-agent-native-ratchets.js";
-import { chooseNextCommandParts, shellQuote } from "./next-support.js";
+import { chooseNextCommandParts } from "./next-support.js";
 import {
 	changedFileClassificationMeta,
 	type ChangedFileClassification,
@@ -59,62 +58,6 @@ function createRecommendationCandidate(args: {
 		requiresNetwork: false,
 		writesFiles: false,
 	};
-}
-
-/**
- * Recommend converting a Harness upgrade matrix artifact into a fleet remediation plan.
- * @param args - Matrix artifact path, mode, and optional normalized evidence metadata
- * @returns A HarnessDecision that directs the operator to run `harness fleet-plan`
- */
-export function fleetMatrixArtifactDecision(args: {
-	mode: HarnessNextMode;
-	matrixArtifact: string;
-	phaseExit?: HePhaseExit | undefined;
-	runtimeCard?: RuntimeCard | undefined;
-	prCloseout?: HarnessNextPrCloseoutEvidence | undefined;
-	agentReadinessContext?: AgentReadinessContextHealth | undefined;
-}): HarnessDecision {
-	const command = `harness fleet-plan --from ${shellQuote(args.matrixArtifact)} --json`;
-	return createNextDecision({
-		status: "action_required",
-		summary: "Harness upgrade matrix artifact detected.",
-		nextAction:
-			"Convert the upgrade matrix into an agent-native fleet remediation plan.",
-		nextCommand: command,
-		phase: "orient",
-		objective:
-			"Convert the detected upgrade matrix into a safe remediation plan.",
-		requiredEvidence: [`artifact:${args.matrixArtifact}`],
-		stopConditions: [
-			"Stop if fleet-plan cannot parse the upgrade matrix artifact.",
-		],
-		humanEscalation: null,
-		followUpCommands: [],
-		hiddenPlumbing: ["artifact-discovery", "fleet-plan"],
-		safeToRun: true,
-		requiresHuman: false,
-		requiresNetwork: false,
-		writesFiles: false,
-		evidenceRef: [`artifact:${args.matrixArtifact}`],
-		failureClass: null,
-		retry: "safe",
-		riskTier: "low",
-		meta: nextDecisionOperationalMeta({
-			mode: args.mode,
-			nextCommandArgv: [
-				"harness",
-				"fleet-plan",
-				"--from",
-				args.matrixArtifact,
-				"--json",
-			],
-			commands: [command],
-			phaseExit: args.phaseExit,
-			runtimeCard: args.runtimeCard,
-			extra: prCloseoutDecisionMeta(args.prCloseout),
-			agentReadinessContext: args.agentReadinessContext,
-		}),
-	});
 }
 
 /**
@@ -196,9 +139,7 @@ export function changedFilesDecision(args: {
 		"pr",
 		args.files,
 	).command;
-	const ratchetFollowUpCommands = [
-		agentNativeRatchets.SESSION_DISTILL_COMMAND,
-		agentNativeRatchets.AGENT_NATIVE_RATCHET_COMMAND,
+	const followUpCommands = [
 		args.mode === "pr"
 			? "bash scripts/validate-codestyle.sh --fast"
 			: reviewContextFollowUp,
@@ -218,12 +159,11 @@ export function changedFilesDecision(args: {
 			`Stop if ${args.mode === "pr" ? "review-context" : "validation-plan"} cannot produce JSON for the changed files.`,
 		],
 		humanEscalation: null,
-		followUpCommands: ratchetFollowUpCommands,
+		followUpCommands,
 		hiddenPlumbing: [
 			"git:status",
 			"command-catalog",
 			"risk-tier",
-			"agent-native-ratchets",
 			...(args.phaseExit ? ["he-phase-exit"] : []),
 			...(args.runtimeCard ? ["runtime-card"] : []),
 			...(args.prCloseout ? ["pr-closeout"] : []),
@@ -247,7 +187,6 @@ export function changedFilesDecision(args: {
 			runtimeCard: args.runtimeCard,
 			extra: {
 				...prCloseoutDecisionMeta(args.prCloseout),
-				...agentNativeRatchets.agentNativeRatchetMeta(),
 				...changedFileClassificationMeta(args.classification),
 			},
 			agentReadinessContext: args.agentReadinessContext,

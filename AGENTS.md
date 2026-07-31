@@ -31,8 +31,9 @@ proof, and hand work back truthfully. Keep the routine path small.
    owned or unknown changes. Never reset, stash, clean, force-push, or delete
    a branch or worktree without explicit authority.
 3. Use `harness next --json` for cold-agent routing. Optional maintenance is a
-   warning, never the primary action. Use documented wrappers through `zsh -lc`
-   with Node `>=26.3.0` and pnpm `10.33.0`.
+   warning, never the primary action; hidden internal recovery commands remain
+   explicit diagnostics. Use documented wrappers through `zsh -lc` with Node
+   `>=26.3.0` and pnpm `10.33.0`.
 4. Use the compact default `harness commands --json` catalogue for supported
    work; query `--all` or `--plumbing` only for a named compatibility consumer.
 

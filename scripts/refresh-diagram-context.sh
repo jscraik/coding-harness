@@ -591,15 +591,48 @@ const diagrams = readdirSync(diagramsDir)
 		};
 	});
 
+const existingManifest = (() => {
+	try {
+		return JSON.parse(
+			readFileSync(join(rootDir, ".diagram", "manifest.json"), "utf8"),
+		);
+	} catch {
+		return null;
+	}
+})();
+const withoutGeneratedAt = ({ generatedAt: _generatedAt, ...manifest }) => manifest;
+const stableJson = (value) => {
+	if (Array.isArray(value)) {
+		return value.map(stableJson);
+	}
+	if (value && typeof value === "object") {
+		return Object.fromEntries(
+			Object.entries(value)
+				.sort(([left], [right]) => left.localeCompare(right))
+				.map(([key, nestedValue]) => [key, stableJson(nestedValue)]),
+		);
+	}
+	return value;
+};
+const generatedManifest = {
+	...sourceManifest,
+	rootPath: ".",
+	diagramDir: ".diagram",
+	diagrams,
+};
+const generatedAt =
+	typeof existingManifest?.generatedAt === "string" &&
+		JSON.stringify(stableJson(withoutGeneratedAt(existingManifest))) ===
+			JSON.stringify(stableJson(withoutGeneratedAt(generatedManifest)))
+		? existingManifest.generatedAt
+		: new Date().toISOString();
+
 writeFileSync(
 	manifestPath,
 	`${JSON.stringify(
 		{
-			...sourceManifest,
-			generatedAt: new Date().toISOString(),
-			rootPath: ".",
-			diagramDir: ".diagram",
-			diagrams,
+			...generatedManifest,
+			generatedAt,
 		},
 		null,
 		"\t",

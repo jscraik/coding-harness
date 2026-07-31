@@ -34,9 +34,14 @@ const AGENT_ORIENT_COMMAND_RAIL_NAMES = ["next"] as const;
 const AGENT_VERIFY_COMMAND_RAIL_NAMES = [
 	"next",
 	"check",
+	"validation-plan",
 	"verify-work",
 ] as const;
-const AGENT_REVIEW_COMMAND_RAIL_NAMES = ["next", "pr-closeout"] as const;
+const AGENT_REVIEW_COMMAND_RAIL_NAMES = [
+	"next",
+	"review-context",
+	"pr-closeout",
+] as const;
 const AGENT_HANDOFF_COMMAND_RAIL_NAMES = ["next", "pr-closeout"] as const;
 
 describe("command registry", () => {
@@ -356,6 +361,8 @@ describe("command registry", () => {
 				"verify-work",
 				"contract",
 				"init",
+				"review-context",
+				"validation-plan",
 				"upgrade",
 				"ci-migrate",
 			]);
@@ -467,6 +474,11 @@ describe("suggestCommands", () => {
 		const distances = suggestions.map((s) => s.distance);
 		expect(distances).toEqual([...distances].sort((a, b) => a - b));
 	});
+
+	it("does not suggest plumbing commands on the default discovery path", () => {
+		const suggestions = suggestCommands("docs-gaet");
+		expect(suggestions.map(({ spec }) => spec.name)).not.toContain("docs-gate");
+	});
 });
 
 describe("suggestCommandCapabilities", () => {
@@ -480,16 +492,21 @@ describe("suggestCommandCapabilities", () => {
 		expect(suggestCommandCapabilities("blast-raduis", 2)).toHaveLength(2);
 	});
 
-	it("returns capabilities that come from the catalog document", () => {
-		const catalogNames = new Set(
-			getRegistryCommandCatalogDocument().commands.map(
-				(capability) => capability.name,
-			),
+	it("returns only capabilities from the supported command catalog", () => {
+		const supportedCatalogNames = new Set(
+			getRegistryCommandCapabilities()
+				.filter((capability) =>
+					["default", "agent", "advanced"].includes(capability.visibility),
+				)
+				.map((capability) => capability.name),
 		);
-		const suggestions = suggestCommandCapabilities("blast-radius-x");
+		const suggestions = suggestCommandCapabilities("docs-gate");
 		for (const { capability } of suggestions) {
-			expect(catalogNames.has(capability.name)).toBe(true);
+			expect(supportedCatalogNames.has(capability.name)).toBe(true);
 		}
+		expect(suggestions.map(({ capability }) => capability.name)).not.toContain(
+			"docs-gate",
+		);
 	});
 });
 
@@ -816,9 +833,10 @@ describe("getRegistryCommandCapabilities", () => {
 		const expected = [
 			["check", "cockpit", "both", ["next"]],
 			["next", "cockpit", "agent", []],
-			["session-context", "domain", "agent", ["next"]],
+			["session-context", "domain", "agent", []],
+			["agent-native-ratchets", "domain", "agent", []],
 			["decision-request", "domain", "agent", ["next", "pr-ready"]],
-			["fleet-plan", "domain", "agent", ["next"]],
+			["fleet-plan", "domain", "agent", []],
 			["doctor", "domain", "both", ["next"]],
 			["health", "domain", "both", ["next"]],
 			["review-gate", "domain", "agent", ["next", "pr-ready"]],
@@ -833,6 +851,34 @@ describe("getRegistryCommandCapabilities", () => {
 				primaryAudience,
 				orchestratedBy,
 			});
+		}
+	});
+
+	it("does not advertise retired recovery routes as next outputs", () => {
+		const capabilitiesByName = new Map(
+			getRegistryCommandCapabilities().map((capability) => [
+				capability.name,
+				capability,
+			]),
+		);
+		const retiredNextRoutes = [
+			"agent-readiness",
+			"runtime-card",
+			"session-context",
+			"agent-native-ratchets",
+			"session-distill",
+			"agent-rework",
+			"reviewer-decision",
+			"governance-decision-surface",
+			"prompt-context-drift:write",
+			"prompt-context-drift:validate",
+			"fleet-plan",
+		] as const;
+
+		for (const name of retiredNextRoutes) {
+			expect(capabilitiesByName.get(name)?.orchestratedBy).not.toContain(
+				"next",
+			);
 		}
 	});
 
@@ -854,7 +900,7 @@ describe("getRegistryCommandCapabilities", () => {
 		});
 		expect(capabilitiesByName.get("validation-plan")).toMatchObject({
 			agentMode: "verify",
-			visibility: "plumbing",
+			visibility: "advanced",
 		});
 		expect(capabilitiesByName.get("session-context")).toMatchObject({
 			agentMode: "orient",
@@ -866,7 +912,7 @@ describe("getRegistryCommandCapabilities", () => {
 		});
 		expect(capabilitiesByName.get("review-context")).toMatchObject({
 			agentMode: "review",
-			visibility: "plumbing",
+			visibility: "advanced",
 		});
 		expect(capabilitiesByName.get("review-gate")).toMatchObject({
 			agentMode: "review",
@@ -1453,13 +1499,14 @@ describe("'commands' command execution", () => {
 		}
 	});
 
-	it("keeps the clean-worktree next command discoverable on the verify rail", () => {
+	it("keeps verify routing commands discoverable on the verify rail", () => {
 		const verifyCatalog = getRegistryAgentCommandCatalogDocument("verify");
 		const verifyNames = new Set(
 			verifyCatalog.commands.map((command) => command.name),
 		);
 
 		expect(verifyNames.has("check")).toBe(true);
+		expect(verifyNames.has("validation-plan")).toBe(true);
 		expect(
 			verifyCatalog.commands.find((command) => command.name === "check"),
 		).toMatchObject({
@@ -1467,6 +1514,16 @@ describe("'commands' command execution", () => {
 			mutability: "read",
 			retryability: "safe",
 		});
+	});
+
+	it("keeps review routing commands discoverable on the review rail", () => {
+		const reviewNames = new Set(
+			getRegistryAgentCommandCatalogDocument("review").commands.map(
+				(command) => command.name,
+			),
+		);
+
+		expect(reviewNames.has("review-context")).toBe(true);
 	});
 
 	it.each([
