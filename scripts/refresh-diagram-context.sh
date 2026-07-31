@@ -655,6 +655,7 @@ SOURCE_FOCUS_FILE="$TMP_DIR/source-focus.txt"
 	$0 ~ /^docs\/agents\/linear-templates\// { print }
 	$0 ~ /^scripts\/refresh-diagram-context\.sh$/ { print }
 	$0 ~ /^scripts\/check-diagram-freshness\.sh$/ { print }
+	$0 ~ /^scripts\/resolve-circleci-pr-ref\.sh$/ { print }
 	$0 ~ /^scripts\/lib\/normalize-mermaid-artifact\.cjs$/ { print }
 	$0 ~ /^contracts\/synaipse-(context-catalog|context-ref|task-context|state)\.schema\.json$/ { print }
 	$0 == "package.json" || $0 == "tsconfig.json" || $0 == ".diagramrc" { print }

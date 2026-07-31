@@ -151,8 +151,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   ownership in `docs/architecture/architecture-adjacent-boundary-registry.json`,
   update boundary tests, refresh architecture context, and keep docs-gate
   required surfaces synchronized when the command family boundary changes. The
-  default catalogue is supported routine and expert work only; compatibility
-  plumbing remains behind explicit `commands --all` or `--plumbing` output.
+  default catalogue is supported routine and expert work only; the dedicated
+  agent rail remains behind `commands --for-agent`, while explicit
+  `commands --all` or `--plumbing` output may expose the complete internal
+  catalogue.
 - runtime-card evidence adapter changes that add `--evidence` ingestion,
   normalized session evidence, or runtime-card source/blocker projection should
   keep `runtime-card/v1` advisory, artifact-backed, and constrained to

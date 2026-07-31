@@ -35,7 +35,9 @@ proof, and hand work back truthfully. Keep the routine path small.
    explicit diagnostics. Use documented wrappers through `zsh -lc` with Node
    `>=26.3.0` and pnpm `10.33.0`.
 4. Use the compact default `harness commands --json` catalogue for supported
-   work; query `--all` or `--plumbing` only for a named compatibility consumer.
+   work; use `--for-agent` for the dedicated agent rail, and query `--all` or
+   `--plumbing` only for a named compatibility consumer that needs the complete
+   internal catalogue.
 
 ## Delivery rules
 

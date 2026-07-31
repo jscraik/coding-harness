@@ -36,9 +36,10 @@ Use the job that matches the immediate need.
 | Close out | `harness pr-closeout --pr <number> --json` | Separate PR, CI, review, finding, and merge truth. |
 
 `harness commands --json` lists the routine and supported expert commands.
-Use `harness commands --json --all` only when maintaining an existing internal
-integration. `harness doctor` is an expert diagnostic only when `check` names a
-setup problem.
+Use `harness commands --json --for-agent` for the dedicated agent rail; use
+`--all` only when maintaining an existing internal integration, where the
+complete catalogue may include agent-visible commands. `harness doctor` is an
+expert diagnostic only when `check` names a setup problem.
 
 ## Install
 
