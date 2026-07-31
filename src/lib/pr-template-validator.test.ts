@@ -290,6 +290,23 @@ describe("validatePrTemplateBody", () => {
 		expect(validatePrTemplateBody(failWithNote)).toEqual([]);
 	});
 
+	it.each([
+		"pass.",
+		"fail.",
+		"blocked (service unavailable).",
+	])("rejects command evidence outcome %s with a bare trailing period", (outcome) => {
+		const body = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			`- Command: \`pnpm lint\` -> ${outcome}`,
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("Command evidence must use"),
+			]),
+		);
+	});
+
 	it("fails when Testing has no Command evidence lines", () => {
 		const body = VALID_BODY.replace(/^- Command: .*\n/gm, "");
 		const errors = validatePrTemplateBody(body);
