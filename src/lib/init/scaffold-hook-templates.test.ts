@@ -21,6 +21,21 @@ import {
 	renderValidateCommitMsgScript,
 } from "./scaffold-hook-templates.js";
 
+/**
+ * Minimal fixture type for mocking docs-gate report JSON in pre-push hook tests.
+ * Captures the fields validated by the jq expression in the pre-push hook.
+ */
+interface DocsGateReportFixture {
+	status: "success" | "warn" | "fail";
+	summary: {
+		errors: number;
+	};
+	findings?: Array<{
+		id: string;
+		severity: "info" | "warning" | "error";
+	}>;
+}
+
 function expectScriptSyntax(
 	name: string,
 	script: string,
@@ -42,7 +57,7 @@ function expectScriptSyntax(
 function runPrePushWithDocsGate(
 	script: string,
 	docsGateExit: number,
-	docsGateReport: Record<string, unknown>,
+	docsGateReport: DocsGateReportFixture,
 ) {
 	const root = mkdtempSync(join(tmpdir(), "scaffold-pre-push-docs-gate-"));
 	const scriptsDir = join(root, "scripts");

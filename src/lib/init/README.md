@@ -35,8 +35,9 @@ contract, not the minimal scaffold.
   pass; otherwise follow its diagnostic to correct the affected documentation
   before rerunning the gate.
 - Keep the checked-in pre-push hook and its generated template aligned. The
-  hook may continue only when docs-gate emits a zero-error advisory warning;
-  documentation drift and every other gate failure remain blocking.
+  hook may continue only when docs-gate has zero errors and every warning is
+  the explicit `docs-gate.docs:archive-candidates.docs.archive_candidates.advisory`
+  category; documentation drift and every other gate failure remain blocking.
 - Generated routine validation guidance must keep Local Memory out of routine
   execution. Preserve `--mode required` only for an explicit Local Memory
   diagnostic or acceptance lane, and keep the source and template scripts in

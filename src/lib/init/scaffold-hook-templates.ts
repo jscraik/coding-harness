@@ -76,9 +76,9 @@ cd "$REPO_ROOT"
 
 unset_git_context_env() {
 	local git_env_name
-	while IFS= read -r git_env_name; do
+	for git_env_name in $(compgen -v GIT_); do
 		[[ -n "$git_env_name" ]] && unset "$git_env_name"
-	done < <(compgen -v GIT_)
+	done
 }
 
 package_script_exists() {
@@ -130,9 +130,9 @@ cd "$REPO_ROOT"
 
 unset_git_context_env() {
 	local git_env_name
-	while IFS= read -r git_env_name; do
+	for git_env_name in $(compgen -v GIT_); do
 		[[ -n "$git_env_name" ]] && unset "$git_env_name"
-	done < <(compgen -v GIT_)
+	done
 }
 
 bash ./scripts/check-validation-locks.sh

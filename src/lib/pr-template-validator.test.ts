@@ -374,6 +374,30 @@ describe("validatePrTemplateBody", () => {
 		).toBe(true);
 	});
 
+	it("fails empty or whitespace-only Command evidence", () => {
+		const emptyBody = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command: -> pass",
+		);
+		const emptyErrors = validatePrTemplateBody(emptyBody);
+
+		expect(
+			emptyErrors.some((error) => error.includes("Command evidence must use")),
+		).toBe(true);
+
+		const whitespaceBody = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command:   -> pass",
+		);
+		const whitespaceErrors = validatePrTemplateBody(whitespaceBody);
+
+		expect(
+			whitespaceErrors.some((error) =>
+				error.includes("Command evidence must use"),
+			),
+		).toBe(true);
+	});
+
 	it("does not treat heading names in prose as section starts", () => {
 		const body = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",
