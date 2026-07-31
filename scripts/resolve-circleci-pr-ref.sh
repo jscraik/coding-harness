@@ -27,7 +27,7 @@ run_with_timeout() {
 	elif command -v gtimeout >/dev/null 2>&1; then
 		gtimeout "$timeout_seconds" "$@"
 	else
-		"$@"
+		return 124
 	fi
 }
 
@@ -63,7 +63,7 @@ resolve_repo_slug() {
 			gh_path="$(command -v "$GH_BIN" 2>/dev/null || true)"
 		fi
 		if [[ -n "$gh_path" ]]; then
-			slug="$("$gh_path" repo view --json nameWithOwner --jq '.nameWithOwner // ""' 2>/dev/null || true)"
+			slug="$(run_with_timeout "$network_timeout" "$gh_path" repo view --json nameWithOwner --jq '.nameWithOwner // ""' 2>/dev/null || true)"
 		fi
 	fi
 	printf '%s' "$slug"
