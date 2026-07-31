@@ -101,10 +101,7 @@ function isFlagToken(value: string | undefined): boolean {
 }
 
 /** Parse a CLI option as a positive integer, returning undefined for invalid input. */
-function parsePositiveInteger(value: string | undefined): number | undefined {
-	if (value === undefined) {
-		return undefined;
-	}
+function parsePositiveInteger(value: string): number | undefined {
 	const trimmed = value.trim();
 	if (!/^-?(?:0|[1-9]\d*)$/.test(trimmed)) {
 		return undefined;
@@ -117,10 +114,7 @@ function parsePositiveInteger(value: string | undefined): number | undefined {
 }
 
 /** Parse a CLI threshold option as a decimal between 0 and 1. */
-function parseThreshold(value: string | undefined): number | undefined {
-	if (value === undefined) {
-		return undefined;
-	}
+function parseThreshold(value: string): number | undefined {
 	const trimmed = value.trim();
 	if (!/^-?(?:(?:0|[1-9]\d*)|(?:\d+\.\d+|\.\d+))$/.test(trimmed)) {
 		return undefined;
