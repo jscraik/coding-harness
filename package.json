@@ -231,7 +231,7 @@
 		"prek:validate-config": "bash scripts/run-prek.sh validate-config"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.4.15",
+		"@biomejs/biome": "2.4.15",
 		"@brainwav/coding-harness-source-bin": "workspace:*",
 		"@brainwav/diagram": "^1.1.0",
 		"@total-typescript/shoehorn": "^0.1.2",

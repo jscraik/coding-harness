@@ -359,6 +359,10 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   before failing closed. The shared resolver script is part of that governance
   surface because it decides when PR-dependent checks may proceed and when they
   must fail closed.
+- A required docs-gate warning remains blocking in generated hooks and CircleCI
+  unless the report has zero errors and every warning is the explicit
+  `docs-gate.docs:archive-candidates.docs.archive_candidates.advisory` category;
+  a generic zero-error warning result is not a continuation condition.
 - rule lifecycle governance changes that alter rule metadata validation, `.harness/rule-lifecycle-manifest.json`, `docs/rule-lifecycle.schema.json`, or `rule-lifecycle-gate` should keep this guide synchronized with `AGENTS.md`, `README.md`, and `docs/agents/00-architecture-bootstrap.md` when docs-gate reports agent-governance, contract-policy, or architecture-context surfaces
 - workflow-authority routing and validation behavior changes should update `docs/agents/04-validation.md`, `docs/agents/08-release-and-change-control.md`, `docs/agents/10-agent-testing-gates.md`, and `docs/agents/14-docs-gate-rollout.md`
 - agent-governance/category updates should keep `AGENTS.md` and this guide synchronized in the same PR
@@ -635,7 +639,7 @@ implementation into the harness.
 - If a reproducible coding-harness bug, policy gap, workflow regression, automation task, or release follow-up is found: create or update a Linear issue with repro + evidence before handoff.
 - If PR review artifacts are missing (CodeRabbit/Codex for this repo): do not merge; complete reviews or explicitly escalate the exception.
 - If the `CodeRabbit` check is absent, pending, or failing for the current head SHA: do not merge.
-- If `docs-gate` reports warning findings for required surfaces on the current head SHA: do not merge until those warnings are resolved in the PR.
+- If `docs-gate` reports warning findings for required surfaces on the current head SHA: do not merge unless the report has zero errors and every warning is the explicit `docs-gate.docs:archive-candidates.docs.archive_candidates.advisory` category. All other warnings must be resolved in the PR.
 - If CodeRabbit reports Semgrep findings: fix all `ERROR` findings before merge. `WARNING` findings may remain only when the PR records the rationale and containment.
 - Any run of `harness linear*` commands must have `LINEAR_API_KEY` available
   in the runtime environment or supplied with `--token`. If secrets are kept

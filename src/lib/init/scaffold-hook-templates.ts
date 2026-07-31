@@ -76,9 +76,9 @@ cd "$REPO_ROOT"
 
 unset_git_context_env() {
 	local git_env_name
-	while IFS= read -r git_env_name; do
+	for git_env_name in $(compgen -v GIT_); do
 		[[ -n "$git_env_name" ]] && unset "$git_env_name"
-	done < <(compgen -v GIT_)
+	done
 }
 
 package_script_exists() {
@@ -130,9 +130,9 @@ cd "$REPO_ROOT"
 
 unset_git_context_env() {
 	local git_env_name
-	while IFS= read -r git_env_name; do
+	for git_env_name in $(compgen -v GIT_); do
 		[[ -n "$git_env_name" ]] && unset "$git_env_name"
-	done < <(compgen -v GIT_)
+	done
 }
 
 bash ./scripts/check-validation-locks.sh
@@ -165,7 +165,22 @@ if [[ "$only_environment_change" == true ]]; then
 	exit 0
 fi
 
-bash ./scripts/run-harness-gate.sh docs-gate --mode required --json
+docs_gate_output="$(mktemp)"
+if bash ./scripts/run-harness-gate.sh docs-gate --mode required --json > "$docs_gate_output"; then
+	cat "$docs_gate_output"
+else
+	docs_gate_status=$?
+	cat "$docs_gate_output"
+	if [[ "$docs_gate_status" -eq 10 ]] && jq -e \\
+		'(.status == "warn") and (.summary.errors == 0) and ([.findings[]? | select(.severity == "warning") | .id] | length > 0) and ([.findings[]? | select(.severity == "warning") | .id] | all(. == "docs-gate.docs:archive-candidates.docs.archive_candidates.advisory"))' \\
+		"$docs_gate_output" > /dev/null; then
+		echo "Continuing pre-push after docs-gate advisory warnings."
+	else
+		rm -f "$docs_gate_output"
+		exit "$docs_gate_status"
+	fi
+fi
+rm -f "$docs_gate_output"
 
 tmp_changed_files="$(mktemp)"
 trap 'rm -f "$tmp_changed_files"' EXIT
