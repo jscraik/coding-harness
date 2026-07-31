@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from collections.abc import Sequence
 from copy import deepcopy
@@ -22,6 +23,7 @@ from check_artifact_type_contracts import (
     HarnessDecision,
     ReviewerDecisionReport,
     SessionDistillReport,
+    tracked_files,
 )
 
 
@@ -36,6 +38,28 @@ FORBIDDEN_HARNESS_CLAIMS = {
     "tracker_closed",
     "merge_ready",
 }
+
+
+def test_tracked_files_ignores_paths_deleted_in_the_worktree(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    (tmp_path / "present.md").write_text("present\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    def fake_run_command(
+        _command: Sequence[str], *, timeout_seconds: float = 60
+    ) -> subprocess.CompletedProcess[str]:
+        del timeout_seconds
+        return subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="present.md\ndeleted.md\n", stderr=""
+        )
+
+    monkeypatch.setattr(
+        "check_artifact_type_contracts.run_command",
+        fake_run_command,
+    )
+
+    assert tracked_files() == [Path("present.md")]
 
 
 def _compact_harness_decision() -> dict[str, Any]:

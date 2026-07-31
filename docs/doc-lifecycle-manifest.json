@@ -198,7 +198,7 @@
 		},
 		{
 			"path": ".agents/skills/coding-harness/SKILL.md",
-			"purpose": "Packaged Codex skill entrypoint for harness install, upgrade, diagnosis, and governance workflows.",
+			"purpose": "Packaged Codex skill entrypoint for the five routine Coding Harness jobs.",
 			"audience": ["codex-agent", "coding-harness-maintainer"],
 			"lifecycleStage": "execute",
 			"knowledgeCategory": "agent-skill",
@@ -209,9 +209,7 @@
 			"owner": "coding-harness-maintainers",
 			"semverDefault": "minor",
 			"dependsOn": [
-				".agents/skills/coding-harness/references/agent-install-guide.md",
-				".agents/skills/coding-harness/references/setup-and-commands.md",
-				".agents/skills/coding-harness/references/contract.yaml"
+				".agents/skills/coding-harness/references/setup-and-commands.md"
 			]
 		},
 		{

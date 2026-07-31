@@ -27,18 +27,17 @@ proof, and hand back the result. Select a reviewer or tool-building subagent
 only when the work is delegated, a reusable tool is needed, or the risk requires
 independent coverage; routine work does not need a reviewer-authored artifact.
 
-Recurring judgment should become a small operating primitive. If an agent needs
-the same judgment twice, or a failure mode can recur across slices, promote it
-into the smallest durable tool that changes future behavior: validator, guard
-script, CLI helper, workflow hook, fixture, or scoped skill. Keep one-off
-implementation knowledge in implementation notes, plan evidence, or PR closeout
-evidence. Use skills only for reusable routed workflows with explicit inputs,
-artifacts, validation, ownership, and review expectations.
+Treat repeated feedback as evidence, not an automatic mandate for more process.
+Finish the bounded local repair first. Promote a small durable control only when
+the same failure recurs across independent work, an existing contract conflicts,
+or a safety boundary requires enforcement. Keep one-off implementation knowledge
+with the change; use skills only for reusable routed workflows with explicit
+inputs, evidence, validation, and ownership.
 
 ## Mandatory gates (when behavior changes)
 
 Root instruction routing is a bounded governance surface. Keep `AGENTS.md` as
-the Layer 0 router within 130 lines and `docs/agents/quickstart.md` as the
+the Layer 0 router within 100 lines and `docs/agents/quickstart.md` as the
 Layer 1 entrypoint within 80 lines, then run `pnpm docs:layer-budgets`. The
 guard proves size and read availability only; it does not prove policy
 correctness or delivery readiness.
@@ -51,6 +50,11 @@ correctness or delivery readiness.
 - `bash scripts/validate-codestyle.sh`
 - `docs-gate` (CI check for documentation parity)
 - Code-review pass-through via PR workflow (no direct `main` commits).
+
+Routine command guidance belongs in the checked
+[CLI reference](../cli-reference.md): `next`, minimal `init`, `check`,
+`verify-work`, and `pr-closeout`. Do not restore hidden command catalogues to
+agent-facing documentation merely because an internal implementation remains.
 - Required status checks and code scanning stay separate: branch protection
   status checks require `pr-pipeline`, `security-scan`, and
   `CodeRabbit`, while public code scanning requires CodeQL results from

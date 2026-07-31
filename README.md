@@ -35,11 +35,9 @@ Use the job that matches the immediate need.
 | Verify | `harness verify-work --fast` | Repository-native focused proof. |
 | Close out | `harness pr-closeout --pr <number> --json` | Separate PR, CI, review, finding, and merge truth. |
 
-`harness commands --json` lists the routine and supported expert commands.
-Use `harness commands --json --for-agent` for the dedicated agent rail; use
-`--all` only when maintaining an existing internal integration, where the
-complete catalogue may include agent-visible commands. `harness doctor` is an
-expert diagnostic only when `check` names a setup problem.
+The [CLI reference](./docs/cli-reference.md) is the complete routine command
+catalogue. Internal and expert operations are intentionally absent from the
+default journey and require a named consumer or task scope.
 
 ## Install
 

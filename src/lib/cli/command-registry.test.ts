@@ -391,21 +391,18 @@ describe("command registry", () => {
 		);
 	});
 
-	it("ensures migrated commands exist in docs command catalog", () => {
+	it("keeps the public CLI reference aligned with the agent routine catalog", () => {
 		const commandCatalogPath = join(process.cwd(), "docs/cli-reference.md");
 		const commandCatalogContent = readFileSync(commandCatalogPath, "utf-8");
-		const readmeCommands = extractReadmeCommandNames(commandCatalogContent);
-		const result = compareRegistryToReadme(
-			MIGRATED_COMMAND_NAMES,
-			readmeCommands,
-		);
+		const documentedCommands = extractReadmeCommandNames(commandCatalogContent);
+		const routineCommands =
+			getRegistryAgentCommandCatalogDocument().commands.map(
+				(command) => command.name,
+			);
+		const result = compareRegistryToReadme(routineCommands, documentedCommands);
 
 		expect(result.missingInReadme).toEqual([]);
-		expect(readmeCommands).not.toContain("repo");
-		expect(readmeCommands).not.toContain("gate");
-		expect(readmeCommands).not.toContain("pilot");
-		expect(readmeCommands).not.toContain("work");
-		expect(readmeCommands).not.toContain("ui");
+		expect(documentedCommands).toEqual(routineCommands);
 	});
 });
 

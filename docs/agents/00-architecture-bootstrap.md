@@ -32,6 +32,10 @@ their size and read-availability contract enforced with
 `pnpm docs:layer-budgets`; that guard proves only those structural properties,
 not policy quality or delivery readiness.
 
+Generated diagrams intentionally include internal validators and compatibility
+surfaces. They are implementation context, not a routine command catalogue;
+the five-job public contract is the [CLI reference](../cli-reference.md).
+
 ## One-task-at-a-time intake
 
 1. Confirm architecture artifacts exist:

@@ -18,6 +18,10 @@ full defaults.
 supported type. Any other policy belongs to an explicit standard or full
 contract, not the minimal scaffold.
 
+The public CLI reference documents the five routine jobs only. Internal
+workflow-contract fixtures must not force install guidance to describe
+unselected migration or governance operations.
+
 ## Change boundaries
 
 - Keep scaffold templates, the compact-contract predicate, loader behavior, and

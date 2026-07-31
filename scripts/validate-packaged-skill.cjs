@@ -10,85 +10,41 @@ const REPO_SKILLS_ROOT = resolve(REPO_ROOT, ".agents/skills");
 
 const REQUIRED_FILES = {
 	skill: ".agents/skills/coding-harness/SKILL.md",
-	installGuide:
-		".agents/skills/coding-harness/references/agent-install-guide.md",
-	installJson: ".agents/skills/coding-harness/references/agent-install.json",
-	evals: ".agents/skills/coding-harness/references/evals.yaml",
 	setup: ".agents/skills/coding-harness/references/setup-and-commands.md",
 };
 
-const MARKDOWN_FILES = [
-	REQUIRED_FILES.skill,
-	REQUIRED_FILES.installGuide,
-	REQUIRED_FILES.setup,
-];
+const MARKDOWN_FILES = [REQUIRED_FILES.skill, REQUIRED_FILES.setup];
 
-const REQUIRED_BOOTSTRAP_COMMANDS = ["harness init --dry-run", "harness init"];
-
-const REQUIRED_MIGRATION_COMMANDS = [
-	"harness ci-migrate prepare --provider circleci --dry-run",
-	"harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>",
-	"harness ci-migrate verify --snapshot <snapshot-id>",
-	"harness ci-migrate commit --snapshot <snapshot-id>",
-	"harness ci-migrate abort --snapshot <snapshot-id>",
+const REQUIRED_ROUTINE_COMMANDS = [
+	"harness next --json",
+	"harness init --minimal --dry-run --json",
+	"harness check --json",
+	"harness verify-work --fast",
+	"harness pr-closeout --pr <number> --json",
 ];
 
 const FORBIDDEN_PATTERNS = [
 	{
-		pattern: "harness init --ci circleci",
+		pattern: "harness orient",
 		message:
-			"stale bootstrap guidance found; current CLI treats `circleci` as a target directory in this flow",
+			"stale orientation guidance found; `harness next --json` is the supported entrypoint",
 	},
 	{
-		pattern: "GitHub Actions workflow env",
+		pattern: "harness upgrade",
 		message:
-			"stale CI secret guidance found; packaged skill should point to CircleCI environment variables",
+			"stale upgrade guidance found; it is not part of the routine product",
 	},
 	{
-		pattern: "pnpm exec tsx src/cli.ts",
+		pattern: "harness ci-migrate",
 		message:
-			"stale source-repo runner found; use node --import tsx src/cli.ts to avoid tsx CLI IPC startup failures",
+			"stale CI migration guidance found; it is not part of the routine product",
+	},
+	{
+		pattern: "harness commands --json --all",
+		message:
+			"hidden command catalogue guidance found; routine users should use the five supported commands",
 	},
 ];
-
-const FORBIDDEN_CI_MIGRATE_COMMANDS = [
-	{
-		matches: ({ hasApply, hasPrepareAction }) => hasPrepareAction && hasApply,
-		message:
-			"stale CI migration apply guidance found; use harness ci-migrate prepare --provider circleci --snapshot <snapshot-id> for the staged write step because prepare conflicts with --apply",
-	},
-	{
-		matches: ({
-			hasApply,
-			hasCircleCIProvider,
-			hasKnownAction,
-			isInStagedMigrationFlow,
-		}) =>
-			!hasKnownAction &&
-			hasApply &&
-			hasCircleCIProvider &&
-			isInStagedMigrationFlow,
-		message:
-			"one-shot ci-migrate apply guidance found in the packaged staged migration flow; use harness ci-migrate prepare --provider circleci --snapshot <snapshot-id> before verify and commit",
-	},
-];
-
-const CI_MIGRATE_COMMAND_PATTERN = /harness\s+ci-migrate[^\n`"']*/g;
-const STAGED_CI_MIGRATE_COMMAND_PATTERNS = [
-	/harness\s+ci-migrate\s+prepare\b[^\n]*--snapshot/u,
-	/harness\s+ci-migrate\s+verify\b[^\n]*--snapshot/u,
-	/harness\s+ci-migrate\s+commit\b[^\n]*--snapshot/u,
-	/harness\s+ci-migrate\s+abort\b[^\n]*--snapshot/u,
-];
-const CI_MIGRATE_ACTIONS = new Set([
-	"prepare",
-	"verify",
-	"commit",
-	"abort",
-	"sync-branch-protection",
-	"promote-mode",
-	"rollback",
-]);
 
 const SKILL_KIND_VALUES = new Set(["executable", "advisory"]);
 
@@ -202,179 +158,24 @@ function validateRequiredFiles() {
 
 function validateLintSurfaces() {
 	runCommand("pnpm", ["exec", "markdownlint-cli2", ...MARKDOWN_FILES]);
-	runCommand("pnpm", ["exec", "biome", "check", REQUIRED_FILES.installJson]);
 }
 
 /**
- * Validate SKILL.md, agent-install-guide.md, and setup-and-commands.md contain required commands and setup markers.
- *
- * Ensures bootstrap commands appear in both SKILL.md and agent-install-guide.md; migration command entries appear in agent-install-guide.md
- * and in SKILL.md either with or without a leading "harness ". Verifies setup-and-commands.md documents CircleCI environment variable setup and
- * mentions `NPM_TOKEN`. Also verifies each of the three files documents the sandbox-safe source-repo runner `node --import tsx src/cli.ts`.
+ * Validate the packaged skill and its single command reference against the
+ * supported routine product.
  */
 function validateSkillMarkdown() {
 	const skillContent = readRepoFile(REQUIRED_FILES.skill);
-	const installGuideContent = readRepoFile(REQUIRED_FILES.installGuide);
 	const setupContent = readRepoFile(REQUIRED_FILES.setup);
 
-	for (const command of REQUIRED_BOOTSTRAP_COMMANDS) {
+	for (const command of REQUIRED_ROUTINE_COMMANDS) {
 		assert(
 			skillContent.includes(command),
-			`SKILL.md is missing bootstrap command: ${command}`,
+			`SKILL.md is missing routine command: ${command}`,
 		);
 		assert(
-			installGuideContent.includes(command),
-			`agent-install-guide.md is missing bootstrap command: ${command}`,
-		);
-	}
-
-	for (const command of REQUIRED_MIGRATION_COMMANDS) {
-		assert(
-			skillContent.includes(command.replace("harness ", "")) ||
-				skillContent.includes(command),
-			`SKILL.md is missing migration command: ${command}`,
-		);
-		assert(
-			installGuideContent.includes(command),
-			`agent-install-guide.md is missing migration command: ${command}`,
-		);
-	}
-
-	assert(
-		setupContent.includes(
-			"CircleCI project settings -> Environment Variables:",
-		),
-		"setup-and-commands.md must document CircleCI environment variable setup",
-	);
-	assert(
-		setupContent.includes("NPM_TOKEN"),
-		"setup-and-commands.md must mention NPM_TOKEN",
-	);
-	for (const content of [skillContent, installGuideContent, setupContent]) {
-		assert(
-			content.includes("node --import tsx src/cli.ts"),
-			"packaged skill docs must use the sandbox-safe source-repo runner: node --import tsx src/cli.ts",
-		);
-	}
-}
-
-/**
- * Validate that agent-install.json contains required fields and exact command strings for CI, init, and migrations.
- *
- * Asserts that `ci_provider`, `init_command`, and `verify_command` match expected values; that an `init` phase with `steps` exists and includes the required init steps (`harness init --dry-run`, `harness init`, `harness init --check-updates`); and that `migration_commands` defines exact commands for `preview`, `prepare`, `verify`, `commit`, and `abort`. Fails the process when any expectation is not met.
- */
-function validateInstallJson() {
-	const content = readRepoFile(REQUIRED_FILES.installJson);
-	const parsed = JSON.parse(content);
-
-	assert(
-		parsed.ci_provider === "circleci",
-		"agent-install.json must keep ci_provider=circleci",
-	);
-	assert(
-		parsed.init_command === "harness init",
-		"agent-install.json init_command must be `harness init`",
-	);
-	assert(
-		parsed.verify_command === "harness check-environment --json",
-		"agent-install.json verify_command must stay aligned with harness environment checks",
-	);
-
-	const initPhase = Array.isArray(parsed.phases)
-		? parsed.phases.find((phase) => phase && phase.id === "init")
-		: null;
-
-	assert(initPhase, "agent-install.json must define an init phase");
-	assert(
-		Array.isArray(initPhase.steps),
-		"agent-install.json init phase must include steps",
-	);
-
-	for (const expectedStep of [
-		"harness init --dry-run",
-		"harness init",
-		"harness init --check-updates",
-	]) {
-		assert(
-			initPhase.steps.includes(expectedStep),
-			`agent-install.json init phase is missing step: ${expectedStep}`,
-		);
-	}
-
-	assert(
-		parsed.migration_commands,
-		"agent-install.json must define migration_commands",
-	);
-	for (const [key, expectedValue] of Object.entries({
-		preview: "harness ci-migrate prepare --provider circleci --dry-run",
-		prepare:
-			"harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>",
-		verify: "harness ci-migrate verify --snapshot <snapshot-id>",
-		commit: "harness ci-migrate commit --snapshot <snapshot-id>",
-		abort: "harness ci-migrate abort --snapshot <snapshot-id>",
-	})) {
-		assert(
-			parsed.migration_commands[key] === expectedValue,
-			`agent-install.json migration_commands.${key} must equal \`${expectedValue}\``,
-		);
-	}
-}
-
-/**
- * Validate that evals.yaml declares the expected schema, contains required eval case IDs, and includes a set of expected coverage markers.
- *
- * Verifies presence of:
- * - `schema_version: "2.0"`
- * - eval case IDs: `happy-bootstrap-command-audit`, `happy-ci-migration-sequence`, `happy-existing-repo-upgrade-dry-run`, and `edge-current-repo-needs-upgrading`
- * - coverage/output strings related to init and upgrade dry-runs, update/skip outcomes, compatibility aliasing, adoption/preview/tracked-update indicators, preview/prepare/verify/commit/abort snapshot commands, and the `last_updated: "2026-04-29"` entry.
- *
- * On any missing requirement, the script will fail and exit with a non-zero status.
- */
-function validateEvals() {
-	const content = readRepoFile(REQUIRED_FILES.evals);
-
-	assert(
-		content.includes('schema_version: "2.0"'),
-		"evals.yaml must declare schema_version 2.0",
-	);
-	assert(
-		content.includes("- id: happy-bootstrap-command-audit"),
-		"evals.yaml must include the bootstrap audit case",
-	);
-	assert(
-		content.includes("- id: happy-ci-migration-sequence"),
-		"evals.yaml must include the CI migration sequence case",
-	);
-	assert(
-		content.includes("- id: happy-existing-repo-upgrade-dry-run"),
-		"evals.yaml must include the existing repo upgrade dry-run case",
-	);
-	assert(
-		content.includes("- id: edge-current-repo-needs-upgrading"),
-		"evals.yaml must include the current repo upgrade edge case",
-	);
-
-	for (const expectedText of [
-		"harness init --dry-run",
-		"--update --dry-run --json",
-		"updated",
-		"skipped",
-		"created-to-updated compatibility alias",
-		"adoption-preview",
-		"tracked-update",
-		"safe in-repo symlinked directories",
-		"harness upgrade --dry-run --json",
-		"current repo that needs upgrading",
-		"prepare --provider circleci --dry-run",
-		"prepare --provider circleci --snapshot",
-		"verify --snapshot",
-		"commit --snapshot",
-		"abort --snapshot",
-		'last_updated: "2026-04-29"',
-	]) {
-		assert(
-			content.includes(expectedText),
-			`evals.yaml is missing expected coverage text: ${expectedText}`,
+			setupContent.includes(command),
+			`setup-and-commands.md is missing routine command: ${command}`,
 		);
 	}
 }
@@ -386,7 +187,6 @@ function validateForbiddenPatterns() {
 	});
 
 	for (const filePath of files) {
-		const extension = filePath.split(".").pop();
 		const content = readFileSync(filePath, "utf8");
 		for (const rule of FORBIDDEN_PATTERNS) {
 			assert(
@@ -394,175 +194,7 @@ function validateForbiddenPatterns() {
 				`${relative(REPO_ROOT, filePath)}: ${rule.message}`,
 			);
 		}
-		for (const { command, context } of findCIMigrateCommands(content, {
-			useMarkdownFlowContext: extension === "md",
-		})) {
-			const facts = classifyCIMigrateCommand(command, context);
-			for (const rule of FORBIDDEN_CI_MIGRATE_COMMANDS) {
-				assert(
-					!rule.matches(facts),
-					`${relative(REPO_ROOT, filePath)}: ${rule.message}: ${command}`,
-				);
-			}
-		}
 	}
-}
-
-function validateForbiddenCIMigrateCommandRules() {
-	const rejectedExamples = [
-		{
-			command: "harness ci-migrate prepare --provider circleci --apply",
-			context: "",
-		},
-		{
-			command: "harness ci-migrate prepare --apply --provider circleci",
-			context: "",
-		},
-		{
-			command: "harness ci-migrate prepare --apply",
-			context: "",
-		},
-		{
-			command: "harness ci-migrate prepare --apply --json",
-			context: "",
-		},
-		{
-			command:
-				"harness ci-migrate --action prepare --provider circleci --apply",
-			context: "",
-		},
-		{
-			command:
-				"harness ci-migrate --provider circleci --apply --action prepare",
-			context: "",
-		},
-		{
-			command: "harness ci-migrate --provider circleci --apply",
-			context: [
-				"Staged migration sequence:",
-				"harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>",
-				"harness ci-migrate --provider circleci --apply",
-				"harness ci-migrate verify --snapshot <snapshot-id>",
-				"harness ci-migrate commit --snapshot <snapshot-id>",
-			].join("\n"),
-		},
-	];
-	const allowedExamples = [
-		{ command: "harness ci-migrate prepare --provider circleci --dry-run" },
-		{
-			command:
-				"harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>",
-		},
-		{ command: "harness ci-migrate verify --snapshot <snapshot-id>" },
-		{ command: "harness ci-migrate commit --snapshot <snapshot-id>" },
-		{ command: "harness ci-migrate abort --snapshot <snapshot-id>" },
-		{ command: "harness ci-migrate --provider circleci --apply" },
-		{ command: "harness ci-migrate --apply --provider circleci" },
-	];
-
-	for (const { command, context } of rejectedExamples) {
-		const facts = classifyCIMigrateCommand(command, context);
-		assert(
-			FORBIDDEN_CI_MIGRATE_COMMANDS.some((rule) => rule.matches(facts)),
-			`forbidden ci-migrate command rule missed rejected example: ${command}`,
-		);
-	}
-
-	for (const { command, context = "" } of allowedExamples) {
-		const facts = classifyCIMigrateCommand(command, context);
-		assert(
-			FORBIDDEN_CI_MIGRATE_COMMANDS.every((rule) => !rule.matches(facts)),
-			`forbidden ci-migrate command rule rejected allowed example: ${command}`,
-		);
-	}
-
-	const structuredSurfaceCommands = findCIMigrateCommands(
-		[
-			'"prepare": "harness ci-migrate prepare --provider circleci --snapshot <snapshot-id>",',
-			'"apply": "harness ci-migrate --provider circleci --apply",',
-			'"verify": "harness ci-migrate verify --snapshot <snapshot-id>",',
-			'"commit": "harness ci-migrate commit --snapshot <snapshot-id>"',
-		].join("\n"),
-		{ useMarkdownFlowContext: false },
-	);
-	const structuredApplyCommand = structuredSurfaceCommands.find(({ command }) =>
-		command.includes("--apply"),
-	);
-	assert(
-		structuredApplyCommand,
-		"forbidden ci-migrate command rule self-check could not find structured one-shot apply example",
-	);
-	const structuredApplyFacts = classifyCIMigrateCommand(
-		structuredApplyCommand.command,
-		structuredApplyCommand.context,
-	);
-	assert(
-		FORBIDDEN_CI_MIGRATE_COMMANDS.every(
-			(rule) => !rule.matches(structuredApplyFacts),
-		),
-		"forbidden ci-migrate command rule rejected structured one-shot apply example",
-	);
-}
-
-function findCIMigrateCommands(content, options = {}) {
-	return Array.from(content.matchAll(CI_MIGRATE_COMMAND_PATTERN), (match) => {
-		const [command] = match;
-		const startIndex = match.index || 0;
-		return {
-			command: command.trim(),
-			context: options.useMarkdownFlowContext
-				? getMarkdownBlockAround(content, startIndex, command.length)
-				: command,
-		};
-	});
-}
-
-function getMarkdownBlockAround(content, startIndex, commandLength) {
-	const previousBreak = content.lastIndexOf("\n\n", startIndex);
-	const nextBreak = content.indexOf("\n\n", startIndex + commandLength);
-	const blockStart = previousBreak === -1 ? 0 : previousBreak + 2;
-	const blockEnd = nextBreak === -1 ? content.length : nextBreak;
-	return content.slice(blockStart, blockEnd);
-}
-
-function isStagedMigrationFlowContext(context) {
-	const markerCount = STAGED_CI_MIGRATE_COMMAND_PATTERNS.filter((pattern) =>
-		pattern.test(context),
-	).length;
-	return markerCount >= 2;
-}
-
-function classifyCIMigrateCommand(command, context = "") {
-	const tokens = command.split(/\s+/).filter(Boolean);
-	const providerIndex = tokens.indexOf("--provider");
-	const hasCircleCIProvider =
-		providerIndex >= 0 && tokens[providerIndex + 1] === "circleci";
-	const actionFlagIndex = tokens.indexOf("--action");
-	const positionalAction =
-		tokens[2] && !tokens[2].startsWith("--") ? tokens[2] : null;
-	const action =
-		positionalAction ||
-		(actionFlagIndex >= 0 ? tokens[actionFlagIndex + 1] : null);
-
-	return {
-		hasApply: tokens.includes("--apply"),
-		hasCircleCIProvider,
-		hasKnownAction: action ? CI_MIGRATE_ACTIONS.has(action) : false,
-		hasPrepareAction: action === "prepare",
-		isInStagedMigrationFlow: isStagedMigrationFlowContext(context),
-	};
-}
-
-function validateReferenceContracts() {
-	runCommand("python3", [
-		join(SKILL_ROOT, "scripts/validate_reference_contracts.py"),
-		"--skill-root",
-		SKILL_ROOT,
-		"--package-form",
-		"source-skill-root",
-		"--truth-source",
-		"JSC-282 source-command truth",
-	]);
 }
 
 function parseFrontmatterScalar(value) {
@@ -692,11 +324,7 @@ function hasDirectoryWithFiles(directoryPath) {
 }
 
 function hasExecutableProofAsset(skillRoot) {
-	return (
-		hasDirectoryWithFiles(join(skillRoot, "scripts")) ||
-		existsSync(join(skillRoot, "references", "evals.yaml")) ||
-		existsSync(join(skillRoot, "references", "agent-install.json"))
-	);
+	return hasDirectoryWithFiles(join(skillRoot, "scripts"));
 }
 
 function hasAdvisoryReferences(skillRoot) {
@@ -1003,12 +631,8 @@ function main() {
 	validateRequiredFiles();
 	validateLintSurfaces();
 	validateSkillMarkdown();
-	validateInstallJson();
-	validateEvals();
 	validateForbiddenPatterns();
-	validateForbiddenCIMigrateCommandRules();
 	validateSkillDensity();
-	validateReferenceContracts();
 	console.info("packaged-skill: pass");
 }
 

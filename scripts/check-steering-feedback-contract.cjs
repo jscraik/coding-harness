@@ -104,6 +104,14 @@ const LOOP_MOVE_PATTERNS = [
 	/act/i,
 	/close out|closeout/i,
 ];
+const LOCAL_CORRECTION_FIRST_PATTERN =
+	/Treat feedback as an observed local defect first/i;
+const DURABLE_CONTROL_THRESHOLD_PATTERN =
+	/(?:Add|Promote)\s+a\s+(?:small\s+)?durable\s+control\s+only\s+when/i;
+const INDEPENDENT_RECURRENCE_PATTERN = /recurs across independent work/i;
+const CONTRACT_CONTRADICTION_PATTERN =
+	/(?:contract is contradictory|existing contract conflicts)/i;
+const SAFETY_BOUNDARY_PATTERN = /safety boundary/i;
 
 function readRequiredFile(label, path) {
 	const absPath = resolve(REPO_ROOT, path);
@@ -269,160 +277,49 @@ function validateAgents(content) {
 		errors,
 		REQUIRED_FILES.agents,
 		content,
-		/Agent engineering proof:/i,
-		"agent engineering proof operating rule",
+		LOCAL_CORRECTION_FIRST_PATTERN,
+		"local correction-first feedback rule",
 	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		EXPECTED_OUTCOME_PATTERN,
-		"expected outcome contract",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		REPEAT_FEEDBACK_ADMISSION_PATTERN,
-		"repeat-feedback admission stop condition",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		CURRENT_SESSION_ADMISSION_PATTERN,
-		"current-session steering admission record stop condition",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		PLANNING_ONLY_STOP_PATTERN,
-		"planning-only stop condition",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		REPEATED_ERROR_RESEARCH_PATTERN,
-		"repeated-error research stop condition",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		DURABLE_DESTINATION_PATTERN,
-		"durable destination list",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		/principle.*sibling patterns.*OODA horizons.*durable destination/is,
-		"synthesized principle-pattern-horizon-destination flow",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		PATTERN_GENERALIZATION_PATTERN,
-		"line-level feedback pattern-generalization rule",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		PATTERN_SCOPE_INVENTORY_PATTERN,
-		"pattern scope inventory requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		OBSERVED_FIXABLE_BLOCKER_PATTERN,
-		"observed fixable blocker fix-first rule",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		TOOL_PROMOTION_THRESHOLD_PATTERN,
-		"tool promotion threshold for repeated judgments",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		ENV_BACKED_VALIDATION_PATTERN,
-		"env-backed validation recovery before missing-credential blockers",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		PRINCIPLE_SIGNAL_PATTERN,
-		"semantic principle signal trigger requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		OODA_HORIZON_PATTERN,
-		"OODA horizon rule for broader context",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		REFLECTED_CONTEXT_PATTERN,
-		"reflected-context rule for boundary-crossing horizons",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		ENGINEERING_PROOF_PATTERN,
-		"software-engineering proof rule beyond benchmark code production",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		WORKFLOW_SKILL_PROOF_PATTERN,
-		"workflow skill capture-the-flag proof rule",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		TOOL_PROMOTION_THRESHOLD_PATTERN,
-		"tool/validator/skill promotion threshold",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.agents,
-		content,
-		CLOSEOUT_COMPLETION_PATTERN,
-		"closeout completion is not green checks rule",
-	);
+	for (const [pattern, description] of [
+		[DURABLE_CONTROL_THRESHOLD_PATTERN, "durable-control threshold"],
+		[INDEPENDENT_RECURRENCE_PATTERN, "independent recurrence threshold"],
+		[CONTRACT_CONTRADICTION_PATTERN, "contract contradiction threshold"],
+		[SAFETY_BOUNDARY_PATTERN, "safety-boundary threshold"],
+	]) {
+		requirePattern(
+			errors,
+			REQUIRED_FILES.agents,
+			content,
+			pattern,
+			description,
+		);
+	}
 	return errors;
 }
 
-/**
- * Validate that the agent-governance guide preserves the tool-promotion threshold.
- *
- * @param {string} content - Markdown content of the agent-governance guide.
- * @returns {string[]} Contract errors, empty when the threshold remains encoded.
- */
 function validateAgentGovernance(content) {
 	const errors = [];
 	requirePattern(
 		errors,
 		REQUIRED_FILES.agentGovernance,
 		content,
-		TOOL_PROMOTION_THRESHOLD_PATTERN,
-		"tool/validator/skill promotion threshold",
+		/Finish the bounded local repair first/i,
+		"local repair-first rule",
 	);
+	for (const [pattern, description] of [
+		[DURABLE_CONTROL_THRESHOLD_PATTERN, "durable-control threshold"],
+		[INDEPENDENT_RECURRENCE_PATTERN, "independent recurrence threshold"],
+		[CONTRACT_CONTRADICTION_PATTERN, "contract contradiction threshold"],
+		[SAFETY_BOUNDARY_PATTERN, "safety-boundary threshold"],
+	]) {
+		requirePattern(
+			errors,
+			REQUIRED_FILES.agentGovernance,
+			content,
+			pattern,
+			description,
+		);
+	}
 	return errors;
 }
 
@@ -1599,28 +1496,36 @@ const validations = [
 	["envSolution", validateEnvSolution],
 ];
 
-const errors = [];
-for (const [label, validate] of validations) {
-	const path = REQUIRED_FILES[label];
-	const result =
-		label === "prValidator"
-			? readPrValidatorContractSource()
-			: readRequiredFile(label, path);
-	errors.push(...result.errors);
-	if (result.errors.length === 0) {
-		errors.push(...validate(result.content));
+function main() {
+	const errors = [];
+	for (const [label, validate] of validations) {
+		const path = REQUIRED_FILES[label];
+		const result =
+			label === "prValidator"
+				? readPrValidatorContractSource()
+				: readRequiredFile(label, path);
+		errors.push(...result.errors);
+		if (result.errors.length === 0) {
+			errors.push(...validate(result.content));
+		}
 	}
-}
-errors.push(...validateAdmissionRecords());
-errors.push(...validateFullImplementationDownscopeContract());
-errors.push(...collectActiveEnvBackedValidationEvidenceErrors());
+	errors.push(...validateAdmissionRecords());
+	errors.push(...validateFullImplementationDownscopeContract());
+	errors.push(...collectActiveEnvBackedValidationEvidenceErrors());
 
-if (errors.length > 0) {
-	console.error("steering-feedback-contract: failed");
-	for (const error of errors) {
-		console.error(`- ${error}`);
+	if (errors.length > 0) {
+		console.error("steering-feedback-contract: failed");
+		for (const error of errors) {
+			console.error(`- ${error}`);
+		}
+		process.exit(1);
 	}
-	process.exit(1);
+
+	console.log("steering-feedback-contract: pass");
 }
 
-console.log("steering-feedback-contract: pass");
+if (require.main === module) {
+	main();
+}
+
+module.exports = { validateAgents, validateAgentGovernance };
