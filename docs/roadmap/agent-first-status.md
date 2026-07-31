@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-07-29
+last_validated: 2026-07-31
 ---
 
 # Agent-First Status
@@ -9,6 +9,7 @@ last_validated: 2026-07-29
 - [Current Status](#current-status)
 - [North-Star Boundary](#north-star-boundary)
 - [What Is Known](#what-is-known)
+- [Direct Observation Sample](#direct-observation-sample)
 - [Recovery Order](#recovery-order)
 - [Historical Reporting](#historical-reporting)
 
@@ -24,15 +25,19 @@ and hand work back clearly.
 Recovery slices 1 through 4 are merged to `main`: [#488](https://github.com/jscraik/coding-harness/pull/488)
 made routine `harness next --json` task-first, [#489](https://github.com/jscraik/coding-harness/pull/489)
 reduced the minimal installer, [#490](https://github.com/jscraik/coding-harness/pull/490)
-reduced the command surface, and [#491](https://github.com/jscraik/coding-harness/pull/491)
-collapsed the compact contract and active documentation. The prerequisite
+reduced the command surface, [#491](https://github.com/jscraik/coding-harness/pull/491)
+reduced the compact minimal contract, and [#501](https://github.com/jscraik/coding-harness/pull/501)
+completed the remaining active contract and documentation collapse. The prerequisite
 [#494](https://github.com/jscraik/coding-harness/pull/494) is also merged to
 `main` and makes Local Memory an explicit diagnostic rather than a routine
 admission dependency. Optional
 context maintenance is advisory; it is not the primary action for ordinary work.
 
-The active slice is direct effectiveness observation. It has no current outcome
-claim: the required observations have not yet been collected.
+The active slice is direct effectiveness observation. A five-repository
+read-only readiness sample is recorded below, but it is not the required
+end-to-end effectiveness evidence: no bounded change, review/fix cycle, or PR
+lifecycle was observed in that sample. The product therefore has no current
+effectiveness outcome claim.
 
 ## North-Star Boundary
 
@@ -51,11 +56,36 @@ rather than refreshed cosmetically.
 ## What Is Known
 
 - The routine CLI route and its compact installer, command, and documentation
-  contracts have merged through recovery PRs #488 through #491.
+  contracts have merged through recovery PR #501 (with #491 as the compact
+  minimal-contract sub-slice).
 - The merged recovery PRs do not prove hosted release, installed-package
   behavior, independent acceptance, or real-world effectiveness.
 - Product effectiveness is unknown until five real Harness-assisted tasks
-  across at least three repositories are recorded with direct observations.
+  across at least three repositories are recorded with direct observations that
+  include a bounded change, review/fix cycle, and PR lifecycle. The sample below
+  establishes routing and failure classification only.
+
+## Direct Observation Sample
+
+These five live observations were run on 2026-07-31 at approximately 18:07Z
+with the installed `harness` v0.15.0. Each used the exact read-only commands
+`harness next --json` and `harness check --json`; the durations are wall-clock
+seconds emitted by `/usr/bin/time -p`. They are raw command observations, not
+a causal comparison against an untreated control.
+
+| Task / repository | `next` / `check` result | Time to first useful proof | Jamie interventions | Review/fix cycles | PR lead time | Observed effect |
+| --- | --- | ---: | ---: | --- | --- | --- |
+| Coding Harness clean source-main checkout | `pass` / `fail` (consumer v0.15.0 versus source v0.15.1; three contract errors) | 0.26s | 0 | n.a. (read-only) | n.a. (no PR) | delayed by consumer/dependency drift; the blocker was classified |
+| Agent-Skills current four-file task | `action_required` / `pass` with two warnings; emitted an exact validation-plan command | 0.43s | 0 | n.a. (read-only) | n.a. (no PR) | accelerated routing; causal improvement is unproven |
+| Configs current four-path task | `action_required` / `pass` with two warnings; emitted an exact validation-plan command | 0.31s | 0 | n.a. (read-only) | n.a. (no PR) | accelerated routing; causal improvement is unproven |
+| Jamie Brain clean checkout | `pass` / `fail` (no harness contract configured) | 0.25s | 0 | n.a. (read-only) | n.a. (no PR) | delayed by an explicit configuration blocker |
+| Portfolio clean checkout | `pass` / `fail` (repo-local v0.1.0 versus installed v0.15.0) | 0.25s | 0 | n.a. (read-only) | n.a. (no PR) | delayed by version drift; the blocker was classified |
+
+The exact command outcomes are reproducible from the named repository state;
+the dirty paths in Agent-Skills and Configs remain owner-controlled and were
+not modified. This sample does not satisfy the end-to-end acceptance condition
+and must not be used to claim lower PR lead time, fewer interventions, less
+rework, or general product effectiveness.
 
 ## Recovery Order
 
