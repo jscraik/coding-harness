@@ -121,7 +121,7 @@ function commandCatalogForFlags(
 	const catalog = getCommandCapabilityCatalogDocument(specs);
 	if (fullCatalogFlag) return catalog;
 	const commands = catalog.commands.filter((command) =>
-		["default", "agent", "advanced"].includes(command.visibility),
+		["default", "advanced"].includes(command.visibility),
 	);
 	return {
 		...catalog,

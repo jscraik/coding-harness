@@ -73,7 +73,7 @@ for (const spec of COMMAND_SPECS) {
 
 /** Whether a capability belongs on the default public discovery surface. */
 function isPublicCommandCapability(capability: CommandCapability): boolean {
-	return ["default", "agent", "advanced"].includes(capability.visibility);
+	return ["default", "advanced"].includes(capability.visibility);
 }
 
 /** Return command specifications whose capabilities are publicly discoverable. */

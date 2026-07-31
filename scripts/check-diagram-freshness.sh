@@ -64,7 +64,7 @@ is_architecture_sensitive_change() {
 	local changed_path="$1"
 
 	case "$changed_path" in
-		package.json|tsconfig.json|.diagramrc|scripts/refresh-diagram-context.sh|scripts/check-diagram-freshness.sh|scripts/lib/normalize-mermaid-artifact.cjs)
+		package.json|tsconfig.json|.diagramrc|scripts/refresh-diagram-context.sh|scripts/check-diagram-freshness.sh|scripts/resolve-circleci-pr-ref.sh|scripts/lib/normalize-mermaid-artifact.cjs)
 			return 0
 			;;
 		src/*)

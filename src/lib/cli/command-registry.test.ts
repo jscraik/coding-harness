@@ -368,9 +368,14 @@ describe("command registry", () => {
 			]);
 			expect(
 				parsed.commands.every((item: { visibility: string }) =>
-					["default", "agent", "advanced"].includes(item.visibility),
+					["default", "advanced"].includes(item.visibility),
 				),
 			).toBe(true);
+			expect(
+				parsed.commands.some(
+					(item: { visibility: string }) => item.visibility === "agent",
+				),
+			).toBe(false);
 		} finally {
 			stdoutSpy.mockRestore();
 		}
@@ -496,7 +501,7 @@ describe("suggestCommandCapabilities", () => {
 		const supportedCatalogNames = new Set(
 			getRegistryCommandCapabilities()
 				.filter((capability) =>
-					["default", "agent", "advanced"].includes(capability.visibility),
+					["default", "advanced"].includes(capability.visibility),
 				)
 				.map((capability) => capability.name),
 		);
@@ -1415,8 +1420,7 @@ describe("'commands' command execution", () => {
 		try {
 			dispatchRegistryCommand("commands", ["commands"]);
 			const capabilities = getRegistryCommandCapabilities().filter(
-				(capability) =>
-					["default", "agent", "advanced"].includes(capability.visibility),
+				(capability) => ["default", "advanced"].includes(capability.visibility),
 			);
 			// header + N capability rows + empty line + hint = N + 3
 			expect(infoSpy.mock.calls.length).toBe(capabilities.length + 3);

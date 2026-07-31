@@ -141,6 +141,36 @@ describe("resolve-circleci-pr-ref.sh", () => {
 		expect(result.stderr).toBe("");
 	});
 
+	it("requires unique branch lookup queries before accepting a GitHub PR", () => {
+		const root = createTempRoot();
+		writeExecutable(
+			root,
+			"bin/gh",
+			[
+				"#!/usr/bin/env bash",
+				"set -euo pipefail",
+				"expected_query='if length == 1 then .[0].url else \"\" end'",
+				'args=" $* "',
+				'[[ "$args" == *"$expected_query"* ]] || exit 9',
+				'if [[ "$args" == *"--head acme:codex/unique-branch "* ]]; then',
+				"  exit 0",
+				"fi",
+				'printf "%s" "https://github.com/acme/demo/pull/57"',
+			].join("\n"),
+		);
+
+		const result = runScript(root, {
+			CIRCLE_BRANCH: "codex/unique-branch",
+			CIRCLE_PROJECT_REPONAME: "demo",
+			CIRCLE_PROJECT_USERNAME: "acme",
+			HARNESS_CIRCLECI_PR_REF_MAX_ATTEMPTS: "1",
+			HARNESS_CIRCLECI_PR_REF_SLEEP_SECONDS: "0",
+		});
+
+		expect(result.status).toBe(0);
+		expect(result.stdout).toBe("https://github.com/acme/demo/pull/57");
+	});
+
 	it("does not accept closed pull requests from commit lookup fallback", () => {
 		const root = createTempRoot();
 		writeExecutable(

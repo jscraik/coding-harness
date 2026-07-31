@@ -185,6 +185,27 @@ printf '%s\n' "$*" > .refresh-invoked
 		expect(existsSync(join(root, ".refresh-invoked"))).toBe(false);
 	});
 
+	it("refreshes when the CircleCI PR resolver is the only changed source", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" > .refresh-invoked
+`);
+		roots.push(root);
+		write(root, ".changed-files", "scripts/resolve-circleci-pr-ref.sh\n");
+
+		const result = run(root, "bash", [
+			"scripts/check-diagram-freshness.sh",
+			"--changed-files",
+			".changed-files",
+		]);
+
+		expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+		expect(result.stdout).toContain(
+			"Refreshing architecture diagrams for changed sensitive paths...",
+		);
+		expect(existsSync(join(root, ".refresh-invoked"))).toBe(true);
+	});
+
 	it("fails closed when an explicit changed-file list is missing", () => {
 		const root = createRepo(`#!/usr/bin/env bash
 set -euo pipefail

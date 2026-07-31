@@ -114,10 +114,10 @@ resolve_github_pr_ref() {
 		gh_repo_args=(--repo "$repo_slug")
 	fi
 	if [[ -n "${CIRCLE_BRANCH:-}" && -n "${CIRCLE_PROJECT_USERNAME:-}" ]]; then
-		resolved="$(run_with_timeout "$network_timeout" "$GH_BIN" pr list "${gh_repo_args[@]}" --head "${CIRCLE_PROJECT_USERNAME}:${CIRCLE_BRANCH}" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
+		resolved="$(run_with_timeout "$network_timeout" "$GH_BIN" pr list "${gh_repo_args[@]}" --head "${CIRCLE_PROJECT_USERNAME}:${CIRCLE_BRANCH}" --state open --json url --jq 'if length == 1 then .[0].url else "" end' 2>/dev/null || true)"
 	fi
 	if [[ -z "$resolved" && -n "${CIRCLE_BRANCH:-}" ]]; then
-		resolved="$(run_with_timeout "$network_timeout" "$GH_BIN" pr list "${gh_repo_args[@]}" --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
+		resolved="$(run_with_timeout "$network_timeout" "$GH_BIN" pr list "${gh_repo_args[@]}" --head "$CIRCLE_BRANCH" --state open --json url --jq 'if length == 1 then .[0].url else "" end' 2>/dev/null || true)"
 	fi
 	if [[ -z "$resolved" && -n "${CIRCLE_SHA1:-}" && -n "$repo_slug" ]]; then
 		resolved="$(run_with_timeout "$network_timeout" "$GH_BIN" api -H "Accept: application/vnd.github+json" "/repos/${repo_slug}/commits/${CIRCLE_SHA1}/pulls" --jq '[.[] | select(.state == "open") | .html_url] | if length == 1 then .[0] else "" end' 2>/dev/null || true)"

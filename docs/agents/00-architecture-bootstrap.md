@@ -69,6 +69,9 @@ expert catalogue, while `--all` or `--plumbing` exposes compatibility and
 internal integration commands only on explicit request. Keep the default
 catalogue bounded; a command needs a current named consumer before it becomes
 part of the routine or expert product surface.
+Agent-only commands belong exclusively to `harness commands --json --for-agent`;
+the default catalogue and command suggestions include only default and advanced
+visibility.
 For the routine `harness next --json` route, keep the default projection
 task-first and compact: it names the current status, summary, one next action
 or command, warnings, the execution boundary, and the claims boundary. Missing
