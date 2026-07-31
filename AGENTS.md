@@ -14,7 +14,7 @@ review_cadence: on-change
 maintenance_trigger: [agent-operating-policy-change, validation-contract-change]
 semver_impact: minor
 validated_by: [pnpm docs:lifecycle, pnpm docs:layer-budgets]
-depends_on: [CODESTYLE.md, UBIQUITOUS_LANGUAGE.md, docs/README.md]
+depends_on: [CODESTYLE.md, UBIQUITOUS_LANGUAGE.md, docs/README.md, harness.contract.json]
 ---
 
 # Coding Harness agent instructions
