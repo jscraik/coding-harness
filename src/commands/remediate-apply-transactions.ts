@@ -251,7 +251,7 @@ function applyFindingTransaction(
 			artifactUri,
 		});
 	} catch (error) {
-		let postSha = preSha;
+		let postSha: string;
 		try {
 			postSha = getHeadSha();
 		} catch {

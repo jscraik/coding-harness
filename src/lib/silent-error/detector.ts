@@ -135,9 +135,7 @@ function getFilesRecursive(
 
 			if (stats.isDirectory()) {
 				files.push(...getFilesRecursive(fullPath, extensions, ignore));
-			} else if (
-				extensions.some((ext) => entry.endsWith(ext.replace("*", "")))
-			) {
+			} else if (extensions.some((ext) => entry.endsWith(ext))) {
 				files.push(fullPath);
 			}
 		}
