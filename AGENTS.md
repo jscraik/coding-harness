@@ -101,6 +101,9 @@ proof, and hand work back truthfully. Keep the routine path small.
   routine preflight does not invoke Local Memory; use
   `bash scripts/codex-preflight.sh --stack auto --mode required` only for an
   explicit Local Memory diagnostic or acceptance lane.
+- A required docs-gate warning remains blocking unless every warning is the
+  explicit `docs.archive_candidates.advisory` category; zero errors alone do
+  not permit a hook or CI route to continue.
 - Before a PR create or update, run
   `python3 ~/.codex/scripts/pr-readiness.py --phase create|update --scope-file <file> --write-receipt`.
 - Report `Command: <exact command> -> pass|fail|blocked (<reason>)`. Do not

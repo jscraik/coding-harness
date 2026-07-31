@@ -270,6 +270,63 @@ describe("validatePrTemplateBody", () => {
 		expect(validatePrTemplateBody(body)).toEqual([]);
 	});
 
+	it("accepts pass and fail with optional parenthetical context", () => {
+		const withNote = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command: `pnpm lint` -> pass (208 tests)",
+		);
+		expect(validatePrTemplateBody(withNote)).toEqual([]);
+
+		const withNoteAndPeriod = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command: `pnpm lint` -> pass (208 tests).",
+		);
+		expect(validatePrTemplateBody(withNoteAndPeriod)).toEqual([]);
+
+		const failWithNote = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command: `pnpm lint` -> fail (type error at line 42)",
+		);
+		expect(validatePrTemplateBody(failWithNote)).toEqual([]);
+	});
+
+	it.each([
+		"pass.",
+		"fail.",
+		"blocked (service unavailable).",
+	])("rejects command evidence outcome %s with a bare trailing period", (outcome) => {
+		const body = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			`- Command: \`pnpm lint\` -> ${outcome}`,
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("Command evidence must use"),
+			]),
+		);
+	});
+
+	it.each([
+		"`pass (208 tests)",
+		"pass` (208 tests)",
+		"`n.a. (not applicable)",
+		"n/a` (not applicable)",
+		"`blocked (service unavailable)",
+		"blocked` (service unavailable)",
+	])("rejects command evidence outcome %s with unbalanced backticks", (outcome) => {
+		const body = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			`- Command: \`pnpm lint\` -> ${outcome}`,
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining("Command evidence must use"),
+			]),
+		);
+	});
+
 	it("fails when Testing has no Command evidence lines", () => {
 		const body = VALID_BODY.replace(/^- Command: .*\n/gm, "");
 		const errors = validatePrTemplateBody(body);
@@ -314,6 +371,30 @@ describe("validatePrTemplateBody", () => {
 
 		expect(
 			errors.some((error) => error.includes("Command evidence must use")),
+		).toBe(true);
+	});
+
+	it("fails empty or whitespace-only Command evidence", () => {
+		const emptyBody = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command: -> pass",
+		);
+		const emptyErrors = validatePrTemplateBody(emptyBody);
+
+		expect(
+			emptyErrors.some((error) => error.includes("Command evidence must use")),
+		).toBe(true);
+
+		const whitespaceBody = VALID_BODY.replace(
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command:   -> pass",
+		);
+		const whitespaceErrors = validatePrTemplateBody(whitespaceBody);
+
+		expect(
+			whitespaceErrors.some((error) =>
+				error.includes("Command evidence must use"),
+			),
 		).toBe(true);
 	});
 

@@ -392,7 +392,22 @@ workflows:
           check_name: docs-gate
           command: |
             pnpm docs:gitbook:check
-            bash scripts/run-harness-gate.sh docs-gate --mode required --json
+            docs_gate_output="$(mktemp)"
+            if bash scripts/run-harness-gate.sh docs-gate --mode required --json > "$docs_gate_output"; then
+              cat "$docs_gate_output"
+            else
+              docs_gate_status=$?
+              cat "$docs_gate_output"
+              if [[ "$docs_gate_status" -eq 10 ]] && jq -e \
+                '(.status == "warn") and (.summary.errors == 0) and ([.findings[]? | select(.severity == "warning") | .id] | length > 0) and ([.findings[]? | select(.severity == "warning") | .id] | all(. == "docs-gate.docs:archive-candidates.docs.archive_candidates.advisory"))' \
+                "$docs_gate_output" > /dev/null; then
+                echo "Continuing docs-gate after zero-error advisory warnings."
+              else
+                rm -f "$docs_gate_output"
+                exit "$docs_gate_status"
+              fi
+            fi
+            rm -f "$docs_gate_output"
           filters:
             tags:
               ignore: /.*/
