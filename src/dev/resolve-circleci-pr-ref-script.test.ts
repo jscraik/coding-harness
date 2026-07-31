@@ -153,8 +153,10 @@ describe("resolve-circleci-pr-ref.sh", () => {
 				'args=" $* "',
 				'[[ "$args" == *"$expected_query"* ]] || exit 9',
 				'if [[ "$args" == *"--head acme:codex/unique-branch "* ]]; then',
+				"  : > .qualified-branch-query",
 				"  exit 0",
 				"fi",
+				"[[ -f .qualified-branch-query ]] || exit 10",
 				'printf "%s" "https://github.com/acme/demo/pull/57"',
 			].join("\n"),
 		);
