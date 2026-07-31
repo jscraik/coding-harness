@@ -34,6 +34,9 @@ contract, not the minimal scaffold.
   `bash scripts/run-harness-gate.sh docs-gate --mode required --json`. It must
   pass; otherwise follow its diagnostic to correct the affected documentation
   before rerunning the gate.
+- Keep the checked-in pre-push hook and its generated template aligned. The
+  hook may continue only when docs-gate emits a zero-error advisory warning;
+  documentation drift and every other gate failure remain blocking.
 - Generated routine validation guidance must keep Local Memory out of routine
   execution. Preserve `--mode required` only for an explicit Local Memory
   diagnostic or acceptance lane, and keep the source and template scripts in
