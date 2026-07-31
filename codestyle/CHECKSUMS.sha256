@@ -1,6 +1,6 @@
 # sha256 manifest for codestyle parity enforcement
 # format: <sha256>  <relative-path-from-repo-root>
-9c18dfa368f8c3834326220696316b90ef611b92fdd38e9acee98713c6c6ef93  CODESTYLE.md
+0b6b94aa150976c6a94f65ded3c624f4fa789b38c409f3970d1b51b3c0a742d0  CODESTYLE.md
 5046765e436a0c24e52b71756a66d14740c9d8b39038054e23d8c661c68b2a51  codestyle/01-foundations.md
 e22f8aba02af91c075bf91f03897790ac14f596d13c1bd1ab4ae89ff1ae6ebe4  codestyle/02-javascript-ui.md
 14350d1f761c0900135d411f1d4cfa3403cdb250f3441ab021ad26acad92718c  codestyle/03-rust-tauri.md
