@@ -41,7 +41,22 @@ if [[ "$only_environment_change" == true ]]; then
 	exit 0
 fi
 
-bash ./scripts/run-harness-gate.sh docs-gate --mode required --json
+docs_gate_output="$(mktemp)"
+if bash ./scripts/run-harness-gate.sh docs-gate --mode required --json > "$docs_gate_output"; then
+	cat "$docs_gate_output"
+else
+	docs_gate_status=$?
+	cat "$docs_gate_output"
+	if [[ "$docs_gate_status" -eq 10 ]] && jq -e \
+		'(.status == "warn") and (.summary.errors == 0)' \
+		"$docs_gate_output" > /dev/null; then
+		echo "Continuing pre-push after docs-gate advisory warnings."
+	else
+		rm -f "$docs_gate_output"
+		exit "$docs_gate_status"
+	fi
+fi
+rm -f "$docs_gate_output"
 
 tmp_changed_files="$(mktemp)"
 trap 'rm -f "$tmp_changed_files"' EXIT

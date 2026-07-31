@@ -39,6 +39,79 @@ function expectScriptSyntax(
 	}
 }
 
+function runPrePushWithDocsGate(
+	script: string,
+	docsGateExit: number,
+	docsGateReport: Record<string, unknown>,
+) {
+	const root = mkdtempSync(join(tmpdir(), "scaffold-pre-push-docs-gate-"));
+	const scriptsDir = join(root, "scripts");
+	const binDir = join(root, "bin");
+	mkdirSync(scriptsDir, { recursive: true });
+	mkdirSync(binDir, { recursive: true });
+	writeFileSync(join(scriptsDir, "hook-pre-push.sh"), script, {
+		mode: 0o755,
+	});
+	writeFileSync(
+		join(scriptsDir, "check-validation-locks.sh"),
+		"#!/usr/bin/env bash\nexit 0\n",
+		{ mode: 0o755 },
+	);
+	writeFileSync(
+		join(scriptsDir, "run-harness-gate.sh"),
+		[
+			"#!/usr/bin/env bash",
+			'if [[ "$1" == "docs-gate" ]]; then',
+			'  printf "%s\\n" "$DOCS_GATE_REPORT"',
+			'  exit "$DOCS_GATE_EXIT"',
+			"fi",
+			"exit 0",
+			"",
+		].join("\n"),
+		{ mode: 0o755 },
+	);
+	for (const name of [
+		"check-diagram-freshness.sh",
+		"check-environment.sh",
+		"run-package-command.sh",
+	]) {
+		writeFileSync(join(scriptsDir, name), "#!/usr/bin/env bash\nexit 0\n", {
+			mode: 0o755,
+		});
+	}
+	writeFileSync(
+		join(binDir, "git"),
+		[
+			"#!/usr/bin/env bash",
+			'if [[ "$1" == "merge-base" ]]; then',
+			"  printf 'base\\n'",
+			'elif [[ "$1" == "diff" ]]; then',
+			"  printf 'src/example.ts\\n'",
+			"fi",
+			"",
+		].join("\n"),
+		{ mode: 0o755 },
+	);
+	writeFileSync(join(binDir, "make"), "#!/usr/bin/env bash\nexit 0\n", {
+		mode: 0o755,
+	});
+
+	try {
+		return spawnSync("bash", ["scripts/hook-pre-push.sh"], {
+			cwd: root,
+			encoding: "utf8",
+			env: {
+				...process.env,
+				DOCS_GATE_EXIT: String(docsGateExit),
+				DOCS_GATE_REPORT: JSON.stringify(docsGateReport),
+				PATH: `${binDir}${delimiter}${process.env.PATH ?? ""}`,
+			},
+		});
+	} finally {
+		rmSync(root, { force: true, recursive: true });
+	}
+}
+
 describe("git-hook scaffold templates", () => {
 	it("renders commit-message validation policy", () => {
 		const script = renderValidateCommitMsgScript("codex");
@@ -189,10 +262,44 @@ describe("git-hook scaffold templates", () => {
 		expect(preCommit).not.toContain("make hooks-pre-commit");
 		expect(preCommit).not.toContain("pre-commit run");
 		expect(prePush).toContain("check-validation-locks.sh");
+		expect(prePush).toContain("docs_gate_status=$?");
+		expect(prePush).toContain('(.status == "warn") and (.summary.errors == 0)');
+		expect(prePush).toContain(
+			"Continuing pre-push after docs-gate advisory warnings.",
+		);
 		expect(prePush).toContain("run-harness-gate.sh tooling-audit");
 		expect(prePush).toContain("HARNESS_PRE_PUSH_FULL_CODESTYLE");
 		expect(prePush).not.toContain("make hooks-pre-push");
 		expect(prePush).not.toContain("pre-commit run");
+	});
+
+	it.each([
+		["checked-in hook", readFileSync("scripts/hook-pre-push.sh", "utf8")],
+		["generated template", renderPrePushHookScript()],
+	])("allows only advisory docs-gate warnings for %s", (_name, script) => {
+		const advisory = runPrePushWithDocsGate(script, 10, {
+			status: "warn",
+			summary: { errors: 0 },
+		});
+		expect(advisory.status, advisory.stderr).toBe(0);
+		expect(advisory.stdout).toContain(
+			"Continuing pre-push after docs-gate advisory warnings.",
+		);
+
+		const drift = runPrePushWithDocsGate(script, 10, {
+			status: "fail",
+			summary: { errors: 1 },
+		});
+		expect(drift.status).toBe(10);
+		expect(drift.stdout).not.toContain(
+			"Continuing pre-push after docs-gate advisory warnings.",
+		);
+
+		const runtimeError = runPrePushWithDocsGate(script, 14, {
+			status: "warn",
+			summary: { errors: 0 },
+		});
+		expect(runtimeError.status).toBe(14);
 	});
 
 	it("renders leaf hook package-script commands for the selected package manager", () => {
