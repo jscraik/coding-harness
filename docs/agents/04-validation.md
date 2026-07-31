@@ -285,6 +285,17 @@ rules; use a CLI helper when operators need a repeatable command; create or
 update a skill only for a reusable routed workflow with explicit inputs,
 artifacts, validation, ownership, and review expectations.
 
+The legacy guard vocabulary is retained for compatibility, not as current
+policy: “specific implementation-detail feedback is systemic until proven
+isolated” is retired; classify specific feedback as local or systemic only
+after applying the shared threshold. Likewise, “the same judgment is needed
+twice” or “a failure mode can recur across slices” is historical trigger
+wording, not an automatic expansion rule. When the current threshold is met,
+choose the smallest durable validator, guard script, CLI helper, workflow hook,
+fixture, or scoped skill; keep one-off implementation knowledge in notes or
+PR closeout evidence, and require reusable skill inputs, artifacts, validation,
+and ownership.
+
 1. Observe: capture the concrete signal and recover relevant context, including reflected context from resumed windows, session collector evidence, runtime evidence, or agent reflection when the signal crosses compaction, harness, repo, machine, or environment boundaries.
 2. Orient: translate the signal into the design principle it implies, then search sibling implementations, tests, docs, skills, PRs, issues, automations, and stacked trajectories that share or consume that principle.
 3. Decide: classify the scope as local, pattern-wide, stack-aware, organization-aware, reflected-context-backed, or `Unobserved Horizon`; choose the narrowest durable destination that can carry the principle.
