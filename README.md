@@ -8,7 +8,7 @@ audience: [human-operator, coding-harness-maintainer, codex-agent]
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-07-29
+last_reviewed: 2026-07-31
 review_cadence: quarterly
 maintenance_trigger: [product-surface-change, install-workflow-change, release-contract-change]
 semver_impact: minor
