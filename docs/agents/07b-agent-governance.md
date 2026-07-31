@@ -33,6 +33,9 @@ the same failure recurs across independent work, an existing contract conflicts,
 or a safety boundary requires enforcement. Keep one-off implementation knowledge
 with the change; use skills only for reusable routed workflows with explicit
 inputs, evidence, validation, and ownership.
+This threshold is shared with the root instructions and codestyle pack: routine
+corrections may close with `no_system_change`, while a promoted control must stay
+within the existing repository-owned authority and validation seams.
 
 ## Mandatory gates (when behavior changes)
 
