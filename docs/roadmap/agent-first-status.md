@@ -34,9 +34,10 @@ admission dependency. Optional
 context maintenance is advisory; it is not the primary action for ordinary work.
 
 The active slice is direct effectiveness observation. A five-repository
-read-only readiness sample is recorded below, but it is not the required
-end-to-end effectiveness evidence: no bounded change, review/fix cycle, or PR
-lifecycle was observed in that sample. The product therefore has no current
+read-only readiness sample and a separate source-bound lifecycle sample are
+recorded below. The lifecycle rows prove that real bounded changes reached
+review and merge, but they do not provide an untreated comparison or complete
+intervention/time-to-proof observations. The product therefore has no current
 effectiveness outcome claim.
 
 ## North-Star Boundary
@@ -60,10 +61,11 @@ rather than refreshed cosmetically.
   minimal-contract sub-slice).
 - The merged recovery PRs do not prove hosted release, installed-package
   behavior, independent acceptance, or real-world effectiveness.
-- Product effectiveness is unknown until five real Harness-assisted tasks
-  across at least three repositories are recorded with direct observations that
-  include a bounded change, review/fix cycle, and PR lifecycle. The sample below
-  establishes routing and failure classification only.
+- Five real task lifecycles across four repositories are now bound below to
+  immutable heads, created/merged timestamps, changed-file and commit counts,
+  review evidence, and Harness commands recorded by each PR. Missing
+  intervention and time-to-first-proof measurements remain explicitly unknown;
+  these rows must not be promoted to a causal effectiveness claim.
 
 ## Direct Observation Sample
 
@@ -86,6 +88,31 @@ the dirty paths in Agent-Skills and Configs remain owner-controlled and were
 not modified. This sample does not satisfy the end-to-end acceptance condition
 and must not be used to claim lower PR lead time, fewer interventions, less
 rework, or general product effectiveness.
+
+## Lifecycle Evidence Sample
+
+This is a post-hoc, source-bound sample collected on 2026-07-31 from the
+authoritative GitHub PR records with read-only `gh pr view` queries. Each row is
+a real bounded change that reached review and merge. The recorded Harness
+command is taken from each PR validation/behavior-proof text; it is evidence
+that the Harness route was exercised, not proof that the route caused the
+observed outcome. `changedFiles`, `commits`, and `reviews` are lifecycle facts,
+not review/fix-cycle counts. `unknown` is intentional where the source record
+does not contain a raw observation.
+
+| Task / repository / PR | Head SHA | Harness command recorded by task | Created → merged (UTC) | Files / commits / reviews | Time to first proof | Jamie interventions | Observed effect |
+| --- | --- | --- | ---: | ---: | --- | --- | --- |
+| Agent-Skills #371 — [narrow local journey guidance](https://github.com/jscraik/Agent-Skills/pull/371) | `25ff6eae9851` | `bash scripts/run-harness-gate.sh tooling-audit --path . --json` | 2026-07-28 22:21:16 → 23:01:09 (39m53s) | 4 / 1 / 3 | unknown | unknown | unknown; no untreated control |
+| Agent-Skills #374 — [recover local proof journey](https://github.com/jscraik/Agent-Skills/pull/374) | `87ed91fd8359` | `bash scripts/run-harness-gate.sh tooling-audit --path . --json` | 2026-07-29 12:31:36 → 14:32:07 (2h00m31s) | 18 / 10 / 5 | unknown | unknown | unknown; no untreated control |
+| Configs #160 — [close runtime review gaps](https://github.com/jscraik/configs/pull/160) | `9345d108fec4` | `bash codex/scripts/verify-work.sh --fast` | 2026-07-31 16:58:03 → 17:07:42 (9m39s) | 8 / 1 / 1 | unknown | unknown | unknown; no untreated control |
+| Portfolio #17 — [repair environment and debt gates](https://github.com/jscraik/portfolio/pull/17) | `ef4522244c95` | `bash scripts/run-harness-gate.sh docs-gate --mode required --json` | 2026-07-21 21:09:36 → 2026-07-22 05:55:55 (8h46m19s) | 13 / 8 / 19 | unknown | unknown | unknown; no untreated control |
+| Coding Harness #501 — [collapse routine command contract](https://github.com/jscraik/coding-harness/pull/501) | `d38589d72b5d` | `node --import tsx src/cli.ts commands --json --for-agent` | 2026-07-31 17:23:40 → 17:53:27 (29m47s) | 29 / 1 / 0 | unknown | unknown | unknown; no untreated control |
+
+The five rows satisfy the lifecycle/sample-count boundary, but not the
+effectiveness conclusion. A future controlled sample must record time to first
+useful proof and Jamie interventions at execution time, then compare a
+Harness-assisted task with an explicitly selected untreated baseline. Until
+that exists, PR lead time is descriptive only.
 
 ## Recovery Order
 
