@@ -5,6 +5,7 @@ GH_BIN="${GH_BIN:-gh}"
 check_name="${HARNESS_CIRCLECI_PR_REF_CHECK_NAME:-pull request context}"
 max_attempts="${HARNESS_CIRCLECI_PR_REF_MAX_ATTEMPTS:-18}"
 sleep_seconds="${HARNESS_CIRCLECI_PR_REF_SLEEP_SECONDS:-10}"
+network_timeout="${HARNESS_CIRCLECI_PR_REF_NETWORK_TIMEOUT:-30}"
 
 if [[ ! "$max_attempts" =~ ^[0-9]+$ || "$max_attempts" -lt 1 ]]; then
 	max_attempts=18
@@ -13,6 +14,22 @@ fi
 if [[ ! "$sleep_seconds" =~ ^[0-9]+$ ]]; then
 	sleep_seconds=10
 fi
+
+if [[ ! "$network_timeout" =~ ^[0-9]+$ || "$network_timeout" -lt 1 ]]; then
+	network_timeout=30
+fi
+
+run_with_timeout() {
+	local timeout_seconds="$1"
+	shift
+	if command -v timeout >/dev/null 2>&1; then
+		timeout "$timeout_seconds" "$@"
+	elif command -v gtimeout >/dev/null 2>&1; then
+		gtimeout "$timeout_seconds" "$@"
+	else
+		"$@"
+	fi
+}
 
 normalize_github_slug() {
 	local slug="$1"
@@ -97,13 +114,13 @@ resolve_github_pr_ref() {
 		gh_repo_args=(--repo "$repo_slug")
 	fi
 	if [[ -n "${CIRCLE_BRANCH:-}" && -n "${CIRCLE_PROJECT_USERNAME:-}" ]]; then
-		resolved="$("$GH_BIN" pr list "${gh_repo_args[@]}" --head "${CIRCLE_PROJECT_USERNAME}:${CIRCLE_BRANCH}" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
+		resolved="$(run_with_timeout "$network_timeout" "$GH_BIN" pr list "${gh_repo_args[@]}" --head "${CIRCLE_PROJECT_USERNAME}:${CIRCLE_BRANCH}" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
 	fi
 	if [[ -z "$resolved" && -n "${CIRCLE_BRANCH:-}" ]]; then
-		resolved="$("$GH_BIN" pr list "${gh_repo_args[@]}" --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
+		resolved="$(run_with_timeout "$network_timeout" "$GH_BIN" pr list "${gh_repo_args[@]}" --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""' 2>/dev/null || true)"
 	fi
 	if [[ -z "$resolved" && -n "${CIRCLE_SHA1:-}" && -n "$repo_slug" ]]; then
-		resolved="$("$GH_BIN" api -H "Accept: application/vnd.github+json" "/repos/${repo_slug}/commits/${CIRCLE_SHA1}/pulls" --jq '[.[] | select(.state == "open") | .html_url] | if length == 1 then .[0] else "" end' 2>/dev/null || true)"
+		resolved="$(run_with_timeout "$network_timeout" "$GH_BIN" api -H "Accept: application/vnd.github+json" "/repos/${repo_slug}/commits/${CIRCLE_SHA1}/pulls" --jq '[.[] | select(.state == "open") | .html_url] | if length == 1 then .[0] else "" end' 2>/dev/null || true)"
 	fi
 	if is_valid_pr_ref "$resolved"; then
 		printf '%s' "$resolved"
@@ -131,7 +148,7 @@ resolve_public_pr_ref() {
 		return 0
 	fi
 	if [[ -n "${CIRCLE_BRANCH:-}" ]]; then
-		response="$(curl -fsSL -H "Accept: application/vnd.github+json" --get \
+		response="$(curl -fsSL --max-time "$network_timeout" -H "Accept: application/vnd.github+json" --get \
 			--data-urlencode "state=open" \
 			--data-urlencode "head=${head_owner}:${CIRCLE_BRANCH}" \
 			"https://api.github.com/repos/${repo_slug}/pulls" 2>/dev/null || true)"
@@ -147,7 +164,7 @@ resolve_public_pr_ref() {
 	if [[ ! "$commit_sha" =~ ^[0-9a-fA-F]{7,64}$ ]]; then
 		return 0
 	fi
-	response="$(curl -fsSL -H "Accept: application/vnd.github+json" \
+	response="$(curl -fsSL --max-time "$network_timeout" -H "Accept: application/vnd.github+json" \
 		"https://api.github.com/repos/${repo_slug}/commits/${commit_sha}/pulls" 2>/dev/null || true)"
 	resolve_unique_open_pr_ref "$response"
 }
