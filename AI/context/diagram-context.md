@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-30T21:50:48Z
+Generated: 2026-07-30T22:38:19Z
 
 ## Table of Contents
 
@@ -29,8 +29,12 @@ Generated: 2026-07-30T21:50:48Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
+- `scripts/refresh-diagram-context.sh`
 - `src/commands/check.ts`
+- `src/commands/next-decisions.ts`
+- `src/commands/next-orientation-meta.ts`
 - `src/commands/next-recommendation-decisions.ts`
+- `src/commands/next-runner-state.ts`
 - `src/lib/cli/command-registry.ts`
 - `src/lib/cli/registry/builtin-command-specs.ts`
 - `src/lib/cli/registry/command-agent-catalog-rules.ts`
@@ -1309,7 +1313,6 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_metrics_tracker_98cec29c_9c4c2266
   ext_node_fs_a15b7d96["node:fs"] --> node_migration_8a6cead4_3c3cc0a4
   ext_node_fs_a15b7d96["node:fs"] --> node_next_pr_closeout_2cf386a5_fcc4fd90
-  ext_node_fs_a15b7d96["node:fs"] --> node_next_runner_state_be6fe997_a30b2ffb
   ext_node_fs_a15b7d96["node:fs"] --> node_normalize_diagram_manifest_259cbddf_3f92b8d6
   ext_node_fs_a15b7d96["node:fs"] --> node_normalize_workflow_contracts_8701f1c8_0fdf7d2f
   ext_node_fs_a15b7d96["node:fs"] --> node_north_star_artifact_io_9f2c34b2_6490caba
@@ -1596,7 +1599,6 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_metrics_tracker_98cec29c_9c4c2266
   ext_node_path_78811c13["node:path"] --> node_migration_8a6cead4_3c3cc0a4
   ext_node_path_78811c13["node:path"] --> node_next_pr_closeout_2cf386a5_fcc4fd90
-  ext_node_path_78811c13["node:path"] --> node_next_runner_state_be6fe997_a30b2ffb
   ext_node_path_78811c13["node:path"] --> node_normalize_diagram_manifest_259cbddf_3f92b8d6
   ext_node_path_78811c13["node:path"] --> node_normalize_workflow_contracts_8701f1c8_0fdf7d2f
   ext_node_path_78811c13["node:path"] --> node_north_star_artifact_io_9f2c34b2_6490caba

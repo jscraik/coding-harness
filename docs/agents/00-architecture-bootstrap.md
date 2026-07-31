@@ -74,6 +74,9 @@ task-first and compact: it names the current status, summary, one next action
 or command, warnings, the execution boundary, and the claims boundary. Missing
 or stale optional context remains a warning; detailed decision, readiness, and
 maintenance data belongs only to an explicit diagnostic or evidence route.
+Do not surface hidden internal recovery commands from advisory artifacts on the
+routine route; invoke those diagnostics explicitly when their named consumer
+needs them.
 For truthful invocation-effect catalog changes, keep the public capability
 projection separate from the source-characterized effect declarations. Each
 declared invocation must identify its effect classes, targets, provider class,

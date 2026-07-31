@@ -78,7 +78,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   terminology source. Agents may use the map to find relevant concepts quickly,
   but claims and definitions should cite the authoritative language file or the
   domain document the map points to.
-- agent-readiness or `harness next` context-health changes should keep `harness.contract.json`, `AGENTS.md`, `README.md`, `.harness/core/agent-readiness-contract.md`, and this guide synchronized. Shared-state action authority belongs in `toolingPolicy.sharedStateActions`; context-health warnings are orientation evidence only unless a separate validated consumer promotes them.
+- agent-readiness or `harness next` context-health changes should keep `harness.contract.json`, `AGENTS.md`, `README.md`, `.harness/core/agent-readiness-contract.md`, and this guide synchronized. Shared-state action authority belongs in `toolingPolicy.sharedStateActions`; context-health warnings are orientation evidence only unless a separate validated consumer promotes them. Advisory artifacts must not inject hidden recovery commands into the routine `next` route.
 - tooling/runtime changes should update `docs/agents/02-tooling-policy.md` and `docs/agents/06-security-and-governance.md`
 - runtime-pin learning updates that affect `harness check-environment` should
   keep consumer `harness.contract.json` `toolingPolicy.requiredMiseTools` pins

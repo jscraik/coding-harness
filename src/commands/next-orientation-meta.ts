@@ -6,8 +6,6 @@ const NEXT_ORIENTATION_REFS = [
 ] as const;
 
 const NEXT_CONTEXT_COMMANDS = [
-	"session-context --json --repo-root .",
-	"agent-readiness . --json",
 	"commands --json --for-agent --mode orient",
 ] as const;
 
