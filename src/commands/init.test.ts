@@ -605,6 +605,13 @@ describe("runInit", () => {
 			expect(circleConfig).toContain(
 				"bash scripts/run-harness-gate.sh docs-gate --mode required --json",
 			);
+			expect(circleConfig).toContain('docs_gate_output="$(mktemp)"');
+			expect(circleConfig).toContain(
+				'(.status == "warn") and (.summary.errors == 0)',
+			);
+			expect(circleConfig).toContain(
+				"Continuing docs-gate after zero-error advisory warnings.",
+			);
 			expect(circleConfig).toContain("store_test_results:");
 			expect(circleConfig).toContain("path: artifacts/test-results");
 			expect(circleConfig).not.toContain("name: Enforce Policy Bundle Outcome");
