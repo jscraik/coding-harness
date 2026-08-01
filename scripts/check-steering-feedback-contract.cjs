@@ -64,13 +64,13 @@ const ENGINEERING_PROOF_PATTERN =
 const WORKFLOW_SKILL_PROOF_PATTERN =
 	/(workflow skill|capture-the-flag|capture the flag|win condition|flag is captured|skill workout|self-reflection|reflect on failures)/i;
 const TOOL_PROMOTION_THRESHOLD_PATTERN =
-	/(?=[\s\S]*(?:same judgment|failure mode|current contract is contradictory|contradictory contract|safety boundary|recurr(?:ence|s) across independent work|shared-control threshold))(?=[\s\S]*(?:smallest durable|small operating primitive|durable primitive|validator|guard script|CLI helper|workflow hook|fixture|scoped skill))(?=[\s\S]*(?:one-off implementation|isolated repeated failures|implementation notes|plan evidence|PR closeout evidence))(?=[\s\S]*(?:skill|reusable routed workflow|inputs[\s\S]{0,120}artifacts[\s\S]{0,120}validation[\s\S]{0,120}ownership))/i;
+	/(?=[\s\S]*(?:current contract is contradictory|contract is contradictory|contradictory contract|(?:crossed|requires|implicates|violates) (?:a )?safety boundary|recurr(?:ence|s) across independent work|shared-control threshold))(?=[\s\S]*(?:smallest durable|small operating primitive|durable primitive|validator|guard script|CLI helper|workflow hook|fixture|scoped skill))(?=[\s\S]*(?:one-off implementation|isolated repeated failures|implementation notes|plan evidence|PR closeout evidence))(?=[\s\S]*(?:skill|reusable routed workflow|inputs[\s\S]{0,120}artifacts[\s\S]{0,120}validation[\s\S]{0,120}ownership))/i;
 const CURRENT_SESSION_ADMISSION_PATTERN =
 	/(current-session steering admission record|not permitted to proceed|feedback class.*inferred principle.*searched surfaces.*durable destination|forbidden recurrence behavior)/i;
 const PLANNING_ONLY_STOP_PATTERN =
 	/(planning-only|planning conversation|not making (the )?changes yet|before implementation|implementation cue|do not implement|no file edits)/i;
 const REPEATED_ERROR_RESEARCH_PATTERN =
-	/(Repeated-error research|Repeated-Error Research Pass|same-error-twice|same error happens twice|same error happened twice|same command.*test.*runtime error happens twice|recurs across independent (?:tasks|work)|shared threshold|Source:.*Candidate 1:.*Candidate 2:.*Candidate 3:.*Chosen:.*Implemented:|3-5 numbered Candidate\/Fix\/Option|don.t fight errors)/i;
+	/(Repeated-error research|Repeated-Error Research Pass|recurs across independent (?:tasks|work)|(?:current|existing|the) contract is contradictory|contradictory contract|(?:crossed|requires|implicates|violates) (?:a )?safety boundary|Source:.*Candidate 1:.*Candidate 2:.*Candidate 3:.*Chosen:.*Implemented:|3-5 numbered Candidate\/Fix\/Option)/i;
 const CLOSEOUT_COMPLETION_PATTERN =
 	/(closeout completion|green checks.*not.*complete|green checks.*validation evidence|not equivalent to green checks|PR state.*merge.*Linear.*next-lane|heartbeat.*lane.*complete)/i;
 const ENV_BACKED_VALIDATION_PATTERN =

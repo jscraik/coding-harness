@@ -20,11 +20,11 @@ export const PLACEHOLDERS = [
 ] as const;
 
 export const STEERING_SIGNAL_PATTERN =
-	/(admitted repeated steering|repeated steering (showed|exposed|drove|required|was)|same steering twice|same feedback twice|same correction across sessions|same feedback again|user had to restate correction|never give the same feedback twice|not permitted to proceed|current-session steering admission|stop-the-line|high-signal (user )?(steering|feedback|correction)|every bit of steering|failing to operate effectively|steering feedback (showed|exposed|drove|required|was|into))/i;
+	/(admitted repeated steering|repeated steering (showed|exposed|drove|required|was)|same steering twice|same feedback twice|same correction across sessions|same feedback again|user had to restate correction|never give the same feedback twice|feedback recurs across independent (tasks|work)|not permitted to proceed|current-session steering admission|stop-the-line|high-signal (user )?(steering|feedback|correction)|every bit of steering|failing to operate effectively|steering feedback (showed|exposed|drove|required|was|into))/i;
 export const REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN =
-	/(?:(?:same error (?:happened|occurred)?\s*twice|same failure twice|same command failed twice|failed again with the same (?:error|failure|command|stack trace|exception)|same (?:stack trace|exception) (?:appeared|happened|occurred|recurred|repeated).*twice|same error repeated|don\u2019t fight (?:the )?(same )?error|don't fight (?:the )?(same )?error)[\s\S]{0,240}(?:across independent (?:tasks|work)|contradictory (?:current )?contract|safety boundary)|(?:failure|error|command|test) recurs? across independent (?:tasks|work)|recurrence across independent (?:tasks|work))/i;
+	/(?:(?:(?:same error (?:happened|occurred)?\s*twice|same failure twice|same command failed twice|failed again with the same (?:error|failure|command|stack trace|exception)|same (?:stack trace|exception) (?:appeared|happened|occurred|recurred|repeated).*twice|same error repeated|don\u2019t fight (?:the )?(same )?error|don't fight (?:the )?(same )?error)[\s\S]{0,240}(?:across independent (?:tasks|work)|(?:current|existing) contract is contradictory|contract is contradictory|contradictory contract|(?:crossed|requires|implicates|violates) (?:a )?safety boundary)|(?:across independent (?:tasks|work)|(?:current|existing) contract is contradictory|contract is contradictory|contradictory contract|(?:crossed|requires|implicates|violates) (?:a )?safety boundary)[\s\S]{0,240}(?:same error (?:happened|occurred)?\s*twice|same failure twice|same command failed twice|failed again with the same (?:error|failure|command|stack trace|exception)|same (?:stack trace|exception) (?:appeared|happened|occurred|recurred|repeated).*twice|same error repeated|don\u2019t fight (?:the )?(same )?error|don't fight (?:the )?(same )?error))|(?:failure|error|command|test) recurs? across independent (?:tasks|work)|recurrence across independent (?:tasks|work))/i;
 export const PATTERN_SCOPE_SIGNAL_PATTERN =
-	/(?:(?:pattern-generalization|shared pattern|sibling implementations|sibling pattern|shared abstraction)[\s\S]{0,500}(?:threshold|principle|search|inventory|changed|unchanged|local|systemic|generaliz|contradictory|safety boundary|recurrence across independent (?:tasks|work)|failure recurs across independent (?:tasks|work))|(?:threshold|contradictory (?:current |shared )?contract|safety boundary|recurrence across independent (?:tasks|work)|failure recurs across independent (?:tasks|work))[\s\S]{0,500}(?:pattern|sibling|shared abstraction|design))/i;
+	/(?:(?:pattern-generalization|shared pattern|sibling implementations|sibling pattern|shared abstraction)[\s\S]{0,500}(?:threshold|principle|search|inventory|changed|unchanged|local|systemic|generaliz|contradictory|(?:crossed|requires|implicates|violates) (?:a )?safety boundary|recurrence across independent (?:tasks|work)|failure recurs across independent (?:tasks|work)|named current consumer)|(?:threshold|contradictory (?:current |shared )?contract|recurrence across independent (?:tasks|work)|failure recurs across independent (?:tasks|work)|(?:crossed|requires|implicates|violates) (?:a )?safety boundary|named current consumer)[\s\S]{0,500}(?:pattern|sibling|shared abstraction|design|consumer))/i;
 export const DURABLE_META_DESTINATION_PATTERN =
 	/(gate|validator|schema|scaffold|template field|validation rule|Project Brain|Linear|tracked issue|memory update|solution record|codestyle|docs-gate|guard|explicit exception)/i;
 export const CONCRETE_DURABLE_REFERENCE_PATTERN =
@@ -225,7 +225,7 @@ export const REQUIRED_WORK_FIELDS = [
 	{
 		label: "Pattern scope inventory",
 		placeholder:
-			"for any steering feedback, review comment, or line-level correction that implies a broader design/API principle, name the principle, list sibling implementations or similar misbehavior classes searched, and state which siblings were changed, intentionally left unchanged, or deferred with tracker/evidence",
+			"when the shared threshold or a named current consumer requires a pattern pass, name the principle, list sibling implementations or similar misbehavior classes searched, and state which siblings were changed, intentionally left unchanged, or deferred with tracker/evidence; otherwise `n.a.` with reason, checked scope, and no-durable-destination decision",
 	},
 	{
 		label: "Meta-behavior proof",
@@ -235,7 +235,7 @@ export const REQUIRED_WORK_FIELDS = [
 	{
 		label: "Repeated-error research",
 		placeholder:
-			"when the same error occurs twice, use `Source: ...; Candidate 1: ...; Candidate 2: ...; Candidate 3: ...; Chosen: ...; Implemented: ...`; otherwise `n.a.` with reason",
+			"when recurrence across independent work, a contradictory contract, or a safety boundary triggers research, use `Source: ...; Candidate 1: ...; Candidate 2: ...; Candidate 3: ...; Chosen: ...; Implemented: ...`; otherwise `n.a.` with reason",
 	},
 	{
 		label: "Acceptance trace",

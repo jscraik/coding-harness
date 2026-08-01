@@ -104,8 +104,9 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 - Waivers MUST include: rule ID or section, reason, tracking ticket, and expiry or ADR reference.
 - Design corrections start with local repair. Promote shared guidance only when
   the contract is contradictory, a safety boundary is crossed, or failure recurs
-  across independent work; otherwise record `no_system_change`. When promoted,
-  search relevant siblings and record changed, unchanged, or deferred scope.
+  across independent work; otherwise record `no_system_change` with the reason,
+  checked scope, and no-durable-destination decision. When promoted, search
+  relevant siblings and record changed, unchanged, or deferred scope.
 - Validation evidence MUST use exact command text and explicit outcomes:
   - `Command: <exact command> -> pass|fail|blocked (<reason>)`
 - Commands are expected from the active instruction scope and the repository root.
@@ -125,6 +126,8 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 1. Start at this file.
 2. Open only the module that matches the task surface.
 3. Classify scope before editing: use local repair or `no_system_change` unless
-   the shared threshold is met or a named current consumer requires the sibling pass.
+  the shared threshold is met or a named current consumer requires the sibling pass;
+  record the reason, checked scope, and no-durable-destination decision for
+  `no_system_change`.
 4. Keep project-specific override content in `06-appendices-and-project-overrides.md`.
 5. When changing standards, update the module first, update `coding-policy.json` when routing or required gates change, run `pnpm run codestyle:checksums`, then confirm this index still matches.

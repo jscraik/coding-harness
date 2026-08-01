@@ -29,6 +29,17 @@ describe("check-steering-feedback-contract", () => {
 		).toContain("AGENTS.md: missing durable-control threshold");
 	});
 
+	it("does not treat legacy judgment or failure-mode wording as a threshold", () => {
+		const content = [
+			"Finish the bounded local repair first.",
+			"If the same judgment is needed twice or a failure mode can recur, promote a durable control.",
+		].join("\n");
+
+		expect(validateAgentGovernance(content)).toContain(
+			"docs/agents/07b-agent-governance.md: missing durable-control threshold",
+		);
+	});
+
 	it("accepts the equivalent bounded rule in governance guidance", () => {
 		const content = [
 			"Finish the bounded local repair first.",

@@ -30,7 +30,7 @@ Secure and maintainable code comes from interfaces that make the correct use nat
 - Return errors with operation context. Bare errors push diagnosis onto callers; boundary code SHOULD preserve the failing operation and original cause.
 - Add helpers only when they remove misuse or represent real domain behavior. Convenience that merely hides a read or parse often makes ownership less clear.
 - Tests SHOULD read like checks against policy. Reusable parsing, resolution, and comparison semantics belong in internal packages; exact current state belongs in checked configuration and tests, not prose.
-- Design corrections SHOULD start with local repair. Promote a shared pattern only when the current contract is contradictory, a safety boundary is crossed, or the same failure recurs across independent work. When that shared threshold is met, search sibling APIs and tests in the same command core, adapter family, and affected docs/templates; otherwise record `no_system_change` and close the bounded correction locally.
+- Design corrections SHOULD start with local repair. Promote a shared pattern only when the current contract is contradictory, a safety boundary is crossed, the same failure recurs across independent work, or a named current consumer requires it. When that shared threshold is met, search sibling APIs and tests in the same command core, adapter family, and affected docs/templates; otherwise record `no_system_change` with the reason, checked scope, and no-durable-destination decision and close the bounded correction locally.
 
 Examples:
 

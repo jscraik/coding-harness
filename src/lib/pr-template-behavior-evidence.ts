@@ -137,6 +137,14 @@ function collectPatternScopeInventoryErrors(
 	return [];
 }
 
+/**
+ * Enforces research evidence only when recurrence, contract contradiction, or
+ * a safety boundary crosses the shared troubleshooting threshold.
+ *
+ * @param body - Complete pull-request body text.
+ * @param readFieldValue - Reader for structured work-performed fields.
+ * @returns Validation errors for missing or incomplete threshold evidence.
+ */
 function collectRepeatedErrorResearchErrors(
 	body: string,
 	readFieldValue: PrTemplateFieldReader,
@@ -165,7 +173,7 @@ function collectRepeatedErrorResearchErrors(
 		candidateCount > 5
 	) {
 		return [
-			"Repeated-error research must include Source, 3-5 numbered Candidate/Fix/Option entries, Chosen, and Implemented evidence when PR text admits the same error happened twice.",
+			"Repeated-error research must include Source, 3-5 numbered Candidate/Fix/Option entries, Chosen, and Implemented evidence when PR text admits recurrence across independent work, a contradictory contract, or a safety boundary.",
 		];
 	}
 

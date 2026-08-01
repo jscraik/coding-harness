@@ -684,7 +684,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		);
 
 		expect(validatePrTemplateBody(body)).toContain(
-			"Repeated-error research must include Source, 3-5 numbered Candidate/Fix/Option entries, Chosen, and Implemented evidence when PR text admits the same error happened twice.",
+			"Repeated-error research must include Source, 3-5 numbered Candidate/Fix/Option entries, Chosen, and Implemented evidence when PR text admits recurrence across independent work, a contradictory contract, or a safety boundary.",
 		);
 	});
 
@@ -700,6 +700,23 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		expect(validatePrTemplateBody(body)).toEqual([]);
 	});
 
+	it.each([
+		"Across independent tasks, the same error happened twice while fixing CI.",
+		"Because the contract is contradictory, the same error happened twice while fixing CI.",
+	])("requires research when the qualifying context precedes the repeated error: %s", (trigger) => {
+		const body = VALID_BODY.replace(
+			"PR bodies could omit required validation evidence.",
+			trigger,
+		).replace(
+			"- Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).",
+			"- Repeated-error research: n.a. (bounded local recovery only).",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Repeated-error research must include Source, 3-5 numbered Candidate/Fix/Option entries, Chosen, and Implemented evidence when PR text admits recurrence across independent work, a contradictory contract, or a safety boundary.",
+		);
+	});
+
 	it("fails repeated error admission with keyword-only research evidence", () => {
 		const body = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",
@@ -710,7 +727,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		);
 
 		expect(validatePrTemplateBody(body)).toContain(
-			"Repeated-error research must include Source, 3-5 numbered Candidate/Fix/Option entries, Chosen, and Implemented evidence when PR text admits the same error happened twice.",
+			"Repeated-error research must include Source, 3-5 numbered Candidate/Fix/Option entries, Chosen, and Implemented evidence when PR text admits recurrence across independent work, a contradictory contract, or a safety boundary.",
 		);
 	});
 
@@ -741,6 +758,35 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		const body = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",
 			"A line-level correction fixed one bounded local behavior without a shared contract or safety boundary.",
+		).replace(
+			"- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.",
+			"- Pattern scope inventory: n.a. (bounded local correction; reason: no shared contract, checked scope: one behavior; no-durable-destination decision: close locally).",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
+	it("requires pattern scope when a named current consumer requires it", () => {
+		const body = VALID_BODY.replace(
+			"PR bodies could omit required validation evidence.",
+			"A named current consumer requires a pattern-generalization pass.",
+		).replace(
+			"- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.",
+			"- Pattern scope inventory: n.a. (not reviewed).",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Pattern scope inventory must name the inferred principle, sibling patterns searched, siblings changed, and siblings intentionally unchanged with reasons when PR text admits line-level or design-pattern correction.",
+		);
+	});
+
+	it("does not promote a negated safety-boundary phrase", () => {
+		const body = VALID_BODY.replace(
+			"PR bodies could omit required validation evidence.",
+			"A bounded local correction proceeds without a shared contract or safety boundary.",
+		).replace(
+			"- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.",
+			"- Pattern scope inventory: n.a. (bounded local correction; reason: no shared contract, checked scope: one behavior; no-durable-destination decision: close locally).",
 		);
 
 		expect(validatePrTemplateBody(body)).toEqual([]);
@@ -780,6 +826,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 	it.each([
 		"Every bit of steering showed the agent was failing to operate effectively.",
 		"This is high signal feedback and the user should never give the same feedback twice.",
+		"Feedback recurs across independent tasks and the durable destination must be checked.",
 	])("fails broad steering trigger '%s' without meta proof", (trigger) => {
 		const body = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",
@@ -808,7 +855,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		);
 
 		expect(validatePrTemplateBody(body)).toContain(
-			"Repeated-error research must include Source, 3-5 numbered Candidate/Fix/Option entries, Chosen, and Implemented evidence when PR text admits the same error happened twice.",
+			"Repeated-error research must include Source, 3-5 numbered Candidate/Fix/Option entries, Chosen, and Implemented evidence when PR text admits recurrence across independent work, a contradictory contract, or a safety boundary.",
 		);
 	});
 

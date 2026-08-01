@@ -242,7 +242,8 @@ rule or phrase.
 When feedback recurs across independent tasks, or current evidence shows a
 contradictory contract or crossed safety boundary, stop ordinary feature work and
 run repeat-feedback admission. Otherwise complete the bounded local repair or
-record `no_system_change`; do not expand scope from one occurrence. The
+record `no_system_change` with its reason, checked scope, and no-durable-
+destination decision; do not expand scope from one occurrence. The
 admission is complete only when the agent can show:
 
 - the repeated feedback and the principle it implies
@@ -269,12 +270,14 @@ durable destination, and run the guard that proves future agents still see the
 stop condition.
 
 When the same error, command failure, or test failure recurs across independent
-tasks, or a safety boundary is implicated, stop the local retry loop before
-another attempt. Research trusted web or upstream documentation, list 3-5
-plausible fixes, choose the most efficient fix for the current repo context,
-implement that fix, and record the research options plus chosen implementation
-in PR closeout. For a one-off failure, use bounded recovery and record
-`no_system_change` when no durable destination is justified.
+tasks, the current contract is contradictory, or a safety boundary is
+implicated, stop the local retry loop before another attempt. Research trusted
+web or upstream documentation, list 3-5 plausible fixes, choose the most
+efficient fix for the current repo context, implement that fix, and record the
+research options plus chosen implementation in PR closeout. For a one-off
+failure, use bounded recovery and record `no_system_change` with the reason,
+checked scope, and no-durable-destination decision when no durable destination
+is justified.
 
 Shared-control promotion threshold: when the current contract is contradictory,
 a safety boundary is crossed, or the same failure recurs across independent
@@ -333,7 +336,8 @@ sibling implementations searched, states which siblings changed, states which
 siblings were intentionally left unchanged with reasons, and links any deferred
 follow-up. A local-only patch or `no_system_change` is routine when evidence
 shows no shared contract, safety boundary, or recurrence across independent
-work.
+work; the record must state the reason, checked scope, and no-durable-
+destination decision.
 
 Use example-based feedback, named-function feedback, review comments, and
 single-line corrections as evidence to classify scope, not as automatic scope
