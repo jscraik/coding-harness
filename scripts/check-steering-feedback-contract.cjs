@@ -44,7 +44,7 @@ const REPEAT_FEEDBACK_ADMISSION_PATTERN =
 const PATTERN_GENERALIZATION_PATTERN =
 	/(pattern-generalization|pattern generalization|sibling implementations|similar classes of misbehavior|shared abstraction|intentionally local|design principle|design\/API principle)/i;
 const SPECIFIC_FEEDBACK_SYSTEMIC_PATTERN =
-	/(?:(?:specific implementation-detail feedback|specific feedback|line-level correction|review comment|shared-control threshold|shared threshold|current contract is contradictory|safety boundary|recurr(?:ence|s) across independent)[\s\S]{0,900}(?:local by default|local or systemic|validator|lint rule|schema constraint|shared utility|repository convention|CI check|documented invariant|tracked exception)|(?:systemic until proven isolated|not local by default)[\s\S]{0,500}(?:validator|lint rule|schema constraint|shared utility|repository convention|CI check|documented invariant|tracked exception))/i;
+	/(?:specific implementation-detail feedback|specific feedback|line-level correction|review comment|shared-control threshold|shared threshold|current contract is contradictory|safety boundary|recurr(?:ence|s) across independent)[\s\S]{0,900}(?:local by default|local or systemic|validator|lint rule|schema constraint|shared utility|repository convention|CI check|documented invariant|tracked exception)/i;
 const PATTERN_SCOPE_INVENTORY_PATTERN =
 	/(pattern scope inventory|siblings changed|siblings left unchanged|sibling implementations searched|similar misbehavior classes searched|deferred follow-ups|deferred followup)/i;
 const OBSERVED_FIXABLE_BLOCKER_PATTERN =

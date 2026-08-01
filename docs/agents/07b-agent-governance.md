@@ -552,11 +552,15 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   env files may populate local credentials, but closeout gate paths must remain
   repo-scoped and outside-repo paths should block rather than expand the trust
   boundary.
-- repeated steering feedback is an agent-governance signal, not a one-line
-  patch request. PRs that encode steering feedback should record the broader
-  design principle, search sibling implementations, update every required
-  governance surface or durable destination, and list unchanged or deferred
-  siblings in the PR template pattern scope inventory
+- repeated steering feedback is an agent-governance signal, not an automatic
+  one-line patch expansion. When the shared threshold is met (recurrence across
+  independent work, a contradictory contract, a crossed safety boundary, or a
+  named current consumer), PRs should record the broader design principle,
+  search sibling implementations, update every required governance surface or
+  durable destination, and list unchanged or deferred siblings in the PR
+  template pattern scope inventory. Routine feedback may close locally with
+  `no_system_change` when its reason, checked scope, and no-durable-destination
+  decision are recorded.
 - observed fixable blockers are also agent-governance evidence. When an agent
   notices a stale artifact, stale instruction, failing hook, flaky repeated
   command, or validation weakness in the active surface, it should fix the

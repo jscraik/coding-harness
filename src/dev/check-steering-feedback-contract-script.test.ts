@@ -40,6 +40,17 @@ describe("check-steering-feedback-contract", () => {
 		);
 	});
 
+	it("rejects the retired systemic-until-proven-isolated wording", () => {
+		const content = [
+			"Finish the bounded local repair first.",
+			"Specific implementation-detail feedback is systemic until proven isolated.",
+		].join("\n");
+
+		expect(validateAgentGovernance(content)).toContain(
+			"docs/agents/07b-agent-governance.md: missing durable-control threshold",
+		);
+	});
+
 	it("accepts the equivalent bounded rule in governance guidance", () => {
 		const content = [
 			"Finish the bounded local repair first.",

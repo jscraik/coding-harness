@@ -703,6 +703,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 	it.each([
 		"Across independent tasks, the same error happened twice while fixing CI.",
 		"Because the contract is contradictory, the same error happened twice while fixing CI.",
+		"The same error happened twice and a safety boundary is implicated.",
 	])("requires research when the qualifying context precedes the repeated error: %s", (trigger) => {
 		const body = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",
@@ -807,6 +808,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 	it.each([
 		"This was example-based feedback about a shared pattern after recurrence across independent work.",
 		"A concrete correction in one function exposed a contradictory shared contract; the shared pattern requires sibling review.",
+		"A line-level correction revealed that the current contract is contradictory.",
 		"Do not just fix that line; a safety boundary requires a shared pattern search across related adapters.",
 		"Codex should apply the same shared pattern in multiple places after the shared threshold is met.",
 	])("fails generalized pattern trigger '%s' without full inventory", (trigger) => {
