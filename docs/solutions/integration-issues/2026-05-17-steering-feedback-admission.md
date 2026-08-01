@@ -34,13 +34,14 @@ When a correction, PR comment, failing check, benchmark-style success, workflow-
 
 This is the distinction between code production and software engineering proof. A patch can pass a constrained task while still failing the engineering loop.
 
-Line-level design feedback requires a pattern scope inventory before closeout. The agent must name the inferred design principle, list the sibling implementations searched, state which siblings changed, state which siblings were intentionally left unchanged with reasons, and record deferred follow-ups. Otherwise the harness has only optimized the example line, not the class of misbehavior the feedback exposed. This is the general rule: a concrete example is evidence of the user's design model, not proof that the correction is local. For example, "return a named sentinel error instead of a success/failure boolean" must trigger an API-pattern search for sibling boolean result contracts before closeout.
+Line-level design feedback requires a pattern scope inventory before closeout only when the shared-control threshold is met or a named current consumer requires it. The agent must then name the inferred design principle, list the sibling implementations searched, state which siblings changed, state which siblings were intentionally left unchanged with reasons, and record deferred follow-ups. Below that threshold, close the bounded correction locally with `no_system_change`, recording the reason, checked scope, and no-durable-destination decision. Otherwise the harness has only optimized the example line, not the class of misbehavior the feedback exposed. This is the general rule: a concrete example is evidence of the user's design model, not proof that the correction is local. For example, "return a named sentinel error instead of a success/failure boolean" must trigger an API-pattern search for sibling boolean result contracts before closeout when that threshold applies.
 
 The trigger set is intentionally semantic, not phrase-bound. Example-based
-feedback, named-function feedback, review comments, single-line corrections,
-and language such as "generally", "same pattern", "similar class", or
-"across everything" all require a pattern-generalization pass unless the
-inventory proves the correction is intentionally local.
+feedback, named-function feedback, review comments, and single-line corrections
+are scope signals. A pattern-generalization pass is required only when the
+shared-control threshold is met or a named current consumer requires it;
+otherwise close the bounded correction locally with `no_system_change`,
+recording the reason, checked scope, and no-durable-destination decision.
 
 For high-level workflow skills, the proof loop must define a capture-the-flag-style win condition and retain the session or trace evidence that proves the agent closed the loop. A skill workout is complete only when Codex has attempted the workflow, reflected on failures, committed targeted skill or harness improvements, and rerun against the flag or named a concrete blocker.
 
@@ -52,14 +53,18 @@ approval, review, or waiting owner, the lane is waiting; deleting the heartbeat
 without that classification repeats the failure this solution records.
 
 For repeated troubleshooting failures, do not fight errors. When the same
-command, test, or runtime error happens twice, stop local retries, research
-trusted web or upstream sources, list 3-5 candidate fixes, choose the most
-efficient repo-fit fix, implement it, and record the repeated-error research
-evidence in PR closeout.
+command, test, or runtime error recurs across independent work, the current
+contract is contradictory, or a safety boundary is implicated, stop local
+retries, research trusted web or upstream sources, list 3-5 candidate fixes,
+choose the most efficient repo-fit fix, implement it, and record the
+repeated-error research evidence in PR closeout. For a one-off failure, record
+`no_system_change` with the reason, checked scope, and no-durable-destination
+decision.
 
-For tool or skill creation, use the promotion threshold instead of taste. If the
-same judgment is needed twice, or a failure mode can recur across slices, promote
-it into the smallest durable primitive that changes future behavior: validator,
+For tool or skill creation, use the promotion threshold instead of taste. When
+the current contract is contradictory, a safety boundary is crossed, or the
+same failure recurs across independent work, promote it into the smallest
+durable primitive that changes future behavior: validator,
 guard script, CLI helper, workflow hook, fixture, or scoped skill. If the
 knowledge is one-off implementation context, keep it in implementation notes,
 plan evidence, or PR closeout evidence. Create or update a skill only when the
@@ -77,7 +82,7 @@ Minimum repeat-feedback admission evidence:
 - executable guard or required evidence field
 - meta-behavior proof field naming the durable repo/system change
 - pattern scope inventory field when a correction reveals a broader design principle
-- repeated-error research field when the same error happened twice
+- repeated-error research field when recurrence across independent work, a contradictory contract, or a safety boundary triggers it
 - focused validation command
 - pattern scope inventory when the correction implies a broader code pattern
 
@@ -159,7 +164,7 @@ returned no matches.
   recurrence behavior, validation outcome, and review condition.
 - The steering guard checks planning-only stop language across AGENTS.md, the validation guide, this solution record, and repo memory so planning conversations do not silently become implementation cues.
 - The steering guard checks the tool promotion threshold across AGENTS.md, the validation guide, UBIQUITOUS_LANGUAGE.md, and this solution record so recurring slice judgment becomes a durable tool, validator, guard, CLI helper, scoped skill, or explicit one-off evidence destination.
-- The steering guard checks that specific implementation-detail feedback is systemic until proven isolated across the validation guide, UBIQUITOUS_LANGUAGE.md, this solution record, and repo memory, so review comments, line-level corrections, and function-specific examples must classify local versus systemic scope, search sibling patterns, and choose a validator, lint rule, schema constraint, shared utility, repository convention, CI check, documented invariant, or tracked exception before closeout.
+- The steering guard checks that specific implementation-detail feedback applies the shared threshold across the validation guide, UBIQUITOUS_LANGUAGE.md, this solution record, and repo memory, so review comments, line-level corrections, and function-specific examples classify local versus systemic scope and choose a validator, lint rule, schema constraint, shared utility, repository convention, CI check, documented invariant, or tracked exception only when recurrence across independent work, a contradictory contract, a crossed safety boundary, or a named current consumer requires it.
 - The steering guard checks safe PR body file handoff language across the validation guide, UBIQUITOUS_LANGUAGE.md, and this solution record so Markdown, backticks, command snippets, and generated validation output are passed through a non-interpreting body file with `--body-file`, not through shell interpolation, command substitution, or a raw `--body` string.
 - The steering guard checks CircleCI env-backed API triage language across the validation guide, UBIQUITOUS_LANGUAGE.md, and this solution record so CircleCI API, CircleCI log, and CircleCI job recovery loads `~/.codex/.env`, resolves `CIRCLECI_TOKEN`, `CIRCLE_TOKEN`, or `CIRCLE_API_TOKEN` without printing values, passes the value as `Circle-Token`, and uses bounded network calls such as `curl --max-time` before classifying CircleCI evidence unavailable.
 - The steering guard validates current-session steering admission records so
@@ -167,7 +172,7 @@ returned no matches.
 - The GitHub pull request template requires pattern scope inventory evidence when steering feedback, review comments, or line-level corrections imply a broader principle.
 - pr-template-gate rejects line-level or design-pattern correction admissions that lack a pattern scope inventory with the inferred principle, sibling search, siblings changed, and siblings intentionally unchanged or deferred with reasons.
 - The GitHub pull request template requires meta-behavior proof when repeated steering or high-signal correction is admitted, so the PR names the durable repo/system change instead of leaving the learning in chat.
-- The GitHub pull request template requires repeated-error research when the same error happens twice, so the PR names web/upstream research, 3-5 candidate fixes, the chosen efficient fix, and what was implemented.
+  - The GitHub pull request template requires repeated-error research when the threshold is met by recurrence across independent work, a contradictory contract, or a safety boundary, so the PR names web/upstream research, 3-5 candidate fixes, the chosen efficient fix, and what was implemented.
 - The GitHub pull request template requires explicit closeout state so PR
   evidence cannot collapse green checks into workflow completion.
 - `pr-template-gate` rejects PR bodies that mention repeated steering or steering feedback but leave `Meta-behavior proof` or `Learning / reinforcement` as `none`, `n.a.`, or another non-durable answer.

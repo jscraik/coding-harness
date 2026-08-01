@@ -60,10 +60,11 @@ automation wake-ups.
 
 ## Admission Test
 
-A feedback item should be admitted when the same judgment is needed twice, a
-failure can recur across slices, or a review comment reveals a reusable rule.
-If the item is one-off implementation context, keep it in the PR, plan, or
-implementation note instead.
+A feedback item should be admitted when the current contract is contradictory,
+a safety boundary is crossed, the same failure recurs across independent work,
+or a named current consumer requires a reusable rule. If the item is one-off
+implementation context, keep it in the PR, plan, or implementation note
+instead.
 
 ## Review Checklist
 

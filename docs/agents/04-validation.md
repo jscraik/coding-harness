@@ -137,7 +137,7 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 - When review-policy or PR-template behavior changes, ensure the PR body and related docs stay truthful about required CodeRabbit and Codex review artifacts.
 - For this repository, keep `## Release Boundary` in the PR body structured with `Release mode`, `Done line`, `Explicit non-goals`, `Allowed polish`, `Deferred polish / follow-up work`, and `Promotion rule` so Prototype, Portfolio, Product, and Harness work is reviewed against the selected release standard instead of silently absorbing adjacent proof, polish, or infrastructure work.
 - For this repository, keep `## Work performed` in the PR body structured with `Plan IDs`, `Phase / slice`, `Session IDs`, `Trace IDs`, `AI session / traceability`, `Completed work`, `Affected surfaces`, `Documentation impact`, `Documentation lifecycle impact`, `SemVer impact`, `Expected outcome alignment`, `Pattern scope inventory`, `Meta-behavior proof`, `Repeated-error research`, `Acceptance trace`, `Validation evidence`, `Review artifacts`, `Runtime impact`, `CodeRabbit mode coverage`, `Closeout state`, `Learning / reinforcement`, and `Deferred work` so implementation progress, provenance, evidence refs, docs alignment, durable learning, SemVer classification, and intentionally deferred scope remain reviewable after handoff.
-- `Meta-behavior proof` must cite the durable destination and a concrete repo path, command, or issue ID when a PR admits repeated steering, high-signal correction, or current-session stop language. `Repeated-error research` must use the structured form `Source: ...; Candidate 1: ...; Candidate 2: ...; Candidate 3: ...; [Candidate 4: ...; Candidate 5: ...;] Chosen: ...; Implemented: ...` when the same error or command failure repeats.
+- `Meta-behavior proof` must cite the durable destination and a concrete repo path, command, or issue ID when a PR admits repeated steering, high-signal correction, or current-session stop language. `Repeated-error research` must use the structured form `Source: ...; Candidate 1: ...; Candidate 2: ...; Candidate 3: ...; [Candidate 4: ...; Candidate 5: ...;] Chosen: ...; Implemented: ...` when recurrence meets the shared threshold.
 - For AI-assisted work, `Session IDs` should cite a Codex thread/session, session-collector artifact, or harness run reference; `Trace IDs` should cite CI, harness, eval, runtime-card, evidence-bundle, or review trace references when those artifacts exist. Use `n.a.` only with a concrete reason, and do not paste raw transcripts, prompts, secrets, or bulky telemetry into PR bodies.
 - When creating or updating a PR body that contains Markdown, backticks, command snippets, or generated validation output, write it through a non-interpreting body file and pass it with `gh pr create --body-file <path>` or `gh pr edit --body-file <path>`. Do not embed PR body Markdown in a shell string, command substitution, or `--body` argument that can execute backticks. Validate the file first with `bash scripts/run-harness-gate.sh pr-template-gate --pr-body-file <path> --json`.
 - Before PR handoff, prefer `harness pr-closeout --pr <number> --gates artifacts/pr-closeout/closeout-gates.json --json` when a PR exists, or `harness pr-closeout --input <path> --json` when evidence is assembled by another workflow. Treat `--phase-exit <path>` as a compatibility alias only. Treat `pr-closeout/v1` as read-only closeout evidence: it may use GitHub CLI, CircleCI CLI, CodeRabbit CLI, Snyk CLI, and `~/.codex/.env` credential discovery, but it must never print secrets or replace independent review approval.
@@ -239,7 +239,12 @@ with zero customer integration ceremony. Before closing meta work, verify the
 changed surfaces still preserve that outcome rather than only preserving a local
 rule or phrase.
 
-If the user has to give the same steering twice, stop ordinary feature work and run repeat-feedback admission. The admission is complete only when the agent can show:
+When feedback recurs across independent tasks, or current evidence shows a
+contradictory contract or crossed safety boundary, stop ordinary feature work and
+run repeat-feedback admission. Otherwise complete the bounded local repair or
+record `no_system_change` with its reason, checked scope, and no-durable-
+destination decision; do not expand scope from one occurrence. The
+admission is complete only when the agent can show:
 
 - the repeated feedback and the principle it implies
 - related repo surfaces searched, including sibling code, docs, skills, gates, PR templates, and roadmap/status surfaces when relevant
@@ -264,20 +269,35 @@ state reading allowed implementation to start, admit the failure through a
 durable destination, and run the guard that proves future agents still see the
 stop condition.
 
-When the same error, command failure, or test failure happens twice, stop the
-local retry loop before another attempt. Research trusted web or upstream
-documentation, list 3-5 plausible fixes, choose the most efficient fix for the
-current repo context, implement that fix, and record the research options plus
-chosen implementation in PR closeout. This prevents agents from fighting the
-same error with repeated local guesses.
+When the same error, command failure, or test failure recurs across independent
+tasks, the current contract is contradictory, or a safety boundary is
+implicated, stop the local retry loop before another attempt. Research trusted
+web or upstream documentation, list 3-5 plausible fixes, choose the most
+efficient fix for the current repo context, implement that fix, and record the
+research options plus chosen implementation in PR closeout. For a one-off
+failure, use bounded recovery and record `no_system_change` with the reason,
+checked scope, and no-durable-destination decision when no durable destination
+is justified.
 
-Tool promotion threshold: if the same judgment is needed twice, or the failure
-mode can recur across slices, promote it into the smallest durable primitive
-that can change future behavior. Use implementation notes, plan evidence, or PR
-closeout evidence for one-off implementation knowledge; use a validator or guard
-for deterministic rules; use a CLI helper when operators need a repeatable
-command; create or update a skill only for a reusable routed workflow with
-explicit inputs, artifacts, validation, ownership, and review expectations.
+Shared-control promotion threshold: when the current contract is contradictory,
+a safety boundary is crossed, or the same failure recurs across independent
+work, promote it into the smallest durable primitive that can change future
+behavior. Use implementation notes, plan evidence, or PR closeout evidence for
+one-off implementation knowledge; use a validator or guard for deterministic
+rules; use a CLI helper when operators need a repeatable command; create or
+update a skill only for a reusable routed workflow with explicit inputs,
+artifacts, validation, ownership, and review expectations.
+
+The legacy guard vocabulary is retained for compatibility, not as current
+policy: “specific implementation-detail feedback is systemic until proven
+isolated” is retired; classify specific feedback as local or systemic only
+after applying the shared threshold. Likewise, “the same judgment is needed
+twice” or “a failure mode can recur across slices” is historical trigger
+wording, not an automatic expansion rule. When the current threshold is met,
+choose the smallest durable validator, guard script, CLI helper, workflow hook,
+fixture, or scoped skill; keep one-off implementation knowledge in notes or
+PR closeout evidence, and require reusable skill inputs, artifacts, validation,
+and ownership.
 
 1. Observe: capture the concrete signal and recover relevant context, including reflected context from resumed windows, session collector evidence, runtime evidence, or agent reflection when the signal crosses compaction, harness, repo, machine, or environment boundaries.
 2. Orient: translate the signal into the design principle it implies, then search sibling implementations, tests, docs, skills, PRs, issues, automations, and stacked trajectories that share or consume that principle.
@@ -285,7 +305,7 @@ explicit inputs, artifacts, validation, ownership, and review expectations.
 4. Act: update the shared abstraction, executable gate, schema, scaffold, documented validation rule, Project Brain decision, Linear follow-up, or explicit exception. Do not add standalone doctrine when no enforcement or follow-up destination exists.
 5. Close out: report the principle, searched scope, chosen destination, validation surface, maintainability impact, traceability, handoff evidence, and review or deletion condition.
 
-The PR template and `pr-template-gate` reject repeated-steering admissions that do not name both a durable meta-behavior proof and a learning or reinforcement destination. They reject line-level or design-pattern correction admissions that do not include a pattern scope inventory with the inferred principle, sibling search, siblings changed, and siblings intentionally unchanged or deferred with reasons. They also reject same-error-twice admissions that do not record web/upstream research, 3-5 candidate fixes, the chosen efficient fix, and what was implemented. `n.a.` is valid only when the PR body does not admit steering feedback, repeated user correction, pattern-bearing line feedback, or repeated troubleshooting failure, or when it names a tracked exception.
+The PR template and `pr-template-gate` reject repeated-steering admissions that do not name both a durable meta-behavior proof and a learning or reinforcement destination. They require a pattern-scope inventory only when the PR admits a shared pattern, contradictory contract, safety boundary, recurrence across independent work, or another named consumer that crosses the shared threshold; isolated line-level or design-pattern corrections remain routine. They require repeated-error research only when the same failure is tied to recurrence across independent work or a safety/contract boundary, not for an isolated failure mentioned twice. `n.a.` is valid for local work that does not cross that threshold, or when the body names a tracked exception.
 
 PR, automation, or heartbeat closeout completion is not the same thing as green
 checks. Green checks prove the validation sub-state only. Before an agent says a
@@ -308,34 +328,33 @@ must classify:
 If any of those states are unknown, closeout is `waiting` or `blocked`, not
 `complete`.
 
-For line-level design feedback, the pattern-generalization pass is a pre-closeout
-requirement for every work surface, not a PR-template-only ceremony. The agent
-must do it before claiming the correction is fixed. The inventory names the
-inferred principle, lists the sibling implementations searched, states which
-siblings changed, states which siblings were intentionally left unchanged with
-reasons, and links any deferred follow-up. A local-only patch is valid only when
-the inventory explains why the principle does not apply elsewhere.
+For line-level design feedback, classify scope before closeout. A
+pattern-generalization pass is required only when the shared-control threshold
+is met or a named current consumer requires it; it is not a PR-template-only
+ceremony. When required, the inventory names the inferred principle, lists the
+sibling implementations searched, states which siblings changed, states which
+siblings were intentionally left unchanged with reasons, and links any deferred
+follow-up. A local-only patch or `no_system_change` is routine when evidence
+shows no shared contract, safety boundary, or recurrence across independent
+work; the record must state the reason, checked scope, and no-durable-
+destination decision.
 
-Do not wait for exact trigger words. Example-based feedback, named-function
-feedback, review comments, single-line corrections, and wording such as
-"generally", "same pattern", "same things in multiple places", "larger
-perspective", "similar class", or "across everything" are
-pattern signals until the inventory proves the correction is intentionally
-local.
+Use example-based feedback, named-function feedback, review comments, and
+single-line corrections as evidence to classify scope, not as automatic scope
+expansion. Trigger words such as "generally", "same pattern", or "across
+everything" do not replace the shared-threshold decision.
 
 If pattern scope is hard to judge, `harness pattern-scope` is the required
 starter: review candidate siblings, run the listed searches or stronger
 repo-specific equivalents, update the shared owner or matching siblings, and
 record unchanged siblings with reasons.
 
-Specific implementation-detail feedback is systemic until proven isolated. Do
-not assume a review comment, line-level correction, function-specific example,
-or local failure applies only to the visible code path. Classify the correction
-as local or systemic, search equivalent patterns in the touched module family
-and affected governance surfaces, identify the underlying engineering
-preference, and decide whether it belongs in a validator, lint rule, schema
-constraint, shared utility, repository convention, CI check, documented
-invariant, or tracked exception before finalizing.
+Specific implementation-detail feedback is local by default. Search equivalent
+patterns in the touched module family and affected governance surfaces when the
+shared threshold is met; then identify the underlying engineering preference
+and decide whether it belongs in a validator, lint rule, schema constraint,
+shared utility, repository convention, CI check, documented invariant, or
+tracked exception before finalizing.
 
 Example: "return a named sentinel error instead of a success/failure boolean" is not only a request to edit one function. It is API design feedback: search sibling boolean-result APIs in the same command core, adapter family, and tests, then either update the shared pattern or explain why the named function is intentionally different.
 
@@ -343,7 +362,14 @@ Example: a PR closeout fix for one branch is not done until the loop checks sibl
 
 Example: a high-level workflow skill such as "log in", "upload attachments and start a chat", or "grant this group access to a workplace agent" is not proven because its instructions look plausible. Define a capture-the-flag eval with an observable win condition in the UI or tool surface, run the skill, retain session or trace evidence, let Codex reflect on failed attempts, commit the minimal skill or harness improvement, and rerun until the flag is captured or the blocker is named.
 
-Use the tool promotion threshold before creating a new surface: if the same judgment is needed twice, or a failure mode can recur across slices, promote it into the smallest durable operating primitive that changes future behavior, such as a validator, guard script, CLI helper, workflow hook, fixture, or scoped skill. Keep one-off implementation knowledge in implementation notes, plan evidence, or PR closeout evidence. Create or update a skill only for a reusable routed workflow with explicit inputs, artifacts, validation, ownership, and review expectations.
+Apply the shared-control threshold before creating a new surface: only a
+contradictory contract, crossed safety boundary, or recurrence across
+independent work justifies promotion into the smallest durable operating
+primitive that changes future behavior, such as a validator, guard script, CLI
+helper, workflow hook, fixture, or scoped skill. Keep one-off implementation
+knowledge in implementation notes, plan evidence, or PR closeout evidence.
+Create or update a skill only for a reusable routed workflow with explicit
+inputs, artifacts, validation, ownership, and review expectations.
 
 Do not satisfy this by adding standalone prose only. If the destination is documentation, tie it to an existing docs-gate, glossary guard, PR template field, command contract, or tracked follow-up.
 

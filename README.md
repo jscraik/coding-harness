@@ -91,6 +91,10 @@ Keep the stable product surface small and move unselected expert capability out
 of the routine path. Keep the truth-bounded recovery status in
 [`docs/roadmap/agent-first-status.md`](./docs/roadmap/agent-first-status.md)
 and its weekly cadence entry in `harness.contract.json` current together.
+Routine corrections stay local, or record `no_system_change` with the reason,
+checked scope, and no-durable-destination decision; promote shared guidance only
+for a contradictory contract, a crossed safety boundary, recurrence across
+independent work, or a named current consumer that requires a reusable rule.
 
 ## Claims boundary
 

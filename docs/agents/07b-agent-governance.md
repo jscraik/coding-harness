@@ -33,6 +33,10 @@ the same failure recurs across independent work, an existing contract conflicts,
 or a safety boundary requires enforcement. Keep one-off implementation knowledge
 with the change; use skills only for reusable routed workflows with explicit
 inputs, evidence, validation, and ownership.
+This threshold is shared with the root instructions and codestyle pack: routine
+corrections may close with `no_system_change` when the record names its reason,
+checked scope, and no-durable-destination decision, while a promoted control
+must stay within the existing repository-owned authority and validation seams.
 
 ## Mandatory gates (when behavior changes)
 
@@ -548,11 +552,15 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   env files may populate local credentials, but closeout gate paths must remain
   repo-scoped and outside-repo paths should block rather than expand the trust
   boundary.
-- repeated steering feedback is an agent-governance signal, not a one-line
-  patch request. PRs that encode steering feedback should record the broader
-  design principle, search sibling implementations, update every required
-  governance surface or durable destination, and list unchanged or deferred
-  siblings in the PR template pattern scope inventory
+- repeated steering feedback is an agent-governance signal, not an automatic
+  one-line patch expansion. When the shared threshold is met (recurrence across
+  independent work, a contradictory contract, a crossed safety boundary, or a
+  named current consumer), PRs should record the broader design principle,
+  search sibling implementations, update every required governance surface or
+  durable destination, and list unchanged or deferred siblings in the PR
+  template pattern scope inventory. Routine feedback may close locally with
+  `no_system_change` when its reason, checked scope, and no-durable-destination
+  decision are recorded.
 - observed fixable blockers are also agent-governance evidence. When an agent
   notices a stale artifact, stale instruction, failing hook, flaky repeated
   command, or validation weakness in the active surface, it should fix the
@@ -568,11 +576,14 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   capability catalog as advanced, agent-facing commands: `artifact-routine`
   is verification evidence for route-driving Project Brain artifacts, while
   `pattern-scope` is review evidence for sibling-pattern steering signals
-- same-error-twice troubleshooting is also an agent-governance signal. When
-  the same command, test, or runtime error happens twice, the PR should record
-  Repeated-error research: trusted web or upstream research, 3-5 candidate
-  fixes, the chosen efficient fix, and the implementation that made the error
-  class less likely to recur
+- repeated-error troubleshooting is also an agent-governance signal. When the
+  same command, test, or runtime error recurs across independent work, the
+  current contract is contradictory, or a safety boundary is implicated, the
+  PR should record Repeated-error research: trusted web or upstream research,
+  3-5 candidate fixes, the chosen efficient fix, and the implementation that
+  made the error class less likely to recur. A one-off recovery records
+  `no_system_change` with reason, checked scope, and no-durable-destination
+  decision.
 - green required checks are not enough to declare closeout complete. Before an
   agent deletes a heartbeat, closes a lane, or starts the next slice, it should
   classify PR state, merge or auto-merge state, branch/worktree state, Linear

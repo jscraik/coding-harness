@@ -20,11 +20,24 @@ export const PLACEHOLDERS = [
 ] as const;
 
 export const STEERING_SIGNAL_PATTERN =
-	/(admitted repeated steering|repeated steering (showed|exposed|drove|required|was)|same steering twice|same feedback twice|same correction across sessions|same feedback again|user had to restate correction|never give the same feedback twice|not permitted to proceed|current-session steering admission|stop-the-line|high-signal (user )?(steering|feedback|correction)|every bit of steering|failing to operate effectively|steering feedback (showed|exposed|drove|required|was|into))/i;
-export const REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN =
-	/(same error (happened|occurred)?\s*twice|same failure twice|same command failed twice|failed again with the same (error|failure|command|stack trace|exception)|same (stack trace|exception) (appeared|happened|occurred|recurred|repeated).*twice|same error repeated|don\u2019t fight (?:the )?(same )?error|don't fight (?:the )?(same )?error)/i;
+	/(admitted repeated steering|repeated steering (showed|exposed|drove|required|was)|same correction across sessions|user had to restate correction|never give the same feedback twice|same feedback(?:\s+\w+){0,4}\s+twice[\s\S]{0,120}across independent (tasks|work)|across independent (tasks|work)[\s\S]{0,120}same feedback(?:\s+\w+){0,4}\s+twice|feedback recurs across independent (tasks|work)|not permitted to proceed|current-session steering admission|stop-the-line|high-signal (user )?(steering|feedback|correction)|every bit of steering|failing to operate effectively|steering feedback (showed|exposed|drove|required|was|into))/i;
+const REPEATED_ERROR_OCCURRENCE_SOURCE =
+	"(?:same error (?:happened|occurred)?\\s*twice|same failure twice|same command failed twice|failed again with the same (?:error|failure|command|stack trace|exception)|same (?:stack trace|exception) (?:appeared|happened|occurred|recurred|repeated).*twice|same error repeated|don\\u2019t fight (?:the )?(same )?error|don't fight (?:the )?(same )?error)";
+const REPEATED_ERROR_THRESHOLD_SOURCE =
+	"(?:across independent (?:tasks|work)|(?:current|existing) contract (?:is contradictory|conflicts with|contradicts)|contract is contradictory|contradictory contract|(?:crossed|requires|implicates|implicated|violates) (?:a )?safety boundary|safety boundary is (?:crossed|required|implicated|violated))";
+export const REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN = new RegExp(
+	`(?:${REPEATED_ERROR_OCCURRENCE_SOURCE}[\\s\\S]{0,240}${REPEATED_ERROR_THRESHOLD_SOURCE}|${REPEATED_ERROR_THRESHOLD_SOURCE}[\\s\\S]{0,240}${REPEATED_ERROR_OCCURRENCE_SOURCE}|${REPEATED_ERROR_THRESHOLD_SOURCE}|(?:failure|error|command|test) recurs? across independent (?:tasks|work)|recurrence across independent (?:tasks|work))`,
+	"i",
+);
 export const PATTERN_SCOPE_SIGNAL_PATTERN =
-	/(line-level correction|line-level design feedback|example-based feedback|concrete correction|single line|single function|single class|just fix that line|do not just fix that line|not just that line|similar classes of misbehavior|similar misbehavior|class of misbehavior|same pattern|same things in multiple places|larger perspective|larger-system judgment|broader perspective|apply this everywhere relevant|sibling implementations|sibling pattern|broader design principle|design model|API design generally|across everything we do|named sentinel error|success and failure as a bool|success\/failure boolean|boolean result)/i;
+	/(?:(?:line[- ]level correction)[\s\S]{0,500}(?:(?:current|existing) contract (?:is contradictory|conflicts with|contradicts)|(?:crossed|requires|implicates|implicated|violates) (?:a )?safety boundary|safety boundary is (?:crossed|required|implicated|violated)|recurrence across independent (?:tasks|work)|failure recurs across independent (?:tasks|work)|named current consumer)|(?:pattern-generalization|shared pattern|sibling implementations|sibling pattern|shared abstraction)[\s\S]{0,500}(?:threshold|principle|search|inventory|changed|unchanged|local|systemic|generaliz|contradictory|(?:crossed|requires|implicates|implicated|violates) (?:a )?safety boundary|safety boundary is (?:crossed|required|implicated|violated)|recurrence across independent (?:tasks|work)|failure recurs across independent (?:tasks|work)|named current consumer)|(?:threshold|contradictory (?:current |shared )?contract|(?:current|existing) contract (?:is contradictory|conflicts with|contradicts)|recurrence across independent (?:tasks|work)|failure recurs across independent (?:tasks|work)|(?:crossed|requires|implicates|implicated|violates) (?:a )?safety boundary|safety boundary is (?:crossed|required|implicated|violated)|named current consumer)[\s\S]{0,500}(?:pattern|sibling|shared abstraction|design|consumer|line[- ]level correction))/i;
+const NO_SYSTEM_CHANGE_VALUE_PATTERN = String.raw`(?=\S)(?!(?:[-–—]|(?:n\.\s*a\.?|n/a|none|not applicable)\b)\s*(?:;|$))[^;\n]+`;
+export const NO_SYSTEM_CHANGE_EVIDENCE_PATTERN = new RegExp(
+	String.raw`(?=.*\breason\s*:\s*${NO_SYSTEM_CHANGE_VALUE_PATTERN})` +
+		String.raw`(?=.*\bchecked scope\s*:\s*${NO_SYSTEM_CHANGE_VALUE_PATTERN})` +
+		String.raw`(?=.*\bno-durable-destination decision\s*:\s*${NO_SYSTEM_CHANGE_VALUE_PATTERN})`,
+	"i",
+);
 export const DURABLE_META_DESTINATION_PATTERN =
 	/(gate|validator|schema|scaffold|template field|validation rule|Project Brain|Linear|tracked issue|memory update|solution record|codestyle|docs-gate|guard|explicit exception)/i;
 export const CONCRETE_DURABLE_REFERENCE_PATTERN =
@@ -225,7 +238,7 @@ export const REQUIRED_WORK_FIELDS = [
 	{
 		label: "Pattern scope inventory",
 		placeholder:
-			"for any steering feedback, review comment, or line-level correction that implies a broader design/API principle, name the principle, list sibling implementations or similar misbehavior classes searched, and state which siblings were changed, intentionally left unchanged, or deferred with tracker/evidence",
+			"when the shared threshold or a named current consumer requires a pattern pass, name the principle, list sibling implementations or similar misbehavior classes searched, and state which siblings were changed, intentionally left unchanged, or deferred with tracker/evidence; otherwise `n.a.` with reason, checked scope, and no-durable-destination decision",
 	},
 	{
 		label: "Meta-behavior proof",
@@ -235,7 +248,7 @@ export const REQUIRED_WORK_FIELDS = [
 	{
 		label: "Repeated-error research",
 		placeholder:
-			"when the same error occurs twice, use `Source: ...; Candidate 1: ...; Candidate 2: ...; Candidate 3: ...; Chosen: ...; Implemented: ...`; otherwise `n.a.` with reason",
+			"when recurrence across independent work, a contradictory contract, or a safety boundary triggers research, use `Source: ...; Candidate 1: ...; Candidate 2: ...; Candidate 3: ...; Chosen: ...; Implemented: ...`; otherwise `n.a.` with reason",
 	},
 	{
 		label: "Acceptance trace",

@@ -2,6 +2,7 @@ import {
 	CANDIDATE_FIX_PATTERN,
 	CONCRETE_DURABLE_REFERENCE_PATTERN,
 	DURABLE_META_DESTINATION_PATTERN,
+	NO_SYSTEM_CHANGE_EVIDENCE_PATTERN,
 	PATTERN_SCOPE_EVIDENCE_PATTERNS,
 	PATTERN_SCOPE_SIGNAL_PATTERN,
 	REPEATED_ERROR_RESEARCH_EVIDENCE_PATTERNS,
@@ -13,6 +14,18 @@ import { validateDurableEvidenceMap } from "./evidence-reference/evidence-refere
 
 const LOCAL_ABSOLUTE_PATH_PATTERN =
 	/(?:^|[\s\x60"'(])((?:\/Users\/|\/private\/var\/folders\/|\/var\/folders\/|\/private\/tmp\/|\/tmp\/)[^\s\x60"'<>),;]+)/g;
+const NEGATED_SHARED_THRESHOLD_PATTERN =
+	/\b(?:no|not|without)\s+(?:(?:recurrence|failure)\s+across independent (?:tasks|work)|(?:a\s+)?safety boundary(?:\s+(?:is|was|has been))?\s+(?:crossed|required|implicated|violated)|(?:a\s+)?(?:current|existing) contract\s+(?:conflict|contradiction))/i;
+const NEGATED_PATTERN_SCOPE_SIGNAL_PATTERN =
+	/\b(?:no|not|without)\s+(?:a\s+)?pattern[- ]generalization(?:\s+pass)?\s+is\s+(?:not\s+)?required\b[\s\S]{0,220}\b(?:local|below (?:the )?shared threshold|threshold not met)\b/i;
+const LOCAL_REPEATED_ERROR_PATTERN =
+	/\bsame (?:error|failure|command|stack trace|exception)\b[\s\S]{0,120}\btwice\b[\s\S]{0,120}\b(?:bounded|local|one[- ]off|isolated)\b/i;
+
+const NO_SYSTEM_CHANGE_PROSE_EVIDENCE_PATTERNS = [
+	/(?:\breason\b|\bbecause\b)[^;\n.]*(?:local|bounded|one[- ]off|no shared|no durable)/i,
+	/(?:\bchecked scope\b|\bscope (?:was|checked|reviewed)\b|\b(?:touched|reviewed|searched) (?:file|fixture|module|scope))/i,
+	/(?:no[- ]durable[- ]destination\b[^;\n.]*(?:close|local|none|not)|(?:close|keep|handled)\s+(?:this|it)\s+locally|no durable destination)/i,
+] as const;
 
 /**
  * Reads a normalized field value from a markdown section in a PR body.
@@ -31,10 +44,55 @@ function hasDurableEvidenceReference(value: string | null): boolean {
 	);
 }
 
+/** Count numbered Candidate/Fix/Option entries in a research field. */
 function countCandidateFixes(value: string): number {
 	return Array.from(value.matchAll(CANDIDATE_FIX_PATTERN)).length;
 }
 
+/** Check whether a research field contains the required option evidence. */
+function hasRepeatedErrorResearchEvidence(value: string | null): boolean {
+	if (value === null) {
+		return false;
+	}
+	return (
+		REPEATED_ERROR_RESEARCH_EVIDENCE_PATTERNS.every((pattern) =>
+			pattern.test(value),
+		) &&
+		countCandidateFixes(value) >= 3 &&
+		countCandidateFixes(value) <= 5
+	);
+}
+
+/** Require explicit local-closeout facts when a repeat stays below threshold. */
+function collectLocalRepeatedErrorErrors(
+	bodyWithoutResearchField: string,
+	research: string | null,
+): string[] {
+	if (!LOCAL_REPEATED_ERROR_PATTERN.test(bodyWithoutResearchField)) {
+		return [];
+	}
+	if (hasRepeatedErrorResearchEvidence(research)) {
+		return [];
+	}
+	if (research !== null && hasNoSystemChangeEvidence(research)) {
+		return [];
+	}
+	return [
+		"Repeated-error research for an isolated local repeat must include a reason, checked scope, and no-durable-destination decision when no research pass is required.",
+	];
+}
+
+/** Check whether a local no-system-change record carries substantive evidence. */
+function hasNoSystemChangeEvidence(value: string): boolean {
+	return (
+		NO_SYSTEM_CHANGE_EVIDENCE_PATTERN.test(value) ||
+		NO_SYSTEM_CHANGE_PROSE_EVIDENCE_PATTERNS.every((pattern) =>
+			pattern.test(value),
+		)
+	);
+}
+
+/** Collect durable-evidence-map validation errors from the work-performed fields. */
 function collectDurableEvidenceMapErrors(
 	body: string,
 	readFieldValue: PrTemplateFieldReader,
@@ -63,6 +121,7 @@ function collectDurableEvidenceMapErrors(
 	}).errors;
 }
 
+/** Collect meta-behavior evidence errors when the PR admits steering feedback. */
 function collectMetaBehaviorErrors(
 	body: string,
 	readFieldValue: PrTemplateFieldReader,
@@ -107,6 +166,14 @@ function collectMetaBehaviorErrors(
 	return errors;
 }
 
+/**
+ * Enforces pattern-scope evidence when a PR crosses the shared threshold and
+ * requires an auditable local no-system-change record otherwise.
+ *
+ * @param body - Complete pull-request body text.
+ * @param readFieldValue - Reader for structured work-performed fields.
+ * @returns Validation errors for missing or incomplete pattern evidence.
+ */
 function collectPatternScopeInventoryErrors(
 	body: string,
 	readFieldValue: PrTemplateFieldReader,
@@ -116,15 +183,36 @@ function collectPatternScopeInventoryErrors(
 		.filter((line) => !/^-\s*Pattern scope inventory:/i.test(line))
 		.join("\n");
 
-	if (!PATTERN_SCOPE_SIGNAL_PATTERN.test(bodyWithoutInventoryField)) {
-		return [];
-	}
-
 	const inventory = readFieldValue(
 		body,
 		"## Work performed",
 		"Pattern scope inventory",
 	);
+	const inventoryIsNotApplicable =
+		inventory !== null &&
+		/^\s*(?:n\.\s*a\.?|n\/a|not applicable)\b/i.test(inventory);
+
+	const hasPatternScopeSignal = PATTERN_SCOPE_SIGNAL_PATTERN.test(
+		bodyWithoutInventoryField,
+	);
+	const bodyWithoutNegatedPatternScopeSignal =
+		bodyWithoutInventoryField.replace(
+			new RegExp(NEGATED_PATTERN_SCOPE_SIGNAL_PATTERN.source, "gi"),
+			"",
+		);
+	const hasAffirmativePatternScopeSignal = PATTERN_SCOPE_SIGNAL_PATTERN.test(
+		bodyWithoutNegatedPatternScopeSignal,
+	);
+
+	if (!hasPatternScopeSignal || !hasAffirmativePatternScopeSignal) {
+		if (inventoryIsNotApplicable && !hasNoSystemChangeEvidence(inventory)) {
+			return [
+				"Pattern scope inventory marked n.a. must include a reason, checked scope, and no-durable-destination decision for the local closeout.",
+			];
+		}
+		return [];
+	}
+
 	if (
 		inventory === null ||
 		!PATTERN_SCOPE_EVIDENCE_PATTERNS.every((pattern) => pattern.test(inventory))
@@ -137,6 +225,14 @@ function collectPatternScopeInventoryErrors(
 	return [];
 }
 
+/**
+ * Enforces research evidence only when recurrence, contract contradiction, or
+ * a safety boundary crosses the shared troubleshooting threshold.
+ *
+ * @param body - Complete pull-request body text.
+ * @param readFieldValue - Reader for structured work-performed fields.
+ * @returns Validation errors for missing or incomplete threshold evidence.
+ */
 function collectRepeatedErrorResearchErrors(
 	body: string,
 	readFieldValue: PrTemplateFieldReader,
@@ -146,15 +242,33 @@ function collectRepeatedErrorResearchErrors(
 		.filter((line) => !/^-\s*Repeated-error research:/i.test(line))
 		.join("\n");
 
-	if (!REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN.test(bodyWithoutResearchField)) {
-		return [];
-	}
-
+	const hasResearchSignal = REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN.test(
+		bodyWithoutResearchField,
+	);
+	const hasNegatedThreshold = NEGATED_SHARED_THRESHOLD_PATTERN.test(
+		bodyWithoutResearchField,
+	);
+	const bodyWithoutNegatedThreshold = bodyWithoutResearchField.replace(
+		new RegExp(NEGATED_SHARED_THRESHOLD_PATTERN.source, "gi"),
+		"",
+	);
+	const hasAffirmativeThreshold = REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN.test(
+		bodyWithoutNegatedThreshold,
+	);
 	const research = readFieldValue(
 		body,
 		"## Work performed",
 		"Repeated-error research",
 	);
+
+	if (!hasResearchSignal) {
+		return collectLocalRepeatedErrorErrors(bodyWithoutResearchField, research);
+	}
+
+	if (hasNegatedThreshold && !hasAffirmativeThreshold) {
+		return [];
+	}
+
 	const candidateCount = research !== null ? countCandidateFixes(research) : 0;
 	if (
 		research === null ||
@@ -165,7 +279,7 @@ function collectRepeatedErrorResearchErrors(
 		candidateCount > 5
 	) {
 		return [
-			"Repeated-error research must include Source, 3-5 numbered Candidate/Fix/Option entries, Chosen, and Implemented evidence when PR text admits the same error happened twice.",
+			"Repeated-error research must include Source, 3-5 numbered Candidate/Fix/Option entries, Chosen, and Implemented evidence when PR text admits recurrence across independent work, a contradictory contract, or a safety boundary.",
 		];
 	}
 
