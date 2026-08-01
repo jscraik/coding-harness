@@ -732,26 +732,23 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		);
 	});
 
-	it("keeps isolated repeated errors on the local-repair path", () => {
-		const body = VALID_BODY.replace(
+	it("requires local no_system_change details for an isolated repeated error", () => {
+		const base = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",
 			"The same error happened twice while fixing this bounded local task.",
 		);
-
-		expect(validatePrTemplateBody(body)).toEqual([]);
-	});
-
-	it("requires research when recurrence is affirmative despite a negated boundary", () => {
-		const body = VALID_BODY.replace(
-			"PR bodies could omit required validation evidence.",
-			"The same error happened twice across independent tasks; no safety boundary is implicated.",
-		).replace(
+		const validBody = base.replace(
 			"- Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).",
-			"- Repeated-error research: n.a. (bounded local recovery only).",
+			"- Repeated-error research: n.a. because this was local; checked scope was the touched validator fixture; no-durable-destination decision was to close locally.",
+		);
+		const invalidBody = base.replace(
+			"- Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).",
+			"- Repeated-error research: n.a. (fixed locally).",
 		);
 
-		expect(validatePrTemplateBody(body)).toContain(
-			"Repeated-error research must include Source, 3-5 numbered Candidate/Fix/Option entries, Chosen, and Implemented evidence when PR text admits recurrence across independent work, a contradictory contract, or a safety boundary.",
+		expect(validatePrTemplateBody(validBody)).toEqual([]);
+		expect(validatePrTemplateBody(invalidBody)).toContain(
+			"Repeated-error research for an isolated local repeat must include a reason, checked scope, and no-durable-destination decision when no research pass is required.",
 		);
 	});
 
@@ -888,6 +885,8 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		"A line-level correction revealed that the current contract is contradictory.",
 		"Do not just fix that line; a safety boundary requires a shared pattern search across related adapters.",
 		"Codex should apply the same shared pattern in multiple places after the shared threshold is met.",
+		"A line-level correction changed one API and a safety boundary is implicated.",
+		"A line-level correction changed one API and failure recurs across independent work.",
 	])("fails generalized pattern trigger '%s' without full inventory", (trigger) => {
 		const body = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",
@@ -906,6 +905,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		"Every bit of steering showed the agent was failing to operate effectively.",
 		"This is high signal feedback and the user should never give the same feedback twice.",
 		"Feedback recurs across independent tasks and the durable destination must be checked.",
+		"Jamie gave the same feedback twice across independent tasks while fixing docs.",
 	])("fails broad steering trigger '%s' without meta proof", (trigger) => {
 		const body = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",
@@ -925,6 +925,9 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		"The command failed again with the same stack trace across independent work.",
 		"The same exception appeared twice across independent tasks.",
 		"The same error happened twice because an existing contract conflicts with the required behavior.",
+		"The same error happened twice; no safety boundary is implicated, but the failure recurs across independent work.",
+		"The command failure implicated a safety boundary.",
+		"The test failure happened because the current contract is contradictory.",
 	])("fails repeated troubleshooting trigger '%s' without research evidence", (trigger) => {
 		const body = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",

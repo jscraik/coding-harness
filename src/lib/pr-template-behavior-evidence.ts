@@ -18,6 +18,8 @@ const NEGATED_SHARED_THRESHOLD_PATTERN =
 	/\b(?:no|not|without)\s+(?:(?:recurrence|failure)\s+across independent (?:tasks|work)|(?:a\s+)?safety boundary(?:\s+(?:is|was|has been))?\s+(?:crossed|required|implicated|violated)|(?:a\s+)?(?:current|existing) contract\s+(?:conflict|contradiction))/i;
 const NEGATED_PATTERN_SCOPE_SIGNAL_PATTERN =
 	/\b(?:no|not|without)\s+(?:a\s+)?pattern[- ]generalization(?:\s+pass)?\s+is\s+(?:not\s+)?required\b[\s\S]{0,220}\b(?:local|below (?:the )?shared threshold|threshold not met)\b/i;
+const LOCAL_REPEATED_ERROR_PATTERN =
+	/\bsame (?:error|failure|command|stack trace|exception)\b[\s\S]{0,120}\btwice\b[\s\S]{0,120}\b(?:bounded|local|one[- ]off|isolated)\b/i;
 
 const NO_SYSTEM_CHANGE_PROSE_EVIDENCE_PATTERNS = [
 	/(?:\breason\b|\bbecause\b)[^;\n.]*(?:local|bounded|one[- ]off|no shared|no durable)/i,
@@ -42,8 +44,42 @@ function hasDurableEvidenceReference(value: string | null): boolean {
 	);
 }
 
+/** Count numbered Candidate/Fix/Option entries in a research field. */
 function countCandidateFixes(value: string): number {
 	return Array.from(value.matchAll(CANDIDATE_FIX_PATTERN)).length;
+}
+
+/** Check whether a research field contains the required option evidence. */
+function hasRepeatedErrorResearchEvidence(value: string | null): boolean {
+	if (value === null) {
+		return false;
+	}
+	return (
+		REPEATED_ERROR_RESEARCH_EVIDENCE_PATTERNS.every((pattern) =>
+			pattern.test(value),
+		) &&
+		countCandidateFixes(value) >= 3 &&
+		countCandidateFixes(value) <= 5
+	);
+}
+
+/** Require explicit local-closeout facts when a repeat stays below threshold. */
+function collectLocalRepeatedErrorErrors(
+	bodyWithoutResearchField: string,
+	research: string | null,
+): string[] {
+	if (!LOCAL_REPEATED_ERROR_PATTERN.test(bodyWithoutResearchField)) {
+		return [];
+	}
+	if (hasRepeatedErrorResearchEvidence(research)) {
+		return [];
+	}
+	if (research !== null && hasNoSystemChangeEvidence(research)) {
+		return [];
+	}
+	return [
+		"Repeated-error research for an isolated local repeat must include a reason, checked scope, and no-durable-destination decision when no research pass is required.",
+	];
 }
 
 /** Check whether a local no-system-change record carries substantive evidence. */
@@ -219,16 +255,20 @@ function collectRepeatedErrorResearchErrors(
 	const hasAffirmativeThreshold = REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN.test(
 		bodyWithoutNegatedThreshold,
 	);
-
-	if (!hasResearchSignal || (hasNegatedThreshold && !hasAffirmativeThreshold)) {
-		return [];
-	}
-
 	const research = readFieldValue(
 		body,
 		"## Work performed",
 		"Repeated-error research",
 	);
+
+	if (!hasResearchSignal) {
+		return collectLocalRepeatedErrorErrors(bodyWithoutResearchField, research);
+	}
+
+	if (hasNegatedThreshold && !hasAffirmativeThreshold) {
+		return [];
+	}
+
 	const candidateCount = research !== null ? countCandidateFixes(research) : 0;
 	if (
 		research === null ||
