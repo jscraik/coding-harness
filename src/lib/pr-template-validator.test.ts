@@ -741,6 +741,20 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		expect(validatePrTemplateBody(body)).toEqual([]);
 	});
 
+	it("requires research when recurrence is affirmative despite a negated boundary", () => {
+		const body = VALID_BODY.replace(
+			"PR bodies could omit required validation evidence.",
+			"The same error happened twice across independent tasks; no safety boundary is implicated.",
+		).replace(
+			"- Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).",
+			"- Repeated-error research: n.a. (bounded local recovery only).",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Repeated-error research must include Source, 3-5 numbered Candidate/Fix/Option entries, Chosen, and Implemented evidence when PR text admits recurrence across independent work, a contradictory contract, or a safety boundary.",
+		);
+	});
+
 	it("keeps same-feedback wording local when the task is explicitly bounded", () => {
 		const body = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",
@@ -814,6 +828,44 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		expect(validatePrTemplateBody(body)).toContain(
 			"Pattern scope inventory marked n.a. must include a reason, checked scope, and no-durable-destination decision for the local closeout.",
 		);
+	});
+
+	it("rejects placeholder-only no_system_change details", () => {
+		const body = VALID_BODY.replace(
+			"PR bodies could omit required validation evidence.",
+			"A bounded local correction fixed one local behavior without a shared contract or safety boundary.",
+		).replace(
+			"- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.",
+			"- Pattern scope inventory: n.a. (reason: -; checked scope: -; no-durable-destination decision: -).",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Pattern scope inventory marked n.a. must include a reason, checked scope, and no-durable-destination decision for the local closeout.",
+		);
+	});
+
+	it("accepts equivalent prose for local no_system_change details", () => {
+		const body = VALID_BODY.replace(
+			"PR bodies could omit required validation evidence.",
+			"A bounded local correction fixed one local behavior without a shared contract or safety boundary.",
+		).replace(
+			"- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.",
+			"- Pattern scope inventory: n.a. because this was local; checked scope was the touched fixture; no-durable-destination decision was to close locally.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
+	it("accepts negated pattern-scope guidance below the shared threshold", () => {
+		const body = VALID_BODY.replace(
+			"PR bodies could omit required validation evidence.",
+			"No pattern-generalization pass is required because this is local and below the shared threshold.",
+		).replace(
+			"- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.",
+			"- Pattern scope inventory: n.a. because this was local; checked scope was the touched fixture; no-durable-destination decision was to close locally.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
 	});
 
 	it("accepts line-level design correction with generalized pattern inventory", () => {

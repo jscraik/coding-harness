@@ -16,6 +16,14 @@ const LOCAL_ABSOLUTE_PATH_PATTERN =
 	/(?:^|[\s\x60"'(])((?:\/Users\/|\/private\/var\/folders\/|\/var\/folders\/|\/private\/tmp\/|\/tmp\/)[^\s\x60"'<>),;]+)/g;
 const NEGATED_SHARED_THRESHOLD_PATTERN =
 	/\b(?:no|not|without)\s+(?:(?:recurrence|failure)\s+across independent (?:tasks|work)|(?:a\s+)?safety boundary(?:\s+(?:is|was|has been))?\s+(?:crossed|required|implicated|violated)|(?:a\s+)?(?:current|existing) contract\s+(?:conflict|contradiction))/i;
+const NEGATED_PATTERN_SCOPE_SIGNAL_PATTERN =
+	/\b(?:no|not|without)\s+(?:a\s+)?pattern[- ]generalization(?:\s+pass)?\s+is\s+(?:not\s+)?required\b[\s\S]{0,220}\b(?:local|below (?:the )?shared threshold|threshold not met)\b/i;
+
+const NO_SYSTEM_CHANGE_PROSE_EVIDENCE_PATTERNS = [
+	/(?:\breason\b|\bbecause\b)[^;\n.]*(?:local|bounded|one[- ]off|no shared|no durable)/i,
+	/(?:\bchecked scope\b|\bscope (?:was|checked|reviewed)\b|\b(?:touched|reviewed|searched) (?:file|fixture|module|scope))/i,
+	/(?:no[- ]durable[- ]destination\b[^;\n.]*(?:close|local|none|not)|(?:close|keep|handled)\s+(?:this|it)\s+locally|no durable destination)/i,
+] as const;
 
 /**
  * Reads a normalized field value from a markdown section in a PR body.
@@ -38,6 +46,17 @@ function countCandidateFixes(value: string): number {
 	return Array.from(value.matchAll(CANDIDATE_FIX_PATTERN)).length;
 }
 
+/** Check whether a local no-system-change record carries substantive evidence. */
+function hasNoSystemChangeEvidence(value: string): boolean {
+	return (
+		NO_SYSTEM_CHANGE_EVIDENCE_PATTERN.test(value) ||
+		NO_SYSTEM_CHANGE_PROSE_EVIDENCE_PATTERNS.every((pattern) =>
+			pattern.test(value),
+		)
+	);
+}
+
+/** Collect durable-evidence-map validation errors from the work-performed fields. */
 function collectDurableEvidenceMapErrors(
 	body: string,
 	readFieldValue: PrTemplateFieldReader,
@@ -66,6 +85,7 @@ function collectDurableEvidenceMapErrors(
 	}).errors;
 }
 
+/** Collect meta-behavior evidence errors when the PR admits steering feedback. */
 function collectMetaBehaviorErrors(
 	body: string,
 	readFieldValue: PrTemplateFieldReader,
@@ -136,11 +156,20 @@ function collectPatternScopeInventoryErrors(
 		inventory !== null &&
 		/^\s*(?:n\.\s*a\.?|n\/a|not applicable)\b/i.test(inventory);
 
-	if (!PATTERN_SCOPE_SIGNAL_PATTERN.test(bodyWithoutInventoryField)) {
-		if (
-			inventoryIsNotApplicable &&
-			!NO_SYSTEM_CHANGE_EVIDENCE_PATTERN.test(inventory)
-		) {
+	const hasPatternScopeSignal = PATTERN_SCOPE_SIGNAL_PATTERN.test(
+		bodyWithoutInventoryField,
+	);
+	const bodyWithoutNegatedPatternScopeSignal =
+		bodyWithoutInventoryField.replace(
+			new RegExp(NEGATED_PATTERN_SCOPE_SIGNAL_PATTERN.source, "gi"),
+			"",
+		);
+	const hasAffirmativePatternScopeSignal = PATTERN_SCOPE_SIGNAL_PATTERN.test(
+		bodyWithoutNegatedPatternScopeSignal,
+	);
+
+	if (!hasPatternScopeSignal || !hasAffirmativePatternScopeSignal) {
+		if (inventoryIsNotApplicable && !hasNoSystemChangeEvidence(inventory)) {
 			return [
 				"Pattern scope inventory marked n.a. must include a reason, checked scope, and no-durable-destination decision for the local closeout.",
 			];
@@ -177,10 +206,21 @@ function collectRepeatedErrorResearchErrors(
 		.filter((line) => !/^-\s*Repeated-error research:/i.test(line))
 		.join("\n");
 
-	if (
-		!REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN.test(bodyWithoutResearchField) ||
-		NEGATED_SHARED_THRESHOLD_PATTERN.test(bodyWithoutResearchField)
-	) {
+	const hasResearchSignal = REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN.test(
+		bodyWithoutResearchField,
+	);
+	const hasNegatedThreshold = NEGATED_SHARED_THRESHOLD_PATTERN.test(
+		bodyWithoutResearchField,
+	);
+	const bodyWithoutNegatedThreshold = bodyWithoutResearchField.replace(
+		new RegExp(NEGATED_SHARED_THRESHOLD_PATTERN.source, "gi"),
+		"",
+	);
+	const hasAffirmativeThreshold = REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN.test(
+		bodyWithoutNegatedThreshold,
+	);
+
+	if (!hasResearchSignal || (hasNegatedThreshold && !hasAffirmativeThreshold)) {
 		return [];
 	}
 

@@ -103,11 +103,12 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 - Rules in this pack use RFC2119 language (`MUST`, `MUST NOT`, `SHOULD`) and are normative unless an explicit waiver exists.
 - Waivers MUST include: rule ID or section, reason, tracking ticket, and expiry or ADR reference.
 - Design corrections start with local repair. Promote shared guidance only when
-  the contract is contradictory, a safety boundary is crossed, failure recurs
-  across independent work, or a named current consumer requires the sibling pass;
-  otherwise record `no_system_change` with the reason, checked scope, and
-  no-durable-destination decision. When promoted, search relevant siblings and
-  record changed, unchanged, or deferred scope.
+  the contract is contradictory, a safety boundary is crossed, or failure recurs
+  across independent work, or a named current consumer requires a reusable rule;
+  otherwise record `no_system_change` with the reason,
+  checked scope, and no-durable-destination decision. When promoted, search
+  relevant siblings and record changed, unchanged, or deferred scope.
+- For a shared-pattern signal or named current consumer, run `harness pattern-scope --files <changed paths> --feedback "<signal>" --output artifacts/pattern-scope/pattern-scope.json --json` from the repository root. The PR author owns the result and must record the principle, sibling search, changed or unchanged scope, and validation outcome. If the search is blocked, record `blocked` with the exact command, error, and owner. Below the shared threshold, record `no_system_change` with its reason, checked scope, and no-durable-destination decision.
 - Validation evidence MUST use exact command text and explicit outcomes:
   - `Command: <exact command> -> pass|fail|blocked (<reason>)`
 - Commands are expected from the active instruction scope and the repository root.

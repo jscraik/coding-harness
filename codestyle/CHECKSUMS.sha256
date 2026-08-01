@@ -1,6 +1,6 @@
 # sha256 manifest for codestyle parity enforcement
 # format: <sha256>  <relative-path-from-repo-root>
-9243d57589bd477f0825a708a4ddbb6f38fbde00d2313c1edf5ed3ba33efc169  CODESTYLE.md
+4d67ead729fb5d1609df5327c10df5a7aec7047c2489f211a1cb53372e9b80b4  CODESTYLE.md
 5046765e436a0c24e52b71756a66d14740c9d8b39038054e23d8c661c68b2a51  codestyle/01-foundations.md
 e22f8aba02af91c075bf91f03897790ac14f596d13c1bd1ab4ae89ff1ae6ebe4  codestyle/02-javascript-ui.md
 14350d1f761c0900135d411f1d4cfa3403cdb250f3441ab021ad26acad92718c  codestyle/03-rust-tauri.md
@@ -14,7 +14,7 @@ a7b2fd2d047e82a8b30e7ae213cdb56902c66e714fbb58b20de3913e81734ca3  codestyle/08-t
 023546acd90e32ec599631534c2b5faefdfb64a354cfb6719de8566c43b760ab  codestyle/11-package-managers-pnpm-npm.md
 6337a8becd53fab350fff8f592c2fd84cb0f3c48736e42c4eea52173478fc323  codestyle/12-swift.md
 7732032d99bbdefb1b293c98e507d4badf8e8236062c522a7d37c4b50a1d4939  codestyle/13-git-workflow.md
-6aa38cd89ee16bc77dd3c23b7c17696be07708bbfa55058aae438c11077bdb59  codestyle/14-patterns.md
+f1e1e55c5366c45c712cb8526a6ee9e75f5a81fa5bcfc2ebd47e5723779a041c  codestyle/14-patterns.md
 f84f371f41031fa46dcdd9ea12e47c5c60c74459bdcbc953678eda4837d54bef  codestyle/15-performance.md
 6dd65276e3fcf78b95520806a6c6ad6b0b3ef6a29d87104d18a4a28335fc4efe  codestyle/16-security.md
 7d024646fe45fada2761a81a697cc124f61e7f90a3cc81d7937b02a95df0776e  codestyle/17-testing.md
