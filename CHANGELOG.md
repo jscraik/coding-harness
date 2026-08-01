@@ -36,7 +36,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Bug Fixes
 
-* **release:** fall back when ripgrep is unavailable ([#505](https://github.com/jscraik/coding-harness/issues/505)) ([0ec0f94](https://github.com/jscraik/coding-harness/commit/0ec0f9449203efecd5c9abfa7fe2d1a08ae4566c))
+* **release:** fall back when ripgrep is unavailable ([#505](https://github.com/jscraik/coding-harness/pull/505)) ([0ec0f94](https://github.com/jscraik/coding-harness/commit/0ec0f9449203efecd5c9abfa7fe2d1a08ae4566c))
 
 ### Fixed
 
