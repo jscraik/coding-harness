@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [Unreleased]
+## [0.15.2](https://github.com/jscraik/coding-harness/compare/v0.15.1...v0.15.2) (2026-08-01)
 
 ### Added
 
@@ -32,6 +32,11 @@ All notable changes to this project will be documented in this file. See [standa
   classification checkboxes.
 - Added validator-backed pull request release-boundary fields and compact
   durable evidence map guidance to the source template and downstream scaffold.
+
+
+### Bug Fixes
+
+* **release:** fall back when ripgrep is unavailable ([#505](https://github.com/jscraik/coding-harness/pull/505)) ([0ec0f94](https://github.com/jscraik/coding-harness/commit/0ec0f9449203efecd5c9abfa7fe2d1a08ae4566c))
 
 ### Fixed
 
