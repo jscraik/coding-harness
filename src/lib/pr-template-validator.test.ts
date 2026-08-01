@@ -741,6 +741,15 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		expect(validatePrTemplateBody(body)).toEqual([]);
 	});
 
+	it("keeps same-feedback wording local when the task is explicitly bounded", () => {
+		const body = VALID_BODY.replace(
+			"PR bodies could omit required validation evidence.",
+			"The same feedback twice happened during one bounded local task.",
+		);
+
+		expect(validatePrTemplateBody(body)).toEqual([]);
+	});
+
 	it("fails line-level design correction without pattern scope evidence", () => {
 		const body = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",
@@ -793,6 +802,20 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		expect(validatePrTemplateBody(body)).toEqual([]);
 	});
 
+	it("requires local no_system_change details for an n.a. pattern inventory", () => {
+		const body = VALID_BODY.replace(
+			"PR bodies could omit required validation evidence.",
+			"A line-level correction fixed one bounded local behavior without a shared contract or safety boundary.",
+		).replace(
+			"- Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.",
+			"- Pattern scope inventory: n.a.",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Pattern scope inventory marked n.a. must include a reason, checked scope, and no-durable-destination decision for the local closeout.",
+		);
+	});
+
 	it("accepts line-level design correction with generalized pattern inventory", () => {
 		const body = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",
@@ -808,6 +831,8 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 	it.each([
 		"This was example-based feedback about a shared pattern after recurrence across independent work.",
 		"A concrete correction in one function exposed a contradictory shared contract; the shared pattern requires sibling review.",
+		"The current contract is contradictory, so a line-level correction changed one API.",
+		"A line-level correction revealed that an existing contract conflicts with the required behavior.",
 		"A line-level correction revealed that the current contract is contradictory.",
 		"Do not just fix that line; a safety boundary requires a shared pattern search across related adapters.",
 		"Codex should apply the same shared pattern in multiple places after the shared threshold is met.",
@@ -847,6 +872,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		"The same failure twice recurred across independent tasks and blocked the fix.",
 		"The command failed again with the same stack trace across independent work.",
 		"The same exception appeared twice across independent tasks.",
+		"The same error happened twice because an existing contract conflicts with the required behavior.",
 	])("fails repeated troubleshooting trigger '%s' without research evidence", (trigger) => {
 		const body = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",
@@ -867,6 +893,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		"The team researched fixes for the broader workflow.",
 		"Tests failed twice while iterating on unrelated docs.",
 		"Reran checks twice in a row to confirm a flaky test.",
+		"The same error happened twice while no recurrence across independent work and no safety boundary is implicated.",
 	])("does not require repeated-error research for broad phrase '%s'", (phrase) => {
 		const body = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",

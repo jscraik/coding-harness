@@ -2,6 +2,7 @@ import {
 	CANDIDATE_FIX_PATTERN,
 	CONCRETE_DURABLE_REFERENCE_PATTERN,
 	DURABLE_META_DESTINATION_PATTERN,
+	NO_SYSTEM_CHANGE_EVIDENCE_PATTERN,
 	PATTERN_SCOPE_EVIDENCE_PATTERNS,
 	PATTERN_SCOPE_SIGNAL_PATTERN,
 	REPEATED_ERROR_RESEARCH_EVIDENCE_PATTERNS,
@@ -13,6 +14,8 @@ import { validateDurableEvidenceMap } from "./evidence-reference/evidence-refere
 
 const LOCAL_ABSOLUTE_PATH_PATTERN =
 	/(?:^|[\s\x60"'(])((?:\/Users\/|\/private\/var\/folders\/|\/var\/folders\/|\/private\/tmp\/|\/tmp\/)[^\s\x60"'<>),;]+)/g;
+const NEGATED_SHARED_THRESHOLD_PATTERN =
+	/\b(?:no|not|without)\s+(?:(?:recurrence|failure)\s+across independent (?:tasks|work)|(?:a\s+)?safety boundary(?:\s+(?:is|was|has been))?\s+(?:crossed|required|implicated|violated)|(?:a\s+)?(?:current|existing) contract\s+(?:conflict|contradiction))/i;
 
 /**
  * Reads a normalized field value from a markdown section in a PR body.
@@ -107,6 +110,14 @@ function collectMetaBehaviorErrors(
 	return errors;
 }
 
+/**
+ * Enforces pattern-scope evidence when a PR crosses the shared threshold and
+ * requires an auditable local no-system-change record otherwise.
+ *
+ * @param body - Complete pull-request body text.
+ * @param readFieldValue - Reader for structured work-performed fields.
+ * @returns Validation errors for missing or incomplete pattern evidence.
+ */
 function collectPatternScopeInventoryErrors(
 	body: string,
 	readFieldValue: PrTemplateFieldReader,
@@ -116,15 +127,27 @@ function collectPatternScopeInventoryErrors(
 		.filter((line) => !/^-\s*Pattern scope inventory:/i.test(line))
 		.join("\n");
 
-	if (!PATTERN_SCOPE_SIGNAL_PATTERN.test(bodyWithoutInventoryField)) {
-		return [];
-	}
-
 	const inventory = readFieldValue(
 		body,
 		"## Work performed",
 		"Pattern scope inventory",
 	);
+	const inventoryIsNotApplicable =
+		inventory !== null &&
+		/^\s*(?:n\.\s*a\.?|n\/a|not applicable)\b/i.test(inventory);
+
+	if (!PATTERN_SCOPE_SIGNAL_PATTERN.test(bodyWithoutInventoryField)) {
+		if (
+			inventoryIsNotApplicable &&
+			!NO_SYSTEM_CHANGE_EVIDENCE_PATTERN.test(inventory)
+		) {
+			return [
+				"Pattern scope inventory marked n.a. must include a reason, checked scope, and no-durable-destination decision for the local closeout.",
+			];
+		}
+		return [];
+	}
+
 	if (
 		inventory === null ||
 		!PATTERN_SCOPE_EVIDENCE_PATTERNS.every((pattern) => pattern.test(inventory))
@@ -154,7 +177,10 @@ function collectRepeatedErrorResearchErrors(
 		.filter((line) => !/^-\s*Repeated-error research:/i.test(line))
 		.join("\n");
 
-	if (!REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN.test(bodyWithoutResearchField)) {
+	if (
+		!REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN.test(bodyWithoutResearchField) ||
+		NEGATED_SHARED_THRESHOLD_PATTERN.test(bodyWithoutResearchField)
+	) {
 		return [];
 	}
 
