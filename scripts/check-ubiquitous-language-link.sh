@@ -22,17 +22,27 @@ if [[ ! -f "$AGENTS_FILE" ]]; then
 	exit 1
 fi
 
-if ! rg --fixed-strings --quiet "UBIQUITOUS_LANGUAGE.md" "$AGENTS_FILE"; then
+contains_fixed_string() {
+	local needle=$1
+	local file=$2
+	if command -v rg >/dev/null 2>&1; then
+		rg --fixed-strings --quiet "$needle" "$file"
+	else
+		awk -v needle="$needle" 'index($0, needle) { found = 1; exit } END { exit(found ? 0 : 1) }' "$file"
+	fi
+}
+
+if ! contains_fixed_string "UBIQUITOUS_LANGUAGE.md" "$AGENTS_FILE"; then
 	echo "[check-ubiquitous-language-link] AGENTS.md must reference UBIQUITOUS_LANGUAGE.md" >&2
 	exit 1
 fi
 
-if ! rg --fixed-strings --quiet "UBIQUITOUS-MAP.md" "$AGENTS_FILE"; then
+if ! contains_fixed_string "UBIQUITOUS-MAP.md" "$AGENTS_FILE"; then
 	echo "[check-ubiquitous-language-link] AGENTS.md must reference UBIQUITOUS-MAP.md" >&2
 	exit 1
 fi
 
-if ! rg --fixed-strings --quiet "UBIQUITOUS_LANGUAGE.md" "$MAP_FILE"; then
+if ! contains_fixed_string "UBIQUITOUS_LANGUAGE.md" "$MAP_FILE"; then
 	echo "[check-ubiquitous-language-link] UBIQUITOUS-MAP.md must reference UBIQUITOUS_LANGUAGE.md" >&2
 	exit 1
 fi
