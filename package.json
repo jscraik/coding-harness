@@ -1,6 +1,6 @@
 {
 	"name": "@brainwav/coding-harness",
-	"version": "0.15.2",
+	"version": "0.15.3",
 	"files": [
 		"dist",
 		"src/templates",
@@ -303,5 +303,11 @@
 		}
 	},
 	"license": "Apache-2.0",
-	"homepage": "https://github.com/jscraik/coding-harness#readme"
+	"homepage": "https://github.com/jscraik/coding-harness#readme",
+	"main": "index.js",
+	"directories": {
+		"doc": "docs",
+		"test": "tests"
+	},
+	"author": ""
 }
