@@ -13,6 +13,10 @@ describe("scaffold private npm release template", () => {
 		expect(workflow).toContain("name: Release to private npm");
 		expect(workflow).toContain('required_pnpm_version="10.33.0"');
 		expect(workflow).toContain("run: pnpm install --frozen-lockfile");
+		expect(workflow).toContain(
+			"sudo apt-get install --yes --no-install-recommends ripgrep",
+		);
+		expect(workflow).toContain("rg --version");
 		expect(workflow).toContain("run: pnpm check");
 		expect(workflow).toContain("run: pnpm build");
 		expect(workflow).toContain(
