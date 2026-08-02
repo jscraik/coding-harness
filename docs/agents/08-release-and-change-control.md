@@ -45,6 +45,7 @@ Use this document before milestones, release-tagged branches, or behavior-changi
 2. Merge to `main` only after required checks and independent review pass.
 3. Create and push a semantic-version tag (`vX.Y.Z`) that matches `package.json`.
 4. GitHub Actions workflow `.github/workflows/release-private-npm.yml` performs:
+   - pinned `uv` bootstrap before dependency and artifact validation,
    - tag/version consistency check,
    - publish (`oidc` by default; `token` fallback only when explicitly requested),
    - attestation generation and verification (when available),
