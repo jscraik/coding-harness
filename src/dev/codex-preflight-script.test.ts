@@ -63,7 +63,7 @@ function writeExecutable(path: string, source: string): void {
 	chmodSync(path, 0o755);
 }
 
-function createSetupChecksFixture(): {
+function createSetupChecksFixture(manifestErrorCode?: string): {
 	binDir: string;
 	homeDir: string;
 	helperInvocationPath: string;
@@ -94,7 +94,11 @@ exit 0
 		`#!/usr/bin/env bash
 set -euo pipefail
 case "$*" in
-  *"init --check-updates --json"*) printf '%s\\n' '{"updateCheck":{"updateAvailable":false}}' ;;
+  *"init --check-updates --json"*) printf '%s\\n' '${
+		manifestErrorCode
+			? `{"error":{"code":"${manifestErrorCode}"}}`
+			: '{"updateCheck":{"updateAvailable":false}}'
+	}'; ${manifestErrorCode ? "exit 1" : ":"} ;;
   *) printf '%s\\n' '{}' ;;
 esac
 `,
@@ -507,5 +511,47 @@ describe("codex-preflight Local Memory legacy routing", () => {
 				outputIncludesForcedPass: false,
 			},
 		});
+	});
+
+	it("keeps setup checks runnable when the retired manifest is absent", () => {
+		const fixture = createSetupChecksFixture("MANIFEST_NOT_FOUND");
+		try {
+			const result = spawnSync(
+				"bash",
+				["scripts/run-harness-setup-checks.sh"],
+				{
+					cwd: repoRoot,
+					encoding: "utf-8",
+					env: {
+						...process.env,
+						BASH_ENV: "",
+						CI: "",
+						CODEX_PREFLIGHT_ENABLE_TEST_OVERRIDES: "1",
+						CODEX_PREFLIGHT_REQUIRE_PROJECT_BRAIN: "never",
+						CODEX_PREFLIGHT_TEST_FORCE_LOCAL_MEMORY_STATUS: "",
+						CODEX_PREFLIGHT_TEST_SKIP_HARNESS_RUNNERS: "",
+						HOME: fixture.homeDir,
+						PATH: `${fixture.binDir}:${process.env.PATH}`,
+					},
+				},
+			);
+
+			expectBehavior({
+				given: "setup checks with no tracked legacy manifest",
+				should: "warn and continue to the remaining setup gates",
+				actual: {
+					status: result.status,
+					output: combinedOutput(result),
+				},
+				expected: {
+					status: 0,
+					output: expect.stringContaining(
+						"continuing with remaining setup gates",
+					),
+				},
+			});
+		} finally {
+			fixture.cleanup();
+		}
 	});
 });
