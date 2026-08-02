@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file. See [standa
 ### Bug Fixes
 
 * **release:** bootstrap pinned uv before private npm publication ([#508](https://github.com/jscraik/coding-harness/pull/508)) ([bc98c937](https://github.com/jscraik/coding-harness/commit/bc98c9378bd45bdab0f94c7834c3d4a8926778ea))
+* **release:** keep setup checks running without retired legacy manifests ([#507](https://github.com/jscraik/coding-harness/pull/507)) ([0a0b606](https://github.com/jscraik/coding-harness/commit/0a0b60665bf27fe18000b720cac3bd2bb636a816))
 
 ## [0.15.2](https://github.com/jscraik/coding-harness/compare/v0.15.1...v0.15.2) (2026-08-01)
 
