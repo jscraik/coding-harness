@@ -68,6 +68,9 @@ default agent route without a named consumer.
   consumer requires a reusable rule.
 - Generated instruction packs must preserve outcome-first local correction and
   must not require systemic generalisation before routine closeout.
+- Refreshes to `docs/roadmap/agent-first-status.md` must update the matching
+  `harness.contract.json` review date in the same change; measurements without
+  retained raw output or an independent receipt remain unverified notes.
 
 ## Validation and handoff
 
