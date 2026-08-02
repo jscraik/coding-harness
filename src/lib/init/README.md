@@ -22,6 +22,10 @@ The public CLI reference documents the five routine jobs only. Internal
 workflow-contract fixtures must not force install guidance to describe
 unselected migration or governance operations.
 
+The generated private-release workflow must provision the repository CLI tools
+used by artifact validation before running its checks, matching the checked-in
+release workflow.
+
 ## Change boundaries
 
 - Keep scaffold templates, the compact-contract predicate, loader behavior, and
