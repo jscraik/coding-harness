@@ -248,6 +248,9 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   surface while one of these gates is blocked. Report local packet proof
   separately from hosted checks, review-thread state, independent acceptance,
   merge, and release truth.
+- The tag-driven private npm release workflow bootstraps the repository-pinned
+  `uv` runtime before artifact validation; publication and release claims still
+  require hosted evidence.
 - runtime-card trace-out changes should keep trace persistence in
   `src/lib/runtime-trace/`, reuse canonical run-record append/manifest
   helpers, constrain `--trace-out` to

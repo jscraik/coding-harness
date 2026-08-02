@@ -70,6 +70,9 @@ depends_on:
 - Manual GitHub Actions release inputs must be assigned to named environment
   variables before shell validation; release shell bodies must not directly
   interpolate `github.event.inputs.*` expressions.
+- The tag-driven private npm release workflow installs the repository-pinned
+  `uv` runtime before dependency and artifact validation; publication remains a
+  hosted release claim.
 - North-star contract changes must update the executable schema/scaffold
   surfaces and the human-facing status docs together so PR reviewers can compare
   generated contract behavior with the published mantra and standards.

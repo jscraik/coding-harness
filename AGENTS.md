@@ -57,6 +57,9 @@ default agent route without a named consumer.
   release, and cleanup as distinct evidence lanes.
 - Branch from `main` and use a PR for merges. Required hosted checks are
   `pr-pipeline`, `security-scan`, and `CodeRabbit`; CodeQL is separate.
+- The tag-driven private npm release workflow bootstraps the repository-pinned
+  `uv` runtime before artifact validation. Local checks do not prove npm
+  publication or release completion.
 - Treat feedback as an observed local defect first; local repair or
   `no_system_change` is routine. A `no_system_change` record names its reason,
   checked scope, and no-durable-destination decision. Add a durable control
