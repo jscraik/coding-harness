@@ -54,6 +54,9 @@ correctness or delivery readiness.
 - `bash scripts/validate-codestyle.sh`
 - `docs-gate` (CI check for documentation parity)
 - Code-review pass-through via PR workflow (no direct `main` commits).
+- The tag-driven private npm release workflow installs the repository-pinned
+  runtime and required CLI tools before artifact validation; local gates do not
+  prove hosted publication or release completion.
 
 Routine command guidance belongs in the checked
 [CLI reference](../cli-reference.md): `next`, minimal `init`, `check`,

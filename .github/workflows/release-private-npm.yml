@@ -97,6 +97,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
 
+      - name: Install repository CLI tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ripgrep
+          rg --version
+
       - name: Materialize CODESTYLE.md for CI
         run: |
           if [[ -L CODESTYLE.md && ! -e CODESTYLE.md ]]; then
