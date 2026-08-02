@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.15.3](https://github.com/jscraik/coding-harness/compare/v0.15.2...v0.15.3) (2026-08-02)
+
+### Bug Fixes
+
+* **release:** bootstrap pinned uv before private npm publication ([#508](https://github.com/jscraik/coding-harness/pull/508)) ([bc98c937](https://github.com/jscraik/coding-harness/commit/bc98c9378bd45bdab0f94c7834c3d4a8926778ea))
+
 ## [0.15.2](https://github.com/jscraik/coding-harness/compare/v0.15.1...v0.15.2) (2026-08-01)
 
 ### Added
