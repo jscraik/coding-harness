@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-07-31
+last_validated: 2026-08-02
 ---
 
 # Agent-First Status
@@ -10,6 +10,7 @@ last_validated: 2026-07-31
 - [North-Star Boundary](#north-star-boundary)
 - [What Is Known](#what-is-known)
 - [Direct Observation Sample](#direct-observation-sample)
+- [Controlled Readiness Comparison](#controlled-readiness-comparison)
 - [Lifecycle Evidence Sample](#lifecycle-evidence-sample)
 - [Recovery Order](#recovery-order)
 - [Historical Reporting](#historical-reporting)
@@ -35,11 +36,12 @@ admission dependency. Optional
 context maintenance is advisory; it is not the primary action for ordinary work.
 
 The active slice is direct effectiveness observation. A five-repository
-read-only readiness sample and a separate source-bound lifecycle sample are
-recorded below. The lifecycle rows prove that real bounded changes reached
-review and merge, but they do not provide an untreated comparison or complete
-intervention/time-to-proof observations. The product therefore has no current
-effectiveness outcome claim.
+read-only readiness sample, a version-matched controlled readiness comparison,
+and a separate source-bound lifecycle sample are recorded below. The lifecycle
+rows prove that real bounded changes reached review and merge, but they do not
+provide complete intervention/time-to-proof observations. The controlled
+comparison shows richer local routing output with sub-second overhead in this
+sample; it does not establish a causal product-effectiveness outcome.
 
 ## North-Star Boundary
 
@@ -89,6 +91,46 @@ the dirty paths in Agent-Skills and Configs remain owner-controlled and were
 not modified. This sample does not satisfy the end-to-end acceptance condition
 and must not be used to claim lower PR lead time, fewer interventions, less
 rework, or general product effectiveness.
+
+## Controlled Readiness Comparison
+
+This bounded comparison was run on 2026-08-02 with the version-matched
+published consumer `harness` v0.15.3. The treated route ran, from each target
+repository, the exact read-only commands `harness next --json` followed by
+`harness check --json`; dirty repositories used the explicit
+`--worktree-role dirty-with-justification` option for `next`. The untreated
+comparison was the read-only command `git status --short --branch; git diff
+--name-only`. Both routes only observed repository state and made no writes.
+The timings below are wall-clock seconds from `/usr/bin/time -p`; the baseline
+is the Git snapshot command, not an equivalent task-routing experience.
+
+The raw JSON, emitted validation-plan output, and changed-file path snapshots
+from this observation were not persisted as a separate receipt. The table is
+therefore an unverified observation note, not independently repeatable
+execution evidence.
+For rows where `next` selected a validation plan, the recorded command form
+was `harness validation-plan --source .harness/learnings/coderabbit.local.json
+--files <observed changed files> --json`; the concrete file list and command
+output are unavailable for independent replay.
+
+| Repository / observed HEAD | Treated `next` | Validation binding | Treated wall time | `check` counts (ok / warn / fail) | Untreated Git snapshot | Interpretation |
+| --- | --- | --- | ---: | ---: | ---: | --- |
+| Jamie Brain `90ee789eced74e6f1dd018b5a1d8259d9c04888b` | `pass`; no changed files | n.a. (no validation-plan command selected) | 0.53s | 1 / 2 / 1 | 0.02s | `check` exposed the missing Harness contract; no causal benefit claim |
+| Agent-Skills `4ced957e36ea6ebe4c65d8754db5328d3879fefb` | `action_required`; 42 changed files and exact validation-plan command | unverified note: command form above; path snapshot not retained | 0.91s | 3 / 2 / 0 | 0.15s | structured next action and warnings; causal benefit unproven |
+| Configs `2d87971e3c08906112d9a712db5220f29ed644a6` | `action_required`; 31 changed files and exact validation-plan command | unverified note: command form above; path snapshot not retained | 0.61s | 3 / 2 / 0 | 0.03s | structured next action and warnings; causal benefit unproven |
+| Portfolio `011183f961a32ebd77a7d773adb1dc5df3487cb6` | `action_required`; 30 changed files and exact validation-plan command | unverified note: command form above; path snapshot not retained | 0.53s | 3 / 1 / 1 | 0.03s | `check` exposed repository-local version drift; no causal benefit claim |
+| Coding Harness `34e46f72e218e1314f0365c81877b7a0cbcd35ed` | `pass`; no changed files | n.a. (no validation-plan command selected) | 0.62s | 4 / 1 / 0 | 0.03s | structured readiness boundary with version coherence; causal benefit unproven |
+
+The recorded summary says that the route supplied a typed status, one next
+action or command, warnings, execution boundary, and claims boundary in
+roughly 0.5–0.9 seconds for these five observations, while the untreated
+command supplied only Git state and paths. Because the raw output and path
+snapshots were not retained, those values remain unverified notes. The two
+`check` failures are configuration/version findings in the observed
+repositories, not evidence that the Harness route itself failed. This is a
+local proof comparison only: it does not measure PR lead time, review/rework,
+Jamie intervention, retries, or production outcomes, and it does not prove
+that the route caused any observed task result.
 
 ## Lifecycle Evidence Sample
 

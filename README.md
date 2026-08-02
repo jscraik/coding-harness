@@ -98,6 +98,8 @@ Keep the stable product surface small and move unselected expert capability out
 of the routine path. Keep the truth-bounded recovery status in
 [`docs/roadmap/agent-first-status.md`](./docs/roadmap/agent-first-status.md)
 and its weekly cadence entry in `harness.contract.json` current together.
+Measurements without retained raw output or an independent receipt are
+observation notes, not execution proof.
 Routine corrections stay local, or record `no_system_change` with the reason,
 checked scope, and no-durable-destination decision; promote shared guidance only
 for a contradictory contract, a crossed safety boundary, recurrence across
