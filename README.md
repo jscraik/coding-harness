@@ -57,6 +57,10 @@ pnpm build
 pnpm exec harness next --json
 ```
 
+The package root resolves to the built `dist/cli.js` entrypoint for consumers;
+importing it is side-effect-free. Use the `harness` binary (or a direct CLI
+invocation) when you intend to execute a command.
+
 Preview installation before any writes:
 
 ```bash

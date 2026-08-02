@@ -26,13 +26,16 @@ function handleFatalError(type: string, error: unknown): never {
 	process.exit(1);
 }
 
-process.on("unhandledRejection", (reason) => {
-	handleFatalError("Unhandled Rejection", reason);
-});
+/** Register process-level fatal handlers only for direct CLI execution. */
+function registerFatalErrorHandlers(): void {
+	process.on("unhandledRejection", (reason) => {
+		handleFatalError("Unhandled Rejection", reason);
+	});
 
-process.on("uncaughtException", (error) => {
-	handleFatalError("Uncaught Exception", error);
-});
+	process.on("uncaughtException", (error) => {
+		handleFatalError("Uncaught Exception", error);
+	});
+}
 
 /**
  * Print CLI usage, examples, and the command list to stdout.
@@ -363,5 +366,6 @@ export function isDirectExecution(
 }
 
 if (isDirectExecution()) {
+	registerFatalErrorHandlers();
 	run(process.argv.slice(2));
 }
