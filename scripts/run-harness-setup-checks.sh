@@ -6,7 +6,7 @@ cd "$ROOT"
 
 warn_legacy_manifest() {
   printf '%s\n' \
-    "warning: legacy .harness/restore-manifest.json metadata blocks tracked update checks; continuing with remaining setup gates" \
+    "warning: legacy .harness/restore-manifest.json metadata is unavailable or incomplete; continuing with remaining setup gates" \
     "remediation: repair the manifest from a known-good tracked install, or remove .harness and re-run \`harness init --track\` when bootstrapping a fresh repo"
 }
 
@@ -34,7 +34,7 @@ printf '%s\n' "$check_output"
 
 legacy_manifest_blocked=0
 if [[ "$check_status" -ne 0 ]]; then
-  if printf '%s\n' "$check_output" | jq -e '.error.code == "INCOMPLETE_MANIFEST"' >/dev/null 2>&1; then
+  if printf '%s\n' "$check_output" | jq -e '.error.code == "INCOMPLETE_MANIFEST" or .error.code == "MANIFEST_NOT_FOUND"' >/dev/null 2>&1; then
     legacy_manifest_blocked=1
     warn_legacy_manifest
   else
