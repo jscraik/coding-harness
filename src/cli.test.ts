@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import {
 	mkdirSync,
 	readFileSync,
@@ -444,6 +445,27 @@ describe("run", () => {
 });
 
 describe("isDirectExecution", () => {
+	it("does not install fatal handlers when imported as a package module", () => {
+		const moduleUrl = pathToFileURL(join(process.cwd(), "src/cli.ts")).href;
+		const script = [
+			`const before = [process.listenerCount("unhandledRejection"), process.listenerCount("uncaughtException")];`,
+			`await import(${JSON.stringify(moduleUrl)});`,
+			`const after = [process.listenerCount("unhandledRejection"), process.listenerCount("uncaughtException")];`,
+			`console.log(JSON.stringify({ before, after }));`,
+		].join("\n");
+
+		const output = execFileSync(
+			process.execPath,
+			["--import", "tsx", "--input-type=module", "--eval", script],
+			{ encoding: "utf8" },
+		);
+
+		expect(JSON.parse(output.trim())).toEqual({
+			before: [0, 0],
+			after: [0, 0],
+		});
+	});
+
 	it("returns true for direct module path", () => {
 		const modulePath = join(process.cwd(), "src/cli.ts");
 		const moduleUrl = pathToFileURL(modulePath).href;
