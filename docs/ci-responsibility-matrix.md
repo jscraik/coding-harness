@@ -45,7 +45,7 @@ This document is the operational source of truth for CI ownership intent. `harne
 
 | Responsibility                                        | Workflow              | Job       | Trigger                                       | Workflow File                               |
 | ----------------------------------------------------- | --------------------- | --------- | --------------------------------------------- | ------------------------------------------- |
-| npm publish + provenance attestation + GitHub Release | `release-private-npm` | `publish` | `Semver` tag push and guarded manual dispatch | `.github/workflows/release-private-npm.yml` |
+| public npm publish + provenance attestation + GitHub Release | `release-private-npm` | `publish` | `Semver` tag push and guarded manual dispatch | `.github/workflows/release-private-npm.yml` (legacy filename) |
 | CodeQL code-scanning upload                           | `CodeQL`              | `Analyze (javascript-typescript)` | Pull request, main push, weekly schedule, and manual dispatch | `.github/workflows/codeql.yml` |
 
 ### Not Owned by Either CI System
@@ -71,7 +71,7 @@ All harness governance checks (`pr-template`, `linear-gate`, `risk-policy-gate`,
 ```text
 Developer pushes tag v1.2.3
          |
-         +---> GitHub Actions: release-private-npm / publish
+         +---> GitHub Actions: release-private-npm / publish (public npm)
                  1. pnpm check
                  2. pnpm build
                  3. Generates SBOM (cyclonedx-npm)
@@ -91,7 +91,7 @@ The repository is in a **CircleCI-primary state**:
 
 - CircleCI is the canonical owner for PR governance and security checks.
 - The CircleCI `security-scan` workflow runs repo-owned Semgrep and report-only Snyk lanes while preserving the single GitHub check-run name `security-scan`.
-- GitHub Actions owns release publishing at `.github/workflows/release-private-npm.yml` and CodeQL code-scanning upload at `.github/workflows/codeql.yml`.
+- GitHub Actions owns public npm release publishing at `.github/workflows/release-private-npm.yml` (legacy filename) and CodeQL code-scanning upload at `.github/workflows/codeql.yml`.
 - `.harness/ci-required-checks.json` maps `security-scan` to CircleCI and `CodeRabbit` to the CodeRabbit app. CodeQL is tracked by `harness.contract.json → branchProtection.publicCodeScanning` instead of the required status-check manifest.
 
 ## Target State

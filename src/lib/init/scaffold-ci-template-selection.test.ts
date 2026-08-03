@@ -9,7 +9,7 @@ describe("scaffold CI template selection", () => {
 		expect(DEFAULT_CI_PROVIDER).toBe("circleci");
 	});
 
-	it("always emits the private npm release workflow", () => {
+	it("always emits the public npm release workflow", () => {
 		expect(
 			isTemplateEnabledForProvider(
 				".github/workflows/release-private-npm.yml",
