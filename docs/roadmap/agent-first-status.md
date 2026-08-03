@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-08-02
+last_validated: 2026-08-03
 ---
 
 # Agent-First Status
@@ -94,43 +94,37 @@ rework, or general product effectiveness.
 
 ## Controlled Readiness Comparison
 
-This bounded comparison was run on 2026-08-02 with the version-matched
-published consumer `harness` v0.15.3. The treated route ran, from each target
-repository, the exact read-only commands `harness next --json` followed by
-`harness check --json`; dirty repositories used the explicit
-`--worktree-role dirty-with-justification` option for `next`. The untreated
-comparison was the read-only command `git status --short --branch; git diff
---name-only`. Both routes only observed repository state and made no writes.
-The timings below are wall-clock seconds from `/usr/bin/time -p`; the baseline
-is the Git snapshot command, not an equivalent task-routing experience.
+A fresh source-bound cohort was captured on 2026-08-03 from five named task
+worktrees across Agent Skills, Configs, Portfolio, and Coding Harness. The raw
+local evidence is retained in the OC evidence lane as
+`real-task-observations.json`, SHA-256
+`fef485416dd21d01d281691e8879f078e31699a33deaba180724f043a1a70272`.
+It is intentionally not a new tracked receipt or schema family. This page
+records the evidence boundary and summary; the raw local bytes are required
+for replay of the exact output.
 
-The raw JSON, emitted validation-plan output, and changed-file path snapshots
-from this observation were not persisted as a separate receipt. The table is
-therefore an unverified observation note, not independently repeatable
-execution evidence.
-For rows where `next` selected a validation plan, the recorded command form
-was `harness validation-plan --source .harness/learnings/coderabbit.local.json
---files <observed changed files> --json`; the concrete file list and command
-output are unavailable for independent replay.
+The source runner was Coding Harness `main` at
+`f0f405adf0b405ec821f58e564d3d3f5927cfffc`. Each observation ran the existing
+read-only commands `node --import tsx src/cli.ts next --json` from the task
+worktree and `node --import tsx src/cli.ts check <repo-root> --json` from the
+Coding Harness checkout. A Git status/diff snapshot was captured first, and
+all five task worktrees were clean at observation time.
 
-| Repository / observed HEAD | Treated `next` | Validation binding | Treated wall time | `check` counts (ok / warn / fail) | Untreated Git snapshot | Interpretation |
-| --- | --- | --- | ---: | ---: | ---: | --- |
-| Jamie Brain `90ee789eced74e6f1dd018b5a1d8259d9c04888b` | `pass`; no changed files | n.a. (no validation-plan command selected) | 0.53s | 1 / 2 / 1 | 0.02s | `check` exposed the missing Harness contract; no causal benefit claim |
-| Agent-Skills `4ced957e36ea6ebe4c65d8754db5328d3879fefb` | `action_required`; 42 changed files and exact validation-plan command | unverified note: command form above; path snapshot not retained | 0.91s | 3 / 2 / 0 | 0.15s | structured next action and warnings; causal benefit unproven |
-| Configs `2d87971e3c08906112d9a712db5220f29ed644a6` | `action_required`; 31 changed files and exact validation-plan command | unverified note: command form above; path snapshot not retained | 0.61s | 3 / 2 / 0 | 0.03s | structured next action and warnings; causal benefit unproven |
-| Portfolio `011183f961a32ebd77a7d773adb1dc5df3487cb6` | `action_required`; 30 changed files and exact validation-plan command | unverified note: command form above; path snapshot not retained | 0.53s | 3 / 1 / 1 | 0.03s | `check` exposed repository-local version drift; no causal benefit claim |
-| Coding Harness `34e46f72e218e1314f0365c81877b7a0cbcd35ed` | `pass`; no changed files | n.a. (no validation-plan command selected) | 0.62s | 4 / 1 / 0 | 0.03s | structured readiness boundary with version coherence; causal benefit unproven |
+| Task worktree / observed HEAD | `next` result | `check` counts (ok / warn / fail) | Local interpretation |
+| --- | --- | ---: | --- |
+| Agent Skills shape-debt retirement `9c485ef0de3ed0baced0e0555577b6d618908685` | `pass` (~1.88s tool wall) | 3 / 2 / 0 | Structured route; repo-local install warning |
+| Agent Skills evaluator guard wording `15a2c6396ad2b90968cf8f91fbd8229fa4a37fb7` | `blocked` (~1.63s tool wall) | 3 / 2 / 0 | Branch is behind `origin/main`; Harness stopped rather than guessing |
+| Configs OSS-cloud executable binding `c6859cff9ee9bd15425aebc1c60f9ed71bae802e` | `pass` (~1.41s tool wall) | 3 / 2 / 0 | Structured route; no repo-local runner warning |
+| Portfolio public registry resolution `68dafea692b8105e01c8ff8930fad98539f85a4d` | `pass` (~1.43s tool wall) | 3 / 1 / 1 | Check exposed repo-local/global version drift |
+| Coding Harness v0.15.3 release preparation `bdf27054f87b73b5e18eaf5bd986d04b9e2bf59e` | `pass` (~1.46s tool wall) | 3 / 1 / 1 | Check exposed source/global version drift |
 
-The recorded summary says that the route supplied a typed status, one next
-action or command, warnings, execution boundary, and claims boundary in
-roughly 0.5–0.9 seconds for these five observations, while the untreated
-command supplied only Git state and paths. Because the raw output and path
-snapshots were not retained, those values remain unverified notes. The two
-`check` failures are configuration/version findings in the observed
-repositories, not evidence that the Harness route itself failed. This is a
-local proof comparison only: it does not measure PR lead time, review/rework,
-Jamie intervention, retries, or production outcomes, and it does not prove
-that the route caused any observed task result.
+The cohort proves clean-lane local routing and fail-closed handling of a
+branch-currency problem. It does not prove that a user task was accelerated,
+that Jamie intervention or review/fix cycles decreased, or that PR lead time
+improved. Intervention, review/fix, and PR-lead-time fields remain unknown;
+the read-only observation itself must not be counted as a task outcome.
+This is local evidence only and does not prove hosted CI, review, acceptance,
+merge, release, package publication, or production effectiveness.
 
 ## Lifecycle Evidence Sample
 
