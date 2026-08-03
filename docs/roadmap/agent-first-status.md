@@ -10,7 +10,7 @@ last_validated: 2026-08-03
 - [North-Star Boundary](#north-star-boundary)
 - [What Is Known](#what-is-known)
 - [Direct Observation Sample](#direct-observation-sample)
-- [Controlled Readiness Comparison](#controlled-readiness-comparison)
+- [Source-Bound Readiness Cohort](#source-bound-readiness-cohort)
 - [Lifecycle Evidence Sample](#lifecycle-evidence-sample)
 - [Recovery Order](#recovery-order)
 - [Historical Reporting](#historical-reporting)
@@ -36,12 +36,12 @@ admission dependency. Optional
 context maintenance is advisory; it is not the primary action for ordinary work.
 
 The active slice is direct effectiveness observation. A five-repository
-read-only readiness sample, a version-matched controlled readiness comparison,
-and a separate source-bound lifecycle sample are recorded below. The lifecycle
-rows prove that real bounded changes reached review and merge, but they do not
-provide complete intervention/time-to-proof observations. The controlled
-comparison shows richer local routing output with sub-second overhead in this
-sample; it does not establish a causal product-effectiveness outcome.
+read-only readiness sample, a source-bound readiness cohort, and a separate
+source-bound lifecycle sample are recorded below. The lifecycle rows prove
+that real bounded changes reached review and merge, but they do not provide
+complete intervention/time-to-proof observations. The cohort records local
+routing output and tool timing; it does not establish a causal
+product-effectiveness outcome.
 
 ## North-Star Boundary
 
@@ -92,23 +92,26 @@ not modified. This sample does not satisfy the end-to-end acceptance condition
 and must not be used to claim lower PR lead time, fewer interventions, less
 rework, or general product effectiveness.
 
-## Controlled Readiness Comparison
+## Source-Bound Readiness Cohort
 
 A fresh source-bound cohort was captured on 2026-08-03 from five named task
 worktrees across Agent Skills, Configs, Portfolio, and Coding Harness. The raw
-local evidence is retained in the OC evidence lane as
+local evidence remains in the private OC evidence lane as
 `real-task-observations.json`, SHA-256
 `fef485416dd21d01d281691e8879f078e31699a33deaba180724f043a1a70272`.
-It is intentionally not a new tracked receipt or schema family. This page
-records the evidence boundary and summary; the raw local bytes are required
-for replay of the exact output.
+It is intentionally not a tracked receipt or a new schema family. The digest
+binds that local observation, but a normal repository checkout cannot
+independently retrieve or replay the private bytes.
 
 The source runner was Coding Harness `main` at
-`f0f405adf0b405ec821f58e564d3d3f5927cfffc`. Each observation ran the existing
-read-only commands `node --import tsx src/cli.ts next --json` from the task
-worktree and `node --import tsx src/cli.ts check <repo-root> --json` from the
-Coding Harness checkout. A Git status/diff snapshot was captured first, and
-all five task worktrees were clean at observation time.
+`f0f405adf0b405ec821f58e564d3d3f5927cfffc`. The recorded invocation used two
+roots: the Coding Harness source checkout supplied `src/cli.ts`, while each
+task worktree was the working directory for `next --json`; `check <repo-root>
+--json` ran from the source checkout with the task root as its explicit
+argument. A Git status/diff snapshot was captured first, and all five task
+worktrees were clean at observation time. This arrangement is a local
+execution record, not a portable command that can be replayed from a target
+repository without the source checkout and private evidence lane.
 
 | Task worktree / observed HEAD | `next` result | `check` counts (ok / warn / fail) | Local interpretation |
 | --- | --- | ---: | --- |
