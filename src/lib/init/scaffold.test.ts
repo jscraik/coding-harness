@@ -438,9 +438,10 @@ describe("scaffold templates resolution", () => {
 		// If missing, the wrapper should provide package-manager-specific recovery commands.
 		expect(rendered).toContain("local $PACKAGE_NAME could not be resolved");
 		expect(rendered).toContain("not a local npm package root");
-		expect(rendered).toContain("Private npm fallback is disabled by default");
+		expect(rendered).toContain("Public npm fallback is disabled by default");
 		expect(rendered).toContain("HARNESS_CLI_ALLOW_NPM_EXEC=1");
-		expect(rendered).toContain("npm auth is missing in this process");
+		expect(rendered).toContain("no npm registry credential is required");
+		expect(rendered).not.toContain("npm auth is missing in this process");
 		expect(rendered).toContain("yarn install");
 		expect(rendered).toContain("yarn add --dev @brainwav/coding-harness");
 		expect(rendered).toContain("yarn harness");

@@ -81,12 +81,6 @@ jobs:
           node-version: "26.3.0"
           registry-url: "https://registry.npmjs.org/"
 
-      - name: Configure npm authentication
-        run: |
-          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
 {{packageManagerSetupStep}}
       - name: Install dependencies
         run: {{installCommand}}

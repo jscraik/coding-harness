@@ -185,9 +185,11 @@ verified by downstream consumers. Unsigned releases introduce supply chain risk.
 
 **Controls:**
 
-- Published npm packages from this repository **must** use npm provenance
-  (`--provenance` flag via the release workflow) so consumers can verify the
-  build origin.
+- The normal public npm release path **must** use npm provenance (`--provenance`
+  via OIDC trusted publishing) so consumers can verify the build origin. The
+  explicitly selected token-mode recovery path is an exception for bootstrap
+  recovery and does not provide npm registry provenance; it must not be
+  described as equivalent evidence.
 - Release workflows **must** use SLSA-compatible build environments (GitHub
   Actions with `id-token: write` for OIDC) to generate verifiable build
   attestations.

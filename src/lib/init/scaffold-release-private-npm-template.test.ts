@@ -11,6 +11,9 @@ describe("scaffold public npm release template", () => {
 		});
 
 		expect(workflow).toContain("name: Release to public npm");
+		expect(workflow).not.toContain("Configure npm authentication");
+		expect(workflow).not.toContain("_authToken=$NPM_TOKEN");
+		expect(workflow).toContain(`NODE_AUTH_TOKEN: \${{ secrets.NPM_TOKEN }}`);
 		expect(workflow).toContain('required_pnpm_version="10.33.0"');
 		expect(workflow).toContain("run: pnpm install --frozen-lockfile");
 		expect(workflow).toContain(

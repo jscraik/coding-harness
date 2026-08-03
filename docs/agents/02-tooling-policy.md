@@ -443,7 +443,7 @@ Environment variables controlling external normalization behavior:
 - CircleCI is non-release only in this repository. The only release-adjacent behavior allowed there is verification-only gating; do not add `pnpm publish`, token-based publish, or GitHub release creation steps there.
 - Keep release docs and scaffolds aligned with this split:
   - CircleCI: PR governance and security checks.
-  - GitHub Actions: public npm publish + registry provenance, attestation, and GitHub release creation.
+  - GitHub Actions: public npm publish. OIDC trusted publishing adds npm registry provenance; the explicit token fallback publishes without npm registry provenance. `actions/attest-build-provenance` is a separate GitHub artifact attestation and may be unavailable for this repository type.
   - Manual `workflow_dispatch` inputs must flow through named environment
     variables before shell validation; release templates and source workflows
     must stay aligned when this boundary changes.
@@ -497,9 +497,12 @@ auth override.
 
 ### CI auth
 
-For CI repos, inject auth into `~/.npmrc` at runtime using repository secrets,
-for example by appending `//registry.npmjs.org/:_authToken=$NPM_TOKEN` in the
-workflow before install steps.
+Public package installs and the opt-in `scripts/harness-cli.sh` npm fallback are
+anonymous and must not require `NPM_TOKEN`. The tag-driven release workflow
+uses OIDC trusted publishing by default. If an operator explicitly selects
+`publish_auth=token` for release recovery, the publish job supplies
+`NODE_AUTH_TOKEN` only to its publish step; that token is not an install
+prerequisite and must not be written into a repository `.npmrc`.
 
 ### Verification
 

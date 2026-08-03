@@ -45,7 +45,7 @@ This document is the operational source of truth for CI ownership intent. `harne
 
 | Responsibility                                        | Workflow              | Job       | Trigger                                       | Workflow File                               |
 | ----------------------------------------------------- | --------------------- | --------- | --------------------------------------------- | ------------------------------------------- |
-| public npm publish + provenance attestation + GitHub Release | `release-private-npm` | `publish` | `Semver` tag push and guarded manual dispatch | `.github/workflows/release-private-npm.yml` (legacy filename) |
+| public npm publish + conditional npm provenance + GitHub artifact attestation + GitHub Release | `release-private-npm` | `publish` | `Semver` tag push and guarded manual dispatch | `.github/workflows/release-private-npm.yml` (legacy filename) |
 | CodeQL code-scanning upload                           | `CodeQL`              | `Analyze (javascript-typescript)` | Pull request, main push, weekly schedule, and manual dispatch | `.github/workflows/codeql.yml` |
 
 ### Not Owned by Either CI System
@@ -77,9 +77,9 @@ Developer pushes tag v1.2.3
                  3. Generates SBOM (cyclonedx-npm)
                  4. Smoke tests packed CLI artifact
                  5. Verifies tag == package.json version
-                 6. Publishes to npm (token or OIDC)
-                 7. Generates provenance attestation (OIDC)
-                 8. Verifies attestation
+                 6. Publishes to npm (OIDC with npm provenance by default, or token fallback without npm provenance)
+                 7. Generates a separate GitHub artifact attestation when supported (OIDC)
+                 8. Verifies the GitHub artifact attestation when generated
                  9. Creates GitHub Release with CHANGELOG.md notes
 ```
 
@@ -143,4 +143,5 @@ For ownership overlap detection, manually verify:
 | Security scan lane  | `security-scan` workflow in `.circleci/config.yml` with Semgrep and report-only Snyk jobs | N/A (release-only)                             |
 | Snyk token          | `SNYK_TOKEN` project environment variable for the report-only Snyk CLI step               | N/A                                            |
 | npm publish token   | N/A (does not publish)                                                                    | `NPM_TOKEN` secret or OIDC (`id-token: write`) |
-| Attestation signing | N/A                                                                                       | OIDC (`actions/attest-build-provenance`)       |
+| npm registry provenance | N/A                                                                                       | OIDC trusted publishing only (`--provenance`)  |
+| GitHub artifact attestation | N/A                                                                                   | OIDC (`actions/attest-build-provenance`), best effort by repository type |

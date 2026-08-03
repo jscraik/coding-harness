@@ -2105,10 +2105,11 @@ describe("runInit", () => {
 				"local install/bootstrap problem, not a harness command failure",
 			);
 			expect(harnessCli).toContain(
-				"Private npm fallback is disabled by default",
+				"Public npm fallback is disabled by default",
 			);
 			expect(harnessCli).toContain("HARNESS_CLI_ALLOW_NPM_EXEC=1");
-			expect(harnessCli).toContain("npm auth is missing in this process");
+			expect(harnessCli).toContain("no npm registry credential is required");
+			expect(harnessCli).not.toContain("npm auth is missing in this process");
 			expect(harnessCli).toContain("npm install");
 			expect(harnessCli).toContain(
 				"npm install --save-dev @brainwav/coding-harness",
@@ -2654,7 +2655,7 @@ describe("runInit", () => {
 				"local install/bootstrap problem, not a harness command failure",
 			);
 			expect(wrapper.stderr).toContain(
-				"Private npm fallback is disabled by default",
+				"Public npm fallback is disabled by default",
 			);
 			expect(wrapper.stderr).toContain("pnpm install");
 			expect(wrapper.stderr).toContain("pnpm add -D @brainwav/coding-harness");
