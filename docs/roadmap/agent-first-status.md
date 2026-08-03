@@ -10,7 +10,7 @@ last_validated: 2026-08-03
 - [North-Star Boundary](#north-star-boundary)
 - [What Is Known](#what-is-known)
 - [Direct Observation Sample](#direct-observation-sample)
-- [Controlled Readiness Comparison](#controlled-readiness-comparison)
+- [Source-Bound Observation Sample](#source-bound-observation-sample)
 - [Lifecycle Evidence Sample](#lifecycle-evidence-sample)
 - [Recovery Order](#recovery-order)
 - [Historical Reporting](#historical-reporting)
@@ -36,11 +36,11 @@ admission dependency. Optional
 context maintenance is advisory; it is not the primary action for ordinary work.
 
 The active slice is direct effectiveness observation. A five-repository
-read-only readiness sample, a version-matched controlled readiness comparison,
+read-only readiness sample, a source-bound observation sample,
 and a separate source-bound lifecycle sample are recorded below. The lifecycle
 rows prove that real bounded changes reached review and merge, but they do not
-provide complete intervention/time-to-proof observations. The controlled
-comparison shows richer local routing output with sub-second overhead in this
+provide complete intervention/time-to-proof observations. The source-bound
+observation sample shows richer local routing output with sub-second overhead in this
 sample; it does not establish a causal product-effectiveness outcome.
 
 ## North-Star Boundary
@@ -92,7 +92,7 @@ not modified. This sample does not satisfy the end-to-end acceptance condition
 and must not be used to claim lower PR lead time, fewer interventions, less
 rework, or general product effectiveness.
 
-## Controlled Readiness Comparison
+## Source-Bound Observation Sample
 
 A fresh source-bound cohort was captured on 2026-08-03 from five named task
 worktrees across Agent Skills, Configs, Portfolio, and Coding Harness. The raw
