@@ -147,6 +147,18 @@ repository without the source checkout and private evidence lane.
 | Portfolio public registry resolution `68dafea692b8105e01c8ff8930fad98539f85a4d` | `pass` (~1.43s tool wall) | 3 / 1 / 1 | Check exposed repo-local/global version drift |
 | Coding Harness v0.15.3 release preparation `bdf27054f87b73b5e18eaf5bd986d04b9e2bf59e` | `pass` (~1.46s tool wall) | 3 / 1 / 1 | Check exposed source/global version drift |
 
+The one failed check in each of those two rows is the `check` command's
+repo-local versus installed/global version-drift check. Its expected status for
+this observation is `fail`; it is accepted as a classified drift observation,
+never as a readiness pass. The Portfolio row is owned by Portfolio maintainers,
+and the Coding Harness row by Coding Harness maintainers. Remediation is to
+align the source and installed versions, then rerun the exact source-bound
+`next --json` and `check <repo-root> --json` commands above. Until the rerun has
+no failed checks and a zero exit status, preserve the row as a drift observation
+and do not promote it to readiness or effectiveness evidence. Capture stdout,
+stderr, and the exit code; if the rerun fails, retain the failure classification
+and stop promotion rather than treating the row as passed.
+
 The private cohort records clean-lane local routing and fail-closed handling of
 a branch-currency problem as an unverified observation note. Because its raw
 bytes are not repo-retained or independently accessible, it does not establish
