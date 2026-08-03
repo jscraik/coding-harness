@@ -108,7 +108,33 @@ The source runner was Coding Harness `main` at
 roots: the Coding Harness source checkout supplied `src/cli.ts`, while each
 task worktree was the working directory for `next --json`; `check <repo-root>
 --json` ran from the source checkout with the task root as its explicit
-argument. A Git status/diff snapshot was captured first, and all five task
+argument. The exact command shape and working-directory arrangement were:
+
+```bash
+# Set these to the pinned Node/tsx paths and the two roots recorded by the
+# private observation artifact before replaying a row.
+NODE_BIN=/path/to/node-26.3.0/bin/node
+TSX_LOADER=/path/to/coding-harness/node_modules/tsx/dist/loader.mjs
+HARNESS_SOURCE=/path/to/coding-harness
+TASK_ROOT=/path/to/task-worktree
+
+# cwd: TASK_ROOT
+(cd "$TASK_ROOT" && "$NODE_BIN" --import "$TSX_LOADER" \
+  "$HARNESS_SOURCE/src/cli.ts" next --json)
+
+# cwd: HARNESS_SOURCE; TASK_ROOT is the explicit check target
+(cd "$HARNESS_SOURCE" && "$NODE_BIN" --import "$TSX_LOADER" \
+  "$HARNESS_SOURCE/src/cli.ts" check "$TASK_ROOT" --json)
+```
+
+The private artifact records the host-specific absolute command strings,
+working directories, exit codes, wall times, and raw output. A replay must
+retain the source commit and task HEAD from the row, capture both stdout and
+stderr, and preserve the exit code. A non-zero command exit blocks the row;
+`check` output with any `fail` count also remains a failed observation even
+when the process exits zero. The Coding Harness and Portfolio rows each had
+one failed check and therefore remain drift observations, not readiness
+passes. A Git status/diff snapshot was captured first, and all five task
 worktrees were clean at observation time. This arrangement is a local
 execution record, not a portable command that can be replayed from a target
 repository without the source checkout and private evidence lane.
