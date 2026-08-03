@@ -111,12 +111,29 @@ task worktree was the working directory for `next --json`; `check <repo-root>
 argument. The exact command shape and working-directory arrangement were:
 
 ```bash
+set -euo pipefail
+
 # Set these to the pinned Node/tsx paths and the two roots recorded by the
 # private observation artifact before replaying a row.
 NODE_BIN=/path/to/node-26.3.0/bin/node
 TSX_LOADER=/path/to/coding-harness/node_modules/tsx/dist/loader.mjs
 HARNESS_SOURCE=/path/to/coding-harness
 TASK_ROOT=/path/to/task-worktree
+EXPECTED_SOURCE_SHA=f0f405adf0b405ec821f58e564d3d3f5927cfffc
+# Select the matching task HEAD from the table above.
+EXPECTED_TASK_SHA=<observed HEAD from the selected table row>
+
+assert_recorded_tree() {
+  local root=$1
+  local expected=$2
+  test "$(git -C "$root" rev-parse HEAD)" = "$expected"
+  test -z "$(git -C "$root" status --porcelain=v1)"
+}
+
+# The source checkout is owned by Coding Harness maintainers. The task
+# worktree is owned by the repository that supplied the selected row.
+assert_recorded_tree "$HARNESS_SOURCE" "$EXPECTED_SOURCE_SHA"
+assert_recorded_tree "$TASK_ROOT" "$EXPECTED_TASK_SHA"
 
 # cwd: TASK_ROOT
 (cd "$TASK_ROOT" && "$NODE_BIN" --import "$TSX_LOADER" \
