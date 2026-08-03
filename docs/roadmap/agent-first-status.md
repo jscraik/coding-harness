@@ -147,8 +147,10 @@ repository without the source checkout and private evidence lane.
 | Portfolio public registry resolution `68dafea692b8105e01c8ff8930fad98539f85a4d` | `pass` (~1.43s tool wall) | 3 / 1 / 1 | Check exposed repo-local/global version drift |
 | Coding Harness v0.15.3 release preparation `bdf27054f87b73b5e18eaf5bd986d04b9e2bf59e` | `pass` (~1.46s tool wall) | 3 / 1 / 1 | Check exposed source/global version drift |
 
-The cohort proves clean-lane local routing and fail-closed handling of a
-branch-currency problem. It does not prove that a user task was accelerated,
+The private cohort records clean-lane local routing and fail-closed handling of
+a branch-currency problem as an unverified observation note. Because its raw
+bytes are not repo-retained or independently accessible, it does not establish
+reviewer-replayable evidence. It does not prove that a user task was accelerated,
 that Jamie intervention or review/fix cycles decreased, or that PR lead time
 improved. Intervention, review/fix, and PR-lead-time fields remain unknown;
 the read-only observation itself must not be counted as a task outcome.
