@@ -29,6 +29,28 @@ describe("scaffold public npm release template", () => {
 			"pnpm publish --no-git-checks --access public --provenance",
 		);
 		expect(workflow).not.toMatch(/__[A-Z_]+__/);
+
+		// Verify NODE_AUTH_TOKEN is scoped to token-auth publish step only
+		const tokenStepMatch = workflow.match(
+			/- name: Publish public package \(token\)\s+if: steps\.publish-auth\.outputs\.mode == 'token'\s+env:\s+NODE_AUTH_TOKEN: \${{ secrets\.NPM_TOKEN }}/,
+		);
+		expect(tokenStepMatch).toBeTruthy();
+
+		// Verify OIDC publish step has no NPM_TOKEN/NODE_AUTH_TOKEN dependency
+		const oidcStepMatch = workflow.match(
+			/- name: Publish public package \(OIDC trusted publisher\)\s+if: steps\.publish-auth\.outputs\.mode == 'oidc'\s+run:/,
+		);
+		expect(oidcStepMatch).toBeTruthy();
+		const oidcStepStart = workflow.indexOf(
+			"- name: Publish public package (OIDC trusted publisher)",
+		);
+		const nextStepStart = workflow.indexOf(
+			"- name: Generate build provenance attestation",
+			oidcStepStart,
+		);
+		const oidcStepContent = workflow.slice(oidcStepStart, nextStepStart);
+		expect(oidcStepContent).not.toContain("NPM_TOKEN");
+		expect(oidcStepContent).not.toContain("NODE_AUTH_TOKEN");
 	});
 
 	it("keeps workflow dispatch inputs out of shell interpolation", () => {
