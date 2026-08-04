@@ -1,4 +1,4 @@
-name: Release to private npm
+name: Release to public npm
 
 on:
   push:
@@ -80,12 +80,6 @@ jobs:
         with:
           node-version: "26.3.0"
           registry-url: "https://registry.npmjs.org/"
-
-      - name: Configure npm authentication
-        run: |
-          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
 {{packageManagerSetupStep}}
       - name: Install dependencies
@@ -251,7 +245,7 @@ jobs:
           fi
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
 
-      - name: Publish private package (token)
+      - name: Publish public package (token)
         if: steps.publish-auth.outputs.mode == 'token'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -263,7 +257,7 @@ jobs:
           fi
           {{publishTokenCommand}}
 
-      - name: Publish private package (OIDC trusted publisher)
+      - name: Publish public package (OIDC trusted publisher)
         if: steps.publish-auth.outputs.mode == 'oidc'
         run: {{publishOidcCommand}}
 

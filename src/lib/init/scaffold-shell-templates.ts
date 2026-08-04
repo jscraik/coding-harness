@@ -140,6 +140,7 @@ if ! command -v node >/dev/null 2>&1; then
 fi`;
 }
 
+/** Render source-repository detection helpers for the generated CLI wrapper. */
 function renderHarnessCliDetectionHelpers(): string {
 	return `is_harness_source_repo() {
 	[[ -f "$REPO_ROOT/src/cli.ts" ]] || return 1
@@ -150,14 +151,10 @@ function renderHarnessCliDetectionHelpers(): string {
 		const packageJson = JSON.parse(readFileSync(process.argv[1], "utf8"));
 		process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);
 	' "$REPO_ROOT/package.json" >/dev/null 2>&1
-}
-
-npm_auth_is_available() {
-	command -v npm >/dev/null 2>&1 || return 1
-	npm whoami --registry="$NPM_REGISTRY" >/dev/null 2>&1
 }`;
 }
 
+/** Render the opt-in public npm fallback helpers for the generated CLI wrapper. */
 function renderHarnessCliNpmFallbackHelpers(): string {
 	return `resolve_package_spec() {
 	if [[ ! -f "$REPO_ROOT/package.json" ]]; then
@@ -191,17 +188,7 @@ run_npm_fallback() {
 		echo "Error: npm is required for HARNESS_CLI_ALLOW_NPM_EXEC=1 but is not on PATH." >&2
 		exit 1
 	fi
-	if ! npm_auth_is_available; then
-		echo "Error: npm auth is missing in this process; cannot fetch $PACKAGE_NAME." >&2
-		print_npm_auth_hint
-		exit 1
-	fi
-	exec npm exec --yes --package "$(resolve_package_spec)" -- harness "$@"
-}
-
-print_npm_auth_hint() {
-	echo "The repo .npmrc only routes @brainwav packages to npm; it does not carry credentials." >&2
-	echo "Provide npm auth in this process with NPM_TOKEN or a user-level ~/.npmrc, then retry." >&2
+	exec npm exec --yes --registry="$NPM_REGISTRY" --package "$(resolve_package_spec)" -- harness "$@"
 }`;
 }
 
@@ -225,6 +212,7 @@ function renderHarnessCliSourceRepoBranch(
 fi`;
 }
 
+/** Render the installed-package and public fallback branch for the generated CLI wrapper. */
 function renderHarnessCliInstalledPackageBranch(
 	installCommand: string,
 	addCommand: string,
@@ -238,7 +226,7 @@ if [[ ! -f "$CLI_PATH" ]]; then
 		echo "Error: local @brainwav/coding-harness could not be resolved because this is not a local npm package root." >&2
 		echo "Detected repo root: $REPO_ROOT" >&2
 		echo "Create or restore package.json before relying on node_modules, or run from the intended project root." >&2
-		echo "To allow an authenticated private npm fallback instead, rerun with:" >&2
+		echo "To allow the public npm fallback, rerun with:" >&2
 		echo "  HARNESS_CLI_ALLOW_NPM_EXEC=1 bash scripts/harness-cli.sh <command>" >&2
 		exit 1
 	fi
@@ -247,14 +235,14 @@ if [[ ! -f "$CLI_PATH" ]]; then
 
 	echo "Error: local $PACKAGE_NAME could not be resolved from this repo." >&2
 	echo "This is a local install/bootstrap problem, not a harness command failure." >&2
-	echo "Private npm fallback is disabled by default so repo checks do not silently download tooling." >&2
+	echo "Public npm fallback is disabled by default so repo checks do not silently download tooling." >&2
 	echo "Repair from the repo root with one of:" >&2
 	echo "  ${installCommand}" >&2
 	echo "  ${addCommand}" >&2
 	echo "After the package is installed, rerun:" >&2
 	echo "  bash scripts/harness-cli.sh <command>" >&2
 	echo "  ${execCommand} <command>" >&2
-	echo "To use the private npm fallback instead, set HARNESS_CLI_ALLOW_NPM_EXEC=1 after npm auth is available." >&2
+	echo "To use the public npm fallback, set HARNESS_CLI_ALLOW_NPM_EXEC=1; no npm registry credential is required." >&2
 	exit 1
 fi
 

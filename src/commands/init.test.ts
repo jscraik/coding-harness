@@ -1348,9 +1348,9 @@ describe("runInit", () => {
 				'echo "$NPM_CONFIG_PREFIX/bin" >> "$GITHUB_PATH"',
 			);
 			expect(content).not.toContain("name: Enable corepack");
-			expect(content).toContain("name: Publish private package (token)");
+			expect(content).toContain("name: Publish public package (token)");
 			expect(content).toContain(
-				"name: Publish private package (OIDC trusted publisher)",
+				"name: Publish public package (OIDC trusted publisher)",
 			);
 			expect(content).toContain("name: Verify tag matches package version");
 			expect(content).toContain("name: Generate build provenance attestation");
@@ -2105,10 +2105,11 @@ describe("runInit", () => {
 				"local install/bootstrap problem, not a harness command failure",
 			);
 			expect(harnessCli).toContain(
-				"Private npm fallback is disabled by default",
+				"Public npm fallback is disabled by default",
 			);
 			expect(harnessCli).toContain("HARNESS_CLI_ALLOW_NPM_EXEC=1");
-			expect(harnessCli).toContain("npm auth is missing in this process");
+			expect(harnessCli).toContain("no npm registry credential is required");
+			expect(harnessCli).not.toContain("npm auth is missing in this process");
 			expect(harnessCli).toContain("npm install");
 			expect(harnessCli).toContain(
 				"npm install --save-dev @brainwav/coding-harness",
@@ -2654,7 +2655,7 @@ describe("runInit", () => {
 				"local install/bootstrap problem, not a harness command failure",
 			);
 			expect(wrapper.stderr).toContain(
-				"Private npm fallback is disabled by default",
+				"Public npm fallback is disabled by default",
 			);
 			expect(wrapper.stderr).toContain("pnpm install");
 			expect(wrapper.stderr).toContain("pnpm add -D @brainwav/coding-harness");

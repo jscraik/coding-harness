@@ -91,9 +91,10 @@ does not approve, merge, publish, or release a change.
 Read [AGENTS.md](./AGENTS.md), then [CODESTYLE.md](./CODESTYLE.md). The
 [CLI reference](./docs/cli-reference.md) is the checked command catalogue;
 [contributor validation](./docs/agents/04-validation.md) owns broader gates.
-The tag-driven private npm release workflow bootstraps the repository-pinned
-`uv` runtime and required repository CLI tools before artifact validation;
-local checks do not prove publication.
+The tag-driven public npm release workflow (kept at the legacy
+`.github/workflows/release-private-npm.yml` path) bootstraps the
+repository-pinned `uv` runtime and required repository CLI tools before
+artifact validation; local checks do not prove publication.
 Keep the stable product surface small and move unselected expert capability out
 of the routine path. Keep the truth-bounded recovery status in
 [`docs/roadmap/agent-first-status.md`](./docs/roadmap/agent-first-status.md)

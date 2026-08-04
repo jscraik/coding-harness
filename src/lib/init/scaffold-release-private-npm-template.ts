@@ -5,7 +5,7 @@ import {
 import { renderGitHubActionsPnpmSetupStep } from "./scaffold-github-actions-pr-pipeline-template.js";
 import type { PackageManager } from "./types.js";
 
-/** Package-manager-specific command inputs for the private npm release workflow. */
+/** Package-manager-specific command inputs for the public npm release workflow. */
 export interface ReleasePrivateNpmWorkflowRenderInput {
 	/** Detected supported package manager. */
 	packageManager: PackageManager;
@@ -17,21 +17,28 @@ export interface ReleasePrivateNpmWorkflowRenderInput {
 	buildCommand: string;
 }
 
+/**
+ * Render a public npm publish command for the selected package manager.
+ *
+ * @param packageManager - Package manager used by the scaffolded repository.
+ * @param withProvenance - Whether the publish command should request npm provenance.
+ * @returns The publish command used by the generated workflow.
+ */
 function renderPrivateNpmPublishCommand(
 	packageManager: PackageManager,
 	withProvenance: boolean,
 ): string {
 	if (packageManager === "pnpm") {
 		return withProvenance
-			? "pnpm publish --no-git-checks --access restricted --provenance"
-			: "pnpm publish --no-git-checks --access restricted";
+			? "pnpm publish --no-git-checks --access public --provenance"
+			: "pnpm publish --no-git-checks --access public";
 	}
 	const provenanceFlag = withProvenance ? " --provenance" : "";
-	return `npm publish --access restricted${provenanceFlag}`;
+	return `npm publish --access public${provenanceFlag}`;
 }
 
 /**
- * Render the scaffolded GitHub Actions workflow for private npm releases.
+ * Render the scaffolded GitHub Actions workflow for public npm releases.
  *
  * @param input - Pre-resolved package-manager commands and package manager name.
  * @returns The YAML contents for `.github/workflows/release-private-npm.yml`.

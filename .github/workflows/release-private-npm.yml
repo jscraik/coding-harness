@@ -1,4 +1,4 @@
-name: Release to private npm
+name: Release to public npm
 
 on:
   push:
@@ -187,7 +187,7 @@ jobs:
           fi
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
 
-      - name: Publish private package (token)
+      - name: Publish public package (token)
         if: steps.publish-auth.outputs.mode == 'token'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -197,15 +197,15 @@ jobs:
             echo "::error::NPM_TOKEN secret is required when publish_auth=token."
             exit 1
           fi
-          pnpm publish --no-git-checks --access restricted
+          pnpm publish --no-git-checks --access public
 
-      - name: Publish private package (OIDC trusted publisher)
+      - name: Publish public package (OIDC trusted publisher)
         if: steps.publish-auth.outputs.mode == 'oidc'
         env:
-          # npm provenance requires a public package. Keep OIDC auth for the
-          # private package, but do not request registry provenance.
-          NPM_CONFIG_PROVENANCE: "false"
-        run: pnpm publish --no-git-checks --access restricted
+          # Public npm publishes use OIDC trusted publishing and registry
+          # provenance for the publicly consumable package.
+          NPM_CONFIG_PROVENANCE: "true"
+        run: pnpm publish --no-git-checks --access public --provenance
 
       - name: Generate build provenance attestation
         id: attest
