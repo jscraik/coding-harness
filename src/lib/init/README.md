@@ -22,9 +22,16 @@ The public CLI reference documents the five routine jobs only. Internal
 workflow-contract fixtures must not force install guidance to describe
 unselected migration or governance operations.
 
-The generated private-release workflow must provision the repository CLI tools
-used by artifact validation before running its checks, matching the checked-in
-release workflow.
+The repository-owned public-release workflow at
+`.github/workflows/release-private-npm.yml` must run `sudo apt-get update`, `sudo
+apt-get install --yes
+--no-install-recommends ripgrep`, and `rg --version` before its selected check
+command. Each command must succeed; the release workflow owner must fix any
+failure before validation continues.
+
+Generated downstream `release-private-npm.yml` scaffolds remain private by
+default and use restricted publish commands. This module documentation must not
+be read as a public-publication contract for generated consumer repositories.
 
 ## Change boundaries
 

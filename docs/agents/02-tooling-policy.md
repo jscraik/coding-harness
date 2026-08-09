@@ -17,7 +17,7 @@ last_validated: 2026-07-16
 - [Tooling verification checklist](#tooling-verification-checklist)
 - [Discovery constraints](#discovery-constraints)
 - [Escalation triggers](#escalation-triggers)
-- [Private npm package setup](#private-npm-package-setup)
+- [npm package setup](#npm-package-setup)
 - [Local auth](#local-auth)
 - [CI auth](#ci-auth)
 - [Verification](#verification)
@@ -314,18 +314,24 @@ Exception for harness readiness:
 - Source-checkout public command proof should use `pnpm exec harness ...` when dependencies are installed and `dist/cli.js` exists; use `node --import tsx src/cli.ts ...` only for before-build current-tree probes.
 - Generated `scripts/check-environment.sh` in harness-managed repositories should prefer a dedicated harness runner using the following lookup order:
   1. `bash scripts/harness-cli.sh`
-  2. `node dist/cli.js`
-  3. `node --import tsx src/cli.ts` (only when `dist/cli.js` is absent and a before-build current-tree probe is required)
+  2. `node --import tsx src/cli.ts` (only when a before-build current-tree probe is required)
+  3. `node dist/cli.js`
   4. `mise which harness`
   5. global `harness` binary
+  6. anonymous public `npm exec` only when `HARNESS_CLI_ALLOW_NPM_EXEC=1` is explicitly set
 - `scripts/run-harness-gate.sh` should treat the real source CLI command as the source-checkout probe. Use `node --import tsx`, not `pnpm exec tsx`, for source-checkout probes because the `tsx` CLI can fail before harness code runs with a temp-pipe `listen EPERM: operation not permitted` startup error in sandboxed runners. Fallback to `node dist/cli.js` is allowed only for the explicit runner temp-pipe signature.
 - This lookup order avoids stale Homebrew/global binaries shadowing the pinned runtime toolchain.
 - `harness check-environment` must compare `uv` against the consumer repository's `harness.contract.json` `toolingPolicy.requiredMiseTools` entry when present. Use the harness package fallback pin only when that consumer contract omits a `uv` tool entry, so downstream canaries do not fail solely because the harness source repo advanced its own default.
 - Keep `scripts/check-environment.sh` validation-only for `mise`: it may assert that `mise` exists, is trusted, and can activate the repo, but CI/bootstrap flows must install `mise` and run `mise trust --yes .mise.toml` before invoking the gate.
 - The global fallback install path is `npm i -g @brainwav/coding-harness`.
-- Private package auth must be wired where the global fallback is used:
-  - Local shell: `export NPM_TOKEN=<token>`
-  - GitHub Actions: `env: NPM_TOKEN: ${{ secrets.NPM_TOKEN }}`
+- The public package fallback does not require registry credentials for install.
+  Keep `NPM_TOKEN` only for an explicitly selected token-mode publish or a
+  separate private registry consumer; never add it to a project `.npmrc`.
+- Generated `scripts/check-environment.sh` keeps its local, mise, and global
+  runner order. When none is available, set
+  `HARNESS_CLI_ALLOW_NPM_EXEC=1` to opt into the anonymous public `npm exec`
+  fallback; without that opt-in, the legacy auth-bound diagnostic remains
+  fail-closed.
 - Harness-managed repos may also scaffold `scripts/harness-cli.sh` as the repo-local wrapper for the published CLI package. That wrapper must resolve `@brainwav/coding-harness/dist/cli.js` from the current repo and fail with actionable install hints such as `pnpm install`, `pnpm add -D @brainwav/coding-harness`, and `pnpm exec harness <command>` instead of surfacing a raw `MODULE_NOT_FOUND`.
 - Semgrep hook configs under `scripts/` must remain valid YAML as well as valid Semgrep syntax; quote pattern strings that contain mapping-like fragments such as `shell: true` so pre-push parsing does not fail before policy checks run.
 
@@ -435,7 +441,7 @@ Environment variables controlling external normalization behavior:
   Active AI-review scaffolding in this repository is CodeRabbit-first. Any remaining Greptile references in active tooling or scaffold paths should exist only for legacy cleanup and migration safety, not for new repo scaffolding or current review enforcement.
   `scripts/check-diagram-freshness.sh` should compare only git-tracked diagram artifacts before and after refresh. gitignored `.diagram/` refresh output outside tracked files must not fail `pre-push` with an empty "Changed tracked files" list.
 
-## Tag-driven private npm release workflow
+## Tag-driven public npm release workflow
 
 - Canonical publish workflow: `.github/workflows/release-private-npm.yml`
 - Trigger: semantic-version tag pushes matching `vX.Y.Z` (for example `v0.12.0`) and guarded manual dispatch.
@@ -443,7 +449,7 @@ Environment variables controlling external normalization behavior:
 - CircleCI is non-release only in this repository. The only release-adjacent behavior allowed there is verification-only gating; do not add `pnpm publish`, token-based publish, or GitHub release creation steps there.
 - Keep release docs and scaffolds aligned with this split:
   - CircleCI: PR governance and security checks.
-  - GitHub Actions: private npm publish + attestation + GitHub release creation.
+  - GitHub Actions: public npm publish. OIDC trusted publishing adds npm registry provenance; the explicit token fallback publishes without npm registry provenance. `actions/attest-build-provenance` is a separate GitHub artifact attestation and may be unavailable for this repository type.
   - Manual `workflow_dispatch` inputs must flow through named environment
     variables before shell validation; release templates and source workflows
     must stay aligned when this boundary changes.
@@ -471,7 +477,7 @@ Stop and ask before proceeding if:
 - A required command is absent.
 - `pnpm` script behavior conflicts with local/global docs.
 
-## Private npm package setup
+## npm package setup
 
 Harness-managed repos should keep a project-level `.npmrc`, but it must stay
 scope-only and auth-free. `harness init` scaffolds the baseline file with
@@ -497,9 +503,12 @@ auth override.
 
 ### CI auth
 
-For CI repos, inject auth into `~/.npmrc` at runtime using repository secrets,
-for example by appending `//registry.npmjs.org/:_authToken=$NPM_TOKEN` in the
-workflow before install steps.
+Public package installs and the opt-in `scripts/harness-cli.sh` npm fallback are
+anonymous and must not require `NPM_TOKEN`. The tag-driven release workflow
+uses OIDC trusted publishing by default. If an operator explicitly selects
+`publish_auth=token` for release recovery, the publish job supplies
+`NODE_AUTH_TOKEN` only to its publish step; that token is not an install
+prerequisite and must not be written into a repository `.npmrc`.
 
 ### Verification
 

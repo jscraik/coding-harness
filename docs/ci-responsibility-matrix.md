@@ -45,7 +45,7 @@ This document is the operational source of truth for CI ownership intent. `harne
 
 | Responsibility                                        | Workflow              | Job       | Trigger                                       | Workflow File                               |
 | ----------------------------------------------------- | --------------------- | --------- | --------------------------------------------- | ------------------------------------------- |
-| npm publish + provenance attestation + GitHub Release | `release-private-npm` | `publish` | `Semver` tag push and guarded manual dispatch | `.github/workflows/release-private-npm.yml` |
+| public npm publish + conditional npm provenance + GitHub artifact attestation + GitHub Release | `release-private-npm` | `publish` | `Semver` tag push and guarded manual dispatch | `.github/workflows/release-private-npm.yml` (legacy filename) |
 | CodeQL code-scanning upload                           | `CodeQL`              | `Analyze (javascript-typescript)` | Pull request, main push, weekly schedule, and manual dispatch | `.github/workflows/codeql.yml` |
 
 ### Not Owned by Either CI System
@@ -71,15 +71,15 @@ All harness governance checks (`pr-template`, `linear-gate`, `risk-policy-gate`,
 ```text
 Developer pushes tag v1.2.3
          |
-         +---> GitHub Actions: release-private-npm / publish
+         +---> GitHub Actions: release-private-npm / publish (public npm)
                  1. pnpm check
                  2. pnpm build
                  3. Generates SBOM (cyclonedx-npm)
                  4. Smoke tests packed CLI artifact
                  5. Verifies tag == package.json version
-                 6. Publishes to npm (token or OIDC)
-                 7. Generates provenance attestation (OIDC)
-                 8. Verifies attestation
+                 6. Publishes to npm (OIDC with npm provenance by default, or token fallback without npm provenance)
+                 7. Generates a separate GitHub artifact attestation when supported (OIDC)
+                 8. Verifies the GitHub artifact attestation when generated
                  9. Creates GitHub Release with CHANGELOG.md notes
 ```
 
@@ -91,7 +91,7 @@ The repository is in a **CircleCI-primary state**:
 
 - CircleCI is the canonical owner for PR governance and security checks.
 - The CircleCI `security-scan` workflow runs repo-owned Semgrep and report-only Snyk lanes while preserving the single GitHub check-run name `security-scan`.
-- GitHub Actions owns release publishing at `.github/workflows/release-private-npm.yml` and CodeQL code-scanning upload at `.github/workflows/codeql.yml`.
+- GitHub Actions owns public npm release publishing at `.github/workflows/release-private-npm.yml` (legacy filename) and CodeQL code-scanning upload at `.github/workflows/codeql.yml`.
 - `.harness/ci-required-checks.json` maps `security-scan` to CircleCI and `CodeRabbit` to the CodeRabbit app. CodeQL is tracked by `harness.contract.json → branchProtection.publicCodeScanning` instead of the required status-check manifest.
 
 ## Target State
@@ -143,4 +143,5 @@ For ownership overlap detection, manually verify:
 | Security scan lane  | `security-scan` workflow in `.circleci/config.yml` with Semgrep and report-only Snyk jobs | N/A (release-only)                             |
 | Snyk token          | `SNYK_TOKEN` project environment variable for the report-only Snyk CLI step               | N/A                                            |
 | npm publish token   | N/A (does not publish)                                                                    | `NPM_TOKEN` secret or OIDC (`id-token: write`) |
-| Attestation signing | N/A                                                                                       | OIDC (`actions/attest-build-provenance`)       |
+| npm registry provenance | N/A                                                                                       | OIDC trusted publishing only (`--provenance`)  |
+| GitHub artifact attestation | N/A                                                                                   | OIDC (`actions/attest-build-provenance`), best effort by repository type |

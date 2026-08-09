@@ -57,8 +57,10 @@ default agent route without a named consumer.
   release, and cleanup as distinct evidence lanes.
 - Branch from `main` and use a PR for merges. Required hosted checks are
   `pr-pipeline`, `security-scan`, and `CodeRabbit`; CodeQL is separate.
-- The tag-driven private npm release workflow bootstraps the repository-pinned
-  `uv` runtime and required repository CLI tools before artifact validation.
+- The tag-driven public npm release workflow (kept at the legacy
+  `.github/workflows/release-private-npm.yml` path) bootstraps the
+  repository-pinned `uv` runtime and required repository CLI tools before
+  artifact validation.
   Local checks do not prove npm publication or release completion.
 - Treat feedback as an observed local defect first; local repair or
   `no_system_change` is routine. A `no_system_change` record names its reason,

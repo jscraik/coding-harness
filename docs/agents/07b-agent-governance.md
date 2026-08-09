@@ -54,7 +54,7 @@ correctness or delivery readiness.
 - `bash scripts/validate-codestyle.sh`
 - `docs-gate` (CI check for documentation parity)
 - Code-review pass-through via PR workflow (no direct `main` commits).
-- The tag-driven private npm release workflow installs the repository-pinned
+- The tag-driven public npm release workflow installs the repository-pinned
   runtime and required CLI tools before artifact validation; local gates do not
   prove hosted publication or release completion.
 
@@ -251,7 +251,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   surface while one of these gates is blocked. Report local packet proof
   separately from hosted checks, review-thread state, independent acceptance,
   merge, and release truth.
-- The tag-driven private npm release workflow bootstraps the repository-pinned
+- The tag-driven public npm release workflow bootstraps the repository-pinned
   `uv` runtime before artifact validation; publication and release claims still
   require hosted evidence.
 - runtime-card trace-out changes should keep trace persistence in
