@@ -24,30 +24,6 @@ is_harness_source_repo() {
 	' "$REPO_ROOT/package.json" >/dev/null 2>&1
 }
 
-resolve_package_spec() {
-	if [[ ! -f "$REPO_ROOT/package.json" ]]; then
-		printf '%s\n' "$PACKAGE_SPEC"
-		return 0
-	fi
-	node -e '
-		const { readFileSync } = require("node:fs");
-		const packageName = process.argv[2];
-		const fallback = process.argv[3];
-		const packageJson = JSON.parse(readFileSync(process.argv[1], "utf8"));
-		const version =
-			packageJson.dependencies?.[packageName] ??
-			packageJson.devDependencies?.[packageName] ??
-			packageJson.optionalDependencies?.[packageName];
-		if (typeof version !== "string") {
-			console.log(fallback);
-		} else if (/^(file:|link:|workspace:|portal:|git:|git\+)/.test(version)) {
-			console.log(fallback);
-		} else {
-			console.log(packageName + "@" + version.replace(/^[~^]/, ""));
-		}
-	' "$REPO_ROOT/package.json" "$PACKAGE_NAME" "$PACKAGE_SPEC"
-}
-
 run_npm_fallback() {
 	if [[ "${HARNESS_CLI_ALLOW_NPM_EXEC:-}" != "1" ]]; then
 		return 1
@@ -56,7 +32,7 @@ run_npm_fallback() {
 		echo "Error: npm is required for HARNESS_CLI_ALLOW_NPM_EXEC=1 but is not on PATH." >&2
 		exit 1
 	fi
-	exec npm exec --yes --registry="$NPM_REGISTRY" --package "$(resolve_package_spec)" -- harness "$@"
+	exec npm exec --yes --registry="$NPM_REGISTRY" --package "$PACKAGE_SPEC" -- harness "$@"
 }
 
 if is_harness_source_repo; then

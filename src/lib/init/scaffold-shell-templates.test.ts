@@ -102,7 +102,7 @@ describe("scaffold shell templates", () => {
 		);
 	});
 
-	it("runs the public npm fallback without registry authentication", () => {
+	it("runs the fixed public npm fallback without trusting a package alias", () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "harness-public-fallback-"));
 		try {
 			const scriptsDir = join(tempDir, "scripts");
@@ -112,7 +112,13 @@ describe("scaffold shell templates", () => {
 			mkdirSync(fakeBin, { recursive: true });
 			writeFileSync(
 				join(tempDir, "package.json"),
-				JSON.stringify({ name: "fixture", private: true }),
+				JSON.stringify({
+					name: "fixture",
+					private: true,
+					dependencies: {
+						"@brainwav/coding-harness": "npm:attacker-harness@1.2.3",
+					},
+				}),
 				"utf8",
 			);
 			const wrapperPath = join(scriptsDir, "harness-cli.sh");
@@ -146,10 +152,19 @@ describe("scaffold shell templates", () => {
 			const npmArgs = readFileSync(argsPath, "utf8");
 			expect(npmArgs).toContain("exec");
 			expect(npmArgs).toContain("--registry=https://registry.npmjs.org/");
+			expect(npmArgs).toContain("--package @brainwav/coding-harness@latest");
+			expect(npmArgs).not.toContain("attacker-harness");
 			expect(npmArgs).not.toContain("whoami");
 		} finally {
 			rmSync(tempDir, { recursive: true, force: true });
 		}
+	});
+
+	it("does not honor a downstream npm alias in the public fallback", () => {
+		const wrapper = renderHarnessCliWrapper("pnpm");
+
+		expect(wrapper).toContain('--package "$PACKAGE_SPEC"');
+		expect(wrapper).not.toContain("resolve_package_spec");
 	});
 
 	it("renders the harness gate runner fallback chain", () => {
