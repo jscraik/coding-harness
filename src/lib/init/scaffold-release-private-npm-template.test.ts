@@ -13,9 +13,15 @@ describe("scaffold private npm release template", () => {
 		expect(workflow).toContain("name: Release to private npm");
 		expect(workflow).not.toContain("Configure npm authentication");
 		expect(workflow).not.toContain("_authToken=$NPM_TOKEN");
+		expect(workflow).not.toContain(
+			'registry-url: "https://registry.npmjs.org/"',
+		);
+		expect(workflow).toContain('NPM_CONFIG_USERCONFIG="$NPMRC"');
 		expect(workflow).toContain(`NODE_AUTH_TOKEN: \${{ secrets.NPM_TOKEN }}`);
 		expect(workflow).toContain('required_pnpm_version="10.33.0"');
-		expect(workflow).toContain("run: pnpm install --frozen-lockfile");
+		expect(workflow).toContain(
+			'NPM_CONFIG_USERCONFIG="$NPMRC" pnpm install --frozen-lockfile',
+		);
 		expect(workflow).toContain(
 			"sudo apt-get install --yes --no-install-recommends ripgrep",
 		);
@@ -105,7 +111,7 @@ describe("scaffold private npm release template", () => {
 		});
 
 		expect(workflow).not.toContain('required_pnpm_version="10.33.0"');
-		expect(workflow).toContain("run: npm ci");
+		expect(workflow).toContain('NPM_CONFIG_USERCONFIG="$NPMRC" npm ci');
 		expect(workflow).toContain("run: npm run check");
 		expect(workflow).toContain("run: npm run build");
 		expect(workflow).toContain("npm publish --access restricted\n");

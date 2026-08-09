@@ -99,7 +99,7 @@ When resuming with `bash scripts/verify-work.sh --resume-from <gate-id>`, prior 
 
 ## Release integrity and verification
 
-Releases published via OIDC trusted publishing from `.github/workflows/release-private-npm.yml` use GitHub OIDC for publish authentication and produce a public npm package. The filename is retained for compatibility with existing scaffolds; the emitted workflow publishes publicly and requests npm registry provenance alongside GitHub artifact attestations and the release SBOM.
+This repository's `.github/workflows/release-private-npm.yml` uses GitHub OIDC for publish authentication and produces the public npm package. The filename is retained for compatibility with existing scaffolds; it is not the contract for generated consumer workflows. Generated downstream `release-private-npm.yml` scaffolds remain private by default and use restricted publish commands, so their behavior must not be inferred from this repository's public release workflow.
 
 ### npm provenance
 
