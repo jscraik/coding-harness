@@ -601,6 +601,14 @@ else
 				exit 1
 			fi
 		else
+			if [[ "\${HARNESS_CLI_ALLOW_NPM_EXEC:-0}" == "1" ]]; then
+				if ! run_check_environment_with_runner "public npm package (npm exec)" npm exec --yes --registry=https://registry.npmjs.org/ --package @brainwav/coding-harness@latest -- harness; then
+					echo "Error: public npm fallback failed to run check-environment successfully."
+					echo "Install the package locally and retry, or verify npm can reach registry.npmjs.org."
+					exit 1
+				fi
+			else
+
 			if ! npm whoami --registry=https://registry.npmjs.org/ >/dev/null 2>&1; then
 				echo "Error: npm auth is missing in this process; cannot inspect private @brainwav/coding-harness."
 				echo "The repo .npmrc only routes @brainwav packages to npm; it does not carry credentials."
@@ -638,6 +646,7 @@ else
 			fi
 		fi
 		fi
+	fi
 	fi
 
 jq -e '.passed == true' "$ATTESTATION_PATH" >/dev/null

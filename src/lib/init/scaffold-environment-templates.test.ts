@@ -81,6 +81,16 @@ describe("scaffold environment templates", () => {
 		expect(script).toContain(
 			"printf 'Fix: ensure the session activates mise first",
 		);
+		expect(script).toContain("public npm package (npm exec)");
+		expect(script).toContain(
+			"npm exec --yes --registry=https://registry.npmjs.org/ --package @brainwav/coding-harness@latest -- harness",
+		);
+		expect(script).toContain(
+			'if [[ "${HARNESS_CLI_ALLOW_NPM_EXEC:-0}" == "1" ]]',
+		);
+		expect(script.indexOf("public npm package (npm exec)")).toBeLessThan(
+			script.indexOf("npm auth is missing in this process"),
+		);
 	});
 
 	it("preserves runner fallback order from repo wrapper to global harness", () => {

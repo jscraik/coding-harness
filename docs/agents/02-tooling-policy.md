@@ -326,6 +326,11 @@ Exception for harness readiness:
 - The public package fallback does not require registry credentials for install.
   Keep `NPM_TOKEN` only for an explicitly selected token-mode publish or a
   separate private registry consumer; never add it to a project `.npmrc`.
+- Generated `scripts/check-environment.sh` keeps its local, mise, and global
+  runner order. When none is available, set
+  `HARNESS_CLI_ALLOW_NPM_EXEC=1` to opt into the anonymous public `npm exec`
+  fallback; without that opt-in, the legacy auth-bound diagnostic remains
+  fail-closed.
 - Harness-managed repos may also scaffold `scripts/harness-cli.sh` as the repo-local wrapper for the published CLI package. That wrapper must resolve `@brainwav/coding-harness/dist/cli.js` from the current repo and fail with actionable install hints such as `pnpm install`, `pnpm add -D @brainwav/coding-harness`, and `pnpm exec harness <command>` instead of surfacing a raw `MODULE_NOT_FOUND`.
 - Semgrep hook configs under `scripts/` must remain valid YAML as well as valid Semgrep syntax; quote pattern strings that contain mapping-like fragments such as `shell: true` so pre-push parsing does not fail before policy checks run.
 
