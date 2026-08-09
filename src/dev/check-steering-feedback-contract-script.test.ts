@@ -3,12 +3,12 @@ import { describe, expect, it } from "vitest";
 
 const requireScript = createRequire(import.meta.url);
 
-const { validateAgents, validateAgentGovernance } = requireScript(
-	"../../scripts/check-steering-feedback-contract.cjs",
-) as {
-	validateAgents(content: string): string[];
-	validateAgentGovernance(content: string): string[];
-};
+const { validateAgents, validateAgentGovernance, validateValidationDoc } =
+	requireScript("../../scripts/check-steering-feedback-contract.cjs") as {
+		validateAgents(content: string): string[];
+		validateAgentGovernance(content: string): string[];
+		validateValidationDoc(content: string): string[];
+	};
 
 describe("check-steering-feedback-contract", () => {
 	it("accepts a bounded local-correction threshold in agent instructions", () => {
@@ -59,5 +59,48 @@ describe("check-steering-feedback-contract", () => {
 		].join("\n");
 
 		expect(validateAgentGovernance(content)).toEqual([]);
+	});
+
+	it("accepts compact validation guidance at the retained boundaries", () => {
+		const content = [
+			"Use the smallest gate needed for risk and keep required gates fail-closed.",
+			"Keep local tests, hosted checks, review, merge, and release separate.",
+			"Run pr-readiness.py --phase create|update before hosted mutation.",
+			"Use GraphQL reviewThreads with isResolved and isOutdated.",
+			"Use run-auth-backed.sh --env-file ~/.codex/.env --canary TOKEN.",
+			"Use run-auth-backed.sh --env-file ~/.codex/.env --require-env TOKEN -- child.",
+			"Never read or source the FIFO.",
+			"Treat feedback as an observed local defect first.",
+			"Add a durable control only when an existing contract conflicts, a safety boundary is crossed, or the same failure recurs across independent work.",
+			"Command: <exact command> -> pass|fail|blocked",
+		].join("\n");
+
+		expect(validateValidationDoc(content)).toEqual([]);
+	});
+
+	it.each([
+		["fail-closed", "fail-closed validation rule"],
+		["isOutdated", "GraphQL review-thread truth"],
+		["Never read or source the FIFO.", "FIFO privacy boundary"],
+		["a safety boundary is crossed", "safety-boundary threshold"],
+	])("rejects compact guidance missing %s", (removed, expected) => {
+		const content = [
+			"Use the smallest gate needed for risk and keep required gates fail-closed.",
+			"Keep local tests, hosted checks, review, merge, and release separate.",
+			"Run pr-readiness.py --phase create|update before hosted mutation.",
+			"Use GraphQL reviewThreads with isResolved and isOutdated.",
+			"Use run-auth-backed.sh --env-file ~/.codex/.env --canary TOKEN.",
+			"Use run-auth-backed.sh --env-file ~/.codex/.env --require-env TOKEN -- child.",
+			"Never read or source the FIFO.",
+			"Treat feedback as an observed local defect first.",
+			"Add a durable control only when an existing contract conflicts, a safety boundary is crossed, or the same failure recurs across independent work.",
+			"Command: <exact command> -> pass|fail|blocked",
+		]
+			.join("\n")
+			.replace(removed, "");
+
+		expect(validateValidationDoc(content)).toContain(
+			`docs/agents/04-validation.md: missing ${expected}`,
+		);
 	});
 });
