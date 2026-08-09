@@ -1348,9 +1348,9 @@ describe("runInit", () => {
 				'echo "$NPM_CONFIG_PREFIX/bin" >> "$GITHUB_PATH"',
 			);
 			expect(content).not.toContain("name: Enable corepack");
-			expect(content).toContain("name: Publish public package (token)");
+			expect(content).toContain("name: Publish private package (token)");
 			expect(content).toContain(
-				"name: Publish public package (OIDC trusted publisher)",
+				"name: Publish private package (OIDC trusted publisher)",
 			);
 			expect(content).toContain("name: Verify tag matches package version");
 			expect(content).toContain("name: Generate build provenance attestation");

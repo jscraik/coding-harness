@@ -1,4 +1,4 @@
-name: Release to public npm
+name: Release to private npm
 
 on:
   push:
@@ -245,7 +245,7 @@ jobs:
           fi
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
 
-      - name: Publish public package (token)
+      - name: Publish private package (token)
         if: steps.publish-auth.outputs.mode == 'token'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -257,7 +257,7 @@ jobs:
           fi
           {{publishTokenCommand}}
 
-      - name: Publish public package (OIDC trusted publisher)
+      - name: Publish private package (OIDC trusted publisher)
         if: steps.publish-auth.outputs.mode == 'oidc'
         run: {{publishOidcCommand}}
 
