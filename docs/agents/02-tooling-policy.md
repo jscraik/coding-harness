@@ -314,10 +314,11 @@ Exception for harness readiness:
 - Source-checkout public command proof should use `pnpm exec harness ...` when dependencies are installed and `dist/cli.js` exists; use `node --import tsx src/cli.ts ...` only for before-build current-tree probes.
 - Generated `scripts/check-environment.sh` in harness-managed repositories should prefer a dedicated harness runner using the following lookup order:
   1. `bash scripts/harness-cli.sh`
-  2. `node dist/cli.js`
-  3. `node --import tsx src/cli.ts` (only when `dist/cli.js` is absent and a before-build current-tree probe is required)
+  2. `node --import tsx src/cli.ts` (only when a before-build current-tree probe is required)
+  3. `node dist/cli.js`
   4. `mise which harness`
   5. global `harness` binary
+  6. anonymous public `npm exec` only when `HARNESS_CLI_ALLOW_NPM_EXEC=1` is explicitly set
 - `scripts/run-harness-gate.sh` should treat the real source CLI command as the source-checkout probe. Use `node --import tsx`, not `pnpm exec tsx`, for source-checkout probes because the `tsx` CLI can fail before harness code runs with a temp-pipe `listen EPERM: operation not permitted` startup error in sandboxed runners. Fallback to `node dist/cli.js` is allowed only for the explicit runner temp-pipe signature.
 - This lookup order avoids stale Homebrew/global binaries shadowing the pinned runtime toolchain.
 - `harness check-environment` must compare `uv` against the consumer repository's `harness.contract.json` `toolingPolicy.requiredMiseTools` entry when present. Use the harness package fallback pin only when that consumer contract omits a `uv` tool entry, so downstream canaries do not fail solely because the harness source repo advanced its own default.

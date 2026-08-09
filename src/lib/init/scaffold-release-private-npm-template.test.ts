@@ -38,7 +38,7 @@ describe("scaffold public npm release template", () => {
 
 		// Verify OIDC publish step has no NPM_TOKEN/NODE_AUTH_TOKEN dependency
 		const oidcStepMatch = workflow.match(
-			/- name: Publish public package \(OIDC trusted publisher\)\s+if: steps\.publish-auth\.outputs\.mode == 'oidc'\s+run:/,
+			/- name: Publish public package \(OIDC trusted publisher\)\s+if: steps\.publish-auth\.outputs\.mode == 'oidc'\s+(?:env:[\s\S]*?)?run:/,
 		);
 		expect(oidcStepMatch).toBeTruthy();
 		const oidcStepStart = workflow.indexOf(

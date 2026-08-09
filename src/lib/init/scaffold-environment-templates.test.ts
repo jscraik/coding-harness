@@ -4,6 +4,7 @@ import {
 	chmodSync,
 	mkdirSync,
 	mkdtempSync,
+	readFileSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs";
@@ -93,7 +94,7 @@ describe("scaffold environment templates", () => {
 		);
 	});
 
-	it("preserves runner fallback order from repo wrapper to global harness", () => {
+	it("preserves runner fallback order from repo wrapper to public npm", () => {
 		const script = renderCheckEnvironmentScript();
 
 		const wrapperIndex = script.indexOf("repo wrapper");
@@ -103,6 +104,7 @@ describe("scaffold environment templates", () => {
 		const distIndex = script.indexOf("repo dist CLI");
 		const miseIndex = script.indexOf("mise harness");
 		const globalIndex = script.indexOf("global npm harness");
+		const publicIndex = script.indexOf("public npm package (npm exec)");
 
 		expect(wrapperIndex).toBeGreaterThan(-1);
 		expect(sourceIndex).toBeGreaterThan(-1);
@@ -110,6 +112,88 @@ describe("scaffold environment templates", () => {
 		expect(distIndex).toBeGreaterThan(sourceIndex);
 		expect(miseIndex).toBeGreaterThan(distIndex);
 		expect(globalIndex).toBeGreaterThan(miseIndex);
+		expect(publicIndex).toBeGreaterThan(globalIndex);
+	});
+
+	it("fails closed when the opt-in public npm fallback command fails", () => {
+		const tempDir = mkdtempSync(
+			join(tmpdir(), "harness-public-fallback-failure-"),
+		);
+		try {
+			const fakeBin = join(tempDir, ".fake-bin");
+			const argsPath = join(tempDir, "npm-args.log");
+			const rendered = renderCheckEnvironmentScript();
+			const runnerStart = rendered.indexOf(
+				"run_check_environment_with_runner() {",
+			);
+			const selectionStart = rendered.indexOf(
+				'if [[ -r "$REPO_ROOT/scripts/harness-cli.sh" ]]',
+			);
+			const selectionEnd = rendered.indexOf(
+				"\njq -e '.passed == true' \"$ATTESTATION_PATH\"",
+				selectionStart,
+			);
+			expect(runnerStart).toBeGreaterThan(-1);
+			expect(selectionStart).toBeGreaterThan(runnerStart);
+			expect(selectionEnd).toBeGreaterThan(selectionStart);
+
+			mkdirSync(fakeBin, { recursive: true });
+			const fakeNpmPath = join(fakeBin, "npm");
+			writeFileSync(
+				fakeNpmPath,
+				`#!/usr/bin/env bash
+set -euo pipefail
+if [[ "\${1:-}" == "prefix" ]]; then
+  exit 0
+fi
+if [[ "\${1:-}" == "exec" ]]; then
+  printf '%s\\n' "$*" > "\${HARNESS_NPM_ARGS_FILE:?}"
+  echo "simulated public npm failure" >&2
+  exit 42
+fi
+exit 43
+`,
+				"utf8",
+			);
+			chmodSync(fakeNpmPath, 0o755);
+			const fakeMisePath = join(fakeBin, "mise");
+			writeFileSync(fakeMisePath, "#!/usr/bin/env bash\nexit 1\n", "utf8");
+			chmodSync(fakeMisePath, 0o755);
+
+			const scriptPath = join(tempDir, "check-environment.sh");
+			writeFileSync(
+				scriptPath,
+				`#!/usr/bin/env bash
+set -euo pipefail
+REPO_ROOT=${JSON.stringify(tempDir)}
+CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
+ATTESTATION_PATH="$REPO_ROOT/artifacts/policy/attestation.json"
+${rendered.slice(runnerStart, selectionEnd)}
+`,
+				"utf8",
+			);
+			chmodSync(scriptPath, 0o755);
+			const result = spawnSync("/bin/bash", [scriptPath], {
+				cwd: tempDir,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					PATH: `${fakeBin}:/usr/bin:/bin`,
+					HARNESS_CLI_ALLOW_NPM_EXEC: "1",
+					HARNESS_NPM_ARGS_FILE: argsPath,
+				},
+			});
+
+			expect(result.status, `${result.stdout}${result.stderr}`).toBe(1);
+			const output = `${result.stdout}${result.stderr}`;
+			expect(output).toContain("public npm package (npm exec)");
+			expect(output).toContain("public npm fallback failed");
+			expect(readFileSync(argsPath, "utf8")).toContain(
+				"exec --yes --registry=https://registry.npmjs.org/ --package @brainwav/coding-harness@latest -- harness",
+			);
+		} finally {
+			rmSync(tempDir, { force: true, recursive: true });
+		}
 	});
 
 	it("renders a check-environment script with valid Bash syntax", () => {
