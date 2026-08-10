@@ -231,6 +231,75 @@ contact_links:
 		expect(result.output.issueKeys.refs).toEqual(["X-42"]);
 	});
 
+	it("rejects issue keys outside the configured Linear prefixes", () => {
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify(
+				{
+					name: "fixture",
+					bugs: {
+						url: "https://linear.app/acme/project/platform-123",
+					},
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+		writeFileSync(
+			join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"),
+			`blank_issues_enabled: false
+contact_links:
+  - name: Linear work intake
+    url: https://linear.app/acme/project/platform-123
+    about: Track all work in Linear.
+`,
+			"utf-8",
+		);
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify(
+				{
+					version: "1.0",
+					issueTrackingPolicy: {
+						provider: "linear",
+						issueKeyPrefixes: ["JSC"],
+						requireBranchIssueKey: true,
+						requirePrIssueKey: true,
+						prReferenceMode: "refs",
+					},
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		const result = runLinearGate({
+			repoRoot: tempDir,
+			branch: "codex/expansion-509-dependency-update",
+			prTitle: "fix(deps): update brace-expansion",
+			prBody: "Refs EXPANSION-509",
+		});
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			return;
+		}
+
+		expect(result.output.passed).toBe(false);
+		expect(result.output.issueKeys.branch).toEqual([]);
+		expect(result.output.issueKeys.pr).toEqual([]);
+		expect(result.output.issueKeys.refs).toEqual([]);
+		expect(
+			result.output.checks.find((check) => check.code === "branch-linkage")
+				?.passed,
+		).toBe(false);
+		expect(
+			result.output.checks.find((check) => check.code === "pr-linkage")?.passed,
+		).toBe(false);
+	});
+
 	it("does not inherit Linear defaults for an exact compact minimal contract", () => {
 		writeCompactMinimalContract(tempDir);
 

@@ -512,7 +512,7 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 				false,
 				"Branch name must include a Linear issue key.",
 				{
-					expected: `${policy.branchPrefix ?? "codex"}/JSC-123-short-description`,
+					expected: `${policy.branchPrefix ?? "codex"}/<LINEAR-KEY>-short-description`,
 					actual: branch,
 				},
 			);
@@ -544,7 +544,7 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 				false,
 				"PR title or body must include a Linear issue key.",
 				{
-					expected: "Refs JSC-123 or Fixes JSC-123",
+					expected: "Refs <LINEAR-KEY> or Fixes <LINEAR-KEY>",
 					actual: prTitle ?? "",
 				},
 			);

@@ -649,9 +649,10 @@ implementation into the harness.
 - If command tooling is unavailable: mark check as blocked and escalate environment dependency.
 - If instructions conflict: resolve precedence before further edits.
 - For this repository, agent-created branches must use `codex/<linear-key>-<short-description>` naming when the work is tracked in Linear.
-- Set `issueTrackingPolicy.issueKeyPrefixes` to the repository's uppercase
-  Linear team prefixes so issue discovery ignores issue-shaped dependency and
-  branch fragments with unrelated team prefixes.
+- When Linear issue discovery must be restricted, set
+  `issueTrackingPolicy.issueKeyPrefixes` to the repository's uppercase Linear
+  team prefixes so issue discovery ignores issue-shaped dependency and branch
+  fragments with unrelated team prefixes.
 - A tracked Linear branch or PR issue reference must not imply parent-goal closure by itself; agents must keep the PR body's linked-issue relationship current and name completed acceptance IDs or `none`.
 - For downstream scaffold output, repositories scaffolded by `harness init` receive generated PR, workflow, and worktree guidance that uses `jscraik/feature/*` for agent-created branches; keep those emitted surfaces synchronized through the init scaffold prefix constant.
 - CodeRabbit review must be independent from code authorship (coding agent cannot act as approving review agent).
