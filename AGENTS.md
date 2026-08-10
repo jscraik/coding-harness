@@ -9,7 +9,7 @@ audience: [codex-agent, coding-harness-maintainer]
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-08-03
+last_reviewed: 2026-08-10
 review_cadence: on-change
 maintenance_trigger: [agent-operating-policy-change, validation-contract-change]
 semver_impact: minor
@@ -73,6 +73,8 @@ default agent route without a named consumer.
 - Refreshes to `docs/roadmap/agent-first-status.md` must update the matching
   `harness.contract.json` review date in the same change; measurements without
   retained raw output or an independent receipt remain unverified notes.
+  A cadence refresh is evidence maintenance only and does not establish
+  effectiveness, publication, or release readiness.
 
 ## Validation and handoff
 
