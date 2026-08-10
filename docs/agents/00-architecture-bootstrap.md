@@ -319,7 +319,10 @@ Codestyle policy-index and nested instruction-surface changes are part of this
 same validation graph when they add or alter `coding-policy.json`, policy
 schemas, policy validators, scoped `AGENTS.md` routing cards, docs-gate
 classification, `coding-policy-route/v1`, changed-file pattern routing, or
-generated architecture context. Keep this guide,
+generated architecture context. A docs-gate exception must stay exact and
+test-covered: the paired `agentFirstStatusMatrix.lastReviewedAt` and
+`docs/roadmap/agent-first-status.md` change is a cadence registration, while
+every other contract mutation remains contract policy. Keep this guide,
 `docs/agents/07b-agent-governance.md`, and the generated context pack in the
 same PR so agents can trace policy authority, local routing, required gates, and
 generated evidence without treating the JSON index as a replacement for Markdown

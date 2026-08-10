@@ -75,8 +75,11 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - north-star status cadence repairs should refresh
   `docs/roadmap/agent-first-status.md` and the registered
   `agent-first-status-matrix.lastReviewedAt` value in `harness.contract.json`
-  together. Keep `README.md`, `AGENTS.md`, and this guide synchronized when
-  drift-gate reports an agent-first-status-matrix cadence breach.
+  together as one exact two-file cadence registration. Docs-gate treats only
+  that paired date update as documentation cadence; any extra contract field
+  remains contract policy. Keep `README.md`, `AGENTS.md`, and this guide
+  synchronized when drift-gate reports an agent-first-status-matrix cadence
+  breach.
 - per-release product-surface cadence repairs are owned by the `owner` declared
   in `harness.contract.json` (the current `preflight-gate` entry is owned by
   `workflow`); refresh its `lastReviewedAt` entry and keep `README.md`,
