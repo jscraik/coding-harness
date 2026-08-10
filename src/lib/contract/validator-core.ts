@@ -292,6 +292,18 @@ const VALID_CODE_SCANNING_ALERTS_THRESHOLDS: CodeScanningAlertsThreshold[] = [
 	"all",
 ];
 
+/** Return whether configured Linear team prefixes are unique and canonical. */
+function isValidIssueKeyPrefixes(value: unknown): value is string[] {
+	return (
+		Array.isArray(value) &&
+		value.length > 0 &&
+		new Set(value).size === value.length &&
+		value.every(
+			(prefix) => typeof prefix === "string" && /^[A-Z][A-Z0-9]+$/.test(prefix),
+		)
+	);
+}
+
 /**
  * Backfills legacy north-star contract payloads with current default fields.
  *
@@ -1230,7 +1242,8 @@ function isValidCIFallbackWorkflows(
  * The policy must only contain the allowed keys and require `provider` to be `"linear"`. If present,
  * `projectUrl` must be a valid Linear project URL, `requirePackageBugsUrl`, `disableGitHubIssues`,
  * `requireBranchIssueKey`, and `requirePrIssueKey` must be booleans, `prReferenceMode` must be one of
- * the permitted modes, and `branchPrefix` must be a non-empty string that does not contain `/`.
+ * the permitted modes, `branchPrefix` must be a non-empty string that does not contain `/`, and
+ * `issueKeyPrefixes` must contain unique uppercase Linear team prefixes.
  *
  * @param value - The value to validate as an IssueTrackingPolicy
  * @returns `true` if `value` matches the IssueTrackingPolicy contract, `false` otherwise.
@@ -1254,6 +1267,7 @@ function isValidIssueTrackingPolicy(
 				"requirePrIssueKey",
 				"prReferenceMode",
 				"branchPrefix",
+				"issueKeyPrefixes",
 			].includes(key),
 	);
 	if (unknownKeys.length > 0) {
@@ -1270,29 +1284,16 @@ function isValidIssueTrackingPolicy(
 	) {
 		return false;
 	}
-	if (
-		policy.requirePackageBugsUrl !== undefined &&
-		typeof policy.requirePackageBugsUrl !== "boolean"
-	) {
-		return false;
-	}
-	if (
-		policy.disableGitHubIssues !== undefined &&
-		typeof policy.disableGitHubIssues !== "boolean"
-	) {
-		return false;
-	}
-	if (
-		policy.requireBranchIssueKey !== undefined &&
-		typeof policy.requireBranchIssueKey !== "boolean"
-	) {
-		return false;
-	}
-	if (
-		policy.requirePrIssueKey !== undefined &&
-		typeof policy.requirePrIssueKey !== "boolean"
-	) {
-		return false;
+	const booleanKeys = [
+		"requirePackageBugsUrl",
+		"disableGitHubIssues",
+		"requireBranchIssueKey",
+		"requirePrIssueKey",
+	] as const;
+	for (const key of booleanKeys) {
+		if (policy[key] !== undefined && typeof policy[key] !== "boolean") {
+			return false;
+		}
 	}
 	if (
 		policy.prReferenceMode !== undefined &&
@@ -1308,6 +1309,12 @@ function isValidIssueTrackingPolicy(
 		(typeof policy.branchPrefix !== "string" ||
 			policy.branchPrefix.trim().length === 0 ||
 			policy.branchPrefix.includes("/"))
+	) {
+		return false;
+	}
+	if (
+		policy.issueKeyPrefixes !== undefined &&
+		!isValidIssueKeyPrefixes(policy.issueKeyPrefixes)
 	) {
 		return false;
 	}
@@ -2360,7 +2367,7 @@ export function validateContract(
 				message:
 					"issueTrackingPolicy must declare provider 'linear' plus optional Linear enforcement settings",
 				expected:
-					"{ provider: 'linear', projectUrl?: 'https://linear.app/.../project/...', requirePackageBugsUrl?: boolean, disableGitHubIssues?: boolean, requireBranchIssueKey?: boolean, requirePrIssueKey?: boolean, prReferenceMode?: 'refs' | 'fixes' | 'either', branchPrefix?: string }",
+					"{ provider: 'linear', projectUrl?: 'https://linear.app/.../project/...', requirePackageBugsUrl?: boolean, disableGitHubIssues?: boolean, requireBranchIssueKey?: boolean, requirePrIssueKey?: boolean, prReferenceMode?: 'refs' | 'fixes' | 'either', branchPrefix?: string, issueKeyPrefixes?: string[] }",
 				received: JSON.stringify(obj.issueTrackingPolicy),
 				fix: "Ensure issueTrackingPolicy uses only supported Linear policy fields",
 			});

@@ -662,6 +662,7 @@ export interface IssueTrackingPolicy {
 	requirePrIssueKey?: boolean | undefined;
 	prReferenceMode?: PrReferenceMode | undefined;
 	branchPrefix?: string | undefined;
+	issueKeyPrefixes?: string[] | undefined;
 }
 
 /** Loop Stage Fail Policy. */

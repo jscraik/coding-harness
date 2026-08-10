@@ -73,6 +73,12 @@ memory system, docs site, hooks, tracker, or governance pack. Use
 `harness contract init --preset standard --force` only when a repository
 chooses that broader policy.
 
+Repositories using the Linear gate can set
+`issueTrackingPolicy.issueKeyPrefixes` to their uppercase team prefixes. When
+configured, branch names and PR text contribute issue keys only for those
+teams, so dependency names such as `brace-expansion-509` are not mistaken for
+tracker references.
+
 ## Verify and close out
 
 Use the repository's own focused checks first. `verify-work --fast` keeps

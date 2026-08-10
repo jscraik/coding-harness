@@ -1170,11 +1170,32 @@ describe("validateContract", () => {
 					requirePrIssueKey: true,
 					prReferenceMode: "either",
 					branchPrefix: "codex",
+					issueKeyPrefixes: ["JSC"],
 				},
 			});
 
 			expect(result.success).toBe(true);
 			expect(result.data?.issueTrackingPolicy?.provider).toBe("linear");
+			expect(result.data?.issueTrackingPolicy?.issueKeyPrefixes).toEqual([
+				"JSC",
+			]);
+		});
+
+		it.each([
+			[[]],
+			[["jsc"]],
+			[["JSC", "JSC"]],
+		])("rejects invalid issue key prefixes: %j", (issueKeyPrefixes) => {
+			const result = validateContract({
+				version: "1.0",
+				issueTrackingPolicy: {
+					provider: "linear",
+					issueKeyPrefixes,
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("issueTrackingPolicy");
 		});
 
 		it("rejects a non-Linear project URL", () => {

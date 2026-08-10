@@ -900,6 +900,12 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 						enum: ["refs", "fixes", "either"],
 					},
 					branchPrefix: { type: "string" },
+					issueKeyPrefixes: {
+						type: "array",
+						minItems: 1,
+						uniqueItems: true,
+						items: { type: "string", pattern: "^[A-Z][A-Z0-9]+$" },
+					},
 				},
 			},
 
