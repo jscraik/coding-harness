@@ -16,6 +16,10 @@ import {
 	WORKFLOW_PATH,
 } from "./docs-gate-types.js";
 
+const AGENT_FIRST_STATUS_SURFACE_ID = "agent-first-status-matrix";
+const AGENT_FIRST_STATUS_DOCUMENT = "docs/roadmap/agent-first-status.md";
+const ISO_DATE_LINE = /^[-+]\s*"lastReviewedAt": "\d{4}-\d{2}-\d{2}",?$/;
+
 /** Validated harness contract loaded from the repository contract file. */
 export interface LoadedContract {
 	contract: HarnessContract;
@@ -212,6 +216,97 @@ function baseRefCandidates(options: DocsGateOptions): string[] {
 	].filter((value): value is string => Boolean(value?.trim()));
 }
 
+/**
+ * Detect the one narrow status-cadence registration that is paired with its
+ * governed document. All broader contract changes remain contract policy work.
+ */
+export function isAgentFirstStatusCadenceRegistration(
+	options: DocsGateOptions,
+	repoRoot: string,
+	resolution: ChangedFilesResolution,
+): boolean {
+	if (!hasExactCadencePaths(resolution)) return false;
+	const patch = resolveTrackedContractPatch(options, repoRoot);
+	return patch !== null && hasExactCadenceRegistrationPatch(patch);
+}
+
+/** Require the cadence document and contract to be the complete changed-path set. */
+function hasExactCadencePaths(resolution: ChangedFilesResolution): boolean {
+	const changed = new Set(resolution.changedFiles);
+	return (
+		changed.size === 2 &&
+		changed.has(CONTRACT_PATH) &&
+		changed.has(AGENT_FIRST_STATUS_DOCUMENT) &&
+		!resolution.deletedFiles.includes(CONTRACT_PATH) &&
+		!resolution.deletedFiles.includes(AGENT_FIRST_STATUS_DOCUMENT)
+	);
+}
+
+/** Read the contract patch from a trusted base; no diff means no cadence exception. */
+function resolveTrackedContractPatch(
+	options: DocsGateOptions,
+	repoRoot: string,
+): string | null {
+	for (const baseRef of baseRefCandidates(options)) {
+		try {
+			const mergeBase = gitOutput(repoRoot, [
+				"merge-base",
+				baseRef,
+				"HEAD",
+			]).trim();
+			if (!mergeBase) continue;
+			return gitOutput(repoRoot, [
+				"diff",
+				"--unified=20",
+				`${mergeBase}...HEAD`,
+				"--",
+				CONTRACT_PATH,
+			]);
+		} catch {
+			// A cadence exception must have a trusted, inspectable contract diff.
+		}
+	}
+	return null;
+}
+
+/** Verify the patch changes only the registered weekly status-review date. */
+function hasExactCadenceRegistrationPatch(patch: string): boolean {
+	const changedLines = patch
+		.split(/\r?\n/)
+		.filter(
+			(line) =>
+				(line.startsWith("+") || line.startsWith("-")) &&
+				!line.startsWith("+++") &&
+				!line.startsWith("---"),
+		);
+	if (
+		changedLines.length !== 2 ||
+		!changedLines.every((line) => ISO_DATE_LINE.test(line))
+	) {
+		return false;
+	}
+	const removed = changedLines.find((line) => line.startsWith("-"));
+	const added = changedLines.find((line) => line.startsWith("+"));
+	if (!removed || !added || removed.slice(1).trim() === added.slice(1).trim()) {
+		return false;
+	}
+	return patch
+		.split(/^@@.*$/m)
+		.slice(1)
+		.some(
+			(hunk) =>
+				hunk.includes(`"surfaceId": "${AGENT_FIRST_STATUS_SURFACE_ID}"`) &&
+				hunk.includes(
+					`"evidenceReference": "${AGENT_FIRST_STATUS_DOCUMENT}"`,
+				) &&
+				hunk.includes('"reviewCadence": "weekly"') &&
+				hunk.includes('"ownedPaths": [') &&
+				hunk.includes(`"${AGENT_FIRST_STATUS_DOCUMENT}"`) &&
+				changedLines.every((line) => hunk.includes(line)),
+		);
+}
+
+/** Read an optional git name-status stream without converting discovery gaps into failures. */
 function optionalGitNameStatus(repoRoot: string, args: readonly string[]) {
 	try {
 		return parseGitNameStatus(gitOutput(repoRoot, args));

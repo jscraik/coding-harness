@@ -1,4 +1,3 @@
-import { resolve } from "node:path";
 import type { DocsGatePolicy, HarnessContract } from "../lib/contract/types.js";
 import {
 	DOC_LIFECYCLE_RULE_ID,
@@ -12,10 +11,10 @@ import {
 import { collectArchiveCandidateDocsGateProjection } from "./docs-gate-archive-candidates.js";
 import { classifyChanges } from "./docs-gate-classification.js";
 import { collectContradictionFindings } from "./docs-gate-contradictions.js";
+import { buildRunContext, type RunContext } from "./docs-gate-context.js";
 import {
 	buildExecutionContext,
 	loadValidatedContract,
-	resolveChangedFiles,
 } from "./docs-gate-files.js";
 import {
 	checkSurfacePresence,
@@ -30,10 +29,8 @@ import {
 	writeReportAndHistory,
 } from "./docs-gate-report.js";
 import type {
-	ChangedFilesResolution,
 	ContradictionFinding,
 	DocsFinding,
-	DocsGateExecutionContext,
 	DocsGateMode,
 	DocsGateOptions,
 	DocsGateOutcome,
@@ -71,15 +68,6 @@ interface EvaluationSummary {
 	archiveCounts: Partial<DocsGateReport["summary"]>;
 }
 
-interface RunContext {
-	mode: DocsGateMode;
-	repoRoot: string;
-	changedFiles: string[];
-	deletedFiles: Set<string>;
-	resolution: ChangedFilesResolution;
-	executionContext: DocsGateExecutionContext;
-}
-
 /**
  * Evaluate repository documentation policy and produce a report plus an exit code.
  *
@@ -106,24 +94,6 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 	const report = buildReport(context, evaluation, options.trustedBaseRef);
 	writeReportAndHistory(report, context.repoRoot, options.outPath, evaluation);
 	return { report, exitCode: exitCodeFor(report.outcome, context.mode) };
-}
-
-function buildRunContext(options: DocsGateOptions): RunContext {
-	const mode = options.mode ?? "advisory";
-	const repoRoot = resolve(options.repoRoot ?? process.cwd());
-	const resolution = resolveChangedFiles(options, repoRoot);
-	return {
-		mode,
-		repoRoot,
-		changedFiles: resolution.changedFiles,
-		deletedFiles: new Set(resolution.deletedFiles),
-		resolution,
-		executionContext: buildExecutionContext(
-			options,
-			undefined,
-			resolution.source,
-		),
-	};
 }
 
 function bootstrapGapResult(
@@ -188,16 +158,20 @@ function disabledFinding(): DocsFinding {
 	};
 }
 
+/** Evaluate documentation policy and retain the precise classification in the report. */
 function evaluateDocsPolicy(
 	context: RunContext,
 	contract: HarnessContract,
 	policy: DocsGatePolicy,
 ): EvaluationSummary {
-	const classified = classifyChanges(context.changedFiles);
+	const classified = classifyChanges(context.changedFiles, {
+		cadenceRegistration: context.cadenceRegistration,
+	});
 	const findings = [
 		...resolutionFindings(context),
 		...unknownFindings(classified.unknownFiles, context.mode),
 	];
+	if (context.cadenceRegistration) findings.push(cadenceRegistrationFinding());
 	const surfaceResult = collectSurfaceFindings(
 		context,
 		policy,
@@ -234,6 +208,21 @@ function evaluateDocsPolicy(
 	};
 }
 
+/** Emit traceable proof that the strict cadence-registration exception applied. */
+function cadenceRegistrationFinding(): DocsFinding {
+	return {
+		rule_id: "docs.gate.agent_first_status_cadence_registration",
+		category: "doc_only",
+		surface: "docs/roadmap/agent-first-status.md",
+		rule_result: "pass",
+		result: "pass",
+		severity: "info",
+		message:
+			"The agent-first weekly status document and its exact lastReviewedAt registration changed together.",
+	};
+}
+
+/** Resolve required surfaces and their presence after classification is complete. */
 function collectSurfaceFindings(
 	context: RunContext,
 	policy: DocsGatePolicy,

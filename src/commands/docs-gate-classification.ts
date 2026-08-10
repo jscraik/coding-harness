@@ -49,9 +49,11 @@ function isAgentGovernanceFile(file: string): boolean {
 	);
 }
 
+/** Classify one changed path, preserving contract policy for every non-cadence edit. */
 function classifyFile(
 	file: string,
 	categories: Set<DocsImpactCategory>,
+	{ cadenceRegistration }: { cadenceRegistration: boolean },
 ): boolean {
 	let matched = addIf(
 		isAgentGovernanceFile(file),
@@ -66,7 +68,13 @@ function classifyFile(
 		categories,
 	);
 	matched ||= addIf(
-		file === "harness.contract.json" || file.includes("src/lib/contract/"),
+		file === "harness.contract.json" && cadenceRegistration,
+		"doc_only",
+		categories,
+	);
+	matched ||= addIf(
+		(file === "harness.contract.json" && !cadenceRegistration) ||
+			file.includes("src/lib/contract/"),
 		"contract_policy",
 		categories,
 	);
@@ -157,14 +165,20 @@ function addWorkflowArtifactCategory(
 }
 
 /** Classify changed files into docs-gate impact categories. */
-export function classifyChanges(changedFiles: readonly string[]): {
+export function classifyChanges(
+	changedFiles: readonly string[],
+	{ cadenceRegistration = false }: { cadenceRegistration?: boolean } = {},
+): {
 	categories: DocsImpactCategory[];
 	unknownFiles: string[];
 } {
 	const categories = new Set<DocsImpactCategory>();
 	const unknownFiles: string[] = [];
 	for (const file of changedFiles) {
-		if (!classifyFile(file, categories) && isPotentialGovernanceFile(file)) {
+		if (
+			!classifyFile(file, categories, { cadenceRegistration }) &&
+			isPotentialGovernanceFile(file)
+		) {
 			unknownFiles.push(file);
 		}
 	}

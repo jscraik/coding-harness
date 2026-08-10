@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## Unreleased
+
+### Fixed
+
+- Allow the weekly agent-first status document and its exact review-date
+  registration to pass the docs gate without masking broader contract changes.
+
 ## [0.15.3](https://github.com/jscraik/coding-harness/compare/v0.15.2...v0.15.3) (2026-08-02)
 
 ### Bug Fixes
