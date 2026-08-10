@@ -98,7 +98,10 @@ function isAllowedIssueKey(
 	allowedPrefixes: string[] | undefined,
 ): boolean {
 	if (allowedPrefixes === undefined) {
-		return true;
+		// Preserve the legacy broad extraction contract while avoiding the
+		// ambiguous one-character team form unless a policy explicitly opts in.
+		const prefix = issueKey.slice(0, issueKey.indexOf("-"));
+		return prefix.length > 1;
 	}
 	const prefix = issueKey.slice(0, issueKey.indexOf("-"));
 	return allowedPrefixes.includes(prefix);
