@@ -904,7 +904,7 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 						type: "array",
 						minItems: 1,
 						uniqueItems: true,
-						items: { type: "string", pattern: "^[A-Z][A-Z0-9]+$" },
+						items: { type: "string", pattern: "^[A-Z][A-Z0-9]*$" },
 					},
 				},
 			},

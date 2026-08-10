@@ -70,10 +70,10 @@ export type LinearGateResult =
 	| { ok: true; output: LinearGateOutput }
 	| { ok: false; error: { code: string; message: string } };
 
-const ISSUE_KEY_PATTERN = /\b[A-Z][A-Z0-9]+-\d+\b/gi;
-const REFS_KEY_PATTERN = /\brefs?\s+([A-Z][A-Z0-9]+-\d+)\b/gi;
-const FIXES_KEY_PATTERN = /\bfix(?:es)?\s+([A-Z][A-Z0-9]+-\d+)\b/gi;
-const CLOSES_KEY_PATTERN = /\bclos(?:e|es|ed)\s+([A-Z][A-Z0-9]+-\d+)\b/gi;
+const ISSUE_KEY_PATTERN = /\b[A-Z][A-Z0-9]*-\d+\b/gi;
+const REFS_KEY_PATTERN = /\brefs?\s+([A-Z][A-Z0-9]*-\d+)\b/gi;
+const FIXES_KEY_PATTERN = /\bfix(?:es)?\s+([A-Z][A-Z0-9]*-\d+)\b/gi;
+const CLOSES_KEY_PATTERN = /\bclos(?:e|es|ed)\s+([A-Z][A-Z0-9]*-\d+)\b/gi;
 
 function normalizeUrl(value: string): string {
 	return value.trim().replace(/\/+$/, "");

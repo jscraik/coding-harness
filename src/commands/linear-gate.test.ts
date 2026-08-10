@@ -169,6 +169,68 @@ contact_links:
 		expect(result.output.issueKeys.pr).toEqual(["JSC-388"]);
 	});
 
+	it("accepts one-character Linear team prefixes in branch and PR references", () => {
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify(
+				{
+					name: "fixture",
+					bugs: {
+						url: "https://linear.app/acme/project/platform-123",
+					},
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+		writeFileSync(
+			join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"),
+			`blank_issues_enabled: false
+contact_links:
+  - name: Linear work intake
+    url: https://linear.app/acme/project/platform-123
+    about: Track all work in Linear.
+`,
+			"utf-8",
+		);
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify(
+				{
+					version: "1.0",
+					issueTrackingPolicy: {
+						provider: "linear",
+						issueKeyPrefixes: ["X"],
+						requireBranchIssueKey: true,
+						requirePrIssueKey: true,
+						prReferenceMode: "refs",
+					},
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		const result = runLinearGate({
+			repoRoot: tempDir,
+			branch: "codex/x-42-allow-single-prefix",
+			prTitle: "X-42: Allow single-character prefixes",
+			prBody: "Refs X-42",
+		});
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			return;
+		}
+
+		expect(result.output.passed).toBe(true);
+		expect(result.output.issueKeys.branch).toEqual(["X-42"]);
+		expect(result.output.issueKeys.pr).toEqual(["X-42"]);
+		expect(result.output.issueKeys.refs).toEqual(["X-42"]);
+	});
+
 	it("does not inherit Linear defaults for an exact compact minimal contract", () => {
 		writeCompactMinimalContract(tempDir);
 

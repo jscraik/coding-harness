@@ -1181,6 +1181,19 @@ describe("validateContract", () => {
 			]);
 		});
 
+		it("accepts a one-character Linear team prefix", () => {
+			const result = validateContract({
+				version: "1.0",
+				issueTrackingPolicy: {
+					provider: "linear",
+					issueKeyPrefixes: ["X"],
+				},
+			});
+
+			expect(result.success).toBe(true);
+			expect(result.data?.issueTrackingPolicy?.issueKeyPrefixes).toEqual(["X"]);
+		});
+
 		it.each([
 			[[]],
 			[["jsc"]],

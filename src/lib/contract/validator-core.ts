@@ -299,7 +299,7 @@ function isValidIssueKeyPrefixes(value: unknown): value is string[] {
 		value.length > 0 &&
 		new Set(value).size === value.length &&
 		value.every(
-			(prefix) => typeof prefix === "string" && /^[A-Z][A-Z0-9]+$/.test(prefix),
+			(prefix) => typeof prefix === "string" && /^[A-Z][A-Z0-9]*$/.test(prefix),
 		)
 	);
 }
