@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { isAgentFirstStatusCadenceRegistration } from "./docs-gate-files.js";
+import { isAgentFirstStatusCadenceRegistration } from "./docs-gate-cadence.js";
 import {
 	buildExecutionContext,
 	resolveChangedFiles,

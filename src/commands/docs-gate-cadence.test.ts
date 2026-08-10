@@ -80,6 +80,20 @@ function seedCadenceContract(root: string): void {
 							ownedPaths: ["docs/roadmap/agent-first-status.md"],
 							lastReviewedAt: "2026-08-03",
 						},
+						{
+							surfaceId: "north-star-roadmap",
+							surfaceType: "document",
+							class: "adjacent",
+							owner: "workflow",
+							northStarContribution: "Keeps roadmap reporting current.",
+							manualGlueReductionClaim:
+								"Avoids repeated roadmap interpretation.",
+							reliabilityContribution: "Prevents unsupported roadmap claims.",
+							evidenceReference: "docs/roadmap/north-star.md",
+							reviewCadence: "weekly",
+							ownedPaths: ["docs/roadmap/north-star.md"],
+							lastReviewedAt: "2026-08-03",
+						},
 					],
 				},
 			},
@@ -143,6 +157,31 @@ function runWithIsolatedGitEnvironment(
 	}
 }
 
+function updateContract(
+	root: string,
+	mutate: (contract: {
+		productSurface: { surfaces: Array<Record<string, unknown>> };
+	}) => void,
+): void {
+	const contractPath = join(root, "harness.contract.json");
+	const contract = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+		productSurface: { surfaces: Array<Record<string, unknown>> };
+	};
+	mutate(contract);
+	write(contractPath, JSON.stringify(contract, null, 2));
+}
+
+function surface(
+	contract: { productSurface: { surfaces: Array<Record<string, unknown>> } },
+	surfaceId: string,
+): Record<string, unknown> {
+	const candidate = contract.productSurface.surfaces.find(
+		(entry) => entry.surfaceId === surfaceId,
+	);
+	if (!candidate) throw new Error(`missing fixture surface: ${surfaceId}`);
+	return candidate;
+}
+
 describe("agent-first status cadence registration", () => {
 	const roots: string[] = [];
 
@@ -187,6 +226,63 @@ describe("agent-first status cadence registration", () => {
 		);
 	});
 
+	it("accepts the exact pair when it is staged but not committed", () => {
+		const root = createTestRoot("docs-gate-agent-first-cadence-staged");
+		roots.push(root);
+		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		seedCadenceContract(root);
+		const baseSha = initializeGitRepository(root, gitEnv);
+		updateContract(root, (contract) => {
+			surface(contract, "agent-first-status-matrix").lastReviewedAt =
+				"2026-08-10";
+		});
+		writeAt(
+			root,
+			"docs/roadmap/agent-first-status.md",
+			"# Agent-first status\n\nReviewed 2026-08-10.\n",
+		);
+		execFileSync(
+			"git",
+			["add", "harness.contract.json", "docs/roadmap/agent-first-status.md"],
+			{ cwd: root, stdio: "ignore", env: gitEnv },
+		);
+
+		const result = runWithIsolatedGitEnvironment({
+			repoRoot: root,
+			mode: "required",
+			trustedBaseRef: baseSha,
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.report.categories).toEqual(["doc_only"]);
+	});
+
+	it("rejects a nearby surface date change instead of the registered date", () => {
+		const root = createTestRoot("docs-gate-agent-first-cadence-nearby-date");
+		roots.push(root);
+		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		seedCadenceContract(root);
+		const baseSha = initializeGitRepository(root, gitEnv);
+		updateContract(root, (contract) => {
+			surface(contract, "north-star-roadmap").lastReviewedAt = "2026-08-10";
+		});
+		writeAt(
+			root,
+			"docs/roadmap/agent-first-status.md",
+			"# Agent-first status\n\nReviewed 2026-08-10.\n",
+		);
+		commitAll(root, "change nearby review date", gitEnv);
+
+		const result = runWithIsolatedGitEnvironment({
+			repoRoot: root,
+			mode: "required",
+			trustedBaseRef: baseSha,
+		});
+
+		expect(result.exitCode).toBe(10);
+		expect(result.report.categories).toContain("contract_policy");
+	});
+
 	it("rejects the pair when its contract diff includes another policy edit", () => {
 		const root = createTestRoot("docs-gate-agent-first-cadence-extra-edit");
 		roots.push(root);
@@ -211,8 +307,6 @@ describe("agent-first status cadence registration", () => {
 			"docs/roadmap/agent-first-status.md",
 			"# Agent-first status\n\nReviewed 2026-08-10.\n",
 		);
-		commitAll(root, "attempt broader contract change", gitEnv);
-
 		const result = runWithIsolatedGitEnvironment({
 			repoRoot: root,
 			mode: "required",

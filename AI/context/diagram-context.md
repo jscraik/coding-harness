@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-08-10T22:35:15Z
+Generated: 2026-08-10T23:29:40Z
 
 ## Table of Contents
 
@@ -1762,6 +1762,7 @@ graph LR
   ext_node_url_d0cb3ad7["node:url"] --> node_validate_synaipse_transition_0ba0a4bb_265e0ab5
   ext_node_url_d0cb3ad7["node:url"] --> node_version_5ca4f385_fd75945b
   ext_node_url_d0cb3ad7["node:url"] --> node_write_prompt_context_drift_report_71a4e149_cf46c973
+  ext_node_util_f2cdb29c["node:util"] --> node_docs_gate_files_affa1b0b_bbdd6f27
   ext_node_util_f2cdb29c["node:util"] --> node_packet_caller_candidate_content_2851389c_d14a04d3
   ext_node_vm_e83aa31f["node:vm"] --> node_validate_goal_kanban_script_268db9bd_4cf9451a
   ext_node_zlib_bb6e132b["node:zlib"] --> node_png_inspection_3ec3d3d7_c00e0d99
