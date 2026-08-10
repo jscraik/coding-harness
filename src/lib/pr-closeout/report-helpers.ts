@@ -5,6 +5,7 @@ import type {
 	PrCloseoutInput,
 } from "./types.js";
 import { isFailedCheck, isPassingCheck, isPendingCheck } from "./evidence.js";
+export { applyConfiguredLinearIssueKeyPolicy } from "./evidence.js";
 
 /** Compact check-state counters included in pr-closeout/v1 reports. */
 export function summarizeChecks(checks: readonly PrCloseoutCheckInput[]): {

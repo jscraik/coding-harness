@@ -1,4 +1,7 @@
+import { existsSync } from "node:fs";
+
 import { sanitizeError } from "../../lib/input/sanitize.js";
+import { loadContract } from "../../lib/contract/loader.js";
 import type {
 	PrCloseoutCheckInput,
 	PrCloseoutInput,
@@ -166,6 +169,19 @@ function rollbackFromBody(
 	return { path: rollback, evidenceRef: "pr-body:rollback" };
 }
 
+/** Load the repository's configured Linear issue-key allowlist for closeout. */
+function loadLinearIssueKeyPrefixes(repoRoot: string): string[] | undefined {
+	const contractPath = `${repoRoot}/harness.contract.json`;
+	if (!existsSync(contractPath)) return undefined;
+	try {
+		return loadContract("harness.contract.json", repoRoot).issueTrackingPolicy
+			?.issueKeyPrefixes;
+	} catch {
+		return undefined;
+	}
+}
+
+/** Probe external tools used by the live closeout route. */
 function inspectLiveTools(
 	options: PrCloseoutCLIOptions,
 	env: NodeJS.ProcessEnv,
@@ -338,6 +354,7 @@ export function buildLivePrCloseoutInput(
 	);
 	const reviewThreads = fetchReviewThreads(options, envLoad.env, runner, tools);
 	const rollback = rollbackFromBody(pullRequest.body);
+	const linearIssueKeyPrefixes = loadLinearIssueKeyPrefixes(options.repoRoot);
 	return {
 		pullRequest,
 		branch: inspectGitBranch(
@@ -352,6 +369,7 @@ export function buildLivePrCloseoutInput(
 		traceability: traceabilityFromBody(pullRequest.body),
 		...(rollback ? { rollback } : {}),
 		tools,
+		...(linearIssueKeyPrefixes ? { linearIssueKeyPrefixes } : {}),
 		linearMutation: linearMutationAvailability(envLoad.env),
 		releaseReadinessImpact: options.releaseReadinessImpact ?? "unknown",
 	};

@@ -44,6 +44,12 @@ describe("normalizeIssueReference", () => {
 		).toBe("TEAM-123");
 	});
 
+	it("extracts one-character issue identifiers from URLs", () => {
+		expect(
+			normalizeIssueReference("https://linear.app/team/issue/X-42/description"),
+		).toBe("X-42");
+	});
+
 	it("uppercases identifier from URL", () => {
 		expect(
 			normalizeIssueReference("https://linear.app/team/issue/team-123"),

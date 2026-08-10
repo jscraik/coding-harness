@@ -353,16 +353,11 @@ function collectCommandEvidenceErrors(testingBody: string): string[] {
 	return errors;
 }
 
-/**
- * Validate a pull request body against the repository's PR template and formatting rules.
- *
- * Performs high-level checks including required section presence, required fields in
- * "Work performed" and "Testing", checklist validation, placeholder detection, and
- * evidence-format rules for meta-behavior, pattern scope, and repeated-error research.
- *
- * @returns An array of error messages describing template or formatting violations; an empty array if no issues are found.
- */
-export function validatePrTemplateBody(body: string): string[] {
+/** Return template validation errors for one PR body. */
+export function validatePrTemplateBody(
+	body: string,
+	options: { issueKeyPrefixes?: readonly string[] } = {},
+): string[] {
 	const errors: string[] = [];
 	if (body.length > MAX_BODY_LENGTH) {
 		errors.push(
@@ -385,7 +380,11 @@ export function validatePrTemplateBody(body: string): string[] {
 	errors.push(...collectReleaseBoundaryFieldErrors(body));
 	errors.push(...collectWorkPerformedFieldErrors(body));
 	errors.push(
-		...collectLinkedIssueRelationshipErrors(body, extractFieldBlockValue),
+		...collectLinkedIssueRelationshipErrors(
+			body,
+			extractFieldBlockValue,
+			options.issueKeyPrefixes,
+		),
 	);
 	errors.push(...collectLinkedIssueAcceptanceTraceErrors(body));
 	errors.push(

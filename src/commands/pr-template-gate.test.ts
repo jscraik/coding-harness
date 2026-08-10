@@ -148,6 +148,47 @@ describe("pr-template-gate command", () => {
 		}
 	});
 
+	it("passes a configured one-character Linear team prefix", () => {
+		const body = VALID_BODY.replace(
+			"- Linear reference: Refs JSC-999.",
+			"- Linear reference: Refs X-999.",
+		).replace(
+			"- Linked issue relationship: implementation closure for JSC-999;",
+			"- Linked issue relationship: implementation closure for X-999;",
+		);
+
+		const result = runPrTemplateGate({
+			prBody: body,
+			issueKeyPrefixes: ["X"],
+		});
+
+		expect(result).toMatchObject({ ok: true, output: { passed: true } });
+	});
+
+	it("rejects a Linear team outside the configured prefix allowlist", () => {
+		const body = VALID_BODY.replace(
+			"- Linear reference: Refs JSC-999.",
+			"- Linear reference: Refs EXPANSION-999.",
+		);
+
+		const result = runPrTemplateGate({
+			prBody: body,
+			issueKeyPrefixes: ["JSC"],
+		});
+
+		expect(result).toMatchObject({
+			ok: true,
+			output: {
+				passed: false,
+				errors: [
+					expect.stringContaining(
+						"Linear reference must use Refs, Fixes, or Closes",
+					),
+				],
+			},
+		});
+	});
+
 	// Security regression: finding ef7d00b48248819187f403dcc5becaa5.
 	// Original check was resolved.startsWith(cwd) — bypassed by sibling dirs
 	// whose absolute path shares the same string prefix as cwd.

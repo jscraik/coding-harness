@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-07-31T17:17:18Z
+Generated: 2026-08-10T23:52:15Z
 
 ## Table of Contents
 
@@ -29,7 +29,19 @@ Generated: 2026-07-31T17:17:18Z
 ## Changed source focus
 
 - These architecture-sensitive paths changed on the current branch and may be compacted out of Mermaid diagrams.
-- `src/lib/init/README.md`
+- `src/commands/linear-gate-core.ts`
+- `src/commands/pr-closeout/live.ts`
+- `src/commands/pr-template-gate.ts`
+- `src/lib/contract/json-schema-core.ts`
+- `src/lib/contract/types-core.ts`
+- `src/lib/contract/validator-core.ts`
+- `src/lib/linear/utils.ts`
+- `src/lib/pr-closeout/evaluator.ts`
+- `src/lib/pr-closeout/evidence.ts`
+- `src/lib/pr-closeout/report-helpers.ts`
+- `src/lib/pr-closeout/types.ts`
+- `src/lib/pr-template-linked-issue-relationship.ts`
+- `src/lib/pr-template-validator.ts`
 
 ## agent
 
@@ -833,6 +845,7 @@ graph LR
   node_lint_checks_83522b19_3fff9a7d["lint_checks_83522b19"]
   node_lint_cli_9ec62ec0_62537dee["lint_cli_9ec62ec0"]
   node_lint_pages_e33301d0_51f54ed1["lint_pages_e33301d0"]
+  node_live_247610f4_9e329ac0["live_247610f4"]
   node_loader_1_16749818_9255dc35["loader_1_16749818"]
   node_loader_d47712cc_1c3a0e19["loader_d47712cc"]
   node_local_checks_98fa27f8_460aa6a0["local_checks_98fa27f8"]
@@ -1289,6 +1302,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_lint_checks_83522b19_3fff9a7d
   ext_node_fs_a15b7d96["node:fs"] --> node_lint_cli_9ec62ec0_62537dee
   ext_node_fs_a15b7d96["node:fs"] --> node_lint_pages_e33301d0_51f54ed1
+  ext_node_fs_a15b7d96["node:fs"] --> node_live_247610f4_9e329ac0
   ext_node_fs_a15b7d96["node:fs"] --> node_loader_1_16749818_9255dc35
   ext_node_fs_a15b7d96["node:fs"] --> node_loader_d47712cc_1c3a0e19
   ext_node_fs_a15b7d96["node:fs"] --> node_local_checks_98fa27f8_460aa6a0
