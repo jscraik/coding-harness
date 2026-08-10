@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-08-03
+last_validated: 2026-08-10
 ---
 
 # Agent-First Status
@@ -34,6 +34,14 @@ completed the remaining active contract and documentation collapse. The prerequi
 `main` and makes Local Memory an explicit diagnostic rather than a routine
 admission dependency. Optional
 context maintenance is advisory; it is not the primary action for ordinary work.
+
+The 2026-08-10 weekly review also includes the dependency remediation merged in
+[#515](https://github.com/jscraik/coding-harness/pull/515) and the public npm
+release-contract alignment merged in
+[#514](https://github.com/jscraik/coding-harness/pull/514). Those maintenance
+slices improve dependency and future release readiness, but they add no new
+effectiveness observation or package-publication evidence. The status therefore
+remains partial.
 
 The active slice is direct effectiveness observation. A five-repository
 read-only readiness sample, a source-bound observation cohort, and a separate
