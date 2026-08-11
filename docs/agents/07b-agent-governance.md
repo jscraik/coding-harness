@@ -73,12 +73,13 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 
 - Every implementation slice must complete PR `Documentation impact`, `Documentation lifecycle impact`, and `SemVer impact` classification before handoff: update applicable root docs (`README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `AGENTS.md`, `ARCHITECTURE.md`), governed docs, and existing deep-module README files, or record `n.a.` with a reason in the matching PR field
 - north-star status cadence repairs should refresh
-  `docs/roadmap/agent-first-status.md` and the registered
-  `agent-first-status-matrix.lastReviewedAt` value in `harness.contract.json`
-  together as one exact two-file cadence registration. Docs-gate treats only
+  `docs/roadmap/agent-first-status.md` and the `lastReviewedAt` value in the
+  `productSurface.surfaces` record whose `surfaceId` is
+  `agent-first-status-matrix` in `harness.contract.json` together as one exact
+  two-file cadence registration. Docs-gate treats only
   that paired date update as documentation cadence; any extra contract field
   remains contract policy. Keep `README.md`, `AGENTS.md`, and this guide
-  synchronized when drift-gate reports an agent-first-status-matrix cadence
+  synchronized when docs-gate reports an agent-first-status-matrix cadence
   breach.
 - per-release product-surface cadence repairs are owned by the `owner` declared
   in `harness.contract.json` (the current `preflight-gate` entry is owned by

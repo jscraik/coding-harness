@@ -71,8 +71,9 @@ default agent route without a named consumer.
 - Generated instruction packs must preserve outcome-first local correction and
   must not require systemic generalisation before routine closeout.
 - Refreshes to `docs/roadmap/agent-first-status.md` must update the matching
-  `agentFirstStatusMatrix.lastReviewedAt` date in `harness.contract.json` in
-  the same two-file cadence registration. That exact pairing is documentation
+  `lastReviewedAt` field in the `productSurface.surfaces` record whose
+  `surfaceId` is `agent-first-status-matrix` in `harness.contract.json`, in the
+  same two-file cadence registration. That exact pairing is documentation
   cadence, not generic contract policy; any additional contract mutation remains
   contract policy. Measurements without retained raw output or an independent
   receipt remain unverified notes.
