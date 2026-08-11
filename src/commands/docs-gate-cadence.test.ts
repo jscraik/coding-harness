@@ -322,4 +322,125 @@ describe("agent-first status cadence registration", () => {
 			}),
 		);
 	});
+
+	it("rejects an explicit defaulted contract field beside the cadence date", () => {
+		const root = createTestRoot("docs-gate-agent-first-cadence-raw-default");
+		roots.push(root);
+		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		seedCadenceContract(root);
+		const baseSha = initializeGitRepository(root, gitEnv);
+		const contractPath = join(root, "harness.contract.json");
+		const contract = JSON.parse(readFileSync(contractPath, "utf-8")) as Record<
+			string,
+			unknown
+		>;
+		contract.blastRadiusRulesMode = "merge";
+		const productSurface = contract.productSurface as {
+			surfaces: Array<Record<string, unknown>>;
+		};
+		const targetSurface = productSurface.surfaces.find(
+			(entry) => entry.surfaceId === "agent-first-status-matrix",
+		);
+		if (!targetSurface) throw new Error("missing fixture surface");
+		targetSurface.lastReviewedAt = "2026-08-10";
+		write(contractPath, JSON.stringify(contract, null, 2));
+		writeAt(
+			root,
+			"docs/roadmap/agent-first-status.md",
+			"# Agent-first status\n\nReviewed 2026-08-10.\n",
+		);
+		commitAll(root, "add explicit defaulted contract field", gitEnv);
+
+		const result = runWithIsolatedGitEnvironment({
+			repoRoot: root,
+			mode: "required",
+			trustedBaseRef: baseSha,
+		});
+
+		expect(result.exitCode).toBe(10);
+		expect(result.report.categories).toContain("contract_policy");
+	});
+
+	it("rejects staged and working-tree contract disagreement", () => {
+		const root = createTestRoot(
+			"docs-gate-agent-first-cadence-staged-mismatch",
+		);
+		roots.push(root);
+		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		seedCadenceContract(root);
+		const baseSha = initializeGitRepository(root, gitEnv);
+		const contractPath = join(root, "harness.contract.json");
+		const stagedContract = JSON.parse(
+			readFileSync(contractPath, "utf-8"),
+		) as Record<string, unknown>;
+		stagedContract.blastRadiusRulesMode = "merge";
+		const stagedSurface = stagedContract.productSurface as {
+			surfaces: Array<Record<string, unknown>>;
+		};
+		const stagedTargetSurface = stagedSurface.surfaces.find(
+			(entry) => entry.surfaceId === "agent-first-status-matrix",
+		);
+		if (!stagedTargetSurface) throw new Error("missing fixture surface");
+		stagedTargetSurface.lastReviewedAt = "2026-08-10";
+		write(contractPath, JSON.stringify(stagedContract, null, 2));
+		execFileSync("git", ["add", "harness.contract.json"], {
+			cwd: root,
+			stdio: "ignore",
+			env: gitEnv,
+		});
+
+		const workingContract = { ...stagedContract };
+		delete workingContract.blastRadiusRulesMode;
+		write(contractPath, JSON.stringify(workingContract, null, 2));
+		writeAt(
+			root,
+			"docs/roadmap/agent-first-status.md",
+			"# Agent-first status\n\nReviewed 2026-08-10.\n",
+		);
+		execFileSync("git", ["add", "docs/roadmap/agent-first-status.md"], {
+			cwd: root,
+			stdio: "ignore",
+			env: gitEnv,
+		});
+
+		const result = runWithIsolatedGitEnvironment({
+			repoRoot: root,
+			mode: "required",
+			trustedBaseRef: baseSha,
+		});
+
+		expect(result.exitCode).toBe(10);
+		expect(result.report.categories).toContain("contract_policy");
+	});
+
+	it("rejects impossible calendar dates before granting cadence", () => {
+		const root = createTestRoot("docs-gate-agent-first-cadence-invalid-date");
+		roots.push(root);
+		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		seedCadenceContract(root);
+		const baseSha = initializeGitRepository(root, gitEnv);
+		const contractPath = join(root, "harness.contract.json");
+		write(
+			contractPath,
+			readFileSync(contractPath, "utf-8").replace(
+				'"lastReviewedAt": "2026-08-03"',
+				'"lastReviewedAt": "2026-99-99"',
+			),
+		);
+		writeAt(
+			root,
+			"docs/roadmap/agent-first-status.md",
+			"# Agent-first status\n\nReviewed 2026-99-99.\n",
+		);
+		commitAll(root, "reject invalid cadence date", gitEnv);
+
+		const result = runWithIsolatedGitEnvironment({
+			repoRoot: root,
+			mode: "required",
+			trustedBaseRef: baseSha,
+		});
+
+		expect(result.exitCode).toBe(10);
+		expect(result.report.categories).toContain("contract_policy");
+	});
 });

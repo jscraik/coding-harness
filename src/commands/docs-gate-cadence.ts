@@ -17,6 +17,14 @@ const AGENT_FIRST_STATUS_SURFACE_ID = "agent-first-status-matrix";
 const AGENT_FIRST_STATUS_DOCUMENT = "docs/roadmap/agent-first-status.md";
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+type JsonValue = null | boolean | number | string | JsonValue[] | JsonObject;
+type JsonObject = { [key: string]: JsonValue };
+
+interface ParsedContract {
+	normalized: HarnessContract;
+	raw: JsonObject;
+}
+
 /** Return trusted-base candidates in precedence order for candidate comparison. */
 export function resolveBaseRefCandidates(options: DocsGateOptions): string[] {
 	return [
@@ -62,7 +70,7 @@ function hasExactCadencePaths(resolution: ChangedFilesResolution): boolean {
 function resolveTrustedBaseContract(
 	options: DocsGateOptions,
 	repoRoot: string,
-): HarnessContract | null {
+): ParsedContract | null {
 	for (const baseRef of resolveBaseRefCandidates(options)) {
 		try {
 			const mergeBase = gitOutput(repoRoot, [
@@ -82,21 +90,40 @@ function resolveTrustedBaseContract(
 }
 
 /** Read the contract as it exists in the working tree, including staged edits. */
-function readWorkingContract(repoRoot: string): HarnessContract | null {
+function readWorkingContract(repoRoot: string): ParsedContract | null {
 	try {
-		return parseValidatedContract(
-			readFileSync(join(repoRoot, CONTRACT_PATH), "utf-8"),
-		);
+		const workingContent = readFileSync(join(repoRoot, CONTRACT_PATH), "utf-8");
+		const stagedContent = readStagedContract(repoRoot);
+		if (stagedContent !== undefined && stagedContent !== workingContent) {
+			return null;
+		}
+		return parseValidatedContract(workingContent);
 	} catch {
 		return null;
 	}
 }
 
+/** Read the staged contract when the index contains a contract change. */
+function readStagedContract(repoRoot: string): string | undefined {
+	const stagedPaths = gitOutput(repoRoot, [
+		"diff",
+		"--cached",
+		"--name-only",
+		"--",
+		CONTRACT_PATH,
+	]).trim();
+	if (!stagedPaths) return undefined;
+	return gitOutput(repoRoot, ["show", `:${CONTRACT_PATH}`]);
+}
+
 /** Parse at the contract schema boundary before cadence policy reads its fields. */
-function parseValidatedContract(content: string): HarnessContract | null {
+function parseValidatedContract(content: string): ParsedContract | null {
 	try {
-		const validation = validateContract(JSON.parse(content));
-		return validation.success && validation.data ? validation.data : null;
+		const raw = JSON.parse(content) as JsonObject;
+		const validation = validateContract(raw);
+		return validation.success && validation.data
+			? { normalized: validation.data, raw }
+			: null;
 	} catch {
 		return null;
 	}
@@ -123,17 +150,67 @@ function isRegisteredWeeklyStatusSurface(
 		Array.isArray(surface.ownedPaths) &&
 		surface.ownedPaths.includes(AGENT_FIRST_STATUS_DOCUMENT) &&
 		typeof surface.lastReviewedAt === "string" &&
-		ISO_DATE.test(surface.lastReviewedAt)
+		isCalendarDate(surface.lastReviewedAt)
 	);
+}
+
+/** Reject impossible calendar dates before granting the cadence exception. */
+function isCalendarDate(value: string): boolean {
+	if (!ISO_DATE.test(value)) return false;
+	const year = Number(value.slice(0, 4));
+	const month = Number(value.slice(5, 7));
+	const day = Number(value.slice(8, 10));
+	if (month < 1 || month > 12 || day < 1) return false;
+	const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+	const daysInMonth = [
+		31,
+		leapYear ? 29 : 28,
+		31,
+		30,
+		31,
+		30,
+		31,
+		31,
+		30,
+		31,
+		30,
+		31,
+	];
+	return day <= (daysInMonth[month - 1] ?? 0);
+}
+
+function isJsonObject(value: JsonValue): value is JsonObject {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Locate the same registered surface without losing raw optional fields. */
+function findRawAgentFirstStatusSurface(
+	contract: JsonObject,
+): JsonObject | null {
+	const productSurface = contract.productSurface;
+	if (
+		productSurface === undefined ||
+		!isJsonObject(productSurface) ||
+		!Array.isArray(productSurface.surfaces)
+	) {
+		return null;
+	}
+	const surfaces = productSurface.surfaces as JsonValue[];
+	const matches = surfaces.filter(
+		(surface): surface is JsonObject =>
+			isJsonObject(surface) &&
+			surface.surfaceId === AGENT_FIRST_STATUS_SURFACE_ID,
+	);
+	return matches.length === 1 ? (matches[0] ?? null) : null;
 }
 
 /** Verify that only this exact registered surface review date changed. */
 function hasExactCadenceRegistrationChange(
-	baseline: HarnessContract,
-	current: HarnessContract,
+	baseline: ParsedContract,
+	current: ParsedContract,
 ): boolean {
-	const baselineSurface = findAgentFirstStatusSurface(baseline);
-	const currentSurface = findAgentFirstStatusSurface(current);
+	const baselineSurface = findAgentFirstStatusSurface(baseline.normalized);
+	const currentSurface = findAgentFirstStatusSurface(current.normalized);
 	if (
 		!baselineSurface ||
 		!currentSurface ||
@@ -143,11 +220,18 @@ function hasExactCadenceRegistrationChange(
 	) {
 		return false;
 	}
-	const restoredCurrent = structuredClone(current);
-	const restoredSurface = findAgentFirstStatusSurface(restoredCurrent);
-	if (!restoredSurface) return false;
-	restoredSurface.lastReviewedAt = baselineSurface.lastReviewedAt;
-	return isDeepStrictEqual(baseline, restoredCurrent);
+	const baselineRawSurface = findRawAgentFirstStatusSurface(baseline.raw);
+	const restoredCurrent = structuredClone(current.raw);
+	const restoredSurface = findRawAgentFirstStatusSurface(restoredCurrent);
+	if (
+		!baselineRawSurface ||
+		!restoredSurface ||
+		typeof baselineRawSurface.lastReviewedAt !== "string"
+	) {
+		return false;
+	}
+	restoredSurface.lastReviewedAt = baselineRawSurface.lastReviewedAt;
+	return isDeepStrictEqual(baseline.raw, restoredCurrent);
 }
 
 function gitOutput(repoRoot: string, args: readonly string[]): string {
