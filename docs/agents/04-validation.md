@@ -85,8 +85,9 @@ CONFIGS_ROOT="${CODEX_CONFIGS_ROOT:-$HOME/dev/configs}" \
   --require-env REQUIRED_ENV_NAME -- <child command>
 ```
 
-The mounted file is a 1Password-owned FIFO. Never read or source the FIFO,
-print values, copy it, or reuse one stream across stages. A passing canary
+The mounted file is a 1Password-owned FIFO. Never read the FIFO and never source
+the FIFO; do not print values, copy it, or reuse one stream across stages. A
+passing canary
 proves injection only; it does not prove a provider request or hosted result.
 
 ## Pull request closeout
@@ -96,7 +97,9 @@ run:
 
 ```bash
 python3 ~/.codex/scripts/pr-readiness.py \
-  --phase create|update --scope-file <scope-file> --write-receipt
+  --phase create --scope-file <scope-file> --write-receipt
+python3 ~/.codex/scripts/pr-readiness.py \
+  --phase update --scope-file <scope-file> --write-receipt
 ```
 
 Write the PR body through a non-interpreting body file and validate it with

@@ -65,11 +65,12 @@ describe("check-steering-feedback-contract", () => {
 		const content = [
 			"Use the smallest gate needed for risk and keep required gates fail-closed.",
 			"Keep local tests, hosted checks, review, merge, and release separate.",
-			"Run pr-readiness.py --phase create|update before hosted mutation.",
+			"Run pr-readiness.py --phase create before hosted mutation.",
+			"Run pr-readiness.py --phase update before hosted mutation.",
 			"Use GraphQL reviewThreads with isResolved and isOutdated.",
 			"Use run-auth-backed.sh --env-file ~/.codex/.env --canary TOKEN.",
 			"Use run-auth-backed.sh --env-file ~/.codex/.env --require-env TOKEN -- child.",
-			"Never read or source the FIFO.",
+			"Never read the FIFO and never source the FIFO.",
 			"Treat feedback as an observed local defect first.",
 			"Add a durable control only when an existing contract conflicts, a safety boundary is crossed, or the same failure recurs across independent work.",
 			"Command: <exact command> -> pass|fail|blocked",
@@ -81,17 +82,19 @@ describe("check-steering-feedback-contract", () => {
 	it.each([
 		["fail-closed", "fail-closed validation rule"],
 		["isOutdated", "GraphQL review-thread truth"],
-		["Never read or source the FIFO.", "FIFO privacy boundary"],
+		["Never read the FIFO and ", "FIFO read privacy boundary"],
+		["never source the FIFO", "FIFO source privacy boundary"],
 		["a safety boundary is crossed", "safety-boundary threshold"],
 	])("rejects compact guidance missing %s", (removed, expected) => {
 		const content = [
 			"Use the smallest gate needed for risk and keep required gates fail-closed.",
 			"Keep local tests, hosted checks, review, merge, and release separate.",
-			"Run pr-readiness.py --phase create|update before hosted mutation.",
+			"Run pr-readiness.py --phase create before hosted mutation.",
+			"Run pr-readiness.py --phase update before hosted mutation.",
 			"Use GraphQL reviewThreads with isResolved and isOutdated.",
 			"Use run-auth-backed.sh --env-file ~/.codex/.env --canary TOKEN.",
 			"Use run-auth-backed.sh --env-file ~/.codex/.env --require-env TOKEN -- child.",
-			"Never read or source the FIFO.",
+			"Never read the FIFO and never source the FIFO.",
 			"Treat feedback as an observed local defect first.",
 			"Add a durable control only when an existing contract conflicts, a safety boundary is crossed, or the same failure recurs across independent work.",
 			"Command: <exact command> -> pass|fail|blocked",
@@ -101,6 +104,17 @@ describe("check-steering-feedback-contract", () => {
 
 		expect(validateValidationDoc(content)).toContain(
 			`docs/agents/04-validation.md: missing ${expected}`,
+		);
+	});
+
+	it("rejects the non-executable PR readiness phase placeholder", () => {
+		const content = [
+			"Run pr-readiness.py --phase create|update before hosted mutation.",
+			"Never read the FIFO and never source the FIFO.",
+		].join("\n");
+
+		expect(validateValidationDoc(content)).toContain(
+			"docs/agents/04-validation.md: missing PR readiness route",
 		);
 	});
 });

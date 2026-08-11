@@ -331,7 +331,10 @@ function validateValidationDoc(content) {
 		[/smallest gate needed for risk/i, "risk-selected validation rule"],
 		[/fail-closed/i, "fail-closed validation rule"],
 		[/local tests.*hosted checks.*review.*merge.*release/is, "claims boundary"],
-		[/pr-readiness\.py.*--phase create\|update/is, "PR readiness route"],
+		[
+			/pr-readiness\.py[\s\S]*--phase\s+(?:create|update)(?=\s|$)/is,
+			"PR readiness route",
+		],
 		[/reviewThreads.*isResolved.*isOutdated/is, "GraphQL review-thread truth"],
 		[
 			/run-auth-backed\.sh.*--env-file.*--canary/is,
@@ -341,7 +344,8 @@ function validateValidationDoc(content) {
 			/run-auth-backed\.sh.*--env-file.*--require-env/is,
 			"authenticated child route",
 		],
-		[/Never (?:read|source).*FIFO/i, "FIFO privacy boundary"],
+		[/Never read[^.]*FIFO/i, "FIFO read privacy boundary"],
+		[/Never source[^.]*FIFO/i, "FIFO source privacy boundary"],
 		[
 			/Treat feedback as an observed local defect first/i,
 			"local repair-first rule",
