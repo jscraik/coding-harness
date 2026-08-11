@@ -49,7 +49,12 @@ export function isAgentFirstStatusCadenceRegistration(
 	repoRoot: string,
 	resolution: ChangedFilesResolution,
 ): boolean {
-	if (!hasExactCadencePaths(resolution)) return false;
+	if (
+		!hasExactCadencePaths(resolution) ||
+		hasUncommittedCadenceChanges(repoRoot)
+	) {
+		return false;
+	}
 	const baseline = resolveTrustedBaseContract(options, repoRoot);
 	const current = readWorkingContract(repoRoot);
 	return (
@@ -57,6 +62,27 @@ export function isAgentFirstStatusCadenceRegistration(
 		current !== null &&
 		hasExactCadenceRegistrationChange(baseline, current)
 	);
+}
+
+/** Keep a cadence exception bound to content that is staged or committed. */
+function hasUncommittedCadenceChanges(repoRoot: string): boolean {
+	const unstaged = gitOutput(repoRoot, [
+		"diff",
+		"--name-only",
+		"--diff-filter=ACMRDT",
+		"--",
+		CONTRACT_PATH,
+		AGENT_FIRST_STATUS_DOCUMENT,
+	]).trim();
+	const untracked = gitOutput(repoRoot, [
+		"ls-files",
+		"--others",
+		"--exclude-standard",
+		"--",
+		CONTRACT_PATH,
+		AGENT_FIRST_STATUS_DOCUMENT,
+	]).trim();
+	return Boolean(unstaged || untracked);
 }
 
 /** Require the cadence document and contract to be the complete changed-path set. */
@@ -181,7 +207,9 @@ function isCalendarDate(value: string): boolean {
 		30,
 		31,
 	];
-	return day <= (daysInMonth[month - 1] ?? 0);
+	if (day > (daysInMonth[month - 1] ?? 0)) return false;
+	const today = new Date().toISOString().slice(0, 10);
+	return value <= today;
 }
 
 /** Locate the same registered surface without losing raw optional fields. */

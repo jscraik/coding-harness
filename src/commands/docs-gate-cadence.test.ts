@@ -487,4 +487,66 @@ describe("agent-first status cadence registration", () => {
 		expect(result.exitCode).toBe(10);
 		expect(result.report.categories).toContain("contract_policy");
 	});
+
+	it("rejects future calendar dates before granting cadence", () => {
+		const root = createTestRoot("docs-gate-agent-first-cadence-future-date");
+		roots.push(root);
+		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		seedCadenceContract(root);
+		const baseSha = initializeGitRepository(root, gitEnv);
+		const contractPath = join(root, "harness.contract.json");
+		write(
+			contractPath,
+			readFileSync(contractPath, "utf-8").replace(
+				'"lastReviewedAt": "2026-08-03"',
+				'"lastReviewedAt": "2099-01-01"',
+			),
+		);
+		writeAt(
+			root,
+			"docs/roadmap/agent-first-status.md",
+			"# Agent-first status\n\nReviewed 2099-01-01.\n",
+		);
+		commitAll(root, "reject future cadence date", gitEnv);
+
+		const result = runWithIsolatedGitEnvironment({
+			repoRoot: root,
+			mode: "required",
+			trustedBaseRef: baseSha,
+		});
+
+		expect(result.exitCode).toBe(10);
+		expect(result.report.categories).toContain("contract_policy");
+	});
+
+	it("rejects a cadence pair split between HEAD and the worktree", () => {
+		const root = createTestRoot("docs-gate-agent-first-cadence-split");
+		roots.push(root);
+		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		seedCadenceContract(root);
+		const baseSha = initializeGitRepository(root, gitEnv);
+		updateContract(root, (contract) => {
+			surface(contract, "agent-first-status-matrix").lastReviewedAt =
+				"2026-08-10";
+		});
+		writeAt(
+			root,
+			"docs/roadmap/agent-first-status.md",
+			"# Agent-first status\n\nReviewed 2026-08-10.\n",
+		);
+		execFileSync("git", ["add", "harness.contract.json"], {
+			cwd: root,
+			stdio: "ignore",
+			env: gitEnv,
+		});
+
+		const result = runWithIsolatedGitEnvironment({
+			repoRoot: root,
+			mode: "required",
+			trustedBaseRef: baseSha,
+		});
+
+		expect(result.exitCode).toBe(10);
+		expect(result.report.categories).toContain("contract_policy");
+	});
 });
