@@ -204,6 +204,24 @@ class TestControlledEffectivenessObservation:
         with pytest.raises(ValidationError, match="exit_code"):
             ControlledEffectivenessObservation.model_validate(payload)
 
+    @pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+    def test_rejects_non_finite_durations(self, value: float) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["treatment"]["wall_seconds"] = value
+
+        with pytest.raises(ValidationError, match="finite"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_failed_decision_with_zero_exit_code(self) -> None:
+        payload = _load_effectiveness_observation()
+        decision = json.loads(payload["tasks"][0]["treatment"]["stdout"])
+        decision["status"] = "fail"
+        payload["tasks"][0]["treatment"]["status"] = "fail"
+        payload["tasks"][0]["treatment"]["stdout"] = json.dumps(decision)
+
+        with pytest.raises(ValidationError, match="non-zero exit_code"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
     def test_rejects_replayable_head_mismatch(self) -> None:
         payload = _load_effectiveness_observation()
         payload["tasks"][0]["observed_head"] = "0" * 40
@@ -276,6 +294,23 @@ class TestControlledEffectivenessObservation:
         ],
     )
     def test_rejects_source_diagnostic_without_concrete_checkout_binding(
+        self, field: str, value: str, message: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["source_diagnostic"][field] = value
+
+        with pytest.raises(ValidationError, match=message):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "value", "message"),
+        [
+            ("task_root_ref", "other-task", "task_root_ref"),
+            ("entrypoint", "dist/cli.js", "entrypoint"),
+            ("replay_command", "node src/cli.ts next --json", "replay_command"),
+        ],
+    )
+    def test_rejects_source_diagnostic_replay_binding_drift(
         self, field: str, value: str, message: str
     ) -> None:
         payload = _load_effectiveness_observation()

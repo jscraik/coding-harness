@@ -143,12 +143,14 @@ The treatment was the current built Coding Harness `0.15.3` entrypoint,
 `344774d0760fc56b0cd8d336d80d483afb798507`. The exact raw source is retained
 at [agent-first-effectiveness-observation-2026-08-11.json](./agent-first-effectiveness-observation-2026-08-11.json),
 SHA-256
-`8b9896a3e1df1e468dbe6a7a542b81745a5e33db79ef3fdb255bff016af6cfc6`,
-19,528 bytes. Each row now binds an authoritative remote URL and full source
+`023f9b3d042685e791a784aaf2f6e5061362d012175eed424d697d3a4d9dbcee`,
+20,448 bytes. Each row now binds an authoritative remote URL and full source
 ref, a replay status, the task-root-relative working directory and `dist/cli.js`
 entrypoint used by the treatment, and the source-checkout-at-`source_head`
-repository, full ref, relative working directory, and source head used by each
-source diagnostic. Treatment and source `pass` or `action_required` decisions
+repository, full ref, relative working directory, task-root binding, and
+`src/cli.ts` replay entrypoint used by each source diagnostic. The replay
+template runs from the task root while loading the pinned source checkout.
+Treatment and source `pass` or `action_required` decisions
 are successful when the command exits 0;
 `blocked` and `fail` remain non-zero outcomes. The existing repository
 artifact-types validator validates this retained observation as

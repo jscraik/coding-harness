@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import subprocess
 import sys
@@ -444,6 +445,8 @@ class EffectivenessObservationBase(BaseModel):
     @field_validator("wall_seconds")
     @classmethod
     def require_non_negative_duration(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("must be finite")
         if value < 0:
             raise ValueError("must be non-negative")
         return value
@@ -474,6 +477,10 @@ CONTROLLED_SOURCE_DIAGNOSTIC_COMMAND = "node --import tsx src/cli.ts next --json
 CONTROLLED_SOURCE_DIAGNOSTIC_WORKING_DIRECTORY = "."
 CONTROLLED_SOURCE_DIAGNOSTIC_REPOSITORY_URL = "https://github.com/jscraik/coding-harness"
 CONTROLLED_SOURCE_DIAGNOSTIC_RELATIVE_WORKING_DIRECTORY = "."
+CONTROLLED_SOURCE_DIAGNOSTIC_ENTRYPOINT = "src/cli.ts"
+CONTROLLED_SOURCE_DIAGNOSTIC_REPLAY_COMMAND = (
+    'node --import "$TSX_LOADER" "$HARNESS_SOURCE/src/cli.ts" next --json'
+)
 
 
 class EffectivenessInitialStatus(BaseModel):
@@ -496,8 +503,8 @@ class EffectivenessDecisionObservation(EffectivenessObservationBase):
     def require_decision_exit_consistency(self) -> EffectivenessDecisionObservation:
         if self.status in {"pass", "action_required"} and self.exit_code != 0:
             raise ValueError("successful observations must have exit_code 0")
-        if self.status == "blocked" and self.exit_code == 0:
-            raise ValueError("blocked observations must have a non-zero exit_code")
+        if self.status in {"fail", "blocked"} and self.exit_code == 0:
+            raise ValueError("failed or blocked observations must have a non-zero exit_code")
         return self
 
 
@@ -512,16 +519,25 @@ class EffectivenessTreatmentObservation(EffectivenessDecisionObservation):
     )
 
 class EffectivenessSourceDiagnosticObservation(EffectivenessDecisionObservation):
-    """Source-checkout diagnostic with an explicit replay location and head binding."""
+    """Source diagnostic with explicit task-root and source-entrypoint replay binding."""
 
     working_directory: str
     repository_url: str
     ref: str
     relative_working_directory: str
     source_head: str
+    task_root_ref: str
+    entrypoint: str
+    replay_command: str
 
     _reject_blank_replay_fields = field_validator(
-        "working_directory", "repository_url", "ref", "relative_working_directory"
+        "working_directory",
+        "repository_url",
+        "ref",
+        "relative_working_directory",
+        "task_root_ref",
+        "entrypoint",
+        "replay_command",
     )(reject_blank_string)
 
     @field_validator("repository_url")
@@ -723,6 +739,18 @@ class ControlledEffectivenessObservation(BaseModel):
             if task.source_diagnostic.source_head != self.source_head:
                 raise ValueError(
                     f"{task.id} source_diagnostic source_head must match artifact source_head"
+                )
+            if task.source_diagnostic.task_root_ref != task.task_root_ref:
+                raise ValueError(
+                    f"{task.id} source_diagnostic task_root_ref must match task_root_ref"
+                )
+            if task.source_diagnostic.entrypoint != CONTROLLED_SOURCE_DIAGNOSTIC_ENTRYPOINT:
+                raise ValueError(
+                    f"{task.id} source_diagnostic entrypoint must remain src/cli.ts"
+                )
+            if task.source_diagnostic.replay_command != CONTROLLED_SOURCE_DIAGNOSTIC_REPLAY_COMMAND:
+                raise ValueError(
+                    f"{task.id} source_diagnostic replay_command must bind task root and source checkout"
                 )
             if task.treatment.working_directory != task.task_root_ref:
                 raise ValueError(
