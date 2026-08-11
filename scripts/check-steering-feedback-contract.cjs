@@ -47,8 +47,6 @@ const SPECIFIC_FEEDBACK_SYSTEMIC_PATTERN =
 	/(?:specific implementation-detail feedback|specific feedback|line-level correction|review comment|shared-control threshold|shared threshold|current contract is contradictory|safety boundary|recurr(?:ence|s) across independent)[\s\S]{0,900}(?:local by default|local or systemic|validator|lint rule|schema constraint|shared utility|repository convention|CI check|documented invariant|tracked exception)/i;
 const PATTERN_SCOPE_INVENTORY_PATTERN =
 	/(pattern scope inventory|siblings changed|siblings left unchanged|sibling implementations searched|similar misbehavior classes searched|deferred follow-ups|deferred followup)/i;
-const OBSERVED_FIXABLE_BLOCKER_PATTERN =
-	/(observed fixable blockers|fixable blocker|fix it in the same pass|rerun the narrowest proving command|tracked exception with the exact reason)/i;
 const PATTERN_SCOPE_VALIDATOR_PATTERN =
 	/(PATTERN_SCOPE_SIGNAL_PATTERN|collectPatternScopeInventoryErrors|Pattern scope inventory must name the inferred principle)/i;
 const PRINCIPLE_SIGNAL_PATTERN =
@@ -84,7 +82,15 @@ const ENV_FIFO_TIMEOUT_PATTERN =
 const CIRCLECI_ENV_API_TRIAGE_PATTERN =
 	/(CircleCI API|CircleCI log|CircleCI job)[\s\S]{0,260}(~\/\.codex\/\.env|op run --env-file ~\/\.codex\/\.env|set -a; source ~\/\.codex\/\.env; set \+a|FIFO|regular readable file|CIRCLECI_TOKEN|CIRCLE_TOKEN|CIRCLE_API_TOKEN|Circle-Token|bounded network call|--max-time)/i;
 const SAFE_PR_BODY_FILE_HANDOFF_PATTERN =
-	/(PR body|pull request body)[\s\S]{0,260}(--body-file|body file|non-interpreting file|shell interpolation|command substitution|backticks|pr-template-gate --pr-body-file)/i;
+	/(PR body|pull request body)[\s\S]{0,260}(--body-file|non-interpreting (?:body )?file|pr-template-gate --pr-body-file)/i;
+const PR_READINESS_CREATE_PATTERN =
+	/pr-readiness\.py(?:\\\r?\n|[^\r\n])*?--phase[ \t]+create(?=[ \t\r\n]|$)(?:\\\r?\n|[^\r\n])*?--scope-file(?=[ \t\r\n]|$)(?:\\\r?\n|[^\r\n])*?--write-receipt(?=[ \t\r\n]|$)/i;
+const PR_READINESS_UPDATE_PATTERN =
+	/pr-readiness\.py(?:\\\r?\n|[^\r\n])*?--phase[ \t]+update(?=[ \t\r\n]|$)(?:\\\r?\n|[^\r\n])*?--scope-file(?=[ \t\r\n]|$)(?:\\\r?\n|[^\r\n])*?--write-receipt(?=[ \t\r\n]|$)/i;
+const CLAIMS_BOUNDARY_PATTERN =
+	/(?=[\s\S]*local tests)(?=[\s\S]*runtime evidence)(?=[\s\S]*hosted checks)(?=[\s\S]*review threads)(?=[\s\S]*approval)(?=[\s\S]*merge)(?=[\s\S]*release)(?=[\s\S]*cleanup)/i;
+const GRAPHQL_REVIEW_THREAD_PATTERN =
+	/GitHub GraphQL[\s\S]{0,260}reviewThreads[\s\S]{0,120}isResolved[\s\S]{0,120}isOutdated/i;
 const STALE_ENV_BACKED_BLOCKER_PATTERN =
 	/(current process lacks GitHub and Linear credentials|GitHub and Linear credentials are unavailable|credentials are unavailable|missing_credentials|(?:~\/?\.?codex\/\.env|\.codex\/\.env)[\s\S]{0,220}\bFIFO\b[\s\S]{0,220}(?:block|blocked|hang|hung|cannot|unavailable|unsafe|not safely|cannot be safely)|\bFIFO\b[\s\S]{0,220}(?:~\/?\.?codex\/\.env|\.codex\/\.env)[\s\S]{0,220}(?:block|blocked|hang|hung|cannot|unavailable|unsafe|not safely|cannot be safely))/i;
 const CLOSEOUT_STATE_FIELD_PATTERNS = [
@@ -94,8 +100,6 @@ const CLOSEOUT_STATE_FIELD_PATTERNS = [
 	[/Linear state/i, "Linear state"],
 	[/next-lane routing/i, "next-lane routing"],
 ];
-const REVIEW_THREAD_TRUTH_PATTERN =
-	/(GitHub GraphQL[\s\S]*reviewThreads[\s\S]*isResolved[\s\S]*isOutdated|reviewThreads[\s\S]*flat comments[\s\S]*not sufficient)/i;
 const AGENT_ENGINEERING_LOOP_PATTERN = /agent engineering proof loop/i;
 const LOOP_MOVE_PATTERNS = [
 	/observe/i,
@@ -331,248 +335,42 @@ function validateAgentGovernance(content) {
  */
 function validateValidationDoc(content) {
 	const errors = [];
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		/- \[Steering feedback closeout\]\(#steering-feedback-closeout\)/,
-		"table-of-contents entry for steering feedback closeout",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		/^### Steering feedback closeout$/m,
-		"steering feedback closeout section",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		AGENT_ENGINEERING_LOOP_PATTERN,
-		"agent engineering proof loop",
-	);
-	for (const pattern of LOOP_MOVE_PATTERNS) {
+	for (const [pattern, description] of [
+		[/smallest gate needed for risk/i, "risk-selected validation rule"],
+		[/fail-closed/i, "fail-closed validation rule"],
+		[CLAIMS_BOUNDARY_PATTERN, "claims boundary"],
+		[PR_READINESS_CREATE_PATTERN, "PR readiness create phase"],
+		[PR_READINESS_UPDATE_PATTERN, "PR readiness update phase"],
+		[SAFE_PR_BODY_FILE_HANDOFF_PATTERN, "safe PR body file handoff"],
+		[GRAPHQL_REVIEW_THREAD_PATTERN, "GraphQL review-thread truth"],
+		[
+			/run-auth-backed\.sh.*--env-file.*--canary/is,
+			"value-blind credential canary",
+		],
+		[
+			/run-auth-backed\.sh.*--env-file.*--require-env/is,
+			"authenticated child route",
+		],
+		[/Never read[^.]*FIFO/i, "FIFO read privacy boundary"],
+		[/Never source[^.]*FIFO/i, "FIFO source privacy boundary"],
+		[
+			/Treat feedback as an observed local defect first/i,
+			"local repair-first rule",
+		],
+		[DURABLE_CONTROL_THRESHOLD_PATTERN, "durable-control threshold"],
+		[INDEPENDENT_RECURRENCE_PATTERN, "independent recurrence threshold"],
+		[CONTRACT_CONTRADICTION_PATTERN, "contract contradiction threshold"],
+		[SAFETY_BOUNDARY_PATTERN, "safety-boundary threshold"],
+		[/Command: <exact command> -> pass\|fail\|blocked/i, "evidence format"],
+	]) {
 		requirePattern(
 			errors,
 			REQUIRED_FILES.validation,
 			content,
 			pattern,
-			`loop move ${pattern}`,
+			description,
 		);
 	}
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		EXPECTED_OUTCOME_PATTERN,
-		"expected outcome closeout frame",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		REPEAT_FEEDBACK_ADMISSION_PATTERN,
-		"repeat-feedback admission closeout requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		CURRENT_SESSION_ADMISSION_PATTERN,
-		"current-session steering admission record requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		PLANNING_ONLY_STOP_PATTERN,
-		"planning-only stop requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		REPEATED_ERROR_RESEARCH_PATTERN,
-		"repeated-error research requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		/Durable destination/i,
-		"durable destination evidence requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		/Meta-behavior proof/i,
-		"meta-behavior proof closeout requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		/validation surface/i,
-		"validation surface evidence requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		/review or deletion condition/i,
-		"review or deletion condition requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		/standalone prose/i,
-		"standalone prose rejection",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		PATTERN_GENERALIZATION_PATTERN,
-		"pattern-generalization closeout requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		SPECIFIC_FEEDBACK_SYSTEMIC_PATTERN,
-		"specific-feedback systemic-until-proven-isolated requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		PATTERN_SCOPE_INVENTORY_PATTERN,
-		"pattern scope inventory closeout requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		OBSERVED_FIXABLE_BLOCKER_PATTERN,
-		"observed fixable blocker validation rule",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		TOOL_PROMOTION_THRESHOLD_PATTERN,
-		"tool promotion threshold validation rule",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		ENV_BACKED_VALIDATION_PATTERN,
-		"env-backed validation recovery rule",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		CIRCLECI_ENV_API_TRIAGE_PATTERN,
-		"CircleCI env-backed API triage rule",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		SAFE_PR_BODY_FILE_HANDOFF_PATTERN,
-		"safe PR body file handoff rule",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		PRINCIPLE_SIGNAL_PATTERN,
-		"semantic principle signal trigger requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		/return a named sentinel error instead of a success\/failure boolean/i,
-		"API design example for pattern feedback",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		OODA_HORIZON_PATTERN,
-		"OODA horizon closeout requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		/stack-aware.*organization-aware/i,
-		"decision horizon classification",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		REFLECTED_CONTEXT_PATTERN,
-		"reflected-context closeout requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		/reflected-context-backed.*unobserved/i,
-		"reflected-context horizon classification",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		ENGINEERING_PROOF_PATTERN,
-		"software-engineering proof requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		WORKFLOW_SKILL_PROOF_PATTERN,
-		"workflow skill capture-the-flag proof requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		TOOL_PROMOTION_THRESHOLD_PATTERN,
-		"tool/validator/skill promotion threshold requirement",
-	);
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		CLOSEOUT_COMPLETION_PATTERN,
-		"closeout completion is not validation-only requirement",
-	);
-	for (const [pattern, fieldName] of CLOSEOUT_STATE_FIELD_PATTERNS) {
-		requirePattern(
-			errors,
-			REQUIRED_FILES.validation,
-			content,
-			pattern,
-			`closeout state classification field: ${fieldName}`,
-		);
-	}
-	requirePattern(
-		errors,
-		REQUIRED_FILES.validation,
-		content,
-		REVIEW_THREAD_TRUTH_PATTERN,
-		"GraphQL reviewThreads source-of-truth requirement",
-	);
 	return errors;
 }
 
@@ -1528,4 +1326,8 @@ if (require.main === module) {
 	main();
 }
 
-module.exports = { validateAgents, validateAgentGovernance };
+module.exports = {
+	validateAgents,
+	validateAgentGovernance,
+	validateValidationDoc,
+};
