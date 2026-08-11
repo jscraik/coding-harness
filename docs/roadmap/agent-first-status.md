@@ -123,7 +123,9 @@ not authorize edits or make the task clean.
 | Coding Harness | `e94794c2b8f117d6bad16b4d11ec98b28d38da02` | `pass` / 0.944 | 3 / 1 / 1 | Routed to `harness check`; source/version drift remained visible |
 
 The raw artifact binds command text, exit codes, stdout, stderr, task HEADs,
-and wall time. It proves a current local routing/check observation only. It
+and wall time. Because it is retained only in the private OC evidence lane,
+reviewers cannot independently retrieve it; this table therefore records an
+unverified local observation note rather than proof or a public receipt. It
 does not provide an untreated baseline, Jamie intervention counts, review/fix
 cycles, or a causal effectiveness result; the recovery status therefore
 remains partial.
