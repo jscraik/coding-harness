@@ -119,6 +119,7 @@ depends_on:
 - [Plans](./plans/2026-04-08-feat-coding-harness-reliability-orchestration-plan.md)
 - [North star](./roadmap/north-star.md)
 - [Roadmap status matrix](./roadmap/agent-first-status.md)
+- [Controlled effectiveness observation](./roadmap/agent-first-effectiveness-observation-2026-08-11.json) — retained typed local observation evidence.
 - [CLI spec](./cli-specs/2026-04-06-harness-cli-spec.md)
 - [Benchmarks](./benchmarks/README.md)
 

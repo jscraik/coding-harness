@@ -10,6 +10,7 @@ last_validated: 2026-08-11
 - [North-Star Boundary](#north-star-boundary)
 - [What Is Known](#what-is-known)
 - [Direct Observation Sample](#direct-observation-sample)
+- [Controlled Baseline And Treatment](#controlled-baseline-and-treatment)
 - [Source-Bound Observation Cohort](#source-bound-observation-cohort)
 - [Lifecycle Evidence Sample](#lifecycle-evidence-sample)
 - [Recovery Order](#recovery-order)
@@ -17,7 +18,7 @@ last_validated: 2026-08-11
 
 ## Current Status
 
-**Status:** 🔶 Partial
+**Status:** ✅ Reduced route locally evidenced; causal productivity metrics remain unknown
 
 Coding Harness is in a product-recovery programme. The immediate goal is a
 small practical route that helps an agent understand a task, choose one useful
@@ -40,16 +41,18 @@ The 2026-08-10 weekly review also includes the dependency remediation merged in
 release-contract alignment merged in
 [#514](https://github.com/jscraik/coding-harness/pull/514). Those maintenance
 slices improve dependency and future release readiness, but they add no new
-effectiveness observation or package-publication evidence. The status therefore
-remains partial.
+effectiveness observation or package-publication evidence. The controlled
+observation below supplies the missing local proof-clarity evidence; causal
+productivity metrics remain explicitly unknown.
 
-The active slice is direct effectiveness observation. A five-repository
-read-only readiness sample, a source-bound observation cohort, and a separate
-source-bound lifecycle sample are recorded below. The lifecycle rows prove
-that real bounded changes reached review and merge, but they do not provide
-complete intervention/time-to-proof observations. The cohort records local
-routing output and tool timing; it does not establish a causal
-product-effectiveness outcome.
+The direct effectiveness slice now has a controlled local observation in
+addition to the earlier readiness, cohort, and lifecycle samples. The
+controlled sample records a repository-only baseline and the built current CLI
+for five real task snapshots across four repositories. It demonstrates clearer
+structured proof with a bounded sub-second built-CLI observation, while
+keeping intervention, review/fix, and PR-lead-time outcomes explicitly
+unknown. This is sufficient for the local proof-clarity boundary, not a causal
+product-effectiveness claim.
 
 ## North-Star Boundary
 
@@ -127,8 +130,44 @@ and wall time. Because it is retained only in the private OC evidence lane,
 reviewers cannot independently retrieve it; this table therefore records an
 unverified local observation note rather than proof or a public receipt. It
 does not provide an untreated baseline, Jamie intervention counts, review/fix
-cycles, or a causal effectiveness result; the recovery status therefore
-remains partial.
+cycles, or a causal effectiveness result; the controlled sample below is the
+source for the bounded local proof-clarity result.
+
+## Controlled Baseline And Treatment
+
+On 2026-08-11, five real task snapshots across Agent-Skills, Configs,
+Portfolio, and Coding Harness were run read-only from immutable task heads.
+The baseline was `git status --short --branch` followed by `git diff --stat -- .`.
+The treatment was the current built Coding Harness `0.15.3` entrypoint,
+`node dist/cli.js next --json`, built from source head
+`344774d0760fc56b0cd8d336d80d483afb798507`. The exact raw source is retained
+at [agent-first-effectiveness-observation-2026-08-11.json](./agent-first-effectiveness-observation-2026-08-11.json),
+SHA-256
+`cfab83cf2b538ab20c226fe6156e074517b2e9d12be5cbc8952f4ee3295008fa`,
+18,352 bytes. Each row now binds an authoritative remote URL and ref, a
+replay status, and the task-root-relative working directory
+and `dist/cli.js` entrypoint used by the treatment. The existing repository
+artifact-types validator validates this retained observation as
+`coding-harness-controlled-effectiveness-observation/v1`.
+
+| Task snapshot | Baseline status + diff (s) | Built `next` (s) | Result | Local effect |
+| --- | ---: | ---: | --- | --- |
+| Coding Harness current main | 0.0260 | 0.5588 | pass | Structured next action and claims boundary with bounded overhead |
+| Agent-Skills OSS-cloud boundary | 0.1011 | 0.6095 | blocked | Correctly stopped on branch currency instead of guessing |
+| Agent-Skills post-merge stabilization | 0.1107 | 0.6437 | pass | Added actionable warnings and safe execution boundary |
+| Configs brace-expansion task | 0.0239 | 0.4588 | pass | Added actionable warnings and safe execution boundary |
+| Portfolio route-rhythm task | 0.0228 | 0.4289 | pass | Added actionable warnings and safe execution boundary |
+
+The built route completed in 0.4289–0.6437 seconds and returned structured
+`nextAction`, execution-boundary, and claims-boundary fields on every row;
+the one non-zero result was the expected fail-closed branch-currency stop.
+The repository-only baseline exposed branch/status and diff state but no
+bounded next action or claims boundary. This is materially clearer local proof
+with a bounded sub-second orientation overhead in this sample; that range is
+an observation, not a product-wide latency target or a guarantee of no delay.
+No row measures Jamie intervention, review/fix cycles, PR lead time, or causal productivity.
+The evidence therefore satisfies the raw five-task local proof-clarity
+boundary while leaving those outcome metrics unknown.
 
 ## Source-Bound Observation Cohort
 

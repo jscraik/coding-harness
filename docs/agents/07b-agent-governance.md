@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-08-03
+last_validated: 2026-08-11
 ---
 
 # Agent governance
@@ -83,6 +83,9 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   breach.
   This synchronization is evidence maintenance only; it does not establish
   product effectiveness, publication, or release readiness.
+- The controlled local effectiveness observation is retained at
+  `docs/roadmap/agent-first-effectiveness-observation-2026-08-11.json` and
+  is limited to proof clarity; it is not causal productivity or release proof.
 - per-release product-surface cadence repairs are owned by the `owner` declared
   in `harness.contract.json` (the current `preflight-gate` entry is owned by
   `workflow`); refresh its `lastReviewedAt` entry and keep `README.md`,
