@@ -143,11 +143,11 @@ The treatment was the current built Coding Harness `0.15.3` entrypoint,
 `344774d0760fc56b0cd8d336d80d483afb798507`. The exact raw source is retained
 at [agent-first-effectiveness-observation-2026-08-11.json](./agent-first-effectiveness-observation-2026-08-11.json),
 SHA-256
-`423e62fdfa3d6510442f50d68ea7fcb12fc14f7f960e5371e13d2ddd61a4b5e8`,
-19,603 bytes. Each row now binds an authoritative remote URL and ref, a
-replay status, the task-root-relative working directory and `dist/cli.js`
+`8b9896a3e1df1e468dbe6a7a542b81745a5e33db79ef3fdb255bff016af6cfc6`,
+19,528 bytes. Each row now binds an authoritative remote URL and full source
+ref, a replay status, the task-root-relative working directory and `dist/cli.js`
 entrypoint used by the treatment, and the source-checkout-at-`source_head`
-repository, ref, relative working directory, and full source head used by each
+repository, full ref, relative working directory, and source head used by each
 source diagnostic. Treatment and source `pass` or `action_required` decisions
 are successful when the command exits 0;
 `blocked` and `fail` remain non-zero outcomes. The existing repository

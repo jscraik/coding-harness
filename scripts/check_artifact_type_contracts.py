@@ -471,9 +471,8 @@ CONTROLLED_BASELINE_DIFF_COMMAND = "git diff --stat -- ."
 CONTROLLED_TREATMENT_CONTRACT = "node dist/cli.js next --json (built from source_head)"
 CONTROLLED_TREATMENT_COMMAND = "node dist/cli.js next --json"
 CONTROLLED_SOURCE_DIAGNOSTIC_COMMAND = "node --import tsx src/cli.ts next --json"
-CONTROLLED_SOURCE_DIAGNOSTIC_WORKING_DIRECTORY = "coding-harness source checkout at source_head"
+CONTROLLED_SOURCE_DIAGNOSTIC_WORKING_DIRECTORY = "."
 CONTROLLED_SOURCE_DIAGNOSTIC_REPOSITORY_URL = "https://github.com/jscraik/coding-harness"
-CONTROLLED_SOURCE_DIAGNOSTIC_REF = "source_head"
 CONTROLLED_SOURCE_DIAGNOSTIC_RELATIVE_WORKING_DIRECTORY = "."
 
 
@@ -712,7 +711,7 @@ class ControlledEffectivenessObservation(BaseModel):
                 raise ValueError(
                     f"{task.id} source_diagnostic repository_url must bind Coding Harness"
                 )
-            if task.source_diagnostic.ref != CONTROLLED_SOURCE_DIAGNOSTIC_REF:
+            if task.source_diagnostic.ref != self.source_head:
                 raise ValueError(f"{task.id} source_diagnostic ref must bind source_head")
             if (
                 task.source_diagnostic.relative_working_directory
