@@ -143,13 +143,17 @@ The treatment was the current built Coding Harness `0.15.3` entrypoint,
 `344774d0760fc56b0cd8d336d80d483afb798507`. The exact raw source is retained
 at [agent-first-effectiveness-observation-2026-08-11.json](./agent-first-effectiveness-observation-2026-08-11.json),
 SHA-256
-`023f9b3d042685e791a784aaf2f6e5061362d012175eed424d697d3a4d9dbcee`,
-20,448 bytes. Each row now binds an authoritative remote URL and full source
+`f4609bef5aa56372b983f9024c0580798271ba44c3dfd82189d2406a4d9c8e93c`,
+21,298 bytes. Each row now binds an authoritative remote URL and full source
 ref, a replay status, the task-root-relative working directory and `dist/cli.js`
 entrypoint used by the treatment, and the source-checkout-at-`source_head`
 repository, full ref, relative working directory, task-root binding, and
-`src/cli.ts` replay entrypoint used by each source diagnostic. The replay
-template runs from the task root while loading the pinned source checkout.
+`src/cli.ts` replay entrypoint used by each source diagnostic. Treatment rows
+also bind the source head and a replay template that loads the pinned Coding
+Harness `dist/cli.js` while running from the task root; the recorded relative
+`dist/cli.js` path is therefore not treated as a task-repository binary. The
+replay templates run from the task root while loading the pinned source
+checkout.
 Treatment and source `pass` or `action_required` decisions
 are successful when the command exits 0;
 `blocked` and `fail` remain non-zero outcomes. The existing repository

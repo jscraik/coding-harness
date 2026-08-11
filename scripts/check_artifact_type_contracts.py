@@ -473,6 +473,9 @@ CONTROLLED_BASELINE_COMMAND = "git status --short --branch"
 CONTROLLED_BASELINE_DIFF_COMMAND = "git diff --stat -- ."
 CONTROLLED_TREATMENT_CONTRACT = "node dist/cli.js next --json (built from source_head)"
 CONTROLLED_TREATMENT_COMMAND = "node dist/cli.js next --json"
+CONTROLLED_TREATMENT_REPLAY_COMMAND = (
+    'node --import "$TSX_LOADER" "$HARNESS_SOURCE/dist/cli.js" next --json'
+)
 CONTROLLED_SOURCE_DIAGNOSTIC_COMMAND = "node --import tsx src/cli.ts next --json"
 CONTROLLED_SOURCE_DIAGNOSTIC_WORKING_DIRECTORY = "."
 CONTROLLED_SOURCE_DIAGNOSTIC_REPOSITORY_URL = "https://github.com/jscraik/coding-harness"
@@ -509,14 +512,23 @@ class EffectivenessDecisionObservation(EffectivenessObservationBase):
 
 
 class EffectivenessTreatmentObservation(EffectivenessDecisionObservation):
-    """Treatment observation with the exact replay working directory and CLI path."""
+    """Treatment observation with task and source-checkout replay bindings."""
 
     working_directory: str
     cli_path: str
+    source_checkout_ref: str
+    replay_command: str
 
-    _reject_blank_replay_fields = field_validator("working_directory", "cli_path")(
-        reject_blank_string
-    )
+    _reject_blank_replay_fields = field_validator(
+        "working_directory", "cli_path", "source_checkout_ref", "replay_command"
+    )(reject_blank_string)
+
+    @field_validator("source_checkout_ref")
+    @classmethod
+    def require_source_checkout_sha(cls, value: str) -> str:
+        if re.fullmatch(r"[0-9a-f]{40}", value) is None:
+            raise ValueError("must be a full lowercase Git SHA")
+        return value
 
 class EffectivenessSourceDiagnosticObservation(EffectivenessDecisionObservation):
     """Source diagnostic with explicit task-root and source-entrypoint replay binding."""
@@ -762,6 +774,14 @@ class ControlledEffectivenessObservation(BaseModel):
                 )
             if task.treatment.cli_path != "dist/cli.js":
                 raise ValueError(f"{task.id} treatment cli_path must remain dist/cli.js")
+            if task.treatment.source_checkout_ref != self.source_head:
+                raise ValueError(
+                    f"{task.id} treatment source_checkout_ref must bind source_head"
+                )
+            if task.treatment.replay_command != CONTROLLED_TREATMENT_REPLAY_COMMAND:
+                raise ValueError(
+                    f"{task.id} treatment replay_command must bind source checkout"
+                )
         return self
 
 

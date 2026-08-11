@@ -335,6 +335,26 @@ class TestControlledEffectivenessObservation:
         with pytest.raises(ValidationError, match=message):
             ControlledEffectivenessObservation.model_validate(payload)
 
+    @pytest.mark.parametrize(
+        ("field", "value", "message"),
+        [
+            ("source_checkout_ref", "0" * 40, "source_checkout_ref"),
+            (
+                "replay_command",
+                "node dist/cli.js next --json",
+                "replay_command",
+            ),
+        ],
+    )
+    def test_rejects_treatment_source_replay_binding_drift(
+        self, field: str, value: str, message: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["treatment"][field] = value
+
+        with pytest.raises(ValidationError, match=message):
+            ControlledEffectivenessObservation.model_validate(payload)
+
 
 class TestAgentNativeRatchetsReport:
     def test_accepts_canonical_report_example(self) -> None:
