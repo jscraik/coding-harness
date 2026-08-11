@@ -102,11 +102,13 @@ rework, or general product effectiveness.
 
 ### Fresh source-bound observation (2026-08-11)
 
-A new read-only observation was captured against the merged source tree at
-`e6aefbff4f0e08cb18f1d5b4d804a27b9c7bce5f`; its tree is identical to current
-`origin/main` at `e94794c2b8f117d6bad16b4d11ec98b28d38da02`. The private raw
-artifact is `/private/tmp/coding-harness-effectiveness-observations-20260811.json`,
-SHA-256 `aedf5538a7753d561f45d09f9e2be286d27ae358a741fa01462b3110ddf92464`.
+A new read-only observation was captured from revision
+`e6aefbff4f0e08cb18f1d5b4d804a27b9c7bce5f`; that revision is not retained as a
+reachable ref, so replay is bound to reachable `origin/main` at
+`e94794c2b8f117d6bad16b4d11ec98b28d38da02`, whose tree was proven identical
+before the observation was recorded. The private raw artifact is
+`/private/tmp/coding-harness-effectiveness-observations-20260811.json`, SHA-256
+`aedf5538a7753d561f45d09f9e2be286d27ae358a741fa01462b3110ddf92464`.
 Each row used `harness next --json --worktree-role dirty-with-justification`
 from the task root and `harness check <task-root> --json` from the source
 checkout. The dirty-worktree role preserved owner-controlled changes; it did
@@ -118,7 +120,7 @@ not authorize edits or make the task clean.
 | Configs | `f56b308cc0bb872c36ed344afb5a8b6032f910b2` | `action_required` / 1.819 | 3 / 2 / 0 | Exact validation-plan command; untracked automation preserved |
 | Portfolio | `3c735ee8928619b23af6b7ee54f3d509beb5a61f` | `action_required` / 1.769 | 3 / 1 / 1 | Exact validation-plan command; one repository check failed |
 | Jamie Brain | `90ee789eced74e6f1dd018b5a1d8259d9c04888b` | `action_required` / 1.854 | 1 / 2 / 1 | Exact validation-plan command; configuration check failed |
-| Coding Harness | `e6aefbff4f0e08cb18f1d5b4d804a27b9c7bce5f` | `pass` / 0.944 | 3 / 1 / 1 | Routed to `harness check`; source/version drift remained visible |
+| Coding Harness | `e94794c2b8f117d6bad16b4d11ec98b28d38da02` | `pass` / 0.944 | 3 / 1 / 1 | Routed to `harness check`; source/version drift remained visible |
 
 The raw artifact binds command text, exit codes, stdout, stderr, task HEADs,
 and wall time. It proves a current local routing/check observation only. It
