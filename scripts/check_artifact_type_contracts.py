@@ -474,10 +474,10 @@ CONTROLLED_BASELINE_DIFF_COMMAND = "git diff --stat -- ."
 CONTROLLED_TREATMENT_CONTRACT = "node dist/cli.js next --json (built from source_head)"
 CONTROLLED_TREATMENT_COMMAND = "node dist/cli.js next --json"
 CONTROLLED_TREATMENT_REPLAY_COMMAND = (
-    'cd "$TASK_ROOT" && node --import "$TSX_LOADER" "$HARNESS_SOURCE/dist/cli.js" next --json'
+    'cd "$TASK_ROOT" && node --import "$SOURCE_LOADER" "$HARNESS_SOURCE/dist/cli.js" next --json'
 )
 CONTROLLED_SOURCE_DIAGNOSTIC_COMMAND = (
-    'cd "$TASK_ROOT" && node --import "$TSX_LOADER" '
+    'cd "$TASK_ROOT" && node --import "$SOURCE_LOADER" '
     '"$HARNESS_SOURCE/src/cli.ts" next --json'
 )
 CONTROLLED_SOURCE_DIAGNOSTIC_WORKING_DIRECTORY = "$TASK_ROOT"
@@ -485,7 +485,7 @@ CONTROLLED_SOURCE_DIAGNOSTIC_REPOSITORY_URL = "https://github.com/jscraik/coding
 CONTROLLED_SOURCE_DIAGNOSTIC_RELATIVE_WORKING_DIRECTORY = "."
 CONTROLLED_SOURCE_DIAGNOSTIC_ENTRYPOINT = "src/cli.ts"
 CONTROLLED_SOURCE_DIAGNOSTIC_REPLAY_COMMAND = (
-    'cd "$TASK_ROOT" && node --import "$TSX_LOADER" '
+    'cd "$TASK_ROOT" && node --import "$SOURCE_LOADER" '
     '"$HARNESS_SOURCE/src/cli.ts" next --json'
 )
 CONTROLLED_SOURCE_CHECKOUT_ROOT = "$HARNESS_SOURCE"
@@ -493,8 +493,19 @@ CONTROLLED_SOURCE_REPLAY_WORKING_DIRECTORY = "$TASK_ROOT"
 CONTROLLED_TREATMENT_REPLAY_WORKING_DIRECTORY = "$TASK_ROOT"
 CONTROLLED_TREATMENT_REPLAY_ENTRYPOINT = "$HARNESS_SOURCE/dist/cli.js"
 CONTROLLED_BUILD_WORKING_DIRECTORY = "$HARNESS_SOURCE"
-CONTROLLED_BUILD_COMMAND = "pnpm build"
+CONTROLLED_BUILD_COMMAND = "pnpm install --frozen-lockfile && pnpm build"
 CONTROLLED_BUILD_VERIFICATION_COMMAND = "shasum -a 256 dist/cli.js"
+CONTROLLED_RUNTIME_SETUP_COMMAND = (
+    'cd "$HARNESS_SOURCE" && pnpm install --frozen-lockfile'
+)
+CONTROLLED_SOURCE_LOADER_PATH = "$HARNESS_SOURCE/node_modules/tsx/dist/loader.mjs"
+CONTROLLED_SOURCE_LOADER_VERSION = "tsx v4.23.0"
+CONTROLLED_SOURCE_LOADER_SHA256 = (
+    "150d1ff8a7770665997a940d4c686f1a3a5660349a5c7c3523b39eb43016ca74"
+)
+CONTROLLED_SOURCE_LOADER_VERIFICATION_COMMAND = (
+    'cd "$HARNESS_SOURCE" && shasum -a 256 node_modules/tsx/dist/loader.mjs'
+)
 
 
 class EffectivenessInitialStatus(BaseModel):
@@ -642,6 +653,8 @@ class EffectivenessTask(BaseModel):
     ref: str
     ref_kind: Literal["branch", "detached"]
     replayability: Literal["replayable", "non_replayable"]
+    pairing: Literal["comparable", "non_comparable"]
+    pairing_reason: str
     observed_head: str
     expected_head: str
     initial_status: EffectivenessInitialStatus
@@ -652,7 +665,7 @@ class EffectivenessTask(BaseModel):
 
     _reject_identity_strings = field_validator(
         "id", "repository", "task_root_ref", "remote_url", "ref", "ref_kind",
-        "replayability"
+        "replayability", "pairing", "pairing_reason"
     )(reject_blank_string)
 
     @field_validator("remote_url")
@@ -677,6 +690,39 @@ class EffectivenessTask(BaseModel):
             )
         return self
 
+    @model_validator(mode="after")
+    def require_non_comparable_reason(self) -> EffectivenessTask:
+        if self.pairing == "non_comparable" and "non-compar" not in self.pairing_reason.lower():
+            raise ValueError("non-comparable tasks must explain their exclusion")
+        return self
+
+
+class EffectivenessRuntimeSetup(BaseModel):
+    """Pinned dependency and loader setup required for replay."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    dependency_setup_command: str
+    source_loader_path: str
+    source_loader_version: str
+    source_loader_sha256: str
+    source_loader_verification_command: str
+
+    _reject_blank_setup = field_validator(
+        "dependency_setup_command",
+        "source_loader_path",
+        "source_loader_version",
+        "source_loader_sha256",
+        "source_loader_verification_command",
+    )(reject_blank_string)
+
+    @field_validator("source_loader_sha256")
+    @classmethod
+    def require_loader_sha256(cls, value: str) -> str:
+        if re.fullmatch(r"[0-9a-f]{64}", value) is None:
+            raise ValueError("must be a lowercase SHA-256 digest")
+        return value
+
 
 class ControlledEffectivenessObservation(BaseModel):
     """Typed contract for the retained five-task effectiveness observation."""
@@ -692,6 +738,7 @@ class ControlledEffectivenessObservation(BaseModel):
     baseline_contract: str
     treatment_contract: str
     claims_boundary: str
+    runtime_setup: EffectivenessRuntimeSetup
     built_cli: EffectivenessBuiltCli
     tasks: list[EffectivenessTask]
 
@@ -752,12 +799,25 @@ class ControlledEffectivenessObservation(BaseModel):
             raise ValueError("baseline_contract does not match the controlled commands")
         if self.treatment_contract != CONTROLLED_TREATMENT_CONTRACT:
             raise ValueError("treatment_contract does not match the controlled command")
+        if self.runtime_setup.dependency_setup_command != CONTROLLED_RUNTIME_SETUP_COMMAND:
+            raise ValueError("runtime setup must bind the frozen dependency install")
+        if self.runtime_setup.source_loader_path != CONTROLLED_SOURCE_LOADER_PATH:
+            raise ValueError("runtime setup must bind the source loader path")
+        if self.runtime_setup.source_loader_version != CONTROLLED_SOURCE_LOADER_VERSION:
+            raise ValueError("runtime setup must bind the source loader version")
+        if self.runtime_setup.source_loader_sha256 != CONTROLLED_SOURCE_LOADER_SHA256:
+            raise ValueError("runtime setup must bind the source loader digest")
+        if (
+            self.runtime_setup.source_loader_verification_command
+            != CONTROLLED_SOURCE_LOADER_VERIFICATION_COMMAND
+        ):
+            raise ValueError("runtime setup must verify the source loader digest")
         if self.built_cli.source_head != self.source_head:
             raise ValueError("built_cli source_head must match artifact source_head")
         if self.built_cli.build_working_directory != CONTROLLED_BUILD_WORKING_DIRECTORY:
             raise ValueError("built_cli build_working_directory must bind source checkout")
         if self.built_cli.build_command != CONTROLLED_BUILD_COMMAND:
-            raise ValueError("built_cli build_command must remain pnpm build")
+            raise ValueError("built_cli build_command must include frozen install and build")
         if self.built_cli.verification_command != CONTROLLED_BUILD_VERIFICATION_COMMAND:
             raise ValueError(
                 "built_cli verification_command must verify the built entrypoint digest"

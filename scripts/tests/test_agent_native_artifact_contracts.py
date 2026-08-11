@@ -182,6 +182,18 @@ class TestControlledEffectivenessObservation:
         assert len(report.tasks) == 5
         assert all(task.replayability == "replayable" for task in report.tasks)
         assert all(task.treatment.cli_path == "dist/cli.js" for task in report.tasks)
+        assert report.runtime_setup.dependency_setup_command == (
+            'cd "$HARNESS_SOURCE" && pnpm install --frozen-lockfile'
+        )
+        assert report.runtime_setup.source_loader_path == (
+            "$HARNESS_SOURCE/node_modules/tsx/dist/loader.mjs"
+        )
+        assert report.runtime_setup.source_loader_version == "tsx v4.23.0"
+        assert report.built_cli.build_command == (
+            "pnpm install --frozen-lockfile && pnpm build"
+        )
+        assert sum(task.pairing == "comparable" for task in report.tasks) == 4
+        assert sum(task.pairing == "non_comparable" for task in report.tasks) == 1
         assert all(
             task.source_diagnostic.replay_working_directory == "$TASK_ROOT"
             for task in report.tasks
@@ -241,6 +253,13 @@ class TestControlledEffectivenessObservation:
         payload["tasks"][0]["observed_head"] = "0" * 40
 
         with pytest.raises(ValidationError, match="replayable"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_requires_reason_for_non_comparable_pairing(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][2]["pairing_reason"] = "mismatched task state"
+
+        with pytest.raises(ValidationError, match="non-comparable"):
             ControlledEffectivenessObservation.model_validate(payload)
 
     def test_rejects_insufficient_repository_diversity(self) -> None:
@@ -423,6 +442,33 @@ class TestControlledEffectivenessObservation:
     ) -> None:
         payload = _load_effectiveness_observation()
         payload["built_cli"][field] = value
+
+        with pytest.raises(ValidationError, match=message):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "value", "message"),
+        [
+            (
+                "dependency_setup_command",
+                "pnpm install",
+                "frozen dependency install",
+            ),
+            ("source_loader_path", "$HARNESS_SOURCE/tsx.mjs", "source loader path"),
+            ("source_loader_version", "tsx v4.22.0", "source loader version"),
+            ("source_loader_sha256", "0" * 64, "source loader digest"),
+            (
+                "source_loader_verification_command",
+                "shasum -a 256 node_modules/tsx/dist/loader.mjs",
+                "source loader digest",
+            ),
+        ],
+    )
+    def test_rejects_unpinned_runtime_setup(
+        self, field: str, value: str, message: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["runtime_setup"][field] = value
 
         with pytest.raises(ValidationError, match=message):
             ControlledEffectivenessObservation.model_validate(payload)
