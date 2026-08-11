@@ -29,7 +29,8 @@
 		"provider": "linear",
 		"requireBranchIssueKey": true,
 		"requirePrIssueKey": true,
-		"branchPrefix": "codex"
+		"branchPrefix": "codex",
+		"issueKeyPrefixes": ["JSC"]
 	},
 	"ciProviderPolicy": {
 		"activeProvider": "circleci",

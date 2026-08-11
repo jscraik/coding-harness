@@ -6,6 +6,7 @@ import {
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 import { normalisePrTemplateGateResult } from "../lib/output/normalise.js";
 import { validatePrTemplateBody } from "../lib/pr-template-validator.js";
+import { loadContract } from "../lib/contract/loader.js";
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -13,12 +14,15 @@ export const EXIT_CODES = {
 	VALIDATION_ERROR: 2,
 } as const;
 
+/** Inputs accepted by the PR-template validation command. */
 export interface PrTemplateGateOptions {
 	prBody?: string;
 	prBodyFile?: string;
+	issueKeyPrefixes?: readonly string[];
 	json?: boolean;
 }
 
+/** Machine-readable result of one PR-template validation pass. */
 export interface PrTemplateGateOutput {
 	passed: boolean;
 	errorCount: number;
@@ -27,6 +31,7 @@ export interface PrTemplateGateOutput {
 	bodyLength: number;
 }
 
+/** Success or validation error from the PR-template gate. */
 export type PrTemplateGateResult =
 	| { ok: true; output: PrTemplateGateOutput }
 	| { ok: false; error: { code: string; message: string } };
@@ -103,6 +108,23 @@ function resolvePrBody(
 	return null;
 }
 
+/** Resolve configured Linear prefixes, falling back to broad legacy matching. */
+function resolveIssueKeyPrefixes(
+	options: PrTemplateGateOptions,
+): readonly string[] | undefined {
+	if (options.issueKeyPrefixes !== undefined) {
+		return options.issueKeyPrefixes;
+	}
+	if (!existsSync("harness.contract.json")) return undefined;
+	try {
+		return loadContract("harness.contract.json").issueTrackingPolicy
+			?.issueKeyPrefixes;
+	} catch {
+		return undefined;
+	}
+}
+
+/** Validate one PR body against the repository template contract. */
 export function runPrTemplateGate(
 	options: PrTemplateGateOptions,
 ): PrTemplateGateResult {
@@ -130,7 +152,11 @@ export function runPrTemplateGate(
 		};
 	}
 
-	const errors = validatePrTemplateBody(resolved.body);
+	const issueKeyPrefixes = resolveIssueKeyPrefixes(options);
+	const errors = validatePrTemplateBody(
+		resolved.body,
+		issueKeyPrefixes === undefined ? {} : { issueKeyPrefixes },
+	);
 
 	return {
 		ok: true,
@@ -144,6 +170,7 @@ export function runPrTemplateGate(
 	};
 }
 
+/** Run the PR-template gate and render its configured output. */
 export function runPrTemplateGateCLI(options: PrTemplateGateOptions): number {
 	const result = runPrTemplateGate(options);
 

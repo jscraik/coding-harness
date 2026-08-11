@@ -75,8 +75,9 @@ default agent route without a named consumer.
   `surfaceId` is `agent-first-status-matrix` in `harness.contract.json`, in the
   same two-file cadence registration. That exact pairing is documentation
   cadence, not generic contract policy; any additional contract mutation remains
-  contract policy. Measurements without retained raw output or an independent
-  receipt remain unverified notes.
+  contract policy. A cadence refresh is evidence maintenance only and does not
+  establish effectiveness, publication, or release readiness. Measurements
+  without retained raw output or an independent receipt remain unverified notes.
 
 ## Validation and handoff
 

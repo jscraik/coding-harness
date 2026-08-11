@@ -81,6 +81,8 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   remains contract policy. Keep `README.md`, `AGENTS.md`, and this guide
   synchronized when docs-gate reports an agent-first-status-matrix cadence
   breach.
+  This synchronization is evidence maintenance only; it does not establish
+  product effectiveness, publication, or release readiness.
 - per-release product-surface cadence repairs are owned by the `owner` declared
   in `harness.contract.json` (the current `preflight-gate` entry is owned by
   `workflow`); refresh its `lastReviewedAt` entry and keep `README.md`,

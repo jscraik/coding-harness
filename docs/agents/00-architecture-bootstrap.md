@@ -114,6 +114,11 @@ and presentation live in the named owner module. Update the registry and
 `src/lib/architecture/module-boundaries.test.ts` when a new family adopts this
 split, then refresh generated architecture context when docs-gate requires it.
 
+Linear issue-key prefixes are a contract policy shared by the Linear gate,
+PR-template validation, and PR closeout. Keep the configured prefix allowlist
+in `harness.contract.json` as the authority and make each consumer reject
+disallowed references consistently; do not introduce a second prefix registry.
+
 ## Local execution coordinator
 
 The local execution architecture has two command facades: `harness run` for a

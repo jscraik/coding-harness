@@ -8,6 +8,44 @@
 import type { LinearIssueSummary } from "./client.js";
 
 export const ISSUE_IDENTIFIER_PATTERN = /^[A-Z][A-Z0-9]+-\d+$/i;
+export const LINEAR_ISSUE_KEY_PATTERN = /\b[A-Z][A-Z0-9]*-\d+\b/gi;
+
+/** Return whether an issue key belongs to the configured Linear teams. */
+export function isAllowedLinearIssueKey(
+	issueKey: string,
+	allowedPrefixes?: readonly string[],
+): boolean {
+	const separator = issueKey.indexOf("-");
+	if (separator <= 0) return false;
+	const prefix = issueKey.slice(0, separator).toUpperCase();
+	if (allowedPrefixes === undefined) {
+		return prefix.length > 1;
+	}
+	return allowedPrefixes.some(
+		(allowedPrefix) => allowedPrefix.toUpperCase() === prefix,
+	);
+}
+
+/** Extract unique Linear issue keys, optionally limited to configured teams. */
+export function extractLinearIssueKeys(
+	value: string | undefined,
+	allowedPrefixes?: readonly string[],
+): string[] {
+	if (!value) return [];
+	const pattern = new RegExp(
+		LINEAR_ISSUE_KEY_PATTERN.source,
+		LINEAR_ISSUE_KEY_PATTERN.flags,
+	);
+	return Array.from(
+		new Set(
+			Array.from(value.matchAll(pattern), (match) =>
+				match[0].toUpperCase(),
+			).filter((issueKey) =>
+				isAllowedLinearIssueKey(issueKey, allowedPrefixes),
+			),
+		),
+	);
+}
 
 /**
  * Normalize a token value, returning undefined for empty/whitespace/null-like strings.
@@ -32,7 +70,7 @@ export function normalizeToken(value: string | undefined): string | undefined {
  */
 export function normalizeIssueReference(value: string): string {
 	const trimmed = value.trim();
-	const urlMatch = trimmed.match(/\/issue\/([A-Z][A-Z0-9]+-\d+)/i);
+	const urlMatch = trimmed.match(/\/issue\/([A-Z][A-Z0-9]*-\d+)/i);
 	if (urlMatch?.[1]) {
 		return urlMatch[1].toUpperCase();
 	}

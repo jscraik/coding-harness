@@ -101,6 +101,8 @@ of the routine path. Keep the truth-bounded recovery status in
 and its weekly cadence entry in `harness.contract.json` current together.
 That exact status-document/date registration is documentation cadence; any
 additional contract mutation remains contract policy.
+Cadence refreshes are evidence maintenance; they do not imply product-
+effectiveness, publication, or release readiness.
 Measurements without retained raw output or an independent receipt are
 observation notes, not execution proof.
 Routine corrections stay local, or record `no_system_change` with the reason,
