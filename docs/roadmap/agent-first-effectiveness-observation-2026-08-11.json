@@ -2,7 +2,7 @@
 	"schema_version": "coding-harness-controlled-effectiveness-observation/v1",
 	"artifact_type": "coding-harness-controlled-effectiveness-observation",
 	"artifact_version": "2026-08-11",
-	"observed_at_utc": "2026-08-11T12:19:37Z",
+	"observed_at_utc": "2026-08-11T22:58:00Z",
 	"source_head": "344774d0760fc56b0cd8d336d80d483afb798507",
 	"source_project": "coding-harness",
 	"baseline_contract": "git status --short --branch followed by git diff --stat -- .",
@@ -66,7 +66,7 @@
 				"stderr": ""
 			},
 			"source_diagnostic": {
-				"working_directory": ".",
+				"working_directory": "$TASK_ROOT",
 				"repository_url": "https://github.com/jscraik/coding-harness",
 				"ref": "344774d0760fc56b0cd8d336d80d483afb798507",
 				"relative_working_directory": ".",
@@ -76,10 +76,10 @@
 				"replay_command": "cd \"$TASK_ROOT\" && node --import \"$TSX_LOADER\" \"$HARNESS_SOURCE/src/cli.ts\" next --json",
 				"source_checkout_root": "$HARNESS_SOURCE",
 				"replay_working_directory": "$TASK_ROOT",
-				"command": "node --import tsx src/cli.ts next --json",
+				"command": "cd \"$TASK_ROOT\" && node --import \"$TSX_LOADER\" \"$HARNESS_SOURCE/src/cli.ts\" next --json",
 				"status": "pass",
 				"exit_code": 0,
-				"wall_seconds": 1.5677,
+				"wall_seconds": 2.2561,
 				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"pass\",\n  \"summary\": \"No changed files detected.\",\n  \"nextAction\": \"Run harness check --json to confirm repo readiness.\",\n  \"nextCommand\": \"harness check --json\",\n  \"warnings\": [\n    \"Local next output does not prove PR, CI, review-thread, tracker, or merge-readiness truth.\",\n    \"No local runtime-card artifact was discovered.\",\n    \"No prompt-context-drift report was provided for agent-readable orientation.\",\n    \"No local PR, CI, Linear, or review-state snapshot was provided to agent-readiness.\"\n  ],\n  \"executionBoundary\": {\n    \"safeToRun\": true,\n    \"requiresHuman\": false,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
 				"stderr": ""
 			}
@@ -131,7 +131,7 @@
 				"stderr": ""
 			},
 			"source_diagnostic": {
-				"working_directory": ".",
+				"working_directory": "$TASK_ROOT",
 				"repository_url": "https://github.com/jscraik/coding-harness",
 				"ref": "344774d0760fc56b0cd8d336d80d483afb798507",
 				"relative_working_directory": ".",
@@ -141,10 +141,10 @@
 				"replay_command": "cd \"$TASK_ROOT\" && node --import \"$TSX_LOADER\" \"$HARNESS_SOURCE/src/cli.ts\" next --json",
 				"source_checkout_root": "$HARNESS_SOURCE",
 				"replay_working_directory": "$TASK_ROOT",
-				"command": "node --import tsx src/cli.ts next --json",
+				"command": "cd \"$TASK_ROOT\" && node --import \"$TSX_LOADER\" \"$HARNESS_SOURCE/src/cli.ts\" next --json",
 				"status": "blocked",
 				"exit_code": 1,
-				"wall_seconds": 1.67,
+				"wall_seconds": 1.7074,
 				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"blocked\",\n  \"summary\": \"Worktree state blocks recommendations for role clean.\",\n  \"nextAction\": \"Use --worktree-role dirty-with-justification, then rerun harness next --json, or align branch codex/oss-cloud-app-server-boundary to origin/main.\",\n  \"nextCommand\": null,\n  \"warnings\": [],\n  \"executionBoundary\": {\n    \"safeToRun\": false,\n    \"requiresHuman\": true,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
 				"stderr": ""
 			}
@@ -196,7 +196,7 @@
 				"stderr": ""
 			},
 			"source_diagnostic": {
-				"working_directory": ".",
+				"working_directory": "$TASK_ROOT",
 				"repository_url": "https://github.com/jscraik/coding-harness",
 				"ref": "344774d0760fc56b0cd8d336d80d483afb798507",
 				"relative_working_directory": ".",
@@ -206,11 +206,11 @@
 				"replay_command": "cd \"$TASK_ROOT\" && node --import \"$TSX_LOADER\" \"$HARNESS_SOURCE/src/cli.ts\" next --json",
 				"source_checkout_root": "$HARNESS_SOURCE",
 				"replay_working_directory": "$TASK_ROOT",
-				"command": "node --import tsx src/cli.ts next --json",
-				"status": "pass",
-				"exit_code": 0,
-				"wall_seconds": 1.7395,
-				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"pass\",\n  \"summary\": \"No changed files detected.\",\n  \"nextAction\": \"Run harness check --json to confirm repo readiness.\",\n  \"nextCommand\": \"harness check --json\",\n  \"warnings\": [\n    \"Local next output does not prove PR, CI, review-thread, tracker, or merge-readiness truth.\",\n    \".harness/active-artifacts.md is missing the Current Active Route section.\",\n    \".harness/active-artifacts.md is missing the Artifact Index section.\",\n    \"Current Active Route does not contain repo-relative artifact refs.\",\n    \"No local runtime-card artifact was discovered.\",\n    \"No prompt-context-drift report was provided for agent-readable orientation.\",\n    \"No local PR, CI, Linear, or review-state snapshot was provided to agent-readiness.\"\n  ],\n  \"executionBoundary\": {\n    \"safeToRun\": true,\n    \"requiresHuman\": false,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
+				"command": "cd \"$TASK_ROOT\" && node --import \"$TSX_LOADER\" \"$HARNESS_SOURCE/src/cli.ts\" next --json",
+				"status": "blocked",
+				"exit_code": 1,
+				"wall_seconds": 1.6873,
+				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"blocked\",\n  \"summary\": \"Worktree state blocks recommendations for role clean.\",\n  \"nextAction\": \"Use --worktree-role dirty-with-justification, then rerun harness next --json, or align branch HEAD to <not-tracked>.\",\n  \"nextCommand\": null,\n  \"warnings\": [],\n  \"executionBoundary\": {\n    \"safeToRun\": false,\n    \"requiresHuman\": true,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
 				"stderr": ""
 			}
 		},
@@ -261,7 +261,7 @@
 				"stderr": ""
 			},
 			"source_diagnostic": {
-				"working_directory": ".",
+				"working_directory": "$TASK_ROOT",
 				"repository_url": "https://github.com/jscraik/coding-harness",
 				"ref": "344774d0760fc56b0cd8d336d80d483afb798507",
 				"relative_working_directory": ".",
@@ -271,10 +271,10 @@
 				"replay_command": "cd \"$TASK_ROOT\" && node --import \"$TSX_LOADER\" \"$HARNESS_SOURCE/src/cli.ts\" next --json",
 				"source_checkout_root": "$HARNESS_SOURCE",
 				"replay_working_directory": "$TASK_ROOT",
-				"command": "node --import tsx src/cli.ts next --json",
+				"command": "cd \"$TASK_ROOT\" && node --import \"$TSX_LOADER\" \"$HARNESS_SOURCE/src/cli.ts\" next --json",
 				"status": "pass",
 				"exit_code": 0,
-				"wall_seconds": 1.5984,
+				"wall_seconds": 1.761,
 				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"pass\",\n  \"summary\": \"No changed files detected.\",\n  \"nextAction\": \"Run harness check --json to confirm repo readiness.\",\n  \"nextCommand\": \"harness check --json\",\n  \"warnings\": [\n    \"Local next output does not prove PR, CI, review-thread, tracker, or merge-readiness truth.\",\n    \".harness/active-artifacts.md is missing.\",\n    \"Current Active Route does not contain repo-relative artifact refs.\",\n    \".harness/memory/LEARNINGS.md is missing.\",\n    \".harness/knowledge/INDEX.md is missing.\",\n    \"No local runtime-card artifact was discovered.\",\n    \"No prompt-context-drift report was provided for agent-readable orientation.\",\n    \"No local PR, CI, Linear, or review-state snapshot was provided to agent-readiness.\"\n  ],\n  \"executionBoundary\": {\n    \"safeToRun\": true,\n    \"requiresHuman\": false,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
 				"stderr": ""
 			}
@@ -326,7 +326,7 @@
 				"stderr": ""
 			},
 			"source_diagnostic": {
-				"working_directory": ".",
+				"working_directory": "$TASK_ROOT",
 				"repository_url": "https://github.com/jscraik/coding-harness",
 				"ref": "344774d0760fc56b0cd8d336d80d483afb798507",
 				"relative_working_directory": ".",
@@ -336,10 +336,10 @@
 				"replay_command": "cd \"$TASK_ROOT\" && node --import \"$TSX_LOADER\" \"$HARNESS_SOURCE/src/cli.ts\" next --json",
 				"source_checkout_root": "$HARNESS_SOURCE",
 				"replay_working_directory": "$TASK_ROOT",
-				"command": "node --import tsx src/cli.ts next --json",
+				"command": "cd \"$TASK_ROOT\" && node --import \"$TSX_LOADER\" \"$HARNESS_SOURCE/src/cli.ts\" next --json",
 				"status": "pass",
 				"exit_code": 0,
-				"wall_seconds": 1.4985,
+				"wall_seconds": 1.6164,
 				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"pass\",\n  \"summary\": \"No changed files detected.\",\n  \"nextAction\": \"Run harness check --json to confirm repo readiness.\",\n  \"nextCommand\": \"harness check --json\",\n  \"warnings\": [\n    \"Local next output does not prove PR, CI, review-thread, tracker, or merge-readiness truth.\",\n    \".harness/active-artifacts.md is missing the Current Active Route section.\",\n    \".harness/active-artifacts.md is missing the Artifact Index section.\",\n    \"Current Active Route does not contain repo-relative artifact refs.\",\n    \"No local runtime-card artifact was discovered.\",\n    \"No prompt-context-drift report was provided for agent-readable orientation.\",\n    \"No local PR, CI, Linear, or review-state snapshot was provided to agent-readiness.\"\n  ],\n  \"executionBoundary\": {\n    \"safeToRun\": true,\n    \"requiresHuman\": false,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
 				"stderr": ""
 			}

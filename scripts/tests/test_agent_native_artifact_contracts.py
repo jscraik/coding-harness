@@ -187,9 +187,13 @@ class TestControlledEffectivenessObservation:
             for task in report.tasks
         )
         assert all(
-            task.source_diagnostic.replay_command.endswith(
+            task.source_diagnostic.command.endswith(
                 '"$HARNESS_SOURCE/src/cli.ts" next --json'
             )
+            for task in report.tasks
+        )
+        assert all(
+            task.source_diagnostic.working_directory == "$TASK_ROOT"
             for task in report.tasks
         )
 
@@ -249,9 +253,11 @@ class TestControlledEffectivenessObservation:
 
     def test_rejects_non_replayable_source_diagnostic_label(self) -> None:
         payload = _load_effectiveness_observation()
-        payload["tasks"][0]["source_diagnostic"]["command"] += " (source diagnostic)"
+        payload["tasks"][0]["source_diagnostic"]["command"] = (
+            "node --import tsx src/cli.ts next --json"
+        )
 
-        with pytest.raises(ValidationError, match="directly runnable"):
+        with pytest.raises(ValidationError, match="task root and source checkout"):
             ControlledEffectivenessObservation.model_validate(payload)
 
     def test_rejects_declared_command_mismatch(self) -> None:
@@ -317,6 +323,7 @@ class TestControlledEffectivenessObservation:
         [
             ("task_root_ref", "other-task", "task_root_ref"),
             ("entrypoint", "dist/cli.js", "entrypoint"),
+            ("command", "node --import tsx src/cli.ts next --json", "source_diagnostic command"),
             ("replay_command", "node src/cli.ts next --json", "replay_command"),
         ],
     )
@@ -333,6 +340,7 @@ class TestControlledEffectivenessObservation:
         ("field", "value", "message"),
         [
             ("source_checkout_root", ".", "source_checkout_root"),
+            ("working_directory", ".", "working_directory"),
             ("replay_working_directory", "$HARNESS_SOURCE", "replay_working_directory"),
         ],
     )

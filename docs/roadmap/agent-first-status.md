@@ -143,19 +143,20 @@ The treatment was the current built Coding Harness `0.15.3` entrypoint,
 `344774d0760fc56b0cd8d336d80d483afb798507`. The exact raw source is retained
 at [agent-first-effectiveness-observation-2026-08-11.json](./agent-first-effectiveness-observation-2026-08-11.json),
 SHA-256
-`1ceb2b1949f17a4618d2e0c54e12253a6410f8b05723c518e32512928bb7e390`,
-22,680 bytes. Each row now binds an authoritative remote URL and full source
+`11bbb5f0ac0bcc6fcd578037e25a4b4ef4857e84caf0906448321c9d4953ebf7`,
+22,490 bytes. Each row now binds an authoritative remote URL and full source
 ref, a replay status, the task-root-relative working directory and `dist/cli.js`
 entrypoint used by the treatment, and the source-checkout-at-`source_head`
 repository, full ref, relative working directory, task-root binding, and
-`src/cli.ts` replay entrypoint used by each source diagnostic. Treatment rows
+`src/cli.ts` entrypoint used by each source diagnostic. Treatment rows
 also bind the source head, the `$TASK_ROOT` replay directory, and the
 `$HARNESS_SOURCE/dist/cli.js` entrypoint; their replay template changes to the
 task root before loading that pinned source checkout. The recorded relative
 `dist/cli.js` path is therefore not treated as a task-repository binary. Source
-diagnostics bind `$HARNESS_SOURCE` as the source checkout and `$TASK_ROOT` as
-the replay directory, while invoking the pinned `$HARNESS_SOURCE/src/cli.ts`
-entrypoint so the task-root state remains observable. The built CLI record also
+diagnostics record the task-root-bound command `cd "$TASK_ROOT" && node
+--import "$TSX_LOADER" "$HARNESS_SOURCE/src/cli.ts" next --json` and bind
+`$TASK_ROOT` as the execution directory while invoking the pinned
+`$HARNESS_SOURCE/src/cli.ts` entrypoint. The built CLI record also
 binds `source_head`, the
 `$HARNESS_SOURCE` build directory, `pnpm build`, and
 `shasum -a 256 dist/cli.js`; an operator must reproduce that digest before
@@ -175,7 +176,11 @@ artifact-types validator validates this retained observation as
 | Configs brace-expansion task | 0.0239 | 0.4588 | pass | Added actionable warnings and safe execution boundary |
 | Portfolio route-rhythm task | 0.0228 | 0.4289 | pass | Added actionable warnings and safe execution boundary |
 
-The built route completed in 0.4289–0.6437 seconds and returned structured
+The corrected task-root source-diagnostic replay was rerun at 2026-08-11T22:58:00Z
+against the recorded heads: Coding Harness, Configs, and Portfolio returned
+`pass`; both Agent-Skills rows returned `blocked` with the repository's existing
+fail-closed worktree-state decision. The built route completed in 0.4289–0.6437
+seconds and returned structured
 `nextAction`, execution-boundary, and claims-boundary fields on every row;
 the one non-zero result was the expected fail-closed branch-currency stop.
 The repository-only baseline exposed branch/status and diff state but no

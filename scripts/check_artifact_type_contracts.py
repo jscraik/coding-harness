@@ -476,8 +476,11 @@ CONTROLLED_TREATMENT_COMMAND = "node dist/cli.js next --json"
 CONTROLLED_TREATMENT_REPLAY_COMMAND = (
     'cd "$TASK_ROOT" && node --import "$TSX_LOADER" "$HARNESS_SOURCE/dist/cli.js" next --json'
 )
-CONTROLLED_SOURCE_DIAGNOSTIC_COMMAND = "node --import tsx src/cli.ts next --json"
-CONTROLLED_SOURCE_DIAGNOSTIC_WORKING_DIRECTORY = "."
+CONTROLLED_SOURCE_DIAGNOSTIC_COMMAND = (
+    'cd "$TASK_ROOT" && node --import "$TSX_LOADER" '
+    '"$HARNESS_SOURCE/src/cli.ts" next --json'
+)
+CONTROLLED_SOURCE_DIAGNOSTIC_WORKING_DIRECTORY = "$TASK_ROOT"
 CONTROLLED_SOURCE_DIAGNOSTIC_REPOSITORY_URL = "https://github.com/jscraik/coding-harness"
 CONTROLLED_SOURCE_DIAGNOSTIC_RELATIVE_WORKING_DIRECTORY = "."
 CONTROLLED_SOURCE_DIAGNOSTIC_ENTRYPOINT = "src/cli.ts"
@@ -770,14 +773,14 @@ class ControlledEffectivenessObservation(BaseModel):
                 raise ValueError(f"{task.id} treatment command is outside the controlled contract")
             if task.source_diagnostic.command != CONTROLLED_SOURCE_DIAGNOSTIC_COMMAND:
                 raise ValueError(
-                    f"{task.id} source_diagnostic command must remain directly runnable"
+                    f"{task.id} source_diagnostic command must bind task root and source checkout"
                 )
             if (
                 task.source_diagnostic.working_directory
                 != CONTROLLED_SOURCE_DIAGNOSTIC_WORKING_DIRECTORY
             ):
                 raise ValueError(
-                    f"{task.id} source_diagnostic working_directory must bind source_head"
+                    f"{task.id} source_diagnostic working_directory must bind task root"
                 )
             if (
                 task.source_diagnostic.repository_url
