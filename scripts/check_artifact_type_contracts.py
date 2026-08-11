@@ -428,13 +428,12 @@ class HarnessDecision(BaseModel):
         return cast(object, value)
 
 
-class EffectivenessCommandObservation(BaseModel):
-    """One bounded command observation retained by the effectiveness sample."""
+class EffectivenessObservationBase(BaseModel):
+    """Shared fields for one bounded command observation."""
 
     model_config = ConfigDict(extra="forbid")
 
     command: str
-    status: Literal["pass", "fail", "blocked", "action_required"]
     exit_code: int
     wall_seconds: float
     stdout: str
@@ -449,12 +448,17 @@ class EffectivenessCommandObservation(BaseModel):
             raise ValueError("must be non-negative")
         return value
 
+
+class EffectivenessCommandObservation(EffectivenessObservationBase):
+    """An ordinary command observation with no decision-only status."""
+
+    status: Literal["pass", "fail", "blocked"]
+
     @model_validator(mode="after")
     def require_status_exit_consistency(self) -> EffectivenessCommandObservation:
-        successful_statuses = {"pass", "action_required"}
-        if self.status in successful_statuses and self.exit_code != 0:
+        if self.status == "pass" and self.exit_code != 0:
             raise ValueError("successful observations must have exit_code 0")
-        if self.status not in successful_statuses and self.exit_code == 0:
+        if self.status != "pass" and self.exit_code == 0:
             raise ValueError("blocked or failed observations must have a non-zero exit_code")
         return self
 
@@ -468,6 +472,9 @@ CONTROLLED_TREATMENT_CONTRACT = "node dist/cli.js next --json (built from source
 CONTROLLED_TREATMENT_COMMAND = "node dist/cli.js next --json"
 CONTROLLED_SOURCE_DIAGNOSTIC_COMMAND = "node --import tsx src/cli.ts next --json"
 CONTROLLED_SOURCE_DIAGNOSTIC_WORKING_DIRECTORY = "coding-harness source checkout at source_head"
+CONTROLLED_SOURCE_DIAGNOSTIC_REPOSITORY_URL = "https://github.com/jscraik/coding-harness"
+CONTROLLED_SOURCE_DIAGNOSTIC_REF = "source_head"
+CONTROLLED_SOURCE_DIAGNOSTIC_RELATIVE_WORKING_DIRECTORY = "."
 
 
 class EffectivenessInitialStatus(BaseModel):
@@ -481,7 +488,21 @@ class EffectivenessInitialStatus(BaseModel):
     stderr: str
 
 
-class EffectivenessTreatmentObservation(EffectivenessCommandObservation):
+class EffectivenessDecisionObservation(EffectivenessObservationBase):
+    """A decision-bearing observation that may report action_required."""
+
+    status: Literal["pass", "fail", "blocked", "action_required"]
+
+    @model_validator(mode="after")
+    def require_decision_exit_consistency(self) -> EffectivenessDecisionObservation:
+        if self.status in {"pass", "action_required"} and self.exit_code != 0:
+            raise ValueError("successful observations must have exit_code 0")
+        if self.status == "blocked" and self.exit_code == 0:
+            raise ValueError("blocked observations must have a non-zero exit_code")
+        return self
+
+
+class EffectivenessTreatmentObservation(EffectivenessDecisionObservation):
     """Treatment observation with the exact replay working directory and CLI path."""
 
     working_directory: str
@@ -491,14 +512,27 @@ class EffectivenessTreatmentObservation(EffectivenessCommandObservation):
         reject_blank_string
     )
 
-
-class EffectivenessSourceDiagnosticObservation(EffectivenessCommandObservation):
+class EffectivenessSourceDiagnosticObservation(EffectivenessDecisionObservation):
     """Source-checkout diagnostic with an explicit replay location and head binding."""
 
     working_directory: str
+    repository_url: str
+    ref: str
+    relative_working_directory: str
     source_head: str
 
-    _reject_blank_replay_fields = field_validator("working_directory")(reject_blank_string)
+    _reject_blank_replay_fields = field_validator(
+        "working_directory", "repository_url", "ref", "relative_working_directory"
+    )(reject_blank_string)
+
+    @field_validator("repository_url")
+    @classmethod
+    def require_github_source_repository(cls, value: str) -> str:
+        if not re.fullmatch(
+            r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", value
+        ):
+            raise ValueError("must be an authoritative GitHub repository URL")
+        return value
 
     @field_validator("source_head")
     @classmethod
@@ -506,7 +540,6 @@ class EffectivenessSourceDiagnosticObservation(EffectivenessCommandObservation):
         if re.fullmatch(r"[0-9a-f]{40}", value) is None:
             raise ValueError("must be a full lowercase Git SHA")
         return value
-
 
 class EffectivenessBuiltCli(BaseModel):
     """Built CLI identity used by every treatment observation."""
@@ -672,10 +705,36 @@ class ControlledEffectivenessObservation(BaseModel):
                 raise ValueError(
                     f"{task.id} source_diagnostic working_directory must bind source_head"
                 )
+            if (
+                task.source_diagnostic.repository_url
+                != CONTROLLED_SOURCE_DIAGNOSTIC_REPOSITORY_URL
+            ):
+                raise ValueError(
+                    f"{task.id} source_diagnostic repository_url must bind Coding Harness"
+                )
+            if task.source_diagnostic.ref != CONTROLLED_SOURCE_DIAGNOSTIC_REF:
+                raise ValueError(f"{task.id} source_diagnostic ref must bind source_head")
+            if (
+                task.source_diagnostic.relative_working_directory
+                != CONTROLLED_SOURCE_DIAGNOSTIC_RELATIVE_WORKING_DIRECTORY
+            ):
+                raise ValueError(
+                    f"{task.id} source_diagnostic relative working directory must be repository root"
+                )
             if task.source_diagnostic.source_head != self.source_head:
                 raise ValueError(
                     f"{task.id} source_diagnostic source_head must match artifact source_head"
                 )
+            if task.treatment.working_directory != task.task_root_ref:
+                raise ValueError(
+                    f"{task.id} treatment working_directory must match task_root_ref"
+                )
+            if task.treatment.cli_path != self.built_cli.entrypoint:
+                raise ValueError(
+                    f"{task.id} treatment cli_path must match built_cli entrypoint"
+                )
+            if task.treatment.cli_path != "dist/cli.js":
+                raise ValueError(f"{task.id} treatment cli_path must remain dist/cli.js")
         return self
 
 

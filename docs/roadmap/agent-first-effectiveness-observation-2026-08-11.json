@@ -59,6 +59,9 @@
 			},
 			"source_diagnostic": {
 				"working_directory": "coding-harness source checkout at source_head",
+				"repository_url": "https://github.com/jscraik/coding-harness",
+				"ref": "source_head",
+				"relative_working_directory": ".",
 				"source_head": "344774d0760fc56b0cd8d336d80d483afb798507",
 				"command": "node --import tsx src/cli.ts next --json",
 				"status": "pass",
@@ -112,6 +115,9 @@
 			},
 			"source_diagnostic": {
 				"working_directory": "coding-harness source checkout at source_head",
+				"repository_url": "https://github.com/jscraik/coding-harness",
+				"ref": "source_head",
+				"relative_working_directory": ".",
 				"source_head": "344774d0760fc56b0cd8d336d80d483afb798507",
 				"command": "node --import tsx src/cli.ts next --json",
 				"status": "blocked",
@@ -165,6 +171,9 @@
 			},
 			"source_diagnostic": {
 				"working_directory": "coding-harness source checkout at source_head",
+				"repository_url": "https://github.com/jscraik/coding-harness",
+				"ref": "source_head",
+				"relative_working_directory": ".",
 				"source_head": "344774d0760fc56b0cd8d336d80d483afb798507",
 				"command": "node --import tsx src/cli.ts next --json",
 				"status": "pass",
@@ -218,6 +227,9 @@
 			},
 			"source_diagnostic": {
 				"working_directory": "coding-harness source checkout at source_head",
+				"repository_url": "https://github.com/jscraik/coding-harness",
+				"ref": "source_head",
+				"relative_working_directory": ".",
 				"source_head": "344774d0760fc56b0cd8d336d80d483afb798507",
 				"command": "node --import tsx src/cli.ts next --json",
 				"status": "pass",
@@ -271,6 +283,9 @@
 			},
 			"source_diagnostic": {
 				"working_directory": "coding-harness source checkout at source_head",
+				"repository_url": "https://github.com/jscraik/coding-harness",
+				"ref": "source_head",
+				"relative_working_directory": ".",
 				"source_head": "344774d0760fc56b0cd8d336d80d483afb798507",
 				"command": "node --import tsx src/cli.ts next --json",
 				"status": "pass",

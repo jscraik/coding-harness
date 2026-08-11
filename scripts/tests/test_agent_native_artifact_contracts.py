@@ -249,11 +249,55 @@ class TestControlledEffectivenessObservation:
 
         ControlledEffectivenessObservation.model_validate(payload)
 
+    def test_rejects_action_required_baseline_observation(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["baseline"]["status"] = "action_required"
+
+        with pytest.raises(ValidationError):
+            ControlledEffectivenessObservation.model_validate(payload)
+
     def test_rejects_source_diagnostic_without_source_head_binding(self) -> None:
         payload = _load_effectiveness_observation()
         payload["tasks"][0]["source_diagnostic"]["source_head"] = "0" * 40
 
         with pytest.raises(ValidationError, match="source_head"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "value", "message"),
+        [
+            (
+                "repository_url",
+                "https://github.com/example/other",
+                "repository_url",
+            ),
+            ("ref", "main", "ref must bind source_head"),
+            ("relative_working_directory", "src", "relative working directory"),
+        ],
+    )
+    def test_rejects_source_diagnostic_without_concrete_checkout_binding(
+        self, field: str, value: str, message: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["source_diagnostic"][field] = value
+
+        with pytest.raises(ValidationError, match=message):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "value", "message"),
+        [
+            ("working_directory", "other-task", "working_directory"),
+            ("cli_path", "bin/cli.js", "cli_path"),
+        ],
+    )
+    def test_rejects_treatment_replay_binding_drift(
+        self, field: str, value: str, message: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["treatment"][field] = value
+
+        with pytest.raises(ValidationError, match=message):
             ControlledEffectivenessObservation.model_validate(payload)
 
 
