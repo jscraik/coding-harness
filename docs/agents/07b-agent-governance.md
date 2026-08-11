@@ -86,6 +86,8 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 - The controlled local effectiveness observation is retained at
   `docs/roadmap/agent-first-effectiveness-observation-2026-08-11.json` and
   is limited to proof clarity; it is not causal productivity or release proof.
+  Its source diagnostics must retain the declared source checkout and bound
+  source head so a reviewer can replay the evidence without guessing context.
 - per-release product-surface cadence repairs are owned by the `owner` declared
   in `harness.contract.json` (the current `preflight-gate` entry is owned by
   `workflow`); refresh its `lastReviewedAt` entry and keep `README.md`,

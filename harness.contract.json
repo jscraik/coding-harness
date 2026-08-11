@@ -134,7 +134,7 @@
 				"owner": "workflow",
 				"northStarContribution": "Keeps a compact, truth-bounded status surface aligned to the canonical metric and bottleneck.",
 				"manualGlueReductionClaim": "Avoids repeated interpretation by separating current evidence from unmeasured outcomes.",
-				"reliabilityContribution": "Prevents status reporting from presenting unsupported numerical claims as current evidence.",
+				"reliabilityContribution": "Prevents status reporting from presenting unsupported numerical claims as current evidence and keeps retained observations bound to replayable source heads.",
 				"evidenceReference": "docs/roadmap/agent-first-status.md",
 				"reviewCadence": "weekly",
 				"ownedPaths": ["docs/roadmap/agent-first-status.md"],
