@@ -1,5 +1,10 @@
 import type { DocsImpactCategory } from "../lib/contract/types.js";
-import { WORKFLOW_POLICY_SOURCE_PATHS } from "./docs-gate-types.js";
+import {
+	CONTRACT_PATH,
+	WORKFLOW_POLICY_SOURCE_PATHS,
+} from "./docs-gate-types.js";
+
+const AGENT_FIRST_STATUS_DOCUMENT = "docs/roadmap/agent-first-status.md";
 
 const GOVERNANCE_PREFIXES = [
 	".github/workflows/",
@@ -40,6 +45,7 @@ function isDocOnly(file: string): boolean {
 	);
 }
 
+/** Identify root, subtree, and governance documentation instruction files. */
 function isAgentGovernanceFile(file: string): boolean {
 	return (
 		file === "AGENTS.md" ||
@@ -140,6 +146,7 @@ function addArchitectureCategory(
 	);
 }
 
+/** Add categories for workflow-adjacent artifact and policy paths. */
 function addWorkflowArtifactCategory(
 	file: string,
 	categories: Set<DocsImpactCategory>,
@@ -181,6 +188,13 @@ export function classifyChanges(
 		) {
 			unknownFiles.push(file);
 		}
+	}
+	const hasContract = changedFiles.includes(CONTRACT_PATH);
+	const hasAgentFirstStatus = changedFiles.includes(
+		AGENT_FIRST_STATUS_DOCUMENT,
+	);
+	if (hasContract !== hasAgentFirstStatus) {
+		categories.add("contract_policy");
 	}
 	if (unknownFiles.length > 0 && categories.size === 0) {
 		categories.add("unknown_governance_change");

@@ -19,10 +19,15 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 type JsonValue = null | boolean | number | string | JsonValue[] | JsonObject;
 type JsonObject = { [key: string]: JsonValue };
+type RawSurface = JsonObject;
+type RawProductSurface = JsonObject & { surfaces?: RawSurface[] };
+type ValidatedRawContract = JsonObject & {
+	productSurface?: RawProductSurface;
+};
 
 interface ParsedContract {
 	normalized: HarnessContract;
-	raw: JsonObject;
+	raw: ValidatedRawContract;
 }
 
 /** Return trusted-base candidates in precedence order for candidate comparison. */
@@ -119,10 +124,10 @@ function readStagedContract(repoRoot: string): string | undefined {
 /** Parse at the contract schema boundary before cadence policy reads its fields. */
 function parseValidatedContract(content: string): ParsedContract | null {
 	try {
-		const raw = JSON.parse(content) as JsonObject;
-		const validation = validateContract(raw);
+		const parsed: unknown = JSON.parse(content);
+		const validation = validateContract(parsed);
 		return validation.success && validation.data
-			? { normalized: validation.data, raw }
+			? { normalized: validation.data, raw: parsed as ValidatedRawContract }
 			: null;
 	} catch {
 		return null;
@@ -179,27 +184,15 @@ function isCalendarDate(value: string): boolean {
 	return day <= (daysInMonth[month - 1] ?? 0);
 }
 
-function isJsonObject(value: JsonValue): value is JsonObject {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 /** Locate the same registered surface without losing raw optional fields. */
 function findRawAgentFirstStatusSurface(
-	contract: JsonObject,
-): JsonObject | null {
+	contract: ValidatedRawContract,
+): RawSurface | null {
 	const productSurface = contract.productSurface;
-	if (
-		productSurface === undefined ||
-		!isJsonObject(productSurface) ||
-		!Array.isArray(productSurface.surfaces)
-	) {
-		return null;
-	}
-	const surfaces = productSurface.surfaces as JsonValue[];
+	const surfaces = productSurface?.surfaces;
+	if (!surfaces) return null;
 	const matches = surfaces.filter(
-		(surface): surface is JsonObject =>
-			isJsonObject(surface) &&
-			surface.surfaceId === AGENT_FIRST_STATUS_SURFACE_ID,
+		(surface) => surface.surfaceId === AGENT_FIRST_STATUS_SURFACE_ID,
 	);
 	return matches.length === 1 ? (matches[0] ?? null) : null;
 }

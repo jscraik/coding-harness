@@ -10,6 +10,11 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { DEFAULT_CONTEXT_INTEGRITY_POLICY } from "../lib/contract/types.js";
+import type {
+	HarnessContract,
+	SurfaceRegistration,
+} from "../lib/contract/types.js";
+import { validateContract } from "../lib/contract/validator.js";
 import {
 	isGitEnvironmentKey,
 	sanitizeGitEnvironment,
@@ -159,27 +164,34 @@ function runWithIsolatedGitEnvironment(
 
 function updateContract(
 	root: string,
-	mutate: (contract: {
-		productSurface: { surfaces: Array<Record<string, unknown>> };
-	}) => void,
+	mutate: (contract: HarnessContract) => void,
 ): void {
 	const contractPath = join(root, "harness.contract.json");
-	const contract = JSON.parse(readFileSync(contractPath, "utf-8")) as {
-		productSurface: { surfaces: Array<Record<string, unknown>> };
-	};
+	const contract = readFixtureContract(contractPath);
 	mutate(contract);
 	write(contractPath, JSON.stringify(contract, null, 2));
 }
 
 function surface(
-	contract: { productSurface: { surfaces: Array<Record<string, unknown>> } },
+	contract: HarnessContract,
 	surfaceId: string,
-): Record<string, unknown> {
+): SurfaceRegistration {
+	if (!contract.productSurface) throw new Error("missing fixture registry");
 	const candidate = contract.productSurface.surfaces.find(
 		(entry) => entry.surfaceId === surfaceId,
 	);
 	if (!candidate) throw new Error(`missing fixture surface: ${surfaceId}`);
 	return candidate;
+}
+
+/** Decode fixture JSON before exposing it to cadence mutation helpers. */
+function readFixtureContract(path: string): HarnessContract {
+	const parsed: unknown = JSON.parse(readFileSync(path, "utf-8"));
+	const validation = validateContract(parsed);
+	if (!validation.success || !validation.data) {
+		throw new Error("invalid cadence fixture contract");
+	}
+	return parsed as HarnessContract;
 }
 
 describe("agent-first status cadence registration", () => {
@@ -257,6 +269,55 @@ describe("agent-first status cadence registration", () => {
 		expect(result.report.categories).toEqual(["doc_only"]);
 	});
 
+	it("rejects a contract-date-only change", () => {
+		const root = createTestRoot("docs-gate-agent-first-cadence-contract-only");
+		roots.push(root);
+		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		seedCadenceContract(root);
+		const baseSha = initializeGitRepository(root, gitEnv);
+		const contractPath = join(root, "harness.contract.json");
+		write(
+			contractPath,
+			readFileSync(contractPath, "utf-8").replace(
+				'"lastReviewedAt": "2026-08-03"',
+				'"lastReviewedAt": "2026-08-10"',
+			),
+		);
+		commitAll(root, "change cadence contract without document", gitEnv);
+
+		const result = runWithIsolatedGitEnvironment({
+			repoRoot: root,
+			mode: "required",
+			trustedBaseRef: baseSha,
+		});
+
+		expect(result.exitCode).toBe(10);
+		expect(result.report.categories).toContain("contract_policy");
+	});
+
+	it("rejects a status-document-only change", () => {
+		const root = createTestRoot("docs-gate-agent-first-cadence-document-only");
+		roots.push(root);
+		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		seedCadenceContract(root);
+		const baseSha = initializeGitRepository(root, gitEnv);
+		writeAt(
+			root,
+			"docs/roadmap/agent-first-status.md",
+			"# Agent-first status\n\nReviewed 2026-08-10.\n",
+		);
+		commitAll(root, "change status document without contract", gitEnv);
+
+		const result = runWithIsolatedGitEnvironment({
+			repoRoot: root,
+			mode: "required",
+			trustedBaseRef: baseSha,
+		});
+
+		expect(result.exitCode).toBe(10);
+		expect(result.report.categories).toContain("contract_policy");
+	});
+
 	it("rejects a nearby surface date change instead of the registered date", () => {
 		const root = createTestRoot("docs-gate-agent-first-cadence-nearby-date");
 		roots.push(root);
@@ -330,19 +391,10 @@ describe("agent-first status cadence registration", () => {
 		seedCadenceContract(root);
 		const baseSha = initializeGitRepository(root, gitEnv);
 		const contractPath = join(root, "harness.contract.json");
-		const contract = JSON.parse(readFileSync(contractPath, "utf-8")) as Record<
-			string,
-			unknown
-		>;
+		const contract = readFixtureContract(contractPath);
 		contract.blastRadiusRulesMode = "merge";
-		const productSurface = contract.productSurface as {
-			surfaces: Array<Record<string, unknown>>;
-		};
-		const targetSurface = productSurface.surfaces.find(
-			(entry) => entry.surfaceId === "agent-first-status-matrix",
-		);
-		if (!targetSurface) throw new Error("missing fixture surface");
-		targetSurface.lastReviewedAt = "2026-08-10";
+		surface(contract, "agent-first-status-matrix").lastReviewedAt =
+			"2026-08-10";
 		write(contractPath, JSON.stringify(contract, null, 2));
 		writeAt(
 			root,
@@ -370,18 +422,10 @@ describe("agent-first status cadence registration", () => {
 		seedCadenceContract(root);
 		const baseSha = initializeGitRepository(root, gitEnv);
 		const contractPath = join(root, "harness.contract.json");
-		const stagedContract = JSON.parse(
-			readFileSync(contractPath, "utf-8"),
-		) as Record<string, unknown>;
+		const stagedContract = readFixtureContract(contractPath);
 		stagedContract.blastRadiusRulesMode = "merge";
-		const stagedSurface = stagedContract.productSurface as {
-			surfaces: Array<Record<string, unknown>>;
-		};
-		const stagedTargetSurface = stagedSurface.surfaces.find(
-			(entry) => entry.surfaceId === "agent-first-status-matrix",
-		);
-		if (!stagedTargetSurface) throw new Error("missing fixture surface");
-		stagedTargetSurface.lastReviewedAt = "2026-08-10";
+		surface(stagedContract, "agent-first-status-matrix").lastReviewedAt =
+			"2026-08-10";
 		write(contractPath, JSON.stringify(stagedContract, null, 2));
 		execFileSync("git", ["add", "harness.contract.json"], {
 			cwd: root,
@@ -389,7 +433,7 @@ describe("agent-first status cadence registration", () => {
 			env: gitEnv,
 		});
 
-		const workingContract = { ...stagedContract };
+		const workingContract = readFixtureContract(contractPath);
 		delete workingContract.blastRadiusRulesMode;
 		write(contractPath, JSON.stringify(workingContract, null, 2));
 		writeAt(
