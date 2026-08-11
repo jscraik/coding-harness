@@ -143,10 +143,13 @@ The treatment was the current built Coding Harness `0.15.3` entrypoint,
 `344774d0760fc56b0cd8d336d80d483afb798507`. The exact raw source is retained
 at [agent-first-effectiveness-observation-2026-08-11.json](./agent-first-effectiveness-observation-2026-08-11.json),
 SHA-256
-`cfab83cf2b538ab20c226fe6156e074517b2e9d12be5cbc8952f4ee3295008fa`,
-18,352 bytes. Each row now binds an authoritative remote URL and ref, a
-replay status, and the task-root-relative working directory
-and `dist/cli.js` entrypoint used by the treatment. The existing repository
+`21d2ce91a993c386fa8c93a96fb357c6e2ff2a6d916a291a27173e08d2782bd3`,
+18,943 bytes. Each row now binds an authoritative remote URL and ref, a
+replay status, the task-root-relative working directory and `dist/cli.js`
+entrypoint used by the treatment, and the source-checkout-at-`source_head`
+working directory and full source head used by each source diagnostic. A
+`pass` or `action_required` decision is successful when the command exits 0;
+`blocked` and `fail` remain non-zero outcomes. The existing repository
 artifact-types validator validates this retained observation as
 `coding-harness-controlled-effectiveness-observation/v1`.
 

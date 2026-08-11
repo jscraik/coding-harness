@@ -434,7 +434,7 @@ class EffectivenessCommandObservation(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     command: str
-    status: Literal["pass", "fail", "blocked"]
+    status: Literal["pass", "fail", "blocked", "action_required"]
     exit_code: int
     wall_seconds: float
     stdout: str
@@ -451,10 +451,11 @@ class EffectivenessCommandObservation(BaseModel):
 
     @model_validator(mode="after")
     def require_status_exit_consistency(self) -> EffectivenessCommandObservation:
-        if self.status == "pass" and self.exit_code != 0:
-            raise ValueError("pass observations must have exit_code 0")
-        if self.status != "pass" and self.exit_code == 0:
-            raise ValueError("non-pass observations must have a non-zero exit_code")
+        successful_statuses = {"pass", "action_required"}
+        if self.status in successful_statuses and self.exit_code != 0:
+            raise ValueError("successful observations must have exit_code 0")
+        if self.status not in successful_statuses and self.exit_code == 0:
+            raise ValueError("blocked or failed observations must have a non-zero exit_code")
         return self
 
 
@@ -466,6 +467,7 @@ CONTROLLED_BASELINE_DIFF_COMMAND = "git diff --stat -- ."
 CONTROLLED_TREATMENT_CONTRACT = "node dist/cli.js next --json (built from source_head)"
 CONTROLLED_TREATMENT_COMMAND = "node dist/cli.js next --json"
 CONTROLLED_SOURCE_DIAGNOSTIC_COMMAND = "node --import tsx src/cli.ts next --json"
+CONTROLLED_SOURCE_DIAGNOSTIC_WORKING_DIRECTORY = "coding-harness source checkout at source_head"
 
 
 class EffectivenessInitialStatus(BaseModel):
@@ -488,6 +490,22 @@ class EffectivenessTreatmentObservation(EffectivenessCommandObservation):
     _reject_blank_replay_fields = field_validator("working_directory", "cli_path")(
         reject_blank_string
     )
+
+
+class EffectivenessSourceDiagnosticObservation(EffectivenessCommandObservation):
+    """Source-checkout diagnostic with an explicit replay location and head binding."""
+
+    working_directory: str
+    source_head: str
+
+    _reject_blank_replay_fields = field_validator("working_directory")(reject_blank_string)
+
+    @field_validator("source_head")
+    @classmethod
+    def require_source_head_sha(cls, value: str) -> str:
+        if re.fullmatch(r"[0-9a-f]{40}", value) is None:
+            raise ValueError("must be a full lowercase Git SHA")
+        return value
 
 
 class EffectivenessBuiltCli(BaseModel):
@@ -530,7 +548,7 @@ class EffectivenessTask(BaseModel):
     baseline: EffectivenessCommandObservation
     baseline_diff: EffectivenessCommandObservation
     treatment: EffectivenessTreatmentObservation
-    source_diagnostic: EffectivenessCommandObservation
+    source_diagnostic: EffectivenessSourceDiagnosticObservation
 
     _reject_identity_strings = field_validator(
         "id", "repository", "task_root_ref", "remote_url", "ref", "ref_kind",
@@ -619,11 +637,7 @@ class ControlledEffectivenessObservation(BaseModel):
                     raise ValueError(
                         f"{task.id} {label} stdout must be valid harness-decision/v1 JSON"
                     ) from exc
-                expected_status = (
-                    decision.status
-                    if decision.status in {"pass", "fail", "blocked"}
-                    else "fail"
-                )
+                expected_status = decision.status
                 if observation.status != expected_status:
                     raise ValueError(
                         f"{task.id} {label} status must match its harness decision"
@@ -650,6 +664,17 @@ class ControlledEffectivenessObservation(BaseModel):
             if task.source_diagnostic.command != CONTROLLED_SOURCE_DIAGNOSTIC_COMMAND:
                 raise ValueError(
                     f"{task.id} source_diagnostic command must remain directly runnable"
+                )
+            if (
+                task.source_diagnostic.working_directory
+                != CONTROLLED_SOURCE_DIAGNOSTIC_WORKING_DIRECTORY
+            ):
+                raise ValueError(
+                    f"{task.id} source_diagnostic working_directory must bind source_head"
+                )
+            if task.source_diagnostic.source_head != self.source_head:
+                raise ValueError(
+                    f"{task.id} source_diagnostic source_head must match artifact source_head"
                 )
         return self
 

@@ -240,6 +240,22 @@ class TestControlledEffectivenessObservation:
         with pytest.raises(ValidationError, match="status must match"):
             ControlledEffectivenessObservation.model_validate(payload)
 
+    def test_accepts_action_required_decision_with_success_exit(self) -> None:
+        payload = _load_effectiveness_observation()
+        decision = json.loads(payload["tasks"][0]["treatment"]["stdout"])
+        decision["status"] = "action_required"
+        payload["tasks"][0]["treatment"]["status"] = "action_required"
+        payload["tasks"][0]["treatment"]["stdout"] = json.dumps(decision)
+
+        ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_source_diagnostic_without_source_head_binding(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["source_diagnostic"]["source_head"] = "0" * 40
+
+        with pytest.raises(ValidationError, match="source_head"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
 
 class TestAgentNativeRatchetsReport:
     def test_accepts_canonical_report_example(self) -> None:
