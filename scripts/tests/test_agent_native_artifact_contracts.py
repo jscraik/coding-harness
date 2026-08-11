@@ -182,6 +182,16 @@ class TestControlledEffectivenessObservation:
         assert len(report.tasks) == 5
         assert all(task.replayability == "replayable" for task in report.tasks)
         assert all(task.treatment.cli_path == "dist/cli.js" for task in report.tasks)
+        assert all(
+            task.source_diagnostic.replay_working_directory == "$TASK_ROOT"
+            for task in report.tasks
+        )
+        assert all(
+            task.source_diagnostic.replay_command.endswith(
+                '"$HARNESS_SOURCE/src/cli.ts" next --json'
+            )
+            for task in report.tasks
+        )
 
     def test_rejects_observation_without_replay_metadata(self) -> None:
         payload = _load_effectiveness_observation()
@@ -323,7 +333,7 @@ class TestControlledEffectivenessObservation:
         ("field", "value", "message"),
         [
             ("source_checkout_root", ".", "source_checkout_root"),
-            ("replay_working_directory", "$TASK_ROOT", "replay_working_directory"),
+            ("replay_working_directory", "$HARNESS_SOURCE", "replay_working_directory"),
         ],
     )
     def test_rejects_source_replay_without_explicit_checkout_binding(

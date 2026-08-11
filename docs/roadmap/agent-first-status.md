@@ -143,8 +143,8 @@ The treatment was the current built Coding Harness `0.15.3` entrypoint,
 `344774d0760fc56b0cd8d336d80d483afb798507`. The exact raw source is retained
 at [agent-first-effectiveness-observation-2026-08-11.json](./agent-first-effectiveness-observation-2026-08-11.json),
 SHA-256
-`f4609bef5aa56372b983f9024c0580798271ba44c3dfd82189d2406a4d9c8e93c`,
-21,298 bytes. Each row now binds an authoritative remote URL and full source
+`1ceb2b1949f17a4618d2e0c54e12253a6410f8b05723c518e32512928bb7e390`,
+22,680 bytes. Each row now binds an authoritative remote URL and full source
 ref, a replay status, the task-root-relative working directory and `dist/cli.js`
 entrypoint used by the treatment, and the source-checkout-at-`source_head`
 repository, full ref, relative working directory, task-root binding, and
@@ -153,9 +153,10 @@ also bind the source head, the `$TASK_ROOT` replay directory, and the
 `$HARNESS_SOURCE/dist/cli.js` entrypoint; their replay template changes to the
 task root before loading that pinned source checkout. The recorded relative
 `dist/cli.js` path is therefore not treated as a task-repository binary. Source
-diagnostics bind `$HARNESS_SOURCE` as both the source checkout and replay
-directory, so the relative observed command cannot be mistaken for a task
-repository command. The built CLI record also binds `source_head`, the
+diagnostics bind `$HARNESS_SOURCE` as the source checkout and `$TASK_ROOT` as
+the replay directory, while invoking the pinned `$HARNESS_SOURCE/src/cli.ts`
+entrypoint so the task-root state remains observable. The built CLI record also
+binds `source_head`, the
 `$HARNESS_SOURCE` build directory, `pnpm build`, and
 `shasum -a 256 dist/cli.js`; an operator must reproduce that digest before
 using the entrypoint. These templates run from the declared directories while
