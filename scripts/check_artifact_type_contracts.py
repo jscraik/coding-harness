@@ -474,7 +474,7 @@ CONTROLLED_BASELINE_DIFF_COMMAND = "git diff --stat -- ."
 CONTROLLED_TREATMENT_CONTRACT = "node dist/cli.js next --json (built from source_head)"
 CONTROLLED_TREATMENT_COMMAND = "node dist/cli.js next --json"
 CONTROLLED_TREATMENT_REPLAY_COMMAND = (
-    'node --import "$TSX_LOADER" "$HARNESS_SOURCE/dist/cli.js" next --json'
+    'cd "$TASK_ROOT" && node --import "$TSX_LOADER" "$HARNESS_SOURCE/dist/cli.js" next --json'
 )
 CONTROLLED_SOURCE_DIAGNOSTIC_COMMAND = "node --import tsx src/cli.ts next --json"
 CONTROLLED_SOURCE_DIAGNOSTIC_WORKING_DIRECTORY = "."
@@ -482,8 +482,15 @@ CONTROLLED_SOURCE_DIAGNOSTIC_REPOSITORY_URL = "https://github.com/jscraik/coding
 CONTROLLED_SOURCE_DIAGNOSTIC_RELATIVE_WORKING_DIRECTORY = "."
 CONTROLLED_SOURCE_DIAGNOSTIC_ENTRYPOINT = "src/cli.ts"
 CONTROLLED_SOURCE_DIAGNOSTIC_REPLAY_COMMAND = (
-    'node --import "$TSX_LOADER" "$HARNESS_SOURCE/src/cli.ts" next --json'
+    'cd "$HARNESS_SOURCE" && node --import "$TSX_LOADER" src/cli.ts next --json'
 )
+CONTROLLED_SOURCE_CHECKOUT_ROOT = "$HARNESS_SOURCE"
+CONTROLLED_SOURCE_REPLAY_WORKING_DIRECTORY = "$HARNESS_SOURCE"
+CONTROLLED_TREATMENT_REPLAY_WORKING_DIRECTORY = "$TASK_ROOT"
+CONTROLLED_TREATMENT_REPLAY_ENTRYPOINT = "$HARNESS_SOURCE/dist/cli.js"
+CONTROLLED_BUILD_WORKING_DIRECTORY = "$HARNESS_SOURCE"
+CONTROLLED_BUILD_COMMAND = "pnpm build"
+CONTROLLED_BUILD_VERIFICATION_COMMAND = "shasum -a 256 dist/cli.js"
 
 
 class EffectivenessInitialStatus(BaseModel):
@@ -518,9 +525,16 @@ class EffectivenessTreatmentObservation(EffectivenessDecisionObservation):
     cli_path: str
     source_checkout_ref: str
     replay_command: str
+    replay_working_directory: str
+    replay_entrypoint: str
 
     _reject_blank_replay_fields = field_validator(
-        "working_directory", "cli_path", "source_checkout_ref", "replay_command"
+        "working_directory",
+        "cli_path",
+        "source_checkout_ref",
+        "replay_command",
+        "replay_working_directory",
+        "replay_entrypoint",
     )(reject_blank_string)
 
     @field_validator("source_checkout_ref")
@@ -541,6 +555,8 @@ class EffectivenessSourceDiagnosticObservation(EffectivenessDecisionObservation)
     task_root_ref: str
     entrypoint: str
     replay_command: str
+    source_checkout_root: str
+    replay_working_directory: str
 
     _reject_blank_replay_fields = field_validator(
         "working_directory",
@@ -550,6 +566,8 @@ class EffectivenessSourceDiagnosticObservation(EffectivenessDecisionObservation)
         "task_root_ref",
         "entrypoint",
         "replay_command",
+        "source_checkout_root",
+        "replay_working_directory",
     )(reject_blank_string)
 
     @field_validator("repository_url")
@@ -577,9 +595,20 @@ class EffectivenessBuiltCli(BaseModel):
     node_version: str
     entrypoint: str
     binary_sha256: str
+    source_head: str
+    build_working_directory: str
+    build_command: str
+    verification_command: str
 
     _reject_blank_identity = field_validator(
-        "package_version", "node_version", "entrypoint", "binary_sha256"
+        "package_version",
+        "node_version",
+        "entrypoint",
+        "binary_sha256",
+        "source_head",
+        "build_working_directory",
+        "build_command",
+        "verification_command",
     )(reject_blank_string)
 
     @field_validator("binary_sha256")
@@ -587,6 +616,13 @@ class EffectivenessBuiltCli(BaseModel):
     def require_sha256(cls, value: str) -> str:
         if re.fullmatch(r"[0-9a-f]{64}", value) is None:
             raise ValueError("must be a lowercase SHA-256 digest")
+        return value
+
+    @field_validator("source_head")
+    @classmethod
+    def require_source_head_sha(cls, value: str) -> str:
+        if re.fullmatch(r"[0-9a-f]{40}", value) is None:
+            raise ValueError("must be a full lowercase Git SHA")
         return value
 
 
@@ -712,6 +748,16 @@ class ControlledEffectivenessObservation(BaseModel):
             raise ValueError("baseline_contract does not match the controlled commands")
         if self.treatment_contract != CONTROLLED_TREATMENT_CONTRACT:
             raise ValueError("treatment_contract does not match the controlled command")
+        if self.built_cli.source_head != self.source_head:
+            raise ValueError("built_cli source_head must match artifact source_head")
+        if self.built_cli.build_working_directory != CONTROLLED_BUILD_WORKING_DIRECTORY:
+            raise ValueError("built_cli build_working_directory must bind source checkout")
+        if self.built_cli.build_command != CONTROLLED_BUILD_COMMAND:
+            raise ValueError("built_cli build_command must remain pnpm build")
+        if self.built_cli.verification_command != CONTROLLED_BUILD_VERIFICATION_COMMAND:
+            raise ValueError(
+                "built_cli verification_command must verify the built entrypoint digest"
+            )
         for task in self.tasks:
             if task.baseline.command != CONTROLLED_BASELINE_COMMAND:
                 raise ValueError(f"{task.id} baseline command is outside the controlled contract")
@@ -764,6 +810,17 @@ class ControlledEffectivenessObservation(BaseModel):
                 raise ValueError(
                     f"{task.id} source_diagnostic replay_command must bind task root and source checkout"
                 )
+            if task.source_diagnostic.source_checkout_root != CONTROLLED_SOURCE_CHECKOUT_ROOT:
+                raise ValueError(
+                    f"{task.id} source_diagnostic source_checkout_root must bind source checkout"
+                )
+            if (
+                task.source_diagnostic.replay_working_directory
+                != CONTROLLED_SOURCE_REPLAY_WORKING_DIRECTORY
+            ):
+                raise ValueError(
+                    f"{task.id} source_diagnostic replay_working_directory must bind source checkout"
+                )
             if task.treatment.working_directory != task.task_root_ref:
                 raise ValueError(
                     f"{task.id} treatment working_directory must match task_root_ref"
@@ -781,6 +838,17 @@ class ControlledEffectivenessObservation(BaseModel):
             if task.treatment.replay_command != CONTROLLED_TREATMENT_REPLAY_COMMAND:
                 raise ValueError(
                     f"{task.id} treatment replay_command must bind source checkout"
+                )
+            if (
+                task.treatment.replay_working_directory
+                != CONTROLLED_TREATMENT_REPLAY_WORKING_DIRECTORY
+            ):
+                raise ValueError(
+                    f"{task.id} treatment replay_working_directory must bind task root"
+                )
+            if task.treatment.replay_entrypoint != CONTROLLED_TREATMENT_REPLAY_ENTRYPOINT:
+                raise ValueError(
+                    f"{task.id} treatment replay_entrypoint must bind built source checkout"
                 )
         return self
 

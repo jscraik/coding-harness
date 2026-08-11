@@ -149,11 +149,17 @@ ref, a replay status, the task-root-relative working directory and `dist/cli.js`
 entrypoint used by the treatment, and the source-checkout-at-`source_head`
 repository, full ref, relative working directory, task-root binding, and
 `src/cli.ts` replay entrypoint used by each source diagnostic. Treatment rows
-also bind the source head and a replay template that loads the pinned Coding
-Harness `dist/cli.js` while running from the task root; the recorded relative
-`dist/cli.js` path is therefore not treated as a task-repository binary. The
-replay templates run from the task root while loading the pinned source
-checkout.
+also bind the source head, the `$TASK_ROOT` replay directory, and the
+`$HARNESS_SOURCE/dist/cli.js` entrypoint; their replay template changes to the
+task root before loading that pinned source checkout. The recorded relative
+`dist/cli.js` path is therefore not treated as a task-repository binary. Source
+diagnostics bind `$HARNESS_SOURCE` as both the source checkout and replay
+directory, so the relative observed command cannot be mistaken for a task
+repository command. The built CLI record also binds `source_head`, the
+`$HARNESS_SOURCE` build directory, `pnpm build`, and
+`shasum -a 256 dist/cli.js`; an operator must reproduce that digest before
+using the entrypoint. These templates run from the declared directories while
+loading the pinned source checkout.
 Treatment and source `pass` or `action_required` decisions
 are successful when the command exits 0;
 `blocked` and `fail` remain non-zero outcomes. The existing repository

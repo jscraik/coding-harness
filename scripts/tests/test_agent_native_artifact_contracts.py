@@ -322,6 +322,22 @@ class TestControlledEffectivenessObservation:
     @pytest.mark.parametrize(
         ("field", "value", "message"),
         [
+            ("source_checkout_root", ".", "source_checkout_root"),
+            ("replay_working_directory", "$TASK_ROOT", "replay_working_directory"),
+        ],
+    )
+    def test_rejects_source_replay_without_explicit_checkout_binding(
+        self, field: str, value: str, message: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["source_diagnostic"][field] = value
+
+        with pytest.raises(ValidationError, match=message):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "value", "message"),
+        [
             ("working_directory", "other-task", "working_directory"),
             ("cli_path", "bin/cli.js", "cli_path"),
         ],
@@ -351,6 +367,44 @@ class TestControlledEffectivenessObservation:
     ) -> None:
         payload = _load_effectiveness_observation()
         payload["tasks"][0]["treatment"][field] = value
+
+        with pytest.raises(ValidationError, match=message):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "value", "message"),
+        [
+            ("replay_working_directory", "$HARNESS_SOURCE", "replay_working_directory"),
+            ("replay_entrypoint", "dist/cli.js", "replay_entrypoint"),
+        ],
+    )
+    def test_rejects_treatment_replay_without_task_root_and_source_entrypoint(
+        self, field: str, value: str, message: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["treatment"][field] = value
+
+        with pytest.raises(ValidationError, match=message):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "value", "message"),
+        [
+            ("source_head", "0" * 40, "built_cli source_head"),
+            ("build_working_directory", ".", "build_working_directory"),
+            ("build_command", "npm run build", "build_command"),
+            (
+                "verification_command",
+                "sha256sum dist/cli.js",
+                "verification_command",
+            ),
+        ],
+    )
+    def test_rejects_unpinned_built_cli_provenance(
+        self, field: str, value: str, message: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["built_cli"][field] = value
 
         with pytest.raises(ValidationError, match=message):
             ControlledEffectivenessObservation.model_validate(payload)
