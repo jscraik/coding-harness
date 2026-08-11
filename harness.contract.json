@@ -241,6 +241,7 @@
 		"requirePrIssueKey": true,
 		"prReferenceMode": "either",
 		"branchPrefix": "codex",
+		"issueKeyPrefixes": ["JSC"],
 		"projectUrl": "https://linear.app/jscraik/project/coding-harness-bb735dbbda79"
 	},
 	"remediationPolicy": {

@@ -357,6 +357,8 @@ export interface PrCloseoutInput {
 	assurance?: HarnessAssuranceEntry[];
 	runtimeEvidence?: RuntimeEvidenceContract;
 	deliveryTruth?: PrCloseoutDeliveryTruthVerdict[];
+	/** Configured Linear team prefixes used to validate PR references. */
+	linearIssueKeyPrefixes?: string[];
 	linearMutation?: "available" | "blocked" | "not_needed" | "unknown";
 	releaseReadinessImpact?:
 		| "none"

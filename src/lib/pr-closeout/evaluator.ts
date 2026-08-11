@@ -28,6 +28,7 @@ import {
 import { buildLifecycleSnapshot } from "./lifecycle-snapshot.js";
 import {
 	buildTraceabilitySummary,
+	applyConfiguredLinearIssueKeyPolicy,
 	selectDirtyPathsExcluded,
 	selectHarnessGateEvidenceSource,
 	summarizeChecks,
@@ -53,6 +54,7 @@ function buildPrCloseoutReportValue(
 ): PrCloseoutReport {
 	const blockers: PrCloseoutBlocker[] = [];
 	const generatedAt = (options.now ?? new Date()).toISOString();
+	input = applyConfiguredLinearIssueKeyPolicy(input);
 	const pr = input.pullRequest;
 	const checks = input.checks ?? [];
 	const reviewThreads = input.reviewThreads ?? { unresolved: null };
@@ -64,7 +66,6 @@ function buildPrCloseoutReportValue(
 	);
 	const tools = input.tools ?? [];
 	const dirtyPathsExcluded = selectDirtyPathsExcluded(input);
-
 	const claims = buildCloseoutClaims(input, checks, reviewThreads, generatedAt);
 	const deliveryTruth = buildPrCloseoutDeliveryTruthSummary(
 		input,
@@ -149,7 +150,6 @@ function buildPrCloseoutReportValue(
 		stackState: input.stackState ?? null,
 	};
 }
-
 /** Build a read-only PR closeout evidence report as an Effect boundary. */
 export function buildPrCloseoutReportEffect(
 	input: PrCloseoutInput,

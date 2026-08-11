@@ -1,10 +1,10 @@
 import { collectWorkEvidenceIntegrityErrors } from "./pr-template-behavior-evidence.js";
 import { collectLinkedIssueRelationshipErrors } from "./pr-template-linked-issue-relationship.js";
+import { extractLinearIssueKeys } from "./linear/utils.js";
 import {
 	MAX_BODY_LENGTH,
 	PLACEHOLDERS,
 	ACCEPTANCE_TRACE_ID_PATTERN,
-	LINKED_ISSUE_REFERENCE_PATTERN,
 	PREPARATORY_LINKED_ISSUE_TRACE_PATTERN,
 	REQUIRED_BEHAVIOR_PROOF_FIELDS,
 	REQUIRED_MOTIVATION_FIELDS,
@@ -233,11 +233,16 @@ function collectWorkPerformedFieldErrors(body: string): string[] {
 }
 
 /** Collect acceptance-trace errors when linked issue references are present. */
-function collectLinkedIssueAcceptanceTraceErrors(body: string): string[] {
+function collectLinkedIssueAcceptanceTraceErrors(
+	body: string,
+	allowedPrefixes?: readonly string[],
+): string[] {
 	const planIds = extractFieldBlockValue(body, "## Work performed", "Plan IDs");
-	if (planIds === null || !LINKED_ISSUE_REFERENCE_PATTERN.test(planIds)) {
+	if (planIds === null) {
 		return [];
 	}
+	const issueKeys = extractLinearIssueKeys(planIds, allowedPrefixes);
+	if (issueKeys.length === 0) return [];
 
 	const acceptanceTrace = extractFieldBlockValue(
 		body,
@@ -248,13 +253,6 @@ function collectLinkedIssueAcceptanceTraceErrors(body: string): string[] {
 		return [];
 	}
 
-	const issueKeys = Array.from(
-		new Set(
-			(planIds.match(/\bJSC-\d+\b/gi) ?? []).map((issueKey) =>
-				issueKey.toUpperCase(),
-			),
-		),
-	);
 	if (traceCoversEveryLinkedIssue(issueKeys, acceptanceTrace)) {
 		return [];
 	}
@@ -265,6 +263,7 @@ function collectLinkedIssueAcceptanceTraceErrors(body: string): string[] {
 	];
 }
 
+/** Return whether each linked issue has acceptance or preparatory trace evidence. */
 function traceCoversEveryLinkedIssue(
 	issueKeys: string[],
 	acceptanceTrace: string,
@@ -277,7 +276,7 @@ function traceCoversEveryLinkedIssue(
 		}
 
 		const segmentPattern = new RegExp(
-			`\\b${escapedIssueKey}\\b([\\s\\S]*?)(?=\\bJSC-\\d+\\b|$)`,
+			`\\b${escapedIssueKey}\\b([\\s\\S]*?)(?=\\b[A-Z][A-Z0-9]*-\\d+\\b(?!-\\d)|$)`,
 			"i",
 		);
 		const segment = acceptanceTrace.match(segmentPattern)?.[0] ?? "";
@@ -353,16 +352,11 @@ function collectCommandEvidenceErrors(testingBody: string): string[] {
 	return errors;
 }
 
-/**
- * Validate a pull request body against the repository's PR template and formatting rules.
- *
- * Performs high-level checks including required section presence, required fields in
- * "Work performed" and "Testing", checklist validation, placeholder detection, and
- * evidence-format rules for meta-behavior, pattern scope, and repeated-error research.
- *
- * @returns An array of error messages describing template or formatting violations; an empty array if no issues are found.
- */
-export function validatePrTemplateBody(body: string): string[] {
+/** Return template validation errors for one PR body. */
+export function validatePrTemplateBody(
+	body: string,
+	options: { issueKeyPrefixes?: readonly string[] } = {},
+): string[] {
 	const errors: string[] = [];
 	if (body.length > MAX_BODY_LENGTH) {
 		errors.push(
@@ -385,9 +379,15 @@ export function validatePrTemplateBody(body: string): string[] {
 	errors.push(...collectReleaseBoundaryFieldErrors(body));
 	errors.push(...collectWorkPerformedFieldErrors(body));
 	errors.push(
-		...collectLinkedIssueRelationshipErrors(body, extractFieldBlockValue),
+		...collectLinkedIssueRelationshipErrors(
+			body,
+			extractFieldBlockValue,
+			options.issueKeyPrefixes,
+		),
 	);
-	errors.push(...collectLinkedIssueAcceptanceTraceErrors(body));
+	errors.push(
+		...collectLinkedIssueAcceptanceTraceErrors(body, options.issueKeyPrefixes),
+	);
 	errors.push(
 		...collectWorkEvidenceIntegrityErrors(body, extractFieldBlockValue),
 	);

@@ -70,10 +70,10 @@ export type LinearGateResult =
 	| { ok: true; output: LinearGateOutput }
 	| { ok: false; error: { code: string; message: string } };
 
-const ISSUE_KEY_PATTERN = /\b[A-Z][A-Z0-9]+-\d+\b/gi;
-const REFS_KEY_PATTERN = /\brefs?\s+([A-Z][A-Z0-9]+-\d+)\b/gi;
-const FIXES_KEY_PATTERN = /\bfix(?:es)?\s+([A-Z][A-Z0-9]+-\d+)\b/gi;
-const CLOSES_KEY_PATTERN = /\bclos(?:e|es|ed)\s+([A-Z][A-Z0-9]+-\d+)\b/gi;
+const ISSUE_KEY_PATTERN = /\b[A-Z][A-Z0-9]*-\d+\b/gi;
+const REFS_KEY_PATTERN = /\brefs?\s+([A-Z][A-Z0-9]*-\d+)\b/gi;
+const FIXES_KEY_PATTERN = /\bfix(?:es)?\s+([A-Z][A-Z0-9]*-\d+)\b/gi;
+const CLOSES_KEY_PATTERN = /\bclos(?:e|es|ed)\s+([A-Z][A-Z0-9]*-\d+)\b/gi;
 
 function normalizeUrl(value: string): string {
 	return value.trim().replace(/\/+$/, "");
@@ -92,21 +92,44 @@ function isLinearProjectUrl(value: string): boolean {
 	}
 }
 
-function extractIssueKeys(value: string | undefined): string[] {
+/** Return whether an extracted issue key belongs to an allowed Linear team. */
+function isAllowedIssueKey(
+	issueKey: string,
+	allowedPrefixes: string[] | undefined,
+): boolean {
+	if (allowedPrefixes === undefined) {
+		// Preserve the legacy broad extraction contract while avoiding the
+		// ambiguous one-character team form unless a policy explicitly opts in.
+		const prefix = issueKey.slice(0, issueKey.indexOf("-"));
+		return prefix.length > 1;
+	}
+	const prefix = issueKey.slice(0, issueKey.indexOf("-"));
+	return allowedPrefixes.includes(prefix);
+}
+
+/** Extract unique issue keys, optionally limited to configured Linear teams. */
+function extractIssueKeys(
+	value: string | undefined,
+	allowedPrefixes?: string[],
+): string[] {
 	if (!value) {
 		return [];
 	}
 	const pattern = new RegExp(ISSUE_KEY_PATTERN.source, ISSUE_KEY_PATTERN.flags);
 	return Array.from(
 		new Set(
-			Array.from(value.matchAll(pattern), (match) => match[0].toUpperCase()),
+			Array.from(value.matchAll(pattern), (match) =>
+				match[0].toUpperCase(),
+			).filter((issueKey) => isAllowedIssueKey(issueKey, allowedPrefixes)),
 		),
 	);
 }
 
+/** Extract linked issue keys for one PR relationship verb. */
 function extractLinkedIssueKeys(
 	value: string | undefined,
 	mode: "refs" | "fixes" | "closes",
+	allowedPrefixes?: string[],
 ): string[] {
 	if (!value) {
 		return [];
@@ -123,7 +146,11 @@ function extractLinkedIssueKeys(
 		new Set(
 			Array.from(value.matchAll(pattern), (match) =>
 				match[1]?.toUpperCase(),
-			).filter((candidate): candidate is string => Boolean(candidate)),
+			).filter(
+				(candidate): candidate is string =>
+					candidate !== undefined &&
+					isAllowedIssueKey(candidate, allowedPrefixes),
+			),
 		),
 	);
 }
@@ -231,18 +258,22 @@ function compactMinimalResult(repoRoot: string): LinearGateResult {
 function resolveReferenceKeys(
 	mode: PrReferenceMode,
 	prText: string,
+	allowedPrefixes?: string[],
 ): { refs: string[]; fixes: string[] } {
 	const fixesIssueKeys =
 		mode === "refs"
 			? []
 			: Array.from(
 					new Set([
-						...extractLinkedIssueKeys(prText, "fixes"),
-						...extractLinkedIssueKeys(prText, "closes"),
+						...extractLinkedIssueKeys(prText, "fixes", allowedPrefixes),
+						...extractLinkedIssueKeys(prText, "closes", allowedPrefixes),
 					]),
 				);
 	return {
-		refs: mode === "fixes" ? [] : extractLinkedIssueKeys(prText, "refs"),
+		refs:
+			mode === "fixes"
+				? []
+				: extractLinkedIssueKeys(prText, "refs", allowedPrefixes),
 		fixes: fixesIssueKeys,
 	};
 }
@@ -319,13 +350,14 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 		: bugsUrl && isLinearProjectUrl(bugsUrl)
 			? normalizeUrl(bugsUrl)
 			: undefined;
-	const branchIssueKeys = extractIssueKeys(branch);
-	const prIssueKeys = extractIssueKeys(prText);
+	const branchIssueKeys = extractIssueKeys(branch, policy.issueKeyPrefixes);
+	const prIssueKeys = extractIssueKeys(prText, policy.issueKeyPrefixes);
 	const standaloneUntrackedPr = isStandaloneUntrackedPr(prBody);
 	const referenceMode = policy.prReferenceMode ?? "either";
 	const { refs: refsIssueKeys, fixes: fixesIssueKeys } = resolveReferenceKeys(
 		referenceMode,
 		prText,
+		policy.issueKeyPrefixes,
 	);
 	const checks: LinearGateCheck[] = [];
 
@@ -483,7 +515,7 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 				false,
 				"Branch name must include a Linear issue key.",
 				{
-					expected: `${policy.branchPrefix ?? "codex"}/JSC-123-short-description`,
+					expected: `${policy.branchPrefix ?? "codex"}/<LINEAR-KEY>-short-description`,
 					actual: branch,
 				},
 			);
@@ -515,7 +547,7 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 				false,
 				"PR title or body must include a Linear issue key.",
 				{
-					expected: "Refs JSC-123 or Fixes JSC-123",
+					expected: "Refs <LINEAR-KEY> or Fixes <LINEAR-KEY>",
 					actual: prTitle ?? "",
 				},
 			);

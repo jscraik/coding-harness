@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## Unreleased
+
+### Added
+
+- Added `issueTrackingPolicy.issueKeyPrefixes` so Linear gates can restrict
+  issue-key extraction to configured team prefixes and ignore issue-shaped
+  dependency suffixes such as `EXPANSION-509`.
+
 ## [0.15.3](https://github.com/jscraik/coding-harness/compare/v0.15.2...v0.15.3) (2026-08-02)
 
 ### Bug Fixes

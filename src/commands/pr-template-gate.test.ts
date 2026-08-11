@@ -148,6 +148,79 @@ describe("pr-template-gate command", () => {
 		}
 	});
 
+	it("passes a configured one-character Linear team prefix", () => {
+		const body = VALID_BODY.replace(
+			"- Linear reference: Refs JSC-999.",
+			"- Linear reference: Refs X-999.",
+		).replace(
+			"- Linked issue relationship: implementation closure for JSC-999;",
+			"- Linked issue relationship: implementation closure for X-999;",
+		);
+
+		const result = runPrTemplateGate({
+			prBody: body,
+			issueKeyPrefixes: ["X"],
+		});
+
+		expect(result).toMatchObject({ ok: true, output: { passed: true } });
+	});
+
+	it("threads configured prefixes into acceptance-trace coverage", () => {
+		const body = VALID_BODY.replace(/JSC-999/g, "X-999");
+
+		const result = runPrTemplateGate({
+			prBody: body,
+			issueKeyPrefixes: ["X"],
+		});
+
+		expect(result).toMatchObject({ ok: true, output: { passed: true } });
+	});
+
+	it("rejects a configured linked issue without a matching acceptance trace", () => {
+		const body = VALID_BODY.replace(/JSC-999/g, "X-999").replace(
+			"- Acceptance trace: X-999 SA-999-001 -> src/commands/pr-template-gate.test.ts.",
+			"- Acceptance trace: SA-999-001 -> src/commands/pr-template-gate.test.ts.",
+		);
+
+		const result = runPrTemplateGate({
+			prBody: body,
+			issueKeyPrefixes: ["X"],
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(
+				result.output.errors.some((error) =>
+					error.includes("Acceptance trace for linked issue X-999"),
+				),
+			).toBe(true);
+		}
+	});
+
+	it("rejects a Linear team outside the configured prefix allowlist", () => {
+		const body = VALID_BODY.replace(
+			"- Linear reference: Refs JSC-999.",
+			"- Linear reference: Refs EXPANSION-999.",
+		);
+
+		const result = runPrTemplateGate({
+			prBody: body,
+			issueKeyPrefixes: ["JSC"],
+		});
+
+		expect(result).toMatchObject({
+			ok: true,
+			output: {
+				passed: false,
+				errors: [
+					expect.stringContaining(
+						"Linear reference must use Refs, Fixes, or Closes",
+					),
+				],
+			},
+		});
+	});
+
 	// Security regression: finding ef7d00b48248819187f403dcc5becaa5.
 	// Original check was resolved.startsWith(cwd) — bypassed by sibling dirs
 	// whose absolute path shares the same string prefix as cwd.

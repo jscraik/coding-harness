@@ -476,6 +476,61 @@ describe("runPrCloseoutCLI", () => {
 		);
 	});
 
+	it("applies the repository Linear prefix policy to input-file closeout", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
+		const inputPath = join(dir, "input.json");
+		writeFileSync(
+			inputPath,
+			JSON.stringify({
+				pullRequest: {
+					number: 258,
+					state: "OPEN",
+					isDraft: false,
+					mergeStateStatus: "CLEAN",
+					headSha: "abc123",
+					body: "Refs EXPANSION-509\n",
+				},
+				branch: {
+					clean: true,
+					headSha: "abc123",
+					worktreeRole: "orientation",
+				},
+				checks: [{ name: "pr-pipeline", state: "SUCCESS", headSha: "abc123" }],
+				reviewThreads: {
+					unresolved: 0,
+					ownerCounts: { codex: 0, jamie: 0 },
+				},
+				traceability: { sessionIds: ["codex-session:2026-05-16"] },
+				rollback: {
+					notApplicable: true,
+					evidenceRef: "pr-body:rollback",
+				},
+				closeoutGates: PASSING_CLOSEOUT_GATES,
+				assurance: PASSING_ASSURANCE,
+			}),
+		);
+
+		const result = await capture([
+			"--json",
+			"--repo",
+			process.cwd(),
+			"--input",
+			inputPath,
+		]);
+		const report = JSON.parse(result.output);
+
+		expect(result.exitCode).toBe(0);
+		expect(report.blockers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					surface: "linear",
+					reason:
+						"Pull request body is missing a Refs/Closes Linear issue reference.",
+				}),
+			]),
+		);
+	});
+
 	it("accepts first-class Coding Harness closeout-gates schema in normalized input", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "pr-closeout-cli-"));
 		const inputPath = join(dir, "input.json");

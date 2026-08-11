@@ -23,7 +23,10 @@ import {
 	normalizeAssuranceEntries,
 	normalizeRuntimeEvidenceContract,
 } from "./pr-closeout/input-validation.js";
-import { buildLivePrCloseoutInput } from "./pr-closeout/live.js";
+import {
+	buildLivePrCloseoutInput,
+	loadLinearIssueKeyPrefixes,
+} from "./pr-closeout/live.js";
 import type { CommandRunner } from "./pr-closeout/types.js";
 import { assertPrCloseoutStackState } from "../lib/pr-closeout/stack-state.js";
 
@@ -210,6 +213,7 @@ function loadRuntimeEvidenceContract(
 	return normalizeRuntimeEvidenceContract(parsed, path);
 }
 
+/** Load closeout evidence and attach the repository's configured Linear policy. */
 function loadBasePrCloseoutInput(
 	options: PrCloseoutCLIOptions,
 	runner: CommandRunner,
@@ -217,11 +221,15 @@ function loadBasePrCloseoutInput(
 	const loadedInput = options.inputPath
 		? loadInput(options.inputPath)
 		: buildLivePrCloseoutInput(options, runner);
+	const linearIssueKeyPrefixes = loadLinearIssueKeyPrefixes(options.repoRoot);
+	const inputWithConfiguredPrefixes = linearIssueKeyPrefixes
+		? { ...loadedInput, linearIssueKeyPrefixes }
+		: loadedInput;
 	if (!options.inputPath || options.releaseReadinessImpact === undefined) {
-		return loadedInput;
+		return inputWithConfiguredPrefixes;
 	}
 	return {
-		...loadedInput,
+		...inputWithConfiguredPrefixes,
 		releaseReadinessImpact: options.releaseReadinessImpact,
 	};
 }
