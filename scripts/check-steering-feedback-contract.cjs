@@ -83,6 +83,10 @@ const CIRCLECI_ENV_API_TRIAGE_PATTERN =
 	/(CircleCI API|CircleCI log|CircleCI job)[\s\S]{0,260}(~\/\.codex\/\.env|op run --env-file ~\/\.codex\/\.env|set -a; source ~\/\.codex\/\.env; set \+a|FIFO|regular readable file|CIRCLECI_TOKEN|CIRCLE_TOKEN|CIRCLE_API_TOKEN|Circle-Token|bounded network call|--max-time)/i;
 const SAFE_PR_BODY_FILE_HANDOFF_PATTERN =
 	/(PR body|pull request body)[\s\S]{0,260}(--body-file|body file|non-interpreting file|shell interpolation|command substitution|backticks|pr-template-gate --pr-body-file)/i;
+const PR_READINESS_CREATE_PATTERN =
+	/pr-readiness\.py[\s\S]*--phase\s+create(?=\s|$)/is;
+const PR_READINESS_UPDATE_PATTERN =
+	/pr-readiness\.py[\s\S]*--phase\s+update(?=\s|$)/is;
 const STALE_ENV_BACKED_BLOCKER_PATTERN =
 	/(current process lacks GitHub and Linear credentials|GitHub and Linear credentials are unavailable|credentials are unavailable|missing_credentials|(?:~\/?\.?codex\/\.env|\.codex\/\.env)[\s\S]{0,220}\bFIFO\b[\s\S]{0,220}(?:block|blocked|hang|hung|cannot|unavailable|unsafe|not safely|cannot be safely)|\bFIFO\b[\s\S]{0,220}(?:~\/?\.?codex\/\.env|\.codex\/\.env)[\s\S]{0,220}(?:block|blocked|hang|hung|cannot|unavailable|unsafe|not safely|cannot be safely))/i;
 const CLOSEOUT_STATE_FIELD_PATTERNS = [
@@ -331,10 +335,9 @@ function validateValidationDoc(content) {
 		[/smallest gate needed for risk/i, "risk-selected validation rule"],
 		[/fail-closed/i, "fail-closed validation rule"],
 		[/local tests.*hosted checks.*review.*merge.*release/is, "claims boundary"],
-		[
-			/pr-readiness\.py[\s\S]*--phase\s+(?:create|update)(?=\s|$)/is,
-			"PR readiness route",
-		],
+		[PR_READINESS_CREATE_PATTERN, "PR readiness create phase"],
+		[PR_READINESS_UPDATE_PATTERN, "PR readiness update phase"],
+		[SAFE_PR_BODY_FILE_HANDOFF_PATTERN, "safe PR body file handoff"],
 		[/reviewThreads.*isResolved.*isOutdated/is, "GraphQL review-thread truth"],
 		[
 			/run-auth-backed\.sh.*--env-file.*--canary/is,

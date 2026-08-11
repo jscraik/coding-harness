@@ -65,8 +65,9 @@ describe("check-steering-feedback-contract", () => {
 		const content = [
 			"Use the smallest gate needed for risk and keep required gates fail-closed.",
 			"Keep local tests, hosted checks, review, merge, and release separate.",
-			"Run pr-readiness.py --phase create before hosted mutation.",
-			"Run pr-readiness.py --phase update before hosted mutation.",
+			"Run python3 ~/.codex/scripts/pr-readiness.py --phase create --scope-file <scope-file> --write-receipt before hosted mutation.",
+			"Run python3 ~/.codex/scripts/pr-readiness.py --phase update --scope-file <scope-file> --write-receipt before hosted mutation.",
+			"Write the PR body through a non-interpreting body file and validate it with pr-template-gate --pr-body-file <path>.",
 			"Use GraphQL reviewThreads with isResolved and isOutdated.",
 			"Use run-auth-backed.sh --env-file ~/.codex/.env --canary TOKEN.",
 			"Use run-auth-backed.sh --env-file ~/.codex/.env --require-env TOKEN -- child.",
@@ -80,6 +81,12 @@ describe("check-steering-feedback-contract", () => {
 	});
 
 	it.each([
+		["--phase create", "PR readiness create phase"],
+		["--phase update", "PR readiness update phase"],
+		[
+			"Write the PR body through a non-interpreting body file and validate it with pr-template-gate --pr-body-file <path>.",
+			"safe PR body file handoff",
+		],
 		["fail-closed", "fail-closed validation rule"],
 		["isOutdated", "GraphQL review-thread truth"],
 		["Never read the FIFO and ", "FIFO read privacy boundary"],
@@ -89,8 +96,9 @@ describe("check-steering-feedback-contract", () => {
 		const content = [
 			"Use the smallest gate needed for risk and keep required gates fail-closed.",
 			"Keep local tests, hosted checks, review, merge, and release separate.",
-			"Run pr-readiness.py --phase create before hosted mutation.",
-			"Run pr-readiness.py --phase update before hosted mutation.",
+			"Run python3 ~/.codex/scripts/pr-readiness.py --phase create --scope-file <scope-file> --write-receipt before hosted mutation.",
+			"Run python3 ~/.codex/scripts/pr-readiness.py --phase update --scope-file <scope-file> --write-receipt before hosted mutation.",
+			"Write the PR body through a non-interpreting body file and validate it with pr-template-gate --pr-body-file <path>.",
 			"Use GraphQL reviewThreads with isResolved and isOutdated.",
 			"Use run-auth-backed.sh --env-file ~/.codex/.env --canary TOKEN.",
 			"Use run-auth-backed.sh --env-file ~/.codex/.env --require-env TOKEN -- child.",
@@ -114,7 +122,19 @@ describe("check-steering-feedback-contract", () => {
 		].join("\n");
 
 		expect(validateValidationDoc(content)).toContain(
-			"docs/agents/04-validation.md: missing PR readiness route",
+			"docs/agents/04-validation.md: missing PR readiness create phase",
+		);
+	});
+
+	it("rejects validation guidance that omits the body-file handoff", () => {
+		const content = [
+			"Run pr-readiness.py --phase create --scope-file <scope-file>.",
+			"Run pr-readiness.py --phase update --scope-file <scope-file>.",
+			"Never read the FIFO and never source the FIFO.",
+		].join("\n");
+
+		expect(validateValidationDoc(content)).toContain(
+			"docs/agents/04-validation.md: missing safe PR body file handoff",
 		);
 	});
 });

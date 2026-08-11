@@ -70,18 +70,20 @@ request a scope or owner decision instead of an unchanged third retry.
 Use the Configs-owned wrapper for a fixed-output, value-blind canary:
 
 ```bash
-CONFIGS_ROOT="${CODEX_CONFIGS_ROOT:-$HOME/dev/configs}" \
-  bash "$CONFIGS_ROOT/codex/scripts/run-auth-backed.sh" \
-  --env-file "${CODEX_AUTH_ENV_FILE:-$HOME/.codex/.env}" \
+CONFIGS_ROOT="${CODEX_CONFIGS_ROOT:-$HOME/dev/configs}"
+AUTH_ENV_FILE="${CODEX_AUTH_ENV_FILE:-$HOME/.codex/.env}"
+bash "$CONFIGS_ROOT/codex/scripts/run-auth-backed.sh" \
+  --env-file "$AUTH_ENV_FILE" \
   --canary REQUIRED_ENV_NAME
 ```
 
 Run each authorized authenticated stage through a fresh wrapper call:
 
 ```bash
-CONFIGS_ROOT="${CODEX_CONFIGS_ROOT:-$HOME/dev/configs}" \
-  bash "$CONFIGS_ROOT/codex/scripts/run-auth-backed.sh" \
-  --env-file "${CODEX_AUTH_ENV_FILE:-$HOME/.codex/.env}" \
+CONFIGS_ROOT="${CODEX_CONFIGS_ROOT:-$HOME/dev/configs}"
+AUTH_ENV_FILE="${CODEX_AUTH_ENV_FILE:-$HOME/.codex/.env}"
+bash "$CONFIGS_ROOT/codex/scripts/run-auth-backed.sh" \
+  --env-file "$AUTH_ENV_FILE" \
   --require-env REQUIRED_ENV_NAME -- <child command>
 ```
 
