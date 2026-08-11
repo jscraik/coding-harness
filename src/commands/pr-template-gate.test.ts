@@ -165,6 +165,38 @@ describe("pr-template-gate command", () => {
 		expect(result).toMatchObject({ ok: true, output: { passed: true } });
 	});
 
+	it("threads configured prefixes into acceptance-trace coverage", () => {
+		const body = VALID_BODY.replace(/JSC-999/g, "X-999");
+
+		const result = runPrTemplateGate({
+			prBody: body,
+			issueKeyPrefixes: ["X"],
+		});
+
+		expect(result).toMatchObject({ ok: true, output: { passed: true } });
+	});
+
+	it("rejects a configured linked issue without a matching acceptance trace", () => {
+		const body = VALID_BODY.replace(/JSC-999/g, "X-999").replace(
+			"- Acceptance trace: X-999 SA-999-001 -> src/commands/pr-template-gate.test.ts.",
+			"- Acceptance trace: SA-999-001 -> src/commands/pr-template-gate.test.ts.",
+		);
+
+		const result = runPrTemplateGate({
+			prBody: body,
+			issueKeyPrefixes: ["X"],
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(
+				result.output.errors.some((error) =>
+					error.includes("Acceptance trace for linked issue X-999"),
+				),
+			).toBe(true);
+		}
+	});
+
 	it("rejects a Linear team outside the configured prefix allowlist", () => {
 		const body = VALID_BODY.replace(
 			"- Linear reference: Refs JSC-999.",

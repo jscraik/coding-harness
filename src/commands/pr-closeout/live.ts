@@ -170,7 +170,9 @@ function rollbackFromBody(
 }
 
 /** Load the repository's configured Linear issue-key allowlist for closeout. */
-function loadLinearIssueKeyPrefixes(repoRoot: string): string[] | undefined {
+export function loadLinearIssueKeyPrefixes(
+	repoRoot: string,
+): string[] | undefined {
 	const contractPath = `${repoRoot}/harness.contract.json`;
 	if (!existsSync(contractPath)) return undefined;
 	try {

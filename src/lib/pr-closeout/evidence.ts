@@ -5,10 +5,10 @@ function isAllowedLinearIssueKey(
 	issueKey: string,
 	allowedPrefixes?: readonly string[],
 ): boolean {
-	if (allowedPrefixes === undefined) return true;
 	const separator = issueKey.indexOf("-");
 	if (separator <= 0) return false;
 	const prefix = issueKey.slice(0, separator).toUpperCase();
+	if (allowedPrefixes === undefined) return prefix.length > 1;
 	return allowedPrefixes.some(
 		(allowedPrefix) => allowedPrefix.toUpperCase() === prefix,
 	);
@@ -69,10 +69,8 @@ export function hasLinearReference(
 	allowedPrefixes?: readonly string[],
 ): boolean {
 	const pattern = /\b(?:Refs|Closes|Fixes)\s+([A-Z][A-Z0-9]*-\d+)\b/giu;
-	return Array.from((body ?? "").matchAll(pattern)).some(
-		(match) =>
-			allowedPrefixes === undefined ||
-			isAllowedLinearIssueKey(match[1] ?? "", allowedPrefixes),
+	return Array.from((body ?? "").matchAll(pattern)).some((match) =>
+		isAllowedLinearIssueKey(match[1] ?? "", allowedPrefixes),
 	);
 }
 
