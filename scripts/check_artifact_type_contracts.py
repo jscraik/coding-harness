@@ -449,6 +449,14 @@ class EffectivenessCommandObservation(BaseModel):
             raise ValueError("must be non-negative")
         return value
 
+    @model_validator(mode="after")
+    def require_status_exit_consistency(self) -> EffectivenessCommandObservation:
+        if self.status == "pass" and self.exit_code != 0:
+            raise ValueError("pass observations must have exit_code 0")
+        if self.status != "pass" and self.exit_code == 0:
+            raise ValueError("non-pass observations must have a non-zero exit_code")
+        return self
+
 
 class EffectivenessInitialStatus(BaseModel):
     """Initial worktree status, which has no timed command observation."""
@@ -533,6 +541,14 @@ class EffectivenessTask(BaseModel):
             raise ValueError("must be a full lowercase Git SHA")
         return value
 
+    @model_validator(mode="after")
+    def require_replay_head_match(self) -> EffectivenessTask:
+        if self.replayability == "replayable" and self.observed_head != self.expected_head:
+            raise ValueError(
+                "replayable tasks must bind observed_head to expected_head"
+            )
+        return self
+
 
 class ControlledEffectivenessObservation(BaseModel):
     """Typed contract for the retained five-task effectiveness observation."""
@@ -574,7 +590,26 @@ class ControlledEffectivenessObservation(BaseModel):
         ids = [task.id for task in value]
         if len(ids) != len(set(ids)):
             raise ValueError("task observation ids must be unique")
+        if len({task.repository for task in value}) < 3:
+            raise ValueError("effectiveness sample must cover at least three repositories")
         return value
+
+    @model_validator(mode="after")
+    def require_decision_stdout_contract(
+        self,
+    ) -> ControlledEffectivenessObservation:
+        for task in self.tasks:
+            for label, observation in (
+                ("treatment", task.treatment),
+                ("source_diagnostic", task.source_diagnostic),
+            ):
+                try:
+                    CompactHarnessDecision.model_validate_json(observation.stdout)
+                except ValidationError as exc:
+                    raise ValueError(
+                        f"{task.id} {label} stdout must be valid harness-decision/v1 JSON"
+                    ) from exc
+        return self
 
 
 class CompactExecutionBoundary(BaseModel):

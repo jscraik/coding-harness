@@ -190,6 +190,35 @@ class TestControlledEffectivenessObservation:
         with pytest.raises(ValidationError, match="remote_url"):
             ControlledEffectivenessObservation.model_validate(payload)
 
+    def test_rejects_untyped_decision_stdout(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["treatment"]["stdout"] = "{}"
+
+        with pytest.raises(ValidationError, match="harness-decision/v1"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_status_exit_code_contradiction(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["baseline"]["exit_code"] = 1
+
+        with pytest.raises(ValidationError, match="exit_code"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_replayable_head_mismatch(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["observed_head"] = "0" * 40
+
+        with pytest.raises(ValidationError, match="replayable"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_insufficient_repository_diversity(self) -> None:
+        payload = _load_effectiveness_observation()
+        for task in payload["tasks"]:
+            task["repository"] = "coding-harness"
+
+        with pytest.raises(ValidationError, match="three repositories"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
 
 class TestAgentNativeRatchetsReport:
     def test_accepts_canonical_report_example(self) -> None:
