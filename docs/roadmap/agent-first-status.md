@@ -143,16 +143,20 @@ The treatment was the current built Coding Harness `0.15.3` entrypoint,
 `344774d0760fc56b0cd8d336d80d483afb798507`. The exact raw source is retained
 at [agent-first-effectiveness-observation-2026-08-11.json](./agent-first-effectiveness-observation-2026-08-11.json),
 SHA-256
-`51dc6a2264101ad99cd27abb53930b7b5f8dd1711751835b4ea13d0b2f5150ce`,
-17,008 bytes.
+`cfab83cf2b538ab20c226fe6156e074517b2e9d12be5cbc8952f4ee3295008fa`,
+18,352 bytes. Each row now binds an authoritative remote URL and ref, a
+replay status, and the task-root-relative working directory
+and `dist/cli.js` entrypoint used by the treatment. The existing repository
+artifact-types validator validates this retained observation as
+`coding-harness-controlled-effectiveness-observation/v1`.
 
-| Task snapshot | Baseline (s) | Built `next` (s) | Result | Local effect |
+| Task snapshot | Baseline status + diff (s) | Built `next` (s) | Result | Local effect |
 | --- | ---: | ---: | --- | --- |
-| Coding Harness current main | 0.0161 | 0.5588 | pass | Structured next action and claims boundary with bounded overhead |
-| Agent-Skills OSS-cloud boundary | 0.0811 | 0.6095 | blocked | Correctly stopped on branch currency instead of guessing |
-| Agent-Skills post-merge stabilization | 0.0886 | 0.6437 | pass | Added actionable warnings and safe execution boundary |
-| Configs brace-expansion task | 0.0152 | 0.4588 | pass | Added actionable warnings and safe execution boundary |
-| Portfolio route-rhythm task | 0.0128 | 0.4289 | pass | Added actionable warnings and safe execution boundary |
+| Coding Harness current main | 0.0260 | 0.5588 | pass | Structured next action and claims boundary with bounded overhead |
+| Agent-Skills OSS-cloud boundary | 0.1011 | 0.6095 | blocked | Correctly stopped on branch currency instead of guessing |
+| Agent-Skills post-merge stabilization | 0.1107 | 0.6437 | pass | Added actionable warnings and safe execution boundary |
+| Configs brace-expansion task | 0.0239 | 0.4588 | pass | Added actionable warnings and safe execution boundary |
+| Portfolio route-rhythm task | 0.0228 | 0.4289 | pass | Added actionable warnings and safe execution boundary |
 
 The built route completed in 0.4289–0.6437 seconds and returned structured
 `nextAction`, execution-boundary, and claims-boundary fields on every row;

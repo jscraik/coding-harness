@@ -428,6 +428,155 @@ class HarnessDecision(BaseModel):
         return cast(object, value)
 
 
+class EffectivenessCommandObservation(BaseModel):
+    """One bounded command observation retained by the effectiveness sample."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    command: str
+    status: Literal["pass", "fail", "blocked"]
+    exit_code: int
+    wall_seconds: float
+    stdout: str
+    stderr: str
+
+    _reject_blank_command = field_validator("command")(reject_blank_string)
+
+    @field_validator("wall_seconds")
+    @classmethod
+    def require_non_negative_duration(cls, value: float) -> float:
+        if value < 0:
+            raise ValueError("must be non-negative")
+        return value
+
+
+class EffectivenessInitialStatus(BaseModel):
+    """Initial worktree status, which has no timed command observation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["pass", "fail", "blocked"]
+    exit_code: int
+    stdout: str
+    stderr: str
+
+
+class EffectivenessTreatmentObservation(EffectivenessCommandObservation):
+    """Treatment observation with the exact replay working directory and CLI path."""
+
+    working_directory: str
+    cli_path: str
+
+    _reject_blank_replay_fields = field_validator("working_directory", "cli_path")(
+        reject_blank_string
+    )
+
+
+class EffectivenessBuiltCli(BaseModel):
+    """Built CLI identity used by every treatment observation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    package_version: str
+    node_version: str
+    entrypoint: str
+    binary_sha256: str
+
+    _reject_blank_identity = field_validator(
+        "package_version", "node_version", "entrypoint", "binary_sha256"
+    )(reject_blank_string)
+
+    @field_validator("binary_sha256")
+    @classmethod
+    def require_sha256(cls, value: str) -> str:
+        if re.fullmatch(r"[0-9a-f]{64}", value) is None:
+            raise ValueError("must be a lowercase SHA-256 digest")
+        return value
+
+
+class EffectivenessTask(BaseModel):
+    """Replayable source, baseline, and treatment record for one task snapshot."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    repository: str
+    task_root_ref: str
+    remote_url: str
+    ref: str
+    ref_kind: Literal["branch", "detached"]
+    replayability: Literal["replayable", "non_replayable"]
+    observed_head: str
+    expected_head: str
+    initial_status: EffectivenessInitialStatus
+    baseline: EffectivenessCommandObservation
+    baseline_diff: EffectivenessCommandObservation
+    treatment: EffectivenessTreatmentObservation
+    source_diagnostic: EffectivenessCommandObservation
+
+    _reject_identity_strings = field_validator(
+        "id", "repository", "task_root_ref", "remote_url", "ref", "ref_kind",
+        "replayability"
+    )(reject_blank_string)
+
+    @field_validator("remote_url")
+    @classmethod
+    def require_github_remote(cls, value: str) -> str:
+        if not re.fullmatch(r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", value):
+            raise ValueError("must be an authoritative GitHub repository URL")
+        return value
+
+    @field_validator("observed_head", "expected_head")
+    @classmethod
+    def require_full_head_sha(cls, value: str) -> str:
+        if re.fullmatch(r"[0-9a-f]{40}", value) is None:
+            raise ValueError("must be a full lowercase Git SHA")
+        return value
+
+
+class ControlledEffectivenessObservation(BaseModel):
+    """Typed contract for the retained five-task effectiveness observation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["coding-harness-controlled-effectiveness-observation/v1"]
+    artifact_type: Literal["coding-harness-controlled-effectiveness-observation"]
+    artifact_version: str
+    observed_at_utc: str
+    source_head: str
+    source_project: Literal["coding-harness"]
+    baseline_contract: str
+    treatment_contract: str
+    claims_boundary: str
+    built_cli: EffectivenessBuiltCli
+    tasks: list[EffectivenessTask]
+
+    _reject_non_blank = field_validator(
+        "artifact_version",
+        "observed_at_utc",
+        "baseline_contract",
+        "treatment_contract",
+        "claims_boundary",
+    )(reject_blank_string)
+
+    @field_validator("source_head")
+    @classmethod
+    def require_source_head_sha(cls, value: str) -> str:
+        if re.fullmatch(r"[0-9a-f]{40}", value) is None:
+            raise ValueError("must be a full lowercase Git SHA")
+        return value
+
+    @field_validator("tasks")
+    @classmethod
+    def require_unique_task_set(cls, value: list[EffectivenessTask]) -> list[EffectivenessTask]:
+        if len(value) < 5:
+            raise ValueError("must retain at least five task observations")
+        ids = [task.id for task in value]
+        if len(ids) != len(set(ids)):
+            raise ValueError("task observation ids must be unique")
+        return value
+
+
 class CompactExecutionBoundary(BaseModel):
     """The material permission boundary exposed by routine `harness next` output."""
 
@@ -1536,6 +1685,10 @@ def validate_json_file(path: Path, errors: list[str]) -> None:
         )
     if path.as_posix() == "contracts/examples/execution-job.example.json":
         validate_pydantic_value(ExecutionJob, data, path.as_posix(), errors)
+    if path.as_posix() == "docs/roadmap/agent-first-effectiveness-observation-2026-08-11.json":
+        validate_pydantic_value(
+            ControlledEffectivenessObservation, data, path.as_posix(), errors
+        )
 
 
 def is_versioned_machine_json(path: Path) -> bool:
@@ -1550,6 +1703,7 @@ def is_versioned_machine_json(path: Path) -> bool:
         return any(token in path.name for token in ("manifest", "registry", "contract"))
     return path_text in {
         "docs/workflow-artifact-registry.json",
+        "docs/roadmap/agent-first-effectiveness-observation-2026-08-11.json",
         ".harness/ci-required-checks.json",
         ".harness/ci-provider-transition-status.json",
     }

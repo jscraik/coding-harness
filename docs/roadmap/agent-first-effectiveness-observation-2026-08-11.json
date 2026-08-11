@@ -1,4 +1,5 @@
 {
+	"schema_version": "coding-harness-controlled-effectiveness-observation/v1",
 	"artifact_type": "coding-harness-controlled-effectiveness-observation",
 	"artifact_version": "2026-08-11",
 	"observed_at_utc": "2026-08-11T12:19:37Z",
@@ -18,6 +19,10 @@
 			"id": "coding-harness-current-main",
 			"repository": "coding-harness",
 			"task_root_ref": "coding-harness-current-main",
+			"remote_url": "https://github.com/jscraik/coding-harness",
+			"ref": "main",
+			"ref_kind": "branch",
+			"replayability": "replayable",
 			"observed_head": "344774d0760fc56b0cd8d336d80d483afb798507",
 			"expected_head": "344774d0760fc56b0cd8d336d80d483afb798507",
 			"initial_status": {
@@ -44,6 +49,8 @@
 			},
 			"treatment": {
 				"command": "node dist/cli.js next --json",
+				"working_directory": "coding-harness-current-main",
+				"cli_path": "dist/cli.js",
 				"status": "pass",
 				"exit_code": 0,
 				"wall_seconds": 0.5588,
@@ -63,6 +70,10 @@
 			"id": "agent-skills-oss-cloud-boundary",
 			"repository": "agent-skills",
 			"task_root_ref": "agent-skills-oss-cloud-boundary",
+			"remote_url": "https://github.com/jscraik/Agent-Skills",
+			"ref": "codex/oss-cloud-app-server-boundary",
+			"ref_kind": "branch",
+			"replayability": "replayable",
 			"observed_head": "e5151dd5984dc3c236842065ef4c100e83677c87",
 			"expected_head": "e5151dd5984dc3c236842065ef4c100e83677c87",
 			"initial_status": {
@@ -89,6 +100,8 @@
 			},
 			"treatment": {
 				"command": "node dist/cli.js next --json",
+				"working_directory": "agent-skills-oss-cloud-boundary",
+				"cli_path": "dist/cli.js",
 				"status": "fail",
 				"exit_code": 1,
 				"wall_seconds": 0.6095,
@@ -108,6 +121,10 @@
 			"id": "agent-skills-postmerge-stabilization",
 			"repository": "agent-skills",
 			"task_root_ref": "agent-skills-postmerge-stabilization",
+			"remote_url": "https://github.com/jscraik/Agent-Skills",
+			"ref": "fc6d09ed101baae6e04333301fb0d6ca73478b39",
+			"ref_kind": "detached",
+			"replayability": "replayable",
 			"observed_head": "fc6d09ed101baae6e04333301fb0d6ca73478b39",
 			"expected_head": "fc6d09ed101baae6e04333301fb0d6ca73478b39",
 			"initial_status": {
@@ -134,6 +151,8 @@
 			},
 			"treatment": {
 				"command": "node dist/cli.js next --json",
+				"working_directory": "agent-skills-postmerge-stabilization",
+				"cli_path": "dist/cli.js",
 				"status": "pass",
 				"exit_code": 0,
 				"wall_seconds": 0.6437,
@@ -153,6 +172,10 @@
 			"id": "configs-brace-expansion-clean",
 			"repository": "configs",
 			"task_root_ref": "configs-brace-expansion-clean",
+			"remote_url": "https://github.com/jscraik/configs",
+			"ref": "codex/brace-expansion-509-clean-20260811",
+			"ref_kind": "branch",
+			"replayability": "replayable",
 			"observed_head": "f187bfd4c0801b249d304cc0baeaf88e7d8d0392",
 			"expected_head": "f187bfd4c0801b249d304cc0baeaf88e7d8d0392",
 			"initial_status": {
@@ -179,6 +202,8 @@
 			},
 			"treatment": {
 				"command": "node dist/cli.js next --json",
+				"working_directory": "configs-brace-expansion-clean",
+				"cli_path": "dist/cli.js",
 				"status": "pass",
 				"exit_code": 0,
 				"wall_seconds": 0.4588,
@@ -198,6 +223,10 @@
 			"id": "portfolio-route-rhythm",
 			"repository": "portfolio",
 			"task_root_ref": "portfolio-route-rhythm",
+			"remote_url": "https://github.com/jscraik/portfolio",
+			"ref": "3c735ee8928619b23af6b7ee54f3d509beb5a61f",
+			"ref_kind": "detached",
+			"replayability": "replayable",
 			"observed_head": "3c735ee8928619b23af6b7ee54f3d509beb5a61f",
 			"expected_head": "3c735ee8928619b23af6b7ee54f3d509beb5a61f",
 			"initial_status": {
@@ -224,6 +253,8 @@
 			},
 			"treatment": {
 				"command": "node dist/cli.js next --json",
+				"working_directory": "portfolio-route-rhythm",
+				"cli_path": "dist/cli.js",
 				"status": "pass",
 				"exit_code": 0,
 				"wall_seconds": 0.4289,
