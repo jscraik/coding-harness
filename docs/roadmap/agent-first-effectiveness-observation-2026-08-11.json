@@ -58,7 +58,7 @@
 				"stderr": ""
 			},
 			"source_diagnostic": {
-				"command": "node --import tsx src/cli.ts next --json (source diagnostic)",
+				"command": "node --import tsx src/cli.ts next --json",
 				"status": "pass",
 				"exit_code": 0,
 				"wall_seconds": 1.5677,
@@ -102,15 +102,15 @@
 				"command": "node dist/cli.js next --json",
 				"working_directory": "agent-skills-oss-cloud-boundary",
 				"cli_path": "dist/cli.js",
-				"status": "fail",
+				"status": "blocked",
 				"exit_code": 1,
 				"wall_seconds": 0.6095,
 				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"blocked\",\n  \"summary\": \"Worktree state blocks recommendations for role clean.\",\n  \"nextAction\": \"Use --worktree-role dirty-with-justification, then rerun harness next --json, or align branch codex/oss-cloud-app-server-boundary to origin/main.\",\n  \"nextCommand\": null,\n  \"warnings\": [],\n  \"executionBoundary\": {\n    \"safeToRun\": false,\n    \"requiresHuman\": true,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
 				"stderr": ""
 			},
 			"source_diagnostic": {
-				"command": "node --import tsx src/cli.ts next --json (source diagnostic)",
-				"status": "fail",
+				"command": "node --import tsx src/cli.ts next --json",
+				"status": "blocked",
 				"exit_code": 1,
 				"wall_seconds": 1.67,
 				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"blocked\",\n  \"summary\": \"Worktree state blocks recommendations for role clean.\",\n  \"nextAction\": \"Use --worktree-role dirty-with-justification, then rerun harness next --json, or align branch codex/oss-cloud-app-server-boundary to origin/main.\",\n  \"nextCommand\": null,\n  \"warnings\": [],\n  \"executionBoundary\": {\n    \"safeToRun\": false,\n    \"requiresHuman\": true,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
@@ -160,7 +160,7 @@
 				"stderr": ""
 			},
 			"source_diagnostic": {
-				"command": "node --import tsx src/cli.ts next --json (source diagnostic)",
+				"command": "node --import tsx src/cli.ts next --json",
 				"status": "pass",
 				"exit_code": 0,
 				"wall_seconds": 1.7395,
@@ -211,7 +211,7 @@
 				"stderr": ""
 			},
 			"source_diagnostic": {
-				"command": "node --import tsx src/cli.ts next --json (source diagnostic)",
+				"command": "node --import tsx src/cli.ts next --json",
 				"status": "pass",
 				"exit_code": 0,
 				"wall_seconds": 1.5984,
@@ -262,7 +262,7 @@
 				"stderr": ""
 			},
 			"source_diagnostic": {
-				"command": "node --import tsx src/cli.ts next --json (source diagnostic)",
+				"command": "node --import tsx src/cli.ts next --json",
 				"status": "pass",
 				"exit_code": 0,
 				"wall_seconds": 1.4985,

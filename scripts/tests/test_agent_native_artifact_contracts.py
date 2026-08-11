@@ -219,6 +219,27 @@ class TestControlledEffectivenessObservation:
         with pytest.raises(ValidationError, match="three repositories"):
             ControlledEffectivenessObservation.model_validate(payload)
 
+    def test_rejects_non_replayable_source_diagnostic_label(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["source_diagnostic"]["command"] += " (source diagnostic)"
+
+        with pytest.raises(ValidationError, match="directly runnable"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_declared_command_mismatch(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["treatment"]["command"] = "harness next --json"
+
+        with pytest.raises(ValidationError, match="treatment command"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_decision_status_mismatch(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][1]["treatment"]["status"] = "fail"
+
+        with pytest.raises(ValidationError, match="status must match"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
 
 class TestAgentNativeRatchetsReport:
     def test_accepts_canonical_report_example(self) -> None:

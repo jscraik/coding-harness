@@ -37,6 +37,9 @@ This threshold is shared with the root instructions and codestyle pack: routine
 corrections may close with `no_system_change` when the record names its reason,
 checked scope, and no-durable-destination decision, while a promoted control
 must stay within the existing repository-owned authority and validation seams.
+Keep the root `AGENTS.md` `last_reviewed` metadata current when its governance
+or validation guidance changes; this is metadata parity, not a second policy
+surface.
 
 ## Mandatory gates (when behavior changes)
 

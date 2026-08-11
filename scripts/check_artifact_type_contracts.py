@@ -458,6 +458,16 @@ class EffectivenessCommandObservation(BaseModel):
         return self
 
 
+CONTROLLED_BASELINE_CONTRACT = (
+    "git status --short --branch followed by git diff --stat -- ."
+)
+CONTROLLED_BASELINE_COMMAND = "git status --short --branch"
+CONTROLLED_BASELINE_DIFF_COMMAND = "git diff --stat -- ."
+CONTROLLED_TREATMENT_CONTRACT = "node dist/cli.js next --json (built from source_head)"
+CONTROLLED_TREATMENT_COMMAND = "node dist/cli.js next --json"
+CONTROLLED_SOURCE_DIAGNOSTIC_COMMAND = "node --import tsx src/cli.ts next --json"
+
+
 class EffectivenessInitialStatus(BaseModel):
     """Initial worktree status, which has no timed command observation."""
 
@@ -604,11 +614,43 @@ class ControlledEffectivenessObservation(BaseModel):
                 ("source_diagnostic", task.source_diagnostic),
             ):
                 try:
-                    CompactHarnessDecision.model_validate_json(observation.stdout)
+                    decision = CompactHarnessDecision.model_validate_json(observation.stdout)
                 except ValidationError as exc:
                     raise ValueError(
                         f"{task.id} {label} stdout must be valid harness-decision/v1 JSON"
                     ) from exc
+                expected_status = (
+                    decision.status
+                    if decision.status in {"pass", "fail", "blocked"}
+                    else "fail"
+                )
+                if observation.status != expected_status:
+                    raise ValueError(
+                        f"{task.id} {label} status must match its harness decision"
+                    )
+        return self
+
+    @model_validator(mode="after")
+    def require_declared_command_contract(
+        self,
+    ) -> ControlledEffectivenessObservation:
+        if self.baseline_contract != CONTROLLED_BASELINE_CONTRACT:
+            raise ValueError("baseline_contract does not match the controlled commands")
+        if self.treatment_contract != CONTROLLED_TREATMENT_CONTRACT:
+            raise ValueError("treatment_contract does not match the controlled command")
+        for task in self.tasks:
+            if task.baseline.command != CONTROLLED_BASELINE_COMMAND:
+                raise ValueError(f"{task.id} baseline command is outside the controlled contract")
+            if task.baseline_diff.command != CONTROLLED_BASELINE_DIFF_COMMAND:
+                raise ValueError(
+                    f"{task.id} baseline_diff command is outside the controlled contract"
+                )
+            if task.treatment.command != CONTROLLED_TREATMENT_COMMAND:
+                raise ValueError(f"{task.id} treatment command is outside the controlled contract")
+            if task.source_diagnostic.command != CONTROLLED_SOURCE_DIAGNOSTIC_COMMAND:
+                raise ValueError(
+                    f"{task.id} source_diagnostic command must remain directly runnable"
+                )
         return self
 
 
