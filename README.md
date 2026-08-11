@@ -99,6 +99,9 @@ Keep the stable product surface small and move unselected expert capability out
 of the routine path. Keep the truth-bounded recovery status in
 [`docs/roadmap/agent-first-status.md`](./docs/roadmap/agent-first-status.md)
 and its weekly cadence entry in `harness.contract.json` current together.
+The current controlled local observation is retained at
+[`docs/roadmap/agent-first-effectiveness-observation-2026-08-11.json`](./docs/roadmap/agent-first-effectiveness-observation-2026-08-11.json);
+it records proof clarity only, not causal productivity or release readiness.
 That exact status-document/date registration is documentation cadence; any
 additional contract mutation remains contract policy.
 Cadence refreshes are evidence maintenance; they do not imply product-

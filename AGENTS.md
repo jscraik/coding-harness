@@ -78,6 +78,10 @@ default agent route without a named consumer.
   contract policy. A cadence refresh is evidence maintenance only and does not
   establish effectiveness, publication, or release readiness. Measurements
   without retained raw output or an independent receipt remain unverified notes.
+  The current controlled local observation is retained at
+  `docs/roadmap/agent-first-effectiveness-observation-2026-08-11.json` and
+  reports proof clarity only; it does not establish causal productivity,
+  publication, or release readiness.
 
 ## Validation and handoff
 

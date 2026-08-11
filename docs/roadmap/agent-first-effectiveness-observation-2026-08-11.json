@@ -1,0 +1,243 @@
+{
+	"artifact_type": "coding-harness-controlled-effectiveness-observation",
+	"artifact_version": "2026-08-11",
+	"observed_at_utc": "2026-08-11T12:19:37Z",
+	"source_head": "344774d0760fc56b0cd8d336d80d483afb798507",
+	"source_project": "coding-harness",
+	"baseline_contract": "git status --short --branch followed by git diff --stat -- .",
+	"treatment_contract": "node dist/cli.js next --json (built from source_head)",
+	"claims_boundary": "Local paired command observations only; no causal product-effectiveness, hosted CI, review, merge, release, or production claim.",
+	"built_cli": {
+		"package_version": "0.15.3",
+		"node_version": "v26.3.0",
+		"entrypoint": "dist/cli.js",
+		"binary_sha256": "1ba827455c870357b9e25eddee1ddaa92704de6d870199978772b37a31d16cdf"
+	},
+	"tasks": [
+		{
+			"id": "coding-harness-current-main",
+			"repository": "coding-harness",
+			"task_root_ref": "coding-harness-current-main",
+			"observed_head": "344774d0760fc56b0cd8d336d80d483afb798507",
+			"expected_head": "344774d0760fc56b0cd8d336d80d483afb798507",
+			"initial_status": {
+				"status": "pass",
+				"exit_code": 0,
+				"stdout": "## HEAD (no branch)\n",
+				"stderr": ""
+			},
+			"baseline": {
+				"command": "git status --short --branch",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 0.0161,
+				"stdout": "## HEAD (no branch)\n",
+				"stderr": ""
+			},
+			"baseline_diff": {
+				"command": "git diff --stat -- .",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 0.0099,
+				"stdout": "",
+				"stderr": ""
+			},
+			"treatment": {
+				"command": "node dist/cli.js next --json",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 0.5588,
+				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"pass\",\n  \"summary\": \"No changed files detected.\",\n  \"nextAction\": \"Run harness check --json to confirm repo readiness.\",\n  \"nextCommand\": \"harness check --json\",\n  \"warnings\": [\n    \"Local next output does not prove PR, CI, review-thread, tracker, or merge-readiness truth.\",\n    \"No local runtime-card artifact was discovered.\",\n    \"No prompt-context-drift report was provided for agent-readable orientation.\",\n    \"No local PR, CI, Linear, or review-state snapshot was provided to agent-readiness.\"\n  ],\n  \"executionBoundary\": {\n    \"safeToRun\": true,\n    \"requiresHuman\": false,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
+				"stderr": ""
+			},
+			"source_diagnostic": {
+				"command": "node --import tsx src/cli.ts next --json (source diagnostic)",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 1.5677,
+				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"pass\",\n  \"summary\": \"No changed files detected.\",\n  \"nextAction\": \"Run harness check --json to confirm repo readiness.\",\n  \"nextCommand\": \"harness check --json\",\n  \"warnings\": [\n    \"Local next output does not prove PR, CI, review-thread, tracker, or merge-readiness truth.\",\n    \"No local runtime-card artifact was discovered.\",\n    \"No prompt-context-drift report was provided for agent-readable orientation.\",\n    \"No local PR, CI, Linear, or review-state snapshot was provided to agent-readiness.\"\n  ],\n  \"executionBoundary\": {\n    \"safeToRun\": true,\n    \"requiresHuman\": false,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
+				"stderr": ""
+			}
+		},
+		{
+			"id": "agent-skills-oss-cloud-boundary",
+			"repository": "agent-skills",
+			"task_root_ref": "agent-skills-oss-cloud-boundary",
+			"observed_head": "e5151dd5984dc3c236842065ef4c100e83677c87",
+			"expected_head": "e5151dd5984dc3c236842065ef4c100e83677c87",
+			"initial_status": {
+				"status": "pass",
+				"exit_code": 0,
+				"stdout": "## codex/oss-cloud-app-server-boundary...origin/main [ahead 1, behind 42]\n",
+				"stderr": ""
+			},
+			"baseline": {
+				"command": "git status --short --branch",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 0.0811,
+				"stdout": "## codex/oss-cloud-app-server-boundary...origin/main [ahead 1, behind 42]\n",
+				"stderr": ""
+			},
+			"baseline_diff": {
+				"command": "git diff --stat -- .",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 0.02,
+				"stdout": "",
+				"stderr": ""
+			},
+			"treatment": {
+				"command": "node dist/cli.js next --json",
+				"status": "fail",
+				"exit_code": 1,
+				"wall_seconds": 0.6095,
+				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"blocked\",\n  \"summary\": \"Worktree state blocks recommendations for role clean.\",\n  \"nextAction\": \"Use --worktree-role dirty-with-justification, then rerun harness next --json, or align branch codex/oss-cloud-app-server-boundary to origin/main.\",\n  \"nextCommand\": null,\n  \"warnings\": [],\n  \"executionBoundary\": {\n    \"safeToRun\": false,\n    \"requiresHuman\": true,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
+				"stderr": ""
+			},
+			"source_diagnostic": {
+				"command": "node --import tsx src/cli.ts next --json (source diagnostic)",
+				"status": "fail",
+				"exit_code": 1,
+				"wall_seconds": 1.67,
+				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"blocked\",\n  \"summary\": \"Worktree state blocks recommendations for role clean.\",\n  \"nextAction\": \"Use --worktree-role dirty-with-justification, then rerun harness next --json, or align branch codex/oss-cloud-app-server-boundary to origin/main.\",\n  \"nextCommand\": null,\n  \"warnings\": [],\n  \"executionBoundary\": {\n    \"safeToRun\": false,\n    \"requiresHuman\": true,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
+				"stderr": ""
+			}
+		},
+		{
+			"id": "agent-skills-postmerge-stabilization",
+			"repository": "agent-skills",
+			"task_root_ref": "agent-skills-postmerge-stabilization",
+			"observed_head": "fc6d09ed101baae6e04333301fb0d6ca73478b39",
+			"expected_head": "fc6d09ed101baae6e04333301fb0d6ca73478b39",
+			"initial_status": {
+				"status": "pass",
+				"exit_code": 0,
+				"stdout": "## HEAD (no branch)\n",
+				"stderr": ""
+			},
+			"baseline": {
+				"command": "git status --short --branch",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 0.0886,
+				"stdout": "## HEAD (no branch)\n",
+				"stderr": ""
+			},
+			"baseline_diff": {
+				"command": "git diff --stat -- .",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 0.0221,
+				"stdout": "",
+				"stderr": ""
+			},
+			"treatment": {
+				"command": "node dist/cli.js next --json",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 0.6437,
+				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"pass\",\n  \"summary\": \"No changed files detected.\",\n  \"nextAction\": \"Run harness check --json to confirm repo readiness.\",\n  \"nextCommand\": \"harness check --json\",\n  \"warnings\": [\n    \"Local next output does not prove PR, CI, review-thread, tracker, or merge-readiness truth.\",\n    \".harness/active-artifacts.md is missing the Current Active Route section.\",\n    \".harness/active-artifacts.md is missing the Artifact Index section.\",\n    \"Current Active Route does not contain repo-relative artifact refs.\",\n    \"No local runtime-card artifact was discovered.\",\n    \"No prompt-context-drift report was provided for agent-readable orientation.\",\n    \"No local PR, CI, Linear, or review-state snapshot was provided to agent-readiness.\"\n  ],\n  \"executionBoundary\": {\n    \"safeToRun\": true,\n    \"requiresHuman\": false,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
+				"stderr": ""
+			},
+			"source_diagnostic": {
+				"command": "node --import tsx src/cli.ts next --json (source diagnostic)",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 1.7395,
+				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"pass\",\n  \"summary\": \"No changed files detected.\",\n  \"nextAction\": \"Run harness check --json to confirm repo readiness.\",\n  \"nextCommand\": \"harness check --json\",\n  \"warnings\": [\n    \"Local next output does not prove PR, CI, review-thread, tracker, or merge-readiness truth.\",\n    \".harness/active-artifacts.md is missing the Current Active Route section.\",\n    \".harness/active-artifacts.md is missing the Artifact Index section.\",\n    \"Current Active Route does not contain repo-relative artifact refs.\",\n    \"No local runtime-card artifact was discovered.\",\n    \"No prompt-context-drift report was provided for agent-readable orientation.\",\n    \"No local PR, CI, Linear, or review-state snapshot was provided to agent-readiness.\"\n  ],\n  \"executionBoundary\": {\n    \"safeToRun\": true,\n    \"requiresHuman\": false,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
+				"stderr": ""
+			}
+		},
+		{
+			"id": "configs-brace-expansion-clean",
+			"repository": "configs",
+			"task_root_ref": "configs-brace-expansion-clean",
+			"observed_head": "f187bfd4c0801b249d304cc0baeaf88e7d8d0392",
+			"expected_head": "f187bfd4c0801b249d304cc0baeaf88e7d8d0392",
+			"initial_status": {
+				"status": "pass",
+				"exit_code": 0,
+				"stdout": "## codex/brace-expansion-509-clean-20260811...origin/codex/brace-expansion-509-clean-20260811\n",
+				"stderr": ""
+			},
+			"baseline": {
+				"command": "git status --short --branch",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 0.0152,
+				"stdout": "## codex/brace-expansion-509-clean-20260811...origin/codex/brace-expansion-509-clean-20260811\n",
+				"stderr": ""
+			},
+			"baseline_diff": {
+				"command": "git diff --stat -- .",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 0.0087,
+				"stdout": "",
+				"stderr": ""
+			},
+			"treatment": {
+				"command": "node dist/cli.js next --json",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 0.4588,
+				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"pass\",\n  \"summary\": \"No changed files detected.\",\n  \"nextAction\": \"Run harness check --json to confirm repo readiness.\",\n  \"nextCommand\": \"harness check --json\",\n  \"warnings\": [\n    \"Local next output does not prove PR, CI, review-thread, tracker, or merge-readiness truth.\",\n    \".harness/active-artifacts.md is missing.\",\n    \"Current Active Route does not contain repo-relative artifact refs.\",\n    \".harness/memory/LEARNINGS.md is missing.\",\n    \".harness/knowledge/INDEX.md is missing.\",\n    \"No local runtime-card artifact was discovered.\",\n    \"No prompt-context-drift report was provided for agent-readable orientation.\",\n    \"No local PR, CI, Linear, or review-state snapshot was provided to agent-readiness.\"\n  ],\n  \"executionBoundary\": {\n    \"safeToRun\": true,\n    \"requiresHuman\": false,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
+				"stderr": ""
+			},
+			"source_diagnostic": {
+				"command": "node --import tsx src/cli.ts next --json (source diagnostic)",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 1.5984,
+				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"pass\",\n  \"summary\": \"No changed files detected.\",\n  \"nextAction\": \"Run harness check --json to confirm repo readiness.\",\n  \"nextCommand\": \"harness check --json\",\n  \"warnings\": [\n    \"Local next output does not prove PR, CI, review-thread, tracker, or merge-readiness truth.\",\n    \".harness/active-artifacts.md is missing.\",\n    \"Current Active Route does not contain repo-relative artifact refs.\",\n    \".harness/memory/LEARNINGS.md is missing.\",\n    \".harness/knowledge/INDEX.md is missing.\",\n    \"No local runtime-card artifact was discovered.\",\n    \"No prompt-context-drift report was provided for agent-readable orientation.\",\n    \"No local PR, CI, Linear, or review-state snapshot was provided to agent-readiness.\"\n  ],\n  \"executionBoundary\": {\n    \"safeToRun\": true,\n    \"requiresHuman\": false,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
+				"stderr": ""
+			}
+		},
+		{
+			"id": "portfolio-route-rhythm",
+			"repository": "portfolio",
+			"task_root_ref": "portfolio-route-rhythm",
+			"observed_head": "3c735ee8928619b23af6b7ee54f3d509beb5a61f",
+			"expected_head": "3c735ee8928619b23af6b7ee54f3d509beb5a61f",
+			"initial_status": {
+				"status": "pass",
+				"exit_code": 0,
+				"stdout": "## HEAD (no branch)\n",
+				"stderr": ""
+			},
+			"baseline": {
+				"command": "git status --short --branch",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 0.0128,
+				"stdout": "## HEAD (no branch)\n",
+				"stderr": ""
+			},
+			"baseline_diff": {
+				"command": "git diff --stat -- .",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 0.01,
+				"stdout": "",
+				"stderr": ""
+			},
+			"treatment": {
+				"command": "node dist/cli.js next --json",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 0.4289,
+				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"pass\",\n  \"summary\": \"No changed files detected.\",\n  \"nextAction\": \"Run harness check --json to confirm repo readiness.\",\n  \"nextCommand\": \"harness check --json\",\n  \"warnings\": [\n    \"Local next output does not prove PR, CI, review-thread, tracker, or merge-readiness truth.\",\n    \".harness/active-artifacts.md is missing the Current Active Route section.\",\n    \".harness/active-artifacts.md is missing the Artifact Index section.\",\n    \"Current Active Route does not contain repo-relative artifact refs.\",\n    \"No local runtime-card artifact was discovered.\",\n    \"No prompt-context-drift report was provided for agent-readable orientation.\",\n    \"No local PR, CI, Linear, or review-state snapshot was provided to agent-readiness.\"\n  ],\n  \"executionBoundary\": {\n    \"safeToRun\": true,\n    \"requiresHuman\": false,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
+				"stderr": ""
+			},
+			"source_diagnostic": {
+				"command": "node --import tsx src/cli.ts next --json (source diagnostic)",
+				"status": "pass",
+				"exit_code": 0,
+				"wall_seconds": 1.4985,
+				"stdout": "{\n  \"schemaVersion\": \"harness-decision/v1\",\n  \"status\": \"pass\",\n  \"summary\": \"No changed files detected.\",\n  \"nextAction\": \"Run harness check --json to confirm repo readiness.\",\n  \"nextCommand\": \"harness check --json\",\n  \"warnings\": [\n    \"Local next output does not prove PR, CI, review-thread, tracker, or merge-readiness truth.\",\n    \".harness/active-artifacts.md is missing the Current Active Route section.\",\n    \".harness/active-artifacts.md is missing the Artifact Index section.\",\n    \"Current Active Route does not contain repo-relative artifact refs.\",\n    \"No local runtime-card artifact was discovered.\",\n    \"No prompt-context-drift report was provided for agent-readable orientation.\",\n    \"No local PR, CI, Linear, or review-state snapshot was provided to agent-readiness.\"\n  ],\n  \"executionBoundary\": {\n    \"safeToRun\": true,\n    \"requiresHuman\": false,\n    \"requiresNetwork\": false,\n    \"writesFiles\": false\n  },\n  \"claimsBoundary\": \"Local cockpit routing only; does not prove CI, review-thread, tracker, external readiness, merge readiness, deployment, or security closure.\"\n}\n",
+				"stderr": ""
+			}
+		}
+	]
+}
