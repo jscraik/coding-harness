@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file. See [standa
 
 ## Unreleased
 
+### Fixed
+
+- Allow the weekly agent-first status document and its exact review-date
+  registration to pass the docs gate without masking broader contract changes.
+
 ### Added
 
 - Added `issueTrackingPolicy.issueKeyPrefixes` so Linear gates can restrict

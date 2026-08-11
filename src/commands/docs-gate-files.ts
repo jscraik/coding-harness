@@ -5,6 +5,7 @@ import type { DocsGatePolicy, HarnessContract } from "../lib/contract/types.js";
 import { isCompactMinimalRawContract } from "../lib/contract/compact-minimal.js";
 import { validateContract } from "../lib/contract/validator.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import { resolveBaseRefCandidates } from "./docs-gate-cadence.js";
 import type {
 	ChangedFilesResolution,
 	DocsGateExecutionContext,
@@ -176,11 +177,12 @@ function gitOutput(repoRoot: string, args: readonly string[]): string {
 	});
 }
 
+/** Resolve the authoritative committed file delta against the first usable base. */
 function resolveTrackedDiff(
 	options: DocsGateOptions,
 	repoRoot: string,
 ): string {
-	for (const baseRef of baseRefCandidates(options)) {
+	for (const baseRef of resolveBaseRefCandidates(options)) {
 		try {
 			const mergeBase = gitOutput(repoRoot, [
 				"merge-base",
@@ -203,15 +205,7 @@ function resolveTrackedDiff(
 	);
 }
 
-function baseRefCandidates(options: DocsGateOptions): string[] {
-	return [
-		options.mergeQueueBaseSha,
-		options.trustedBaseRef,
-		"origin/main",
-		"origin/master",
-	].filter((value): value is string => Boolean(value?.trim()));
-}
-
+/** Read an optional git name-status stream without converting discovery gaps into failures. */
 function optionalGitNameStatus(repoRoot: string, args: readonly string[]) {
 	try {
 		return parseGitNameStatus(gitOutput(repoRoot, args));
@@ -246,6 +240,7 @@ export function resolveChangedFiles(
 	}
 }
 
+/** Combine committed, worktree, staged, and untracked paths for policy evaluation. */
 function collectGitChangedFiles(
 	options: DocsGateOptions,
 	repoRoot: string,

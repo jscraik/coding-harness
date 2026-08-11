@@ -9,7 +9,7 @@ audience: [codex-agent, coding-harness-maintainer]
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-08-10
+last_reviewed: 2026-08-03
 review_cadence: on-change
 maintenance_trigger: [agent-operating-policy-change, validation-contract-change]
 semver_impact: minor
@@ -57,9 +57,6 @@ default agent route without a named consumer.
   release, and cleanup as distinct evidence lanes.
 - Branch from `main` and use a PR for merges. Required hosted checks are
   `pr-pipeline`, `security-scan`, and `CodeRabbit`; CodeQL is separate.
-- Configure `issueTrackingPolicy.issueKeyPrefixes` when Linear issue discovery
-  must be restricted to known team prefixes; do not treat arbitrary
-  `<word>-<digits>` fragments in dependency or branch names as issue keys.
 - The tag-driven public npm release workflow (kept at the legacy
   `.github/workflows/release-private-npm.yml` path) bootstraps the
   repository-pinned `uv` runtime and required repository CLI tools before
@@ -74,10 +71,13 @@ default agent route without a named consumer.
 - Generated instruction packs must preserve outcome-first local correction and
   must not require systemic generalisation before routine closeout.
 - Refreshes to `docs/roadmap/agent-first-status.md` must update the matching
-  `harness.contract.json` review date in the same change; measurements without
-  retained raw output or an independent receipt remain unverified notes.
-  A cadence refresh is evidence maintenance only and does not establish
-  effectiveness, publication, or release readiness.
+  `lastReviewedAt` field in the `productSurface.surfaces` record whose
+  `surfaceId` is `agent-first-status-matrix` in `harness.contract.json`, in the
+  same two-file cadence registration. That exact pairing is documentation
+  cadence, not generic contract policy; any additional contract mutation remains
+  contract policy. A cadence refresh is evidence maintenance only and does not
+  establish effectiveness, publication, or release readiness. Measurements
+  without retained raw output or an independent receipt remain unverified notes.
 
 ## Validation and handoff
 

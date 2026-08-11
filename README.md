@@ -8,7 +8,7 @@ audience: [human-operator, coding-harness-maintainer, codex-agent]
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-08-10
+last_reviewed: 2026-08-11
 review_cadence: quarterly
 maintenance_trigger: [product-surface-change, install-workflow-change, release-contract-change]
 semver_impact: minor
@@ -73,12 +73,6 @@ memory system, docs site, hooks, tracker, or governance pack. Use
 `harness contract init --preset standard --force` only when a repository
 chooses that broader policy.
 
-Repositories using the Linear gate can set
-`issueTrackingPolicy.issueKeyPrefixes` to their uppercase team prefixes. When
-configured, branch names and PR text contribute issue keys only for those
-teams, so dependency names such as `brace-expansion-509` are not mistaken for
-tracker references.
-
 ## Verify and close out
 
 Use the repository's own focused checks first. `verify-work --fast` keeps
@@ -105,6 +99,8 @@ Keep the stable product surface small and move unselected expert capability out
 of the routine path. Keep the truth-bounded recovery status in
 [`docs/roadmap/agent-first-status.md`](./docs/roadmap/agent-first-status.md)
 and its weekly cadence entry in `harness.contract.json` current together.
+That exact status-document/date registration is documentation cadence; any
+additional contract mutation remains contract policy.
 Cadence refreshes are evidence maintenance; they do not imply product-
 effectiveness, publication, or release readiness.
 Measurements without retained raw output or an independent receipt are

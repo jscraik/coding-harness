@@ -1,5 +1,10 @@
 import type { DocsImpactCategory } from "../lib/contract/types.js";
-import { WORKFLOW_POLICY_SOURCE_PATHS } from "./docs-gate-types.js";
+import {
+	CONTRACT_PATH,
+	WORKFLOW_POLICY_SOURCE_PATHS,
+} from "./docs-gate-types.js";
+
+const AGENT_FIRST_STATUS_DOCUMENT = "docs/roadmap/agent-first-status.md";
 
 const GOVERNANCE_PREFIXES = [
 	".github/workflows/",
@@ -40,6 +45,7 @@ function isDocOnly(file: string): boolean {
 	);
 }
 
+/** Identify root, subtree, and governance documentation instruction files. */
 function isAgentGovernanceFile(file: string): boolean {
 	return (
 		file === "AGENTS.md" ||
@@ -49,9 +55,11 @@ function isAgentGovernanceFile(file: string): boolean {
 	);
 }
 
+/** Classify one changed path, preserving contract policy for every non-cadence edit. */
 function classifyFile(
 	file: string,
 	categories: Set<DocsImpactCategory>,
+	{ cadenceRegistration }: { cadenceRegistration: boolean },
 ): boolean {
 	let matched = addIf(
 		isAgentGovernanceFile(file),
@@ -66,7 +74,13 @@ function classifyFile(
 		categories,
 	);
 	matched ||= addIf(
-		file === "harness.contract.json" || file.includes("src/lib/contract/"),
+		file === "harness.contract.json" && cadenceRegistration,
+		"doc_only",
+		categories,
+	);
+	matched ||= addIf(
+		(file === "harness.contract.json" && !cadenceRegistration) ||
+			file.includes("src/lib/contract/"),
 		"contract_policy",
 		categories,
 	);
@@ -132,6 +146,7 @@ function addArchitectureCategory(
 	);
 }
 
+/** Add categories for workflow-adjacent artifact and policy paths. */
 function addWorkflowArtifactCategory(
 	file: string,
 	categories: Set<DocsImpactCategory>,
@@ -157,16 +172,29 @@ function addWorkflowArtifactCategory(
 }
 
 /** Classify changed files into docs-gate impact categories. */
-export function classifyChanges(changedFiles: readonly string[]): {
+export function classifyChanges(
+	changedFiles: readonly string[],
+	{ cadenceRegistration = false }: { cadenceRegistration?: boolean } = {},
+): {
 	categories: DocsImpactCategory[];
 	unknownFiles: string[];
 } {
 	const categories = new Set<DocsImpactCategory>();
 	const unknownFiles: string[] = [];
 	for (const file of changedFiles) {
-		if (!classifyFile(file, categories) && isPotentialGovernanceFile(file)) {
+		if (
+			!classifyFile(file, categories, { cadenceRegistration }) &&
+			isPotentialGovernanceFile(file)
+		) {
 			unknownFiles.push(file);
 		}
+	}
+	const hasContract = changedFiles.includes(CONTRACT_PATH);
+	const hasAgentFirstStatus = changedFiles.includes(
+		AGENT_FIRST_STATUS_DOCUMENT,
+	);
+	if (hasContract !== hasAgentFirstStatus) {
+		categories.add("contract_policy");
 	}
 	if (unknownFiles.length > 0 && categories.size === 0) {
 		categories.add("unknown_governance_change");
