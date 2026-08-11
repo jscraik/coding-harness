@@ -64,11 +64,11 @@ describe("check-steering-feedback-contract", () => {
 	it("accepts compact validation guidance at the retained boundaries", () => {
 		const content = [
 			"Use the smallest gate needed for risk and keep required gates fail-closed.",
-			"Keep local tests, hosted checks, review, merge, and release separate.",
+			"Keep local tests, runtime evidence, hosted checks, review threads, approval, merge, release, and cleanup separate.",
 			"Run python3 ~/.codex/scripts/pr-readiness.py --phase create --scope-file <scope-file> --write-receipt before hosted mutation.",
 			"Run python3 ~/.codex/scripts/pr-readiness.py --phase update --scope-file <scope-file> --write-receipt before hosted mutation.",
 			"Write the PR body through a non-interpreting body file and validate it with pr-template-gate --pr-body-file <path>.",
-			"Use GraphQL reviewThreads with isResolved and isOutdated.",
+			"Use GitHub GraphQL reviewThreads with isResolved and isOutdated.",
 			"Use run-auth-backed.sh --env-file ~/.codex/.env --canary TOKEN.",
 			"Use run-auth-backed.sh --env-file ~/.codex/.env --require-env TOKEN -- child.",
 			"Never read the FIFO and never source the FIFO.",
@@ -88,6 +88,11 @@ describe("check-steering-feedback-contract", () => {
 			"safe PR body file handoff",
 		],
 		["fail-closed", "fail-closed validation rule"],
+		["runtime evidence", "claims boundary"],
+		["review threads", "claims boundary"],
+		["approval", "claims boundary"],
+		["cleanup", "claims boundary"],
+		["GitHub GraphQL", "GraphQL review-thread truth"],
 		["isOutdated", "GraphQL review-thread truth"],
 		["Never read the FIFO and ", "FIFO read privacy boundary"],
 		["never source the FIFO", "FIFO source privacy boundary"],
@@ -95,11 +100,11 @@ describe("check-steering-feedback-contract", () => {
 	])("rejects compact guidance missing %s", (removed, expected) => {
 		const content = [
 			"Use the smallest gate needed for risk and keep required gates fail-closed.",
-			"Keep local tests, hosted checks, review, merge, and release separate.",
+			"Keep local tests, runtime evidence, hosted checks, review threads, approval, merge, release, and cleanup separate.",
 			"Run python3 ~/.codex/scripts/pr-readiness.py --phase create --scope-file <scope-file> --write-receipt before hosted mutation.",
 			"Run python3 ~/.codex/scripts/pr-readiness.py --phase update --scope-file <scope-file> --write-receipt before hosted mutation.",
 			"Write the PR body through a non-interpreting body file and validate it with pr-template-gate --pr-body-file <path>.",
-			"Use GraphQL reviewThreads with isResolved and isOutdated.",
+			"Use GitHub GraphQL reviewThreads with isResolved and isOutdated.",
 			"Use run-auth-backed.sh --env-file ~/.codex/.env --canary TOKEN.",
 			"Use run-auth-backed.sh --env-file ~/.codex/.env --require-env TOKEN -- child.",
 			"Never read the FIFO and never source the FIFO.",
@@ -126,6 +131,18 @@ describe("check-steering-feedback-contract", () => {
 		);
 	});
 
+	it("rejects readiness flags assembled from separate commands", () => {
+		const content = [
+			"Run pr-readiness.py --phase create.",
+			"Run pr-readiness.py --scope-file <scope-file> --write-receipt.",
+			"Never read the FIFO and never source the FIFO.",
+		].join("\n");
+
+		expect(validateValidationDoc(content)).toContain(
+			"docs/agents/04-validation.md: missing PR readiness create phase",
+		);
+	});
+
 	it("rejects validation guidance that omits the body-file handoff", () => {
 		const content = [
 			"Run pr-readiness.py --phase create --scope-file <scope-file>.",
@@ -135,6 +152,28 @@ describe("check-steering-feedback-contract", () => {
 
 		expect(validateValidationDoc(content)).toContain(
 			"docs/agents/04-validation.md: missing safe PR body file handoff",
+		);
+	});
+
+	it("rejects unsafe PR body transfer terms", () => {
+		const content = [
+			"The PR body may use shell interpolation, command substitution, or backticks.",
+			"Never read the FIFO and never source the FIFO.",
+		].join("\n");
+
+		expect(validateValidationDoc(content)).toContain(
+			"docs/agents/04-validation.md: missing safe PR body file handoff",
+		);
+	});
+
+	it("requires authoritative GraphQL review-thread sourcing", () => {
+		const content = [
+			"Use reviewThreads with isResolved and isOutdated from a flat review summary.",
+			"Never read the FIFO and never source the FIFO.",
+		].join("\n");
+
+		expect(validateValidationDoc(content)).toContain(
+			"docs/agents/04-validation.md: missing GraphQL review-thread truth",
 		);
 	});
 });

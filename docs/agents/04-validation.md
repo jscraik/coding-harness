@@ -28,8 +28,8 @@ harness pr-closeout --pr <number> --json
 ```
 
 `harness verify-work --fast` is the integrated local route. Keep local tests,
-runtime evidence, hosted checks, review, merge, release, and cleanup as separate
-claims. Green checks do not prove complete closeout.
+runtime evidence, hosted checks, review threads, approval, merge, release, and
+cleanup as separate claims. Green checks do not prove complete closeout.
 
 ## Validation by change
 

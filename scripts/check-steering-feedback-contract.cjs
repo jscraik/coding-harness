@@ -82,11 +82,15 @@ const ENV_FIFO_TIMEOUT_PATTERN =
 const CIRCLECI_ENV_API_TRIAGE_PATTERN =
 	/(CircleCI API|CircleCI log|CircleCI job)[\s\S]{0,260}(~\/\.codex\/\.env|op run --env-file ~\/\.codex\/\.env|set -a; source ~\/\.codex\/\.env; set \+a|FIFO|regular readable file|CIRCLECI_TOKEN|CIRCLE_TOKEN|CIRCLE_API_TOKEN|Circle-Token|bounded network call|--max-time)/i;
 const SAFE_PR_BODY_FILE_HANDOFF_PATTERN =
-	/(PR body|pull request body)[\s\S]{0,260}(--body-file|body file|non-interpreting file|shell interpolation|command substitution|backticks|pr-template-gate --pr-body-file)/i;
+	/(PR body|pull request body)[\s\S]{0,260}(--body-file|non-interpreting (?:body )?file|pr-template-gate --pr-body-file)/i;
 const PR_READINESS_CREATE_PATTERN =
-	/pr-readiness\.py[\s\S]*--phase\s+create(?=\s|$)/is;
+	/pr-readiness\.py(?:\\\r?\n|[^\r\n])*?--phase[ \t]+create(?=[ \t\r\n]|$)(?:\\\r?\n|[^\r\n])*?--scope-file(?=[ \t\r\n]|$)(?:\\\r?\n|[^\r\n])*?--write-receipt(?=[ \t\r\n]|$)/i;
 const PR_READINESS_UPDATE_PATTERN =
-	/pr-readiness\.py[\s\S]*--phase\s+update(?=\s|$)/is;
+	/pr-readiness\.py(?:\\\r?\n|[^\r\n])*?--phase[ \t]+update(?=[ \t\r\n]|$)(?:\\\r?\n|[^\r\n])*?--scope-file(?=[ \t\r\n]|$)(?:\\\r?\n|[^\r\n])*?--write-receipt(?=[ \t\r\n]|$)/i;
+const CLAIMS_BOUNDARY_PATTERN =
+	/(?=[\s\S]*local tests)(?=[\s\S]*runtime evidence)(?=[\s\S]*hosted checks)(?=[\s\S]*review threads)(?=[\s\S]*approval)(?=[\s\S]*merge)(?=[\s\S]*release)(?=[\s\S]*cleanup)/i;
+const GRAPHQL_REVIEW_THREAD_PATTERN =
+	/GitHub GraphQL[\s\S]{0,260}reviewThreads[\s\S]{0,120}isResolved[\s\S]{0,120}isOutdated/i;
 const STALE_ENV_BACKED_BLOCKER_PATTERN =
 	/(current process lacks GitHub and Linear credentials|GitHub and Linear credentials are unavailable|credentials are unavailable|missing_credentials|(?:~\/?\.?codex\/\.env|\.codex\/\.env)[\s\S]{0,220}\bFIFO\b[\s\S]{0,220}(?:block|blocked|hang|hung|cannot|unavailable|unsafe|not safely|cannot be safely)|\bFIFO\b[\s\S]{0,220}(?:~\/?\.?codex\/\.env|\.codex\/\.env)[\s\S]{0,220}(?:block|blocked|hang|hung|cannot|unavailable|unsafe|not safely|cannot be safely))/i;
 const CLOSEOUT_STATE_FIELD_PATTERNS = [
@@ -334,11 +338,11 @@ function validateValidationDoc(content) {
 	for (const [pattern, description] of [
 		[/smallest gate needed for risk/i, "risk-selected validation rule"],
 		[/fail-closed/i, "fail-closed validation rule"],
-		[/local tests.*hosted checks.*review.*merge.*release/is, "claims boundary"],
+		[CLAIMS_BOUNDARY_PATTERN, "claims boundary"],
 		[PR_READINESS_CREATE_PATTERN, "PR readiness create phase"],
 		[PR_READINESS_UPDATE_PATTERN, "PR readiness update phase"],
 		[SAFE_PR_BODY_FILE_HANDOFF_PATTERN, "safe PR body file handoff"],
-		[/reviewThreads.*isResolved.*isOutdated/is, "GraphQL review-thread truth"],
+		[GRAPHQL_REVIEW_THREAD_PATTERN, "GraphQL review-thread truth"],
 		[
 			/run-auth-backed\.sh.*--env-file.*--canary/is,
 			"value-blind credential canary",
