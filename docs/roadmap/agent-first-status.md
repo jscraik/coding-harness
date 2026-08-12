@@ -166,7 +166,7 @@ using the entrypoint. These templates run from the declared directories while
 loading the pinned source checkout.
 Treatment and source `pass` or `action_required` decisions
 are successful when the command exits 0;
-`blocked` and `fail` remain non-zero outcomes. The existing repository
+`blocked` and `fail` require exit code 1. The existing repository
 artifact-types validator validates this retained observation as
 `coding-harness-controlled-effectiveness-observation/v1`.
 
@@ -223,6 +223,7 @@ SOURCE_LOADER=/path/to/coding-harness/node_modules/tsx/dist/loader.mjs
 HARNESS_SOURCE=/path/to/coding-harness
 TASK_ROOT=/path/to/task-worktree
 EXPECTED_SOURCE_SHA=f0f405adf0b405ec821f58e564d3d3f5927cfffc
+EXPECTED_SOURCE_LOADER_SHA=150d1ff8a7770665997a940d4c686f1a3a5660349a5c7c3523b39eb43016ca74
 # Select the matching task HEAD from the table above.
 EXPECTED_TASK_SHA=<observed HEAD from the selected table row>
 
@@ -240,7 +241,11 @@ assert_recorded_tree "$TASK_ROOT" "$EXPECTED_TASK_SHA"
 
 # cwd: HARNESS_SOURCE (once per source head)
 (cd "$HARNESS_SOURCE" && pnpm install --frozen-lockfile)
-shasum -a 256 "$HARNESS_SOURCE/node_modules/tsx/dist/loader.mjs"
+ACTUAL_SOURCE_LOADER_SHA="$(
+  (cd "$HARNESS_SOURCE" && shasum -a 256 node_modules/tsx/dist/loader.mjs) |
+    awk '{print $1}'
+)"
+test "$ACTUAL_SOURCE_LOADER_SHA" = "$EXPECTED_SOURCE_LOADER_SHA"
 
 # cwd: TASK_ROOT
 (cd "$TASK_ROOT" && "$NODE_BIN" --import "$SOURCE_LOADER" \

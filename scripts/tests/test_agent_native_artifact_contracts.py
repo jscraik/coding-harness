@@ -278,10 +278,14 @@ class TestControlledEffectivenessObservation:
 
     def test_requires_matching_statuses_for_comparable_pairing(self) -> None:
         payload = _load_effectiveness_observation()
-        payload["tasks"][0]["source_diagnostic"]["status"] = "blocked"
-        payload["tasks"][0]["source_diagnostic"]["exit_code"] = 1
+        source_diagnostic = payload["tasks"][0]["source_diagnostic"]
+        source_diagnostic["status"] = "blocked"
+        source_diagnostic["exit_code"] = 1
+        decision = json.loads(source_diagnostic["stdout"])
+        decision["status"] = "blocked"
+        source_diagnostic["stdout"] = json.dumps(decision)
 
-        with pytest.raises(ValidationError, match="status must match"):
+        with pytest.raises(ValidationError, match="comparable task status"):
             ControlledEffectivenessObservation.model_validate(payload)
 
     def test_rejects_insufficient_repository_diversity(self) -> None:
