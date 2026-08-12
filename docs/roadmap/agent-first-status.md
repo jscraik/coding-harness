@@ -143,14 +143,18 @@ The treatment was the current built Coding Harness `0.15.3` entrypoint,
 `node dist/cli.js next --json`, built from source head
 `344774d0760fc56b0cd8d336d80d483afb798507`. The exact raw source is retained
 at [agent-first-effectiveness-observation-2026-08-11.json](./agent-first-effectiveness-observation-2026-08-11.json),
-SHA-256 `2211573353729622489f9de5b894435c620009aae7ea8aced30852b0c639fdfa`,
-24,138 bytes. Each row now binds an authoritative remote URL and full source
+SHA-256 `68cc3718c5944b545a8b49a9bece3dfa54d6c7a53519c1baa7fc2de38ef9353c`,
+24,174 bytes. Each row now binds an authoritative remote URL and full source
 ref, a replay status, the task-root-relative working directory and `dist/cli.js`
 entrypoint used by the treatment, and the source-checkout-at-`source_head`
 repository, full ref, relative working directory, task-root binding, and
 `src/cli.ts` entrypoint used by each source diagnostic. Comparable branch rows
 also bind the observed upstream commit; rows without a retained upstream
-snapshot are explicitly non-comparable. Treatment rows also bind the source
+snapshot are explicitly non-comparable. Comparable rows must retain replay
+support and
+the sample's three-repository floor is counted from distinct authoritative
+remote URLs; detached rows bind their ref directly to the recorded expected
+head. Treatment rows also bind the source
 head, the `$TASK_ROOT` replay directory, and the
 `$HARNESS_SOURCE/dist/cli.js` entrypoint; their replay template changes to the
 task root before loading that pinned source checkout. The recorded relative

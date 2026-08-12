@@ -318,9 +318,23 @@ class TestControlledEffectivenessObservation:
     def test_rejects_insufficient_repository_diversity(self) -> None:
         payload = _load_effectiveness_observation()
         for task in payload["tasks"]:
-            task["repository"] = "coding-harness"
+            task["remote_url"] = "https://github.com/jscraik/coding-harness"
 
         with pytest.raises(ValidationError, match="three repositories"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_comparable_non_replayable_task(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["replayability"] = "non_replayable"
+
+        with pytest.raises(ValidationError, match="comparable tasks must be replayable"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_detached_ref_that_is_not_expected_head(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["ref"] = "main"
+
+        with pytest.raises(ValidationError, match="detached tasks must bind ref"):
             ControlledEffectivenessObservation.model_validate(payload)
 
     def test_rejects_non_replayable_source_diagnostic_label(self) -> None:

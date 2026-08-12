@@ -707,6 +707,10 @@ class EffectivenessTask(BaseModel):
             )
         if self.ref_kind == "detached" and self.upstream_head is not None:
             raise ValueError("detached tasks must not claim an upstream_head")
+        if self.ref_kind == "detached" and self.ref != self.expected_head:
+            raise ValueError("detached tasks must bind ref to expected_head")
+        if self.pairing == "comparable" and self.replayability != "replayable":
+            raise ValueError("comparable tasks must be replayable")
         return self
 
     @model_validator(mode="after")
@@ -796,7 +800,8 @@ class ControlledEffectivenessObservation(BaseModel):
             raise ValueError(
                 "effectiveness sample must retain at least three comparable task observations"
             )
-        if len({task.repository for task in comparable_tasks}) < 3:
+        comparable_remotes = {task.remote_url for task in comparable_tasks}
+        if len(comparable_remotes) < 3:
             raise ValueError("effectiveness sample must cover at least three repositories")
         return value
 

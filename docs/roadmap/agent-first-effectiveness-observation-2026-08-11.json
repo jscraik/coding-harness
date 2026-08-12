@@ -31,7 +31,7 @@
 			"repository": "coding-harness",
 			"task_root_ref": "coding-harness-current-main",
 			"remote_url": "https://github.com/jscraik/coding-harness",
-			"ref": "main",
+			"ref": "344774d0760fc56b0cd8d336d80d483afb798507",
 			"ref_kind": "detached",
 			"replayability": "replayable",
 			"pairing": "comparable",
