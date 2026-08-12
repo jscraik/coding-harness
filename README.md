@@ -102,6 +102,9 @@ and its weekly cadence entry in `harness.contract.json` current together.
 The current controlled local observation is retained at
 [`docs/roadmap/agent-first-effectiveness-observation-2026-08-11.json`](./docs/roadmap/agent-first-effectiveness-observation-2026-08-11.json);
 it records proof clarity only, not causal productivity or release readiness.
+Source diagnostics in that observation can be replayed only from the declared
+source checkout at each bound source head; the artifact validator enforces that
+binding before the observation is treated as evidence.
 That exact status-document/date registration is documentation cadence; any
 additional contract mutation remains contract policy.
 Cadence refreshes are evidence maintenance; they do not imply product-

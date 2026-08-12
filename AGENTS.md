@@ -9,7 +9,7 @@ audience: [codex-agent, coding-harness-maintainer]
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-08-03
+last_reviewed: 2026-08-11
 review_cadence: on-change
 maintenance_trigger: [agent-operating-policy-change, validation-contract-change]
 semver_impact: minor
@@ -81,7 +81,8 @@ default agent route without a named consumer.
   The current controlled local observation is retained at
   `docs/roadmap/agent-first-effectiveness-observation-2026-08-11.json` and
   reports proof clarity only; it does not establish causal productivity,
-  publication, or release readiness.
+  publication, or release readiness. Its source diagnostics can be replayed
+  only from the declared source checkout at the bound source head.
 
 ## Validation and handoff
 

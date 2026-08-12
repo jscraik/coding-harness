@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import subprocess
 import sys
@@ -428,13 +429,12 @@ class HarnessDecision(BaseModel):
         return cast(object, value)
 
 
-class EffectivenessCommandObservation(BaseModel):
-    """One bounded command observation retained by the effectiveness sample."""
+class EffectivenessObservationBase(BaseModel):
+    """Shared fields for one bounded command observation."""
 
     model_config = ConfigDict(extra="forbid")
 
     command: str
-    status: Literal["pass", "fail", "blocked"]
     exit_code: int
     wall_seconds: float
     stdout: str
@@ -445,17 +445,68 @@ class EffectivenessCommandObservation(BaseModel):
     @field_validator("wall_seconds")
     @classmethod
     def require_non_negative_duration(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("must be finite")
         if value < 0:
             raise ValueError("must be non-negative")
         return value
 
+
+class EffectivenessCommandObservation(EffectivenessObservationBase):
+    """An ordinary command observation with no decision-only status."""
+
+    status: Literal["pass", "fail", "blocked"]
+
     @model_validator(mode="after")
     def require_status_exit_consistency(self) -> EffectivenessCommandObservation:
         if self.status == "pass" and self.exit_code != 0:
-            raise ValueError("pass observations must have exit_code 0")
+            raise ValueError("successful observations must have exit_code 0")
         if self.status != "pass" and self.exit_code == 0:
-            raise ValueError("non-pass observations must have a non-zero exit_code")
+            raise ValueError("blocked or failed observations must have a non-zero exit_code")
         return self
+
+
+CONTROLLED_BASELINE_CONTRACT = (
+    "git status --short --branch followed by git diff --stat -- ."
+)
+CONTROLLED_BASELINE_COMMAND = "git status --short --branch"
+CONTROLLED_BASELINE_DIFF_COMMAND = "git diff --stat -- ."
+CONTROLLED_TREATMENT_CONTRACT = "node dist/cli.js next --json (built from source_head)"
+CONTROLLED_TREATMENT_COMMAND = "node dist/cli.js next --json"
+CONTROLLED_TREATMENT_REPLAY_COMMAND = (
+    'cd "$TASK_ROOT" && "$NODE_BIN" "$HARNESS_SOURCE/dist/cli.js" next --json'
+)
+CONTROLLED_SOURCE_DIAGNOSTIC_COMMAND = (
+    'cd "$TASK_ROOT" && "$NODE_BIN" --import "$SOURCE_LOADER" '
+    '"$HARNESS_SOURCE/src/cli.ts" next --json'
+)
+CONTROLLED_SOURCE_DIAGNOSTIC_WORKING_DIRECTORY = "$TASK_ROOT"
+CONTROLLED_SOURCE_DIAGNOSTIC_REPOSITORY_URL = "https://github.com/jscraik/coding-harness"
+CONTROLLED_SOURCE_DIAGNOSTIC_RELATIVE_WORKING_DIRECTORY = "."
+CONTROLLED_SOURCE_DIAGNOSTIC_ENTRYPOINT = "src/cli.ts"
+CONTROLLED_SOURCE_DIAGNOSTIC_REPLAY_COMMAND = (
+    'cd "$TASK_ROOT" && "$NODE_BIN" --import "$SOURCE_LOADER" '
+    '"$HARNESS_SOURCE/src/cli.ts" next --json'
+)
+CONTROLLED_SOURCE_CHECKOUT_ROOT = "$HARNESS_SOURCE"
+CONTROLLED_SOURCE_REPLAY_WORKING_DIRECTORY = "$TASK_ROOT"
+CONTROLLED_TREATMENT_REPLAY_WORKING_DIRECTORY = "$TASK_ROOT"
+CONTROLLED_TREATMENT_REPLAY_ENTRYPOINT = "$HARNESS_SOURCE/dist/cli.js"
+CONTROLLED_BUILD_WORKING_DIRECTORY = "$HARNESS_SOURCE"
+CONTROLLED_BUILD_COMMAND = "pnpm install --frozen-lockfile && pnpm build"
+CONTROLLED_BUILD_VERIFICATION_COMMAND = "shasum -a 256 dist/cli.js"
+CONTROLLED_BUILT_CLI_SHA256 = "1ba827455c870357b9e25eddee1ddaa92704de6d870199978772b37a31d16cdf"
+CONTROLLED_RUNTIME_SETUP_COMMAND = (
+    'cd "$HARNESS_SOURCE" && pnpm install --frozen-lockfile'
+)
+CONTROLLED_SOURCE_LOADER_PATH = "$HARNESS_SOURCE/node_modules/tsx/dist/loader.mjs"
+CONTROLLED_SOURCE_LOADER_VERSION = "tsx v4.23.0"
+CONTROLLED_SOURCE_LOADER_SHA256 = (
+    "150d1ff8a7770665997a940d4c686f1a3a5660349a5c7c3523b39eb43016ca74"
+)
+CONTROLLED_SOURCE_LOADER_VERIFICATION_COMMAND = (
+    'cd "$HARNESS_SOURCE" && shasum -a 256 node_modules/tsx/dist/loader.mjs'
+)
 
 
 class EffectivenessInitialStatus(BaseModel):
@@ -469,16 +520,89 @@ class EffectivenessInitialStatus(BaseModel):
     stderr: str
 
 
-class EffectivenessTreatmentObservation(EffectivenessCommandObservation):
-    """Treatment observation with the exact replay working directory and CLI path."""
+class EffectivenessDecisionObservation(EffectivenessObservationBase):
+    """A decision-bearing observation that may report action_required."""
+
+    status: Literal["pass", "fail", "blocked", "action_required"]
+
+    @model_validator(mode="after")
+    def require_decision_exit_consistency(self) -> EffectivenessDecisionObservation:
+        if self.status in {"pass", "action_required"} and self.exit_code != 0:
+            raise ValueError("successful observations must have exit_code 0")
+        if self.status in {"fail", "blocked"} and self.exit_code != 1:
+            raise ValueError(
+                "failed or blocked observations must have exit_code 1 (non-zero)"
+            )
+        return self
+
+
+class EffectivenessTreatmentObservation(EffectivenessDecisionObservation):
+    """Treatment observation with task and source-checkout replay bindings."""
 
     working_directory: str
     cli_path: str
+    source_checkout_ref: str
+    replay_command: str
+    replay_working_directory: str
+    replay_entrypoint: str
 
-    _reject_blank_replay_fields = field_validator("working_directory", "cli_path")(
-        reject_blank_string
-    )
+    _reject_blank_replay_fields = field_validator(
+        "working_directory",
+        "cli_path",
+        "source_checkout_ref",
+        "replay_command",
+        "replay_working_directory",
+        "replay_entrypoint",
+    )(reject_blank_string)
 
+    @field_validator("source_checkout_ref")
+    @classmethod
+    def require_source_checkout_sha(cls, value: str) -> str:
+        if re.fullmatch(r"[0-9a-f]{40}", value) is None:
+            raise ValueError("must be a full lowercase Git SHA")
+        return value
+
+class EffectivenessSourceDiagnosticObservation(EffectivenessDecisionObservation):
+    """Source diagnostic with explicit task-root and source-entrypoint replay binding."""
+
+    working_directory: str
+    repository_url: str
+    ref: str
+    relative_working_directory: str
+    source_head: str
+    task_root_ref: str
+    entrypoint: str
+    replay_command: str
+    source_checkout_root: str
+    replay_working_directory: str
+
+    _reject_blank_replay_fields = field_validator(
+        "working_directory",
+        "repository_url",
+        "ref",
+        "relative_working_directory",
+        "task_root_ref",
+        "entrypoint",
+        "replay_command",
+        "source_checkout_root",
+        "replay_working_directory",
+    )(reject_blank_string)
+
+    @field_validator("repository_url")
+    @classmethod
+    def require_github_source_repository(cls, value: str) -> str:
+        if not re.fullmatch(
+            r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", value
+        ):
+            raise ValueError("must be an authoritative GitHub repository URL")
+        return value
+
+    @field_validator("source_head")
+    @classmethod
+    def require_source_head_sha(cls, value: str) -> str:
+        if re.fullmatch(r"[0-9a-f]{40}", value) is None:
+            raise ValueError("must be a full lowercase Git SHA")
+        return value
 
 class EffectivenessBuiltCli(BaseModel):
     """Built CLI identity used by every treatment observation."""
@@ -489,9 +613,20 @@ class EffectivenessBuiltCli(BaseModel):
     node_version: str
     entrypoint: str
     binary_sha256: str
+    source_head: str
+    build_working_directory: str
+    build_command: str
+    verification_command: str
 
     _reject_blank_identity = field_validator(
-        "package_version", "node_version", "entrypoint", "binary_sha256"
+        "package_version",
+        "node_version",
+        "entrypoint",
+        "binary_sha256",
+        "source_head",
+        "build_working_directory",
+        "build_command",
+        "verification_command",
     )(reject_blank_string)
 
     @field_validator("binary_sha256")
@@ -499,6 +634,15 @@ class EffectivenessBuiltCli(BaseModel):
     def require_sha256(cls, value: str) -> str:
         if re.fullmatch(r"[0-9a-f]{64}", value) is None:
             raise ValueError("must be a lowercase SHA-256 digest")
+        if value != CONTROLLED_BUILT_CLI_SHA256:
+            raise ValueError("binary_sha256 does not match the retained built CLI")
+        return value
+
+    @field_validator("source_head")
+    @classmethod
+    def require_source_head_sha(cls, value: str) -> str:
+        if re.fullmatch(r"[0-9a-f]{40}", value) is None:
+            raise ValueError("must be a full lowercase Git SHA")
         return value
 
 
@@ -514,17 +658,20 @@ class EffectivenessTask(BaseModel):
     ref: str
     ref_kind: Literal["branch", "detached"]
     replayability: Literal["replayable", "non_replayable"]
+    pairing: Literal["comparable", "non_comparable"]
+    pairing_reason: str
     observed_head: str
     expected_head: str
+    upstream_head: str | None = None
     initial_status: EffectivenessInitialStatus
     baseline: EffectivenessCommandObservation
     baseline_diff: EffectivenessCommandObservation
     treatment: EffectivenessTreatmentObservation
-    source_diagnostic: EffectivenessCommandObservation
+    source_diagnostic: EffectivenessSourceDiagnosticObservation
 
     _reject_identity_strings = field_validator(
         "id", "repository", "task_root_ref", "remote_url", "ref", "ref_kind",
-        "replayability"
+        "replayability", "pairing", "pairing_reason"
     )(reject_blank_string)
 
     @field_validator("remote_url")
@@ -534,9 +681,11 @@ class EffectivenessTask(BaseModel):
             raise ValueError("must be an authoritative GitHub repository URL")
         return value
 
-    @field_validator("observed_head", "expected_head")
+    @field_validator("observed_head", "expected_head", "upstream_head")
     @classmethod
-    def require_full_head_sha(cls, value: str) -> str:
+    def require_full_head_sha(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
         if re.fullmatch(r"[0-9a-f]{40}", value) is None:
             raise ValueError("must be a full lowercase Git SHA")
         return value
@@ -548,6 +697,79 @@ class EffectivenessTask(BaseModel):
                 "replayable tasks must bind observed_head to expected_head"
             )
         return self
+
+    @model_validator(mode="after")
+    def require_upstream_snapshot_for_comparison(self) -> EffectivenessTask:
+        if (
+            self.ref_kind == "branch"
+            and self.pairing == "comparable"
+            and self.upstream_head is None
+        ):
+            raise ValueError(
+                "comparable branch tasks must bind an observed upstream_head"
+            )
+        if self.ref_kind == "detached" and self.upstream_head is not None:
+            raise ValueError("detached tasks must not claim an upstream_head")
+        if self.ref_kind == "detached" and self.ref != self.expected_head:
+            raise ValueError("detached tasks must bind ref to expected_head")
+        if self.pairing == "comparable" and self.replayability != "replayable":
+            raise ValueError("comparable tasks must be replayable")
+        return self
+
+    @model_validator(mode="after")
+    def require_non_comparable_reason(self) -> EffectivenessTask:
+        if self.pairing == "non_comparable" and "non-compar" not in self.pairing_reason.lower():
+            raise ValueError("non-comparable tasks must explain their exclusion")
+        if (
+            self.pairing == "comparable"
+            and self.treatment.status != self.source_diagnostic.status
+        ):
+            raise ValueError(
+                "comparable task status must match treatment and source statuses"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def require_successful_comparison_baseline(self) -> EffectivenessTask:
+        if self.pairing == "comparable":
+            observations = (
+                ("initial_status", self.initial_status),
+                ("baseline", self.baseline),
+                ("baseline_diff", self.baseline_diff),
+            )
+            for label, observation in observations:
+                if observation.status != "pass" or observation.exit_code != 0:
+                    raise ValueError(
+                        f"comparable tasks require a successful {label} observation"
+                    )
+        return self
+
+
+class EffectivenessRuntimeSetup(BaseModel):
+    """Pinned dependency and loader setup required for replay."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    dependency_setup_command: str
+    source_loader_path: str
+    source_loader_version: str
+    source_loader_sha256: str
+    source_loader_verification_command: str
+
+    _reject_blank_setup = field_validator(
+        "dependency_setup_command",
+        "source_loader_path",
+        "source_loader_version",
+        "source_loader_sha256",
+        "source_loader_verification_command",
+    )(reject_blank_string)
+
+    @field_validator("source_loader_sha256")
+    @classmethod
+    def require_loader_sha256(cls, value: str) -> str:
+        if re.fullmatch(r"[0-9a-f]{64}", value) is None:
+            raise ValueError("must be a lowercase SHA-256 digest")
+        return value
 
 
 class ControlledEffectivenessObservation(BaseModel):
@@ -564,6 +786,7 @@ class ControlledEffectivenessObservation(BaseModel):
     baseline_contract: str
     treatment_contract: str
     claims_boundary: str
+    runtime_setup: EffectivenessRuntimeSetup
     built_cli: EffectivenessBuiltCli
     tasks: list[EffectivenessTask]
 
@@ -590,7 +813,13 @@ class ControlledEffectivenessObservation(BaseModel):
         ids = [task.id for task in value]
         if len(ids) != len(set(ids)):
             raise ValueError("task observation ids must be unique")
-        if len({task.repository for task in value}) < 3:
+        comparable_tasks = [task for task in value if task.pairing == "comparable"]
+        if len(comparable_tasks) < 3:
+            raise ValueError(
+                "effectiveness sample must retain at least three comparable task observations"
+            )
+        comparable_remotes = {task.remote_url for task in comparable_tasks}
+        if len(comparable_remotes) < 3:
             raise ValueError("effectiveness sample must cover at least three repositories")
         return value
 
@@ -604,11 +833,152 @@ class ControlledEffectivenessObservation(BaseModel):
                 ("source_diagnostic", task.source_diagnostic),
             ):
                 try:
-                    CompactHarnessDecision.model_validate_json(observation.stdout)
+                    decision = CompactHarnessDecision.model_validate_json(observation.stdout)
                 except ValidationError as exc:
                     raise ValueError(
                         f"{task.id} {label} stdout must be valid harness-decision/v1 JSON"
                     ) from exc
+                expected_status = decision.status
+                if observation.status != expected_status:
+                    raise ValueError(
+                        f"{task.id} {label} status must match its harness decision"
+                    )
+            if task.pairing == "comparable":
+                treatment_decision = CompactHarnessDecision.model_validate_json(
+                    task.treatment.stdout
+                )
+                source_decision = CompactHarnessDecision.model_validate_json(
+                    task.source_diagnostic.stdout
+                )
+                if treatment_decision != source_decision:
+                    raise ValueError(
+                        f"{task.id} comparable treatment and source decisions must match"
+                    )
+        return self
+
+    @model_validator(mode="after")
+    def require_declared_command_contract(
+        self,
+    ) -> ControlledEffectivenessObservation:
+        if self.baseline_contract != CONTROLLED_BASELINE_CONTRACT:
+            raise ValueError("baseline_contract does not match the controlled commands")
+        if self.treatment_contract != CONTROLLED_TREATMENT_CONTRACT:
+            raise ValueError("treatment_contract does not match the controlled command")
+        if self.runtime_setup.dependency_setup_command != CONTROLLED_RUNTIME_SETUP_COMMAND:
+            raise ValueError("runtime setup must bind the frozen dependency install")
+        if self.runtime_setup.source_loader_path != CONTROLLED_SOURCE_LOADER_PATH:
+            raise ValueError("runtime setup must bind the source loader path")
+        if self.runtime_setup.source_loader_version != CONTROLLED_SOURCE_LOADER_VERSION:
+            raise ValueError("runtime setup must bind the source loader version")
+        if self.runtime_setup.source_loader_sha256 != CONTROLLED_SOURCE_LOADER_SHA256:
+            raise ValueError("runtime setup must bind the source loader digest")
+        if (
+            self.runtime_setup.source_loader_verification_command
+            != CONTROLLED_SOURCE_LOADER_VERIFICATION_COMMAND
+        ):
+            raise ValueError("runtime setup must verify the source loader digest")
+        if self.built_cli.source_head != self.source_head:
+            raise ValueError("built_cli source_head must match artifact source_head")
+        if self.built_cli.build_working_directory != CONTROLLED_BUILD_WORKING_DIRECTORY:
+            raise ValueError("built_cli build_working_directory must bind source checkout")
+        if self.built_cli.build_command != CONTROLLED_BUILD_COMMAND:
+            raise ValueError("built_cli build_command must include frozen install and build")
+        if self.built_cli.verification_command != CONTROLLED_BUILD_VERIFICATION_COMMAND:
+            raise ValueError(
+                "built_cli verification_command must verify the built entrypoint digest"
+            )
+        for task in self.tasks:
+            if task.baseline.command != CONTROLLED_BASELINE_COMMAND:
+                raise ValueError(f"{task.id} baseline command is outside the controlled contract")
+            if task.baseline_diff.command != CONTROLLED_BASELINE_DIFF_COMMAND:
+                raise ValueError(
+                    f"{task.id} baseline_diff command is outside the controlled contract"
+                )
+            if task.treatment.command != CONTROLLED_TREATMENT_COMMAND:
+                raise ValueError(f"{task.id} treatment command is outside the controlled contract")
+            if task.source_diagnostic.command != CONTROLLED_SOURCE_DIAGNOSTIC_COMMAND:
+                raise ValueError(
+                    f"{task.id} source_diagnostic command must bind task root and source checkout"
+                )
+            if (
+                task.source_diagnostic.working_directory
+                != CONTROLLED_SOURCE_DIAGNOSTIC_WORKING_DIRECTORY
+            ):
+                raise ValueError(
+                    f"{task.id} source_diagnostic working_directory must bind task root"
+                )
+            if (
+                task.source_diagnostic.repository_url
+                != CONTROLLED_SOURCE_DIAGNOSTIC_REPOSITORY_URL
+            ):
+                raise ValueError(
+                    f"{task.id} source_diagnostic repository_url must bind Coding Harness"
+                )
+            if task.source_diagnostic.ref != self.source_head:
+                raise ValueError(f"{task.id} source_diagnostic ref must bind source_head")
+            if (
+                task.source_diagnostic.relative_working_directory
+                != CONTROLLED_SOURCE_DIAGNOSTIC_RELATIVE_WORKING_DIRECTORY
+            ):
+                raise ValueError(
+                    f"{task.id} source_diagnostic relative working directory must be repository root"
+                )
+            if task.source_diagnostic.source_head != self.source_head:
+                raise ValueError(
+                    f"{task.id} source_diagnostic source_head must match artifact source_head"
+                )
+            if task.source_diagnostic.task_root_ref != task.task_root_ref:
+                raise ValueError(
+                    f"{task.id} source_diagnostic task_root_ref must match task_root_ref"
+                )
+            if task.source_diagnostic.entrypoint != CONTROLLED_SOURCE_DIAGNOSTIC_ENTRYPOINT:
+                raise ValueError(
+                    f"{task.id} source_diagnostic entrypoint must remain src/cli.ts"
+                )
+            if task.source_diagnostic.replay_command != CONTROLLED_SOURCE_DIAGNOSTIC_REPLAY_COMMAND:
+                raise ValueError(
+                    f"{task.id} source_diagnostic replay_command must bind task root and source checkout"
+                )
+            if task.source_diagnostic.source_checkout_root != CONTROLLED_SOURCE_CHECKOUT_ROOT:
+                raise ValueError(
+                    f"{task.id} source_diagnostic source_checkout_root must bind source checkout"
+                )
+            if (
+                task.source_diagnostic.replay_working_directory
+                != CONTROLLED_SOURCE_REPLAY_WORKING_DIRECTORY
+            ):
+                raise ValueError(
+                    f"{task.id} source_diagnostic replay_working_directory must bind source checkout"
+                )
+            if task.treatment.working_directory != task.task_root_ref:
+                raise ValueError(
+                    f"{task.id} treatment working_directory must match task_root_ref"
+                )
+            if task.treatment.cli_path != self.built_cli.entrypoint:
+                raise ValueError(
+                    f"{task.id} treatment cli_path must match built_cli entrypoint"
+                )
+            if task.treatment.cli_path != "dist/cli.js":
+                raise ValueError(f"{task.id} treatment cli_path must remain dist/cli.js")
+            if task.treatment.source_checkout_ref != self.source_head:
+                raise ValueError(
+                    f"{task.id} treatment source_checkout_ref must bind source_head"
+                )
+            if task.treatment.replay_command != CONTROLLED_TREATMENT_REPLAY_COMMAND:
+                raise ValueError(
+                    f"{task.id} treatment replay_command must bind source checkout"
+                )
+            if (
+                task.treatment.replay_working_directory
+                != CONTROLLED_TREATMENT_REPLAY_WORKING_DIRECTORY
+            ):
+                raise ValueError(
+                    f"{task.id} treatment replay_working_directory must bind task root"
+                )
+            if task.treatment.replay_entrypoint != CONTROLLED_TREATMENT_REPLAY_ENTRYPOINT:
+                raise ValueError(
+                    f"{task.id} treatment replay_entrypoint must bind built source checkout"
+                )
         return self
 
 

@@ -48,7 +48,8 @@ productivity metrics remain explicitly unknown.
 The direct effectiveness slice now has a controlled local observation in
 addition to the earlier readiness, cohort, and lifecycle samples. The
 controlled sample records a repository-only baseline and the built current CLI
-for five real task snapshots across four repositories. It demonstrates clearer
+for five real task snapshots across four repositories; three rows are comparable
+paired observations and two are explicitly non-comparable. It demonstrates clearer
 structured proof with a bounded sub-second built-CLI observation, while
 keeping intervention, review/fix, and PR-lead-time outcomes explicitly
 unknown. This is sufficient for the local proof-clarity boundary, not a causal
@@ -142,11 +143,36 @@ The treatment was the current built Coding Harness `0.15.3` entrypoint,
 `node dist/cli.js next --json`, built from source head
 `344774d0760fc56b0cd8d336d80d483afb798507`. The exact raw source is retained
 at [agent-first-effectiveness-observation-2026-08-11.json](./agent-first-effectiveness-observation-2026-08-11.json),
-SHA-256
-`cfab83cf2b538ab20c226fe6156e074517b2e9d12be5cbc8952f4ee3295008fa`,
-18,352 bytes. Each row now binds an authoritative remote URL and ref, a
-replay status, and the task-root-relative working directory
-and `dist/cli.js` entrypoint used by the treatment. The existing repository
+SHA-256 `68cc3718c5944b545a8b49a9bece3dfa54d6c7a53519c1baa7fc2de38ef9353c`,
+24,174 bytes. Each row now binds an authoritative remote URL and full source
+ref, a replay status, the task-root-relative working directory and `dist/cli.js`
+entrypoint used by the treatment, and the source-checkout-at-`source_head`
+repository, full ref, relative working directory, task-root binding, and
+`src/cli.ts` entrypoint used by each source diagnostic. Comparable branch rows
+also bind the observed upstream commit; rows without a retained upstream
+snapshot are explicitly non-comparable. Comparable rows must retain replay
+support and
+the sample's three-repository floor is counted from distinct authoritative
+remote URLs; detached rows bind their ref directly to the recorded expected
+head. Treatment rows also bind the source
+head, the `$TASK_ROOT` replay directory, and the
+`$HARNESS_SOURCE/dist/cli.js` entrypoint; their replay template changes to the
+task root before loading that pinned source checkout. The recorded relative
+`dist/cli.js` path is therefore not treated as a task-repository binary. Source
+diagnostics record the task-root-bound command `cd "$TASK_ROOT" && "$NODE_BIN"
+--import "$SOURCE_LOADER" "$HARNESS_SOURCE/src/cli.ts" next --json` and bind
+`$TASK_ROOT` as the execution directory while invoking the pinned
+`$HARNESS_SOURCE/src/cli.ts` entrypoint. The shared runtime setup binds
+`cd "$HARNESS_SOURCE" && pnpm install --frozen-lockfile`, the `tsx v4.23.0`
+loader path, and its SHA-256 verification command. The built CLI record also
+binds `source_head`, the `$HARNESS_SOURCE` build directory, the complete
+`pnpm install --frozen-lockfile && pnpm build` recipe, and
+`shasum -a 256 dist/cli.js`; an operator must reproduce that digest before
+using the entrypoint. These templates run from the declared directories while
+loading the pinned source checkout.
+Treatment and source `pass` or `action_required` decisions
+are successful when the command exits 0;
+`blocked` and `fail` require exit code 1. The existing repository
 artifact-types validator validates this retained observation as
 `coding-harness-controlled-effectiveness-observation/v1`.
 
@@ -154,11 +180,17 @@ artifact-types validator validates this retained observation as
 | --- | ---: | ---: | --- | --- |
 | Coding Harness current main | 0.0260 | 0.5588 | pass | Structured next action and claims boundary with bounded overhead |
 | Agent-Skills OSS-cloud boundary | 0.1011 | 0.6095 | blocked | Correctly stopped on branch currency instead of guessing |
-| Agent-Skills post-merge stabilization | 0.1107 | 0.6437 | pass | Added actionable warnings and safe execution boundary |
+| Agent-Skills post-merge stabilization | 0.1107 | 0.6437 | non-comparable | Source replay fail-closed on detached task state; built result retained but excluded from paired comparison |
 | Configs brace-expansion task | 0.0239 | 0.4588 | pass | Added actionable warnings and safe execution boundary |
 | Portfolio route-rhythm task | 0.0228 | 0.4289 | pass | Added actionable warnings and safe execution boundary |
 
-The built route completed in 0.4289–0.6437 seconds and returned structured
+The corrected task-root source-diagnostic replay was rerun at 2026-08-11T22:58:00Z
+against the recorded heads: Coding Harness, Configs, and Portfolio returned
+`pass`; the Agent-Skills OSS-cloud row returned `blocked` in both lanes, while
+the detached Agent-Skills post-merge row returned a `blocked` source diagnostic
+and a prior `pass` built treatment. Both Agent-Skills rows are explicitly marked
+`non-comparable` and excluded from paired comparison. The built route completed in 0.4289–0.6437
+seconds and returned structured
 `nextAction`, execution-boundary, and claims-boundary fields on every row;
 the one non-zero result was the expected fail-closed branch-currency stop.
 The repository-only baseline exposed branch/status and diff state but no
@@ -193,10 +225,11 @@ set -euo pipefail
 # Set these to the pinned Node/tsx paths and the two roots recorded by the
 # private observation artifact before replaying a row.
 NODE_BIN=/path/to/node-26.3.0/bin/node
-TSX_LOADER=/path/to/coding-harness/node_modules/tsx/dist/loader.mjs
+SOURCE_LOADER=/path/to/coding-harness/node_modules/tsx/dist/loader.mjs
 HARNESS_SOURCE=/path/to/coding-harness
 TASK_ROOT=/path/to/task-worktree
 EXPECTED_SOURCE_SHA=f0f405adf0b405ec821f58e564d3d3f5927cfffc
+EXPECTED_SOURCE_LOADER_SHA=150d1ff8a7770665997a940d4c686f1a3a5660349a5c7c3523b39eb43016ca74
 # Select the matching task HEAD from the table above.
 EXPECTED_TASK_SHA=<observed HEAD from the selected table row>
 
@@ -212,12 +245,20 @@ assert_recorded_tree() {
 assert_recorded_tree "$HARNESS_SOURCE" "$EXPECTED_SOURCE_SHA"
 assert_recorded_tree "$TASK_ROOT" "$EXPECTED_TASK_SHA"
 
+# cwd: HARNESS_SOURCE (once per source head)
+(cd "$HARNESS_SOURCE" && pnpm install --frozen-lockfile)
+ACTUAL_SOURCE_LOADER_SHA="$(
+  (cd "$HARNESS_SOURCE" && shasum -a 256 node_modules/tsx/dist/loader.mjs) |
+    awk '{print $1}'
+)"
+test "$ACTUAL_SOURCE_LOADER_SHA" = "$EXPECTED_SOURCE_LOADER_SHA"
+
 # cwd: TASK_ROOT
-(cd "$TASK_ROOT" && "$NODE_BIN" --import "$TSX_LOADER" \
+(cd "$TASK_ROOT" && "$NODE_BIN" --import "$SOURCE_LOADER" \
   "$HARNESS_SOURCE/src/cli.ts" next --json)
 
 # cwd: HARNESS_SOURCE; TASK_ROOT is the explicit check target
-(cd "$HARNESS_SOURCE" && "$NODE_BIN" --import "$TSX_LOADER" \
+(cd "$HARNESS_SOURCE" && "$NODE_BIN" --import "$SOURCE_LOADER" \
   "$HARNESS_SOURCE/src/cli.ts" check "$TASK_ROOT" --json)
 ```
 
