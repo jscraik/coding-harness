@@ -62,6 +62,7 @@ Routine command guidance belongs in the checked
 [CLI reference](../cli-reference.md): `next`, minimal `init`, `check`,
 `verify-work`, and `pr-closeout`. Do not restore hidden command catalogues to
 agent-facing documentation merely because an internal implementation remains.
+
 - Required status checks and code scanning stay separate: branch protection
   status checks require `pr-pipeline`, `security-scan`, and
   `CodeRabbit`, while public code scanning requires CodeQL results from
@@ -239,9 +240,9 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   and use the
   [packet-consolidation operational gate route](../plans/2026-07-11-synaipse-agent-native-delivery-control-plane-v1-plan.md#packet-consolidation-operational-gate-route).
   Run `pnpm exec vitest run src/lib/synaipse/packet-consolidation.test.ts
-  src/lib/synaipse/transition.test.ts --reporter=dot` for stale-SHA,
+src/lib/synaipse/transition.test.ts --reporter=dot` for stale-SHA,
   traceability, caller-inventory, and retirement diagnostics; run `node
-  scripts/validate-runtime-packet-schemas.cjs --all` for packet schema and
+scripts/validate-runtime-packet-schemas.cjs --all` for packet schema and
   example boundaries; and run `pnpm run quality:behavior-tests` for the
   installed-package retirement suite. Any non-zero exit or missing diagnostic
   blocks promotion. Harness engineering repairs local code or fixtures and

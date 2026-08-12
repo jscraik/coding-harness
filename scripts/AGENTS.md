@@ -33,3 +33,5 @@ scripts. Root [AGENTS.md](../AGENTS.md), [CODESTYLE.md](../CODESTYLE.md),
 - Run the narrowest script-specific test or validator, then widen to
   bash scripts/validate-codestyle.sh --fast when governed behavior changes.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the [$visualize:visualize](/Users/jamiecraik/.codex/plugins/cache/openai-bundled/visualize/1.0.19/skills/visualize/SKILL.md) skill

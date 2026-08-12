@@ -27,12 +27,12 @@ or a substitute for independent review.
 
 Use the job that matches the immediate need.
 
-| Job | Command | Result |
-| --- | --- | --- |
-| Orient | `harness next --json` | One task-first, read-only next action. |
-| Diagnose | `harness check --json` | Fast local health and an actionable failure. |
-| Install | `harness init --minimal --dry-run --json` | One-file preview with no surprise writes. |
-| Verify | `harness verify-work --fast` | Repository-native focused proof. |
+| Job       | Command                                    | Result                                             |
+| --------- | ------------------------------------------ | -------------------------------------------------- |
+| Orient    | `harness next --json`                      | One task-first, read-only next action.             |
+| Diagnose  | `harness check --json`                     | Fast local health and an actionable failure.       |
+| Install   | `harness init --minimal --dry-run --json`  | One-file preview with no surprise writes.          |
+| Verify    | `harness verify-work --fast`               | Repository-native focused proof.                   |
 | Close out | `harness pr-closeout --pr <number> --json` | Separate PR, CI, review, finding, and merge truth. |
 
 The [CLI reference](./docs/cli-reference.md) is the complete routine command

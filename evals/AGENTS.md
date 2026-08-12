@@ -26,3 +26,5 @@ This directory contains harness evaluation scenarios and registries. Root
 
 - Run the focused eval validator or scenario command for changed eval assets.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the [$visualize:visualize](/Users/jamiecraik/.codex/plugins/cache/openai-bundled/visualize/1.0.19/skills/visualize/SKILL.md) skill

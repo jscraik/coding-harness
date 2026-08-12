@@ -141,11 +141,11 @@ jq '.components | length' artifacts/sbom.cdx.json
 
 The release workflow uses these top-level permissions (least-privilege):
 
-| Permission | Justification |
-|---|---|
-| `id-token: write` | OIDC token for npm trusted publishing and attestation signing |
-| `attestations: write` | `actions/attest-build-provenance` for build provenance |
-| `contents: write` | GitHub Release creation |
+| Permission            | Justification                                                 |
+| --------------------- | ------------------------------------------------------------- |
+| `id-token: write`     | OIDC token for npm trusted publishing and attestation signing |
+| `attestations: write` | `actions/attest-build-provenance` for build provenance        |
+| `contents: write`     | GitHub Release creation                                       |
 
 No additional secrets are required for OIDC-mode publishes. Token-mode (`publish_auth=token`) is retained for bootstrap recovery only and does not produce OIDC-mode attestations.
 

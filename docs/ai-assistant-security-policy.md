@@ -227,15 +227,15 @@ including required-scope validation.
 
 ## Harness Gate Mapping
 
-| Risk domain | Primary gate | Secondary gate | Enforcement |
-|---|---|---|---|
-| Dependency selection | `policy-gate` | `license-gate` | Enforced (`risk-policy-gate` in requiredChecks) / CLI-only |
-| Secret handling | `preflight-gate` | pre-commit hook | CLI-only / pre-commit hook |
-| Test generation | `docs-gate` | `plan-gate` | Enforced (`docs-gate` in requiredChecks) / CLI-only |
-| Logging / observability | `observability-gate` | `silent-error` | CLI-only |
-| Workflow / CI generation | `workflow:generate` | `pnpm workflow:validate` | CLI-only |
-| Provenance / supply chain | Release workflow | `ci-migrate` | Enforced (release workflow gates) |
-| Privilege / authorization | `check-authz` | `review-gate` | CLI-only / Enforced (`CodeRabbit` in requiredChecks) |
+| Risk domain               | Primary gate         | Secondary gate           | Enforcement                                                |
+| ------------------------- | -------------------- | ------------------------ | ---------------------------------------------------------- |
+| Dependency selection      | `policy-gate`        | `license-gate`           | Enforced (`risk-policy-gate` in requiredChecks) / CLI-only |
+| Secret handling           | `preflight-gate`     | pre-commit hook          | CLI-only / pre-commit hook                                 |
+| Test generation           | `docs-gate`          | `plan-gate`              | Enforced (`docs-gate` in requiredChecks) / CLI-only        |
+| Logging / observability   | `observability-gate` | `silent-error`           | CLI-only                                                   |
+| Workflow / CI generation  | `workflow:generate`  | `pnpm workflow:validate` | CLI-only                                                   |
+| Provenance / supply chain | Release workflow     | `ci-migrate`             | Enforced (release workflow gates)                          |
+| Privilege / authorization | `check-authz`        | `review-gate`            | CLI-only / Enforced (`CodeRabbit` in requiredChecks)       |
 
 Gates marked **enforced** are listed in `harness.contract.json` `branchProtection.requiredChecks` and block merge. Gates marked **CLI-only** are run manually or in CI pipelines but are not branch-protection blockers.
 

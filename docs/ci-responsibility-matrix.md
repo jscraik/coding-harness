@@ -35,18 +35,18 @@ This document is the operational source of truth for CI ownership intent. `harne
 
 ### CircleCI Owns
 
-| Responsibility                                                                                                                                            | Workflow        | Job                                     | Trigger                                                |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | --------------------------------------- | ------------------------------------------------------ |
+| Responsibility                                                                                                                                            | Workflow        | Job                                                                                                                    | Trigger                                                |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
 | PR governance and quality checks (`pr-template`, `linear-gate`, `risk-policy-gate`, `docs-gate`, `lint`, `typecheck`, `test`, `audit`, `check`, `memory`) | `pr-pipeline`   | `pr-template`, `linear-gate`, `risk-policy-gate`, `docs-gate`, `lint`, `typecheck`, `test`, `audit`, `check`, `memory` | Pull request and merge queue events via GitHub webhook |
-| Security scanning (`security-scan`)                                                                                                                       | `security-scan` | `security-scan`, `snyk-dependency-scan` | Pull request and merge queue events via GitHub webhook |
-| Environment and dependency policy checks (`dependency-scan`, `orb-pinning`)                                                                               | `pr-pipeline`   | `dependency-scan`, `orb-pinning`        | Pull request and merge queue events via GitHub webhook |
+| Security scanning (`security-scan`)                                                                                                                       | `security-scan` | `security-scan`, `snyk-dependency-scan`                                                                                | Pull request and merge queue events via GitHub webhook |
+| Environment and dependency policy checks (`dependency-scan`, `orb-pinning`)                                                                               | `pr-pipeline`   | `dependency-scan`, `orb-pinning`                                                                                       | Pull request and merge queue events via GitHub webhook |
 
 ### GitHub Actions Owns
 
-| Responsibility                                        | Workflow              | Job       | Trigger                                       | Workflow File                               |
-| ----------------------------------------------------- | --------------------- | --------- | --------------------------------------------- | ------------------------------------------- |
-| npm publish + provenance attestation + GitHub Release | `release-private-npm` | `publish` | `Semver` tag push and guarded manual dispatch | `.github/workflows/release-private-npm.yml` |
-| CodeQL code-scanning upload                           | `CodeQL`              | `Analyze (javascript-typescript)` | Pull request, main push, weekly schedule, and manual dispatch | `.github/workflows/codeql.yml` |
+| Responsibility                                        | Workflow              | Job                               | Trigger                                                       | Workflow File                               |
+| ----------------------------------------------------- | --------------------- | --------------------------------- | ------------------------------------------------------------- | ------------------------------------------- |
+| npm publish + provenance attestation + GitHub Release | `release-private-npm` | `publish`                         | `Semver` tag push and guarded manual dispatch                 | `.github/workflows/release-private-npm.yml` |
+| CodeQL code-scanning upload                           | `CodeQL`              | `Analyze (javascript-typescript)` | Pull request, main push, weekly schedule, and manual dispatch | `.github/workflows/codeql.yml`              |
 
 ### Not Owned by Either CI System
 

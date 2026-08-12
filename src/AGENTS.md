@@ -33,3 +33,5 @@ and [Testing Standards](../codestyle/17-testing.md) remain binding.
   pnpm run quality:size, and pnpm run test:related.
 - Run the narrowest focused Vitest or CLI command before widening.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the [$visualize:visualize](/Users/jamiecraik/.codex/plugins/cache/openai-bundled/visualize/1.0.19/skills/visualize/SKILL.md) skill

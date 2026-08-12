@@ -6,8 +6,8 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Bug Fixes
 
-* **release:** bootstrap pinned uv before private npm publication ([#508](https://github.com/jscraik/coding-harness/pull/508)) ([bc98c937](https://github.com/jscraik/coding-harness/commit/bc98c9378bd45bdab0f94c7834c3d4a8926778ea))
-* **release:** keep setup checks running without retired legacy manifests ([#507](https://github.com/jscraik/coding-harness/pull/507)) ([0a0b606](https://github.com/jscraik/coding-harness/commit/0a0b60665bf27fe18000b720cac3bd2bb636a816))
+- **release:** bootstrap pinned uv before private npm publication ([#508](https://github.com/jscraik/coding-harness/pull/508)) ([bc98c937](https://github.com/jscraik/coding-harness/commit/bc98c9378bd45bdab0f94c7834c3d4a8926778ea))
+- **release:** keep setup checks running without retired legacy manifests ([#507](https://github.com/jscraik/coding-harness/pull/507)) ([0a0b606](https://github.com/jscraik/coding-harness/commit/0a0b60665bf27fe18000b720cac3bd2bb636a816))
 
 ## [0.15.2](https://github.com/jscraik/coding-harness/compare/v0.15.1...v0.15.2) (2026-08-01)
 
@@ -27,7 +27,7 @@ All notable changes to this project will be documented in this file. See [standa
   stale optional context is now an advisory warning rather than the primary
   action.
 - Retired the legacy `harness orient --json` cold-start command; `harness next
-  --json` is the sole routine cold-agent route.
+--json` is the sole routine cold-agent route.
 - Consolidated the default agent-native packet catalog from five choices to
   two canonical commands while retaining all five legacy commands as callable
   compatibility surfaces.
@@ -40,10 +40,9 @@ All notable changes to this project will be documented in this file. See [standa
 - Added validator-backed pull request release-boundary fields and compact
   durable evidence map guidance to the source template and downstream scaffold.
 
-
 ### Bug Fixes
 
-* **release:** fall back when ripgrep is unavailable ([#505](https://github.com/jscraik/coding-harness/pull/505)) ([0ec0f94](https://github.com/jscraik/coding-harness/commit/0ec0f9449203efecd5c9abfa7fe2d1a08ae4566c))
+- **release:** fall back when ripgrep is unavailable ([#505](https://github.com/jscraik/coding-harness/pull/505)) ([0ec0f94](https://github.com/jscraik/coding-harness/commit/0ec0f9449203efecd5c9abfa7fe2d1a08ae4566c))
 
 ### Fixed
 

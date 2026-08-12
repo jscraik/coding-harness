@@ -31,3 +31,5 @@ specs, and operator guidance. Root [AGENTS.md](../AGENTS.md),
   bash scripts/run-harness-gate.sh docs-gate --mode required --json.
 - For documentation lifecycle changes, run pnpm docs:lifecycle.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the [$visualize:visualize](/Users/jamiecraik/.codex/plugins/cache/openai-bundled/visualize/1.0.19/skills/visualize/SKILL.md) skill

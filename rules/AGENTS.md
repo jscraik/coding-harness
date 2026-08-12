@@ -29,3 +29,5 @@ This directory contains static analysis and policy rules. Root
 - Run the specific rule engine, fixture test, or repo security/policy wrapper
   that exercises the changed rule.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the [$visualize:visualize](/Users/jamiecraik/.codex/plugins/cache/openai-bundled/visualize/1.0.19/skills/visualize/SKILL.md) skill
