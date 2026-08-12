@@ -1,13 +1,11 @@
 export const REQUIRED_SECTIONS = [
-	"## What Problem This Solves",
-	"## Release Boundary",
-	"## Why This Change Was Made",
-	"## Behavior Proof",
-	"## Work performed",
+	"## Summary",
+	"## Release boundary",
+	"## Behavior proof",
+	"## Change details",
 	"## Checklist",
-	"## Testing",
-	"## Review artifacts",
-	"## Notes",
+	"## Validation",
+	"## Review and closeout",
 ] as const;
 
 export const MAX_BODY_LENGTH = 100_000; // 100KB limit to prevent ReDoS
@@ -63,41 +61,30 @@ export const PREPARATORY_LINKED_ISSUE_TRACE_PATTERN =
 export const PREPARATORY_NO_ACCEPTANCE_COMPLETION_PATTERN =
 	/(?:completed\s+(?:JSC-\d+\s+)?(?:acceptance\s+)?(?:IDs|criteria|items)\s*:\s*(?:none|n\.a\.|n\/a)|no\s+(?:JSC-\d+\s+)?(?:SA|AC|acceptance)[\w\s-]{0,80}\s+(?:IDs?|criteria|items)\s+(?:completed|claimed))/i;
 
-export const REQUIRED_TESTING_FIELDS = [
+export const REQUIRED_VALIDATION_FIELDS = [
 	{
-		label: "regression_test_plan",
+		label: "Regression coverage",
 		placeholder:
 			"describe unit, integration, contract, operator, or n.a. regression coverage",
 	},
 	{
-		label: "verification_commands",
-		placeholder: "list exact commands run here",
-	},
-	{
-		label: "verification_outcomes",
-		placeholder: "record pass/fail/blocked for each command here",
-	},
-	{
-		label: "blocked_steps_reason",
-		placeholder: "none if all planned steps ran",
+		label: "Untested or blocked paths",
+		placeholder: "list untested or blocked paths, or none with reason",
 	},
 ] as const;
 
-export const REQUIRED_MOTIVATION_FIELDS = [
+export const REQUIRED_SUMMARY_FIELDS = [
 	{
-		label: "Motivation",
-		placeholder:
-			"explain the motivating problem, operator need, or decision pressure behind this change",
+		label: "Problem",
+		placeholder: "state the problem or need",
 	},
 	{
-		label: "Reasoning",
-		placeholder:
-			"explain the reasoning that makes this change the right one now",
+		label: "Change",
+		placeholder: "summarize the change",
 	},
 	{
-		label: "Chosen approach",
-		placeholder:
-			"explain why this approach was chosen over simpler, broader, or deferred alternatives",
+		label: "Why this approach",
+		placeholder: "explain why this approach was selected",
 	},
 ] as const;
 
@@ -108,46 +95,37 @@ export const REQUIRED_RELEASE_BOUNDARY_FIELDS = [
 			"Prototype / Portfolio / Product / Harness / n.a. because reason",
 	},
 	{
-		label: "Done line",
+		label: "Completion condition",
 		placeholder:
 			"state the bounded shipping condition for the selected release mode",
 	},
 	{
-		label: "Explicit non-goals",
-		placeholder:
-			"list the work this PR is deliberately not absorbing, or `none` with reason",
+		label: "Deferred work",
+		placeholder: "list intentionally deferred work, or none with reason",
 	},
 	{
-		label: "Allowed polish",
-		placeholder: "list polish allowed in this PR, or `none` with reason",
-	},
-	{
-		label: "Deferred polish / follow-up work",
+		label: "Stronger-proof condition",
 		placeholder:
-			"list polish or adjacent work intentionally deferred, or `none` with reason",
-	},
-	{
-		label: "Promotion rule",
-		placeholder:
-			"name what would justify promoting this PR into a more serious mode or follow-up issue",
+			"name what would require a more serious release mode or additional proof",
 	},
 ] as const;
 
 export const REQUIRED_BEHAVIOR_PROOF_FIELDS = [
 	{
-		label: "Behavior before fix",
+		label: "Before",
 		placeholder: "describe the previous behavior, baseline, or n.a. reason",
 	},
 	{
-		label: "Behavior or issue addressed",
-		placeholder: "describe the observable behavior, issue, or n.a. reason",
+		label: "After",
+		placeholder:
+			"describe the observed behavior after the change, or n.a. reason",
 	},
 	{
-		label: "Real environment tested",
+		label: "Environment or operator path",
 		placeholder: "list the real environment, production path, or n.a. reason",
 	},
 	{
-		label: "Exact steps or command run after this patch",
+		label: "Verification steps",
 		placeholder: "list exact steps, command, or n.a. reason",
 	},
 	{
@@ -156,20 +134,12 @@ export const REQUIRED_BEHAVIOR_PROOF_FIELDS = [
 			"link artifact, copied output, screenshot, redacted log, runtime-card ref, or n.a. reason",
 	},
 	{
-		label: "Observed result after fix",
-		placeholder: "state the observed result, or n.a. reason",
-	},
-	{
-		label: "What was not tested",
-		placeholder: "list untested paths, or `none` with reason",
-	},
-	{
-		label: "Proof limitations or environment constraints",
-		placeholder: "state limitations, blockers, or `none`",
+		label: "Untested paths and limitations",
+		placeholder: "state untested paths, limitations, blockers, or none",
 	},
 ] as const;
 
-export const REQUIRED_WORK_FIELDS = [
+export const REQUIRED_CHANGE_FIELDS = [
 	{
 		label: "Plan IDs",
 		placeholder:
@@ -184,26 +154,6 @@ export const REQUIRED_WORK_FIELDS = [
 		label: "Linked issue relationship",
 		placeholder:
 			"classify the linked issue relationship as implementation closure, preparatory/enabling work, standalone/untracked work, or `n.a.` with reason; for parent-goal references, state completed acceptance IDs or `none`",
-	},
-	{
-		label: "Phase / slice",
-		placeholder:
-			"list completed phase, implementation slice, or `n.a.` with reason",
-	},
-	{
-		label: "Session IDs",
-		placeholder:
-			"list Codex thread/session IDs, session-collector artifact IDs or paths, harness run IDs, or `n.a.` with reason. For AI-assisted work, include at least one session reference or explain why no session artifact was captured.",
-	},
-	{
-		label: "Trace IDs",
-		placeholder:
-			"list CI workflow/job URLs, harness/eval/runtime trace IDs, runtime-card/evidence bundle artifact paths, review trace IDs, or `n.a.` with reason. For traced or evaluated work, include the trace or artifact reference used to verify the claim.",
-	},
-	{
-		label: "AI session / traceability",
-		placeholder:
-			"map the AI session or trace reference to the work it supports; do not paste raw transcripts, prompts, secrets, or bulky telemetry into the PR body.",
 	},
 	{
 		label: "Completed work",
@@ -221,19 +171,37 @@ export const REQUIRED_WORK_FIELDS = [
 			"classify required docs as updated or `n.a.` with reason, including README.md, SECURITY.md, CONTRIBUTING.md, AGENTS.md, ARCHITECTURE.md, governance docs, and existing deep-module READMEs; list docs-expert or reviewer evidence for high-impact documentation changes",
 	},
 	{
-		label: "Documentation lifecycle impact",
-		placeholder:
-			"classify created, updated, deprecated, superseded, archived, removed, or `n.a.` with reason; include canon class and distribution impact when docs changed",
-	},
-	{
 		label: "SemVer impact",
 		placeholder:
 			"classify none, patch, minor, major, or `n.a.` with reason; explain downstream-template or packaged-skill impact when present",
 	},
 	{
+		label: "Acceptance trace",
+		placeholder:
+			"map completed acceptance items to evidence refs, or `n.a.` with reason",
+	},
+	{
+		label: "Runtime impact",
+		placeholder:
+			"state direct, transitive, dev-only, CI-only, runtime-facing, or `n.a.` with reason",
+	},
+] as const;
+
+export const CONDITIONAL_EVIDENCE_FIELDS = [
+	{
 		label: "Expected outcome alignment",
 		placeholder:
-			"state how this change preserves Coding Harness as a portable agent operating system for greenfield and brownfield repos, or mark `n.a.` with reason",
+			"explain how the change advances the expected outcome, or `n.a.` with reason",
+	},
+	{
+		label: "Validation evidence",
+		placeholder:
+			"list command outcomes, CI jobs, repo-relative artifact paths, or `n.a.` with reason; do not paste local absolute paths",
+	},
+	{
+		label: "Review artifacts",
+		placeholder:
+			"list CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason",
 	},
 	{
 		label: "Pattern scope inventory",
@@ -251,39 +219,9 @@ export const REQUIRED_WORK_FIELDS = [
 			"when recurrence across independent work, a contradictory contract, or a safety boundary triggers research, use `Source: ...; Candidate 1: ...; Candidate 2: ...; Candidate 3: ...; Chosen: ...; Implemented: ...`; otherwise `n.a.` with reason",
 	},
 	{
-		label: "Acceptance trace",
-		placeholder:
-			"map completed acceptance items to evidence refs, or `n.a.` with reason",
-	},
-	{
-		label: "Validation evidence",
-		placeholder:
-			"list command outcomes, CI jobs, repo-relative artifact paths, or `n.a.` with reason; do not paste local absolute paths",
-	},
-	{
-		label: "Review artifacts",
-		placeholder:
-			"list CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason",
-	},
-	{
 		label: "Durable evidence map",
 		placeholder:
 			"for evidence-heavy PRs, index each artifact in the compact table with a durable reference, schema/version, producer command, digest, replay command, and authority (`source-of-truth` or `retained context`); use `n.a.` with reason when no evidence map is needed; use repo-relative paths only",
-	},
-	{
-		label: "Runtime impact",
-		placeholder:
-			"state direct, transitive, dev-only, CI-only, runtime-facing, or `n.a.` with reason",
-	},
-	{
-		label: "CodeRabbit mode coverage",
-		placeholder:
-			"list analysis, validation, gate, closeout, promotion, or `n.a.` with reason",
-	},
-	{
-		label: "Closeout state",
-		placeholder:
-			"classify PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and any remaining blocker or waiting owner",
 	},
 	{
 		label: "Learning / reinforcement",
@@ -291,7 +229,8 @@ export const REQUIRED_WORK_FIELDS = [
 			"list promoted learnings, memory updates, or `none` with reason",
 	},
 	{
-		label: "Deferred work",
-		placeholder: "list follow-up work intentionally left out, or `none`",
+		label: "Closeout state",
+		placeholder:
+			"state PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and remaining blockers",
 	},
 ] as const;

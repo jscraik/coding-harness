@@ -312,7 +312,7 @@ This repository uses `action-review-receipt/v1` as a narrow guardian-style recei
 
 ## Plan traceability
 
-- Pull requests must declare `Plan IDs` in the PR template `## Work performed` section.
+- Pull requests must declare `Plan IDs` in the PR template `## Change details` section.
 - Each declared ID must resolve to a `docs/plans/*` document with matching `plan_id` frontmatter.
 - Completed acceptance checklist items in referenced plans must carry evidence links or refs before merge.
 - `risk-policy-gate` enforces this in CI, and `review-gate` treats missing or invalid plan traceability as a merge blocker even when the review check itself passed.
@@ -391,12 +391,10 @@ Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`, `ci`
 
 On agent branches (`codex/*`, `claude/*`), the commit-msg hook reminds about PR template requirements:
 
-- `## What Problem This Solves` (motivation, reasoning, and chosen approach)
-- `## Release Boundary` (release mode, done line, deferred work, and promotion rule)
-- `## Why This Change Was Made` (problem, why now, intended outcome, out of scope, reviewer focus, and risk)
-- `## Behavior Proof` (before/after behavior, operator path, verification, evidence, result, and limitations)
-- `## Work performed` (scope, traceability, documentation, SemVer, runtime, acceptance, and evidence)
+- `## Summary` (problem, change, chosen approach, outcome, scope, reviewer focus, and risk)
+- `## Release boundary` (release mode, completion condition, deferred work, and stronger-proof condition)
+- `## Behavior proof` (before/after behavior, operator path, verification, evidence, and limitations)
+- `## Change details` (scope, traceability, documentation, SemVer, runtime, acceptance, and conditional evidence)
 - `## Checklist` (required items and truthful status)
-- `## Testing` (regression plan, exact commands/outcomes, and blocked paths)
-- `## Review artifacts` (CodeRabbit, independent reviewer, Codex, findings, waivers, and blockers)
-- `## Notes` (one-paragraph merge rationale before requesting review)
+- `## Validation` (regression coverage, exact command outcomes, and blocked paths)
+- `## Review and closeout` (CodeRabbit, independent reviewer, Codex, findings, waivers, and blockers)

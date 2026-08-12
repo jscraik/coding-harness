@@ -1,5 +1,6 @@
 import {
-	REQUIRED_WORK_FIELDS,
+	CONDITIONAL_EVIDENCE_FIELDS,
+	REQUIRED_CHANGE_FIELDS,
 	REQUIRED_RELEASE_BOUNDARY_FIELDS,
 } from "../pr-template-validator-rules.js";
 
@@ -11,12 +12,10 @@ type PullRequestTemplateOptions = {
 };
 
 /** Render PR evidence fields with traceability guidance where needed. */
-function renderRequiredWorkFieldLines(): string {
-	return REQUIRED_WORK_FIELDS.map((field) => {
+function renderChangeFieldLines(): string {
+	const required = REQUIRED_CHANGE_FIELDS.map((field) => `- ${field.label}:`);
+	const conditional = CONDITIONAL_EVIDENCE_FIELDS.map((field) => {
 		const line = `- ${field.label}:`;
-		if (field.label === "AI session / traceability") {
-			return `${line}\n<!-- Cite durable session/run/runtime-card references when available. Do not paste raw transcripts, prompts, secrets, or bulky telemetry. -->`;
-		}
 		if (field.label === "Durable evidence map") {
 			return `${line}\n<!-- ${field.placeholder}
 
@@ -25,12 +24,16 @@ function renderRequiredWorkFieldLines(): string {
 |  |  |  |  |  |  | \`source-of-truth\` / \`retained context\` | -->`;
 		}
 		return line;
-	}).join("\n");
+	});
+	return `${required.join("\n")}
+
+<!-- Complete the following fields only when their admission conditions apply. -->
+${conditional.join("\n")}`;
 }
 
 /** Render the reusable PR behavior-proof guidance section. */
 function renderBehaviorProofSection(): string {
-	return `## Behavior Proof
+	return `## Behavior proof
 
 Complete this section when the PR changes runtime behavior, CLI behavior,
 generated artifacts, validation behavior, agent workflow behavior, user-facing
@@ -38,14 +41,12 @@ docs, or any observable operator experience. Use \`n.a.\` with a concrete reason
 for docs-only, metadata-only, or evidence-only changes where no behavior path
 exists.
 
-- Behavior before fix:
-- Behavior or issue addressed:
-- Real environment tested:
-- Exact steps or command run after this patch:
+- Before:
+- After:
+- Environment or operator path:
+- Verification steps:
 - Evidence after fix:
-- Observed result after fix:
-- What was not tested:
-- Proof limitations or environment constraints:
+- Untested paths and limitations:
 
 Behavior proof guidance: Behavior proof is separate from unit tests, lint,
 typecheck, and CI. Use it to show the actual production path or nearest
@@ -59,17 +60,15 @@ function renderReleaseBoundarySection(): string {
 	const releaseModeField = REQUIRED_RELEASE_BOUNDARY_FIELDS.find(
 		(field) => field.label === "Release mode",
 	);
-	return `## Release Boundary
+	return `## Release boundary
 
 Choose the release standard before listing proof. Use \`n.a.\` with a concrete
 reason only when the change has no release-stage meaning.
 
 - Release mode: ${releaseModeField?.placeholder}
-- Done line:
-- Explicit non-goals:
-- Allowed polish:
-- Deferred polish / follow-up work:
-- Promotion rule:
+- Completion condition:
+- Deferred work:
+- Stronger-proof condition:
 
 <!--
 Prototype: prove the idea has value. Core path works; known gaps are listed; no unsafe behavior.
@@ -77,9 +76,7 @@ Portfolio: credible, coherent, navigable, and explainable. Demo, screenshots, an
 Product: reusable and maintained. Tests, docs, release path, versioning, and supportable architecture are expected.
 Harness: trust boundary or repeatable proof. Deterministic checks, receipts, failure behavior, and evidence boundaries are expected.
 
-Promotion rule should name what would force this PR into a more serious mode.
-If a new improvement does not fit the selected release mode or done line, defer
-it to follow-up work instead of absorbing it into this PR.
+Name the condition that would require a more serious mode or additional proof.
 -->`;
 }
 
@@ -98,69 +95,56 @@ export function renderPullRequestTemplate(
 	const codeRabbitArtifacts = `- CodeRabbit:
 - Independent reviewer evidence:
 `;
-	return `# Pull request checklist
+	return `# Pull request
 
 Write for human maintainers first. Use \`n.a.\` with a concrete reason when a
 field does not apply. Do not paste secrets, raw transcripts, bulky telemetry,
 or local absolute paths.
 
-## What Problem This Solves
-
-- Motivation:
-- Reasoning:
-- Chosen approach:
-
-${renderReleaseBoundarySection()}
-
-## Why This Change Was Made
+## Summary
 
 - Problem:
-- Why now:
+- Change:
+- Why this approach:
 - Intended outcome:
 - Out of scope:
 - Reviewer focus:
 - Risk and rollback:
 
+${renderReleaseBoundarySection()}
+
 ${renderBehaviorProofSection()}
 
-## Work performed
+## Change details
 
-${renderRequiredWorkFieldLines()}
-<!-- Closeout state must classify PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and any remaining blocker or waiting owner. -->
+${renderChangeFieldLines()}
 
 ## Checklist
 
 - [ ] I did not push directly to \`main\`; this PR is from a dedicated branch.
 - [ ] Branch name follows policy (\`${options.agentBranchPrefix}/*\` for agent-created branches).
-- [ ] Required local gates run: \`${options.codestyleCommand}\`, \`${options.checkCommand}\`, \`${options.memoryValidateCommand}\`.
+- [ ] I ran the required validation for the changed surfaces and recorded every outcome below.
 ${codeRabbitChecklist}- [ ] **(Pending)** Codex review completed and findings handled (or explicitly waived).
 - [ ] Any CodeRabbit Semgrep findings were either fixed or explicitly justified when warning-level-only.
-- [ ] This change is user-facing and I added a changelog entry.
-- [ ] This change is not user-facing.
 - [ ] Merge is blocked until all required checks pass.
 - [ ] I will delete branch/worktree after merge.
 
-## Testing
+## Validation
 
-- regression_test_plan:
-- verification_commands:
-- verification_outcomes:
-- blocked_steps_reason:
+- Regression coverage:
 <!-- Add one or more evidence lines such as:
 - Command: \`${options.codestyleCommand}\` -> pass
 - Command: \`${options.checkCommand}\` -> blocked (reason)
 - Command: \`${options.memoryValidateCommand}\` -> n.a. (reason)
 -->
-- Any other command(s):
+- Untested or blocked paths:
 
-## Review artifacts
+## Review and closeout
 
 ${codeRabbitArtifacts}- Codex:
 - CodeRabbit Semgrep:
-- Additional evidence (if any):
-
-## Notes
-
-<!-- Add one-paragraph merge rationale before requesting review. -->
+- User-facing impact: yes, with changelog / no / n.a. because reason
+- Remaining findings or waivers:
+- Current blockers:
 `;
 }

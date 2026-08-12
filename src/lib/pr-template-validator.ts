@@ -7,13 +7,12 @@ import {
 	ACCEPTANCE_TRACE_ID_PATTERN,
 	PREPARATORY_LINKED_ISSUE_TRACE_PATTERN,
 	REQUIRED_BEHAVIOR_PROOF_FIELDS,
-	REQUIRED_MOTIVATION_FIELDS,
+	REQUIRED_SUMMARY_FIELDS,
 	REQUIRED_RELEASE_BOUNDARY_FIELDS,
 	REQUIRED_SECTIONS,
-	REQUIRED_TESTING_FIELDS,
-	REQUIRED_WORK_FIELDS,
+	REQUIRED_VALIDATION_FIELDS,
+	REQUIRED_CHANGE_FIELDS,
 } from "./pr-template-validator-rules.js";
-
 /**
  * Normalize a field value extracted from a PR template for reliable comparison.
  *
@@ -25,17 +24,14 @@ import {
  */
 function normalizeFieldValue(value: string): string {
 	let normalized = value.trim();
-
 	const fencedMatch = normalized.match(/^```[\w-]*\s*([\s\S]*?)\s*```$/);
 	if (fencedMatch) {
 		normalized = fencedMatch[1] ?? "";
 	}
-
 	const inlineCodeMatch = normalized.match(/^`([^`]+)`$/);
 	if (inlineCodeMatch) {
 		normalized = inlineCodeMatch[1] ?? "";
 	}
-
 	return normalized.replace(/\s+/g, " ").trim();
 }
 /** Normalize a multi-line PR-template field value and drop guidance comments. */
@@ -54,6 +50,7 @@ function normalizeFieldBlockValue(value: string): string {
 	}
 	return normalized.trim();
 }
+
 const RELEASE_MODE_PATTERN = /^(?:Prototype|Portfolio|Product|Harness)$/i;
 const NOT_APPLICABLE_RELEASE_MODE_PATTERN =
 	/^(?:n\.a\.|n\/a|not applicable)\s+because\s+(?!reason\b)(?!<reason>\b)\S.{6,}\S$/i;
@@ -70,25 +67,21 @@ function extractSectionBody(body: string, heading: string): string | null {
 	}
 	return match[1] ?? "";
 }
-
 /** Collect checklist checkbox status errors from the pull request body. */
 function collectChecklistErrors(body: string): string[] {
 	const checklistBody = extractSectionBody(body, "## Checklist");
 	if (checklistBody === null) {
 		return ["Missing checklist block."];
 	}
-
 	const checklistItems = checklistBody
 		.split(/\r?\n/)
 		.map((line) => line.trim())
 		.filter((line) => /^- \[[ xX]\]/.test(line));
-
 	const errors: string[] = [];
 	if (checklistItems.length === 0) {
 		errors.push("Checklist has no checkbox items.");
 		return errors;
 	}
-
 	const unchecked = checklistItems.filter((line) => /^- \[ \]/.test(line));
 	const unresolvedUnchecked = unchecked.filter(
 		(line) => !/\*\*\((pending|n\/a|not applicable)\)\*\*/i.test(line),
@@ -98,21 +91,20 @@ function collectChecklistErrors(body: string): string[] {
 			`Checklist has unchecked item(s) without explicit status marker ((Pending) or (N/A)):\n${unresolvedUnchecked.join("\n")}`,
 		);
 	}
-
 	return errors;
 }
-
 /** Collect unresolved template placeholder errors from the pull request body. */
 function collectPlaceholderErrors(body: string): string[] {
 	const errors: string[] = [];
-
 	for (const placeholder of PLACEHOLDERS) {
 		if (body.includes(placeholder)) {
 			errors.push(`Replace template placeholder: ${placeholder}`);
 		}
 	}
-
-	const reviewArtifactsBody = extractSectionBody(body, "## Review artifacts");
+	const reviewArtifactsBody = extractSectionBody(
+		body,
+		"## Review and closeout",
+	);
 	if (reviewArtifactsBody !== null) {
 		const unresolvedTokens = reviewArtifactsBody.match(/<[^>\n]+>/g) ?? [];
 		for (const token of unresolvedTokens) {
@@ -122,7 +114,6 @@ function collectPlaceholderErrors(body: string): string[] {
 
 	return errors;
 }
-
 /** Collect missing required field values from a named pull request section. */
 function collectFieldErrors(
 	body: string,
@@ -153,21 +144,21 @@ function collectFieldErrors(
 
 	return errors;
 }
-
-function collectTestingFieldErrors(body: string): string[] {
+/** Collect required validation fields and command-evidence errors. */
+function collectValidationFieldErrors(body: string): string[] {
 	const errors = collectFieldErrors(
 		body,
-		"## Testing",
-		REQUIRED_TESTING_FIELDS,
-		"testing",
+		"## Validation",
+		REQUIRED_VALIDATION_FIELDS,
+		"validation",
 	);
-	const testingBody = extractSectionBody(body, "## Testing");
-	if (testingBody !== null) {
-		errors.push(...collectCommandEvidenceErrors(testingBody));
+	const validationBody = extractSectionBody(body, "## Validation");
+	if (validationBody !== null) {
+		errors.push(...collectCommandEvidenceErrors(validationBody));
 	}
 	return errors;
 }
-
+/** Collect required behavior-proof field errors. */
 function collectBehaviorProofFieldErrors(body: string): string[] {
 	return collectFieldErrors(
 		body,
@@ -176,14 +167,13 @@ function collectBehaviorProofFieldErrors(body: string): string[] {
 		"behavior proof",
 	);
 }
-
-/** Collect missing motivation fields from the pull request body. */
-function collectMotivationFieldErrors(body: string): string[] {
+/** Collect missing summary fields from the pull request body. */
+function collectSummaryFieldErrors(body: string): string[] {
 	return collectFieldErrors(
 		body,
-		"## What Problem This Solves",
-		REQUIRED_MOTIVATION_FIELDS,
-		"motivation",
+		"## Summary",
+		REQUIRED_SUMMARY_FIELDS,
+		"summary",
 	);
 }
 
@@ -218,17 +208,17 @@ function collectReleaseBoundaryFieldErrors(body: string): string[] {
 }
 
 /**
- * Validate required fields inside the "Work performed" section and collect any related errors.
+ * Validate required fields inside the "Change details" section.
  *
  * @param body - The full pull request body text to inspect
- * @returns An array of error messages describing missing or invalid required fields in the "Work performed" section; empty if no errors
+ * @returns Errors for missing or invalid change-detail fields; empty if none
  */
-function collectWorkPerformedFieldErrors(body: string): string[] {
+function collectChangeDetailsFieldErrors(body: string): string[] {
 	return collectFieldErrors(
 		body,
-		"## Work performed",
-		REQUIRED_WORK_FIELDS,
-		"work performed",
+		"## Change details",
+		REQUIRED_CHANGE_FIELDS,
+		"change details",
 	);
 }
 
@@ -237,7 +227,7 @@ function collectLinkedIssueAcceptanceTraceErrors(
 	body: string,
 	allowedPrefixes?: readonly string[],
 ): string[] {
-	const planIds = extractFieldBlockValue(body, "## Work performed", "Plan IDs");
+	const planIds = extractFieldBlockValue(body, "## Change details", "Plan IDs");
 	if (planIds === null) {
 		return [];
 	}
@@ -246,7 +236,7 @@ function collectLinkedIssueAcceptanceTraceErrors(
 
 	const acceptanceTrace = extractFieldBlockValue(
 		body,
-		"## Work performed",
+		"## Change details",
 		"Acceptance trace",
 	);
 	if (acceptanceTrace === null) {
@@ -323,20 +313,22 @@ function extractFieldBlockValue(
 }
 
 /**
- * Validates the `- Command:` evidence lines within a Testing section.
+ * Validates the `- Command:` evidence lines within a Validation section.
  *
- * @param testingBody - The markdown content of the `## Testing` section to inspect
+ * @param validationBody - The markdown content of the `## Validation` section to inspect
  * @returns An array of error messages describing formatting violations; empty if all command evidence lines conform to the required patterns
  */
-function collectCommandEvidenceErrors(testingBody: string): string[] {
-	const commandLines = testingBody
+function collectCommandEvidenceErrors(validationBody: string): string[] {
+	const commandLines = validationBody
 		.split(/\r?\n/)
 		.map((line) => line.trim())
 		.filter((line) => /^-\s*Command:\s*/i.test(line));
 	const errors: string[] = [];
 
 	if (commandLines.length === 0) {
-		return ["Testing section must include at least one Command evidence line."];
+		return [
+			"Validation section must include at least one Command evidence line.",
+		];
 	}
 
 	const commandEvidencePattern =
@@ -352,7 +344,15 @@ function collectCommandEvidenceErrors(testingBody: string): string[] {
 	return errors;
 }
 
-/** Return template validation errors for one PR body. */
+/**
+ * Validate a pull request body against the repository's PR template and formatting rules.
+ *
+ * Performs high-level checks including required section presence, required fields in
+ * "Change details" and "Validation", checklist validation, placeholder detection, and
+ * evidence-format rules for meta-behavior, pattern scope, and repeated-error research.
+ *
+ * @returns An array of error messages describing template or formatting violations; an empty array if no issues are found.
+ */
 export function validatePrTemplateBody(
 	body: string,
 	options: { issueKeyPrefixes?: readonly string[] } = {},
@@ -375,9 +375,9 @@ export function validatePrTemplateBody(
 		}
 	}
 
-	errors.push(...collectMotivationFieldErrors(body));
+	errors.push(...collectSummaryFieldErrors(body));
 	errors.push(...collectReleaseBoundaryFieldErrors(body));
-	errors.push(...collectWorkPerformedFieldErrors(body));
+	errors.push(...collectChangeDetailsFieldErrors(body));
 	errors.push(
 		...collectLinkedIssueRelationshipErrors(
 			body,
@@ -393,7 +393,7 @@ export function validatePrTemplateBody(
 	);
 	errors.push(...collectChecklistErrors(body));
 	errors.push(...collectBehaviorProofFieldErrors(body));
-	errors.push(...collectTestingFieldErrors(body));
+	errors.push(...collectValidationFieldErrors(body));
 	errors.push(...collectPlaceholderErrors(body));
 
 	return errors;

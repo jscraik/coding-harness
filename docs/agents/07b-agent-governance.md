@@ -495,7 +495,7 @@ scripts/validate-runtime-packet-schemas.cjs --all` for packet schema and
   criteria remain governed together
 - PR-template contract changes should keep local validation, GitHub PR body
   structure, and reviewer handoff evidence synchronized so the release boundary
-  and work-performed ledger remain enforceable before closeout
+  and change-details ledger remain enforceable before closeout
 - PR-template Behavior Proof changes should keep the source PR template,
   downstream scaffolded PR template, validator rules, README guidance, AGENTS
   guidance, and affected deep-module README files synchronized. Behavior Proof
