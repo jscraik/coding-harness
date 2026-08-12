@@ -192,8 +192,9 @@ class TestControlledEffectivenessObservation:
         assert report.built_cli.build_command == (
             "pnpm install --frozen-lockfile && pnpm build"
         )
-        assert sum(task.pairing == "comparable" for task in report.tasks) == 4
-        assert sum(task.pairing == "non_comparable" for task in report.tasks) == 1
+        assert sum(task.pairing == "comparable" for task in report.tasks) == 3
+        assert sum(task.pairing == "non_comparable" for task in report.tasks) == 2
+        assert report.tasks[3].upstream_head == report.tasks[3].observed_head
         assert all(
             task.source_diagnostic.replay_working_directory == "$TASK_ROOT"
             for task in report.tasks
@@ -288,6 +289,32 @@ class TestControlledEffectivenessObservation:
         with pytest.raises(ValidationError, match="comparable task status"):
             ControlledEffectivenessObservation.model_validate(payload)
 
+    def test_requires_upstream_snapshot_for_comparable_branch(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["ref_kind"] = "branch"
+        payload["tasks"][0]["upstream_head"] = None
+
+        with pytest.raises(ValidationError, match="upstream_head"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_requires_minimum_comparable_cohort(self) -> None:
+        payload = _load_effectiveness_observation()
+        for task in payload["tasks"]:
+            task["pairing"] = "non_comparable"
+            task["pairing_reason"] = "upstream snapshot unavailable; non-comparable"
+
+        with pytest.raises(ValidationError, match="three comparable"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_comparable_decision_payload_mismatch(self) -> None:
+        payload = _load_effectiveness_observation()
+        decision = json.loads(payload["tasks"][0]["source_diagnostic"]["stdout"])
+        decision["summary"] = "different summary"
+        payload["tasks"][0]["source_diagnostic"]["stdout"] = json.dumps(decision)
+
+        with pytest.raises(ValidationError, match="decisions must match"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
     def test_rejects_insufficient_repository_diversity(self) -> None:
         payload = _load_effectiveness_observation()
         for task in payload["tasks"]:
@@ -325,10 +352,10 @@ class TestControlledEffectivenessObservation:
         decision["status"] = "action_required"
         payload["tasks"][0]["treatment"]["status"] = "action_required"
         payload["tasks"][0]["treatment"]["stdout"] = json.dumps(decision)
-        payload["tasks"][0]["pairing"] = "non_comparable"
-        payload["tasks"][0]["pairing_reason"] = (
-            "action_required source/treatment status divergence is non-comparable"
-        )
+        source_decision = json.loads(payload["tasks"][0]["source_diagnostic"]["stdout"])
+        source_decision["status"] = "action_required"
+        payload["tasks"][0]["source_diagnostic"]["status"] = "action_required"
+        payload["tasks"][0]["source_diagnostic"]["stdout"] = json.dumps(source_decision)
 
         ControlledEffectivenessObservation.model_validate(payload)
 

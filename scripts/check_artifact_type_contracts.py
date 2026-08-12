@@ -474,10 +474,10 @@ CONTROLLED_BASELINE_DIFF_COMMAND = "git diff --stat -- ."
 CONTROLLED_TREATMENT_CONTRACT = "node dist/cli.js next --json (built from source_head)"
 CONTROLLED_TREATMENT_COMMAND = "node dist/cli.js next --json"
 CONTROLLED_TREATMENT_REPLAY_COMMAND = (
-    'cd "$TASK_ROOT" && node --import "$SOURCE_LOADER" "$HARNESS_SOURCE/dist/cli.js" next --json'
+    'cd "$TASK_ROOT" && "$NODE_BIN" "$HARNESS_SOURCE/dist/cli.js" next --json'
 )
 CONTROLLED_SOURCE_DIAGNOSTIC_COMMAND = (
-    'cd "$TASK_ROOT" && node --import "$SOURCE_LOADER" '
+    'cd "$TASK_ROOT" && "$NODE_BIN" --import "$SOURCE_LOADER" '
     '"$HARNESS_SOURCE/src/cli.ts" next --json'
 )
 CONTROLLED_SOURCE_DIAGNOSTIC_WORKING_DIRECTORY = "$TASK_ROOT"
@@ -485,7 +485,7 @@ CONTROLLED_SOURCE_DIAGNOSTIC_REPOSITORY_URL = "https://github.com/jscraik/coding
 CONTROLLED_SOURCE_DIAGNOSTIC_RELATIVE_WORKING_DIRECTORY = "."
 CONTROLLED_SOURCE_DIAGNOSTIC_ENTRYPOINT = "src/cli.ts"
 CONTROLLED_SOURCE_DIAGNOSTIC_REPLAY_COMMAND = (
-    'cd "$TASK_ROOT" && node --import "$SOURCE_LOADER" '
+    'cd "$TASK_ROOT" && "$NODE_BIN" --import "$SOURCE_LOADER" '
     '"$HARNESS_SOURCE/src/cli.ts" next --json'
 )
 CONTROLLED_SOURCE_CHECKOUT_ROOT = "$HARNESS_SOURCE"
@@ -659,6 +659,7 @@ class EffectivenessTask(BaseModel):
     pairing_reason: str
     observed_head: str
     expected_head: str
+    upstream_head: str | None = None
     initial_status: EffectivenessInitialStatus
     baseline: EffectivenessCommandObservation
     baseline_diff: EffectivenessCommandObservation
@@ -677,9 +678,11 @@ class EffectivenessTask(BaseModel):
             raise ValueError("must be an authoritative GitHub repository URL")
         return value
 
-    @field_validator("observed_head", "expected_head")
+    @field_validator("observed_head", "expected_head", "upstream_head")
     @classmethod
-    def require_full_head_sha(cls, value: str) -> str:
+    def require_full_head_sha(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
         if re.fullmatch(r"[0-9a-f]{40}", value) is None:
             raise ValueError("must be a full lowercase Git SHA")
         return value
@@ -690,6 +693,20 @@ class EffectivenessTask(BaseModel):
             raise ValueError(
                 "replayable tasks must bind observed_head to expected_head"
             )
+        return self
+
+    @model_validator(mode="after")
+    def require_upstream_snapshot_for_comparison(self) -> EffectivenessTask:
+        if (
+            self.ref_kind == "branch"
+            and self.pairing == "comparable"
+            and self.upstream_head is None
+        ):
+            raise ValueError(
+                "comparable branch tasks must bind an observed upstream_head"
+            )
+        if self.ref_kind == "detached" and self.upstream_head is not None:
+            raise ValueError("detached tasks must not claim an upstream_head")
         return self
 
     @model_validator(mode="after")
@@ -774,7 +791,12 @@ class ControlledEffectivenessObservation(BaseModel):
         ids = [task.id for task in value]
         if len(ids) != len(set(ids)):
             raise ValueError("task observation ids must be unique")
-        if len({task.repository for task in value}) < 3:
+        comparable_tasks = [task for task in value if task.pairing == "comparable"]
+        if len(comparable_tasks) < 3:
+            raise ValueError(
+                "effectiveness sample must retain at least three comparable task observations"
+            )
+        if len({task.repository for task in comparable_tasks}) < 3:
             raise ValueError("effectiveness sample must cover at least three repositories")
         return value
 
@@ -797,6 +819,17 @@ class ControlledEffectivenessObservation(BaseModel):
                 if observation.status != expected_status:
                     raise ValueError(
                         f"{task.id} {label} status must match its harness decision"
+                    )
+            if task.pairing == "comparable":
+                treatment_decision = CompactHarnessDecision.model_validate_json(
+                    task.treatment.stdout
+                )
+                source_decision = CompactHarnessDecision.model_validate_json(
+                    task.source_diagnostic.stdout
+                )
+                if treatment_decision != source_decision:
+                    raise ValueError(
+                        f"{task.id} comparable treatment and source decisions must match"
                     )
         return self
 

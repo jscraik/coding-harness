@@ -48,8 +48,8 @@ productivity metrics remain explicitly unknown.
 The direct effectiveness slice now has a controlled local observation in
 addition to the earlier readiness, cohort, and lifecycle samples. The
 controlled sample records a repository-only baseline and the built current CLI
-for five real task snapshots across four repositories; four rows are comparable
-paired observations and one is explicitly non-comparable. It demonstrates clearer
+for five real task snapshots across four repositories; three rows are comparable
+paired observations and two are explicitly non-comparable. It demonstrates clearer
 structured proof with a bounded sub-second built-CLI observation, while
 keeping intervention, review/fix, and PR-lead-time outcomes explicitly
 unknown. This is sufficient for the local proof-clarity boundary, not a causal
@@ -143,17 +143,19 @@ The treatment was the current built Coding Harness `0.15.3` entrypoint,
 `node dist/cli.js next --json`, built from source head
 `344774d0760fc56b0cd8d336d80d483afb798507`. The exact raw source is retained
 at [agent-first-effectiveness-observation-2026-08-11.json](./agent-first-effectiveness-observation-2026-08-11.json),
-SHA-256 `5afb5dc47a8df2165ad617d6f313834a19cdd06be8bab758b49d30f80dff070e`,
-23,902 bytes. Each row now binds an authoritative remote URL and full source
+SHA-256 `2211573353729622489f9de5b894435c620009aae7ea8aced30852b0c639fdfa`,
+24,138 bytes. Each row now binds an authoritative remote URL and full source
 ref, a replay status, the task-root-relative working directory and `dist/cli.js`
 entrypoint used by the treatment, and the source-checkout-at-`source_head`
 repository, full ref, relative working directory, task-root binding, and
-`src/cli.ts` entrypoint used by each source diagnostic. Treatment rows
-also bind the source head, the `$TASK_ROOT` replay directory, and the
+`src/cli.ts` entrypoint used by each source diagnostic. Comparable branch rows
+also bind the observed upstream commit; rows without a retained upstream
+snapshot are explicitly non-comparable. Treatment rows also bind the source
+head, the `$TASK_ROOT` replay directory, and the
 `$HARNESS_SOURCE/dist/cli.js` entrypoint; their replay template changes to the
 task root before loading that pinned source checkout. The recorded relative
 `dist/cli.js` path is therefore not treated as a task-repository binary. Source
-diagnostics record the task-root-bound command `cd "$TASK_ROOT" && node
+diagnostics record the task-root-bound command `cd "$TASK_ROOT" && "$NODE_BIN"
 --import "$SOURCE_LOADER" "$HARNESS_SOURCE/src/cli.ts" next --json` and bind
 `$TASK_ROOT` as the execution directory while invoking the pinned
 `$HARNESS_SOURCE/src/cli.ts` entrypoint. The shared runtime setup binds
@@ -182,7 +184,7 @@ The corrected task-root source-diagnostic replay was rerun at 2026-08-11T22:58:0
 against the recorded heads: Coding Harness, Configs, and Portfolio returned
 `pass`; the Agent-Skills OSS-cloud row returned `blocked` in both lanes, while
 the detached Agent-Skills post-merge row returned a `blocked` source diagnostic
-and a prior `pass` built treatment. That row is explicitly marked
+and a prior `pass` built treatment. Both Agent-Skills rows are explicitly marked
 `non-comparable` and excluded from paired comparison. The built route completed in 0.4289–0.6437
 seconds and returned structured
 `nextAction`, execution-boundary, and claims-boundary fields on every row;
