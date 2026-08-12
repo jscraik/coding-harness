@@ -2,6 +2,7 @@ import {
 	ACCEPTANCE_TRACE_ID_PATTERN,
 	PREPARATORY_NO_ACCEPTANCE_COMPLETION_PATTERN,
 } from "./pr-template-validator-rules.js";
+import { isAllowedLinearIssueKey } from "./linear/utils.js";
 
 type FieldValueExtractor = (
 	body: string,
@@ -26,6 +27,7 @@ type LinkedIssueRelationship =
 export function collectLinkedIssueRelationshipErrors(
 	body: string,
 	extractFieldBlockValue: FieldValueExtractor,
+	allowedPrefixes?: readonly string[],
 ): string[] {
 	const errors: string[] = [];
 	const linearReference = extractFieldBlockValue(
@@ -39,7 +41,10 @@ export function collectLinkedIssueRelationshipErrors(
 		"Linked issue relationship",
 	);
 
-	if (linearReference !== null && !isValidLinearReference(linearReference)) {
+	if (
+		linearReference !== null &&
+		!isValidLinearReference(linearReference, allowedPrefixes)
+	) {
 		errors.push(
 			"Linear reference must use Refs, Fixes, or Closes with a Linear issue key, or n.a. with reason; URL-only references do not satisfy linear-gate.",
 		);
@@ -68,7 +73,7 @@ export function collectLinkedIssueRelationshipErrors(
 
 	if (
 		linearReference !== null &&
-		usesClosureLinearReference(linearReference) &&
+		usesClosureLinearReference(linearReference, allowedPrefixes) &&
 		!(
 			relationship === "implementation" &&
 			hasCompletedAcceptanceIds(linkedIssueRelationship)
@@ -82,15 +87,29 @@ export function collectLinkedIssueRelationshipErrors(
 	return errors;
 }
 
-function isValidLinearReference(value: string): boolean {
+/** Validate a PR template Linear reference against configured teams. */
+function isValidLinearReference(
+	value: string,
+	allowedPrefixes?: readonly string[],
+): boolean {
+	const pattern = /\b(?:Refs?|Fix(?:es)?|Closes?)\s+([A-Z][A-Z0-9]*-\d+)\b/giu;
 	return (
 		hasNaWithReason(value) ||
-		/\b(?:Refs?|Fix(?:es)?|Closes?)\s+JSC-\d+\b/i.test(value)
+		Array.from(value.matchAll(pattern)).some((match) =>
+			isAllowedLinearIssueKey(match[1] ?? "", allowedPrefixes),
+		)
 	);
 }
 
-function usesClosureLinearReference(value: string): boolean {
-	return /\b(?:Fix(?:es)?|Closes?)\s+JSC-\d+\b/i.test(value);
+/** Return whether a configured Linear reference uses a closure verb. */
+function usesClosureLinearReference(
+	value: string,
+	allowedPrefixes?: readonly string[],
+): boolean {
+	const pattern = /\b(?:Fix(?:es)?|Closes?)\s+([A-Z][A-Z0-9]*-\d+)\b/giu;
+	return Array.from(value.matchAll(pattern)).some((match) =>
+		isAllowedLinearIssueKey(match[1] ?? "", allowedPrefixes),
+	);
 }
 
 function classifyLinkedIssueRelationship(
@@ -115,18 +134,20 @@ function hasNaWithReason(value: string): boolean {
 	return /\b(?:n\.a\.|n\/a|not applicable)\b.{6,}/i.test(value);
 }
 
+/** Check that preparatory work explicitly disclaims acceptance completion. */
 function hasPreparatoryNoClosureEvidence(value: string): boolean {
 	return (
 		PREPARATORY_NO_ACCEPTANCE_COMPLETION_PATTERN.test(value) ||
-		/\bdoes\s+not\s+(?:close|complete)\b[\s\S]{0,120}\b(?:acceptance|scope|issue|JSC-\d+)\b/i.test(
+		/\bdoes\s+not\s+(?:close|complete)\b[\s\S]{0,120}\b(?:acceptance|scope|issue|[A-Z][A-Z0-9]*-\d+)\b/i.test(
 			value,
 		)
 	);
 }
 
+/** Check that a closure relationship names completed acceptance IDs. */
 function hasCompletedAcceptanceIds(value: string): boolean {
 	const completedAcceptanceMatch = value.match(
-		/\bcompleted\s+(?:JSC-\d+\s+)?(?:acceptance\s+)?IDs?\s*:\s*([^.;\n]+)/i,
+		/\bcompleted\s+(?:[A-Z][A-Z0-9]*-\d+\s+)?(?:acceptance\s+)?IDs?\s*:\s*([^.;\n]+)/i,
 	);
 	if (!completedAcceptanceMatch) {
 		return false;

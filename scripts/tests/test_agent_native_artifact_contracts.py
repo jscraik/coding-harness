@@ -19,6 +19,7 @@ from check_artifact_type_contracts import (
     AgentNativeRatchetsReport,
     AgentReworkReport,
     CompactHarnessDecision,
+    ControlledEffectivenessObservation,
     GovernanceDecisionSurfaceReport,
     HarnessDecision,
     ReviewerDecisionReport,
@@ -105,6 +106,11 @@ def _load_example(name: str) -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(path.read_text(encoding="utf-8")))
 
 
+def _load_effectiveness_observation() -> dict[str, Any]:
+    path = REPO_ROOT / "docs" / "roadmap" / "agent-first-effectiveness-observation-2026-08-11.json"
+    return cast(dict[str, Any], json.loads(path.read_text(encoding="utf-8")))
+
+
 def _assert_harness_boundary(
     native_authority: str,
     source_kind: str,
@@ -165,6 +171,403 @@ class TestHarnessDecisionShapes:
 
         with pytest.raises(ValidationError, match="must not be blank"):
             CompactHarnessDecision.model_validate(payload)
+
+
+class TestControlledEffectivenessObservation:
+    def test_accepts_replayable_observation_artifact(self) -> None:
+        report = ControlledEffectivenessObservation.model_validate(
+            _load_effectiveness_observation()
+        )
+
+        assert len(report.tasks) == 5
+        assert all(task.replayability == "replayable" for task in report.tasks)
+        assert all(task.treatment.cli_path == "dist/cli.js" for task in report.tasks)
+        assert report.runtime_setup.dependency_setup_command == (
+            'cd "$HARNESS_SOURCE" && pnpm install --frozen-lockfile'
+        )
+        assert report.runtime_setup.source_loader_path == (
+            "$HARNESS_SOURCE/node_modules/tsx/dist/loader.mjs"
+        )
+        assert report.runtime_setup.source_loader_version == "tsx v4.23.0"
+        assert report.built_cli.build_command == (
+            "pnpm install --frozen-lockfile && pnpm build"
+        )
+        assert sum(task.pairing == "comparable" for task in report.tasks) == 3
+        assert sum(task.pairing == "non_comparable" for task in report.tasks) == 2
+        assert report.tasks[3].upstream_head == report.tasks[3].observed_head
+        assert all(
+            task.source_diagnostic.replay_working_directory == "$TASK_ROOT"
+            for task in report.tasks
+        )
+        assert all(
+            task.source_diagnostic.command.endswith(
+                '"$HARNESS_SOURCE/src/cli.ts" next --json'
+            )
+            for task in report.tasks
+        )
+        assert all(
+            task.source_diagnostic.working_directory == "$TASK_ROOT"
+            for task in report.tasks
+        )
+
+    def test_rejects_observation_without_replay_metadata(self) -> None:
+        payload = _load_effectiveness_observation()
+        del payload["tasks"][0]["remote_url"]
+
+        with pytest.raises(ValidationError, match="remote_url"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_untyped_decision_stdout(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["treatment"]["stdout"] = "{}"
+
+        with pytest.raises(ValidationError, match="harness-decision/v1"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_status_exit_code_contradiction(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["baseline"]["exit_code"] = 1
+
+        with pytest.raises(ValidationError, match="exit_code"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+    def test_rejects_non_finite_durations(self, value: float) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["treatment"]["wall_seconds"] = value
+
+        with pytest.raises(ValidationError, match="finite"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_unbound_built_cli_digest(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["built_cli"]["binary_sha256"] = "0" * 64
+
+        with pytest.raises(ValidationError, match="retained built CLI"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_failed_decision_with_zero_exit_code(self) -> None:
+        payload = _load_effectiveness_observation()
+        decision = json.loads(payload["tasks"][0]["treatment"]["stdout"])
+        decision["status"] = "fail"
+        payload["tasks"][0]["treatment"]["status"] = "fail"
+        payload["tasks"][0]["treatment"]["stdout"] = json.dumps(decision)
+
+        with pytest.raises(ValidationError, match="exit_code 1"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize("exit_code", [2, 127])
+    def test_rejects_failed_decision_with_non_decision_exit_code(
+        self, exit_code: int
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        decision = json.loads(payload["tasks"][0]["treatment"]["stdout"])
+        decision["status"] = "blocked"
+        payload["tasks"][0]["treatment"]["status"] = "blocked"
+        payload["tasks"][0]["treatment"]["exit_code"] = exit_code
+        payload["tasks"][0]["treatment"]["stdout"] = json.dumps(decision)
+
+        with pytest.raises(ValidationError, match="exit_code 1"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_replayable_head_mismatch(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["observed_head"] = "0" * 40
+
+        with pytest.raises(ValidationError, match="replayable"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_requires_reason_for_non_comparable_pairing(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][2]["pairing_reason"] = "mismatched task state"
+
+        with pytest.raises(ValidationError, match="non-comparable"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_requires_matching_statuses_for_comparable_pairing(self) -> None:
+        payload = _load_effectiveness_observation()
+        source_diagnostic = payload["tasks"][0]["source_diagnostic"]
+        source_diagnostic["status"] = "blocked"
+        source_diagnostic["exit_code"] = 1
+        decision = json.loads(source_diagnostic["stdout"])
+        decision["status"] = "blocked"
+        source_diagnostic["stdout"] = json.dumps(decision)
+
+        with pytest.raises(ValidationError, match="comparable task status"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_requires_upstream_snapshot_for_comparable_branch(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["ref_kind"] = "branch"
+        payload["tasks"][0]["upstream_head"] = None
+
+        with pytest.raises(ValidationError, match="upstream_head"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_requires_minimum_comparable_cohort(self) -> None:
+        payload = _load_effectiveness_observation()
+        for task in payload["tasks"]:
+            task["pairing"] = "non_comparable"
+            task["pairing_reason"] = "upstream snapshot unavailable; non-comparable"
+
+        with pytest.raises(ValidationError, match="three comparable"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_comparable_decision_payload_mismatch(self) -> None:
+        payload = _load_effectiveness_observation()
+        decision = json.loads(payload["tasks"][0]["source_diagnostic"]["stdout"])
+        decision["summary"] = "different summary"
+        payload["tasks"][0]["source_diagnostic"]["stdout"] = json.dumps(decision)
+
+        with pytest.raises(ValidationError, match="decisions must match"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_insufficient_repository_diversity(self) -> None:
+        payload = _load_effectiveness_observation()
+        for task in payload["tasks"]:
+            task["remote_url"] = "https://github.com/jscraik/coding-harness"
+
+        with pytest.raises(ValidationError, match="three repositories"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_comparable_non_replayable_task(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["replayability"] = "non_replayable"
+
+        with pytest.raises(ValidationError, match="comparable tasks must be replayable"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "status_field"),
+        [
+            ("initial_status", "status"),
+            ("baseline", "status"),
+            ("baseline_diff", "status"),
+        ],
+    )
+    def test_rejects_failed_comparable_baseline(
+        self, field: str, status_field: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0][field][status_field] = "fail"
+        payload["tasks"][0][field]["exit_code"] = 1
+
+        with pytest.raises(ValidationError, match="successful"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_detached_ref_that_is_not_expected_head(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["ref"] = "main"
+
+        with pytest.raises(ValidationError, match="detached tasks must bind ref"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_non_replayable_source_diagnostic_label(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["source_diagnostic"]["command"] = (
+            "node --import tsx src/cli.ts next --json"
+        )
+
+        with pytest.raises(ValidationError, match="task root and source checkout"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_declared_command_mismatch(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["treatment"]["command"] = "harness next --json"
+
+        with pytest.raises(ValidationError, match="treatment command"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_decision_status_mismatch(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][1]["treatment"]["status"] = "fail"
+
+        with pytest.raises(ValidationError, match="status must match"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_accepts_action_required_decision_with_success_exit(self) -> None:
+        payload = _load_effectiveness_observation()
+        decision = json.loads(payload["tasks"][0]["treatment"]["stdout"])
+        decision["status"] = "action_required"
+        payload["tasks"][0]["treatment"]["status"] = "action_required"
+        payload["tasks"][0]["treatment"]["stdout"] = json.dumps(decision)
+        source_decision = json.loads(payload["tasks"][0]["source_diagnostic"]["stdout"])
+        source_decision["status"] = "action_required"
+        payload["tasks"][0]["source_diagnostic"]["status"] = "action_required"
+        payload["tasks"][0]["source_diagnostic"]["stdout"] = json.dumps(source_decision)
+
+        ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_action_required_baseline_observation(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["baseline"]["status"] = "action_required"
+
+        with pytest.raises(ValidationError):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_rejects_source_diagnostic_without_source_head_binding(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["source_diagnostic"]["source_head"] = "0" * 40
+
+        with pytest.raises(ValidationError, match="source_head"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "value", "message"),
+        [
+            (
+                "repository_url",
+                "https://github.com/example/other",
+                "repository_url",
+            ),
+            ("ref", "main", "ref must bind source_head"),
+            ("relative_working_directory", "src", "relative working directory"),
+        ],
+    )
+    def test_rejects_source_diagnostic_without_concrete_checkout_binding(
+        self, field: str, value: str, message: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["source_diagnostic"][field] = value
+
+        with pytest.raises(ValidationError, match=message):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "value", "message"),
+        [
+            ("task_root_ref", "other-task", "task_root_ref"),
+            ("entrypoint", "dist/cli.js", "entrypoint"),
+            ("command", "node --import tsx src/cli.ts next --json", "source_diagnostic command"),
+            ("replay_command", "node src/cli.ts next --json", "replay_command"),
+        ],
+    )
+    def test_rejects_source_diagnostic_replay_binding_drift(
+        self, field: str, value: str, message: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["source_diagnostic"][field] = value
+
+        with pytest.raises(ValidationError, match=message):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "value", "message"),
+        [
+            ("source_checkout_root", ".", "source_checkout_root"),
+            ("working_directory", ".", "working_directory"),
+            ("replay_working_directory", "$HARNESS_SOURCE", "replay_working_directory"),
+        ],
+    )
+    def test_rejects_source_replay_without_explicit_checkout_binding(
+        self, field: str, value: str, message: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["source_diagnostic"][field] = value
+
+        with pytest.raises(ValidationError, match=message):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "value", "message"),
+        [
+            ("working_directory", "other-task", "working_directory"),
+            ("cli_path", "bin/cli.js", "cli_path"),
+        ],
+    )
+    def test_rejects_treatment_replay_binding_drift(
+        self, field: str, value: str, message: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["treatment"][field] = value
+
+        with pytest.raises(ValidationError, match=message):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "value", "message"),
+        [
+            ("source_checkout_ref", "0" * 40, "source_checkout_ref"),
+            (
+                "replay_command",
+                "node dist/cli.js next --json",
+                "replay_command",
+            ),
+        ],
+    )
+    def test_rejects_treatment_source_replay_binding_drift(
+        self, field: str, value: str, message: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["treatment"][field] = value
+
+        with pytest.raises(ValidationError, match=message):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "value", "message"),
+        [
+            ("replay_working_directory", "$HARNESS_SOURCE", "replay_working_directory"),
+            ("replay_entrypoint", "dist/cli.js", "replay_entrypoint"),
+        ],
+    )
+    def test_rejects_treatment_replay_without_task_root_and_source_entrypoint(
+        self, field: str, value: str, message: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["treatment"][field] = value
+
+        with pytest.raises(ValidationError, match=message):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "value", "message"),
+        [
+            ("source_head", "0" * 40, "built_cli source_head"),
+            ("build_working_directory", ".", "build_working_directory"),
+            ("build_command", "npm run build", "build_command"),
+            (
+                "verification_command",
+                "sha256sum dist/cli.js",
+                "verification_command",
+            ),
+        ],
+    )
+    def test_rejects_unpinned_built_cli_provenance(
+        self, field: str, value: str, message: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["built_cli"][field] = value
+
+        with pytest.raises(ValidationError, match=message):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "value", "message"),
+        [
+            (
+                "dependency_setup_command",
+                "pnpm install",
+                "frozen dependency install",
+            ),
+            ("source_loader_path", "$HARNESS_SOURCE/tsx.mjs", "source loader path"),
+            ("source_loader_version", "tsx v4.22.0", "source loader version"),
+            ("source_loader_sha256", "0" * 64, "source loader digest"),
+            (
+                "source_loader_verification_command",
+                "shasum -a 256 node_modules/tsx/dist/loader.mjs",
+                "source loader digest",
+            ),
+        ],
+    )
+    def test_rejects_unpinned_runtime_setup(
+        self, field: str, value: str, message: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["runtime_setup"][field] = value
+
+        with pytest.raises(ValidationError, match=message):
+            ControlledEffectivenessObservation.model_validate(payload)
 
 
 class TestAgentNativeRatchetsReport:

@@ -17,6 +17,13 @@ export interface ReleasePrivateNpmWorkflowRenderInput {
 	buildCommand: string;
 }
 
+/**
+ * Render a private npm publish command for the selected package manager.
+ *
+ * @param packageManager - Package manager used by the scaffolded repository.
+ * @param withProvenance - Whether the publish command should request npm provenance.
+ * @returns The publish command used by the generated workflow.
+ */
 function renderPrivateNpmPublishCommand(
 	packageManager: PackageManager,
 	withProvenance: boolean,

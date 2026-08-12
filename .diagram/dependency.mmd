@@ -81,9 +81,10 @@ graph LR
   node_doc_lifecycle_harness_131bc783_fad034a2["doc_lifecycle_harness_131bc783"]
   node_doc_lifecycle_paths_f62bff0f_413ff7eb["doc_lifecycle_paths_f62bff0f"]
   node_docs_gate_archive_candidates_f8789950_3fa686e1["docs_gate_archive_candidates_f8789950"]
+  node_docs_gate_cadence_293517da_bb1a140d["docs_gate_cadence_293517da"]
+  node_docs_gate_context_7b8b4da7_c77454ff["docs_gate_context_7b8b4da7"]
   node_docs_gate_contradiction_history_cfc01258_84a293d6["docs_gate_contradiction_history_cfc01258"]
   node_docs_gate_contradictions_40d242b0_4424f175["docs_gate_contradictions_40d242b0"]
-  node_docs_gate_core_eb9b6c18_f8540503["docs_gate_core_eb9b6c18"]
   node_docs_gate_files_affa1b0b_bbdd6f27["docs_gate_files_affa1b0b"]
   node_docs_gate_report_338b8e37_c7338e12["docs_gate_report_338b8e37"]
   node_docs_gate_surfaces_bc70c187_c9c3bd9b["docs_gate_surfaces_bc70c187"]
@@ -153,6 +154,7 @@ graph LR
   node_lint_checks_83522b19_3fff9a7d["lint_checks_83522b19"]
   node_lint_cli_9ec62ec0_62537dee["lint_cli_9ec62ec0"]
   node_lint_pages_e33301d0_51f54ed1["lint_pages_e33301d0"]
+  node_live_247610f4_9e329ac0["live_247610f4"]
   node_loader_1_16749818_9255dc35["loader_1_16749818"]
   node_loader_d47712cc_1c3a0e19["loader_d47712cc"]
   node_local_checks_98fa27f8_460aa6a0["local_checks_98fa27f8"]
@@ -375,6 +377,7 @@ graph LR
   ext_node_child_process_f62b7d19["node:child_process"] --> node_command_version_probe_8bb29bab_eb9a49d1
   ext_node_child_process_f62b7d19["node:child_process"] --> node_control_plane_core_db3b4cb2_27437a14
   ext_node_child_process_f62b7d19["node:child_process"] --> node_diff_budget_9da0268d_71167227
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_docs_gate_cadence_293517da_bb1a140d
   ext_node_child_process_f62b7d19["node:child_process"] --> node_docs_gate_files_affa1b0b_bbdd6f27
   ext_node_child_process_f62b7d19["node:child_process"] --> node_doctor_check_utils_d0fc22ea_d74f86eb
   ext_node_child_process_f62b7d19["node:child_process"] --> node_doctor_github_tool_check_e0a938df_28b6e31e
@@ -554,6 +557,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_doc_lifecycle_harness_131bc783_fad034a2
   ext_node_fs_a15b7d96["node:fs"] --> node_doc_lifecycle_paths_f62bff0f_413ff7eb
   ext_node_fs_a15b7d96["node:fs"] --> node_docs_gate_archive_candidates_f8789950_3fa686e1
+  ext_node_fs_a15b7d96["node:fs"] --> node_docs_gate_cadence_293517da_bb1a140d
   ext_node_fs_a15b7d96["node:fs"] --> node_docs_gate_contradiction_history_cfc01258_84a293d6
   ext_node_fs_a15b7d96["node:fs"] --> node_docs_gate_contradictions_40d242b0_4424f175
   ext_node_fs_a15b7d96["node:fs"] --> node_docs_gate_files_affa1b0b_bbdd6f27
@@ -609,6 +613,7 @@ graph LR
   ext_node_fs_a15b7d96["node:fs"] --> node_lint_checks_83522b19_3fff9a7d
   ext_node_fs_a15b7d96["node:fs"] --> node_lint_cli_9ec62ec0_62537dee
   ext_node_fs_a15b7d96["node:fs"] --> node_lint_pages_e33301d0_51f54ed1
+  ext_node_fs_a15b7d96["node:fs"] --> node_live_247610f4_9e329ac0
   ext_node_fs_a15b7d96["node:fs"] --> node_loader_1_16749818_9255dc35
   ext_node_fs_a15b7d96["node:fs"] --> node_loader_d47712cc_1c3a0e19
   ext_node_fs_a15b7d96["node:fs"] --> node_local_checks_98fa27f8_460aa6a0
@@ -846,9 +851,10 @@ graph LR
   ext_node_path_78811c13["node:path"] --> node_doc_lifecycle_harness_131bc783_fad034a2
   ext_node_path_78811c13["node:path"] --> node_doc_lifecycle_paths_f62bff0f_413ff7eb
   ext_node_path_78811c13["node:path"] --> node_docs_gate_archive_candidates_f8789950_3fa686e1
+  ext_node_path_78811c13["node:path"] --> node_docs_gate_cadence_293517da_bb1a140d
+  ext_node_path_78811c13["node:path"] --> node_docs_gate_context_7b8b4da7_c77454ff
   ext_node_path_78811c13["node:path"] --> node_docs_gate_contradiction_history_cfc01258_84a293d6
   ext_node_path_78811c13["node:path"] --> node_docs_gate_contradictions_40d242b0_4424f175
-  ext_node_path_78811c13["node:path"] --> node_docs_gate_core_eb9b6c18_f8540503
   ext_node_path_78811c13["node:path"] --> node_docs_gate_files_affa1b0b_bbdd6f27
   ext_node_path_78811c13["node:path"] --> node_docs_gate_report_338b8e37_c7338e12
   ext_node_path_78811c13["node:path"] --> node_docs_gate_surfaces_bc70c187_c9c3bd9b
@@ -1075,6 +1081,7 @@ graph LR
   ext_node_url_d0cb3ad7["node:url"] --> node_validate_synaipse_transition_0ba0a4bb_265e0ab5
   ext_node_url_d0cb3ad7["node:url"] --> node_version_5ca4f385_fd75945b
   ext_node_url_d0cb3ad7["node:url"] --> node_write_prompt_context_drift_report_71a4e149_cf46c973
+  ext_node_util_f2cdb29c["node:util"] --> node_docs_gate_cadence_293517da_bb1a140d
   ext_node_util_f2cdb29c["node:util"] --> node_packet_caller_candidate_content_2851389c_d14a04d3
   ext_node_vm_e83aa31f["node:vm"] --> node_validate_goal_kanban_script_268db9bd_4cf9451a
   ext_node_zlib_bb6e132b["node:zlib"] --> node_png_inspection_3ec3d3d7_c00e0d99

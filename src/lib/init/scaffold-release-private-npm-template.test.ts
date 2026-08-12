@@ -11,8 +11,17 @@ describe("scaffold private npm release template", () => {
 		});
 
 		expect(workflow).toContain("name: Release to private npm");
+		expect(workflow).not.toContain("Configure npm authentication");
+		expect(workflow).not.toContain("_authToken=$NPM_TOKEN");
+		expect(workflow).not.toContain(
+			'registry-url: "https://registry.npmjs.org/"',
+		);
+		expect(workflow).toContain('NPM_CONFIG_USERCONFIG="$NPMRC"');
+		expect(workflow).toContain(`NODE_AUTH_TOKEN: \${{ secrets.NPM_TOKEN }}`);
 		expect(workflow).toContain('required_pnpm_version="10.33.0"');
-		expect(workflow).toContain("run: pnpm install --frozen-lockfile");
+		expect(workflow).toContain(
+			'NPM_CONFIG_USERCONFIG="$NPMRC" pnpm install --frozen-lockfile',
+		);
 		expect(workflow).toContain(
 			"sudo apt-get install --yes --no-install-recommends ripgrep",
 		);
@@ -26,6 +35,28 @@ describe("scaffold private npm release template", () => {
 			"pnpm publish --no-git-checks --access restricted --provenance",
 		);
 		expect(workflow).not.toMatch(/__[A-Z_]+__/);
+
+		// Verify NODE_AUTH_TOKEN is scoped to token-auth publish step only
+		const tokenStepMatch = workflow.match(
+			/- name: Publish private package \(token\)\s+if: steps\.publish-auth\.outputs\.mode == 'token'\s+env:\s+NODE_AUTH_TOKEN: \${{ secrets\.NPM_TOKEN }}/,
+		);
+		expect(tokenStepMatch).toBeTruthy();
+
+		// Verify OIDC publish step has no NPM_TOKEN/NODE_AUTH_TOKEN dependency
+		const oidcStepMatch = workflow.match(
+			/- name: Publish private package \(OIDC trusted publisher\)\s+if: steps\.publish-auth\.outputs\.mode == 'oidc'\s+(?:env:[\s\S]*?)?run:/,
+		);
+		expect(oidcStepMatch).toBeTruthy();
+		const oidcStepStart = workflow.indexOf(
+			"- name: Publish private package (OIDC trusted publisher)",
+		);
+		const nextStepStart = workflow.indexOf(
+			"- name: Generate build provenance attestation",
+			oidcStepStart,
+		);
+		const oidcStepContent = workflow.slice(oidcStepStart, nextStepStart);
+		expect(oidcStepContent).not.toContain("NPM_TOKEN");
+		expect(oidcStepContent).not.toContain("NODE_AUTH_TOKEN");
 	});
 
 	it("keeps workflow dispatch inputs out of shell interpolation", () => {
@@ -80,7 +111,7 @@ describe("scaffold private npm release template", () => {
 		});
 
 		expect(workflow).not.toContain('required_pnpm_version="10.33.0"');
-		expect(workflow).toContain("run: npm ci");
+		expect(workflow).toContain('NPM_CONFIG_USERCONFIG="$NPMRC" npm ci');
 		expect(workflow).toContain("run: npm run check");
 		expect(workflow).toContain("run: npm run build");
 		expect(workflow).toContain("npm publish --access restricted\n");

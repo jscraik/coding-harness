@@ -40,7 +40,9 @@ describe("scaffold default promotions", () => {
 		expect(harnessCli).toContain("pnpm add -D @brainwav/coding-harness");
 		expect(harnessCli).toContain("pnpm exec harness <command>");
 		expect(harnessCli).toContain("HARNESS_CLI_ALLOW_NPM_EXEC=1");
-		expect(harnessCli).toContain("npm auth is missing in this process");
+		expect(harnessCli).toContain("Public npm fallback is disabled by default");
+		expect(harnessCli).toContain("no npm registry credential is required");
+		expect(harnessCli).not.toContain("npm auth is missing in this process");
 		expect(harnessCli).not.toContain("MODULE_NOT_FOUND");
 
 		const checkEnvironment = renderTemplate(

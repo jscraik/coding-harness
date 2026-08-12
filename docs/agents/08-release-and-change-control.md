@@ -99,15 +99,13 @@ When resuming with `bash scripts/verify-work.sh --resume-from <gate-id>`, prior 
 
 ## Release integrity and verification
 
-Releases published via OIDC trusted publishing from `.github/workflows/release-private-npm.yml` use GitHub OIDC for publish authentication, then carry two private-package verification layers that consumers can verify independently while the package remains private: GitHub artifact attestations and the release SBOM. npm registry provenance is not one of those private-package layers.
+This repository's `.github/workflows/release-private-npm.yml` uses GitHub OIDC for publish authentication and produces the public npm package. The filename is retained for compatibility with existing scaffolds; it is not the contract for generated consumer workflows. Generated downstream `release-private-npm.yml` scaffolds remain private by default and use restricted publish commands, so their behavior must not be inferred from this repository's public release workflow.
 
 ### npm provenance
 
-`@brainwav/coding-harness` is a private/restricted npm package, so npm registry provenance is intentionally disabled for release publishes. Trusted publishing still supplies OIDC authentication for the publish operation, but npm only generates registry provenance when trusted publishing is used from a public repository to publish a public package.
+`@brainwav/coding-harness` is a public npm package. The release workflow uses OIDC trusted publishing with `--access public --provenance`; token-mode publishing remains an explicitly selected bootstrap fallback and also publishes publicly.
 
-The release workflow therefore sets `NPM_CONFIG_PROVENANCE=false` and publishes with OIDC trusted publishing without passing `--provenance`. If the package is intentionally made public later, revisit this section and the workflow publish command before claiming npm registry provenance.
-
-When npm provenance is enabled for a future public package, verify OIDC-published packages from any machine:
+Verify OIDC-published public packages from any machine:
 
 ```bash
 npm view @brainwav/coding-harness --json | jq '.attestations'

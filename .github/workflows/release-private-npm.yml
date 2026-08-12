@@ -1,4 +1,4 @@
-name: Release to private npm
+name: Release to public npm
 
 on:
   push:
@@ -80,7 +80,6 @@ jobs:
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "26.3.0"
-          registry-url: "https://registry.npmjs.org/"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288 # v5
@@ -187,7 +186,7 @@ jobs:
           fi
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
 
-      - name: Publish private package (token)
+      - name: Publish public package (token)
         if: steps.publish-auth.outputs.mode == 'token'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -197,15 +196,18 @@ jobs:
             echo "::error::NPM_TOKEN secret is required when publish_auth=token."
             exit 1
           fi
-          pnpm publish --no-git-checks --access restricted
+          NPMRC="$RUNNER_TEMP/harness-publish.npmrc"
+          trap 'rm -f "$NPMRC"' EXIT
+          printf '%s\n' "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > "$NPMRC"
+          NPM_CONFIG_USERCONFIG="$NPMRC" pnpm publish --no-git-checks --access public
 
-      - name: Publish private package (OIDC trusted publisher)
+      - name: Publish public package (OIDC trusted publisher)
         if: steps.publish-auth.outputs.mode == 'oidc'
         env:
-          # npm provenance requires a public package. Keep OIDC auth for the
-          # private package, but do not request registry provenance.
-          NPM_CONFIG_PROVENANCE: "false"
-        run: pnpm publish --no-git-checks --access restricted
+          # Public npm publishes use OIDC trusted publishing and registry
+          # provenance for the publicly consumable package.
+          NPM_CONFIG_PROVENANCE: "true"
+        run: pnpm publish --no-git-checks --access public --provenance
 
       - name: Generate build provenance attestation
         id: attest

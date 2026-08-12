@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-08-02
+last_validated: 2026-08-11
 ---
 
 # Agent governance
@@ -54,7 +54,7 @@ correctness or delivery readiness.
 - `bash scripts/validate-codestyle.sh`
 - `docs-gate` (CI check for documentation parity)
 - Code-review pass-through via PR workflow (no direct `main` commits).
-- The tag-driven private npm release workflow installs the repository-pinned
+- The tag-driven public npm release workflow installs the repository-pinned
   runtime and required CLI tools before artifact validation; local gates do not
   prove hosted publication or release completion.
 
@@ -74,10 +74,21 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
 
 - Every implementation slice must complete PR `Documentation impact`, `Documentation lifecycle impact`, and `SemVer impact` classification before handoff: update applicable root docs (`README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `AGENTS.md`, `ARCHITECTURE.md`), governed docs, and existing deep-module README files, or record `n.a.` with a reason in the matching PR field
 - north-star status cadence repairs should refresh
-  `docs/roadmap/agent-first-status.md` and the registered
-  `agent-first-status-matrix.lastReviewedAt` value in `harness.contract.json`
-  together. Keep `README.md`, `AGENTS.md`, and this guide synchronized when
-  drift-gate reports an agent-first-status-matrix cadence breach.
+  `docs/roadmap/agent-first-status.md` and the `lastReviewedAt` value in the
+  `productSurface.surfaces` record whose `surfaceId` is
+  `agent-first-status-matrix` in `harness.contract.json` together as one exact
+  two-file cadence registration. Docs-gate treats only
+  that paired date update as documentation cadence; any extra contract field
+  remains contract policy. Keep `README.md`, `AGENTS.md`, and this guide
+  synchronized when docs-gate reports an agent-first-status-matrix cadence
+  breach.
+  This synchronization is evidence maintenance only; it does not establish
+  product effectiveness, publication, or release readiness.
+- The controlled local effectiveness observation is retained at
+  `docs/roadmap/agent-first-effectiveness-observation-2026-08-11.json` and
+  is limited to proof clarity; it is not causal productivity or release proof.
+  Its source diagnostics must retain the declared source checkout and bound
+  source head so a reviewer can replay the evidence without guessing context.
 - per-release product-surface cadence repairs are owned by the `owner` declared
   in `harness.contract.json` (the current `preflight-gate` entry is owned by
   `workflow`); refresh its `lastReviewedAt` entry and keep `README.md`,
@@ -252,7 +263,7 @@ scripts/validate-runtime-packet-schemas.cjs --all` for packet schema and
   surface while one of these gates is blocked. Report local packet proof
   separately from hosted checks, review-thread state, independent acceptance,
   merge, and release truth.
-- The tag-driven private npm release workflow bootstraps the repository-pinned
+- The tag-driven public npm release workflow bootstraps the repository-pinned
   `uv` runtime before artifact validation; publication and release claims still
   require hosted evidence.
 - runtime-card trace-out changes should keep trace persistence in

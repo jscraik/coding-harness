@@ -8,7 +8,7 @@ audience: [human-operator, coding-harness-maintainer, codex-agent]
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-07-31
+last_reviewed: 2026-08-11
 review_cadence: quarterly
 maintenance_trigger: [product-surface-change, install-workflow-change, release-contract-change]
 semver_impact: minor
@@ -91,13 +91,24 @@ does not approve, merge, publish, or release a change.
 Read [AGENTS.md](./AGENTS.md), then [CODESTYLE.md](./CODESTYLE.md). The
 [CLI reference](./docs/cli-reference.md) is the checked command catalogue;
 [contributor validation](./docs/agents/04-validation.md) owns broader gates.
-The tag-driven private npm release workflow bootstraps the repository-pinned
-`uv` runtime and required repository CLI tools before artifact validation;
-local checks do not prove publication.
+The tag-driven public npm release workflow (kept at the legacy
+`.github/workflows/release-private-npm.yml` path) bootstraps the
+repository-pinned `uv` runtime and required repository CLI tools before
+artifact validation; local checks do not prove publication.
 Keep the stable product surface small and move unselected expert capability out
 of the routine path. Keep the truth-bounded recovery status in
 [`docs/roadmap/agent-first-status.md`](./docs/roadmap/agent-first-status.md)
 and its weekly cadence entry in `harness.contract.json` current together.
+The current controlled local observation is retained at
+[`docs/roadmap/agent-first-effectiveness-observation-2026-08-11.json`](./docs/roadmap/agent-first-effectiveness-observation-2026-08-11.json);
+it records proof clarity only, not causal productivity or release readiness.
+Source diagnostics in that observation can be replayed only from the declared
+source checkout at each bound source head; the artifact validator enforces that
+binding before the observation is treated as evidence.
+That exact status-document/date registration is documentation cadence; any
+additional contract mutation remains contract policy.
+Cadence refreshes are evidence maintenance; they do not imply product-
+effectiveness, publication, or release readiness.
 Measurements without retained raw output or an independent receipt are
 observation notes, not execution proof.
 Routine corrections stay local, or record `no_system_change` with the reason,

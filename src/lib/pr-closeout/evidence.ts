@@ -1,4 +1,18 @@
-import type { PrCloseoutCheckInput } from "./types.js";
+import type { PrCloseoutCheckInput, PrCloseoutInput } from "./types.js";
+
+/** Check one extracted key against an optional configured Linear allowlist. */
+function isAllowedLinearIssueKey(
+	issueKey: string,
+	allowedPrefixes?: readonly string[],
+): boolean {
+	const separator = issueKey.indexOf("-");
+	if (separator <= 0) return false;
+	const prefix = issueKey.slice(0, separator).toUpperCase();
+	if (allowedPrefixes === undefined) return prefix.length > 1;
+	return allowedPrefixes.some(
+		(allowedPrefix) => allowedPrefix.toUpperCase() === prefix,
+	);
+}
 
 /** Normalize provider status strings before verifier comparisons. */
 export function normalizeStatus(value: string | null | undefined): string {
@@ -50,6 +64,28 @@ export function isPendingCheck(check: PrCloseoutCheckInput): boolean {
 }
 
 /** Return whether PR prose contains the required Linear issue reference. */
-export function hasLinearReference(body: string | null | undefined): boolean {
-	return /\b(?:Refs|Closes|Fixes)\s+[A-Z][A-Z0-9]+-\d+\b/u.test(body ?? "");
+export function hasLinearReference(
+	body: string | null | undefined,
+	allowedPrefixes?: readonly string[],
+): boolean {
+	const pattern = /\b(?:Refs|Closes|Fixes)\s+([A-Z][A-Z0-9]*-\d+)\b/giu;
+	return Array.from((body ?? "").matchAll(pattern)).some((match) =>
+		isAllowedLinearIssueKey(match[1] ?? "", allowedPrefixes),
+	);
+}
+
+/** Apply configured Linear-prefix validation before closeout claims are built. */
+export function applyConfiguredLinearIssueKeyPolicy(
+	input: PrCloseoutInput,
+): PrCloseoutInput {
+	if (
+		input.linearIssueKeyPrefixes === undefined ||
+		hasLinearReference(input.pullRequest.body, input.linearIssueKeyPrefixes)
+	) {
+		return input;
+	}
+	return {
+		...input,
+		pullRequest: { ...input.pullRequest, body: null },
+	};
 }

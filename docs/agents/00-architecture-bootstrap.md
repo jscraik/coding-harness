@@ -114,6 +114,11 @@ and presentation live in the named owner module. Update the registry and
 `src/lib/architecture/module-boundaries.test.ts` when a new family adopts this
 split, then refresh generated architecture context when docs-gate requires it.
 
+Linear issue-key prefixes are a contract policy shared by the Linear gate,
+PR-template validation, and PR closeout. Keep the configured prefix allowlist
+in `harness.contract.json` as the authority and make each consumer reject
+disallowed references consistently; do not introduce a second prefix registry.
+
 ## Local execution coordinator
 
 The local execution architecture has two command facades: `harness run` for a
@@ -319,7 +324,12 @@ Codestyle policy-index and nested instruction-surface changes are part of this
 same validation graph when they add or alter `coding-policy.json`, policy
 schemas, policy validators, scoped `AGENTS.md` routing cards, docs-gate
 classification, `coding-policy-route/v1`, changed-file pattern routing, or
-generated architecture context. Keep this guide,
+generated architecture context. A docs-gate exception must stay exact and
+test-covered: the paired `lastReviewedAt` change in the
+`productSurface.surfaces` record whose `surfaceId` is
+`agent-first-status-matrix` and the `docs/roadmap/agent-first-status.md` change
+is a cadence registration, while every other contract mutation remains contract
+policy. Keep this guide,
 `docs/agents/07b-agent-governance.md`, and the generated context pack in the
 same PR so agents can trace policy authority, local routing, required gates, and
 generated evidence without treating the JSON index as a replacement for Markdown

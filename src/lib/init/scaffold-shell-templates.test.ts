@@ -1,3 +1,14 @@
+import {
+	chmodSync,
+	mkdtempSync,
+	mkdirSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
 	renderAddPackageCommand,
@@ -61,10 +72,11 @@ describe("scaffold shell templates", () => {
 		expect(pnpmWrapper).toContain("pnpm exec harness <command>");
 		expect(pnpmWrapper).toContain("not a local npm package root");
 		expect(pnpmWrapper).toContain("HARNESS_CLI_ALLOW_NPM_EXEC=1");
-		expect(pnpmWrapper).toContain("npm auth is missing in this process");
-		expect(pnpmWrapper).toContain(
-			"Private npm fallback is disabled by default",
-		);
+		expect(pnpmWrapper).toContain("Public npm fallback is disabled by default");
+		expect(pnpmWrapper).toContain("no npm registry credential is required");
+		expect(pnpmWrapper).not.toContain("npm_auth_is_available");
+		expect(pnpmWrapper).not.toContain("npm auth is missing in this process");
+		expect(pnpmWrapper).not.toContain("Private npm fallback");
 
 		expect(pnpmWrapper).toContain("is_harness_source_repo");
 		expect(pnpmWrapper).toContain('exec node "$REPO_ROOT/dist/cli.js" "$@"');
@@ -88,6 +100,71 @@ describe("scaffold shell templates", () => {
 		expect(npmWrapper).toContain(
 			'exec npm exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
 		);
+	});
+
+	it("runs the fixed public npm fallback without trusting a package alias", () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "harness-public-fallback-"));
+		try {
+			const scriptsDir = join(tempDir, "scripts");
+			const fakeBin = join(tempDir, ".fake-bin");
+			const argsPath = join(tempDir, "npm-args.log");
+			mkdirSync(scriptsDir, { recursive: true });
+			mkdirSync(fakeBin, { recursive: true });
+			writeFileSync(
+				join(tempDir, "package.json"),
+				JSON.stringify({
+					name: "fixture",
+					private: true,
+					dependencies: {
+						"@brainwav/coding-harness": "npm:attacker-harness@1.2.3",
+					},
+				}),
+				"utf8",
+			);
+			const wrapperPath = join(scriptsDir, "harness-cli.sh");
+			writeFileSync(wrapperPath, renderHarnessCliWrapper("pnpm"), "utf8");
+			chmodSync(wrapperPath, 0o755);
+			const fakeNpmPath = join(fakeBin, "npm");
+			writeFileSync(
+				fakeNpmPath,
+				`#!/usr/bin/env bash
+		set -euo pipefail
+		if [[ "\${1:-}" == "whoami" ]]; then
+			echo "unexpected npm whoami" >&2
+			exit 91
+		fi
+		printf '%s\\n' "$*" > "\${HARNESS_NPM_ARGS_FILE:?}"
+		`,
+				"utf8",
+			);
+			chmodSync(fakeNpmPath, 0o755);
+			const result = spawnSync("/bin/bash", [wrapperPath, "check"], {
+				cwd: tempDir,
+				encoding: "utf8",
+				env: {
+					PATH: `${fakeBin}:${dirname(process.execPath)}:/opt/homebrew/bin:/usr/bin:/bin`,
+					HOME: tempDir,
+					HARNESS_CLI_ALLOW_NPM_EXEC: "1",
+					HARNESS_NPM_ARGS_FILE: argsPath,
+				},
+			});
+			expect(result.status, `${result.stdout}${result.stderr}`).toBe(0);
+			const npmArgs = readFileSync(argsPath, "utf8");
+			expect(npmArgs).toContain("exec");
+			expect(npmArgs).toContain("--registry=https://registry.npmjs.org/");
+			expect(npmArgs).toContain("--package @brainwav/coding-harness@latest");
+			expect(npmArgs).not.toContain("attacker-harness");
+			expect(npmArgs).not.toContain("whoami");
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("does not honor a downstream npm alias in the public fallback", () => {
+		const wrapper = renderHarnessCliWrapper("pnpm");
+
+		expect(wrapper).toContain('--package "$PACKAGE_SPEC"');
+		expect(wrapper).not.toContain("resolve_package_spec");
 	});
 
 	it("renders the harness gate runner fallback chain", () => {

@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-08-02
+last_validated: 2026-08-11
 ---
 
 # Agent-First Status
@@ -10,14 +10,15 @@ last_validated: 2026-08-02
 - [North-Star Boundary](#north-star-boundary)
 - [What Is Known](#what-is-known)
 - [Direct Observation Sample](#direct-observation-sample)
-- [Controlled Readiness Comparison](#controlled-readiness-comparison)
+- [Controlled Baseline And Treatment](#controlled-baseline-and-treatment)
+- [Source-Bound Observation Cohort](#source-bound-observation-cohort)
 - [Lifecycle Evidence Sample](#lifecycle-evidence-sample)
 - [Recovery Order](#recovery-order)
 - [Historical Reporting](#historical-reporting)
 
 ## Current Status
 
-**Status:** 🔶 Partial
+**Status:** ✅ Reduced route locally evidenced; causal productivity metrics remain unknown
 
 Coding Harness is in a product-recovery programme. The immediate goal is a
 small practical route that helps an agent understand a task, choose one useful
@@ -35,13 +36,24 @@ completed the remaining active contract and documentation collapse. The prerequi
 admission dependency. Optional
 context maintenance is advisory; it is not the primary action for ordinary work.
 
-The active slice is direct effectiveness observation. A five-repository
-read-only readiness sample, a version-matched controlled readiness comparison,
-and a separate source-bound lifecycle sample are recorded below. The lifecycle
-rows prove that real bounded changes reached review and merge, but they do not
-provide complete intervention/time-to-proof observations. The controlled
-comparison shows richer local routing output with sub-second overhead in this
-sample; it does not establish a causal product-effectiveness outcome.
+The 2026-08-10 weekly review also includes the dependency remediation merged in
+[#515](https://github.com/jscraik/coding-harness/pull/515) and the public npm
+release-contract alignment merged in
+[#514](https://github.com/jscraik/coding-harness/pull/514). Those maintenance
+slices improve dependency and future release readiness, but they add no new
+effectiveness observation or package-publication evidence. The controlled
+observation below supplies the missing local proof-clarity evidence; causal
+productivity metrics remain explicitly unknown.
+
+The direct effectiveness slice now has a controlled local observation in
+addition to the earlier readiness, cohort, and lifecycle samples. The
+controlled sample records a repository-only baseline and the built current CLI
+for five real task snapshots across four repositories; three rows are comparable
+paired observations and two are explicitly non-comparable. It demonstrates clearer
+structured proof with a bounded sub-second built-CLI observation, while
+keeping intervention, review/fix, and PR-lead-time outcomes explicitly
+unknown. This is sufficient for the local proof-clarity boundary, not a causal
+product-effectiveness claim.
 
 ## North-Star Boundary
 
@@ -92,26 +104,27 @@ not modified. This sample does not satisfy the end-to-end acceptance condition
 and must not be used to claim lower PR lead time, fewer interventions, less
 rework, or general product effectiveness.
 
-## Controlled Readiness Comparison
+### Fresh source-bound observation (2026-08-11)
 
-This bounded comparison was run on 2026-08-02 with the version-matched
-published consumer `harness` v0.15.3. The treated route ran, from each target
-repository, the exact read-only commands `harness next --json` followed by
-`harness check --json`; dirty repositories used the explicit
-`--worktree-role dirty-with-justification` option for `next`. The untreated
-comparison was the read-only command `git status --short --branch; git diff
---name-only`. Both routes only observed repository state and made no writes.
-The timings below are wall-clock seconds from `/usr/bin/time -p`; the baseline
-is the Git snapshot command, not an equivalent task-routing experience.
+A new read-only observation was captured from revision
+`e6aefbff4f0e08cb18f1d5b4d804a27b9c7bce5f`; that revision is not retained as a
+reachable ref, so replay is bound to reachable `origin/main` at
+`e94794c2b8f117d6bad16b4d11ec98b28d38da02`, whose tree was proven identical
+before the observation was recorded. The private raw artifact is
+`/private/tmp/coding-harness-effectiveness-observations-20260811.json`, SHA-256
+`aedf5538a7753d561f45d09f9e2be286d27ae358a741fa01462b3110ddf92464`.
+Each row used `harness next --json --worktree-role dirty-with-justification`
+from the task root and `harness check <task-root> --json` from the source
+checkout. The dirty-worktree role preserved owner-controlled changes; it did
+not authorize edits or make the task clean.
 
-The raw JSON, emitted validation-plan output, and changed-file path snapshots
-from this observation were not persisted as a separate receipt. The table is
-therefore an unverified observation note, not independently repeatable
-execution evidence.
-For rows where `next` selected a validation plan, the recorded command form
-was `harness validation-plan --source .harness/learnings/coderabbit.local.json
---files <observed changed files> --json`; the concrete file list and command
-output are unavailable for independent replay.
+| Task / repository | Task HEAD | `next` result / seconds | `check` counts (ok / warn / fail) | Local interpretation |
+| --- | --- | --- | --- | --- |
+| Agent-Skills | `6c3c83bdf236ce8badd97e5e86eedcbb8388d1e2` | `action_required` / 1.996 | 3 / 2 / 0 | Exact validation-plan command; dirty changes preserved |
+| Configs | `f56b308cc0bb872c36ed344afb5a8b6032f910b2` | `action_required` / 1.819 | 3 / 2 / 0 | Exact validation-plan command; untracked automation preserved |
+| Portfolio | `3c735ee8928619b23af6b7ee54f3d509beb5a61f` | `action_required` / 1.769 | 3 / 1 / 1 | Exact validation-plan command; one repository check failed |
+| Jamie Brain | `90ee789eced74e6f1dd018b5a1d8259d9c04888b` | `action_required` / 1.854 | 1 / 2 / 1 | Exact validation-plan command; configuration check failed |
+| Coding Harness | `e94794c2b8f117d6bad16b4d11ec98b28d38da02` | `pass` / 0.944 | 3 / 1 / 1 | Routed to `harness check`; source/version drift remained visible |
 
 | Repository / observed HEAD                                | Treated `next`                                                        | Validation binding                                              | Treated wall time | `check` counts (ok / warn / fail) | Untreated Git snapshot | Interpretation                                                                |
 | --------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------- | ----------------: | --------------------------------: | ---------------------: | ----------------------------------------------------------------------------- |
@@ -121,16 +134,183 @@ output are unavailable for independent replay.
 | Portfolio `011183f961a32ebd77a7d773adb1dc5df3487cb6`      | `action_required`; 30 changed files and exact validation-plan command | unverified note: command form above; path snapshot not retained |             0.53s |                         3 / 1 / 1 |                  0.03s | `check` exposed repository-local version drift; no causal benefit claim       |
 | Coding Harness `34e46f72e218e1314f0365c81877b7a0cbcd35ed` | `pass`; no changed files                                              | n.a. (no validation-plan command selected)                      |             0.62s |                         4 / 1 / 0 |                  0.03s | structured readiness boundary with version coherence; causal benefit unproven |
 
-The recorded summary says that the route supplied a typed status, one next
-action or command, warnings, execution boundary, and claims boundary in
-roughly 0.5–0.9 seconds for these five observations, while the untreated
-command supplied only Git state and paths. Because the raw output and path
-snapshots were not retained, those values remain unverified notes. The two
-`check` failures are configuration/version findings in the observed
-repositories, not evidence that the Harness route itself failed. This is a
-local proof comparison only: it does not measure PR lead time, review/rework,
-Jamie intervention, retries, or production outcomes, and it does not prove
-that the route caused any observed task result.
+The raw artifact binds command text, exit codes, stdout, stderr, task HEADs,
+and wall time. Because it is retained only in the private OC evidence lane,
+reviewers cannot independently retrieve it; this table therefore records an
+unverified local observation note rather than proof or a public receipt. It
+does not provide an untreated baseline, Jamie intervention counts, review/fix
+cycles, or a causal effectiveness result; the controlled sample below is the
+source for the bounded local proof-clarity result.
+
+## Controlled Baseline And Treatment
+
+On 2026-08-11, five real task snapshots across Agent-Skills, Configs,
+Portfolio, and Coding Harness were run read-only from immutable task heads.
+The baseline was `git status --short --branch` followed by `git diff --stat -- .`.
+The treatment was the current built Coding Harness `0.15.3` entrypoint,
+`node dist/cli.js next --json`, built from source head
+`344774d0760fc56b0cd8d336d80d483afb798507`. The exact raw source is retained
+at [agent-first-effectiveness-observation-2026-08-11.json](./agent-first-effectiveness-observation-2026-08-11.json),
+SHA-256 `68cc3718c5944b545a8b49a9bece3dfa54d6c7a53519c1baa7fc2de38ef9353c`,
+24,174 bytes. Each row now binds an authoritative remote URL and full source
+ref, a replay status, the task-root-relative working directory and `dist/cli.js`
+entrypoint used by the treatment, and the source-checkout-at-`source_head`
+repository, full ref, relative working directory, task-root binding, and
+`src/cli.ts` entrypoint used by each source diagnostic. Comparable branch rows
+also bind the observed upstream commit; rows without a retained upstream
+snapshot are explicitly non-comparable. Comparable rows must retain replay
+support and
+the sample's three-repository floor is counted from distinct authoritative
+remote URLs; detached rows bind their ref directly to the recorded expected
+head. Treatment rows also bind the source
+head, the `$TASK_ROOT` replay directory, and the
+`$HARNESS_SOURCE/dist/cli.js` entrypoint; their replay template changes to the
+task root before loading that pinned source checkout. The recorded relative
+`dist/cli.js` path is therefore not treated as a task-repository binary. Source
+diagnostics record the task-root-bound command `cd "$TASK_ROOT" && "$NODE_BIN"
+--import "$SOURCE_LOADER" "$HARNESS_SOURCE/src/cli.ts" next --json` and bind
+`$TASK_ROOT` as the execution directory while invoking the pinned
+`$HARNESS_SOURCE/src/cli.ts` entrypoint. The shared runtime setup binds
+`cd "$HARNESS_SOURCE" && pnpm install --frozen-lockfile`, the `tsx v4.23.0`
+loader path, and its SHA-256 verification command. The built CLI record also
+binds `source_head`, the `$HARNESS_SOURCE` build directory, the complete
+`pnpm install --frozen-lockfile && pnpm build` recipe, and
+`shasum -a 256 dist/cli.js`; an operator must reproduce that digest before
+using the entrypoint. These templates run from the declared directories while
+loading the pinned source checkout.
+Treatment and source `pass` or `action_required` decisions
+are successful when the command exits 0;
+`blocked` and `fail` require exit code 1. The existing repository
+artifact-types validator validates this retained observation as
+`coding-harness-controlled-effectiveness-observation/v1`.
+
+| Task snapshot | Baseline status + diff (s) | Built `next` (s) | Result | Local effect |
+| --- | ---: | ---: | --- | --- |
+| Coding Harness current main | 0.0260 | 0.5588 | pass | Structured next action and claims boundary with bounded overhead |
+| Agent-Skills OSS-cloud boundary | 0.1011 | 0.6095 | blocked | Correctly stopped on branch currency instead of guessing |
+| Agent-Skills post-merge stabilization | 0.1107 | 0.6437 | non-comparable | Source replay fail-closed on detached task state; built result retained but excluded from paired comparison |
+| Configs brace-expansion task | 0.0239 | 0.4588 | pass | Added actionable warnings and safe execution boundary |
+| Portfolio route-rhythm task | 0.0228 | 0.4289 | pass | Added actionable warnings and safe execution boundary |
+
+The corrected task-root source-diagnostic replay was rerun at 2026-08-11T22:58:00Z
+against the recorded heads: Coding Harness, Configs, and Portfolio returned
+`pass`; the Agent-Skills OSS-cloud row returned `blocked` in both lanes, while
+the detached Agent-Skills post-merge row returned a `blocked` source diagnostic
+and a prior `pass` built treatment. Both Agent-Skills rows are explicitly marked
+`non-comparable` and excluded from paired comparison. The built route completed in 0.4289–0.6437
+seconds and returned structured
+`nextAction`, execution-boundary, and claims-boundary fields on every row;
+the one non-zero result was the expected fail-closed branch-currency stop.
+The repository-only baseline exposed branch/status and diff state but no
+bounded next action or claims boundary. This is materially clearer local proof
+with a bounded sub-second orientation overhead in this sample; that range is
+an observation, not a product-wide latency target or a guarantee of no delay.
+No row measures Jamie intervention, review/fix cycles, PR lead time, or causal productivity.
+The evidence therefore satisfies the raw five-task local proof-clarity
+boundary while leaving those outcome metrics unknown.
+
+## Source-Bound Observation Cohort
+
+A fresh source-bound cohort was captured on 2026-08-03 from five named task
+worktrees across Agent Skills, Configs, Portfolio, and Coding Harness. The raw
+local evidence remains in the private OC evidence lane as
+`real-task-observations.json`, SHA-256
+`fef485416dd21d01d281691e8879f078e31699a33deaba180724f043a1a70272`.
+It is intentionally not a tracked receipt or a new schema family. The digest
+binds that local observation, but a normal repository checkout cannot
+independently retrieve or replay the private bytes.
+
+The source runner was Coding Harness `main` at
+`f0f405adf0b405ec821f58e564d3d3f5927cfffc`. The recorded invocation used two
+roots: the Coding Harness source checkout supplied `src/cli.ts`, while each
+task worktree was the working directory for `next --json`; `check <repo-root>
+--json` ran from the source checkout with the task root as its explicit
+argument. The exact command shape and working-directory arrangement were:
+
+```bash
+set -euo pipefail
+
+# Set these to the pinned Node/tsx paths and the two roots recorded by the
+# private observation artifact before replaying a row.
+NODE_BIN=/path/to/node-26.3.0/bin/node
+SOURCE_LOADER=/path/to/coding-harness/node_modules/tsx/dist/loader.mjs
+HARNESS_SOURCE=/path/to/coding-harness
+TASK_ROOT=/path/to/task-worktree
+EXPECTED_SOURCE_SHA=f0f405adf0b405ec821f58e564d3d3f5927cfffc
+EXPECTED_SOURCE_LOADER_SHA=150d1ff8a7770665997a940d4c686f1a3a5660349a5c7c3523b39eb43016ca74
+# Select the matching task HEAD from the table above.
+EXPECTED_TASK_SHA=<observed HEAD from the selected table row>
+
+assert_recorded_tree() {
+  local root=$1
+  local expected=$2
+  test "$(git -C "$root" rev-parse HEAD)" = "$expected"
+  test -z "$(git -C "$root" status --porcelain=v1)"
+}
+
+# The source checkout is owned by Coding Harness maintainers. The task
+# worktree is owned by the repository that supplied the selected row.
+assert_recorded_tree "$HARNESS_SOURCE" "$EXPECTED_SOURCE_SHA"
+assert_recorded_tree "$TASK_ROOT" "$EXPECTED_TASK_SHA"
+
+# cwd: HARNESS_SOURCE (once per source head)
+(cd "$HARNESS_SOURCE" && pnpm install --frozen-lockfile)
+ACTUAL_SOURCE_LOADER_SHA="$(
+  (cd "$HARNESS_SOURCE" && shasum -a 256 node_modules/tsx/dist/loader.mjs) |
+    awk '{print $1}'
+)"
+test "$ACTUAL_SOURCE_LOADER_SHA" = "$EXPECTED_SOURCE_LOADER_SHA"
+
+# cwd: TASK_ROOT
+(cd "$TASK_ROOT" && "$NODE_BIN" --import "$SOURCE_LOADER" \
+  "$HARNESS_SOURCE/src/cli.ts" next --json)
+
+# cwd: HARNESS_SOURCE; TASK_ROOT is the explicit check target
+(cd "$HARNESS_SOURCE" && "$NODE_BIN" --import "$SOURCE_LOADER" \
+  "$HARNESS_SOURCE/src/cli.ts" check "$TASK_ROOT" --json)
+```
+
+The private artifact records the host-specific absolute command strings,
+working directories, exit codes, wall times, and raw output. A replay must
+retain the source commit and task HEAD from the row, capture both stdout and
+stderr, and preserve the exit code. A non-zero command exit blocks the row;
+`check` output with any `fail` count also remains a failed observation even
+when the process exits zero. The Coding Harness and Portfolio rows each had
+one failed check and therefore remain drift observations, not readiness
+passes. A Git status/diff snapshot was captured first, and all five task
+worktrees were clean at observation time. This arrangement is a local
+execution record, not a portable command that can be replayed from a target
+repository without the source checkout and private evidence lane.
+
+| Task worktree / observed HEAD | `next` result | `check` counts (ok / warn / fail) | Local interpretation |
+| --- | --- | ---: | --- |
+| Agent Skills shape-debt retirement `9c485ef0de3ed0baced0e0555577b6d618908685` | `pass` (~1.88s tool wall) | 3 / 2 / 0 | Structured route; repo-local install warning |
+| Agent Skills evaluator guard wording `15a2c6396ad2b90968cf8f91fbd8229fa4a37fb7` | `blocked` (~1.63s tool wall) | 3 / 2 / 0 | Branch is behind `origin/main`; Harness stopped rather than guessing |
+| Configs OSS-cloud executable binding `c6859cff9ee9bd15425aebc1c60f9ed71bae802e` | `pass` (~1.41s tool wall) | 3 / 2 / 0 | Structured route; no repo-local runner warning |
+| Portfolio public registry resolution `68dafea692b8105e01c8ff8930fad98539f85a4d` | `pass` (~1.43s tool wall) | 3 / 1 / 1 | Check exposed repo-local/global version drift |
+| Coding Harness v0.15.3 release preparation `bdf27054f87b73b5e18eaf5bd986d04b9e2bf59e` | `pass` (~1.46s tool wall) | 3 / 1 / 1 | Check exposed source/global version drift |
+
+The one failed check in each of those two rows is the `check` command's
+repo-local versus installed/global version-drift check. Its expected status for
+this observation is `fail`; it is accepted as a classified drift observation,
+never as a readiness pass. The Portfolio row is owned by Portfolio maintainers,
+and the Coding Harness row by Coding Harness maintainers. Remediation is to
+align the source and installed versions, then rerun the exact source-bound
+`next --json` and `check <repo-root> --json` commands above. Until the rerun has
+no failed checks and a zero exit status, preserve the row as a drift observation
+and do not promote it to readiness or effectiveness evidence. Capture stdout,
+stderr, and the exit code; if the rerun fails, retain the failure classification
+and stop promotion rather than treating the row as passed.
+
+The private cohort records clean-lane local routing and fail-closed handling of
+a branch-currency problem as an unverified observation note. Because its raw
+bytes are not repo-retained or independently accessible, it does not establish
+reviewer-replayable evidence. It does not prove that a user task was accelerated,
+that Jamie intervention or review/fix cycles decreased, or that PR lead time
+improved. Intervention, review/fix, and PR-lead-time fields remain unknown;
+the read-only observation itself must not be counted as a task outcome.
+This is local evidence only and does not prove hosted CI, review, acceptance,
+merge, release, package publication, or production effectiveness.
 
 ## Lifecycle Evidence Sample
 
