@@ -495,6 +495,7 @@ CONTROLLED_TREATMENT_REPLAY_ENTRYPOINT = "$HARNESS_SOURCE/dist/cli.js"
 CONTROLLED_BUILD_WORKING_DIRECTORY = "$HARNESS_SOURCE"
 CONTROLLED_BUILD_COMMAND = "pnpm install --frozen-lockfile && pnpm build"
 CONTROLLED_BUILD_VERIFICATION_COMMAND = "shasum -a 256 dist/cli.js"
+CONTROLLED_BUILT_CLI_SHA256 = "1ba827455c870357b9e25eddee1ddaa92704de6d870199978772b37a31d16cdf"
 CONTROLLED_RUNTIME_SETUP_COMMAND = (
     'cd "$HARNESS_SOURCE" && pnpm install --frozen-lockfile'
 )
@@ -633,6 +634,8 @@ class EffectivenessBuiltCli(BaseModel):
     def require_sha256(cls, value: str) -> str:
         if re.fullmatch(r"[0-9a-f]{64}", value) is None:
             raise ValueError("must be a lowercase SHA-256 digest")
+        if value != CONTROLLED_BUILT_CLI_SHA256:
+            raise ValueError("binary_sha256 does not match the retained built CLI")
         return value
 
     @field_validator("source_head")
@@ -724,6 +727,21 @@ class EffectivenessTask(BaseModel):
             raise ValueError(
                 "comparable task status must match treatment and source statuses"
             )
+        return self
+
+    @model_validator(mode="after")
+    def require_successful_comparison_baseline(self) -> EffectivenessTask:
+        if self.pairing == "comparable":
+            observations = (
+                ("initial_status", self.initial_status),
+                ("baseline", self.baseline),
+                ("baseline_diff", self.baseline_diff),
+            )
+            for label, observation in observations:
+                if observation.status != "pass" or observation.exit_code != 0:
+                    raise ValueError(
+                        f"comparable tasks require a successful {label} observation"
+                    )
         return self
 
 

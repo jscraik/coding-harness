@@ -239,6 +239,13 @@ class TestControlledEffectivenessObservation:
         with pytest.raises(ValidationError, match="finite"):
             ControlledEffectivenessObservation.model_validate(payload)
 
+    def test_rejects_unbound_built_cli_digest(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["built_cli"]["binary_sha256"] = "0" * 64
+
+        with pytest.raises(ValidationError, match="retained built CLI"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
     def test_rejects_failed_decision_with_zero_exit_code(self) -> None:
         payload = _load_effectiveness_observation()
         decision = json.loads(payload["tasks"][0]["treatment"]["stdout"])
@@ -328,6 +335,24 @@ class TestControlledEffectivenessObservation:
         payload["tasks"][0]["replayability"] = "non_replayable"
 
         with pytest.raises(ValidationError, match="comparable tasks must be replayable"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "status_field"),
+        [
+            ("initial_status", "status"),
+            ("baseline", "status"),
+            ("baseline_diff", "status"),
+        ],
+    )
+    def test_rejects_failed_comparable_baseline(
+        self, field: str, status_field: str
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0][field][status_field] = "fail"
+        payload["tasks"][0][field]["exit_code"] = 1
+
+        with pytest.raises(ValidationError, match="successful"):
             ControlledEffectivenessObservation.model_validate(payload)
 
     def test_rejects_detached_ref_that_is_not_expected_head(self) -> None:
