@@ -528,8 +528,10 @@ class EffectivenessDecisionObservation(EffectivenessObservationBase):
     def require_decision_exit_consistency(self) -> EffectivenessDecisionObservation:
         if self.status in {"pass", "action_required"} and self.exit_code != 0:
             raise ValueError("successful observations must have exit_code 0")
-        if self.status in {"fail", "blocked"} and self.exit_code == 0:
-            raise ValueError("failed or blocked observations must have a non-zero exit_code")
+        if self.status in {"fail", "blocked"} and self.exit_code != 1:
+            raise ValueError(
+                "failed or blocked observations must have exit_code 1 (non-zero)"
+            )
         return self
 
 
@@ -694,6 +696,13 @@ class EffectivenessTask(BaseModel):
     def require_non_comparable_reason(self) -> EffectivenessTask:
         if self.pairing == "non_comparable" and "non-compar" not in self.pairing_reason.lower():
             raise ValueError("non-comparable tasks must explain their exclusion")
+        if (
+            self.pairing == "comparable"
+            and self.treatment.status != self.source_diagnostic.status
+        ):
+            raise ValueError(
+                "comparable task status must match treatment and source statuses"
+            )
         return self
 
 

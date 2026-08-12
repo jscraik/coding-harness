@@ -245,7 +245,21 @@ class TestControlledEffectivenessObservation:
         payload["tasks"][0]["treatment"]["status"] = "fail"
         payload["tasks"][0]["treatment"]["stdout"] = json.dumps(decision)
 
-        with pytest.raises(ValidationError, match="non-zero exit_code"):
+        with pytest.raises(ValidationError, match="exit_code 1"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    @pytest.mark.parametrize("exit_code", [2, 127])
+    def test_rejects_failed_decision_with_non_decision_exit_code(
+        self, exit_code: int
+    ) -> None:
+        payload = _load_effectiveness_observation()
+        decision = json.loads(payload["tasks"][0]["treatment"]["stdout"])
+        decision["status"] = "blocked"
+        payload["tasks"][0]["treatment"]["status"] = "blocked"
+        payload["tasks"][0]["treatment"]["exit_code"] = exit_code
+        payload["tasks"][0]["treatment"]["stdout"] = json.dumps(decision)
+
+        with pytest.raises(ValidationError, match="exit_code 1"):
             ControlledEffectivenessObservation.model_validate(payload)
 
     def test_rejects_replayable_head_mismatch(self) -> None:
@@ -260,6 +274,14 @@ class TestControlledEffectivenessObservation:
         payload["tasks"][2]["pairing_reason"] = "mismatched task state"
 
         with pytest.raises(ValidationError, match="non-comparable"):
+            ControlledEffectivenessObservation.model_validate(payload)
+
+    def test_requires_matching_statuses_for_comparable_pairing(self) -> None:
+        payload = _load_effectiveness_observation()
+        payload["tasks"][0]["source_diagnostic"]["status"] = "blocked"
+        payload["tasks"][0]["source_diagnostic"]["exit_code"] = 1
+
+        with pytest.raises(ValidationError, match="status must match"):
             ControlledEffectivenessObservation.model_validate(payload)
 
     def test_rejects_insufficient_repository_diversity(self) -> None:
@@ -299,6 +321,10 @@ class TestControlledEffectivenessObservation:
         decision["status"] = "action_required"
         payload["tasks"][0]["treatment"]["status"] = "action_required"
         payload["tasks"][0]["treatment"]["stdout"] = json.dumps(decision)
+        payload["tasks"][0]["pairing"] = "non_comparable"
+        payload["tasks"][0]["pairing_reason"] = (
+            "action_required source/treatment status divergence is non-comparable"
+        )
 
         ControlledEffectivenessObservation.model_validate(payload)
 
