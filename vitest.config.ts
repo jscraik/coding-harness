@@ -4,6 +4,7 @@ export default defineConfig({
 	test: {
 		globals: true,
 		environment: "node",
+		setupFiles: ["./src/testing/git-fixture-environment.setup.ts"],
 		pool: "forks",
 		// Run test files sequentially to prevent birpc IPC overload.
 		// When files run in parallel, multiple forks race to send onTaskUpdate

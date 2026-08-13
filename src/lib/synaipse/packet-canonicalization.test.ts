@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { gitEnvironmentForRepoRoot } from "../runtime/git-environment.js";
+import { withGitFixtureSigningDisabled } from "../../testing/git-fixture-environment.js";
 import { canonicalizeLegacyPacket } from "./packet-canonicalization.js";
 import {
 	PACKET_FAMILY_REGISTRY,
@@ -29,7 +30,9 @@ function emittedPacket(...args: string[]): unknown {
 }
 
 beforeAll(() => {
-	const gitEnvironment = gitEnvironmentForRepoRoot();
+	const gitEnvironment = withGitFixtureSigningDisabled(
+		gitEnvironmentForRepoRoot(),
+	);
 	canonicalRepoRoot = mkdtempSync(
 		resolve(tmpdir(), "packet-canonicalization-repo-"),
 	);

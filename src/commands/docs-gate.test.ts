@@ -15,6 +15,7 @@ import {
 	isGitEnvironmentKey,
 	sanitizeGitEnvironment,
 } from "../lib/git/safe-env.js";
+import { withGitFixtureSigningDisabled } from "../testing/git-fixture-environment.js";
 import { runDocsGate, runDocsGateCLI } from "./docs-gate.js";
 
 function write(path: string, content: string): void {
@@ -66,7 +67,9 @@ function createContractWithoutDocsGate(root: string): void {
 }
 
 function createIsolatedGitEnv(): NodeJS.ProcessEnv {
-	return sanitizeGitEnvironment({ policy: "strict" });
+	return withGitFixtureSigningDisabled(
+		sanitizeGitEnvironment({ policy: "strict" }),
+	);
 }
 
 function runDocsGateWithIsolatedGitEnv(

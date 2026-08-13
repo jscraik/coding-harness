@@ -21,6 +21,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { sanitizeGitEnvironment } from "../git/safe-env.js";
+import { withGitFixtureSigningDisabled } from "../../testing/git-fixture-environment.js";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -147,7 +148,9 @@ export function sanitizeGitEnv(
 		string | undefined
 	>,
 ): Record<string, string | undefined> {
-	return sanitizeGitEnvironment(env, { policy: "strict" });
+	return withGitFixtureSigningDisabled(
+		sanitizeGitEnvironment(env, { policy: "strict" }),
+	);
 }
 
 /**
