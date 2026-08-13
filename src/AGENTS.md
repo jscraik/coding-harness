@@ -33,3 +33,5 @@ and [Testing Standards](../codestyle/17-testing.md) remain binding.
   pnpm run quality:size, and pnpm run test:related.
 - Run the narrowest focused Vitest or CLI command before widening.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the portable `visualize` skill when it is available.

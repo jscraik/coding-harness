@@ -27,3 +27,5 @@ Root [AGENTS.md](../AGENTS.md), [CODESTYLE.md](../CODESTYLE.md), and
 - Run pnpm run quality:scripts or the narrowest script-specific check when
   shell behavior changes.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the portable `visualize` skill when it is available.

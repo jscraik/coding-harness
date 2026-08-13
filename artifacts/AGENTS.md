@@ -29,3 +29,5 @@ under [contracts](../contracts) remain binding.
 - Validate changed artifacts with their declared schema, manifest, or nearest
   repo-owned gate.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the portable `visualize` skill when it is available.

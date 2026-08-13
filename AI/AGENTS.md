@@ -29,3 +29,5 @@ remain binding.
 - For prompt or AI-context changes, run the narrowest validator or test that
   consumes the changed artifact.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the portable `visualize` skill when it is available.

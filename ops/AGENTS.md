@@ -29,3 +29,5 @@ remain binding.
 
 - Run the producer or consumer validator for changed operational evidence.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the portable `visualize` skill when it is available.

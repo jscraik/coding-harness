@@ -31,3 +31,5 @@ and [Testing Standards](../codestyle/17-testing.md) remain binding.
 - If credentials or external services block the exact path, state the blocker
   and run the nearest meaningful local validation.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the portable `visualize` skill when it is available.

@@ -27,12 +27,12 @@ or a substitute for independent review.
 
 Use the job that matches the immediate need.
 
-| Job | Command | Result |
-| --- | --- | --- |
-| Orient | `harness next --json` | One task-first, read-only next action. |
-| Diagnose | `harness check --json` | Fast local health and an actionable failure. |
-| Install | `harness init --minimal --dry-run --json` | One-file preview with no surprise writes. |
-| Verify | `harness verify-work --fast` | Repository-native focused proof. |
+| Job       | Command                                    | Result                                             |
+| --------- | ------------------------------------------ | -------------------------------------------------- |
+| Orient    | `harness next --json`                      | One task-first, read-only next action.             |
+| Diagnose  | `harness check --json`                     | Fast local health and an actionable failure.       |
+| Install   | `harness init --minimal --dry-run --json`  | One-file preview with no surprise writes.          |
+| Verify    | `harness verify-work --fast`               | Repository-native focused proof.                   |
 | Close out | `harness pr-closeout --pr <number> --json` | Separate PR, CI, review, finding, and merge truth. |
 
 The [CLI reference](./docs/cli-reference.md) is the complete routine command
@@ -96,7 +96,7 @@ The tag-driven public npm release workflow (kept at the legacy
 repository-pinned `uv` runtime and required repository CLI tools before
 artifact validation; local checks do not prove publication.
 The repository-owned CircleCI bootstrap and generated template also set
-`MISE_PYTHON_COMPILE=false`, keeping the small setup executor on a precompiled
+`MISE_PYTHON_COMPILE=false`, keeping the small setup executor on a pre-compiled
 Python path when mise provides one instead of spending the job window building
 Python from source.
 Keep the stable product surface small and move unselected expert capability out

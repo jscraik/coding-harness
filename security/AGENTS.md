@@ -29,3 +29,5 @@ This directory contains security policies and related security evidence. Root
 - Run the configured security, policy, or audit check for changed security
   surfaces, or record the concrete blocker.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the portable `visualize` skill when it is available.

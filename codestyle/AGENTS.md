@@ -29,3 +29,5 @@ This directory contains the detailed coding standards pack. Root
 - Run pnpm codestyle:parity and the narrowest affected policy check before
   handoff.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the portable `visualize` skill when it is available.

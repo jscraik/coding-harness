@@ -135,15 +135,16 @@ gh run download --name sbom
 jq '.components | length' artifacts/sbom.cdx.json
 ```
 
-### Permission model
+### Job-level permissions
 
-The release workflow uses these top-level permissions (least-privilege):
+The publish job uses these job-level permissions (least-privilege); the
+workflow itself grants only `contents: read` at the top level:
 
-| Permission | Justification |
-|---|---|
-| `id-token: write` | OIDC token for npm trusted publishing and attestation signing |
-| `attestations: write` | `actions/attest-build-provenance` for build provenance |
-| `contents: write` | GitHub Release creation |
+| Permission            | Justification                                                 |
+| --------------------- | ------------------------------------------------------------- |
+| `id-token: write`     | OIDC token for npm trusted publishing and attestation signing |
+| `attestations: write` | `actions/attest-build-provenance` for build provenance        |
+| `contents: write`     | GitHub Release creation                                       |
 
 No additional secrets are required for OIDC-mode publishes. Token-mode (`publish_auth=token`) is retained for bootstrap recovery only and does not produce OIDC-mode attestations.
 

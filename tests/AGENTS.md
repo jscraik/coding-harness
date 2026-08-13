@@ -29,3 +29,5 @@ Root [AGENTS.md](../AGENTS.md), [CODESTYLE.md](../CODESTYLE.md), and
 - Run the focused Vitest, fixture, or consumer-repo test for changed tests.
 - Changed tests also require pnpm run quality:self-affirming.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the portable `visualize` skill when it is available.

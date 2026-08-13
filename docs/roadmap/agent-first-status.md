@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-08-11
+last_validated: 2026-08-13
 ---
 
 # Agent-First Status
@@ -90,19 +90,22 @@ with the installed `harness` v0.15.0. Each used the exact read-only commands
 seconds emitted by `/usr/bin/time -p`. They are raw command observations, not
 a causal comparison against an untreated control.
 
-| Task / repository | `next` / `check` result | Time to first useful proof | Jamie interventions | Review/fix cycles | PR lead time | Observed effect |
-| --- | --- | ---: | ---: | --- | --- | --- |
-| Coding Harness clean source-main checkout | `pass` / `fail` (consumer v0.15.0 versus source v0.15.1; three contract errors) | 0.26s | 0 | n.a. (read-only) | n.a. (no PR) | delayed by consumer/dependency drift; the blocker was classified |
-| Agent-Skills current four-file task | `action_required` / `pass` with two warnings; emitted an exact validation-plan command | 0.43s | 0 | n.a. (read-only) | n.a. (no PR) | accelerated routing; causal improvement is unproven |
-| Configs current four-path task | `action_required` / `pass` with two warnings; emitted an exact validation-plan command | 0.31s | 0 | n.a. (read-only) | n.a. (no PR) | accelerated routing; causal improvement is unproven |
-| Jamie Brain clean checkout | `pass` / `fail` (no harness contract configured) | 0.25s | 0 | n.a. (read-only) | n.a. (no PR) | delayed by an explicit configuration blocker |
-| Portfolio clean checkout | `pass` / `fail` (repo-local v0.1.0 versus installed v0.15.0) | 0.25s | 0 | n.a. (read-only) | n.a. (no PR) | delayed by version drift; the blocker was classified |
+| Task / repository                         | `next` / `check` result                                                                | Time to first useful proof | Jamie interventions | Review/fix cycles | PR lead time | Observed effect                                                  |
+| ----------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------: | ------------------: | ----------------- | ------------ | ---------------------------------------------------------------- |
+| Coding Harness clean source-main checkout | `pass` / `fail` (consumer v0.15.0 versus source v0.15.1; three contract errors)        |                      0.26s |                   0 | n.a. (read-only)  | n.a. (no PR) | delayed by consumer/dependency drift; the blocker was classified |
+| Agent-Skills current four-file task       | `action_required` / `pass` with two warnings; validation-plan routing selected |                      0.43s |                   0 | n.a. (read-only)  | n.a. (no PR) | accelerated routing; causal improvement is unproven              |
+| Configs current four-path task            | `action_required` / `pass` with two warnings; validation-plan routing selected |                      0.31s |                   0 | n.a. (read-only)  | n.a. (no PR) | accelerated routing; causal improvement is unproven              |
+| Jamie Brain clean checkout                | `pass` / `fail` (no harness contract configured)                                       |                      0.25s |                   0 | n.a. (read-only)  | n.a. (no PR) | delayed by an explicit configuration blocker                     |
+| Portfolio clean checkout                  | `pass` / `fail` (repo-local v0.1.0 versus installed v0.15.0)                           |                      0.25s |                   0 | n.a. (read-only)  | n.a. (no PR) | delayed by version drift; the blocker was classified             |
 
-The exact command outcomes are reproducible from the named repository state;
-the dirty paths in Agent-Skills and Configs remain owner-controlled and were
-not modified. This sample does not satisfy the end-to-end acceptance condition
-and must not be used to claim lower PR lead time, fewer interventions, less
-rework, or general product effectiveness.
+The exact command forms and outcomes were recorded in the source note, but this
+sample does not retain an authoritative repository URL or immutable commit/tree
+binding for each row. Treat these rows as observational notes that are not
+independently reproducible from the named checkout labels. The dirty paths in Agent-Skills and
+Configs remain owner-controlled and were not modified. This sample does not
+satisfy the end-to-end acceptance condition and must not be used to claim lower
+PR lead time, fewer interventions, less rework, or general product
+effectiveness.
 
 ### Fresh source-bound observation (2026-08-11)
 
@@ -125,6 +128,14 @@ not authorize edits or make the task clean.
 | Portfolio | `3c735ee8928619b23af6b7ee54f3d509beb5a61f` | `action_required` / 1.769 | 3 / 1 / 1 | Exact validation-plan command; one repository check failed |
 | Jamie Brain | `90ee789eced74e6f1dd018b5a1d8259d9c04888b` | `action_required` / 1.854 | 1 / 2 / 1 | Exact validation-plan command; configuration check failed |
 | Coding Harness | `e94794c2b8f117d6bad16b4d11ec98b28d38da02` | `pass` / 0.944 | 3 / 1 / 1 | Routed to `harness check`; source/version drift remained visible |
+
+| Repository / observed HEAD                                | Treated `next`                                                        | Validation binding                                              | Treated wall time | `check` counts (ok / warn / fail) | Untreated Git snapshot | Interpretation                                                                |
+| --------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------- | ----------------: | --------------------------------: | ---------------------: | ----------------------------------------------------------------------------- |
+| Jamie Brain `90ee789eced74e6f1dd018b5a1d8259d9c04888b`    | `pass`; no changed files                                              | n.a. (no validation-plan command selected)                      |             0.53s |                         1 / 2 / 1 |                  0.02s | `check` exposed the missing Harness contract; no causal benefit claim         |
+| Agent-Skills `4ced957e36ea6ebe4c65d8754db5328d3879fefb`   | `action_required`; 42 changed files; validation-plan routing selected | unavailable: exact command and expected result were not retained |             0.91s |                         3 / 2 / 0 |                  0.15s | structured next action and warnings; causal benefit unproven                  |
+| Configs `2d87971e3c08906112d9a712db5220f29ed644a6`        | `action_required`; 31 changed files; validation-plan routing selected | unavailable: exact command and expected result were not retained |             0.61s |                         3 / 2 / 0 |                  0.03s | structured next action and warnings; causal benefit unproven                  |
+| Portfolio `011183f961a32ebd77a7d773adb1dc5df3487cb6`      | `action_required`; 30 changed files; validation-plan routing selected | unavailable: exact command and expected result were not retained |             0.53s |                         3 / 1 / 1 |                  0.03s | `check` exposed repository-local version drift; no causal benefit claim       |
+| Coding Harness `34e46f72e218e1314f0365c81877b7a0cbcd35ed` | `pass`; no changed files                                              | n.a. (no validation-plan command selected)                      |             0.62s |                         4 / 1 / 0 |                  0.03s | structured readiness boundary with version coherence; causal benefit unproven |
 
 The raw artifact binds command text, exit codes, stdout, stderr, task HEADs,
 and wall time. Because it is retained only in the private OC evidence lane,
@@ -316,13 +327,13 @@ Harness route ran or caused the observed outcome. `changedFiles`, `commits`, and
 `reviews` are lifecycle facts, not review/fix-cycle counts. `unknown` is
 intentional where the source record does not contain a raw observation.
 
-| Task / repository / PR | Head SHA | Harness command recorded by task | First PR / merged (UTC) | Files / commits / reviews | State validation | Time to first proof | Jamie interventions | Observed effect |
-| --- | --- | --- | ---: | ---: | --- | --- | --- | --- |
-| Agent-Skills #371 — [narrow local journey guidance](https://github.com/jscraik/Agent-Skills/pull/371) | `25ff6eae9851fac513dc8d99de766765adf5341d` | `bash scripts/run-harness-gate.sh tooling-audit --path . --json` | 2026-07-28 22:21:16 → 23:01:09 (39m53s) | 4 / 1 / 3 | opened → merged; no `ReopenedEvent` in returned timeline | unknown | unknown | unknown; no untreated control |
-| Agent-Skills #374 — [recover local proof journey](https://github.com/jscraik/Agent-Skills/pull/374) | `87ed91fd8359f145b5af087cf629688dc56cf8aa` | `bash scripts/run-harness-gate.sh tooling-audit --path . --json` | 2026-07-29 12:31:36 → 14:32:07 (2h00m31s) | 18 / 10 / 5 | opened → merged; no `ReopenedEvent` in returned timeline | unknown | unknown | unknown; no untreated control |
-| Configs #160 — [close runtime review gaps](https://github.com/jscraik/configs/pull/160) | `9345d108fec4e708189e3136aae49acee12e1a60` | `bash codex/scripts/verify-work.sh --fast` | 2026-07-31 16:58:03 → 17:07:42 (9m39s) | 8 / 1 / 1 | opened → merged; no `ReopenedEvent` in returned timeline | unknown | unknown | unknown; no untreated control |
-| Portfolio #17 — [repair environment and debt gates](https://github.com/jscraik/portfolio/pull/17) | `ef4522244c958fa002617b779f543464cb274433` | `bash scripts/run-harness-gate.sh docs-gate --mode required --json` | 2026-07-21 21:09:36 → 2026-07-22 05:55:55 (8h46m19s) | 13 / 8 / 19 | opened → merged; no `ReopenedEvent` in returned timeline | unknown | unknown | unknown; no untreated control |
-| Coding Harness #502 — [record effectiveness observation sample](https://github.com/jscraik/coding-harness/pull/502) | `1a8d854089bd83a133887f7455c140d58eaabbd4` | `harness next --json` | 2026-07-31 18:26:19 → 18:36:07 (9m48s) | 1 / 1 / 1 | opened → merged; no `ReopenedEvent` in returned timeline | unknown | unknown | unknown; no untreated control |
+| Task / repository / PR                                                                                              | Head SHA                                   | Harness command recorded by task                                    |                              First PR / merged (UTC) | Files / commits / reviews | State validation                                         | Time to first proof | Jamie interventions | Observed effect               |
+| ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------- | ---------------------------------------------------: | ------------------------: | -------------------------------------------------------- | ------------------- | ------------------- | ----------------------------- |
+| Agent-Skills #371 — [narrow local journey guidance](https://github.com/jscraik/Agent-Skills/pull/371)               | `25ff6eae9851fac513dc8d99de766765adf5341d` | `bash scripts/run-harness-gate.sh tooling-audit --path . --json`    |              2026-07-28 22:21:16 → 23:01:09 (39m53s) |                 4 / 1 / 3 | opened → merged; no `ReopenedEvent` in returned timeline | unknown             | unknown             | unknown; no untreated control |
+| Agent-Skills #374 — [recover local proof journey](https://github.com/jscraik/Agent-Skills/pull/374)                 | `87ed91fd8359f145b5af087cf629688dc56cf8aa` | `bash scripts/run-harness-gate.sh tooling-audit --path . --json`    |            2026-07-29 12:31:36 → 14:32:07 (2h00m31s) |               18 / 10 / 5 | opened → merged; no `ReopenedEvent` in returned timeline | unknown             | unknown             | unknown; no untreated control |
+| Configs #160 — [close runtime review gaps](https://github.com/jscraik/configs/pull/160)                             | `9345d108fec4e708189e3136aae49acee12e1a60` | `bash codex/scripts/verify-work.sh --fast`                          |               2026-07-31 16:58:03 → 17:07:42 (9m39s) |                 8 / 1 / 1 | opened → merged; no `ReopenedEvent` in returned timeline | unknown             | unknown             | unknown; no untreated control |
+| Portfolio #17 — [repair environment and debt gates](https://github.com/jscraik/portfolio/pull/17)                   | `ef4522244c958fa002617b779f543464cb274433` | `bash scripts/run-harness-gate.sh docs-gate --mode required --json` | 2026-07-21 21:09:36 → 2026-07-22 05:55:55 (8h46m19s) |               13 / 8 / 19 | opened → merged; no `ReopenedEvent` in returned timeline | unknown             | unknown             | unknown; no untreated control |
+| Coding Harness #502 — [record effectiveness observation sample](https://github.com/jscraik/coding-harness/pull/502) | `1a8d854089bd83a133887f7455c140d58eaabbd4` | `harness next --json`                                               |               2026-07-31 18:26:19 → 18:36:07 (9m48s) |                 1 / 1 / 1 | opened → merged; no `ReopenedEvent` in returned timeline | unknown             | unknown             | unknown; no untreated control |
 
 `First PR / merged` maps GitHub `createdAt` to `first_pr_at` and `mergedAt`
 to `merged_at`. State validation used the same read-only GraphQL record for

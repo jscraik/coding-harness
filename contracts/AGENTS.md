@@ -29,3 +29,5 @@ machine-readable harness contracts. Root [AGENTS.md](../AGENTS.md) and
 - When runtime packet schemas change, run
   node scripts/validate-runtime-packet-schemas.cjs --all.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the portable `visualize` skill when it is available.

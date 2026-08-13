@@ -312,7 +312,7 @@ This repository uses `action-review-receipt/v1` as a narrow guardian-style recei
 
 ## Plan traceability
 
-- Pull requests must declare `Plan IDs` in the PR template `## Work performed` ledger.
+- Pull requests must declare `Plan IDs` in the PR template `## Work performed` section.
 - Each declared ID must resolve to a `docs/plans/*` document with matching `plan_id` frontmatter.
 - Completed acceptance checklist items in referenced plans must carry evidence links or refs before merge.
 - `risk-policy-gate` enforces this in CI, and `review-gate` treats missing or invalid plan traceability as a merge blocker even when the review check itself passed.
@@ -391,11 +391,11 @@ Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`, `ci`
 
 On agent branches (`codex/*`, `claude/*`), the commit-msg hook reminds about PR template requirements:
 
-- ## What Problem This Solves (motivation, reasoning, chosen approach)
-- ## Release Boundary (release mode, done line, explicit non-goals, allowed polish, deferred polish / follow-up work, promotion rule)
-- ## Why This Change Was Made (problem, timing, outcome, scope, review focus, risk)
-- ## Work performed (plan IDs, phase/slice, session IDs, trace IDs, AI session/traceability mapping, completed work, documentation impact, documentation lifecycle impact, SemVer impact, acceptance trace, validation evidence, review artifacts, learning/reinforcement, deferred work)
-- ## Checklist (all items checked)
-- ## Testing (test commands and evidence)
-- ## Review artifacts (links to review outputs)
-- ## Notes (merge rationale, risks, rollback)
+- `## What Problem This Solves` (motivation, reasoning, and chosen approach)
+- `## Release Boundary` (release mode, done line, deferred work, and promotion rule)
+- `## Why This Change Was Made` (problem, why now, intended outcome, out of scope, reviewer focus, and risk)
+- `## Behavior Proof` (before/after behavior, operator path, verification, evidence, result, and limitations)
+- `## Work performed` (scope, traceability, documentation, SemVer, runtime, acceptance, and evidence)
+- `## Checklist` (required items and truthful status)
+- `## Testing` (regression plan, exact commands/outcomes, and blocked paths)
+- `## Review artifacts` (CodeRabbit, independent reviewer, Codex, findings, waivers, and blockers)

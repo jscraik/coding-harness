@@ -31,3 +31,5 @@ specs, and operator guidance. Root [AGENTS.md](../AGENTS.md),
   bash scripts/run-harness-gate.sh docs-gate --mode required --json.
 - For documentation lifecycle changes, run pnpm docs:lifecycle.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the portable `visualize` skill when it is available.

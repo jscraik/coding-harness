@@ -28,3 +28,5 @@ remain binding.
 - Run the focused template, scaffold, or snapshot test that consumes changed
   templates.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the portable `visualize` skill when it is available.

@@ -29,3 +29,5 @@ This directory contains static analysis and policy rules. Root
 - Run the specific rule engine, fixture test, or repo security/policy wrapper
   that exercises the changed rule.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the portable `visualize` skill when it is available.

@@ -26,3 +26,5 @@ This directory contains harness evaluation scenarios and registries. Root
 
 - Run the focused eval validator or scenario command for changed eval assets.
 - Report exact commands as pass, fail, or blocked.
+
+- When explaining something to the user, use the portable `visualize` skill when it is available.
