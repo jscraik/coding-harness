@@ -135,9 +135,10 @@ gh run download --name sbom
 jq '.components | length' artifacts/sbom.cdx.json
 ```
 
-### Permission model
+### Job-level permissions
 
-The release workflow uses these top-level permissions (least-privilege):
+The publish job uses these job-level permissions (least-privilege); the
+workflow itself grants only `contents: read` at the top level:
 
 | Permission            | Justification                                                 |
 | --------------------- | ------------------------------------------------------------- |

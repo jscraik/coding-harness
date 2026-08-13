@@ -30,4 +30,4 @@ remain binding.
 - Run the nearest docs, template, or consumer validation for changed body text.
 - Report exact commands as pass, fail, or blocked.
 
-- When explaining something to the user, use the [$visualize:visualize](/Users/jamiecraik/.codex/plugins/cache/openai-bundled/visualize/1.0.19/skills/visualize/SKILL.md) skill
+- When explaining something to the user, use the portable `visualize` skill when it is available.

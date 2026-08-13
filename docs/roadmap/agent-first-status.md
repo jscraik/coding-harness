@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-08-11
+last_validated: 2026-08-13
 ---
 
 # Agent-First Status
@@ -98,11 +98,14 @@ a causal comparison against an untreated control.
 | Jamie Brain clean checkout                | `pass` / `fail` (no harness contract configured)                                       |                      0.25s |                   0 | n.a. (read-only)  | n.a. (no PR) | delayed by an explicit configuration blocker                     |
 | Portfolio clean checkout                  | `pass` / `fail` (repo-local v0.1.0 versus installed v0.15.0)                           |                      0.25s |                   0 | n.a. (read-only)  | n.a. (no PR) | delayed by version drift; the blocker was classified             |
 
-The exact command outcomes are reproducible from the named repository state;
-the dirty paths in Agent-Skills and Configs remain owner-controlled and were
-not modified. This sample does not satisfy the end-to-end acceptance condition
-and must not be used to claim lower PR lead time, fewer interventions, less
-rework, or general product effectiveness.
+The exact command forms and outcomes were recorded in the source note, but this
+sample does not retain an authoritative repository URL or immutable commit/tree
+binding for each row. Treat these rows as observational notes that are not
+independently reproducible from the named checkout labels. The dirty paths in Agent-Skills and
+Configs remain owner-controlled and were not modified. This sample does not
+satisfy the end-to-end acceptance condition and must not be used to claim lower
+PR lead time, fewer interventions, less rework, or general product
+effectiveness.
 
 ### Fresh source-bound observation (2026-08-11)
 
@@ -129,9 +132,9 @@ not authorize edits or make the task clean.
 | Repository / observed HEAD                                | Treated `next`                                                        | Validation binding                                              | Treated wall time | `check` counts (ok / warn / fail) | Untreated Git snapshot | Interpretation                                                                |
 | --------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------- | ----------------: | --------------------------------: | ---------------------: | ----------------------------------------------------------------------------- |
 | Jamie Brain `90ee789eced74e6f1dd018b5a1d8259d9c04888b`    | `pass`; no changed files                                              | n.a. (no validation-plan command selected)                      |             0.53s |                         1 / 2 / 1 |                  0.02s | `check` exposed the missing Harness contract; no causal benefit claim         |
-| Agent-Skills `4ced957e36ea6ebe4c65d8754db5328d3879fefb`   | `action_required`; 42 changed files and exact validation-plan command | unverified note: command form above; path snapshot not retained |             0.91s |                         3 / 2 / 0 |                  0.15s | structured next action and warnings; causal benefit unproven                  |
-| Configs `2d87971e3c08906112d9a712db5220f29ed644a6`        | `action_required`; 31 changed files and exact validation-plan command | unverified note: command form above; path snapshot not retained |             0.61s |                         3 / 2 / 0 |                  0.03s | structured next action and warnings; causal benefit unproven                  |
-| Portfolio `011183f961a32ebd77a7d773adb1dc5df3487cb6`      | `action_required`; 30 changed files and exact validation-plan command | unverified note: command form above; path snapshot not retained |             0.53s |                         3 / 1 / 1 |                  0.03s | `check` exposed repository-local version drift; no causal benefit claim       |
+| Agent-Skills `4ced957e36ea6ebe4c65d8754db5328d3879fefb`   | `action_required`; 42 changed files and exact validation-plan command | unavailable: exact command and expected result were not retained |             0.91s |                         3 / 2 / 0 |                  0.15s | structured next action and warnings; causal benefit unproven                  |
+| Configs `2d87971e3c08906112d9a712db5220f29ed644a6`        | `action_required`; 31 changed files and exact validation-plan command | unavailable: exact command and expected result were not retained |             0.61s |                         3 / 2 / 0 |                  0.03s | structured next action and warnings; causal benefit unproven                  |
+| Portfolio `011183f961a32ebd77a7d773adb1dc5df3487cb6`      | `action_required`; 30 changed files and exact validation-plan command | unavailable: exact command and expected result were not retained |             0.53s |                         3 / 1 / 1 |                  0.03s | `check` exposed repository-local version drift; no causal benefit claim       |
 | Coding Harness `34e46f72e218e1314f0365c81877b7a0cbcd35ed` | `pass`; no changed files                                              | n.a. (no validation-plan command selected)                      |             0.62s |                         4 / 1 / 0 |                  0.03s | structured readiness boundary with version coherence; causal benefit unproven |
 
 The raw artifact binds command text, exit codes, stdout, stderr, task HEADs,
