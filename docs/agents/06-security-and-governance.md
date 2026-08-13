@@ -391,10 +391,11 @@ Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`, `ci`
 
 On agent branches (`codex/*`, `claude/*`), the commit-msg hook reminds about PR template requirements:
 
-- ## Summary (problem, change, approach, outcome, scope, review focus, risk)
-- ## Release boundary (release mode, completion condition, deferred work, stronger-proof condition)
-- ## Behavior proof (before, after, operator path, verification steps, evidence, limitations)
-- ## Change details (scope, traceability, documentation, SemVer, runtime impact, acceptance evidence, and conditionally admitted evidence)
-- ## Checklist (all items checked)
-- ## Validation (regression coverage, command-bound outcomes, and untested or blocked paths)
-- ## Review and closeout (review evidence, user-facing impact, findings, waivers, and blockers)
+- `## What Problem This Solves` (motivation, reasoning, and chosen approach)
+- `## Release Boundary` (release mode, done line, deferred work, and promotion rule)
+- `## Why This Change Was Made` (problem, why now, intended outcome, out of scope, reviewer focus, and risk)
+- `## Behavior Proof` (before/after behavior, operator path, verification, evidence, result, and limitations)
+- `## Work performed` (scope, traceability, documentation, SemVer, runtime, acceptance, and evidence)
+- `## Checklist` (required items and truthful status)
+- `## Testing` (regression plan, exact commands/outcomes, and blocked paths)
+- `## Review artifacts` (CodeRabbit, independent reviewer, Codex, findings, waivers, and blockers)
