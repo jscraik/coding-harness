@@ -17,7 +17,7 @@ import {
 	isGitEnvironmentKey,
 	sanitizeGitEnvironment,
 } from "../lib/git/safe-env.js";
-import { withGitFixtureSigningDisabled } from "../testing/git-fixture-environment.js";
+import { withGitFixtureSigningDisabled } from "../lib/git/fixture-environment.js";
 import { runDocsGate } from "./docs-gate.js";
 
 function write(path: string, content: string): void {

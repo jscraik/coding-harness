@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { gitEnvironmentForRepoRoot } from "../runtime/git-environment.js";
-import { withGitFixtureSigningDisabled } from "../../testing/git-fixture-environment.js";
+import { withGitFixtureSigningDisabled } from "../git/fixture-environment.js";
 import { canonicalizeLegacyPacket } from "./packet-canonicalization.js";
 import {
 	PACKET_FAMILY_REGISTRY,

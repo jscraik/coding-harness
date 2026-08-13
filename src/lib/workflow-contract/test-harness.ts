@@ -20,8 +20,8 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { withGitFixtureSigningDisabled } from "../git/fixture-environment.js";
 import { sanitizeGitEnvironment } from "../git/safe-env.js";
-import { withGitFixtureSigningDisabled } from "../../testing/git-fixture-environment.js";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
