@@ -312,7 +312,7 @@ This repository uses `action-review-receipt/v1` as a narrow guardian-style recei
 
 ## Plan traceability
 
-- Pull requests must declare `Plan IDs` in the PR template `## Change details` section.
+- Pull requests must declare `Plan IDs` in the PR template `## Work performed` section.
 - Each declared ID must resolve to a `docs/plans/*` document with matching `plan_id` frontmatter.
 - Completed acceptance checklist items in referenced plans must carry evidence links or refs before merge.
 - `risk-policy-gate` enforces this in CI, and `review-gate` treats missing or invalid plan traceability as a merge blocker even when the review check itself passed.

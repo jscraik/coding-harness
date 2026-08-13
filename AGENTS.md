@@ -111,4 +111,4 @@ Keep durable repository knowledge separate from private runtime data, caches,
 and raw sessions. PR bodies may cite concise evidence but never secrets or raw
 telemetry.
 
-- When explaining something to the user, use the [$visualize:visualize](/Users/jamiecraik/.codex/plugins/cache/openai-bundled/visualize/1.0.19/skills/visualize/SKILL.md) skill
+- When explaining something to the user, use the portable `visualize` skill when it is available.
