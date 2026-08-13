@@ -33,6 +33,7 @@ describe("scaffold CircleCI config template", () => {
 		expect(config).toContain(
 			"retry_cmd 3 install_mise_without_github_tokens rust@stable",
 		);
+		expect(config).toContain("export MISE_PYTHON_COMPILE=false");
 		expect(config).toContain(
 			"retry_cmd 3 install_mise_without_github_tokens \\",
 		);

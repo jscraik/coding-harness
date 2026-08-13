@@ -32,6 +32,10 @@ failure before validation continues.
 Generated downstream `release-private-npm.yml` scaffolds remain private by
 default and use restricted publish commands. This module documentation must not
 be read as a public-publication contract for generated consumer repositories.
+The generated CircleCI template keeps its bootstrap executor on mise's
+precompiled Python path with `MISE_PYTHON_COMPILE=false`; changes to that
+template must preserve the checked-in CircleCI configuration and their focused
+tests in parity.
 
 ## Change boundaries
 

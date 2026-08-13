@@ -302,6 +302,9 @@ workflows:
             ln -sf "$SEMGREP_VENV/bin/semgrep" "$HOME/.local/bin/semgrep"
             export MISE_CARGO_BINSTALL=false
             export MISE_NODE_VERIFY=false
+            # Keep the small executor on the precompiled Python path; a source
+            # build can consume the job window before the remaining tools run.
+            export MISE_PYTHON_COMPILE=false
             retry_cmd 3 install_mise_without_github_tokens \
               node pnpm python uv cargo:prek \
               npm:@brainwav/diagram npm:@argos-ci/cli cosign cloudflared npm:vitest \

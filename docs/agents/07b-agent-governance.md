@@ -72,6 +72,11 @@ agent-facing documentation merely because an internal implementation remains.
 
 When agent work changes tooling/runtime contract surfaces or architecture-context refresh behavior, the matching docs are part of the required gate, not optional polish:
 
+- The checked-in CircleCI bootstrap and generated template set
+  `MISE_PYTHON_COMPILE=false` so the small setup executor prefers a pre-compiled
+  Python runtime when mise provides one; keep the two configuration surfaces
+  and their focused tests in parity.
+
 - Every implementation slice must complete PR `Documentation impact`, `Documentation lifecycle impact`, and `SemVer impact` classification before handoff: update applicable root docs (`README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `AGENTS.md`, `ARCHITECTURE.md`), governed docs, and existing deep-module README files, or record `n.a.` with a reason in the matching PR field
 - north-star status cadence repairs should refresh
   `docs/roadmap/agent-first-status.md` and the `lastReviewedAt` value in the

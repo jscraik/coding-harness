@@ -95,6 +95,10 @@ The tag-driven public npm release workflow (kept at the legacy
 `.github/workflows/release-private-npm.yml` path) bootstraps the
 repository-pinned `uv` runtime and required repository CLI tools before
 artifact validation; local checks do not prove publication.
+The repository-owned CircleCI bootstrap and generated template also set
+`MISE_PYTHON_COMPILE=false`, keeping the small setup executor on a pre-compiled
+Python path when mise provides one instead of spending the job window building
+Python from source.
 Keep the stable product surface small and move unselected expert capability out
 of the routine path. Keep the truth-bounded recovery status in
 [`docs/roadmap/agent-first-status.md`](./docs/roadmap/agent-first-status.md)

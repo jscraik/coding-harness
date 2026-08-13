@@ -62,6 +62,10 @@ default agent route without a named consumer.
   repository-pinned `uv` runtime and required repository CLI tools before
   artifact validation.
   Local checks do not prove npm publication or release completion.
+  The repository-owned CircleCI bootstrap and its generated template set
+  `MISE_PYTHON_COMPILE=false` so the small setup executor prefers a pre-compiled
+  Python runtime when mise provides one; keep those two configuration surfaces
+  aligned.
 - Treat feedback as an observed local defect first; local repair or
   `no_system_change` is routine. A `no_system_change` record names its reason,
   checked scope, and no-durable-destination decision. Add a durable control

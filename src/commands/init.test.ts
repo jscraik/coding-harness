@@ -645,6 +645,7 @@ describe("runInit", () => {
 			expect(circleConfig).toContain('if [[ -f "$HOME/.cargo/env" ]]; then');
 			expect(circleConfig).toContain('. "$HOME/.cargo/env"');
 			expect(circleConfig).toContain("export MISE_CARGO_BINSTALL=false");
+			expect(circleConfig).toContain("export MISE_PYTHON_COMPILE=false");
 			expect(circleConfig).toContain('export PATH="$HOME/.local/bin:$PATH"');
 			expect(circleConfig).toContain('SEMGREP_VERSION="1.153.1"');
 			expect(circleConfig).toContain('python3 -m venv "$SEMGREP_VENV"');
