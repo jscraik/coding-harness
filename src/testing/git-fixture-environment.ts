@@ -7,10 +7,11 @@
 export function withGitFixtureSigningDisabled(
 	environment: NodeJS.ProcessEnv,
 ): NodeJS.ProcessEnv {
-	const configuredEntries = Number.parseInt(
-		environment.GIT_CONFIG_COUNT ?? "0",
-		10,
-	);
+	const configuredCount = environment.GIT_CONFIG_COUNT;
+	const configuredEntries =
+		configuredCount !== undefined && /^\d+$/.test(configuredCount)
+			? Number(configuredCount)
+			: 0;
 	const existingConfigCount =
 		Number.isSafeInteger(configuredEntries) && configuredEntries >= 0
 			? configuredEntries
