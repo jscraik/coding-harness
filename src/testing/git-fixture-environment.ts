@@ -1,3 +1,5 @@
+import { sanitizeGitEnvironment } from "../lib/git/safe-env.js";
+
 /**
  * Add Git signing overrides that disposable test repositories need.
  *
@@ -25,4 +27,18 @@ export function withGitFixtureSigningDisabled(
 		[`GIT_CONFIG_KEY_${existingConfigCount + 1}`]: "tag.gpgSign",
 		[`GIT_CONFIG_VALUE_${existingConfigCount + 1}`]: "false",
 	};
+}
+
+/**
+ * Build a clean fixture environment by stripping inherited Git routing variables
+ * and applying signing overrides.
+ *
+ * Prevents inherited GIT_DIR/GIT_WORK_TREE from routing fixture git commands
+ * to the wrong repository.
+ */
+export function buildFixtureEnvironment(
+	environment: NodeJS.ProcessEnv,
+): NodeJS.ProcessEnv {
+	const sanitized = sanitizeGitEnvironment(environment, { policy: "minimal" });
+	return withGitFixtureSigningDisabled(sanitized);
 }
