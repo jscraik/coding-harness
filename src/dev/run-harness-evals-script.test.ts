@@ -269,6 +269,43 @@ describe("run-harness-evals.mjs", () => {
 		]);
 	});
 
+	it("keeps eval fixture commits independent of host signing", () => {
+		mkdirSync(CACHE_ROOT, { recursive: true });
+		const outputRoot = mkdtempSync(join(CACHE_ROOT, "eval-script-test-"));
+		tempRoots.push(outputRoot);
+
+		const result = runNodeScript(
+			SCRIPT_PATH,
+			[
+				"--scenario",
+				"observed-eval-usage-repo-root-telemetry",
+				"--output",
+				relative(REPO_ROOT, join(outputRoot, "result.json")),
+				"--observability-output",
+				relative(REPO_ROOT, join(outputRoot, "observability.json")),
+				"--fixture-root",
+				relative(REPO_ROOT, join(outputRoot, "fixtures")),
+			],
+			{
+				env: {
+					GIT_CONFIG_COUNT: "1",
+					GIT_CONFIG_KEY_0: "commit.gpgsign",
+					GIT_CONFIG_VALUE_0: "true",
+					SSH_AUTH_SOCK: join(outputRoot, "missing-signing-agent.sock"),
+				},
+				timeoutMs: 30_000,
+			},
+		);
+		const report = JSON.parse(result.stdout) as {
+			status: string;
+			summary: { selectedScenarios: number };
+		};
+
+		expect(result.status).toBe(0);
+		expect(report.status).toBe("pass");
+		expect(report.summary.selectedScenarios).toBe(1);
+	});
+
 	it("requires every scenario to declare an eval tier", () => {
 		mkdirSync(CACHE_ROOT, { recursive: true });
 		const outputRoot = mkdtempSync(join(CACHE_ROOT, "eval-script-test-"));
