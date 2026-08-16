@@ -1808,10 +1808,22 @@ function initializeObservedEvalUsageFixtureRepo(repoRoot) {
 		cwd: repoRoot,
 		stdio: "ignore",
 	});
-	execFileSync("git", ["commit", "-m", "fixture checkout"], {
-		cwd: repoRoot,
-		stdio: "ignore",
-	});
+	execFileSync(
+		"git",
+		[
+			"-c",
+			"commit.gpgsign=false",
+			"-c",
+			"tag.gpgSign=false",
+			"commit",
+			"-m",
+			"fixture checkout",
+		],
+		{
+			cwd: repoRoot,
+			stdio: "ignore",
+		},
+	);
 }
 
 function buildCircleCiRedJobTriageCases() {

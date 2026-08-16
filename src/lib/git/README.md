@@ -20,12 +20,20 @@ options to sanitize `process.env` for source-checkout and packaged CLI paths.
 
 `minimal` intentionally does not preserve inherited object-store indirection. Callers that require alternates or quarantine object paths need a separate reviewed execution policy instead of broadening the default repository-root sanitizer.
 
+`fixture-environment.ts` owns the disposable-test variant. It first applies the
+`minimal` policy, then adds explicit `commit.gpgsign=false` and
+`tag.gpgSign=false` overrides so fixture commits never depend on a developer's
+signing agent or inherited repository routing.
+
 ## Ownership
 
 `src/lib/git/safe-env.ts` is the shared authority for git subprocess
 environment cleanup. Runtime-card code, root-hygiene classifiers, and wrapper
 invocations should call it through their local adapter instead of repeating
 manual deletion logic.
+
+`src/lib/git/fixture-environment.ts` owns the packaged setup helper used by
+test harnesses that create disposable Git repositories.
 
 ## Validation
 
