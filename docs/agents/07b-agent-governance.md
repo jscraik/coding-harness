@@ -93,6 +93,8 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   breach.
   This synchronization is evidence maintenance only; it does not establish
   product effectiveness, publication, or release readiness.
+  Lifecycle samples must retain only source-bound rows; an unbound observation
+  is context, not proof, and must not be used to satisfy a readiness claim.
 - The controlled local effectiveness observation is retained at
   `docs/roadmap/agent-first-effectiveness-observation-2026-08-11.json` and
   is limited to proof clarity; it is not causal productivity or release proof.
