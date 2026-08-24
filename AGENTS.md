@@ -47,6 +47,10 @@ Use only the command that answers the current question:
 Everything else is internal or explicitly scoped expert work. Do not make it a
 default agent route without a named consumer.
 
+The [North Star](docs/roadmap/north-star.md) is maintainer guidance for this
+routine boundary. It does not add a routine command or make optional context,
+runtime, or review integrations prerequisites for a bounded task.
+
 ## Delivery rules
 
 - Current source, schemas, lockfiles, generated artifacts, and runtime output

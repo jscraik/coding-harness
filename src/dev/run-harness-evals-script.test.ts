@@ -22,10 +22,68 @@ const SCORECARD_IDS = [
 	"manual_step_reduction",
 ];
 
+type HarnessEvalResult = {
+	schemaVersion: "harness-eval-result/v1";
+	status: "pass" | "fail";
+	summary: { selectedScenarios: number };
+};
+
+function parseHarnessEvalResult<T extends object>(
+	stdout: string,
+): HarnessEvalResult & T {
+	let value: unknown;
+	try {
+		value = JSON.parse(stdout);
+	} catch {
+		throw new Error("Harness evaluation output is not valid JSON");
+	}
+	if (typeof value !== "object" || value === null || Array.isArray(value)) {
+		throw new Error("Harness evaluation output must be an object");
+	}
+	const candidate = value as Record<string, unknown>;
+	const summary = candidate.summary;
+	const selectedScenarios =
+		typeof summary === "object" && summary !== null && !Array.isArray(summary)
+			? (summary as Record<string, unknown>).selectedScenarios
+			: undefined;
+	if (candidate.schemaVersion !== "harness-eval-result/v1") {
+		throw new Error(
+			"Harness evaluation output has an unsupported schemaVersion",
+		);
+	}
+	if (candidate.status !== "pass" && candidate.status !== "fail") {
+		throw new Error("Harness evaluation output has an invalid status");
+	}
+	if (
+		typeof selectedScenarios !== "number" ||
+		!Number.isSafeInteger(selectedScenarios) ||
+		selectedScenarios < 0
+	) {
+		throw new Error(
+			"Harness evaluation output summary.selectedScenarios must be a non-negative integer",
+		);
+	}
+	return value as HarnessEvalResult & T;
+}
+
 afterEach(() => {
 	for (const root of tempRoots.splice(0)) {
 		rmSync(root, { recursive: true, force: true });
 	}
+});
+
+describe("parseHarnessEvalResult", () => {
+	it("rejects a report with an invalid selected scenario count", () => {
+		expect(() =>
+			parseHarnessEvalResult(
+				JSON.stringify({
+					schemaVersion: "harness-eval-result/v1",
+					status: "pass",
+					summary: { selectedScenarios: "1" },
+				}),
+			),
+		).toThrow("summary.selectedScenarios");
+	});
 });
 
 describe("run-harness-evals.mjs", () => {
@@ -267,6 +325,47 @@ describe("run-harness-evals.mjs", () => {
 				evalTier: "package_canary",
 			}),
 		]);
+	});
+
+	it("keeps eval fixture commits independent of host signing", () => {
+		mkdirSync(CACHE_ROOT, { recursive: true });
+		const outputRoot = mkdtempSync(join(CACHE_ROOT, "eval-script-test-"));
+		tempRoots.push(outputRoot);
+
+		const result = runNodeScript(
+			SCRIPT_PATH,
+			[
+				"--scenario",
+				"observed-eval-usage-repo-root-telemetry",
+				"--output",
+				relative(REPO_ROOT, join(outputRoot, "result.json")),
+				"--observability-output",
+				relative(REPO_ROOT, join(outputRoot, "observability.json")),
+				"--fixture-root",
+				relative(REPO_ROOT, join(outputRoot, "fixtures")),
+			],
+			{
+				env: {
+					GIT_CONFIG_COUNT: "3",
+					GIT_CONFIG_KEY_0: "commit.gpgsign",
+					GIT_CONFIG_VALUE_0: "true",
+					GIT_CONFIG_KEY_1: "gpg.format",
+					GIT_CONFIG_VALUE_1: "ssh",
+					GIT_CONFIG_KEY_2: "user.signingKey",
+					GIT_CONFIG_VALUE_2:
+						"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFRlc3RTaWduaW5nS2V5 fixture@example.invalid",
+					SSH_AUTH_SOCK: join(outputRoot, "missing-signing-agent.sock"),
+				},
+				timeoutMs: 30_000,
+			},
+		);
+		const report = parseHarnessEvalResult<{
+			summary: { selectedScenarios: number };
+		}>(result.stdout);
+
+		expect(result.status).toBe(0);
+		expect(report.status).toBe("pass");
+		expect(report.summary.selectedScenarios).toBe(1);
 	});
 
 	it("requires every scenario to declare an eval tier", () => {
