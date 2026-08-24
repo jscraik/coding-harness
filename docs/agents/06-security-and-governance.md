@@ -399,3 +399,4 @@ On agent branches (`codex/*`, `claude/*`), the commit-msg hook reminds about PR 
 - `## Checklist` (required items and truthful status)
 - `## Testing` (regression plan, exact commands/outcomes, and blocked paths)
 - `## Review artifacts` (CodeRabbit, independent reviewer, Codex, findings, waivers, and blockers)
+- `## Notes` (one-paragraph merge rationale before requesting review)

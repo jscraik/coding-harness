@@ -9,7 +9,7 @@ audience: [codex-agent, coding-harness-maintainer]
 lifecycle_state: active
 owner: coding-harness-maintainers
 created: 2026-06-04
-last_reviewed: 2026-08-11
+last_reviewed: 2026-08-24
 review_cadence: on-change
 maintenance_trigger: [agent-operating-policy-change, validation-contract-change]
 semver_impact: minor
@@ -50,6 +50,9 @@ default agent route without a named consumer.
 The [North Star](docs/roadmap/north-star.md) is maintainer guidance for this
 routine boundary. It does not add a routine command or make optional context,
 runtime, or review integrations prerequisites for a bounded task.
+Status-cadence updates must keep the recorded sample source-bound; remove
+unsupported observation rows instead of treating prose or unbound heads as
+execution evidence.
 
 ## Delivery rules
 

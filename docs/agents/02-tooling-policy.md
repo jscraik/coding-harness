@@ -268,7 +268,8 @@ Branch name consumers should treat this pattern as an agent worktree-readiness b
 
 The PR queue's optional review-artifact form is a separate, copy-safe command:
 `pnpm run pr:queue -- --json --require-ready --require-review-artifact`.
-These rows are expert-only operational surfaces. The owning command or script
+The advanced operational rows below are expert-only surfaces. `pr-closeout`
+remains a routine read-only handoff command. The owning command or script
 must emit structured JSON on success; a non-zero exit, malformed output, or
 missing required input stops the route and leaves the source and target
 repository untouched.
