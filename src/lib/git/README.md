@@ -39,3 +39,5 @@ test harnesses that create disposable Git repositories.
 
 Run `pnpm run quality:git-env-sanitizer` after changing git subprocess
 environment handling.
+The command must exit successfully; a non-zero result blocks handoff until the
+reported failure is fixed and rerun.
