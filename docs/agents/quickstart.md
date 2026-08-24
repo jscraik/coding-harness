@@ -27,21 +27,25 @@ For an installed package consumer, start with the read-only cockpit entrypoint:
 harness next --json
 ```
 
-When working from this source checkout, prove the checkout itself rather than
-whichever global binary happens to be on `PATH`. Use the package-local binary
-after the build, or the source loader before a build:
+From this source checkout, install dependencies first, then prove the checkout
+rather than whichever global binary happens to be on `PATH`:
 
 ```bash
-pnpm exec harness next --json
+pnpm install --frozen-lockfile
+
+# Before a build, use the source loader:
 node --import tsx src/cli.ts next --json
+
+# After a build, use the package-local binary:
+pnpm build
+pnpm exec harness next --json
 ```
 
-The bare `harness` command is not source-package proof when a global version
-may shadow the checkout.
+The bare `harness` command is not source proof when a global version may shadow
+the checkout.
 
 Read `nextCommand` and `executionBoundary.safeToRun`, run the recommendation
-when safe, and repeat after repository state changes. Use the [CLI
-reference](../cli-reference.md) for the full command contract.
+when safe, and repeat after repository state changes; use the [CLI reference](../cli-reference.md).
 
 ## Validate
 
