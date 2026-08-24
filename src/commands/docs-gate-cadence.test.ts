@@ -19,6 +19,7 @@ import {
 	isGitEnvironmentKey,
 	sanitizeGitEnvironment,
 } from "../lib/git/safe-env.js";
+import { withGitFixtureSigningDisabled } from "../lib/git/fixture-environment.js";
 import { runDocsGate } from "./docs-gate.js";
 
 function write(path: string, content: string): void {
@@ -33,6 +34,12 @@ function writeAt(root: string, path: string, content: string): void {
 
 function createTestRoot(label: string): string {
 	return mkdtempSync(join(tmpdir(), `${label}-`));
+}
+
+function createIsolatedGitEnv(): NodeJS.ProcessEnv {
+	return withGitFixtureSigningDisabled(
+		sanitizeGitEnvironment({ policy: "strict" }),
+	);
 }
 
 function seedRequiredTruthSources(root: string): void {
@@ -205,7 +212,7 @@ describe("agent-first status cadence registration", () => {
 	it("accepts the exact registered review-date and document pair", () => {
 		const root = createTestRoot("docs-gate-agent-first-cadence");
 		roots.push(root);
-		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		const gitEnv = createIsolatedGitEnv();
 		seedCadenceContract(root);
 		const baseSha = initializeGitRepository(root, gitEnv);
 		const contractPath = join(root, "harness.contract.json");
@@ -241,7 +248,7 @@ describe("agent-first status cadence registration", () => {
 	it("accepts the exact pair when it is staged but not committed", () => {
 		const root = createTestRoot("docs-gate-agent-first-cadence-staged");
 		roots.push(root);
-		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		const gitEnv = createIsolatedGitEnv();
 		seedCadenceContract(root);
 		const baseSha = initializeGitRepository(root, gitEnv);
 		updateContract(root, (contract) => {
@@ -272,7 +279,7 @@ describe("agent-first status cadence registration", () => {
 	it("rejects a contract-date-only change", () => {
 		const root = createTestRoot("docs-gate-agent-first-cadence-contract-only");
 		roots.push(root);
-		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		const gitEnv = createIsolatedGitEnv();
 		seedCadenceContract(root);
 		const baseSha = initializeGitRepository(root, gitEnv);
 		const contractPath = join(root, "harness.contract.json");
@@ -298,7 +305,7 @@ describe("agent-first status cadence registration", () => {
 	it("rejects a status-document-only change", () => {
 		const root = createTestRoot("docs-gate-agent-first-cadence-document-only");
 		roots.push(root);
-		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		const gitEnv = createIsolatedGitEnv();
 		seedCadenceContract(root);
 		const baseSha = initializeGitRepository(root, gitEnv);
 		writeAt(
@@ -321,7 +328,7 @@ describe("agent-first status cadence registration", () => {
 	it("rejects a nearby surface date change instead of the registered date", () => {
 		const root = createTestRoot("docs-gate-agent-first-cadence-nearby-date");
 		roots.push(root);
-		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		const gitEnv = createIsolatedGitEnv();
 		seedCadenceContract(root);
 		const baseSha = initializeGitRepository(root, gitEnv);
 		updateContract(root, (contract) => {
@@ -347,7 +354,7 @@ describe("agent-first status cadence registration", () => {
 	it("rejects the pair when its contract diff includes another policy edit", () => {
 		const root = createTestRoot("docs-gate-agent-first-cadence-extra-edit");
 		roots.push(root);
-		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		const gitEnv = createIsolatedGitEnv();
 		seedCadenceContract(root);
 		const baseSha = initializeGitRepository(root, gitEnv);
 		const contractPath = join(root, "harness.contract.json");
@@ -387,7 +394,7 @@ describe("agent-first status cadence registration", () => {
 	it("rejects an explicit defaulted contract field beside the cadence date", () => {
 		const root = createTestRoot("docs-gate-agent-first-cadence-raw-default");
 		roots.push(root);
-		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		const gitEnv = createIsolatedGitEnv();
 		seedCadenceContract(root);
 		const baseSha = initializeGitRepository(root, gitEnv);
 		const contractPath = join(root, "harness.contract.json");
@@ -418,7 +425,7 @@ describe("agent-first status cadence registration", () => {
 			"docs-gate-agent-first-cadence-staged-mismatch",
 		);
 		roots.push(root);
-		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		const gitEnv = createIsolatedGitEnv();
 		seedCadenceContract(root);
 		const baseSha = initializeGitRepository(root, gitEnv);
 		const contractPath = join(root, "harness.contract.json");
@@ -460,7 +467,7 @@ describe("agent-first status cadence registration", () => {
 	it("rejects impossible calendar dates before granting cadence", () => {
 		const root = createTestRoot("docs-gate-agent-first-cadence-invalid-date");
 		roots.push(root);
-		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		const gitEnv = createIsolatedGitEnv();
 		seedCadenceContract(root);
 		const baseSha = initializeGitRepository(root, gitEnv);
 		const contractPath = join(root, "harness.contract.json");
@@ -491,7 +498,7 @@ describe("agent-first status cadence registration", () => {
 	it("rejects future calendar dates before granting cadence", () => {
 		const root = createTestRoot("docs-gate-agent-first-cadence-future-date");
 		roots.push(root);
-		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		const gitEnv = createIsolatedGitEnv();
 		seedCadenceContract(root);
 		const baseSha = initializeGitRepository(root, gitEnv);
 		const contractPath = join(root, "harness.contract.json");
@@ -522,7 +529,7 @@ describe("agent-first status cadence registration", () => {
 	it("rejects a cadence pair split between HEAD and the worktree", () => {
 		const root = createTestRoot("docs-gate-agent-first-cadence-split");
 		roots.push(root);
-		const gitEnv = sanitizeGitEnvironment({ policy: "strict" });
+		const gitEnv = createIsolatedGitEnv();
 		seedCadenceContract(root);
 		const baseSha = initializeGitRepository(root, gitEnv);
 		updateContract(root, (contract) => {

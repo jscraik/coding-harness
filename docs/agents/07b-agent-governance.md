@@ -27,6 +27,10 @@ proof, and hand back the result. Select a reviewer or tool-building subagent
 only when the work is delegated, a reusable tool is needed, or the risk requires
 independent coverage; routine work does not need a reviewer-authored artifact.
 
+The [North Star](../roadmap/north-star.md) is maintainer guidance for that
+routine boundary. It does not add a routine command or make optional context,
+runtime, or review integrations prerequisites for a bounded task.
+
 Treat repeated feedback as evidence, not an automatic mandate for more process.
 Finish the bounded local repair first. Promote a small durable control only when
 the same failure recurs across independent work, an existing contract conflicts,

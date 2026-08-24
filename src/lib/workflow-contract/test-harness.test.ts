@@ -11,6 +11,7 @@ import {
 	createGreenEvidence,
 	createRedEvidence,
 	runGateAssertions,
+	sanitizeGitEnv,
 	validateModuleTestManifest,
 	validateTDDEvidencePair,
 } from "./test-harness.js";
@@ -126,6 +127,23 @@ describe("createGitFixture", () => {
 		expect(readFileSync(join(fixture.dir, "a/b/c/deep.txt"), "utf-8")).toBe(
 			"deep content",
 		);
+	});
+});
+
+describe("sanitizeGitEnv", () => {
+	it("removes inherited Git routing while disabling fixture-only signing", () => {
+		const environment = sanitizeGitEnv({
+			GIT_DIR: "/unexpected/git-dir",
+			PATH: "/test/bin",
+		});
+
+		expect(environment.GIT_DIR).toBeUndefined();
+		expect(environment.PATH).toBe("/test/bin");
+		expect(environment.GIT_CONFIG_COUNT).toBe("2");
+		expect(environment.GIT_CONFIG_KEY_0).toBe("commit.gpgsign");
+		expect(environment.GIT_CONFIG_VALUE_0).toBe("false");
+		expect(environment.GIT_CONFIG_KEY_1).toBe("tag.gpgSign");
+		expect(environment.GIT_CONFIG_VALUE_1).toBe("false");
 	});
 });
 
