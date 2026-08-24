@@ -21,11 +21,23 @@ pnpm -v   # 10.33.0
 
 ## Agent-native loop
 
-Start with the read-only cockpit entrypoint:
+For an installed package consumer, start with the read-only cockpit entrypoint:
 
 ```bash
 harness next --json
 ```
+
+When working from this source checkout, prove the checkout itself rather than
+whichever global binary happens to be on `PATH`. Use the package-local binary
+after the build, or the source loader before a build:
+
+```bash
+pnpm exec harness next --json
+node --import tsx src/cli.ts next --json
+```
+
+The bare `harness` command is not source-package proof when a global version
+may shadow the checkout.
 
 Read `nextCommand` and `executionBoundary.safeToRun`, run the recommendation
 when safe, and repeat after repository state changes. Use the [CLI

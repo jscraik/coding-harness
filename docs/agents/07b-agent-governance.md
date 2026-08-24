@@ -66,6 +66,9 @@ Routine command guidance belongs in the checked
 [CLI reference](../cli-reference.md): `next`, minimal `init`, `check`,
 `verify-work`, and `pr-closeout`. Do not restore hidden command catalogues to
 agent-facing documentation merely because an internal implementation remains.
+For source-checkout proof, use `pnpm exec harness` after building or
+`node --import tsx src/cli.ts` before a build; a bare global `harness` binary
+is installed-consumer evidence only.
 
 - Required status checks and code scanning stay separate: branch protection
   status checks require `pr-pipeline`, `security-scan`, and

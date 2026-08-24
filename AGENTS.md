@@ -33,6 +33,9 @@ path small.
 3. Start cold-agent routing with `harness next --json`. Optional maintenance is
    a warning, not the primary action. Use documented wrappers through `zsh -lc`
    with Node `>=26.3.0` and pnpm `10.33.0`.
+   From this source checkout, use `pnpm exec harness` after building or
+   `node --import tsx src/cli.ts` before a build; a bare global `harness`
+   binary is installed-consumer evidence only.
 
 ## Routine product
 
