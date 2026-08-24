@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-08-13
+last_validated: 2026-08-24
 ---
 
 # Agent-First Status
@@ -128,14 +128,6 @@ not authorize edits or make the task clean.
 | Portfolio | `3c735ee8928619b23af6b7ee54f3d509beb5a61f` | `action_required` / 1.769 | 3 / 1 / 1 | Exact validation-plan command; one repository check failed |
 | Jamie Brain | `90ee789eced74e6f1dd018b5a1d8259d9c04888b` | `action_required` / 1.854 | 1 / 2 / 1 | Exact validation-plan command; configuration check failed |
 | Coding Harness | `e94794c2b8f117d6bad16b4d11ec98b28d38da02` | `pass` / 0.944 | 3 / 1 / 1 | Routed to `harness check`; source/version drift remained visible |
-
-| Repository / observed HEAD                                | Treated `next`                                                        | Validation binding                                              | Treated wall time | `check` counts (ok / warn / fail) | Untreated Git snapshot | Interpretation                                                                |
-| --------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------- | ----------------: | --------------------------------: | ---------------------: | ----------------------------------------------------------------------------- |
-| Jamie Brain `90ee789eced74e6f1dd018b5a1d8259d9c04888b`    | `pass`; no changed files                                              | n.a. (no validation-plan command selected)                      |             0.53s |                         1 / 2 / 1 |                  0.02s | `check` exposed the missing Harness contract; no causal benefit claim         |
-| Agent-Skills `4ced957e36ea6ebe4c65d8754db5328d3879fefb`   | `action_required`; 42 changed files; validation-plan routing selected | unavailable: exact command and expected result were not retained |             0.91s |                         3 / 2 / 0 |                  0.15s | structured next action and warnings; causal benefit unproven                  |
-| Configs `2d87971e3c08906112d9a712db5220f29ed644a6`        | `action_required`; 31 changed files; validation-plan routing selected | unavailable: exact command and expected result were not retained |             0.61s |                         3 / 2 / 0 |                  0.03s | structured next action and warnings; causal benefit unproven                  |
-| Portfolio `011183f961a32ebd77a7d773adb1dc5df3487cb6`      | `action_required`; 30 changed files; validation-plan routing selected | unavailable: exact command and expected result were not retained |             0.53s |                         3 / 1 / 1 |                  0.03s | `check` exposed repository-local version drift; no causal benefit claim       |
-| Coding Harness `34e46f72e218e1314f0365c81877b7a0cbcd35ed` | `pass`; no changed files                                              | n.a. (no validation-plan command selected)                      |             0.62s |                         4 / 1 / 0 |                  0.03s | structured readiness boundary with version coherence; causal benefit unproven |
 
 The raw artifact binds command text, exit codes, stdout, stderr, task HEADs,
 and wall time. Because it is retained only in the private OC evidence lane,
