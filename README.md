@@ -103,9 +103,9 @@ Keep the stable product surface small and move unselected expert capability out
 of the routine path. Keep the truth-bounded recovery status in
 [`docs/roadmap/agent-first-status.md`](./docs/roadmap/agent-first-status.md)
 and its weekly cadence entry in `harness.contract.json` current together.
-The lifecycle sample in that status document is limited to rows backed by
-retained source evidence; unbound observations remain out of the product
-claim.
+The lifecycle sample in that status document is limited to source-bound
+descriptive rows; without retained raw output or an independent receipt, the
+rows remain context rather than execution proof.
 The current controlled local observation is retained at
 [`docs/roadmap/agent-first-effectiveness-observation-2026-08-11.json`](./docs/roadmap/agent-first-effectiveness-observation-2026-08-11.json);
 it records proof clarity only, not causal productivity or release readiness.
