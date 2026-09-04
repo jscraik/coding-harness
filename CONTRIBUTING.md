@@ -298,6 +298,10 @@ Each PR must include:
 - Confirmation that reviewer agent is independent from coding agent.
 
 If a required review artifact is missing, block merge until it is added or explicitly waived by repository policy.
+The PR-template gate validates that each review lane is truthfully classified,
+including an explicit pending state during the opening pipeline. It does not
+prove review completion. The exact-head update-readiness gate owns completed
+review, unresolved-thread, and merge-readiness enforcement.
 
 ## Credential-safe evidence snippets
 

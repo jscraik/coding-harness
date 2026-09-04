@@ -87,8 +87,6 @@ function collectValidationFieldErrors(body: string): string[] {
 }
 
 const REVIEW_ARTIFACT_URL_PATTERN = /https?:\/\/\S+/i;
-const REVIEW_INCOMPLETE_STATUS_PATTERN =
-	/\b(?:pending|running|in[ -]progress|incomplete|not completed?|review requested|requested review)\b/i;
 const REVIEW_WAIVER_PREFIX = "waived by repository policy:";
 const REVIEW_WAIVER_TICKET_PATTERN = /^(?:https?:\/\/\S+|[A-Z]+-\d+)$/;
 const REVIEW_WAIVER_EXPIRY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -142,12 +140,6 @@ function collectReviewFieldErrors(body: string): string[] {
 			field.label,
 		);
 		if (value === null || isCompleteReviewWaiver(value)) continue;
-		if (REVIEW_INCOMPLETE_STATUS_PATTERN.test(value)) {
-			errors.push(
-				`Review and closeout field ${field.label} must reference a completed review artifact, not a pending, requested, or running review.`,
-			);
-			continue;
-		}
 		if (!REVIEW_ARTIFACT_URL_PATTERN.test(value)) {
 			errors.push(
 				`Review and closeout field ${field.label} must link a checkable artifact or use \`waived by repository policy: rule=<id-or-section>; reason=<reason>; ticket=<ticket>; expiry=<YYYY-MM-DD>\` (or \`adr=<reference>\`).`,

@@ -99,9 +99,7 @@ describe("validatePrTemplateBody", () => {
 			new RegExp(`^- ${label}:.*$`, "m"),
 			`- ${label}: https://example.com/request requested; final artifact pending`,
 		);
-		expect(validatePrTemplateBody(pendingBody)).toContain(
-			`Review and closeout field ${label} must reference a completed review artifact, not a pending, requested, or running review.`,
-		);
+		expect(validatePrTemplateBody(pendingBody)).toEqual([]);
 	});
 
 	it("fails when the problem section is missing", () => {
