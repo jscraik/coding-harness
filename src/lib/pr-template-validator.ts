@@ -84,6 +84,32 @@ function collectValidationFieldErrors(body: string): string[] {
 	}
 	return errors;
 }
+
+const REVIEW_ARTIFACT_PATTERN =
+	/https?:\/\/\S+|waived by repository policy:\s*(?:https?:\/\/\S+|[A-Z]+-\d+|[\w./-]+\.md\b)/i;
+
+/** Require review evidence to be checkable or explicitly policy-waived. */
+function collectReviewFieldErrors(body: string): string[] {
+	const errors = collectFieldErrors(
+		body,
+		"## Review and closeout",
+		REQUIRED_REVIEW_FIELDS,
+		"review and closeout",
+	);
+	for (const field of REQUIRED_REVIEW_FIELDS) {
+		const value = extractFieldBlockValue(
+			body,
+			"## Review and closeout",
+			field.label,
+		);
+		if (value !== null && !REVIEW_ARTIFACT_PATTERN.test(value)) {
+			errors.push(
+				`Review and closeout field ${field.label} must link a checkable artifact or use \`waived by repository policy: <policy reference>\`.`,
+			);
+		}
+	}
+	return errors;
+}
 /** Collect required behavior-proof field errors. */
 function collectBehaviorProofFieldErrors(body: string): string[] {
 	return collectFieldErrors(
@@ -227,6 +253,7 @@ function issueHasPreparatoryNoCompletionTrace(
  */
 function collectCommandEvidenceErrors(validationBody: string): string[] {
 	const commandLines = validationBody
+		.replace(/<!--\s*[\s\S]*?\s*-->/g, "")
 		.split(/\r?\n/)
 		.map((line) => line.trim())
 		.filter((line) => /^-\s*Command:\s*/i.test(line));
@@ -239,7 +266,7 @@ function collectCommandEvidenceErrors(validationBody: string): string[] {
 	}
 
 	const commandEvidencePattern =
-		/^-\s*Command:\s*(?:`[^\n`]+`|(?=\S).*?\S)\s*->\s*(?:(?:pass|fail|`(?:pass|fail)`)(?:\s*\([^)]+\)\.?)?|(?:blocked|`blocked`)\s*\([^)]+\))\s*$/i;
+		/^-\s*Command:\s*(?:`[^\n`]+`|(?=\S).*?\S)\s*->\s*(?:(?:pass|fail|`(?:pass|fail)`)(?:\s*\([^)]+\)\.?)?|(?:blocked|`blocked`)\s*\([^)]*\S[^)]*\))\s*$/i;
 	for (const line of commandLines) {
 		if (!commandEvidencePattern.test(line)) {
 			errors.push(
@@ -301,14 +328,7 @@ export function validatePrTemplateBody(
 	errors.push(...collectChecklistErrors(body));
 	errors.push(...collectBehaviorProofFieldErrors(body));
 	errors.push(...collectValidationFieldErrors(body));
-	errors.push(
-		...collectFieldErrors(
-			body,
-			"## Review and closeout",
-			REQUIRED_REVIEW_FIELDS,
-			"review and closeout",
-		),
-	);
+	errors.push(...collectReviewFieldErrors(body));
 	errors.push(...collectPlaceholderErrors(body));
 
 	return errors;

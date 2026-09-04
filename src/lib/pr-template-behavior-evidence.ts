@@ -103,11 +103,24 @@ function collectDurableEvidenceMapErrors(
 		"## Change details",
 		"Durable evidence map",
 	);
-	const reviewArtifacts = readFieldValue(
+	const conditionalReviewArtifacts = readFieldValue(
 		body,
 		"## Change details",
 		"Review artifacts",
 	);
+	const requiredReviewArtifacts = [
+		"CodeRabbit",
+		"Independent reviewer evidence",
+		"Codex",
+	]
+		.map((label) => readFieldValue(body, "## Review and closeout", label))
+		.filter((field): field is string => field !== null);
+	const reviewArtifacts = [
+		conditionalReviewArtifacts,
+		...requiredReviewArtifacts,
+	]
+		.filter((field): field is string => field !== null)
+		.join("\n");
 	const evidenceText = [
 		...REQUIRED_CHANGE_FIELDS,
 		...CONDITIONAL_EVIDENCE_FIELDS,
@@ -115,6 +128,7 @@ function collectDurableEvidenceMapErrors(
 		.filter((field) => field.label !== "Durable evidence map")
 		.map((field) => readFieldValue(body, "## Change details", field.label))
 		.filter((field): field is string => field !== null)
+		.concat(requiredReviewArtifacts)
 		.join("\n");
 
 	return validateDurableEvidenceMap({

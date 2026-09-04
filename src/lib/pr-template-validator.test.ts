@@ -73,7 +73,7 @@ const VALID_BODY = `## Summary
 ## Review and closeout
 
 - CodeRabbit: https://example.com/coderabbit
-- Independent reviewer evidence: N/A (solo mode)
+- Independent reviewer evidence: https://example.com/independent-review
 - Codex: https://example.com/codex
 - Additional evidence (if any): none
 
@@ -96,6 +96,14 @@ describe("validatePrTemplateBody", () => {
 
 		expect(validatePrTemplateBody(body)).toContain(
 			`Missing required review and closeout field: ${label}`,
+		);
+
+		const pendingBody = VALID_BODY.replace(
+			new RegExp(`^- ${label}:.*$`, "m"),
+			`- ${label}: pending`,
+		);
+		expect(validatePrTemplateBody(pendingBody)).toContain(
+			`Review and closeout field ${label} must link a checkable artifact or use \`waived by repository policy: <policy reference>\`.`,
 		);
 	});
 
@@ -344,16 +352,41 @@ describe("validatePrTemplateBody", () => {
 		).toBe(true);
 	});
 
-	it("fails blocked Command evidence without a reason", () => {
+	it.each([
+		"blocked",
+		"blocked ( )",
+	])("fails incomplete blocked Command evidence: %s", (outcome) => {
 		const body = VALID_BODY.replace(
 			"- Command: `pnpm lint` -> `pass`",
-			"- Command: `pnpm lint` -> blocked",
+			`- Command: \`pnpm lint\` -> ${outcome}`,
 		);
 		const errors = validatePrTemplateBody(body);
 
 		expect(
 			errors.some((error) => error.includes("Command evidence must use")),
 		).toBe(true);
+	});
+
+	it("does not count commented command examples as validation evidence", () => {
+		const body = VALID_BODY.replace(/^- Command: .*$/gm, "").replace(
+			"- Untested or blocked paths: none",
+			"- Untested or blocked paths: none\n<!--\n- Command: `pnpm test` -> pass\n-->",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Validation section must include at least one Command evidence line.",
+		);
+	});
+
+	it("requires durable mapping for local-only closeout review artifacts", () => {
+		const body = VALID_BODY.replace(
+			"- CodeRabbit: https://example.com/coderabbit",
+			"- CodeRabbit: artifacts/reviews/coderabbit.md",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Durable evidence map cannot be n.a. when PR evidence fields cite ignored local artifact paths.",
+		);
 	});
 
 	it("fails invalid Command evidence outcomes", () => {

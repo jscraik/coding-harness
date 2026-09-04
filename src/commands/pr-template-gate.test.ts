@@ -87,7 +87,7 @@ const VALID_BODY = `## Summary
 ## Review and closeout
 
 - CodeRabbit: https://example.com/coderabbit
-- Independent reviewer evidence: N/A (solo mode)
+- Independent reviewer evidence: https://example.com/independent-review
 - Codex: https://example.com/codex
 - Additional evidence (if any): none
 
