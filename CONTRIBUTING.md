@@ -256,25 +256,26 @@ repeat findings should become a validator, gate, scaffold regression,
 generated-artifact rule, review-context fact, or explicit exception instead of
 remaining a review comment.
 
-## Work performed ledger
+## Change details ledger
 
-Every PR must keep `## Work performed` filled in with concrete evidence:
+Every PR must keep `## Change details` filled in with concrete evidence:
 
 - `Plan IDs`: Linear keys, spec paths, plan paths, or `n.a.` with reason.
-- `Phase / slice`: completed phase, implementation slice, or `n.a.` with reason.
+- `Linear reference`: `Refs JSC-N`, `Fixes JSC-N`, `Closes JSC-N`, or `n.a.` with reason.
+- `Linked issue relationship`: implementation closure, preparatory/enabling work, standalone/untracked work, or `n.a.` with reason.
 - `Session IDs`: Codex, session-collector, or Harness Engineering session IDs, or `n.a.` with reason.
 - `Trace IDs`: CI, harness, eval, review, or runtime trace IDs, or `n.a.` with reason.
+- `AI session / traceability`: AI session link, durable traceability reference, or `n.a.` with reason.
 - `Completed work`: implementation units, docs/config changes, or evidence-only work completed in the PR.
+- `Affected surfaces`: code, tests, docs, PR template, CLI reference, workflow config, generated artifacts, examples, or `n.a.` with reason.
 - `Documentation impact`: root docs, governed docs, and deep-module README changes, or `n.a.` with reason.
-- `Documentation lifecycle impact`: created, updated, deprecated, superseded, archived, removed, or `n.a.` with canon and distribution classification.
 - `SemVer impact`: none, patch, minor, major, or `n.a.` with downstream-template or packaged-skill impact when present.
 - `Acceptance trace`: completed acceptance items mapped to evidence refs, or `n.a.` with reason.
-- `Validation evidence`: command outcomes, CI jobs, artifact paths, or `n.a.` with reason.
-- `Review artifacts`: CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason.
-- `Learning / reinforcement`: promoted learnings, memory updates, or `none` with reason.
-- `Deferred work`: follow-up work intentionally left out, or `none`.
+- `Runtime impact`: direct, transitive, dev-only, CI-only, runtime-facing, or `n.a.` with reason.
 
-Use this section as the compact handoff ledger. It should say what was actually done, which sessions and traces produced the evidence, what was promoted into durable learning, and what remains, not repeat the full implementation story.
+Use this section as the compact change ledger. Keep conditional evidence and
+release-boundary details in their named template fields rather than duplicating
+them here.
 
 ## Review artifacts requirement
 

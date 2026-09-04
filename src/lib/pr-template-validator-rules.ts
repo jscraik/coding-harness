@@ -156,6 +156,21 @@ export const REQUIRED_CHANGE_FIELDS = [
 			"classify the linked issue relationship as implementation closure, preparatory/enabling work, standalone/untracked work, or `n.a.` with reason; for parent-goal references, state completed acceptance IDs or `none`",
 	},
 	{
+		label: "Session IDs",
+		placeholder:
+			"list Codex, session-collector, or Harness Engineering session IDs, or `n.a.` with reason",
+	},
+	{
+		label: "Trace IDs",
+		placeholder:
+			"list CI, harness, eval, review, or runtime trace IDs, or `n.a.` with reason",
+	},
+	{
+		label: "AI session / traceability",
+		placeholder:
+			"link the AI session or give a durable traceability reference, or `n.a.` with reason",
+	},
+	{
 		label: "Completed work",
 		placeholder:
 			"list implementation units, docs/config changes, or evidence-only work completed in this PR",
@@ -184,6 +199,21 @@ export const REQUIRED_CHANGE_FIELDS = [
 		label: "Runtime impact",
 		placeholder:
 			"state direct, transitive, dev-only, CI-only, runtime-facing, or `n.a.` with reason",
+	},
+] as const;
+
+export const REQUIRED_REVIEW_FIELDS = [
+	{
+		label: "CodeRabbit",
+		placeholder: "link the CodeRabbit review artifact or state a policy waiver",
+	},
+	{
+		label: "Independent reviewer evidence",
+		placeholder: "link independent review evidence or state a policy waiver",
+	},
+	{
+		label: "Codex",
+		placeholder: "link the Codex review artifact or state a policy waiver",
 	},
 ] as const;
 

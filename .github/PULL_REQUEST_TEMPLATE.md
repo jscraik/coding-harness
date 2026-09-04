@@ -55,6 +55,9 @@ run, state the blocker and the nearest fallback.
 - Plan IDs:
 - Linear reference:
 - Linked issue relationship:
+- Session IDs:
+- Trace IDs:
+- AI session / traceability:
 - Completed work:
 - Affected surfaces:
 - Documentation impact:

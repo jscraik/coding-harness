@@ -80,7 +80,6 @@ Required binaries on `PATH` validated by
 - `ruff`
 - `eslint`
 - `agent-browser`
-- `agentation`
 - `agentation-mcp`
 - `ctx7`
 - `mmdc`

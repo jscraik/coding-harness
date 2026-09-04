@@ -12,6 +12,7 @@ import {
 	REQUIRED_BEHAVIOR_PROOF_FIELDS,
 	REQUIRED_SUMMARY_FIELDS,
 	REQUIRED_RELEASE_BOUNDARY_FIELDS,
+	REQUIRED_REVIEW_FIELDS,
 	REQUIRED_VALIDATION_FIELDS,
 	REQUIRED_CHANGE_FIELDS,
 } from "../pr-template-validator-rules.js";
@@ -292,6 +293,10 @@ describe("document scaffold templates", () => {
 			expect(template).toContain(`- ${field.label}:`);
 		}
 		for (const field of REQUIRED_CHANGE_FIELDS) {
+			expect(template).toContain(`- ${field.label}:`);
+			expect(template).not.toContain(`- ${field.label}: ${field.placeholder}`);
+		}
+		for (const field of REQUIRED_REVIEW_FIELDS) {
 			expect(template).toContain(`- ${field.label}:`);
 			expect(template).not.toContain(`- ${field.label}: ${field.placeholder}`);
 		}

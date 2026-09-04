@@ -2,6 +2,12 @@ import { collectWorkEvidenceIntegrityErrors } from "./pr-template-behavior-evide
 import { collectLinkedIssueRelationshipErrors } from "./pr-template-linked-issue-relationship.js";
 import { extractLinearIssueKeys } from "./linear/utils.js";
 import {
+	collectFieldErrors,
+	extractFieldBlockValue,
+	extractSectionBody,
+	normalizeFieldValue,
+} from "./pr-template-fields.js";
+import {
 	MAX_BODY_LENGTH,
 	PLACEHOLDERS,
 	ACCEPTANCE_TRACE_ID_PATTERN,
@@ -9,65 +15,15 @@ import {
 	REQUIRED_BEHAVIOR_PROOF_FIELDS,
 	REQUIRED_SUMMARY_FIELDS,
 	REQUIRED_RELEASE_BOUNDARY_FIELDS,
+	REQUIRED_REVIEW_FIELDS,
 	REQUIRED_SECTIONS,
 	REQUIRED_VALIDATION_FIELDS,
 	REQUIRED_CHANGE_FIELDS,
 } from "./pr-template-validator-rules.js";
-/**
- * Normalize a field value extracted from a PR template for reliable comparison.
- *
- * Strips surrounding fenced code blocks or single backtick inline code if present,
- * collapses all consecutive whitespace to single spaces, and trims leading/trailing whitespace.
- *
- * @param value - The raw field value possibly containing code fences, inline code, or extra whitespace
- * @returns The normalized field value suitable for comparison and placeholder checks
- */
-function normalizeFieldValue(value: string): string {
-	let normalized = value.trim();
-	const fencedMatch = normalized.match(/^```[\w-]*\s*([\s\S]*?)\s*```$/);
-	if (fencedMatch) {
-		normalized = fencedMatch[1] ?? "";
-	}
-	const inlineCodeMatch = normalized.match(/^`([^`]+)`$/);
-	if (inlineCodeMatch) {
-		normalized = inlineCodeMatch[1] ?? "";
-	}
-	return normalized.replace(/\s+/g, " ").trim();
-}
-/** Normalize a multi-line PR-template field value and drop guidance comments. */
-function normalizeFieldBlockValue(value: string): string {
-	let normalized = value.trim();
-	const fencedMatch = normalized.match(/^```[\w-]*\s*([\s\S]*?)\s*```$/);
-	if (fencedMatch) {
-		normalized = fencedMatch[1] ?? "";
-	}
-	const inlineCodeMatch = normalized.match(/^`([^`]+)`$/);
-	if (inlineCodeMatch) {
-		normalized = inlineCodeMatch[1] ?? "";
-	}
-	while (/<!--\s*[\s\S]*?\s*-->/.test(normalized)) {
-		normalized = normalized.replace(/<!--\s*[\s\S]*?\s*-->/g, "");
-	}
-	return normalized.trim();
-}
-
 const RELEASE_MODE_PATTERN = /^(?:Prototype|Portfolio|Product|Harness)$/i;
 const NOT_APPLICABLE_RELEASE_MODE_PATTERN =
 	/^(?:n\.a\.|n\/a|not applicable)\s+because\s+(?!reason\b)(?!<reason>\b)\S.{6,}\S$/i;
-/** Extract the markdown content below a named PR-template heading. */
-function extractSectionBody(body: string, heading: string): string | null {
-	const escapedHeading = heading.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
-	const pattern = new RegExp(
-		`(?:^|\\n)${escapedHeading}[ \\t]*(?:\\r?\\n)([\\s\\S]*?)(?=\\r?\\n## |\\r?\\n# |$)`,
-		"i",
-	);
-	const match = body.match(pattern);
-	if (!match) {
-		return null;
-	}
-	return match[1] ?? "";
-}
-/** Collect checklist checkbox status errors from the pull request body. */
+/** Collect checklist status errors. */
 function collectChecklistErrors(body: string): string[] {
 	const checklistBody = extractSectionBody(body, "## Checklist");
 	if (checklistBody === null) {
@@ -93,7 +49,7 @@ function collectChecklistErrors(body: string): string[] {
 	}
 	return errors;
 }
-/** Collect unresolved template placeholder errors from the pull request body. */
+/** Collect unresolved template placeholders. */
 function collectPlaceholderErrors(body: string): string[] {
 	const errors: string[] = [];
 	for (const placeholder of PLACEHOLDERS) {
@@ -114,37 +70,7 @@ function collectPlaceholderErrors(body: string): string[] {
 
 	return errors;
 }
-/** Collect missing required field values from a named pull request section. */
-function collectFieldErrors(
-	body: string,
-	sectionHeading: string,
-	fields: ReadonlyArray<{ label: string; placeholder: string }>,
-	errorPrefix: string,
-): string[] {
-	const sectionBody = extractSectionBody(body, sectionHeading);
-	if (sectionBody === null) {
-		return [`Missing ${errorPrefix} block.`];
-	}
-
-	const errors: string[] = [];
-
-	for (const field of fields) {
-		const value = extractFieldBlockValue(body, sectionHeading, field.label);
-		if (value === null) {
-			errors.push(`Missing required ${errorPrefix} field: ${field.label}`);
-			continue;
-		}
-
-		const normalizedValue = normalizeFieldValue(value);
-		const placeholder = normalizeFieldValue(field.placeholder);
-		if (normalizedValue.length === 0 || normalizedValue === placeholder) {
-			errors.push(`Replace ${errorPrefix} field placeholder: ${field.label}`);
-		}
-	}
-
-	return errors;
-}
-/** Collect required validation fields and command-evidence errors. */
+/** Collect required validation-field and command-evidence errors. */
 function collectValidationFieldErrors(body: string): string[] {
 	const errors = collectFieldErrors(
 		body,
@@ -167,7 +93,7 @@ function collectBehaviorProofFieldErrors(body: string): string[] {
 		"behavior proof",
 	);
 }
-/** Collect missing summary fields from the pull request body. */
+/** Collect required summary field errors. */
 function collectSummaryFieldErrors(body: string): string[] {
 	return collectFieldErrors(
 		body,
@@ -222,7 +148,7 @@ function collectChangeDetailsFieldErrors(body: string): string[] {
 	);
 }
 
-/** Collect acceptance-trace errors when linked issue references are present. */
+/** Collect acceptance-trace errors for linked issues. */
 function collectLinkedIssueAcceptanceTraceErrors(
 	body: string,
 	allowedPrefixes?: readonly string[],
@@ -277,6 +203,7 @@ function traceCoversEveryLinkedIssue(
 	});
 }
 
+/** Return whether an issue has an explicit preparatory no-completion trace. */
 function issueHasPreparatoryNoCompletionTrace(
 	issueKey: string,
 	acceptanceTrace: string,
@@ -290,26 +217,6 @@ function issueHasPreparatoryNoCompletionTrace(
 		PREPARATORY_LINKED_ISSUE_TRACE_PATTERN.test(acceptanceTrace) &&
 		issueScopedNoCompletionPattern.test(acceptanceTrace)
 	);
-}
-
-/** Extract and normalize a named field from a bounded PR-template section. */
-function extractFieldBlockValue(
-	body: string,
-	sectionHeading: string,
-	label: string,
-): string | null {
-	const sectionBody = extractSectionBody(body, sectionHeading);
-	if (sectionBody === null) {
-		return null;
-	}
-
-	const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-	const pattern = new RegExp(
-		`^-\\s*${escapedLabel}:[ \\t]*([\\s\\S]*?)(?=\\r?\\n-\\s*[A-Za-z][^\\n:]{0,80}:|\\r?\\n##\\s|(?![\\s\\S]))`,
-		"im",
-	);
-	const match = sectionBody.match(pattern);
-	return match ? normalizeFieldBlockValue(match[1] ?? "") : null;
 }
 
 /**
@@ -394,6 +301,14 @@ export function validatePrTemplateBody(
 	errors.push(...collectChecklistErrors(body));
 	errors.push(...collectBehaviorProofFieldErrors(body));
 	errors.push(...collectValidationFieldErrors(body));
+	errors.push(
+		...collectFieldErrors(
+			body,
+			"## Review and closeout",
+			REQUIRED_REVIEW_FIELDS,
+			"review and closeout",
+		),
+	);
 	errors.push(...collectPlaceholderErrors(body));
 
 	return errors;

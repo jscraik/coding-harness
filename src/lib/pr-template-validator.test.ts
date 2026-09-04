@@ -84,6 +84,21 @@ describe("validatePrTemplateBody", () => {
 		expect(validatePrTemplateBody(VALID_BODY)).toEqual([]);
 	});
 
+	it.each([
+		"CodeRabbit",
+		"Independent reviewer evidence",
+		"Codex",
+	])("fails when the required %s review field is missing", (label) => {
+		const body = VALID_BODY.replace(
+			new RegExp(`^- ${label}:.*(?:\\n|$)`, "m"),
+			"",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			`Missing required review and closeout field: ${label}`,
+		);
+	});
+
 	it("fails when the problem section is missing", () => {
 		const MISSING_MOTIVATION_BODY = VALID_BODY.replace(
 			/## Summary\n[\s\S]*?(?=## )/g,
