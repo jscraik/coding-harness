@@ -32,12 +32,12 @@ export function collectLinkedIssueRelationshipErrors(
 	const errors: string[] = [];
 	const linearReference = extractFieldBlockValue(
 		body,
-		"## Work performed",
+		"## Change details",
 		"Linear reference",
 	);
 	const linkedIssueRelationship = extractFieldBlockValue(
 		body,
-		"## Work performed",
+		"## Change details",
 		"Linked issue relationship",
 	);
 

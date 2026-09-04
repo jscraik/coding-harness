@@ -15,54 +15,43 @@ import {
 	runPrTemplateGateCLI,
 } from "./pr-template-gate.js";
 
-const VALID_BODY = `## What Problem This Solves
+const VALID_BODY = `## Summary
 
-- Motivation: PR bodies need to explain the decision pressure behind the work, not only list changed files.
-- Reasoning: Maintainers can review intent faster when motivation is captured near the top of the PR.
-- Chosen approach: Add a required Motivation section to the template and validator instead of relying on optional prose in Summary.
-
-## Release Boundary
-
-- Release mode: Harness
-- Done line: PR-template gate rejects incomplete evidence while keeping the release scope bounded.
-- Explicit non-goals: Changing GitHub branch protection or expanding adjacent workflow gates.
-- Allowed polish: Template wording that improves reviewer clarity without adding new evidence systems.
-- Deferred polish / follow-up work: none; fixture-only validation change.
-- Promotion rule: New validators or adjacent workflow changes require a follow-up issue unless required for this gate to stay truthful.
-
-## Why This Change Was Made
-
-- Problem: PR bodies could omit required validation evidence.
-- Why now: CI should catch incomplete PR templates before review.
+- Problem: PR bodies need to explain the decision pressure behind the work, not only list changed files.
+- Change: Maintainers can review intent faster when motivation is captured near the top of the PR.
+- Why this approach: Add a required Motivation section to the template and validator instead of relying on optional prose in Summary.
 - Intended outcome: PR-template gate rejects incomplete evidence.
 - Out of scope: Changing GitHub branch protection.
 - Reviewer focus: Command-gate behavior and fixture coverage.
-- Risk and rollback: Revert the command and docs updates.
+- Risk and rollback: Revert the command and template changes.
 
-## Behavior Proof
+## Release boundary
 
-- Behavior before fix: PR-template gate accepted bodies without an explicit regression test plan.
-- Behavior or issue addressed: PR-template gate validates complete PR bodies.
-- Real environment tested: local command-gate fixture through Vitest.
-- Exact steps or command run after this patch: pnpm vitest run src/commands/pr-template-gate.test.ts.
+- Release mode: Harness
+- Completion condition: PR-template gate rejects incomplete evidence while keeping the release scope bounded.
+- Deferred work: none; fixture-only validation change.
+- Stronger-proof condition: New validators or adjacent workflow changes require a follow-up issue unless required for this gate to stay truthful.
+
+## Behavior proof
+
+- Before: PR-template gate accepted bodies without an explicit regression test plan.
+- After: PR-template gate validates complete PR bodies.
+- Environment or operator path: local command-gate fixture through Vitest.
+- Verification steps: pnpm vitest run src/commands/pr-template-gate.test.ts.
 - Evidence after fix: Command output recorded in Testing.
-- Observed result after fix: Complete PR body fixture passed the gate.
-- What was not tested: live GitHub PR submission is n.a. because this fixture tests the local command path.
-- Proof limitations or environment constraints: none for the local command-gate path.
+- Untested paths and limitations: live GitHub PR submission is n.a. because this fixture tests the local command path.
 
-## Work performed
+## Change details
 
 - Plan IDs: JSC-999; .harness/plan/example-plan.md
 - Linear reference: Refs JSC-999.
 - Linked issue relationship: implementation closure for JSC-999; completed acceptance IDs: SA-999-001.
-- Phase / slice: PU-001 PR evidence ledger
 - Session IDs: codex-session-019c-example
 - Trace IDs: circleci-workflow-123; harness-gate-pr-template
 - AI session / traceability: codex-session-019c-example supports the command gate edits.
 - Completed work: Added pr-template-gate command and docs update with evidence refs.
 - Affected surfaces: code, tests, docs, PR template.
 - Documentation impact: PR template and validator fixtures updated; README.md, SECURITY.md, CONTRIBUTING.md, AGENTS.md, ARCHITECTURE.md, governance docs, and deep-module READMEs are n.a. because this fixture only proves PR body validation.
-- Documentation lifecycle impact: updated canonical PR template and validator fixtures; distribution remains source-only.
 - SemVer impact: none; validation-only fixture and PR-template contract change does not alter the packaged CLI runtime.
 - Expected outcome alignment: Keeps PR evidence reviewable for downstream harness operators.
 - Pattern scope inventory: validation evidence format checked in PR template gate; no sibling validators needed.
@@ -73,39 +62,32 @@ const VALID_BODY = `## What Problem This Solves
 - Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.
 - Durable evidence map: n.a. because review artifacts are represented by PR body links rather than local-only artifact paths.
 - Runtime impact: dev-only PR body validation gate.
-- CodeRabbit mode coverage: validation and gate; promotion n.a. (single fixture change).
 - Closeout state: PR open; merge blocked on required checks; no Linear blocker.
 - Learning / reinforcement: none; no durable learning promoted.
-- Deferred work: none
 
 ## Checklist
 
 - [x] I did not push directly to \`main\`; this PR is from a dedicated branch.
 
-## Testing
+## Validation
 
-- regression_test_plan: Unit fixture coverage validates the command accepts complete bodies and rejects incomplete bodies.
-- verification_commands: \`pnpm lint\`; \`pnpm typecheck\`; \`pnpm test\`; \`pnpm audit\`; \`pnpm check\`
-- verification_outcomes: \`pass\`; \`pass\`; \`pass\`; \`pass\`; \`pass\`
-- blocked_steps_reason: none
+- Regression coverage: Unit fixture coverage validates the command accepts complete bodies and rejects incomplete bodies.
+- Untested or blocked paths: none
 - Command: \`pnpm lint\` -> \`pass\`
 - Command: \`pnpm typecheck\` -> \`pass\`
 - Command: \`pnpm test\` -> \`pass\`
 - Command: \`pnpm audit\` -> \`pass\`
 - Command: \`pnpm check\` -> \`pass\`
-- Command: \`harness docs-gate --mode advisory\` -> n.a. (not needed for command fixture)
+- Command: \`harness docs-gate --mode advisory\` -> blocked (not run for command fixture)
 - Any other command(s): none
 
-## Review artifacts
+## Review and closeout
 
 - CodeRabbit: https://example.com/coderabbit
-- Independent reviewer evidence: N/A (solo mode)
+- Independent reviewer evidence: https://example.com/independent-review
 - Codex: https://example.com/codex
 - Additional evidence (if any): none
 
-## Notes
-
-This change adds local PR-template validation so template failures are caught before PR updates.
 `;
 
 function write(path: string, content: string): void {
@@ -280,7 +262,7 @@ describe("pr-template-gate command", () => {
 
 	it("requires motivation fields near the top of the PR body", () => {
 		const invalid = VALID_BODY.replace(
-			/## What Problem This Solves[\s\S]*?(?=## Why This Change Was Made)/,
+			/## Summary[\s\S]*?(?=## Release boundary)/,
 			"",
 		);
 
@@ -290,9 +272,9 @@ describe("pr-template-gate command", () => {
 		if (result.ok) {
 			expect(result.output.passed).toBe(false);
 			expect(result.output.errors).toContain(
-				"Missing required section: ## What Problem This Solves",
+				"Missing required section: ## Summary",
 			);
-			expect(result.output.errors).toContain("Missing motivation block.");
+			expect(result.output.errors).toContain("Missing summary block.");
 		}
 	});
 
@@ -329,9 +311,93 @@ describe("pr-template-gate command", () => {
 			.mockImplementation(() => undefined);
 		const exitCode = runPrTemplateGateCLI({
 			prBody:
-				"## Why This Change Was Made\n\n## Checklist\n\n- [ ] placeholder checklist item\n\n## Testing\n\npass/fail\n\n## Review artifacts\n\n<link / artifact path / comment ID>\n\n## Notes\n\nAdd one-paragraph merge rationale here.",
+				"## Change rationale\n\n## Checklist\n\n- [ ] placeholder checklist item\n\n## Validation\n\npass/fail\n\n## Review and closeout\n\n<link / artifact path / comment ID>\n\n## Notes\n\nAdd one-paragraph merge rationale here.",
 		});
 		expect(exitCode).toBe(EXIT_CODES.POLICY_VIOLATION);
 		expect(consoleError).toHaveBeenCalled();
+	});
+
+	it.each([
+		[
+			"commented fields",
+			VALID_BODY.replace(
+				/(- (?:CodeRabbit|Independent reviewer evidence|Codex):.*\n){3}/,
+				"<!--\n$&-->\n",
+			),
+		],
+		[
+			"ticket-only waiver",
+			VALID_BODY.replace(
+				"https://example.com/codex",
+				"waived by repository policy: JSC-123",
+			),
+		],
+		[
+			"commented section",
+			VALID_BODY.replace(/## Review and closeout[\s\S]*$/, "<!--\n$&-->"),
+		],
+	])("rejects incomplete review evidence: %s", (_case, prBody) => {
+		const result = runPrTemplateGate({ prBody });
+		expect(result.ok && result.output.passed).toBe(false);
+	});
+
+	it("does not promote text after an HTML comment into a heading", () => {
+		const prBody = VALID_BODY.replace(
+			"## Review and closeout",
+			"<!-- hidden guidance -->## Review and closeout",
+		);
+		const result = runPrTemplateGate({ prBody });
+
+		expect(result.ok && result.output.passed).toBe(false);
+	});
+
+	it.each([
+		[
+			"fenced section",
+			VALID_BODY.replace(/## Review and closeout[\s\S]*$/, "```md\n$&\n```"),
+		],
+		[
+			"inline comment delimiter",
+			VALID_BODY.replace("`pnpm lint`", "`printf '<!--'`"),
+		],
+	])("handles Markdown code without structural confusion: %s", (kind, prBody) => {
+		const result = runPrTemplateGate({ prBody });
+		expect(result.ok && result.output.passed).toBe(
+			kind === "inline comment delimiter",
+		);
+	});
+
+	it("accepts a complete review waiver", () => {
+		const prBody = VALID_BODY.replace(
+			"https://example.com/codex",
+			"waived by repository policy: rule=AGENTS.md review quorum; reason=provider outage; ticket=JSC-123; expiry=2026-09-11",
+		);
+		const result = runPrTemplateGate({ prBody });
+		expect(result.ok && result.output.passed).toBe(true);
+	});
+
+	it.each([
+		[
+			"resolved requests",
+			"https://example.com/review completed; all requested changes resolved",
+			true,
+		],
+		[
+			"expired waiver",
+			"waived by repository policy: rule=reviews; reason=outage; ticket=JSC-123; expiry=2000-01-01",
+			false,
+		],
+	])("classifies review completion: %s", (_case, evidence, expected) => {
+		const result = runPrTemplateGate({
+			prBody: VALID_BODY.replace("https://example.com/codex", evidence),
+		});
+		expect(result.ok && result.output.passed).toBe(expected);
+	});
+
+	it("requires closeout state", () => {
+		const result = runPrTemplateGate({
+			prBody: VALID_BODY.replace(/^- Closeout state:.*$/m, "- Closeout state:"),
+		});
+		expect(result.ok && result.output.passed).toBe(false);
 	});
 });

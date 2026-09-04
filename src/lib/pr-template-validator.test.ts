@@ -1,54 +1,43 @@
 import { describe, expect, it } from "vitest";
 import { validatePrTemplateBody } from "./pr-template-validator.js";
 
-const VALID_BODY = `## What Problem This Solves
+const VALID_BODY = `## Summary
 
-- Motivation: PR bodies need to explain the decision pressure behind the work, not only list changed files.
-- Reasoning: Maintainers can review intent faster when motivation is captured near the top of the PR.
-- Chosen approach: Add a required Motivation section to the template and validator instead of relying on optional prose in Summary.
+- Problem: PR bodies need to explain the decision pressure behind the work, not only list changed files.
+- Change: Maintainers can review intent faster when motivation is captured near the top of the PR.
+- Why this approach: Add a required Motivation section to the template and validator instead of relying on optional prose in Summary.
+- Intended outcome: PR-template validation rejects incomplete evidence.
+- Out of scope: Changing GitHub branch protection.
+- Reviewer focus: PR bodies could omit required validation evidence.
+- Risk and rollback: Revert the validator and template changes.
 
-## Release Boundary
+## Release boundary
 
 - Release mode: Harness
-- Done line: PR-template validation rejects incomplete evidence while keeping the release scope bounded.
-- Explicit non-goals: Changing GitHub branch protection or expanding adjacent workflow gates.
-- Allowed polish: Template wording that improves reviewer clarity without adding new evidence systems.
-- Deferred polish / follow-up work: none; fixture-only validation change.
-- Promotion rule: New validators or adjacent workflow changes require a follow-up issue unless required for this gate to stay truthful.
+- Completion condition: PR-template validation rejects incomplete evidence while keeping the release scope bounded.
+- Deferred work: none; fixture-only validation change.
+- Stronger-proof condition: New validators or adjacent workflow changes require a follow-up issue unless required for this gate to stay truthful.
 
-## Why This Change Was Made
+## Behavior proof
 
-- Problem: PR bodies could omit required validation evidence.
-- Why now: CI should catch incomplete PR templates before review.
-- Intended outcome: PR-template gate rejects incomplete evidence.
-- Out of scope: Changing GitHub branch protection.
-- Reviewer focus: Validator behavior and fixture coverage.
-- Risk and rollback: Revert the command and docs updates.
-
-## Behavior Proof
-
-- Behavior before fix: PR-template validation accepted bodies without an explicit regression test plan.
-- Behavior or issue addressed: PR-template validation rejects incomplete PR bodies.
-- Real environment tested: local source-repo validator path through Vitest.
-- Exact steps or command run after this patch: pnpm vitest run src/lib/pr-template-validator.test.ts.
+- Before: PR-template validation accepted bodies without an explicit regression test plan.
+- After: PR-template validation rejects incomplete PR bodies.
+- Environment or operator path: local source-repo validator path through Vitest.
+- Verification steps: pnpm vitest run src/lib/pr-template-validator.test.ts.
 - Evidence after fix: Command output recorded in Testing.
-- Observed result after fix: Complete PR body fixture passed validation.
-- What was not tested: live GitHub PR submission is n.a. because this fixture tests local validator behavior.
-- Proof limitations or environment constraints: none for the local validator path.
+- Untested paths and limitations: live GitHub PR submission is n.a. because this fixture tests local validator behavior.
 
-## Work performed
+## Change details
 
 - Plan IDs: JSC-999; .harness/plan/example-plan.md
 - Linear reference: Refs JSC-999.
 - Linked issue relationship: implementation closure for JSC-999; completed acceptance IDs: SA-999-001.
-- Phase / slice: PU-001 PR evidence ledger
 - Session IDs: codex-session-019c-example
 - Trace IDs: circleci-workflow-123; harness-gate-pr-template
 - AI session / traceability: codex-session-019c-example supports the validator and PR-template-gate implementation changes.
 - Completed work: Added pr-template-gate command and docs update with evidence refs.
 - Affected surfaces: code, tests, and PR template.
 - Documentation impact: PR template and validator fixtures updated; README.md, SECURITY.md, CONTRIBUTING.md, AGENTS.md, ARCHITECTURE.md, governance docs, and deep-module READMEs are n.a. because this fixture only proves PR body validation.
-- Documentation lifecycle impact: updated canonical PR template and validator fixtures; distribution remains source-only.
 - SemVer impact: none; validation-only fixture and PR-template contract change does not alter the packaged CLI runtime.
 - Expected outcome alignment: Keeps PR evidence portable and machine-checkable for greenfield and brownfield repos.
 - Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.
@@ -59,39 +48,32 @@ const VALID_BODY = `## What Problem This Solves
 - Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.
 - Durable evidence map: n.a. because review artifacts are represented by PR body links rather than local-only artifact paths.
 - Runtime impact: CI-only.
-- CodeRabbit mode coverage: validation.
 - Closeout state: local branch clean, checks passed, Linear linked, no remaining blocker.
 - Learning / reinforcement: none; no durable learning promoted.
-- Deferred work: none
 
 ## Checklist
 
 - [x] I did not push directly to \`main\`; this PR is from a dedicated branch.
 
-## Testing
+## Validation
 
-- regression_test_plan: Unit fixture coverage validates the PR-template gate accepts complete bodies and rejects incomplete bodies.
-- verification_commands: \`pnpm lint\`; \`pnpm typecheck\`; \`pnpm test\`; \`pnpm audit\`; \`pnpm check\`
-- verification_outcomes: \`pass\`; \`pass\`; \`pass\`; \`pass\`; \`pass\`
-- blocked_steps_reason: none
+- Regression coverage: Unit fixture coverage validates the PR-template gate accepts complete bodies and rejects incomplete bodies.
+- Untested or blocked paths: none
 - Command: \`pnpm lint\` -> \`pass\`
 - Command: \`pnpm typecheck\` -> \`pass\`
 - Command: \`pnpm test\` -> \`pass\`
 - Command: \`pnpm audit\` -> \`pass\`
 - Command: \`pnpm check\` -> \`pass\`
-- Command: \`harness docs-gate --mode advisory\` -> \`n.a.\` (advisory docs gate not required for this fixture)
+- Command: \`harness docs-gate --mode advisory\` -> blocked (advisory docs gate not run in this fixture)
 - Any other command(s): none
 
-## Review artifacts
+## Review and closeout
 
 - CodeRabbit: https://example.com/coderabbit
-- Independent reviewer evidence: N/A (solo mode)
+- Independent reviewer evidence: https://example.com/independent-review
 - Codex: https://example.com/codex
 - Additional evidence (if any): none
 
-## Notes
-
-This change adds local PR-template validation so template failures are caught before PR updates.
 `;
 
 describe("validatePrTemplateBody", () => {
@@ -99,24 +81,43 @@ describe("validatePrTemplateBody", () => {
 		expect(validatePrTemplateBody(VALID_BODY)).toEqual([]);
 	});
 
+	it.each([
+		"CodeRabbit",
+		"Independent reviewer evidence",
+		"Codex",
+	])("fails when the required %s review field is missing", (label) => {
+		const body = VALID_BODY.replace(
+			new RegExp(`^- ${label}:.*(?:\\n|$)`, "m"),
+			"",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			`Missing required review and closeout field: ${label}`,
+		);
+
+		const pendingBody = VALID_BODY.replace(
+			new RegExp(`^- ${label}:.*$`, "m"),
+			`- ${label}: https://example.com/request requested; final artifact pending`,
+		);
+		expect(validatePrTemplateBody(pendingBody)).toEqual([]);
+	});
+
 	it("fails when the problem section is missing", () => {
 		const MISSING_MOTIVATION_BODY = VALID_BODY.replace(
-			/## What Problem This Solves\n[\s\S]*?(?=## )/g,
+			/## Summary\n[\s\S]*?(?=## )/g,
 			"",
 		);
 		const errors = validatePrTemplateBody(MISSING_MOTIVATION_BODY);
-		expect(errors).toContain(
-			"Missing required section: ## What Problem This Solves",
-		);
+		expect(errors).toContain("Missing required section: ## Summary");
 	});
 
 	it("fails when the release boundary section is missing", () => {
 		const body = VALID_BODY.replace(
-			/## Release Boundary\n[\s\S]*?(?=## )/g,
+			/## Release boundary\n[\s\S]*?(?=## )/g,
 			"",
 		);
 		const errors = validatePrTemplateBody(body);
-		expect(errors).toContain("Missing required section: ## Release Boundary");
+		expect(errors).toContain("Missing required section: ## Release boundary");
 		expect(errors).toContain("Missing release boundary block.");
 	});
 
@@ -153,27 +154,21 @@ describe("validatePrTemplateBody", () => {
 
 	it("fails when release-boundary fields are blank before guidance comments", () => {
 		const body = VALID_BODY.replace(
-			`- Done line: PR-template validation rejects incomplete evidence while keeping the release scope bounded.
-- Explicit non-goals: Changing GitHub branch protection or expanding adjacent workflow gates.
-- Allowed polish: Template wording that improves reviewer clarity without adding new evidence systems.
-- Deferred polish / follow-up work: none; fixture-only validation change.
-- Promotion rule: New validators or adjacent workflow changes require a follow-up issue unless required for this gate to stay truthful.`,
-			`- Done line:
-- Explicit non-goals:
-- Allowed polish:
-- Deferred polish / follow-up work:
-- Promotion rule:
+			`- Completion condition: PR-template validation rejects incomplete evidence while keeping the release scope bounded.
+- Deferred work: none; fixture-only validation change.
+- Stronger-proof condition: New validators or adjacent workflow changes require a follow-up issue unless required for this gate to stay truthful.`,
+			`- Completion condition:
+- Deferred work:
+- Stronger-proof condition:
 
 <!-- Guidance comment that must not satisfy blank release-boundary fields. -->`,
 		);
 
 		expect(validatePrTemplateBody(body)).toEqual(
 			expect.arrayContaining([
-				"Replace release boundary field placeholder: Done line",
-				"Replace release boundary field placeholder: Explicit non-goals",
-				"Replace release boundary field placeholder: Allowed polish",
-				"Replace release boundary field placeholder: Deferred polish / follow-up work",
-				"Replace release boundary field placeholder: Promotion rule",
+				"Replace release boundary field placeholder: Completion condition",
+				"Replace release boundary field placeholder: Deferred work",
+				"Replace release boundary field placeholder: Stronger-proof condition",
 			]),
 		);
 	});
@@ -261,13 +256,15 @@ describe("validatePrTemplateBody", () => {
 		);
 	});
 
-	it("accepts template-documented n.a. command outcomes without a reason", () => {
+	it("rejects n.a. command outcomes", () => {
 		const body = VALID_BODY.replace(
-			"- Command: `harness docs-gate --mode advisory` -> `n.a.` (advisory docs gate not required for this fixture)",
+			"- Command: `harness docs-gate --mode advisory` -> blocked (advisory docs gate not run in this fixture)",
 			"- Command: `harness docs-gate --mode advisory` -> `n.a.`",
 		);
 
-		expect(validatePrTemplateBody(body)).toEqual([]);
+		expect(validatePrTemplateBody(body)).toContainEqual(
+			expect.stringContaining("Command evidence must use"),
+		);
 	});
 
 	it("accepts pass and fail with optional parenthetical context", () => {
@@ -331,7 +328,7 @@ describe("validatePrTemplateBody", () => {
 		const body = VALID_BODY.replace(/^- Command: .*\n/gm, "");
 		const errors = validatePrTemplateBody(body);
 		expect(errors).toContain(
-			"Testing section must include at least one Command evidence line.",
+			"Validation section must include at least one Command evidence line.",
 		);
 	});
 
@@ -344,22 +341,50 @@ describe("validatePrTemplateBody", () => {
 		expect(
 			validatePrTemplateBody(body).some((error) =>
 				error.includes(
-					"Command evidence must use `Command: <exact command> -> pass|fail`, `-> n.a.|n/a` (optional reason), or `-> blocked (<required reason>)` format",
+					"Command evidence must use `Command: <exact command> -> pass|fail` or `-> blocked (<required reason>)` format",
 				),
 			),
 		).toBe(true);
 	});
 
-	it("fails blocked Command evidence without a reason", () => {
+	it.each([
+		"blocked",
+		"blocked ( )",
+	])("fails incomplete blocked Command evidence: %s", (outcome) => {
 		const body = VALID_BODY.replace(
 			"- Command: `pnpm lint` -> `pass`",
-			"- Command: `pnpm lint` -> blocked",
+			`- Command: \`pnpm lint\` -> ${outcome}`,
 		);
 		const errors = validatePrTemplateBody(body);
 
 		expect(
 			errors.some((error) => error.includes("Command evidence must use")),
 		).toBe(true);
+	});
+
+	it.each([
+		["ordinary", "<!--\n- Command: `pnpm test` -> pass\n-->"],
+		["nested", "<!-- outer <!--\n- Command: `pnpm test` -> pass\n-->"],
+	])("does not count %s comments as command evidence", (_kind, comment) => {
+		const body = VALID_BODY.replace(/^- Command: .*$/gm, "").replace(
+			"- Untested or blocked paths: none",
+			`- Untested or blocked paths: none\n${comment}`,
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Validation section must include at least one Command evidence line.",
+		);
+	});
+
+	it("requires durable mapping for local-only closeout review artifacts", () => {
+		const body = VALID_BODY.replace(
+			"- CodeRabbit: https://example.com/coderabbit",
+			"- CodeRabbit: artifacts/reviews/coderabbit.md",
+		);
+
+		expect(validatePrTemplateBody(body)).toContain(
+			"Durable evidence map cannot be n.a. when PR evidence fields cite ignored local artifact paths.",
+		);
 	});
 
 	it("fails invalid Command evidence outcomes", () => {
@@ -401,7 +426,7 @@ describe("validatePrTemplateBody", () => {
 	it("does not treat heading names in prose as section starts", () => {
 		const body = VALID_BODY.replace(
 			"PR bodies could omit required validation evidence.",
-			"Added the required `## Work performed` ledger to the PR body.",
+			"Added the required `## Change details` ledger to the PR body.",
 		);
 
 		expect(validatePrTemplateBody(body)).toEqual([]);
@@ -409,14 +434,15 @@ describe("validatePrTemplateBody", () => {
 
 	it("fails when required sections are missing", () => {
 		const errors = validatePrTemplateBody(
-			"## Why This Change Was Made\n\nOnly summary.",
+			"## Change rationale\n\nOnly summary.",
 		);
-		expect(errors).toContain("Missing required section: ## Behavior Proof");
-		expect(errors).toContain("Missing required section: ## Work performed");
+		expect(errors).toContain("Missing required section: ## Behavior proof");
+		expect(errors).toContain("Missing required section: ## Change details");
 		expect(errors).toContain("Missing required section: ## Checklist");
-		expect(errors).toContain("Missing required section: ## Testing");
-		expect(errors).toContain("Missing required section: ## Review artifacts");
-		expect(errors).toContain("Missing required section: ## Notes");
+		expect(errors).toContain("Missing required section: ## Validation");
+		expect(errors).toContain(
+			"Missing required section: ## Review and closeout",
+		);
 	});
 
 	it("fails local-only review artifacts without a durable evidence mirror", () => {
@@ -433,10 +459,10 @@ describe("validatePrTemplateBody", () => {
 		);
 	});
 
-	it("fails local-only validation evidence without a durable evidence mirror", () => {
+	it("fails local-only command evidence without a durable evidence mirror", () => {
 		const body = VALID_BODY.replace(
-			"- Validation evidence: pnpm vitest run src/lib/pr-template-validator.test.ts -> pass.",
-			"- Validation evidence: pnpm vitest run src/lib/pr-template-validator.test.ts -> pass; artifacts/reviews/codex-review.md.",
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command: `pnpm lint` -> pass (details: artifacts/test.log)",
 		);
 
 		expect(validatePrTemplateBody(body)).toContain(
@@ -445,10 +471,7 @@ describe("validatePrTemplateBody", () => {
 	});
 
 	it("fails local absolute paths in PR bodies", () => {
-		const body = VALID_BODY.replace(
-			"This change adds local PR-template validation so template failures are caught before PR updates.",
-			"This change was validated from /Users/jamiecraik/dev/coding-harness/artifacts/reviews/codex-review.md.",
-		);
+		const body = `${VALID_BODY}\nThis change was validated from /Users/jamiecraik/dev/coding-harness/artifacts/reviews/codex-review.md.`;
 
 		expect(validatePrTemplateBody(body)).toContain(
 			"Replace local absolute path in PR body with a repo-relative path, PR comment, CI artifact URL, runtime-card ref, or tracked receipt: /Users/jamiecraik/dev/coding-harness/artifacts/reviews/codex-review.md",
@@ -508,19 +531,20 @@ describe("validatePrTemplateBody", () => {
 	});
 
 	it("fails when headings appear only in prose without markdown headers", () => {
-		const body = `## Why This Change Was Made
+		const body = `## Change rationale
 
 This PR addresses the Work performed: field, the Checklist: items, Testing: outcomes, Review artifacts: links, and Notes: section.`;
 		const errors = validatePrTemplateBody(body);
-		expect(errors).toContain("Missing required section: ## Behavior Proof");
-		expect(errors).toContain("Missing required section: ## Work performed");
+		expect(errors).toContain("Missing required section: ## Behavior proof");
+		expect(errors).toContain("Missing required section: ## Change details");
 		expect(errors).toContain("Missing required section: ## Checklist");
-		expect(errors).toContain("Missing required section: ## Testing");
-		expect(errors).toContain("Missing required section: ## Review artifacts");
-		expect(errors).toContain("Missing required section: ## Notes");
+		expect(errors).toContain("Missing required section: ## Validation");
+		expect(errors).toContain(
+			"Missing required section: ## Review and closeout",
+		);
 	});
 
-	it("fails missing or placeholder work performed fields", () => {
+	it("fails missing or placeholder change detail fields", () => {
 		const body = VALID_BODY.replace(
 			"- Completed work: Added pr-template-gate command and docs update with evidence refs.",
 			"- Completed work: list implementation units, docs/config changes, or evidence-only work completed in this PR",
@@ -529,7 +553,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 				"- Trace IDs: circleci-workflow-123; harness-gate-pr-template",
 				"- Trace IDs: list CI workflow/job URLs, harness/eval/runtime trace IDs, runtime-card/evidence bundle artifact paths, review trace IDs, or `n.a.` with reason. For traced or evaluated work, include the trace or artifact reference used to verify the claim.",
 			)
-			.replace("- Session IDs: codex-session-019c-example\n", "")
+			.replace("- Plan IDs: JSC-999; .harness/plan/example-plan.md\n", "")
 			.replace(
 				"- Meta-behavior proof: n.a. (no repeated steering or high-signal correction admitted in this PR body).\n",
 				"",
@@ -537,27 +561,12 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 			.replace(
 				"- Repeated-error research: n.a. (no same-error-twice troubleshooting trigger in this PR body).\n",
 				"",
-			)
-			.replace("- Deferred work: none\n", "");
+			);
 
 		const errors = validatePrTemplateBody(body);
+		expect(errors).toContain("Missing required change details field: Plan IDs");
 		expect(errors).toContain(
-			"Missing required work performed field: Session IDs",
-		);
-		expect(errors).toContain(
-			"Replace work performed field placeholder: Trace IDs",
-		);
-		expect(errors).toContain(
-			"Replace work performed field placeholder: Completed work",
-		);
-		expect(errors).toContain(
-			"Missing required work performed field: Meta-behavior proof",
-		);
-		expect(errors).toContain(
-			"Missing required work performed field: Repeated-error research",
-		);
-		expect(errors).toContain(
-			"Missing required work performed field: Deferred work",
+			"Replace change details field placeholder: Completed work",
 		);
 	});
 
@@ -568,7 +577,7 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		);
 
 		expect(validatePrTemplateBody(body)).toContain(
-			"Missing required work performed field: Linked issue relationship",
+			"Missing required change details field: Linked issue relationship",
 		);
 	});
 
@@ -1176,20 +1185,14 @@ This PR addresses the Work performed: field, the Checklist: items, Testing: outc
 		);
 	});
 
-	it("fails testing placeholders wrapped in markdown code", () => {
+	it("fails validation placeholders wrapped in markdown code", () => {
 		const body = VALID_BODY.replace(
-			"- verification_commands: `pnpm lint`; `pnpm typecheck`; `pnpm test`; `pnpm audit`; `pnpm check`",
-			"- verification_commands: ``` list exact commands run here ```",
-		).replace(
-			"- blocked_steps_reason: none",
-			"- blocked_steps_reason: `none if all planned steps ran`",
+			"- Regression coverage: Unit fixture coverage validates the PR-template gate accepts complete bodies and rejects incomplete bodies.",
+			"- Regression coverage: ``` describe unit, integration, contract, operator, or n.a. regression coverage ```",
 		);
 		const errors = validatePrTemplateBody(body);
 		expect(errors).toContain(
-			"Replace testing field placeholder: verification_commands",
-		);
-		expect(errors).toContain(
-			"Replace testing field placeholder: blocked_steps_reason",
+			"Replace validation field placeholder: Regression coverage",
 		);
 	});
 });

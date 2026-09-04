@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-05-11
+last_validated: 2026-09-04
 ---
 
 # Tooling Inventory
@@ -44,6 +44,8 @@ Required `[tools]` entries in [`.mise.toml`](../../.mise.toml):
 - `ruff`
 - `npm:eslint`
 - `npm:agent-browser`
+- `npm:agentation`
+- `npm:agentation-mcp`
 - `npm:ctx7`
 - `npm:@mermaid-js/mermaid-cli`
 - `npm:@brainwav/rsearch`
@@ -78,6 +80,7 @@ Required binaries on `PATH` validated by
 - `ruff`
 - `eslint`
 - `agent-browser`
+- `agentation-mcp`
 - `ctx7`
 - `mmdc`
 - `markdownlint-cli2`

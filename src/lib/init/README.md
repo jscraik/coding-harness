@@ -41,6 +41,12 @@ tests in parity.
 
 - Keep scaffold templates, the compact-contract predicate, loader behavior, and
   their focused tests aligned.
+- Keep generated pull-request templates aligned with the canonical review path:
+  `Summary`, `Release boundary`, `Behavior proof`, `Change details`,
+  `Checklist`, `Validation`, and `Review and closeout`. Require only common
+  review evidence.
+  Keep systemic-learning and durable-evidence fields conditional on their
+  validator admission rules.
 - Preserve target path safety and rollback behavior. Relative in-repository
   symlinks are allowed; absolute or escaping links are blocked.
 - Run `pnpm exec vitest run src/lib/init/scaffold.test.ts

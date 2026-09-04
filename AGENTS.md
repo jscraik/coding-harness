@@ -123,7 +123,7 @@ execution evidence.
 - [Release](docs/agents/08-release-and-change-control.md)
 
 Keep durable repository knowledge separate from private runtime data, caches,
-and raw sessions. PR bodies may cite concise evidence but never secrets or raw
-telemetry.
+and raw sessions. Keep PR bodies concise and template-complete; cite durable
+evidence, never secrets, raw telemetry, or local-only paths.
 
 - When explaining something to the user, use the portable `visualize` skill when it is available.

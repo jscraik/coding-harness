@@ -7,10 +7,12 @@ import {
 	PATTERN_SCOPE_SIGNAL_PATTERN,
 	REPEATED_ERROR_RESEARCH_EVIDENCE_PATTERNS,
 	REPEATED_ERROR_RESEARCH_SIGNAL_PATTERN,
-	REQUIRED_WORK_FIELDS,
+	CONDITIONAL_EVIDENCE_FIELDS,
+	REQUIRED_CHANGE_FIELDS,
 	STEERING_SIGNAL_PATTERN,
 } from "./pr-template-validator-rules.js";
 import { validateDurableEvidenceMap } from "./evidence-reference/evidence-reference.js";
+import { extractSectionBody } from "./pr-template-fields.js";
 
 const LOCAL_ABSOLUTE_PATH_PATTERN =
 	/(?:^|[\s\x60"'(])((?:\/Users\/|\/private\/var\/folders\/|\/var\/folders\/|\/private\/tmp\/|\/tmp\/)[^\s\x60"'<>),;]+)/g;
@@ -92,26 +94,44 @@ function hasNoSystemChangeEvidence(value: string): boolean {
 	);
 }
 
-/** Collect durable-evidence-map validation errors from the work-performed fields. */
+/** Collect durable-evidence-map validation errors from change-detail fields. */
 function collectDurableEvidenceMapErrors(
 	body: string,
 	readFieldValue: PrTemplateFieldReader,
 ): string[] {
 	const durableEvidenceMap = readFieldValue(
 		body,
-		"## Work performed",
+		"## Change details",
 		"Durable evidence map",
 	);
-	const reviewArtifacts = readFieldValue(
+	const conditionalReviewArtifacts = readFieldValue(
 		body,
-		"## Work performed",
+		"## Change details",
 		"Review artifacts",
 	);
-	const evidenceText = REQUIRED_WORK_FIELDS.filter(
-		(field) => field.label !== "Durable evidence map",
-	)
-		.map((field) => readFieldValue(body, "## Work performed", field.label))
+	const requiredReviewArtifacts = [
+		"CodeRabbit",
+		"Independent reviewer evidence",
+		"Codex",
+	]
+		.map((label) => readFieldValue(body, "## Review and closeout", label))
+		.filter((field): field is string => field !== null);
+	const reviewArtifacts = [
+		conditionalReviewArtifacts,
+		...requiredReviewArtifacts,
+	]
 		.filter((field): field is string => field !== null)
+		.join("\n");
+	const validationEvidence = extractSectionBody(body, "## Validation");
+	const evidenceText = [
+		...REQUIRED_CHANGE_FIELDS,
+		...CONDITIONAL_EVIDENCE_FIELDS,
+	]
+		.filter((field) => field.label !== "Durable evidence map")
+		.map((field) => readFieldValue(body, "## Change details", field.label))
+		.filter((field): field is string => field !== null)
+		.concat(requiredReviewArtifacts)
+		.concat(validationEvidence ?? [])
 		.join("\n");
 
 	return validateDurableEvidenceMap({
@@ -143,12 +163,12 @@ function collectMetaBehaviorErrors(
 	const errors: string[] = [];
 	const metaProof = readFieldValue(
 		body,
-		"## Work performed",
+		"## Change details",
 		"Meta-behavior proof",
 	);
 	const learning = readFieldValue(
 		body,
-		"## Work performed",
+		"## Change details",
 		"Learning / reinforcement",
 	);
 
@@ -171,7 +191,7 @@ function collectMetaBehaviorErrors(
  * requires an auditable local no-system-change record otherwise.
  *
  * @param body - Complete pull-request body text.
- * @param readFieldValue - Reader for structured work-performed fields.
+ * @param readFieldValue - Reader for structured change-detail fields.
  * @returns Validation errors for missing or incomplete pattern evidence.
  */
 function collectPatternScopeInventoryErrors(
@@ -185,7 +205,7 @@ function collectPatternScopeInventoryErrors(
 
 	const inventory = readFieldValue(
 		body,
-		"## Work performed",
+		"## Change details",
 		"Pattern scope inventory",
 	);
 	const inventoryIsNotApplicable =
@@ -230,7 +250,7 @@ function collectPatternScopeInventoryErrors(
  * a safety boundary crosses the shared troubleshooting threshold.
  *
  * @param body - Complete pull-request body text.
- * @param readFieldValue - Reader for structured work-performed fields.
+ * @param readFieldValue - Reader for structured change-detail fields.
  * @returns Validation errors for missing or incomplete threshold evidence.
  */
 function collectRepeatedErrorResearchErrors(
@@ -257,7 +277,7 @@ function collectRepeatedErrorResearchErrors(
 	);
 	const research = readFieldValue(
 		body,
-		"## Work performed",
+		"## Change details",
 		"Repeated-error research",
 	);
 

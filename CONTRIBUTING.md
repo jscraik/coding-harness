@@ -256,25 +256,38 @@ repeat findings should become a validator, gate, scaffold regression,
 generated-artifact rule, review-context fact, or explicit exception instead of
 remaining a review comment.
 
-## Work performed ledger
+## Change details ledger
 
-Every PR must keep `## Work performed` filled in with concrete evidence:
+Every PR must keep `## Change details` filled in with concrete evidence:
 
 - `Plan IDs`: Linear keys, spec paths, plan paths, or `n.a.` with reason.
-- `Phase / slice`: completed phase, implementation slice, or `n.a.` with reason.
+- `Linear reference`: `Refs JSC-N`, `Fixes JSC-N`, `Closes JSC-N`, or `n.a.` with reason.
+- `Linked issue relationship`: implementation closure, preparatory/enabling work, standalone/untracked work, or `n.a.` with reason.
 - `Session IDs`: Codex, session-collector, or Harness Engineering session IDs, or `n.a.` with reason.
 - `Trace IDs`: CI, harness, eval, review, or runtime trace IDs, or `n.a.` with reason.
+- `AI session / traceability`: AI session link, durable traceability reference, or `n.a.` with reason.
 - `Completed work`: implementation units, docs/config changes, or evidence-only work completed in the PR.
+- `Affected surfaces`: code, tests, docs, PR template, CLI reference, workflow config, generated artifacts, examples, or `n.a.` with reason.
 - `Documentation impact`: root docs, governed docs, and deep-module README changes, or `n.a.` with reason.
-- `Documentation lifecycle impact`: created, updated, deprecated, superseded, archived, removed, or `n.a.` with canon and distribution classification.
 - `SemVer impact`: none, patch, minor, major, or `n.a.` with downstream-template or packaged-skill impact when present.
 - `Acceptance trace`: completed acceptance items mapped to evidence refs, or `n.a.` with reason.
-- `Validation evidence`: command outcomes, CI jobs, artifact paths, or `n.a.` with reason.
-- `Review artifacts`: CodeRabbit, Codex, reviewer, or harness review artifacts, or `n.a.` with reason.
-- `Learning / reinforcement`: promoted learnings, memory updates, or `none` with reason.
-- `Deferred work`: follow-up work intentionally left out, or `none`.
+- `Runtime impact`: direct, transitive, dev-only, CI-only, runtime-facing, or `n.a.` with reason.
 
-Use this section as the compact handoff ledger. It should say what was actually done, which sessions and traces produced the evidence, what was promoted into durable learning, and what remains, not repeat the full implementation story.
+Use this section as the compact change ledger. Keep conditional evidence and
+release-boundary details in their named template fields rather than duplicating
+them here.
+
+The seven-section PR template is canonical-only. Active PRs that still use the
+legacy nine-section body must copy the current template, preserve their concrete
+evidence under the matching new fields, and validate the migrated body with
+`bash scripts/run-harness-gate.sh pr-template-gate --pr-body-file <path> --json`.
+The contributor responsible for the migration must resolve every failure and
+obtain a zero exit before scaffold regeneration continues. Downstream scaffolds
+must then regenerate or replace their PR template from the same release; deep
+imports of legacy validator field-group constants are not a supported
+compatibility surface. Roll back a template-contract release as one unit by
+reverting its merge commit so the source template, scaffold, validator exports,
+documentation, and gate behavior return together.
 
 ## Review artifacts requirement
 
@@ -285,6 +298,10 @@ Each PR must include:
 - Confirmation that reviewer agent is independent from coding agent.
 
 If a required review artifact is missing, block merge until it is added or explicitly waived by repository policy.
+The PR-template gate validates that each review lane is truthfully classified,
+including an explicit pending state during the opening pipeline. It does not
+prove review completion. The exact-head update-readiness gate owns completed
+review, unresolved-thread, and merge-readiness enforcement.
 
 ## Credential-safe evidence snippets
 

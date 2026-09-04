@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-08-11
+last_validated: 2026-09-04
 ---
 
 # Agent governance
@@ -85,7 +85,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   Python runtime when mise provides one; keep the two configuration surfaces
   and their focused tests in parity.
 
-- Every implementation slice must complete PR `Documentation impact`, `Documentation lifecycle impact`, and `SemVer impact` classification before handoff: update applicable root docs (`README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `AGENTS.md`, `ARCHITECTURE.md`), governed docs, and existing deep-module README files, or record `n.a.` with a reason in the matching PR field
+- Every implementation slice must complete PR `Documentation impact` and `SemVer impact` classification before handoff. The documentation classification must include any lifecycle effect: update applicable root docs (`README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `AGENTS.md`, `ARCHITECTURE.md`), governed docs, and existing deep-module README files, or record `n.a.` with a reason in the matching PR field.
 - north-star status cadence repairs should refresh
   `docs/roadmap/agent-first-status.md` and the `lastReviewedAt` value in the
   `productSurface.surfaces` record whose `surfaceId` is
@@ -495,7 +495,7 @@ scripts/validate-runtime-packet-schemas.cjs --all` for packet schema and
   criteria remain governed together
 - PR-template contract changes should keep local validation, GitHub PR body
   structure, and reviewer handoff evidence synchronized so the release boundary
-  and work-performed ledger remain enforceable before closeout
+  and change-details ledger remain enforceable before closeout
 - PR-template Behavior Proof changes should keep the source PR template,
   downstream scaffolded PR template, validator rules, README guidance, AGENTS
   guidance, and affected deep-module README files synchronized. Behavior Proof
@@ -688,6 +688,10 @@ implementation into the harness.
 - Rollback expectation for CI-ownership changes: restore the previous `harness.contract.json` `ciOwnership` mapping and matching check-identity docs in the same PR, then re-run required governance/docs gates before merge.
 - If a reproducible coding-harness bug, policy gap, workflow regression, automation task, or release follow-up is found: create or update a Linear issue with repro + evidence before handoff.
 - If PR review artifacts are missing (CodeRabbit/Codex for this repo): do not merge; complete reviews or explicitly escalate the exception.
+- The CircleCI PR-template lane validates truthful review-state classification
+  and may accept explicit pending evidence during the opening pipeline. Only
+  the update-readiness receipt may establish completed exact-head reviews and
+  zero unresolved threads; template validation is not merge-readiness proof.
 - If the `CodeRabbit` check is absent, pending, or failing for the current head SHA: do not merge.
 - If `docs-gate` reports warning findings for required surfaces on the current head SHA: do not merge unless the report has zero errors and every warning is the explicit `docs-gate.docs:archive-candidates.docs.archive_candidates.advisory` category. All other warnings must be resolved in the PR.
 - If CodeRabbit reports Semgrep findings: fix all `ERROR` findings before merge. `WARNING` findings may remain only when the PR records the rationale and containment.
