@@ -81,7 +81,7 @@ const VALID_BODY = `## Summary
 - Command: \`pnpm test\` -> \`pass\`
 - Command: \`pnpm audit\` -> \`pass\`
 - Command: \`pnpm check\` -> \`pass\`
-- Command: \`harness docs-gate --mode advisory\` -> n.a. (not needed for command fixture)
+- Command: \`harness docs-gate --mode advisory\` -> blocked (not run for command fixture)
 - Any other command(s): none
 
 ## Review and closeout

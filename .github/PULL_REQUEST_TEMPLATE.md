@@ -100,7 +100,7 @@ run, state the blocker and the nearest fallback.
 <!-- Add one evidence line for each command:
 - Command: `bash scripts/validate-codestyle.sh` -> pass
 - Command: `pnpm check` -> blocked (reason)
-- Command: `bash scripts/run-harness-gate.sh tooling-audit --path . --json` -> n.a. (reason)
+- Command: `bash scripts/run-harness-gate.sh tooling-audit --path . --json` -> blocked (reason)
 -->
 - Untested or blocked paths:
 

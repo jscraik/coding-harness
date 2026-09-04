@@ -200,7 +200,7 @@ function fillRenderedPullRequestTemplate(template: string): string {
 			"- Untested or blocked paths: none",
 		)
 		.replace(
-			"<!-- Add one or more evidence lines such as:\n- Command: `bash scripts/validate-codestyle.sh` -> pass\n- Command: `pnpm check` -> blocked (reason)\n- Command: `test -f memory.json` -> n.a. (reason)\n-->",
+			"<!-- Add one or more evidence lines such as:\n- Command: `bash scripts/validate-codestyle.sh` -> pass\n- Command: `pnpm check` -> blocked (reason)\n- Command: `test -f memory.json` -> blocked (reason)\n-->",
 			"- Command: `pnpm vitest run src/lib/init/scaffold-doc-templates.test.ts` -> pass",
 		)
 		.replace("- Any other command(s):", "- Any other command(s): none");

@@ -239,11 +239,11 @@ function collectCommandEvidenceErrors(validationBody: string): string[] {
 	}
 
 	const commandEvidencePattern =
-		/^-\s*Command:\s*(?:`[^\n`]+`|(?=\S).*?\S)\s*->\s*(?:(?:pass|fail|`(?:pass|fail)`)(?:\s*\([^)]+\)\.?)?|(?:n\.a\.|n\/a|`(?:n\.a\.|n\/a)`)(?:\s*\([^)]+\))?|(?:blocked|`blocked`)\s*\([^)]+\))\s*$/i;
+		/^-\s*Command:\s*(?:`[^\n`]+`|(?=\S).*?\S)\s*->\s*(?:(?:pass|fail|`(?:pass|fail)`)(?:\s*\([^)]+\)\.?)?|(?:blocked|`blocked`)\s*\([^)]+\))\s*$/i;
 	for (const line of commandLines) {
 		if (!commandEvidencePattern.test(line)) {
 			errors.push(
-				`Command evidence must use \`Command: <exact command> -> pass|fail\`, \`-> n.a.|n/a\` (optional reason), or \`-> blocked (<required reason>)\` format: ${line}`,
+				`Command evidence must use \`Command: <exact command> -> pass|fail\` or \`-> blocked (<required reason>)\` format: ${line}`,
 			);
 		}
 	}

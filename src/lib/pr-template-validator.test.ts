@@ -67,7 +67,7 @@ const VALID_BODY = `## Summary
 - Command: \`pnpm test\` -> \`pass\`
 - Command: \`pnpm audit\` -> \`pass\`
 - Command: \`pnpm check\` -> \`pass\`
-- Command: \`harness docs-gate --mode advisory\` -> \`n.a.\` (advisory docs gate not required for this fixture)
+- Command: \`harness docs-gate --mode advisory\` -> blocked (advisory docs gate not run in this fixture)
 - Any other command(s): none
 
 ## Review and closeout
@@ -253,13 +253,15 @@ describe("validatePrTemplateBody", () => {
 		);
 	});
 
-	it("accepts template-documented n.a. command outcomes without a reason", () => {
+	it("rejects n.a. command outcomes", () => {
 		const body = VALID_BODY.replace(
-			"- Command: `harness docs-gate --mode advisory` -> `n.a.` (advisory docs gate not required for this fixture)",
+			"- Command: `harness docs-gate --mode advisory` -> blocked (advisory docs gate not run in this fixture)",
 			"- Command: `harness docs-gate --mode advisory` -> `n.a.`",
 		);
 
-		expect(validatePrTemplateBody(body)).toEqual([]);
+		expect(validatePrTemplateBody(body)).toContainEqual(
+			expect.stringContaining("Command evidence must use"),
+		);
 	});
 
 	it("accepts pass and fail with optional parenthetical context", () => {
@@ -336,7 +338,7 @@ describe("validatePrTemplateBody", () => {
 		expect(
 			validatePrTemplateBody(body).some((error) =>
 				error.includes(
-					"Command evidence must use `Command: <exact command> -> pass|fail`, `-> n.a.|n/a` (optional reason), or `-> blocked (<required reason>)` format",
+					"Command evidence must use `Command: <exact command> -> pass|fail` or `-> blocked (<required reason>)` format",
 				),
 			),
 		).toBe(true);

@@ -135,7 +135,7 @@ ${codeRabbitChecklist}- [ ] **(Pending)** Codex review completed and findings ha
 <!-- Add one or more evidence lines such as:
 - Command: \`${options.codestyleCommand}\` -> pass
 - Command: \`${options.checkCommand}\` -> blocked (reason)
-- Command: \`${options.memoryValidateCommand}\` -> n.a. (reason)
+- Command: \`${options.memoryValidateCommand}\` -> blocked (reason)
 -->
 - Untested or blocked paths:
 
