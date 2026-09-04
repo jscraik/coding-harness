@@ -332,6 +332,10 @@ describe("pr-template-gate command", () => {
 				"waived by repository policy: JSC-123",
 			),
 		],
+		[
+			"commented section",
+			VALID_BODY.replace(/## Review and closeout[\s\S]*$/, "<!--\n$&-->"),
+		],
 	])("rejects incomplete review evidence: %s", (_case, prBody) => {
 		const result = runPrTemplateGate({ prBody });
 		expect(result.ok && result.output.passed).toBe(false);

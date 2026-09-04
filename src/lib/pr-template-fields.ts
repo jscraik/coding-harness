@@ -38,12 +38,13 @@ export function extractSectionBody(
 	body: string,
 	heading: string,
 ): string | null {
+	const visibleBody = stripHtmlComments(body);
 	const escapedHeading = heading.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
 	const pattern = new RegExp(
 		`(?:^|\\n)${escapedHeading}[ \\t]*(?:\\r?\\n)([\\s\\S]*?)(?=\\r?\\n## |\\r?\\n# |$)`,
 		"i",
 	);
-	return body.match(pattern)?.[1] ?? null;
+	return visibleBody.match(pattern)?.[1] ?? null;
 }
 
 /** Extract and normalize a named field from a bounded PR-template section. */
@@ -59,7 +60,7 @@ export function extractFieldBlockValue(
 		`^-\\s*${escapedLabel}:[ \\t]*([\\s\\S]*?)(?=\\r?\\n-\\s*[A-Za-z][^\\n:]{0,80}:|\\r?\\n##\\s|(?![\\s\\S]))`,
 		"im",
 	);
-	const match = stripHtmlComments(sectionBody).match(pattern);
+	const match = sectionBody.match(pattern);
 	return match ? normalizeFieldBlockValue(match[1] ?? "") : null;
 }
 
