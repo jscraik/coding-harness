@@ -18,6 +18,7 @@ export function stripHtmlComments(value: string): string {
 		result += value.slice(cursor, commentStart);
 		const commentEnd = value.indexOf("-->", commentStart + 4);
 		if (commentEnd === -1) return result;
+		result += " ";
 		cursor = commentEnd + 3;
 	}
 	return result;

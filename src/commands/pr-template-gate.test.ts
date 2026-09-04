@@ -341,6 +341,16 @@ describe("pr-template-gate command", () => {
 		expect(result.ok && result.output.passed).toBe(false);
 	});
 
+	it("does not promote text after an HTML comment into a heading", () => {
+		const prBody = VALID_BODY.replace(
+			"## Review and closeout",
+			"<!-- hidden guidance -->## Review and closeout",
+		);
+		const result = runPrTemplateGate({ prBody });
+
+		expect(result.ok && result.output.passed).toBe(false);
+	});
+
 	it("accepts a complete review waiver", () => {
 		const prBody = VALID_BODY.replace(
 			"https://example.com/codex",
