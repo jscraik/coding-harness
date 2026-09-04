@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Fixed
 
+- Replaced the legacy pull-request body contract with the canonical seven-section
+  template and aligned validation, generated scaffolds, and review evidence.
 - Allow the weekly agent-first status document and its exact review-date
   registration to pass the docs gate without masking broader contract changes.
 

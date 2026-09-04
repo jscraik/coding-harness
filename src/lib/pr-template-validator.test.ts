@@ -97,10 +97,10 @@ describe("validatePrTemplateBody", () => {
 
 		const pendingBody = VALID_BODY.replace(
 			new RegExp(`^- ${label}:.*$`, "m"),
-			`- ${label}: pending`,
+			`- ${label}: https://example.com/request requested; final artifact pending`,
 		);
 		expect(validatePrTemplateBody(pendingBody)).toContain(
-			`Review and closeout field ${label} must link a checkable artifact or use \`waived by repository policy: rule=<id-or-section>; reason=<reason>; ticket=<ticket>; expiry=<YYYY-MM-DD>\` (or \`adr=<reference>\`).`,
+			`Review and closeout field ${label} must reference a completed review artifact, not a pending, requested, or running review.`,
 		);
 	});
 

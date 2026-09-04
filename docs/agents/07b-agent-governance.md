@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-08-11
+last_validated: 2026-09-04
 ---
 
 # Agent governance
@@ -85,7 +85,7 @@ When agent work changes tooling/runtime contract surfaces or architecture-contex
   Python runtime when mise provides one; keep the two configuration surfaces
   and their focused tests in parity.
 
-- Every implementation slice must complete PR `Documentation impact`, `Documentation lifecycle impact`, and `SemVer impact` classification before handoff: update applicable root docs (`README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `AGENTS.md`, `ARCHITECTURE.md`), governed docs, and existing deep-module README files, or record `n.a.` with a reason in the matching PR field
+- Every implementation slice must complete PR `Documentation impact` and `SemVer impact` classification before handoff. The documentation classification must include any lifecycle effect: update applicable root docs (`README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `AGENTS.md`, `ARCHITECTURE.md`), governed docs, and existing deep-module README files, or record `n.a.` with a reason in the matching PR field.
 - north-star status cadence repairs should refresh
   `docs/roadmap/agent-first-status.md` and the `lastReviewedAt` value in the
   `productSurface.surfaces` record whose `surfaceId` is
