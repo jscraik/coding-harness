@@ -32,14 +32,12 @@ const VALID_BODY = `## Summary
 - Plan IDs: JSC-999; .harness/plan/example-plan.md
 - Linear reference: Refs JSC-999.
 - Linked issue relationship: implementation closure for JSC-999; completed acceptance IDs: SA-999-001.
-- Phase / slice: PU-001 PR evidence ledger
 - Session IDs: codex-session-019c-example
 - Trace IDs: circleci-workflow-123; harness-gate-pr-template
 - AI session / traceability: codex-session-019c-example supports the validator and PR-template-gate implementation changes.
 - Completed work: Added pr-template-gate command and docs update with evidence refs.
 - Affected surfaces: code, tests, and PR template.
 - Documentation impact: PR template and validator fixtures updated; README.md, SECURITY.md, CONTRIBUTING.md, AGENTS.md, ARCHITECTURE.md, governance docs, and deep-module READMEs are n.a. because this fixture only proves PR body validation.
-- Documentation lifecycle impact: updated canonical PR template and validator fixtures; distribution remains source-only.
 - SemVer impact: none; validation-only fixture and PR-template contract change does not alter the packaged CLI runtime.
 - Expected outcome alignment: Keeps PR evidence portable and machine-checkable for greenfield and brownfield repos.
 - Pattern scope inventory: Principle: PR evidence fields must be validator-backed; sibling tests and command fixtures updated; unchanged siblings not applicable because this fixture does not admit pattern-bearing feedback.
@@ -50,7 +48,6 @@ const VALID_BODY = `## Summary
 - Review artifacts: CodeRabbit pending; Codex self-review recorded in PR body.
 - Durable evidence map: n.a. because review artifacts are represented by PR body links rather than local-only artifact paths.
 - Runtime impact: CI-only.
-- CodeRabbit mode coverage: validation.
 - Closeout state: local branch clean, checks passed, Linear linked, no remaining blocker.
 - Learning / reinforcement: none; no durable learning promoted.
 

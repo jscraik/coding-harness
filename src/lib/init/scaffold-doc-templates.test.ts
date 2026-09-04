@@ -24,7 +24,6 @@ const completedChangeDetailValues = new Map<string, string>([
 		"Linked issue relationship",
 		"implementation closure for JSC-999; completed acceptance IDs: SA-999-001.",
 	],
-	["Phase / slice", "Generated template parity"],
 	["Session IDs", "codex-session-generated-template-test"],
 	["Trace IDs", "harness-run-generated-template-test"],
 	[
@@ -36,10 +35,6 @@ const completedChangeDetailValues = new Map<string, string>([
 	[
 		"Documentation impact",
 		"PR template and scaffold fixtures updated; README.md, SECURITY.md, CONTRIBUTING.md, AGENTS.md, ARCHITECTURE.md, governance docs, and deep-module READMEs are n.a. because this fixture only proves generated PR template validation.",
-	],
-	[
-		"Documentation lifecycle impact",
-		"updated downstream-template PR contract fixture; canon class is supporting downstream scaffold.",
 	],
 	[
 		"SemVer impact",
@@ -72,7 +67,6 @@ const completedChangeDetailValues = new Map<string, string>([
 		"n.a. because review artifacts are represented by PR body links rather than local-only artifact paths.",
 	],
 	["Runtime impact", "CI-only."],
-	["CodeRabbit mode coverage", "validation."],
 	[
 		"Closeout state",
 		"PR state n.a.; merge or auto-merge state n.a.; branch/worktree state test fixture; Linear state n.a.; next-lane routing n.a.; no remaining blocker.",
