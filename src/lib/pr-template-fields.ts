@@ -59,7 +59,7 @@ export function extractFieldBlockValue(
 		`^-\\s*${escapedLabel}:[ \\t]*([\\s\\S]*?)(?=\\r?\\n-\\s*[A-Za-z][^\\n:]{0,80}:|\\r?\\n##\\s|(?![\\s\\S]))`,
 		"im",
 	);
-	const match = sectionBody.match(pattern);
+	const match = stripHtmlComments(sectionBody).match(pattern);
 	return match ? normalizeFieldBlockValue(match[1] ?? "") : null;
 }
 

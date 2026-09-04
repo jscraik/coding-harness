@@ -86,8 +86,40 @@ function collectValidationFieldErrors(body: string): string[] {
 	return errors;
 }
 
-const REVIEW_ARTIFACT_PATTERN =
-	/https?:\/\/\S+|waived by repository policy:\s*(?:https?:\/\/\S+|[A-Z]+-\d+|[\w./-]+\.md\b)/i;
+const REVIEW_ARTIFACT_URL_PATTERN = /https?:\/\/\S+/i;
+const REVIEW_WAIVER_PREFIX = "waived by repository policy:";
+const REVIEW_WAIVER_TICKET_PATTERN = /^(?:https?:\/\/\S+|[A-Z]+-\d+)$/;
+const REVIEW_WAIVER_EXPIRY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Return whether a policy waiver contains every required metadata field. */
+function isCompleteReviewWaiver(value: string): boolean {
+	if (!value.toLowerCase().startsWith(REVIEW_WAIVER_PREFIX)) return false;
+	const fields = new Map(
+		value
+			.slice(REVIEW_WAIVER_PREFIX.length)
+			.split(";")
+			.map((part) =>
+				part
+					.split(/=(.*)/s)
+					.slice(0, 2)
+					.map((item) => item.trim()),
+			)
+			.filter((entry): entry is [string, string] => entry.length === 2)
+			.map(([key, fieldValue]) => [key.toLowerCase(), fieldValue]),
+	);
+	const rule = fields.get("rule") ?? fields.get("section");
+	const reason = fields.get("reason");
+	const ticket = fields.get("ticket");
+	const expiry = fields.get("expiry");
+	const adr = fields.get("adr");
+	return Boolean(
+		rule &&
+			reason &&
+			ticket &&
+			REVIEW_WAIVER_TICKET_PATTERN.test(ticket) &&
+			((expiry && REVIEW_WAIVER_EXPIRY_PATTERN.test(expiry)) || adr),
+	);
+}
 
 /** Require review evidence to be checkable or explicitly policy-waived. */
 function collectReviewFieldErrors(body: string): string[] {
@@ -103,9 +135,13 @@ function collectReviewFieldErrors(body: string): string[] {
 			"## Review and closeout",
 			field.label,
 		);
-		if (value !== null && !REVIEW_ARTIFACT_PATTERN.test(value)) {
+		if (
+			value !== null &&
+			!REVIEW_ARTIFACT_URL_PATTERN.test(value) &&
+			!isCompleteReviewWaiver(value)
+		) {
 			errors.push(
-				`Review and closeout field ${field.label} must link a checkable artifact or use \`waived by repository policy: <policy reference>\`.`,
+				`Review and closeout field ${field.label} must link a checkable artifact or use \`waived by repository policy: rule=<id-or-section>; reason=<reason>; ticket=<ticket>; expiry=<YYYY-MM-DD>\` (or \`adr=<reference>\`).`,
 			);
 		}
 	}

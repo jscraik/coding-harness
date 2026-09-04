@@ -100,7 +100,7 @@ describe("validatePrTemplateBody", () => {
 			`- ${label}: pending`,
 		);
 		expect(validatePrTemplateBody(pendingBody)).toContain(
-			`Review and closeout field ${label} must link a checkable artifact or use \`waived by repository policy: <policy reference>\`.`,
+			`Review and closeout field ${label} must link a checkable artifact or use \`waived by repository policy: rule=<id-or-section>; reason=<reason>; ticket=<ticket>; expiry=<YYYY-MM-DD>\` (or \`adr=<reference>\`).`,
 		);
 	});
 

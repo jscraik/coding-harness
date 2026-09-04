@@ -316,4 +316,33 @@ describe("pr-template-gate command", () => {
 		expect(exitCode).toBe(EXIT_CODES.POLICY_VIOLATION);
 		expect(consoleError).toHaveBeenCalled();
 	});
+
+	it.each([
+		[
+			"commented fields",
+			VALID_BODY.replace(
+				/(- (?:CodeRabbit|Independent reviewer evidence|Codex):.*\n){3}/,
+				"<!--\n$&-->\n",
+			),
+		],
+		[
+			"ticket-only waiver",
+			VALID_BODY.replace(
+				"https://example.com/codex",
+				"waived by repository policy: JSC-123",
+			),
+		],
+	])("rejects incomplete review evidence: %s", (_case, prBody) => {
+		const result = runPrTemplateGate({ prBody });
+		expect(result.ok && result.output.passed).toBe(false);
+	});
+
+	it("accepts a complete review waiver", () => {
+		const prBody = VALID_BODY.replace(
+			"https://example.com/codex",
+			"waived by repository policy: rule=AGENTS.md review quorum; reason=provider outage; ticket=JSC-123; expiry=2026-09-11",
+		);
+		const result = runPrTemplateGate({ prBody });
+		expect(result.ok && result.output.passed).toBe(true);
+	});
 });

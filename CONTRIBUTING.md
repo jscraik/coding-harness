@@ -281,11 +281,13 @@ The seven-section PR template is canonical-only. Active PRs that still use the
 legacy nine-section body must copy the current template, preserve their concrete
 evidence under the matching new fields, and validate the migrated body with
 `bash scripts/run-harness-gate.sh pr-template-gate --pr-body-file <path> --json`.
-Downstream scaffolds must regenerate or replace their PR template
-from the same release; deep imports of legacy validator field-group constants
-are not a supported compatibility surface. Roll back a template-contract release
-as one unit by reverting its merge commit so the source template, scaffold,
-validator exports, documentation, and gate behavior return together.
+The contributor responsible for the migration must resolve every failure and
+obtain a zero exit before scaffold regeneration continues. Downstream scaffolds
+must then regenerate or replace their PR template from the same release; deep
+imports of legacy validator field-group constants are not a supported
+compatibility surface. Roll back a template-contract release as one unit by
+reverting its merge commit so the source template, scaffold, validator exports,
+documentation, and gate behavior return together.
 
 ## Review artifacts requirement
 
