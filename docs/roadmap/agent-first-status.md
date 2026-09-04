@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-08-24
+last_validated: 2026-09-04
 ---
 
 # Agent-First Status
@@ -44,6 +44,12 @@ slices improve dependency and future release readiness, but they add no new
 effectiveness observation or package-publication evidence. The controlled
 observation below supplies the missing local proof-clarity evidence; causal
 productivity metrics remain explicitly unknown.
+
+The 2026-09-04 cadence review confirms that [#526](https://github.com/jscraik/coding-harness/pull/526)
+clarified the distinction between source-checkout proof and an installed global
+binary. That documentation repair strengthens evidence interpretation but adds
+no new effectiveness observation, causal productivity result, publication
+evidence, or release-readiness claim.
 
 The direct effectiveness slice now has a controlled local observation in
 addition to the earlier readiness, cohort, and lifecycle samples. The
