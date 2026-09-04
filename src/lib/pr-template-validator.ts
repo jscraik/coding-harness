@@ -88,7 +88,7 @@ function collectValidationFieldErrors(body: string): string[] {
 
 const REVIEW_ARTIFACT_URL_PATTERN = /https?:\/\/\S+/i;
 const REVIEW_INCOMPLETE_STATUS_PATTERN =
-	/\b(?:pending|requested|running|in[ -]progress|incomplete|not completed?)\b/i;
+	/\b(?:pending|running|in[ -]progress|incomplete|not completed?|review requested|requested review)\b/i;
 const REVIEW_WAIVER_PREFIX = "waived by repository policy:";
 const REVIEW_WAIVER_TICKET_PATTERN = /^(?:https?:\/\/\S+|[A-Z]+-\d+)$/;
 const REVIEW_WAIVER_EXPIRY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -114,12 +114,16 @@ function isCompleteReviewWaiver(value: string): boolean {
 	const ticket = fields.get("ticket");
 	const expiry = fields.get("expiry");
 	const adr = fields.get("adr");
+	const today = new Date().toISOString().slice(0, 10);
 	return Boolean(
 		rule &&
 			reason &&
 			ticket &&
 			REVIEW_WAIVER_TICKET_PATTERN.test(ticket) &&
-			((expiry && REVIEW_WAIVER_EXPIRY_PATTERN.test(expiry)) || adr),
+			((expiry &&
+				REVIEW_WAIVER_EXPIRY_PATTERN.test(expiry) &&
+				expiry >= today) ||
+				adr),
 	);
 }
 

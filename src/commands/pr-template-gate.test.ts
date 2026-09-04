@@ -351,6 +351,22 @@ describe("pr-template-gate command", () => {
 		expect(result.ok && result.output.passed).toBe(false);
 	});
 
+	it.each([
+		[
+			"fenced section",
+			VALID_BODY.replace(/## Review and closeout[\s\S]*$/, "```md\n$&\n```"),
+		],
+		[
+			"inline comment delimiter",
+			VALID_BODY.replace("`pnpm lint`", "`printf '<!--'`"),
+		],
+	])("handles Markdown code without structural confusion: %s", (kind, prBody) => {
+		const result = runPrTemplateGate({ prBody });
+		expect(result.ok && result.output.passed).toBe(
+			kind === "inline comment delimiter",
+		);
+	});
+
 	it("accepts a complete review waiver", () => {
 		const prBody = VALID_BODY.replace(
 			"https://example.com/codex",
@@ -358,5 +374,30 @@ describe("pr-template-gate command", () => {
 		);
 		const result = runPrTemplateGate({ prBody });
 		expect(result.ok && result.output.passed).toBe(true);
+	});
+
+	it.each([
+		[
+			"resolved requests",
+			"https://example.com/review completed; all requested changes resolved",
+			true,
+		],
+		[
+			"expired waiver",
+			"waived by repository policy: rule=reviews; reason=outage; ticket=JSC-123; expiry=2000-01-01",
+			false,
+		],
+	])("classifies review completion: %s", (_case, evidence, expected) => {
+		const result = runPrTemplateGate({
+			prBody: VALID_BODY.replace("https://example.com/codex", evidence),
+		});
+		expect(result.ok && result.output.passed).toBe(expected);
+	});
+
+	it("requires closeout state", () => {
+		const result = runPrTemplateGate({
+			prBody: VALID_BODY.replace(/^- Closeout state:.*$/m, "- Closeout state:"),
+		});
+		expect(result.ok && result.output.passed).toBe(false);
 	});
 });

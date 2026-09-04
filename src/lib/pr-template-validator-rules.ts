@@ -200,6 +200,11 @@ export const REQUIRED_CHANGE_FIELDS = [
 		placeholder:
 			"state direct, transitive, dev-only, CI-only, runtime-facing, or `n.a.` with reason",
 	},
+	{
+		label: "Closeout state",
+		placeholder:
+			"state PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and remaining blockers",
+	},
 ] as const;
 
 export const REQUIRED_REVIEW_FIELDS = [
@@ -257,10 +262,5 @@ export const CONDITIONAL_EVIDENCE_FIELDS = [
 		label: "Learning / reinforcement",
 		placeholder:
 			"list promoted learnings, memory updates, or `none` with reason",
-	},
-	{
-		label: "Closeout state",
-		placeholder:
-			"state PR state, merge or auto-merge state, branch/worktree state, Linear state, next-lane routing, and remaining blockers",
 	},
 ] as const;
