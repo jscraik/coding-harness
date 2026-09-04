@@ -461,10 +461,10 @@ describe("validatePrTemplateBody", () => {
 		);
 	});
 
-	it("fails local-only validation evidence without a durable evidence mirror", () => {
+	it("fails local-only command evidence without a durable evidence mirror", () => {
 		const body = VALID_BODY.replace(
-			"- Validation evidence: pnpm vitest run src/lib/pr-template-validator.test.ts -> pass.",
-			"- Validation evidence: pnpm vitest run src/lib/pr-template-validator.test.ts -> pass; artifacts/reviews/codex-review.md.",
+			"- Command: `pnpm lint` -> `pass`",
+			"- Command: `pnpm lint` -> pass (details: artifacts/test.log)",
 		);
 
 		expect(validatePrTemplateBody(body)).toContain(

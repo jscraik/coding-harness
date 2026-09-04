@@ -12,6 +12,7 @@ import {
 	STEERING_SIGNAL_PATTERN,
 } from "./pr-template-validator-rules.js";
 import { validateDurableEvidenceMap } from "./evidence-reference/evidence-reference.js";
+import { extractSectionBody } from "./pr-template-fields.js";
 
 const LOCAL_ABSOLUTE_PATH_PATTERN =
 	/(?:^|[\s\x60"'(])((?:\/Users\/|\/private\/var\/folders\/|\/var\/folders\/|\/private\/tmp\/|\/tmp\/)[^\s\x60"'<>),;]+)/g;
@@ -121,6 +122,7 @@ function collectDurableEvidenceMapErrors(
 	]
 		.filter((field): field is string => field !== null)
 		.join("\n");
+	const validationEvidence = extractSectionBody(body, "## Validation");
 	const evidenceText = [
 		...REQUIRED_CHANGE_FIELDS,
 		...CONDITIONAL_EVIDENCE_FIELDS,
@@ -129,6 +131,7 @@ function collectDurableEvidenceMapErrors(
 		.map((field) => readFieldValue(body, "## Change details", field.label))
 		.filter((field): field is string => field !== null)
 		.concat(requiredReviewArtifacts)
+		.concat(validationEvidence ?? [])
 		.join("\n");
 
 	return validateDurableEvidenceMap({
