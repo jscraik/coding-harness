@@ -364,10 +364,13 @@ describe("validatePrTemplateBody", () => {
 		).toBe(true);
 	});
 
-	it("does not count commented command examples as validation evidence", () => {
+	it.each([
+		["ordinary", "<!--\n- Command: `pnpm test` -> pass\n-->"],
+		["nested", "<!-- outer <!--\n- Command: `pnpm test` -> pass\n-->"],
+	])("does not count %s comments as command evidence", (_kind, comment) => {
 		const body = VALID_BODY.replace(/^- Command: .*$/gm, "").replace(
 			"- Untested or blocked paths: none",
-			"- Untested or blocked paths: none\n<!--\n- Command: `pnpm test` -> pass\n-->",
+			`- Untested or blocked paths: none\n${comment}`,
 		);
 
 		expect(validatePrTemplateBody(body)).toContain(

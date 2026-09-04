@@ -6,6 +6,7 @@ import {
 	extractFieldBlockValue,
 	extractSectionBody,
 	normalizeFieldValue,
+	stripHtmlComments,
 } from "./pr-template-fields.js";
 import {
 	MAX_BODY_LENGTH,
@@ -252,8 +253,7 @@ function issueHasPreparatoryNoCompletionTrace(
  * @returns An array of error messages describing formatting violations; empty if all command evidence lines conform to the required patterns
  */
 function collectCommandEvidenceErrors(validationBody: string): string[] {
-	const commandLines = validationBody
-		.replace(/<!--\s*[\s\S]*?\s*-->/g, "")
+	const commandLines = stripHtmlComments(validationBody)
 		.split(/\r?\n/)
 		.map((line) => line.trim())
 		.filter((line) => /^-\s*Command:\s*/i.test(line));

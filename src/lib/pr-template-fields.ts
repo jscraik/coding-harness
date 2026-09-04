@@ -8,6 +8,21 @@ export function normalizeFieldValue(value: string): string {
 	return normalized.replace(/\s+/g, " ").trim();
 }
 
+/** Remove complete and unterminated HTML comments without reparsing remnants. */
+export function stripHtmlComments(value: string): string {
+	let result = "";
+	let cursor = 0;
+	while (cursor < value.length) {
+		const commentStart = value.indexOf("<!--", cursor);
+		if (commentStart === -1) return result + value.slice(cursor);
+		result += value.slice(cursor, commentStart);
+		const commentEnd = value.indexOf("-->", commentStart + 4);
+		if (commentEnd === -1) return result;
+		cursor = commentEnd + 3;
+	}
+	return result;
+}
+
 /** Normalize a multiline field and discard embedded guidance comments. */
 function normalizeFieldBlockValue(value: string): string {
 	let normalized = value.trim();
@@ -15,10 +30,7 @@ function normalizeFieldBlockValue(value: string): string {
 	if (fencedMatch) normalized = fencedMatch[1] ?? "";
 	const inlineCodeMatch = normalized.match(/^`([^`]+)`$/);
 	if (inlineCodeMatch) normalized = inlineCodeMatch[1] ?? "";
-	while (/<!--\s*[\s\S]*?\s*-->/.test(normalized)) {
-		normalized = normalized.replace(/<!--\s*[\s\S]*?\s*-->/g, "");
-	}
-	return normalized.trim();
+	return stripHtmlComments(normalized).trim();
 }
 
 /** Extract the markdown content below a named PR-template heading. */
